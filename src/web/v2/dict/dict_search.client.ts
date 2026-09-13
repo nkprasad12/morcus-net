@@ -6,6 +6,8 @@ import {
   inflectedSettingsStore,
   fetchAndSwapPartial,
   registerElement,
+  replaceWithHtml,
+  setHtml,
 } from "@/web/v2/core/index.client";
 import {
   processTokens,
@@ -353,7 +355,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         const langChipsContainer = this.$<HTMLElement>(".v2-lang-chips");
         if (langChipsContainer && this.activeDictKeys) {
           const activeLangs = computeActiveLanguages(this.activeDictKeys);
-          langChipsContainer.innerHTML = renderLangChipsHtml(activeLangs);
+          setHtml(langChipsContainer, renderLangChipsHtml(activeLangs));
         }
       }
     );
@@ -370,7 +372,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         // Update inflection badge in the search bar tray live
         const inflectChip = this.$<HTMLElement>(".v2-inflect-chip");
         if (inflectChip) {
-          inflectChip.outerHTML = renderInflectChipHtml(this.isInflected);
+          replaceWithHtml(inflectChip, renderInflectChipHtml(this.isInflected));
         }
 
         const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");

@@ -3,7 +3,9 @@ import {
   type QueryParamSync,
   DrawerController,
   ICON_PATHS,
+  html,
   registerElement,
+  setHtml,
   settingsStore,
   setupModalDialog,
   trackPointerDrag,
@@ -677,7 +679,12 @@ export class MorcusReaderView extends BaseElement {
     btn.className = "v2-reader-dict-back-to-top";
     btn.setAttribute("aria-label", "Scroll dictionary to top");
     btn.title = "Jump to top";
-    btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON_PATHS.chevronUp}"></path></svg>`;
+    setHtml(
+      btn,
+      html`<svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="${ICON_PATHS.chevronUp}"></path>
+      </svg>`
+    );
 
     dictPanel.appendChild(btn);
 
@@ -1089,7 +1096,9 @@ export class MorcusReaderView extends BaseElement {
     const setExpanded = (expanded: boolean) => {
       expandBtn.setAttribute("aria-expanded", String(expanded));
       expandedRow.hidden = !expanded;
-      if (chevron) chevron.innerHTML = expanded ? "&utrif;" : "&dtrif;";
+      // The literal glyphs for &utrif; / &dtrif;, which is what reader.server.ts
+      // emits, so this can be textContent: no markup, no HTML sink.
+      if (chevron) chevron.textContent = expanded ? "▴" : "▾";
       try {
         localStorage.setItem("morcus_sticky_expanded", String(expanded));
       } catch {

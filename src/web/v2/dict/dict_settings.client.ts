@@ -2,8 +2,11 @@ import {
   BaseElement,
   bindDismissable,
   dictSettingsStore,
+  html,
   inflectedSettingsStore,
+  joinHtml,
   registerElement,
+  setHtml,
   settingsStore,
 } from "@/web/v2/core/index.client";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
@@ -103,10 +106,10 @@ export class MorcusDictSettings extends BaseElement {
 
     // If SSR details element doesn't exist (e.g. standalone test), build full structure
     if (!this.detailsEl || !this.popoverEl) {
-      const dictItemsHtml = LatinDict.AVAILABLE.map((d) => {
+      const dictItems = LatinDict.AVAILABLE.map((d) => {
         const isChecked = this.activeDictKeys.has(d.key);
         const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
-        return `
+        return html`
           <label class="v2-dict-item" title="${d.displayName} (${langText})">
             <input
               type="checkbox"
@@ -114,34 +117,33 @@ export class MorcusDictSettings extends BaseElement {
               value="${d.key}"
               class="v2-dict-checkbox"
               data-key="${d.key}"
-              ${isChecked ? "checked" : ""}
-            />
+              ${isChecked ? "checked" : ""} />
             <span class="v2-dict-name">${d.displayName}</span>
             <span class="v2-dict-lang">${langText}</span>
           </label>
         `;
-      }).join("");
+      });
 
-      this.innerHTML = `
-        <details class="v2-dict-settings-details">
-          <summary
-            class="v2-settings-btn"
-            aria-label="Dictionary and highlight settings"
-            title="Dictionary and highlight settings"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="${TUNE_PATH}"></path>
-            </svg>
-          </summary>
+      setHtml(
+        this,
+        html`
+          <details class="v2-dict-settings-details">
+            <summary
+              class="v2-settings-btn"
+              aria-label="Dictionary and highlight settings"
+              title="Dictionary and highlight settings">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="${TUNE_PATH}"></path>
+              </svg>
+            </summary>
 
-          <div class="v2-settings-popover">
-            <div class="v2-settings-section-title">Enabled Dictionaries</div>
-            <div class="v2-dict-list">
-              ${dictItemsHtml}
+            <div class="v2-settings-popover">
+              <div class="v2-settings-section-title">Enabled Dictionaries</div>
+              <div class="v2-dict-list">${joinHtml(dictItems)}</div>
             </div>
-          </div>
-        </details>
-      `;
+          </details>
+        `
+      );
 
       this.detailsEl = this.$<HTMLDetailsElement>(".v2-dict-settings-details");
       this.summaryEl = this.$<HTMLElement>(".v2-settings-btn");
@@ -168,33 +170,35 @@ export class MorcusDictSettings extends BaseElement {
     if (this.popoverEl && !this.$(".v2-settings-slider")) {
       const sliderControls = document.createElement("div");
       sliderControls.className = "v2-settings-slider-section";
-      sliderControls.innerHTML = `
-        <div class="v2-settings-header">
-          <span class="v2-settings-title">Highlight Strength</span>
-          <span class="v2-settings-value">${this.strength}%</span>
-        </div>
+      setHtml(
+        sliderControls,
+        html`
+          <div class="v2-settings-header">
+            <span class="v2-settings-title">Highlight Strength</span>
+            <span class="v2-settings-value">${this.strength}%</span>
+          </div>
 
-        <div class="v2-settings-control-row">
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="10"
-            value="${this.strength}"
-            class="v2-settings-slider"
-            aria-label="Highlight strength"
-          />
-        </div>
+          <div class="v2-settings-control-row">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="10"
+              value="${this.strength}"
+              class="v2-settings-slider"
+              aria-label="Highlight strength" />
+          </div>
 
-        <div class="v2-settings-preview" aria-hidden="true">
-          <span class="lsOrth">Caesar</span>
-          <span class="lsGrammar">noun</span>
-          <span class="lsBibl">Gall. 1.1</span>
-          <span class="lsQuote">omnia</span>
-        </div>
+          <div class="v2-settings-preview" aria-hidden="true">
+            <span class="lsOrth">Caesar</span>
+            <span class="lsGrammar">noun</span>
+            <span class="lsBibl">Gall. 1.1</span>
+            <span class="lsQuote">omnia</span>
+          </div>
 
-        <div class="v2-settings-divider" role="separator"></div>
-      `;
+          <div class="v2-settings-divider" role="separator"></div>
+        `
+      );
       this.popoverEl.prepend(sliderControls);
     }
 

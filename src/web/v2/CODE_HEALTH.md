@@ -117,7 +117,7 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 ## Phase 2 — Guardrails (do these before the big cleanups)
 
-- [ ] 🟡 **Add an auto-escaping `html` tagged template** in `core/html.common.ts`. There are
+- [x] 🟡 **Add an auto-escaping `html` tagged template** in `core/html.common.ts`. There are
       currently **five** ways to escape: `he.escape`, `he.encode`, a hand-rolled `escapeHtml`,
       trusted-by-assumption, and the outright bugs above. `he.escape` and `he.encode` are used
       interchangeably for the same job within single files (e.g. `inflection_table.server.ts`
@@ -152,6 +152,36 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
       Makes the safe path the default and the unsafe path explicitly `raw(...)` — greppable and
       reviewable. Migrate files opportunistically; no big-bang rewrite needed.
+
+      **Done** — landed as `core/html.common.ts` exporting `html`, `raw`, `joinHtml` and
+      `escapeHtml`, with 16 tests. `search_bar.common.ts`'s private `escapeHtml` copy is gone,
+      removing one of the five escape paths, and its two chip renderers now return `SafeHtml`.
+
+      The sketch above does not work as written and was not followed. `SafeHtml = { [RAW]: string }`
+      is an object, so it cannot be assigned to `innerHTML` — TypeScript rejects it, and unwrapping
+      it at the call site defeats the point, because an unwrapping call is exactly what
+      `no-unsanitized` cannot see through. `html` therefore returns a *branded string*
+      (`string & { [SAFE_HTML]: true }`): a real string at runtime, assignable to `string`, but not
+      constructible from one. `raw()` stays an object, since that is what makes trusted content
+      recognisable at runtime.
+
+      That has one consequence worth knowing: a `SafeHtml` interpolated directly into another
+      template is escaped *again*, because the brand is erased at runtime. Compose with `joinHtml`
+      or `raw`. It fails safe — visibly double-encoded text, not an injection — and there is a test
+      pinning it.
+
+      Markup reaches the DOM through `setHtml` / `replaceWithHtml` in the new `core/dom.client.ts`
+      rather than by direct assignment. This was not in the plan; it is forced by how the lint rule
+      works. Two of the migrated sites assign the *result of a renderer function*, which the rule
+      sees as a call expression and rejects no matter how the callee is written. Configuring the
+      rule to trust those functions by name would put the trust in a list that cannot notice when a
+      renderer changes its return type, whereas a `SafeHtml` parameter is checked. The sinks cost
+      two audited `eslint-disable` lines in total.
+
+      Also worth knowing when authoring templates: prettier formats the markup inside `html`
+      tagged templates. It is whitespace-aware and will not introduce a rendered gap between inline
+      elements, but it reflows block elements across lines — which does put real whitespace in the
+      output — and rewrites single-quoted attributes to double quotes.
 
 - [ ] 🟢 **Prefer `he.escape` over `he.encode`** in remaining server templates. `he.encode`
       entity-encodes all non-ASCII, which on Latin/Greek lexica is wasted CPU and payload on every
@@ -336,7 +366,7 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       down the whole server, V2 included. Small enough to do as a one-off without taking on the
       other ~86 legacy violations.
 
-- [ ] 🟡 **Add `eslint-plugin-no-unsanitized`, configured to trust the `html` helper.** There are
+- [x] 🟡 **Add `eslint-plugin-no-unsanitized`, configured to trust the `html` helper.** There are
       **13** `innerHTML` / `outerHTML` / `insertAdjacentHTML` / `createContextualFragment` sites in
       non-test V2 code, across `core/partial.client.ts`, `dict_greek.client.ts`,
       `dict_search.client.ts`, `dict_settings.client.ts`, `reader_view.client.ts` and
@@ -354,6 +384,48 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       > assignment becomes an error needing an explicit, reviewable disable. Adopted in the other
       > order it produces 13 `eslint-disable` comments and no behaviour change — which is precisely
       > the half-adoption failure mode named in the audit summary.
+
+      **Done** — and the sequencing warning above was right, so the `html` helper landed first.
+
+      The `escape: { taggedTemplates: ["html"] }` configuration in the box above is deliberately
+      *not* used; the rule runs with default options. Trusting the tag by name only covers markup
+      written inline as a template, and two sites assign the result of a renderer function instead,
+      which the rule rejects whatever the callee does. Routing every sink through `setHtml` /
+      `replaceWithHtml`, which take `SafeHtml`, covers both shapes and keeps the trust in the type
+      system. See the previous item.
+
+      The item's count was wrong. Measured with the plugin installed: **16** violations, **9**
+      production and **7** in tests, not 13 non-test. More usefully, the nine were not nine
+      instances of one problem:
+
+      Two were false positives with a better fix than the helper. `dict_greek.client.ts` L61 and
+      `reader_view.client.ts` L1092 each assigned a ternary of two *string literals* (`&#x25BE;`,
+      `&utrif;` and friends). The rule flags them because `ConditionalExpression` is simply not in
+      its allowed-node list, not because anything dynamic is involved. Both are triangle glyphs, so
+      they became `textContent` with the literal character — deleting the sink rather than
+      annotating it.
+
+      One is the actual trust boundary. `core/partial.client.ts` feeds
+      `createContextualFragment` a string fetched from the network, so no escaping helper can apply
+      — the markup is already assembled. It keeps the sink with a documented exemption explaining
+      what the trust rests on: the only caller fetches same-origin V2 routes, so it is our own SSR
+      output, escaped server-side.
+
+      The remaining six moved to `html` + the typed sinks.
+
+      Tests are exempt, unlike the async-rules block. Their fixtures deliberately assign arbitrary
+      markup — including the XSS payloads in the regression tests — into jsdom, where there is no
+      untrusted input and no boundary. Forcing `raw()` there would have added seven annotations
+      that assert nothing.
+
+      Verified by probe: a raw `innerHTML` assignment in a `.client.ts` is reported, the same
+      assignment in a `.test.ts` is not. One trap worth remembering — an
+      `// eslint-disable-next-line rule -- long reason` is unsafe here, because prettier wraps the
+      trailing reason onto a second line and the directive then applies to *that comment* instead
+      of the code. The `reportUnusedDisableDirectives` warning is what caught it. Put the reason on
+      its own line above the directive.
+
+      Bundle cost of the helper plus sinks: **74.7 → 75.2 kB** raw, **21.2 → 21.4 kB** gzip.
 
 - [ ] 🟢 **Add `eslint-plugin-wc`, narrowly scoped.** The justifying rule is **`wc/no-typos`**: a
       misspelled `disconnectedCallback` is a _silent_ no-op, invisible to `tsc` (it is merely an

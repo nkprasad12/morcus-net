@@ -1,6 +1,8 @@
 import {
   BaseElement,
+  html,
   registerElement,
+  setHtml,
   settingsStore,
 } from "@/web/v2/core/index.client";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
@@ -83,17 +85,20 @@ export class MorcusThemeToggle extends BaseElement {
     const label = this.isDark ? "Switch to light mode" : "Switch to dark mode";
     const pathD = this.isDark ? SUN_PATH : MOON_PATH;
 
-    this.innerHTML = `
-      <button
-        type="button"
-        class="v2-theme-toggle-btn"
-        aria-label="${label}"
-        title="${label}">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="${pathD}"></path>
-        </svg>
-      </button>
-    `;
+    setHtml(
+      this,
+      html`
+        <button
+          type="button"
+          class="v2-theme-toggle-btn"
+          aria-label="${label}"
+          title="${label}">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="${pathD}"></path>
+          </svg>
+        </button>
+      `
+    );
 
     this.buttonEl = this.$<HTMLButtonElement>("button");
     this.pathEl = this.querySelector<SVGPathElement>("path");
