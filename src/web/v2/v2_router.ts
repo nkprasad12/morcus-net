@@ -30,7 +30,6 @@ import {
 import type { ReportApiRequest } from "@/web/api_routes";
 import * as path from "path";
 import * as he from "he";
-import * as zlib from "zlib";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
@@ -139,89 +138,6 @@ export function createV2Router(
       res.json({});
     }
   });
-
-  // Diagnostic profiling endpoint to measure processing time vs DB time and gzip level 6 metrics
-  router.get(
-    "/api/completions/profile",
-    async (req: Request, res: Response) => {
-      const rawQuery = typeof req.query.q === "string" ? req.query.q : "";
-      const dictParam =
-        toStringOrArray(req.query.d) ??
-        toStringOrArray(req.query.dict) ??
-        toStringOrArray(req.query.in);
-      const langParam = toStringOrArray(req.query.lang);
-      const rawLimit =
-        typeof req.query.limit === "string" ? req.query.limit : undefined;
-      const limitParam = rawLimit ? parseInt(rawLimit, 10) : NaN;
-      const limit =
-        Number.isFinite(limitParam) && limitParam > 0
-          ? Math.min(limitParam, 50000)
-          : 50000;
-
-      const { dictKeys } = resolveActiveDicts({
-        urlParam: dictParam,
-        cookieHeader: req.headers.cookie,
-        lang: langParam,
-      });
-      const activeDicts = dictKeys.length > 0 ? dictKeys : ALL_LATIN_DICTS;
-
-      try {
-        let dbTimeMs = 0;
-        let collateTimeMs = 0;
-        let clusterTimeMs = 0;
-        let candidateCount = 0;
-
-        const t0 = performance.now();
-        const items = await getV2Completions(fusedDict, {
-          rawQuery,
-          activeDictKeys: activeDicts,
-          limit,
-          onTiming: (t) => {
-            dbTimeMs = t.dbTimeMs;
-            collateTimeMs = t.collateTimeMs;
-            clusterTimeMs = t.clusterTimeMs;
-            candidateCount = t.candidateCount;
-          },
-        });
-        const t1 = performance.now();
-        const jsonStr = JSON.stringify(items);
-        const t2 = performance.now();
-        const gzipBuf = zlib.gzipSync(Buffer.from(jsonStr), { level: 6 });
-        const t3 = performance.now();
-
-        const jsonStringifyTimeMs = Number((t2 - t1).toFixed(3));
-        const gzipLevel6TimeMs = Number((t3 - t2).toFixed(3));
-        const totalProcessingTimeMs = Number(
-          (
-            collateTimeMs +
-            clusterTimeMs +
-            jsonStringifyTimeMs +
-            gzipLevel6TimeMs
-          ).toFixed(3)
-        );
-
-        res.json({
-          query: rawQuery,
-          candidateCount,
-          resultCount: items.length,
-          rawBytes: Buffer.byteLength(jsonStr, "utf8"),
-          gzipLevel6Bytes: gzipBuf.length,
-          timing: {
-            dbTimeMs,
-            collateTimeMs,
-            clusterTimeMs,
-            jsonStringifyTimeMs,
-            gzipLevel6TimeMs,
-            totalProcessingTimeMs,
-            totalEndToEndMs: Number((t3 - t0).toFixed(3)),
-          },
-        });
-      } catch (err) {
-        console.error("Error in completions profile:", err);
-        res.status(500).json({ error: String(err) });
-      }
-    }
-  );
 
   // Main dictionary route: handles both full SSR (HTML page) and AJAX partials
   router.get("/dicts", async (req: Request, res: Response) => {

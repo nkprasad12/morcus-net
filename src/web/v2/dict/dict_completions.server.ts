@@ -36,18 +36,10 @@ export interface CompletionsProvider {
   ): Promise<CompletionsFusedResponse>;
 }
 
-export interface V2CompletionsTiming {
-  dbTimeMs: number;
-  collateTimeMs: number;
-  clusterTimeMs: number;
-  candidateCount: number;
-}
-
 export interface V2CompletionsOptions {
   rawQuery: string;
   activeDictKeys: string[];
   limit?: number;
-  onTiming?: (timing: V2CompletionsTiming) => void;
 }
 
 export interface V2DictChunksOptions {
@@ -232,11 +224,8 @@ export async function getV2Completions(
   }
 
   try {
-    const t0_db = performance.now();
     const resolved = await Promise.all(tasks);
-    const dbTimeMs = Number((performance.now() - t0_db).toFixed(3));
 
-    const t0_collate = performance.now();
     const candidates: Candidate[] = [];
     for (const { lang: partitionLang, res } of resolved) {
       for (const [dictKey, words] of Object.entries(res)) {
@@ -250,22 +239,8 @@ export async function getV2Completions(
         }
       }
     }
-    const collateTimeMs = Number((performance.now() - t0_collate).toFixed(3));
 
-    const t0_cluster = performance.now();
-    const results = clusterAndDeduplicate(candidates, limit);
-    const clusterTimeMs = Number((performance.now() - t0_cluster).toFixed(3));
-
-    if (options.onTiming) {
-      options.onTiming({
-        dbTimeMs,
-        collateTimeMs,
-        clusterTimeMs,
-        candidateCount: candidates.length,
-      });
-    }
-
-    return results;
+    return clusterAndDeduplicate(candidates, limit);
   } catch (err) {
     console.error("Error in prefix completions:", err);
     return [];

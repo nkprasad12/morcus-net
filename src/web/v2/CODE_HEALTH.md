@@ -43,9 +43,16 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       in `dict_page.server.ts`, so the router no longer hand-builds HTML (a down-payment on the
       Phase 4 router split). Covered by four new tests; the two partial-path tests fail against the
       old code, and the two full-page tests now guard the previously-untested safe path.
-- [ ] 🟢 **Gate or delete `/api/completions/profile`** (`v2_router.ts` L143-223). A diagnostic
-      endpoint on an unauthenticated GET that runs `zlib.gzipSync` over up to **50,000** results —
-      a cheap CPU-exhaustion vector. Gate behind `NODE_ENV !== "production"`.
+- [x] 🟢 **Gate or delete `/api/completions/profile`.** A diagnostic endpoint on an unauthenticated
+      GET that ran a **synchronous** `zlib.gzipSync` over up to **50,000** results (its `limit`
+      defaulted to the maximum), blocking the event loop for the duration — an availability risk.
+      **Done**: deleted rather than gated. It was added in `89d7ef35` to inform the 2-letter chunk
+      caching work, which has shipped; it had zero callers, no tests, and was reachable only by
+      typing the URL. Also removed the orphaned `onTiming` / `V2CompletionsTiming` plumbing it was
+      the sole consumer of, which incidentally drops 6 `performance.now()` calls and 3
+      `toFixed`/`Number` round-trips from the real completions hot path. `zlib` is no longer
+      imported by the router. A guard test asserts the route 404s. If profiling is wanted again,
+      prefer an offline `src/scripts/` entry over a production route.
 - [ ] 🟢 **Pass an `AbortSignal` to the main results fetch.** `dict_search.client.ts` L587 omits it,
       so out-of-order responses overwrite the DOM. `LatestTask` is _already imported and used in
       this same file_ for autocomplete (L55), and `fetchAndSwapPartial` already supports
