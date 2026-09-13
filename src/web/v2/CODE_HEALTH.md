@@ -175,14 +175,21 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       the build because Rsbuild interpolates `[name]` from the entry _key_, not the source path —
       verified by rebuilding and confirming the emitted `v2_bundle.7e3597c7bbe48ef0.js` and
       `manifest.json` are unchanged.
-- [ ] 🟢 **Document the `.common.ts` contract in [README.md](README.md)** as _"isomorphic logic
+- [x] 🟢 **Document the `.common.ts` contract in [README.md](README.md)** as _"isomorphic logic
       **and** isomorphic rendering"_. See the Phase 5 note — this was investigated and the current
       usage is correct; it just isn't written down.
-      Partly addressed: the suffix list in README rule 2 now has a `.common.ts` entry, but it only
-      states the _restriction_ ("safe in both tiers"). The actual contract — that a `.common.ts` may
-      legitimately export HTML **renderers**, not just logic, when server and client must emit
-      byte-identical markup — is still undocumented. That is the part worth writing down, since it
-      is the non-obvious half and the reason `search_bar.common.ts` looks wrong but isn't.
+      **Done**: the suffix list in README rule 2 previously stated only the _restriction_ ("safe in
+      both tiers"), which is the half a reader can already infer from the lint errors. Added a
+      dedicated **The `.common.ts` contract** section carrying the half they cannot: that a
+      `.common.ts` may legitimately export HTML **renderers**, and that this is right whenever server
+      and client must emit byte-identical markup for the same widget — the server painting it on load
+      and the client repainting it after an interaction. Framed around the failure mode rather than
+      the rule, since the cost of splitting such a module is silent drift that only surfaces as a
+      flicker after the first interaction. Records the two constraints that follow and are otherwise
+      easy to "fix" by mistake: the renderers must return HTML **strings** (the client assigns to
+      `innerHTML` / `outerHTML`), and their escaping must stay hand-rolled because `he` cannot enter
+      the client bundle. Points at `search_bar.common.ts` as the canonical example so the Phase 5
+      investigation is discoverable from the README rather than only from this backlog.
 - [ ] 🟢 **Hold V2 to the three rules the legacy code can't pass.**
       `@typescript-eslint/no-unused-vars`, `no-non-null-assertion` and `no-explicit-any` are
       disabled repo-wide in `eslint.config.mjs`, presumably because the older React code cannot
