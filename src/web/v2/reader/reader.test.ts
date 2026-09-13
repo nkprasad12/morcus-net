@@ -9,8 +9,8 @@ import {
   getSectionLocalId,
   getSectionPrefix,
   resolveCitationJump,
-} from "@/web/v2/reader/reader_types";
-import { getReaderWork } from "@/web/v2/reader/reader_data";
+} from "@/web/v2/reader/reader_types.server";
+import { getReaderWork } from "@/web/v2/testing/reader_data";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,

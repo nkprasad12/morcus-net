@@ -6,7 +6,7 @@ export * from "@/web/v2/core/settings.client";
 export * from "@/web/v2/core/router.client";
 export * from "@/web/v2/core/gesture.client";
 export * from "@/web/v2/core/dialog.client";
-export * from "@/web/v2/core/icons";
+export * from "@/web/v2/core/icons.common";
 export * from "@/web/v2/core/clipboard.client";
 export * from "@/web/v2/core/toast.client";
 export * from "@/web/v2/core/drawer.client";

@@ -3,7 +3,7 @@ import {
   registerElement,
   settingsStore,
 } from "@/web/v2/core/index.client";
-import { ICON_PATHS } from "@/web/v2/core/icons";
+import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
 const MOON_PATH = ICON_PATHS.moon;
 const SUN_PATH = ICON_PATHS.sun;

@@ -1,4 +1,4 @@
-import { ReaderWork } from "@/web/v2/reader/reader_types";
+import { ReaderWork } from "@/web/v2/reader/reader_types.server";
 
 export const READER_WORKS: Record<string, ReaderWork> = {
   dbg: {

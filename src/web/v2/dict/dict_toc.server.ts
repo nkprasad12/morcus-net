@@ -6,7 +6,10 @@
  */
 
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
-import { DICT_NAMES, DICT_ACRONYMS } from "@/web/v2/dict/dict_attribution";
+import {
+  DICT_NAMES,
+  DICT_ACRONYMS,
+} from "@/web/v2/dict/dict_attribution.server";
 import { findDictInfo } from "@/web/v2/dict/dict_clustering.common";
 import * as he from "he";
 

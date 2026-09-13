@@ -1,4 +1,4 @@
-import { ICON_PATHS, renderIconSvg } from "@/web/v2/core/icons";
+import { ICON_PATHS, renderIconSvg } from "@/web/v2/core/icons.common";
 
 describe("icons", () => {
   it("defines standard icon paths", () => {

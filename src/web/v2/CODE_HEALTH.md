@@ -144,9 +144,26 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       claims "< 20 KB gzipped"; the minified bundle currently measures **21.0 KB gzipped**
       (74.5 KB raw). Either fix the claim or enforce it — right now nothing checks, so it will
       drift further. (CSS is a further 15.4 KB gzipped / 91.8 KB raw.)
-- [ ] 🟢 **Give the four unsuffixed modules a tier**: `core/icons.ts`, `dict/dict_attribution.ts`,
-      `reader/reader_types.ts`, `reader/reader_data.ts`. Renaming to `.common.ts` makes the
-      convention total rather than mostly-true (and lets the lint rule above cover them).
+- [x] 🟢 **Give the four unsuffixed modules a tier**: `core/icons.ts`, `dict/dict_attribution.ts`,
+      `reader/reader_types.ts`, `reader/reader_data.ts`. Renaming makes the convention total rather
+      than mostly-true, which matters more than tidiness: a file with no target suffix matches no
+      glob, so the lint rule above could not see these four at all.
+      **Done**, but not all to `.common.ts` — the tier was chosen per file from actual usage rather
+      than applied uniformly. `core/icons.ts` → **`.common.ts`**: genuinely dual-tier (5 server
+      importers, 3 client), and its own docstring already claimed as much.
+      `dict/dict_attribution.ts` → **`.server.ts`** and `reader/reader_types.ts` → **`.server.ts`**:
+      both are Node-free and DOM-free, so `.common.ts` would have been _safe_, but nothing on the
+      client imports either (the reader client does not reference citation concepts at all), and
+      labelling a module isomorphic when no client uses it asserts a contract nobody tests. Tighter
+      is the honest default; both are a one-line rename away if the client ever needs them.
+      `reader/reader_data.ts` had no right answer among the three tiers because it is test fixture
+      data, so it moved to `testing/` instead — that is the Phase 7 relocation item, done here
+      because the two items are the same physical change and doing them separately would have
+      touched the file twice.
+      Verified the hole is actually closed with a controlled probe: the same one-line `import he`
+      file reports **0** errors when unsuffixed and **1** when named `.common.ts`. Then confirmed on
+      the real files — a deliberate violation injected into each of the three renamed modules is
+      caught (3/3), where before the rename none of them were linted at all.
 - [ ] 🟢 **Document the `.common.ts` contract in [README.md](README.md)** as _"isomorphic logic
       **and** isomorphic rendering"_. See the Phase 5 note — this was investigated and the current
       usage is correct; it just isn't written down.
@@ -372,9 +389,14 @@ Verified counts as of the audit.
       Also [TESTING.md](TESTING.md) L23 and [dict/README.md](dict/README.md) L19.
 - [ ] 🟢 **Fix the stale test inventory** in [TESTING.md](TESTING.md) §1 — it lists 7 test files;
       there are 25. Replace the enumeration with a glob.
-- [ ] 🟢 **Relocate `reader/reader_data.ts`** — 257 lines of hardcoded Caesar text in the production
+- [x] 🟢 **Relocate `reader/reader_data.ts`** — 257 lines of hardcoded Caesar text in the production
       folder, imported **only** by `reader.test.ts`. Move to `testing/` (where
       `mock_reader_loader.ts` already correctly lives) or delete.
+      **Done**: moved to `testing/reader_data.ts` rather than deleted — `reader.test.ts` is its only
+      consumer but is a real consumer, and `testing/` is already the accepted home for unsuffixed
+      fixture modules. Landed together with the Phase 2 tier-assignment item, which had to resolve
+      this same file: it was one of the four unsuffixed modules, and the reason it had no correct
+      answer among `.client` / `.server` / `.common` is precisely that it is a fixture.
       **Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
       dialog markup. Gaps:
 

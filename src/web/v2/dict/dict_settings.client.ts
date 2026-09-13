@@ -11,7 +11,7 @@ import {
   encodeDictBitmask,
   decodeDictBitmask,
 } from "@/web/v2/dict/dict_bitmask.common";
-import { ICON_PATHS } from "@/web/v2/core/icons";
+import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
 const DEFAULT_STRENGTH = 50;
 

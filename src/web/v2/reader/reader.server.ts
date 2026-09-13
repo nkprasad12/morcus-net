@@ -8,7 +8,10 @@ import {
   getV2Work,
   resolvePageInWork,
 } from "@/web/v2/reader/reader_loader.server";
-import { CitationId, citationToString } from "@/web/v2/reader/reader_types";
+import {
+  CitationId,
+  citationToString,
+} from "@/web/v2/reader/reader_types.server";
 import * as he from "he";
 
 export interface ReaderPageOptions {

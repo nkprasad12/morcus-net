@@ -42,7 +42,7 @@ export {
 export {
   DICT_ATTRIBUTIONS,
   DictAttributionInfo,
-} from "@/web/v2/dict/dict_attribution";
+} from "@/web/v2/dict/dict_attribution.server";
 
 export {
   SearchBarOptions,
