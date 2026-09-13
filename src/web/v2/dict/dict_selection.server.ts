@@ -60,19 +60,22 @@ export function formatDictsParam(dictKeys: string[]): string {
 
 /**
  * Resolves active dictionary keys based on the precedence hierarchy:
- * 1. Explicit URL parameter (`in=` or `dict=`)
+ * 1. Keys already resolved from the query string by `resolveDictParams`
  * 2. HTTP Cookie (`morcus_dicts=`)
  * 3. Default Preset (All Latin dicts except Pozo)
+ *
+ * Callers pass `keysFromQuery` pre-parsed rather than a raw parameter: the query may carry several
+ * competing dictionary parameters (`dict`, `d`, `in`) whose precedence only the caller can apply.
  *
  * If `lang` filter is specified (e.g. `lang=La`), only dictionaries matching that
  * source language (or wildcard '*') are returned.
  */
 export function resolveActiveDicts(options: {
-  urlParam?: string | string[] | null;
+  keysFromQuery?: string[] | null;
   cookieHeader?: string | null;
   lang?: string | string[] | null;
 }): { dictKeys: string[]; source: "url" | "cookie" | "default" } {
-  const fromUrl = parseDictKeys(options.urlParam);
+  const fromUrl = options.keysFromQuery;
   let resolvedKeys: string[];
   let source: "url" | "cookie" | "default";
 

@@ -9,40 +9,28 @@ export const DEFAULT_DICTS: LatinDictInfo[] = LatinDict.AVAILABLE.filter(
 export const DEFAULT_DICT_KEYS: string[] = DEFAULT_DICTS.map((d) => d.key);
 
 /**
- * Normalizes URL dictionary parameter into canonical LatinDict keys.
+ * Normalizes a URL dictionary parameter into canonical LatinDict keys.
  * Supports:
- * - Base36 bitmask string (e.g. "e7", "an", "1")
  * - Hyphen, semicolon, or comma separated strings: "ls-gaffiot", "L&S,GAF", "L&S;GAF"
  * - Array of strings (e.g. from repeated `dict=ls&dict=gaffiot` query params)
  * - Safe mapping of 'n' <-> '&' (e.g. "LnS" <-> "L&S", "SnH" <-> "S&H")
+ *
+ * Deliberately does NOT interpret base36 bitmasks. Every short alphanumeric token is a valid
+ * base36 integer, so guessing here silently mangled real keys: "GAF" parsed as 21111, whose bits
+ * select six unrelated dictionaries, and "ls" parsed as 784, selecting S&H and NUM. Bitmasks
+ * arrive only via `?d=` and are decoded by `decodeDictBitmask`.
  */
 export function parseDictKeys(
   raw: string | string[] | undefined | null
 ): string[] | null {
   if (!raw) return null;
 
-  // 1. Try decoding as Base36 bitmask if it's a single alphanumeric token <= 6 chars without delimiters
-  if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    if (/^[0-9a-zA-Z]+$/.test(trimmed) && trimmed.length <= 6) {
-      const fromBitmask = decodeDictBitmask(trimmed);
-      if (fromBitmask && fromBitmask.length > 0) {
-        return fromBitmask;
-      }
-    }
-  }
-
-  const rawList: string[] = Array.isArray(raw)
-    ? raw
-    : typeof raw === "string"
-    ? raw.includes(";")
-      ? raw.split(";")
-      : raw.includes(",")
-      ? raw.split(",")
-      : raw.includes("-")
-      ? raw.split("-")
-      : [raw]
-    : [];
+  // Delimiters are split per entry, not just for scalars: `getAll` and repeated query params both
+  // hand us an array whose entries may still be delimited lists (`?dict=ls,gaffiot`).
+  // No canonical key or alias contains ';', ',' or '-', so this split is always safe.
+  const rawList: string[] = (Array.isArray(raw) ? raw : [raw]).flatMap((item) =>
+    item.split(/[;,-]/)
+  );
 
   const parsedKeys: string[] = [];
   for (const item of rawList) {

@@ -7,10 +7,12 @@ import {
   settingsStore,
 } from "@/web/v2/core/index.client";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import {
-  encodeDictBitmask,
-  decodeDictBitmask,
-} from "@/web/v2/dict/dict_bitmask.common";
+  DEFAULT_DICT_KEYS,
+  parseInflectionParam,
+  resolveDictParams,
+} from "@/web/v2/dict/dict_selection.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
 const DEFAULT_STRENGTH = 50;
@@ -61,33 +63,15 @@ export class MorcusDictSettings extends BaseElement {
     // 1. Synchronize cookie with localStorage if cookie was missing
     dictSettingsStore.syncWithCookie();
 
-    // 2. Check if URL has explicit dictionary override (d bitmask, in, or dict)
+    // 2. URL override: 'dict' checkboxes > 'd' bitmask > legacy 'in'
     const searchParams = new URLSearchParams(window.location.search);
-    const dParam = searchParams.get("d");
-    if (dParam) {
-      const fromBitmask = decodeDictBitmask(dParam);
-      if (fromBitmask && fromBitmask.length > 0) {
-        this.activeDictKeys = new Set(fromBitmask);
-        return;
-      }
-    }
-
-    const inParam = searchParams.get("in") || searchParams.get("dict");
-    if (inParam) {
-      const keys = inParam.split(inParam.includes(",") ? "," : "-");
-      const normalized = keys.map((k) =>
-        k.replace(/([a-zA-Z])n([a-zA-Z])/g, "$1&$2")
-      );
-      this.activeDictKeys = new Set(
-        LatinDict.AVAILABLE.filter((d) =>
-          normalized.some(
-            (n) =>
-              n.toLowerCase() === d.key.toLowerCase() ||
-              (n.toLowerCase() === "ls" && d.key === "L&S") ||
-              (n.toLowerCase() === "sh" && d.key === "S&H")
-          )
-        ).map((d) => d.key)
-      );
+    const keysFromQuery = resolveDictParams({
+      dictParam: searchParams.getAll("dict"),
+      bitmaskParam: searchParams.get("d"),
+      inParam: searchParams.getAll("in"),
+    });
+    if (keysFromQuery) {
+      this.activeDictKeys = new Set(keysFromQuery);
       return;
     }
 
@@ -99,31 +83,17 @@ export class MorcusDictSettings extends BaseElement {
     }
 
     // 4. Fallback to default (all Latin dicts except Pozo)
-    this.activeDictKeys = new Set(
-      LatinDict.AVAILABLE.filter((d) => d !== LatinDict.Pozo).map((d) => d.key)
-    );
+    this.activeDictKeys = new Set(DEFAULT_DICT_KEYS);
   }
 
   private initInflectedState() {
     inflectedSettingsStore.syncWithCookie();
     const searchParams = new URLSearchParams(window.location.search);
-    const oParam = searchParams.get("o");
-    if (oParam === "0") {
-      this.isInflected = false;
-      return;
-    }
-    if (oParam === "1") {
-      this.isInflected = true;
-      return;
-    }
-
-    const stored = inflectedSettingsStore.get();
-    if (typeof stored === "boolean") {
-      this.isInflected = stored;
-      return;
-    }
-
-    this.isInflected = true; // default
+    // getAll, not get: a No-JS form submits the hidden "0" and the checked box's "1" together.
+    this.isInflected =
+      parseInflectionParam(searchParams.getAll("o")) ??
+      inflectedSettingsStore.get() ??
+      true;
   }
 
   private enhanceMarkup() {

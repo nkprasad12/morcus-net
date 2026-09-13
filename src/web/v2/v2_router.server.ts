@@ -6,9 +6,13 @@ import {
   renderDictPageHtml,
   renderDictResultsHtml,
   resolveActiveDicts,
+  resolveDictParams,
+  parseInflectionParam,
+  readCookie,
   formatDictsCookie,
   hasGreek,
 } from "@/web/v2/dict/dict.server";
+import type { DictParamsInput } from "@/web/v2/dict/dict_selection.common";
 import { renderAboutPageHtml } from "@/web/v2/about/about.server";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
 import {
@@ -50,6 +54,23 @@ function toStringOrArray(val: unknown): string | string[] | undefined {
   return undefined;
 }
 
+/**
+ * Collects the competing dictionary parameters out of a request query.
+ * `d` is a scalar bitmask by construction; if it somehow repeats, the last value wins, matching
+ * how browsers treat repeated scalar controls.
+ */
+function dictParamsFromQuery(req: Request): DictParamsInput {
+  const rawD = toStringOrArray(req.query.d);
+  const bitmaskParam = Array.isArray(rawD)
+    ? rawD[rawD.length - 1] ?? null
+    : rawD ?? null;
+  return {
+    dictParam: toStringOrArray(req.query.dict),
+    bitmaskParam,
+    inParam: toStringOrArray(req.query.in),
+  };
+}
+
 export function createV2Router(
   fusedDict: FusedDictionary,
   options?: V2RouterOptions
@@ -85,10 +106,7 @@ export function createV2Router(
     const effectiveQuery = rawPrefix || rawQuery;
     const { query, isSuffix } = cleanCompletionQuery(effectiveQuery);
 
-    const dictParam =
-      toStringOrArray(req.query.d) ??
-      toStringOrArray(req.query.dict) ??
-      toStringOrArray(req.query.in);
+    const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
     const langParam = toStringOrArray(req.query.lang);
     const rawLimit =
       typeof req.query.limit === "string" ? req.query.limit : undefined;
@@ -99,7 +117,7 @@ export function createV2Router(
         : 25;
 
     const { dictKeys } = resolveActiveDicts({
-      urlParam: dictParam,
+      keysFromQuery,
       cookieHeader: req.headers.cookie,
       lang: langParam,
     });
@@ -126,7 +144,7 @@ export function createV2Router(
     try {
       const chunks = await getV2DictChunks(fusedDict, {
         rawPrefix: query,
-        activeDictKeys: dictParam ? activeDicts : undefined,
+        activeDictKeys: keysFromQuery ? activeDicts : undefined,
       });
       res.setHeader(
         "Cache-Control",
@@ -152,41 +170,44 @@ export function createV2Router(
       req.headers.referer?.includes("embedded=1") === true;
 
     // Resolve dictionary selection based on precedence:
-    // URL param ('d' [base36 bitmask], 'dict', or 'in') > Cookie ('morcus_dicts') > Default (All Latin except Pozo)
-    const dictParam =
-      toStringOrArray(req.query.d) ??
-      toStringOrArray(req.query.dict) ??
-      toStringOrArray(req.query.in);
+    // Query ('dict' checkboxes > 'd' bitmask > legacy 'in') > Cookie ('morcus_dicts')
+    // > Default (All Latin except Pozo)
+    const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
     const langParam = toStringOrArray(req.query.lang);
-
-    // Resolve inflection mode: o=0 (exact headwords, mode: 0) vs o=1 (inflected forms, mode: 1, default)
-    const oParam = toStringOrArray(req.query.o);
     const cookieHeader = req.headers.cookie;
 
-    let isInflected = true;
-    if (oParam === "0") {
-      isInflected = false;
-    } else if (oParam === "1") {
-      isInflected = true;
-    } else if (cookieHeader?.includes("morcus_inflected=0")) {
-      isInflected = false;
-    }
+    // Resolve inflection mode: o=0 (exact headwords, mode: 0) vs o=1 (inflected forms, mode: 1,
+    // default). No-JS forms pair a hidden "0" with a checkbox "1", so a checked box arrives as
+    // ["0", "1"]; parseInflectionParam owns that shape.
+    const oParam = parseInflectionParam(toStringOrArray(req.query.o));
+    const isInflected =
+      oParam ?? readCookie(cookieHeader, "morcus_inflected") !== "0";
 
     const { dictKeys, source } = resolveActiveDicts({
-      urlParam: dictParam,
+      keysFromQuery,
       cookieHeader,
       lang: langParam,
     });
 
-    // If explicit dictionary choice came via full page form submission, update the cookie
-    // so No-JS users have their choice persisted across sessions without cookie consent overhead.
-    if (!isPartial && source === "url" && dictKeys.length > 0 && !langParam) {
-      res.setHeader("Set-Cookie", [
-        formatDictsCookie(dictKeys),
-        `morcus_inflected=${
-          isInflected ? "1" : "0"
-        }; Path=/; Max-Age=31536000; SameSite=Lax`,
-      ]);
+    // Persist explicit choices from full page form submissions so No-JS users keep them across
+    // sessions. The two cookies are written independently: a submission may legitimately change
+    // the inflection toggle while its dictionaries still resolve from the existing cookie.
+    // `langParam` requests are scoped views (e.g. the embedded reader iframe) and never persist.
+    if (!isPartial && !langParam) {
+      const cookies: string[] = [];
+      if (source === "url" && dictKeys.length > 0) {
+        cookies.push(formatDictsCookie(dictKeys));
+      }
+      if (oParam !== undefined) {
+        cookies.push(
+          `morcus_inflected=${
+            oParam ? "1" : "0"
+          }; Path=/; Max-Age=31536000; SameSite=Lax`
+        );
+      }
+      if (cookies.length > 0) {
+        res.setHeader("Set-Cookie", cookies);
+      }
     }
 
     if (!query) {

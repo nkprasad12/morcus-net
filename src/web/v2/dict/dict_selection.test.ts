@@ -52,21 +52,29 @@ describe("dict_selection.server", () => {
   });
 
   describe("resolveActiveDicts", () => {
-    it("prefers URL parameter over cookie and default", () => {
+    it("prefers keys resolved from the query over cookie and default", () => {
       const res = resolveActiveDicts({
-        urlParam: "gaffiot",
+        keysFromQuery: ["GAF"],
         cookieHeader: "morcus_dicts=L%26S",
       });
       expect(res.source).toBe("url");
       expect(res.dictKeys).toEqual(["GAF"]);
     });
 
-    it("falls back to cookie if URL parameter is absent", () => {
+    it("falls back to cookie if the query resolved nothing", () => {
       const res = resolveActiveDicts({
+        keysFromQuery: null,
         cookieHeader: "morcus_dicts=L%26S%3BGAF",
       });
       expect(res.source).toBe("cookie");
       expect(res.dictKeys).toEqual(["L&S", "GAF"]);
+    });
+
+    it("resolves a single-dictionary cookie exactly", () => {
+      // Regression: base36 guessing used to expand "GAF" to six dictionaries.
+      const res = resolveActiveDicts({ cookieHeader: "morcus_dicts=GAF" });
+      expect(res.source).toBe("cookie");
+      expect(res.dictKeys).toEqual(["GAF"]);
     });
 
     it("falls back to default preset if both are absent", () => {
@@ -77,7 +85,7 @@ describe("dict_selection.server", () => {
 
     it("filters by source language (e.g. lang=La)", () => {
       const res = resolveActiveDicts({
-        urlParam: "ls,sh,gaffiot,numeral",
+        keysFromQuery: ["L&S", "S&H", "GAF", "NUM"],
         lang: "La",
       });
       // L&S (La->En), GAF (La->Fr), NUM (*->*) match. S&H (En->La) is filtered out.
