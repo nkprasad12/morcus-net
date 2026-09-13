@@ -53,13 +53,26 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       `toFixed`/`Number` round-trips from the real completions hot path. `zlib` is no longer
       imported by the router. A guard test asserts the route 404s. If profiling is wanted again,
       prefer an offline `src/scripts/` entry over a production route.
-- [ ] 🟢 **Pass an `AbortSignal` to the main results fetch.** `dict_search.client.ts` L587 omits it,
-      so out-of-order responses overwrite the DOM. `LatestTask` is _already imported and used in
-      this same file_ for autocomplete (L55), and `fetchAndSwapPartial` already supports
-      `options.signal` and handles `AbortError` (`partial.client.ts` L53). Add
-      `private readonly resultsTask = new LatestTask()` and pass `this.resultsTask.start()`.
-      Also fixes the 3-concurrent-fetch storm when toggling dictionary checkboxes
-      (`dict_settings.client.ts` L273 → `dict_search.client.ts` L332).
+- [x] 🟢 **Pass an `AbortSignal` to the main results fetch.** `dict_search.client.ts` L587 omitted
+      it, so out-of-order responses overwrote the DOM.
+      **Done**, but generalized rather than patched. Adding a second `LatestTask` field would have
+      been the fourth hand-rolled lifetime in the codebase, so the primitives moved into
+      `BaseElement`: `this.signal` (aborts on disconnect), `this.latest(lane)` (aborts the previous
+      request in that lane) and `this.cancel(lane)`. Lanes are a typed union on the class so an
+      undeclared lane is a compile error. They are independent because `MorcusDictSearch` genuinely
+      runs completions and results concurrently and neither may cancel the other.
+      `FetchAndSwapOptions.signal` is now **required**, so future call sites have to decide.
+      Two fetches are deliberately left uncancellable, each with a comment saying why:
+      `dict_chunk_cache.client.ts` (shared in-flight promise — aborting for one caller poisons the
+      cache for all) and `report_dialog.client.ts` (a POST mutation should still land).
+      Fixing this surfaced a second bug: `fetchAndSwapPartial` captured and restored the container's
+      inline opacity, so with overlapping requests the live one could be left permanently dimmed.
+      An aborted request now leaves the container to whichever request is still live.
+      Verified by reverting the client changes — the two supersession tests fail against the old
+      code while the behavior tests pass against both.
+      Still open: the 3-concurrent-fetch storm when toggling dictionary checkboxes
+      (`dict_settings.client.ts` L273 → `dict_search.client.ts` L332) is now harmless rather than
+      corrupting, but it should still be coalesced.
 - [ ] 🟢 **Validate `localStorage` reads.** `reader_view.client.ts` L849 does
       `{ ...DEFAULT_PREFS, ...JSON.parse(stored) }` — malformed stored prefs bypass the type system.
       Reuse `matchesObject` / `typeOf` from `src/web/utils/rpc/parsing.ts`.

@@ -19,7 +19,13 @@ export function swapElementContent(container: HTMLElement, html: string): void {
 }
 
 export interface FetchAndSwapOptions {
-  signal?: AbortSignal;
+  /**
+   * Required so that every call site has to decide what cancels this request.
+   * Callers that genuinely want an uncancellable fetch can pass
+   * `AbortSignal.timeout` or a never-aborted controller, but they have to say so.
+   * Components should normally pass `this.signal` or `this.latest(lane)`.
+   */
+  signal: AbortSignal;
   loadingOpacity?: number;
   errorMessage?: string;
 }
@@ -31,15 +37,24 @@ export interface FetchAndSwapOptions {
 export async function fetchAndSwapPartial(
   container: HTMLElement,
   url: string,
-  options?: FetchAndSwapOptions
+  options: FetchAndSwapOptions
 ): Promise<boolean> {
-  const originalOpacity = container.style.opacity;
-  container.style.opacity = String(options?.loadingOpacity ?? 0.5);
+  // Deliberately not capturing/restoring the previous inline opacity. This
+  // helper is the only thing that sets it, so when two requests overlap the
+  // "previous" value is just the older request's loading dim. Instead, an
+  // aborted request leaves the container alone: whichever request is still
+  // live owns it.
+  container.style.opacity = String(options.loadingOpacity ?? 0.5);
+  const clearLoading = () => {
+    if (!options.signal.aborted) {
+      container.style.opacity = "";
+    }
+  };
 
   try {
     const res = await fetch(url, {
       headers: { "X-Requested-With": "fetch" },
-      signal: options?.signal,
+      signal: options.signal,
     });
 
     if (!res.ok) {
@@ -57,11 +72,11 @@ export async function fetchAndSwapPartial(
     const errorDiv = document.createElement("div");
     errorDiv.className = "v2-no-results";
     const p = document.createElement("p");
-    p.textContent = options?.errorMessage ?? "Error loading results.";
+    p.textContent = options.errorMessage ?? "Error loading results.";
     errorDiv.appendChild(p);
     container.replaceChildren(errorDiv);
     return false;
   } finally {
-    container.style.opacity = originalOpacity || "1";
+    clearLoading();
   }
 }
