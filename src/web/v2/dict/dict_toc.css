@@ -196,11 +196,33 @@
   padding: 1px 5px;
   border-radius: 3px;
   background-color: var(--v2-tag-bg);
-  border: 1px solid var(--v2-border);
-  font-family: monospace;
-  font-size: 0.72rem;
-  font-weight: 600;
+  border: 1px solid transparent;
+  font-family: var(--v2-font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   color: var(--v2-text-muted);
+}
+
+.v2-toc-badge-la {
+  background-color: var(--v2-chip-la-bg);
+  color: var(--v2-chip-la-text);
+}
+
+.v2-toc-badge-en {
+  background-color: var(--v2-chip-en-bg);
+  color: var(--v2-chip-en-text);
+}
+
+.v2-toc-badge-de {
+  background-color: var(--v2-chip-de-bg);
+  color: var(--v2-chip-de-text);
+}
+
+.v2-toc-badge-es {
+  background-color: var(--v2-chip-es-bg);
+  color: var(--v2-chip-es-text);
 }
 
 .v2-toc-entry {

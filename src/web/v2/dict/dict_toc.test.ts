@@ -271,9 +271,13 @@ describe("dict_toc.server", () => {
       expect(html).toContain('<span class="v2-toc-dict-name">Gaffiot</span>');
 
       // Entry article headers in outline carry the dictionary badge
-      expect(html).toContain('<span class="v2-toc-badge">L&#x26;S</span>');
+      expect(html).toContain(
+        '<span class="v2-toc-badge v2-toc-badge-la">L&#x26;S</span>'
+      );
       expect(html).toContain('<span class="v2-toc-entry-word">lex</span>');
-      expect(html).toContain('<span class="v2-toc-badge">GAF</span>');
+      expect(html).toContain(
+        '<span class="v2-toc-badge v2-toc-badge-la">GAF</span>'
+      );
 
       // TOC links
       expect(html).toContain('href="#ls1" class="v2-toc-link"');

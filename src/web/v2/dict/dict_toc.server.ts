@@ -7,7 +7,7 @@
 
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { DICT_NAMES, DICT_ACRONYMS } from "@/web/v2/dict/dict_attribution";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { findDictInfo } from "@/web/v2/dict/dict_clustering.common";
 import * as he from "he";
 
 export { DICT_ACRONYMS };
@@ -113,14 +113,17 @@ export function renderDictTocHtml(options: DictTocOptions): string {
       const entries = results[dictKey] || [];
       if (entries.length === 0) return "";
 
+      const info = findDictInfo(dictKey);
       const dictAcronym =
+        info?.key ??
         DICT_ACRONYMS[dictKey] ??
         DICT_ACRONYMS[dictKey.toLowerCase()] ??
         dictKey.toUpperCase();
 
       const dictName =
         DICT_NAMES[dictKey] ??
-        LatinDict.BY_KEY.get(dictKey)?.displayName ??
+        DICT_NAMES[dictKey.toLowerCase()] ??
+        info?.displayName ??
         dictKey.toUpperCase();
 
       const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
@@ -184,13 +187,20 @@ export function renderDictTocHtml(options: DictTocOptions): string {
           }
 
           if (entries.length > 1 || totalEntries > 1) {
+            const info = findDictInfo(dictKey);
+            const dictLang =
+              info && info.languages.from !== "*"
+                ? info.languages.from.toLowerCase()
+                : "la";
             return `
               <div class="v2-toc-entry">
                 <div class="v2-toc-entry-header">
                   <a href="#${he.encode(
                     entryAnchorId
                   )}" class="v2-toc-link v2-toc-entry-link">
-                    <span class="v2-toc-badge">${he.encode(dictAcronym)}</span>
+                    <span class="v2-toc-badge v2-toc-badge-${dictLang}">${he.encode(
+              dictAcronym
+            )}</span>
                     <span class="v2-toc-entry-word">${he.encode(
                       headword
                     )}</span>
@@ -226,10 +236,16 @@ export function renderDictTocHtml(options: DictTocOptions): string {
         const entries = results[dictKey] || [];
         if (entries.length === 0) return "";
 
+        const info = findDictInfo(dictKey);
         const dictAcronym =
+          info?.key ??
           DICT_ACRONYMS[dictKey] ??
           DICT_ACRONYMS[dictKey.toLowerCase()] ??
           dictKey.toUpperCase();
+        const dictLang =
+          info && info.languages.from !== "*"
+            ? info.languages.from.toLowerCase()
+            : "la";
 
         const chipsHtml = entries
           .map((entry, idx) => {
@@ -258,7 +274,9 @@ export function renderDictTocHtml(options: DictTocOptions): string {
 
         return `
           <div class="v2-toc-entries-group">
-            <span class="v2-toc-badge">${he.encode(dictAcronym)}</span>
+            <span class="v2-toc-badge v2-toc-badge-${dictLang}">${he.encode(
+          dictAcronym
+        )}</span>
             <ul class="v2-toc-entries-sublist">
               ${chipsHtml}
             </ul>
