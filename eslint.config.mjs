@@ -17,6 +17,58 @@ const compat = new FlatCompat({
   allConfig: js.configs.all,
 });
 
+// Shared `no-restricted-imports` patterns.
+//
+// NOTE: ESLint flat config *replaces* a rule's options when the same rule is
+// configured again for a narrower set of files -- it does not merge them. The
+// UI V2 blocks at the bottom of this file therefore have to re-state
+// NO_RELATIVE_IMPORTS, or they would silently switch the relative-import ban
+// back off for exactly the files they are meant to constrain.
+const NO_RELATIVE_IMPORTS = {
+  group: ["./", "../"],
+  message: "Relative imports are not allowed.",
+};
+
+// UI V2 uses a target-suffix convention (see src/web/v2/README.md): `*.client.ts`
+// runs in the browser, `*.server.ts` runs in Node, and `*.common.ts` must be safe
+// in both. Only the first two are self-evident from the filename at a call site,
+// so the boundary is enforced here rather than by review.
+//
+// `he` is singled out because it is ~100 KB of poorly tree-shakeable CommonJS: a
+// `.common.ts` importing it would quietly land the whole thing in the client
+// bundle. Browser-bound code should use the hand-rolled `escapeHtml` in
+// `dict/search_bar.common.ts` instead.
+const NO_SERVER_ONLY_IMPORTS = {
+  group: [
+    "**/*.server",
+    "express",
+    "he",
+    "node:*",
+    "child_process",
+    "crypto",
+    "fs",
+    "fs/*",
+    "http",
+    "https",
+    "os",
+    "path",
+    "stream",
+    "worker_threads",
+    "zlib",
+  ],
+  message:
+    "Browser-bound code (*.client.ts / *.common.ts) must not import server-only " +
+    "modules. Move the logic behind a route, or into a *.common.ts that has no " +
+    "Node dependencies.",
+};
+
+const NO_CLIENT_IMPORTS = {
+  group: ["**/*.client"],
+  message:
+    "Server-side code (*.server.ts / *.common.ts) must not import *.client.ts " +
+    "modules, which expect browser globals and pull DOM code into the server build.",
+};
+
 export default [
   {
     ignores: [
@@ -108,17 +160,7 @@ export default [
 
       "no-constant-condition": "off",
       "no-inner-declarations": "off",
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["./", "../"],
-              message: "Relative imports are not allowed.",
-            },
-          ],
-        },
-      ],
+      "no-restricted-imports": ["error", { patterns: [NO_RELATIVE_IMPORTS] }],
       "no-empty": [
         "error",
         {
@@ -150,6 +192,48 @@ export default [
 
     rules: {
       "@typescript-eslint/consistent-type-assertions": "off",
+    },
+  },
+  // UI V2 target-suffix import boundaries. These come last so they win the flat
+  // config cascade. Colocated tests (`*.test.ts`) are deliberately not matched:
+  // they legitimately exercise both tiers, and `foo.client.test.ts` ends in
+  // `.test.ts`, so it falls outside these globs.
+  //
+  // The three blocks are kept mutually exclusive on purpose. `.common.ts` needs
+  // *both* ban lists, and because configuring `no-restricted-imports` again
+  // replaces rather than extends it, listing `.common.ts` in a client block and
+  // again in a server block would leave it with only whichever came last.
+  {
+    files: ["src/web/v2/**/*.client.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [NO_RELATIVE_IMPORTS, NO_SERVER_ONLY_IMPORTS] },
+      ],
+    },
+  },
+  {
+    files: ["src/web/v2/**/*.server.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [NO_RELATIVE_IMPORTS, NO_CLIENT_IMPORTS] },
+      ],
+    },
+  },
+  {
+    files: ["src/web/v2/**/*.common.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            NO_RELATIVE_IMPORTS,
+            NO_SERVER_ONLY_IMPORTS,
+            NO_CLIENT_IMPORTS,
+          ],
+        },
+      ],
     },
   },
 ];
