@@ -230,9 +230,6 @@ Every item here is a feature reimplementing something `core/` already provides.
       `removeDiacritics` there would also strip breves, diaereses and Greek accents from displayed
       text. The real smell is only that a text-normalization primitive lives as a private method on
       a DOM element, so move it next to its siblings and give it a test — do not delete it.
-- [ ] 🟢 **Move `this.delegate(...)` out of the constructor** in `dict_suggestions.client.ts`
-      L18-28. `BaseElement` clears disposables on disconnect, so if the element is ever moved or
-      re-attached its delegation is silently gone forever. Move to `onConnect()`.
 - [ ] 🟢 **Use `onConnect()` / `this.listen()` in `dict_toc.client.ts`** L21-25, which overrides
       `connectedCallback` directly and hand-manages `matchMedia` listeners, bypassing the
       `BaseElement` cleanup guarantee. Same file as the Phase 1 mobile-TOC-flash item; worth doing
@@ -641,6 +638,14 @@ worth not rediscovering is summarised in Phase 5 instead.
   either typed or an audited disable; two turned out to be false positives better fixed with
   `textContent`, and one is the documented network trust boundary in `core/partial.client.ts`.
   (`ec3aa77f`)
+
+**Phase 3 — adopt the abstractions we already built**
+
+- **Suggestion selection survives a re-attach.** `BaseElement` clears disposables on disconnect, so
+  anything registered once outside `onConnect()` is gone for good the first time an element moves.
+  `dict_suggestions.client.ts` delegated from its constructor; `dict_search.client.ts` registered its
+  `suggestion-select` listener inside the guard that creates the child exactly once. Both had to move
+  — fixing only the child left it emitting to nobody.
 
 **Phase 7 — docs & tests**
 

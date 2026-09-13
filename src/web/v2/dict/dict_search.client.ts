@@ -252,11 +252,18 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       });
     }
 
-    // Create and attach child component for suggestions
+    // Create and attach child component for suggestions. Creating it is
+    // one-time; listening to it is not.
     const inputWrapper = this.$(".v2-input-wrapper");
     if (inputWrapper && !this.suggestionsEl) {
-      const suggestionsTag = document.createElement("morcus-dict-suggestions");
-      this.suggestionsEl = suggestionsTag;
+      this.suggestionsEl = document.createElement("morcus-dict-suggestions");
+      inputWrapper.appendChild(this.suggestionsEl);
+    }
+
+    // Deliberately outside the guard above. `BaseElement` disposes listeners on
+    // disconnect, so registering this alongside the one-time creation would
+    // leave a re-attached element holding a child it can no longer hear.
+    if (this.suggestionsEl) {
       this.listen(this.suggestionsEl, "suggestion-select", (e: Event) => {
         if (
           e instanceof CustomEvent &&
@@ -266,7 +273,6 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
           this.chooseSuggestion(e.detail.word);
         }
       });
-      inputWrapper.appendChild(this.suggestionsEl);
     }
 
     // Dismiss suggestions on outside clicks
