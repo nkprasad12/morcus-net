@@ -28,6 +28,35 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 ## Phase 1 — Correctness & security
 
+- [ ] 🟡 **Stop the mobile TOC drawer rendering expanded and then collapsing.** On every mobile
+      dictionary page with JS, the browser paints the table of contents **fully expanded over the
+      entry**, then the module script upgrades `<morcus-dict-toc>` and collapses it to a minimized
+      drawer. The result is a guaranteed flash and layout shift on first paint.
+      The cause is that the two halves disagree by construction. `dict_toc.server.ts` L323 emits
+      `<details class="v2-toc-details" open>` unconditionally, which is the correct zero-JS baseline
+      and the correct desktop rail. `dict_toc.client.ts` `syncDrawerState()` (L47-66) then
+      constructs a `DrawerController` whenever the viewport is under 1080px, and that minimizes the
+      drawer — so the enhanced state is _smaller_ than the SSR state and has to be undone after
+      paint. Mobile-with-JS is the only combination where the two disagree, which is exactly the
+      combination that fails.
+      The idiomatic fix already exists in this codebase: `.v2-back-to-top` has the server emit the
+      JS-ready state and uses `@media (scripting: none)` in `app_bar.css` to restore the no-JS
+      baseline. Doing the same here — SSR emits the minimized drawer for narrow viewports, and a
+      `scripting: none` rule re-expands it — removes the flash without costing no-JS users the
+      open TOC. Prefer that over a `requestAnimationFrame` or a "hide until upgraded" cloak, both of
+      which trade the flash for a blank.
+      Found by the visual suite, which cannot photograph the page at all while this is happening:
+      `toHaveScreenshot` retries at 100/250/500/1000 ms and sees 10974 → 7353 → 8082 → 8633 → 7389 →
+      7380 differing pixels before giving up on "two consecutive stable screenshots". The sequence
+      is reproducible run to run, so this is a settling animation, not flake.
+      **Six baselines are deliberately left stale until this is fixed**:
+      `v2-dicts-{results-gladius,embedded,subsection-note}-js-{light,dark}-MobileChrome`. Do not
+      "fix" the suite by re-recording them — `--update` writes whatever frame it captures without
+      requiring stability, which is how the unusable ones got written in the first place. Re-record
+      them once the drawer settles before first paint.
+      Related but distinct: the Phase 3 item about `dict_toc.client.ts` bypassing `BaseElement` is
+      the same file and worth doing in the same sitting, but it is about listener lifecycle, not
+      initial state.
 - [ ] 🟢 **Coalesce the fetch storm when dictionary checkboxes are toggled.** Each toggle in
       `dict_settings.client.ts` L273 calls straight through to `dict_search.client.ts` L332, so
       flipping three boxes fires three overlapping requests for the same query. The abort-lane work
@@ -235,7 +264,8 @@ Every item here is a feature reimplementing something `core/` already provides.
       re-attached its delegation is silently gone forever. Move to `onConnect()`.
 - [ ] 🟢 **Use `onConnect()` / `this.listen()` in `dict_toc.client.ts`** L21-25, which overrides
       `connectedCallback` directly and hand-manages `matchMedia` listeners, bypassing the
-      `BaseElement` cleanup guarantee.
+      `BaseElement` cleanup guarantee. Same file as the Phase 1 mobile-TOC-flash item; worth doing
+      together, though that one is about the drawer's initial state rather than its listeners.
 - [ ] 🟢 **Decide whether `BaseElement` needs a re-connection guard — verify before implementing.**
       `connectedCallback` (L36-43) has no re-entry guard, and this item used to assert that an
       element moved within the DOM therefore "runs `onConnect()` twice and double-registers
