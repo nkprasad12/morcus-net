@@ -28,35 +28,6 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 ## Phase 1 — Correctness & security
 
-- [ ] 🟡 **Stop the mobile TOC drawer rendering expanded and then collapsing.** On every mobile
-      dictionary page with JS, the browser paints the table of contents **fully expanded over the
-      entry**, then the module script upgrades `<morcus-dict-toc>` and collapses it to a minimized
-      drawer. The result is a guaranteed flash and layout shift on first paint.
-      The cause is that the two halves disagree by construction. `dict_toc.server.ts` L323 emits
-      `<details class="v2-toc-details" open>` unconditionally, which is the correct zero-JS baseline
-      and the correct desktop rail. `dict_toc.client.ts` `syncDrawerState()` (L47-66) then
-      constructs a `DrawerController` whenever the viewport is under 1080px, and that minimizes the
-      drawer — so the enhanced state is _smaller_ than the SSR state and has to be undone after
-      paint. Mobile-with-JS is the only combination where the two disagree, which is exactly the
-      combination that fails.
-      The idiomatic fix already exists in this codebase: `.v2-back-to-top` has the server emit the
-      JS-ready state and uses `@media (scripting: none)` in `app_bar.css` to restore the no-JS
-      baseline. Doing the same here — SSR emits the minimized drawer for narrow viewports, and a
-      `scripting: none` rule re-expands it — removes the flash without costing no-JS users the
-      open TOC. Prefer that over a `requestAnimationFrame` or a "hide until upgraded" cloak, both of
-      which trade the flash for a blank.
-      Found by the visual suite, which cannot photograph the page at all while this is happening:
-      `toHaveScreenshot` retries at 100/250/500/1000 ms and sees 10974 → 7353 → 8082 → 8633 → 7389 →
-      7380 differing pixels before giving up on "two consecutive stable screenshots". The sequence
-      is reproducible run to run, so this is a settling animation, not flake.
-      **Six baselines are deliberately left stale until this is fixed**:
-      `v2-dicts-{results-gladius,embedded,subsection-note}-js-{light,dark}-MobileChrome`. Do not
-      "fix" the suite by re-recording them — `--update` writes whatever frame it captures without
-      requiring stability, which is how the unusable ones got written in the first place. Re-record
-      them once the drawer settles before first paint.
-      Related but distinct: the Phase 3 item about `dict_toc.client.ts` bypassing `BaseElement` is
-      the same file and worth doing in the same sitting, but it is about listener lifecycle, not
-      initial state.
 - [ ] 🟢 **Coalesce the fetch storm when dictionary checkboxes are toggled.** Each toggle in
       `dict_settings.client.ts` L273 calls straight through to `dict_search.client.ts` L332, so
       flipping three boxes fires three overlapping requests for the same query. The abort-lane work
@@ -396,6 +367,34 @@ bibliography modal, settings dialog, keyboard shortcuts, dictionary sheet, URL s
 Findings that cost real time to establish and that would otherwise be rediscovered — or worse,
 "fixed" back. This is not a changelog; see **Landed** for what shipped.
 
+**The mobile TOC drawer flash does not exist — do not re-file it.** It was filed as a Phase 1
+correctness bug on the theory that `dict_toc.client.ts` builds a `DrawerController` below 1080px and
+that minimizing the drawer undoes the SSR state after paint. `DrawerController`'s constructor only
+calls `initDrag` / `initKeyboard` / `initSummaryCapture` / `initDetailsSync`; it never calls
+`minimize()`, and nothing else writes `v2-drawer-minimized` on load. Sampling every animation frame
+from document start on `/v2/dicts?q=gladius` in MobileChrome shows the drawer at `height=349,
+top=378, open=true, minimized=false` before the element upgrades (137 ms), at upgrade (182 ms), and
+thereafter. The only state change after upgrade is the intentional `scrollToResults` moving the page
+to y=162. The proposed `@media (scripting: none)` fix would have been a UX change — mobile TOC
+starts collapsed — sold as a flash fix, and would not have turned the suite green.
+
+**`fullPage` screenshots on `isMobile` contexts move the scroll offset, and `toHaveScreenshot`
+cannot recover from it.** The capture briefly resizes the viewport and Chromium does not restore
+the offset: gladius walks 162 → 213 → 263 → 312 → 361, one step per capture. Fixed chrome is painted
+somewhere new each time, so `toHaveScreenshot`'s stability loop — which re-captures until two
+consecutive frames agree — drives the very drift it is waiting out and reports "Failed to take two
+consecutive stable screenshots". Only pages that are scrolled are affected, which is why it hit
+exactly the three `?q=` dictionary scenarios with JS and never their no-JS or desktop siblings.
+Ruled out along the way: `scroll-behavior: smooth` (fails identically under `reducedMotion:
+reduce`), scroll anchoring (`overflow-anchor: none` changes nothing), `scale: "css"` vs `"device"`
+(both drift), and masking the chrome (the mask rectangle tracks the element and moves with it).
+
+**Do not "strengthen" the visual harness to require byte-identical frames.** Replacing
+`toHaveScreenshot` with a capture-until-byte-equal loop plus `toMatchSnapshot` looks stricter and
+breaks six _passing_ no-JS mobile tests: consecutive captures of an idle page differ by sub-threshold
+antialiasing, which `toHaveScreenshot`'s comparator is designed to absorb. Stability and equality are
+different questions, and the comparator is the one that knows the difference.
+
 **`search_bar.common.ts` exporting HTML renderers is CORRECT — do not "fix" it.**
 `renderLangChipsHtml` and `renderInflectChipHtml` are the only HTML-rendering functions in the
 entire `.common.ts` tier, and both are genuinely used on **both** sides, in strict parallel with
@@ -542,6 +541,16 @@ Verified counts as of the audit.
       is unchanged and should stay — `he` cannot enter the client bundle — but the mechanism is now
       `core/html.common.ts`. Check the safe-DOM paragraph near L11 in the same pass.
 
+- [ ] 🟡 **Stop the Firefox baselines going stale again.** The baselines were all re-recorded when
+      the suite moved to viewport + coverage shots, so the matrix is green today, but nothing
+      prevents the drift recurring. `./morcus.sh e2e --visual` runs Chromium and MobileChrome only,
+      while `--update` is almost always run through that fast path; the `firefox` and
+      `FirefoxSmallScreen` baselines then sit at whatever the last `--all` run wrote. That is how
+      they reached 48 / 64 failing: the refresh at `8e04058a` covered the fast pair, and two days
+      later Firefox was still rendering the old about page (baseline 1163px tall, actual 1171px —
+      a pure size mismatch, no pixel differences). Options are to make `--update` refuse to run
+      without `--all`, or to run the full matrix in CI so the gap cannot open silently.
+
 **Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
 dialog markup. Gaps:
 
@@ -637,6 +646,15 @@ worth not rediscovering is summarised in Phase 5 instead.
 
 - **`reader/reader_data.ts` relocated to `testing/`** — it is test fixture data, which is why it had
   no right answer among the three target suffixes. (`acb202cf`)
+- **The six unphotographable mobile dictionary baselines.** Filed as a drawer bug; it was the
+  harness. `fullPage` captures on `isMobile` contexts walk the scroll offset, so `toHaveScreenshot`
+  never converged. The scenario now locks the offset in-page before asserting, and the six baselines
+  were re-recorded from stable frames.
+- **The visual suite now shoots the viewport, not the whole page.** Every scenario's primary
+  baseline is a viewport capture — the only one that shows `position: fixed` chrome where a user
+  sees it — over the full js/theme/browser matrix. Below-the-fold coverage moved to one
+  `-coverage.png` per scenario per browser, capped at three viewports. 176 baselines / 58MB became
+  160 / ~25MB, and the 29135px library-landing image nobody could review is gone.
 
 **Phase 8 — performance**
 
