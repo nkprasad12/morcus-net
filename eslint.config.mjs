@@ -8,6 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import js from "@eslint/js";
 import { FlatCompat } from "@eslint/eslintrc";
+import nounsanitized from "eslint-plugin-no-unsanitized";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -253,6 +254,31 @@ export default [
     rules: {
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/no-misused-promises": "error",
+    },
+  },
+  // XSS guardrail. Two of the three Phase 1 security fixes were an `innerHTML`
+  // sink fed by a query parameter, so this is a bug class V2 has already
+  // shipped twice.
+  //
+  // Markup should reach the DOM through `setHtml` / `replaceWithHtml` in
+  // `core/dom.client.ts`, which accept only the `SafeHtml` produced by the
+  // `html` tagged template. Note that the *type system* is what covers markup
+  // coming back from a renderer function: this rule sees a call expression and
+  // has no way to know whether the callee escapes its inputs. The rule's job is
+  // to catch raw assignments that bypass the helpers altogether.
+  //
+  // Tests are exempt. Their fixtures deliberately inject arbitrary markup --
+  // including the XSS payloads in the regression tests -- into a jsdom
+  // document, where there is no untrusted input and no security boundary. This
+  // is the opposite call from the async block above, which includes tests
+  // precisely because they had nothing to exempt.
+  {
+    files: ["src/web/v2/**/*.ts"],
+    ignores: ["src/web/v2/**/*.test.ts"],
+    plugins: { "no-unsanitized": nounsanitized },
+    rules: {
+      "no-unsanitized/method": "error",
+      "no-unsanitized/property": "error",
     },
   },
 ];

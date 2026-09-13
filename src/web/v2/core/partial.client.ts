@@ -3,10 +3,21 @@
  */
 
 /**
- * Parses an HTML string into a contextual DocumentFragment using the browser's Range API.
+ * Parses an HTML string into a contextual DocumentFragment using the browser's
+ * Range API.
+ *
+ * This is the trust boundary for partial swapping, and the one place in V2 that
+ * parses markup it did not build itself. The `html` helper cannot protect this:
+ * the string arrives from the network, already assembled. What it rests on
+ * instead is that the only caller, {@link fetchAndSwapPartial}, fetches
+ * same-origin V2 routes, so the markup is our own SSR output and is escaped
+ * server-side. Anything that starts passing third-party markup here needs a
+ * sanitizer, not this function.
  */
 export function createHtmlFragment(html: string): DocumentFragment {
   const range = document.createRange();
+  // Same-origin SSR markup; the escaping happened on the server. See above.
+  // eslint-disable-next-line no-unsanitized/method
   return range.createContextualFragment(html);
 }
 

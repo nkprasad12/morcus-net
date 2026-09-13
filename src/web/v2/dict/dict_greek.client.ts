@@ -58,7 +58,9 @@ export class MorcusGreekEmbed extends BaseElement {
         : "Open Logeion Embed";
     }
     if (this.toggleIcon) {
-      this.toggleIcon.innerHTML = isOpen ? "&#x25BE;" : "&#x25B8;";
+      // The literal glyphs rather than &#x25BE; / &#x25B8;, so this can be
+      // textContent: no markup, no HTML sink.
+      this.toggleIcon.textContent = isOpen ? "▾" : "▸";
     }
   }
 
