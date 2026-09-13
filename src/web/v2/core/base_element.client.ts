@@ -3,15 +3,29 @@ import {
   type QueryParamSync,
   type SyncQueryParamOptions,
 } from "@/web/v2/core/router.client";
+import { LatestTask } from "@/web/v2/core/task.client";
 
 /**
  * Lightweight base class for UI V2 Light DOM Web Components.
  *
- * Provides automatic cleanup for event listeners, delegation, and subscriptions
- * when disconnected from the DOM, eliminating manual removeEventListener boilerplate.
+ * Provides automatic cleanup for event listeners, delegation, subscriptions,
+ * and in-flight async work when disconnected from the DOM, eliminating manual
+ * removeEventListener / AbortController boilerplate.
+ *
+ * `Lane` names the supersession lanes this component uses with {@link latest}.
+ * It defaults to `never`, so calling `latest()` without declaring lanes is a
+ * compile error rather than a silently-created lane:
+ *
+ * ```ts
+ * class MorcusDictSearch extends BaseElement<"completions" | "results"> {}
+ * ```
  */
-export abstract class BaseElement extends HTMLElement {
+export abstract class BaseElement<
+  Lane extends string = never
+> extends HTMLElement {
   private disposables: (() => void)[] = [];
+  private lifetime = new AbortController();
+  private readonly lanes = new Map<Lane, LatestTask>();
 
   /** Lifecycle hook invoked when the element is inserted into the document. */
   protected onConnect(): void {}
@@ -20,12 +34,57 @@ export abstract class BaseElement extends HTMLElement {
   protected onDisconnect(): void {}
 
   connectedCallback() {
+    // An element moved within the DOM is disconnected and reconnected, which
+    // would otherwise leave it permanently aborted.
+    if (this.lifetime.signal.aborted) {
+      this.lifetime = new AbortController();
+    }
     this.onConnect();
   }
 
   disconnectedCallback() {
     this.dispose();
     this.onDisconnect();
+  }
+
+  /**
+   * An AbortSignal aborted when this element disconnects.
+   *
+   * Use for one-shot async work that should simply stop if the element goes
+   * away. For work where a newer request should supersede an older one, use
+   * {@link latest} instead.
+   */
+  protected get signal(): AbortSignal {
+    return this.lifetime.signal;
+  }
+
+  /**
+   * Returns an AbortSignal for a named supersession lane, aborting whatever
+   * was previously in flight *in that lane only*.
+   *
+   * Lanes are independent: starting `latest("results")` does not disturb
+   * `latest("completions")`. This matters because a single component can run
+   * genuinely concurrent requests whose results are both still wanted.
+   *
+   * All lanes are also aborted when the element disconnects.
+   */
+  protected latest(lane: Lane): AbortSignal {
+    let task = this.lanes.get(lane);
+    if (task === undefined) {
+      task = new LatestTask();
+      this.lanes.set(lane, task);
+    }
+    return task.start();
+  }
+
+  /**
+   * Aborts whatever is in flight in `lane` without starting anything new.
+   *
+   * Use when the result stops being wanted for a reason other than being
+   * superseded, e.g. the UI that would display it has been dismissed.
+   */
+  protected cancel(lane: Lane): void {
+    this.lanes.get(lane)?.cancel();
   }
 
   /**
@@ -165,6 +224,14 @@ export abstract class BaseElement extends HTMLElement {
   }
 
   private dispose() {
+    // Cancel in-flight async work first, so listener teardown below cannot be
+    // raced by a late response.
+    for (const task of this.lanes.values()) {
+      task.cancel();
+    }
+    this.lanes.clear();
+    this.lifetime.abort();
+
     for (const fn of this.disposables) {
       try {
         fn();
