@@ -120,28 +120,26 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 - [ ] 🟢 **Prefer `he.escape` over `he.encode`** in remaining server templates. `he.encode`
       entity-encodes all non-ASCII, which on Latin/Greek lexica is wasted CPU and payload on every
       render. Hot path: `xml_to_html.server.ts` L65 (runs per XML node).
-- [ ] 🟡 **Enforce the target-suffix boundaries with ESLint.** There are currently **zero**
-      violations — no `*.client.ts` imports a `*.server.ts`, none import Node builtins, and
-      `.common.ts` imports neither. That discipline is real and worth protecting mechanically
-      before it silently lapses. Add to `eslint.config.mjs`:
-
-      ```js
-      {
-        files: ["src/web/v2/**/*.client.ts", "src/web/v2/**/*.common.ts"],
-        rules: { "no-restricted-imports": ["error", { patterns: [{
-          group: ["**/*.server", "fs", "path", "zlib", "he", "express"],
-          message: "Client/common code must not import server-only modules.",
-        }]}]},
-      },
-      {
-        files: ["src/web/v2/**/*.server.ts", "src/web/v2/**/*.common.ts"],
-        rules: { "no-restricted-imports": ["error", { patterns: [{
-          group: ["**/*.client"],
-          message: "Server/common code must not import client modules.",
-        }]}]},
-      }
-      ```
-
+- [x] 🟡 **Enforce the target-suffix boundaries with ESLint.** There were **zero** violations — no
+      `*.client.ts` imported a `*.server.ts`, none imported Node builtins, and `.common.ts` imported
+      neither. That discipline was real and worth protecting mechanically before it silently lapsed.
+      **Done**: three mutually-exclusive blocks at the bottom of `eslint.config.mjs`, sharing
+      `NO_RELATIVE_IMPORTS` / `NO_SERVER_ONLY_IMPORTS` / `NO_CLIENT_IMPORTS` pattern constants.
+      The draft sketched here needed two corrections, both found by testing rather than reading.
+      First, ESLint flat config **replaces** a rule's options rather than merging them, so
+      re-declaring `no-restricted-imports` for V2 files switched the repo-wide relative-import ban
+      back **off** for exactly the files the new blocks were meant to constrain; each block now
+      re-states it. Second, the drafted two-block form listed `.common.ts` under both the client and
+      the server block, so the later one won and `.common.ts` silently kept only the client ban.
+      Measured: against a `.common.ts` probe importing a `*.client`, a `*.server` and `he`, the
+      drafted config reports **1 of 3**; the landed config reports **3 of 3**.
+      `he` is banned by name for browser-bound code, so the Phase 5 invariant (importing it would
+      drag ~100 KB of CommonJS into the bundle) is now mechanical rather than a comment.
+      Verified with throwaway probe files in each tier: every ban fires with its intended message,
+      while `fs` in a `*.server.ts` stays allowed — confirming the rules are tier-specific and not a
+      blanket ban. Deliberately **not** covered: `*.test.ts` (colocated tests legitimately exercise
+      both tiers, and `foo.client.test.ts` ends in `.test.ts` so it falls outside the globs), and
+      the four unsuffixed modules in the next item, which no glob can match until they are renamed.
 - [ ] 🟢 **Add a client bundle size budget** to `src/bundler/v2.rsbuild.ts`. [README.md](README.md)
       claims "< 20 KB gzipped"; the minified bundle currently measures **21.0 KB gzipped**
       (74.5 KB raw). Either fix the claim or enforce it — right now nothing checks, so it will
