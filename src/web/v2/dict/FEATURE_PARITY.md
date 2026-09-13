@@ -41,7 +41,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
      - `textScale`: Scaled font sizes across definitions and icons.
      - `skipJumpToResult`: Suppressed auto-scrolling.
      - `embeddedInflectedSearch`: Decoupled inflection settings for reader embeds.
-   - **V2 (`v2_router.ts:L97-101`, `dict_page.server.ts:L281`)**: `embedded=1` only hides the top site app bar. The search bar is always present, and text scaling / separate settings are absent.
+   - **V2 (`v2_router.server.ts:L97-101`, `dict_page.server.ts:L281`)**: `embedded=1` only hides the top site app bar. The search bar is always present, and text scaling / separate settings are absent.
 
 ---
 

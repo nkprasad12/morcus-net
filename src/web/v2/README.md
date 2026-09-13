@@ -19,15 +19,15 @@ UI V2 is structured by **topic (domain vertical slices)** rather than technical 
 
 ```
 src/web/v2/
-├── shell/       # Document skeleton, app bar, theme & global design tokens
-├── dict/        # Dictionary search, entry rendering, inflections & settings
-├── reader/      # Parallel two-column reader
-├── dialog/      # Accessible modal dialogs & issue reporting
-├── about/       # Project information & metadata
-├── v2_router.ts # Express router orchestrator mounted at /v2 (public integration)
-├── v2_bundle.ts # Client bundle manifest (imports *.client.ts)
-├── v2.css       # Global stylesheet manifest (imports topic *.css)
-└── v2-critical.css # Inlined above-the-fold critical CSS
+├── shell/              # Document skeleton, app bar, theme & global design tokens
+├── dict/               # Dictionary search, entry rendering, inflections & settings
+├── reader/             # Parallel two-column reader
+├── dialog/             # Accessible modal dialogs & issue reporting
+├── about/              # Project information & metadata
+├── v2_router.server.ts # Express router orchestrator mounted at /v2 (public integration)
+├── v2_bundle.client.ts # Client bundle manifest (imports *.client.ts)
+├── v2.css              # Global stylesheet manifest (imports topic *.css)
+└── v2-critical.css     # Inlined above-the-fold critical CSS
 ```
 
 > [!NOTE]
@@ -38,13 +38,14 @@ src/web/v2/
 ### Core Design Rules
 
 1. **Colocated Vertical Slices**: Each topic folder contains everything required for that domain: SSR HTML templates, Light DOM Web Components, stylesheets, and unit tests. Deleting or refactoring a feature is isolated to its topic folder.
-2. **Target Suffix Convention**:
-   - `*.server.ts`: Executes in Node.js (Express SSR renderers, XML parsers, server-side utilities). **Never** bundled to browser assets; **no** browser DOM globals (`window`, `document`, `HTMLElement`).
-   - `*.client.ts`: Executes in the Browser (Light DOM Web Components, client event delegation). Bundled via Rsbuild into `build/v2/v2.js`.
-   - `*.test.ts`: Colocated unit tests targeting adjacent modules.
+2. **Target Suffix Convention**: every module carries a tier, and the boundaries between them are enforced by `no-restricted-imports` rules in [eslint.config.mjs](../../../eslint.config.mjs) rather than by review.
+   - `*.server.ts`: Executes in Node.js (Express SSR renderers, XML parsers, server-side utilities). **Never** bundled to browser assets; **no** browser DOM globals (`window`, `document`, `HTMLElement`). May not import `*.client.ts`.
+   - `*.client.ts`: Executes in the Browser (Light DOM Web Components, client event delegation). Bundled via Rsbuild into `build/v2/v2.js`. May not import `*.server.ts`, Node builtins, `express`, or `he`.
+   - `*.common.ts`: Safe in **both** tiers, and subject to both restrictions above.
+   - `*.test.ts`: Colocated unit tests targeting adjacent modules. Deliberately exempt, since a test legitimately exercises both sides of a boundary.
    - `*.css`: Feature-scoped styles imported by the root `v2.css`.
 3. **Flat Topic Directories**: Topics remain flat by default (avoiding micro-directories for 1–2 files). Filename prefixes (e.g. `dict_search.*`, `dict_settings.*`) keep related files automatically clustered alphabetically. Subdirectories are introduced only when a subcomponent exceeds 4+ dedicated files.
-4. **Root Integration Hubs**: Top-level entry points (`v2_router.ts`, `v2_bundle.ts`, `v2.css`) aggregate exports across topics so external consumers have a single, stable contract.
+4. **Root Integration Hubs**: Top-level entry points (`v2_router.server.ts`, `v2_bundle.client.ts`, `v2.css`) aggregate exports across topics so external consumers have a single, stable contract. They carry target suffixes like any other module — being an entry point is not an exemption, and `v2_bundle.client.ts` in particular is the root of everything shipped to the browser, so it is the last file that should be outside the import rules.
 
 ### Build Pipeline
 
