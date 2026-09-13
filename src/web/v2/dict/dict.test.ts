@@ -868,4 +868,50 @@ describe("dict_ssr", () => {
     expect(html).not.toContain("<morcus-dict-toc");
     expect(html).toContain('class="v2-results-main"');
   });
+
+  test("renderDictResultsHtml enables TOC with entries summary when multiple entries exist across lexica", () => {
+    const results = {
+      ls: [
+        {
+          entry: new XmlNode("entry", [["id", "n200"]], ["canis"]),
+          outline: {
+            mainKey: "canis",
+            mainSection: {
+              text: "canis",
+              level: 0,
+              ordinal: "",
+              sectionId: "n200",
+            },
+            senses: [
+              { level: 1, ordinal: "I.", text: "Dog", sectionId: "n200.1" },
+            ],
+          },
+        },
+      ],
+      gaffiot: [
+        {
+          entry: new XmlNode("entry", [["id", "g300"]], ["canis"]),
+          outline: {
+            mainKey: "canis",
+            mainSection: {
+              text: "canis",
+              level: 0,
+              ordinal: "",
+              sectionId: "g300",
+            },
+            senses: [
+              { level: 1, ordinal: "1.", text: "Chien", sectionId: "g300.1" },
+            ],
+          },
+        },
+      ],
+    };
+
+    const html = renderDictResultsHtml("canis", results);
+    expect(html).toContain('class="v2-results-layout has-toc"');
+    expect(html).toContain("<morcus-dict-toc");
+    expect(html).toContain("v2-toc-entries-summary");
+    expect(html).toContain('href="#n200" class="v2-toc-entry-chip"');
+    expect(html).toContain('href="#g300" class="v2-toc-entry-chip"');
+  });
 });

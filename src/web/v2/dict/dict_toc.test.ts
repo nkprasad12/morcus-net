@@ -7,7 +7,6 @@ import {
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { XmlNode } from "@/common/xml/xml_node";
 import { EntryResult } from "@/common/dictionaries/dict_result";
-import * as he from "he";
 
 function makeMockEntry(
   headword: string,
@@ -57,12 +56,13 @@ describe("dict_toc.server", () => {
       expect(countTotalSenses(results)).toEqual({
         totalSenses: 0,
         maxSingleEntrySenses: 0,
+        totalEntries: 0,
       });
       expect(hasDictToc(results)).toBe(false);
       expect(renderDictTocHtml({ results })).toBe("");
     });
 
-    test("returns false for short entries below gating threshold (1 or 2 senses total)", () => {
+    test("returns false for short entries below gating threshold (single entry with 1 or 2 senses total)", () => {
       const results: DictsFusedResponse = {
         ls: [
           makeMockEntry("abbas", "n100", [
@@ -74,6 +74,7 @@ describe("dict_toc.server", () => {
       expect(countTotalSenses(results)).toEqual({
         totalSenses: 2,
         maxSingleEntrySenses: 2,
+        totalEntries: 1,
       });
       expect(hasDictToc(results)).toBe(false);
       expect(renderDictTocHtml({ results })).toBe("");
@@ -102,6 +103,7 @@ describe("dict_toc.server", () => {
       expect(countTotalSenses(results)).toEqual({
         totalSenses: 3,
         maxSingleEntrySenses: 3,
+        totalEntries: 1,
       });
       expect(hasDictToc(results)).toBe(true);
       expect(renderDictTocHtml({ results })).not.toBe("");
@@ -140,9 +142,36 @@ describe("dict_toc.server", () => {
       expect(countTotalSenses(results)).toEqual({
         totalSenses: 4,
         maxSingleEntrySenses: 2,
+        totalEntries: 2,
       });
       expect(hasDictToc(results)).toBe(true);
       expect(renderDictTocHtml({ results })).not.toBe("");
+    });
+
+    test("returns true for multiple entries even with < 4 senses total", () => {
+      const results: DictsFusedResponse = {
+        ls: [
+          makeMockEntry("canis", "n1", [
+            { level: 1, ordinal: "I.", text: "A dog", sectionId: "n1.1" },
+          ]),
+        ],
+        gaffiot: [
+          makeMockEntry("canis", "n2", [
+            { level: 1, ordinal: "1.", text: "Chien", sectionId: "n2.1" },
+          ]),
+        ],
+      };
+      expect(countTotalSenses(results)).toEqual({
+        totalSenses: 2,
+        maxSingleEntrySenses: 1,
+        totalEntries: 2,
+      });
+      expect(hasDictToc(results)).toBe(true);
+      const html = renderDictTocHtml({ results });
+      expect(html).toContain("v2-toc-entries-summary");
+      expect(html).toContain(
+        'Contents <span class="v2-toc-count">(2 entries · 2 senses)</span>'
+      );
     });
   });
 
@@ -220,15 +249,30 @@ describe("dict_toc.server", () => {
         '<div class="v2-drawer-handle" aria-hidden="true"></div>'
       );
       expect(html).toContain(
-        'Contents <span class="v2-toc-count">(4 senses)</span>'
+        'Contents <span class="v2-toc-count">(2 entries · 4 senses)</span>'
       );
 
-      // Dictionary groups with badges
-      expect(html).toContain('href="#dict-ls"');
+      // Global multi-lexicon entries summary (streamlined without redundant section titles)
+      expect(html).toContain('class="v2-toc-section v2-toc-entries-summary"');
+      expect(html).not.toContain('class="v2-toc-section-title"');
+      expect(html).toContain('class="v2-toc-entries-group"');
       expect(html).toContain(
-        `<span class="v2-toc-badge">${he.encode("L&S")}</span>`
+        '<span class="v2-toc-entries-divider" aria-hidden="true">|</span>'
       );
-      expect(html).toContain('href="#dict-gaffiot"');
+      expect(html).toContain('href="#n27000" class="v2-toc-entry-chip"');
+      expect(html).toContain('href="#g3000" class="v2-toc-entry-chip"');
+
+      // Dictionary groups have clean full names without redundant badges in header
+      expect(html).toContain('href="#dict-ls" class="v2-toc-dict-link"');
+      expect(html).toContain(
+        '<span class="v2-toc-dict-name">Lewis &#x26; Short</span>'
+      );
+      expect(html).toContain('href="#dict-gaffiot" class="v2-toc-dict-link"');
+      expect(html).toContain('<span class="v2-toc-dict-name">Gaffiot</span>');
+
+      // Entry article headers in outline carry the dictionary badge
+      expect(html).toContain('<span class="v2-toc-badge">L&#x26;S</span>');
+      expect(html).toContain('<span class="v2-toc-entry-word">lex</span>');
       expect(html).toContain('<span class="v2-toc-badge">GAF</span>');
 
       // TOC links

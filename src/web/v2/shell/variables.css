@@ -24,6 +24,7 @@
   --v2-primary: #0066cc;
   --v2-primary-hover: #0052a3;
   --v2-border: #e2e4e8;
+  --v2-border-mid: #b7bac1;
   --v2-border-strong: #8c919a;
   --v2-border-focus: #80bdff;
   --v2-focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.2);
@@ -72,6 +73,8 @@
     0 -1px 4px rgba(0, 0, 0, 0.04);
   --v2-dict-toc-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   --v2-dict-toc-rail-border: var(--v2-border);
+  --v2-dict-toc-header-bg: #f1f3f5;
+  --v2-dict-toc-header-text: var(--v2-text);
   --v2-chip-la-bg: rgba(122, 171, 53, 0.16);
   --v2-chip-la-text: #4e731b;
   --v2-chip-en-bg: rgba(18, 52, 216, 0.13);
@@ -88,6 +91,7 @@
     --v2-primary: #8ab4f8;
     --v2-primary-hover: #aecbfa;
     --v2-border: #363a42;
+    --v2-border-mid: #4d525c;
     --v2-border-strong: #656a76;
     --v2-border-focus: #8ab4f8;
     --v2-focus-ring: 0 0 0 3px rgba(77, 163, 255, 0.25);
@@ -134,6 +138,8 @@
       0 -2px 8px rgba(0, 0, 0, 0.4), 0 -1px 0 rgba(255, 255, 255, 0.09);
     --v2-dict-toc-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
     --v2-dict-toc-rail-border: var(--v2-border);
+    --v2-dict-toc-header-bg: var(--v2-card-header-bg);
+    --v2-dict-toc-header-text: var(--v2-text);
     --v2-chip-la-bg: rgba(158, 208, 76, 0.2);
     --v2-chip-la-text: #b2e664;
     --v2-chip-en-bg: rgba(138, 180, 248, 0.2);
@@ -197,6 +203,8 @@
     0 -2px 8px rgba(0, 0, 0, 0.4), 0 -1px 0 rgba(255, 255, 255, 0.09);
   --v2-dict-toc-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   --v2-dict-toc-rail-border: var(--v2-border);
+  --v2-dict-toc-header-bg: var(--v2-card-header-bg);
+  --v2-dict-toc-header-text: var(--v2-text);
   --v2-chip-la-bg: rgba(158, 208, 76, 0.2);
   --v2-chip-la-text: #b2e664;
   --v2-chip-en-bg: rgba(138, 180, 248, 0.2);
@@ -259,6 +267,8 @@
     0 -1px 4px rgba(0, 0, 0, 0.04);
   --v2-dict-toc-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   --v2-dict-toc-rail-border: var(--v2-border);
+  --v2-dict-toc-header-bg: #f1f3f5;
+  --v2-dict-toc-header-text: var(--v2-text);
   --v2-chip-la-bg: rgba(122, 171, 53, 0.16);
   --v2-chip-la-text: #4e731b;
   --v2-chip-en-bg: rgba(18, 52, 216, 0.13);
