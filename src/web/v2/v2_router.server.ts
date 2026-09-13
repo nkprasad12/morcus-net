@@ -1,4 +1,4 @@
-import express, { Router, Request, Response } from "express";
+import express, { Router, Request, Response, NextFunction } from "express";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
@@ -46,6 +46,25 @@ export interface V2RouterOptions {
   githubToken?: string;
 }
 
+type AsyncRouteHandler = (req: Request, res: Response) => Promise<void>;
+
+/**
+ * Adapts an async route handler to the signature Express actually expects.
+ *
+ * Express 4 ignores a handler's return value, so a rejection escapes as an unhandled
+ * rejection — which Node terminates the process over. This is not only about `await`:
+ * marking a handler `async` also turns *synchronous* throws into rejections, so it
+ * silently forfeits the sync-throw handling Express does provide. Forwarding to `next`
+ * restores both.
+ */
+function asyncHandler(
+  handler: AsyncRouteHandler
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req, res, next) => {
+    handler(req, res).catch(next);
+  };
+}
+
 function toStringOrArray(val: unknown): string | string[] | undefined {
   if (typeof val === "string") return val;
   if (Array.isArray(val) && val.every((item) => typeof item === "string")) {
@@ -78,6 +97,13 @@ export function createV2Router(
   const router = Router();
   router.use(express.json());
 
+  // Register async routes through these rather than `router.get`/`router.post`
+  // directly, so no handler can reintroduce the unhandled-rejection crash path.
+  const getAsync = (path: string, handler: AsyncRouteHandler) =>
+    router.get(path, asyncHandler(handler));
+  const postAsync = (path: string, handler: AsyncRouteHandler) =>
+    router.post(path, asyncHandler(handler));
+
   // Root redirect to dictionary
   router.get("/", (_req: Request, res: Response) => {
     res.redirect("/v2/dicts");
@@ -99,7 +125,7 @@ export function createV2Router(
   );
 
   // Autocomplete endpoint for live search suggestions
-  router.get("/api/completions", async (req: Request, res: Response) => {
+  getAsync("/api/completions", async (req, res) => {
     const rawPrefix =
       typeof req.query.prefix === "string" ? req.query.prefix : "";
     const rawQuery = typeof req.query.q === "string" ? req.query.q : "";
@@ -158,7 +184,7 @@ export function createV2Router(
   });
 
   // Main dictionary route: handles both full SSR (HTML page) and AJAX partials
-  router.get("/dicts", async (req: Request, res: Response) => {
+  getAsync("/dicts", async (req, res) => {
     const query =
       typeof req.query.q === "string" ? trimRawQuery(req.query.q) : "";
     const isPartial =
@@ -288,7 +314,7 @@ export function createV2Router(
   });
 
   // ID-based dictionary lookup route
-  router.get("/dicts/id/:id", async (req: Request, res: Response) => {
+  getAsync("/dicts/id/:id", async (req, res) => {
     const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
     const isPartial =
       req.query.format === "partial" ||
@@ -350,7 +376,7 @@ export function createV2Router(
   });
 
   // Library Catalog route
-  router.get("/library", async (_req: Request, res: Response) => {
+  getAsync("/library", async (_req, res) => {
     try {
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       const html = await renderLibraryPageHtml();
@@ -362,30 +388,28 @@ export function createV2Router(
   });
 
   // Human-readable reader route: /v2/reader/:author/:name/:page?
-  router.get(
-    "/reader/:author/:name/:page?",
-    async (req: Request, res: Response) => {
-      const author = req.params.author;
-      const name = req.params.name;
-      const pageId = req.params.page;
-      const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
-      const view = req.query.view === "parallel" ? "parallel" : "single";
-      const jump =
-        typeof req.query.jump === "string" ? req.query.jump.trim() : "";
-      const isPartial =
-        req.query.format === "partial" ||
-        req.headers["x-requested-with"] === "fetch";
+  getAsync("/reader/:author/:name/:page?", async (req, res) => {
+    const author = req.params.author;
+    const name = req.params.name;
+    const pageId = req.params.page;
+    const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const view = req.query.view === "parallel" ? "parallel" : "single";
+    const jump =
+      typeof req.query.jump === "string" ? req.query.jump.trim() : "";
+    const isPartial =
+      req.query.format === "partial" ||
+      req.headers["x-requested-with"] === "fetch";
 
-      const work =
-        (await getV2Work(`${author}/${name}`)) ||
-        (await getV2Work(`${author}_${name}`));
+    const work =
+      (await getV2Work(`${author}/${name}`)) ||
+      (await getV2Work(`${author}_${name}`));
 
-      if (!work) {
-        res.status(404).send(
-          renderPageShell({
-            title: "Work Not Found - Morcus Latin Tools",
-            activePage: "library",
-            contentHtml: `
+    if (!work) {
+      res.status(404).send(
+        renderPageShell({
+          title: "Work Not Found - Morcus Latin Tools",
+          activePage: "library",
+          contentHtml: `
             <div class="v2-library-empty-state" style="margin: 4rem auto; max-width: 600px;">
               <h2 class="v2-library-empty-title">Classical Work Not Found</h2>
               <p class="v2-library-empty-desc">Could not locate classical work <em>${he.encode(
@@ -394,54 +418,53 @@ export function createV2Router(
               <a href="/v2/library" class="v2-btn v2-btn-primary">Browse Full Library</a>
             </div>
           `,
+        })
+      );
+      return;
+    }
+
+    if (jump) {
+      const resolved = resolvePageInWork(work, jump);
+      const params = new URLSearchParams();
+      if (view === "parallel") params.set("view", "parallel");
+      if (query) params.set("q", query);
+      const qStr = params.toString() ? `?${params.toString()}` : "";
+      res.redirect(
+        302,
+        `/v2/reader/${work.urlAuthor}/${work.urlName}/${resolved.page.id}${qStr}`
+      );
+      return;
+    }
+
+    try {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      if (isPartial) {
+        res.send(
+          await renderReaderContentHtml({
+            work,
+            pageId,
+            query,
+            view,
           })
         );
-        return;
-      }
-
-      if (jump) {
-        const resolved = resolvePageInWork(work, jump);
-        const params = new URLSearchParams();
-        if (view === "parallel") params.set("view", "parallel");
-        if (query) params.set("q", query);
-        const qStr = params.toString() ? `?${params.toString()}` : "";
-        res.redirect(
-          302,
-          `/v2/reader/${work.urlAuthor}/${work.urlName}/${resolved.page.id}${qStr}`
+      } else {
+        res.send(
+          await renderReaderPageHtml({
+            work,
+            pageId,
+            query,
+            view,
+          })
         );
-        return;
       }
-
-      try {
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
-        if (isPartial) {
-          res.send(
-            await renderReaderContentHtml({
-              work,
-              pageId,
-              query,
-              view,
-            })
-          );
-        } else {
-          res.send(
-            await renderReaderPageHtml({
-              work,
-              pageId,
-              query,
-              view,
-            })
-          );
-        }
-      } catch (err) {
-        console.error("Error rendering reader work:", err);
-        res.status(500).send("Error rendering reader passage");
-      }
+    } catch (err) {
+      console.error("Error rendering reader work:", err);
+      res.status(500).send("Error rendering reader passage");
     }
-  );
+  });
 
   // General reader route: handles jumps, legacy query parameters, and default work
-  router.get("/reader", async (req: Request, res: Response) => {
+  getAsync("/reader", async (req, res) => {
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const workId =
       typeof req.query.work === "string"
@@ -517,7 +540,7 @@ export function createV2Router(
   });
 
   // Issue and feedback reporting endpoint
-  router.post("/api/report", async (req: Request, res: Response) => {
+  postAsync("/api/report", async (req, res) => {
     const reportText =
       typeof req.body?.reportText === "string"
         ? req.body.reportText.trim()

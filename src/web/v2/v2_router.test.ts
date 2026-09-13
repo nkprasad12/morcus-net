@@ -5,10 +5,23 @@ import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { XmlNode } from "@/common/xml/xml_node";
 import { buildV2Bundle } from "@/bundler/v2.rsbuild";
 import { getV2AssetHref } from "@/web/v2/shell/asset_manifest.server";
+import { getV2Work } from "@/web/v2/reader/reader_loader.server";
 
-jest.mock("@/web/v2/reader/reader_loader.server", () =>
-  jest.requireActual("@/web/v2/testing/mock_reader_loader")
-);
+// The mock loader is the real fixture-backed implementation, except that
+// `getV2Work` is wrapped in a `jest.fn` so tests can force it to reject and
+// exercise the reader routes' failure path.
+jest.mock("@/web/v2/reader/reader_loader.server", () => {
+  const actual = jest.requireActual("@/web/v2/testing/mock_reader_loader");
+  return {
+    __esModule: true,
+    ...actual,
+    getV2Work: jest.fn(actual.getV2Work),
+  };
+});
+
+const realGetV2Work: typeof getV2Work = jest.requireActual<
+  typeof import("@/web/v2/testing/mock_reader_loader")
+>("@/web/v2/testing/mock_reader_loader").getV2Work;
 
 describe("v2_router integration", () => {
   let app: express.Express;
@@ -600,5 +613,39 @@ describe("v2_router integration", () => {
       expect(res.status).toBe(500);
       expectPayloadNeutralized(res.text);
     });
+  });
+
+  describe("reader loader failures", () => {
+    /**
+     * These two routes `await getV2Work` outside of any `try`, so a rejection
+     * escapes the handler entirely. Express 4 ignores the promise a handler
+     * returns, so without an `asyncHandler` wrapper the rejection surfaces as
+     * an unhandled rejection (which terminates the process on Node 15+) and
+     * the request itself simply hangs. Asserting on the 500 pins the wrapper.
+     */
+    const FAILING_ROUTES = [
+      "/v2/reader?q=Gallia",
+      "/v2/reader/caesar/de_bello_gallico/1.1",
+    ];
+
+    beforeEach(() => {
+      (getV2Work as jest.Mock).mockRejectedValue(new Error("loader exploded"));
+    });
+
+    afterEach(() => {
+      // `mockReset` alone would leave the mock without an implementation, so
+      // reinstate the fixture-backed one for any later test.
+      (getV2Work as jest.Mock).mockReset();
+      (getV2Work as jest.Mock).mockImplementation(realGetV2Work);
+    });
+
+    test.each(FAILING_ROUTES)(
+      "GET %s responds 500 instead of hanging",
+      async (route) => {
+        const res = await request(app).get(route);
+
+        expect(res.status).toBe(500);
+      }
+    );
   });
 });
