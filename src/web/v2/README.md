@@ -30,6 +30,11 @@ src/web/v2/
 └── v2-critical.css # Inlined above-the-fold critical CSS
 ```
 
+> [!NOTE]
+> Known code-quality debt is tracked as an incremental, checklist-driven backlog in
+> [CODE_HEALTH.md](CODE_HEALTH.md). Each item is scoped to be one small, independently landable
+> change. Add new debt there rather than leaving `TODO` comments, and check items off as they land.
+
 ### Core Design Rules
 
 1. **Colocated Vertical Slices**: Each topic folder contains everything required for that domain: SSR HTML templates, Light DOM Web Components, stylesheets, and unit tests. Deleting or refactoring a feature is isolated to its topic folder.
