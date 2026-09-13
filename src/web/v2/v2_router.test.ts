@@ -302,6 +302,14 @@ describe("v2_router integration", () => {
     expect(res.status).toBe(404);
   });
 
+  test("GET /v2/api/completions/profile is not exposed", async () => {
+    // Deliberately removed: it ran a synchronous gzip over up to 50k results on
+    // an unauthenticated GET. If profiling is needed again, prefer an offline
+    // script over a production route.
+    const res = await request(app).get("/v2/api/completions/profile?q=am");
+    expect(res.status).toBe(404);
+  });
+
   test("GET /v2/about returns full About page with 200", async () => {
     const res = await request(app).get("/v2/about");
     expect(res.status).toBe(200);
