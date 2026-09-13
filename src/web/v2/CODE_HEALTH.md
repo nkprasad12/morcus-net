@@ -85,16 +85,33 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       `src/web/utils/rpc/parsing.ts` exports `matchesObject`, `typeOf`, `maybeUndefined`,
       `isOneOf`, `isArray` and friends, and has **zero imports**, so it is browser-safe and
       tree-shakeable.
-      Two things to settle before writing code. First, `ReaderPreferences` and `DEFAULT_PREFS` are
+      Two wrinkles shaped the design below. First, `ReaderPreferences` and `DEFAULT_PREFS` are
       declared _inside_ `initSettingsDialog` (L842-858) — that is why they were never validated,
       there is no module-level declaration to hang a validator on. Lifting them out is part of the
       work. Second, `parsing.ts` has no literal-union combinator, and two of the six fields are
       unions (`fontFamily: "serif" | "sans"`, `lineHeight: "compact" | "normal" | "relaxed"`);
       `isOneOf` composes two _validators_, not literals, so this needs either small local
       `(x): x is "serif" => x === "serif"` guards or a new `isLiteral` in `parsing.ts`.
-      Decide the failure mode deliberately: `matchesObject` rejects the whole object, so one
-      corrupt field would reset every preference. Per-field fallback to the default is almost
-      certainly what a user wants from a settings blob.
+      **Design settled, work deferred.** Do not use `matchesObject` for either store. It is
+      all-or-nothing (L230-249, `return false` on the first bad field), so it would be a straight
+      _regression_ for `core/settings.client.ts`, which is per-field tolerant today — one corrupt
+      `darkMode` would also discard `highlightStrength`, `autoOpenLogeion` and `inflectedSearch`.
+      For the reader it would break upgrades: all six `ReaderPreferences` fields are required, so a
+      blob written before a field existed validates fine today via the spread, but would be
+      rejected wholesale, resetting every reader setting. The shape that works for both is a
+      per-field partial parse — roughly
+      `pickValid<T>(x, checkers): Partial<T>` — keeping valid fields and dropping invalid ones,
+      then spread over the defaults. That is ~10 lines, reproduces `parseSettings`'s current
+      semantics exactly, and lets its four `typeof` branches go. Every field checker should be
+      `maybeUndefined` so partial blobs survive. `isLiteral` belongs in `parsing.ts` (it is a real
+      `Validator`); `pickValid` is not a guard but a partial parse, so keep it in V2 until a second
+      consumer appears.
+      Deferred because the payoff is small and the sequencing is wrong, not because it is hard. The
+      only actual defect is the unvalidated reader blob, and that blob is same-origin data the user
+      sets themselves — the realistic failure is a corrupt or stale value, not an attacker. More
+      importantly, lifting `ReaderPreferences` / `DEFAULT_PREFS` to module scope is a move the
+      Phase 4 reader decomposition has to make anyway, so doing it first means doing it twice.
+      Pick this up after that decomposition, or as part of it.
 
 ---
 
