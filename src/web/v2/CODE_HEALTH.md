@@ -182,6 +182,117 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       legitimately export HTML **renderers**, not just logic, when server and client must emit
       byte-identical markup — is still undocumented. That is the part worth writing down, since it
       is the non-obvious half and the reason `search_bar.common.ts` looks wrong but isn't.
+- [ ] 🟢 **Hold V2 to the three rules the legacy code can't pass.**
+      `@typescript-eslint/no-unused-vars`, `no-non-null-assertion` and `no-explicit-any` are
+      disabled repo-wide in `eslint.config.mjs`, presumably because the older React code cannot
+      satisfy them. V2 is new code and need not inherit that ceiling. Measured against
+      `src/web/v2`, the split between production and test code is decisive:
+
+      | rule | prod | test |
+      | --- | --- | --- |
+      | `no-non-null-assertion` | 10 | 98 |
+      | `no-explicit-any` | 3 | 19 |
+      | `no-unused-vars` | 2 | 0 |
+
+      So the headline count (131) is misleading — **90% of it is test files**, where `el.querySelector(...)!`
+      is idiomatic and worth keeping. Enable these for V2 production code only; the config already
+      has a `**/*.test.ts*` override block to hang the exemption on. That leaves 15 real fixes
+      across 6 files (`entry_view.server.ts`, `xml_to_html.server.ts`, `library.server.ts`,
+      `reader_loader.server.ts` for the assertions; `core/base_element.client.ts` and
+      `core/task.client.ts` for the `any`s — both in the `listen()` overload chain).
+      The two `no-unused-vars` hits are real dead parameters in `dict_search.client.ts` L83/L87.
+
+      > [!WARNING]
+      > Same flat-config trap the target-suffix work hit: re-declaring a rule **replaces** its
+      > options rather than merging them. Keep this block to rules the three tier blocks don't
+      > touch, or it will silently undo their `no-restricted-imports` bans.
+
+      Also worth noting: `plugin:react/recommended` and `react-hooks/recommended` are applied to V2,
+      which contains no React. Inert today, but the hooks rules key off functions named `use*`, so
+      it is a latent false-positive source.
+
+- [ ] 🟡 **Enable the type-checked rules for V2 — the expensive part is already paid for.**
+      `parserOptions: { project: true }` makes the parser build a full TypeScript `Program`,
+      resolving the whole import graph. Measured on `src/web/v2` (102 files, two runs each):
+
+      | | wall | peak RSS |
+      | --- | --- | --- |
+      | with `project: true` | 12.3 s / 16.7 s | ~868 MB |
+      | without | 9.5 s / 7.6 s | ~475 MB |
+
+      Type-awareness therefore costs about **+6 s and +390 MB** — a fixed, up-front cost incurred
+      the moment `project` is set at all, and it currently buys exactly **three** rules
+      (`prefer-find`, `prefer-readonly`, `no-confusing-void-expression`).
+      `recommended-type-checked` adds ~40 more that reuse the same program.
+
+      Measured cost of the full preset: **72 production + 104 test** violations. Land the two
+      highest-value rules first, as their own change — they are the only ones that find latent bugs
+      rather than style:
+      - `no-misused-promises` (**7**, all in `v2_router.server.ts`): async handlers passed where a
+        void return is expected. Express 4.22.2 does not await handler return values, so any
+        rejection escaping an internal `try`/`catch` becomes an unhandled rejection — which on
+        Node 22 terminates the process.
+      - `no-floating-promises` (**9**, in `dict_search.client.ts`, `reader_view.client.ts`,
+        `report_dialog.client.ts`): fire-and-forget calls from sync event handlers. Most are
+        probably benign because the callee catches internally, but the rule forces that to be
+        stated — `void this.foo()` for deliberate fire-and-forget — in the same spirit as the now
+        required `FetchAndSwapOptions.signal`.
+
+      The `no-unsafe-*` family (20 + 13 + 3 + 1 in production) is the bulk of the remainder and is
+      mostly downstream of a handful of `any`s, so it should follow the item above rather than
+      lead. `restrict-template-expressions` was the rule most likely to explode in an SSR codebase
+      built on template strings; it reports only **9**, so that worry was unfounded.
+
+      If lint latency becomes painful, the lever is `projectService: true` (typescript-eslint v8;
+      we are on 8.38), which reuses the incremental program the editor already maintains, rather
+      than giving up type-aware rules.
+
+- [ ] 🟡 **Add `eslint-plugin-no-unsanitized`, configured to trust the `html` helper.** There are
+      **13** `innerHTML` / `outerHTML` / `insertAdjacentHTML` / `createContextualFragment` sites in
+      non-test V2 code, across `core/partial.client.ts`, `dict_greek.client.ts`,
+      `dict_search.client.ts`, `dict_settings.client.ts`, `reader_view.client.ts` and
+      `theme_toggle.client.ts`. Two of the three Phase 1 security fixes were exactly this sink.
+
+      > [!IMPORTANT]
+      > Land this **after** the `html` tagged-template item above, not before. The plugin can be
+      > told which escapers are trusted:
+      >
+      > ```js
+      > "no-unsanitized/property": ["error", { escape: { taggedTemplates: ["html"] } }]
+      > ```
+      >
+      > That is what turns the helper from _available_ into _enforced_: every remaining raw
+      > assignment becomes an error needing an explicit, reviewable disable. Adopted in the other
+      > order it produces 13 `eslint-disable` comments and no behaviour change — which is precisely
+      > the half-adoption failure mode named in the audit summary.
+
+- [ ] 🟢 **Add `eslint-plugin-wc`, narrowly scoped.** The justifying rule is **`wc/no-typos`**: a
+      misspelled `disconnectedCallback` is a _silent_ no-op, invisible to `tsc` (it is merely an
+      unused method) and unfindable by review. Now that `BaseElement` disposal is what stands
+      between us and leaked listeners and un-aborted fetches, a mistyped lifecycle hook is an
+      expensive bug. `wc/no-invalid-element-name` and `wc/no-constructor-attributes` are cheap
+      extras. Needs `settings: { wc: { elementBaseClasses: ["BaseElement"] } }`.
+
+      > [!WARNING]
+      > Turn **off** `wc/no-child-traversal-in-connectedcallback`. It exists because children may
+      > not be parsed when `connectedCallback` fires — but `page_shell.server.ts` L180 loads the
+      > bundle as `<script type="module">`, which is deferred, so upgrade always happens after
+      > parsing completes. Light-DOM child traversal in `onConnect()` is correct for our SSR model,
+      > and this rule would fire on nearly every component.
+
+- [ ] 🟡 **Decide on `eslint-plugin-compat` + a browserslist — deliberately, or not at all.** There
+      is currently **no browserslist** anywhere (no `.browserslistrc`, no `package.json` key, no
+      target in `v2.rsbuild.ts`), so browser-support questions get answered by guessing. That has
+      already cost us once: `AbortSignal.any()` was the natural way to link a lane signal to the
+      element lifetime in `BaseElement`, and it was rejected purely because support was unknowable.
+
+      > [!CAUTION]
+      > **Rsbuild reads browserslist too.** Adding one is not merely a lint-config change — it
+      > changes transpilation targets, and therefore bundle output and size. Re-measure the bundle
+      > in the same change, and sequence this with the bundle-budget item above so the effect is
+      > visible rather than silent.
+
+      Closing this as "won't do" is reasonable. It should be a decision, not a default.
 
 ---
 
@@ -393,6 +504,16 @@ Verified counts as of the audit.
 - [ ] 🟢 Add spacing and radius scales (`--v2-space-*`, `--v2-radius-sm/md/lg`) — currently ~300
       arbitrary `padding`/`margin`/`border-radius` values (e.g. `reader.css` mixes `3px`/`6px`/`8px`
       radii; `library.css` L65 uses `10px 100px 10px 42px`).
+- [ ] 🟡 **Add Stylelint — ESLint cannot see CSS, so every item in this phase is unenforceable.**
+      The ESLint guardrails in Phase 2 protect the TypeScript; nothing protects the stylesheets, and
+      this phase is the larger pile of debt: **78** `!important` declarations, **23 of 125** hex
+      colours living outside the two token files, and **11** distinct z-index values across 17
+      declarations. `stylelint-declaration-strict-value` can require that colours and z-index come
+      from custom properties, which converts each cleanup below from a one-off sweep into an
+      invariant.
+      Start warn-only and ratchet. The value is stopping the _next_ hardcoded colour, not
+      relitigating the existing 23 — otherwise this blocks on the full token migration and
+      therefore never lands.
 
 ---
 
