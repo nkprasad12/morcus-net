@@ -554,14 +554,70 @@ Verified counts as of the audit.
 
 ## Phase 8 — Performance
 
-- [ ] 🟢 **Stop scanning every word to clear one class.** `reader_view.client.ts` L213-217 and
-      L276-279 run `querySelectorAll(".v2-lat-word")` over ~3,000 nodes on _every_ word click, to
-      remove a class present on exactly one element. Query `.v2-word-active` instead.
+> [!NOTE]
+> The first four items were found together on 2026-09-13 while investigating a report that
+> **resizing the reader drawer feels laggy**. They compound, so they are listed in the order worth
+> doing them. The first is a **bug**, not an optimization, and is expected to account for most of
+> the symptom on its own — re-measure after it lands before spending effort on the rest.
+> None of this has been profiled; the mechanisms are confirmed by reading, the split between them
+> is not.
+
+- [ ] 🟢 **Fix the drawer's drag transition escape hatch — the selector never matches.**
+      `core/gesture.client.ts` L73 applies `handleActiveClass` to the **handle**, but two rules are
+      written as though it lands on the panel: `.v2-drawer.v2-is-dragging` (`core/drawer.css` L47)
+      and `.v2-reader-dict-panel.v2-is-dragging` (`reader/reader.css` L321). The reader's markup is
+      `<aside class="v2-reader-dict-panel">` containing `<div class="v2-reader-sheet-bar">`, and the
+      controller is constructed with `drawer: dictPanel, handle: sheetBar`, so `v2-is-dragging`
+      always lands on a **child**. Both rules are dead.
+      Consequence: `.v2-reader-dict-panel` keeps its `transition: height 0.25s cubic-bezier(...)`
+      (`reader.css` L316) live for the whole drag, so every `pointermove` re-targets a fresh 250 ms
+      eased interpolation from wherever the animation currently is. The drawer permanently chases the
+      pointer and only settles once you stop — rubber-banding, not stutter.
+      The third rule, `.v2-reader-split-layout:has(.v2-is-dragging) .v2-reader-text-panel`
+      (`reader.css` L388), **does** work. The inconsistency is the evidence: whoever wrote the
+      `:has()` version knew the class was on a descendant. Fix the other two the same way.
+      Affects both drawers — the reader panel and the dict TOC (`dict_toc.client.ts` L55) — since the
+      canonical structure is always `.v2-drawer` > `.v2-drawer-bar`. Testable in jsdom by asserting
+      the class lands on the element the CSS actually selects.
+- [ ] 🟡 **Coalesce pointer drags to animation frames** in `core/gesture.client.ts` L80-96.
+      `onPointerMove` invokes `options.onMove` synchronously on every `pointermove`. Pointer events
+      outpace frames on modern hardware (120 Hz trackpads, high-polling mice, coalesced touch), so
+      each drag runs several full write → layout cycles per rendered frame and discards all but the
+      last. Buffer the latest event and flush once per `requestAnimationFrame`.
+      Worth doing in the shared helper rather than per-caller: it fixes the drawer, the desktop
+      splitter and any future drag at once.
+- [ ] 🟢 **Hoist layout reads out of `pointermove`.** `reader_view.client.ts` L532 reads
+      `splitLayout.getBoundingClientRect().width` on every move, _after_ the previous move wrote
+      `--v2-dict-width` at L541 — a read-after-write that forces synchronous layout each time.
+      `containerWidth` cannot change mid-drag, so hoist it into `onStart` exactly as `startWidth`
+      already is at L529. `drawer.client.ts` L193 has the milder version with `window.innerHeight`.
+      (Supersedes the original note, which cited `reader_view.client.ts` L516; the code has moved.)
+- [ ] 🟢 **Delete the two universal `user-select` overrides.** `body.v2-resizing-drawer *`
+      (`core/drawer.css` L19-21) and `body.v2-resizing-panels *` (`reader/reader.css` L221-223) apply
+      `user-select: none !important` to **every element in the document**, so toggling the body class
+      forces a whole-document style recalculation twice per drag — at grab and at release, which is
+      exactly when a hitch is most noticeable.
+      They are free to delete: `user-select` is inherited, the `body` rule immediately above each one
+      already sets `none`, and every `user-select` declaration in V2 CSS (~15 of them) is already
+      `none`. The universal rule is overriding `none` with `none`.
+- [ ] 🟢 **Stop scanning every word to clear one class.** `reader_view.client.ts` L234-237
+      (`dismissDictionary`) and L296-299 (`lookupWord`) run
+      `querySelectorAll(".v2-reader-text-panel .v2-lat-word")` over thousands of nodes on _every_
+      word click, to remove a class present on exactly one element. Query `.v2-word-active` instead.
+      This runs synchronously in the click handler **before** the new highlight is applied, so it is
+      pure added latency between tapping a word and seeing it selected — the reader's primary
+      interaction. Not the dominant cost (the dictionary fetch is), but it delays the immediate
+      feedback specifically.
+      Note the third scan in the same file, `findWordElement` L444-446, is **not** this bug: it is a
+      genuine text search that needs every word. Leave it, or index it separately.
 - [ ] 🟡 **Don't tokenize the whole chapter synchronously on mount.** `reader_view.client.ts`
-      L357-360 blocks the main thread in `onConnect` — a long task that delays INP. Batch via
-      `requestIdleCallback`.
-- [ ] 🟢 **Hoist `getBoundingClientRect()` out of `pointermove`** (`reader_view.client.ts` L516) —
-      forces a reflow at ~60 Hz while dragging. Measure once in `onStart`.
+      L366-374 walks every target block calling `tokenizeElement` (L401) inside `onConnect` — one
+      long task that delays first interaction. Batch via `requestIdleCallback`.
+- [ ] 🟡 **Add CSS containment to the reader text panel.** There is currently **no** `contain:` or
+      `content-visibility:` anywhere in `src/web/v2`, so a drawer or splitter resize relayouts the
+      full text panel and all of its inline word spans. This is what makes the two drag items above
+      expensive rather than merely wasteful, so it is worth measuring after they land — it may be
+      the remaining gap, or it may be unnecessary.
 - [ ] 🟢 **Stop `fs.existsSync` on the render hot path.** `shell/asset_manifest.server.ts` L18-23
       does up to 2 syscalls per page render. Check once at boot, or on a timer in dev only.
 - [ ] 🟡 **Lazy-load the two heavy verticals.** `v2_bundle.client.ts` L1-10 eagerly bundles everything, so
