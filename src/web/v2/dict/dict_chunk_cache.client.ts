@@ -74,7 +74,14 @@ export class DictChunkCache {
       return existingPromise;
     }
 
-    // 3. Initiate new network request
+    // 3. Initiate new network request.
+    //
+    // Deliberately not cancellable. This promise is shared by every caller that
+    // asks for the same prefix (step 2), so aborting on behalf of one of them
+    // would reject it for all of them and poison the shared cache. It is an
+    // idempotent GET whose result is worth keeping regardless of who asked for
+    // it; callers that no longer care just ignore the result via their own
+    // staleness check.
     const promise = fetch(
       `/v2/api/completions?prefix=${encodeURIComponent(key)}`
     )

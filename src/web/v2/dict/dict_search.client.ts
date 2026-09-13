@@ -5,7 +5,6 @@ import {
   dictSettingsStore,
   inflectedSettingsStore,
   fetchAndSwapPartial,
-  LatestTask,
   registerElement,
 } from "@/web/v2/core/index.client";
 import {
@@ -44,15 +43,16 @@ import {
  * With JS:
  * - Intercepts form submit via hijackForm.
  * - Debounces input typing to fetch autocomplete suggestions from /v2/api/completions.
- * - Uses LatestTask to cleanly cancel stale completion requests.
+ * - Cancels stale requests via two independent supersession lanes: "completions"
+ *   (typing) and "results" (submit). These run concurrently and must not cancel
+ *   each other, which is why they are separate lanes rather than one controller.
  * - Uses syncQueryParam for seamless browser back/forward and title sync.
  * - Performs smooth AJAX partial swaps via fetchAndSwapPartial without full page reloads.
  */
-export class MorcusDictSearch extends BaseElement {
+export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   public readonly chunkCache: DictChunkCache = new DictChunkCache();
   private suggestions: CompletionItem[] = [];
   private selectedSuggestionIndex: number = -1;
-  private readonly completionTask = new LatestTask();
 
   private inputElement: HTMLInputElement | null = null;
   private resultsElement: HTMLElement | null = null;
@@ -81,7 +81,7 @@ export class MorcusDictSearch extends BaseElement {
 
   private readonly debouncedFetchPrefixChunk = debounce(
     (prefix: string, query: string) => {
-      const signal = this.completionTask.start();
+      const signal = this.latest("completions");
       this.chunkCache
         .loadPrefix(prefix)
         .then((chunks) => {
@@ -104,7 +104,7 @@ export class MorcusDictSearch extends BaseElement {
 
   private readonly debouncedFetchSuffixCompletions = debounce(
     (query: string) => {
-      const signal = this.completionTask.start();
+      const signal = this.latest("completions");
       const currentParams = new URLSearchParams(window.location.search);
       const fetchParams = new URLSearchParams();
       fetchParams.set("q", query);
@@ -202,7 +202,7 @@ export class MorcusDictSearch extends BaseElement {
   }
 
   protected override onDisconnect() {
-    this.completionTask.cancel();
+    // In-flight lanes are aborted by BaseElement; these are the pending timers.
     this.debouncedFetchPrefixChunk.cancel();
     this.debouncedFetchSuffixCompletions.cancel();
   }
@@ -462,7 +462,7 @@ export class MorcusDictSearch extends BaseElement {
   private clearSuggestions() {
     this.debouncedFetchPrefixChunk.cancel();
     this.debouncedFetchSuffixCompletions.cancel();
-    this.completionTask.cancel();
+    this.cancel("completions");
     this.suggestions = [];
     this.selectedSuggestionIndex = -1;
     this.updateSuggestionsView();
@@ -585,6 +585,7 @@ export class MorcusDictSearch extends BaseElement {
 
     const url = `/v2/dicts?${fetchParams.toString()}`;
     const success = await fetchAndSwapPartial(this.resultsElement, url, {
+      signal: this.latest("results"),
       errorMessage: "Error loading results.",
       loadingOpacity: 0.5,
     });

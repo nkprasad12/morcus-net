@@ -637,4 +637,120 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       done();
     });
   });
+  describe("stale response handling", () => {
+    /**
+     * Replaces fetch with one that never settles on its own, so tests can
+     * resolve responses in whatever order they like. Honors AbortSignal the way
+     * the real fetch does, which is the whole point: without that, nothing here
+     * would be testing anything.
+     */
+    function controllableFetch() {
+      const pending: {
+        url: string;
+        signal?: AbortSignal;
+        respond: (html: string) => void;
+      }[] = [];
+      global.fetch = jest
+        .fn()
+        .mockImplementation((url: string, init?: RequestInit) => {
+          return new Promise((resolve, reject) => {
+            const signal = init?.signal ?? undefined;
+            signal?.addEventListener("abort", () => {
+              const error = new Error("The operation was aborted.");
+              error.name = "AbortError";
+              reject(error);
+            });
+            pending.push({
+              url,
+              signal,
+              respond: (html: string) =>
+                resolve({
+                  ok: true,
+                  text: () => Promise.resolve(html),
+                  json: () => Promise.resolve([]),
+                } as unknown as Response),
+            });
+          });
+        });
+      return pending;
+    }
+
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    function submit(el: MorcusDictSearch, query: string) {
+      const form = el.querySelector<HTMLFormElement>("form.v2-search-form")!;
+      el.querySelector<HTMLInputElement>("input.v2-input")!.value = query;
+      form.dispatchEvent(new Event("submit", { bubbles: true }));
+    }
+
+    test("a superseded search does not overwrite the results of a newer one", async () => {
+      const pending = controllableFetch();
+      const el = createDictSearch();
+
+      submit(el, "alpha");
+      submit(el, "beta");
+      await flush();
+
+      expect(pending).toHaveLength(2);
+      expect(pending[0].url).toContain("q=alpha");
+      expect(pending[1].url).toContain("q=beta");
+      // The first request is cancelled the moment the second one starts.
+      expect(pending[0].signal?.aborted).toBe(true);
+      expect(pending[1].signal?.aborted).toBe(false);
+
+      // The newer response lands first, then the stale one arrives late. This
+      // is the ordering that used to corrupt the page.
+      pending[1].respond('<div class="results">beta results</div>');
+      await flush();
+      pending[0].respond('<div class="results">alpha results</div>');
+      await flush();
+
+      const results = el.querySelector<HTMLElement>("#dict-results")!;
+      expect(results.textContent).toContain("beta results");
+      expect(results.textContent).not.toContain("alpha results");
+    });
+
+    test("a superseded search leaves the loading state of the live one intact", async () => {
+      const pending = controllableFetch();
+      const el = createDictSearch();
+      const results = el.querySelector<HTMLElement>("#dict-results")!;
+
+      submit(el, "alpha");
+      submit(el, "beta");
+      await flush();
+
+      // The cancelled request must not clear the dim that the live request set,
+      // and the live request must not be left permanently dimmed afterwards.
+      expect(results.style.opacity).toBe("0.5");
+      pending[1].respond('<div class="results">beta results</div>');
+      await flush();
+      expect(results.style.opacity).toBe("");
+    });
+
+    test("abandoning the query cancels the in-flight completions request", async () => {
+      const pending = controllableFetch();
+      jest.useFakeTimers();
+      const el = createDictSearch();
+      const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+
+      // A suffix query goes straight to /v2/api/completions. A prefix query
+      // would instead hit the shared chunk cache, which is deliberately not
+      // cancellable.
+      input.value = "-arum";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      jest.advanceTimersByTime(200);
+      jest.useRealTimers();
+
+      const completions = pending.find((p) => p.url.includes("/completions"));
+      expect(completions).toBeDefined();
+      expect(completions!.signal?.aborted).toBe(false);
+
+      // Deleting back below the completion threshold dismisses the dropdown,
+      // so nothing is left to display the response.
+      input.value = "-";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+
+      expect(completions!.signal?.aborted).toBe(true);
+    });
+  });
 });
