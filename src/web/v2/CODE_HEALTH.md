@@ -7,9 +7,13 @@ audit on 2026-09-13 (102 files, ~22,300 lines).
 
 - Each `[ ]` item is scoped to be **one small, independently landable change**. Nothing here
   requires a mega-refactor.
-- Check items off as they land. Delete a section once it is fully done.
 - Sizes: 🟢 < 30 min · 🟡 an hour or two · 🔴 half a day+
 - When adding new debt, add it here rather than a TODO comment, so it stays reviewable.
+- **When an item lands, move it to the `Landed` section as one line naming the commit** rather than
+  leaving a write-up in place. Put the reasoning in the commit message. If the work turned up
+  something counter-intuitive — a decision that looks wrong until you know why, or advice in this
+  file that proved incorrect — add it to **Phase 5** so it is not rediscovered or undone. Keeping
+  full post-mortems inline is what made this file 866 lines.
 
 **Audit summary**: the architecture is sound — vertical slices, the `*.server`/`*.client`/`*.common`
 suffix convention, the zero-JS baseline, and the `core/` primitives are all the right bones.
@@ -24,55 +28,12 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 ## Phase 1 — Correctness & security
 
-- [x] 🟢 **Fix DOM XSS in the reader dictionary sheet.** `?q=` reached `innerHTML` unescaped at
-      five sites in `reader_view.client.ts`. `currentQuery` is assigned from `this.router.get()`
-      at L49; `trimRawQuery()` does **not** strip `<`/`>` (they are `\p{Sm}`, not `\p{P}`), so a
-      payload survived intact.
-      **Done**: all five sites now route through one `setSheetLabel(query, showExpandHint)` helper
-      that builds the `<strong>` via `textContent` + `replaceChildren`. The `<strong>` wrapper is
-      load-bearing — `.v2-reader-sheet-label strong` in `core/drawer.css` supplies its color and
-      weight — so it is preserved as a real element. Verified by three tests in
-      `reader_view.test.ts`: the two behaviour tests pass against **both** the old and new code
-      (proving output equivalence), and the XSS test fails against the old code (proving it
-      actually catches the bug).
-- [x] 🟢 **Escape the query in router error responses.** `v2_router.server.ts` interpolated the raw query
-      into an HTML error string on the `/dicts` and `/dicts/id/:id` failure paths.
-      **Done**: only the `format=partial` branches were affected — the full-page fallbacks already
-      escaped via `renderDictPageHtml`. Rather than bolting on `he.escape`, the markup moved to a
-      `renderDictErrorHtml(term, isIdSearch)` renderer beside the other `.v2-no-results` renderers
-      in `dict_page.server.ts`, so the router no longer hand-builds HTML (a down-payment on the
-      Phase 4 router split). Covered by four new tests; the two partial-path tests fail against the
-      old code, and the two full-page tests now guard the previously-untested safe path.
-- [x] 🟢 **Gate or delete `/api/completions/profile`.** A diagnostic endpoint on an unauthenticated
-      GET that ran a **synchronous** `zlib.gzipSync` over up to **50,000** results (its `limit`
-      defaulted to the maximum), blocking the event loop for the duration — an availability risk.
-      **Done**: deleted rather than gated. It was added in `89d7ef35` to inform the 2-letter chunk
-      caching work, which has shipped; it had zero callers, no tests, and was reachable only by
-      typing the URL. Also removed the orphaned `onTiming` / `V2CompletionsTiming` plumbing it was
-      the sole consumer of, which incidentally drops 6 `performance.now()` calls and 3
-      `toFixed`/`Number` round-trips from the real completions hot path. `zlib` is no longer
-      imported by the router. A guard test asserts the route 404s. If profiling is wanted again,
-      prefer an offline `src/scripts/` entry over a production route.
-- [x] 🟢 **Pass an `AbortSignal` to the main results fetch.** `dict_search.client.ts` L587 omitted
-      it, so out-of-order responses overwrote the DOM.
-      **Done**, but generalized rather than patched. Adding a second `LatestTask` field would have
-      been the fourth hand-rolled lifetime in the codebase, so the primitives moved into
-      `BaseElement`: `this.signal` (aborts on disconnect), `this.latest(lane)` (aborts the previous
-      request in that lane) and `this.cancel(lane)`. Lanes are a typed union on the class so an
-      undeclared lane is a compile error. They are independent because `MorcusDictSearch` genuinely
-      runs completions and results concurrently and neither may cancel the other.
-      `FetchAndSwapOptions.signal` is now **required**, so future call sites have to decide.
-      Two fetches are deliberately left uncancellable, each with a comment saying why:
-      `dict_chunk_cache.client.ts` (shared in-flight promise — aborting for one caller poisons the
-      cache for all) and `report_dialog.client.ts` (a POST mutation should still land).
-      Fixing this surfaced a second bug: `fetchAndSwapPartial` captured and restored the container's
-      inline opacity, so with overlapping requests the live one could be left permanently dimmed.
-      An aborted request now leaves the container to whichever request is still live.
-      Verified by reverting the client changes — the two supersession tests fail against the old
-      code while the behavior tests pass against both.
-      Still open: the 3-concurrent-fetch storm when toggling dictionary checkboxes
-      (`dict_settings.client.ts` L273 → `dict_search.client.ts` L332) is now harmless rather than
-      corrupting, but it should still be coalesced.
+- [ ] 🟢 **Coalesce the fetch storm when dictionary checkboxes are toggled.** Each toggle in
+      `dict_settings.client.ts` L273 calls straight through to `dict_search.client.ts` L332, so
+      flipping three boxes fires three overlapping requests for the same query. The abort-lane work
+      made this **harmless rather than corrupting** — the losing responses can no longer overwrite
+      the winner — so what is left is wasted work, not a bug. Debounce the settings change, or have
+      the caller take the results lane once rather than per checkbox.
 - [ ] 🟢 **Validate both `localStorage` reads with the repo's combinators.** Merged with Phase 3's
       "reuse the validator combinators in `core/settings.client.ts`", which was the same problem
       seen from the other end; that entry is now a pointer here. Doing them together is what makes
@@ -117,145 +78,9 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 ## Phase 2 — Guardrails (do these before the big cleanups)
 
-- [x] 🟡 **Add an auto-escaping `html` tagged template** in `core/html.common.ts`. There are
-      currently **five** ways to escape: `he.escape`, `he.encode`, a hand-rolled `escapeHtml`,
-      trusted-by-assumption, and the outright bugs above. `he.escape` and `he.encode` are used
-      interchangeably for the same job within single files (e.g. `inflection_table.server.ts`
-      L55-56 alternates between them on adjacent `<td>`s).
-
-      > [!WARNING]
-      > This helper **must not import `he`** — `he` is ~100 KB of CommonJS UMD and poorly
-      > tree-shakeable, so a `.common.ts` importing it lands it in the client bundle. Use the
-      > existing hand-rolled escape from `search_bar.common.ts` (see the note in Phase 5).
-
-      ```ts
-      const RAW = Symbol("raw");
-      export type SafeHtml = { [RAW]: string };
-      export const raw = (s: string): SafeHtml => ({ [RAW]: s });
-
-      export function html(
-        strings: TemplateStringsArray,
-        ...values: unknown[]
-      ): SafeHtml {
-        let out = strings[0];
-        for (let i = 0; i < values.length; i++) {
-          const v = values[i];
-          out +=
-            v && typeof v === "object" && RAW in v
-              ? (v as SafeHtml)[RAW]
-              : escapeHtml(String(v ?? ""));
-          out += strings[i + 1];
-        }
-        return raw(out);
-      }
-      ```
-
-      Makes the safe path the default and the unsafe path explicitly `raw(...)` — greppable and
-      reviewable. Migrate files opportunistically; no big-bang rewrite needed.
-
-      **Done** — landed as `core/html.common.ts` exporting `html`, `raw`, `joinHtml` and
-      `escapeHtml`, with 16 tests. `search_bar.common.ts`'s private `escapeHtml` copy is gone,
-      removing one of the five escape paths, and its two chip renderers now return `SafeHtml`.
-
-      The sketch above does not work as written and was not followed. `SafeHtml = { [RAW]: string }`
-      is an object, so it cannot be assigned to `innerHTML` — TypeScript rejects it, and unwrapping
-      it at the call site defeats the point, because an unwrapping call is exactly what
-      `no-unsanitized` cannot see through. `html` therefore returns a *branded string*
-      (`string & { [SAFE_HTML]: true }`): a real string at runtime, assignable to `string`, but not
-      constructible from one. `raw()` stays an object, since that is what makes trusted content
-      recognisable at runtime.
-
-      That has one consequence worth knowing: a `SafeHtml` interpolated directly into another
-      template is escaped *again*, because the brand is erased at runtime. Compose with `joinHtml`
-      or `raw`. It fails safe — visibly double-encoded text, not an injection — and there is a test
-      pinning it.
-
-      Markup reaches the DOM through `setHtml` / `replaceWithHtml` in the new `core/dom.client.ts`
-      rather than by direct assignment. This was not in the plan; it is forced by how the lint rule
-      works. Two of the migrated sites assign the *result of a renderer function*, which the rule
-      sees as a call expression and rejects no matter how the callee is written. Configuring the
-      rule to trust those functions by name would put the trust in a list that cannot notice when a
-      renderer changes its return type, whereas a `SafeHtml` parameter is checked. The sinks cost
-      two audited `eslint-disable` lines in total.
-
-      Also worth knowing when authoring templates: prettier formats the markup inside `html`
-      tagged templates. It is whitespace-aware and will not introduce a rendered gap between inline
-      elements, but it reflows block elements across lines — which does put real whitespace in the
-      output — and rewrites single-quoted attributes to double quotes.
-
 - [ ] 🟢 **Prefer `he.escape` over `he.encode`** in remaining server templates. `he.encode`
       entity-encodes all non-ASCII, which on Latin/Greek lexica is wasted CPU and payload on every
       render. Hot path: `xml_to_html.server.ts` L65 (runs per XML node).
-- [x] 🟡 **Enforce the target-suffix boundaries with ESLint.** There were **zero** violations — no
-      `*.client.ts` imported a `*.server.ts`, none imported Node builtins, and `.common.ts` imported
-      neither. That discipline was real and worth protecting mechanically before it silently lapsed.
-      **Done**: three mutually-exclusive blocks at the bottom of `eslint.config.mjs`, sharing
-      `NO_RELATIVE_IMPORTS` / `NO_SERVER_ONLY_IMPORTS` / `NO_CLIENT_IMPORTS` pattern constants.
-      The draft sketched here needed two corrections, both found by testing rather than reading.
-      First, ESLint flat config **replaces** a rule's options rather than merging them, so
-      re-declaring `no-restricted-imports` for V2 files switched the repo-wide relative-import ban
-      back **off** for exactly the files the new blocks were meant to constrain; each block now
-      re-states it. Second, the drafted two-block form listed `.common.ts` under both the client and
-      the server block, so the later one won and `.common.ts` silently kept only the client ban.
-      Measured: against a `.common.ts` probe importing a `*.client`, a `*.server` and `he`, the
-      drafted config reports **1 of 3**; the landed config reports **3 of 3**.
-      `he` is banned by name for browser-bound code, so the Phase 5 invariant (importing it would
-      drag ~100 KB of CommonJS into the bundle) is now mechanical rather than a comment.
-      Verified with throwaway probe files in each tier: every ban fires with its intended message,
-      while `fs` in a `*.server.ts` stays allowed — confirming the rules are tier-specific and not a
-      blanket ban. Deliberately **not** covered: `*.test.ts` (colocated tests legitimately exercise
-      both tiers, and `foo.client.test.ts` ends in `.test.ts` so it falls outside the globs), and
-      the four unsuffixed modules in the next item, which no glob can match until they are renamed.
-- [x] 🟢 **Fix stale bundle size claims in [README.md](README.md).** [README.md](README.md) claimed
-      "< 20 KB gzipped", but the minified bundle measures **21.0 KB gzipped** (74.6 KB raw) and
-      active feature prototyping is ongoing.
-      **Done**: removed the stale "< 20 KB" claims from [README.md](README.md) §Core Principles and
-      §Data Flow. Automated budget enforcement is deferred until the prototype feature set stabilizes.
-- [x] 🟢 **Give the four unsuffixed modules a tier**: `core/icons.ts`, `dict/dict_attribution.ts`,
-      `reader/reader_types.ts`, `reader/reader_data.ts`. Renaming makes the convention total rather
-      than mostly-true, which matters more than tidiness: a file with no target suffix matches no
-      glob, so the lint rule above could not see these four at all.
-      **Done**, but not all to `.common.ts` — the tier was chosen per file from actual usage rather
-      than applied uniformly. `core/icons.ts` → **`.common.ts`**: genuinely dual-tier (5 server
-      importers, 3 client), and its own docstring already claimed as much.
-      `dict/dict_attribution.ts` → **`.server.ts`** and `reader/reader_types.ts` → **`.server.ts`**:
-      both are Node-free and DOM-free, so `.common.ts` would have been _safe_, but nothing on the
-      client imports either (the reader client does not reference citation concepts at all), and
-      labelling a module isomorphic when no client uses it asserts a contract nobody tests. Tighter
-      is the honest default; both are a one-line rename away if the client ever needs them.
-      `reader/reader_data.ts` had no right answer among the three tiers because it is test fixture
-      data, so it moved to `testing/` instead — that is the Phase 7 relocation item, done here
-      because the two items are the same physical change and doing them separately would have
-      touched the file twice.
-      Verified the hole is actually closed with a controlled probe: the same one-line `import he`
-      file reports **0** errors when unsuffixed and **1** when named `.common.ts`. Then confirmed on
-      the real files — a deliberate violation injected into each of the three renamed modules is
-      caught (3/3), where before the rename none of them were linted at all.
-      **Follow-up, same day**: doing this exposed that the four named modules were not the whole
-      gap — `v2_router.ts` and `v2_bundle.ts` were also unsuffixed, exempted by the
-      "Root Integration Hubs" rule in [README.md](README.md). That exemption was backwards for
-      `v2_bundle.ts`, which is the Rsbuild entry point and therefore the root of everything shipped
-      to the browser: it was the single most valuable file to protect and the only browser-bound one
-      no rule covered. Both are now `v2_router.server.ts` and `v2_bundle.client.ts`, and the README
-      rule says explicitly that being an entry point is not an exemption. The rename is invisible to
-      the build because Rsbuild interpolates `[name]` from the entry _key_, not the source path —
-      verified by rebuilding and confirming the emitted `v2_bundle.7e3597c7bbe48ef0.js` and
-      `manifest.json` are unchanged.
-- [x] 🟢 **Document the `.common.ts` contract in [README.md](README.md)** as _"isomorphic logic
-      **and** isomorphic rendering"_. See the Phase 5 note — this was investigated and the current
-      usage is correct; it just isn't written down.
-      **Done**: the suffix list in README rule 2 previously stated only the _restriction_ ("safe in
-      both tiers"), which is the half a reader can already infer from the lint errors. Added a
-      dedicated **The `.common.ts` contract** section carrying the half they cannot: that a
-      `.common.ts` may legitimately export HTML **renderers**, and that this is right whenever server
-      and client must emit byte-identical markup for the same widget — the server painting it on load
-      and the client repainting it after an interaction. Framed around the failure mode rather than
-      the rule, since the cost of splitting such a module is silent drift that only surfaces as a
-      flicker after the first interaction. Records the two constraints that follow and are otherwise
-      easy to "fix" by mistake: the renderers must return HTML **strings** (the client assigns to
-      `innerHTML` / `outerHTML`), and their escaping must stay hand-rolled because `he` cannot enter
-      the client bundle. Points at `search_bar.common.ts` as the canonical example so the Phase 5
-      investigation is discoverable from the README rather than only from this backlog.
 - [ ] 🟢 **Hold V2 to the three rules the legacy code can't pass.**
       `@typescript-eslint/no-unused-vars`, `no-non-null-assertion` and `no-explicit-any` are
       disabled repo-wide in `eslint.config.mjs`, presumably because the older React code cannot
@@ -299,9 +124,9 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       (`prefer-find`, `prefer-readonly`, `no-confusing-void-expression`).
       `recommended-type-checked` adds ~40 more that reuse the same program.
 
-      Measured cost of the full preset: **72 production + 104 test** violations. Land the two
-      highest-value rules first, as their own change — they are the only ones that find latent bugs
-      rather than style:
+      Measured cost of the full preset: **72 production + 104 test** violations. The two
+      highest-value rules were split out and landed first, because they are the only ones that find
+      latent bugs rather than style:
       - `no-misused-promises` (**7**, all in `v2_router.server.ts`): async handlers passed where a
         void return is expected. Express 4.22.2 does not await handler return values, so any
         rejection escaping an internal `try`/`catch` becomes an unhandled rejection — which on
@@ -322,110 +147,17 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       than giving up type-aware rules.
 
       **Partly done** — the two async rules above are now enabled for all of `src/web/v2/**/*.ts`
-      (a fourth V2 block at the bottom of `eslint.config.mjs`); the rest of the preset is still
-      open and is what remains of this item.
-
-      The counts held: **7** `no-misused-promises`, all in `v2_router.server.ts`, and **9**
-      `no-floating-promises`. Tests had **zero** violations, so no test exemption was needed and
-      the block covers `.test.ts` too. Repo-wide there are **93** violations outside V2
-      (`src/web/client` 44, `run_morcus.ts` 9, `benchmark_configs.ts` 6, `start_server.ts` 6,
-      `lewis_and_short` 5, …), which is why the block is scoped to V2 rather than global.
-
-      Only **two** of the seven async handlers were live crash paths: `/reader` and
-      `/reader/:author/:name/:page?` both `await getV2Work(...)` before entering any `try`. The
-      other five have all their awaits inside one. The non-obvious part is that marking a handler
-      `async` also converts its *synchronous* throws into rejections, so it forfeits the sync-throw
-      handling Express 4 does provide — the risk is invisible at the throw site. There is no
-      error-handling middleware anywhere in the app, so the fix routes rejections to Express's
-      default handler (500 + stack) via a local `asyncHandler` wrapper that does `.catch(next)`.
-
-      `asyncHandler` was kept local to `v2_router.server.ts` rather than extracted to `core/`:
-      there is one consumer, `core/` contains no `.server.ts` at all today, and the Phase 4 router
-      split can hoist it once there are several. Handlers are registered through local `getAsync` /
-      `postAsync` helpers rather than wrapping inline. That is not cosmetic: with
-      `router.get("/x", asyncHandler(async (req, res) => {`, the last argument is a call
-      expression, so prettier stops hugging the callback and re-indents every handler body —
-      ~450 lines of noise in a 577-line file. With the registrars, each handler is a one-line diff.
-
-      On the client side all 9 floating promises were genuinely fire-and-forget: `searchQuery` and
-      `fetchResults` bottom out in `fetchAndSwapPartial`, whose entire body is a `try`/`catch`
-      returning a boolean, so they cannot reject; `submitReport` likewise. Those got `void`.
-      `reader_view.client.ts`'s `lookupWord` was different — it was `async` with **no `await` in
-      its body** and no caller awaiting it, so dropping `async` removed three of the nine sites
-      outright rather than papering over them.
-
-      Guardrail probes confirmed all five bans fire (relative import, `he` in a `.client.ts`,
-      `.client` import from a `.server.ts`, floating promise, async Express handler). Re-probing
-      `no-restricted-imports` mattered specifically because flat config *replaces* rule options:
-      the new block deliberately configures neither. Lint cost is ~1 s on an 11 s run (single
-      sample), as predicted — the `Program` was already being built.
+      (a fourth V2 block at the bottom of `eslint.config.mjs`), so what remains of this item is the
+      rest of the preset. The predicted counts held exactly, and tests had **zero** violations, so
+      that block covers `.test.ts` too. It is scoped to V2 because there are **93** violations
+      elsewhere in the repo (`src/web/client` 44, `run_morcus.ts` 9, `benchmark_configs.ts` 6,
+      `start_server.ts` 6, `lewis_and_short` 5, …).
 
 - [ ] 🟡 **Fix the ~7 async-safety violations in `start_server.ts` / `web_server.ts`.** Filed off
       the back of the item above. Those two files are outside `src/web/v2`, so the new block does
       not cover them, but they are the process entry points: an unhandled rejection there takes
       down the whole server, V2 included. Small enough to do as a one-off without taking on the
       other ~86 legacy violations.
-
-- [x] 🟡 **Add `eslint-plugin-no-unsanitized`, configured to trust the `html` helper.** There are
-      **13** `innerHTML` / `outerHTML` / `insertAdjacentHTML` / `createContextualFragment` sites in
-      non-test V2 code, across `core/partial.client.ts`, `dict_greek.client.ts`,
-      `dict_search.client.ts`, `dict_settings.client.ts`, `reader_view.client.ts` and
-      `theme_toggle.client.ts`. Two of the three Phase 1 security fixes were exactly this sink.
-
-      > [!IMPORTANT]
-      > Land this **after** the `html` tagged-template item above, not before. The plugin can be
-      > told which escapers are trusted:
-      >
-      > ```js
-      > "no-unsanitized/property": ["error", { escape: { taggedTemplates: ["html"] } }]
-      > ```
-      >
-      > That is what turns the helper from _available_ into _enforced_: every remaining raw
-      > assignment becomes an error needing an explicit, reviewable disable. Adopted in the other
-      > order it produces 13 `eslint-disable` comments and no behaviour change — which is precisely
-      > the half-adoption failure mode named in the audit summary.
-
-      **Done** — and the sequencing warning above was right, so the `html` helper landed first.
-
-      The `escape: { taggedTemplates: ["html"] }` configuration in the box above is deliberately
-      *not* used; the rule runs with default options. Trusting the tag by name only covers markup
-      written inline as a template, and two sites assign the result of a renderer function instead,
-      which the rule rejects whatever the callee does. Routing every sink through `setHtml` /
-      `replaceWithHtml`, which take `SafeHtml`, covers both shapes and keeps the trust in the type
-      system. See the previous item.
-
-      The item's count was wrong. Measured with the plugin installed: **16** violations, **9**
-      production and **7** in tests, not 13 non-test. More usefully, the nine were not nine
-      instances of one problem:
-
-      Two were false positives with a better fix than the helper. `dict_greek.client.ts` L61 and
-      `reader_view.client.ts` L1092 each assigned a ternary of two *string literals* (`&#x25BE;`,
-      `&utrif;` and friends). The rule flags them because `ConditionalExpression` is simply not in
-      its allowed-node list, not because anything dynamic is involved. Both are triangle glyphs, so
-      they became `textContent` with the literal character — deleting the sink rather than
-      annotating it.
-
-      One is the actual trust boundary. `core/partial.client.ts` feeds
-      `createContextualFragment` a string fetched from the network, so no escaping helper can apply
-      — the markup is already assembled. It keeps the sink with a documented exemption explaining
-      what the trust rests on: the only caller fetches same-origin V2 routes, so it is our own SSR
-      output, escaped server-side.
-
-      The remaining six moved to `html` + the typed sinks.
-
-      Tests are exempt, unlike the async-rules block. Their fixtures deliberately assign arbitrary
-      markup — including the XSS payloads in the regression tests — into jsdom, where there is no
-      untrusted input and no boundary. Forcing `raw()` there would have added seven annotations
-      that assert nothing.
-
-      Verified by probe: a raw `innerHTML` assignment in a `.client.ts` is reported, the same
-      assignment in a `.test.ts` is not. One trap worth remembering — an
-      `// eslint-disable-next-line rule -- long reason` is unsafe here, because prettier wraps the
-      trailing reason onto a second line and the directive then applies to *that comment* instead
-      of the code. The `reportUnusedDisableDirectives` warning is what caught it. Put the reason on
-      its own line above the directive.
-
-      Bundle cost of the helper plus sinks: **74.7 → 75.2 kB** raw, **21.2 → 21.4 kB** gzip.
 
 - [ ] 🟢 **Add `eslint-plugin-wc`, narrowly scoped.** The justifying rule is **`wc/no-typos`**: a
       misspelled `disconnectedCallback` is a _silent_ no-op, invisible to `tsc` (it is merely an
@@ -440,6 +172,12 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       > bundle as `<script type="module">`, which is deferred, so upgrade always happens after
       > parsing completes. Light-DOM child traversal in `onConnect()` is correct for our SSR model,
       > and this rule would fire on nearly every component.
+
+- [ ] 🟢 **Decide whether to enforce a bundle-size budget.** Deliberately deferred when the stale
+      "< 20 KB gzipped" claims came out of [README.md](README.md): a budget is only useful once the
+      prototype feature set stops moving, and until then it would just be a number someone bumps.
+      Current baseline is **75.2 kB raw / 21.4 kB gzip**. Revisit when V2 feature work settles —
+      and note the browserslist item below changes this number, so sequence the two.
 
 - [ ] 🟡 **Decide on `eslint-plugin-compat` + a browserslist — deliberately, or not at all.** There
       is currently **no browserslist** anywhere (no `.browserslistrc`, no `package.json` key, no
@@ -460,7 +198,8 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       `querySelector()`. That makes every `:has()` rule we ship untestable, and `reader.css` already
       has two load-bearing ones: L371 (`:has(.v2-drawer-minimized)`, drives the text panel's bottom
       padding) and L388 (`:has(.v2-is-dragging)`, suppresses its transition mid-drag). It also
-      removed `:has()` from consideration when fixing the drag-selector bug in Phase 8.
+      removed `:has()` from consideration when the drawer's drag-transition selector was fixed (see
+      **Landed**), which is why that fix went through TypeScript instead.
 
       The fix is smaller than it looks — **nothing needs upgrading except the lockfile**. jsdom stays
       20.0.3 and jest stays 29.7.0; only the transitive `nwsapi` moves, and **2.2.27** already
@@ -612,31 +351,72 @@ bibliography modal, settings dialog, keyboard shortcuts, dictionary sheet, URL s
       (`dict_landing.server.ts` L63). `renderDictPageHtml` already does this correctly.
 - [ ] 🟢 **Name the TOC visibility thresholds** in `dict_toc.server.ts` L86
       (`totalSenses < 4 && maxSingleEntrySenses < 3 && totalEntries <= 1`).
+- [ ] 🟢 **Use or delete `linkifyText`'s `activeWord` parameter** (`dict/linkify.server.ts` L26).
+      Its only caller, `xml_to_html.server.ts` L63, never passes it, so nothing emits
+      `v2-word-active` server-side today. That makes it a latent trap rather than dead weight:
+      reviving it would start emitting the class into dictionary-entry markup, and any reader code
+      that clears `.v2-word-active` unscoped would then reach into the dictionary panel. The
+      reader's clear is scoped and has a test pinning the scope, so the trap is contained — but the
+      parameter should still be either wired up deliberately or removed.
 
 ---
 
 ## Phase 5 — Investigated & resolved
 
-Kept so these aren't re-litigated.
+Findings that cost real time to establish and that would otherwise be rediscovered — or worse,
+"fixed" back. This is not a changelog; see **Landed** for what shipped.
 
-> [!NOTE] > **`search_bar.common.ts` exporting HTML renderers is CORRECT — do not "fix" it.**
->
-> `renderLangChipsHtml` and `renderInflectChipHtml` are the only HTML-rendering functions in the
-> entire `.common.ts` tier, and both are genuinely used on **both** sides, in strict parallel with
-> `computeActiveLanguages`:
->
-> |        | `computeActiveLanguages`    | `renderLangChipsHtml` | `renderInflectChipHtml` |
-> | ------ | --------------------------- | --------------------- | ----------------------- |
-> | Server | `search_bar.server.ts:42`   | `:43`                 | `:44`                   |
-> | Client | `dict_search.client.ts:381` | `:382` (`innerHTML`)  | `:399` (`outerHTML`)    |
->
-> The server paints the chips on initial load; the client must repaint **byte-identical** markup
-> when the user toggles dictionaries without a reload. Splitting them into server/client copies
-> would guarantee silent drift. They must also return HTML **strings** (the client assigns to
-> `innerHTML`/`outerHTML`), so returning DOM nodes is not an option either.
->
-> Corollary: the hand-rolled `escapeHtml` at `search_bar.common.ts` L49 is **also correct**, not a
-> smell — it cannot use `he` without pulling ~100 KB of CommonJS UMD into the client bundle.
+**`search_bar.common.ts` exporting HTML renderers is CORRECT — do not "fix" it.**
+`renderLangChipsHtml` and `renderInflectChipHtml` are the only HTML-rendering functions in the
+entire `.common.ts` tier, and both are genuinely used on **both** sides, in strict parallel with
+`computeActiveLanguages` (`search_bar.server.ts` L42-44; `dict_search.client.ts` L381-399). The
+server paints the chips on initial load, and the client must repaint **byte-identical** markup when
+the user toggles dictionaries without a reload, so server/client copies would guarantee silent
+drift. They return markup rather than DOM nodes for the same reason.
+
+**`he` must never reach browser-bound code** — ~100 KB of poorly tree-shakeable CommonJS UMD, so a
+`.common.ts` importing it lands it in the client bundle. Now enforced by `no-restricted-imports` on
+the client and common tiers rather than resting on a comment, and it is why the escaping in
+`core/html.common.ts` is hand-rolled.
+
+**`SafeHtml` is a branded string, not a wrapper object.** The obvious design —
+`type SafeHtml = { [RAW]: string }` — does not compile: an object cannot be assigned to `innerHTML`,
+and unwrapping it at the call site is exactly the kind of call expression `no-unsanitized` cannot
+see through. So `html` returns `string & { [SAFE_HTML]: true }`: a real string at runtime,
+assignable to `string`, but not constructible from one. `raw()` stays an object, because that is
+what makes trusted content recognisable at runtime.
+
+**A `SafeHtml` interpolated directly into another `html` template is escaped again**, because the
+brand is erased at runtime. Compose with `joinHtml` or `raw`. It fails safe — visibly
+double-encoded text, not an injection — and there is a test pinning it.
+
+**`no-unsanitized`'s `escape: { taggedTemplates: ["html"] }` is deliberately unused.** Trusting the
+tag by name only covers markup written inline as a template; it cannot cover a site that assigns the
+_result of a renderer function_, which the rule rejects however the callee is written. Routing every
+sink through `setHtml` / `replaceWithHtml`, which take `SafeHtml`, covers both shapes and keeps the
+trust in the type system — where a renderer changing its return type is caught, unlike a config
+allowlist of function names.
+
+**ESLint flat config _replaces_ a rule's options rather than merging them.** Re-declaring
+`no-restricted-imports` in a V2 block switched the repo-wide relative-import ban back **off** for
+exactly the files the block was meant to constrain. Every block that touches it now re-states
+`NO_RELATIVE_IMPORTS`. Still live for the remaining Phase 2 items.
+
+**Prettier formats the markup inside `html` tagged templates.** It is whitespace-aware and will not
+introduce a rendered gap between inline elements, but it reflows block elements across lines — which
+does put real whitespace in the output — and rewrites single-quoted attributes to double quotes.
+Tests asserting exact output should therefore use inline elements.
+
+**`// eslint-disable-next-line rule -- long reason` is unsafe in this repo.** Prettier wraps the
+trailing reason onto a second line, and the directive then applies to _that comment_ rather than to
+the code. `reportUnusedDisableDirectives` is what catches it. Put the reason on its own line above
+the directive.
+
+**Do not wrap Express handlers inline as `router.get("/x", asyncHandler(async (req, res) => {`.**
+The last argument becomes a call expression, so prettier stops hugging the callback and re-indents
+every handler body — ~450 lines of noise in a 577-line file. Piloted and reverted; the local
+`getAsync` / `postAsync` registrars make each handler a one-line diff instead. Worth knowing for the
+Phase 4 router split, which is the right moment to hoist `asyncHandler` into a shared home.
 
 ---
 
@@ -724,16 +504,16 @@ Verified counts as of the audit.
       Also [TESTING.md](TESTING.md) L23 and [dict/README.md](dict/README.md) L19.
 - [ ] 🟢 **Fix the stale test inventory** in [TESTING.md](TESTING.md) §1 — it lists 7 test files;
       there are 25. Replace the enumeration with a glob.
-- [x] 🟢 **Relocate `reader/reader_data.ts`** — 257 lines of hardcoded Caesar text in the production
-      folder, imported **only** by `reader.test.ts`. Move to `testing/` (where
-      `mock_reader_loader.ts` already correctly lives) or delete.
-      **Done**: moved to `testing/reader_data.ts` rather than deleted — `reader.test.ts` is its only
-      consumer but is a real consumer, and `testing/` is already the accepted home for unsuffixed
-      fixture modules. Landed together with the Phase 2 tier-assignment item, which had to resolve
-      this same file: it was one of the four unsuffixed modules, and the reason it had no correct
-      answer among `.client` / `.server` / `.common` is precisely that it is a fixture.
-      **Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
-      dialog markup. Gaps:
+- [ ] 🟢 **Update the `.common.ts` contract in [README.md](README.md) for `SafeHtml`.** L68-71 now
+      describes code that no longer exists: it says renderers "return HTML strings" that the client
+      assigns to `innerHTML` / `outerHTML`, and that they "must hand-roll their escaping" via the
+      local `escapeHtml` in `search_bar.common.ts`. That escaper is gone, the renderers return
+      `SafeHtml`, and the client goes through `setHtml` / `replaceWithHtml`. The underlying reason
+      is unchanged and should stay — `he` cannot enter the client bundle — but the mechanism is now
+      `core/html.common.ts`. Check the safe-DOM paragraph near L11 in the same pass.
+
+**Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
+dialog markup. Gaps:
 
 - [ ] 🟡 `v2_bundle.client.ts` — all 262 lines of global behavior
 - [ ] 🟢 Reader keyboard shortcuts (`reader_view.client.ts` L1028-1066)
@@ -746,49 +526,12 @@ Verified counts as of the audit.
 ## Phase 8 — Performance
 
 > [!NOTE]
-> The first four items were found together on 2026-09-13 while investigating a report that
-> **resizing the reader drawer feels laggy**. They compound, so they are listed in the order worth
-> doing them. The first is a **bug**, not an optimization, and is expected to account for most of
-> the symptom on its own — re-measure after it lands before spending effort on the rest.
-> None of this has been profiled; the mechanisms are confirmed by reading, the split between them
-> is not.
-
-- [x] 🟢 **Fix the drawer's drag transition escape hatch — the selector never matches.**
-      `core/gesture.client.ts` L73 applies `handleActiveClass` to the **handle**, but two rules are
-      written as though it lands on the panel: `.v2-drawer.v2-is-dragging` (`core/drawer.css` L47)
-      and `.v2-reader-dict-panel.v2-is-dragging` (`reader/reader.css` L321). The reader's markup is
-      `<aside class="v2-reader-dict-panel">` containing `<div class="v2-reader-sheet-bar">`, and the
-      controller is constructed with `drawer: dictPanel, handle: sheetBar`, so `v2-is-dragging`
-      always lands on a **child**. Both rules are dead.
-      Consequence: `.v2-reader-dict-panel` keeps its `transition: height 0.25s cubic-bezier(...)`
-      (`reader.css` L316) live for the whole drag, so every `pointermove` re-targets a fresh 250 ms
-      eased interpolation from wherever the animation currently is. The drawer permanently chases the
-      pointer and only settles once you stop — rubber-banding, not stutter.
-      **Done**, but via TypeScript rather than the `:has()` rewrite suggested here, and the rules
-      were left untouched. `trackPointerDrag` gained an `activeClassTarget` option that also puts
-      `handleActiveClass` on the panel, and `DrawerController` passes its `drawer`. Three reasons the
-      suggestion was not followed. First, it was **three** dead rules, not two: the entry missed
-      `.v2-reader-dict-panel.v2-is-dragging .v2-dict-iframe` (`reader.css` L158), which suppresses
-      iframe pointer capture during a drag — its `body.v2-resizing-panels` sibling covers only the
-      splitter, so drawer drags had no iframe guard at all. Three rules written panel-side against
-      one written with `:has()` is the majority mental model, and satisfying them is a smaller change
-      than rewriting them. Second, `:has()` would have shipped **unverified**: jsdom 20.0.3 resolves
-      `nwsapi` 2.2.2, which throws `unknown pseudo-class selector ':has(...)'`, so no unit test could
-      have covered it (see the nwsapi item in Phase 2, filed off the back of this). Third, even with
-      a working engine the assertion would have been `drawer.matches(".v2-drawer:has(...)")` — a
-      hand-copied duplicate of the stylesheet, proving only that nwsapi works. The class-based fix
-      asserts `drawer.classList.contains("v2-is-dragging")` directly.
-      The class is still applied to the handle as well, so `.v2-drawer-bar.v2-is-dragging`
-      (`drawer.css` L82, L104) and the working `:has()` rule at `reader.css` L388 are unaffected.
-      Fixing this also closed a latent leak: the three class-removal paths (pointerup, pointercancel,
-      unbind-while-dragging) were separately hand-written, and a fourth element to clear would have
-      been a fourth chance to forget one, so they now share a single `setDragClasses(active)`. A
-      drawer destroyed mid-drag previously kept `v2-is-dragging` on the handle; it now clears the
-      panel too, which matters much more because on the panel that class means `transition: none`.
-      Verified by reverting `gesture.client.ts` and `drawer.client.ts` to pre-fix HEAD with the new
-      tests in place: the 2 tests asserting the new behaviour fail against old code, while the other
-      4 new tests and all 9 pre-existing drawer tests pass against **both** — so the drag, filter and
-      body-class behaviour is provably unchanged.
+> The drag-related items were found together on 2026-09-13 while investigating a report that
+> **resizing the reader drawer feels laggy**. They compound. The one among them that was a **bug**
+> rather than an optimization — the dead drag-transition selector — has since landed, and it was
+> expected to account for most of the symptom on its own, so **re-measure before spending effort on
+> the rest**. None of this has been profiled; the mechanisms are confirmed by reading, the split
+> between them is not.
 
 - [ ] 🟡 **Coalesce pointer drags to animation frames** in `core/gesture.client.ts` L80-96.
       `onPointerMove` invokes `options.onMove` synchronously on every `pointermove`. Pointer events
@@ -803,53 +546,6 @@ Verified counts as of the audit.
       `containerWidth` cannot change mid-drag, so hoist it into `onStart` exactly as `startWidth`
       already is at L529. `drawer.client.ts` L193 has the milder version with `window.innerHeight`.
       (Supersedes the original note, which cited `reader_view.client.ts` L516; the code has moved.)
-- [x] 🟢 **Delete the two universal `user-select` overrides.** `body.v2-resizing-drawer *`
-      (`core/drawer.css` L19-21) and `body.v2-resizing-panels *` (`reader/reader.css` L221-223) apply
-      `user-select: none !important` to **every element in the document**, so toggling the body class
-      forces a whole-document style recalculation twice per drag — at grab and at release, which is
-      exactly when a hitch is most noticeable.
-      **Done**: both deleted, landed with the drag-selector fix above since they are the same drag
-      and the same two stylesheets. The redundancy argument held up on a full count — all **19**
-      `user-select` declarations in V2 CSS are `none`, so the universal rule only ever overrode
-      `none` with `none`. One correction to the claim that this cannot change behaviour: UA
-      stylesheets set `user-select: text`/`auto` on form controls, so the author-level `*` rule was
-      also beating those, and deleting it makes text inside `<input>`/`<textarea>` selectable during
-      a drag. Reachable only by dragging a handle while the pointer is captured, so it is accepted
-      rather than worked around — but it is a behaviour delta, not a pure no-op.
-
-- [x] 🟢 **Stop scanning every word to clear one class.** `reader_view.client.ts` L234-237
-      (`dismissDictionary`) and L296-299 (`lookupWord`) run
-      `querySelectorAll(".v2-reader-text-panel .v2-lat-word")` over thousands of nodes on _every_
-      word click, to remove a class present on exactly one element.
-      This runs synchronously in the click handler **before** the new highlight is applied, so it is
-      pure added latency between tapping a word and seeing it selected — the reader's primary
-      interaction. Not the dominant cost (the dictionary fetch is), but it delays the immediate
-      feedback specifically.
-      **Done**, but **not** by querying `.v2-word-active` as written here — that drops the
-      `.v2-reader-text-panel` scope, and the scope is load-bearing. `linkifyText`
-      (`dict/linkify.server.ts` L26) also emits `v2-word-active`, on dictionary-entry markup, so an
-      unscoped clear would reach into the dictionary panel. The landed query is
-      `.v2-reader-text-panel .v2-word-active`: a strict subset of the old one, so it cannot miss an
-      element the old code cleared. Both sites now share one `setActiveWord(el?)`, making
-      "at most one word is highlighted" a single enforced invariant rather than a convention spelled
-      out twice; `dismissDictionary` passes `null` and `lookupWord` passes
-      `activeAnchor ?? findWordElement(word)`.
-      The unscoped version would have passed every test we have, because the trap is currently
-      inert: `linkifyText`'s `activeWord` parameter is **dead**, as its only caller
-      (`xml_to_html.server.ts` L63) never passes it. So nothing emits `v2-word-active` server-side
-      today, and the bug would have waited for whoever revived that parameter. A test now pins the
-      scope. (Worth deciding separately whether to use or delete that parameter.)
-      Left alone as the item says: `findWordElement` L444-446 is a genuine text search. Worth
-      recording which path actually got faster — clicking passes the anchor, so the click path no
-      longer touches it at all; only the URL-restore path still scans, unavoidably.
-      Magnitude remains **unprofiled**. Browsers short-circuit removing an absent class token, so
-      the saving is materializing an N-element NodeList and iterating it, not N style
-      invalidations — real, but likely small. The durable argument is that the cost scaled with
-      chapter length for work that is inherently O(1).
-      Verified by reverting `reader_view.client.ts` to pre-fix HEAD with the new tests in place: the
-      mechanism test fails against old code, while the three behaviour tests — single active word,
-      cleared on dismiss, dictionary-panel highlight untouched — pass against **both**.
-
 - [ ] 🟡 **Don't tokenize the whole chapter synchronously on mount.** `reader_view.client.ts`
       L366-374 walks every target block calling `tokenizeElement` (L401) inside `onConnect` — one
       long task that delays first interaction. Batch via `requestIdleCallback`.
@@ -863,3 +559,65 @@ Verified counts as of the audit.
 - [ ] 🟡 **Lazy-load the two heavy verticals.** `v2_bundle.client.ts` L1-10 eagerly bundles everything, so
       reader users download the full dictionary interaction matrix and vice versa. Gate behind
       `document.querySelector(...)` + dynamic `import()`.
+
+---
+
+## Landed
+
+One line per completed item, grouped by the phase it came from. The commit messages carry the full
+reasoning deliberately, so it does not have to live here; anything counter-intuitive enough to be
+worth not rediscovering is summarised in Phase 5 instead.
+
+**Phase 1 — correctness & security**
+
+- **DOM XSS in the reader dictionary sheet.** `?q=` reached `innerHTML` unescaped at five sites;
+  all five now route through one `setSheetLabel()` built from `textContent`. (`1ba4ccd2`)
+- **Escaped the query in router error responses.** Only the `format=partial` paths were affected;
+  the markup moved to a `renderDictErrorHtml` renderer in `dict_page.server.ts` rather than being
+  patched in the router. (`b9e16df9`)
+- **Deleted `/api/completions/profile`.** An unauthenticated GET running a synchronous
+  `zlib.gzipSync` over up to 50,000 results, with zero callers. (`a8ce5b91`)
+- **Abort signals for the results fetch.** Generalised into `BaseElement` rather than patched:
+  `this.signal`, `this.latest(lane)`, `this.cancel(lane)`, and `FetchAndSwapOptions.signal` is now
+  required so future call sites have to decide. (`948a5349`, `fee5c5b0`)
+
+**Phase 2 — guardrails**
+
+- **Target-suffix import boundaries enforced by ESLint**, including the `he` ban for browser-bound
+  code. There were zero pre-existing violations — the discipline was real and is now mechanical.
+  (`06da3c29`)
+- **The four unsuffixed modules given a tier**, then `v2_router.ts` and `v2_bundle.ts` as well: the
+  "root integration hubs" exemption was backwards for the browser entry point, the single most
+  valuable file to protect. (`acb202cf`, `112c66b0`)
+- **The `.common.ts` contract documented in README.** (`68ed93e2`)
+- **Stale "< 20 KB gzipped" bundle claims removed from README.** (`cd1c2d35`)
+- **`no-floating-promises` and `no-misused-promises` enabled for V2**, with an `asyncHandler` +
+  `getAsync` / `postAsync` wrapper in the router. Two of the seven async handlers were live crash
+  paths: `/reader` and `/reader/:author/:name/:page?` both awaited before entering any `try`.
+  (`4c89fa88`, `83f1f6f8`)
+- **`core/html.common.ts`** — an auto-escaping `html` tagged template with `raw`, `joinHtml` and
+  `escapeHtml`, plus the typed `setHtml` / `replaceWithHtml` sinks in `core/dom.client.ts`. Removed
+  `search_bar.common.ts`'s private escaper, one of the five escape paths. (`37a6746a`)
+- **`eslint-plugin-no-unsanitized` enforcing it.** Every raw HTML sink in V2 production code is now
+  either typed or an audited disable; two turned out to be false positives better fixed with
+  `textContent`, and one is the documented network trust boundary in `core/partial.client.ts`.
+  (`ec3aa77f`)
+
+**Phase 7 — docs & tests**
+
+- **`reader/reader_data.ts` relocated to `testing/`** — it is test fixture data, which is why it had
+  no right answer among the three target suffixes. (`acb202cf`)
+
+**Phase 8 — performance**
+
+- **The drawer's drag-transition escape hatch.** `v2-is-dragging` was applied to the handle while
+  three CSS rules were written against the panel, so the panel kept its 250 ms transition live for
+  the whole drag and rubber-banded after the pointer. Fixed in TypeScript, not by rewriting the
+  rules with `:has()` — which jsdom cannot currently evaluate, so it would have shipped untested.
+  (`8b996e21`)
+- **The two universal `user-select` overrides deleted.** `body.v2-resizing-* *` forced a
+  whole-document style recalculation twice per drag while only ever overriding `none` with `none`.
+  (`8b996e21`)
+- **Stopped scanning every word to clear one class** on each word click in the reader. The scope
+  `.v2-reader-text-panel` in the query is load-bearing, because `linkifyText` can emit the same
+  class into the dictionary panel. (`a4e2a276`)
