@@ -446,4 +446,64 @@ describe("v2_router integration", () => {
       expect(res.body).toEqual({ error: "Failed to submit report" });
     });
   });
+
+  describe("dictionary lookup failures", () => {
+    const PAYLOAD = '<img src=x onerror="alert(1)">';
+
+    /**
+     * Asserts the payload was reflected as inert text rather than live markup.
+     *
+     * Note we cannot simply assert the absence of "<img": the app bar always
+     * renders a legitimate brand-logo <img>, and the escaped payload still
+     * contains the literal word "onerror" as harmless text.
+     */
+    function expectPayloadNeutralized(html: string): void {
+      expect(html).not.toContain("<img src=x");
+      expect(html).toContain("&lt;img");
+    }
+
+    beforeEach(() => {
+      mockFusedDict.getEntry = jest
+        .fn()
+        .mockRejectedValue(new Error("dictionary backend exploded"));
+    });
+
+    test("escapes the query in the partial error response", async () => {
+      const res = await request(app).get(
+        `/v2/dicts?format=partial&q=${encodeURIComponent(PAYLOAD)}`
+      );
+
+      expect(res.status).toBe(500);
+      expect(res.text).toContain("An error occurred searching for");
+      expectPayloadNeutralized(res.text);
+    });
+
+    test("escapes the query in the full page error response", async () => {
+      const res = await request(app).get(
+        `/v2/dicts?q=${encodeURIComponent(PAYLOAD)}`
+      );
+
+      expect(res.status).toBe(500);
+      expectPayloadNeutralized(res.text);
+    });
+
+    test("escapes the id in the partial error response", async () => {
+      const res = await request(app).get(
+        `/v2/dicts/id/${encodeURIComponent(PAYLOAD)}?format=partial`
+      );
+
+      expect(res.status).toBe(500);
+      expect(res.text).toContain("An error occurred retrieving ID");
+      expectPayloadNeutralized(res.text);
+    });
+
+    test("escapes the id in the full page error response", async () => {
+      const res = await request(app).get(
+        `/v2/dicts/id/${encodeURIComponent(PAYLOAD)}`
+      );
+
+      expect(res.status).toBe(500);
+      expectPayloadNeutralized(res.text);
+    });
+  });
 });

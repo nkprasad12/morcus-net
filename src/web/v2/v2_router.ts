@@ -2,6 +2,7 @@ import express, { Router, Request, Response } from "express";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
+  renderDictErrorHtml,
   renderDictPageHtml,
   renderDictResultsHtml,
   resolveActiveDicts,
@@ -336,11 +337,7 @@ export function createV2Router(
     } catch (err) {
       console.error("Error retrieving dictionary entry:", err);
       if (isPartial) {
-        res
-          .status(500)
-          .send(
-            `<div class="v2-no-results"><p>An error occurred searching for "${query}".</p></div>`
-          );
+        res.status(500).send(renderDictErrorHtml(query));
         return;
       }
       res.status(500).send(
@@ -402,11 +399,7 @@ export function createV2Router(
     } catch (err) {
       console.error("Error retrieving dictionary entry by ID:", err);
       if (isPartial) {
-        res
-          .status(500)
-          .send(
-            `<div class="v2-no-results"><p>An error occurred retrieving ID "${id}".</p></div>`
-          );
+        res.status(500).send(renderDictErrorHtml(id, true));
         return;
       }
       res.status(500).send(

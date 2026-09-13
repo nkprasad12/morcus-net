@@ -35,8 +35,14 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       `reader_view.test.ts`: the two behaviour tests pass against **both** the old and new code
       (proving output equivalence), and the XSS test fails against the old code (proving it
       actually catches the bug).
-- [ ] 🟢 **Escape the query in router error responses.** `v2_router.ts` L342 and L408 interpolate the
-      raw query into an HTML error string. Only reachable on a backend error, but same root cause.
+- [x] 🟢 **Escape the query in router error responses.** `v2_router.ts` interpolated the raw query
+      into an HTML error string on the `/dicts` and `/dicts/id/:id` failure paths.
+      **Done**: only the `format=partial` branches were affected — the full-page fallbacks already
+      escaped via `renderDictPageHtml`. Rather than bolting on `he.escape`, the markup moved to a
+      `renderDictErrorHtml(term, isIdSearch)` renderer beside the other `.v2-no-results` renderers
+      in `dict_page.server.ts`, so the router no longer hand-builds HTML (a down-payment on the
+      Phase 4 router split). Covered by four new tests; the two partial-path tests fail against the
+      old code, and the two full-page tests now guard the previously-untested safe path.
 - [ ] 🟢 **Gate or delete `/api/completions/profile`** (`v2_router.ts` L143-223). A diagnostic
       endpoint on an unauthenticated GET that runs `zlib.gzipSync` over up to **50,000** results —
       a cheap CPU-exhaustion vector. Gate behind `NODE_ENV !== "production"`.
