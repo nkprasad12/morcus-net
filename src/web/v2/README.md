@@ -41,11 +41,35 @@ src/web/v2/
 2. **Target Suffix Convention**: every module carries a tier, and the boundaries between them are enforced by `no-restricted-imports` rules in [eslint.config.mjs](../../../eslint.config.mjs) rather than by review.
    - `*.server.ts`: Executes in Node.js (Express SSR renderers, XML parsers, server-side utilities). **Never** bundled to browser assets; **no** browser DOM globals (`window`, `document`, `HTMLElement`). May not import `*.client.ts`.
    - `*.client.ts`: Executes in the Browser (Light DOM Web Components, client event delegation). Bundled via Rsbuild into `build/v2/v2.js`. May not import `*.server.ts`, Node builtins, `express`, or `he`.
-   - `*.common.ts`: Safe in **both** tiers, and subject to both restrictions above.
+   - `*.common.ts`: Isomorphic **logic and rendering**. Safe in both tiers, and subject to both restrictions above. See [The `.common.ts` contract](#the-commonts-contract) below.
    - `*.test.ts`: Colocated unit tests targeting adjacent modules. Deliberately exempt, since a test legitimately exercises both sides of a boundary.
    - `*.css`: Feature-scoped styles imported by the root `v2.css`.
 3. **Flat Topic Directories**: Topics remain flat by default (avoiding micro-directories for 1–2 files). Filename prefixes (e.g. `dict_search.*`, `dict_settings.*`) keep related files automatically clustered alphabetically. Subdirectories are introduced only when a subcomponent exceeds 4+ dedicated files.
 4. **Root Integration Hubs**: Top-level entry points (`v2_router.server.ts`, `v2_bundle.client.ts`, `v2.css`) aggregate exports across topics so external consumers have a single, stable contract. They carry target suffixes like any other module — being an entry point is not an exemption, and `v2_bundle.client.ts` in particular is the root of everything shipped to the browser, so it is the last file that should be outside the import rules.
+
+### The `.common.ts` contract
+
+`.common.ts` means **isomorphic logic _and_ isomorphic rendering**. The second half is the
+non-obvious one: a `.common.ts` may legitimately export HTML-rendering functions, not just pure
+logic.
+
+That is correct whenever the server and the client must emit **byte-identical markup** for the same
+widget — the server paints it on initial load, and the client repaints it after an interaction that
+does not reload the page. Keeping one implementation is the whole point: server and client copies of
+the same template would be free to drift silently, and the bug would only appear as a flicker after
+the first interaction.
+
+The canonical example is `dict/search_bar.common.ts`, whose `renderLangChipsHtml` and
+`renderInflectChipHtml` are used in strict parallel with `computeActiveLanguages` by both
+`dict/search_bar.server.ts` and `dict/dict_search.client.ts`.
+
+Two consequences worth knowing before you "clean up" such a module:
+
+- **They return HTML strings, not DOM nodes.** The client assigns the result to `innerHTML` /
+  `outerHTML`, so returning nodes is not an option.
+- **They must hand-roll their escaping.** Escaping in a `.common.ts` cannot use `he`, which is ~100
+  KB of poorly tree-shakeable CommonJS and would land in the client bundle. The local `escapeHtml`
+  in `search_bar.common.ts` is therefore deliberate, not a smell. The lint rules enforce this.
 
 ### Build Pipeline
 
