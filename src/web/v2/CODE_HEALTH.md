@@ -35,7 +35,7 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       `reader_view.test.ts`: the two behaviour tests pass against **both** the old and new code
       (proving output equivalence), and the XSS test fails against the old code (proving it
       actually catches the bug).
-- [x] 🟢 **Escape the query in router error responses.** `v2_router.ts` interpolated the raw query
+- [x] 🟢 **Escape the query in router error responses.** `v2_router.server.ts` interpolated the raw query
       into an HTML error string on the `/dicts` and `/dicts/id/:id` failure paths.
       **Done**: only the `format=partial` branches were affected — the full-page fallbacks already
       escaped via `renderDictPageHtml`. Rather than bolting on `he.escape`, the markup moved to a
@@ -164,9 +164,24 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       file reports **0** errors when unsuffixed and **1** when named `.common.ts`. Then confirmed on
       the real files — a deliberate violation injected into each of the three renamed modules is
       caught (3/3), where before the rename none of them were linted at all.
+      **Follow-up, same day**: doing this exposed that the four named modules were not the whole
+      gap — `v2_router.ts` and `v2_bundle.ts` were also unsuffixed, exempted by the
+      "Root Integration Hubs" rule in [README.md](README.md). That exemption was backwards for
+      `v2_bundle.ts`, which is the Rsbuild entry point and therefore the root of everything shipped
+      to the browser: it was the single most valuable file to protect and the only browser-bound one
+      no rule covered. Both are now `v2_router.server.ts` and `v2_bundle.client.ts`, and the README
+      rule says explicitly that being an entry point is not an exemption. The rename is invisible to
+      the build because Rsbuild interpolates `[name]` from the entry _key_, not the source path —
+      verified by rebuilding and confirming the emitted `v2_bundle.7e3597c7bbe48ef0.js` and
+      `manifest.json` are unchanged.
 - [ ] 🟢 **Document the `.common.ts` contract in [README.md](README.md)** as _"isomorphic logic
       **and** isomorphic rendering"_. See the Phase 5 note — this was investigated and the current
       usage is correct; it just isn't written down.
+      Partly addressed: the suffix list in README rule 2 now has a `.common.ts` entry, but it only
+      states the _restriction_ ("safe in both tiers"). The actual contract — that a `.common.ts` may
+      legitimately export HTML **renderers**, not just logic, when server and client must emit
+      byte-identical markup — is still undocumented. That is the part worth writing down, since it
+      is the non-obvious half and the reason `search_bar.common.ts` looks wrong but isn't.
 
 ---
 
@@ -194,7 +209,7 @@ Every item here is a feature reimplementing something `core/` already provides.
       and the possibility of forgetting one.
 - [ ] 🟡 **Extract `core/cookies.common.ts`.** The literal
       `; Path=/; Max-Age=31536000; SameSite=Lax` appears in four places
-      (`dict_selection.server.ts` L102, `v2_router.ts` L269, `settings.client.ts` L87 and L125),
+      (`dict_selection.server.ts` L102, `v2_router.server.ts` L269, `settings.client.ts` L87 and L125),
       and `DICT_COOKIE_NAME` is declared twice (`dict_selection.server.ts` L4 **and**
       `settings.client.ts` L64) — a client/server contract with two sources of truth.
 - [ ] 🟢 **Reuse the repo's validator combinators** in `settings.client.ts` L14-36, which hand-writes
@@ -215,7 +230,7 @@ Every item here is a feature reimplementing something `core/` already provides.
 
 ## Phase 4 — Decomposition
 
-### `v2_router.ts` (626 lines)
+### `v2_router.server.ts` (626 lines)
 
 - [ ] 🟡 **Extract `core/request_params.server.ts`** with `readDictParam`, `isPartialRequest`,
       `isEmbeddedRequest`, `readLimit`. Current duplication:
@@ -230,13 +245,13 @@ Every item here is a feature reimplementing something `core/` already provides.
       | reader render + error block | L485-509 ≡ L556-580 (**verbatim**) |
       | jump-redirect block | L472-483 ≡ L543-554 (**verbatim**) |
 
-- [ ] 🟢 **Move the inlined 404 page** (`v2_router.ts` L455-468, complete with an inline `style=`
+- [ ] 🟢 **Move the inlined 404 page** (`v2_router.server.ts` L455-468, complete with an inline `style=`
       attribute) into `library/not_found.server.ts`.
 - [ ] 🔴 **Split into `dict_routes.server.ts` / `reader_routes.server.ts` / `api_routes.server.ts`**,
-      reducing `v2_router.ts` to mounting. Preserves the "single stable contract" in
+      reducing `v2_router.server.ts` to mounting. Preserves the "single stable contract" in
       [README.md](README.md) while letting each vertical own its routes.
 
-### `v2_bundle.ts` (274 lines)
+### `v2_bundle.client.ts` (274 lines)
 
 Documented as "the client bundle manifest"; the first 10 lines are that, and the other **262** are
 untested global behavior.
@@ -245,7 +260,7 @@ untested global behavior.
 - [ ] 🟢 **Move the `declare global { interface HTMLElement { showPopover… } }` block** (L139) into a
       `.d.ts` — it is also redundant with modern `lib.dom`.
 - [ ] 🟡 **Split into `core/anchor_scroll.client.ts`, `core/back_to_top.client.ts`, and
-      `dict/abbr_popover.client.ts`**, returning `v2_bundle.ts` to a ~12-line import list. The
+      `dict/abbr_popover.client.ts`**, returning `v2_bundle.client.ts` to a ~12-line import list. The
       abbreviation popover (L146-270) is dictionary-specific (`.lsHover`) but currently lives at the
       root, violating the vertical-slice rule. Note the three separate global `click`/`pointerdown`
       handlers share an implicit ordering contract via `e.defaultPrevented` (L73) — preserve that
@@ -400,7 +415,7 @@ Verified counts as of the audit.
       **Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
       dialog markup. Gaps:
 
-- [ ] 🟡 `v2_bundle.ts` — all 262 lines of global behavior
+- [ ] 🟡 `v2_bundle.client.ts` — all 262 lines of global behavior
 - [ ] 🟢 Reader keyboard shortcuts (`reader_view.client.ts` L1028-1066)
 - [ ] 🟡 Reader preference save/hydrate lifecycle (L806-984)
 - [ ] 🟡 `DrawerController` snap thresholds and flick-velocity logic — extract the snap math to a
@@ -420,6 +435,6 @@ Verified counts as of the audit.
       forces a reflow at ~60 Hz while dragging. Measure once in `onStart`.
 - [ ] 🟢 **Stop `fs.existsSync` on the render hot path.** `shell/asset_manifest.server.ts` L18-23
       does up to 2 syscalls per page render. Check once at boot, or on a timer in dev only.
-- [ ] 🟡 **Lazy-load the two heavy verticals.** `v2_bundle.ts` L1-10 eagerly bundles everything, so
+- [ ] 🟡 **Lazy-load the two heavy verticals.** `v2_bundle.client.ts` L1-10 eagerly bundles everything, so
       reader users download the full dictionary interaction matrix and vice versa. Gate behind
       `document.querySelector(...)` + dynamic `import()`.

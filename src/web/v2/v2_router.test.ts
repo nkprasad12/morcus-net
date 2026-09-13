@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { createV2Router } from "@/web/v2/v2_router";
+import { createV2Router } from "@/web/v2/v2_router.server";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { XmlNode } from "@/common/xml/xml_node";
 import { buildV2Bundle } from "@/bundler/v2.rsbuild";

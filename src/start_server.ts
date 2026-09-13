@@ -33,7 +33,7 @@ import {
 } from "@/common/library/library_lookup";
 import { readFileSync } from "fs";
 import { scrapeUrlText } from "@/web/scraping/scraper";
-import { createV2Router } from "@/web/v2/v2_router";
+import { createV2Router } from "@/web/v2/v2_router.server";
 import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { timed } from "@/common/timing/timed_invocation";
