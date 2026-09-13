@@ -218,9 +218,6 @@ body.v2-resizing-panels {
   user-select: none !important;
   cursor: col-resize !important;
 }
-body.v2-resizing-panels * {
-  user-select: none !important;
-}
 
 /* Mobile & Responsive Breakpoint */
 /* Mobile Sheet Bar & Teaser (Visible on Mobile, Hidden on Desktop) */

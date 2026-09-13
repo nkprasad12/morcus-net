@@ -30,6 +30,17 @@ export interface TrackPointerDragOptions {
   onEnd?: (e: DragEndEvent) => void;
   /** Optional CSS class toggled on handle during active drag. */
   handleActiveClass?: string;
+  /**
+   * Optional second element that also receives `handleActiveClass` for the duration of
+   * the drag, typically the panel the handle resizes.
+   *
+   * The handle is usually a child of the thing being dragged, so a rule written as
+   * `.panel.is-dragging` would never match without this. The canonical use is
+   * suppressing the panel's own height transition mid-drag: while it is live, every
+   * pointermove re-targets a fresh eased interpolation and the panel chases the
+   * pointer instead of tracking it.
+   */
+  activeClassTarget?: HTMLElement | null;
   /** Optional CSS class toggled on document.body during active drag. */
   bodyActiveClass?: string;
 }
@@ -52,6 +63,24 @@ export function trackPointerDrag(
   let startTime = 0;
   let activePointerId = -1;
 
+  /**
+   * Toggles every drag-state class at once.
+   *
+   * Centralized because these classes have three separate removal paths (pointerup,
+   * pointercancel, and unbind while still dragging); toggling them individually at
+   * each one invites a state that is set but never cleared.
+   */
+  const setDragClasses = (active: boolean) => {
+    const { handleActiveClass, activeClassTarget, bodyActiveClass } = options;
+    if (handleActiveClass) {
+      handle.classList.toggle(handleActiveClass, active);
+      activeClassTarget?.classList.toggle(handleActiveClass, active);
+    }
+    if (bodyActiveClass) {
+      document.body.classList.toggle(bodyActiveClass, active);
+    }
+  };
+
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return; // Primary pointer only
     if (options.filter && !options.filter(e)) return;
@@ -69,12 +98,7 @@ export function trackPointerDrag(
       handle.setPointerCapture(e.pointerId);
     } catch {}
 
-    if (options.handleActiveClass) {
-      handle.classList.add(options.handleActiveClass);
-    }
-    if (options.bodyActiveClass) {
-      document.body.classList.add(options.bodyActiveClass);
-    }
+    setDragClasses(true);
   };
 
   const onPointerMove = (e: PointerEvent) => {
@@ -106,12 +130,7 @@ export function trackPointerDrag(
     } catch {}
     activePointerId = -1;
 
-    if (options.handleActiveClass) {
-      handle.classList.remove(options.handleActiveClass);
-    }
-    if (options.bodyActiveClass) {
-      document.body.classList.remove(options.bodyActiveClass);
-    }
+    setDragClasses(false);
 
     currentX = e.clientX;
     currentY = e.clientY;
@@ -146,12 +165,7 @@ export function trackPointerDrag(
 
   return () => {
     if (isDragging) {
-      if (options.handleActiveClass) {
-        handle.classList.remove(options.handleActiveClass);
-      }
-      if (options.bodyActiveClass) {
-        document.body.classList.remove(options.bodyActiveClass);
-      }
+      setDragClasses(false);
     }
     handle.removeEventListener("pointerdown", onPointerDown);
     handle.removeEventListener("pointermove", onPointerMove);

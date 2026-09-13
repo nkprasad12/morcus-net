@@ -302,6 +302,25 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
       Closing this as "won't do" is reasonable. It should be a decision, not a default.
 
+- [ ] 🟢 **Bump `nwsapi` so jsdom can evaluate `:has()`.** jsdom's selector engine is currently
+      **2.2.2**, which throws `unknown pseudo-class selector ':has(...)'` on `matches()` /
+      `querySelector()`. That makes every `:has()` rule we ship untestable, and `reader.css` already
+      has two load-bearing ones: L371 (`:has(.v2-drawer-minimized)`, drives the text panel's bottom
+      padding) and L388 (`:has(.v2-is-dragging)`, suppresses its transition mid-drag). It also
+      removed `:has()` from consideration when fixing the drag-selector bug in Phase 8.
+
+      The fix is smaller than it looks — **nothing needs upgrading except the lockfile**. jsdom stays
+      20.0.3 and jest stays 29.7.0; only the transitive `nwsapi` moves, and **2.2.27** already
+      satisfies both `jsdom@20`'s `^2.2.2` and `jsdom@17`'s `^2.2.0` (the latter arrives via
+      `@craftamap/esbuild-plugin-html`, and the two dedupe). Measured on a scratch install of
+      jsdom 20.0.3 + nwsapi 2.2.27: `.v2-drawer:has(.v2-is-dragging)` matches correctly, with a
+      non-matching control also behaving.
+
+      > [!WARNING]
+      > nwsapi backs `querySelector` for **every** jsdom test in the repo, not just V2 — so verify
+      > with the full `npm run ts-tests`, not `ts-tests:v2`. Consider pinning via `overrides` so a
+      > later `npm install` cannot silently resolve back down the `^2.2.x` range.
+
 ---
 
 ## Phase 3 — Adopt the abstractions we already built
@@ -562,7 +581,7 @@ Verified counts as of the audit.
 > None of this has been profiled; the mechanisms are confirmed by reading, the split between them
 > is not.
 
-- [ ] 🟢 **Fix the drawer's drag transition escape hatch — the selector never matches.**
+- [x] 🟢 **Fix the drawer's drag transition escape hatch — the selector never matches.**
       `core/gesture.client.ts` L73 applies `handleActiveClass` to the **handle**, but two rules are
       written as though it lands on the panel: `.v2-drawer.v2-is-dragging` (`core/drawer.css` L47)
       and `.v2-reader-dict-panel.v2-is-dragging` (`reader/reader.css` L321). The reader's markup is
@@ -573,12 +592,32 @@ Verified counts as of the audit.
       (`reader.css` L316) live for the whole drag, so every `pointermove` re-targets a fresh 250 ms
       eased interpolation from wherever the animation currently is. The drawer permanently chases the
       pointer and only settles once you stop — rubber-banding, not stutter.
-      The third rule, `.v2-reader-split-layout:has(.v2-is-dragging) .v2-reader-text-panel`
-      (`reader.css` L388), **does** work. The inconsistency is the evidence: whoever wrote the
-      `:has()` version knew the class was on a descendant. Fix the other two the same way.
-      Affects both drawers — the reader panel and the dict TOC (`dict_toc.client.ts` L55) — since the
-      canonical structure is always `.v2-drawer` > `.v2-drawer-bar`. Testable in jsdom by asserting
-      the class lands on the element the CSS actually selects.
+      **Done**, but via TypeScript rather than the `:has()` rewrite suggested here, and the rules
+      were left untouched. `trackPointerDrag` gained an `activeClassTarget` option that also puts
+      `handleActiveClass` on the panel, and `DrawerController` passes its `drawer`. Three reasons the
+      suggestion was not followed. First, it was **three** dead rules, not two: the entry missed
+      `.v2-reader-dict-panel.v2-is-dragging .v2-dict-iframe` (`reader.css` L158), which suppresses
+      iframe pointer capture during a drag — its `body.v2-resizing-panels` sibling covers only the
+      splitter, so drawer drags had no iframe guard at all. Three rules written panel-side against
+      one written with `:has()` is the majority mental model, and satisfying them is a smaller change
+      than rewriting them. Second, `:has()` would have shipped **unverified**: jsdom 20.0.3 resolves
+      `nwsapi` 2.2.2, which throws `unknown pseudo-class selector ':has(...)'`, so no unit test could
+      have covered it (see the nwsapi item in Phase 2, filed off the back of this). Third, even with
+      a working engine the assertion would have been `drawer.matches(".v2-drawer:has(...)")` — a
+      hand-copied duplicate of the stylesheet, proving only that nwsapi works. The class-based fix
+      asserts `drawer.classList.contains("v2-is-dragging")` directly.
+      The class is still applied to the handle as well, so `.v2-drawer-bar.v2-is-dragging`
+      (`drawer.css` L82, L104) and the working `:has()` rule at `reader.css` L388 are unaffected.
+      Fixing this also closed a latent leak: the three class-removal paths (pointerup, pointercancel,
+      unbind-while-dragging) were separately hand-written, and a fourth element to clear would have
+      been a fourth chance to forget one, so they now share a single `setDragClasses(active)`. A
+      drawer destroyed mid-drag previously kept `v2-is-dragging` on the handle; it now clears the
+      panel too, which matters much more because on the panel that class means `transition: none`.
+      Verified by reverting `gesture.client.ts` and `drawer.client.ts` to pre-fix HEAD with the new
+      tests in place: the 2 tests asserting the new behaviour fail against old code, while the other
+      4 new tests and all 9 pre-existing drawer tests pass against **both** — so the drag, filter and
+      body-class behaviour is provably unchanged.
+
 - [ ] 🟡 **Coalesce pointer drags to animation frames** in `core/gesture.client.ts` L80-96.
       `onPointerMove` invokes `options.onMove` synchronously on every `pointermove`. Pointer events
       outpace frames on modern hardware (120 Hz trackpads, high-polling mice, coalesced touch), so
@@ -592,14 +631,20 @@ Verified counts as of the audit.
       `containerWidth` cannot change mid-drag, so hoist it into `onStart` exactly as `startWidth`
       already is at L529. `drawer.client.ts` L193 has the milder version with `window.innerHeight`.
       (Supersedes the original note, which cited `reader_view.client.ts` L516; the code has moved.)
-- [ ] 🟢 **Delete the two universal `user-select` overrides.** `body.v2-resizing-drawer *`
+- [x] 🟢 **Delete the two universal `user-select` overrides.** `body.v2-resizing-drawer *`
       (`core/drawer.css` L19-21) and `body.v2-resizing-panels *` (`reader/reader.css` L221-223) apply
       `user-select: none !important` to **every element in the document**, so toggling the body class
       forces a whole-document style recalculation twice per drag — at grab and at release, which is
       exactly when a hitch is most noticeable.
-      They are free to delete: `user-select` is inherited, the `body` rule immediately above each one
-      already sets `none`, and every `user-select` declaration in V2 CSS (~15 of them) is already
-      `none`. The universal rule is overriding `none` with `none`.
+      **Done**: both deleted, landed with the drag-selector fix above since they are the same drag
+      and the same two stylesheets. The redundancy argument held up on a full count — all **19**
+      `user-select` declarations in V2 CSS are `none`, so the universal rule only ever overrode
+      `none` with `none`. One correction to the claim that this cannot change behaviour: UA
+      stylesheets set `user-select: text`/`auto` on form controls, so the author-level `*` rule was
+      also beating those, and deleting it makes text inside `<input>`/`<textarea>` selectable during
+      a drag. Reachable only by dragging a handle while the pointer is captured, so it is accepted
+      rather than worked around — but it is a behaviour delta, not a pure no-op.
+
 - [ ] 🟢 **Stop scanning every word to clear one class.** `reader_view.client.ts` L234-237
       (`dismissDictionary`) and L296-299 (`lookupWord`) run
       `querySelectorAll(".v2-reader-text-panel .v2-lat-word")` over thousands of nodes on _every_

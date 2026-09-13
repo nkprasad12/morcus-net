@@ -169,6 +169,11 @@ export class DrawerController {
 
     this.unbindDrag = trackPointerDrag(this.handle, {
       handleActiveClass: "v2-is-dragging",
+      // The handle is a child of the drawer, so `.v2-drawer.v2-is-dragging`
+      // (and the reader's `.v2-reader-dict-panel.v2-is-dragging`) only match
+      // if the panel is marked too. Those rules are what disable the height
+      // transition mid-drag.
+      activeClassTarget: this.drawer,
       bodyActiveClass: "v2-resizing-drawer",
       filter: this.options.filter,
       onStart: () => {

@@ -16,10 +16,6 @@ body.v2-resizing-drawer {
   cursor: grabbing !important;
 }
 
-body.v2-resizing-drawer * {
-  user-select: none !important;
-}
-
 /* Core Docked Bottom Drawer */
 .v2-drawer {
   position: fixed;
