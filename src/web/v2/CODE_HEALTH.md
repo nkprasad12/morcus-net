@@ -34,45 +34,6 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       made this **harmless rather than corrupting** — the losing responses can no longer overwrite
       the winner — so what is left is wasted work, not a bug. Debounce the settings change, or have
       the caller take the results lane once rather than per checkbox.
-- [ ] 🟢 **Validate both `localStorage` reads with the repo's combinators.** Merged with Phase 3's
-      "reuse the validator combinators in `core/settings.client.ts`", which was the same problem
-      seen from the other end; that entry is now a pointer here. Doing them together is what makes
-      the shared helper worth extracting rather than hand-writing a second validator.
-      The correctness half is `reader_view.client.ts` L863-866:
-      `currentPrefs = { ...DEFAULT_PREFS, ...JSON.parse(stored) }` performs **no** validation, so
-      anything in storage lands straight in a `ReaderPreferences` the type system believes. The
-      cleanup half is `core/settings.client.ts` L14-36, which _does_ validate correctly — there is
-      no bug there — but as four hand-written `typeof` blocks that grow by one per setting.
-      `src/web/utils/rpc/parsing.ts` exports `matchesObject`, `typeOf`, `maybeUndefined`,
-      `isOneOf`, `isArray` and friends, and has **zero imports**, so it is browser-safe and
-      tree-shakeable.
-      Two wrinkles shaped the design below. First, `ReaderPreferences` and `DEFAULT_PREFS` are
-      declared _inside_ `initSettingsDialog` (L842-858) — that is why they were never validated,
-      there is no module-level declaration to hang a validator on. Lifting them out is part of the
-      work. Second, `parsing.ts` has no literal-union combinator, and two of the six fields are
-      unions (`fontFamily: "serif" | "sans"`, `lineHeight: "compact" | "normal" | "relaxed"`);
-      `isOneOf` composes two _validators_, not literals, so this needs either small local
-      `(x): x is "serif" => x === "serif"` guards or a new `isLiteral` in `parsing.ts`.
-      **Design settled, work deferred.** Do not use `matchesObject` for either store. It is
-      all-or-nothing (L230-249, `return false` on the first bad field), so it would be a straight
-      _regression_ for `core/settings.client.ts`, which is per-field tolerant today — one corrupt
-      `darkMode` would also discard `highlightStrength`, `autoOpenLogeion` and `inflectedSearch`.
-      For the reader it would break upgrades: all six `ReaderPreferences` fields are required, so a
-      blob written before a field existed validates fine today via the spread, but would be
-      rejected wholesale, resetting every reader setting. The shape that works for both is a
-      per-field partial parse — roughly
-      `pickValid<T>(x, checkers): Partial<T>` — keeping valid fields and dropping invalid ones,
-      then spread over the defaults. That is ~10 lines, reproduces `parseSettings`'s current
-      semantics exactly, and lets its four `typeof` branches go. Every field checker should be
-      `maybeUndefined` so partial blobs survive. `isLiteral` belongs in `parsing.ts` (it is a real
-      `Validator`); `pickValid` is not a guard but a partial parse, so keep it in V2 until a second
-      consumer appears.
-      Deferred because the payoff is small and the sequencing is wrong, not because it is hard. The
-      only actual defect is the unvalidated reader blob, and that blob is same-origin data the user
-      sets themselves — the realistic failure is a corrupt or stale value, not an attacker. More
-      importantly, lifting `ReaderPreferences` / `DEFAULT_PREFS` to module scope is a move the
-      Phase 4 reader decomposition has to make anyway, so doing it first means doing it twice.
-      Pick this up after that decomposition, or as part of it.
 
 ---
 
@@ -223,10 +184,6 @@ Every item here is a feature reimplementing something `core/` already provides.
       (`dict_selection.server.ts` L102, `v2_router.server.ts` L269, `settings.client.ts` L87 and L125),
       and `DICT_COOKIE_NAME` is declared twice (`dict_selection.server.ts` L4 **and**
       `settings.client.ts` L64) — a client/server contract with two sources of truth.
-- _Reusing the repo's validator combinators in `core/settings.client.ts` L14-36 has moved into the
-  Phase 1 item "Validate both `localStorage` reads with the repo's combinators" — it is the same
-  change as validating the reader preferences, and splitting them would mean writing the helper
-  twice._
 - [ ] 🔴 **Extract `core/tokenize.client.ts`.** `dict_search.client.ts` L596-685 and
       `reader_view.client.ts` L385-422 independently implement
       `createTreeWalker(SHOW_TEXT)` → `processTokens` → fragment-swap-with-clickable-spans,
@@ -409,6 +366,13 @@ every handler body — ~450 lines of noise in a 577-line file. Piloted and rever
 `getAsync` / `postAsync` registrars make each handler a one-line diff instead. Worth knowing for the
 Phase 4 router split, which is the right moment to hoist `asyncHandler` into a shared home.
 
+**`matchesObject` must not be used for settings stores; use `pickValid`.** `matchesObject` is
+all-or-nothing: one corrupt or unrecognized key returns `false` for the entire object, which
+would discard unrelated valid settings in `GlobalSettings` and wipe out stored `ReaderPreferences`
+on schema upgrades. `pickValid` keeps valid fields and drops invalid or missing ones. Crucially,
+missing fields are omitted from the returned `Partial<T>` rather than set to `undefined`, so
+`{ ...defaults, ...pickValid(...) }` never clobbers defaults with `undefined`.
+
 ---
 
 ## Phase 6 — CSS
@@ -581,6 +545,10 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Abort signals for the results fetch.** Generalised into `BaseElement` rather than patched:
   `this.signal`, `this.latest(lane)`, `this.cancel(lane)`, and `FetchAndSwapOptions.signal` is now
   required so future call sites have to decide. (`948a5349`, `fee5c5b0`)
+- **Validated both localStorage stores via per-field partial combinators.** Extracted `pickValid` in
+  `core/settings.client.ts` and added `isLiteral` to `parsing.ts`, replacing `parseSettings`'s four
+  imperative `typeof` checks and fixing unvalidated `ReaderPreferences` deserialization in
+  `reader_view.client.ts` with graceful fallback to defaults. (`6cf9dd90`)
 
 **Phase 2 — guardrails**
 

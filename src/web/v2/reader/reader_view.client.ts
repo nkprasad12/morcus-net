@@ -1,9 +1,11 @@
 import {
   BaseElement,
+  type FieldCheckers,
   type QueryParamSync,
   DrawerController,
   ICON_PATHS,
   html,
+  pickValid,
   registerElement,
   setHtml,
   settingsStore,
@@ -11,6 +13,68 @@ import {
   trackPointerDrag,
 } from "@/web/v2/core/index.client";
 import { processTokens, removeDiacritics } from "@/common/text_cleaning";
+import {
+  isBoolean,
+  isLiteral,
+  isNumber,
+  isOneOf,
+  Validator,
+} from "@/web/utils/rpc/parsing";
+
+export type ReaderFontFamily = "serif" | "sans";
+export type ReaderLineHeight = "compact" | "normal" | "relaxed";
+
+export interface ReaderPreferences {
+  readerScale: number;
+  dictScale: number;
+  showMacra: boolean;
+  showGutter: boolean;
+  fontFamily: ReaderFontFamily;
+  lineHeight: ReaderLineHeight;
+}
+
+export const DEFAULT_READER_PREFS: ReaderPreferences = {
+  readerScale: 100,
+  dictScale: 100,
+  showMacra: true,
+  showGutter: true,
+  fontFamily: "serif",
+  lineHeight: "normal",
+};
+
+export const isReaderFontFamily: Validator<ReaderFontFamily> = isOneOf(
+  isLiteral("serif"),
+  isLiteral("sans")
+);
+
+export const isReaderLineHeight: Validator<ReaderLineHeight> = isOneOf(
+  isLiteral("compact"),
+  isOneOf(isLiteral("normal"), isLiteral("relaxed"))
+);
+
+export const READER_PREFS_CHECKERS: FieldCheckers<ReaderPreferences> = {
+  readerScale: isNumber,
+  dictScale: isNumber,
+  showMacra: isBoolean,
+  showGutter: isBoolean,
+  fontFamily: isReaderFontFamily,
+  lineHeight: isReaderLineHeight,
+};
+
+export const READER_SETTINGS_KEY = "morcus_reader_settings";
+
+export function parseReaderPreferences(raw: string | null): ReaderPreferences {
+  if (!raw) return { ...DEFAULT_READER_PREFS };
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      ...DEFAULT_READER_PREFS,
+      ...pickValid<ReaderPreferences>(parsed, READER_PREFS_CHECKERS),
+    };
+  } catch {
+    return { ...DEFAULT_READER_PREFS };
+  }
+}
 
 /**
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
@@ -24,7 +88,7 @@ import { processTokens, removeDiacritics } from "@/common/text_cleaning";
  * - Tokenizes text nodes into clickable <span class="v2-lat-word" role="button"> on mount (< 2ms).
  * - Clicking or pressing Enter on a word updates the dictionary iframe src and history state.
  * - Manages mobile bottom sheet expansion and desktop resizable panels.
- */
+ * */
 export class MorcusReaderView extends BaseElement {
   private currentQuery: string = "";
   private preferredDrawerDvh: number = 48;
@@ -853,31 +917,11 @@ export class MorcusReaderView extends BaseElement {
 
     if (!dialog) return;
 
-    interface ReaderPreferences {
-      readerScale: number;
-      dictScale: number;
-      showMacra: boolean;
-      showGutter: boolean;
-      fontFamily: "serif" | "sans";
-      lineHeight: "compact" | "normal" | "relaxed";
-    }
-
-    const DEFAULT_PREFS: ReaderPreferences = {
-      readerScale: 100,
-      dictScale: 100,
-      showMacra: true,
-      showGutter: true,
-      fontFamily: "serif",
-      lineHeight: "normal",
-    };
-
-    let currentPrefs: ReaderPreferences = { ...DEFAULT_PREFS };
-
+    let currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
     try {
-      const stored = localStorage.getItem("morcus_reader_settings");
-      if (stored) {
-        currentPrefs = { ...DEFAULT_PREFS, ...JSON.parse(stored) };
-      }
+      currentPrefs = parseReaderPreferences(
+        localStorage.getItem(READER_SETTINGS_KEY)
+      );
     } catch {
       // Ignore storage errors
     }
@@ -931,7 +975,7 @@ export class MorcusReaderView extends BaseElement {
       if (toggleMacra) toggleMacra.checked = prefs.showMacra;
 
       try {
-        localStorage.setItem("morcus_reader_settings", JSON.stringify(prefs));
+        localStorage.setItem(READER_SETTINGS_KEY, JSON.stringify(prefs));
       } catch {
         // Ignore storage errors
       }
@@ -1004,7 +1048,7 @@ export class MorcusReaderView extends BaseElement {
 
     if (resetBtn) {
       this.listen(resetBtn, "click", () => {
-        currentPrefs = { ...DEFAULT_PREFS };
+        currentPrefs = { ...DEFAULT_READER_PREFS };
         applyPreferences(currentPrefs);
       });
     }

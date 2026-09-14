@@ -1,8 +1,12 @@
 /**
  * @jest-environment jsdom
  */
-import "@/web/v2/reader/reader_view.client";
-import { MorcusReaderView } from "@/web/v2/reader/reader_view.client";
+import {
+  DEFAULT_READER_PREFS,
+  MorcusReaderView,
+  READER_SETTINGS_KEY,
+  parseReaderPreferences,
+} from "@/web/v2/reader/reader_view.client";
 
 describe("MorcusReaderView client tokenization & macra handling", () => {
   beforeEach(() => {
@@ -351,5 +355,137 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
       querySelectorAll.mockRestore();
     });
+  });
+});
+
+describe("Reader preferences validation & hydration", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = "";
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("returns default preferences on null, empty string, or invalid JSON", () => {
+    expect(parseReaderPreferences(null)).toEqual(DEFAULT_READER_PREFS);
+    expect(parseReaderPreferences("")).toEqual(DEFAULT_READER_PREFS);
+    expect(parseReaderPreferences("{invalid json")).toEqual(
+      DEFAULT_READER_PREFS
+    );
+  });
+
+  it("returns default preferences on non-object JSON", () => {
+    expect(parseReaderPreferences("123")).toEqual(DEFAULT_READER_PREFS);
+    expect(parseReaderPreferences('"serif"')).toEqual(DEFAULT_READER_PREFS);
+    expect(parseReaderPreferences("[1, 2, 3]")).toEqual(DEFAULT_READER_PREFS);
+  });
+
+  it("parses valid preferences completely", () => {
+    const valid = {
+      readerScale: 120,
+      dictScale: 90,
+      showMacra: false,
+      showGutter: false,
+      fontFamily: "sans",
+      lineHeight: "compact",
+    };
+    expect(parseReaderPreferences(JSON.stringify(valid))).toEqual(valid);
+  });
+
+  it("partially parses valid fields and falls back to defaults for missing ones", () => {
+    const partial = {
+      readerScale: 80,
+      fontFamily: "sans",
+    };
+    expect(parseReaderPreferences(JSON.stringify(partial))).toEqual({
+      ...DEFAULT_READER_PREFS,
+      readerScale: 80,
+      fontFamily: "sans",
+    });
+  });
+
+  it("drops corrupt or invalid union/numeric values and preserves defaults", () => {
+    const corrupt = {
+      readerScale: "invalid_string",
+      dictScale: null,
+      showMacra: "not_a_boolean",
+      showGutter: 123,
+      fontFamily: "comic-sans", // not "serif" | "sans"
+      lineHeight: "huge", // not "compact" | "normal" | "relaxed"
+      extraField: "ignored",
+    };
+    expect(parseReaderPreferences(JSON.stringify(corrupt))).toEqual(
+      DEFAULT_READER_PREFS
+    );
+  });
+
+  it("preserves valid fields even when sibling fields are corrupt", () => {
+    const mixed = {
+      readerScale: 110,
+      dictScale: "bad",
+      fontFamily: "sans",
+      lineHeight: "super_relaxed",
+    };
+    expect(parseReaderPreferences(JSON.stringify(mixed))).toEqual({
+      ...DEFAULT_READER_PREFS,
+      readerScale: 110,
+      fontFamily: "sans",
+    });
+  });
+
+  it("initializes reader view dialog safely with corrupted localStorage data", () => {
+    localStorage.setItem(
+      READER_SETTINGS_KEY,
+      JSON.stringify({
+        readerScale: "corrupt",
+        dictScale: 120,
+        fontFamily: "papyrus",
+        lineHeight: "compact",
+      })
+    );
+
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.innerHTML = `
+      <div class="v2-reader-split-layout">
+        <section class="v2-reader-text-panel">
+          <article class="v2-reader-passage"></article>
+        </section>
+        <dialog id="v2-reader-settings-dialog">
+          <button id="v2-reader-settings-btn"></button>
+          <span id="v2-reader-size-label"></span>
+          <span id="v2-dict-size-label"></span>
+          <select id="v2-font-select">
+            <option value="serif">Serif</option>
+            <option value="sans">Sans</option>
+          </select>
+          <select id="v2-line-height-select">
+            <option value="compact">Compact</option>
+            <option value="normal">Normal</option>
+            <option value="relaxed">Relaxed</option>
+          </select>
+          <input type="checkbox" id="v2-toggle-macra" />
+          <input type="checkbox" id="v2-toggle-gutter" />
+        </dialog>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    const fontSelect = el.querySelector<HTMLSelectElement>("#v2-font-select")!;
+    const lineSelect = el.querySelector<HTMLSelectElement>(
+      "#v2-line-height-select"
+    )!;
+    const readerLabel = el.querySelector<HTMLElement>("#v2-reader-size-label")!;
+    const dictLabel = el.querySelector<HTMLElement>("#v2-dict-size-label")!;
+
+    // Corrupt readerScale dropped -> default 100%
+    expect(readerLabel.textContent).toBe("100%");
+    // Valid dictScale kept -> 120%
+    expect(dictLabel.textContent).toBe("120%");
+    // Corrupt fontFamily "papyrus" dropped -> default "serif"
+    expect(fontSelect.value).toBe("serif");
+    // Valid lineHeight "compact" kept
+    expect(lineSelect.value).toBe("compact");
   });
 });

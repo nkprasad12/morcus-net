@@ -1,3 +1,5 @@
+import { isBoolean, isNumber, Validator } from "@/web/utils/rpc/parsing";
+
 /**
  * Typed LocalStorage settings store for UI V2.
  */
@@ -11,28 +13,50 @@ export interface GlobalSettings {
 
 export const GLOBAL_SETTINGS_KEY = "GlobalSettings";
 
+export type FieldCheckers<T> = {
+  [K in keyof T]-?: Validator<NonNullable<T[K]>>;
+};
+
+/**
+ * Extracts and validates properties from an unknown value based on a schema of validators.
+ * Invalid or undefined fields are omitted from the returned partial object.
+ */
+export function pickValid<T extends object>(
+  raw: unknown,
+  checkers: FieldCheckers<T>
+): Partial<T> {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return {};
+  }
+  const result: Partial<T> = {};
+  for (const property in checkers) {
+    if (Object.prototype.hasOwnProperty.call(checkers, property)) {
+      // @ts-ignore
+      const val = raw[property];
+      const checker = checkers[property];
+      if (val !== undefined && checker(val)) {
+        // @ts-ignore
+        result[property] = val;
+      }
+    }
+  }
+  return result;
+}
+
+const GLOBAL_SETTINGS_CHECKERS: FieldCheckers<GlobalSettings> = {
+  darkMode: isBoolean,
+  highlightStrength: isNumber,
+  autoOpenLogeion: isBoolean,
+  inflectedSearch: isBoolean,
+};
+
 export function parseSettings(raw: string | null): GlobalSettings {
   if (!raw) return {};
   try {
-    const val = JSON.parse(raw);
-    if (val && typeof val === "object") {
-      const settings: GlobalSettings = {};
-      if (typeof val.darkMode === "boolean") {
-        settings.darkMode = val.darkMode;
-      }
-      if (typeof val.highlightStrength === "number") {
-        settings.highlightStrength = val.highlightStrength;
-      }
-      if (typeof val.autoOpenLogeion === "boolean") {
-        settings.autoOpenLogeion = val.autoOpenLogeion;
-      }
-      if (typeof val.inflectedSearch === "boolean") {
-        settings.inflectedSearch = val.inflectedSearch;
-      }
-      return settings;
-    }
-  } catch {}
-  return {};
+    return pickValid<GlobalSettings>(JSON.parse(raw), GLOBAL_SETTINGS_CHECKERS);
+  } catch {
+    return {};
+  }
 }
 
 export const settingsStore = {
