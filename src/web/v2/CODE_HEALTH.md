@@ -230,23 +230,13 @@ Every item here is a feature reimplementing something `core/` already provides.
       `removeDiacritics` there would also strip breves, diaereses and Greek accents from displayed
       text. The real smell is only that a text-normalization primitive lives as a private method on
       a DOM element, so move it next to its siblings and give it a test — do not delete it.
-- [ ] 🟢 **Use `onConnect()` / `this.listen()` in `dict_toc.client.ts`** L21-25, which overrides
-      `connectedCallback` directly and hand-manages `matchMedia` listeners, bypassing the
-      `BaseElement` cleanup guarantee. Same file as the Phase 1 mobile-TOC-flash item; worth doing
-      together, though that one is about the drawer's initial state rather than its listeners.
-- [ ] 🟢 **Decide whether `BaseElement` needs a re-connection guard — verify before implementing.**
-      `connectedCallback` (L36-43) has no re-entry guard, and this item used to assert that an
-      element moved within the DOM therefore "runs `onConnect()` twice and double-registers
-      listeners". That does not hold for anything registered through `this.listen()` /
-      `this.delegate()`: a move fires `disconnectedCallback` first, which calls `dispose()` and
-      drops every disposable, and `connectedCallback` already replaces the aborted lifetime
-      `AbortController`. So the second `onConnect()` re-registers from a clean slate, which is the
-      intended behaviour rather than a leak. The genuine exposure is narrower — an `onConnect()`
-      body doing something non-idempotent that is _not_ funnelled through the disposables, e.g.
-      mutating the DOM or incrementing state. Establish whether any subclass does that (note the
-      two items above are exactly the subclasses that bypass the machinery). If none does, the
-      resolution is a doc comment stating that `onConnect` must be idempotent, not a
-      `hasConnected` flag — a flag would actively break the legitimate move-and-reconnect path.
+- [ ] 🟢 **Use `onConnect()` / `this.listen()` in `dict_toc.client.ts`** L21-29, which overrides
+      `connectedCallback` directly and hand-manages its `matchMedia` listener and
+      `DrawerController`. Note this is style, not a bug: the manual teardown in
+      `disconnectedCallback` is correct — it removes the listener, destroys the controller and nulls
+      the field, so a re-attach rebuilds both, and the conformance test confirms it. The value is
+      removing the second cleanup mechanism, not fixing a leak. Same file as the Phase 1
+      mobile-TOC-flash item; worth doing together.
 - [ ] 🟢 **Delete the empty `initSummaryCapture()`** (`drawer.client.ts` L291-293) — a no-op method
       whose body is a comment saying the work happens elsewhere.
 - [ ] 🟡 **Extract `core/disposable.client.ts`.** `DrawerController` hand-rolls four parallel
@@ -646,6 +636,14 @@ worth not rediscovering is summarised in Phase 5 instead.
   `dict_suggestions.client.ts` delegated from its constructor; `dict_search.client.ts` registered its
   `suggestion-select` listener inside the guard that creates the child exactly once. Both had to move
   — fixing only the child left it emitting to nobody.
+- **The `onConnect` idempotency contract, documented on `BaseElement` and enforced by
+  `core/reattach_conformance.test.ts`.** The test moves all nine registered elements and fails on any
+  listener torn down by `dispose()` that is not put back. It found a third instance immediately —
+  `reader_view.client.ts` guarded its passage `keydown` behind a `data-enhanced` marker, which lives
+  in the DOM and so outlives the disconnect, permanently killing keyboard word selection after a
+  move. Verified against all three bugs: reverting each one turns the corresponding case red.
+  Resolves the "does `BaseElement` need a re-connection guard" question — no, it needs a documented
+  contract and a test; a `hasConnected` flag would break the legitimate move-and-reconnect path.
 
 **Phase 7 — docs & tests**
 
