@@ -35,7 +35,10 @@ export interface DrawerControllerOptions {
   onMinimize?: () => void;
   /** Callback fired when drawer is restored or expanded */
   onRestore?: (dvh: number) => void;
-  /** Callback fired continuously during drag move */
+  /**
+   * Callback fired continuously during drag move. Must avoid layout reads
+   * (e.g. getBoundingClientRect, clientWidth) to prevent forced reflows.
+   */
   onHeightChange?: (heightPx: number, dvhPercent: number) => void;
   /** Callback fired when Escape key is pressed */
   onEscape?: () => void;
@@ -161,6 +164,8 @@ export class DrawerController {
   private initDrag(): void {
     let wasMinimized = false;
     let startHeight = 0;
+    let winHeight = 800;
+    let maxHeight = 800;
     let wasDragged = false;
 
     this.disposables.add(
@@ -173,7 +178,18 @@ export class DrawerController {
         activeClassTarget: this.drawer,
         bodyActiveClass: "v2-resizing-drawer",
         filter: this.options.filter,
+        /**
+         * `window.innerHeight` is measured once per gesture and reused by
+         * `onMove` and `onEnd`. It is layout-dependent, so reading it per move —
+         * right after the previous move wrote `--v2-drawer-height` — forces a
+         * synchronous layout. The viewport cannot change mid-gesture: the handle
+         * is `touch-action: none` (drawer.css), so there is no scroll-driven
+         * URL-bar collapse to react to. Reusing it in `onEnd` also keeps the
+         * snap decision on the same basis as the heights the drag just painted.
+         */
         onStart: () => {
+          winHeight = window.innerHeight || 800;
+          maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
           wasMinimized = this.isMinimized();
           startHeight = this.drawer.getBoundingClientRect().height;
           if (this.details && !this.details.open) {
@@ -192,8 +208,6 @@ export class DrawerController {
           if (Math.abs(dy) > 6) {
             wasDragged = true;
           }
-          const winHeight = window.innerHeight || 800;
-          const maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
           const newHeight = Math.max(
             this.minHeight,
             Math.min(maxHeight, startHeight - dy)
@@ -208,7 +222,6 @@ export class DrawerController {
           this.options.onHeightChange?.(newHeight, percent);
         },
         onEnd: ({ dy, elapsedMs, velocityY }) => {
-          const winHeight = window.innerHeight || 800;
           const currentHeight = this.drawer.getBoundingClientRect().height;
           const currentDvh = Math.round((currentHeight / winHeight) * 100);
 

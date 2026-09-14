@@ -77,6 +77,23 @@ export function parseReaderPreferences(raw: string | null): ReaderPreferences {
 }
 
 /**
+ * Bounds for the desktop dictionary panel, in px. `MIN_TEXT_PANEL_WIDTH` is the
+ * slice reserved for the passage, so the dictionary may grow to the container
+ * width less that much, capped at `MAX_SPLIT_WIDTH`.
+ */
+const MIN_SPLIT_WIDTH = 300;
+const MAX_SPLIT_WIDTH = 800;
+const MIN_TEXT_PANEL_WIDTH = 320;
+const DEFAULT_SPLIT_WIDTH = 420;
+
+function computeMaxSplitWidth(containerWidth: number): number {
+  return Math.max(
+    MIN_SPLIT_WIDTH,
+    Math.min(MAX_SPLIT_WIDTH, containerWidth - MIN_TEXT_PANEL_WIDTH)
+  );
+}
+
+/**
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
  *
  * Without JS:
@@ -590,7 +607,7 @@ export class MorcusReaderView extends BaseElement {
       const savedWidth = localStorage.getItem("morcus_v2_reader_dict_width");
       if (savedWidth) {
         const parsed = parseInt(savedWidth, 10);
-        if (!isNaN(parsed) && parsed >= 300 && parsed <= 900) {
+        if (!isNaN(parsed) && parsed >= MIN_SPLIT_WIDTH && parsed <= 900) {
           splitLayout.style.setProperty("--v2-dict-width", `${parsed}px`);
           splitter.setAttribute("aria-valuenow", String(parsed));
         }
@@ -600,30 +617,41 @@ export class MorcusReaderView extends BaseElement {
     }
 
     let startWidth = 0;
+    let maxWidth = MAX_SPLIT_WIDTH;
 
     this.addDisposable(
       trackPointerDrag(splitter, {
         handleActiveClass: "v2-is-resizing",
         bodyActiveClass: "v2-resizing-panels",
+        /**
+         * Both measurements are taken once, here, because `onMove` writes
+         * `--v2-dict-width`: reading either one per move would be a
+         * read-after-write and would force a synchronous layout of the whole
+         * passage on every pointer event.
+         *
+         * Safe because the container width does not depend on the value being
+         * written. At this breakpoint `.v2-reader-split-layout` is a `flex: 1`
+         * row whose width comes from its parent, and `--v2-dict-width` only
+         * divides space between its children (reader.css). The drag classes
+         * applied immediately after this callback are `user-select` / `cursor` /
+         * `pointer-events` only, so measuring before them is equivalent.
+         */
         onStart: () => {
           startWidth = dictPanel.getBoundingClientRect().width;
+          const containerWidth = splitLayout.getBoundingClientRect().width;
+          maxWidth = computeMaxSplitWidth(containerWidth);
         },
         onMove: ({ dx }) => {
-          const containerWidth = splitLayout.getBoundingClientRect().width;
-          const minWidth = 300;
-          const maxWidth = Math.max(
-            minWidth,
-            Math.min(800, containerWidth - 320)
-          );
           const newWidth = Math.round(
-            Math.max(minWidth, Math.min(maxWidth, startWidth - dx))
+            Math.max(MIN_SPLIT_WIDTH, Math.min(maxWidth, startWidth - dx))
           );
           splitLayout.style.setProperty("--v2-dict-width", `${newWidth}px`);
           splitter.setAttribute("aria-valuenow", String(newWidth));
         },
         onEnd: () => {
           const finalWidth = parseInt(
-            splitter.getAttribute("aria-valuenow") || "420",
+            splitter.getAttribute("aria-valuenow") ||
+              String(DEFAULT_SPLIT_WIDTH),
             10
           );
           try {
@@ -640,7 +668,7 @@ export class MorcusReaderView extends BaseElement {
 
     const onDblClick = () => {
       splitLayout.style.removeProperty("--v2-dict-width");
-      splitter.setAttribute("aria-valuenow", "420");
+      splitter.setAttribute("aria-valuenow", String(DEFAULT_SPLIT_WIDTH));
       try {
         localStorage.removeItem("morcus_v2_reader_dict_width");
       } catch {
@@ -650,22 +678,21 @@ export class MorcusReaderView extends BaseElement {
 
     const onKeyDown = (e: KeyboardEvent) => {
       const currentWidth = parseInt(
-        splitter.getAttribute("aria-valuenow") || "420",
+        splitter.getAttribute("aria-valuenow") || String(DEFAULT_SPLIT_WIDTH),
         10
       );
       const containerWidth = splitLayout.getBoundingClientRect().width;
-      const minWidth = 300;
-      const maxWidth = Math.max(minWidth, Math.min(800, containerWidth - 320));
+      const keyMaxWidth = computeMaxSplitWidth(containerWidth);
       let nextWidth: number | null = null;
 
       if (e.key === "ArrowLeft") {
-        nextWidth = Math.min(maxWidth, currentWidth + 24);
+        nextWidth = Math.min(keyMaxWidth, currentWidth + 24);
       } else if (e.key === "ArrowRight") {
-        nextWidth = Math.max(minWidth, currentWidth - 24);
+        nextWidth = Math.max(MIN_SPLIT_WIDTH, currentWidth - 24);
       } else if (e.key === "Home") {
-        nextWidth = minWidth;
+        nextWidth = MIN_SPLIT_WIDTH;
       } else if (e.key === "End") {
-        nextWidth = maxWidth;
+        nextWidth = keyMaxWidth;
       } else if (e.key === "Enter" || e.key === "Escape") {
         onDblClick();
         return;

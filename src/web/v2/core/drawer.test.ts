@@ -2,24 +2,9 @@
  * @jest-environment jsdom
  */
 import { DrawerController } from "@/web/v2/core/drawer.client";
+import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
-// Ensure PointerEvent exists in jsdom
-if (typeof window.PointerEvent === "undefined") {
-  class MockPointerEvent extends MouseEvent {
-    readonly pointerId: number;
-    constructor(type: string, params: any = {}) {
-      super(type, params);
-      this.pointerId = params.pointerId ?? 1;
-    }
-  }
-  (window as any).PointerEvent = MockPointerEvent;
-}
-
-if (!Element.prototype.setPointerCapture) {
-  Element.prototype.setPointerCapture = () => {};
-  Element.prototype.releasePointerCapture = () => {};
-  Element.prototype.hasPointerCapture = () => true;
-}
+installPointerEventShims();
 
 describe("DrawerController", () => {
   let drawer: HTMLElement;
@@ -250,6 +235,84 @@ describe("DrawerController", () => {
     expect(clickEvent.defaultPrevented).toBe(true);
 
     controller.destroy();
+  });
+
+  /**
+   * Pins the viewport read out of the move hot path.
+   *
+   * `window.innerHeight` is layout-dependent, so reading it per `pointermove`
+   * flushes pending layout — and the move handler writes `--v2-drawer-height`
+   * immediately before, making it a read-after-write. The viewport cannot
+   * change mid-gesture (the handle is `touch-action: none`, so no scroll-driven
+   * URL-bar collapse), so it is measured once in `onStart` and reused by both
+   * `onMove` and `onEnd`.
+   *
+   * Counting reads rather than asserting on the resulting height is deliberate:
+   * the height maths is unchanged by the hoist, so only the read count can tell
+   * the two versions apart.
+   */
+  test("reads the viewport once per gesture, never during pointermove", () => {
+    const controller = new DrawerController({ drawer, handle });
+
+    const original = Object.getOwnPropertyDescriptor(window, "innerHeight");
+    let innerHeightReads = 0;
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      get: () => {
+        innerHeightReads++;
+        return 800;
+      },
+    });
+    const rectSpy = jest.spyOn(Element.prototype, "getBoundingClientRect");
+
+    try {
+      handle.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          clientX: 100,
+          clientY: 300,
+          pointerId: 1,
+        })
+      );
+
+      // The gesture measures the viewport and the drawer exactly once, up front.
+      expect(innerHeightReads).toBe(1);
+      expect(rectSpy).toHaveBeenCalled();
+      innerHeightReads = 0;
+      rectSpy.mockClear();
+
+      for (const clientY of [280, 260, 240]) {
+        handle.dispatchEvent(
+          new PointerEvent("pointermove", {
+            clientX: 100,
+            clientY,
+            pointerId: 1,
+          })
+        );
+      }
+
+      // Every move is pure arithmetic plus writes: no layout is forced.
+      expect(innerHeightReads).toBe(0);
+      expect(rectSpy).not.toHaveBeenCalled();
+      expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBeTruthy();
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerup", {
+          clientX: 100,
+          clientY: 240,
+          pointerId: 1,
+        })
+      );
+
+      // onEnd reuses the cached viewport rather than re-reading it.
+      expect(innerHeightReads).toBe(0);
+    } finally {
+      rectSpy.mockRestore();
+      if (original) {
+        Object.defineProperty(window, "innerHeight", original);
+      }
+      controller.destroy();
+    }
   });
 
   test("filter ignores pointerdown on specified elements", () => {
