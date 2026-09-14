@@ -278,6 +278,8 @@ export abstract class BaseElement<
   }
 }
 
+const REGISTERED_TAGS = new Set<string>();
+
 /**
  * Safe Custom Element registration guard.
  */
@@ -285,7 +287,16 @@ export function registerElement(
   name: string,
   constructor: CustomElementConstructor
 ): void {
+  REGISTERED_TAGS.add(name);
   if (!customElements.get(name)) {
     customElements.define(name, constructor);
   }
+}
+
+/**
+ * Testing-only helper to inspect all custom element tags registered via
+ * {@link registerElement}.
+ */
+export function getRegisteredElementTags(): ReadonlySet<string> {
+  return REGISTERED_TAGS;
 }

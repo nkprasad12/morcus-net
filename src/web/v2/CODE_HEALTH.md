@@ -40,20 +40,6 @@ _(All items completed or resolved — see Landed and Phase 5 below)_
       down the whole server, V2 included. Small enough to do as a one-off without taking on the
       other ~86 legacy violations.
 
-- [ ] 🟢 **Add `eslint-plugin-wc`, narrowly scoped.** The justifying rule is **`wc/no-typos`**: a
-      misspelled `disconnectedCallback` is a _silent_ no-op, invisible to `tsc` (it is merely an
-      unused method) and unfindable by review. Now that `BaseElement` disposal is what stands
-      between us and leaked listeners and un-aborted fetches, a mistyped lifecycle hook is an
-      expensive bug. `wc/no-invalid-element-name` and `wc/no-constructor-attributes` are cheap
-      extras. Needs `settings: { wc: { elementBaseClasses: ["BaseElement"] } }`.
-
-      > [!WARNING]
-      > Turn **off** `wc/no-child-traversal-in-connectedcallback`. It exists because children may
-      > not be parsed when `connectedCallback` fires — but `page_shell.server.ts` L180 loads the
-      > bundle as `<script type="module">`, which is deferred, so upgrade always happens after
-      > parsing completes. Light-DOM child traversal in `onConnect()` is correct for our SSR model,
-      > and this rule would fire on nearly every component.
-
 - [ ] 🟢 **Decide whether to enforce a bundle-size budget.** Deliberately deferred when the stale
       "< 20 KB gzipped" claims came out of [README.md](README.md): a budget is only useful once the
       prototype feature set stops moving, and until then it would just be a number someone bumps.
@@ -212,6 +198,8 @@ bibliography modal, settings dialog, keyboard shortcuts, dictionary sheet, URL s
 
 Findings that cost real time to establish and that would otherwise be rediscovered — or worse,
 "fixed" back. This is not a changelog; see **Landed** for what shipped.
+
+**Do not add `eslint-plugin-wc` — won't do.** Investigated and resolved with self-populating conformance testing instead. `eslint-plugin-wc`'s justifying rule (`wc/no-typos`) only checks W3C standard lifecycle methods (`connectedCallback`, `disconnectedCallback`, `attributeChangedCallback`, `observedAttributes`). In UI V2, `BaseElement` has fully centralized `connectedCallback` and `disconnectedCallback`; feature components implement `onConnect()` and `onDisconnect()`, which `eslint-plugin-wc` does not recognize or validate. Furthermore, `wc/no-invalid-element-name` keys off `customElements.define` AST nodes, missing registrations routed through `registerElement()`. Rather than adding an external dependency that does not inspect `onConnect`, lifecycle and reattachment correctness is mechanically enforced by `core/reattach_conformance.test.ts` paired with `v2_elements.client.ts` and `getRegisteredElementTags()`, asserting bidirectional fixture coverage and statically verifying all `registerElement` callers are imported in the manifest.
 
 **The mobile TOC drawer flash does not exist — do not re-file it.** It was filed as a Phase 1
 correctness bug on the theory that `dict_toc.client.ts` builds a `DrawerController` below 1080px and
@@ -522,6 +510,7 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **`recommended-type-checked` rules enabled for V2 production code.** Captures full value of the
   `parserOptions: { project: true }` program already running; 35 production violations resolved
   with zero type assertions, and tests exempt for dynamic fixture/mock typing.
+- **`eslint-plugin-wc` evaluated and superseded by `v2_elements.client.ts` + conformance self-population.** `BaseElement` centralized native callbacks; `reattach_conformance.test.ts` now mechanically verifies manifest coverage and bidirectional fixture completeness.
 
 **Phase 3 — adopt the abstractions we already built**
 

@@ -1,13 +1,5 @@
 // Register native custom elements for the UI V2 progressive enhancement
-import "@/web/v2/dict/dict_suggestions.client";
-import "@/web/v2/dict/dict_search.client";
-import "@/web/v2/dict/dict_settings.client";
-import "@/web/v2/dict/dict_greek.client";
-import "@/web/v2/dict/dict_toc.client";
-import "@/web/v2/shell/theme_toggle.client";
-import "@/web/v2/dialog/report_dialog.client";
-import "@/web/v2/reader/reader_view.client";
-import "@/web/v2/library/library_view.client";
+import "@/web/v2/v2_elements.client";
 
 // Mark document as JS-enhanced to disable static No-JS CSS fallbacks
 document.documentElement.classList.add("v2-has-js");
