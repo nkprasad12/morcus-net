@@ -34,10 +34,6 @@ _(All items completed or resolved — see Landed and Phase 5 below)_
 
 ## Phase 2 — Guardrails (do these before the big cleanups)
 
-- [ ] 🟢 **Prefer `he.escape` over `he.encode`** in remaining server templates. `he.encode`
-      entity-encodes all non-ASCII, which on Latin/Greek lexica is wasted CPU and payload on every
-      render. Hot path: `xml_to_html.server.ts` L65 (runs per XML node).
-
 - [ ] 🟡 **Enable the type-checked rules for V2 — the expensive part is already paid for.**
       `parserOptions: { project: true }` makes the parser build a full TypeScript `Program`,
       resolving the whole import graph. Measured on `src/web/v2` (102 files, two runs each):
@@ -319,6 +315,14 @@ drift. They return markup rather than DOM nodes for the same reason.
 the client and common tiers rather than resting on a comment, and it is why the escaping in
 `core/html.common.ts` is hand-rolled.
 
+**`he.encode` entity-encodes all non-ASCII characters (> 0x7E) into hex numeric references.**
+In Latin and Greek lexica, this converts macronized vowels (`hăbēna` → `h&#x103;b&#x113;na`),
+Greek text (`λόγος` → `&#x3BB;...`), and typographical symbols (`•` → `&#x2022;`) into bloated
+entity strings, running 40× slower on Greek text and inflating payload size by ~3×. `he.escape`
+only escapes the five HTML syntactic characters (`&`, `<`, `>`, `"`, `'`) and preserves raw UTF-8.
+Enforced on server templates by `no-restricted-properties` and `no-restricted-syntax` in
+`eslint.config.mjs`.
+
 **`SafeHtml` is a branded string, not a wrapper object.** The obvious design —
 `type SafeHtml = { [RAW]: string }` — does not compile: an object cannot be assigned to `innerHTML`,
 and unwrapping it at the call site is exactly the kind of call expression `no-unsanitized` cannot
@@ -578,6 +582,9 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Stop applying React plugins to V2.** `plugin:react/recommended`, `plugin:react-hooks/recommended`,
   plugin registration, version detection, and custom rules scoped out of `src/web/v2/**` to eliminate
   latent false positives on `use*` helper functions.
+- **`he.escape` preferred over `he.encode` across all server templates**, with an ESLint guardrail
+  banning `he.encode` on server code. Eliminates entity-encoding of Greek, macrons, and symbols on
+  the render hot path (`xml_to_html.server.ts` L65).
 
 **Phase 3 — adopt the abstractions we already built**
 

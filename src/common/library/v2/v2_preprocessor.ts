@@ -87,7 +87,7 @@ function renderXmlNodeCleanHtml(
   node: XmlNode<ProcessedWorkContentNodeType> | string
 ): string {
   if (typeof node === "string") {
-    return he.encode(node);
+    return he.escape(node);
   }
 
   const tag = node.name;
@@ -107,9 +107,9 @@ function renderXmlNodeCleanHtml(
     return '<span class="v2-reader-gap text-muted">[gap]</span>';
   }
   if (tag === "note" && noteId !== undefined) {
-    return `<button type="button" class="v2-reader-note-ref" data-note-id="${he.encode(
+    return `<button type="button" class="v2-reader-note-ref" data-note-id="${he.escape(
       noteId
-    )}" aria-label="Note ${he.encode(noteId)}"><sup>*</sup></button>`;
+    )}" aria-label="Note ${he.escape(noteId)}"><sup>*</sup></button>`;
   }
 
   const childrenHtml = node.children.map(renderXmlNodeCleanHtml).join("");
@@ -234,9 +234,9 @@ export function preprocessWorkToV2(
              class="v2-section-anchor"
              title="Citation § ${dotId} (Click to copy anchor)"
              aria-label="Section ${dotId}">
-            <span class="v2-cite-prefix">${he.encode(
+            <span class="v2-cite-prefix">${he.escape(
               prefix
-            )}</span><span class="v2-cite-local">${he.encode(localId)}</span>
+            )}</span><span class="v2-cite-local">${he.escape(localId)}</span>
           </a>
         </div>
       `.trim();
@@ -273,7 +273,7 @@ export function preprocessWorkToV2(
                 <div class="v2-reader-passage">${latinHtml}</div>
               </div>
               <div class="v2-reader-passage-col v2-passage-english">
-                <span class="v2-reader-trans-author">${he.encode(
+                <span class="v2-reader-trans-author">${he.escape(
                   translator
                 )}:</span>
                 <div class="v2-reader-passage">${transHtml}</div>

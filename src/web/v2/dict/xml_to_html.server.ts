@@ -62,7 +62,7 @@ export function xmlNodeToHtml(
     if (options?.allowLinkify) {
       return linkifyText(node);
     }
-    return he.encode(node);
+    return he.escape(node);
   }
 
   const sourceTagName = node.name.toLowerCase();
@@ -245,33 +245,33 @@ export function xmlNodeToHtml(
     dLinkText !== undefined &&
     rawClass.includes("dLink")
   ) {
-    childrenHtml = he.encode(dLinkText);
+    childrenHtml = he.escape(dLinkText);
   }
 
   const finalClass = attrsMap.get("class");
-  const classNames = finalClass ? ` class="${he.encode(finalClass)}"` : "";
+  const classNames = finalClass ? ` class="${he.escape(finalClass)}"` : "";
   const idVal = attrsMap.get("id");
   const idAttr =
-    idVal && !options?.omitRootId ? ` id="${he.encode(idVal)}"` : "";
+    idVal && !options?.omitRootId ? ` id="${he.escape(idVal)}"` : "";
   const titleVal = attrsMap.get("title");
-  const titleAttr = titleVal ? ` title="${he.encode(titleVal)}"` : "";
+  const titleAttr = titleVal ? ` title="${he.escape(titleVal)}"` : "";
   const tabindexVal = attrsMap.get("tabindex");
   const tabindexAttr =
-    tabindexVal !== undefined ? ` tabindex="${he.encode(tabindexVal)}"` : "";
+    tabindexVal !== undefined ? ` tabindex="${he.escape(tabindexVal)}"` : "";
   const hrefVal = attrsMap.get("href");
-  const hrefAttr = hrefVal ? ` href="${he.encode(hrefVal)}"` : "";
+  const hrefAttr = hrefVal ? ` href="${he.escape(hrefVal)}"` : "";
   const targetVal = attrsMap.get("target");
-  const targetAttr = targetVal ? ` target="${he.encode(targetVal)}"` : "";
+  const targetAttr = targetVal ? ` target="${he.escape(targetVal)}"` : "";
   const relAttr = targetVal === "_blank" ? ' rel="noopener noreferrer"' : "";
   const roleVal = attrsMap.get("role");
-  const roleAttr = roleVal ? ` role="${he.encode(roleVal)}"` : "";
+  const roleAttr = roleVal ? ` role="${he.escape(roleVal)}"` : "";
   const langVal = attrsMap.get("lang");
-  const langAttr = langVal ? ` lang="${he.encode(langVal)}"` : "";
+  const langAttr = langVal ? ` lang="${he.escape(langVal)}"` : "";
   const dirVal = attrsMap.get("dir");
-  const dirAttr = dirVal ? ` dir="${he.encode(dirVal)}"` : "";
+  const dirAttr = dirVal ? ` dir="${he.escape(dirVal)}"` : "";
   const ariaCurrentVal = attrsMap.get("aria-current");
   const ariaCurrentAttr = ariaCurrentVal
-    ? ` aria-current="${he.encode(ariaCurrentVal)}"`
+    ? ` aria-current="${he.escape(ariaCurrentVal)}"`
     : "";
 
   const indentLevel = Number.parseInt(attrsMap.get("indentlevel") ?? "", 10);
@@ -283,7 +283,7 @@ export function xmlNodeToHtml(
   const baseHtml = `<${tagName}${idAttr}${classNames}${titleAttr}${tabindexAttr}${hrefAttr}${targetAttr}${relAttr}${roleAttr}${langAttr}${dirAttr}${ariaCurrentAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
 
   if (isMateoLink && currentHref) {
-    const encodedHref = he.encode(currentHref);
+    const encodedHref = he.escape(currentHref);
     return `
       <span class="v2-mateo-wrapper">
         ${baseHtml}

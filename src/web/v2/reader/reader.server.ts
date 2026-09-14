@@ -102,9 +102,9 @@ export async function renderReaderContentHtml(
            class="v2-reader-toc-item ${isCurrent ? "active" : ""}"
            ${isCurrent ? 'aria-current="page"' : ""}>
           <div class="v2-reader-toc-item-text">
-            <span class="v2-reader-toc-item-title">${he.encode(p.title)}</span>
+            <span class="v2-reader-toc-item-title">${he.escape(p.title)}</span>
           </div>
-          <span class="v2-reader-toc-item-id">§ ${he.encode(
+          <span class="v2-reader-toc-item-id">§ ${he.escape(
             String(p.id)
           )}</span>
         </a>
@@ -159,14 +159,14 @@ export async function renderReaderContentHtml(
                 : ""
             }
             
-            <div class="v2-sticky-title-wrapper" title="${he.encode(
+            <div class="v2-sticky-title-wrapper" title="${he.escape(
               work.author
-            )}, ${he.encode(work.title)}, ${he.encode(activePage.title)}">
-              <span class="v2-sticky-author">${he.encode(work.author)}</span>
+            )}, ${he.escape(work.title)}, ${he.escape(activePage.title)}">
+              <span class="v2-sticky-author">${he.escape(work.author)}</span>
               <span class="v2-sticky-title-sep">,</span>
-              <span class="v2-sticky-work-title">${he.encode(work.title)}</span>
+              <span class="v2-sticky-work-title">${he.escape(work.title)}</span>
               <span class="v2-sticky-title-sep v2-sticky-work-sep">,</span>
-              <span class="v2-sticky-page-title">${he.encode(
+              <span class="v2-sticky-page-title">${he.escape(
                 activePage.title
               )}</span>
             </div>
@@ -288,13 +288,13 @@ export async function renderReaderContentHtml(
             
             <header class="v2-reader-text-card-header">
               <div class="v2-reader-text-meta">
-                <span class="v2-reader-author-tag">${he.encode(
+                <span class="v2-reader-author-tag">${he.escape(
                   work.author
                 )}</span>
                 <span class="v2-reader-meta-sep">&middot;</span>
-                <span class="v2-reader-work-tag">${he.encode(work.title)}</span>
+                <span class="v2-reader-work-tag">${he.escape(work.title)}</span>
               </div>
-              <h1 class="v2-reader-passage-heading">${he.encode(
+              <h1 class="v2-reader-passage-heading">${he.escape(
                 activePage.title
               )}</h1>
             </header>
@@ -312,7 +312,7 @@ export async function renderReaderContentHtml(
                     ? `<a href="${makePageUrl(
                         nextPage
                       )}" class="v2-reader-btn v2-reader-continue-btn">
-                        <span>Continue to ${he.encode(
+                        <span>Continue to ${he.escape(
                           nextPage.title
                         )}</span> &rarr;
                        </a>`
@@ -323,7 +323,7 @@ export async function renderReaderContentHtml(
                     ? `<a href="${makePageUrl(
                         prevPage
                       )}" class="v2-reader-btn v2-reader-return-btn">
-                        &larr; <span>Return to ${he.encode(
+                        &larr; <span>Return to ${he.escape(
                           prevPage.title
                         )}</span>
                        </a>`
@@ -333,12 +333,12 @@ export async function renderReaderContentHtml(
 
               <div class="v2-reader-footer-info">
                 <span class="v2-reader-footer-note">
-                  Text: ${he.encode(work.author)}, <em>${he.encode(
+                  Text: ${he.escape(work.author)}, <em>${he.escape(
     work.title
   )}</em>.
                   ${
                     work.editor
-                      ? `Critical edition: ${he.encode(work.editor)}.`
+                      ? `Critical edition: ${he.escape(work.editor)}.`
                       : ""
                   }
                 </span>
@@ -381,7 +381,7 @@ export async function renderReaderContentHtml(
               <span class="v2-reader-sheet-label">
                 ${
                   query
-                    ? `Definitions for <strong>${he.encode(query)}</strong>`
+                    ? `Definitions for <strong>${he.escape(query)}</strong>`
                     : "Tap any word to view definitions"
                 }
               </span>
@@ -399,9 +399,7 @@ export async function renderReaderContentHtml(
           <div class="v2-dict-iframe-container">
             <iframe id="v2-dict-frame"
                     name="v2-dict-frame"
-                    src="${he.encode(dictIframeSrc, {
-                      useNamedReferences: true,
-                    })}"
+                    src="${he.escape(dictIframeSrc)}"
                     class="v2-dict-iframe"
                     title="Dictionary Search and Definitions"
                     loading="lazy"></iframe>
@@ -434,10 +432,10 @@ export async function renderReaderContentHtml(
         </div>
 
         <div class="v2-reader-toc-banner">
-          <span class="v2-reader-toc-work-title">${he.encode(
+          <span class="v2-reader-toc-work-title">${he.escape(
             work.author
-          )} &middot; ${he.encode(work.title)}</span>
-          <span class="v2-reader-toc-scheme-label">${he.encode(
+          )} &middot; ${he.escape(work.title)}</span>
+          <span class="v2-reader-toc-scheme-label">${he.escape(
             work.textParts.join(" · ")
           )}</span>
         </div>
@@ -460,7 +458,7 @@ export async function renderReaderContentHtml(
         <div class="v2-dialog-card">
           <div class="v2-dialog-header">
             <div>
-              <h2 class="v2-dialog-title">${he.encode(work.title)}</h2>
+              <h2 class="v2-dialog-title">${he.escape(work.title)}</h2>
               <p class="v2-dialog-subtitle">Scholarly editions &amp; CTS citation</p>
             </div>
             <button type="button" class="v2-dialog-close-btn" id="v2-reader-biblio-close-btn" data-dialog-close>&times;</button>
@@ -469,7 +467,7 @@ export async function renderReaderContentHtml(
           <dl class="v2-reader-meta-list">
             <div class="v2-meta-row">
               <dt>Author</dt>
-              <dd>${he.encode(work.author)}</dd>
+              <dd>${he.escape(work.author)}</dd>
             </div>
             <div class="v2-meta-row">
               <dt>Structural Hierarchy</dt>
@@ -481,7 +479,7 @@ export async function renderReaderContentHtml(
               work.editor
                 ? `<div class="v2-meta-row">
                     <dt>Critical Edition</dt>
-                    <dd>${he.encode(work.editor)}</dd>
+                    <dd>${he.escape(work.editor)}</dd>
                    </div>`
                 : ""
             }
@@ -489,7 +487,7 @@ export async function renderReaderContentHtml(
               work.translator
                 ? `<div class="v2-meta-row">
                     <dt>English Translation</dt>
-                    <dd>${he.encode(work.translator)}</dd>
+                    <dd>${he.escape(work.translator)}</dd>
                    </div>`
                 : ""
             }
@@ -497,7 +495,7 @@ export async function renderReaderContentHtml(
               work.ctsUrn
                 ? `<div class="v2-meta-row">
                     <dt>CTS URN</dt>
-                    <dd><code>${he.encode(work.ctsUrn)}</code></dd>
+                    <dd><code>${he.escape(work.ctsUrn)}</code></dd>
                    </div>`
                 : ""
             }
@@ -505,7 +503,7 @@ export async function renderReaderContentHtml(
               work.license
                 ? `<div class="v2-meta-row">
                     <dt>License</dt>
-                    <dd>${he.encode(work.license)}</dd>
+                    <dd>${he.escape(work.license)}</dd>
                    </div>`
                 : ""
             }
@@ -513,9 +511,9 @@ export async function renderReaderContentHtml(
               work.sourceRepo
                 ? `<div class="v2-meta-row">
                     <dt>Source Repository</dt>
-                    <dd><a href="${he.encode(
+                    <dd><a href="${he.escape(
                       work.sourceRepo
-                    )}" target="_blank" rel="noopener noreferrer">${he.encode(
+                    )}" target="_blank" rel="noopener noreferrer">${he.escape(
                     work.sourceRepo
                   )}</a></dd>
                    </div>`

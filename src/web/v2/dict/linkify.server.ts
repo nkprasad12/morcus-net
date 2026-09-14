@@ -24,11 +24,11 @@ export function linkifyText(
         cleanActiveWord !== undefined &&
         cleanWord.toLowerCase() === cleanActiveWord;
       const activeClass = isActive ? " v2-word-active" : "";
-      return `<a href="${he.encode(
+      return `<a href="${he.escape(
         href
-      )}" class="v2-lat-word${activeClass}">${he.encode(word)}</a>`;
+      )}" class="v2-lat-word${activeClass}">${he.escape(word)}</a>`;
     }
-    return he.encode(word);
+    return he.escape(word);
   });
   return parts.join("");
 }

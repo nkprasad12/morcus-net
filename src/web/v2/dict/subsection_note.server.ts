@@ -137,7 +137,7 @@ function arrowIcon(isBlurb: boolean): string {
 }
 
 function renderGroupLabel(group: SubsectionGroup): string {
-  const name = `<span class="v2-subsection-name">${he.encode(
+  const name = `<span class="v2-subsection-name">${he.escape(
     group.name
   )}</span>`;
 
@@ -148,7 +148,7 @@ function renderGroupLabel(group: SubsectionGroup): string {
     if (target.anchor === undefined) {
       return name;
     }
-    return `<a class="v2-subsection-namelink" href="#${he.encode(
+    return `<a class="v2-subsection-namelink" href="#${he.escape(
       target.anchor
     )}">${name}${arrowIcon(target.isBlurb)}</a>`;
   }
@@ -161,7 +161,7 @@ function renderGroupLabel(group: SubsectionGroup): string {
           index + 1
         }</span>`;
       }
-      return `<a class="v2-subsection-chip" href="#${he.encode(
+      return `<a class="v2-subsection-chip" href="#${he.escape(
         target.anchor
       )}" title="Jump to match ${index + 1}">${label}</a>`;
     })
@@ -179,7 +179,7 @@ function renderInflections(group: SubsectionGroup): string {
   }
   return `
       <details class="v2-subsection-details">
-        <summary class="v2-tab-pill">Inflections of ${he.encode(group.name)} (${
+        <summary class="v2-tab-pill">Inflections of ${he.escape(group.name)} (${
     inflections.length
   })</summary>
         <div class="v2-tool-body v2-inflections-body">${renderInflectionTable(

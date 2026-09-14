@@ -331,4 +331,35 @@ export default [
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
+  // Prefer he.escape over he.encode in server templates: he.encode entity-encodes
+  // all non-ASCII characters (including Greek and accented Latin), wasting CPU and
+  // payload size on every render. Tests are exempt.
+  //
+  // NOTE: this block must not configure `no-restricted-imports`. Flat config replaces a
+  // rule's options rather than merging them, so naming it here would disable the
+  // target-suffix bans. Using no-restricted-properties and no-restricted-syntax avoids
+  // this conflict entirely.
+  {
+    files: ["src/web/v2/**/*.ts", "src/common/library/v2/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "he",
+          property: "encode",
+          message:
+            "Prefer he.escape over he.encode in server templates. he.encode entity-encodes all non-ASCII (including Greek and accented Latin), wasting CPU and payload on every render.",
+        },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "ImportDeclaration[source.value='he'] > ImportSpecifier[imported.name='encode']",
+          message: "Prefer importing he.escape over he.encode.",
+        },
+      ],
+    },
+  },
 ];

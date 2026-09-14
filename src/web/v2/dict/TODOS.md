@@ -80,7 +80,7 @@ has no class:
 ```ts
 // xml_to_html.server.ts, ~L233
 const finalClass = attrsMap.get("class");
-const classNames = finalClass ? ` class="${he.encode(finalClass)}"` : "";
+const classNames = finalClass ? ` class="${he.escape(finalClass)}"` : "";
 ```
 
 With that guaranteed, the splice becomes one unconditional
@@ -144,18 +144,18 @@ The browser displays raw text `dog (<i>subs.</i>)` rather than italicized text `
    return `${key} ${blurb.substring(i, j + 1)}`;
    ```
    The source blurb contains raw HTML fragments like `(<i>subs.</i>)`.
-2. `renderEntryResult` in [`entry_view.server.ts`](entry_view.server.ts) selects `result.outline.mainLabel` as `headword`, and runs `he.encode(headword)`:
+2. `renderEntryResult` in [`entry_view.server.ts`](entry_view.server.ts) selects `result.outline.mainLabel` as `headword`, and runs `he.escape(headword)`:
    ```html
-   <span class="v2-entry-headword-text">${he.encode(headword)}</span>
+   <span class="v2-entry-headword-text">${he.escape(headword)}</span>
    ```
-   This converts `<` and `>` into `&#x3C;` and `&#x3E;`, causing the browser to render the raw HTML tag text on screen.
+   This converts `<` and `>` into `&lt;` and `&gt;`, causing the browser to render the raw HTML tag text on screen.
 
 ### Fix Implemented (Runtime Tier)
 
 - **Runtime Revival Sanitization (`src/common/smith_and_hall/sh_dict.ts`)**:
   Sanitizes `outline.mainLabel`, `outline.mainSection.text`, and `outline.senses[].text` upon JSON deserialization in `reviveRaw`, stripping inline HTML tags before handing entries to callers. This guarantees backwards compatibility with existing `sh.db` databases without forcing an immediate artifact rebuild.
 - **Defensive Rendering Sanitization (`src/web/v2/dict/entry_view.server.ts` & `dict_page.server.ts`)**:
-  Strips HTML tags from `headword` before `he.encode()` defensively across entry headers and multi-entry quick-jump bars.
+  Strips HTML tags from `headword` before `he.escape()` defensively across entry headers and multi-entry quick-jump bars.
 
 ### Pending TODO (Build-Time / Extraction Tier)
 

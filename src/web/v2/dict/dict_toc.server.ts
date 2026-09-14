@@ -154,16 +154,16 @@ export function renderDictTocHtml(options: DictTocOptions): string {
                     : "";
 
                 const ordinalHtml = sense.ordinal
-                  ? `<strong class="v2-toc-ordinal">${he.encode(
+                  ? `<strong class="v2-toc-ordinal">${he.escape(
                       sense.ordinal
                     )}</strong> `
                   : "";
 
-                const textHtml = he.encode(truncateSenseText(sense.text));
+                const textHtml = he.escape(truncateSenseText(sense.text));
 
                 return `<li class="v2-toc-item v2-toc-level-${
                   sense.level
-                }"${indentStyle}><a href="#${he.encode(
+                }"${indentStyle}><a href="#${he.escape(
                   sense.sectionId
                 )}" class="v2-toc-link">${ordinalHtml}<span class="v2-toc-text">${textHtml}</span></a></li>`;
               })
@@ -179,9 +179,9 @@ export function renderDictTocHtml(options: DictTocOptions): string {
             sensesHtml = `
               <ul class="v2-toc-list">
                 <li class="v2-toc-item v2-toc-level-1">
-                  <a href="#${he.encode(
+                  <a href="#${he.escape(
                     entryAnchorId
-                  )}" class="v2-toc-link"><span class="v2-toc-text">${he.encode(
+                  )}" class="v2-toc-link"><span class="v2-toc-text">${he.escape(
               headword
             )}</span></a>
                 </li>
@@ -198,13 +198,13 @@ export function renderDictTocHtml(options: DictTocOptions): string {
             return `
               <div class="v2-toc-entry">
                 <div class="v2-toc-entry-header">
-                  <a href="#${he.encode(
+                  <a href="#${he.escape(
                     entryAnchorId
                   )}" class="v2-toc-link v2-toc-entry-link">
-                    <span class="v2-toc-badge v2-toc-badge-${dictLang}">${he.encode(
+                    <span class="v2-toc-badge v2-toc-badge-${dictLang}">${he.escape(
               dictAcronym
             )}</span>
-                    <span class="v2-toc-entry-word">${he.encode(
+                    <span class="v2-toc-entry-word">${he.escape(
                       headword
                     )}</span>
                   </a>
@@ -222,7 +222,7 @@ export function renderDictTocHtml(options: DictTocOptions): string {
         <div class="v2-toc-group">
           <div class="v2-toc-dict-header">
             <a href="#${cardId}" class="v2-toc-dict-link">
-              <span class="v2-toc-dict-name">${he.encode(dictName)}</span>
+              <span class="v2-toc-dict-name">${he.escape(dictName)}</span>
             </a>
           </div>
           ${entriesHtml}
@@ -263,13 +263,13 @@ export function renderDictTocHtml(options: DictTocOptions): string {
               ? `#${entryAnchorId}`
               : `#dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
-            return `<li class="v2-toc-entry-chip-item"><a href="${he.encode(
+            return `<li class="v2-toc-entry-chip-item"><a href="${he.escape(
               anchor
-            )}" class="v2-toc-entry-chip" title="Jump to ${he.encode(
+            )}" class="v2-toc-entry-chip" title="Jump to ${he.escape(
               headword
-            )} (${he.encode(
+            )} (${he.escape(
               dictAcronym
-            )})"><span class="v2-toc-chip-text">${he.encode(
+            )})"><span class="v2-toc-chip-text">${he.escape(
               headword
             )}</span></a></li>`;
           })
@@ -277,7 +277,7 @@ export function renderDictTocHtml(options: DictTocOptions): string {
 
         return `
           <div class="v2-toc-entries-group">
-            <span class="v2-toc-badge v2-toc-badge-${dictLang}">${he.encode(
+            <span class="v2-toc-badge v2-toc-badge-${dictLang}">${he.escape(
           dictAcronym
         )}</span>
             <ul class="v2-toc-entries-sublist">

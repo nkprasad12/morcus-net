@@ -265,14 +265,14 @@ describe("dict_toc.server", () => {
       // Dictionary groups have clean full names without redundant badges in header
       expect(html).toContain('href="#dict-ls" class="v2-toc-dict-link"');
       expect(html).toContain(
-        '<span class="v2-toc-dict-name">Lewis &#x26; Short</span>'
+        '<span class="v2-toc-dict-name">Lewis &amp; Short</span>'
       );
       expect(html).toContain('href="#dict-gaffiot" class="v2-toc-dict-link"');
       expect(html).toContain('<span class="v2-toc-dict-name">Gaffiot</span>');
 
       // Entry article headers in outline carry the dictionary badge
       expect(html).toContain(
-        '<span class="v2-toc-badge v2-toc-badge-la">L&#x26;S</span>'
+        '<span class="v2-toc-badge v2-toc-badge-la">L&amp;S</span>'
       );
       expect(html).toContain('<span class="v2-toc-entry-word">lex</span>');
       expect(html).toContain(
