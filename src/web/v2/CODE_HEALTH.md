@@ -154,8 +154,6 @@ Every item here is a feature reimplementing something `core/` already provides.
       `removeDiacritics` there would also strip breves, diaereses and Greek accents from displayed
       text. The real smell is only that a text-normalization primitive lives as a private method on
       a DOM element, so move it next to its siblings and give it a test — do not delete it.
-- [ ] 🟢 **Delete the empty `initSummaryCapture()`** (`drawer.client.ts` L291-293) — a no-op method
-      whose body is a comment saying the work happens elsewhere.
 - [ ] 🟡 **Extract `core/disposable.client.ts`.** `DrawerController` hand-rolls four parallel
       unbind fields plus a `destroy()` (`drawer.client.ts` L56-59) — exactly `BaseElement.disposables`.
       A shared `DisposableBag { add(fn); dispose(); }` used by both removes ~40 lines of bookkeeping
@@ -270,7 +268,7 @@ Findings that cost real time to establish and that would otherwise be rediscover
 **The mobile TOC drawer flash does not exist — do not re-file it.** It was filed as a Phase 1
 correctness bug on the theory that `dict_toc.client.ts` builds a `DrawerController` below 1080px and
 that minimizing the drawer undoes the SSR state after paint. `DrawerController`'s constructor only
-calls `initDrag` / `initKeyboard` / `initSummaryCapture` / `initDetailsSync`; it never calls
+calls `initDrag` / `initKeyboard` / `initDetailsSync`; it never calls
 `minimize()`, and nothing else writes `v2-drawer-minimized` on load. Sampling every animation frame
 from document start on `/v2/dicts?q=gladius` in MobileChrome shows the drawer at `height=349,
 top=378, open=true, minimized=false` before the element upgrades (137 ms), at upgrade (182 ms), and
