@@ -82,12 +82,11 @@ Every item here is a feature reimplementing something `core/` already provides.
       reducing `v2_router.server.ts` to mounting. Preserves the "single stable contract" in
       [README.md](README.md) while letting each vertical own its routes.
 
-### `reader_view.client.ts` (1,034 lines)
+### `reader_view.client.ts`
 
-One class orchestrating reader subsystems: tokenization, splitter drag, mobile drawer, TOC,
+One class orchestrating reader subsystems: tokenization, splitter drag, mobile drawer,
 bibliography modal, keyboard shortcuts, dictionary sheet, URL sync, highlights.
 
-- [ ] 🟡 Extract `reader_toc.client.ts` ← L739-791
 - [ ] 🟡 Extract `reader_layout.client.ts` ← L484-595 (desktop splitter)
 - [ ] 🟢 Hoist the drawer's `18`/`48`/`88` dvh magic numbers to named constants. (The splitter's
       `300`/`800`/`320` px were named as part of the `pointermove` hoist, which had to touch the
@@ -515,6 +514,9 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Extract `reader_settings.client.ts` (`<morcus-reader-settings>`)**, decomposing settings dialog
   lifecycle, steppers, and persistence out of `reader_view.client.ts` into a dedicated custom element
   via a bubbling `reader-settings-change` event contract, backed by 15 unit tests.
+- **Extract `reader_toc.client.ts` (`ReaderTocController`)**, decomposing TOC drawer open/close
+  lifecycle, live search filtering, outside-click dismissal, and keyboard accessibility out of
+  `reader_view.client.ts`, backed by 13 new unit tests.
 
 **Phase 7 — docs & tests**
 
