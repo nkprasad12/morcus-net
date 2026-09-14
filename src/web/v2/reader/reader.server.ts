@@ -643,3 +643,5 @@ export async function renderReaderPageHtml(
     contentHtml,
   });
 }
+
+export { createReaderRoutes } from "@/web/v2/reader/reader_routes.server";
