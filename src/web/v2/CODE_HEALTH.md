@@ -78,9 +78,6 @@ Every item here is a feature reimplementing something `core/` already provides.
 
 - [ ] 🟢 **Move the inlined 404 page** (`v2_router.server.ts` L455-468, complete with an inline `style=`
       attribute) into `library/not_found.server.ts`.
-- [ ] 🔴 **Split into `dict_routes.server.ts` / `reader_routes.server.ts` / `api_routes.server.ts`**,
-      reducing `v2_router.server.ts` to mounting. Preserves the "single stable contract" in
-      [README.md](README.md) while letting each vertical own its routes.
 
 ### `reader_view.client.ts`
 
@@ -505,6 +502,9 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Extract `reader_layout.client.ts` (`ReaderLayoutController`)**, decomposing desktop split layout,
   resizable splitter drag gesture, keyboard navigation, and width persistence out of
   `reader_view.client.ts`, backed by 13 new unit tests.
+- **Split `v2_router.server.ts` into vertical route slices**, extracting `dict/dict_routes.server.ts`,
+  `reader/reader_routes.server.ts`, `api_routes.server.ts`, and `core/async_handler.server.ts`,
+  reducing `v2_router.server.ts` from 616 to 74 lines while preserving the single mounting contract.
 
 **Phase 7 — docs & tests**
 

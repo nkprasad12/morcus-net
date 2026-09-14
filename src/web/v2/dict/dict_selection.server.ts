@@ -1,8 +1,10 @@
+import type { Request } from "express";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
   DEFAULT_DICT_KEYS,
   parseDictsFromCookie,
 } from "@/web/v2/dict/dict_selection.common";
+import type { DictParamsInput } from "@/web/v2/dict/dict_selection.common";
 
 export {
   DEFAULT_DICTS,
@@ -18,6 +20,31 @@ export {
 } from "@/web/v2/dict/dict_selection.common";
 export type { DictParamsInput } from "@/web/v2/dict/dict_selection.common";
 export { readCookie } from "@/web/v2/core/cookies.common";
+
+export function toStringOrArray(val: unknown): string | string[] | undefined {
+  if (typeof val === "string") return val;
+  if (Array.isArray(val) && val.every((item) => typeof item === "string")) {
+    return val;
+  }
+  return undefined;
+}
+
+/**
+ * Collects the competing dictionary parameters out of a request query.
+ * `d` is a scalar bitmask by construction; if it somehow repeats, the last value wins, matching
+ * how browsers treat repeated scalar controls.
+ */
+export function dictParamsFromQuery(req: Request): DictParamsInput {
+  const rawD = toStringOrArray(req.query.d);
+  const bitmaskParam = Array.isArray(rawD)
+    ? rawD[rawD.length - 1] ?? null
+    : rawD ?? null;
+  return {
+    dictParam: toStringOrArray(req.query.dict),
+    bitmaskParam,
+    inParam: toStringOrArray(req.query.in),
+  };
+}
 
 /**
  * Formats canonical dict keys for URL query parameter (using hyphen separator).

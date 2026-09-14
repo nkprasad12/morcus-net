@@ -66,6 +66,8 @@ export {
   formatInflectedCookie,
   formatDictsParam,
   resolveActiveDicts,
+  toStringOrArray,
+  dictParamsFromQuery,
 } from "@/web/v2/dict/dict_selection.server";
 
 export {
@@ -75,3 +77,5 @@ export {
 } from "@/web/v2/dict/dict_greek.common";
 
 export { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
+
+export { createDictRoutes } from "@/web/v2/dict/dict_routes.server";
