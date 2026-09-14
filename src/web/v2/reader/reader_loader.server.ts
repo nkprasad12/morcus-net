@@ -83,8 +83,9 @@ export async function getV2Work(
   const workId = await resolveV2WorkId(queryOrSlug, resultDir);
   const targetId = workId ?? queryOrSlug;
 
-  if (cachedWorksById.has(targetId)) {
-    return cachedWorksById.get(targetId)!;
+  const cached = cachedWorksById.get(targetId);
+  if (cached !== undefined) {
+    return cached;
   }
 
   // 1. Try reading preprocessed artifact from disk

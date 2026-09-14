@@ -30,13 +30,16 @@ export function renderEntryResult(
     .replace(/[^a-z0-9_-]/g, "_");
   const entryAnchorId = result.outline.mainSection.sectionId;
 
-  const hasOutline = Boolean(
-    result.outline?.senses && result.outline.senses.length > 0
-  );
-  const hasInflections = Boolean(
-    result.inflections && result.inflections.length > 0
-  );
-  const hasTools = hasOutline || hasInflections;
+  // Bind the narrowed arrays rather than booleans. `Boolean(...)` discards the
+  // type information, which is precisely what the non-null assertions at the
+  // use sites below used to restore by hand.
+  const outlineSenses = result.outline?.senses?.length
+    ? result.outline.senses
+    : undefined;
+  const inflections = result.inflections?.length
+    ? result.inflections
+    : undefined;
+  const hasTools = outlineSenses !== undefined || inflections !== undefined;
   const isMultiEntry = Boolean(totalEntries && totalEntries > 1);
 
   // Every `id` defined anywhere in this entry's XML. Used both to resolve
@@ -93,9 +96,9 @@ export function renderEntryResult(
     : "";
 
   const groupName = `entry-tools-${safeId}`;
-  const outlineItems = hasOutline
-    ? result
-        .outline!.senses!.map((sense) => {
+  const outlineItems = outlineSenses
+    ? outlineSenses
+        .map((sense) => {
           const indentLevel = Math.max(0, sense.level - 1);
           const indentStyle =
             indentLevel > 0
@@ -114,7 +117,7 @@ export function renderEntryResult(
         .join("")
     : "";
 
-  const outlinePanelHtml = hasOutline
+  const outlinePanelHtml = outlineSenses
     ? `
       <details class="v2-tool-pane" name="${groupName}">
         <summary class="v2-tab-pill">Outline</summary>
@@ -127,12 +130,12 @@ export function renderEntryResult(
     `
     : "";
 
-  const inflectionsPanelHtml = hasInflections
+  const inflectionsPanelHtml = inflections
     ? `
       <details class="v2-tool-pane" name="${groupName}">
         <summary class="v2-tab-pill">Inflections</summary>
         <div class="v2-tool-body v2-inflections-body">${renderInflectionTable(
-          dedupeInflections(result.inflections!)
+          dedupeInflections(inflections)
         )}</div>
       </details>
     `

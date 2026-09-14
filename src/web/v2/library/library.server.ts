@@ -21,18 +21,22 @@ export async function renderLibraryPageHtml(): Promise<string> {
   const byAuthor = new Map<string, V2WorkSummary[]>();
   for (const s of summaries) {
     const author = s.author || "Unknown";
-    if (!byAuthor.has(author)) byAuthor.set(author, []);
-    byAuthor.get(author)!.push(s);
+    const existing = byAuthor.get(author);
+    if (existing) {
+      existing.push(s);
+    } else {
+      byAuthor.set(author, [s]);
+    }
   }
 
-  // Sort authors alphabetically
-  const sortedAuthors = Array.from(byAuthor.keys()).sort((a, b) =>
+  // Sort authors alphabetically. Sorting entries rather than keys avoids a
+  // second lookup that the type system cannot know will succeed.
+  const sortedAuthors = Array.from(byAuthor.entries()).sort(([a], [b]) =>
     a.localeCompare(b)
   );
 
   const authorSectionsHtml = sortedAuthors
-    .map((author) => {
-      const works = byAuthor.get(author)!;
+    .map(([author, works]) => {
       // Sort works by title
       works.sort((a, b) => a.title.localeCompare(b.title));
 

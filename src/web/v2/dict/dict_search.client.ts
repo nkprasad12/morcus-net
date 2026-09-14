@@ -84,28 +84,27 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     this.updateSuggestionsView();
   }
 
-  private readonly debouncedFetchPrefixChunk = debounce(
-    (prefix: string, query: string) => {
-      const signal = this.latest("completions");
-      this.chunkCache
-        .loadPrefix(prefix)
-        .then((chunks) => {
-          if (signal.aborted) return;
-          if (document.activeElement !== this.inputElement) return;
-          const currentRaw = this.inputElement?.value ?? "";
-          const currentClean = cleanCompletionQuery(currentRaw).query;
-          if (!currentClean.toLowerCase().startsWith(prefix)) return;
+  // Deliberately takes no query: by the time the debounce fires the one the
+  // caller had is up to 180ms stale, so the live input value is re-read below.
+  private readonly debouncedFetchPrefixChunk = debounce((prefix: string) => {
+    const signal = this.latest("completions");
+    this.chunkCache
+      .loadPrefix(prefix)
+      .then(() => {
+        if (signal.aborted) return;
+        if (document.activeElement !== this.inputElement) return;
+        const currentRaw = this.inputElement?.value ?? "";
+        const currentClean = cleanCompletionQuery(currentRaw).query;
+        if (!currentClean.toLowerCase().startsWith(prefix)) return;
 
-          this.renderCachedCompletions(prefix, currentClean);
-        })
-        .catch((e) => {
-          if (e.name !== "AbortError") {
-            console.error("Failed to load completions chunk", e);
-          }
-        });
-    },
-    180
-  );
+        this.renderCachedCompletions(prefix, currentClean);
+      })
+      .catch((e) => {
+        if (e.name !== "AbortError") {
+          console.error("Failed to load completions chunk", e);
+        }
+      });
+  }, 180);
 
   private readonly debouncedFetchSuffixCompletions = debounce(
     (query: string) => {
@@ -477,7 +476,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       this.debouncedFetchPrefixChunk.cancel();
       this.renderCachedCompletions(prefix, query);
     } else {
-      this.debouncedFetchPrefixChunk(prefix, query);
+      this.debouncedFetchPrefixChunk(prefix);
     }
   };
 
