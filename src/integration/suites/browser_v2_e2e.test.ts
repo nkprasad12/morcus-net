@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { gzipSync } from "zlib";
+import { V2_BUNDLE_BUDGET } from "@/bundler/v2_bundle_budget";
 
 test.describe("UI V2 dictionary", () => {
   test("loads results without JavaScript (No-JS fallback)", async ({
@@ -787,5 +789,83 @@ test.describe("UI V2 dictionary", () => {
       expect(parseFloat(safeAreaPaddingBottom)).toBe(58);
       await expect(tip).toBeInViewport();
     }
+  });
+
+  test.describe("UI V2 bundle validation", () => {
+    test.skip(
+      ({ browserName, isMobile }) => browserName !== "chromium" || isMobile,
+      "Bundle validation does not use browser rendering, so only needs to run once."
+    );
+
+    test("combined bundle size (JS + CSS) is within budget", async ({
+      request,
+    }) => {
+      // 1. Fetch the Dictionary page to extract the emitted asset filenames
+      const pageRes = await request.get("/v2/dicts");
+      expect(pageRes.status()).toBe(200);
+      const html = await pageRes.text();
+
+      // Extract JS and CSS links from HTML
+      const cssMatch = html.match(
+        /<link\s+rel="stylesheet"\s+href="(\/v2\/assets\/v2\.[a-f0-9]+\.css)">/
+      );
+      const jsMatch = html.match(
+        /<script\s+type="module"\s+src="(\/v2\/assets\/v2_bundle\.[a-f0-9]+\.js)">/
+      );
+
+      expect(cssMatch).toBeTruthy();
+      expect(jsMatch).toBeTruthy();
+
+      const cssPath = cssMatch![1];
+      const jsPath = jsMatch![1];
+
+      // 2. Fetch the CSS asset
+      const cssRes = await request.get(cssPath);
+      expect(cssRes.status()).toBe(200);
+      expect(cssRes.headers()["content-type"]).toContain("text/css");
+      expect(cssRes.headers()["cache-control"]).toContain("immutable");
+      const cssBuffer = await cssRes.body();
+      const cssRaw = cssBuffer.byteLength;
+      const cssGzip = gzipSync(cssBuffer).byteLength;
+
+      // 3. Fetch the JS asset
+      const jsRes = await request.get(jsPath);
+      expect(jsRes.status()).toBe(200);
+      expect(jsRes.headers()["content-type"]).toContain("javascript");
+      expect(jsRes.headers()["cache-control"]).toContain("immutable");
+      const jsBuffer = await jsRes.body();
+      const jsRaw = jsBuffer.byteLength;
+      const jsGzip = gzipSync(jsBuffer).byteLength;
+
+      // 4. Combined calculations
+      const combinedRaw = cssRaw + jsRaw;
+      const combinedGzip = cssGzip + jsGzip;
+
+      console.log(
+        `UI V2 Network Bundle Sizes: JS=${(jsRaw / 1024).toFixed(
+          1
+        )} kB raw / ${(jsGzip / 1024).toFixed(1)} kB gzip, CSS=${(
+          cssRaw / 1024
+        ).toFixed(1)} kB raw / ${(cssGzip / 1024).toFixed(
+          1
+        )} kB gzip, Combined=${(combinedRaw / 1024).toFixed(1)} kB raw / ${(
+          combinedGzip / 1024
+        ).toFixed(1)} kB gzip`
+      );
+
+      // Assert individual and combined budgets
+      expect(jsRaw).toBeLessThan(V2_BUNDLE_BUDGET.maxJsRawBytes);
+      expect(jsGzip).toBeLessThan(V2_BUNDLE_BUDGET.maxJsGzipBytes);
+
+      expect(cssRaw).toBeLessThan(V2_BUNDLE_BUDGET.maxCssRawBytes);
+      expect(cssGzip).toBeLessThan(V2_BUNDLE_BUDGET.maxCssGzipBytes);
+
+      expect(combinedRaw).toBeLessThan(V2_BUNDLE_BUDGET.maxCombinedRawBytes);
+      expect(combinedGzip).toBeLessThan(V2_BUNDLE_BUDGET.maxCombinedGzipBytes);
+
+      // 5. Ensure no banned development-only strings leaked into the client bundle
+      const jsText = jsBuffer.toString("utf8");
+      expect(jsText).not.toContain("/devOnlyHelper");
+    });
   });
 });
