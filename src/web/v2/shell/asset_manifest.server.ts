@@ -8,42 +8,31 @@ let cachedManifest: V2AssetManifest | undefined;
 let cachedCriticalCss: string | undefined;
 let cachedCriticalJs: string | undefined;
 
+const MANIFEST_PATH = path.resolve(process.cwd(), "build/v2/manifest.json");
+
 function loadManifest(): V2AssetManifest {
   if (process.env.NODE_ENV === "test") {
     cachedManifest = undefined;
   }
   if (cachedManifest !== undefined) {
-    const jsFilename = cachedManifest["v2.js"];
-    const cssFilename = cachedManifest["v2.css"];
-    if (
-      (jsFilename &&
-        !fs.existsSync(path.resolve(process.cwd(), "build/v2", jsFilename))) ||
-      (cssFilename &&
-        !fs.existsSync(path.resolve(process.cwd(), "build/v2", cssFilename)))
-    ) {
-      cachedManifest = undefined;
-    }
+    return cachedManifest;
   }
-  if (cachedManifest === undefined) {
-    const manifestPath = path.resolve(process.cwd(), "build/v2/manifest.json");
-    try {
-      const raw: unknown = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-      const parsed: V2AssetManifest = {};
-      if (typeof raw === "object" && raw !== null) {
-        if ("v2.js" in raw && typeof raw["v2.js"] === "string") {
-          parsed["v2.js"] = raw["v2.js"];
-        }
-        if ("v2.css" in raw && typeof raw["v2.css"] === "string") {
-          parsed["v2.css"] = raw["v2.css"];
-        }
+  try {
+    const raw: unknown = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+    const parsed: V2AssetManifest = {};
+    if (typeof raw === "object" && raw !== null) {
+      if ("v2.js" in raw && typeof raw["v2.js"] === "string") {
+        parsed["v2.js"] = raw["v2.js"];
       }
-      cachedManifest = parsed;
-      return parsed;
-    } catch {
-      return { "v2.js": "v2.js", "v2.css": "v2.css" };
+      if ("v2.css" in raw && typeof raw["v2.css"] === "string") {
+        parsed["v2.css"] = raw["v2.css"];
+      }
     }
+    cachedManifest = parsed;
+    return parsed;
+  } catch {
+    return { "v2.js": "v2.js", "v2.css": "v2.css" };
   }
-  return cachedManifest;
 }
 
 /** Resolves the content-hashed URL for a UI V2 asset; falls back gracefully if not yet built. */
