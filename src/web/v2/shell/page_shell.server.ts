@@ -15,6 +15,7 @@ export interface PageShellOptions {
   contentHtml: string;
   hideAppBar?: boolean;
   isReader?: boolean;
+  extraHeadHtml?: string;
 }
 
 /**
@@ -152,6 +153,7 @@ export function renderPageShell(options: PageShellOptions): string {
   <style>${getV2CriticalCss()}</style>
   <script>${getV2CriticalJs()}</script>
   <link rel="stylesheet" href="${getV2AssetHref("v2.css")}">
+  ${options.extraHeadHtml ? options.extraHeadHtml : ""}
 </head>
 <body${bodyClass}>
   <div id="top"></div>

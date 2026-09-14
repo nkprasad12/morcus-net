@@ -1,3 +1,7 @@
+:root {
+  --v2-dict-scale: 1;
+}
+
 .v2-results {
   display: flex;
   flex-direction: column;
@@ -5,7 +9,7 @@
 }
 
 .v2-results > .v2-dict-card + .v2-dict-card {
-  margin-top: 28px;
+  margin-top: 18px;
 }
 
 /* Results Navigation & Quick-Jump Pills (Option 1) */
@@ -48,7 +52,7 @@
   border: 1px solid var(--v2-border);
   color: var(--v2-dict-title);
   text-decoration: none;
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--v2-dict-scale, 1));
   font-weight: 600;
   white-space: nowrap;
   user-select: none;
@@ -81,7 +85,7 @@
 
 .v2-jump-pill-name {
   font-family: monospace;
-  font-size: 0.76rem;
+  font-size: calc(0.76rem * var(--v2-dict-scale, 1));
   letter-spacing: 0.02em;
 }
 
@@ -92,7 +96,7 @@
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  font-size: 0.7rem;
+  font-size: calc(0.7rem * var(--v2-dict-scale, 1));
   font-weight: 700;
   border-radius: 3px;
   background-color: var(--v2-card-bg);
@@ -124,7 +128,7 @@
 }
 
 .v2-results-total {
-  font-size: 0.82rem;
+  font-size: calc(0.82rem * var(--v2-dict-scale, 1));
   font-weight: 500;
   color: var(--v2-text-muted);
   white-space: nowrap;
@@ -132,7 +136,7 @@
 }
 
 .v2-no-results-sub {
-  font-size: 0.82rem;
+  font-size: calc(0.82rem * var(--v2-dict-scale, 1));
   color: var(--v2-text-muted);
   margin-top: 6px;
 }
@@ -154,11 +158,11 @@
 
   .v2-dict-header,
   .v2-dict-summary {
-    padding: 8px 0;
+    padding: 4px 0 5px;
   }
 
   .v2-dict-body {
-    padding: 10px 0 16px;
+    padding: 6px 0 12px;
   }
 
   /* Reduced sense indentation on mobile to maximize horizontal reading space */
@@ -178,12 +182,16 @@
 }
 
 .v2-dict-header {
-  padding: 8px 0 10px;
+  /* Left inset of the dictionary acronym within the header row, so sibling rows
+     (e.g. the quick-jump bar) can line up with the name rather than the toggle:
+     2px summary padding + 14px toggle icon + 6px summary gap. */
+  --v2-dict-name-inset: 22px;
+  padding: 3px 0 5px;
   background-color: transparent;
   border-bottom: 1px solid var(--v2-border);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .v2-dict-header-row {
@@ -191,14 +199,65 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px 16px;
+  min-height: 22px;
+  gap: 6px 12px;
   width: 100%;
 }
 
+.v2-dict-header-slim .v2-dict-summary {
+  font-family: var(--v2-font-sans);
+  font-size: calc(0.72rem * var(--v2-dict-scale, 1));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-muted);
+  gap: 6px;
+  padding: 1px 2px;
+  width: auto;
+  border-radius: 4px;
+}
+
+.v2-dict-header-slim .v2-dict-toggle-icon {
+  width: 14px;
+  height: 14px;
+  font-size: calc(0.68rem * var(--v2-dict-scale, 1));
+  border-radius: 3px;
+}
+
+.v2-dict-header-slim .v2-dict-acronym {
+  font-family: var(--v2-font-mono, monospace);
+  font-weight: 700;
+  color: var(--v2-text);
+  letter-spacing: 0.02em;
+}
+
+.v2-dict-header-slim .v2-dict-name,
+.v2-dict-header-slim .v2-dict-title {
+  font-family: var(--v2-font-sans);
+  font-weight: 600;
+  color: var(--v2-text-muted);
+}
+
+.v2-dict-header-slim .v2-dict-count {
+  font-family: var(--v2-font-sans);
+  font-weight: 500;
+  color: var(--v2-text-muted);
+  font-size: calc(0.7rem * var(--v2-dict-scale, 1));
+}
+
+.v2-dict-header-slim .v2-dict-source-btn {
+  padding: 1px 6px;
+  font-size: calc(0.68rem * var(--v2-dict-scale, 1));
+  min-height: calc(20px * var(--v2-dict-scale, 1));
+}
+
 /* Hide card body, entry quick-jump, and source button when collapsed */
-.v2-dict-card:not(:has(.v2-dict-toggle[open])) .v2-dict-body,
-.v2-dict-card:not(:has(.v2-dict-toggle[open])) .v2-entry-nav,
-.v2-dict-card:not(:has(.v2-dict-toggle[open])) .v2-dict-source-pane {
+.v2-dict-card:has(.v2-dict-toggle):not(:has(.v2-dict-toggle[open]))
+  .v2-dict-body,
+.v2-dict-card:has(.v2-dict-toggle):not(:has(.v2-dict-toggle[open]))
+  .v2-entry-nav,
+.v2-dict-card:has(.v2-dict-toggle):not(:has(.v2-dict-toggle[open]))
+  .v2-dict-source-pane {
   display: none !important;
 }
 
@@ -225,7 +284,7 @@
   padding: 2px 8px;
   border-radius: 9999px;
   font-family: var(--v2-font-sans);
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--v2-dict-scale, 1));
   font-weight: 500;
   color: var(--v2-text-muted);
   background-color: var(--v2-tag-bg);
@@ -262,7 +321,7 @@
 }
 
 .v2-dict-source-btn-icon {
-  font-size: 0.8rem;
+  font-size: calc(0.8rem * var(--v2-dict-scale, 1));
   line-height: 1;
 }
 
@@ -279,14 +338,14 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
   z-index: 50;
   font-family: var(--v2-font-sans);
-  font-size: 0.8rem;
+  font-size: calc(0.8rem * var(--v2-dict-scale, 1));
   line-height: 1.55;
   color: var(--v2-text);
 }
 
 .v2-dict-source-popover-title {
   font-weight: 700;
-  font-size: 0.74rem;
+  font-size: calc(0.74rem * var(--v2-dict-scale, 1));
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--v2-text-muted);
@@ -312,7 +371,7 @@
 .v2-dict-summary {
   padding: 2px 4px;
   font-weight: bold;
-  font-size: 1.15rem;
+  font-size: calc(1.15rem * var(--v2-dict-scale, 1));
   cursor: pointer;
   user-select: none;
   background-color: transparent;
@@ -355,7 +414,7 @@
   border: 1px solid var(--v2-border);
   color: var(--v2-text-muted);
   font-family: var(--v2-font-sans);
-  font-size: 0.85rem;
+  font-size: calc(0.85rem * var(--v2-dict-scale, 1));
   line-height: 1;
   user-select: none;
   transition: all 0.15s ease-in-out;
@@ -380,61 +439,33 @@
   color: var(--v2-text);
 }
 
-.v2-dict-title {
-  font-family: var(--v2-font-sans);
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--v2-dict-title);
-}
-
-/* Collapsed entry count badge: hidden when open, visible when collapsed */
-.v2-dict-collapsed-badge {
-  display: none;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  font-family: var(--v2-font-sans);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--v2-text-muted);
-  background-color: var(--v2-tag-bg);
-  border: 1px solid var(--v2-border);
-  letter-spacing: normal;
-  text-transform: none;
-  line-height: 1.2;
-}
-
-.v2-dict-toggle:not([open]) .v2-dict-collapsed-badge {
-  display: inline-flex;
-}
-
 .v2-dict-body {
-  padding: 14px 0 20px;
+  padding: 8px 0 14px;
 }
 
-/* Entry Quick-Jump Bar (integrated directly inside dictionary header) */
+/* Entry Quick-Jump Bar (integrated directly inside dictionary header).
+   Indented by the toggle-icon column so it lines up with the dictionary acronym,
+   and styled to match the neighbouring `.v2-dict-source-btn` hairline pill. */
 .v2-entry-nav {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px 8px;
   width: 100%;
-  margin: 2px 0 0;
-  padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 0 0 var(--v2-dict-name-inset, 22px);
   background: transparent;
   border: none;
   font-family: var(--v2-font-sans);
-  font-size: 0.85rem;
+  font-size: calc(0.78rem * var(--v2-dict-scale, 1));
 }
 
 .v2-entry-nav-label {
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: calc(0.65rem * var(--v2-dict-scale, 1));
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
   color: var(--v2-text-muted);
 }
 
@@ -442,7 +473,7 @@
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -452,43 +483,51 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 11px;
-  min-height: 26px;
+  padding: 1px 8px;
+  min-height: calc(20px * var(--v2-dict-scale, 1));
   box-sizing: border-box;
-  border-radius: 13px;
-  background: var(--v2-card-bg);
+  border-radius: 9999px;
+  background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
   text-decoration: none;
   color: var(--v2-primary);
-  font-size: 0.88rem;
   font-weight: 400;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.15s ease-in-out;
 }
 
 .v2-entry-nav-link:hover {
-  background: var(--v2-primary);
-  color: #ffffff;
+  color: var(--v2-primary-hover);
   border-color: var(--v2-primary);
-  box-shadow: 0 1px 3px rgba(0, 102, 204, 0.2);
 }
 
 .v2-entry-nav-word {
   font-family: var(--v2-font-serif);
-  font-size: 0.94rem;
+  font-size: calc(0.82rem * var(--v2-dict-scale, 1));
   font-weight: 400;
+  line-height: 1.2;
+}
+
+/* Declutter standalone desktop navigation when left TOC rail is active */
+@media (min-width: 1080px) {
+  .has-toc .v2-entry-nav {
+    display: none !important;
+  }
+
+  .has-toc .v2-tool-outline {
+    display: none !important;
+  }
 }
 
 .v2-entry {
-  scroll-margin-top: 20px;
-  margin-bottom: 20px;
+  scroll-margin-top: 16px;
+  margin-bottom: 12px;
   font-family: var(--v2-font-serif);
-  font-size: 1.15rem;
+  font-size: calc(1.15rem * var(--v2-dict-scale, 1));
   line-height: 1.6;
 }
 
 .v2-entry [id] {
-  scroll-margin-top: 20px;
+  scroll-margin-top: 16px;
 }
 
 .v2-entry:last-child {
@@ -497,8 +536,8 @@
 
 /* Demarcation divider between multiple entries in the same dictionary */
 .v2-entry + .v2-entry {
-  margin-top: 28px;
-  padding-top: 20px;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px dashed var(--v2-border);
 }
 
@@ -506,8 +545,8 @@
 .v2-entry-header {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px dashed var(--v2-border);
   font-family: var(--v2-font-sans);
 }
@@ -531,11 +570,15 @@
 
 .v2-entry-headword-text {
   font-family: var(--v2-font-serif);
-  font-size: 1.2rem;
+  font-size: calc(1.2rem * var(--v2-dict-scale, 1));
   font-weight: 700;
   line-height: 1.25;
   color: var(--v2-text);
   letter-spacing: -0.01em;
+}
+
+.v2-entry-content {
+  font-size: calc(1.15rem * var(--v2-dict-scale, 1));
 }
 
 .v2-entry-content ol,
@@ -551,7 +594,7 @@
   padding: 10px 14px;
   background: var(--v2-tag-bg);
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--v2-dict-scale, 1));
   font-family: var(--v2-font-sans);
 }
 
@@ -564,6 +607,7 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 0;
+  font-size: calc(0.95rem * var(--v2-dict-scale, 1));
 }
 
 .v2-inflection-table th,
@@ -686,7 +730,7 @@ html.v2-has-js .lsHover:focus::after {
   margin: 0;
   padding: 8px 14px;
   font-family: var(--v2-font-sans);
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--v2-dict-scale, 1));
   font-weight: 500;
   font-style: normal;
   line-height: 1.4;
@@ -745,7 +789,7 @@ html.v2-has-js .lsHover:focus::after {
   padding: 32px 16px;
   text-align: center;
   color: var(--v2-text-muted);
-  font-size: 1.1rem;
+  font-size: calc(1.1rem * var(--v2-dict-scale, 1));
 }
 
 .v2-badge {
@@ -840,7 +884,7 @@ html.v2-has-js .lsHover:focus::after {
 
 /* Top Unified Segmented Tab Bar */
 .v2-entry-tools {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .v2-segmented-bar {
@@ -848,13 +892,59 @@ html.v2-has-js .lsHover:focus::after {
   /* headword | copy pill | Outline | Inflections | filler */
   grid-template-columns: auto auto auto auto 1fr;
   align-items: center;
-  gap: 8px 10px;
+  gap: 6px 8px;
   width: 100%;
-  padding-bottom: 10px;
+  padding-bottom: 6px;
   border-bottom: 1px dashed var(--v2-border);
   background-color: transparent;
   font-family: var(--v2-font-sans);
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--v2-dict-scale, 1));
+}
+
+.v2-segmented-bar.has-badge,
+.v2-segmented-bar:has(.v2-dict-badge) {
+  /* badge | headword | copy pill | Outline | Inflections | filler */
+  grid-template-columns: auto auto auto auto auto 1fr;
+}
+
+/* Inline Lexicon Badge for Entry Toolbar (Embedded Mode) */
+.v2-dict-badge {
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background-color: var(--v2-tag-bg);
+  border: 1px solid var(--v2-border);
+  font-family: var(--v2-font-mono, monospace);
+  font-size: calc(0.72rem * var(--v2-dict-scale, 1));
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: var(--v2-text-muted);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.v2-dict-badge-la {
+  background-color: var(--v2-chip-la-bg, var(--v2-tag-bg));
+  color: var(--v2-chip-la-text, var(--v2-text-muted));
+}
+
+.v2-dict-badge-en {
+  background-color: var(--v2-chip-en-bg, var(--v2-tag-bg));
+  color: var(--v2-chip-en-text, var(--v2-text-muted));
+}
+
+.v2-dict-badge-de {
+  background-color: var(--v2-chip-de-bg, var(--v2-tag-bg));
+  color: var(--v2-chip-de-text, var(--v2-text-muted));
+}
+
+.v2-dict-badge-es {
+  background-color: var(--v2-chip-es-bg, var(--v2-tag-bg));
+  color: var(--v2-chip-es-text, var(--v2-text-muted));
 }
 
 .v2-entry-content > :first-child {
@@ -882,11 +972,11 @@ html.v2-has-js .lsHover:focus::after {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 1.65rem;
-  min-height: 1.65rem;
-  padding: 0 0.65rem;
+  height: calc(1.65rem * var(--v2-dict-scale, 1));
+  min-height: calc(1.65rem * var(--v2-dict-scale, 1));
+  padding: 0 calc(0.65rem * var(--v2-dict-scale, 1));
   box-sizing: border-box;
-  font-size: 0.76rem;
+  font-size: calc(0.76rem * var(--v2-dict-scale, 1));
   font-weight: 500;
   line-height: 1;
   border-radius: 9999px;
@@ -906,7 +996,7 @@ html.v2-has-js .lsHover:focus::after {
 
 .v2-tab-pill::after {
   content: " ▾";
-  font-size: 0.68rem;
+  font-size: calc(0.68rem * var(--v2-dict-scale, 1));
   color: var(--v2-text-muted);
   transition: transform 0.2s ease-in-out;
 }
@@ -1021,6 +1111,7 @@ html.v2-has-js .lsHover:focus::after {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   max-height: 280px;
   overflow-y: auto;
+  font-size: calc(0.92rem * var(--v2-dict-scale, 1));
 }
 
 .v2-entry .v2-toc-list,
@@ -1071,7 +1162,7 @@ html.v2-has-js .lsHover:focus::after {
 .v2-inflection-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--v2-dict-scale, 1));
 }
 
 .v2-inflection-table th {
@@ -1097,7 +1188,7 @@ html.v2-has-js .lsHover:focus::after {
   margin: 4px 0 4px 6px;
   padding: 3px 10px;
   font-family: var(--v2-font-sans);
-  font-size: 0.8rem;
+  font-size: calc(0.8rem * var(--v2-dict-scale, 1));
   font-weight: 500;
   line-height: 1.3;
   color: var(--v2-primary);
@@ -1185,7 +1276,7 @@ html.v2-has-js .lsHover:focus::after {
 
 .v2-greek-title {
   margin: 0 0 4px 0;
-  font-size: 1rem;
+  font-size: calc(1rem * var(--v2-dict-scale, 1));
   font-weight: 500;
   line-height: 1.4;
   color: var(--v2-text);
@@ -1193,7 +1284,7 @@ html.v2-has-js .lsHover:focus::after {
 
 .v2-greek-desc {
   margin: 0 0 10px 0;
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--v2-dict-scale, 1));
   line-height: 1.4;
   color: var(--v2-text-muted);
 }
@@ -1274,7 +1365,7 @@ html.v2-has-js .lsHover:focus::after {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
+  font-size: calc(0.85rem * var(--v2-dict-scale, 1));
   color: var(--v2-text-muted);
   cursor: pointer;
   user-select: none;
@@ -1291,10 +1382,12 @@ html.v2-has-js .lsHover:focus::after {
 }
 
 @media (max-width: 600px) {
-  .v2-segmented-bar {
+  .v2-segmented-bar,
+  .v2-segmented-bar.has-badge,
+  .v2-segmented-bar:has(.v2-dict-badge) {
     display: flex;
-    /* Clear the desktop track definition; it still applies to a grid container
-       and would otherwise fight the flex fallback. */
+    /* Clear the desktop track definitions (base and badge variants); they still
+       apply to a grid container and would otherwise fight the flex fallback. */
     grid-template-columns: none;
     flex-wrap: wrap;
     align-items: center;
@@ -1639,9 +1732,9 @@ html:not(.v2-has-js) .v2-js-only {
 .v2-subsection-note {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: 0 0 14px;
-  padding: 9px 14px;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 6px 12px;
   border-radius: 6px;
   background-color: var(--v2-tag-bg);
   font-family: var(--v2-font-sans);
@@ -1653,7 +1746,7 @@ html:not(.v2-has-js) .v2-js-only {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  font-size: 0.85rem;
+  font-size: calc(0.85rem * var(--v2-dict-scale, 1));
   line-height: 1.6;
   color: var(--v2-text-muted);
 }
@@ -1661,7 +1754,7 @@ html:not(.v2-has-js) .v2-js-only {
 /* The matched headword reads as prose, in the dictionary's serif face. */
 .v2-subsection-name {
   font-family: var(--v2-font-serif);
-  font-size: 0.98rem;
+  font-size: calc(0.98rem * var(--v2-dict-scale, 1));
   font-weight: 700;
   color: var(--v2-text);
 }
@@ -1678,7 +1771,7 @@ html:not(.v2-has-js) .v2-js-only {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  min-height: 1.55rem;
+  min-height: calc(1.55rem * var(--v2-dict-scale, 1));
   margin-left: 4px;
   padding: 1px 9px 1px 6px;
   box-sizing: border-box;
@@ -1687,7 +1780,7 @@ html:not(.v2-has-js) .v2-js-only {
   border: 1px solid var(--v2-border);
   color: var(--v2-text);
   text-decoration: none;
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--v2-dict-scale, 1));
   font-weight: 600;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -1738,7 +1831,7 @@ html:not(.v2-has-js) .v2-js-only {
    one fact justifies, which matters most in the narrow reader panel. */
 .v2-subsection-inline-inf {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: calc(0.8rem * var(--v2-dict-scale, 1));
   line-height: 1.5;
   color: var(--v2-text-muted);
 }

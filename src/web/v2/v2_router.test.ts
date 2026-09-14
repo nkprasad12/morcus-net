@@ -486,6 +486,55 @@ describe("v2_router integration", () => {
         })
       );
     });
+
+    test("suppresses table of contents in embedded mode", async () => {
+      const res = await request(app).get("/v2/dicts?q=Gallia&embedded=1");
+      expect(res.status).toBe(200);
+      expect(res.text).not.toContain("has-toc");
+      expect(res.text).not.toContain("v2-drawer-toc");
+    });
+
+    test("partial format in embedded mode returns fragment without TOC and with lexicon badges", async () => {
+      const res = await request(app).get(
+        "/v2/dicts?q=Gallia&embedded=1&format=partial"
+      );
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("text/html");
+      expect(res.text).not.toContain("<!DOCTYPE html>");
+      expect(res.text).not.toContain("has-toc");
+      expect(res.text).not.toContain("v2-drawer-toc");
+      expect(res.text).toContain("v2-dict-card");
+      expect(res.text).toContain("v2-dict-badge");
+    });
+
+    test("SSR injects clamped font scale style tag from ?scale= query param", async () => {
+      const res = await request(app).get("/v2/dicts?q=Gallia&scale=120");
+      expect(res.status).toBe(200);
+      expect(res.text).toContain(
+        "<style>:root { --v2-dict-scale: 1.20; }</style>"
+      );
+
+      const maxRes = await request(app).get("/v2/dicts?q=Gallia&scale=200");
+      expect(maxRes.text).toContain(
+        "<style>:root { --v2-dict-scale: 1.40; }</style>"
+      );
+
+      const minRes = await request(app).get("/v2/dicts?q=Gallia&scale=40");
+      expect(minRes.text).toContain(
+        "<style>:root { --v2-dict-scale: 0.70; }</style>"
+      );
+
+      const invalidRes = await request(app).get("/v2/dicts?q=Gallia&scale=abc");
+      expect(invalidRes.text).not.toContain("--v2-dict-scale");
+    });
+
+    test("GET /v2/dicts/id/:id injects font scale style tag from ?scale=", async () => {
+      const res = await request(app).get("/v2/dicts/id/n20077?scale=125");
+      expect(res.status).toBe(200);
+      expect(res.text).toContain(
+        "<style>:root { --v2-dict-scale: 1.25; }</style>"
+      );
+    });
   });
 
   describe("GET /v2/library", () => {

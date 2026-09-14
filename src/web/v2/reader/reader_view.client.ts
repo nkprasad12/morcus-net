@@ -111,8 +111,18 @@ export class MorcusReaderView extends BaseElement {
   private preferredDrawerDvh: number = 48;
   private drawerController?: DrawerController;
   private router: QueryParamSync | null = null;
+  private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
+
+  private loadPreferences(): ReaderPreferences {
+    try {
+      return parseReaderPreferences(localStorage.getItem(READER_SETTINGS_KEY));
+    } catch {
+      return { ...DEFAULT_READER_PREFS };
+    }
+  }
 
   protected override onConnect() {
+    this.currentPrefs = this.loadPreferences();
     this.enhancePassage();
 
     this.router = this.syncQueryParam("q", {
@@ -147,6 +157,18 @@ export class MorcusReaderView extends BaseElement {
     this.initQuickJump();
     this.initKeyboardShortcuts();
     this.initIframeThemeSync();
+
+    if (this.currentPrefs.dictScale !== 100) {
+      const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
+      if (iframe) {
+        const src = iframe.getAttribute("src");
+        if (src && !src.includes("scale=")) {
+          iframe.src = `${src}${src.includes("?") ? "&" : "?"}scale=${
+            this.currentPrefs.dictScale
+          }`;
+        }
+      }
+    }
   }
 
   private initIframeThemeSync() {
@@ -399,7 +421,7 @@ export class MorcusReaderView extends BaseElement {
     if (iframe) {
       const targetSrc = `/v2/dicts?q=${encodeURIComponent(
         word
-      )}&lang=La&o=1&embedded=1`;
+      )}&lang=La&o=1&embedded=1&scale=${this.currentPrefs.dictScale}`;
       if (iframe.getAttribute("src") !== targetSrc) {
         iframe.src = targetSrc;
       }
@@ -944,14 +966,7 @@ export class MorcusReaderView extends BaseElement {
 
     if (!dialog) return;
 
-    let currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
-    try {
-      currentPrefs = parseReaderPreferences(
-        localStorage.getItem(READER_SETTINGS_KEY)
-      );
-    } catch {
-      // Ignore storage errors
-    }
+    let currentPrefs: ReaderPreferences = this.currentPrefs;
 
     const applyMacra = (show: boolean) => {
       const words = this.$$<HTMLElement>(".v2-reader-passage .v2-lat-word");
@@ -964,16 +979,31 @@ export class MorcusReaderView extends BaseElement {
       }
     };
 
+    const applyDictScale = (scalePercent: number) => {
+      const scale = (scalePercent / 100).toFixed(2);
+      const iframe = this.$<HTMLIFrameElement>("#v2-dict-frame");
+      try {
+        if (iframe?.contentDocument?.documentElement) {
+          iframe.contentDocument.documentElement.style.setProperty(
+            "--v2-dict-scale",
+            scale
+          );
+        }
+      } catch {
+        // Cross-origin fallback
+      }
+    };
+
     const applyPreferences = (prefs: ReaderPreferences) => {
+      this.currentPrefs = prefs;
       // Font sizes
       const readerRem = `${((1.25 * prefs.readerScale) / 100).toFixed(3)}rem`;
       this.style.setProperty("--v2-reader-font-size", readerRem);
       if (readerSizeLabel)
         readerSizeLabel.textContent = `${prefs.readerScale}%`;
 
-      const dictRem = `${((0.9375 * prefs.dictScale) / 100).toFixed(3)}rem`;
-      this.style.setProperty("--v2-dict-font-size", dictRem);
       if (dictSizeLabel) dictSizeLabel.textContent = `${prefs.dictScale}%`;
+      applyDictScale(prefs.dictScale);
 
       // Line height
       const lhVal =
@@ -1010,6 +1040,13 @@ export class MorcusReaderView extends BaseElement {
 
     // Apply on load
     applyPreferences(currentPrefs);
+
+    const iframe = this.$<HTMLIFrameElement>("#v2-dict-frame");
+    if (iframe) {
+      this.listen(iframe, "load", () => {
+        applyDictScale(currentPrefs.dictScale);
+      });
+    }
 
     this.addDisposable(
       setupModalDialog(dialog, {

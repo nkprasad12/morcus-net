@@ -43,6 +43,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
         </aside>
         <dialog id="v2-reader-settings-dialog">
           <input type="checkbox" id="v2-toggle-macra" checked />
+          <button id="v2-dict-size-dec">-</button>
+          <span id="v2-dict-size-label">100%</span>
+          <button id="v2-dict-size-inc">+</button>
         </dialog>
       </div>
     `;
@@ -128,6 +131,27 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(sheetLabel.innerHTML).toContain("Mu\u0304sa");
   });
 
+  test("clicking a word reflects customized dictScale in iframe query param", () => {
+    localStorage.setItem(
+      READER_SETTINGS_KEY,
+      JSON.stringify({ dictScale: 120 })
+    );
+    const passageHtml = `
+      <div class="v2-reader-section" id="sec-1.1">
+        <span class="v2-reader-line">arma virumque cano</span>
+      </div>
+    `;
+    const el = createReaderView(passageHtml);
+    const armaWord = el.querySelector<HTMLElement>(".v2-lat-word")!;
+    armaWord.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    const iframe = el.querySelector<HTMLIFrameElement>("#v2-dict-frame")!;
+    expect(iframe.src).toContain(
+      "/v2/dicts?q=arma&lang=La&o=1&embedded=1&scale=120"
+    );
+    localStorage.removeItem(READER_SETTINGS_KEY);
+  });
+
   test("findWordElement highlights word matching unaccented, NFC, or NFD queries", () => {
     const passageHtml = `
       <div class="v2-reader-section" id="sec-1.8">
@@ -211,6 +235,47 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     // Clean up
     document.documentElement.removeAttribute("data-theme");
+  });
+
+  test("syncs --v2-dict-scale to iframe on stepper change and iframe reload", () => {
+    const passageHtml = `
+      <div class="v2-reader-section" id="sec-1.1">
+        <span class="v2-reader-line">Arma virumque cano.</span>
+      </div>
+    `;
+
+    const el = createReaderView(passageHtml);
+    const iframe = el.querySelector<HTMLIFrameElement>("#v2-dict-frame")!;
+
+    // Populate iframe contentDocument with a basic HTML document
+    iframe.contentDocument!.write("<html><head></head><body></body></html>");
+    iframe.contentDocument!.close();
+
+    const incBtn = el.querySelector<HTMLButtonElement>("#v2-dict-size-inc")!;
+    incBtn.click();
+
+    expect(
+      iframe.contentDocument!.documentElement.style.getPropertyValue(
+        "--v2-dict-scale"
+      )
+    ).toBe("1.10");
+
+    // Re-trigger iframe load event to simulate navigation/reload
+    iframe.dispatchEvent(new Event("load"));
+
+    expect(
+      iframe.contentDocument!.documentElement.style.getPropertyValue(
+        "--v2-dict-scale"
+      )
+    ).toBe("1.10");
+
+    const decBtn = el.querySelector<HTMLButtonElement>("#v2-dict-size-dec")!;
+    decBtn.click();
+    expect(
+      iframe.contentDocument!.documentElement.style.getPropertyValue(
+        "--v2-dict-scale"
+      )
+    ).toBe("1.00");
   });
 
   describe("sheet label rendering", () => {

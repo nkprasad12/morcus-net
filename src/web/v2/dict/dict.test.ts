@@ -3,6 +3,7 @@ import {
   renderEntryResult,
   renderDictResultsHtml,
   renderDictPageHtml,
+  parseDictScale,
   formatInflectionForm,
 } from "@/web/v2/dict/dict.server";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -224,26 +225,27 @@ describe("dict_ssr", () => {
     expect(html).toContain('class="v2-lexicon-badge v2-dict-disabled">EGL<');
 
     // Custom dictionaries: Latin only
-    const latinOnlyHtml = renderDictResultsHtml("", undefined, ["L&S", "GAF"]);
+    const latinOnlyHtml = renderDictResultsHtml("", undefined, {
+      queriedDicts: ["L&S", "GAF"],
+    });
     expect(latinOnlyHtml).toContain(
       "Welcome to the dictionary. You can search Latin headwords and inflected forms."
     );
     expect(latinOnlyHtml).not.toContain("words in");
 
     // Custom dictionaries: English reverse only
-    const englishOnlyHtml = renderDictResultsHtml("", undefined, ["S&H"]);
+    const englishOnlyHtml = renderDictResultsHtml("", undefined, {
+      queriedDicts: ["S&H"],
+    });
     expect(englishOnlyHtml).toContain(
       "Welcome to the dictionary. You can search words in English."
     );
     expect(englishOnlyHtml).not.toContain("Latin headwords");
 
     // Inflection disabled landing page: Latin headwords only without inflected forms
-    const nonInflectedHtml = renderDictResultsHtml(
-      "",
-      undefined,
-      undefined,
-      false
-    );
+    const nonInflectedHtml = renderDictResultsHtml("", undefined, {
+      isInflected: false,
+    });
     expect(nonInflectedHtml).toContain(
       "Welcome to the dictionary. You can search Latin headwords, and words in English and German."
     );
@@ -256,7 +258,14 @@ describe("dict_ssr", () => {
   });
 
   test("renderDictResultsHtml renders inflected search guidance when isInflected is false and no results found", () => {
-    const html = renderDictResultsHtml("amavi", {}, ["L&S"], false);
+    const html = renderDictResultsHtml(
+      "amavi",
+      {},
+      {
+        queriedDicts: ["L&S"],
+        isInflected: false,
+      }
+    );
     expect(html).toContain("No dictionary entries found for");
     expect(html).toContain("Exact headword search is active.");
     expect(html).toContain("Enable inflected search");
@@ -577,13 +586,18 @@ describe("dict_ssr", () => {
     const html = renderDictResultsHtml("cum", results);
 
     // Quick jump bar integrated in header
-    expect(html).toContain('class="v2-dict-header"');
+    expect(html).toContain('class="v2-dict-header v2-dict-header-slim"');
     expect(html).toContain('class="v2-dict-toggle" open');
     expect(html).toContain('class="v2-entry-nav"');
     expect(html).toContain("Jump to");
     expect(html).toContain('href="#n1"');
     expect(html).toContain('href="#n2"');
     expect(html).toContain("cum");
+    expect(html).toContain('class="v2-dict-acronym">L&amp;S</span>');
+    expect(html).toContain(
+      'class="v2-dict-name v2-dict-title">Lewis &amp; Short</span>'
+    );
+    expect(html).toContain('class="v2-dict-count">(2)</span>');
 
     // Ensure <summary> does not contain nested interactive elements (links or buttons)
     const summaryMatch = html.match(/<summary[^>]*>([\s\S]*?)<\/summary>/);
@@ -735,11 +749,28 @@ describe("dict_ssr", () => {
           },
         },
       ],
+      GRG: [
+        {
+          entry: new XmlNode("span", [["class", "grgOrth"]], ["habeo"]),
+          outline: {
+            mainKey: "habeo",
+            mainSection: {
+              text: "habeo",
+              level: 0,
+              ordinal: "",
+              sectionId: "g0",
+            },
+            senses: [],
+          },
+        },
+      ],
     };
 
-    // Pass queriedDicts with GAF (0 hits) before L&S (1 hit)
-    const html = renderDictResultsHtml("habeo", results, ["GAF", "L&S"]);
-    // L&S has 1 hit -> prioritized before GAF
+    // Pass queriedDicts with GAF (0 hits) before L&S (1 hit) and GRG (1 hit)
+    const html = renderDictResultsHtml("habeo", results, {
+      queriedDicts: ["GAF", "GRG", "L&S"],
+    });
+    // L&S and GRG have 1 hit -> prioritized before GAF
     const lAndSIndex = html.indexOf('href="#dict-L-S"');
     const gafIndex = html.indexOf("No entries found in Gaffiot");
     expect(lAndSIndex).toBeGreaterThan(-1);
@@ -749,6 +780,30 @@ describe("dict_ssr", () => {
     expect(html).toContain('<span class="v2-jump-pill-count">1</span>');
     expect(html).toContain('class="v2-jump-pill v2-jump-pill-zero"');
     expect(html).toContain('<span class="v2-jump-pill-count">0</span>');
+  });
+
+  test("renderDictResultsHtml omits jump bar when hitKeys <= 1", () => {
+    const results = {
+      "L&S": [
+        {
+          entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+          outline: {
+            mainKey: "habeo",
+            mainSection: {
+              text: "habeo",
+              level: 0,
+              ordinal: "",
+              sectionId: "n0",
+            },
+            senses: [],
+          },
+        },
+      ],
+    };
+    const html = renderDictResultsHtml("habeo", results, {
+      queriedDicts: ["GAF", "L&S"],
+    });
+    expect(html).not.toContain('class="v2-results-nav"');
   });
 
   test("xmlNodeToHtml renders forcNewTab as an action button with external icon", () => {
@@ -923,5 +978,146 @@ describe("dict_ssr", () => {
     expect(html).toContain("v2-toc-entries-summary");
     expect(html).toContain('href="#n200" class="v2-toc-entry-chip"');
     expect(html).toContain('href="#g300" class="v2-toc-entry-chip"');
+  });
+
+  test("renderDictResultsHtml suppresses TOC when isEmbedded is true", () => {
+    const results = {
+      ls: [
+        {
+          entry: new XmlNode("entry", [["id", "n200"]], ["canis"]),
+          outline: {
+            mainKey: "canis",
+            mainSection: {
+              text: "canis",
+              level: 0,
+              ordinal: "",
+              sectionId: "n200",
+            },
+            senses: [
+              { level: 1, ordinal: "I.", text: "Dog", sectionId: "n200.1" },
+            ],
+          },
+        },
+      ],
+      gaffiot: [
+        {
+          entry: new XmlNode("entry", [["id", "g300"]], ["canis"]),
+          outline: {
+            mainKey: "canis",
+            mainSection: {
+              text: "canis",
+              level: 0,
+              ordinal: "",
+              sectionId: "g300",
+            },
+            senses: [
+              { level: 1, ordinal: "1.", text: "Chien", sectionId: "g300.1" },
+            ],
+          },
+        },
+      ],
+    };
+
+    // When isEmbedded is true, TOC must be completely suppressed (fixes drawer-in-a-drawer collision)
+    const html = renderDictResultsHtml("canis", results, {
+      isEmbedded: true,
+    });
+    expect(html).not.toContain("has-toc");
+    expect(html).not.toContain("<morcus-dict-toc");
+    expect(html).not.toContain("v2-drawer-toc");
+    expect(html).toContain('class="v2-results-layout"');
+    expect(html).toContain('class="v2-results-main"');
+
+    // In embedded mode, entries should carry inline lexicon badges
+    expect(html).toContain('class="v2-dict-badge v2-dict-badge-la"');
+    expect(html).toContain('title="Lewis &amp; Short">L&amp;S</span>');
+    expect(html).toContain('title="Gaffiot">GAF</span>');
+  });
+
+  test("renderEntryResult emits v2-tool-outline class on outline details element", () => {
+    const entryResult = {
+      entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+      outline: {
+        mainKey: "habeo",
+        mainSection: {
+          text: "habeo",
+          level: 0,
+          ordinal: "",
+          sectionId: "n0",
+        },
+        senses: [
+          { level: 1, ordinal: "I.", text: "To have, hold", sectionId: "n0.1" },
+        ],
+      },
+    };
+
+    const standaloneHtml = renderEntryResult(entryResult);
+    expect(standaloneHtml).toContain('class="v2-tool-pane v2-tool-outline"');
+    expect(standaloneHtml).not.toContain("v2-dict-badge");
+
+    const embeddedHtml = renderEntryResult(entryResult, 0, 1, 1, {
+      dictKey: "L&S",
+      dictName: "Lewis & Short",
+      dictAcronym: "L&S",
+      dictLang: "la",
+      isEmbedded: true,
+    });
+    expect(embeddedHtml).toContain(
+      '<span class="v2-dict-badge v2-dict-badge-la" title="Lewis &amp; Short">L&amp;S</span>'
+    );
+    expect(embeddedHtml).toContain('class="v2-tool-pane v2-tool-outline"');
+  });
+
+  test("renderDictPageHtml injects clamped --v2-dict-scale style tag when scale is provided", () => {
+    const unscaledHtml = renderDictPageHtml({
+      query: "test",
+    });
+    expect(unscaledHtml).not.toContain("--v2-dict-scale");
+
+    const scaledHtml = renderDictPageHtml({
+      query: "test",
+      scale: 120,
+    });
+    expect(scaledHtml).toContain(
+      "<style>:root { --v2-dict-scale: 1.20; }</style>"
+    );
+
+    // Clamping: max 140
+    const maxClamped = renderDictPageHtml({
+      query: "test",
+      scale: 200,
+    });
+    expect(maxClamped).toContain(
+      "<style>:root { --v2-dict-scale: 1.40; }</style>"
+    );
+
+    // Clamping: min 70
+    const minClamped = renderDictPageHtml({
+      query: "test",
+      scale: 40,
+    });
+    expect(minClamped).toContain(
+      "<style>:root { --v2-dict-scale: 0.70; }</style>"
+    );
+  });
+
+  describe("parseDictScale", () => {
+    test("returns parsed number clamped between 70 and 140", () => {
+      expect(parseDictScale(100)).toBe(100);
+      expect(parseDictScale(120)).toBe(120);
+      expect(parseDictScale("130")).toBe(130);
+      expect(parseDictScale(60)).toBe(70);
+      expect(parseDictScale(200)).toBe(140);
+      expect(parseDictScale("50")).toBe(70);
+      expect(parseDictScale("150")).toBe(140);
+    });
+
+    test("returns undefined for invalid, empty, or undefined input", () => {
+      expect(parseDictScale(undefined)).toBeUndefined();
+      expect(parseDictScale(null)).toBeUndefined();
+      expect(parseDictScale("")).toBeUndefined();
+      expect(parseDictScale("abc")).toBeUndefined();
+      expect(parseDictScale(NaN)).toBeUndefined();
+    });
   });
 });

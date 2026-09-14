@@ -12,9 +12,16 @@ import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
 import { hasGreek } from "@/web/v2/dict/dict_greek.common";
 import { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
 import { renderDictTocHtml } from "@/web/v2/dict/dict_toc.server";
+import { findDictInfo } from "@/web/v2/dict/dict_clustering.common";
 import * as he from "he";
 
 export { DICT_NAMES, DICT_ACRONYMS };
+
+export interface DictResultsOptions {
+  queriedDicts?: string[];
+  isInflected?: boolean;
+  isEmbedded?: boolean;
+}
 
 /**
  * Renders the error partial shown when a dictionary lookup fails.
@@ -40,9 +47,10 @@ export function renderDictErrorHtml(
 export function renderDictResultsHtml(
   query: string,
   results?: DictsFusedResponse,
-  queriedDicts?: string[],
-  isInflected: boolean = true
+  options: DictResultsOptions = {}
 ): string {
+  const { queriedDicts, isInflected = true, isEmbedded = false } = options;
+
   if (!query.trim()) {
     return renderDictLandingHtml(queriedDicts, isInflected);
   }
@@ -104,18 +112,63 @@ export function renderDictResultsHtml(
     0
   );
 
-  // Sort jump pills so dictionaries with results come first, followed by zero-hit dictionaries
-  const sortedPillKeys = [...allQueriedKeys].sort((a, b) => {
-    const countA = results[a]?.length || 0;
-    const countB = results[b]?.length || 0;
-    if (countA > 0 && countB === 0) return -1;
-    if (countA === 0 && countB > 0) return 1;
-    return 0; // maintain relative queried order
-  });
+  let jumpBarHtml = "";
+  if (hitKeys.length > 1) {
+    // Sort jump pills so dictionaries with results come first, followed by zero-hit dictionaries
+    const sortedPillKeys = [...allQueriedKeys].sort((a, b) => {
+      const countA = results[a]?.length || 0;
+      const countB = results[b]?.length || 0;
+      if (countA > 0 && countB === 0) return -1;
+      if (countA === 0 && countB > 0) return 1;
+      return 0; // maintain relative queried order
+    });
 
-  const pillsHtml = sortedPillKeys
+    const pillsHtml = sortedPillKeys
+      .map((dictKey) => {
+        const entries = results[dictKey] || [];
+        const shortName =
+          DICT_NAMES[dictKey] ??
+          LatinDict.BY_KEY.get(dictKey)?.displayName ??
+          dictKey.toUpperCase();
+        const dictAcronym =
+          DICT_ACRONYMS[dictKey] ??
+          DICT_ACRONYMS[dictKey.toLowerCase()] ??
+          dictKey.toUpperCase();
+        const count = entries.length;
+        const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+        if (count > 0) {
+          return `<a href="#${cardId}" class="v2-jump-pill" title="Jump to ${he.escape(
+            shortName
+          )} (${count} ${
+            count === 1 ? "entry" : "entries"
+          })"><span class="v2-jump-pill-name">${he.escape(
+            dictAcronym
+          )}</span><span class="v2-jump-pill-count">${count}</span></a>`;
+        } else {
+          return `<span class="v2-jump-pill v2-jump-pill-zero" title="No entries found in ${he.escape(
+            shortName
+          )}"><span class="v2-jump-pill-name">${he.escape(
+            dictAcronym
+          )}</span><span class="v2-jump-pill-count">0</span></span>`;
+        }
+      })
+      .join("");
+
+    jumpBarHtml = `
+      <nav class="v2-results-nav" aria-label="Jump to dictionary">
+        <div class="v2-results-pills">
+          ${pillsHtml}
+        </div>
+        <div class="v2-results-total">
+          ${totalCount} ${totalCount === 1 ? "result" : "results"}
+        </div>
+      </nav>
+    `;
+  }
+
+  const cardsHtml = hitKeys
     .map((dictKey) => {
-      const entries = results[dictKey] || [];
+      const entries = results[dictKey];
       const shortName =
         DICT_NAMES[dictKey] ??
         LatinDict.BY_KEY.get(dictKey)?.displayName ??
@@ -124,44 +177,11 @@ export function renderDictResultsHtml(
         DICT_ACRONYMS[dictKey] ??
         DICT_ACRONYMS[dictKey.toLowerCase()] ??
         dictKey.toUpperCase();
-      const count = entries.length;
-      const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-      if (count > 0) {
-        return `<a href="#${cardId}" class="v2-jump-pill" title="Jump to ${he.escape(
-          shortName
-        )} (${count} ${
-          count === 1 ? "entry" : "entries"
-        })"><span class="v2-jump-pill-name">${he.escape(
-          dictAcronym
-        )}</span><span class="v2-jump-pill-count">${count}</span></a>`;
-      } else {
-        return `<span class="v2-jump-pill v2-jump-pill-zero" title="No entries found in ${he.escape(
-          shortName
-        )}"><span class="v2-jump-pill-name">${he.escape(
-          dictAcronym
-        )}</span><span class="v2-jump-pill-count">0</span></span>`;
-      }
-    })
-    .join("");
-
-  const jumpBarHtml = `
-    <nav class="v2-results-nav" aria-label="Jump to dictionary">
-      <div class="v2-results-pills">
-        ${pillsHtml}
-      </div>
-      <div class="v2-results-total">
-        ${totalCount} ${totalCount === 1 ? "result" : "results"}
-      </div>
-    </nav>
-  `;
-
-  const cardsHtml = hitKeys
-    .map((dictKey) => {
-      const entries = results[dictKey];
-      const dictName =
-        DICT_NAMES[dictKey] ??
-        LatinDict.BY_KEY.get(dictKey)?.displayName ??
-        dictKey.toUpperCase();
+      const info = findDictInfo(dictKey);
+      const dictLang =
+        info && info.languages.from !== "*"
+          ? info.languages.from.toLowerCase()
+          : "la";
       const totalEntries = entries.length;
       const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
@@ -194,7 +214,13 @@ export function renderDictResultsHtml(
 
       const entriesHtml = entries
         .map((entry, idx) =>
-          renderEntryResult(entry, `${dictKey}-${idx}`, idx + 1, totalEntries)
+          renderEntryResult(entry, `${dictKey}-${idx}`, idx + 1, totalEntries, {
+            dictKey,
+            dictName: shortName,
+            dictAcronym,
+            dictLang,
+            isEmbedded,
+          })
         )
         .join("");
 
@@ -217,15 +243,16 @@ export function renderDictResultsHtml(
 
       return `
         <section class="v2-dict-card" id="${cardId}">
-          <header class="v2-dict-header">
+          <header class="v2-dict-header v2-dict-header-slim">
             <div class="v2-dict-header-row">
               <details class="v2-dict-toggle" open>
                 <summary class="v2-dict-summary">
                   <span class="v2-dict-toggle-icon" aria-hidden="true"></span>
-                  <span class="v2-dict-title">${he.escape(dictName)}</span>
-                  <span class="v2-dict-collapsed-badge">${totalEntries} ${
-        totalEntries === 1 ? "entry" : "entries"
-      }</span>
+                  <span class="v2-dict-acronym">${he.escape(dictAcronym)}</span>
+                  <span class="v2-dict-name v2-dict-title">${he.escape(
+                    shortName
+                  )}</span>
+                  <span class="v2-dict-count">(${totalEntries})</span>
                 </summary>
               </details>
               ${attrHtml}
@@ -240,9 +267,10 @@ export function renderDictResultsHtml(
     })
     .join("\n");
 
-  const tocHtml = results
-    ? renderDictTocHtml({ results, hitKeys, maxLevel: 3 })
-    : "";
+  const tocHtml =
+    !isEmbedded && results
+      ? renderDictTocHtml({ results, hitKeys, maxLevel: 3 })
+      : "";
   const hasToc = Boolean(tocHtml);
 
   return `
@@ -256,6 +284,22 @@ export function renderDictResultsHtml(
   `;
 }
 
+/**
+ * Parses and clamps an optional dictionary font scale percentage between 70% and 140%.
+ * Returns undefined if raw is null/undefined, NaN, or non-numeric.
+ */
+export function parseDictScale(raw: unknown): number | undefined {
+  if (raw === undefined || raw === null || raw === "") return undefined;
+  const num =
+    typeof raw === "number"
+      ? raw
+      : typeof raw === "string"
+      ? Number.parseInt(raw, 10)
+      : NaN;
+  if (!Number.isFinite(num)) return undefined;
+  return Math.min(140, Math.max(70, num));
+}
+
 export interface DictPageOptions {
   query: string;
   results?: DictsFusedResponse;
@@ -263,6 +307,7 @@ export interface DictPageOptions {
   isInflected?: boolean;
   isIdSearch?: boolean;
   embedded?: boolean;
+  scale?: number;
 }
 
 /**
@@ -271,15 +316,22 @@ export interface DictPageOptions {
 export function renderDictPageHtml(options: DictPageOptions): string {
   const query = options.query || "";
   const isInflected = options.isInflected !== false;
-  const resultsHtml = renderDictResultsHtml(
-    options.query,
-    options.results,
-    options.queriedDicts,
-    isInflected
-  );
+  const isEmbedded = options.embedded ?? false;
+  const resultsHtml = renderDictResultsHtml(options.query, options.results, {
+    queriedDicts: options.queriedDicts,
+    isInflected,
+    isEmbedded,
+  });
 
   const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
-  const isEmbedded = options.embedded ?? false;
+
+  const dictScale = parseDictScale(options.scale);
+  const extraHeadHtml =
+    dictScale !== undefined
+      ? `<style>:root { --v2-dict-scale: ${(dictScale / 100).toFixed(
+          2
+        )}; }</style>`
+      : undefined;
 
   const contentHtml = `
     <morcus-dict-search>
@@ -304,5 +356,6 @@ export function renderDictPageHtml(options: DictPageOptions): string {
     activePage: "dicts",
     contentHtml,
     hideAppBar: isEmbedded,
+    extraHeadHtml,
   });
 }
