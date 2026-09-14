@@ -42,6 +42,17 @@ export function removeDiacritics(input: string): string {
   return stripDiacritics(input).word;
 }
 
+/**
+ * Removes only combining macrons (U+0304 and U+0305) from text and normalizes
+ * back to NFC. Unlike removeDiacritics, preserves breves, accents, and other marks.
+ */
+export function removeMacrons(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[\u0304\u0305]/g, "")
+    .normalize("NFC");
+}
+
 export interface DiacriticStripped {
   word: string;
   diacritics?: string[];

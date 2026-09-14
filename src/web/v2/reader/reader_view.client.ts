@@ -12,7 +12,11 @@ import {
   setupModalDialog,
   trackPointerDrag,
 } from "@/web/v2/core/index.client";
-import { processTokens, removeDiacritics } from "@/common/text_cleaning";
+import {
+  processTokens,
+  removeDiacritics,
+  removeMacrons,
+} from "@/common/text_cleaning";
 import {
   isBoolean,
   isLiteral,
@@ -510,13 +514,6 @@ export class MorcusReaderView extends BaseElement {
     });
   }
 
-  private stripMacrons(str: string): string {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0304\u0305]/g, "")
-      .normalize("NFC");
-  }
-
   private tokenizeElement(element: HTMLElement) {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const textNodes: Text[] = [];
@@ -559,7 +556,7 @@ export class MorcusReaderView extends BaseElement {
   private findWordElement(word: string): HTMLElement | undefined {
     const rawWord = word.trim().toLowerCase();
     const nfcWord = rawWord.normalize("NFC");
-    const strippedWord = this.stripMacrons(rawWord);
+    const strippedWord = removeMacrons(rawWord);
     const allWords = this.querySelectorAll<HTMLElement>(
       ".v2-reader-text-panel .v2-lat-word"
     );
@@ -575,7 +572,7 @@ export class MorcusReaderView extends BaseElement {
     // 2. Diacritic-stripped fallback (e.g. searching "musa" matches "Mūsa")
     for (const w of allWords) {
       const val = (w.dataset.word || w.textContent || "").trim().toLowerCase();
-      if (this.stripMacrons(val) === strippedWord) {
+      if (removeMacrons(val) === strippedWord) {
         return w;
       }
     }
@@ -975,7 +972,7 @@ export class MorcusReaderView extends BaseElement {
           w.setAttribute("data-original-text", w.textContent || "");
         }
         const orig = w.getAttribute("data-original-text") || "";
-        w.textContent = show ? orig : this.stripMacrons(orig);
+        w.textContent = show ? orig : removeMacrons(orig);
       }
     };
 

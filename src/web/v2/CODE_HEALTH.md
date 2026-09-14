@@ -46,16 +46,6 @@ _(All items completed or resolved — see Landed and Phase 5 below)_
 
 Every item here is a feature reimplementing something `core/` already provides.
 
-- [ ] 🟢 **Move `stripMacrons()` into `@/common/text_cleaning` as `removeMacrons`**
-      (`reader_view.client.ts` L401). This item previously read "delete `stripMacrons()`, the file
-      already imports `removeDiacritics`" — that is wrong, and acting on it would ship a visible
-      regression. They are not two functions racing to disagree; they do different jobs.
-      `stripMacrons` removes only `U+0304`/`U+0305` and re-normalizes to NFC, whereas
-      `removeDiacritics` strips the entire `U+0300–U+036F` range plus `U+1DC0–1DFF` and
-      `U+20D0–20FF`, and leaves the result decomposed. The decisive call site is L878, the
-      **Show Macra** toggle: `w.textContent = show ? orig : this.stripMacrons(orig)`. Swapping in
-      `removeDiacritics` there would also strip breves, diaereses and Greek accents from displayed
-      text. The real smell is only that a text-normalization primitive lives as a private method on
 - [ ] 🔴 **Extract `core/tokenize.client.ts`.** `dict_search.client.ts` L596-685 and
       `reader_view.client.ts` L385-422 independently implement
       `createTreeWalker(SHOW_TEXT)` → `processTokens` → fragment-swap-with-clickable-spans,
@@ -504,6 +494,9 @@ worth not rediscovering is summarised in Phase 5 instead.
 
 **Phase 3 — adopt the abstractions we already built**
 
+- **Move `stripMacrons()` from `reader_view.client.ts` to `@/common/text_cleaning` as `removeMacrons`.**
+  Replaces private class method with shared primitive and adds unit tests, preserving non-macron diacritics
+  (breves, accents) during macra toggle and passage lookup.
 - **Suggestion selection survives a re-attach.** `BaseElement` clears disposables on disconnect, so
   anything registered once outside `onConnect()` is gone for good the first time an element moves.
   `dict_suggestions.client.ts` delegated from its constructor; `dict_search.client.ts` registered its
