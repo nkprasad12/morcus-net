@@ -369,20 +369,27 @@ export class MorcusReaderView extends BaseElement {
   private enhancePassage() {
     const passage = this.querySelector<HTMLElement>("#v2-reader-passage");
     if (!passage) return;
-    if (passage.dataset.enhanced === "true") return;
-    passage.dataset.enhanced = "true";
 
-    const targetBlocks = passage.querySelectorAll<HTMLElement>(
-      ".v2-reader-section:not(.v2-section-parallel) p.v2-reader-paragraph, " +
-        ".v2-reader-section:not(.v2-section-parallel) .v2-reader-line, " +
-        ".v2-passage-latin p.v2-reader-paragraph, " +
-        ".v2-passage-latin .v2-reader-line"
-    );
+    // Tokenizing rewrites the passage into `.v2-lat-word` spans, so it must
+    // happen exactly once. The marker lives in the DOM and therefore survives a
+    // disconnect, which is why the listener below cannot be guarded by it.
+    if (passage.dataset.enhanced !== "true") {
+      passage.dataset.enhanced = "true";
 
-    for (const block of targetBlocks) {
-      this.tokenizeElement(block);
+      const targetBlocks = passage.querySelectorAll<HTMLElement>(
+        ".v2-reader-section:not(.v2-section-parallel) p.v2-reader-paragraph, " +
+          ".v2-reader-section:not(.v2-section-parallel) .v2-reader-line, " +
+          ".v2-passage-latin p.v2-reader-paragraph, " +
+          ".v2-passage-latin .v2-reader-line"
+      );
+
+      for (const block of targetBlocks) {
+        this.tokenizeElement(block);
+      }
     }
 
+    // Outside the guard: `BaseElement` disposes this on disconnect, and the
+    // marker above would otherwise stop it ever being registered again.
     this.listen(passage, "keydown", (e: KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
         if (

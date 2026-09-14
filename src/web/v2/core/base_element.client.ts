@@ -27,7 +27,39 @@ export abstract class BaseElement<
   private lifetime = new AbortController();
   private readonly lanes = new Map<Lane, LatestTask>();
 
-  /** Lifecycle hook invoked when the element is inserted into the document. */
+  /**
+   * Lifecycle hook invoked when the element is inserted into the document.
+   *
+   * **Must be idempotent, and must re-register every listener it needs each
+   * time it runs.** Moving an element in the DOM disconnects and reconnects it,
+   * and `disconnectedCallback` calls `dispose()` — so by the time this runs
+   * again, everything registered through {@link listen}, {@link delegate} or
+   * {@link addDisposable} is already gone.
+   *
+   * The trap is a "do this only once" guard with a registration inside it. The
+   * guard is still satisfied on the second connect, so the listener is never
+   * restored and the element goes silently half-dead. This has been gotten
+   * wrong three times here, in three disguises: registering in the constructor,
+   * guarding on a cached field, and guarding on a `data-` marker that outlives
+   * the disconnect entirely. Keep one-time DOM work inside the guard and
+   * registration outside it:
+   *
+   * ```ts
+   * protected override onConnect() {
+   *   if (!this.child) {                    // once: build the DOM
+   *     this.child = document.createElement("x-child");
+   *     this.append(this.child);
+   *   }
+   *   this.listen(this.child, "evt", ...);  // every time: re-subscribe
+   * }
+   * ```
+   *
+   * `core/reattach_conformance.test.ts` enforces this for every registered
+   * element. Note there is deliberately no `hasConnected` re-entry guard in
+   * {@link connectedCallback}: a second `onConnect()` re-registering from a
+   * clean slate is the intended behaviour, and suppressing it would break the
+   * move-and-reconnect path rather than protect it.
+   */
   protected onConnect(): void {}
 
   /** Lifecycle hook invoked when the element is removed from the document. */
