@@ -1,134 +1,75 @@
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
-import {
-  getV2LibrarySummaries,
-  V2WorkSummary,
-} from "@/web/v2/reader/reader_loader.server";
+import { getV2LibrarySummaries } from "@/web/v2/reader/reader_loader.server";
+import { ICON_PATHS } from "@/web/v2/core/icons.common";
 import * as he from "he";
+
+const SEARCH_PATH = ICON_PATHS.search;
 
 export async function renderLibraryPageHtml(): Promise<string> {
   const summaries = (await getV2LibrarySummaries()) || [];
 
-  const macraCount = summaries.filter((w) => w.hasMacra).length;
-  const transCount = summaries.filter((w) => w.hasTranslation).length;
-  const perseusCount = summaries.filter(
-    (w) => w.attribution === "perseus"
-  ).length;
-  const phiCount = summaries.filter(
-    (w) => w.attribution === "publicDomain"
-  ).length;
+  // Sort works alphabetically by author, then by title
+  const sortedWorks = [...summaries].sort((a, b) => {
+    const authorCmp = (a.author || "").localeCompare(b.author || "");
+    if (authorCmp !== 0) return authorCmp;
+    return (a.title || "").localeCompare(b.title || "");
+  });
 
-  // Group by author
-  const byAuthor = new Map<string, V2WorkSummary[]>();
-  for (const s of summaries) {
-    const author = s.author || "Unknown";
-    const existing = byAuthor.get(author);
-    if (existing) {
-      existing.push(s);
-    } else {
-      byAuthor.set(author, [s]);
-    }
-  }
+  const cardsHtml = sortedWorks
+    .map((w) => {
+      const tags: string[] = ["all"];
+      const badges: string[] = [];
 
-  // Sort authors alphabetically. Sorting entries rather than keys avoids a
-  // second lookup that the type system cannot know will succeed.
-  const sortedAuthors = Array.from(byAuthor.entries()).sort(([a], [b]) =>
-    a.localeCompare(b)
-  );
+      if (w.hasMacra) {
+        tags.push("macra");
+        badges.push('<span class="v2-badge v2-badge-macra">Macronized</span>');
+      }
+      if (w.hasTranslation) {
+        tags.push("translation");
+        badges.push('<span class="v2-badge v2-badge-trans">Translated</span>');
+      }
 
-  const authorSectionsHtml = sortedAuthors
-    .map(([author, works]) => {
-      // Sort works by title
-      works.sort((a, b) => a.title.localeCompare(b.title));
+      const readerUrl = `/v2/reader/${w.urlAuthor}/${w.urlName}`;
 
-      const cardsHtml = works
-        .map((w) => {
-          const tags: string[] = ["all"];
-          const badges: string[] = [];
+      const metaParts: string[] = [];
+      if (w.editor) {
+        metaParts.push(
+          `<span class="v2-meta-editor">Ed. ${he.escape(w.editor)}</span>`
+        );
+      }
+      if (w.translator) {
+        metaParts.push(
+          `<span class="v2-meta-trans">Trans. ${he.escape(w.translator)}</span>`
+        );
+      }
+      const metaHtml =
+        metaParts.length > 0
+          ? `<p class="v2-work-card-meta">${metaParts.join(" &middot; ")}</p>`
+          : "";
 
-          if (w.hasMacra) {
-            tags.push("macra");
-            badges.push(
-              '<span class="v2-badge v2-badge-macra" title="Macronized vowel lengths and metrical scansion">Macronized</span>'
-            );
-          }
-          if (w.hasTranslation) {
-            tags.push("translation");
-            badges.push(
-              '<span class="v2-badge v2-badge-trans" title="Includes parallel English translation">Translation</span>'
-            );
-          }
-          if (w.attribution === "perseus") {
-            tags.push("perseus");
-            badges.push(
-              '<span class="v2-badge v2-badge-perseus" title="Perseus Digital Library critical edition">Perseus</span>'
-            );
-          } else if (w.attribution === "publicDomain") {
-            tags.push("phi");
-            badges.push(
-              '<span class="v2-badge v2-badge-phi" title="Packard Humanities Institute Public Domain Latin">Public Domain</span>'
-            );
-          }
-
-          const readerUrl = `/v2/reader/${w.urlAuthor}/${w.urlName}`;
-          const chapterLabel =
-            w.pageCount === 1 ? "1 chapter" : `${w.pageCount} chapters`;
-
-          return `
-            <article class="v2-work-card"
-                     data-author="${he.escape(w.author.toLowerCase())}"
-                     data-title="${he.escape(w.title.toLowerCase())}"
-                     data-tags="${tags.join(" ")}">
-              <div class="v2-work-card-content">
-                <div class="v2-work-card-badges">
-                  ${badges.join(" ")}
-                </div>
-                <h3 class="v2-work-card-title">
-                  <a href="${readerUrl}">${he.escape(w.title)}</a>
-                </h3>
-                <p class="v2-work-card-meta">
-                  <span class="v2-meta-chapters">${chapterLabel}</span>
-                  ${
-                    w.editor
-                      ? `&middot; <span class="v2-meta-editor">Ed. ${he.escape(
-                          w.editor
-                        )}</span>`
-                      : ""
-                  }
-                  ${
-                    w.translator
-                      ? `&middot; <span class="v2-meta-trans">Trans. ${he.escape(
-                          w.translator
-                        )}</span>`
-                      : ""
-                  }
-                </p>
-              </div>
-              <div class="v2-work-card-action">
-                <a href="${readerUrl}" class="v2-work-card-btn" aria-label="Read ${he.escape(
-            w.title
-          )} by ${he.escape(w.author)}">
-                  <span>Read</span> &rarr;
-                </a>
-              </div>
-            </article>
-          `;
-        })
-        .join("\n");
+      const badgesHtml =
+        badges.length > 0
+          ? `<div class="v2-work-card-badges">${badges.join(" ")}</div>`
+          : "";
 
       return `
-        <section class="v2-library-author-section" data-author="${he.escape(
-          author.toLowerCase()
-        )}">
-          <header class="v2-library-author-header">
-            <h2 class="v2-library-author-name">${he.escape(author)}</h2>
-            <span class="v2-library-author-count">${works.length} ${
-        works.length === 1 ? "work" : "works"
-      }</span>
-          </header>
-          <div class="v2-library-grid">
-            ${cardsHtml}
+        <a href="${readerUrl}"
+           class="v2-work-card"
+           data-author="${he.escape((w.author || "").toLowerCase())}"
+           data-title="${he.escape((w.title || "").toLowerCase())}"
+           data-tags="${tags.join(" ")}"
+           aria-label="${he.escape(w.title)}${
+        w.author ? ` by ${he.escape(w.author)}` : ""
+      }">
+          <div class="v2-work-card-content">
+            <span class="v2-work-card-author">${he.escape(
+              w.author || "Unknown"
+            )}</span>
+            <h2 class="v2-work-card-title">${he.escape(w.title)}</h2>
+            ${metaHtml}
+            ${badgesHtml}
           </div>
-        </section>
+        </a>
       `;
     })
     .join("\n");
@@ -138,32 +79,32 @@ export async function renderLibraryPageHtml(): Promise<string> {
       <!-- Library Hero Header -->
       <header class="v2-library-header">
         <div class="v2-library-title-group">
-          <h1 class="v2-library-title">Classical Latin Library</h1>
-          <p class="v2-library-subtitle">
-            Explore <strong>${summaries.length}</strong> classical Latin works with instant lexical lookup,
-            macronized metrical editions, and parallel English translations.
-          </p>
+          <h1 class="v2-library-title">Welcome to the library!</h1>
         </div>
 
-        <!-- Interactive Search & Tag Filters -->
-        <div class="v2-library-controls">
-          <div class="v2-library-search-box">
-            <span class="v2-library-search-glyph" aria-hidden="true">&#x1F50D;</span>
+        <!-- Interactive Search & Feature Filters -->
+        <div class="v2-library-search-form v2-search-form">
+          <div class="v2-input-wrapper">
             <input type="search"
                    id="v2-library-search-input"
-                   class="v2-library-search-input"
-                   placeholder="Filter by author or work (e.g. Caesar, Aeneid, Catullus, Cicero)..."
+                   class="v2-input v2-library-search-input"
+                   placeholder="Filter by author or work (e.g. Caesar, Aeneid, Catullus)..."
                    aria-label="Filter classical works"
-                   autocomplete="off">
-            <span id="v2-library-count-badge" class="v2-library-count-badge">${summaries.length} works</span>
+                   autocomplete="off"
+                   enterkeyhint="search">
+            <button type="button" class="v2-search-btn" aria-label="Search" tabindex="-1">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="${SEARCH_PATH}"></path>
+              </svg>
+            </button>
           </div>
 
-          <div class="v2-library-filter-pills" role="group" aria-label="Filter works by edition feature">
-            <button type="button" class="v2-filter-pill active" data-filter="all">All (${summaries.length})</button>
-            <button type="button" class="v2-filter-pill" data-filter="macra">Macronized (${macraCount})</button>
-            <button type="button" class="v2-filter-pill" data-filter="translation">With Translation (${transCount})</button>
-            <button type="button" class="v2-filter-pill" data-filter="perseus">Perseus (${perseusCount})</button>
-            <button type="button" class="v2-filter-pill" data-filter="phi">Public Domain (${phiCount})</button>
+          <div class="v2-search-tray">
+            <div class="v2-library-filter-pills" role="group" aria-label="Filter works by edition feature">
+              <button type="button" class="v2-filter-pill active" data-filter="all">All</button>
+              <button type="button" class="v2-filter-pill" data-filter="macra">Macronized</button>
+              <button type="button" class="v2-filter-pill" data-filter="translation">Translated</button>
+            </div>
           </div>
         </div>
       </header>
@@ -175,9 +116,11 @@ export async function renderLibraryPageHtml(): Promise<string> {
         <button type="button" class="v2-btn v2-btn-secondary" id="v2-library-reset-filter-btn">Show All Works</button>
       </div>
 
-      <!-- Grouped Author Sections -->
+      <!-- Continuous Works Grid -->
       <main class="v2-library-main" id="v2-library-main">
-        ${authorSectionsHtml}
+        <div class="v2-library-grid" id="v2-library-grid">
+          ${cardsHtml}
+        </div>
       </main>
     </morcus-library-view>
   `;

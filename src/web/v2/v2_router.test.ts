@@ -543,8 +543,14 @@ describe("v2_router integration", () => {
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("morcus-library-view");
-      expect(res.text).toContain("Classical Latin Library");
+      expect(res.text).toContain("Welcome to the library!");
+      expect(res.text).toContain("v2-search-form");
       expect(res.text).toContain("Julius Caesar");
+      expect(res.text).toContain("v2-work-card");
+      expect(res.text).not.toContain("v2-work-card-btn");
+      expect(res.text).not.toContain("chapters");
+      expect(res.text).not.toContain("v2-badge-perseus");
+      expect(res.text).not.toContain("v2-badge-phi");
     });
   });
 

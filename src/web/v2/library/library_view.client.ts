@@ -55,8 +55,6 @@ export class MorcusLibraryView extends BaseElement {
 
   private applyFilter() {
     const cards = this.$$<HTMLElement>(".v2-work-card");
-    const sections = this.$$<HTMLElement>(".v2-library-author-section");
-    const countBadge = this.$<HTMLElement>("#v2-library-count-badge");
     const emptyState = this.$<HTMLElement>("#v2-library-empty-state");
 
     let visibleCount = 0;
@@ -76,28 +74,6 @@ export class MorcusLibraryView extends BaseElement {
       const isVisible = matchesTag && matchesQuery;
       card.hidden = !isVisible;
       if (isVisible) visibleCount++;
-    }
-
-    // Update author section counts and visibility
-    for (const section of sections) {
-      const visibleInSec = section.querySelectorAll<HTMLElement>(
-        ".v2-work-card:not([hidden])"
-      ).length;
-      section.hidden = visibleInSec === 0;
-      const countEl = section.querySelector<HTMLElement>(
-        ".v2-library-author-count"
-      );
-      if (countEl) {
-        countEl.textContent = `${visibleInSec} ${
-          visibleInSec === 1 ? "work" : "works"
-        }`;
-      }
-    }
-
-    if (countBadge) {
-      countBadge.textContent = `${visibleCount} ${
-        visibleCount === 1 ? "work" : "works"
-      }`;
     }
 
     if (emptyState) {
