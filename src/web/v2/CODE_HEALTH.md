@@ -40,26 +40,6 @@ _(All items completed or resolved — see Landed and Phase 5 below)_
       down the whole server, V2 included. Small enough to do as a one-off without taking on the
       other ~86 legacy violations.
 
-- [ ] 🟢 **Bump `nwsapi` so jsdom can evaluate `:has()`.** jsdom's selector engine is currently
-      **2.2.2**, which throws `unknown pseudo-class selector ':has(...)'` on `matches()` /
-      `querySelector()`. That makes every `:has()` rule we ship untestable, and `reader.css` already
-      has two load-bearing ones: L371 (`:has(.v2-drawer-minimized)`, drives the text panel's bottom
-      padding) and L388 (`:has(.v2-is-dragging)`, suppresses its transition mid-drag). It also
-      removed `:has()` from consideration when the drawer's drag-transition selector was fixed (see
-      **Landed**), which is why that fix went through TypeScript instead.
-
-      The fix is smaller than it looks — **nothing needs upgrading except the lockfile**. jsdom stays
-      20.0.3 and jest stays 29.7.0; only the transitive `nwsapi` moves, and **2.2.27** already
-      satisfies both `jsdom@20`'s `^2.2.2` and `jsdom@17`'s `^2.2.0` (the latter arrives via
-      `@craftamap/esbuild-plugin-html`, and the two dedupe). Measured on a scratch install of
-      jsdom 20.0.3 + nwsapi 2.2.27: `.v2-drawer:has(.v2-is-dragging)` matches correctly, with a
-      non-matching control also behaving.
-
-      > [!WARNING]
-      > nwsapi backs `querySelector` for **every** jsdom test in the repo, not just V2 — so verify
-      > with the full `npm run ts-tests`, not `ts-tests:v2`. Consider pinning via `overrides` so a
-      > later `npm install` cannot silently resolve back down the `^2.2.x` range.
-
 ---
 
 ## Phase 3 — Adopt the abstractions we already built
@@ -520,6 +500,7 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **`eslint-plugin-wc` evaluated and superseded by `v2_elements.client.ts` + conformance self-population.** `BaseElement` centralized native callbacks; `reattach_conformance.test.ts` now mechanically verifies manifest coverage and bidirectional fixture completeness.
 - **Decided on Baseline 2023 browserslist via `browser_targets.common.ts`; closed `eslint-plugin-compat` as won't-do.** Targets Baseline 2023 + extended mobile (`chrome/edge/and_chr >= 111`, `firefox/and_ff >= 121`, `safari/ios_saf >= 16.4`, `samsung >= 23`, `opera >= 96`, `op_mob >= 73`) via `output.overrideBrowserslist` in `src/bundler/v2.rsbuild.ts`, isolating V1 SPA. Drops client bundle by 3.8 kB raw / 0.98 kB gzip (-9) and CSS by 925 B. Resolves `AbortSignal.any()` (out) and `AbortSignal.timeout()` (in).
 - **Enforced combined (JS + CSS) bundle-size budget in Rsbuild and Playwright E2E.** Baseline is 72.0 kB raw / 20.6 kB gzip JS and 93.8 kB raw / 15.7 kB gzip CSS (combined: 165.8 kB raw / 36.3 kB gzip). Caps set at < 90/26 kB (JS), < 115/20 kB (CSS), and < 200/45 kB (combined). Built-in Rsbuild guard fails minified builds fast, and Playwright verifies network headers and payloads.
+- **Bumped `nwsapi` to `^2.2.27` via `package.json` overrides.** Unlocks jsdom evaluation of `:has()` pseudo-class selectors on `matches()` and `querySelector()` without throwing `SyntaxError`, enabling DOM testing for load-bearing `reader.css` drawer rules (`:has(.v2-drawer-minimized)`, `:has(.v2-is-dragging)`). Added selector and DOM sink conformance tests in `core/dom.test.ts`.
 
 **Phase 3 — adopt the abstractions we already built**
 

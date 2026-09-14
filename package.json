@@ -109,5 +109,8 @@
   "dependencies": {
     "diff": "^8.0.3",
     "he": "^1.2.0"
+  },
+  "overrides": {
+    "nwsapi": "^2.2.27"
   }
 }
