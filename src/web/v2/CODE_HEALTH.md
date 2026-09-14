@@ -464,9 +464,6 @@ dialog markup. Gaps:
       `content-visibility:` anywhere in `src/web/v2`, so a drawer or splitter resize relayouts the
       full text panel and all of its inline word spans. This is what makes the two drag items above
       expensive rather than merely wasteful, so it is worth measuring after they land — it may be
-      the remaining gap, or it may be unnecessary.
-- [ ] 🟢 **Stop `fs.existsSync` on the render hot path.** `shell/asset_manifest.server.ts` L18-23
-      does up to 2 syscalls per page render. Check once at boot, or on a timer in dev only.
 - [ ] 🟡 **Lazy-load the two heavy verticals.** `v2_bundle.client.ts` L1-10 eagerly bundles everything, so
       reader users download the full dictionary interaction matrix and vice versa. Gate behind
       `document.querySelector(...)` + dynamic `import()`.
@@ -580,3 +577,5 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Stopped scanning every word to clear one class** on each word click in the reader. The scope
   `.v2-reader-text-panel` in the query is load-bearing, because `linkifyText` can emit the same
   class into the dictionary panel. (`a4e2a276`)
+- **Stop `fs.existsSync` on the render hot path.** Deleted the per-render asset file existence
+  checks in `shell/asset_manifest.server.ts` and cache the parsed manifest on first access. (`6f5b6d75`)
