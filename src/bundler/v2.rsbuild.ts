@@ -5,6 +5,7 @@ import {
 } from "@rsbuild/core";
 import * as path from "path";
 import * as fs from "fs";
+import { V2_BROWSERSLIST } from "@/web/v2/browser_targets.common";
 
 // Logical asset name -> its emitted (content-hashed) filename under `build/v2`.
 export type V2AssetManifest = Partial<Record<"v2.js" | "v2.css", string>>;
@@ -55,6 +56,7 @@ export function getV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
       },
     },
     output: {
+      overrideBrowserslist: [...V2_BROWSERSLIST],
       distPath: {
         root: outDir,
         js: "",
