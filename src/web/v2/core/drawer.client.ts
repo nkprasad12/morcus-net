@@ -85,7 +85,6 @@ export class DrawerController {
 
     this.initDrag();
     this.initKeyboard();
-    this.initSummaryCapture();
     this.initDetailsSync();
   }
 
@@ -291,10 +290,6 @@ export class DrawerController {
     this.unbindKeydown = () => {
       this.handle.removeEventListener("keydown", onKeyDown);
     };
-  }
-
-  private initSummaryCapture(): void {
-    // Handled in initDrag via capture listener on this.summary
   }
 
   private initDetailsSync(): void {
