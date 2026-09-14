@@ -7,20 +7,13 @@ This document provides instructions for developers and AI agents on running unit
 ## 1. Test Locations
 
 - **E2E Tests (Playwright)**: `src/integration/suites/browser_v2_e2e.test.ts`
-- **Unit Tests (Jest)**:
-  - `src/web/v2/v2_router.test.ts` (Express router, HTTP routes, SSR responses, JSON completions)
-  - `src/web/v2/dict/dict.test.ts` (Dictionary SSR renderer, tabs, tool panes, HTML escaping)
-  - `src/web/v2/dict/search_bar.test.ts` (Search bar HTML generation)
-  - `src/web/v2/dict/dict_settings.test.ts` (Highlight settings Web Component)
-  - `src/web/v2/reader/reader.test.ts` (Reader page SSR renderer)
-  - `src/web/v2/dialog/dialog.test.ts` (Accessible modal dialog markup)
-  - `src/web/v2/about/about.test.ts` (About page SSR renderer)
+- **Unit Tests (Jest)**: Colocated alongside source modules matching `src/web/v2/**/*.test.ts` (run via `npm run ts-tests:v2`). Tests cover SSR renderers, routing, bitmask/clustering logic, custom elements, and core utilities across each vertical slice (`about/`, `core/`, `dialog/`, `dict/`, `reader/`, `shell/`, and `v2_router.test.ts`).
 
 ---
 
 ## 2. Running E2E Tests with Playwright
 
-Playwright tests are configured in `playwright.config.ts`. The V2 E2E suite verifies both **No-JS baseline** (SSR only) and **JS-enhanced** (Lit web components) interactions.
+Playwright tests are configured in `playwright.config.ts`. The V2 E2E suite verifies both **No-JS baseline** (SSR only) and **JS-enhanced** (native Web Components) interactions.
 
 ### Option A: Reusing a Running Dev Server (Recommended for Fast Local Testing)
 

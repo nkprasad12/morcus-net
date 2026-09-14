@@ -76,7 +76,7 @@
   display: block;
 }
 
-/* Autocomplete suggestion container (populated by Lit component) */
+/* Autocomplete suggestion container (populated by Web Component) */
 .v2-suggestions {
   position: absolute;
   top: 100%;

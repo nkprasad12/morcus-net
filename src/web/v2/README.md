@@ -8,7 +8,7 @@ The UI V2 prototype explores a server-rendered Multi-Page Application (MPA) mode
 
 1. **Zero-JS Baseline**: All primary user flows (dictionary lookup, inflected search, site navigation, and readability) function 100% without client-side JavaScript using standard HTML semantics (`<form method="GET">`, native `<details>`/`<summary>`, and semantic `<a>` links).
 2. **Light DOM Custom Elements (Zero Framework Overhead)**: Web Components extend native `HTMLElement` to wrap server-rendered markup without shadow root barriers or form association issues, keeping client bundle size minimal.
-3. **Safe DOM Manipulation**: Components use safe DOM APIs (`textContent`, `replaceChildren`, and `createContextualFragment`) with event delegation for performant, robust updates and automated XSS protection.
+3. **Safe DOM Manipulation**: Components use safe DOM APIs (`textContent`, `replaceChildren`) and typed HTML sinks (`setHtml`, `replaceWithHtml` in `core/dom.client.ts`) accepting branded `SafeHtml` produced by `core/html.common.ts`, backed by `eslint-plugin-no-unsanitized` for automated XSS prevention.
 4. **Coexistence**: Mounted under `/v2/*`, leaving the existing React/Preact SPA, RPC endpoints, and build pipelines completely unaffected.
 
 ---
@@ -65,11 +65,13 @@ The canonical example is `dict/search_bar.common.ts`, whose `renderLangChipsHtml
 
 Two consequences worth knowing before you "clean up" such a module:
 
-- **They return HTML strings, not DOM nodes.** The client assigns the result to `innerHTML` /
-  `outerHTML`, so returning nodes is not an option.
-- **They must hand-roll their escaping.** Escaping in a `.common.ts` cannot use `he`, which is ~100
-  KB of poorly tree-shakeable CommonJS and would land in the client bundle. The local `escapeHtml`
-  in `search_bar.common.ts` is therefore deliberate, not a smell. The lint rules enforce this.
+- **They return `SafeHtml`, not DOM nodes.** The client updates the DOM via typed sinks
+  (`setHtml` / `replaceWithHtml` in `core/dom.client.ts`), so returning DOM nodes is not an option.
+- **Escaping is provided by `core/html.common.ts`.** Escaping in a `.common.ts` cannot use `he`,
+  which is ~100 KB of poorly tree-shakeable CommonJS and must not enter the client bundle
+  (enforced mechanically by ESLint). Instead, isomorphic renderers use the `html` tagged template
+  from `core/html.common.ts`, which auto-escapes dynamic values and brands output as `SafeHtml`
+  without third-party bundle bloat.
 
 ### Build Pipeline
 

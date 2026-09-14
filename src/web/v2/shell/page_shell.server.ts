@@ -178,7 +178,7 @@ export function renderPageShell(options: PageShellOptions): string {
   <!-- Single global popover for abbreviation expansions -->
   <div id="v2-abbr-popover" popover="auto" class="v2-abbr-popover"></div>
 
-  <!-- UI V2 enhanced with Lit Web Components -->
+  <!-- UI V2 client-side Web Components bundle -->
   <script type="module" src="${getV2AssetHref("v2.js")}"></script>
 </body>
 </html>`;
