@@ -46,11 +46,6 @@ _(All items completed or resolved — see Landed and Phase 5 below)_
 
 Every item here is a feature reimplementing something `core/` already provides.
 
-- [ ] 🔴 **Extract `core/tokenize.client.ts`.** `dict_search.client.ts` L596-685 and
-      `reader_view.client.ts` L385-422 independently implement
-      `createTreeWalker(SHOW_TEXT)` → `processTokens` → fragment-swap-with-clickable-spans,
-      with subtly different exclusion rules (~100 lines duplicated).
-
 > [!NOTE] > **Dictionary selection is currently represented four ways**: base36 URL bitmask, the
 > `morcus_dicts` cookie, `SEARCH_SETTINGS_KEY` as a semicolon-string in localStorage, and
 > `GlobalSettings` JSON — each with its own parser. This is the most likely source of future
@@ -87,10 +82,6 @@ bibliography modal, keyboard shortcuts, dictionary sheet, URL sync, highlights.
 - [ ] 🟢 Hoist the drawer's `18`/`48`/`88` dvh magic numbers to named constants. (The splitter's
       `300`/`800`/`320` px were named as part of the `pointermove` hoist, which had to touch the
       same expressions.)
-- [ ] 🟡 Decouple client from SSR markup shape: L350-355 queries exact CSS selector chains
-      (`p.v2-reader-paragraph`, `.v2-passage-latin .v2-reader-line`). Have `reader.server.ts` emit
-      `data-tokenize-target="true"` and query that instead, so restyling can't silently break
-      tokenization.
 
 ### Server-side render functions
 
@@ -487,6 +478,7 @@ worth not rediscovering is summarised in Phase 5 instead.
   cookie primitives (`readCookie`, `hasCookie`, `formatCookie`), unifying dictionary and inflection
   cookie formatting in `dict_selection.common.ts`, and relocating misplaced dictionary stores out
   of `core/settings.client.ts`.
+- **Extract `core/tokenize.client.ts`**, consolidating TreeWalker text tokenization, Latin word detection, and fragment replacement between `reader_view.client.ts` and `dict_search.client.ts`, backed by 10 unit tests.
 
 **Phase 4 — decomposition**
 
@@ -505,6 +497,7 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Split `v2_router.server.ts` into vertical route slices**, extracting `dict/dict_routes.server.ts`,
   `reader/reader_routes.server.ts`, `api_routes.server.ts`, and `core/async_handler.server.ts`,
   reducing `v2_router.server.ts` from 616 to 74 lines while preserving the single mounting contract.
+- **Decouple client from SSR markup shape via `data-tokenize-target`**, emitting semantic data attributes in `v2_preprocessor.ts` and `entry_view.server.ts` with legacy selector fallback, eliminating brittle CSS selector chains in `reader_view.client.ts`.
 
 **Phase 7 — docs & tests**
 

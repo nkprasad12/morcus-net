@@ -42,7 +42,7 @@ export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
               <span class="v2-cite-prefix">1.1.</span><span class="v2-cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage">
+          <div class="v2-reader-passage" data-tokenize-target="true">
             Gallia est omnis divisa in partes tres, quarum unam incolunt Belgae, aliam Aquitani, tertiam qui ipsorum lingua Celtae, nostra Galli appellantur.
           </div>
         </div>
@@ -52,7 +52,7 @@ export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
               <span class="v2-cite-prefix">1.1.</span><span class="v2-cite-local">2</span>
             </a>
           </div>
-          <div class="v2-reader-passage">
+          <div class="v2-reader-passage" data-tokenize-target="true">
             Hi omnes lingua, institutis, legibus inter se differunt.
           </div>
         </div>
@@ -62,7 +62,7 @@ export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
               <span class="v2-cite-prefix">1.1.</span><span class="v2-cite-local">3</span>
             </a>
           </div>
-          <div class="v2-reader-passage">
+          <div class="v2-reader-passage" data-tokenize-target="true">
             Horum omnium fortissimi sunt Belgae.
           </div>
         </div>
@@ -72,7 +72,7 @@ export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
               <span class="v2-cite-prefix">1.1.</span><span class="v2-cite-local">4</span>
             </a>
           </div>
-          <div class="v2-reader-passage">
+          <div class="v2-reader-passage" data-tokenize-target="true">
             Qua de causa Helvetii.
           </div>
         </div>
@@ -90,7 +90,7 @@ export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
               <span class="v2-cite-prefix">1.2.</span><span class="v2-cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage">
+          <div class="v2-reader-passage" data-tokenize-target="true">
             Apud Helvetios longe nobilissimus fuit et ditissimus Orgetorix.
           </div>
         </div>
@@ -128,7 +128,7 @@ export const MOCK_SALLUST_WORK: V2PreprocessedWork = {
               <span class="v2-cite-prefix">1.</span><span class="v2-cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage">Omnis homines qui sese student praestare ceteris animalibus...</div>
+          <div class="v2-reader-passage" data-tokenize-target="true">Omnis homines qui sese student praestare ceteris animalibus...</div>
         </div>
       `,
       parallelHtml: `
@@ -140,7 +140,7 @@ export const MOCK_SALLUST_WORK: V2PreprocessedWork = {
           </div>
           <div class="v2-reader-parallel-content">
             <div class="v2-reader-passage-col v2-passage-latin">
-              <div class="v2-reader-passage">Omnis homines qui sese student praestare ceteris animalibus...</div>
+              <div class="v2-reader-passage" data-tokenize-target="true">Omnis homines qui sese student praestare ceteris animalibus...</div>
             </div>
             <div class="v2-reader-passage-col v2-passage-english">
               <span class="v2-reader-trans-author">John Selby Watson:</span>
@@ -181,7 +181,7 @@ export const MOCK_CATULLUS_WORK: V2PreprocessedWork = {
               <span class="v2-cite-prefix">5.</span><span class="v2-cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage">
+          <div class="v2-reader-passage" data-tokenize-target="true">
             Vivamus, mea Lesbia, atque amemus
           </div>
         </div>
@@ -218,7 +218,7 @@ export const MOCK_VERGIL_WORK: V2PreprocessedWork = {
               <span class="v2-cite-prefix">1.</span><span class="v2-cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage">
+          <div class="v2-reader-passage" data-tokenize-target="true">
             Arma virumque cano
           </div>
         </div>

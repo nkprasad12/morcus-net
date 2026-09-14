@@ -6,16 +6,13 @@ import {
   registerElement,
   replaceWithHtml,
   setHtml,
+  tokenizeTargets,
 } from "@/web/v2/core/index.client";
 import {
   dictSettingsStore,
   inflectedSettingsStore,
 } from "@/web/v2/dict/dict_preferences.client";
-import {
-  processTokens,
-  removeDiacritics,
-  trimRawQuery,
-} from "@/common/text_cleaning";
+import { trimRawQuery } from "@/common/text_cleaning";
 import {
   cleanCompletionQuery,
   type CompletionItem,
@@ -591,93 +588,31 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   public enhanceWords(container: HTMLElement | null) {
     if (!container) return;
 
-    const entries =
-      container.querySelectorAll<HTMLElement>(".v2-entry-content");
-    if (entries.length === 0) return;
-
-    for (const entry of entries) {
-      if (entry.dataset.wordsEnhanced === "true") continue;
-      entry.dataset.wordsEnhanced = "true";
-
-      const walker = document.createTreeWalker(
-        entry,
-        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
-        {
-          acceptNode(node: Node) {
-            if (node instanceof HTMLElement) {
-              const tag = node.tagName.toLowerCase();
-              const cls = node.className || "";
-              if (
-                tag === "a" ||
-                tag === "button" ||
-                tag === "script" ||
-                tag === "style" ||
-                node.getAttribute("lang") === "el" ||
-                node.hasAttribute("data-no-linkify") ||
-                (typeof cls === "string" &&
-                  (cls.includes("lsOrth") ||
-                    cls.includes("lsEmph") ||
-                    cls.includes("lsHover") ||
-                    cls.includes("lsSenseBullet") ||
-                    cls.includes("v2-section-anchor") ||
-                    cls.includes("v2-toc") ||
-                    cls.includes("dLink")))
-              ) {
-                return NodeFilter.FILTER_REJECT;
-              }
-              return NodeFilter.FILTER_SKIP;
-            }
-            if (node instanceof Text) {
-              return NodeFilter.FILTER_ACCEPT;
-            }
-            return NodeFilter.FILTER_SKIP;
-          },
-        }
-      );
-
-      const textNodes: Text[] = [];
-      let curr: Node | null = walker.nextNode();
-      while (curr) {
-        if (curr instanceof Text && curr.nodeValue) {
-          textNodes.push(curr);
-        }
-        curr = walker.nextNode();
-      }
-
-      for (const textNode of textNodes) {
-        const text = textNode.nodeValue || "";
-        if (!/[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(text)) {
-          continue;
-        }
-
-        const fragment = document.createDocumentFragment();
-        let hasWords = false;
-
-        for (const [token, isWord] of processTokens(text)) {
-          const cleanWord = removeDiacritics(token).replaceAll("-", "").trim();
-          const isLatinWord =
-            isWord &&
-            !/\d/.test(token) &&
-            /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(cleanWord);
-
-          if (isLatinWord) {
-            hasWords = true;
-            const a = document.createElement("a");
-            a.className = "v2-lat-word";
-            a.href = this.buildWordHref(cleanWord);
-            a.dataset.word = cleanWord;
-            a.textContent = token;
-            fragment.appendChild(a);
-          } else {
-            fragment.appendChild(document.createTextNode(token));
-          }
-        }
-
-        if (hasWords) {
-          textNode.parentNode?.replaceChild(fragment, textNode);
-        }
-      }
-    }
+    tokenizeTargets(container, {
+      targetSelector: "[data-tokenize-target='true'], .v2-entry-content",
+      enhancedDatasetKey: "wordsEnhanced",
+      isExcludedElement: (node) => {
+        const cls = node.className;
+        return (
+          typeof cls === "string" &&
+          (cls.includes("lsOrth") ||
+            cls.includes("lsEmph") ||
+            cls.includes("lsHover") ||
+            cls.includes("lsSenseBullet") ||
+            cls.includes("v2-section-anchor") ||
+            cls.includes("v2-toc") ||
+            cls.includes("dLink"))
+        );
+      },
+      renderWord: (token, cleanWord) => {
+        const a = document.createElement("a");
+        a.className = "v2-lat-word";
+        a.href = this.buildWordHref(cleanWord);
+        a.dataset.word = cleanWord;
+        a.textContent = token;
+        return a;
+      },
+    });
   }
 
   private buildWordHref(cleanWord: string): string {

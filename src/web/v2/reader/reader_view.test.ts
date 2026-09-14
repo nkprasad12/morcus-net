@@ -106,6 +106,34 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(wordTexts).toEqual(["Mūsa", "mihi", "causās", "memorā"]);
   });
 
+  test("decouples tokenization from CSS selectors via data-tokenize-target attribute", () => {
+    const passageHtml = `
+      <div class="v2-reader-section" id="sec-1.1">
+        <div class="v2-reader-passage" data-tokenize-target="true">
+          <blockquote>Gallia est omnis divisa.</blockquote>
+        </div>
+        <div class="v2-english-translation">
+          <span>All Gaul is divided.</span>
+        </div>
+      </div>
+    `;
+
+    const el = createReaderView(passageHtml);
+
+    const latinWords = Array.from(
+      el.querySelectorAll<HTMLElement>(
+        '[data-tokenize-target="true"] .v2-lat-word'
+      )
+    ).map((w) => w.textContent);
+    expect(latinWords).toEqual(["Gallia", "est", "omnis", "divisa"]);
+
+    // Untargeted translation section has 0 .v2-lat-word spans
+    const englishWords = el.querySelectorAll<HTMLElement>(
+      ".v2-english-translation .v2-lat-word"
+    );
+    expect(englishWords).toHaveLength(0);
+  });
+
   test("clicking a word with macra opens dictionary with query and activates word", () => {
     const passageHtml = `
       <div class="v2-reader-section" id="sec-1.8">

@@ -201,7 +201,7 @@ export function renderEntryResult(
       hasTools ? "has-tools" : ""
     }" id="${entryAnchorId}">
       ${topBarHtml}${subsectionNoteHtml}
-      <div class="v2-entry-content">
+      <div class="v2-entry-content" data-tokenize-target="true">
         ${entryHtml}
       </div>
     </article>

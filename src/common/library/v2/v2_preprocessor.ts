@@ -249,7 +249,7 @@ export function preprocessWorkToV2(
         `
         <div class="${sectionClass}" id="sec-${dotId}">
           ${gutterHtml}
-          <div class="v2-reader-passage">
+          <div class="v2-reader-passage" data-tokenize-target="true">
             ${latinHtml}
           </div>
         </div>
@@ -270,7 +270,7 @@ export function preprocessWorkToV2(
             ${gutterHtml}
             <div class="v2-reader-parallel-content">
               <div class="v2-reader-passage-col v2-passage-latin">
-                <div class="v2-reader-passage">${latinHtml}</div>
+                <div class="v2-reader-passage" data-tokenize-target="true">${latinHtml}</div>
               </div>
               <div class="v2-reader-passage-col v2-passage-english">
                 <span class="v2-reader-trans-author">${he.escape(
