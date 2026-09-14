@@ -51,6 +51,7 @@ export {
 
 export {
   DICT_COOKIE_NAME,
+  INFLECTED_COOKIE_NAME,
   DEFAULT_DICTS,
   DEFAULT_DICT_KEYS,
   parseDictKeys,
@@ -59,6 +60,7 @@ export {
   parseDictsFromCookie,
   readCookie,
   formatDictsCookie,
+  formatInflectedCookie,
   formatDictsParam,
   resolveActiveDicts,
 } from "@/web/v2/dict/dict_selection.server";

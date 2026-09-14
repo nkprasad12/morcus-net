@@ -1,55 +1,23 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
   DEFAULT_DICT_KEYS,
-  parseDictKeys,
+  parseDictsFromCookie,
 } from "@/web/v2/dict/dict_selection.common";
 
 export {
   DEFAULT_DICTS,
   DEFAULT_DICT_KEYS,
+  DICT_COOKIE_NAME,
+  INFLECTED_COOKIE_NAME,
   parseDictKeys,
   parseInflectionParam,
+  parseDictsFromCookie,
+  formatDictsCookie,
+  formatInflectedCookie,
   resolveDictParams,
 } from "@/web/v2/dict/dict_selection.common";
 export type { DictParamsInput } from "@/web/v2/dict/dict_selection.common";
-
-export const DICT_COOKIE_NAME = "morcus_dicts";
-
-/**
- * Reads a single cookie value out of a raw HTTP Cookie header.
- * Returns null when the header is absent or does not contain the named cookie.
- */
-export function readCookie(
-  cookieHeader: string | undefined | null,
-  name: string
-): string | null {
-  if (!cookieHeader) return null;
-  for (const c of cookieHeader.split(";")) {
-    const [rawName, ...valParts] = c.trim().split("=");
-    if (rawName === name) {
-      return decodeURIComponent(valParts.join("="));
-    }
-  }
-  return null;
-}
-
-/**
- * Parses dictionary selection from HTTP Cookie header string.
- */
-export function parseDictsFromCookie(
-  cookieHeader: string | undefined | null
-): string[] | null {
-  return parseDictKeys(readCookie(cookieHeader, DICT_COOKIE_NAME));
-}
-
-/**
- * Formats canonical dict keys into a cookie value.
- */
-export function formatDictsCookie(dictKeys: string[]): string {
-  return `${DICT_COOKIE_NAME}=${encodeURIComponent(
-    dictKeys.join(";")
-  )}; Path=/; Max-Age=31536000; SameSite=Lax`;
-}
+export { readCookie } from "@/web/v2/core/cookies.common";
 
 /**
  * Formats canonical dict keys for URL query parameter (using hyphen separator).

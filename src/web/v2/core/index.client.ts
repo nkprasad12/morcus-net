@@ -12,3 +12,4 @@ export * from "@/web/v2/core/toast.client";
 export * from "@/web/v2/core/drawer.client";
 export * from "@/web/v2/core/html.common";
 export * from "@/web/v2/core/dom.client";
+export * from "@/web/v2/core/cookies.common";
