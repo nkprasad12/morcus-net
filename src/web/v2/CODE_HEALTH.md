@@ -43,22 +43,9 @@ _(All items completed or resolved — see Landed and Phase 5 below)_
 - [ ] 🟢 **Decide whether to enforce a bundle-size budget.** Deliberately deferred when the stale
       "< 20 KB gzipped" claims came out of [README.md](README.md): a budget is only useful once the
       prototype feature set stops moving, and until then it would just be a number someone bumps.
-      Current baseline is **75.2 kB raw / 21.4 kB gzip**. Revisit when V2 feature work settles —
-      and note the browserslist item below changes this number, so sequence the two.
-
-- [ ] 🟡 **Decide on `eslint-plugin-compat` + a browserslist — deliberately, or not at all.** There
-      is currently **no browserslist** anywhere (no `.browserslistrc`, no `package.json` key, no
-      target in `v2.rsbuild.ts`), so browser-support questions get answered by guessing. That has
-      already cost us once: `AbortSignal.any()` was the natural way to link a lane signal to the
-      element lifetime in `BaseElement`, and it was rejected purely because support was unknowable.
-
-      > [!CAUTION]
-      > **Rsbuild reads browserslist too.** Adding one is not merely a lint-config change — it
-      > changes transpilation targets, and therefore bundle output and size. Re-measure the bundle
-      > in the same change, and sequence this with the bundle-budget item above so the effect is
-      > visible rather than silent.
-
-      Closing this as "won't do" is reasonable. It should be a decision, not a default.
+      Current baseline is **72.0 kB raw / 20.6 kB gzip (-9)** (calibrated after adopting Baseline 2023
+      browserslist in `v2.rsbuild.ts`, down from 75.7 kB / 21.5 kB). Revisit when V2 feature work
+      settles.
 
 - [ ] 🟢 **Bump `nwsapi` so jsdom can evaluate `:has()`.** jsdom's selector engine is currently
       **2.2.2**, which throws `unknown pseudo-class selector ':has(...)'` on `matches()` /
@@ -314,6 +301,33 @@ which the hoist eliminated. Redundant rAF coalescing would add ~30 lines carryin
 flush-on-`pointerup` footgun (without which the synthetic `<summary>` click suppression and
 splitter width persistence silently break) for zero measurable gain.
 
+**`eslint-plugin-compat` cannot detect static Web API incompatibilities — closed as won't-do.**
+The motivating use-case for linting browser compatibility was evaluating `AbortSignal.any()`. In
+MDN Browser Compat Data (BCD), static class methods are keyed with an `_static` suffix
+(`any_static`, `timeout_static`), but `eslint-plugin-compat`'s underlying AST engine
+(`ast-metadata-inferer`) only indexes prototype instance properties (`aborted`, `reason`,
+`throwIfAborted`) and constructor `.name`. Tested against Safari 14 targets, `eslint-plugin-compat`
+reports 0 errors for `AbortSignal.any()` or `AbortSignal.timeout()`, providing zero protection for
+the bug class that prompted the proposal. Furthermore, it cannot lint `.css` files where UI V2's
+real platform floor (`:has()`, `dvh`) lives. Under unconfigured defaults it also produces 21 false
+positives on core APIs (`fetch`, `URL`, `performance.now`) due to Opera Mini.
+
+**`AbortSignal.any()` is outside Baseline 2023; `AbortSignal.timeout()` is supported.**
+`AbortSignal.any()` was added in Safari 17.4 (March 2024), Firefox 124 (March 2024), and Chrome 116
+(August 2023). Under UI V2's Baseline 2023 target floor (`safari >= 16.4`, `firefox >= 121`,
+`chrome >= 111`), `AbortSignal.any()` cannot be used. The decision in `BaseElement` to reject it in
+favor of explicit lifecycle teardown (`this.lanes` + `this.lifetime.abort()`) is correct. Conversely,
+`AbortSignal.timeout()` is supported across Safari 16.0+, Firefox 100+, and Chrome 103+, and is
+sanctioned for client use throughout UI V2 (e.g. `core/partial.client.ts`).
+
+**Adopting Baseline 2023 browserslist saves 3.8 kB JS / 925 B CSS without dropping vendor prefixes.**
+Targeting Baseline 2023 in `src/bundler/v2.rsbuild.ts` via `output.overrideBrowserslist` allows SWC
+to emit native class fields (`disposables = [];`), native optional chaining (`?.`), and rest
+parameters (`(...s) => ...`) instead of injecting `_defineProperty` helpers and `arguments` arrays.
+In CSS, Lightning CSS preserves WebKit properties like `-webkit-overflow-scrolling: touch` while
+enabling Media Queries Level 4 range syntax (`width <= 640px`), `:is(...)` selector deduplication,
+and `inset` property shorthands.
+
 ---
 
 ## Phase 6 — CSS
@@ -511,6 +525,7 @@ worth not rediscovering is summarised in Phase 5 instead.
   `parserOptions: { project: true }` program already running; 35 production violations resolved
   with zero type assertions, and tests exempt for dynamic fixture/mock typing.
 - **`eslint-plugin-wc` evaluated and superseded by `v2_elements.client.ts` + conformance self-population.** `BaseElement` centralized native callbacks; `reattach_conformance.test.ts` now mechanically verifies manifest coverage and bidirectional fixture completeness.
+- **Decided on Baseline 2023 browserslist via `browser_targets.common.ts`; closed `eslint-plugin-compat` as won't-do.** Targets Baseline 2023 + extended mobile (`chrome/edge/and_chr >= 111`, `firefox/and_ff >= 121`, `safari/ios_saf >= 16.4`, `samsung >= 23`, `opera >= 96`, `op_mob >= 73`) via `output.overrideBrowserslist` in `src/bundler/v2.rsbuild.ts`, isolating V1 SPA. Drops client bundle by 3.8 kB raw / 0.98 kB gzip (-9) and CSS by 925 B. Resolves `AbortSignal.any()` (out) and `AbortSignal.timeout()` (in).
 
 **Phase 3 — adopt the abstractions we already built**
 
