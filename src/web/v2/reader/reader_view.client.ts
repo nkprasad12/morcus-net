@@ -8,12 +8,9 @@ import {
   setHtml,
   settingsStore,
   setupModalDialog,
+  tokenizeTargets,
 } from "@/web/v2/core/index.client";
-import {
-  processTokens,
-  removeDiacritics,
-  removeMacrons,
-} from "@/common/text_cleaning";
+import { removeMacrons } from "@/common/text_cleaning";
 import {
   DEFAULT_READER_PREFS,
   parseReaderPreferences,
@@ -472,16 +469,24 @@ export class MorcusReaderView extends BaseElement {
     if (passage.dataset.enhanced !== "true") {
       passage.dataset.enhanced = "true";
 
-      const targetBlocks = passage.querySelectorAll<HTMLElement>(
-        ".v2-reader-section:not(.v2-section-parallel) p.v2-reader-paragraph, " +
+      tokenizeTargets(passage, {
+        targetSelector: "[data-tokenize-target='true']",
+        fallbackSelector:
+          ".v2-reader-section:not(.v2-section-parallel) p.v2-reader-paragraph, " +
           ".v2-reader-section:not(.v2-section-parallel) .v2-reader-line, " +
           ".v2-passage-latin p.v2-reader-paragraph, " +
-          ".v2-passage-latin .v2-reader-line"
-      );
-
-      for (const block of targetBlocks) {
-        this.tokenizeElement(block);
-      }
+          ".v2-passage-latin .v2-reader-line",
+        enhancedDatasetKey: "wordsEnhanced",
+        renderWord: (token) => {
+          const span = document.createElement("span");
+          span.className = "v2-lat-word";
+          span.setAttribute("role", "button");
+          span.setAttribute("tabindex", "0");
+          span.setAttribute("data-word", token);
+          span.textContent = token;
+          return span;
+        },
+      });
     }
 
     // Outside the guard: `BaseElement` disposes this on disconnect, and the
@@ -501,45 +506,6 @@ export class MorcusReaderView extends BaseElement {
         }
       }
     });
-  }
-
-  private tokenizeElement(element: HTMLElement) {
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-    const textNodes: Text[] = [];
-    let current: Node | null = walker.nextNode();
-    while (current) {
-      if (current instanceof Text && current.nodeValue) {
-        textNodes.push(current);
-      }
-      current = walker.nextNode();
-    }
-
-    for (const node of textNodes) {
-      const text = node.nodeValue || "";
-      const fragment = document.createDocumentFragment();
-
-      for (const [token, isWord] of processTokens(text)) {
-        const cleanWord = removeDiacritics(token).replaceAll("-", "").trim();
-        const isLatinWord =
-          isWord &&
-          !/\d/.test(token) &&
-          /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(cleanWord);
-
-        if (isLatinWord) {
-          const span = document.createElement("span");
-          span.className = "v2-lat-word";
-          span.setAttribute("role", "button");
-          span.setAttribute("tabindex", "0");
-          span.setAttribute("data-word", token);
-          span.textContent = token;
-          fragment.appendChild(span);
-        } else {
-          fragment.appendChild(document.createTextNode(token));
-        }
-      }
-
-      node.parentNode?.replaceChild(fragment, node);
-    }
   }
 
   private findWordElement(word: string): HTMLElement | undefined {

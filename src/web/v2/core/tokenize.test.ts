@@ -1,0 +1,227 @@
+/**
+ * @jest-environment jsdom
+ */
+import {
+  isLatinWord,
+  tokenizeSubtree,
+  tokenizeTargets,
+} from "@/web/v2/core/tokenize.client";
+
+describe("isLatinWord", () => {
+  it("identifies plain Latin words", () => {
+    expect(isLatinWord("Gallia", true)).toEqual({
+      isLatin: true,
+      cleanWord: "Gallia",
+    });
+    expect(isLatinWord("omnis", true)).toEqual({
+      isLatin: true,
+      cleanWord: "omnis",
+    });
+  });
+
+  it("handles combining diacritics and macra", () => {
+    expect(isLatinWord("Mu\u0304sa", true)).toEqual({
+      isLatin: true,
+      cleanWord: "Musa",
+    });
+    expect(isLatinWord("M\u016Bsa", true)).toEqual({
+      isLatin: true,
+      cleanWord: "Musa",
+    });
+  });
+
+  it("rejects non-words and tokens with numbers", () => {
+    expect(isLatinWord(",", false)).toEqual({
+      isLatin: false,
+      cleanWord: ",",
+    });
+    expect(isLatinWord("123", true)).toEqual({
+      isLatin: false,
+      cleanWord: "123",
+    });
+    expect(isLatinWord("sec1", true)).toEqual({
+      isLatin: false,
+      cleanWord: "sec1",
+    });
+  });
+});
+
+describe("tokenizeSubtree", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("tokenizes plain Latin text into custom elements", () => {
+    const div = document.createElement("div");
+    div.innerHTML = "Gallia est omnis divisa in partes tres.";
+    document.body.appendChild(div);
+
+    tokenizeSubtree(div, {
+      renderWord: (token, cleanWord) => {
+        const span = document.createElement("span");
+        span.className = "v2-lat-word";
+        span.dataset.word = cleanWord;
+        span.textContent = token;
+        return span;
+      },
+    });
+
+    const spans = div.querySelectorAll(".v2-lat-word");
+    expect(spans).toHaveLength(7);
+    expect(spans[0].textContent).toBe("Gallia");
+    expect(spans[0].getAttribute("data-word")).toBe("Gallia");
+    expect(div.textContent).toBe("Gallia est omnis divisa in partes tres.");
+  });
+
+  it("is idempotent and avoids double-tokenizing", () => {
+    const div = document.createElement("div");
+    div.innerHTML = "Arma virumque cano";
+    document.body.appendChild(div);
+
+    const renderWord = (token: string) => {
+      const span = document.createElement("span");
+      span.className = "v2-lat-word";
+      span.textContent = token;
+      return span;
+    };
+
+    tokenizeSubtree(div, { renderWord });
+    expect(div.querySelectorAll(".v2-lat-word")).toHaveLength(3);
+    expect(div.dataset.wordsEnhanced).toBe("true");
+
+    // Re-run
+    tokenizeSubtree(div, { renderWord });
+    expect(div.querySelectorAll(".v2-lat-word")).toHaveLength(3);
+  });
+
+  it("rejects standard exclusion elements (a, button, script, style, lang=el, data-no-tokenize)", () => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <p>Before <a href="#">link word</a> middle</p>
+      <button>Button Text</button>
+      <script>const x = "code";</script>
+      <style>.class { color: red; }</style>
+      <span lang="el">\u03bb\u03cc\u03b3\u03bf\u03c2</span>
+      <div data-no-tokenize="true">Ignored content</div>
+      <div data-no-linkify="true">Also ignored content</div>
+      <svg><text>SVG Text</text></svg>
+      <p>After text</p>
+    `;
+    document.body.appendChild(div);
+
+    tokenizeSubtree(div, {
+      renderWord: (token) => {
+        const span = document.createElement("span");
+        span.className = "v2-lat-word";
+        span.textContent = token;
+        return span;
+      },
+    });
+
+    const words = Array.from(div.querySelectorAll(".v2-lat-word")).map(
+      (w) => w.textContent
+    );
+    expect(words).toEqual(["Before", "middle", "After", "text"]);
+  });
+
+  it("honors caller-provided isExcludedElement", () => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <b class="lsOrth">habeo</b>
+      <span class="lsHover">abbr</span>
+      <span>validus</span>
+    `;
+    document.body.appendChild(div);
+
+    tokenizeSubtree(div, {
+      renderWord: (token) => {
+        const span = document.createElement("span");
+        span.className = "v2-lat-word";
+        span.textContent = token;
+        return span;
+      },
+      isExcludedElement: (el) =>
+        el.classList.contains("lsOrth") || el.classList.contains("lsHover"),
+    });
+
+    const words = Array.from(div.querySelectorAll(".v2-lat-word")).map(
+      (w) => w.textContent
+    );
+    expect(words).toEqual(["validus"]);
+  });
+});
+
+describe("tokenizeTargets", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("finds and tokenizes elements matching data-tokenize-target='true'", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <div class="header">Title</div>
+      <div class="content" data-tokenize-target="true">Gallia est omnis divisa.</div>
+      <div class="footer">Non-target text</div>
+    `;
+    document.body.appendChild(container);
+
+    tokenizeTargets(container, {
+      renderWord: (token) => {
+        const span = document.createElement("span");
+        span.className = "v2-lat-word";
+        span.textContent = token;
+        return span;
+      },
+    });
+
+    const words = Array.from(container.querySelectorAll(".v2-lat-word")).map(
+      (w) => w.textContent
+    );
+    expect(words).toEqual(["Gallia", "est", "omnis", "divisa"]);
+  });
+
+  it("tokenizes container directly if container itself matches data-tokenize-target='true'", () => {
+    const container = document.createElement("div");
+    container.setAttribute("data-tokenize-target", "true");
+    container.textContent = "Arma virumque cano";
+    document.body.appendChild(container);
+
+    tokenizeTargets(container, {
+      renderWord: (token) => {
+        const span = document.createElement("span");
+        span.className = "v2-lat-word";
+        span.textContent = token;
+        return span;
+      },
+    });
+
+    expect(container.querySelectorAll(".v2-lat-word")).toHaveLength(3);
+  });
+
+  it("falls back to fallbackSelector when no primary target matches", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <div class="v2-reader-section">
+        <p class="v2-reader-paragraph">Legacy paragraph text</p>
+      </div>
+      <div class="sidebar">Sidebar text</div>
+    `;
+    document.body.appendChild(container);
+
+    tokenizeTargets(container, {
+      targetSelector: "[data-tokenize-target='true']",
+      fallbackSelector: "p.v2-reader-paragraph",
+      renderWord: (token) => {
+        const span = document.createElement("span");
+        span.className = "v2-lat-word";
+        span.textContent = token;
+        return span;
+      },
+    });
+
+    const words = Array.from(container.querySelectorAll(".v2-lat-word")).map(
+      (w) => w.textContent
+    );
+    expect(words).toEqual(["Legacy", "paragraph", "text"]);
+  });
+});

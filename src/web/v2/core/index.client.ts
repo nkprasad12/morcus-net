@@ -13,3 +13,4 @@ export * from "@/web/v2/core/drawer.client";
 export * from "@/web/v2/core/html.common";
 export * from "@/web/v2/core/dom.client";
 export * from "@/web/v2/core/cookies.common";
+export * from "@/web/v2/core/tokenize.client";
