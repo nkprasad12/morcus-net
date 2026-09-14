@@ -42,9 +42,6 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 - [ ] 🟢 **Prefer `he.escape` over `he.encode`** in remaining server templates. `he.encode`
       entity-encodes all non-ASCII, which on Latin/Greek lexica is wasted CPU and payload on every
       render. Hot path: `xml_to_html.server.ts` L65 (runs per XML node).
-- [ ] 🟢 **Stop applying the React plugins to V2.** `plugin:react/recommended` and
-      `react-hooks/recommended` are applied to `src/web/v2`, which contains no React. Inert today,
-      but the hooks rules key off functions named `use*`, so it is a latent false-positive source.
 
 - [ ] 🟡 **Enable the type-checked rules for V2 — the expensive part is already paid for.**
       `parserOptions: { project: true }` makes the parser build a full TypeScript `Program`,
@@ -576,6 +573,9 @@ worth not rediscovering is summarised in Phase 5 instead.
   15 fixes instead of 140. No fix needed a suppression: the assertions were all `has`-then-`get`
   Map lookups or `Boolean()` guards that had thrown the narrowing away, and both `any`s in the
   `debounce` constraint became `never[]`. The one exemption left is a single cast in `listen()`.
+- **Stop applying React plugins to V2.** `plugin:react/recommended`, `plugin:react-hooks/recommended`,
+  plugin registration, version detection, and custom rules scoped out of `src/web/v2/**` to eliminate
+  latent false positives on `use*` helper functions.
 
 **Phase 3 — adopt the abstractions we already built**
 
