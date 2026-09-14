@@ -87,7 +87,6 @@ Every item here is a feature reimplementing something `core/` already provides.
 One class orchestrating reader subsystems: tokenization, splitter drag, mobile drawer,
 bibliography modal, keyboard shortcuts, dictionary sheet, URL sync, highlights.
 
-- [ ] 🟡 Extract `reader_layout.client.ts` ← L484-595 (desktop splitter)
 - [ ] 🟢 Hoist the drawer's `18`/`48`/`88` dvh magic numbers to named constants. (The splitter's
       `300`/`800`/`320` px were named as part of the `pointermove` hoist, which had to touch the
       same expressions.)
@@ -502,6 +501,9 @@ worth not rediscovering is summarised in Phase 5 instead.
   via a bubbling `reader-settings-change` event contract, backed by 15 unit tests.
 - **Extract `reader_toc.client.ts` (`ReaderTocController`)**, decomposing TOC drawer open/close
   lifecycle, live search filtering, outside-click dismissal, and keyboard accessibility out of
+  `reader_view.client.ts`, backed by 13 new unit tests.
+- **Extract `reader_layout.client.ts` (`ReaderLayoutController`)**, decomposing desktop split layout,
+  resizable splitter drag gesture, keyboard navigation, and width persistence out of
   `reader_view.client.ts`, backed by 13 new unit tests.
 
 **Phase 7 — docs & tests**

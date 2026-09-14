@@ -8,7 +8,6 @@ import {
   setHtml,
   settingsStore,
   setupModalDialog,
-  trackPointerDrag,
 } from "@/web/v2/core/index.client";
 import {
   processTokens,
@@ -26,6 +25,17 @@ import {
   readerSettingsStore,
 } from "@/web/v2/reader/reader_settings.client";
 import { ReaderTocController } from "@/web/v2/reader/reader_toc.client";
+import {
+  ReaderLayoutController,
+  type ReaderLayoutElements,
+  type ReaderLayoutOptions,
+  MIN_SPLIT_WIDTH,
+  MAX_SPLIT_WIDTH,
+  MIN_TEXT_PANEL_WIDTH,
+  DEFAULT_SPLIT_WIDTH,
+  READER_DICT_WIDTH_STORAGE_KEY,
+  computeMaxSplitWidth,
+} from "@/web/v2/reader/reader_layout.client";
 
 export {
   type ReaderFontFamily,
@@ -36,24 +46,16 @@ export {
   parseReaderPreferences,
   readerSettingsStore,
   type ReaderSettingsChangeEventDetail,
+  ReaderLayoutController,
+  type ReaderLayoutElements,
+  type ReaderLayoutOptions,
+  MIN_SPLIT_WIDTH,
+  MAX_SPLIT_WIDTH,
+  MIN_TEXT_PANEL_WIDTH,
+  DEFAULT_SPLIT_WIDTH,
+  READER_DICT_WIDTH_STORAGE_KEY,
+  computeMaxSplitWidth,
 };
-
-/**
- * Bounds for the desktop dictionary panel, in px. `MIN_TEXT_PANEL_WIDTH` is the
- * slice reserved for the passage, so the dictionary may grow to the container
- * width less that much, capped at `MAX_SPLIT_WIDTH`.
- */
-const MIN_SPLIT_WIDTH = 300;
-const MAX_SPLIT_WIDTH = 800;
-const MIN_TEXT_PANEL_WIDTH = 320;
-const DEFAULT_SPLIT_WIDTH = 420;
-
-function computeMaxSplitWidth(containerWidth: number): number {
-  return Math.max(
-    MIN_SPLIT_WIDTH,
-    Math.min(MAX_SPLIT_WIDTH, containerWidth - MIN_TEXT_PANEL_WIDTH)
-  );
-}
 
 /**
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
@@ -73,11 +75,16 @@ export class MorcusReaderView extends BaseElement {
   private preferredDrawerDvh: number = 48;
   private drawerController?: DrawerController;
   private tocController: ReaderTocController | null = null;
+  private layoutController: ReaderLayoutController | null = null;
   private router: QueryParamSync | null = null;
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
 
   public getTocController(): ReaderTocController | null {
     return this.tocController;
+  }
+
+  public getLayoutController(): ReaderLayoutController | null {
+    return this.layoutController;
   }
 
   protected override onConnect() {
@@ -117,7 +124,11 @@ export class MorcusReaderView extends BaseElement {
 
     this.listen(this, "click", this.handleClick);
 
-    this.initDesktopSplitter();
+    this.layoutController = new ReaderLayoutController({ root: this });
+    this.addDisposable(() => {
+      this.layoutController?.destroy();
+      this.layoutController = null;
+    });
     this.initMobileDrawer();
     this.initBackToTop();
     this.tocController = new ReaderTocController({ root: this });
@@ -340,10 +351,12 @@ export class MorcusReaderView extends BaseElement {
     }
 
     // Update split layout class to empty
-    const splitLayout = this.querySelector<HTMLElement>(
-      ".v2-reader-split-layout"
-    );
-    if (splitLayout) {
+    const splitLayout =
+      this.layoutController?.splitLayout ??
+      this.querySelector<HTMLElement>(".v2-reader-split-layout");
+    if (this.layoutController) {
+      this.layoutController.setActive(false);
+    } else if (splitLayout) {
       splitLayout.classList.remove("v2-reader-layout-active");
       splitLayout.classList.add("v2-reader-layout-empty");
     }
@@ -404,12 +417,16 @@ export class MorcusReaderView extends BaseElement {
     }
 
     // Update split layout class to active (expands mobile sheet)
-    const splitLayout = this.querySelector<HTMLElement>(
-      ".v2-reader-split-layout"
-    );
-    if (splitLayout) {
-      splitLayout.classList.remove("v2-reader-layout-empty");
-      splitLayout.classList.add("v2-reader-layout-active");
+    if (this.layoutController) {
+      this.layoutController.setActive(true);
+    } else {
+      const splitLayout = this.querySelector<HTMLElement>(
+        ".v2-reader-split-layout"
+      );
+      if (splitLayout) {
+        splitLayout.classList.remove("v2-reader-layout-empty");
+        splitLayout.classList.add("v2-reader-layout-active");
+      }
     }
 
     // Ensure drawer is open and restored to preferred dvh
@@ -582,130 +599,6 @@ export class MorcusReaderView extends BaseElement {
         }
       }
     }
-  }
-
-  // --- Desktop Panel Resizer ---
-  private initDesktopSplitter() {
-    const splitter = this.querySelector<HTMLElement>(".v2-reader-splitter");
-    const splitLayout = this.querySelector<HTMLElement>(
-      ".v2-reader-split-layout"
-    );
-    const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
-    if (!splitter || !splitLayout || !dictPanel) return;
-
-    // Restore saved width from localStorage
-    try {
-      const savedWidth = localStorage.getItem("morcus_v2_reader_dict_width");
-      if (savedWidth) {
-        const parsed = parseInt(savedWidth, 10);
-        if (!isNaN(parsed) && parsed >= MIN_SPLIT_WIDTH && parsed <= 900) {
-          splitLayout.style.setProperty("--v2-dict-width", `${parsed}px`);
-          splitter.setAttribute("aria-valuenow", String(parsed));
-        }
-      }
-    } catch {
-      // localStorage may be disabled
-    }
-
-    let startWidth = 0;
-    let maxWidth = MAX_SPLIT_WIDTH;
-
-    this.addDisposable(
-      trackPointerDrag(splitter, {
-        handleActiveClass: "v2-is-resizing",
-        bodyActiveClass: "v2-resizing-panels",
-        /**
-         * Both measurements are taken once, here, because `onMove` writes
-         * `--v2-dict-width`: reading either one per move would be a
-         * read-after-write and would force a synchronous layout of the whole
-         * passage on every pointer event.
-         *
-         * Safe because the container width does not depend on the value being
-         * written. At this breakpoint `.v2-reader-split-layout` is a `flex: 1`
-         * row whose width comes from its parent, and `--v2-dict-width` only
-         * divides space between its children (reader.css). The drag classes
-         * applied immediately after this callback are `user-select` / `cursor` /
-         * `pointer-events` only, so measuring before them is equivalent.
-         */
-        onStart: () => {
-          startWidth = dictPanel.getBoundingClientRect().width;
-          const containerWidth = splitLayout.getBoundingClientRect().width;
-          maxWidth = computeMaxSplitWidth(containerWidth);
-        },
-        onMove: ({ dx }) => {
-          const newWidth = Math.round(
-            Math.max(MIN_SPLIT_WIDTH, Math.min(maxWidth, startWidth - dx))
-          );
-          splitLayout.style.setProperty("--v2-dict-width", `${newWidth}px`);
-          splitter.setAttribute("aria-valuenow", String(newWidth));
-        },
-        onEnd: () => {
-          const finalWidth = parseInt(
-            splitter.getAttribute("aria-valuenow") ||
-              String(DEFAULT_SPLIT_WIDTH),
-            10
-          );
-          try {
-            localStorage.setItem(
-              "morcus_v2_reader_dict_width",
-              String(finalWidth)
-            );
-          } catch {
-            // ignore
-          }
-        },
-      })
-    );
-
-    const onDblClick = () => {
-      splitLayout.style.removeProperty("--v2-dict-width");
-      splitter.setAttribute("aria-valuenow", String(DEFAULT_SPLIT_WIDTH));
-      try {
-        localStorage.removeItem("morcus_v2_reader_dict_width");
-      } catch {
-        // ignore
-      }
-    };
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      const currentWidth = parseInt(
-        splitter.getAttribute("aria-valuenow") || String(DEFAULT_SPLIT_WIDTH),
-        10
-      );
-      const containerWidth = splitLayout.getBoundingClientRect().width;
-      const keyMaxWidth = computeMaxSplitWidth(containerWidth);
-      let nextWidth: number | null = null;
-
-      if (e.key === "ArrowLeft") {
-        nextWidth = Math.min(keyMaxWidth, currentWidth + 24);
-      } else if (e.key === "ArrowRight") {
-        nextWidth = Math.max(MIN_SPLIT_WIDTH, currentWidth - 24);
-      } else if (e.key === "Home") {
-        nextWidth = MIN_SPLIT_WIDTH;
-      } else if (e.key === "End") {
-        nextWidth = keyMaxWidth;
-      } else if (e.key === "Enter" || e.key === "Escape") {
-        onDblClick();
-        return;
-      }
-
-      if (nextWidth !== null) {
-        e.preventDefault();
-        splitLayout.style.setProperty("--v2-dict-width", `${nextWidth}px`);
-        splitter.setAttribute("aria-valuenow", String(nextWidth));
-        try {
-          localStorage.setItem(
-            "morcus_v2_reader_dict_width",
-            String(nextWidth)
-          );
-        } catch {
-          // ignore
-        }
-      }
-    };
-
-    this.listen(splitter, "dblclick", onDblClick);
-    this.listen(splitter, "keydown", onKeyDown);
   }
 
   // --- Mobile Bottom Drawer Resizer ---
