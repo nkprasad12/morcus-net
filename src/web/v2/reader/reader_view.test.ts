@@ -683,6 +683,18 @@ describe("MorcusReaderView desktop splitter drag", () => {
     splitSpy.mockRestore();
   });
 
+  test("initializes ReaderLayoutController and exposes it via getLayoutController", () => {
+    const { el } = createSplitterReaderView();
+    const layoutController = el.getLayoutController();
+
+    expect(layoutController).not.toBeNull();
+    expect(layoutController?.getWidth()).toBe(420);
+
+    // Disconnect tears down controller
+    el.remove();
+    expect(el.getLayoutController()).toBeNull();
+  });
+
   test("initializes ReaderTocController and toggles on KeyT", () => {
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     el.innerHTML = `
