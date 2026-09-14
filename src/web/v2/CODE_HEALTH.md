@@ -28,12 +28,7 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 ## Phase 1 — Correctness & security
 
-- [ ] 🟢 **Coalesce the fetch storm when dictionary checkboxes are toggled.** Each toggle in
-      `dict_settings.client.ts` L273 calls straight through to `dict_search.client.ts` L332, so
-      flipping three boxes fires three overlapping requests for the same query. The abort-lane work
-      made this **harmless rather than corrupting** — the losing responses can no longer overwrite
-      the winner — so what is left is wasted work, not a bug. Debounce the settings change, or have
-      the caller take the results lane once rather than per checkbox.
+_(All items completed or resolved — see Landed and Phase 5 below)_
 
 ---
 
@@ -369,6 +364,13 @@ would discard unrelated valid settings in `GlobalSettings` and wipe out stored `
 on schema upgrades. `pickValid` keeps valid fields and drops invalid or missing ones. Crucially,
 missing fields are omitted from the returned `Partial<T>` rather than set to `undefined`, so
 `{ ...defaults, ...pickValid(...) }` never clobbers defaults with `undefined`.
+
+**Do not debounce dictionary/inflection checkbox toggles in settings.** A short debounce (e.g.
+180 ms) cannot coalesce human checkbox clicking (Fitts's law and pointer transit take 400–800 ms),
+so sequential toggles still fire separate requests while single clicks (the 95%+ case) suffer
+artificial latency. A long debounce (600–800 ms) makes single toggles feel sluggish and unresponsive.
+`BaseElement`'s abort lane (`signal: this.latest("results")`) already aborts stale in-flight fetches
+cleanly with zero page corruption, making immediate execution both safe and snappier.
 
 ---
 
