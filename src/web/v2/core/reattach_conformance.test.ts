@@ -16,15 +16,10 @@
  *
  * @jest-environment jsdom
  */
-import "@/web/v2/dialog/report_dialog.client";
-import "@/web/v2/dict/dict_greek.client";
-import "@/web/v2/dict/dict_search.client";
-import "@/web/v2/dict/dict_settings.client";
-import "@/web/v2/dict/dict_suggestions.client";
-import "@/web/v2/dict/dict_toc.client";
-import "@/web/v2/library/library_view.client";
-import "@/web/v2/reader/reader_view.client";
-import "@/web/v2/shell/theme_toggle.client";
+import "@/web/v2/v2_elements.client";
+import { getRegisteredElementTags } from "@/web/v2/core/base_element.client";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 interface ListenerRecord {
   target: EventTarget;
@@ -197,7 +192,62 @@ afterAll(() => {
   EventTarget.prototype.removeEventListener = originalRemove;
 });
 
+function findCustomElementFiles(dir: string): string[] {
+  const results: string[] = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "node_modules") {
+        results.push(...findCustomElementFiles(fullPath));
+      }
+    } else if (
+      entry.isFile() &&
+      entry.name.endsWith(".client.ts") &&
+      !entry.name.endsWith(".test.ts") &&
+      entry.name !== "base_element.client.ts" &&
+      entry.name !== "v2_elements.client.ts" &&
+      entry.name !== "v2_bundle.client.ts"
+    ) {
+      const content = fs.readFileSync(fullPath, "utf-8");
+      if (content.includes("registerElement(")) {
+        const rel = path
+          .relative(path.resolve(__dirname, "../../.."), fullPath)
+          .replace(/\\/g, "/")
+          .replace(/\.ts$/, "");
+        results.push(`@/${rel}`);
+      }
+    }
+  }
+  return results;
+}
+
 describe("V2 custom elements survive being moved in the DOM", () => {
+  test("every registered element has a conformance fixture", () => {
+    const registered = Array.from(getRegisteredElementTags()).sort();
+    const configured = Object.keys(FIXTURES).sort();
+    expect(configured).toEqual(registered);
+  });
+
+  test("all custom element files are imported in v2_elements.client.ts", () => {
+    const v2Dir = path.resolve(__dirname, "..");
+    const elementFiles = findCustomElementFiles(v2Dir).sort();
+    const manifestPath = path.resolve(v2Dir, "v2_elements.client.ts");
+    const manifestContent = fs.readFileSync(manifestPath, "utf-8");
+
+    expect(elementFiles.length).toBeGreaterThan(0);
+    for (const file of elementFiles) {
+      expect(manifestContent).toContain(`import "${file}";`);
+    }
+  });
+
+  test("v2_bundle.client.ts imports v2_elements.client.ts", () => {
+    const v2Dir = path.resolve(__dirname, "..");
+    const bundlePath = path.resolve(v2Dir, "v2_bundle.client.ts");
+    const bundleContent = fs.readFileSync(bundlePath, "utf-8");
+    expect(bundleContent).toContain('import "@/web/v2/v2_elements.client";');
+  });
+
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = "";
