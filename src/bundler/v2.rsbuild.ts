@@ -6,11 +6,18 @@ import {
 import * as path from "path";
 import * as fs from "fs";
 import { V2_BROWSERSLIST } from "@/web/v2/browser_targets.common";
+import {
+  checkV2BundleBudget,
+  formatV2BundleSizeReport,
+} from "@/bundler/v2_bundle_budget";
 
 // Logical asset name -> its emitted (content-hashed) filename under `build/v2`.
 export type V2AssetManifest = Partial<Record<"v2.js" | "v2.css", string>>;
 
-function v2ManifestPlugin(outDir: string): RsbuildPlugin {
+function v2ManifestPlugin(
+  outDir: string,
+  enforceBudget: boolean = false
+): RsbuildPlugin {
   return {
     name: "v2-manifest-plugin",
     setup(api) {
@@ -39,6 +46,17 @@ function v2ManifestPlugin(outDir: string): RsbuildPlugin {
           path.join(outDir, "manifest.json"),
           JSON.stringify(manifest, null, 2)
         );
+
+        if (enforceBudget) {
+          const report = checkV2BundleBudget(outDir, manifest);
+          console.log(formatV2BundleSizeReport(report));
+          if (report.exceeded) {
+            throw new Error(
+              `UI V2 bundle size exceeded budget:\n` +
+                report.errors.map((e) => `  - ${e}`).join("\n")
+            );
+          }
+        }
       });
     },
   };
@@ -84,7 +102,7 @@ export function getV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
     tools: {
       htmlPlugin: false,
     },
-    plugins: [v2ManifestPlugin(outDir)],
+    plugins: [v2ManifestPlugin(outDir, minify)],
   };
 }
 
