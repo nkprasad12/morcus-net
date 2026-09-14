@@ -7,6 +7,11 @@ import {
   READER_SETTINGS_KEY,
   parseReaderPreferences,
 } from "@/web/v2/reader/reader_view.client";
+import {
+  DRAWER_DEFAULT_DVH,
+  DRAWER_EXPANDED_DVH,
+  DRAWER_FLOOR_DVH,
+} from "@/web/v2/core/drawer.client";
 
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
@@ -352,6 +357,39 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
       el.restoreDrawer();
       expect(sheetLabelOf(el).textContent).toBe("Definitions for Arma");
+    });
+
+    test("restoreDrawer clamps target dvh within [DRAWER_FLOOR_DVH, DRAWER_EXPANDED_DVH] and falls back to DRAWER_DEFAULT_DVH", () => {
+      const el = createReaderView(passageHtml);
+      const dictPanel = el.querySelector<HTMLElement>(".v2-reader-dict-panel")!;
+      const sheetBar = el.querySelector<HTMLElement>(".v2-reader-sheet-bar")!;
+
+      // Default restore (omitted targetDvh) sets DRAWER_DEFAULT_DVH
+      el.restoreDrawer();
+      expect(dictPanel.style.getPropertyValue("--v2-drawer-height")).toBe(
+        `${DRAWER_DEFAULT_DVH}dvh`
+      );
+      expect(sheetBar.getAttribute("aria-valuenow")).toBe(
+        String(DRAWER_DEFAULT_DVH)
+      );
+
+      // Clamps below floor threshold to DRAWER_FLOOR_DVH
+      el.restoreDrawer(DRAWER_FLOOR_DVH - 10);
+      expect(dictPanel.style.getPropertyValue("--v2-drawer-height")).toBe(
+        `${DRAWER_FLOOR_DVH}dvh`
+      );
+      expect(sheetBar.getAttribute("aria-valuenow")).toBe(
+        String(DRAWER_FLOOR_DVH)
+      );
+
+      // Clamps above expanded threshold to DRAWER_EXPANDED_DVH
+      el.restoreDrawer(DRAWER_EXPANDED_DVH + 10);
+      expect(dictPanel.style.getPropertyValue("--v2-drawer-height")).toBe(
+        `${DRAWER_EXPANDED_DVH}dvh`
+      );
+      expect(sheetBar.getAttribute("aria-valuenow")).toBe(
+        String(DRAWER_EXPANDED_DVH)
+      );
     });
 
     test("does not execute markup supplied via the ?q= parameter", () => {

@@ -11,7 +11,12 @@ import {
   BaseElement,
   registerElement,
 } from "@/web/v2/core/base_element.client";
-import { DrawerController } from "@/web/v2/core/drawer.client";
+import {
+  DrawerController,
+  DRAWER_DEFAULT_DVH,
+  DRAWER_EXPANDED_DVH,
+  DRAWER_FLOOR_DVH,
+} from "@/web/v2/core/drawer.client";
 
 export class MorcusDictToc extends BaseElement {
   private drawerController: DrawerController | null = null;
@@ -51,9 +56,9 @@ export class MorcusDictToc extends BaseElement {
             layoutElement: document.documentElement,
             detailsElement: details,
             minHeight: 28,
-            defaultDvh: 48,
-            floorDvh: 18,
-            expandedDvh: 88,
+            defaultDvh: DRAWER_DEFAULT_DVH,
+            floorDvh: DRAWER_FLOOR_DVH,
+            expandedDvh: DRAWER_EXPANDED_DVH,
           });
         }
       }
