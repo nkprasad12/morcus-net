@@ -93,6 +93,12 @@
   margin: 0 0 1.25rem;
 }
 
+.v2-not-found-state,
+.v2-library-empty-state-standalone {
+  margin: 4rem auto;
+  max-width: 600px;
+}
+
 /* Continuous Works Grid */
 .v2-library-grid {
   display: grid;
