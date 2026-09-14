@@ -8,6 +8,10 @@ import {
   parseReaderPreferences,
 } from "@/web/v2/reader/reader_view.client";
 
+import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
+
+installPointerEventShims();
+
 describe("MorcusReaderView client tokenization & macra handling", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -487,5 +491,126 @@ describe("Reader preferences validation & hydration", () => {
     expect(fontSelect.value).toBe("serif");
     // Valid lineHeight "compact" kept
     expect(lineSelect.value).toBe("compact");
+  });
+});
+
+describe("MorcusReaderView desktop splitter drag", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = "";
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  function createSplitterReaderView(): {
+    el: MorcusReaderView;
+    splitLayout: HTMLElement;
+    splitter: HTMLElement;
+    dictPanel: HTMLElement;
+  } {
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.innerHTML = `
+      <div class="v2-reader-split-layout">
+        <section class="v2-reader-text-panel">
+          <div class="v2-reader-text-card">
+            <article class="v2-reader-passage" id="v2-reader-passage">
+              <span class="v2-reader-line">arma virumque cano</span>
+            </article>
+          </div>
+        </section>
+        <div class="v2-reader-splitter" role="separator" aria-valuenow="420"></div>
+        <aside class="v2-reader-dict-panel">
+          <div class="v2-reader-sheet-bar">
+            <span class="v2-reader-sheet-label">Tap any word</span>
+          </div>
+          <iframe id="v2-dict-frame" src="/v2/dicts?embedded=1"></iframe>
+        </aside>
+      </div>
+    `;
+    document.body.appendChild(el);
+    return {
+      el,
+      splitLayout: el.querySelector<HTMLElement>(".v2-reader-split-layout")!,
+      splitter: el.querySelector<HTMLElement>(".v2-reader-splitter")!,
+      dictPanel: el.querySelector<HTMLElement>(".v2-reader-dict-panel")!,
+    };
+  }
+
+  test("updates --v2-dict-width and aria-valuenow without layout reads during pointermove", () => {
+    const { splitLayout, splitter, dictPanel } = createSplitterReaderView();
+
+    const splitSpy = jest
+      .spyOn(splitLayout, "getBoundingClientRect")
+      .mockReturnValue({ width: 1200 } as DOMRect);
+    const dictSpy = jest
+      .spyOn(dictPanel, "getBoundingClientRect")
+      .mockReturnValue({ width: 420 } as DOMRect);
+
+    // 1. Pointerdown (drag start) measures container and panel
+    splitter.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        button: 0,
+        clientX: 800,
+        clientY: 300,
+        pointerId: 1,
+      })
+    );
+
+    expect(splitSpy).toHaveBeenCalledTimes(1);
+    expect(dictSpy).toHaveBeenCalledTimes(1);
+    splitSpy.mockClear();
+    dictSpy.mockClear();
+
+    // 2. Pointermove (drag left by 50px -> dx = -50)
+    splitter.dispatchEvent(
+      new PointerEvent("pointermove", {
+        clientX: 750,
+        clientY: 300,
+        pointerId: 1,
+      })
+    );
+
+    // Width should increase by 50px: 420 - (-50) = 470px
+    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("470px");
+    expect(splitter.getAttribute("aria-valuenow")).toBe("470");
+
+    // CRITICAL: No layout reads performed during pointermove!
+    expect(splitSpy).not.toHaveBeenCalled();
+    expect(dictSpy).not.toHaveBeenCalled();
+
+    // 3. Pointerup finishes drag and persists to localStorage
+    splitter.dispatchEvent(
+      new PointerEvent("pointerup", {
+        clientX: 750,
+        clientY: 300,
+        pointerId: 1,
+      })
+    );
+
+    expect(localStorage.getItem("morcus_v2_reader_dict_width")).toBe("470");
+
+    splitSpy.mockRestore();
+    dictSpy.mockRestore();
+  });
+
+  test("keyboard arrow keys resize splitter within bounds", () => {
+    const { splitLayout, splitter } = createSplitterReaderView();
+    const splitSpy = jest
+      .spyOn(splitLayout, "getBoundingClientRect")
+      .mockReturnValue({ width: 1200 } as DOMRect);
+
+    splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
+    // default 420 + 24 = 444
+    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("444px");
+    expect(splitter.getAttribute("aria-valuenow")).toBe("444");
+
+    splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+    // 444 - 24 = 420
+    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("420px");
+    expect(splitter.getAttribute("aria-valuenow")).toBe("420");
+
+    splitSpy.mockRestore();
   });
 });

@@ -175,8 +175,9 @@ bibliography modal, settings dialog, keyboard shortcuts, dictionary sheet, URL s
 - [ ] 🔴 Extract `reader_settings.client.ts` ← L806-984 (`<morcus-reader-settings>`)
 - [ ] 🟡 Extract `reader_toc.client.ts` ← L739-791
 - [ ] 🟡 Extract `reader_layout.client.ts` ← L484-595 (desktop splitter)
-- [ ] 🟢 Hoist magic numbers to named constants (drawer `18`/`48`/`88` dvh at L188-190; splitter
-      `300`/`800`/`320` px at L517-519)
+- [ ] 🟢 Hoist the drawer's `18`/`48`/`88` dvh magic numbers to named constants. (The splitter's
+      `300`/`800`/`320` px were named as part of the `pointermove` hoist, which had to touch the
+      same expressions.)
 - [ ] 🟡 Decouple client from SSR markup shape: L350-355 queries exact CSS selector chains
       (`p.v2-reader-paragraph`, `.v2-passage-latin .v2-reader-line`). Have `reader.server.ts` emit
       `data-tokenize-target="true"` and query that instead, so restyling can't silently break
@@ -451,12 +452,6 @@ dialog markup. Gaps:
       last. Buffer the latest event and flush once per `requestAnimationFrame`.
       Worth doing in the shared helper rather than per-caller: it fixes the drawer, the desktop
       splitter and any future drag at once.
-- [ ] 🟢 **Hoist layout reads out of `pointermove`.** `reader_view.client.ts` L532 reads
-      `splitLayout.getBoundingClientRect().width` on every move, _after_ the previous move wrote
-      `--v2-dict-width` at L541 — a read-after-write that forces synchronous layout each time.
-      `containerWidth` cannot change mid-drag, so hoist it into `onStart` exactly as `startWidth`
-      already is at L529. `drawer.client.ts` L193 has the milder version with `window.innerHeight`.
-      (Supersedes the original note, which cited `reader_view.client.ts` L516; the code has moved.)
 - [ ] 🟡 **Don't tokenize the whole chapter synchronously on mount.** `reader_view.client.ts`
       L366-374 walks every target block calling `tokenizeElement` (L401) inside `onConnect` — one
       long task that delays first interaction. Batch via `requestIdleCallback`.
@@ -579,3 +574,8 @@ worth not rediscovering is summarised in Phase 5 instead.
   class into the dictionary panel. (`a4e2a276`)
 - **Stop `fs.existsSync` on the render hot path.** Deleted the per-render asset file existence
   checks in `shell/asset_manifest.server.ts` and cache the parsed manifest on first access. (`6f5b6d75`)
+- **Hoisted the per-move layout reads out of both drags.** The splitter measured its container on
+  every `pointermove`, immediately after the previous move wrote `--v2-dict-width`; the drawer read
+  `window.innerHeight` the same way. Both are now measured once in `onStart`, so the move handlers
+  are pure arithmetic plus writes. Pinned by read-counting tests rather than by the resulting
+  geometry, which the hoist leaves unchanged. (`TBD`)
