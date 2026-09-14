@@ -10,6 +10,8 @@ import {
   parseInflectionParam,
   readCookie,
   formatDictsCookie,
+  formatInflectedCookie,
+  INFLECTED_COOKIE_NAME,
   hasGreek,
 } from "@/web/v2/dict/dict.server";
 import type { DictParamsInput } from "@/web/v2/dict/dict_selection.common";
@@ -207,7 +209,7 @@ export function createV2Router(
     // ["0", "1"]; parseInflectionParam owns that shape.
     const oParam = parseInflectionParam(toStringOrArray(req.query.o));
     const isInflected =
-      oParam ?? readCookie(cookieHeader, "morcus_inflected") !== "0";
+      oParam ?? readCookie(cookieHeader, INFLECTED_COOKIE_NAME) !== "0";
 
     const { dictKeys, source } = resolveActiveDicts({
       keysFromQuery,
@@ -225,11 +227,7 @@ export function createV2Router(
         cookies.push(formatDictsCookie(dictKeys));
       }
       if (oParam !== undefined) {
-        cookies.push(
-          `morcus_inflected=${
-            oParam ? "1" : "0"
-          }; Path=/; Max-Age=31536000; SameSite=Lax`
-        );
+        cookies.push(formatInflectedCookie(oParam));
       }
       if (cookies.length > 0) {
         res.setHeader("Set-Cookie", cookies);

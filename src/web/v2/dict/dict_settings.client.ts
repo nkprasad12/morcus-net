@@ -1,14 +1,16 @@
 import {
   BaseElement,
   bindDismissable,
-  dictSettingsStore,
   html,
-  inflectedSettingsStore,
   joinHtml,
   registerElement,
   setHtml,
   settingsStore,
 } from "@/web/v2/core/index.client";
+import {
+  dictSettingsStore,
+  inflectedSettingsStore,
+} from "@/web/v2/dict/dict_preferences.client";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import {

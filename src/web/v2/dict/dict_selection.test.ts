@@ -2,30 +2,11 @@ import {
   parseDictsFromCookie,
   formatDictsCookie,
   formatDictsParam,
-  readCookie,
   resolveActiveDicts,
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/dict_selection.server";
 
 describe("dict_selection.server", () => {
-  describe("readCookie", () => {
-    it("reads and decodes a named cookie", () => {
-      expect(
-        readCookie("foo=bar; morcus_inflected=0", "morcus_inflected")
-      ).toBe("0");
-      expect(readCookie("morcus_dicts=L%26S%3BGAF", "morcus_dicts")).toBe(
-        "L&S;GAF"
-      );
-    });
-
-    it("does not match a name embedded in another cookie's value", () => {
-      expect(
-        readCookie("other=morcus_inflected=0", "morcus_inflected")
-      ).toBeNull();
-      expect(readCookie(undefined, "morcus_inflected")).toBeNull();
-    });
-  });
-
   describe("parseDictsFromCookie", () => {
     it("extracts morcus_dicts from cookie header", () => {
       const cookie = "foo=bar; morcus_dicts=L%26S%3BGAF; other=baz";

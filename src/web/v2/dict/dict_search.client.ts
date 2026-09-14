@@ -2,13 +2,15 @@ import {
   BaseElement,
   bindDismissable,
   debounce,
-  dictSettingsStore,
-  inflectedSettingsStore,
   fetchAndSwapPartial,
   registerElement,
   replaceWithHtml,
   setHtml,
 } from "@/web/v2/core/index.client";
+import {
+  dictSettingsStore,
+  inflectedSettingsStore,
+} from "@/web/v2/dict/dict_preferences.client";
 import {
   processTokens,
   removeDiacritics,

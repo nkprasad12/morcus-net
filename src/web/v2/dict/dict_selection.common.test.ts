@@ -2,6 +2,11 @@ import {
   parseDictKeys,
   resolveDictParams,
   parseInflectionParam,
+  formatDictsCookie,
+  formatInflectedCookie,
+  parseDictsFromCookie,
+  DICT_COOKIE_NAME,
+  INFLECTED_COOKIE_NAME,
 } from "@/web/v2/dict/dict_selection.common";
 
 describe("dict_selection.common", () => {
@@ -111,6 +116,37 @@ describe("dict_selection.common", () => {
       expect(resolveDictParams({})).toBeNull();
       expect(resolveDictParams({ dictParam: [], inParam: [] })).toBeNull();
       expect(resolveDictParams({ dictParam: "nonsense" })).toBeNull();
+    });
+  });
+
+  describe("formatDictsCookie & formatInflectedCookie", () => {
+    it("formats morcus_dicts cookie with proper URL encoding and attributes", () => {
+      const cookie = formatDictsCookie(["L&S", "GAF"]);
+      expect(cookie).toContain(`${DICT_COOKIE_NAME}=L%26S%3BGAF`);
+      expect(cookie).toContain("Path=/;");
+      expect(cookie).toContain("Max-Age=31536000;");
+      expect(cookie).toContain("SameSite=Lax");
+    });
+
+    it("formats morcus_inflected cookie correctly", () => {
+      expect(formatInflectedCookie(true)).toBe(
+        `${INFLECTED_COOKIE_NAME}=1; Path=/; Max-Age=31536000; SameSite=Lax`
+      );
+      expect(formatInflectedCookie(false)).toBe(
+        `${INFLECTED_COOKIE_NAME}=0; Path=/; Max-Age=31536000; SameSite=Lax`
+      );
+    });
+  });
+
+  describe("parseDictsFromCookie", () => {
+    it("extracts and parses morcus_dicts from a cookie string", () => {
+      const header = "foo=bar; morcus_dicts=L%26S%3BGAF; other=baz";
+      expect(parseDictsFromCookie(header)).toEqual(["L&S", "GAF"]);
+    });
+
+    it("returns null when cookie header is missing or does not have morcus_dicts", () => {
+      expect(parseDictsFromCookie(undefined)).toBeNull();
+      expect(parseDictsFromCookie("other=123")).toBeNull();
     });
   });
 });

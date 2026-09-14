@@ -110,11 +110,6 @@ Every item here is a feature reimplementing something `core/` already provides.
       **Show Macra** toggle: `w.textContent = show ? orig : this.stripMacrons(orig)`. Swapping in
       `removeDiacritics` there would also strip breves, diaereses and Greek accents from displayed
       text. The real smell is only that a text-normalization primitive lives as a private method on
-- [ ] 🟡 **Extract `core/cookies.common.ts`.** The literal
-      `; Path=/; Max-Age=31536000; SameSite=Lax` appears in four places
-      (`dict_selection.server.ts` L102, `v2_router.server.ts` L269, `settings.client.ts` L87 and L125),
-      and `DICT_COOKIE_NAME` is declared twice (`dict_selection.server.ts` L4 **and**
-      `settings.client.ts` L64) — a client/server contract with two sources of truth.
 - [ ] 🔴 **Extract `core/tokenize.client.ts`.** `dict_search.client.ts` L596-685 and
       `reader_view.client.ts` L385-422 independently implement
       `createTreeWalker(SHOW_TEXT)` → `processTokens` → fragment-swap-with-clickable-spans,
@@ -548,6 +543,10 @@ worth not rediscovering is summarised in Phase 5 instead.
   `BaseElement` disposables, and consolidating drawer teardown.
 - **Extract `core/disposable.client.ts` with `DisposableBag`**, unifying cleanup across `BaseElement`,
   `DrawerController`, and `setupModalDialog` while preserving FIFO teardown and re-entrant safety without latches.
+- **Extract `core/cookies.common.ts` and `dict/dict_preferences.client.ts`**, providing pure isomorphic
+  cookie primitives (`readCookie`, `hasCookie`, `formatCookie`), unifying dictionary and inflection
+  cookie formatting in `dict_selection.common.ts`, and relocating misplaced dictionary stores out
+  of `core/settings.client.ts`.
 
 **Phase 7 — docs & tests**
 
