@@ -53,7 +53,9 @@ export async function renderReaderContentHtml(
   const hasParallel = Boolean(work.hasTranslation && activePage.parallelHtml);
   const viewMode =
     hasParallel && options.view === "parallel" ? "parallel" : "single";
-  const pageDotId = activePage.id;
+  const pageDotId = Array.isArray(activePage.id)
+    ? citationToString(activePage.id)
+    : activePage.id;
   const prevPage = activePageIndex > 0 ? work.pages[activePageIndex - 1] : null;
   const nextPage =
     activePageIndex < work.pages.length - 1
@@ -67,23 +69,24 @@ export async function renderReaderContentHtml(
     if (viewMode === "parallel") params.set("view", "parallel");
     if (query) params.set("q", query);
     const qStr = params.toString() ? `?${params.toString()}` : "";
-    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${page.id}${qStr}`;
+    const pageId = Array.isArray(page.id) ? citationToString(page.id) : page.id;
+    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}`;
   };
 
   const singleViewUrl = (() => {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     const qStr = params.toString() ? `?${params.toString()}` : "";
-    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${activePage.id}${qStr}`;
+    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageDotId}${qStr}`;
   })();
 
   const parallelViewUrl = (() => {
     const params = new URLSearchParams();
     params.set("view", "parallel");
     if (query) params.set("q", query);
-    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${
-      activePage.id
-    }?${params.toString()}`;
+    return `/v2/reader/${work.urlAuthor}/${
+      work.urlName
+    }/${pageDotId}?${params.toString()}`;
   })();
 
   // Select passage HTML (single or parallel)

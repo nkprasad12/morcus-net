@@ -27,9 +27,16 @@ function loadManifest(): V2AssetManifest {
   if (cachedManifest === undefined) {
     const manifestPath = path.resolve(process.cwd(), "build/v2/manifest.json");
     try {
-      const parsed: V2AssetManifest = JSON.parse(
-        fs.readFileSync(manifestPath, "utf8")
-      );
+      const raw: unknown = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      const parsed: V2AssetManifest = {};
+      if (typeof raw === "object" && raw !== null) {
+        if ("v2.js" in raw && typeof raw["v2.js"] === "string") {
+          parsed["v2.js"] = raw["v2.js"];
+        }
+        if ("v2.css" in raw && typeof raw["v2.css"] === "string") {
+          parsed["v2.css"] = raw["v2.css"];
+        }
+      }
       cachedManifest = parsed;
       return parsed;
     } catch {

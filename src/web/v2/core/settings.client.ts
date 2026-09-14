@@ -21,22 +21,24 @@ export type FieldCheckers<T> = {
  * Extracts and validates properties from an unknown value based on a schema of validators.
  * Invalid or undefined fields are omitted from the returned partial object.
  */
+function isRecord(val: unknown): val is Record<string, unknown> {
+  return typeof val === "object" && val !== null && !Array.isArray(val);
+}
+
 export function pickValid<T extends object>(
   raw: unknown,
   checkers: FieldCheckers<T>
 ): Partial<T> {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+  if (!isRecord(raw)) {
     return {};
   }
   const result: Partial<T> = {};
   for (const property in checkers) {
     if (Object.prototype.hasOwnProperty.call(checkers, property)) {
-      // @ts-ignore
       const val = raw[property];
       const checker = checkers[property];
       if (val !== undefined && checker(val)) {
-        // @ts-ignore
-        result[property] = val;
+        Reflect.set(result, property, val);
       }
     }
   }

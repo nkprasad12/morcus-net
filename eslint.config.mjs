@@ -94,10 +94,7 @@ export default [
     )
   ),
   ...fixupConfigRules(
-    compat.extends(
-      "plugin:react/recommended",
-      "plugin:react-hooks/recommended"
-    )
+    compat.extends("plugin:react/recommended", "plugin:react-hooks/recommended")
   ).map((config) => ({
     ...config,
     files: ["**/*.{js,jsx,mjs,cjs,ts,tsx}"],
@@ -360,6 +357,25 @@ export default [
           message: "Prefer importing he.escape over he.encode.",
         },
       ],
+    },
+  },
+  // Enables type-checked rules for UI V2 production code. The expensive
+  // TypeScript Program parsing (parserOptions: { project: true }) is already
+  // paid for repo-wide; this captures the full safety value of
+  // recommended-type-checked-only.
+  //
+  // Tests are exempt from the no-unsafe-* family and unbound-method: Supertest
+  // response bodies and Jest spy assertions are dynamically typed by external
+  // libraries, and forcing casts there adds test boilerplate with zero runtime
+  // benefit. Async safety (no-floating-promises / no-misused-promises) remains
+  // active for tests in the block above.
+  //
+  // NOTE: this block must not configure `no-restricted-imports`.
+  {
+    files: ["src/web/v2/**/*.ts"],
+    ignores: ["src/web/v2/**/*.test.ts"],
+    rules: {
+      ...typescriptEslint.configs["recommended-type-checked-only"].rules,
     },
   },
 ];
