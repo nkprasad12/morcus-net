@@ -66,7 +66,7 @@ export const READER_SETTINGS_KEY = "morcus_reader_settings";
 export function parseReaderPreferences(raw: string | null): ReaderPreferences {
   if (!raw) return { ...DEFAULT_READER_PREFS };
   try {
-    const parsed = JSON.parse(raw);
+    const parsed: unknown = JSON.parse(raw);
     return {
       ...DEFAULT_READER_PREFS,
       ...pickValid<ReaderPreferences>(parsed, READER_PREFS_CHECKERS),

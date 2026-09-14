@@ -34,49 +34,6 @@ _(All items completed or resolved — see Landed and Phase 5 below)_
 
 ## Phase 2 — Guardrails (do these before the big cleanups)
 
-- [ ] 🟡 **Enable the type-checked rules for V2 — the expensive part is already paid for.**
-      `parserOptions: { project: true }` makes the parser build a full TypeScript `Program`,
-      resolving the whole import graph. Measured on `src/web/v2` (102 files, two runs each):
-
-      | | wall | peak RSS |
-      | --- | --- | --- |
-      | with `project: true` | 12.3 s / 16.7 s | ~868 MB |
-      | without | 9.5 s / 7.6 s | ~475 MB |
-
-      Type-awareness therefore costs about **+6 s and +390 MB** — a fixed, up-front cost incurred
-      the moment `project` is set at all, and it currently buys exactly **three** rules
-      (`prefer-find`, `prefer-readonly`, `no-confusing-void-expression`).
-      `recommended-type-checked` adds ~40 more that reuse the same program.
-
-      Measured cost of the full preset: **72 production + 104 test** violations. The two
-      highest-value rules were split out and landed first, because they are the only ones that find
-      latent bugs rather than style:
-      - `no-misused-promises` (**7**, all in `v2_router.server.ts`): async handlers passed where a
-        void return is expected. Express 4.22.2 does not await handler return values, so any
-        rejection escaping an internal `try`/`catch` becomes an unhandled rejection — which on
-        Node 22 terminates the process.
-      - `no-floating-promises` (**9**, in `dict_search.client.ts`, `reader_view.client.ts`,
-        `report_dialog.client.ts`): fire-and-forget calls from sync event handlers. Most are
-        probably benign because the callee catches internally, but the rule forces that to be
-        stated — `void this.foo()` for deliberate fire-and-forget — in the same spirit as the now
-        required `FetchAndSwapOptions.signal`.
-
-      The `no-unsafe-*` family (20 + 13 + 3 + 1 in production) is the bulk of the remainder and is
-      mostly downstream of a handful of `any`s, so it should follow the item above rather than
-      lead. `restrict-template-expressions` was the rule most likely to explode in an SSR codebase
-      built on template strings; it reports only **9**, so that worry was unfounded.
-
-      If lint latency becomes painful, the lever is `projectService: true` (typescript-eslint v8;
-      we are on 8.38), which reuses the incremental program the editor already maintains, rather
-      than giving up type-aware rules.
-
-      **Partly done** — the two async rules above are now enabled for all of `src/web/v2/**/*.ts`
-      (a fourth V2 block at the bottom of `eslint.config.mjs`), so what remains of this item is the
-      rest of the preset. The predicted counts held exactly, and tests had **zero** violations, so
-      that block covers `.test.ts` too. It is scoped to V2 because there are **93** violations
-      elsewhere in the repo (`src/web/client` 44, `run_morcus.ts` 9, `benchmark_configs.ts` 6,
-      `start_server.ts` 6, `lewis_and_short` 5, …).
-
 - [ ] 🟡 **Fix the ~7 async-safety violations in `start_server.ts` / `web_server.ts`.** Filed off
       the back of the item above. Those two files are outside `src/web/v2`, so the new block does
       not cover them, but they are the process entry points: an unhandled rejection there takes
@@ -576,6 +533,9 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **`he.escape` preferred over `he.encode` across all server templates**, with an ESLint guardrail
   banning `he.encode` on server code. Eliminates entity-encoding of Greek, macrons, and symbols on
   the render hot path (`xml_to_html.server.ts` L65).
+- **`recommended-type-checked` rules enabled for V2 production code.** Captures full value of the
+  `parserOptions: { project: true }` program already running; 35 production violations resolved
+  with zero type assertions, and tests exempt for dynamic fixture/mock typing.
 
 **Phase 3 — adopt the abstractions we already built**
 

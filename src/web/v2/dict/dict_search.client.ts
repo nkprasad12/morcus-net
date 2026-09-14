@@ -99,8 +99,8 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
         this.renderCachedCompletions(prefix, currentClean);
       })
-      .catch((e) => {
-        if (e.name !== "AbortError") {
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name !== "AbortError") {
           console.error("Failed to load completions chunk", e);
         }
       });
@@ -126,8 +126,8 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
           this.selectedSuggestionIndex = -1;
           this.updateSuggestionsView();
         })
-        .catch((e) => {
-          if (e.name !== "AbortError") {
+        .catch((e: unknown) => {
+          if (e instanceof Error && e.name !== "AbortError") {
             console.error("Failed to fetch suffix suggestions", e);
           }
         });
@@ -264,12 +264,16 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     // leave a re-attached element holding a child it can no longer hear.
     if (this.suggestionsEl) {
       this.listen(this.suggestionsEl, "suggestion-select", (e: Event) => {
-        if (
-          e instanceof CustomEvent &&
-          e.detail &&
-          typeof e.detail.word === "string"
-        ) {
-          this.chooseSuggestion(e.detail.word);
+        if (e instanceof CustomEvent) {
+          const detail: unknown = e.detail;
+          if (
+            typeof detail === "object" &&
+            detail !== null &&
+            "word" in detail &&
+            typeof detail.word === "string"
+          ) {
+            this.chooseSuggestion(detail.word);
+          }
         }
       });
     }

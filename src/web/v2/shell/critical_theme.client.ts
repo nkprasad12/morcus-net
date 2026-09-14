@@ -16,18 +16,23 @@ import "@/web/v2/v2-critical.css";
 try {
   const settingsStr = localStorage.getItem("GlobalSettings");
   if (settingsStr) {
-    const settings = JSON.parse(settingsStr);
-    if (typeof settings.darkMode === "boolean") {
-      document.documentElement.setAttribute(
-        "data-theme",
-        settings.darkMode ? "dark" : "light"
-      );
-    }
-    if (typeof settings.highlightStrength === "number") {
-      document.documentElement.style.setProperty(
-        "--v2-highlight-scale",
-        String(settings.highlightStrength / 50)
-      );
+    const settings: unknown = JSON.parse(settingsStr);
+    if (typeof settings === "object" && settings !== null) {
+      if ("darkMode" in settings && typeof settings.darkMode === "boolean") {
+        document.documentElement.setAttribute(
+          "data-theme",
+          settings.darkMode ? "dark" : "light"
+        );
+      }
+      if (
+        "highlightStrength" in settings &&
+        typeof settings.highlightStrength === "number"
+      ) {
+        document.documentElement.style.setProperty(
+          "--v2-highlight-scale",
+          String(settings.highlightStrength / 50)
+        );
+      }
     }
   }
 } catch {

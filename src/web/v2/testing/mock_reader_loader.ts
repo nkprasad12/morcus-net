@@ -313,21 +313,21 @@ const MOCK_SLUG_MAP = new Map<string, string>([
 
 export const V2_LIBRARY_INDEX = "morcus_v2_index.json";
 
-export async function getV2LibrarySummaries(): Promise<V2WorkSummary[]> {
-  return MOCK_V2_SUMMARIES;
+export function getV2LibrarySummaries(): Promise<V2WorkSummary[]> {
+  return Promise.resolve(MOCK_V2_SUMMARIES);
 }
 
-export async function resolveV2WorkId(
+export function resolveV2WorkId(
   queryOrSlug: string
 ): Promise<string | undefined> {
   const normalized = queryOrSlug.trim();
   if (MOCK_SLUG_MAP.has(normalized)) {
-    return MOCK_SLUG_MAP.get(normalized);
+    return Promise.resolve(MOCK_SLUG_MAP.get(normalized));
   }
   if (MOCK_V2_WORKS[normalized]) {
-    return normalized;
+    return Promise.resolve(normalized);
   }
-  return undefined;
+  return Promise.resolve(undefined);
 }
 
 export async function getV2Work(

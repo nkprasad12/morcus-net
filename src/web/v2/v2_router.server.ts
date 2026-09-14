@@ -429,9 +429,12 @@ export function createV2Router(
       if (view === "parallel") params.set("view", "parallel");
       if (query) params.set("q", query);
       const qStr = params.toString() ? `?${params.toString()}` : "";
+      const pageId = Array.isArray(resolved.page.id)
+        ? resolved.page.id.join(".")
+        : resolved.page.id;
       res.redirect(
         302,
-        `/v2/reader/${work.urlAuthor}/${work.urlName}/${resolved.page.id}${qStr}`
+        `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}`
       );
       return;
     }
@@ -499,9 +502,12 @@ export function createV2Router(
       if (view === "parallel") params.set("view", "parallel");
       if (query) params.set("q", query);
       const qStr = params.toString() ? `?${params.toString()}` : "";
+      const pageId = Array.isArray(resolved.page.id)
+        ? resolved.page.id.join(".")
+        : resolved.page.id;
       res.redirect(
         302,
-        `/v2/reader/${work.urlAuthor}/${work.urlName}/${resolved.page.id}${qStr}`
+        `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}`
       );
       return;
     }
@@ -541,9 +547,11 @@ export function createV2Router(
 
   // Issue and feedback reporting endpoint
   postAsync("/api/report", async (req, res) => {
+    const body: unknown = req.body;
+    const isObj = typeof body === "object" && body !== null;
     const reportText =
-      typeof req.body?.reportText === "string"
-        ? req.body.reportText.trim()
+      isObj && "reportText" in body && typeof body.reportText === "string"
+        ? body.reportText.trim()
         : "";
     if (!reportText) {
       res.status(400).json({ error: "reportText is required" });
@@ -553,7 +561,10 @@ export function createV2Router(
     const reportRequest: ReportApiRequest = {
       reportText,
       commit: process.env.COMMIT_ID ?? "undefined",
-      url: typeof req.body?.url === "string" ? req.body.url : undefined,
+      url:
+        isObj && "url" in body && typeof body.url === "string"
+          ? body.url
+          : undefined,
       userAgent: req.headers["user-agent"],
     };
 

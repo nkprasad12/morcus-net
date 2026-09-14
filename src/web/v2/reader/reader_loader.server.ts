@@ -23,32 +23,42 @@ const WORK_ALIASES = new Map<string, string>([
   ["aeneid", "hypotactic_Aeneid_Vergil"],
 ]);
 
-export async function getV2LibrarySummaries(
+function isV2WorkSummaryArray(val: unknown): val is V2WorkSummary[] {
+  return Array.isArray(val);
+}
+
+function isV2Work(val: unknown): val is V2PreprocessedWork {
+  return (
+    typeof val === "object" && val !== null && "id" in val && "pages" in val
+  );
+}
+
+export function getV2LibrarySummaries(
   resultDir: string = LIB_DEFAULT_DIR
 ): Promise<V2WorkSummary[]> {
   if (cachedSummaries !== null) {
-    return cachedSummaries;
+    return Promise.resolve(cachedSummaries);
   }
 
   const indexPath = path.join(resultDir, V2_LIBRARY_INDEX);
   if (fs.existsSync(indexPath)) {
     try {
-      const data: V2WorkSummary[] = JSON.parse(
-        fs.readFileSync(indexPath, "utf8")
-      );
-      cachedSummaries = data;
-      for (const item of data) {
-        slugToWorkId.set(`${item.urlAuthor}/${item.urlName}`, item.id);
-        slugToWorkId.set(item.urlName, item.id);
-        slugToWorkId.set(item.id, item.id);
+      const data: unknown = JSON.parse(fs.readFileSync(indexPath, "utf8"));
+      if (isV2WorkSummaryArray(data)) {
+        cachedSummaries = data;
+        for (const item of data) {
+          slugToWorkId.set(`${item.urlAuthor}/${item.urlName}`, item.id);
+          slugToWorkId.set(item.urlName, item.id);
+          slugToWorkId.set(item.id, item.id);
+        }
+        return Promise.resolve(data);
       }
-      return data;
     } catch (err) {
       console.error("Error reading morcus_v2_index.json:", err);
     }
   }
 
-  return [];
+  return Promise.resolve([]);
 }
 
 export async function resolveV2WorkId(
@@ -94,10 +104,12 @@ export async function getV2Work(
     try {
       const buffer = fs.readFileSync(v2ArtifactPath);
       const jsonStr = zlib.gunzipSync(buffer).toString("utf8");
-      const work: V2PreprocessedWork = JSON.parse(jsonStr);
-      cachedWorksById.set(targetId, work);
-      cachedWorksById.set(work.id, work);
-      return work;
+      const work: unknown = JSON.parse(jsonStr);
+      if (isV2Work(work)) {
+        cachedWorksById.set(targetId, work);
+        cachedWorksById.set(work.id, work);
+        return work;
+      }
     } catch (err) {
       console.error(`Error loading V2 artifact ${v2ArtifactPath}:`, err);
     }
