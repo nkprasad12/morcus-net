@@ -412,7 +412,7 @@ export function createV2Router(
           contentHtml: `
             <div class="v2-library-empty-state" style="margin: 4rem auto; max-width: 600px;">
               <h2 class="v2-library-empty-title">Classical Work Not Found</h2>
-              <p class="v2-library-empty-desc">Could not locate classical work <em>${he.encode(
+              <p class="v2-library-empty-desc">Could not locate classical work <em>${he.escape(
                 `${author}/${name}`
               )}</em> in the library catalog.</p>
               <a href="/v2/library" class="v2-btn v2-btn-primary">Browse Full Library</a>

@@ -71,7 +71,7 @@ export function renderEntryResult(
   const headwordHtml = headword
     ? `
       <span class="v2-entry-headword">
-        <span class="v2-entry-headword-text">${he.encode(headword)}</span>
+        <span class="v2-entry-headword-text">${he.escape(headword)}</span>
       </span>
     `
     : "";
@@ -105,12 +105,12 @@ export function renderEntryResult(
               ? ` style="margin-left: ${indentLevel * 0.75}rem;"`
               : "";
           const ordinalHtml = sense.ordinal
-            ? `<strong class="v2-toc-ordinal">${he.encode(
+            ? `<strong class="v2-toc-ordinal">${he.escape(
                 sense.ordinal
               )}</strong> `
             : "";
-          const textHtml = he.encode(sense.text.trim());
-          return `<li${indentStyle}><a href="#${he.encode(
+          const textHtml = he.escape(sense.text.trim());
+          return `<li${indentStyle}><a href="#${he.escape(
             sense.sectionId
           )}" class="v2-toc-link">${ordinalHtml}${textHtml}</a></li>`;
         })

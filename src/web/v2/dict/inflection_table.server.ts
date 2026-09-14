@@ -42,7 +42,7 @@ export function dedupeInflections(
 
 function usageNoteHtml(inflection: InflectionData): string {
   return inflection.usageNote
-    ? ` <span class="v2-usage-note">(${he.encode(inflection.usageNote)})</span>`
+    ? ` <span class="v2-usage-note">(${he.escape(inflection.usageNote)})</span>`
     : "";
 }
 
@@ -53,7 +53,7 @@ export function renderInflectionTable(inflections: InflectionData[]): string {
       (inflection) => `
             <tr>
               <td>${he.escape(formatInflectionForm(inflection.form))}</td>
-              <td>${he.encode(inflection.data)}${usageNoteHtml(inflection)}</td>
+              <td>${he.escape(inflection.data)}${usageNoteHtml(inflection)}</td>
             </tr>`
     )
     .join("");
@@ -77,5 +77,5 @@ export function renderInflectionTable(inflections: InflectionData[]): string {
 export function renderInflectionInline(inflection: InflectionData): string {
   return `<p class="v2-subsection-inline-inf"><b>${he.escape(
     formatInflectionForm(inflection.form)
-  )}</b> — ${he.encode(inflection.data)}${usageNoteHtml(inflection)}</p>`;
+  )}</b> — ${he.escape(inflection.data)}${usageNoteHtml(inflection)}</p>`;
 }

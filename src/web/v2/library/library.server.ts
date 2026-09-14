@@ -75,28 +75,28 @@ export async function renderLibraryPageHtml(): Promise<string> {
 
           return `
             <article class="v2-work-card"
-                     data-author="${he.encode(w.author.toLowerCase())}"
-                     data-title="${he.encode(w.title.toLowerCase())}"
+                     data-author="${he.escape(w.author.toLowerCase())}"
+                     data-title="${he.escape(w.title.toLowerCase())}"
                      data-tags="${tags.join(" ")}">
               <div class="v2-work-card-content">
                 <div class="v2-work-card-badges">
                   ${badges.join(" ")}
                 </div>
                 <h3 class="v2-work-card-title">
-                  <a href="${readerUrl}">${he.encode(w.title)}</a>
+                  <a href="${readerUrl}">${he.escape(w.title)}</a>
                 </h3>
                 <p class="v2-work-card-meta">
                   <span class="v2-meta-chapters">${chapterLabel}</span>
                   ${
                     w.editor
-                      ? `&middot; <span class="v2-meta-editor">Ed. ${he.encode(
+                      ? `&middot; <span class="v2-meta-editor">Ed. ${he.escape(
                           w.editor
                         )}</span>`
                       : ""
                   }
                   ${
                     w.translator
-                      ? `&middot; <span class="v2-meta-trans">Trans. ${he.encode(
+                      ? `&middot; <span class="v2-meta-trans">Trans. ${he.escape(
                           w.translator
                         )}</span>`
                       : ""
@@ -104,9 +104,9 @@ export async function renderLibraryPageHtml(): Promise<string> {
                 </p>
               </div>
               <div class="v2-work-card-action">
-                <a href="${readerUrl}" class="v2-work-card-btn" aria-label="Read ${he.encode(
+                <a href="${readerUrl}" class="v2-work-card-btn" aria-label="Read ${he.escape(
             w.title
-          )} by ${he.encode(w.author)}">
+          )} by ${he.escape(w.author)}">
                   <span>Read</span> &rarr;
                 </a>
               </div>
@@ -116,11 +116,11 @@ export async function renderLibraryPageHtml(): Promise<string> {
         .join("\n");
 
       return `
-        <section class="v2-library-author-section" data-author="${he.encode(
+        <section class="v2-library-author-section" data-author="${he.escape(
           author.toLowerCase()
         )}">
           <header class="v2-library-author-header">
-            <h2 class="v2-library-author-name">${he.encode(author)}</h2>
+            <h2 class="v2-library-author-name">${he.escape(author)}</h2>
             <span class="v2-library-author-count">${works.length} ${
         works.length === 1 ? "work" : "works"
       }</span>

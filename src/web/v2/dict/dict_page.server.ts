@@ -90,7 +90,7 @@ export function renderDictResultsHtml(
         }
         ${
           queriedNames
-            ? `<p class="v2-no-results-sub">Searched: ${he.encode(
+            ? `<p class="v2-no-results-sub">Searched: ${he.escape(
                 queriedNames
               )}</p>`
             : ""
@@ -127,17 +127,17 @@ export function renderDictResultsHtml(
       const count = entries.length;
       const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
       if (count > 0) {
-        return `<a href="#${cardId}" class="v2-jump-pill" title="Jump to ${he.encode(
+        return `<a href="#${cardId}" class="v2-jump-pill" title="Jump to ${he.escape(
           shortName
         )} (${count} ${
           count === 1 ? "entry" : "entries"
-        })"><span class="v2-jump-pill-name">${he.encode(
+        })"><span class="v2-jump-pill-name">${he.escape(
           dictAcronym
         )}</span><span class="v2-jump-pill-count">${count}</span></a>`;
       } else {
-        return `<span class="v2-jump-pill v2-jump-pill-zero" title="No entries found in ${he.encode(
+        return `<span class="v2-jump-pill v2-jump-pill-zero" title="No entries found in ${he.escape(
           shortName
-        )}"><span class="v2-jump-pill-name">${he.encode(
+        )}"><span class="v2-jump-pill-name">${he.escape(
           dictAcronym
         )}</span><span class="v2-jump-pill-count">0</span></span>`;
       }
@@ -176,7 +176,7 @@ export function renderDictResultsHtml(
               `Entry ${idx + 1}`;
             const headword = rawHeadword.replace(/<[^>]+>/g, "").trim();
             const entryAnchor = entry.outline.mainSection.sectionId;
-            return `<li><a href="#${entryAnchor}" class="v2-entry-nav-link"><span class="v2-entry-nav-word">${he.encode(
+            return `<li><a href="#${entryAnchor}" class="v2-entry-nav-link"><span class="v2-entry-nav-word">${he.escape(
               headword
             )}</span></a></li>`;
           })
@@ -222,7 +222,7 @@ export function renderDictResultsHtml(
               <details class="v2-dict-toggle" open>
                 <summary class="v2-dict-summary">
                   <span class="v2-dict-toggle-icon" aria-hidden="true"></span>
-                  <span class="v2-dict-title">${he.encode(dictName)}</span>
+                  <span class="v2-dict-title">${he.escape(dictName)}</span>
                   <span class="v2-dict-collapsed-badge">${totalEntries} ${
         totalEntries === 1 ? "entry" : "entries"
       }</span>

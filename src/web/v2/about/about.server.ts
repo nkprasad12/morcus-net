@@ -9,9 +9,9 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
   const commitId = options.commitId ?? process.env.COMMIT_ID;
   const commitLinkHtml =
     commitId && commitId.length > 0
-      ? `<a href="https://github.com/nkprasad12/morcus-net/commit/${he.encode(
+      ? `<a href="https://github.com/nkprasad12/morcus-net/commit/${he.escape(
           commitId
-        )}">${he.encode(commitId.slice(0, 7))}</a>`
+        )}">${he.escape(commitId.slice(0, 7))}</a>`
       : "<span>(dev build)</span>";
 
   return `

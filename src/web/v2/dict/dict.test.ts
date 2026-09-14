@@ -26,6 +26,15 @@ describe("dict_ssr", () => {
     const node = new XmlNode("span", [], ["<script>alert(1)</script>"]);
     const html = xmlNodeToHtml(node);
     expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+  });
+
+  test("xmlNodeToHtml preserves non-ASCII UTF-8 characters without entity encoding", () => {
+    const node = new XmlNode("span", [], ["ἵππος • hăbēna & nātūra"]);
+    const html = xmlNodeToHtml(node);
+    expect(html).toContain("&amp;");
+    expect(html).toContain("ἵππος • hăbēna &amp; nātūra");
+    expect(html).not.toMatch(/&#x[0-9A-Fa-f]+;/);
   });
 
   test("xmlNodeToHtml indents senses according to indentLevel", () => {
@@ -340,7 +349,7 @@ describe("dict_ssr", () => {
     expect(html).toContain('href="#n20077.1"');
     expect(html).toContain('class="lsSenseBullet v2-section-anchor"');
     expect(html).toContain('title="Copy link to this section"');
-    expect(html).toContain("&#x2022;");
+    expect(html).toContain("•");
     expect(html).toContain("</a>");
   });
 
@@ -482,6 +491,7 @@ describe("dict_ssr", () => {
 
     // Foreign with lang="GR" becomes <span lang="el"> and Greek text is preserved (decoded)
     expect(html).toContain('<span lang="el">');
+    expect(html).toContain('<span lang="el">ἵππος ἐργάτης</span>');
     expect(he.decode(html)).toContain('<span lang="el">ἵππος ἐργάτης</span>');
 
     // Hi with rend="italic" becomes <i> without word links in default SSR
