@@ -41,12 +41,14 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
           </div>
           <iframe id="v2-dict-frame" src="/v2/dicts?embedded=1"></iframe>
         </aside>
-        <dialog id="v2-reader-settings-dialog">
-          <input type="checkbox" id="v2-toggle-macra" checked />
-          <button id="v2-dict-size-dec">-</button>
-          <span id="v2-dict-size-label">100%</span>
-          <button id="v2-dict-size-inc">+</button>
-        </dialog>
+        <morcus-reader-settings>
+          <dialog id="v2-reader-settings-dialog">
+            <input type="checkbox" id="v2-toggle-macra" checked />
+            <button id="v2-dict-size-dec">-</button>
+            <span id="v2-dict-size-label">100%</span>
+            <button id="v2-dict-size-inc">+</button>
+          </dialog>
+        </morcus-reader-settings>
       </div>
     `;
     document.body.appendChild(el);
@@ -521,22 +523,24 @@ describe("Reader preferences validation & hydration", () => {
         <section class="v2-reader-text-panel">
           <article class="v2-reader-passage"></article>
         </section>
-        <dialog id="v2-reader-settings-dialog">
-          <button id="v2-reader-settings-btn"></button>
-          <span id="v2-reader-size-label"></span>
-          <span id="v2-dict-size-label"></span>
-          <select id="v2-font-select">
-            <option value="serif">Serif</option>
-            <option value="sans">Sans</option>
-          </select>
-          <select id="v2-line-height-select">
-            <option value="compact">Compact</option>
-            <option value="normal">Normal</option>
-            <option value="relaxed">Relaxed</option>
-          </select>
-          <input type="checkbox" id="v2-toggle-macra" />
-          <input type="checkbox" id="v2-toggle-gutter" />
-        </dialog>
+        <morcus-reader-settings>
+          <dialog id="v2-reader-settings-dialog">
+            <button id="v2-reader-settings-btn"></button>
+            <span id="v2-reader-size-label"></span>
+            <span id="v2-dict-size-label"></span>
+            <select id="v2-font-select">
+              <option value="serif">Serif</option>
+              <option value="sans">Sans</option>
+            </select>
+            <select id="v2-line-height-select">
+              <option value="compact">Compact</option>
+              <option value="normal">Normal</option>
+              <option value="relaxed">Relaxed</option>
+            </select>
+            <input type="checkbox" id="v2-toggle-macra" />
+            <input type="checkbox" id="v2-toggle-gutter" />
+          </dialog>
+        </morcus-reader-settings>
       </div>
     `;
     document.body.appendChild(el);

@@ -1426,6 +1426,10 @@ body.v2-resizing-panels {
 /* ==========================================================================
    Reader Settings Dialog & Stepper Controls
    ========================================================================== */
+morcus-reader-settings {
+  display: contents;
+}
+
 .v2-reader-settings-dialog {
   max-width: 440px;
 }

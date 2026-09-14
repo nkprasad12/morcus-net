@@ -531,83 +531,85 @@ export async function renderReaderContentHtml(
       </dialog>
 
       <!-- Reader Appearance & Settings Dialog -->
-      <dialog class="v2-dialog v2-reader-settings-dialog" id="v2-reader-settings-dialog">
-        <div class="v2-dialog-card v2-settings-card">
-          <div class="v2-dialog-header">
-            <div>
-              <h2 class="v2-dialog-title">Reader Settings</h2>
-              <p class="v2-dialog-subtitle">Typography &amp; display preferences</p>
+      <morcus-reader-settings>
+        <dialog class="v2-dialog v2-reader-settings-dialog" id="v2-reader-settings-dialog">
+          <div class="v2-dialog-card v2-settings-card">
+            <div class="v2-dialog-header">
+              <div>
+                <h2 class="v2-dialog-title">Reader Settings</h2>
+                <p class="v2-dialog-subtitle">Typography &amp; display preferences</p>
+              </div>
+              <button type="button" class="v2-dialog-close-btn" id="v2-reader-settings-close-btn" aria-label="Close settings" data-dialog-close>&times;</button>
             </div>
-            <button type="button" class="v2-dialog-close-btn" id="v2-reader-settings-close-btn" aria-label="Close settings" data-dialog-close>&times;</button>
-          </div>
 
-          <div class="v2-settings-body">
-            
-            <!-- Font Size Scaling Group -->
-            <div class="v2-settings-group">
-              <h3 class="v2-settings-group-title">Text Size</h3>
-              <div class="v2-settings-row">
-                <span class="v2-settings-label">Reading Canvas</span>
-                <div class="v2-stepper">
-                  <button type="button" class="v2-stepper-btn" id="v2-reader-size-dec" aria-label="Decrease reading text size">A&minus;</button>
-                  <span class="v2-stepper-val" id="v2-reader-size-label">100%</span>
-                  <button type="button" class="v2-stepper-btn" id="v2-reader-size-inc" aria-label="Increase reading text size">A+</button>
+            <div class="v2-settings-body">
+              
+              <!-- Font Size Scaling Group -->
+              <div class="v2-settings-group">
+                <h3 class="v2-settings-group-title">Text Size</h3>
+                <div class="v2-settings-row">
+                  <span class="v2-settings-label">Reading Canvas</span>
+                  <div class="v2-stepper">
+                    <button type="button" class="v2-stepper-btn" id="v2-reader-size-dec" aria-label="Decrease reading text size">A&minus;</button>
+                    <span class="v2-stepper-val" id="v2-reader-size-label">100%</span>
+                    <button type="button" class="v2-stepper-btn" id="v2-reader-size-inc" aria-label="Increase reading text size">A+</button>
+                  </div>
+                </div>
+
+                <div class="v2-settings-row">
+                  <span class="v2-settings-label">Dictionary Sidebar</span>
+                  <div class="v2-stepper">
+                    <button type="button" class="v2-stepper-btn" id="v2-dict-size-dec" aria-label="Decrease dictionary text size">A&minus;</button>
+                    <span class="v2-stepper-val" id="v2-dict-size-label">100%</span>
+                    <button type="button" class="v2-stepper-btn" id="v2-dict-size-inc" aria-label="Increase dictionary text size">A+</button>
+                  </div>
                 </div>
               </div>
 
-              <div class="v2-settings-row">
-                <span class="v2-settings-label">Dictionary Sidebar</span>
-                <div class="v2-stepper">
-                  <button type="button" class="v2-stepper-btn" id="v2-dict-size-dec" aria-label="Decrease dictionary text size">A&minus;</button>
-                  <span class="v2-stepper-val" id="v2-dict-size-label">100%</span>
-                  <button type="button" class="v2-stepper-btn" id="v2-dict-size-inc" aria-label="Increase dictionary text size">A+</button>
+              <!-- Scholarly & Textual Aids -->
+              <div class="v2-settings-group">
+                <h3 class="v2-settings-group-title">Scholarly &amp; Textual Aids</h3>
+                <label class="v2-settings-toggle-row">
+                  <span class="v2-settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
+                  <input type="checkbox" id="v2-toggle-macra" class="v2-toggle-checkbox" checked>
+                </label>
+
+                <label class="v2-settings-toggle-row">
+                  <span class="v2-settings-label">Show Section Numbers (&sect;)</span>
+                  <input type="checkbox" id="v2-toggle-gutter" class="v2-toggle-checkbox" checked>
+                </label>
+              </div>
+
+              <!-- Typography Style -->
+              <div class="v2-settings-group">
+                <h3 class="v2-settings-group-title">Typography</h3>
+                <div class="v2-settings-row">
+                  <span class="v2-settings-label">Font Family</span>
+                  <select id="v2-font-select" class="v2-settings-select" aria-label="Select font style">
+                    <option value="serif" selected>Classical Serif</option>
+                    <option value="sans">Modern Sans-Serif</option>
+                  </select>
+                </div>
+
+                <div class="v2-settings-row">
+                  <span class="v2-settings-label">Line Spacing</span>
+                  <select id="v2-line-height-select" class="v2-settings-select" aria-label="Select line spacing">
+                    <option value="compact">Compact</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="relaxed">Relaxed</option>
+                  </select>
                 </div>
               </div>
+
             </div>
 
-            <!-- Scholarly & Textual Aids -->
-            <div class="v2-settings-group">
-              <h3 class="v2-settings-group-title">Scholarly &amp; Textual Aids</h3>
-              <label class="v2-settings-toggle-row">
-                <span class="v2-settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
-                <input type="checkbox" id="v2-toggle-macra" class="v2-toggle-checkbox" checked>
-              </label>
-
-              <label class="v2-settings-toggle-row">
-                <span class="v2-settings-label">Show Section Numbers (&sect;)</span>
-                <input type="checkbox" id="v2-toggle-gutter" class="v2-toggle-checkbox" checked>
-              </label>
+            <div class="v2-dialog-actions v2-settings-actions">
+              <button type="button" class="v2-btn v2-btn-secondary" id="v2-reader-settings-reset-btn">Reset Defaults</button>
+              <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-settings-done-btn" data-dialog-close>Done</button>
             </div>
-
-            <!-- Typography Style -->
-            <div class="v2-settings-group">
-              <h3 class="v2-settings-group-title">Typography</h3>
-              <div class="v2-settings-row">
-                <span class="v2-settings-label">Font Family</span>
-                <select id="v2-font-select" class="v2-settings-select" aria-label="Select font style">
-                  <option value="serif" selected>Classical Serif</option>
-                  <option value="sans">Modern Sans-Serif</option>
-                </select>
-              </div>
-
-              <div class="v2-settings-row">
-                <span class="v2-settings-label">Line Spacing</span>
-                <select id="v2-line-height-select" class="v2-settings-select" aria-label="Select line spacing">
-                  <option value="compact">Compact</option>
-                  <option value="normal" selected>Normal</option>
-                  <option value="relaxed">Relaxed</option>
-                </select>
-              </div>
-            </div>
-
           </div>
-
-          <div class="v2-dialog-actions v2-settings-actions">
-            <button type="button" class="v2-btn v2-btn-secondary" id="v2-reader-settings-reset-btn">Reset Defaults</button>
-            <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-settings-done-btn" data-dialog-close>Done</button>
-          </div>
-        </div>
-      </dialog>
+        </dialog>
+      </morcus-reader-settings>
 
     </morcus-reader-view>
   `;
