@@ -18,30 +18,23 @@ export class MorcusDictToc extends BaseElement {
   private mediaQuery: MediaQueryList | null = null;
   private readonly onMediaChange = () => this.syncDrawerState();
 
-  override connectedCallback() {
-    super.connectedCallback();
+  protected override onConnect() {
     this.mediaQuery = window.matchMedia("(max-width: 1079.98px)");
-    if (this.mediaQuery.addEventListener) {
-      this.mediaQuery.addEventListener("change", this.onMediaChange);
-    } else {
-      this.mediaQuery.addListener(this.onMediaChange);
-    }
+    this.listen(this.mediaQuery, "change", this.onMediaChange);
     this.syncDrawerState();
   }
 
-  override disconnectedCallback() {
-    super.disconnectedCallback();
-    if (this.mediaQuery) {
-      if (this.mediaQuery.removeEventListener) {
-        this.mediaQuery.removeEventListener("change", this.onMediaChange);
-      } else {
-        this.mediaQuery.removeListener(this.onMediaChange);
-      }
-      this.mediaQuery = null;
+  protected override onDisconnect() {
+    this.destroyDrawer();
+    this.mediaQuery = null;
+  }
+
+  private destroyDrawer() {
+    if (this.drawerController) {
+      this.drawerController.destroy();
+      this.drawerController = null;
+      document.documentElement.style.removeProperty("--v2-drawer-height");
     }
-    this.drawerController?.destroy();
-    this.drawerController = null;
-    document.documentElement.style.removeProperty("--v2-drawer-height");
   }
 
   private syncDrawerState() {
@@ -65,11 +58,7 @@ export class MorcusDictToc extends BaseElement {
         }
       }
     } else {
-      if (this.drawerController) {
-        this.drawerController.destroy();
-        this.drawerController = null;
-        document.documentElement.style.removeProperty("--v2-drawer-height");
-      }
+      this.destroyDrawer();
       // Ensure details disclosure remains open on desktop
       const details = this.querySelector<HTMLDetailsElement>(".v2-toc-details");
       if (details && !details.open) {
