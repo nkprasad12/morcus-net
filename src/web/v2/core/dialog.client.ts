@@ -9,6 +9,8 @@
  * - ARIA expanded state tracking on opening trigger buttons
  */
 
+import { DisposableBag } from "@/web/v2/core/disposable.client";
+
 export interface ModalDialogOptions {
   /** Optional trigger element(s) that open this dialog. */
   trigger?: HTMLElement | HTMLElement[] | null;
@@ -79,24 +81,28 @@ export function setupModalDialog(
     options.onClose?.();
   };
 
-  const cleanups: (() => void)[] = [];
+  const disposables = new DisposableBag();
 
   // Wire trigger button(s)
   for (const trigger of triggers) {
     trigger.removeAttribute("disabled");
     trigger.addEventListener("click", openDialog);
-    cleanups.push(() => trigger.removeEventListener("click", openDialog));
+    disposables.add(() => trigger.removeEventListener("click", openDialog));
   }
 
   // Backdrop click & cancel/close events
   dialog.addEventListener("click", handleBackdropClick);
-  cleanups.push(() => dialog.removeEventListener("click", handleBackdropClick));
+  disposables.add(() =>
+    dialog.removeEventListener("click", handleBackdropClick)
+  );
 
   dialog.addEventListener("close", handleNativeClose);
-  cleanups.push(() => dialog.removeEventListener("close", handleNativeClose));
+  disposables.add(() => dialog.removeEventListener("close", handleNativeClose));
 
   dialog.addEventListener("cancel", handleNativeClose);
-  cleanups.push(() => dialog.removeEventListener("cancel", handleNativeClose));
+  disposables.add(() =>
+    dialog.removeEventListener("cancel", handleNativeClose)
+  );
 
   // Wire all close buttons marked with [data-dialog-close]
   const closeBtns = Array.from(
@@ -104,12 +110,10 @@ export function setupModalDialog(
   );
   for (const btn of closeBtns) {
     btn.addEventListener("click", closeDialog);
-    cleanups.push(() => btn.removeEventListener("click", closeDialog));
+    disposables.add(() => btn.removeEventListener("click", closeDialog));
   }
 
   return () => {
-    for (const cleanup of cleanups) {
-      cleanup();
-    }
+    disposables.dispose();
   };
 }

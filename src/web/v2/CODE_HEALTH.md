@@ -110,11 +110,6 @@ Every item here is a feature reimplementing something `core/` already provides.
       **Show Macra** toggle: `w.textContent = show ? orig : this.stripMacrons(orig)`. Swapping in
       `removeDiacritics` there would also strip breves, diaereses and Greek accents from displayed
       text. The real smell is only that a text-normalization primitive lives as a private method on
-      a DOM element, so move it next to its siblings and give it a test — do not delete it.
-- [ ] 🟡 **Extract `core/disposable.client.ts`.** `DrawerController` hand-rolls four parallel
-      unbind fields plus a `destroy()` (`drawer.client.ts` L56-59) — exactly `BaseElement.disposables`.
-      A shared `DisposableBag { add(fn); dispose(); }` used by both removes ~40 lines of bookkeeping
-      and the possibility of forgetting one.
 - [ ] 🟡 **Extract `core/cookies.common.ts`.** The literal
       `; Path=/; Max-Age=31536000; SameSite=Lax` appears in four places
       (`dict_selection.server.ts` L102, `v2_router.server.ts` L269, `settings.client.ts` L87 and L125),
@@ -555,6 +550,8 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Use `onConnect()` and `this.listen()` in `dict_toc.client.ts`**, eliminating manual
   `connectedCallback`/`disconnectedCallback` overrides, managing mediaQuery listeners via
   `BaseElement` disposables, and consolidating drawer teardown.
+- **Extract `core/disposable.client.ts` with `DisposableBag`**, unifying cleanup across `BaseElement`,
+  `DrawerController`, and `setupModalDialog` while preserving FIFO teardown and re-entrant safety without latches.
 
 **Phase 7 — docs & tests**
 

@@ -5,6 +5,7 @@
  * and <details>/<summary> disclosure coordination for bottom sheet drawers.
  */
 
+import { DisposableBag } from "@/web/v2/core/disposable.client";
 import { trackPointerDrag } from "@/web/v2/core/gesture.client";
 
 export interface DrawerControllerOptions {
@@ -52,11 +53,7 @@ export class DrawerController {
   private readonly floorDvh: number;
   private readonly expandedDvh: number;
   private preferredDvh: number;
-
-  private unbindDrag: (() => void) | null = null;
-  private unbindKeydown: (() => void) | null = null;
-  private unbindClick: (() => void) | null = null;
-  private unbindToggle: (() => void) | null = null;
+  private readonly disposables = new DisposableBag();
 
   private isUpdatingDetails = false;
 
@@ -166,83 +163,86 @@ export class DrawerController {
     let startHeight = 0;
     let wasDragged = false;
 
-    this.unbindDrag = trackPointerDrag(this.handle, {
-      handleActiveClass: "v2-is-dragging",
-      // The handle is a child of the drawer, so `.v2-drawer.v2-is-dragging`
-      // (and the reader's `.v2-reader-dict-panel.v2-is-dragging`) only match
-      // if the panel is marked too. Those rules are what disable the height
-      // transition mid-drag.
-      activeClassTarget: this.drawer,
-      bodyActiveClass: "v2-resizing-drawer",
-      filter: this.options.filter,
-      onStart: () => {
-        wasMinimized = this.isMinimized();
-        startHeight = this.drawer.getBoundingClientRect().height;
-        if (this.details && !this.details.open) {
-          this.isUpdatingDetails = true;
-          this.details.open = true;
-          this.isUpdatingDetails = false;
-          startHeight =
-            this.drawer.getBoundingClientRect().height || this.minHeight;
-        }
-        if (wasMinimized) {
-          this.drawer.classList.remove("v2-drawer-minimized");
-        }
-        wasDragged = false;
-      },
-      onMove: ({ dy }) => {
-        if (Math.abs(dy) > 6) {
-          wasDragged = true;
-        }
-        const winHeight = window.innerHeight || 800;
-        const maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
-        const newHeight = Math.max(
-          this.minHeight,
-          Math.min(maxHeight, startHeight - dy)
-        );
-        this.drawer.style.setProperty("--v2-drawer-height", `${newHeight}px`);
-        this.layoutElement?.style.setProperty(
-          "--v2-drawer-height",
-          `${newHeight}px`
-        );
-        const percent = Math.round((newHeight / winHeight) * 100);
-        this.handle.setAttribute("aria-valuenow", String(percent));
-        this.options.onHeightChange?.(newHeight, percent);
-      },
-      onEnd: ({ dy, elapsedMs, velocityY }) => {
-        const winHeight = window.innerHeight || 800;
-        const currentHeight = this.drawer.getBoundingClientRect().height;
-        const currentDvh = Math.round((currentHeight / winHeight) * 100);
-
-        // Handle simple tap (minimal movement)
-        if (Math.abs(dy) < 6 && elapsedMs < 350) {
-          wasDragged = false;
-          if (wasMinimized && !this.details) {
-            this.restore();
+    this.disposables.add(
+      trackPointerDrag(this.handle, {
+        handleActiveClass: "v2-is-dragging",
+        // The handle is a child of the drawer, so `.v2-drawer.v2-is-dragging`
+        // (and the reader's `.v2-reader-dict-panel.v2-is-dragging`) only match
+        // if the panel is marked too. Those rules are what disable the height
+        // transition mid-drag.
+        activeClassTarget: this.drawer,
+        bodyActiveClass: "v2-resizing-drawer",
+        filter: this.options.filter,
+        onStart: () => {
+          wasMinimized = this.isMinimized();
+          startHeight = this.drawer.getBoundingClientRect().height;
+          if (this.details && !this.details.open) {
+            this.isUpdatingDetails = true;
+            this.details.open = true;
+            this.isUpdatingDetails = false;
+            startHeight =
+              this.drawer.getBoundingClientRect().height || this.minHeight;
           }
-          return;
-        }
+          if (wasMinimized) {
+            this.drawer.classList.remove("v2-drawer-minimized");
+          }
+          wasDragged = false;
+        },
+        onMove: ({ dy }) => {
+          if (Math.abs(dy) > 6) {
+            wasDragged = true;
+          }
+          const winHeight = window.innerHeight || 800;
+          const maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
+          const newHeight = Math.max(
+            this.minHeight,
+            Math.min(maxHeight, startHeight - dy)
+          );
+          this.drawer.style.setProperty("--v2-drawer-height", `${newHeight}px`);
+          this.layoutElement?.style.setProperty(
+            "--v2-drawer-height",
+            `${newHeight}px`
+          );
+          const percent = Math.round((newHeight / winHeight) * 100);
+          this.handle.setAttribute("aria-valuenow", String(percent));
+          this.options.onHeightChange?.(newHeight, percent);
+        },
+        onEnd: ({ dy, elapsedMs, velocityY }) => {
+          const winHeight = window.innerHeight || 800;
+          const currentHeight = this.drawer.getBoundingClientRect().height;
+          const currentDvh = Math.round((currentHeight / winHeight) * 100);
 
-        // Fast flick down detection:
-        const vhPerSec = (dy / winHeight) * (1000 / elapsedMs);
-        const isFastFlickDown = dy > 35 && (velocityY > 0.75 || vhPerSec > 1.1);
+          // Handle simple tap (minimal movement)
+          if (Math.abs(dy) < 6 && elapsedMs < 350) {
+            wasDragged = false;
+            if (wasMinimized && !this.details) {
+              this.restore();
+            }
+            return;
+          }
 
-        // Dragged into floor threshold
-        const isDraggedToFloor =
-          currentDvh < this.floorDvh || currentHeight < 110;
+          // Fast flick down detection:
+          const vhPerSec = (dy / winHeight) * (1000 / elapsedMs);
+          const isFastFlickDown =
+            dy > 35 && (velocityY > 0.75 || vhPerSec > 1.1);
 
-        if (isFastFlickDown || isDraggedToFloor) {
-          this.minimize();
-          return;
-        }
+          // Dragged into floor threshold
+          const isDraggedToFloor =
+            currentDvh < this.floorDvh || currentHeight < 110;
 
-        const clampedDvh = Math.min(
-          this.expandedDvh,
-          Math.max(this.floorDvh, currentDvh)
-        );
-        this.restore(clampedDvh);
-      },
-    });
+          if (isFastFlickDown || isDraggedToFloor) {
+            this.minimize();
+            return;
+          }
+
+          const clampedDvh = Math.min(
+            this.expandedDvh,
+            Math.max(this.floorDvh, currentDvh)
+          );
+          this.restore(clampedDvh);
+        },
+      })
+    );
 
     if (this.summary) {
       const onSummaryClick = (e: MouseEvent) => {
@@ -253,9 +253,9 @@ export class DrawerController {
         }
       };
       this.summary.addEventListener("click", onSummaryClick, true);
-      this.unbindClick = () => {
+      this.disposables.add(() => {
         this.summary?.removeEventListener("click", onSummaryClick, true);
-      };
+      });
     }
   }
 
@@ -287,9 +287,9 @@ export class DrawerController {
       }
     };
     this.handle.addEventListener("keydown", onKeyDown);
-    this.unbindKeydown = () => {
+    this.disposables.add(() => {
       this.handle.removeEventListener("keydown", onKeyDown);
-    };
+    });
   }
 
   private initDetailsSync(): void {
@@ -303,22 +303,15 @@ export class DrawerController {
       }
     };
     this.details.addEventListener("toggle", onToggle);
-    this.unbindToggle = () => {
+    this.disposables.add(() => {
       this.details?.removeEventListener("toggle", onToggle);
-    };
+    });
   }
 
   /**
    * Destroys all event listeners and gesture tracking.
    */
   destroy(): void {
-    this.unbindDrag?.();
-    this.unbindDrag = null;
-    this.unbindKeydown?.();
-    this.unbindKeydown = null;
-    this.unbindClick?.();
-    this.unbindClick = null;
-    this.unbindToggle?.();
-    this.unbindToggle = null;
+    this.disposables.dispose();
   }
 }

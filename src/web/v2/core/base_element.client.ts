@@ -1,3 +1,4 @@
+import { DisposableBag } from "@/web/v2/core/disposable.client";
 import {
   syncQueryParam,
   type QueryParamSync,
@@ -23,7 +24,7 @@ import { LatestTask } from "@/web/v2/core/task.client";
 export abstract class BaseElement<
   Lane extends string = never
 > extends HTMLElement {
-  private disposables: (() => void)[] = [];
+  private readonly disposables = new DisposableBag();
   private lifetime = new AbortController();
   private readonly lanes = new Map<Lane, LatestTask>();
 
@@ -123,8 +124,7 @@ export abstract class BaseElement<
    * Registers a cleanup callback to be called when disconnectedCallback executes.
    */
   protected addDisposable(fn: () => void): () => void {
-    this.disposables.push(fn);
-    return fn;
+    return this.disposables.add(fn);
   }
 
   /**
@@ -274,15 +274,7 @@ export abstract class BaseElement<
     }
     this.lanes.clear();
     this.lifetime.abort();
-
-    for (const fn of this.disposables) {
-      try {
-        fn();
-      } catch (e) {
-        console.error("Error during BaseElement disposal:", e);
-      }
-    }
-    this.disposables = [];
+    this.disposables.dispose();
   }
 }
 

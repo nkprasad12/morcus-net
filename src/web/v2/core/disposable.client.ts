@@ -1,0 +1,41 @@
+/**
+ * UI V2 Disposable cleanup primitive.
+ *
+ * Collects zero-argument cleanup callbacks (e.g. unbinds, event listener removals,
+ * observer disconnects, or timer cancellations) and executes them on disposal.
+ *
+ * Teardown drains the bag in insertion order (FIFO) with per-callback error
+ * isolation so that one failing unbind does not prevent remaining cleanups from
+ * executing. The bag is safe to call dispose() on multiple times (no-op when empty),
+ * and remains reusable after disposal (e.g. for re-attaching elements).
+ */
+export class DisposableBag {
+  private disposables: (() => void)[] = [];
+
+  /**
+   * Registers a cleanup callback.
+   * Returns the registered callback for convenient inline chaining.
+   */
+  add(fn: () => void): () => void {
+    this.disposables.push(fn);
+    return fn;
+  }
+
+  /**
+   * Executes and clears all registered cleanup callbacks in FIFO order.
+   * Drains the internal list before executing so that any re-entrant add()
+   * during teardown survives into the next disposal cycle.
+   */
+  dispose(): void {
+    const toRun = this.disposables;
+    this.disposables = [];
+
+    for (const fn of toRun) {
+      try {
+        fn();
+      } catch (err) {
+        console.error("Error during disposal:", err);
+      }
+    }
+  }
+}
