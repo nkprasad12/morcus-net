@@ -358,20 +358,6 @@ Verified counts as of the audit.
 
 ## Phase 7 — Docs & tests
 
-- [ ] 🟢 **Remove the three stale "Lit" references** — there is no Lit dependency in
-      `package.json`. One ships in the HTML of **every page**:
-      `shell/page_shell.server.ts` L179 `<!-- UI V2 enhanced with Lit Web Components -->`.
-      Also [TESTING.md](TESTING.md) L23 and [dict/README.md](dict/README.md) L19.
-- [ ] 🟢 **Fix the stale test inventory** in [TESTING.md](TESTING.md) §1 — it lists 7 test files;
-      there are 25. Replace the enumeration with a glob.
-- [ ] 🟢 **Update the `.common.ts` contract in [README.md](README.md) for `SafeHtml`.** L68-71 now
-      describes code that no longer exists: it says renderers "return HTML strings" that the client
-      assigns to `innerHTML` / `outerHTML`, and that they "must hand-roll their escaping" via the
-      local `escapeHtml` in `search_bar.common.ts`. That escaper is gone, the renderers return
-      `SafeHtml`, and the client goes through `setHtml` / `replaceWithHtml`. The underlying reason
-      is unchanged and should stay — `he` cannot enter the client bundle — but the mechanism is now
-      `core/html.common.ts`. Check the safe-DOM paragraph near L11 in the same pass.
-
 - [ ] 🟡 **Stop the Firefox baselines going stale again.** The baselines were all re-recorded when
       the suite moved to viewport + coverage shots, so the matrix is green today, but nothing
       prevents the drift recurring. `./morcus.sh e2e --visual` runs Chromium and MobileChrome only,
@@ -531,6 +517,9 @@ worth not rediscovering is summarised in Phase 5 instead.
   sees it — over the full js/theme/browser matrix. Below-the-fold coverage moved to one
   `-coverage.png` per scenario per browser, capped at three viewports. 176 baselines / 58MB became
   160 / ~25MB, and the 29135px library-landing image nobody could review is gone.
+- **Purged stale "Lit" references** from `shell/page_shell.server.ts`, `TESTING.md`, `dict/README.md`, and `dict/search.css`.
+- **Replaced stale 7-file test enumeration** in `TESTING.md` §1 with a glob pattern matching colocated test files (`src/web/v2/**/*.test.ts`).
+- **Updated `.common.ts` contract and safe-DOM documentation** in `README.md` to reflect `SafeHtml`, `core/html.common.ts`, and typed sinks (`setHtml` / `replaceWithHtml`).
 
 **Phase 8 — performance**
 

@@ -74,7 +74,7 @@ test.describe("UI V2 dictionary", () => {
     await input.click();
     await page.keyboard.type("hab", { delay: 30 });
 
-    // Wait for the reactive suggestions overlay created by Lit component
+    // Wait for the reactive suggestions overlay created by Web Component
     const suggestionItem = page.locator(".v2-suggestion-item").first();
     await expect(suggestionItem).toBeVisible({ timeout: 5000 });
 

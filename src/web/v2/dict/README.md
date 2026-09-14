@@ -16,7 +16,7 @@ sequenceDiagram
     actor User as Browser / User
     participant Router as Express (/v2/dicts)
     participant Fused as FusedDictionary (Server)
-    participant Lit as Web Components (Client)
+    participant Client as Web Components (Client)
 
     alt Initial Load / No-JS Form Submit
         User->>Router: GET /v2/dicts?q=habeo
@@ -24,18 +24,18 @@ sequenceDiagram
         Fused-->>Router: DictsFusedResponse
         Router-->>User: 200 OK (Full SSR HTML document with <details>, app bar)
     else With JS: Live Autocomplete
-        User->>Lit: Type "hab" into <input name="q">
-        Lit->>Router: GET /v2/api/completions?q=hab
+        User->>Client: Type "hab" into <input name="q">
+        Client->>Router: GET /v2/api/completions?q=hab
         Router->>Fused: getCompletions("hab")
         Fused-->>Router: string[]
-        Router-->>Lit: JSON string[]
-        Lit-->>User: Declarative <morcus-dict-suggestions> dropdown
+        Router-->>Client: JSON string[]
+        Client-->>User: Declarative <morcus-dict-suggestions> dropdown
     else With JS: Form Hijack (AJAX Swap)
-        User->>Lit: Submit form / select suggestion
-        Lit->>Router: GET /v2/dicts?q=habeo&format=partial (X-Requested-With: fetch)
+        User->>Client: Submit form / select suggestion
+        Client->>Router: GET /v2/dicts?q=habeo&format=partial (X-Requested-With: fetch)
         Router->>Fused: getEntry({ query: "habeo", mode: 1 })
-        Router-->>Lit: HTML fragment (<details class="v2-dict-card">...)
-        Lit->>User: replaceChildren(fragment) & history.pushState()
+        Router-->>Client: HTML fragment (<details class="v2-dict-card">...)
+        Client->>User: replaceChildren(fragment) & history.pushState()
     end
 ```
 
