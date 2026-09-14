@@ -2,6 +2,10 @@ import {
   BaseElement,
   type QueryParamSync,
   DrawerController,
+  DRAWER_DEFAULT_DVH,
+  DRAWER_EXPANDED_DVH,
+  DRAWER_FLOOR_DVH,
+  DRAWER_MIN_HEIGHT,
   ICON_PATHS,
   html,
   registerElement,
@@ -69,7 +73,7 @@ export {
  * */
 export class MorcusReaderView extends BaseElement {
   private currentQuery: string = "";
-  private preferredDrawerDvh: number = 48;
+  private preferredDrawerDvh: number = DRAWER_DEFAULT_DVH;
   private drawerController?: DrawerController;
   private tocController: ReaderTocController | null = null;
   private layoutController: ReaderLayoutController | null = null;
@@ -300,8 +304,11 @@ export class MorcusReaderView extends BaseElement {
         ".v2-reader-split-layout"
       );
       const dvh = Math.min(
-        88,
-        Math.max(18, targetDvh ?? this.preferredDrawerDvh ?? 48)
+        DRAWER_EXPANDED_DVH,
+        Math.max(
+          DRAWER_FLOOR_DVH,
+          targetDvh ?? this.preferredDrawerDvh ?? DRAWER_DEFAULT_DVH
+        )
       );
       this.preferredDrawerDvh = dvh;
 
@@ -437,7 +444,8 @@ export class MorcusReaderView extends BaseElement {
           const rect = targetEl.getBoundingClientRect();
           const drawerTop =
             dictPanel?.getBoundingClientRect().top ??
-            window.innerHeight * (1 - (this.preferredDrawerDvh ?? 48) / 100);
+            window.innerHeight *
+              (1 - (this.preferredDrawerDvh ?? DRAWER_DEFAULT_DVH) / 100);
           if (rect.bottom > drawerTop - 24) {
             const scrollNeeded = rect.bottom - (drawerTop - 24);
             window.scrollBy({
@@ -580,10 +588,10 @@ export class MorcusReaderView extends BaseElement {
       drawer: dictPanel,
       handle: sheetBar,
       layoutElement: splitLayout,
-      minHeight: 54,
-      defaultDvh: 48,
-      floorDvh: 18,
-      expandedDvh: 88,
+      minHeight: DRAWER_MIN_HEIGHT,
+      defaultDvh: DRAWER_DEFAULT_DVH,
+      floorDvh: DRAWER_FLOOR_DVH,
+      expandedDvh: DRAWER_EXPANDED_DVH,
       preferredDvh: this.preferredDrawerDvh,
       filter: (e) => {
         if (

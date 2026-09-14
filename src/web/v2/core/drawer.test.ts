@@ -1,7 +1,13 @@
 /**
  * @jest-environment jsdom
  */
-import { DrawerController } from "@/web/v2/core/drawer.client";
+import {
+  DrawerController,
+  DRAWER_DEFAULT_DVH,
+  DRAWER_EXPANDED_DVH,
+  DRAWER_FLOOR_DVH,
+  DRAWER_MIN_HEIGHT,
+} from "@/web/v2/core/drawer.client";
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
 installPointerEventShims();
@@ -41,12 +47,33 @@ describe("DrawerController", () => {
       drawer,
       handle,
       layoutElement,
-      defaultDvh: 48,
     });
 
     expect(controller.isMinimized()).toBe(false);
-    expect(controller.getPreferredDvh()).toBe(48);
+    expect(controller.getPreferredDvh()).toBe(DRAWER_DEFAULT_DVH);
 
+    controller.destroy();
+  });
+
+  test("uses DRAWER_* constants when dvh and height options are omitted", () => {
+    const controller = new DrawerController({ drawer, handle, layoutElement });
+    expect(controller.getPreferredDvh()).toBe(DRAWER_DEFAULT_DVH);
+    controller.minimize();
+    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+      `${DRAWER_MIN_HEIGHT}px`
+    );
+    // Floor clamp
+    controller.restore(DRAWER_FLOOR_DVH - 5);
+    expect(controller.getPreferredDvh()).toBe(DRAWER_FLOOR_DVH);
+    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+      `${DRAWER_FLOOR_DVH}dvh`
+    );
+    // Expanded clamp
+    controller.restore(DRAWER_EXPANDED_DVH + 10);
+    expect(controller.getPreferredDvh()).toBe(DRAWER_EXPANDED_DVH);
+    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+      `${DRAWER_EXPANDED_DVH}dvh`
+    );
     controller.destroy();
   });
 
@@ -156,8 +183,6 @@ describe("DrawerController", () => {
     const controller = new DrawerController({
       drawer,
       handle,
-      defaultDvh: 48,
-      expandedDvh: 88,
       onEscape,
     });
 
@@ -165,14 +190,18 @@ describe("DrawerController", () => {
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
     expect(controller.isMinimized()).toBe(true);
 
-    // ArrowUp while minimized restores to default (48dvh)
+    // ArrowUp while minimized restores to default (DRAWER_DEFAULT_DVH)
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
     expect(controller.isMinimized()).toBe(false);
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe("48dvh");
+    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+      `${DRAWER_DEFAULT_DVH}dvh`
+    );
 
-    // ArrowUp while open expands to expandedDvh (88dvh)
+    // ArrowUp while open expands to expandedDvh (DRAWER_EXPANDED_DVH)
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe("88dvh");
+    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+      `${DRAWER_EXPANDED_DVH}dvh`
+    );
 
     // Escape calls onEscape
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));

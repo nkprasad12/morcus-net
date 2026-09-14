@@ -8,6 +8,14 @@
 import { DisposableBag } from "@/web/v2/core/disposable.client";
 import { trackPointerDrag } from "@/web/v2/core/gesture.client";
 
+/**
+ * Snap points and bounds for bottom sheet drawers in dynamic viewport height units (dvh).
+ */
+export const DRAWER_DEFAULT_DVH = 48;
+export const DRAWER_FLOOR_DVH = 18;
+export const DRAWER_EXPANDED_DVH = 88;
+export const DRAWER_MIN_HEIGHT = 54;
+
 export interface DrawerControllerOptions {
   /** The drawer element whose height and styles are modified */
   drawer: HTMLElement;
@@ -19,13 +27,13 @@ export interface DrawerControllerOptions {
   detailsElement?: HTMLDetailsElement | null;
   /** Optional <summary> element (for drag suppression). If omitted, inferred from handle or details. */
   summaryElement?: HTMLElement | null;
-  /** Minimum height in pixels (peek / minimized height). Defaults to 54. */
+  /** Minimum height in pixels (peek / minimized height). Defaults to DRAWER_MIN_HEIGHT (54). */
   minHeight?: number;
-  /** Default / initial height in dvh (1-100). Defaults to 48. */
+  /** Default / initial height in dvh (1-100). Defaults to DRAWER_DEFAULT_DVH (48). */
   defaultDvh?: number;
-  /** Floor / collapse threshold in dvh. Defaults to 18. */
+  /** Floor / collapse threshold in dvh. Defaults to DRAWER_FLOOR_DVH (18). */
   floorDvh?: number;
-  /** Expanded snap height in dvh. Defaults to 88. */
+  /** Expanded snap height in dvh. Defaults to DRAWER_EXPANDED_DVH (88). */
   expandedDvh?: number;
   /** Initial preferred dvh. Defaults to defaultDvh. */
   preferredDvh?: number;
@@ -77,10 +85,10 @@ export class DrawerController {
         ? options.handle
         : this.details?.querySelector("summary") ?? null);
 
-    this.minHeight = options.minHeight ?? 54;
-    this.defaultDvh = options.defaultDvh ?? 48;
-    this.floorDvh = options.floorDvh ?? 18;
-    this.expandedDvh = options.expandedDvh ?? 88;
+    this.minHeight = options.minHeight ?? DRAWER_MIN_HEIGHT;
+    this.defaultDvh = options.defaultDvh ?? DRAWER_DEFAULT_DVH;
+    this.floorDvh = options.floorDvh ?? DRAWER_FLOOR_DVH;
+    this.expandedDvh = options.expandedDvh ?? DRAWER_EXPANDED_DVH;
     this.preferredDvh = options.preferredDvh ?? this.defaultDvh;
 
     this.initDrag();
