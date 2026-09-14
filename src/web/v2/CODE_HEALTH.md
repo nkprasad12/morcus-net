@@ -82,22 +82,6 @@ Every item here is a feature reimplementing something `core/` already provides.
       reducing `v2_router.server.ts` to mounting. Preserves the "single stable contract" in
       [README.md](README.md) while letting each vertical own its routes.
 
-### `v2_bundle.client.ts` (274 lines)
-
-Documented as "the client bundle manifest"; the first 10 lines are that, and the other **262** are
-untested global behavior.
-
-- [ ] 🟢 **Remove the production `console.log`** (L272).
-- [ ] 🟢 **Move the `declare global { interface HTMLElement { showPopover… } }` block** (L139) into a
-      `.d.ts` — it is also redundant with modern `lib.dom`.
-- [ ] 🟡 **Split into `core/anchor_scroll.client.ts`, `core/back_to_top.client.ts`, and
-      `dict/abbr_popover.client.ts`**, returning `v2_bundle.client.ts` to a ~12-line import list. The
-      abbreviation popover (L146-270) is dictionary-specific (`.lsHover`) but currently lives at the
-      root, violating the vertical-slice rule. Note the three separate global `click`/`pointerdown`
-      handlers share an implicit ordering contract via `e.defaultPrevented` (L73) — preserve that
-      carefully, and add tests (this is currently the only V2 module with substantial logic and
-      **zero** tests).
-
 ### `reader_view.client.ts` (1,110 lines — god class)
 
 One class orchestrating ten unrelated subsystems: tokenization, splitter drag, mobile drawer, TOC,
@@ -291,6 +275,11 @@ In CSS, Lightning CSS preserves WebKit properties like `-webkit-overflow-scrolli
 enabling Media Queries Level 4 range syntax (`width <= 640px`), `:is(...)` selector deduplication,
 and `inset` property shorthands.
 
+**`HTMLElement` popover methods do not require a custom `.d.ts` declaration.** TypeScript 5.8
+`lib.dom.d.ts` natively provides `showPopover(): void` and `hidePopover(): void` on `HTMLElement`
+under the `"dom"` library target in `tsconfig.json`. The `declare global` block in the client bundle
+was completely redundant and safely removed without auxiliary declaration files.
+
 ---
 
 ## Phase 6 — CSS
@@ -398,7 +387,6 @@ Verified counts as of the audit.
 **Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
 dialog markup. Gaps:
 
-- [ ] 🟡 `v2_bundle.client.ts` — all 262 lines of global behavior
 - [ ] 🟢 Reader keyboard shortcuts (`reader_view.client.ts` L1028-1066)
 - [ ] 🟡 Reader preference save/hydrate lifecycle (L806-984)
 - [ ] 🟡 `DrawerController` snap thresholds and flick-velocity logic — extract the snap math to a
@@ -519,6 +507,12 @@ worth not rediscovering is summarised in Phase 5 instead.
   cookie primitives (`readCookie`, `hasCookie`, `formatCookie`), unifying dictionary and inflection
   cookie formatting in `dict_selection.common.ts`, and relocating misplaced dictionary stores out
   of `core/settings.client.ts`.
+
+**Phase 4 — decomposition**
+
+- **Split `v2_bundle.client.ts` into vertical slices**, extracting `core/anchor_scroll.client.ts`,
+  `core/back_to_top.client.ts`, `shell/mobile_menu.client.ts`, and `dict/abbr_popover.client.ts`,
+  deleting the production `console.log` and redundant `showPopover` declaration, backed by 35 new unit tests.
 
 **Phase 7 — docs & tests**
 
