@@ -682,4 +682,36 @@ describe("MorcusReaderView desktop splitter drag", () => {
 
     splitSpy.mockRestore();
   });
+
+  test("initializes ReaderTocController and toggles on KeyT", () => {
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.innerHTML = `
+      <div class="v2-sticky-expanded-row">
+        <button type="button" id="v2-reader-toc-btn" aria-expanded="false">Contents</button>
+      </div>
+      <div id="v2-reader-toc-drawer" class="v2-reader-toc-drawer" hidden>
+        <button type="button" id="v2-reader-toc-close-btn">&times;</button>
+        <div id="v2-reader-toc-list">
+          <a class="v2-reader-toc-item" href="#">Item 1</a>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    const tocController = el.getTocController();
+    expect(tocController).not.toBeNull();
+    expect(tocController?.isOpen()).toBe(false);
+
+    // Press 't' shortcut
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
+    expect(tocController?.isOpen()).toBe(true);
+
+    // Press 'T' shortcut
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "T" }));
+    expect(tocController?.isOpen()).toBe(false);
+
+    // Disconnect removes controller
+    el.remove();
+    expect(el.getTocController()).toBeNull();
+  });
 });

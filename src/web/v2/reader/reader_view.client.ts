@@ -25,6 +25,7 @@ import {
   READER_SETTINGS_KEY,
   readerSettingsStore,
 } from "@/web/v2/reader/reader_settings.client";
+import { ReaderTocController } from "@/web/v2/reader/reader_toc.client";
 
 export {
   type ReaderFontFamily,
@@ -71,8 +72,13 @@ export class MorcusReaderView extends BaseElement {
   private currentQuery: string = "";
   private preferredDrawerDvh: number = 48;
   private drawerController?: DrawerController;
+  private tocController: ReaderTocController | null = null;
   private router: QueryParamSync | null = null;
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
+
+  public getTocController(): ReaderTocController | null {
+    return this.tocController;
+  }
 
   protected override onConnect() {
     this.currentPrefs = readerSettingsStore.get();
@@ -114,7 +120,11 @@ export class MorcusReaderView extends BaseElement {
     this.initDesktopSplitter();
     this.initMobileDrawer();
     this.initBackToTop();
-    this.initTOC();
+    this.tocController = new ReaderTocController({ root: this });
+    this.addDisposable(() => {
+      this.tocController?.destroy();
+      this.tocController = null;
+    });
     this.initBiblioModal();
     this.initStickyExpand();
     this.initQuickJump();
@@ -835,60 +845,6 @@ export class MorcusReaderView extends BaseElement {
     }, 2200);
   }
 
-  // --- Table of Contents (TOC) Modal/Drawer ---
-  private initTOC() {
-    const tocDrawer = this.$<HTMLElement>("#v2-reader-toc-drawer");
-    const tocBtn = this.$<HTMLButtonElement>("#v2-reader-toc-btn");
-    const breadcrumbBtn = this.$<HTMLButtonElement>(
-      "#v2-reader-breadcrumb-btn"
-    );
-    const closeBtn = this.$<HTMLButtonElement>("#v2-reader-toc-close-btn");
-    const backBtn = this.$<HTMLButtonElement>("#v2-reader-toc-back-btn");
-    const filterInput = this.$<HTMLInputElement>("#v2-reader-toc-filter");
-    if (!tocDrawer) return;
-
-    const openTOC = () => {
-      tocDrawer.removeAttribute("hidden");
-      tocBtn?.setAttribute("aria-expanded", "true");
-      filterInput?.focus();
-    };
-
-    const closeTOC = () => {
-      tocDrawer.setAttribute("hidden", "");
-      tocBtn?.setAttribute("aria-expanded", "false");
-    };
-
-    if (tocBtn) this.listen(tocBtn, "click", openTOC);
-    if (breadcrumbBtn) this.listen(breadcrumbBtn, "click", openTOC);
-    if (closeBtn) this.listen(closeBtn, "click", closeTOC);
-    if (backBtn) this.listen(backBtn, "click", closeTOC);
-
-    // Filter items in TOC list
-    if (filterInput) {
-      this.listen(filterInput, "input", () => {
-        const term = filterInput.value.trim().toLowerCase();
-        const items = this.$$<HTMLElement>(".v2-reader-toc-item");
-        for (const item of items) {
-          const text = item.textContent?.toLowerCase() || "";
-          item.style.display = term && !text.includes(term) ? "none" : "";
-        }
-      });
-    }
-
-    // Dismiss on outside click
-    this.listen(document, "click", (e) => {
-      if (!tocDrawer.hasAttribute("hidden") && e.target instanceof Node) {
-        if (
-          !tocDrawer.contains(e.target) &&
-          !tocBtn?.contains(e.target) &&
-          !breadcrumbBtn?.contains(e.target)
-        ) {
-          closeTOC();
-        }
-      }
-    });
-  }
-
   // --- Bibliographical Metadata Modal Dialog ---
   private initBiblioModal() {
     const dialog = this.$<HTMLDialogElement>("#v2-reader-biblio-dialog");
@@ -1016,13 +972,18 @@ export class MorcusReaderView extends BaseElement {
           nextBtn.click();
         }
       } else if (e.key === "t" || e.key === "T") {
-        const tocDrawer = this.$<HTMLElement>("#v2-reader-toc-drawer");
-        if (tocDrawer) {
+        if (this.tocController) {
           e.preventDefault();
-          if (tocDrawer.hasAttribute("hidden")) {
-            this.$<HTMLButtonElement>("#v2-reader-toc-btn")?.click();
-          } else {
-            this.$<HTMLButtonElement>("#v2-reader-toc-close-btn")?.click();
+          this.tocController.toggle();
+        } else {
+          const tocDrawer = this.$<HTMLElement>("#v2-reader-toc-drawer");
+          if (tocDrawer) {
+            e.preventDefault();
+            if (tocDrawer.hasAttribute("hidden")) {
+              this.$<HTMLButtonElement>("#v2-reader-toc-btn")?.click();
+            } else {
+              this.$<HTMLButtonElement>("#v2-reader-toc-close-btn")?.click();
+            }
           }
         }
       } else if (e.key === "m" || e.key === "M") {
