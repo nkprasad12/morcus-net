@@ -71,9 +71,6 @@ Every item here is a feature reimplementing something `core/` already provides.
       | reader render + error block | L485-509 ≡ L556-580 (**verbatim**) |
       | jump-redirect block | L472-483 ≡ L543-554 (**verbatim**) |
 
-- [ ] 🟢 **Move the inlined 404 page** (`v2_router.server.ts` L455-468, complete with an inline `style=`
-      attribute) into `library/not_found.server.ts`.
-
 ### `reader_view.client.ts`
 
 One class orchestrating reader subsystems: tokenization, splitter drag, mobile drawer,
@@ -498,6 +495,7 @@ worth not rediscovering is summarised in Phase 5 instead.
   `reader/reader_routes.server.ts`, `api_routes.server.ts`, and `core/async_handler.server.ts`,
   reducing `v2_router.server.ts` from 616 to 74 lines while preserving the single mounting contract.
 - **Decouple client from SSR markup shape via `data-tokenize-target`**, emitting semantic data attributes in `v2_preprocessor.ts` and `entry_view.server.ts` with legacy selector fallback, eliminating brittle CSS selector chains in `reader_view.client.ts`.
+- **Extract `library/not_found.server.ts`**, decomposing the inlined 404 classical work-not-found page from `reader_routes.server.ts` into a dedicated SSR renderer and hoisting inline styles to `library.css`, backed by unit and router 404 tests.
 
 **Phase 7 — docs & tests**
 

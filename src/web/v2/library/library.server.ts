@@ -131,3 +131,5 @@ export async function renderLibraryPageHtml(): Promise<string> {
     contentHtml,
   });
 }
+
+export * from "@/web/v2/library/not_found.server";

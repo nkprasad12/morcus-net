@@ -470,6 +470,19 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("De bello Gallico");
       expect(res.text).toContain("Gallia est omnis divisa in partes tres");
     });
+
+    test("GET /v2/reader/:author/:name/:page? returns 404 for unknown works", async () => {
+      const res = await request(app).get(
+        "/v2/reader/unknown_author/nonexistent_work"
+      );
+      expect(res.status).toBe(404);
+      expect(res.header["content-type"]).toContain("text/html");
+      expect(res.text).toContain("Classical Work Not Found");
+      expect(res.text).toContain("unknown_author/nonexistent_work");
+      expect(res.text).toContain('href="/v2/library"');
+      expect(res.text).toContain("v2-not-found-state");
+      expect(res.text).not.toContain("style=");
+    });
   });
 
   describe("GET /v2/dicts with embedded mode", () => {

@@ -8,9 +8,8 @@ import {
   getV2Work,
   resolvePageInWork,
 } from "@/web/v2/reader/reader_loader.server";
-import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
-import * as he from "he";
+import { renderNotFoundPageHtml } from "@/web/v2/library/not_found.server";
 
 function redirectReaderJump(
   res: Response,
@@ -95,18 +94,8 @@ export function createReaderRoutes(): Router {
 
     if (!work) {
       res.status(404).send(
-        renderPageShell({
-          title: "Work Not Found - Morcus Latin Tools",
-          activePage: "library",
-          contentHtml: `
-            <div class="v2-library-empty-state" style="margin: 4rem auto; max-width: 600px;">
-              <h2 class="v2-library-empty-title">Classical Work Not Found</h2>
-              <p class="v2-library-empty-desc">Could not locate classical work <em>${he.escape(
-                `${author}/${name}`
-              )}</em> in the library catalog.</p>
-              <a href="/v2/library" class="v2-btn v2-btn-primary">Browse Full Library</a>
-            </div>
-          `,
+        renderNotFoundPageHtml({
+          workSlug: `${author}/${name}`,
         })
       );
       return;
