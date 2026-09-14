@@ -90,4 +90,82 @@ describe("MorcusDictToc custom element", () => {
     tocEl.remove();
     expect(tocEl.getDrawerController()).toBeNull();
   });
+
+  test("unregisters mediaQuery listener when disconnected from DOM", () => {
+    matchesMobile = true;
+    document.body.innerHTML = `
+      <morcus-dict-toc class="v2-drawer v2-drawer-toc">
+        <details class="v2-toc-details" open>
+          <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
+          <div class="v2-toc-body">Outline items</div>
+        </details>
+      </morcus-dict-toc>
+    `;
+
+    const tocEl = document.querySelector<MorcusDictToc>("morcus-dict-toc")!;
+    const mql = (window.matchMedia as jest.Mock).mock.results[0].value;
+    expect(mql.addEventListener).toHaveBeenCalledWith(
+      "change",
+      expect.any(Function),
+      undefined
+    );
+
+    tocEl.remove();
+    expect(mql.removeEventListener).toHaveBeenCalledWith(
+      "change",
+      expect.any(Function),
+      undefined
+    );
+  });
+
+  test("recreates DrawerController when re-attached to DOM", () => {
+    matchesMobile = true;
+    document.body.innerHTML = `
+      <morcus-dict-toc class="v2-drawer v2-drawer-toc">
+        <details class="v2-toc-details" open>
+          <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
+          <div class="v2-toc-body">Outline items</div>
+        </details>
+      </morcus-dict-toc>
+    `;
+
+    const tocEl = document.querySelector<MorcusDictToc>("morcus-dict-toc")!;
+    expect(tocEl.getDrawerController()).not.toBeNull();
+
+    tocEl.remove();
+    expect(tocEl.getDrawerController()).toBeNull();
+
+    document.body.appendChild(tocEl);
+    expect(tocEl.getDrawerController()).not.toBeNull();
+  });
+
+  test("dynamically adapts DrawerController when mediaQuery changes", () => {
+    matchesMobile = true;
+    document.body.innerHTML = `
+      <morcus-dict-toc class="v2-drawer v2-drawer-toc">
+        <details class="v2-toc-details">
+          <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
+          <div class="v2-toc-body">Outline items</div>
+        </details>
+      </morcus-dict-toc>
+    `;
+
+    const tocEl = document.querySelector<MorcusDictToc>("morcus-dict-toc")!;
+    const mql = (window.matchMedia as jest.Mock).mock.results[0].value;
+    expect(tocEl.getDrawerController()).not.toBeNull();
+
+    // Transition to desktop viewport
+    mql.matches = false;
+    mql.dispatchEvent(new Event("change"));
+
+    expect(tocEl.getDrawerController()).toBeNull();
+    const details = tocEl.querySelector<HTMLDetailsElement>(".v2-toc-details");
+    expect(details?.open).toBe(true);
+
+    // Transition back to mobile viewport
+    mql.matches = true;
+    mql.dispatchEvent(new Event("change"));
+
+    expect(tocEl.getDrawerController()).not.toBeNull();
+  });
 });

@@ -154,13 +154,6 @@ Every item here is a feature reimplementing something `core/` already provides.
       `removeDiacritics` there would also strip breves, diaereses and Greek accents from displayed
       text. The real smell is only that a text-normalization primitive lives as a private method on
       a DOM element, so move it next to its siblings and give it a test — do not delete it.
-- [ ] 🟢 **Use `onConnect()` / `this.listen()` in `dict_toc.client.ts`** L21-29, which overrides
-      `connectedCallback` directly and hand-manages its `matchMedia` listener and
-      `DrawerController`. Note this is style, not a bug: the manual teardown in
-      `disconnectedCallback` is correct — it removes the listener, destroys the controller and nulls
-      the field, so a re-attach rebuilds both, and the conformance test confirms it. The value is
-      removing the second cleanup mechanism, not fixing a leak. Same file as the Phase 1
-      mobile-TOC-flash item; worth doing together.
 - [ ] 🟢 **Delete the empty `initSummaryCapture()`** (`drawer.client.ts` L291-293) — a no-op method
       whose body is a comment saying the work happens elsewhere.
 - [ ] 🟡 **Extract `core/disposable.client.ts`.** `DrawerController` hand-rolls four parallel
@@ -601,6 +594,9 @@ worth not rediscovering is summarised in Phase 5 instead.
   move. Verified against all three bugs: reverting each one turns the corresponding case red.
   Resolves the "does `BaseElement` need a re-connection guard" question — no, it needs a documented
   contract and a test; a `hasConnected` flag would break the legitimate move-and-reconnect path.
+- **Use `onConnect()` and `this.listen()` in `dict_toc.client.ts`**, eliminating manual
+  `connectedCallback`/`disconnectedCallback` overrides, managing mediaQuery listeners via
+  `BaseElement` disposables, and consolidating drawer teardown.
 
 **Phase 7 — docs & tests**
 
