@@ -90,14 +90,21 @@ export default [
   ...fixupConfigRules(
     compat.extends(
       "eslint:recommended",
-      "plugin:react/recommended",
-      "plugin:react-hooks/recommended",
       "plugin:@typescript-eslint/recommended"
     )
   ),
+  ...fixupConfigRules(
+    compat.extends(
+      "plugin:react/recommended",
+      "plugin:react-hooks/recommended"
+    )
+  ).map((config) => ({
+    ...config,
+    files: ["**/*.{js,jsx,mjs,cjs,ts,tsx}"],
+    ignores: ["src/web/v2/**"],
+  })),
   {
     plugins: {
-      react: fixupPluginRules(react),
       "@typescript-eslint": fixupPluginRules(typescriptEslint),
       jest,
     },
@@ -114,12 +121,6 @@ export default [
 
       parserOptions: {
         project: true,
-      },
-    },
-
-    settings: {
-      react: {
-        version: "detect",
       },
     },
 
@@ -149,16 +150,6 @@ export default [
         },
       ],
 
-      "react/prop-types": "off",
-      "react/no-unstable-nested-components": "error",
-
-      "react/no-unknown-property": [
-        "error",
-        {
-          ignore: ["spellcheck"],
-        },
-      ],
-
       "no-constant-condition": "off",
       "no-inner-declarations": "off",
       "no-restricted-imports": ["error", { patterns: [NO_RELATIVE_IMPORTS] }],
@@ -169,12 +160,6 @@ export default [
         },
       ],
 
-      "react/jsx-boolean-value": "error",
-      "react/hook-use-state": "error",
-      "react/jsx-fragments": "error",
-      "react/jsx-closing-bracket-location": "off",
-      "react/jsx-uses-react": "off",
-      "react/react-in-jsx-scope": "off",
       "jest/no-alias-methods": 2,
       "jest/valid-title": 2,
       "jest/valid-expect": 2,
@@ -186,6 +171,39 @@ export default [
           additionalTestBlockFunctions: ["e2eTest"],
         },
       ],
+    },
+  },
+  // React rules, settings, and plugins apply to legacy and tooling code, but are
+  // explicitly excluded from UI V2 (src/web/v2), which contains no React and would
+  // otherwise risk false positives on use* naming conventions in react-hooks rules.
+  {
+    files: ["**/*.{js,jsx,mjs,cjs,ts,tsx}"],
+    ignores: ["src/web/v2/**"],
+    plugins: {
+      react: fixupPluginRules(react),
+    },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
+    rules: {
+      "react/prop-types": "off",
+      "react/no-unstable-nested-components": "error",
+
+      "react/no-unknown-property": [
+        "error",
+        {
+          ignore: ["spellcheck"],
+        },
+      ],
+
+      "react/jsx-boolean-value": "error",
+      "react/hook-use-state": "error",
+      "react/jsx-fragments": "error",
+      "react/jsx-closing-bracket-location": "off",
+      "react/jsx-uses-react": "off",
+      "react/react-in-jsx-scope": "off",
     },
   },
   {
