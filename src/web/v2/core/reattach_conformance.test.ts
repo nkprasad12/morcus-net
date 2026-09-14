@@ -150,6 +150,32 @@ const FIXTURES: Record<string, string> = {
         </dialog>
       </div>
     </morcus-reader-view>`,
+
+  "morcus-reader-settings": `
+    <morcus-reader-settings>
+      <button id="v2-reader-settings-btn"></button>
+      <dialog class="v2-dialog v2-reader-settings-dialog" id="v2-reader-settings-dialog">
+        <button id="v2-reader-size-dec">-</button>
+        <span id="v2-reader-size-label">100%</span>
+        <button id="v2-reader-size-inc">+</button>
+        <button id="v2-dict-size-dec">-</button>
+        <span id="v2-dict-size-label">100%</span>
+        <button id="v2-dict-size-inc">+</button>
+        <input type="checkbox" id="v2-toggle-macra" checked />
+        <input type="checkbox" id="v2-toggle-gutter" checked />
+        <select id="v2-font-select">
+          <option value="serif">Serif</option>
+          <option value="sans">Sans</option>
+        </select>
+        <select id="v2-line-height-select">
+          <option value="compact">Compact</option>
+          <option value="normal">Normal</option>
+          <option value="relaxed">Relaxed</option>
+        </select>
+        <button id="v2-reader-settings-reset-btn">Reset</button>
+        <button id="v2-reader-settings-close-btn" data-dialog-close>&times;</button>
+      </dialog>
+    </morcus-reader-settings>`,
 };
 
 beforeAll(() => {

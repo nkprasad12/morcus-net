@@ -1,11 +1,9 @@
 import {
   BaseElement,
-  type FieldCheckers,
   type QueryParamSync,
   DrawerController,
   ICON_PATHS,
   html,
-  pickValid,
   registerElement,
   setHtml,
   settingsStore,
@@ -18,67 +16,26 @@ import {
   removeMacrons,
 } from "@/common/text_cleaning";
 import {
-  isBoolean,
-  isLiteral,
-  isNumber,
-  isOneOf,
-  Validator,
-} from "@/web/utils/rpc/parsing";
+  DEFAULT_READER_PREFS,
+  parseReaderPreferences,
+  type ReaderFontFamily,
+  type ReaderLineHeight,
+  type ReaderPreferences,
+  type ReaderSettingsChangeEventDetail,
+  READER_SETTINGS_KEY,
+  readerSettingsStore,
+} from "@/web/v2/reader/reader_settings.client";
 
-export type ReaderFontFamily = "serif" | "sans";
-export type ReaderLineHeight = "compact" | "normal" | "relaxed";
-
-export interface ReaderPreferences {
-  readerScale: number;
-  dictScale: number;
-  showMacra: boolean;
-  showGutter: boolean;
-  fontFamily: ReaderFontFamily;
-  lineHeight: ReaderLineHeight;
-}
-
-export const DEFAULT_READER_PREFS: ReaderPreferences = {
-  readerScale: 100,
-  dictScale: 100,
-  showMacra: true,
-  showGutter: true,
-  fontFamily: "serif",
-  lineHeight: "normal",
+export {
+  type ReaderFontFamily,
+  type ReaderLineHeight,
+  type ReaderPreferences,
+  DEFAULT_READER_PREFS,
+  READER_SETTINGS_KEY,
+  parseReaderPreferences,
+  readerSettingsStore,
+  type ReaderSettingsChangeEventDetail,
 };
-
-export const isReaderFontFamily: Validator<ReaderFontFamily> = isOneOf(
-  isLiteral("serif"),
-  isLiteral("sans")
-);
-
-export const isReaderLineHeight: Validator<ReaderLineHeight> = isOneOf(
-  isLiteral("compact"),
-  isOneOf(isLiteral("normal"), isLiteral("relaxed"))
-);
-
-export const READER_PREFS_CHECKERS: FieldCheckers<ReaderPreferences> = {
-  readerScale: isNumber,
-  dictScale: isNumber,
-  showMacra: isBoolean,
-  showGutter: isBoolean,
-  fontFamily: isReaderFontFamily,
-  lineHeight: isReaderLineHeight,
-};
-
-export const READER_SETTINGS_KEY = "morcus_reader_settings";
-
-export function parseReaderPreferences(raw: string | null): ReaderPreferences {
-  if (!raw) return { ...DEFAULT_READER_PREFS };
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    return {
-      ...DEFAULT_READER_PREFS,
-      ...pickValid<ReaderPreferences>(parsed, READER_PREFS_CHECKERS),
-    };
-  } catch {
-    return { ...DEFAULT_READER_PREFS };
-  }
-}
 
 /**
  * Bounds for the desktop dictionary panel, in px. `MIN_TEXT_PANEL_WIDTH` is the
@@ -117,17 +74,20 @@ export class MorcusReaderView extends BaseElement {
   private router: QueryParamSync | null = null;
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
 
-  private loadPreferences(): ReaderPreferences {
-    try {
-      return parseReaderPreferences(localStorage.getItem(READER_SETTINGS_KEY));
-    } catch {
-      return { ...DEFAULT_READER_PREFS };
-    }
-  }
-
   protected override onConnect() {
-    this.currentPrefs = this.loadPreferences();
+    this.currentPrefs = readerSettingsStore.get();
     this.enhancePassage();
+    this.applyPreferences(this.currentPrefs);
+
+    this.listen<ReaderSettingsChangeEventDetail>(
+      this,
+      "reader-settings-change",
+      (e) => {
+        if (e.detail?.prefs) {
+          this.applyPreferences(e.detail.prefs);
+        }
+      }
+    );
 
     this.router = this.syncQueryParam("q", {
       onChange: (q) => {
@@ -156,15 +116,17 @@ export class MorcusReaderView extends BaseElement {
     this.initBackToTop();
     this.initTOC();
     this.initBiblioModal();
-    this.initSettings();
     this.initStickyExpand();
     this.initQuickJump();
     this.initKeyboardShortcuts();
     this.initIframeThemeSync();
 
-    if (this.currentPrefs.dictScale !== 100) {
-      const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
-      if (iframe) {
+    const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
+    if (iframe) {
+      this.listen(iframe, "load", () => {
+        this.applyDictScale(this.currentPrefs.dictScale);
+      });
+      if (this.currentPrefs.dictScale !== 100) {
         const src = iframe.getAttribute("src");
         if (src && !src.includes("scale=")) {
           iframe.src = `${src}${src.includes("?") ? "&" : "?"}scale=${
@@ -940,179 +902,55 @@ export class MorcusReaderView extends BaseElement {
     );
   }
 
-  // --- Reader Settings & Appearance Modal ---
-  private initSettings() {
-    const dialog = this.$<HTMLDialogElement>("#v2-reader-settings-dialog");
-    const settingsBtn = this.$<HTMLButtonElement>("#v2-reader-settings-btn");
-    const resetBtn = this.$<HTMLButtonElement>("#v2-reader-settings-reset-btn");
-
-    const readerSizeDec = this.$<HTMLButtonElement>("#v2-reader-size-dec");
-    const readerSizeInc = this.$<HTMLButtonElement>("#v2-reader-size-inc");
-    const readerSizeLabel = this.$<HTMLElement>("#v2-reader-size-label");
-
-    const dictSizeDec = this.$<HTMLButtonElement>("#v2-dict-size-dec");
-    const dictSizeInc = this.$<HTMLButtonElement>("#v2-dict-size-inc");
-    const dictSizeLabel = this.$<HTMLElement>("#v2-dict-size-label");
-
-    const toggleMacra = this.$<HTMLInputElement>("#v2-toggle-macra");
-    const toggleGutter = this.$<HTMLInputElement>("#v2-toggle-gutter");
-    const fontSelect = this.$<HTMLSelectElement>("#v2-font-select");
-    const lineHeightSelect = this.$<HTMLSelectElement>(
-      "#v2-line-height-select"
-    );
-
-    if (!dialog) return;
-
-    let currentPrefs: ReaderPreferences = this.currentPrefs;
-
-    const applyMacra = (show: boolean) => {
-      const words = this.$$<HTMLElement>(".v2-reader-passage .v2-lat-word");
-      for (const w of words) {
-        if (!w.hasAttribute("data-original-text")) {
-          w.setAttribute("data-original-text", w.textContent || "");
-        }
-        const orig = w.getAttribute("data-original-text") || "";
-        w.textContent = show ? orig : removeMacrons(orig);
+  // --- Reader Preferences & Canvas Styling ---
+  private applyMacra(show: boolean) {
+    const words = this.$$<HTMLElement>(".v2-reader-passage .v2-lat-word");
+    for (const w of words) {
+      if (!w.hasAttribute("data-original-text")) {
+        w.setAttribute("data-original-text", w.textContent || "");
       }
-    };
+      const orig = w.getAttribute("data-original-text") || "";
+      w.textContent = show ? orig : removeMacrons(orig);
+    }
+  }
 
-    const applyDictScale = (scalePercent: number) => {
-      const scale = (scalePercent / 100).toFixed(2);
-      const iframe = this.$<HTMLIFrameElement>("#v2-dict-frame");
-      try {
-        if (iframe?.contentDocument?.documentElement) {
-          iframe.contentDocument.documentElement.style.setProperty(
-            "--v2-dict-scale",
-            scale
-          );
-        }
-      } catch {
-        // Cross-origin fallback
-      }
-    };
-
-    const applyPreferences = (prefs: ReaderPreferences) => {
-      this.currentPrefs = prefs;
-      // Font sizes
-      const readerRem = `${((1.25 * prefs.readerScale) / 100).toFixed(3)}rem`;
-      this.style.setProperty("--v2-reader-font-size", readerRem);
-      if (readerSizeLabel)
-        readerSizeLabel.textContent = `${prefs.readerScale}%`;
-
-      if (dictSizeLabel) dictSizeLabel.textContent = `${prefs.dictScale}%`;
-      applyDictScale(prefs.dictScale);
-
-      // Line height
-      const lhVal =
-        prefs.lineHeight === "compact"
-          ? "1.6"
-          : prefs.lineHeight === "relaxed"
-          ? "2.3"
-          : "1.95";
-      this.style.setProperty("--v2-reader-line-height", lhVal);
-      if (lineHeightSelect) lineHeightSelect.value = prefs.lineHeight;
-
-      // Font family
-      const fontVal =
-        prefs.fontFamily === "sans"
-          ? "var(--v2-font-sans)"
-          : "var(--v2-font-serif)";
-      this.style.setProperty("--v2-reader-font", fontVal);
-      if (fontSelect) fontSelect.value = prefs.fontFamily;
-
-      // Section gutter
-      this.classList.toggle("v2-hide-gutter", !prefs.showGutter);
-      if (toggleGutter) toggleGutter.checked = prefs.showGutter;
-
-      // Macra
-      applyMacra(prefs.showMacra);
-      if (toggleMacra) toggleMacra.checked = prefs.showMacra;
-
-      try {
-        localStorage.setItem(READER_SETTINGS_KEY, JSON.stringify(prefs));
-      } catch {
-        // Ignore storage errors
-      }
-    };
-
-    // Apply on load
-    applyPreferences(currentPrefs);
-
+  private applyDictScale(scalePercent: number) {
+    const scale = (scalePercent / 100).toFixed(2);
     const iframe = this.$<HTMLIFrameElement>("#v2-dict-frame");
-    if (iframe) {
-      this.listen(iframe, "load", () => {
-        applyDictScale(currentPrefs.dictScale);
-      });
+    try {
+      if (iframe?.contentDocument?.documentElement) {
+        iframe.contentDocument.documentElement.style.setProperty(
+          "--v2-dict-scale",
+          scale
+        );
+      }
+    } catch {
+      // Cross-origin fallback
     }
+  }
 
-    this.addDisposable(
-      setupModalDialog(dialog, {
-        trigger: settingsBtn,
-      })
-    );
+  private applyPreferences(prefs: ReaderPreferences) {
+    this.currentPrefs = prefs;
+    const readerRem = `${((1.25 * prefs.readerScale) / 100).toFixed(3)}rem`;
+    this.style.setProperty("--v2-reader-font-size", readerRem);
+    this.applyDictScale(prefs.dictScale);
 
-    // Steppers
-    if (readerSizeDec) {
-      this.listen(readerSizeDec, "click", () => {
-        currentPrefs.readerScale = Math.max(70, currentPrefs.readerScale - 10);
-        applyPreferences(currentPrefs);
-      });
-    }
-    if (readerSizeInc) {
-      this.listen(readerSizeInc, "click", () => {
-        currentPrefs.readerScale = Math.min(160, currentPrefs.readerScale + 10);
-        applyPreferences(currentPrefs);
-      });
-    }
+    const lhVal =
+      prefs.lineHeight === "compact"
+        ? "1.6"
+        : prefs.lineHeight === "relaxed"
+        ? "2.3"
+        : "1.95";
+    this.style.setProperty("--v2-reader-line-height", lhVal);
 
-    if (dictSizeDec) {
-      this.listen(dictSizeDec, "click", () => {
-        currentPrefs.dictScale = Math.max(70, currentPrefs.dictScale - 10);
-        applyPreferences(currentPrefs);
-      });
-    }
-    if (dictSizeInc) {
-      this.listen(dictSizeInc, "click", () => {
-        currentPrefs.dictScale = Math.min(140, currentPrefs.dictScale + 10);
-        applyPreferences(currentPrefs);
-      });
-    }
+    const fontVal =
+      prefs.fontFamily === "sans"
+        ? "var(--v2-font-sans)"
+        : "var(--v2-font-serif)";
+    this.style.setProperty("--v2-reader-font", fontVal);
 
-    // Toggles
-    if (toggleMacra) {
-      this.listen(toggleMacra, "change", () => {
-        currentPrefs.showMacra = toggleMacra.checked;
-        applyPreferences(currentPrefs);
-      });
-    }
-    if (toggleGutter) {
-      this.listen(toggleGutter, "change", () => {
-        currentPrefs.showGutter = toggleGutter.checked;
-        applyPreferences(currentPrefs);
-      });
-    }
-    if (fontSelect) {
-      this.listen(fontSelect, "change", () => {
-        currentPrefs.fontFamily =
-          fontSelect.value === "sans" ? "sans" : "serif";
-        applyPreferences(currentPrefs);
-      });
-    }
-    if (lineHeightSelect) {
-      this.listen(lineHeightSelect, "change", () => {
-        const val = lineHeightSelect.value;
-        currentPrefs.lineHeight =
-          val === "compact" || val === "relaxed" ? val : "normal";
-        applyPreferences(currentPrefs);
-      });
-    }
-
-    if (resetBtn) {
-      this.listen(resetBtn, "click", () => {
-        currentPrefs = { ...DEFAULT_READER_PREFS };
-        applyPreferences(currentPrefs);
-      });
-    }
+    this.classList.toggle("v2-hide-gutter", !prefs.showGutter);
+    this.applyMacra(prefs.showMacra);
   }
 
   // --- Quick Jump In-Page Smooth Scroll ---

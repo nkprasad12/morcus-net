@@ -172,6 +172,7 @@ describe("reader_ssr", () => {
     expect(html).toContain('id="v2-reader-info-btn"');
 
     // Settings dialog
+    expect(html).toContain("<morcus-reader-settings>");
     expect(html).toContain('id="v2-reader-settings-dialog"');
     expect(html).toContain('id="v2-reader-size-dec"');
     expect(html).toContain('id="v2-reader-size-inc"');

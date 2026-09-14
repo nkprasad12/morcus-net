@@ -82,12 +82,11 @@ Every item here is a feature reimplementing something `core/` already provides.
       reducing `v2_router.server.ts` to mounting. Preserves the "single stable contract" in
       [README.md](README.md) while letting each vertical own its routes.
 
-### `reader_view.client.ts` (1,110 lines — god class)
+### `reader_view.client.ts` (1,034 lines)
 
-One class orchestrating ten unrelated subsystems: tokenization, splitter drag, mobile drawer, TOC,
-bibliography modal, settings dialog, keyboard shortcuts, dictionary sheet, URL sync, highlights.
+One class orchestrating reader subsystems: tokenization, splitter drag, mobile drawer, TOC,
+bibliography modal, keyboard shortcuts, dictionary sheet, URL sync, highlights.
 
-- [ ] 🔴 Extract `reader_settings.client.ts` ← L806-984 (`<morcus-reader-settings>`)
 - [ ] 🟡 Extract `reader_toc.client.ts` ← L739-791
 - [ ] 🟡 Extract `reader_layout.client.ts` ← L484-595 (desktop splitter)
 - [ ] 🟢 Hoist the drawer's `18`/`48`/`88` dvh magic numbers to named constants. (The splitter's
@@ -513,6 +512,9 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Split `v2_bundle.client.ts` into vertical slices**, extracting `core/anchor_scroll.client.ts`,
   `core/back_to_top.client.ts`, `shell/mobile_menu.client.ts`, and `dict/abbr_popover.client.ts`,
   deleting the production `console.log` and redundant `showPopover` declaration, backed by 35 new unit tests.
+- **Extract `reader_settings.client.ts` (`<morcus-reader-settings>`)**, decomposing settings dialog
+  lifecycle, steppers, and persistence out of `reader_view.client.ts` into a dedicated custom element
+  via a bubbling `reader-settings-change` event contract, backed by 15 unit tests.
 
 **Phase 7 — docs & tests**
 
