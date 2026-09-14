@@ -5,6 +5,7 @@ import {
   renderDictErrorHtml,
   renderDictPageHtml,
   renderDictResultsHtml,
+  parseDictScale,
   resolveActiveDicts,
   resolveDictParams,
   parseInflectionParam,
@@ -197,6 +198,8 @@ export function createV2Router(
       req.headers["sec-fetch-dest"] === "iframe" ||
       req.headers.referer?.includes("embedded=1") === true;
 
+    const dictScale = parseDictScale(req.query.scale);
+
     // Resolve dictionary selection based on precedence:
     // Query ('dict' checkboxes > 'd' bitmask > legacy 'in') > Cookie ('morcus_dicts')
     // > Default (All Latin except Pozo)
@@ -237,7 +240,13 @@ export function createV2Router(
     if (!query) {
       if (isPartial) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(renderDictResultsHtml("", undefined, dictKeys, isInflected));
+        res.send(
+          renderDictResultsHtml("", undefined, {
+            queriedDicts: dictKeys,
+            isInflected,
+            isEmbedded,
+          })
+        );
         return;
       }
       res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -247,6 +256,7 @@ export function createV2Router(
           embedded: isEmbedded,
           queriedDicts: dictKeys,
           isInflected,
+          scale: dictScale,
         })
       );
       return;
@@ -256,7 +266,11 @@ export function createV2Router(
       if (isPartial) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.send(
-          renderDictResultsHtml(query, undefined, dictKeys, isInflected)
+          renderDictResultsHtml(query, undefined, {
+            queriedDicts: dictKeys,
+            isInflected,
+            isEmbedded,
+          })
         );
         return;
       }
@@ -267,6 +281,7 @@ export function createV2Router(
           embedded: isEmbedded,
           queriedDicts: dictKeys,
           isInflected,
+          scale: dictScale,
         })
       );
       return;
@@ -281,7 +296,13 @@ export function createV2Router(
 
       if (isPartial) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(renderDictResultsHtml(query, results, dictKeys, isInflected));
+        res.send(
+          renderDictResultsHtml(query, results, {
+            queriedDicts: dictKeys,
+            isInflected,
+            isEmbedded,
+          })
+        );
         return;
       }
 
@@ -293,6 +314,7 @@ export function createV2Router(
           embedded: isEmbedded,
           queriedDicts: dictKeys,
           isInflected,
+          scale: dictScale,
         })
       );
     } catch (err) {
@@ -306,6 +328,7 @@ export function createV2Router(
           query,
           embedded: isEmbedded,
           queriedDicts: dictKeys,
+          scale: dictScale,
         })
       );
     }
@@ -321,6 +344,8 @@ export function createV2Router(
       req.query.embedded === "1" ||
       req.headers["sec-fetch-dest"] === "iframe" ||
       req.headers.referer?.includes("embedded=1") === true;
+
+    const dictScale = parseDictScale(req.query.scale);
 
     if (!id) {
       res.redirect("/v2/dicts");
@@ -344,7 +369,7 @@ export function createV2Router(
 
       if (isPartial) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(renderDictResultsHtml(id, results));
+        res.send(renderDictResultsHtml(id, results, { isEmbedded }));
         return;
       }
 
@@ -355,6 +380,7 @@ export function createV2Router(
           results,
           isIdSearch: true,
           embedded: isEmbedded,
+          scale: dictScale,
         })
       );
     } catch (err) {
@@ -368,6 +394,7 @@ export function createV2Router(
           query: id,
           isIdSearch: true,
           embedded: isEmbedded,
+          scale: dictScale,
         })
       );
     }

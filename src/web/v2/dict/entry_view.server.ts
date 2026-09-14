@@ -16,6 +16,14 @@ import * as he from "he";
 
 export { formatInflectionForm };
 
+export interface EntryRenderOptions {
+  dictKey?: string;
+  dictName?: string;
+  dictAcronym?: string;
+  dictLang?: string;
+  isEmbedded?: boolean;
+}
+
 /**
  * Formats an EntryResult into semantic HTML with top tools bar / desktop side-rail.
  */
@@ -23,7 +31,8 @@ export function renderEntryResult(
   result: EntryResult,
   entryIndex: string | number = 0,
   entryNumber?: number,
-  totalEntries?: number
+  totalEntries?: number,
+  options?: EntryRenderOptions
 ): string {
   const safeId = String(entryIndex)
     .toLowerCase()
@@ -119,7 +128,7 @@ export function renderEntryResult(
 
   const outlinePanelHtml = outlineSenses
     ? `
-      <details class="v2-tool-pane" name="${groupName}">
+      <details class="v2-tool-pane v2-tool-outline" name="${groupName}">
         <summary class="v2-tab-pill">Outline</summary>
         <div class="v2-tool-body">
           <ul class="v2-toc-list">
@@ -141,15 +150,36 @@ export function renderEntryResult(
     `
     : "";
 
-  // Rendered for every entry that has a headword, so short entries in lexica
-  // without outlines (Riddle & Arnold, Numerals) still get a permalink. The
-  // empty-string guard leaves a malformed outline degrading to no header at all
+  const dictLang = options?.dictLang;
+  const safeLang = dictLang && /^[a-z]{2,5}$/.test(dictLang) ? dictLang : "la";
+
+  const dictBadgeHtml =
+    options?.isEmbedded && options.dictAcronym
+      ? `
+        <span class="v2-dict-badge v2-dict-badge-${safeLang}" title="${he.escape(
+          options.dictName || options.dictAcronym
+        )}">${he.escape(options.dictAcronym)}</span>
+      `
+      : "";
+
+  // Rendered for every entry that has a headword or embedded lexicon badge, so short
+  // entries in lexica without outlines (Riddle & Arnold, Numerals) still get a header.
+  // In embedded mode, even if an entry lacks an explicit headword, the lexicon badge
+  // provides essential origin attribution (e.g. [LS], [OLD]) directly in the entry toolbar
+  // since the parent dictionary card header is minimized into a hairline divider.
+  // The empty-string guard leaves a malformed outline degrading to no header at all
   // rather than to an empty one.
-  const topBarHtml = headword
+  const hasHeader = Boolean(
+    headword || (options?.isEmbedded && options.dictAcronym)
+  );
+  const topBarHtml = hasHeader
     ? `
       <header class="v2-entry-header has-tools">
         <div class="v2-entry-tools">
-          <div class="v2-segmented-bar">
+          <div class="v2-segmented-bar${
+            options?.isEmbedded && options.dictAcronym ? " has-badge" : ""
+          }">
+            ${dictBadgeHtml}
             ${headwordHtml}
             ${copyPillHtml}
             ${outlinePanelHtml}

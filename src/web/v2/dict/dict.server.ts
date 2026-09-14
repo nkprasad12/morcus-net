@@ -11,6 +11,7 @@ export {
 } from "@/web/v2/dict/xml_to_html.server";
 
 export {
+  EntryRenderOptions,
   formatInflectionForm,
   renderEntryResult,
 } from "@/web/v2/dict/entry_view.server";
@@ -34,6 +35,8 @@ export {
 export {
   DICT_NAMES,
   DictPageOptions,
+  DictResultsOptions,
+  parseDictScale,
   renderDictErrorHtml,
   renderDictResultsHtml,
   renderDictPageHtml,

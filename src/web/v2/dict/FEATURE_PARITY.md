@@ -11,13 +11,13 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 1. Remaining Gaps Matrix
 
-| Feature Area                           | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                                       | Parity Status                 |
-| :------------------------------------- | :---------------------------------------------------------------- | :-------------------------------------------------------------------------- | :---------------------------- |
-| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Pinned entry summary in TOC rail (desktop) and drawer (mobile) with chips   | ✅ **Completed in V2**        |
-| **Embedded Reader View Options**       | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Only hides app bar (`embedded=1`)                                           | ⚠️ **Partial in V2**          |
-| **Desktop Table of Contents**          | Dedicated two-column sidebar (`.tocSidebar`)                      | Semantic, sticky two-column rail sidebar (`morcus-dict-toc`) flush at top   | ✅ **Completed in V2**        |
-| **Mobile Drawer Layout**               | Draggable, resizable bottom drawer (`BottomDrawer`)               | Draggable, resizable bottom drawer (`morcus-dict-toc` + `DrawerController`) | ✅ **Completed in V2**        |
-| **Mobile Layout Preference**           | Setting toggling between "Drawer" and "Classic" single column     | Unified responsive layout (drawer on mobile, rail on desktop)               | ℹ️ **Intentional Streamline** |
+| Feature Area                           | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                                                                                                            | Parity Status                 |
+| :------------------------------------- | :---------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------- |
+| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Pinned entry summary in TOC rail (desktop) and drawer (mobile) with chips                                                                        | ✅ **Completed in V2**        |
+| **Embedded Reader View Options**       | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Suppresses app bar & search bar, resolves drawer collision, adds inline lexicon badges, and syncs proportional `textScale` via `--v2-dict-scale` | ✅ **Completed in V2**        |
+| **Desktop Table of Contents**          | Dedicated two-column sidebar (`.tocSidebar`)                      | Semantic, sticky two-column rail sidebar (`morcus-dict-toc`) flush at top                                                                        | ✅ **Completed in V2**        |
+| **Mobile Drawer Layout**               | Draggable, resizable bottom drawer (`BottomDrawer`)               | Draggable, resizable bottom drawer (`morcus-dict-toc` + `DrawerController`)                                                                      | ✅ **Completed in V2**        |
+| **Mobile Layout Preference**           | Setting toggling between "Drawer" and "Classic" single column     | Unified responsive layout (drawer on mobile, rail on desktop)                                                                                    | ℹ️ **Intentional Streamline** |
 
 ---
 
@@ -41,7 +41,11 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
      - `textScale`: Scaled font sizes across definitions and icons.
      - `skipJumpToResult`: Suppressed auto-scrolling.
      - `embeddedInflectedSearch`: Decoupled inflection settings for reader embeds.
-   - **V2 (`v2_router.server.ts:L97-101`, `dict_page.server.ts:L281`)**: `embedded=1` only hides the top site app bar. The search bar is always present, and text scaling / separate settings are absent.
+   - **V2 (`dict_page.server.ts`, `reader_view.client.ts`, `dictionary.css`)**: ✅ **Completed in V2**.
+     - `embedded=1`: Automatically suppresses the site app bar, footer, and search bar (`hideSearch`), maximizing reading area in constrained iframe containers.
+     - **TOC & Drawer De-duplication**: Suppresses the outer Table of Contents rail and mobile bottom drawer when embedded, eliminating "drawer-in-a-drawer" collisions with the Reader's native desktop sidebar and mobile draggable bottom sheet.
+     - **Hairline Card Dividers & Inline Lexicon Badges**: Dictionary card headers collapse into slim hairline demarcation dividers (`.v2-dict-header-slim`), while each entry displays an inline lexicon origin badge (`.v2-dict-badge`, e.g. `[LS]`, `[OLD]`) directly in its segmented toolbar.
+     - **Proportional Font Scaling (`textScale`)**: Reader settings modal provides a "Dictionary font size" stepper (70% to 140%). Scale is applied via the `--v2-dict-scale` CSS variable and `?scale=` query param (SSR rendered as `<style>:root { --v2-dict-scale: ...; }</style>`), scaling headwords, definitions, toolbars, inflections, subsection match notes, and attribution popovers.
 
 ---
 
@@ -68,12 +72,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 Prioritized enhancements for remaining gaps:
 
-### High Priority
-
-1. **Embedded Reader Mode Controls** (§2.2):
-   - Support `hideSearch`, `textScale`, `skipJumpToResult`, and isolated search parameters for embedded reader contexts.
-
 ### Medium Priority (Enhancements)
 
-2. **Table of Contents Scroll Tracking (Scroll-Spy)**:
+1. **Table of Contents Scroll Tracking (Scroll-Spy)**:
    - Implement `IntersectionObserver` in `MorcusDictToc` to dynamically highlight the active sense/section in the TOC outline as the user scrolls the dictionary page, keeping the active item in view within the TOC scroll body. See `TODOS.md §7`.
