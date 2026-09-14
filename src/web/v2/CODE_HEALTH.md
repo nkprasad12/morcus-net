@@ -317,8 +317,19 @@ missing fields are omitted from the returned `Partial<T>` rather than set to `un
 180 ms) cannot coalesce human checkbox clicking (Fitts's law and pointer transit take 400–800 ms),
 so sequential toggles still fire separate requests while single clicks (the 95%+ case) suffer
 artificial latency. A long debounce (600–800 ms) makes single toggles feel sluggish and unresponsive.
-`BaseElement`'s abort lane (`signal: this.latest("results")`) already aborts stale in-flight fetches
-cleanly with zero page corruption, making immediate execution both safe and snappier.
+**Do not coalesce pointer drags to animation frames in `core/gesture.client.ts` — won't do.**
+Investigated and closed with zero code changes. Browsers (Blink, Gecko, WebKit) already coalesce
+continuous input events (`pointermove`, `mousemove`, `touchmove`, `wheel`) and align dispatch to
+the `requestAnimationFrame` cadence; `event.getCoalescedEvents()` exists specifically to recover
+the intermediate positions the browser discarded. Measured via on-page instrumentation across five
+splitter and drawer drags on the heaviest reader text in the corpus (`apuleius/metamorphoses`):
+`max 1/fr`, `burst 0` across all 48 rendered frames (no frame ever received >1 `pointermove`).
+Furthermore, with the layout-read hoist landed (`0be16378`), `onMove` contains only arithmetic and
+CSS variable writes (`--v2-drawer-height`, `--v2-dict-width`). Property writes do not force synchronous
+layout; the browser merges them at paint time anyway. The real cost was layout _reads_ after writes,
+which the hoist eliminated. Redundant rAF coalescing would add ~30 lines carrying a subtle
+flush-on-`pointerup` footgun (without which the synthetic `<summary>` click suppression and
+splitter width persistence silently break) for zero measurable gain.
 
 ---
 
@@ -445,13 +456,6 @@ dialog markup. Gaps:
 > the rest**. None of this has been profiled; the mechanisms are confirmed by reading, the split
 > between them is not.
 
-- [ ] 🟡 **Coalesce pointer drags to animation frames** in `core/gesture.client.ts` L80-96.
-      `onPointerMove` invokes `options.onMove` synchronously on every `pointermove`. Pointer events
-      outpace frames on modern hardware (120 Hz trackpads, high-polling mice, coalesced touch), so
-      each drag runs several full write → layout cycles per rendered frame and discards all but the
-      last. Buffer the latest event and flush once per `requestAnimationFrame`.
-      Worth doing in the shared helper rather than per-caller: it fixes the drawer, the desktop
-      splitter and any future drag at once.
 - [ ] 🟡 **Don't tokenize the whole chapter synchronously on mount.** `reader_view.client.ts`
       L366-374 walks every target block calling `tokenizeElement` (L401) inside `onConnect` — one
       long task that delays first interaction. Batch via `requestIdleCallback`.
@@ -578,4 +582,8 @@ worth not rediscovering is summarised in Phase 5 instead.
   every `pointermove`, immediately after the previous move wrote `--v2-dict-width`; the drawer read
   `window.innerHeight` the same way. Both are now measured once in `onStart`, so the move handlers
   are pure arithmetic plus writes. Pinned by read-counting tests rather than by the resulting
-  geometry, which the hoist leaves unchanged. (`TBD`)
+  geometry, which the hoist leaves unchanged. (`0be16378`)
+- **Coalescing pointer drags to animation frames closed as won't-do.** Browser input alignment
+  already delivers at most one `pointermove` per frame (measured `max 1/fr`, `burst 0/48` on heaviest
+  reader text), and the hoist above leaves only property writes which the compositor merges anyway;
+  see Phase 5.
