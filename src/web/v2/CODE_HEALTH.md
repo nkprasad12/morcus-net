@@ -81,34 +81,9 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 - [ ] 🟢 **Prefer `he.escape` over `he.encode`** in remaining server templates. `he.encode`
       entity-encodes all non-ASCII, which on Latin/Greek lexica is wasted CPU and payload on every
       render. Hot path: `xml_to_html.server.ts` L65 (runs per XML node).
-- [ ] 🟢 **Hold V2 to the three rules the legacy code can't pass.**
-      `@typescript-eslint/no-unused-vars`, `no-non-null-assertion` and `no-explicit-any` are
-      disabled repo-wide in `eslint.config.mjs`, presumably because the older React code cannot
-      satisfy them. V2 is new code and need not inherit that ceiling. Measured against
-      `src/web/v2`, the split between production and test code is decisive:
-
-      | rule | prod | test |
-      | --- | --- | --- |
-      | `no-non-null-assertion` | 10 | 98 |
-      | `no-explicit-any` | 3 | 19 |
-      | `no-unused-vars` | 2 | 0 |
-
-      So the headline count (131) is misleading — **90% of it is test files**, where `el.querySelector(...)!`
-      is idiomatic and worth keeping. Enable these for V2 production code only; the config already
-      has a `**/*.test.ts*` override block to hang the exemption on. That leaves 15 real fixes
-      across 6 files (`entry_view.server.ts`, `xml_to_html.server.ts`, `library.server.ts`,
-      `reader_loader.server.ts` for the assertions; `core/base_element.client.ts` and
-      `core/task.client.ts` for the `any`s — both in the `listen()` overload chain).
-      The two `no-unused-vars` hits are real dead parameters in `dict_search.client.ts` L83/L87.
-
-      > [!WARNING]
-      > Same flat-config trap the target-suffix work hit: re-declaring a rule **replaces** its
-      > options rather than merging them. Keep this block to rules the three tier blocks don't
-      > touch, or it will silently undo their `no-restricted-imports` bans.
-
-      Also worth noting: `plugin:react/recommended` and `react-hooks/recommended` are applied to V2,
-      which contains no React. Inert today, but the hooks rules key off functions named `use*`, so
-      it is a latent false-positive source.
+- [ ] 🟢 **Stop applying the React plugins to V2.** `plugin:react/recommended` and
+      `react-hooks/recommended` are applied to `src/web/v2`, which contains no React. Inert today,
+      but the hooks rules key off functions named `use*`, so it is a latent false-positive source.
 
 - [ ] 🟡 **Enable the type-checked rules for V2 — the expensive part is already paid for.**
       `parserOptions: { project: true }` makes the parser build a full TypeScript `Program`,
@@ -628,6 +603,11 @@ worth not rediscovering is summarised in Phase 5 instead.
   either typed or an audited disable; two turned out to be false positives better fixed with
   `textContent`, and one is the documented network trust boundary in `core/partial.client.ts`.
   (`ec3aa77f`)
+- **`no-unused-vars`, `no-non-null-assertion` and `no-explicit-any` enabled for V2 production code.**
+  All three are off repo-wide for the legacy React code; tests stay exempt, which is what made this
+  15 fixes instead of 140. No fix needed a suppression: the assertions were all `has`-then-`get`
+  Map lookups or `Boolean()` guards that had thrown the narrowing away, and both `any`s in the
+  `debounce` constraint became `never[]`. The one exemption left is a single cast in `listen()`.
 
 **Phase 3 — adopt the abstractions we already built**
 

@@ -148,15 +148,26 @@ export abstract class BaseElement<
     listener: EventListenerOrEventListenerObject,
     options?: boolean | AddEventListenerOptions
   ): void;
+  // Implementation signature: callers see the typed overloads above, never
+  // this one. It cannot be given a concrete type -- no signature satisfies the
+  // generic `CustomEvent<T>` overload above, which TypeScript rejects with
+  // TS2394 against `EventListener`, `EventListenerOrEventListenerObject` and
+  // every union of them.
+  //
+  // That leaves `any` or `unknown`, and both cost exactly one lint exemption.
+  // `unknown` is preferred because `any` would switch off checking for the
+  // whole body, whereas this confines the single unsafe step to one line.
   protected listen(
     target: EventTarget,
     type: string,
-    listener: any,
+    listener: unknown,
     options?: boolean | AddEventListenerOptions
   ): void {
-    target.addEventListener(type, listener, options);
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const handler = listener as EventListenerOrEventListenerObject;
+    target.addEventListener(type, handler, options);
     this.addDisposable(() => {
-      target.removeEventListener(type, listener, options);
+      target.removeEventListener(type, handler, options);
     });
   }
 

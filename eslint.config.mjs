@@ -281,4 +281,36 @@ export default [
       "no-unsanitized/property": "error",
     },
   },
+  // V2 opts back in to three rules that are off repo-wide (see the base block
+  // near the top of this file). They are disabled globally because the older
+  // React code cannot satisfy them; V2 is new code and need not inherit that
+  // ceiling.
+  //
+  // The point is the ratchet, not the one-time cleanup: V2 is 100+ files and
+  // still growing, and without these rules `any` and `!` accumulate silently.
+  //
+  // Tests are exempt, and the measured split is what justifies it -- against
+  // `src/web/v2` at the time this landed:
+  //
+  //                              prod   test
+  //   no-non-null-assertion        10    106
+  //   no-explicit-any               3     19
+  //   no-unused-vars                2      0
+  //
+  // A non-null assertion in a test is a deliberate, cheap way to say "the
+  // fixture guarantees this exists," and it fails loudly as a test failure
+  // rather than silently in production. Enforcing there would cost 125 changes
+  // to buy nothing. Excluding tests is what makes this 15 fixes instead of 140.
+  //
+  // As with the async block above, this must not configure
+  // `no-restricted-imports`.
+  {
+    files: ["src/web/v2/**/*.ts"],
+    ignores: ["src/web/v2/**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/no-non-null-assertion": "error",
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
 ];

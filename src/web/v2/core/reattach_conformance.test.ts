@@ -226,6 +226,11 @@ describe("V2 custom elements survive being moved in the DOM", () => {
 
       // A move is a disconnect immediately followed by a connect.
       const disconnect = record(() => element!.remove());
+      // An element that tears down nothing would pass both assertions below:
+      // `dead` would be empty, and the second connect would register exactly
+      // as many listeners as the first. That is what a misspelled or broken
+      // disconnectedCallback looks like, so require real teardown.
+      expect(disconnect.removed.length).toBeGreaterThan(0);
       const secondConnect = record(() => document.body.appendChild(element!));
 
       // A target that is no longer in the document was replaced rather than

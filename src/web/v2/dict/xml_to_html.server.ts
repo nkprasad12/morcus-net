@@ -239,29 +239,27 @@ export function xmlNodeToHtml(
   }
 
   // In Smith & Hall, dLink nodes may have empty children and store the display text in attrs.text
+  const dLinkText = attrsMap.get("text");
   if (
     childrenHtml === "" &&
-    attrsMap.has("text") &&
+    dLinkText !== undefined &&
     rawClass.includes("dLink")
   ) {
-    childrenHtml = he.encode(attrsMap.get("text")!);
+    childrenHtml = he.encode(dLinkText);
   }
 
   const finalClass = attrsMap.get("class");
   const classNames = finalClass ? ` class="${he.encode(finalClass)}"` : "";
+  const idVal = attrsMap.get("id");
   const idAttr =
-    attrsMap.get("id") && !options?.omitRootId
-      ? ` id="${he.encode(attrsMap.get("id")!)}"`
-      : "";
-  const titleAttr = attrsMap.get("title")
-    ? ` title="${he.encode(attrsMap.get("title")!)}"`
-    : "";
+    idVal && !options?.omitRootId ? ` id="${he.encode(idVal)}"` : "";
+  const titleVal = attrsMap.get("title");
+  const titleAttr = titleVal ? ` title="${he.encode(titleVal)}"` : "";
   const tabindexVal = attrsMap.get("tabindex");
   const tabindexAttr =
     tabindexVal !== undefined ? ` tabindex="${he.encode(tabindexVal)}"` : "";
-  const hrefAttr = attrsMap.get("href")
-    ? ` href="${he.encode(attrsMap.get("href")!)}"`
-    : "";
+  const hrefVal = attrsMap.get("href");
+  const hrefAttr = hrefVal ? ` href="${he.encode(hrefVal)}"` : "";
   const targetVal = attrsMap.get("target");
   const targetAttr = targetVal ? ` target="${he.encode(targetVal)}"` : "";
   const relAttr = targetVal === "_blank" ? ' rel="noopener noreferrer"' : "";
