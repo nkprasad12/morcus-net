@@ -1,6 +1,7 @@
 import {
   processWords,
   removeDiacritics,
+  removeMacrons,
   stripDiacritics,
   trimRawQuery,
 } from "@/common/text_cleaning";
@@ -61,6 +62,31 @@ describe("removeDiacritics", () => {
 
     const word = "r" + withStackedDiacritics + "ma";
     expect(removeDiacritics(word)).toBe("rama");
+  });
+});
+
+describe("removeMacrons", () => {
+  it("does not modify text without macrons", () => {
+    expect(removeMacrons("canaba")).toBe("canaba");
+    expect(removeMacrons("")).toBe("");
+  });
+
+  it("removes precomposed macrons and normalizes to NFC", () => {
+    expect(removeMacrons("Mūsa")).toBe("Musa");
+    expect(removeMacrons("causās")).toBe("causas");
+    expect(removeMacrons("hēllō")).toBe("hello");
+  });
+
+  it("removes combining macrons (U+0304 and U+0305)", () => {
+    expect(removeMacrons("Mu\u0304sa")).toBe("Musa");
+    expect(removeMacrons("Mu\u0305sa")).toBe("Musa");
+  });
+
+  it("preserves breves and other non-macron diacritics", () => {
+    expect(removeMacrons("hăbēna")).toBe("hăbena");
+    expect(removeMacrons("cöëunt")).toBe("cöëunt");
+    expect(removeMacrons("Ōărĭon")).toBe("Oărĭon");
+    expect(removeMacrons("a\u0304\u0306")).toBe("ă");
   });
 });
 
