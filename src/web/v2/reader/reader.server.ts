@@ -12,7 +12,29 @@ import {
   CitationId,
   citationToString,
 } from "@/web/v2/reader/reader_types.server";
+import {
+  buildReaderPageUrl,
+  renderTocDrawer,
+} from "@/web/v2/reader/reader_toc.server";
+import {
+  renderBiblioDialog,
+  renderReaderSettingsDialog,
+} from "@/web/v2/reader/reader_dialogs.server";
 import * as he from "he";
+
+export {
+  renderBiblioDialog,
+  renderReaderSettingsDialog,
+} from "@/web/v2/reader/reader_dialogs.server";
+
+export {
+  buildReaderPageUrl,
+  renderTocItemsHtml,
+  renderTocDrawer,
+  type ReaderPageUrlOptions,
+  type RenderTocItemsOptions,
+  type ReaderTocDrawerOptions,
+} from "@/web/v2/reader/reader_toc.server";
 
 export interface ReaderPageOptions {
   workId?: string;
@@ -23,9 +45,30 @@ export interface ReaderPageOptions {
   work?: V2PreprocessedWork;
 }
 
-export async function renderReaderContentHtml(
+export interface ReaderRenderContext {
+  work: V2PreprocessedWork;
+  activePage: V2PreprocessedPage;
+  activePageIndex: number;
+  pageDotId: string;
+  hasParallel: boolean;
+  viewMode: "single" | "parallel";
+  prevPage: V2PreprocessedPage | null;
+  nextPage: V2PreprocessedPage | null;
+  query: string;
+  passageHtml: string;
+  singleViewUrl: string;
+  parallelViewUrl: string;
+  dictIframeSrc: string;
+  layoutStateClass: string;
+}
+
+/**
+ * Resolves the active work, chapter, navigation links, and layout state
+ * into a typed render context for reader view components.
+ */
+export async function resolveReaderContext(
   options: ReaderPageOptions = {}
-): Promise<string> {
+): Promise<ReaderRenderContext> {
   const query = options.query?.trim() ?? "";
   const requestedId = options.workId || "caesar_de_bello_gallico";
 
@@ -62,58 +105,20 @@ export async function renderReaderContentHtml(
       ? work.pages[activePageIndex + 1]
       : null;
 
-  // Build canonical URLs
-  const makePageUrl = (page: V2PreprocessedPage | null) => {
-    if (!page) return "#";
-    const params = new URLSearchParams();
-    if (viewMode === "parallel") params.set("view", "parallel");
-    if (query) params.set("q", query);
-    const qStr = params.toString() ? `?${params.toString()}` : "";
-    const pageId = Array.isArray(page.id) ? citationToString(page.id) : page.id;
-    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}`;
-  };
+  const singleViewUrl = buildReaderPageUrl(work, activePage, {
+    query: query || undefined,
+  });
 
-  const singleViewUrl = (() => {
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    const qStr = params.toString() ? `?${params.toString()}` : "";
-    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageDotId}${qStr}`;
-  })();
-
-  const parallelViewUrl = (() => {
-    const params = new URLSearchParams();
-    params.set("view", "parallel");
-    if (query) params.set("q", query);
-    return `/v2/reader/${work.urlAuthor}/${
-      work.urlName
-    }/${pageDotId}?${params.toString()}`;
-  })();
+  const parallelViewUrl = buildReaderPageUrl(work, activePage, {
+    viewMode: "parallel",
+    query: query || undefined,
+  });
 
   // Select passage HTML (single or parallel)
   const passageHtml =
     viewMode === "parallel" && activePage.parallelHtml
       ? activePage.parallelHtml
       : activePage.singleHtml;
-
-  // TOC entries
-  const tocItemsHtml = work.pages
-    .map((p, idx) => {
-      const isCurrent = idx === activePageIndex;
-      const pageUrl = makePageUrl(p);
-      return `
-        <a href="${pageUrl}"
-           class="v2-reader-toc-item ${isCurrent ? "active" : ""}"
-           ${isCurrent ? 'aria-current="page"' : ""}>
-          <div class="v2-reader-toc-item-text">
-            <span class="v2-reader-toc-item-title">${he.escape(p.title)}</span>
-          </div>
-          <span class="v2-reader-toc-item-id">§ ${he.escape(
-            String(p.id)
-          )}</span>
-        </a>
-      `;
-    })
-    .join("\n");
 
   // Dictionary iframe src
   // When a word is looked up from the Latin reader, force inflected search (o=1) and restrict initial query to Latin lexica (lang=La)
@@ -125,22 +130,50 @@ export async function renderReaderContentHtml(
     ? "v2-reader-layout-active"
     : "v2-reader-layout-empty";
 
-  return `
-    <morcus-reader-view class="v2-reader-view ${
-      viewMode === "parallel" ? "v2-reader-view-parallel" : ""
-    }"
-      data-work="${work.id}"
-      data-page="${pageDotId}"
-      data-view="${viewMode}"
-      data-author="${work.urlAuthor}"
-      data-name="${work.urlName}">
+  return {
+    work,
+    activePage,
+    activePageIndex,
+    pageDotId,
+    hasParallel,
+    viewMode,
+    prevPage,
+    nextPage,
+    query,
+    passageHtml,
+    singleViewUrl,
+    parallelViewUrl,
+    dictIframeSrc,
+    layoutStateClass,
+  };
+}
 
-      <!-- Sticky Quick Navigation Bar (Essentials Default with Expandable Tools) -->
+/**
+ * Renders the reader sticky quick-navigation bar containing essential chapter jump
+ * controls and the expandable secondary toolbar.
+ */
+export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
+  const {
+    work,
+    activePage,
+    pageDotId,
+    prevPage,
+    nextPage,
+    viewMode,
+    hasParallel,
+    query,
+    singleViewUrl,
+    parallelViewUrl,
+  } = ctx;
+  const prevPageUrl = buildReaderPageUrl(work, prevPage, { viewMode, query });
+  const nextPageUrl = buildReaderPageUrl(work, nextPage, { viewMode, query });
+
+  return `      <!-- Sticky Quick Navigation Bar (Essentials Default with Expandable Tools) -->
       <header class="v2-reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
         
         <!-- Primary Row: Essentials Only (Left arrow, Name of work, Section Jump, Right arrow, Expand toggle) -->
         <div class="v2-sticky-primary-row">
-          <a href="${makePageUrl(prevPage)}"
+          <a href="${prevPageUrl}"
              class="v2-reader-btn v2-reader-nav-arrow ${
                !prevPage ? "disabled" : ""
              }"
@@ -190,7 +223,7 @@ export async function renderReaderContentHtml(
 
           <!-- Right Controls: Next Arrow + Expand Button -->
           <div class="v2-sticky-primary-right">
-            <a href="${makePageUrl(nextPage)}"
+            <a href="${nextPageUrl}"
                class="v2-reader-btn v2-reader-nav-arrow ${
                  !nextPage ? "disabled" : ""
                }"
@@ -277,15 +310,20 @@ export async function renderReaderContentHtml(
           </div>
         </div>
 
-      </header>
+      </header>`;
+}
 
-      <!-- Floating Confirmation Toast -->
-      <div id="v2-reader-toast" class="v2-reader-toast" aria-live="polite"></div>
+/**
+ * Renders the main reading text card containing passage header metadata,
+ * the Latin text article body, continuation buttons, and library catalog link.
+ */
+export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
+  const { work, activePage, passageHtml, prevPage, nextPage, viewMode, query } =
+    ctx;
+  const prevPageUrl = buildReaderPageUrl(work, prevPage, { viewMode, query });
+  const nextPageUrl = buildReaderPageUrl(work, nextPage, { viewMode, query });
 
-      <!-- Main Split Layout -->
-      <div class="v2-reader-split-layout ${layoutStateClass}">
-        
-        <!-- Left Column: Reading Text Canvas -->
+  return `        <!-- Left Column: Reading Text Canvas -->
         <section class="v2-reader-text-panel" aria-label="Reading Text">
           <div class="v2-reader-text-card">
             
@@ -312,9 +350,7 @@ export async function renderReaderContentHtml(
               <div class="v2-reader-continuation-actions">
                 ${
                   nextPage
-                    ? `<a href="${makePageUrl(
-                        nextPage
-                      )}" class="v2-reader-btn v2-reader-continue-btn">
+                    ? `<a href="${nextPageUrl}" class="v2-reader-btn v2-reader-continue-btn">
                         <span>Continue to ${he.escape(
                           nextPage.title
                         )}</span> &rarr;
@@ -323,9 +359,7 @@ export async function renderReaderContentHtml(
                 }
                 ${
                   prevPage
-                    ? `<a href="${makePageUrl(
-                        prevPage
-                      )}" class="v2-reader-btn v2-reader-return-btn">
+                    ? `<a href="${prevPageUrl}" class="v2-reader-btn v2-reader-return-btn">
                         &larr; <span>Return to ${he.escape(
                           prevPage.title
                         )}</span>
@@ -354,9 +388,21 @@ export async function renderReaderContentHtml(
             </footer>
 
           </div>
-        </section>
+        </section>`;
+}
 
-        <!-- Desktop Resizable Splitter Bar -->
+/**
+ * Renders the desktop splitter and dictionary panel (mobile bottom sheet)
+ * containing word definition teasers and the embedded dictionary iframe.
+ */
+export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
+  const { work, activePage, query, dictIframeSrc, viewMode } = ctx;
+  const activePageUrl = buildReaderPageUrl(work, activePage, {
+    viewMode,
+    query: query || undefined,
+  });
+
+  return `        <!-- Desktop Resizable Splitter Bar -->
         <div class="v2-reader-splitter"
              role="separator"
              tabindex="0"
@@ -390,9 +436,7 @@ export async function renderReaderContentHtml(
               </span>
               ${
                 query
-                  ? `<a href="${makePageUrl(
-                      activePage
-                    )}" class="v2-reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
+                  ? `<a href="${activePageUrl}" class="v2-reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
                   : ""
               }
             </div>
@@ -407,234 +451,69 @@ export async function renderReaderContentHtml(
                     title="Dictionary Search and Definitions"
                     loading="lazy"></iframe>
           </div>
-        </aside>
+        </aside>`;
+}
 
+/**
+ * Synchronous renderer converting an established ReaderRenderContext into the
+ * complete reader view custom element markup (<morcus-reader-view>).
+ */
+export function renderReaderContentHtmlFromContext(
+  ctx: ReaderRenderContext
+): string {
+  return `
+    <morcus-reader-view class="v2-reader-view ${
+      ctx.viewMode === "parallel" ? "v2-reader-view-parallel" : ""
+    }"
+      data-work="${ctx.work.id}"
+      data-page="${ctx.pageDotId}"
+      data-view="${ctx.viewMode}"
+      data-author="${ctx.work.urlAuthor}"
+      data-name="${ctx.work.urlName}">
+
+${renderReaderStickyBar(ctx)}
+
+      <!-- Floating Confirmation Toast -->
+      <div id="v2-reader-toast" class="v2-reader-toast" aria-live="polite"></div>
+
+      <!-- Main Split Layout -->
+      <div class="v2-reader-split-layout ${ctx.layoutStateClass}">
+${renderReaderTextPanel(ctx)}
+${renderReaderDictPanel(ctx)}
       </div>
 
-      <!-- Contained Table of Contents (TOC) Drawer -->
-      <div id="v2-reader-toc-drawer"
-           class="v2-reader-toc-drawer"
-           role="dialog"
-           aria-modal="true"
-           aria-label="Table of Contents"
-           hidden>
-        <div class="v2-reader-toc-header">
-          <div class="v2-reader-toc-header-left">
-            <button type="button"
-                    class="v2-reader-toc-back-btn"
-                    id="v2-reader-toc-back-btn"
-                    aria-label="Back to reader">
-              &larr; Back
-            </button>
-            <span class="v2-reader-toc-title">Table of Contents</span>
-          </div>
-          <button type="button"
-                  class="v2-reader-toc-close-btn"
-                  id="v2-reader-toc-close-btn"
-                  aria-label="Close table of contents">&times;</button>
-        </div>
+${renderTocDrawer({
+  work: ctx.work,
+  activePageIndex: ctx.activePageIndex,
+  viewMode: ctx.viewMode,
+  query: ctx.query,
+})}
 
-        <div class="v2-reader-toc-banner">
-          <span class="v2-reader-toc-work-title">${he.escape(
-            work.author
-          )} &middot; ${he.escape(work.title)}</span>
-          <span class="v2-reader-toc-scheme-label">${he.escape(
-            work.textParts.join(" · ")
-          )}</span>
-        </div>
+${renderBiblioDialog(ctx.work)}
 
-        <div class="v2-reader-toc-search-box">
-          <input type="text"
-                 id="v2-reader-toc-filter"
-                 class="v2-reader-toc-input"
-                 placeholder="Search chapters, summaries..."
-                 aria-label="Search Table of Contents">
-        </div>
-
-        <div class="v2-reader-toc-list" id="v2-reader-toc-list">
-          ${tocItemsHtml}
-        </div>
-      </div>
-
-      <!-- Bibliographical Metadata Dialog -->
-      <dialog class="v2-dialog v2-reader-biblio-dialog" id="v2-reader-biblio-dialog">
-        <div class="v2-dialog-card">
-          <div class="v2-dialog-header">
-            <div>
-              <h2 class="v2-dialog-title">${he.escape(work.title)}</h2>
-              <p class="v2-dialog-subtitle">Scholarly editions &amp; CTS citation</p>
-            </div>
-            <button type="button" class="v2-dialog-close-btn" id="v2-reader-biblio-close-btn" data-dialog-close>&times;</button>
-          </div>
-
-          <dl class="v2-reader-meta-list">
-            <div class="v2-meta-row">
-              <dt>Author</dt>
-              <dd>${he.escape(work.author)}</dd>
-            </div>
-            <div class="v2-meta-row">
-              <dt>Structural Hierarchy</dt>
-              <dd><code>[${work.textParts
-                .map((p) => `"${p}"`)
-                .join(", ")}]</code></dd>
-            </div>
-            ${
-              work.editor
-                ? `<div class="v2-meta-row">
-                    <dt>Critical Edition</dt>
-                    <dd>${he.escape(work.editor)}</dd>
-                   </div>`
-                : ""
-            }
-            ${
-              work.translator
-                ? `<div class="v2-meta-row">
-                    <dt>English Translation</dt>
-                    <dd>${he.escape(work.translator)}</dd>
-                   </div>`
-                : ""
-            }
-            ${
-              work.ctsUrn
-                ? `<div class="v2-meta-row">
-                    <dt>CTS URN</dt>
-                    <dd><code>${he.escape(work.ctsUrn)}</code></dd>
-                   </div>`
-                : ""
-            }
-            ${
-              work.license
-                ? `<div class="v2-meta-row">
-                    <dt>License</dt>
-                    <dd>${he.escape(work.license)}</dd>
-                   </div>`
-                : ""
-            }
-            ${
-              work.sourceRepo
-                ? `<div class="v2-meta-row">
-                    <dt>Source Repository</dt>
-                    <dd><a href="${he.escape(
-                      work.sourceRepo
-                    )}" target="_blank" rel="noopener noreferrer">${he.escape(
-                    work.sourceRepo
-                  )}</a></dd>
-                   </div>`
-                : ""
-            }
-          </dl>
-
-          <div class="v2-dialog-actions">
-            <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-biblio-ok-btn" data-dialog-close>Close</button>
-          </div>
-        </div>
-      </dialog>
-
-      <!-- Reader Appearance & Settings Dialog -->
-      <morcus-reader-settings>
-        <dialog class="v2-dialog v2-reader-settings-dialog" id="v2-reader-settings-dialog">
-          <div class="v2-dialog-card v2-settings-card">
-            <div class="v2-dialog-header">
-              <div>
-                <h2 class="v2-dialog-title">Reader Settings</h2>
-                <p class="v2-dialog-subtitle">Typography &amp; display preferences</p>
-              </div>
-              <button type="button" class="v2-dialog-close-btn" id="v2-reader-settings-close-btn" aria-label="Close settings" data-dialog-close>&times;</button>
-            </div>
-
-            <div class="v2-settings-body">
-              
-              <!-- Font Size Scaling Group -->
-              <div class="v2-settings-group">
-                <h3 class="v2-settings-group-title">Text Size</h3>
-                <div class="v2-settings-row">
-                  <span class="v2-settings-label">Reading Canvas</span>
-                  <div class="v2-stepper">
-                    <button type="button" class="v2-stepper-btn" id="v2-reader-size-dec" aria-label="Decrease reading text size">A&minus;</button>
-                    <span class="v2-stepper-val" id="v2-reader-size-label">100%</span>
-                    <button type="button" class="v2-stepper-btn" id="v2-reader-size-inc" aria-label="Increase reading text size">A+</button>
-                  </div>
-                </div>
-
-                <div class="v2-settings-row">
-                  <span class="v2-settings-label">Dictionary Sidebar</span>
-                  <div class="v2-stepper">
-                    <button type="button" class="v2-stepper-btn" id="v2-dict-size-dec" aria-label="Decrease dictionary text size">A&minus;</button>
-                    <span class="v2-stepper-val" id="v2-dict-size-label">100%</span>
-                    <button type="button" class="v2-stepper-btn" id="v2-dict-size-inc" aria-label="Increase dictionary text size">A+</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Scholarly & Textual Aids -->
-              <div class="v2-settings-group">
-                <h3 class="v2-settings-group-title">Scholarly &amp; Textual Aids</h3>
-                <label class="v2-settings-toggle-row">
-                  <span class="v2-settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
-                  <input type="checkbox" id="v2-toggle-macra" class="v2-toggle-checkbox" checked>
-                </label>
-
-                <label class="v2-settings-toggle-row">
-                  <span class="v2-settings-label">Show Section Numbers (&sect;)</span>
-                  <input type="checkbox" id="v2-toggle-gutter" class="v2-toggle-checkbox" checked>
-                </label>
-              </div>
-
-              <!-- Typography Style -->
-              <div class="v2-settings-group">
-                <h3 class="v2-settings-group-title">Typography</h3>
-                <div class="v2-settings-row">
-                  <span class="v2-settings-label">Font Family</span>
-                  <select id="v2-font-select" class="v2-settings-select" aria-label="Select font style">
-                    <option value="serif" selected>Classical Serif</option>
-                    <option value="sans">Modern Sans-Serif</option>
-                  </select>
-                </div>
-
-                <div class="v2-settings-row">
-                  <span class="v2-settings-label">Line Spacing</span>
-                  <select id="v2-line-height-select" class="v2-settings-select" aria-label="Select line spacing">
-                    <option value="compact">Compact</option>
-                    <option value="normal" selected>Normal</option>
-                    <option value="relaxed">Relaxed</option>
-                  </select>
-                </div>
-              </div>
-
-            </div>
-
-            <div class="v2-dialog-actions v2-settings-actions">
-              <button type="button" class="v2-btn v2-btn-secondary" id="v2-reader-settings-reset-btn">Reset Defaults</button>
-              <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-settings-done-btn" data-dialog-close>Done</button>
-            </div>
-          </div>
-        </dialog>
-      </morcus-reader-settings>
+${renderReaderSettingsDialog()}
 
     </morcus-reader-view>
   `;
 }
 
+export async function renderReaderContentHtml(
+  options: ReaderPageOptions = {}
+): Promise<string> {
+  const ctx = await resolveReaderContext(options);
+  return renderReaderContentHtmlFromContext(ctx);
+}
+
 export async function renderReaderPageHtml(
   options: ReaderPageOptions = {}
 ): Promise<string> {
-  const query = options.query?.trim() ?? "";
-  const requestedId = options.workId || "caesar_de_bello_gallico";
-  const work =
-    options.work ||
-    (await getV2Work(requestedId)) ||
-    (await getV2Work("caesar_de_bello_gallico")) ||
-    (await getV2Work("phi0448.phi001.perseus-lat2"));
+  const ctx = await resolveReaderContext(options);
 
-  if (!work) {
-    throw new Error(`Classical work not found: ${requestedId}`);
-  }
+  const title = ctx.query
+    ? `${ctx.query} - Latin Reader - Morcus Latin Tools`
+    : `${ctx.work.title} - Latin Reader - Morcus Latin Tools`;
 
-  const title = query
-    ? `${query} - Latin Reader - Morcus Latin Tools`
-    : `${work.title} - Latin Reader - Morcus Latin Tools`;
-
-  const contentHtml = await renderReaderContentHtml({ ...options, work });
+  const contentHtml = renderReaderContentHtmlFromContext(ctx);
 
   return renderPageShell({
     title,

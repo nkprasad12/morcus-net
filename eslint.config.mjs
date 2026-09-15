@@ -85,6 +85,7 @@ export default [
       "**/eslint.config.mjs",
       "**/corpus_driver.js",
       "target/",
+      "**/*.snap",
     ],
   },
   ...fixupConfigRules(
