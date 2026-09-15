@@ -198,9 +198,9 @@ describe("renderSubsectionNote", () => {
     const html = renderSubsectionNote(
       groupsFor([{ id: "n1.1", name: "proximus" }])
     );
-    expect(html).toContain('class="v2-subsection-namelink" href="#n1.1"');
+    expect(html).toContain('class="subsection-namelink" href="#n1.1"');
     expect(html).toContain("proximus");
-    expect(html).not.toContain('class="v2-subsection-chip"');
+    expect(html).not.toContain('class="subsection-chip"');
   });
 
   it("renders numbered chips for repeated matches", () => {
@@ -212,7 +212,7 @@ describe("renderSubsectionNote", () => {
     );
     expect(html).toContain('href="#n1.1"');
     expect(html).toContain('href="#n1.2"');
-    expect(html.match(/v2-subsection-chip"/g)).toHaveLength(2);
+    expect(html.match(/subsection-chip"/g)).toHaveLength(2);
   });
 
   it("points a merged first sense at the blurb, not a dead anchor", () => {
@@ -272,7 +272,7 @@ describe("renderSubsectionNote", () => {
         },
       ])
     );
-    expect(html).toContain("v2-subsection-inline-inf");
+    expect(html).toContain("subsection-inline-inf");
     expect(html).not.toContain("<table");
     // Morpheus diacritics are decoded.
     expect(html).toContain("proxi\u0306mus".normalize("NFC"));
@@ -309,9 +309,9 @@ describe("renderEntryResult with subsections", () => {
     const html = renderEntryResult(
       entryResult("n1", ["n1.1", "n1.2"], [{ id: "n1.1", name: "proximus" }])
     );
-    expect(html).toContain("v2-subsection-note");
+    expect(html).toContain("subsection-note");
     expect(html).toContain('href="#n1.1"');
-    expect(html).toContain('id="n1.1" class="v2-subsection-hit"');
+    expect(html).toContain('id="n1.1" class="subsection-hit"');
     expect(html).toContain('aria-current="location"');
   });
 
@@ -319,14 +319,14 @@ describe("renderEntryResult with subsections", () => {
     const html = renderEntryResult(
       entryResult("n1", ["n1.1", "n1.2"], [{ id: "n1.1", name: "proximus" }])
     );
-    expect(html.match(/v2-subsection-hit/g)).toHaveLength(1);
+    expect(html.match(/subsection-hit/g)).toHaveLength(1);
   });
 
   it("marks the blurb when the match is a merged first sense", () => {
     const html = renderEntryResult(
       entryResult("n1", ["n1.1"], [{ id: "n1.0", name: "proximus" }])
     );
-    expect(html).toContain('id="n1.blurb" class="v2-subsection-hit"');
+    expect(html).toContain('id="n1.blurb" class="subsection-hit"');
   });
 
   it("renders the note for entries that have no tool pills", () => {
@@ -338,15 +338,15 @@ describe("renderEntryResult with subsections", () => {
     const html = renderEntryResult(result);
     // The segmented bar is always present now, because it hosts the permalink
     // pill, but with no outline senses and no inflections it holds no tools.
-    expect(html).toContain("v2-segmented-bar");
-    expect(html).not.toContain("v2-tool-pane");
-    expect(html).toContain("v2-subsection-note");
+    expect(html).toContain("segmented-bar");
+    expect(html).not.toContain("tool-pane");
+    expect(html).toContain("subsection-note");
   });
 
   it("leaves entries without subsections untouched", () => {
     const html = renderEntryResult(entryResult("n1", ["n1.1"], []));
-    expect(html).not.toContain("v2-subsection-note");
-    expect(html).not.toContain("v2-subsection-hit");
+    expect(html).not.toContain("subsection-note");
+    expect(html).not.toContain("subsection-hit");
   });
 });
 

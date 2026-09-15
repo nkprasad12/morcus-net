@@ -67,7 +67,7 @@ export {
  * - Searching words in the iframe maintains the reader's scroll position 100% stationary.
  *
  * With JS:
- * - Tokenizes text nodes into clickable <span class="v2-lat-word" role="button"> on mount (< 2ms).
+ * - Tokenizes text nodes into clickable <span class="lat-word" role="button"> on mount (< 2ms).
  * - Clicking or pressing Enter on a word updates the dictionary iframe src and history state.
  * - Manages mobile bottom sheet expansion and desktop resizable panels.
  * */
@@ -120,7 +120,7 @@ export class MorcusReaderView extends BaseElement {
     this.currentQuery = this.router.get();
     if (this.currentQuery) {
       const el = this.findWordElement(this.currentQuery);
-      if (el) el.classList.add("v2-word-active");
+      if (el) el.classList.add("word-active");
     }
 
     this.listen(this, "click", this.handleClick);
@@ -143,7 +143,7 @@ export class MorcusReaderView extends BaseElement {
     this.initKeyboardShortcuts();
     this.initIframeThemeSync();
 
-    const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
+    const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
     if (iframe) {
       this.listen(iframe, "load", () => {
         this.applyDictScale(this.currentPrefs.dictScale);
@@ -160,7 +160,7 @@ export class MorcusReaderView extends BaseElement {
   }
 
   private initIframeThemeSync() {
-    const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
+    const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
     if (!iframe) return;
 
     const syncTheme = () => {
@@ -192,7 +192,7 @@ export class MorcusReaderView extends BaseElement {
 
     // Handle close button click (collapses sheet/clears word)
     const closeBtn = e.target.closest<HTMLAnchorElement>(
-      "a.v2-reader-sheet-close"
+      "a.reader-sheet-close"
     );
     if (closeBtn) {
       e.preventDefault();
@@ -201,9 +201,7 @@ export class MorcusReaderView extends BaseElement {
     }
 
     // Handle section anchor click (copies canonical permalink with toast confirmation)
-    const secAnchor = e.target.closest<HTMLAnchorElement>(
-      "a.v2-section-anchor"
-    );
+    const secAnchor = e.target.closest<HTMLAnchorElement>("a.section-anchor");
     if (secAnchor) {
       e.preventDefault();
       const href = secAnchor.getAttribute("href") || "";
@@ -226,7 +224,7 @@ export class MorcusReaderView extends BaseElement {
       return;
     }
 
-    const wordEl = e.target.closest<HTMLElement>(".v2-lat-word");
+    const wordEl = e.target.closest<HTMLElement>(".lat-word");
     if (!wordEl) return;
 
     e.preventDefault();
@@ -245,15 +243,13 @@ export class MorcusReaderView extends BaseElement {
    *
    * The query originates from user-controlled input (the `?q=` URL parameter and word
    * text content), so it is bound via `textContent` rather than interpolated into an
-   * HTML string. The `<strong>` wrapper is load-bearing: `.v2-reader-sheet-label strong`
+   * HTML string. The `<strong>` wrapper is load-bearing: `.reader-sheet-label strong`
    * in core/drawer.css supplies its color and weight.
    *
    * Mirrors the server-rendered markup in reader.server.ts.
    */
   private setSheetLabel(query: string, showExpandHint: boolean = false): void {
-    const sheetLabel = this.querySelector<HTMLElement>(
-      ".v2-reader-sheet-label"
-    );
+    const sheetLabel = this.querySelector<HTMLElement>(".reader-sheet-label");
     if (!sheetLabel || !query) return;
 
     const strong = document.createElement("strong");
@@ -275,19 +271,17 @@ export class MorcusReaderView extends BaseElement {
     if (this.drawerController) {
       this.drawerController.minimize();
     } else {
-      const dictPanel = this.querySelector<HTMLElement>(
-        ".v2-reader-dict-panel"
-      );
-      const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
+      const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+      const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
       const splitLayout = this.querySelector<HTMLElement>(
-        ".v2-reader-split-layout"
+        ".reader-split-layout"
       );
       if (dictPanel) {
-        dictPanel.classList.add("v2-drawer-minimized");
-        dictPanel.style.setProperty("--v2-drawer-height", "54px");
+        dictPanel.classList.add("drawer-minimized");
+        dictPanel.style.setProperty("--drawer-height", "54px");
         sheetBar?.setAttribute("aria-valuenow", "0");
       }
-      splitLayout?.style.setProperty("--v2-drawer-height", "54px");
+      splitLayout?.style.setProperty("--drawer-height", "54px");
       this.setSheetLabel(this.currentQuery, true);
     }
   }
@@ -296,12 +290,10 @@ export class MorcusReaderView extends BaseElement {
     if (this.drawerController) {
       this.drawerController.restore(targetDvh);
     } else {
-      const dictPanel = this.querySelector<HTMLElement>(
-        ".v2-reader-dict-panel"
-      );
-      const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
+      const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+      const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
       const splitLayout = this.querySelector<HTMLElement>(
-        ".v2-reader-split-layout"
+        ".reader-split-layout"
       );
       const dvh = Math.min(
         DRAWER_EXPANDED_DVH,
@@ -313,11 +305,11 @@ export class MorcusReaderView extends BaseElement {
       this.preferredDrawerDvh = dvh;
 
       if (dictPanel) {
-        dictPanel.classList.remove("v2-drawer-minimized");
-        dictPanel.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
+        dictPanel.classList.remove("drawer-minimized");
+        dictPanel.style.setProperty("--drawer-height", `${dvh}dvh`);
         sheetBar?.setAttribute("aria-valuenow", String(dvh));
       }
-      splitLayout?.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
+      splitLayout?.style.setProperty("--drawer-height", `${dvh}dvh`);
       this.setSheetLabel(this.currentQuery);
       this.resetDictScroll();
     }
@@ -331,15 +323,15 @@ export class MorcusReaderView extends BaseElement {
    * element, but a chapter holds thousands, and this runs synchronously in the click
    * handler before the new highlight is painted.
    *
-   * The `.v2-reader-text-panel` scope is load-bearing. `linkifyText` also emits
-   * `v2-word-active` on dictionary-entry markup, which must not be cleared from here.
+   * The `.reader-text-panel` scope is load-bearing. `linkifyText` also emits
+   * `word-active` on dictionary-entry markup, which must not be cleared from here.
    */
   private setActiveWord(el?: HTMLElement | null) {
     const active = this.querySelectorAll<HTMLElement>(
-      ".v2-reader-text-panel .v2-word-active"
+      ".reader-text-panel .word-active"
     );
-    active.forEach((word) => word.classList.remove("v2-word-active"));
-    el?.classList.add("v2-word-active");
+    active.forEach((word) => word.classList.remove("word-active"));
+    el?.classList.add("word-active");
   }
 
   private dismissDictionary(updateHistory: boolean = true) {
@@ -349,7 +341,7 @@ export class MorcusReaderView extends BaseElement {
     this.setActiveWord(null);
 
     // Reset iframe to default embedded state
-    const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
+    const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
     if (iframe) {
       iframe.src = "/v2/dicts?embedded=1";
     }
@@ -357,28 +349,26 @@ export class MorcusReaderView extends BaseElement {
     // Update split layout class to empty
     const splitLayout =
       this.layoutController?.splitLayout ??
-      this.querySelector<HTMLElement>(".v2-reader-split-layout");
+      this.querySelector<HTMLElement>(".reader-split-layout");
     if (this.layoutController) {
       this.layoutController.setActive(false);
     } else if (splitLayout) {
-      splitLayout.classList.remove("v2-reader-layout-active");
-      splitLayout.classList.add("v2-reader-layout-empty");
+      splitLayout.classList.remove("reader-layout-active");
+      splitLayout.classList.add("reader-layout-empty");
     }
 
     // Reset drawer height and ARIA on mobile
-    const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
-    const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
+    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+    const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
     if (dictPanel) {
-      dictPanel.classList.remove("v2-drawer-minimized");
-      dictPanel.style.removeProperty("--v2-drawer-height");
+      dictPanel.classList.remove("drawer-minimized");
+      dictPanel.style.removeProperty("--drawer-height");
       sheetBar?.setAttribute("aria-valuenow", "54");
     }
-    splitLayout?.style.removeProperty("--v2-drawer-height");
+    splitLayout?.style.removeProperty("--drawer-height");
 
     // Update mobile teaser label
-    const sheetLabel = this.querySelector<HTMLElement>(
-      ".v2-reader-sheet-label"
-    );
+    const sheetLabel = this.querySelector<HTMLElement>(".reader-sheet-label");
     if (sheetLabel) {
       sheetLabel.textContent = "Tap any word to view definitions";
     }
@@ -395,10 +385,10 @@ export class MorcusReaderView extends BaseElement {
   ) {
     if (!word) return;
 
-    const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
+    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
     if (
       word === this.currentQuery &&
-      dictPanel?.classList.contains("v2-drawer-minimized")
+      dictPanel?.classList.contains("drawer-minimized")
     ) {
       this.restoreDrawer();
       return;
@@ -410,7 +400,7 @@ export class MorcusReaderView extends BaseElement {
     this.setActiveWord(activeAnchor ?? this.findWordElement(word));
 
     // Update dictionary iframe (filtering by lang=La and forcing inflected search o=1 for Latin text word lookups)
-    const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
+    const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
     if (iframe) {
       const targetSrc = `/v2/dicts?q=${encodeURIComponent(
         word
@@ -425,11 +415,11 @@ export class MorcusReaderView extends BaseElement {
       this.layoutController.setActive(true);
     } else {
       const splitLayout = this.querySelector<HTMLElement>(
-        ".v2-reader-split-layout"
+        ".reader-split-layout"
       );
       if (splitLayout) {
-        splitLayout.classList.remove("v2-reader-layout-empty");
-        splitLayout.classList.add("v2-reader-layout-active");
+        splitLayout.classList.remove("reader-layout-empty");
+        splitLayout.classList.add("reader-layout-active");
       }
     }
 
@@ -468,10 +458,10 @@ export class MorcusReaderView extends BaseElement {
   }
 
   private enhancePassage() {
-    const passage = this.querySelector<HTMLElement>("#v2-reader-passage");
+    const passage = this.querySelector<HTMLElement>("#reader-passage");
     if (!passage) return;
 
-    // Tokenizing rewrites the passage into `.v2-lat-word` spans, so it must
+    // Tokenizing rewrites the passage into `.lat-word` spans, so it must
     // happen exactly once. The marker lives in the DOM and therefore survives a
     // disconnect, which is why the listener below cannot be guarded by it.
     if (passage.dataset.enhanced !== "true") {
@@ -480,14 +470,14 @@ export class MorcusReaderView extends BaseElement {
       tokenizeTargets(passage, {
         targetSelector: "[data-tokenize-target='true']",
         fallbackSelector:
-          ".v2-reader-section:not(.v2-section-parallel) p.v2-reader-paragraph, " +
-          ".v2-reader-section:not(.v2-section-parallel) .v2-reader-line, " +
-          ".v2-passage-latin p.v2-reader-paragraph, " +
-          ".v2-passage-latin .v2-reader-line",
+          ".reader-section:not(.section-parallel) p.reader-paragraph, " +
+          ".reader-section:not(.section-parallel) .reader-line, " +
+          ".passage-latin p.reader-paragraph, " +
+          ".passage-latin .reader-line",
         enhancedDatasetKey: "wordsEnhanced",
         renderWord: (token) => {
           const span = document.createElement("span");
-          span.className = "v2-lat-word";
+          span.className = "lat-word";
           span.setAttribute("role", "button");
           span.setAttribute("tabindex", "0");
           span.setAttribute("data-word", token);
@@ -503,7 +493,7 @@ export class MorcusReaderView extends BaseElement {
       if (e.key === "Enter" || e.key === " ") {
         if (
           e.target instanceof HTMLElement &&
-          e.target.classList.contains("v2-lat-word")
+          e.target.classList.contains("lat-word")
         ) {
           e.preventDefault();
           const word =
@@ -521,7 +511,7 @@ export class MorcusReaderView extends BaseElement {
     const nfcWord = rawWord.normalize("NFC");
     const strippedWord = removeMacrons(rawWord);
     const allWords = this.querySelectorAll<HTMLElement>(
-      ".v2-reader-text-panel .v2-lat-word"
+      ".reader-text-panel .lat-word"
     );
 
     // 1. Exact or NFC-normalized match (e.g. Mūsa NFC matching Mūsa NFD)
@@ -546,9 +536,7 @@ export class MorcusReaderView extends BaseElement {
   private resetDictScroll() {
     if (window.innerWidth > 640) {
       // Desktop: Reset outer dict panel to top
-      const dictPanel = this.querySelector<HTMLElement>(
-        ".v2-reader-dict-panel"
-      );
+      const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
       if (typeof dictPanel?.scrollTo === "function") {
         dictPanel.scrollTo({ top: 0, behavior: "instant" });
       } else if (dictPanel) {
@@ -557,11 +545,9 @@ export class MorcusReaderView extends BaseElement {
     } else {
       // Mobile: Instant scroll to the semantic content wrapper
       const scrollContainer = this.querySelector<HTMLElement>(
-        ".v2-reader-dict-sticky"
+        ".reader-dict-sticky"
       );
-      const contentEl = this.querySelector<HTMLElement>(
-        ".v2-reader-dict-content"
-      );
+      const contentEl = this.querySelector<HTMLElement>(".reader-dict-content");
       if (scrollContainer && contentEl) {
         if (typeof scrollContainer.scrollTo === "function") {
           scrollContainer.scrollTo({
@@ -577,11 +563,9 @@ export class MorcusReaderView extends BaseElement {
 
   // --- Mobile Bottom Drawer Resizer ---
   private initMobileDrawer() {
-    const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
-    const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
-    const splitLayout = this.querySelector<HTMLElement>(
-      ".v2-reader-split-layout"
-    );
+    const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
+    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+    const splitLayout = this.querySelector<HTMLElement>(".reader-split-layout");
     if (!sheetBar || !dictPanel) return;
 
     this.drawerController = new DrawerController({
@@ -596,7 +580,7 @@ export class MorcusReaderView extends BaseElement {
       filter: (e) => {
         if (
           e.target instanceof Element &&
-          e.target.closest("a.v2-reader-sheet-close, a.v2-drawer-close")
+          e.target.closest("a.reader-sheet-close, a.drawer-close")
         ) {
           return false;
         }
@@ -624,15 +608,15 @@ export class MorcusReaderView extends BaseElement {
   // --- Embedded Dictionary "Jump to top" Button ---
   private initBackToTop() {
     // 1. Guard against duplicate elements
-    if (this.querySelector(".v2-reader-dict-back-to-top")) return;
+    if (this.querySelector(".reader-dict-back-to-top")) return;
 
-    const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
+    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
     if (!dictPanel) return;
 
     // 2. Create button dynamically (ensures 0 elements in No-JS)
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "v2-reader-dict-back-to-top";
+    btn.className = "reader-dict-back-to-top";
     btn.setAttribute("aria-label", "Scroll dictionary to top");
     btn.title = "Jump to top";
     setHtml(
@@ -648,14 +632,14 @@ export class MorcusReaderView extends BaseElement {
       if (window.innerWidth > 640) {
         return dictPanel;
       }
-      return this.querySelector<HTMLElement>(".v2-reader-dict-sticky");
+      return this.querySelector<HTMLElement>(".reader-dict-sticky");
     };
 
     let ticking = false;
     const updateVisibility = () => {
       const scroller = getScroller();
       const shouldShow = (scroller?.scrollTop ?? 0) > 300;
-      btn.classList.toggle("v2-visible", shouldShow);
+      btn.classList.toggle("visible", shouldShow);
       ticking = false;
     };
 
@@ -667,9 +651,7 @@ export class MorcusReaderView extends BaseElement {
     };
 
     // Listen on both possible scroll containers
-    const mobileSticky = this.querySelector<HTMLElement>(
-      ".v2-reader-dict-sticky"
-    );
+    const mobileSticky = this.querySelector<HTMLElement>(".reader-dict-sticky");
     dictPanel.addEventListener("scroll", onScroll, { passive: true });
     mobileSticky?.addEventListener("scroll", onScroll, { passive: true });
 
@@ -683,12 +665,12 @@ export class MorcusReaderView extends BaseElement {
         scroller.scrollTo({ top: 0, behavior: "instant" });
       } else {
         const contentEl = this.querySelector<HTMLElement>(
-          ".v2-reader-dict-content"
+          ".reader-dict-content"
         );
         const targetTop = contentEl ? contentEl.offsetTop : 0;
         scroller.scrollTo({ top: targetTop, behavior: "instant" });
       }
-      btn.classList.remove("v2-visible");
+      btn.classList.remove("visible");
     };
 
     btn.addEventListener("click", onClick);
@@ -703,7 +685,7 @@ export class MorcusReaderView extends BaseElement {
 
   // --- Reader Confirmation Toast ---
   private showToast(msg: string) {
-    const toast = this.$<HTMLElement>("#v2-reader-toast");
+    const toast = this.$<HTMLElement>("#reader-toast");
     if (!toast) return;
     toast.textContent = msg;
     toast.classList.add("visible");
@@ -714,8 +696,8 @@ export class MorcusReaderView extends BaseElement {
 
   // --- Bibliographical Metadata Modal Dialog ---
   private initBiblioModal() {
-    const dialog = this.$<HTMLDialogElement>("#v2-reader-biblio-dialog");
-    const infoBtn = this.$<HTMLButtonElement>("#v2-reader-info-btn");
+    const dialog = this.$<HTMLDialogElement>("#reader-biblio-dialog");
+    const infoBtn = this.$<HTMLButtonElement>("#reader-info-btn");
     if (!dialog) return;
 
     this.addDisposable(
@@ -727,7 +709,7 @@ export class MorcusReaderView extends BaseElement {
 
   // --- Reader Preferences & Canvas Styling ---
   private applyMacra(show: boolean) {
-    const words = this.$$<HTMLElement>(".v2-reader-passage .v2-lat-word");
+    const words = this.$$<HTMLElement>(".reader-passage .lat-word");
     for (const w of words) {
       if (!w.hasAttribute("data-original-text")) {
         w.setAttribute("data-original-text", w.textContent || "");
@@ -739,11 +721,11 @@ export class MorcusReaderView extends BaseElement {
 
   private applyDictScale(scalePercent: number) {
     const scale = (scalePercent / 100).toFixed(2);
-    const iframe = this.$<HTMLIFrameElement>("#v2-dict-frame");
+    const iframe = this.$<HTMLIFrameElement>("#dict-frame");
     try {
       if (iframe?.contentDocument?.documentElement) {
         iframe.contentDocument.documentElement.style.setProperty(
-          "--v2-dict-scale",
+          "--dict-scale",
           scale
         );
       }
@@ -755,7 +737,7 @@ export class MorcusReaderView extends BaseElement {
   private applyPreferences(prefs: ReaderPreferences) {
     this.currentPrefs = prefs;
     const readerRem = `${((1.25 * prefs.readerScale) / 100).toFixed(3)}rem`;
-    this.style.setProperty("--v2-reader-font-size", readerRem);
+    this.style.setProperty("--reader-font-size", readerRem);
     this.applyDictScale(prefs.dictScale);
 
     const lhVal =
@@ -764,22 +746,20 @@ export class MorcusReaderView extends BaseElement {
         : prefs.lineHeight === "relaxed"
         ? "2.3"
         : "1.95";
-    this.style.setProperty("--v2-reader-line-height", lhVal);
+    this.style.setProperty("--reader-line-height", lhVal);
 
     const fontVal =
-      prefs.fontFamily === "sans"
-        ? "var(--v2-font-sans)"
-        : "var(--v2-font-serif)";
-    this.style.setProperty("--v2-reader-font", fontVal);
+      prefs.fontFamily === "sans" ? "var(--font-sans)" : "var(--font-serif)";
+    this.style.setProperty("--reader-font", fontVal);
 
-    this.classList.toggle("v2-hide-gutter", !prefs.showGutter);
+    this.classList.toggle("hide-gutter", !prefs.showGutter);
     this.applyMacra(prefs.showMacra);
   }
 
   // --- Quick Jump In-Page Smooth Scroll ---
   private initQuickJump() {
-    const form = this.$<HTMLFormElement>("#v2-reader-jump-form");
-    const input = this.$<HTMLInputElement>("#v2-jump-input");
+    const form = this.$<HTMLFormElement>("#reader-jump-form");
+    const input = this.$<HTMLInputElement>("#jump-input");
     if (!form || !input) return;
 
     this.listen(input, "focus", () => input.select());
@@ -827,13 +807,13 @@ export class MorcusReaderView extends BaseElement {
       }
 
       if (e.key === "[") {
-        const prevBtn = this.$<HTMLAnchorElement>("#v2-pager-prev");
+        const prevBtn = this.$<HTMLAnchorElement>("#pager-prev");
         if (prevBtn && !prevBtn.classList.contains("disabled")) {
           e.preventDefault();
           prevBtn.click();
         }
       } else if (e.key === "]") {
-        const nextBtn = this.$<HTMLAnchorElement>("#v2-pager-next");
+        const nextBtn = this.$<HTMLAnchorElement>("#pager-next");
         if (nextBtn && !nextBtn.classList.contains("disabled")) {
           e.preventDefault();
           nextBtn.click();
@@ -843,18 +823,18 @@ export class MorcusReaderView extends BaseElement {
           e.preventDefault();
           this.tocController.toggle();
         } else {
-          const tocDrawer = this.$<HTMLElement>("#v2-reader-toc-drawer");
+          const tocDrawer = this.$<HTMLElement>("#reader-toc-drawer");
           if (tocDrawer) {
             e.preventDefault();
             if (tocDrawer.hasAttribute("hidden")) {
-              this.$<HTMLButtonElement>("#v2-reader-toc-btn")?.click();
+              this.$<HTMLButtonElement>("#reader-toc-btn")?.click();
             } else {
-              this.$<HTMLButtonElement>("#v2-reader-toc-close-btn")?.click();
+              this.$<HTMLButtonElement>("#reader-toc-close-btn")?.click();
             }
           }
         }
       } else if (e.key === "m" || e.key === "M") {
-        const expandBtn = this.$<HTMLButtonElement>("#v2-sticky-expand-btn");
+        const expandBtn = this.$<HTMLButtonElement>("#sticky-expand-btn");
         if (expandBtn) {
           e.preventDefault();
           expandBtn.click();
@@ -865,11 +845,11 @@ export class MorcusReaderView extends BaseElement {
 
   // --- Sticky Navigation Bar Expand / Collapse ---
   private initStickyExpand() {
-    const expandBtn = this.$<HTMLButtonElement>("#v2-sticky-expand-btn");
-    const expandedRow = this.$<HTMLElement>("#v2-sticky-expanded-row");
+    const expandBtn = this.$<HTMLButtonElement>("#sticky-expand-btn");
+    const expandedRow = this.$<HTMLElement>("#sticky-expanded-row");
     if (!expandBtn || !expandedRow) return;
 
-    const chevron = expandBtn.querySelector(".v2-expand-chevron");
+    const chevron = expandBtn.querySelector(".expand-chevron");
 
     const setExpanded = (expanded: boolean) => {
       expandBtn.setAttribute("aria-expanded", String(expanded));

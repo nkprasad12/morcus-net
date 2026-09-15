@@ -30,28 +30,28 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   function createReaderView(innerPassageHtml: string): MorcusReaderView {
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     el.innerHTML = `
-      <div class="v2-reader-split-layout v2-reader-layout-empty">
-        <section class="v2-reader-text-panel">
-          <div class="v2-reader-text-card">
-            <article class="v2-reader-passage" id="v2-reader-passage">
+      <div class="reader-split-layout reader-layout-empty">
+        <section class="reader-text-panel">
+          <div class="reader-text-card">
+            <article class="reader-passage" id="reader-passage">
               ${innerPassageHtml}
             </article>
           </div>
         </section>
-        <aside class="v2-reader-dict-panel">
-          <div class="v2-reader-sheet-bar">
-            <div class="v2-reader-sheet-teaser">
-              <span class="v2-reader-sheet-label">Tap any word</span>
+        <aside class="reader-dict-panel">
+          <div class="reader-sheet-bar">
+            <div class="reader-sheet-teaser">
+              <span class="reader-sheet-label">Tap any word</span>
             </div>
           </div>
-          <iframe id="v2-dict-frame" src="/v2/dicts?embedded=1"></iframe>
+          <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
         </aside>
         <morcus-reader-settings>
-          <dialog id="v2-reader-settings-dialog">
-            <input type="checkbox" id="v2-toggle-macra" checked />
-            <button id="v2-dict-size-dec">-</button>
-            <span id="v2-dict-size-label">100%</span>
-            <button id="v2-dict-size-inc">+</button>
+          <dialog id="reader-settings-dialog">
+            <input type="checkbox" id="toggle-macra" checked />
+            <button id="dict-size-dec">-</button>
+            <span id="dict-size-label">100%</span>
+            <button id="dict-size-inc">+</button>
           </dialog>
         </morcus-reader-settings>
       </div>
@@ -63,14 +63,14 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   test("tokenizes Aeneid text with decomposed NFD macra without splitting words", () => {
     // Aeneid 1.8 with combining macrons (\u0304): Mūsa, mihī causās memorā, quō nūmine laesō
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.8">
-        <span class="v2-reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304, quo\u0304 nu\u0304mine laeso\u0304.</span>
+      <div class="reader-section" id="sec-1.8">
+        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304, quo\u0304 nu\u0304mine laeso\u0304.</span>
       </div>
     `;
 
     const el = createReaderView(passageHtml);
 
-    const words = Array.from(el.querySelectorAll<HTMLElement>(".v2-lat-word"));
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
     const wordTexts = words.map((w) => w.textContent);
 
     // Verified: Musa is NOT split into 'Mu' and 'sa'
@@ -89,7 +89,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(words[2].getAttribute("data-word")).toBe("causa\u0304s");
 
     // Interstitial punctuation and spaces preserved
-    const line = el.querySelector(".v2-reader-line")!;
+    const line = el.querySelector(".reader-line")!;
     expect(line.textContent).toBe(
       "Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304, quo\u0304 nu\u0304mine laeso\u0304."
     );
@@ -98,14 +98,14 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   test("tokenizes precomposed NFC macra without splitting", () => {
     // Composed: Mūsa, causās
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.8">
-        <span class="v2-reader-line">M\u016Bsa, mihi caus\u0101s memor\u0101.</span>
+      <div class="reader-section" id="sec-1.8">
+        <span class="reader-line">M\u016Bsa, mihi caus\u0101s memor\u0101.</span>
       </div>
     `;
 
     const el = createReaderView(passageHtml);
 
-    const words = Array.from(el.querySelectorAll<HTMLElement>(".v2-lat-word"));
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
     const wordTexts = words.map((w) => w.textContent);
 
     expect(wordTexts).toEqual(["Mūsa", "mihi", "causās", "memorā"]);
@@ -113,11 +113,11 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
   test("decouples tokenization from CSS selectors via data-tokenize-target attribute", () => {
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.1">
-        <div class="v2-reader-passage" data-tokenize-target="true">
+      <div class="reader-section" id="sec-1.1">
+        <div class="reader-passage" data-tokenize-target="true">
           <blockquote>Gallia est omnis divisa.</blockquote>
         </div>
-        <div class="v2-english-translation">
+        <div class="english-translation">
           <span>All Gaul is divided.</span>
         </div>
       </div>
@@ -127,42 +127,42 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     const latinWords = Array.from(
       el.querySelectorAll<HTMLElement>(
-        '[data-tokenize-target="true"] .v2-lat-word'
+        '[data-tokenize-target="true"] .lat-word'
       )
     ).map((w) => w.textContent);
     expect(latinWords).toEqual(["Gallia", "est", "omnis", "divisa"]);
 
-    // Untargeted translation section has 0 .v2-lat-word spans
+    // Untargeted translation section has 0 .lat-word spans
     const englishWords = el.querySelectorAll<HTMLElement>(
-      ".v2-english-translation .v2-lat-word"
+      ".english-translation .lat-word"
     );
     expect(englishWords).toHaveLength(0);
   });
 
   test("clicking a word with macra opens dictionary with query and activates word", () => {
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.8">
-        <span class="v2-reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+      <div class="reader-section" id="sec-1.8">
+        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
       </div>
     `;
 
     const el = createReaderView(passageHtml);
-    const musaWord = el.querySelector<HTMLElement>(".v2-lat-word")!;
+    const musaWord = el.querySelector<HTMLElement>(".lat-word")!;
     expect(musaWord.textContent).toBe("Mu\u0304sa");
 
     musaWord.click();
 
     // Word receives active highlight class
-    expect(musaWord.classList.contains("v2-word-active")).toBe(true);
+    expect(musaWord.classList.contains("word-active")).toBe(true);
 
     // Dictionary iframe source is updated with Latin filter and forced inflections (o=1)
-    const iframe = el.querySelector<HTMLIFrameElement>("#v2-dict-frame")!;
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
     expect(iframe.src).toContain(
       "/v2/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1"
     );
 
     // Sheet label updated
-    const sheetLabel = el.querySelector<HTMLElement>(".v2-reader-sheet-label")!;
+    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label")!;
     expect(sheetLabel.innerHTML).toContain("Mu\u0304sa");
   });
 
@@ -172,15 +172,15 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       JSON.stringify({ dictScale: 120 })
     );
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.1">
-        <span class="v2-reader-line">arma virumque cano</span>
+      <div class="reader-section" id="sec-1.1">
+        <span class="reader-line">arma virumque cano</span>
       </div>
     `;
     const el = createReaderView(passageHtml);
-    const armaWord = el.querySelector<HTMLElement>(".v2-lat-word")!;
+    const armaWord = el.querySelector<HTMLElement>(".lat-word")!;
     armaWord.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-    const iframe = el.querySelector<HTMLIFrameElement>("#v2-dict-frame")!;
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
     expect(iframe.src).toContain(
       "/v2/dicts?q=arma&lang=La&o=1&embedded=1&scale=120"
     );
@@ -189,13 +189,13 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
   test("findWordElement highlights word matching unaccented, NFC, or NFD queries", () => {
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.8">
-        <span class="v2-reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+      <div class="reader-section" id="sec-1.8">
+        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
       </div>
     `;
 
     const el = createReaderView(passageHtml);
-    const musaWord = el.querySelector<HTMLElement>(".v2-lat-word")!;
+    const musaWord = el.querySelector<HTMLElement>(".lat-word")!;
 
     // Case 1: Search unaccented "musa" matches "Mūsa"
     // @ts-expect-error accessing private method for test verification
@@ -215,17 +215,17 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
   test("toggling Show Macra in settings strips and restores vowel markings", () => {
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.8">
-        <span class="v2-reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+      <div class="reader-section" id="sec-1.8">
+        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
       </div>
     `;
 
     const el = createReaderView(passageHtml);
-    const words = Array.from(el.querySelectorAll<HTMLElement>(".v2-lat-word"));
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
     expect(words[0].textContent).toBe("Mu\u0304sa");
     expect(words[2].textContent).toBe("causa\u0304s");
 
-    const toggleMacra = el.querySelector<HTMLInputElement>("#v2-toggle-macra")!;
+    const toggleMacra = el.querySelector<HTMLInputElement>("#toggle-macra")!;
     expect(toggleMacra).not.toBeNull();
 
     // Toggle macra OFF
@@ -249,13 +249,13 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     document.documentElement.setAttribute("data-theme", "dark");
 
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.1">
-        <span class="v2-reader-line">Arma virumque cano.</span>
+      <div class="reader-section" id="sec-1.1">
+        <span class="reader-line">Arma virumque cano.</span>
       </div>
     `;
 
     const el = createReaderView(passageHtml);
-    const iframe = el.querySelector<HTMLIFrameElement>("#v2-dict-frame")!;
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
 
     // Populate iframe contentDocument with a basic HTML document
     iframe.contentDocument!.write("<html><head></head><body></body></html>");
@@ -272,26 +272,26 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     document.documentElement.removeAttribute("data-theme");
   });
 
-  test("syncs --v2-dict-scale to iframe on stepper change and iframe reload", () => {
+  test("syncs --dict-scale to iframe on stepper change and iframe reload", () => {
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.1">
-        <span class="v2-reader-line">Arma virumque cano.</span>
+      <div class="reader-section" id="sec-1.1">
+        <span class="reader-line">Arma virumque cano.</span>
       </div>
     `;
 
     const el = createReaderView(passageHtml);
-    const iframe = el.querySelector<HTMLIFrameElement>("#v2-dict-frame")!;
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
 
     // Populate iframe contentDocument with a basic HTML document
     iframe.contentDocument!.write("<html><head></head><body></body></html>");
     iframe.contentDocument!.close();
 
-    const incBtn = el.querySelector<HTMLButtonElement>("#v2-dict-size-inc")!;
+    const incBtn = el.querySelector<HTMLButtonElement>("#dict-size-inc")!;
     incBtn.click();
 
     expect(
       iframe.contentDocument!.documentElement.style.getPropertyValue(
-        "--v2-dict-scale"
+        "--dict-scale"
       )
     ).toBe("1.10");
 
@@ -300,36 +300,36 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     expect(
       iframe.contentDocument!.documentElement.style.getPropertyValue(
-        "--v2-dict-scale"
+        "--dict-scale"
       )
     ).toBe("1.10");
 
-    const decBtn = el.querySelector<HTMLButtonElement>("#v2-dict-size-dec")!;
+    const decBtn = el.querySelector<HTMLButtonElement>("#dict-size-dec")!;
     decBtn.click();
     expect(
       iframe.contentDocument!.documentElement.style.getPropertyValue(
-        "--v2-dict-scale"
+        "--dict-scale"
       )
     ).toBe("1.00");
   });
 
   describe("sheet label rendering", () => {
     const passageHtml = `
-      <div class="v2-reader-section" id="sec-1.1">
-        <span class="v2-reader-line">Arma virumque cano.</span>
+      <div class="reader-section" id="sec-1.1">
+        <span class="reader-line">Arma virumque cano.</span>
       </div>
     `;
 
     function sheetLabelOf(el: MorcusReaderView): HTMLElement {
-      return el.querySelector<HTMLElement>(".v2-reader-sheet-label")!;
+      return el.querySelector<HTMLElement>(".reader-sheet-label")!;
     }
 
     test("renders the query inside a <strong> that CSS targets", () => {
       const el = createReaderView(passageHtml);
-      el.querySelector<HTMLElement>(".v2-lat-word")!.click();
+      el.querySelector<HTMLElement>(".lat-word")!.click();
 
       const label = sheetLabelOf(el);
-      // `.v2-reader-sheet-label strong` in core/drawer.css styles this element,
+      // `.reader-sheet-label strong` in core/drawer.css styles this element,
       // so the wrapper must remain a real <strong>, not plain text.
       const strong = label.querySelector("strong");
       expect(strong).not.toBeNull();
@@ -339,7 +339,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     test("appends the 'tap to expand' hint only when minimized", () => {
       const el = createReaderView(passageHtml);
-      el.querySelector<HTMLElement>(".v2-lat-word")!.click();
+      el.querySelector<HTMLElement>(".lat-word")!.click();
 
       // Restored state: no hint.
       expect(sheetLabelOf(el).textContent).toBe("Definitions for Arma");
@@ -361,12 +361,12 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     test("restoreDrawer clamps target dvh within [DRAWER_FLOOR_DVH, DRAWER_EXPANDED_DVH] and falls back to DRAWER_DEFAULT_DVH", () => {
       const el = createReaderView(passageHtml);
-      const dictPanel = el.querySelector<HTMLElement>(".v2-reader-dict-panel")!;
-      const sheetBar = el.querySelector<HTMLElement>(".v2-reader-sheet-bar")!;
+      const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+      const sheetBar = el.querySelector<HTMLElement>(".reader-sheet-bar")!;
 
       // Default restore (omitted targetDvh) sets DRAWER_DEFAULT_DVH
       el.restoreDrawer();
-      expect(dictPanel.style.getPropertyValue("--v2-drawer-height")).toBe(
+      expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe(
         `${DRAWER_DEFAULT_DVH}dvh`
       );
       expect(sheetBar.getAttribute("aria-valuenow")).toBe(
@@ -375,7 +375,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
       // Clamps below floor threshold to DRAWER_FLOOR_DVH
       el.restoreDrawer(DRAWER_FLOOR_DVH - 10);
-      expect(dictPanel.style.getPropertyValue("--v2-drawer-height")).toBe(
+      expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe(
         `${DRAWER_FLOOR_DVH}dvh`
       );
       expect(sheetBar.getAttribute("aria-valuenow")).toBe(
@@ -384,7 +384,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
       // Clamps above expanded threshold to DRAWER_EXPANDED_DVH
       el.restoreDrawer(DRAWER_EXPANDED_DVH + 10);
-      expect(dictPanel.style.getPropertyValue("--v2-drawer-height")).toBe(
+      expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe(
         `${DRAWER_EXPANDED_DVH}dvh`
       );
       expect(sheetBar.getAttribute("aria-valuenow")).toBe(
@@ -420,14 +420,14 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
   describe("active word highlight", () => {
     const PASSAGE = `
-      <div class="v2-reader-section" id="sec-1.8">
-        <span class="v2-reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+      <div class="reader-section" id="sec-1.8">
+        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
       </div>
     `;
 
     const textPanelWords = (el: MorcusReaderView) =>
       Array.from(
-        el.querySelectorAll<HTMLElement>(".v2-reader-text-panel .v2-lat-word")
+        el.querySelectorAll<HTMLElement>(".reader-text-panel .lat-word")
       );
 
     test("moves the highlight so exactly one word is ever active", () => {
@@ -435,13 +435,13 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       const words = textPanelWords(el);
 
       words[0].click();
-      expect(el.querySelectorAll(".v2-word-active")).toHaveLength(1);
-      expect(words[0].classList.contains("v2-word-active")).toBe(true);
+      expect(el.querySelectorAll(".word-active")).toHaveLength(1);
+      expect(words[0].classList.contains("word-active")).toBe(true);
 
       words[2].click();
-      expect(el.querySelectorAll(".v2-word-active")).toHaveLength(1);
-      expect(words[2].classList.contains("v2-word-active")).toBe(true);
-      expect(words[0].classList.contains("v2-word-active")).toBe(false);
+      expect(el.querySelectorAll(".word-active")).toHaveLength(1);
+      expect(words[2].classList.contains("word-active")).toBe(true);
+      expect(words[0].classList.contains("word-active")).toBe(false);
     });
 
     test("dismissing the dictionary clears the highlight", () => {
@@ -449,31 +449,31 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       const word = textPanelWords(el)[0];
 
       word.click();
-      expect(word.classList.contains("v2-word-active")).toBe(true);
+      expect(word.classList.contains("word-active")).toBe(true);
 
       // @ts-expect-error accessing private method for test verification
       el.dismissDictionary(false);
 
-      expect(el.querySelectorAll(".v2-word-active")).toHaveLength(0);
+      expect(el.querySelectorAll(".word-active")).toHaveLength(0);
     });
 
     /**
-     * `linkifyText` also emits `v2-word-active`, on dictionary entry markup. Clearing
+     * `linkifyText` also emits `word-active`, on dictionary entry markup. Clearing
      * the passage highlight must not reach into the dictionary panel, which is why the
-     * query stays scoped to `.v2-reader-text-panel`.
+     * query stays scoped to `.reader-text-panel`.
      */
     test("leaves an active word outside the text panel alone", () => {
       const el = createReaderView(PASSAGE);
       const entryWord = document.createElement("a");
-      entryWord.className = "v2-lat-word v2-word-active";
-      el.querySelector(".v2-reader-dict-panel")!.appendChild(entryWord);
+      entryWord.className = "lat-word word-active";
+      el.querySelector(".reader-dict-panel")!.appendChild(entryWord);
 
       textPanelWords(el)[0].click();
-      expect(entryWord.classList.contains("v2-word-active")).toBe(true);
+      expect(entryWord.classList.contains("word-active")).toBe(true);
 
       // @ts-expect-error accessing private method for test verification
       el.dismissDictionary(false);
-      expect(entryWord.classList.contains("v2-word-active")).toBe(true);
+      expect(entryWord.classList.contains("word-active")).toBe(true);
     });
 
     // Clicking supplies the anchor directly, so nothing needs to look at the rest of
@@ -487,7 +487,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
       const wordScans = querySelectorAll.mock.calls
         .map(([selector]) => selector)
-        .filter((selector) => selector.includes("v2-lat-word"));
+        .filter((selector) => selector.includes("lat-word"));
       expect(wordScans).toEqual([]);
 
       querySelectorAll.mockRestore();
@@ -585,38 +585,38 @@ describe("Reader preferences validation & hydration", () => {
 
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     el.innerHTML = `
-      <div class="v2-reader-split-layout">
-        <section class="v2-reader-text-panel">
-          <article class="v2-reader-passage"></article>
+      <div class="reader-split-layout">
+        <section class="reader-text-panel">
+          <article class="reader-passage"></article>
         </section>
         <morcus-reader-settings>
-          <dialog id="v2-reader-settings-dialog">
-            <button id="v2-reader-settings-btn"></button>
-            <span id="v2-reader-size-label"></span>
-            <span id="v2-dict-size-label"></span>
-            <select id="v2-font-select">
+          <dialog id="reader-settings-dialog">
+            <button id="reader-settings-btn"></button>
+            <span id="reader-size-label"></span>
+            <span id="dict-size-label"></span>
+            <select id="font-select">
               <option value="serif">Serif</option>
               <option value="sans">Sans</option>
             </select>
-            <select id="v2-line-height-select">
+            <select id="line-height-select">
               <option value="compact">Compact</option>
               <option value="normal">Normal</option>
               <option value="relaxed">Relaxed</option>
             </select>
-            <input type="checkbox" id="v2-toggle-macra" />
-            <input type="checkbox" id="v2-toggle-gutter" />
+            <input type="checkbox" id="toggle-macra" />
+            <input type="checkbox" id="toggle-gutter" />
           </dialog>
         </morcus-reader-settings>
       </div>
     `;
     document.body.appendChild(el);
 
-    const fontSelect = el.querySelector<HTMLSelectElement>("#v2-font-select")!;
+    const fontSelect = el.querySelector<HTMLSelectElement>("#font-select")!;
     const lineSelect = el.querySelector<HTMLSelectElement>(
-      "#v2-line-height-select"
+      "#line-height-select"
     )!;
-    const readerLabel = el.querySelector<HTMLElement>("#v2-reader-size-label")!;
-    const dictLabel = el.querySelector<HTMLElement>("#v2-dict-size-label")!;
+    const readerLabel = el.querySelector<HTMLElement>("#reader-size-label")!;
+    const dictLabel = el.querySelector<HTMLElement>("#dict-size-label")!;
 
     // Corrupt readerScale dropped -> default 100%
     expect(readerLabel.textContent).toBe("100%");
@@ -647,33 +647,33 @@ describe("MorcusReaderView desktop splitter drag", () => {
   } {
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     el.innerHTML = `
-      <div class="v2-reader-split-layout">
-        <section class="v2-reader-text-panel">
-          <div class="v2-reader-text-card">
-            <article class="v2-reader-passage" id="v2-reader-passage">
-              <span class="v2-reader-line">arma virumque cano</span>
+      <div class="reader-split-layout">
+        <section class="reader-text-panel">
+          <div class="reader-text-card">
+            <article class="reader-passage" id="reader-passage">
+              <span class="reader-line">arma virumque cano</span>
             </article>
           </div>
         </section>
-        <div class="v2-reader-splitter" role="separator" aria-valuenow="420"></div>
-        <aside class="v2-reader-dict-panel">
-          <div class="v2-reader-sheet-bar">
-            <span class="v2-reader-sheet-label">Tap any word</span>
+        <div class="reader-splitter" role="separator" aria-valuenow="420"></div>
+        <aside class="reader-dict-panel">
+          <div class="reader-sheet-bar">
+            <span class="reader-sheet-label">Tap any word</span>
           </div>
-          <iframe id="v2-dict-frame" src="/v2/dicts?embedded=1"></iframe>
+          <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
         </aside>
       </div>
     `;
     document.body.appendChild(el);
     return {
       el,
-      splitLayout: el.querySelector<HTMLElement>(".v2-reader-split-layout")!,
-      splitter: el.querySelector<HTMLElement>(".v2-reader-splitter")!,
-      dictPanel: el.querySelector<HTMLElement>(".v2-reader-dict-panel")!,
+      splitLayout: el.querySelector<HTMLElement>(".reader-split-layout")!,
+      splitter: el.querySelector<HTMLElement>(".reader-splitter")!,
+      dictPanel: el.querySelector<HTMLElement>(".reader-dict-panel")!,
     };
   }
 
-  test("updates --v2-dict-width and aria-valuenow without layout reads during pointermove", () => {
+  test("updates --dict-width and aria-valuenow without layout reads during pointermove", () => {
     const { splitLayout, splitter, dictPanel } = createSplitterReaderView();
 
     const splitSpy = jest
@@ -708,7 +708,7 @@ describe("MorcusReaderView desktop splitter drag", () => {
     );
 
     // Width should increase by 50px: 420 - (-50) = 470px
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("470px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("470px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("470");
 
     // CRITICAL: No layout reads performed during pointermove!
@@ -738,12 +738,12 @@ describe("MorcusReaderView desktop splitter drag", () => {
 
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
     // default 420 + 24 = 444
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("444px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("444px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("444");
 
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
     // 444 - 24 = 420
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("420px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("420px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("420");
 
     splitSpy.mockRestore();
@@ -764,13 +764,13 @@ describe("MorcusReaderView desktop splitter drag", () => {
   test("initializes ReaderTocController and toggles on KeyT", () => {
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     el.innerHTML = `
-      <div class="v2-sticky-expanded-row">
-        <button type="button" id="v2-reader-toc-btn" aria-expanded="false">Contents</button>
+      <div class="sticky-expanded-row">
+        <button type="button" id="reader-toc-btn" aria-expanded="false">Contents</button>
       </div>
-      <div id="v2-reader-toc-drawer" class="v2-reader-toc-drawer" hidden>
-        <button type="button" id="v2-reader-toc-close-btn">&times;</button>
-        <div id="v2-reader-toc-list">
-          <a class="v2-reader-toc-item" href="#">Item 1</a>
+      <div id="reader-toc-drawer" class="reader-toc-drawer" hidden>
+        <button type="button" id="reader-toc-close-btn">&times;</button>
+        <div id="reader-toc-list">
+          <a class="reader-toc-item" href="#">Item 1</a>
         </div>
       </div>
     `;

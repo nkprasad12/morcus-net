@@ -5,9 +5,9 @@ export class MorcusLibraryView extends BaseElement {
   private currentQuery: string = "";
 
   protected override onConnect() {
-    const input = this.$<HTMLInputElement>("#v2-library-search-input");
+    const input = this.$<HTMLInputElement>("#library-search-input");
     const emptyResetBtn = this.$<HTMLButtonElement>(
-      "#v2-library-reset-filter-btn"
+      "#library-reset-filter-btn"
     );
 
     if (input) {
@@ -19,7 +19,7 @@ export class MorcusLibraryView extends BaseElement {
 
     this.listen(this, "click", (e) => {
       if (!(e.target instanceof Element)) return;
-      const pill = e.target.closest<HTMLButtonElement>(".v2-filter-pill");
+      const pill = e.target.closest<HTMLButtonElement>(".filter-pill");
       if (pill) {
         e.preventDefault();
         const filter = pill.dataset.filter || "all";
@@ -42,7 +42,7 @@ export class MorcusLibraryView extends BaseElement {
 
   private setFilter(filter: string) {
     this.currentFilter = filter;
-    const pills = this.$$<HTMLButtonElement>(".v2-filter-pill");
+    const pills = this.$$<HTMLButtonElement>(".filter-pill");
     for (const p of pills) {
       if (p.dataset.filter === filter) {
         p.classList.add("active");
@@ -54,8 +54,8 @@ export class MorcusLibraryView extends BaseElement {
   }
 
   private applyFilter() {
-    const cards = this.$$<HTMLElement>(".v2-work-card");
-    const emptyState = this.$<HTMLElement>("#v2-library-empty-state");
+    const cards = this.$$<HTMLElement>(".work-card");
+    const emptyState = this.$<HTMLElement>("#library-empty-state");
 
     let visibleCount = 0;
     const tokens = this.currentQuery.split(/\s+/).filter((t) => t.length > 0);

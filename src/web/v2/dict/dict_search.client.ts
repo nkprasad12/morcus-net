@@ -182,10 +182,10 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   }
 
   private enhanceExistingMarkup() {
-    this.inputElement = this.$<HTMLInputElement>("input.v2-input");
+    this.inputElement = this.$<HTMLInputElement>("input.input");
     this.resultsElement = this.$<HTMLElement>("#dict-results");
 
-    this.hijackForm("form.v2-search-form", ({ q }) => {
+    this.hijackForm("form.search-form", ({ q }) => {
       this.clearSuggestions();
       const cleaned = trimRawQuery(q || "");
       if (cleaned) {
@@ -221,7 +221,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
           return;
         }
 
-        const wordEl = e.target.closest<HTMLElement>(".v2-lat-word");
+        const wordEl = e.target.closest<HTMLElement>(".lat-word");
         if (wordEl) {
           e.preventDefault();
           const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
@@ -252,7 +252,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
     // Create and attach child component for suggestions. Creating it is
     // one-time; listening to it is not.
-    const inputWrapper = this.$(".v2-input-wrapper");
+    const inputWrapper = this.$(".input-wrapper");
     if (inputWrapper && !this.suggestionsEl) {
       this.suggestionsEl = document.createElement("morcus-dict-suggestions");
       inputWrapper.appendChild(this.suggestionsEl);
@@ -330,7 +330,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
           }
         }
 
-        const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
+        const welcomeEl = this.$<HTMLElement>("#landing-welcome");
         if (welcomeEl && this.activeDictKeys) {
           welcomeEl.textContent = buildWelcomeMessage(
             this.activeDictKeys,
@@ -343,24 +343,24 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
           const activeSet = new Set(
             e.detail.dictKeys.map((k) => k.toUpperCase())
           );
-          const items = this.$$<HTMLElement>(".v2-dict-list-item");
+          const items = this.$$<HTMLElement>(".dict-list-item");
           for (const item of items) {
             const key = item.dataset.dictKey?.toUpperCase();
             if (!key) continue;
             const isEnabled = activeSet.has(key);
-            item.classList.toggle("v2-dict-enabled", isEnabled);
-            item.classList.toggle("v2-dict-disabled", !isEnabled);
+            item.classList.toggle("dict-enabled", isEnabled);
+            item.classList.toggle("dict-disabled", !isEnabled);
 
-            const badge = item.querySelector(".v2-lexicon-badge");
+            const badge = item.querySelector(".lexicon-badge");
             if (badge) {
-              badge.classList.toggle("v2-dict-enabled", isEnabled);
-              badge.classList.toggle("v2-dict-disabled", !isEnabled);
+              badge.classList.toggle("dict-enabled", isEnabled);
+              badge.classList.toggle("dict-disabled", !isEnabled);
             }
           }
         }
 
         // Update language chips in the search bar tray live
-        const langChipsContainer = this.$<HTMLElement>(".v2-lang-chips");
+        const langChipsContainer = this.$<HTMLElement>(".lang-chips");
         if (langChipsContainer && this.activeDictKeys) {
           const activeLangs = computeActiveLanguages(this.activeDictKeys);
           setHtml(langChipsContainer, renderLangChipsHtml(activeLangs));
@@ -378,12 +378,12 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         this.syncUrlParams({ o: this.isInflected ? "1" : "0" });
 
         // Update inflection badge in the search bar tray live
-        const inflectChip = this.$<HTMLElement>(".v2-inflect-chip");
+        const inflectChip = this.$<HTMLElement>(".inflect-chip");
         if (inflectChip) {
           replaceWithHtml(inflectChip, renderInflectChipHtml(this.isInflected));
         }
 
-        const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
+        const welcomeEl = this.$<HTMLElement>("#landing-welcome");
         if (welcomeEl && this.activeDictKeys) {
           welcomeEl.textContent = buildWelcomeMessage(
             this.activeDictKeys,
@@ -589,7 +589,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     if (!container) return;
 
     tokenizeTargets(container, {
-      targetSelector: "[data-tokenize-target='true'], .v2-entry-content",
+      targetSelector: "[data-tokenize-target='true'], .entry-content",
       enhancedDatasetKey: "wordsEnhanced",
       isExcludedElement: (node) => {
         const cls = node.className;
@@ -599,14 +599,14 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
             cls.includes("lsEmph") ||
             cls.includes("lsHover") ||
             cls.includes("lsSenseBullet") ||
-            cls.includes("v2-section-anchor") ||
-            cls.includes("v2-toc") ||
+            cls.includes("section-anchor") ||
+            cls.includes("toc") ||
             cls.includes("dLink"))
         );
       },
       renderWord: (token, cleanWord) => {
         const a = document.createElement("a");
-        a.className = "v2-lat-word";
+        a.className = "lat-word";
         a.href = this.buildWordHref(cleanWord);
         a.dataset.word = cleanWord;
         a.textContent = token;

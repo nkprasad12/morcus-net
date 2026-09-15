@@ -18,8 +18,8 @@ describe("escapeHtml", () => {
 
 describe("html", () => {
   it("leaves static markup untouched", () => {
-    expect(html`<span class="v2-chip">Hello</span>`).toBe(
-      '<span class="v2-chip">Hello</span>'
+    expect(html`<span class="chip">Hello</span>`).toBe(
+      '<span class="chip">Hello</span>'
     );
   });
 
@@ -77,10 +77,10 @@ describe("html", () => {
   });
 
   it("interpolates raw() without escaping", () => {
-    const trusted = '<em class="v2-hl">amo</em>';
+    const trusted = '<em class="hl">amo</em>';
 
     expect(html`<div>${raw(trusted)}</div>`).toBe(
-      '<div><em class="v2-hl">amo</em></div>'
+      '<div><em class="hl">amo</em></div>'
     );
   });
 

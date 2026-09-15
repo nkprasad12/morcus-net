@@ -47,19 +47,19 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     const isChecked = activeDictKeys.has(d.key);
     const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
     return `
-      <label class="v2-dict-item" title="${he.escape(
+      <label class="dict-item" title="${he.escape(
         d.displayName
       )} (${langText})">
         <input
           type="checkbox"
           name="dict"
           value="${he.escape(d.key)}"
-          class="v2-dict-checkbox"
+          class="dict-checkbox"
           data-key="${he.escape(d.key)}"
           ${isChecked ? "checked" : ""}
         />
-        <span class="v2-dict-name">${he.escape(d.displayName)}</span>
-        <span class="v2-dict-lang">${langText}</span>
+        <span class="dict-name">${he.escape(d.displayName)}</span>
+        <span class="dict-lang">${langText}</span>
       </label>
     `;
   }).join("\n");
@@ -67,9 +67,9 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   const settingsHtml = includeSettings
     ? `
       <morcus-dict-settings>
-        <details class="v2-dict-settings-details">
+        <details class="dict-settings-details">
           <summary
-            class="v2-settings-btn"
+            class="settings-btn"
             aria-label="Dictionary and highlight settings"
             title="Dictionary and highlight settings"
           >
@@ -78,33 +78,33 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
             </svg>
           </summary>
 
-          <div class="v2-settings-popover">
-            <div class="v2-settings-inflected-section">
-              <div class="v2-settings-section-title">Search Scope</div>
+          <div class="settings-popover">
+            <div class="settings-inflected-section">
+              <div class="settings-section-title">Search Scope</div>
               <input type="hidden" name="o" value="0" />
-              <label class="v2-dict-item" title="Search conjugated verbs and declined nouns/adjectives">
+              <label class="dict-item" title="Search conjugated verbs and declined nouns/adjectives">
                 <input
                   type="checkbox"
                   name="o"
                   value="1"
-                  id="v2-toggle-inflected"
-                  class="v2-inflected-checkbox"
+                  id="toggle-inflected"
+                  class="inflected-checkbox"
                   ${isInflected ? "checked" : ""}
                 />
-                <span class="v2-dict-name">Latin inflected forms</span>
+                <span class="dict-name">Latin inflected forms</span>
               </label>
-              <p class="v2-settings-caption">Match conjugated verbs and declined nouns/adjectives.</p>
+              <p class="settings-caption">Match conjugated verbs and declined nouns/adjectives.</p>
             </div>
 
-            <div class="v2-settings-divider" role="separator"></div>
+            <div class="settings-divider" role="separator"></div>
 
-            <div class="v2-settings-section-title">Enabled Dictionaries</div>
-            <div class="v2-dict-list">
+            <div class="settings-section-title">Enabled Dictionaries</div>
+            <div class="dict-list">
               ${dictItemsHtml}
             </div>
             <noscript>
-              <div class="v2-settings-noscript-actions">
-                <button type="submit" class="v2-btn v2-btn-secondary v2-settings-apply-btn">Apply Selection</button>
+              <div class="settings-noscript-actions">
+                <button type="submit" class="btn btn-secondary settings-apply-btn">Apply Selection</button>
               </div>
             </noscript>
           </div>
@@ -115,17 +115,17 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
 
   const trayHtml = includeSettings
     ? `
-      <div class="v2-search-tray">
-        <div class="v2-search-tray-left">
-          <span class="v2-tray-label">In</span>
-          <div class="v2-lang-chips">
+      <div class="search-tray">
+        <div class="search-tray-left">
+          <span class="tray-label">In</span>
+          <div class="lang-chips">
             ${langChipsHtml}
           </div>
-          <span class="v2-tray-dot" aria-hidden="true">•</span>
-          <span class="v2-tray-label">Inflection</span>
+          <span class="tray-dot" aria-hidden="true">•</span>
+          <span class="tray-label">Inflection</span>
           ${inflectChipHtml}
         </div>
-        <div class="v2-search-tray-right">
+        <div class="search-tray-right">
           ${settingsHtml}
         </div>
       </div>
@@ -152,16 +152,16 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     : `<input type="hidden" name="d" value="${he.escape(dictBitmask)}" />`;
 
   return `
-    <form class="v2-search-form" action="${he.escape(
+    <form class="search-form" action="${he.escape(
       options.action
     )}" method="GET">
       ${dictStateInputHtml}
       ${hiddenInputsHtml}
-      <div class="v2-input-wrapper">
+      <div class="input-wrapper">
         <input
           type="text"
           name="q"
-          class="v2-input"
+          class="input"
           value="${queryEscaped}"
           placeholder="${he.escape(placeholder)}"
           autocomplete="off"
@@ -169,7 +169,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
         />
         <button
           type="submit"
-          class="v2-search-btn"
+          class="search-btn"
           aria-label="Search"
           title="Search"
         >

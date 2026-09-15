@@ -15,10 +15,10 @@ describe("core/dom.client", () => {
       container.innerHTML = "<span>original</span>";
       document.body.appendChild(container);
 
-      setHtml(container, html`<p class="v2-test">updated</p>`);
+      setHtml(container, html`<p class="test">updated</p>`);
 
-      expect(container.innerHTML).toBe('<p class="v2-test">updated</p>');
-      expect(container.querySelector(".v2-test")?.textContent).toBe("updated");
+      expect(container.innerHTML).toBe('<p class="test">updated</p>');
+      expect(container.querySelector(".test")?.textContent).toBe("updated");
     });
   });
 
@@ -85,13 +85,13 @@ describe("core/dom.client", () => {
     });
 
     it("evaluates load-bearing UI V2 reader.css :has() selectors", () => {
-      // reader.css L368: .v2-reader-layout-active:has(.v2-drawer-minimized) .v2-reader-text-panel
-      // reader.css L385: .v2-reader-split-layout:has(.v2-is-dragging) .v2-reader-text-panel
+      // reader.css L368: .reader-layout-active:has(.drawer-minimized) .reader-text-panel
+      // reader.css L385: .reader-split-layout:has(.is-dragging) .reader-text-panel
       document.body.innerHTML = `
-        <div id="reader-layout" class="v2-reader-split-layout v2-reader-layout-active">
-          <section id="text-panel" class="v2-reader-text-panel">Content</section>
-          <aside id="dict-panel" class="v2-reader-dict-panel v2-drawer-minimized">
-            <div id="handle" class="v2-drawer-bar v2-is-dragging">Handle</div>
+        <div id="reader-layout" class="reader-split-layout reader-layout-active">
+          <section id="text-panel" class="reader-text-panel">Content</section>
+          <aside id="dict-panel" class="reader-dict-panel drawer-minimized">
+            <div id="handle" class="drawer-bar is-dragging">Handle</div>
           </aside>
         </div>
       `;
@@ -99,35 +99,35 @@ describe("core/dom.client", () => {
       const layout = document.getElementById("reader-layout")!;
 
       // 1. Minimized drawer rule: drives text panel bottom padding
-      expect(layout.matches(":has(.v2-drawer-minimized)")).toBe(true);
+      expect(layout.matches(":has(.drawer-minimized)")).toBe(true);
       const textPanelWithMinimized = document.querySelector(
-        ".v2-reader-layout-active:has(.v2-drawer-minimized) .v2-reader-text-panel"
+        ".reader-layout-active:has(.drawer-minimized) .reader-text-panel"
       );
       expect(textPanelWithMinimized?.id).toBe("text-panel");
 
       // 2. Drag transition suppression rule: suppresses transition mid-drag
-      expect(layout.matches(":has(.v2-is-dragging)")).toBe(true);
+      expect(layout.matches(":has(.is-dragging)")).toBe(true);
       const textPanelDragging = document.querySelector(
-        ".v2-reader-split-layout:has(.v2-is-dragging) .v2-reader-text-panel"
+        ".reader-split-layout:has(.is-dragging) .reader-text-panel"
       );
       expect(textPanelDragging?.id).toBe("text-panel");
 
       // 3. Negative controls: when state classes are removed
       document
         .getElementById("dict-panel")!
-        .classList.remove("v2-drawer-minimized");
-      document.getElementById("handle")!.classList.remove("v2-is-dragging");
+        .classList.remove("drawer-minimized");
+      document.getElementById("handle")!.classList.remove("is-dragging");
 
-      expect(layout.matches(":has(.v2-drawer-minimized)")).toBe(false);
-      expect(layout.matches(":has(.v2-is-dragging)")).toBe(false);
+      expect(layout.matches(":has(.drawer-minimized)")).toBe(false);
+      expect(layout.matches(":has(.is-dragging)")).toBe(false);
       expect(
         document.querySelector(
-          ".v2-reader-layout-active:has(.v2-drawer-minimized) .v2-reader-text-panel"
+          ".reader-layout-active:has(.drawer-minimized) .reader-text-panel"
         )
       ).toBeNull();
       expect(
         document.querySelector(
-          ".v2-reader-split-layout:has(.v2-is-dragging) .v2-reader-text-panel"
+          ".reader-split-layout:has(.is-dragging) .reader-text-panel"
         )
       ).toBeNull();
     });

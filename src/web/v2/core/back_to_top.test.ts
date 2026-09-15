@@ -30,14 +30,14 @@ describe("setupBackToTop", () => {
     callbacks.forEach((cb) => cb(performance.now()));
   }
 
-  test("returns a no-op cleanup when .v2-back-to-top is missing", () => {
+  test("returns a no-op cleanup when .back-to-top is missing", () => {
     cleanup = setupBackToTop(document, window);
     expect(() => cleanup()).not.toThrow();
   });
 
   test("initializes visibility based on initial window.scrollY", () => {
-    document.body.innerHTML = `<a href="#top" class="v2-back-to-top">Top</a>`;
-    const btn = document.querySelector(".v2-back-to-top") as HTMLAnchorElement;
+    document.body.innerHTML = `<a href="#top" class="back-to-top">Top</a>`;
+    const btn = document.querySelector(".back-to-top") as HTMLAnchorElement;
 
     // Below 300px
     Object.defineProperty(window, "scrollY", {
@@ -46,7 +46,7 @@ describe("setupBackToTop", () => {
       writable: true,
     });
     cleanup = setupBackToTop(document, window);
-    expect(btn.classList.contains("v2-visible")).toBe(false);
+    expect(btn.classList.contains("visible")).toBe(false);
 
     // Above 300px
     Object.defineProperty(window, "scrollY", {
@@ -55,12 +55,12 @@ describe("setupBackToTop", () => {
       writable: true,
     });
     cleanup = setupBackToTop(document, window);
-    expect(btn.classList.contains("v2-visible")).toBe(true);
+    expect(btn.classList.contains("visible")).toBe(true);
   });
 
   test("toggles visibility on scroll throttled via requestAnimationFrame", () => {
-    document.body.innerHTML = `<a href="#top" class="v2-back-to-top">Top</a>`;
-    const btn = document.querySelector(".v2-back-to-top") as HTMLAnchorElement;
+    document.body.innerHTML = `<a href="#top" class="back-to-top">Top</a>`;
+    const btn = document.querySelector(".back-to-top") as HTMLAnchorElement;
     Object.defineProperty(window, "scrollY", {
       value: 0,
       configurable: true,
@@ -68,7 +68,7 @@ describe("setupBackToTop", () => {
     });
 
     cleanup = setupBackToTop(document, window);
-    expect(btn.classList.contains("v2-visible")).toBe(false);
+    expect(btn.classList.contains("visible")).toBe(false);
 
     // Scroll past 300
     Object.defineProperty(window, "scrollY", {
@@ -79,10 +79,10 @@ describe("setupBackToTop", () => {
     window.dispatchEvent(new Event("scroll"));
 
     expect(window.requestAnimationFrame).toHaveBeenCalled();
-    expect(btn.classList.contains("v2-visible")).toBe(false); // Before rAF flush
+    expect(btn.classList.contains("visible")).toBe(false); // Before rAF flush
 
     flushRaf();
-    expect(btn.classList.contains("v2-visible")).toBe(true);
+    expect(btn.classList.contains("visible")).toBe(true);
 
     // Scroll back up
     Object.defineProperty(window, "scrollY", {
@@ -92,12 +92,12 @@ describe("setupBackToTop", () => {
     });
     window.dispatchEvent(new Event("scroll"));
     flushRaf();
-    expect(btn.classList.contains("v2-visible")).toBe(false);
+    expect(btn.classList.contains("visible")).toBe(false);
   });
 
   test("scrolls to top instantly on click and strips URL hash if present", () => {
-    document.body.innerHTML = `<a href="#top" class="v2-back-to-top">Top</a>`;
-    const btn = document.querySelector(".v2-back-to-top") as HTMLAnchorElement;
+    document.body.innerHTML = `<a href="#top" class="back-to-top">Top</a>`;
+    const btn = document.querySelector(".back-to-top") as HTMLAnchorElement;
     const scrollTo = jest.fn();
     const replaceState = jest.fn();
 
@@ -126,8 +126,8 @@ describe("setupBackToTop", () => {
   });
 
   test("does not call replaceState on click if hash is empty", () => {
-    document.body.innerHTML = `<a href="#top" class="v2-back-to-top">Top</a>`;
-    const btn = document.querySelector(".v2-back-to-top") as HTMLAnchorElement;
+    document.body.innerHTML = `<a href="#top" class="back-to-top">Top</a>`;
+    const btn = document.querySelector(".back-to-top") as HTMLAnchorElement;
     const scrollTo = jest.fn();
     const replaceState = jest.fn();
 
@@ -151,8 +151,8 @@ describe("setupBackToTop", () => {
   });
 
   test("cleanup unbinds window scroll and button click listeners", () => {
-    document.body.innerHTML = `<a href="#top" class="v2-back-to-top">Top</a>`;
-    const btn = document.querySelector(".v2-back-to-top") as HTMLAnchorElement;
+    document.body.innerHTML = `<a href="#top" class="back-to-top">Top</a>`;
+    const btn = document.querySelector(".back-to-top") as HTMLAnchorElement;
     const scrollTo = jest.fn();
     window.scrollTo = scrollTo;
 

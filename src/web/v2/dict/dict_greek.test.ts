@@ -61,10 +61,10 @@ describe("Greek Query Fallback & Logeion Integration", () => {
   describe("renderGreekFallbackHtml", () => {
     test("renders fallback banner with direct link and toggleable embed", () => {
       const html = renderGreekFallbackHtml("λόγος");
-      expect(html).toContain('class="v2-greek-fallback"');
+      expect(html).toContain('class="greek-fallback"');
       expect(html).toContain('lang="el"');
-      expect(html).not.toContain("v2-greek-badge");
-      expect(html).toContain('class="v2-greek-title"');
+      expect(html).not.toContain("greek-badge");
+      expect(html).toContain('class="greek-title"');
       expect(html).toContain("This site does not (yet) support Greek.");
       expect(html).toContain("λόγος");
       expect(html).toContain(
@@ -73,13 +73,13 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       expect(html).toContain('target="_blank"');
       expect(html).toContain('rel="noopener noreferrer"');
       expect(html).toContain("<morcus-greek-embed");
-      expect(html).toContain('class="v2-greek-details"');
-      expect(html).toContain('class="v2-action-btn v2-greek-toggle-btn"');
+      expect(html).toContain('class="greek-details"');
+      expect(html).toContain('class="action-btn greek-toggle-btn"');
       expect(html).toContain("Open Logeion Embed");
       expect(html).toContain("<iframe");
       expect(html).toContain('loading="lazy"');
-      expect(html).toContain('class="v2-greek-frame"');
-      expect(html).toContain('class="v2-greek-auto-open-checkbox"');
+      expect(html).toContain('class="greek-frame"');
+      expect(html).toContain('class="greek-auto-open-checkbox"');
       expect(html).toContain("Automatically open embedded Logeion searches");
     });
 
@@ -91,7 +91,7 @@ describe("Greek Query Fallback & Logeion Integration", () => {
 
     test("is returned by renderDictResultsHtml when query has Greek", () => {
       const html = renderDictResultsHtml("λόγος");
-      expect(html).toContain('class="v2-greek-fallback"');
+      expect(html).toContain('class="greek-fallback"');
       expect(html).toContain("This site does not (yet) support Greek.");
     });
   });
@@ -111,12 +111,11 @@ describe("Greek Query Fallback & Logeion Integration", () => {
 
       const embedEl = document.querySelector("morcus-greek-embed");
       const details =
-        embedEl?.querySelector<HTMLDetailsElement>(".v2-greek-details");
-      const toggleText = embedEl?.querySelector<HTMLElement>(
-        ".v2-greek-toggle-text"
-      );
+        embedEl?.querySelector<HTMLDetailsElement>(".greek-details");
+      const toggleText =
+        embedEl?.querySelector<HTMLElement>(".greek-toggle-text");
       const checkbox = embedEl?.querySelector<HTMLInputElement>(
-        ".v2-greek-auto-open-checkbox"
+        ".greek-auto-open-checkbox"
       );
 
       expect(embedEl).not.toBeNull();
@@ -131,12 +130,11 @@ describe("Greek Query Fallback & Logeion Integration", () => {
 
       const embedEl = document.querySelector("morcus-greek-embed");
       const details =
-        embedEl?.querySelector<HTMLDetailsElement>(".v2-greek-details");
-      const toggleText = embedEl?.querySelector<HTMLElement>(
-        ".v2-greek-toggle-text"
-      );
+        embedEl?.querySelector<HTMLDetailsElement>(".greek-details");
+      const toggleText =
+        embedEl?.querySelector<HTMLElement>(".greek-toggle-text");
       const checkbox = embedEl?.querySelector<HTMLInputElement>(
-        ".v2-greek-auto-open-checkbox"
+        ".greek-auto-open-checkbox"
       );
 
       expect(details?.open).toBe(true);
@@ -150,9 +148,9 @@ describe("Greek Query Fallback & Logeion Integration", () => {
 
       const embedEl = document.querySelector("morcus-greek-embed");
       const details =
-        embedEl?.querySelector<HTMLDetailsElement>(".v2-greek-details");
+        embedEl?.querySelector<HTMLDetailsElement>(".greek-details");
       const checkbox = embedEl?.querySelector<HTMLInputElement>(
-        ".v2-greek-auto-open-checkbox"
+        ".greek-auto-open-checkbox"
       );
 
       expect(details?.open).toBe(true);
@@ -164,13 +162,12 @@ describe("Greek Query Fallback & Logeion Integration", () => {
 
       const embedEl = document.querySelector("morcus-greek-embed")!;
       const details =
-        embedEl.querySelector<HTMLDetailsElement>(".v2-greek-details")!;
+        embedEl.querySelector<HTMLDetailsElement>(".greek-details")!;
       const checkbox = embedEl.querySelector<HTMLInputElement>(
-        ".v2-greek-auto-open-checkbox"
+        ".greek-auto-open-checkbox"
       )!;
-      const toggleText = embedEl.querySelector<HTMLElement>(
-        ".v2-greek-toggle-text"
-      )!;
+      const toggleText =
+        embedEl.querySelector<HTMLElement>(".greek-toggle-text")!;
 
       expect(details.open).toBe(false);
 
@@ -188,10 +185,9 @@ describe("Greek Query Fallback & Logeion Integration", () => {
 
       const embedEl = document.querySelector("morcus-greek-embed")!;
       const details =
-        embedEl.querySelector<HTMLDetailsElement>(".v2-greek-details")!;
-      const toggleText = embedEl.querySelector<HTMLElement>(
-        ".v2-greek-toggle-text"
-      )!;
+        embedEl.querySelector<HTMLDetailsElement>(".greek-details")!;
+      const toggleText =
+        embedEl.querySelector<HTMLElement>(".greek-toggle-text")!;
 
       expect(toggleText.textContent).toBe("Open Logeion Embed");
 

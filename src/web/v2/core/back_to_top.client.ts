@@ -13,7 +13,7 @@ export function setupBackToTop(
     activeCleanup = null;
   }
 
-  const backToTopBtn = doc.querySelector<HTMLAnchorElement>(".v2-back-to-top");
+  const backToTopBtn = doc.querySelector<HTMLAnchorElement>(".back-to-top");
   if (!backToTopBtn) {
     return () => {};
   }
@@ -21,7 +21,7 @@ export function setupBackToTop(
   let ticking = false;
   const updateBackToTop = () => {
     const shouldShow = win.scrollY > 300;
-    backToTopBtn.classList.toggle("v2-visible", shouldShow);
+    backToTopBtn.classList.toggle("visible", shouldShow);
     ticking = false;
   };
 

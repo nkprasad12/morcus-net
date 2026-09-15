@@ -67,9 +67,9 @@ Every item here is a feature reimplementing something `core/` already provides.
       `renderDictPageHtml` and `renderDictResultsHtml` already do this correctly.
 - [ ] 🟢 **Use or delete `linkifyText`'s `activeWord` parameter** (`dict/linkify.server.ts` L26).
       Its only caller, `xml_to_html.server.ts` L63, never passes it, so nothing emits
-      `v2-word-active` server-side today. That makes it a latent trap rather than dead weight:
+      `word-active` server-side today. That makes it a latent trap rather than dead weight:
       reviving it would start emitting the class into dictionary-entry markup, and any reader code
-      that clears `.v2-word-active` unscoped would then reach into the dictionary panel. The
+      that clears `.word-active` unscoped would then reach into the dictionary panel. The
       reader's clear is scoped and has a test pinning the scope, so the trap is contained — but the
       parameter should still be either wired up deliberately or removed.
 
@@ -86,7 +86,7 @@ Findings that cost real time to establish and that would otherwise be rediscover
 correctness bug on the theory that `dict_toc.client.ts` builds a `DrawerController` below 1080px and
 that minimizing the drawer undoes the SSR state after paint. `DrawerController`'s constructor only
 calls `initDrag` / `initKeyboard` / `initDetailsSync`; it never calls
-`minimize()`, and nothing else writes `v2-drawer-minimized` on load. Sampling every animation frame
+`minimize()`, and nothing else writes `drawer-minimized` on load. Sampling every animation frame
 from document start on `/v2/dicts?q=gladius` in MobileChrome shows the drawer at `height=349,
 top=378, open=true, minimized=false` before the element upgrades (137 ms), at upgrade (182 ms), and
 thereafter. The only state change after upgrade is the intentional `scrollToResults` moving the page
@@ -189,7 +189,7 @@ the intermediate positions the browser discarded. Measured via on-page instrumen
 splitter and drawer drags on the heaviest reader text in the corpus (`apuleius/metamorphoses`):
 `max 1/fr`, `burst 0` across all 48 rendered frames (no frame ever received >1 `pointermove`).
 Furthermore, with the layout-read hoist landed (`0be16378`), `onMove` contains only arithmetic and
-CSS variable writes (`--v2-drawer-height`, `--v2-dict-width`). Property writes do not force synchronous
+CSS variable writes (`--drawer-height`, `--dict-width`). Property writes do not force synchronous
 layout; the browser merges them at paint time anyway. The real cost was layout _reads_ after writes,
 which the hoist eliminated. Redundant rAF coalescing would add ~30 lines carrying a subtle
 flush-on-`pointerup` footgun (without which the synthetic `<summary>` click suppression and
@@ -227,12 +227,12 @@ and `inset` property shorthands.
 under the `"dom"` library target in `tsconfig.json`. The `declare global` block in the client bundle
 was completely redundant and safely removed without auxiliary declaration files.
 
-**The floating return-to-top button must stay elevated above mobile drawers (`--v2-z-fab: 110`).**
-On mobile, `.v2-back-to-top` dynamically rests 16px above the top edge of `.v2-drawer` via
-`bottom: calc(var(--v2-drawer-height) + ...)`. During drawer drag transitions and docking, the drawer's
+**The floating return-to-top button must stay elevated above mobile drawers (`--z-fab: 110`).**
+On mobile, `.back-to-top` dynamically rests 16px above the top edge of `.drawer` via
+`bottom: calc(var(--drawer-height) + ...)`. During drawer drag transitions and docking, the drawer's
 upward box-shadow and swipe surface occlude lower-z-index elements. A prior attempt setting `z-index: 90`
 caused clicks near the handle to intercept the drawer instead of triggering smooth scroll; elevating
-to `--v2-z-fab: 110` (strictly above `--v2-z-drawer: 100`) is required.
+to `--z-fab: 110` (strictly above `--z-drawer: 100`) is required.
 
 ---
 
@@ -244,24 +244,24 @@ Verified counts as of the audit.
       102 of 125 hex values live correctly inside `variables.css` / `critical_variables.css`.
       Only **23 leak**, clustered in `dialog.css` (6, status colors), `library.css` (5, language
       badges), `reader.css` (4), `dictionary.css` (4), `search.css` (3), `dict_settings.css` (1).
-      Adding `--v2-success`, `--v2-danger`, `--v2-on-accent` closes most of it.
+      Adding `--success`, `--danger`, `--on-accent` closes most of it.
 - [x] 🟢 **Stop branching themes inside component stylesheets.** e.g. `dialog.css` L255-264
-      (`:root[data-theme="dark"] .v2-report-status.success { color: #5cdb95; }`). Put the flip in
+      (`:root[data-theme="dark"] .report-status.success { color: #5cdb95; }`). Put the flip in
       the token instead.
       **Extract shared component classes.** These shells are re-declared per feature — each row is one
       independently landable change:
 
-| Extract               | Replaces                                                                                          | Notes                                               |
-| --------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `.v2-card`            | `.v2-work-card`, `.v2-dict-card`, `.v2-landing-card`, `.v2-reader-text-card`, `.v2-settings-card` | all are `card-bg + 1px border + radius + shadow`    |
-| `.v2-btn` + modifiers | `.v2-work-card-btn`, `.v2-reader-continue-btn`, `.v2-reader-return-btn`, `.v2-settings-btn`       | extend the existing `.v2-btn` in `dialog.css`       |
-| `.v2-empty-state`     | `.v2-library-empty-state`                                                                         | the inlined router 404 already wants this           |
-| `.v2-ghost-scrollbar` | —                                                                                                 | polished in `reader.css` L169-208, absent elsewhere |
+| Extract            | Replaces                                                                           | Notes                                               |
+| ------------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `.card`            | `.work-card`, `.dict-card`, `.landing-card`, `.reader-text-card`, `.settings-card` | all are `card-bg + 1px border + radius + shadow`    |
+| `.btn` + modifiers | `.work-card-btn`, `.reader-continue-btn`, `.reader-return-btn`, `.settings-btn`    | extend the existing `.btn` in `dialog.css`          |
+| `.empty-state`     | `.library-empty-state`                                                             | the inlined router 404 already wants this           |
+| `.ghost-scrollbar` | —                                                                                  | polished in `reader.css` L169-208, absent elsewhere |
 
-- [x] 🟡 Extract `.v2-card`
-- [x] 🟡 Extract `.v2-btn` + modifiers
-- [x] 🟢 Extract `.v2-empty-state`
-- [x] 🟢 Extract `.v2-ghost-scrollbar`
+- [x] 🟡 Extract `.card`
+- [x] 🟡 Extract `.btn` + modifiers
+- [x] 🟢 Extract `.empty-state`
+- [x] 🟢 Extract `.ghost-scrollbar`
 
 **Split the two large stylesheets** along their existing section comments:
 
@@ -377,7 +377,7 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **`eslint-plugin-wc` evaluated and superseded by `v2_elements.client.ts` + conformance self-population.** `BaseElement` centralized native callbacks; `reattach_conformance.test.ts` now mechanically verifies manifest coverage and bidirectional fixture completeness.
 - **Decided on Baseline 2023 browserslist via `browser_targets.common.ts`; closed `eslint-plugin-compat` as won't-do.** Targets Baseline 2023 + extended mobile (`chrome/edge/and_chr >= 111`, `firefox/and_ff >= 121`, `safari/ios_saf >= 16.4`, `samsung >= 23`, `opera >= 96`, `op_mob >= 73`) via `output.overrideBrowserslist` in `src/bundler/v2.rsbuild.ts`, isolating V1 SPA. Drops client bundle by 3.8 kB raw / 0.98 kB gzip (-9) and CSS by 925 B. Resolves `AbortSignal.any()` (out) and `AbortSignal.timeout()` (in).
 - **Enforced combined (JS + CSS) bundle-size budget in Rsbuild and Playwright E2E.** Baseline is 72.0 kB raw / 20.6 kB gzip JS and 93.8 kB raw / 15.7 kB gzip CSS (combined: 165.8 kB raw / 36.3 kB gzip). Caps set at < 90/26 kB (JS), < 115/20 kB (CSS), and < 200/45 kB (combined). Built-in Rsbuild guard fails minified builds fast, and Playwright verifies network headers and payloads.
-- **Bumped `nwsapi` to `^2.2.27` via `package.json` overrides.** Unlocks jsdom evaluation of `:has()` pseudo-class selectors on `matches()` and `querySelector()` without throwing `SyntaxError`, enabling DOM testing for load-bearing `reader.css` drawer rules (`:has(.v2-drawer-minimized)`, `:has(.v2-is-dragging)`). Added selector and DOM sink conformance tests in `core/dom.test.ts`.
+- **Bumped `nwsapi` to `^2.2.27` via `package.json` overrides.** Unlocks jsdom evaluation of `:has()` pseudo-class selectors on `matches()` and `querySelector()` without throwing `SyntaxError`, enabling DOM testing for load-bearing `reader.css` drawer rules (`:has(.drawer-minimized)`, `:has(.is-dragging)`). Added selector and DOM sink conformance tests in `core/dom.test.ts`.
 
 **Phase 3 — adopt the abstractions we already built**
 
@@ -437,11 +437,11 @@ worth not rediscovering is summarised in Phase 5 instead.
 
 - **Split `reader.css` (1,514 lines) into modular topic stylesheets and merged settings into `core/settings.css`.** Decomposed layout & viewport shell (`reader/reader_layout.css`), resizable splitter gutter (`reader/reader_splitter.css`), sticky navigation & toolbar (`reader/reader_nav.css`), reading text & Latin typography (`reader/reader_text.css`), embedded dictionary sidebar (`reader/reader_dict.css`), TOC drawer (`reader/reader_toc.css`), metadata dialogs (`reader/reader_dialogs.css`), and extracted shared settings system (`core/settings.css`), slimming `dict_settings.css` to dictionary selection.
 - **Standardized z-index scale in `shell/variables.css` and enforced via Stylelint.** Migrated all 17
-  declarations across 8 stylesheets to design tokens (`--v2-z-raised`, `--v2-z-sticky`,
-  `--v2-z-overlay`, `--v2-z-drawer`, `--v2-z-fab`, `--v2-z-dropdown`, `--v2-z-nav`, `--v2-z-toast`,
-  `--v2-z-modal`), and introduced Stylelint with `stylelint-declaration-strict-value` for `src/web/v2/**/*.css`.
+  declarations across 8 stylesheets to design tokens (`--z-raised`, `--z-sticky`,
+  `--z-overlay`, `--z-drawer`, `--z-fab`, `--z-dropdown`, `--z-nav`, `--z-toast`,
+  `--z-modal`), and introduced Stylelint with `stylelint-declaration-strict-value` for `src/web/v2/**/*.css`.
 - **Reduced `!important` from 78 instances to 1**, eliminating desktop overrides in `dict_toc.css`
-  via compound `.v2-drawer.v2-drawer-toc` (0,2,0) selector, unblocking `--v2-drawer-min-height` inheritance,
+  via compound `.drawer.drawer-toc` (0,2,0) selector, unblocking `--drawer-min-height` inheritance,
   fixing No-JS sticky row display, and enforcing repo-wide via Stylelint `declaration-no-important` with
   exactly 1 documented `[hidden]` reset exception in `v2.css`.
 - **Enforced complete Stylelint 17 correctness suite and modular file-size limits.** Configured
@@ -451,7 +451,7 @@ worth not rediscovering is summarised in Phase 5 instead.
   bans outside `shell/`, and custom `src/web/v2/tools/max_file_lines.cjs` enforcing a 650-line maximum per
   stylesheet backed by 6 unit tests.
 - **Standardized border radius and spacing scales in `shell/variables.css` and enforced via Stylelint.** Defined
-  `--v2-radius-xs` through `--v2-radius-full` and `--v2-space-1` through `--v2-space-9` (4px base grid), migrated
+  `--radius-xs` through `--radius-full` and `--space-1` through `--space-9` (4px base grid), migrated
   all ~110 `border-radius` declarations and ~80 `gap` declarations across all 28 stylesheets, and locked in
   `border-radius` token usage in `.stylelintrc.json` via `scale-unlimited/declaration-strict-value`.
 
@@ -474,21 +474,21 @@ worth not rediscovering is summarised in Phase 5 instead.
 
 **Phase 8 — performance**
 
-- **The drawer's drag-transition escape hatch.** `v2-is-dragging` was applied to the handle while
+- **The drawer's drag-transition escape hatch.** `is-dragging` was applied to the handle while
   three CSS rules were written against the panel, so the panel kept its 250 ms transition live for
   the whole drag and rubber-banded after the pointer. Fixed in TypeScript, not by rewriting the
   rules with `:has()` — which jsdom cannot currently evaluate, so it would have shipped untested.
   (`8b996e21`)
-- **The two universal `user-select` overrides deleted.** `body.v2-resizing-* *` forced a
+- **The two universal `user-select` overrides deleted.** `body.resizing-* *` forced a
   whole-document style recalculation twice per drag while only ever overriding `none` with `none`.
   (`8b996e21`)
 - **Stopped scanning every word to clear one class** on each word click in the reader. The scope
-  `.v2-reader-text-panel` in the query is load-bearing, because `linkifyText` can emit the same
+  `.reader-text-panel` in the query is load-bearing, because `linkifyText` can emit the same
   class into the dictionary panel. (`a4e2a276`)
 - **Stop `fs.existsSync` on the render hot path.** Deleted the per-render asset file existence
   checks in `shell/asset_manifest.server.ts` and cache the parsed manifest on first access. (`6f5b6d75`)
 - **Hoisted the per-move layout reads out of both drags.** The splitter measured its container on
-  every `pointermove`, immediately after the previous move wrote `--v2-dict-width`; the drawer read
+  every `pointermove`, immediately after the previous move wrote `--dict-width`; the drawer read
   `window.innerHeight` the same way. Both are now measured once in `onStart`, so the move handlers
   are pure arithmetic plus writes. Pinned by read-counting tests rather than by the resulting
   geometry, which the hoist leaves unchanged. (`0be16378`)

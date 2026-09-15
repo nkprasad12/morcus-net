@@ -12,15 +12,15 @@ describe("dialog server utilities", () => {
         bodyHtml: "<p>Dialog body content</p>",
       });
 
-      expect(html).toContain('<dialog id="test-dialog" class="v2-dialog"');
+      expect(html).toContain('<dialog id="test-dialog" class="dialog"');
       expect(html).toContain('aria-labelledby="test-dialog-title"');
       expect(html).toContain(
-        '<h2 id="test-dialog-title" class="v2-dialog-title">Test Title</h2>'
+        '<h2 id="test-dialog-title" class="dialog-title">Test Title</h2>'
       );
       expect(html).toContain(
-        '<button type="button" class="v2-dialog-close-btn" aria-label="Close dialog" data-dialog-close>'
+        '<button type="button" class="dialog-close-btn" aria-label="Close dialog" data-dialog-close>'
       );
-      expect(html).toContain('class="v2-dialog-close-icon"');
+      expect(html).toContain('class="dialog-close-icon"');
       expect(html).toContain("<p>Dialog body content</p>");
     });
 
@@ -35,7 +35,7 @@ describe("dialog server utilities", () => {
       expect(html).toContain(
         "&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;"
       );
-      expect(html).toContain('class="v2-dialog custom-class"');
+      expect(html).toContain('class="dialog custom-class"');
       expect(html).not.toContain("<script>");
     });
 
@@ -50,7 +50,7 @@ describe("dialog server utilities", () => {
 
       expect(html).toContain('aria-describedby="desc-id"');
       expect(html).toContain(
-        '<div class="v2-dialog-actions"><button type="button">OK</button></div>'
+        '<div class="dialog-actions"><button type="button">OK</button></div>'
       );
     });
 
@@ -62,7 +62,7 @@ describe("dialog server utilities", () => {
         hideCloseButton: true,
       });
 
-      expect(html).not.toContain("v2-dialog-close-btn");
+      expect(html).not.toContain("dialog-close-btn");
     });
   });
 
@@ -71,19 +71,17 @@ describe("dialog server utilities", () => {
       const html = renderReportIssueDialog();
 
       expect(html).toContain('id="report-issue-dialog"');
-      expect(html).toContain('class="v2-dialog v2-report-dialog"');
+      expect(html).toContain('class="dialog report-dialog"');
       expect(html).toContain("Issues / Feedback");
       expect(html).toContain(
         "This report will be visible to the general public"
       );
-      expect(html).toContain('form class="v2-report-form"');
+      expect(html).toContain('form class="report-form"');
       expect(html).toContain('name="reportText"');
       expect(html).toContain('name="reporter"');
-      expect(html).toContain('class="v2-input v2-report-reporter"');
+      expect(html).toContain('class="input report-reporter"');
       expect(html).toContain("data-dialog-close");
-      expect(html).toContain(
-        'class="v2-btn v2-btn-primary v2-report-submit-btn"'
-      );
+      expect(html).toContain('class="btn btn-primary report-submit-btn"');
     });
 
     it("supports custom dialog ID and custom default text", () => {

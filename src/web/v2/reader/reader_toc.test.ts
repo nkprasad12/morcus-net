@@ -10,38 +10,38 @@ describe("ReaderTocController", () => {
   function createTocFixture(): HTMLDivElement {
     const div = document.createElement("div");
     div.innerHTML = `
-      <div class="v2-sticky-expanded-row">
-        <button type="button" id="v2-reader-toc-btn" aria-expanded="false" aria-controls="v2-reader-toc-drawer">
+      <div class="sticky-expanded-row">
+        <button type="button" id="reader-toc-btn" aria-expanded="false" aria-controls="reader-toc-drawer">
           Contents
         </button>
-        <button type="button" id="v2-reader-breadcrumb-btn" aria-expanded="false">
+        <button type="button" id="reader-breadcrumb-btn" aria-expanded="false">
           Book 1
         </button>
       </div>
 
-      <div id="v2-reader-toc-drawer" class="v2-reader-toc-drawer" role="dialog" aria-label="Table of Contents" hidden>
-        <div class="v2-reader-toc-header">
-          <button type="button" id="v2-reader-toc-back-btn" class="v2-reader-toc-back-btn">&larr; Back</button>
-          <span class="v2-reader-toc-title">Table of Contents</span>
-          <button type="button" id="v2-reader-toc-close-btn" class="v2-reader-toc-close-btn">&times;</button>
+      <div id="reader-toc-drawer" class="reader-toc-drawer" role="dialog" aria-label="Table of Contents" hidden>
+        <div class="reader-toc-header">
+          <button type="button" id="reader-toc-back-btn" class="reader-toc-back-btn">&larr; Back</button>
+          <span class="reader-toc-title">Table of Contents</span>
+          <button type="button" id="reader-toc-close-btn" class="reader-toc-close-btn">&times;</button>
         </div>
 
-        <div class="v2-reader-toc-search-box">
-          <input type="text" id="v2-reader-toc-filter" class="v2-reader-toc-input" placeholder="Search..." />
+        <div class="reader-toc-search-box">
+          <input type="text" id="reader-toc-filter" class="reader-toc-input" placeholder="Search..." />
         </div>
 
-        <div class="v2-reader-toc-list" id="v2-reader-toc-list">
-          <a href="/v2/reader/vergil-aeneid/1" class="v2-reader-toc-item active">
-            <span class="v2-reader-toc-item-title">Book I: The Trojan Fleet</span>
-            <span class="v2-reader-toc-item-id">&sect; 1.1</span>
+        <div class="reader-toc-list" id="reader-toc-list">
+          <a href="/v2/reader/vergil-aeneid/1" class="reader-toc-item active">
+            <span class="reader-toc-item-title">Book I: The Trojan Fleet</span>
+            <span class="reader-toc-item-id">&sect; 1.1</span>
           </a>
-          <a href="/v2/reader/vergil-aeneid/2" class="v2-reader-toc-item">
-            <span class="v2-reader-toc-item-title">Book II: The Fall of Troy</span>
-            <span class="v2-reader-toc-item-id">&sect; 2.1</span>
+          <a href="/v2/reader/vergil-aeneid/2" class="reader-toc-item">
+            <span class="reader-toc-item-title">Book II: The Fall of Troy</span>
+            <span class="reader-toc-item-id">&sect; 2.1</span>
           </a>
-          <a href="/v2/reader/vergil-aeneid/6" class="v2-reader-toc-item">
-            <span class="v2-reader-toc-item-title">Book VI: The Underworld</span>
-            <span class="v2-reader-toc-item-id">&sect; 6.1</span>
+          <a href="/v2/reader/vergil-aeneid/6" class="reader-toc-item">
+            <span class="reader-toc-item-title">Book VI: The Underworld</span>
+            <span class="reader-toc-item-id">&sect; 6.1</span>
           </a>
         </div>
       </div>
@@ -80,25 +80,25 @@ describe("ReaderTocController", () => {
     const controller = new ReaderTocController({ root: container });
 
     expect(controller.drawer).toBe(
-      container.querySelector("#v2-reader-toc-drawer")
+      container.querySelector("#reader-toc-drawer")
     );
     expect(controller.triggerBtn).toBe(
-      container.querySelector("#v2-reader-toc-btn")
+      container.querySelector("#reader-toc-btn")
     );
     expect(controller.breadcrumbBtn).toBe(
-      container.querySelector("#v2-reader-breadcrumb-btn")
+      container.querySelector("#reader-breadcrumb-btn")
     );
     expect(controller.closeBtn).toBe(
-      container.querySelector("#v2-reader-toc-close-btn")
+      container.querySelector("#reader-toc-close-btn")
     );
     expect(controller.backBtn).toBe(
-      container.querySelector("#v2-reader-toc-back-btn")
+      container.querySelector("#reader-toc-back-btn")
     );
     expect(controller.filterInput).toBe(
-      container.querySelector("#v2-reader-toc-filter")
+      container.querySelector("#reader-toc-filter")
     );
     expect(controller.listContainer).toBe(
-      container.querySelector("#v2-reader-toc-list")
+      container.querySelector("#reader-toc-list")
     );
 
     controller.destroy();

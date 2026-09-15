@@ -44,10 +44,10 @@ describe("MorcusDictToc custom element", () => {
   test("initializes DrawerController on mobile viewport (< 1080px)", () => {
     matchesMobile = true;
     document.body.innerHTML = `
-      <morcus-dict-toc class="v2-drawer v2-drawer-toc">
-        <details class="v2-toc-details" open>
-          <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
-          <div class="v2-toc-body">Outline items</div>
+      <morcus-dict-toc class="drawer drawer-toc">
+        <details class="toc-details" open>
+          <summary class="drawer-bar toc-bar">Contents</summary>
+          <div class="toc-body">Outline items</div>
         </details>
       </morcus-dict-toc>
     `;
@@ -60,10 +60,10 @@ describe("MorcusDictToc custom element", () => {
   test("does not initialize DrawerController on desktop viewport (>= 1080px)", () => {
     matchesMobile = false;
     document.body.innerHTML = `
-      <morcus-dict-toc class="v2-drawer v2-drawer-toc">
-        <details class="v2-toc-details" open>
-          <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
-          <div class="v2-toc-body">Outline items</div>
+      <morcus-dict-toc class="drawer drawer-toc">
+        <details class="toc-details" open>
+          <summary class="drawer-bar toc-bar">Contents</summary>
+          <div class="toc-body">Outline items</div>
         </details>
       </morcus-dict-toc>
     `;
@@ -76,10 +76,10 @@ describe("MorcusDictToc custom element", () => {
   test("cleans up DrawerController when disconnected from DOM", () => {
     matchesMobile = true;
     document.body.innerHTML = `
-      <morcus-dict-toc class="v2-drawer v2-drawer-toc">
-        <details class="v2-toc-details" open>
-          <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
-          <div class="v2-toc-body">Outline items</div>
+      <morcus-dict-toc class="drawer drawer-toc">
+        <details class="toc-details" open>
+          <summary class="drawer-bar toc-bar">Contents</summary>
+          <div class="toc-body">Outline items</div>
         </details>
       </morcus-dict-toc>
     `;
@@ -94,10 +94,10 @@ describe("MorcusDictToc custom element", () => {
   test("unregisters mediaQuery listener when disconnected from DOM", () => {
     matchesMobile = true;
     document.body.innerHTML = `
-      <morcus-dict-toc class="v2-drawer v2-drawer-toc">
-        <details class="v2-toc-details" open>
-          <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
-          <div class="v2-toc-body">Outline items</div>
+      <morcus-dict-toc class="drawer drawer-toc">
+        <details class="toc-details" open>
+          <summary class="drawer-bar toc-bar">Contents</summary>
+          <div class="toc-body">Outline items</div>
         </details>
       </morcus-dict-toc>
     `;
@@ -121,10 +121,10 @@ describe("MorcusDictToc custom element", () => {
   test("recreates DrawerController when re-attached to DOM", () => {
     matchesMobile = true;
     document.body.innerHTML = `
-      <morcus-dict-toc class="v2-drawer v2-drawer-toc">
-        <details class="v2-toc-details" open>
-          <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
-          <div class="v2-toc-body">Outline items</div>
+      <morcus-dict-toc class="drawer drawer-toc">
+        <details class="toc-details" open>
+          <summary class="drawer-bar toc-bar">Contents</summary>
+          <div class="toc-body">Outline items</div>
         </details>
       </morcus-dict-toc>
     `;
@@ -142,10 +142,10 @@ describe("MorcusDictToc custom element", () => {
   test("dynamically adapts DrawerController when mediaQuery changes", () => {
     matchesMobile = true;
     document.body.innerHTML = `
-      <morcus-dict-toc class="v2-drawer v2-drawer-toc">
-        <details class="v2-toc-details">
-          <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
-          <div class="v2-toc-body">Outline items</div>
+      <morcus-dict-toc class="drawer drawer-toc">
+        <details class="toc-details">
+          <summary class="drawer-bar toc-bar">Contents</summary>
+          <div class="toc-body">Outline items</div>
         </details>
       </morcus-dict-toc>
     `;
@@ -159,7 +159,7 @@ describe("MorcusDictToc custom element", () => {
     mql.dispatchEvent(new Event("change"));
 
     expect(tocEl.getDrawerController()).toBeNull();
-    const details = tocEl.querySelector<HTMLDetailsElement>(".v2-toc-details");
+    const details = tocEl.querySelector<HTMLDetailsElement>(".toc-details");
     expect(details?.open).toBe(true);
 
     // Transition back to mobile viewport

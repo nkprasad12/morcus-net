@@ -34,7 +34,7 @@ sequenceDiagram
         User->>Client: Submit form / select suggestion
         Client->>Router: GET /v2/dicts?q=habeo&format=partial (X-Requested-With: fetch)
         Router->>Fused: getEntry({ query: "habeo", mode: 1 })
-        Router-->>Client: HTML fragment (<details class="v2-dict-card">...)
+        Router-->>Client: HTML fragment (<details class="dict-card">...)
         Client->>User: replaceChildren(fragment) & history.pushState()
     end
 ```
@@ -85,6 +85,6 @@ $$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus
 ## Transparency & Zero-Hit Status
 
 - The search result navigation bar displays pills for **all** queried dictionaries.
-- Dictionaries with matches display active anchor jump links with their count: `<a href="#dict-L-S" class="v2-jump-pill">...</a>`.
-- Dictionaries that returned 0 matches are transparently displayed as dashed pills: `<span class="v2-jump-pill v2-jump-pill-zero">...<span class="v2-jump-pill-count">0</span></span>`.
+- Dictionaries with matches display active anchor jump links with their count: `<a href="#dict-L-S" class="jump-pill">...</a>`.
+- Dictionaries that returned 0 matches are transparently displayed as dashed pills: `<span class="jump-pill jump-pill-zero">...<span class="jump-pill-count">0</span></span>`.
 - If no dictionaries had matches, a summary line shows exactly which lexica were queried (e.g. `Searched: Lewis & Short, Gaffiot`).

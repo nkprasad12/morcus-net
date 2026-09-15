@@ -74,106 +74,106 @@ const FIXTURES: Record<string, string> = {
   "morcus-dict-settings": `<morcus-dict-settings></morcus-dict-settings>`,
 
   "morcus-dict-toc": `
-    <morcus-dict-toc class="v2-drawer v2-drawer-toc">
-      <details class="v2-toc-details" open>
-        <summary class="v2-drawer-bar v2-toc-bar">Contents</summary>
-        <div class="v2-toc-body">Outline</div>
+    <morcus-dict-toc class="drawer drawer-toc">
+      <details class="toc-details" open>
+        <summary class="drawer-bar toc-bar">Contents</summary>
+        <div class="toc-body">Outline</div>
       </details>
     </morcus-dict-toc>`,
 
   "morcus-dict-search": `
     <morcus-dict-search>
-      <form class="v2-search-form" action="/v2/dicts" method="GET">
-        <div class="v2-input-wrapper">
-          <input type="text" name="q" class="v2-input" value="habeo" />
+      <form class="search-form" action="/v2/dicts" method="GET">
+        <div class="input-wrapper">
+          <input type="text" name="q" class="input" value="habeo" />
         </div>
       </form>
-      <output id="dict-results" class="v2-results"></output>
+      <output id="dict-results" class="results"></output>
     </morcus-dict-search>`,
 
   "morcus-greek-embed": `
     <morcus-greek-embed>
-      <details class="v2-greek-details">
+      <details class="greek-details">
         <summary>
-          <span class="v2-greek-toggle-text">Show</span>
-          <span class="v2-greek-toggle-icon"></span>
+          <span class="greek-toggle-text">Show</span>
+          <span class="greek-toggle-icon"></span>
         </summary>
-        <input type="checkbox" class="v2-greek-auto-open-checkbox" />
+        <input type="checkbox" class="greek-auto-open-checkbox" />
       </details>
     </morcus-greek-embed>`,
 
   "morcus-library-view": `
-    <morcus-library-view class="v2-library-view">
-      <input id="v2-library-search-input" />
-      <button id="v2-library-reset-filter-btn">Reset</button>
-      <button class="v2-filter-pill" data-filter="all">All</button>
-      <div class="v2-library-author-group">
-        <div class="v2-work-card" data-title="x"></div>
+    <morcus-library-view class="library-view">
+      <input id="library-search-input" />
+      <button id="library-reset-filter-btn">Reset</button>
+      <button class="filter-pill" data-filter="all">All</button>
+      <div class="library-author-group">
+        <div class="work-card" data-title="x"></div>
       </div>
     </morcus-library-view>`,
 
   "morcus-report-dialog": `
     <morcus-report-dialog>
-      <button class="v2-report-btn">Report</button>
-      <dialog class="v2-report-dialog">
-        <form class="v2-report-form">
-          <textarea class="v2-report-textarea"></textarea>
-          <input class="v2-report-reporter" />
-          <div class="v2-report-status"></div>
-          <button class="v2-report-submit-btn">Send</button>
+      <button class="report-btn">Report</button>
+      <dialog class="report-dialog">
+        <form class="report-form">
+          <textarea class="report-textarea"></textarea>
+          <input class="report-reporter" />
+          <div class="report-status"></div>
+          <button class="report-submit-btn">Send</button>
         </form>
       </dialog>
     </morcus-report-dialog>`,
 
   "morcus-reader-view": `
-    <morcus-reader-view class="v2-reader-view">
-      <div class="v2-reader-split-layout">
-        <section class="v2-reader-text-panel">
-          <div class="v2-reader-text-card">
-            <article class="v2-reader-passage" id="v2-reader-passage">
-              <div class="v2-reader-section" id="sec-1">
-                <span class="v2-reader-line">arma virumque cano</span>
+    <morcus-reader-view class="reader-view">
+      <div class="reader-split-layout">
+        <section class="reader-text-panel">
+          <div class="reader-text-card">
+            <article class="reader-passage" id="reader-passage">
+              <div class="reader-section" id="sec-1">
+                <span class="reader-line">arma virumque cano</span>
               </div>
             </article>
           </div>
         </section>
-        <aside class="v2-reader-dict-panel">
-          <div class="v2-reader-sheet-bar">
-            <div class="v2-reader-sheet-teaser">
-              <span class="v2-reader-sheet-label">Tap any word</span>
+        <aside class="reader-dict-panel">
+          <div class="reader-sheet-bar">
+            <div class="reader-sheet-teaser">
+              <span class="reader-sheet-label">Tap any word</span>
             </div>
           </div>
-          <iframe id="v2-dict-frame" src="/v2/dicts?embedded=1"></iframe>
+          <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
         </aside>
-        <dialog id="v2-reader-settings-dialog">
-          <input type="checkbox" id="v2-toggle-macra" checked />
+        <dialog id="reader-settings-dialog">
+          <input type="checkbox" id="toggle-macra" checked />
         </dialog>
       </div>
     </morcus-reader-view>`,
 
   "morcus-reader-settings": `
     <morcus-reader-settings>
-      <button id="v2-reader-settings-btn"></button>
-      <dialog class="v2-dialog v2-reader-settings-dialog" id="v2-reader-settings-dialog">
-        <button id="v2-reader-size-dec">-</button>
-        <span id="v2-reader-size-label">100%</span>
-        <button id="v2-reader-size-inc">+</button>
-        <button id="v2-dict-size-dec">-</button>
-        <span id="v2-dict-size-label">100%</span>
-        <button id="v2-dict-size-inc">+</button>
-        <input type="checkbox" id="v2-toggle-macra" checked />
-        <input type="checkbox" id="v2-toggle-gutter" checked />
-        <select id="v2-font-select">
+      <button id="reader-settings-btn"></button>
+      <dialog class="dialog reader-settings-dialog" id="reader-settings-dialog">
+        <button id="reader-size-dec">-</button>
+        <span id="reader-size-label">100%</span>
+        <button id="reader-size-inc">+</button>
+        <button id="dict-size-dec">-</button>
+        <span id="dict-size-label">100%</span>
+        <button id="dict-size-inc">+</button>
+        <input type="checkbox" id="toggle-macra" checked />
+        <input type="checkbox" id="toggle-gutter" checked />
+        <select id="font-select">
           <option value="serif">Serif</option>
           <option value="sans">Sans</option>
         </select>
-        <select id="v2-line-height-select">
+        <select id="line-height-select">
           <option value="compact">Compact</option>
           <option value="normal">Normal</option>
           <option value="relaxed">Relaxed</option>
         </select>
-        <button id="v2-reader-settings-reset-btn">Reset</button>
-        <button id="v2-reader-settings-close-btn" data-dialog-close>&times;</button>
+        <button id="reader-settings-reset-btn">Reset</button>
+        <button id="reader-settings-close-btn" data-dialog-close>&times;</button>
       </dialog>
     </morcus-reader-settings>`,
 };

@@ -17,18 +17,18 @@ describe("setupAbbrPopover", () => {
     }
   });
 
-  test("returns no-op cleanup when #v2-abbr-popover is absent", () => {
+  test("returns no-op cleanup when #abbr-popover is absent", () => {
     cleanup = setupAbbrPopover(document, window);
     expect(() => cleanup()).not.toThrow();
   });
 
   test("opens popover on .lsHover click, caches title into dataset, and positions over target", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <span class="lsHover" title="Cicero, Marcus Tullius">Cic.</span>
       <div id="outside">Outside</div>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
 
     // Provide mock geometry
@@ -61,10 +61,10 @@ describe("setupAbbrPopover", () => {
 
   test("toggles off when clicking the same active element again", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <span class="lsHover" title="Vergil">Verg.</span>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
 
     cleanup = setupAbbrPopover(document, window);
@@ -84,10 +84,10 @@ describe("setupAbbrPopover", () => {
 
   test("supports native showPopover / hidePopover when available", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <span class="lsHover" title="Horace">Hor.</span>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
 
     const showPopover = jest.fn();
@@ -124,11 +124,11 @@ describe("setupAbbrPopover", () => {
 
   test("dismisses on outside click", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <span class="lsHover" title="Ovid">Ov.</span>
       <div id="outside">Outside</div>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
     const outside = document.getElementById("outside") as HTMLElement;
 
@@ -148,11 +148,11 @@ describe("setupAbbrPopover", () => {
 
   test("dismisses on outside pointerdown (touch tap outside)", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <span class="lsHover" title="Tacitus">Tac.</span>
       <div id="outside">Outside</div>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
     const outside = document.getElementById("outside") as HTMLElement;
 
@@ -169,10 +169,10 @@ describe("setupAbbrPopover", () => {
 
   test("dismisses on Escape keydown", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <span class="lsHover" title="Livy">Liv.</span>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
 
     cleanup = setupAbbrPopover(document, window);
@@ -190,10 +190,10 @@ describe("setupAbbrPopover", () => {
 
   test("keyboard activation: Enter and Space on focused .lsHover opens popover", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <button class="lsHover" title="Caesar">Caes.</button>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
 
     cleanup = setupAbbrPopover(document, window);
@@ -229,10 +229,10 @@ describe("setupAbbrPopover", () => {
 
   test("repositions popover on window resize if active", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <span class="lsHover" title="Sallust">Sall.</span>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
 
     let targetLeft = 100;
@@ -262,10 +262,10 @@ describe("setupAbbrPopover", () => {
 
   test("clamps position to viewport padding when near left or right edge", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <span class="lsHover" title="Pliny">Plin.</span>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
 
     // Near left edge (e.g. left = 0)
@@ -292,11 +292,11 @@ describe("setupAbbrPopover", () => {
 
   test("cleanup removes all document and window event listeners", () => {
     document.body.innerHTML = `
-      <div id="v2-abbr-popover"></div>
+      <div id="abbr-popover"></div>
       <span class="lsHover" title="Juvenal">Juv.</span>
       <div id="outside">Outside</div>
     `;
-    const popover = document.getElementById("v2-abbr-popover") as HTMLElement;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
     const abbr = document.querySelector(".lsHover") as HTMLElement;
     const outside = document.getElementById("outside") as HTMLElement;
 

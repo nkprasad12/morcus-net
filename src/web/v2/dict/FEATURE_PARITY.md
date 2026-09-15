@@ -11,13 +11,13 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 1. Remaining Gaps Matrix
 
-| Feature Area                           | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                                                                                                            | Parity Status                 |
-| :------------------------------------- | :---------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------- |
-| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Pinned entry summary in TOC rail (desktop) and drawer (mobile) with chips                                                                        | ✅ **Completed in V2**        |
-| **Embedded Reader View Options**       | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Suppresses app bar & search bar, resolves drawer collision, adds inline lexicon badges, and syncs proportional `textScale` via `--v2-dict-scale` | ✅ **Completed in V2**        |
-| **Desktop Table of Contents**          | Dedicated two-column sidebar (`.tocSidebar`)                      | Semantic, sticky two-column rail sidebar (`morcus-dict-toc`) flush at top                                                                        | ✅ **Completed in V2**        |
-| **Mobile Drawer Layout**               | Draggable, resizable bottom drawer (`BottomDrawer`)               | Draggable, resizable bottom drawer (`morcus-dict-toc` + `DrawerController`)                                                                      | ✅ **Completed in V2**        |
-| **Mobile Layout Preference**           | Setting toggling between "Drawer" and "Classic" single column     | Unified responsive layout (drawer on mobile, rail on desktop)                                                                                    | ℹ️ **Intentional Streamline** |
+| Feature Area                           | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                                                                                                         | Parity Status                 |
+| :------------------------------------- | :---------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------- |
+| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Pinned entry summary in TOC rail (desktop) and drawer (mobile) with chips                                                                     | ✅ **Completed in V2**        |
+| **Embedded Reader View Options**       | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Suppresses app bar & search bar, resolves drawer collision, adds inline lexicon badges, and syncs proportional `textScale` via `--dict-scale` | ✅ **Completed in V2**        |
+| **Desktop Table of Contents**          | Dedicated two-column sidebar (`.tocSidebar`)                      | Semantic, sticky two-column rail sidebar (`morcus-dict-toc`) flush at top                                                                     | ✅ **Completed in V2**        |
+| **Mobile Drawer Layout**               | Draggable, resizable bottom drawer (`BottomDrawer`)               | Draggable, resizable bottom drawer (`morcus-dict-toc` + `DrawerController`)                                                                   | ✅ **Completed in V2**        |
+| **Mobile Layout Preference**           | Setting toggling between "Drawer" and "Classic" single column     | Unified responsive layout (drawer on mobile, rail on desktop)                                                                                 | ℹ️ **Intentional Streamline** |
 
 ---
 
@@ -28,7 +28,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 1. **Top-Level Consolidated Entry Summary**:
 
    - **V1 (`dictionary_v2.tsx:L472-518`)**: `SummarySection` provided a global list of all matched headwords across all lexica at the top of the page, with `ToEntryButton` chips.
-   - **V2 (`dict_toc.server.ts`, `dict_toc.css`)**: ✅ **Completed in V2**. Rather than consuming vertical space above the fold in the main reading column, multi-lexicon entry navigation is pinned at the top of the Table of Contents rail on desktop (`.v2-toc-entries-summary`) and the draggable bottom drawer on mobile. When `totalEntries > 1`, `hasDictToc` gates the TOC layout and renders compact entry chips (`.v2-toc-entry-chip`) displaying dictionary acronym badges and headwords with direct jump anchors (`#${entryAnchorId}`). On desktop this sticky rail remains accessible alongside definitions as the user scrolls; on mobile the chips wrap responsively inside the drawer. Local card header quick-jump links (`.v2-entry-nav`) continue to provide in-card navigation.
+   - **V2 (`dict_toc.server.ts`, `dict_toc.css`)**: ✅ **Completed in V2**. Rather than consuming vertical space above the fold in the main reading column, multi-lexicon entry navigation is pinned at the top of the Table of Contents rail on desktop (`.toc-entries-summary`) and the draggable bottom drawer on mobile. When `totalEntries > 1`, `hasDictToc` gates the TOC layout and renders compact entry chips (`.toc-entry-chip`) displaying dictionary acronym badges and headwords with direct jump anchors (`#${entryAnchorId}`). On desktop this sticky rail remains accessible alongside definitions as the user scrolls; on mobile the chips wrap responsively inside the drawer. Local card header quick-jump links (`.entry-nav`) continue to provide in-card navigation.
 
 ---
 
@@ -44,8 +44,8 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
    - **V2 (`dict_page.server.ts`, `reader_view.client.ts`, `dictionary.css`)**: ✅ **Completed in V2**.
      - `embedded=1`: Automatically suppresses the site app bar, footer, and search bar (`hideSearch`), maximizing reading area in constrained iframe containers.
      - **TOC & Drawer De-duplication**: Suppresses the outer Table of Contents rail and mobile bottom drawer when embedded, eliminating "drawer-in-a-drawer" collisions with the Reader's native desktop sidebar and mobile draggable bottom sheet.
-     - **Hairline Card Dividers & Inline Lexicon Badges**: Dictionary card headers collapse into slim hairline demarcation dividers (`.v2-dict-header-slim`), while each entry displays an inline lexicon origin badge (`.v2-dict-badge`, e.g. `[LS]`, `[OLD]`) directly in its segmented toolbar.
-     - **Proportional Font Scaling (`textScale`)**: Reader settings modal provides a "Dictionary font size" stepper (70% to 140%). Scale is applied via the `--v2-dict-scale` CSS variable and `?scale=` query param (SSR rendered as `<style>:root { --v2-dict-scale: ...; }</style>`), scaling headwords, definitions, toolbars, inflections, subsection match notes, and attribution popovers.
+     - **Hairline Card Dividers & Inline Lexicon Badges**: Dictionary card headers collapse into slim hairline demarcation dividers (`.dict-header-slim`), while each entry displays an inline lexicon origin badge (`.dict-badge`, e.g. `[LS]`, `[OLD]`) directly in its segmented toolbar.
+     - **Proportional Font Scaling (`textScale`)**: Reader settings modal provides a "Dictionary font size" stepper (70% to 140%). Scale is applied via the `--dict-scale` CSS variable and `?scale=` query param (SSR rendered as `<style>:root { --dict-scale: ...; }</style>`), scaling headwords, definitions, toolbars, inflections, subsection match notes, and attribution popovers.
 
 ---
 
@@ -54,7 +54,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 1. **Desktop Sidebar Table of Contents**:
 
    - **V1 (`dictionary_v2.tsx:L444-470`, `table_of_contents_v2.tsx`)**: Two-column layout on desktop with a dedicated `.tocSidebar`. Users could navigate hierarchical sections (ordinals, sense summaries) while reading definitions side-by-side.
-   - **V2 (`dict_toc.server.ts`, `dict_toc.css`)**: ✅ **Completed in V2**. Renders a semantic, No-JS accessible Table of Contents rail. On wide viewports (>= 1080px), `.v2-results-layout.has-toc` displays a 240px sticky left rail sidebar alongside the primary reading column, sticking flush to the top edge of the viewport when scrolled down.
+   - **V2 (`dict_toc.server.ts`, `dict_toc.css`)**: ✅ **Completed in V2**. Renders a semantic, No-JS accessible Table of Contents rail. On wide viewports (>= 1080px), `.results-layout.has-toc` displays a 240px sticky left rail sidebar alongside the primary reading column, sticking flush to the top edge of the viewport when scrolled down.
 
 2. **Mobile Draggable Drawer (`BottomDrawer`)**:
 

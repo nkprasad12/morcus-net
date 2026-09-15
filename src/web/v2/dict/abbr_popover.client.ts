@@ -13,7 +13,7 @@ export function setupAbbrPopover(
     activeCleanup = null;
   }
 
-  const abbrPopover = doc.getElementById("v2-abbr-popover");
+  const abbrPopover = doc.getElementById("abbr-popover");
   if (!abbrPopover) {
     return () => {};
   }

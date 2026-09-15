@@ -103,7 +103,7 @@ export class DrawerController {
     if (this.details && !this.details.open) {
       return true;
     }
-    return this.drawer.classList.contains("v2-drawer-minimized");
+    return this.drawer.classList.contains("drawer-minimized");
   }
 
   /**
@@ -117,15 +117,15 @@ export class DrawerController {
    * Minimizes the drawer to peek height (54px).
    */
   minimize(): void {
-    this.drawer.classList.add("v2-drawer-minimized");
+    this.drawer.classList.add("drawer-minimized");
     if (this.details && this.details.open) {
       this.isUpdatingDetails = true;
       this.details.open = false;
       this.isUpdatingDetails = false;
     }
-    this.drawer.style.setProperty("--v2-drawer-height", `${this.minHeight}px`);
+    this.drawer.style.setProperty("--drawer-height", `${this.minHeight}px`);
     this.layoutElement?.style.setProperty(
-      "--v2-drawer-height",
+      "--drawer-height",
       `${this.minHeight}px`
     );
     this.handle.setAttribute("aria-valuenow", "0");
@@ -142,14 +142,14 @@ export class DrawerController {
     );
     this.preferredDvh = dvh;
 
-    this.drawer.classList.remove("v2-drawer-minimized");
+    this.drawer.classList.remove("drawer-minimized");
     if (this.details && !this.details.open) {
       this.isUpdatingDetails = true;
       this.details.open = true;
       this.isUpdatingDetails = false;
     }
-    this.drawer.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
-    this.layoutElement?.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
+    this.drawer.style.setProperty("--drawer-height", `${dvh}dvh`);
+    this.layoutElement?.style.setProperty("--drawer-height", `${dvh}dvh`);
     this.handle.setAttribute("aria-valuenow", String(dvh));
 
     this.options.onRestore?.(dvh);
@@ -162,8 +162,8 @@ export class DrawerController {
     const winHeight = window.innerHeight || 800;
     const maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
     const clamped = Math.max(this.minHeight, Math.min(maxHeight, heightPx));
-    this.drawer.style.setProperty("--v2-drawer-height", `${clamped}px`);
-    this.layoutElement?.style.setProperty("--v2-drawer-height", `${clamped}px`);
+    this.drawer.style.setProperty("--drawer-height", `${clamped}px`);
+    this.layoutElement?.style.setProperty("--drawer-height", `${clamped}px`);
     const percent = Math.round((clamped / winHeight) * 100);
     this.handle.setAttribute("aria-valuenow", String(percent));
     this.options.onHeightChange?.(clamped, percent);
@@ -178,18 +178,18 @@ export class DrawerController {
 
     this.disposables.add(
       trackPointerDrag(this.handle, {
-        handleActiveClass: "v2-is-dragging",
-        // The handle is a child of the drawer, so `.v2-drawer.v2-is-dragging`
-        // (and the reader's `.v2-reader-dict-panel.v2-is-dragging`) only match
+        handleActiveClass: "is-dragging",
+        // The handle is a child of the drawer, so `.drawer.is-dragging`
+        // (and the reader's `.reader-dict-panel.is-dragging`) only match
         // if the panel is marked too. Those rules are what disable the height
         // transition mid-drag.
         activeClassTarget: this.drawer,
-        bodyActiveClass: "v2-resizing-drawer",
+        bodyActiveClass: "resizing-drawer",
         filter: this.options.filter,
         /**
          * `window.innerHeight` is measured once per gesture and reused by
          * `onMove` and `onEnd`. It is layout-dependent, so reading it per move —
-         * right after the previous move wrote `--v2-drawer-height` — forces a
+         * right after the previous move wrote `--drawer-height` — forces a
          * synchronous layout. The viewport cannot change mid-gesture: the handle
          * is `touch-action: none` (drawer.css), so there is no scroll-driven
          * URL-bar collapse to react to. Reusing it in `onEnd` also keeps the
@@ -208,7 +208,7 @@ export class DrawerController {
               this.drawer.getBoundingClientRect().height || this.minHeight;
           }
           if (wasMinimized) {
-            this.drawer.classList.remove("v2-drawer-minimized");
+            this.drawer.classList.remove("drawer-minimized");
           }
           wasDragged = false;
         },
@@ -220,9 +220,9 @@ export class DrawerController {
             this.minHeight,
             Math.min(maxHeight, startHeight - dy)
           );
-          this.drawer.style.setProperty("--v2-drawer-height", `${newHeight}px`);
+          this.drawer.style.setProperty("--drawer-height", `${newHeight}px`);
           this.layoutElement?.style.setProperty(
-            "--v2-drawer-height",
+            "--drawer-height",
             `${newHeight}px`
           );
           const percent = Math.round((newHeight / winHeight) * 100);

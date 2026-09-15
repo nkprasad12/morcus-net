@@ -13,7 +13,7 @@ describe("UI V2 Bundle Budget", () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "v2-budget-test-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "budget-test-"));
   });
 
   afterEach(() => {
@@ -185,7 +185,7 @@ describe("UI V2 Bundle Budget", () => {
   test("accepts realistic production bundle sizes corresponding to current baseline", () => {
     // Current baseline is ~72 kB raw / ~20 kB gzip JS and ~94 kB raw / ~15 kB gzip CSS
     const jsContent = "const x = 1;\n".repeat(4500); // ~72 kB
-    const cssContent = ".v2-card { border: 1px solid #ccc; }\n".repeat(2500); // ~92 kB
+    const cssContent = ".card { border: 1px solid #ccc; }\n".repeat(2500); // ~92 kB
 
     fs.writeFileSync(path.join(tmpDir, "v2_bundle.js"), jsContent);
     fs.writeFileSync(path.join(tmpDir, "v2.css"), cssContent);

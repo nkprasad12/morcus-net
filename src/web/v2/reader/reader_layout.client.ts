@@ -35,11 +35,11 @@ export function computeMaxSplitWidth(containerWidth: number): number {
 }
 
 export interface ReaderLayoutElements {
-  /** The split container element (.v2-reader-split-layout) */
+  /** The split container element (.reader-split-layout) */
   splitLayout: HTMLElement | null;
-  /** The draggable divider separator (.v2-reader-splitter) */
+  /** The draggable divider separator (.reader-splitter) */
   splitter: HTMLElement | null;
-  /** The dictionary panel element (.v2-reader-dict-panel) */
+  /** The dictionary panel element (.reader-dict-panel) */
   dictPanel: HTMLElement | null;
 }
 
@@ -69,17 +69,17 @@ export class ReaderLayoutController {
     this.splitLayout =
       overrides?.splitLayout !== undefined
         ? overrides.splitLayout
-        : root.querySelector<HTMLElement>(".v2-reader-split-layout");
+        : root.querySelector<HTMLElement>(".reader-split-layout");
 
     this.splitter =
       overrides?.splitter !== undefined
         ? overrides.splitter
-        : root.querySelector<HTMLElement>(".v2-reader-splitter");
+        : root.querySelector<HTMLElement>(".reader-splitter");
 
     this.dictPanel =
       overrides?.dictPanel !== undefined
         ? overrides.dictPanel
-        : root.querySelector<HTMLElement>(".v2-reader-dict-panel");
+        : root.querySelector<HTMLElement>(".reader-dict-panel");
 
     this.storageKey = options.storageKey ?? READER_DICT_WIDTH_STORAGE_KEY;
     this.onWidthChange = options.onWidthChange;
@@ -107,7 +107,7 @@ export class ReaderLayoutController {
       if (savedWidth) {
         const parsed = parseInt(savedWidth, 10);
         if (!isNaN(parsed) && parsed >= MIN_SPLIT_WIDTH && parsed <= 900) {
-          splitLayout.style.setProperty("--v2-dict-width", `${parsed}px`);
+          splitLayout.style.setProperty("--dict-width", `${parsed}px`);
           splitter.setAttribute("aria-valuenow", String(parsed));
         }
       }
@@ -126,17 +126,17 @@ export class ReaderLayoutController {
     let maxWidth = MAX_SPLIT_WIDTH;
 
     const unbind = trackPointerDrag(splitter, {
-      handleActiveClass: "v2-is-resizing",
-      bodyActiveClass: "v2-resizing-panels",
+      handleActiveClass: "is-resizing",
+      bodyActiveClass: "resizing-panels",
       /**
        * Both measurements are taken once, here, because `onMove` writes
-       * `--v2-dict-width`: reading either one per move would be a
+       * `--dict-width`: reading either one per move would be a
        * read-after-write and would force a synchronous layout of the whole
        * passage on every pointer event.
        *
        * Safe because the container width does not depend on the value being
-       * written. At this breakpoint `.v2-reader-split-layout` is a `flex: 1`
-       * row whose width comes from its parent, and `--v2-dict-width` only
+       * written. At this breakpoint `.reader-split-layout` is a `flex: 1`
+       * row whose width comes from its parent, and `--dict-width` only
        * divides space between its children (reader.css). The drag classes
        * applied immediately after this callback are `user-select` / `cursor` /
        * `pointer-events` only, so measuring before them is equivalent.
@@ -150,7 +150,7 @@ export class ReaderLayoutController {
         const newWidth = Math.round(
           Math.max(MIN_SPLIT_WIDTH, Math.min(maxWidth, startWidth - dx))
         );
-        splitLayout.style.setProperty("--v2-dict-width", `${newWidth}px`);
+        splitLayout.style.setProperty("--dict-width", `${newWidth}px`);
         splitter.setAttribute("aria-valuenow", String(newWidth));
         this.onWidthChange?.(newWidth);
       },
@@ -244,7 +244,7 @@ export class ReaderLayoutController {
    */
   public setWidth(width: number, persist: boolean = false): void {
     if (this.splitLayout) {
-      this.splitLayout.style.setProperty("--v2-dict-width", `${width}px`);
+      this.splitLayout.style.setProperty("--dict-width", `${width}px`);
     }
     if (this.splitter) {
       this.splitter.setAttribute("aria-valuenow", String(width));
@@ -265,7 +265,7 @@ export class ReaderLayoutController {
    */
   public resetWidth(): void {
     if (this.splitLayout) {
-      this.splitLayout.style.removeProperty("--v2-dict-width");
+      this.splitLayout.style.removeProperty("--dict-width");
     }
     if (this.splitter) {
       this.splitter.setAttribute("aria-valuenow", String(DEFAULT_SPLIT_WIDTH));
@@ -284,11 +284,11 @@ export class ReaderLayoutController {
   public setActive(active: boolean): void {
     if (!this.splitLayout) return;
     if (active) {
-      this.splitLayout.classList.remove("v2-reader-layout-empty");
-      this.splitLayout.classList.add("v2-reader-layout-active");
+      this.splitLayout.classList.remove("reader-layout-empty");
+      this.splitLayout.classList.add("reader-layout-active");
     } else {
-      this.splitLayout.classList.remove("v2-reader-layout-active");
-      this.splitLayout.classList.add("v2-reader-layout-empty");
+      this.splitLayout.classList.remove("reader-layout-active");
+      this.splitLayout.classList.add("reader-layout-empty");
     }
   }
 

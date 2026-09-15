@@ -28,32 +28,32 @@ export function renderAppBar(activePage: V2ActivePage): string {
   const isAboutActive = activePage === "about";
 
   return `
-    <header class="v2-app-bar">
-      <div class="v2-app-bar-inner">
+    <header class="app-bar">
+      <div class="app-bar-inner">
         <!-- Left on desktop / Center on mobile: Brand Logo & Desktop Nav -->
-        <div class="v2-brand-group">
-          <a href="/v2/dicts" class="v2-brand-logo-link" aria-label="M&oacute;rcus Home">
-            <img src="/public/favicon.ico" alt="M&oacute;rcus Logo" class="v2-brand-logo" width="48" height="48">
+        <div class="brand-group">
+          <a href="/v2/dicts" class="brand-logo-link" aria-label="M&oacute;rcus Home">
+            <img src="/public/favicon.ico" alt="M&oacute;rcus Logo" class="brand-logo" width="48" height="48">
           </a>
           <!-- Desktop Navigation Links -->
-          <nav class="v2-nav v2-nav-desktop" aria-label="Main Navigation">
+          <nav class="nav nav-desktop" aria-label="Main Navigation">
             <a
               href="/v2/dicts"
-              class="v2-nav-link ${isDictsActive ? "active" : ""}"
+              class="nav-link ${isDictsActive ? "active" : ""}"
               ${isDictsActive ? 'aria-current="page"' : ""}
             >
               Dictionary
             </a>
             <a
               href="/v2/library"
-              class="v2-nav-link ${isLibraryActive ? "active" : ""}"
+              class="nav-link ${isLibraryActive ? "active" : ""}"
               ${isLibraryActive ? 'aria-current="page"' : ""}
             >
               Library
             </a>
             <a
               href="/v2/about"
-              class="v2-nav-link ${isAboutActive ? "active" : ""}"
+              class="nav-link ${isAboutActive ? "active" : ""}"
               ${isAboutActive ? 'aria-current="page"' : ""}
             >
               About
@@ -62,12 +62,12 @@ export function renderAppBar(activePage: V2ActivePage): string {
         </div>
 
         <!-- Right on desktop / Left on mobile: Dark/Light Mode & Report Dialog -->
-        <div class="v2-actions-group">
+        <div class="actions-group">
           <morcus-theme-toggle></morcus-theme-toggle>
           <morcus-report-dialog>
             <button
               type="button"
-              class="v2-theme-toggle-btn v2-report-btn"
+              class="theme-toggle-btn report-btn"
               aria-label="Report an issue"
               title="Report an issue"
             >
@@ -80,33 +80,33 @@ export function renderAppBar(activePage: V2ActivePage): string {
         </div>
 
         <!-- Mobile Hamburger Dropdown Menu (<details> native Zero-JS) -->
-        <details class="v2-mobile-menu">
-            <summary class="v2-mobile-menu-btn" aria-label="Open navigation menu">
-              <svg viewBox="0 0 24 24" aria-hidden="true" class="v2-icon-menu">
+        <details class="mobile-menu">
+            <summary class="mobile-menu-btn" aria-label="Open navigation menu">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="icon-menu">
                 <path d="${ICON_PATHS.menu}"></path>
               </svg>
-              <svg viewBox="0 0 24 24" aria-hidden="true" class="v2-icon-close">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="icon-close">
                 <path d="${ICON_PATHS.close}"></path>
               </svg>
             </summary>
-            <nav class="v2-nav v2-mobile-menu-dropdown" aria-label="Mobile Navigation">
+            <nav class="nav mobile-menu-dropdown" aria-label="Mobile Navigation">
               <a
                 href="/v2/dicts"
-                class="v2-nav-link ${isDictsActive ? "active" : ""}"
+                class="nav-link ${isDictsActive ? "active" : ""}"
                 ${isDictsActive ? 'aria-current="page"' : ""}
               >
                 Dictionary
               </a>
               <a
                 href="/v2/library"
-                class="v2-nav-link ${isLibraryActive ? "active" : ""}"
+                class="nav-link ${isLibraryActive ? "active" : ""}"
                 ${isLibraryActive ? 'aria-current="page"' : ""}
               >
                 Library
               </a>
               <a
                 href="/v2/about"
-                class="v2-nav-link ${isAboutActive ? "active" : ""}"
+                class="nav-link ${isAboutActive ? "active" : ""}"
                 ${isAboutActive ? 'aria-current="page"' : ""}
               >
                 About
@@ -128,19 +128,19 @@ export function renderPageShell(options: PageShellOptions): string {
   const isEmbedded = options.hideAppBar ?? false;
 
   const bodyClasses: string[] = [];
-  if (isReader) bodyClasses.push("v2-body-reader");
-  if (isEmbedded) bodyClasses.push("v2-body-embedded");
+  if (isReader) bodyClasses.push("body-reader");
+  if (isEmbedded) bodyClasses.push("body-embedded");
   const bodyClass =
     bodyClasses.length > 0 ? ` class="${bodyClasses.join(" ")}"` : "";
 
-  const containerClasses: string[] = ["v2-container"];
-  if (isReader) containerClasses.push("v2-container-reader");
-  if (isEmbedded) containerClasses.push("v2-container-embedded");
+  const containerClasses: string[] = ["container"];
+  if (isReader) containerClasses.push("container-reader");
+  if (isEmbedded) containerClasses.push("container-embedded");
   const containerClass = containerClasses.join(" ");
 
   const mainClasses: string[] = [];
-  if (isReader) mainClasses.push("v2-main-reader");
-  if (isEmbedded) mainClasses.push("v2-main-embedded");
+  if (isReader) mainClasses.push("main-reader");
+  if (isEmbedded) mainClasses.push("main-embedded");
   const mainClass =
     mainClasses.length > 0 ? ` class="${mainClasses.join(" ")}"` : "";
 
@@ -166,7 +166,7 @@ export function renderPageShell(options: PageShellOptions): string {
 
   <a
     href="#top"
-    class="v2-back-to-top"
+    class="back-to-top"
     aria-label="Jump to top"
     title="Jump to top"
   >
@@ -176,7 +176,7 @@ export function renderPageShell(options: PageShellOptions): string {
   </a>
 
   <!-- Single global popover for abbreviation expansions -->
-  <div id="v2-abbr-popover" popover="auto" class="v2-abbr-popover"></div>
+  <div id="abbr-popover" popover="auto" class="abbr-popover"></div>
 
   <!-- UI V2 client-side Web Components bundle -->
   <script type="module" src="${getV2AssetHref("v2.js")}"></script>

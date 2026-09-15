@@ -1,55 +1,55 @@
 /* Reader Bibliographical Metadata Dialog and Toast Notifications */
 
-.v2-reader-meta-list {
+.reader-meta-list {
   display: flex;
   flex-direction: column;
-  gap: var(--v2-space-5);
-  margin: var(--v2-space-6) 0;
+  gap: var(--space-5);
+  margin: var(--space-6) 0;
   font-size: 0.8125rem;
 }
 
-.v2-meta-row dt {
+.meta-row dt {
   font-weight: 600;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  margin-bottom: var(--v2-space-1);
+  margin-bottom: var(--space-1);
 }
 
-.v2-meta-row dd {
+.meta-row dd {
   margin: 0;
-  color: var(--v2-text);
+  color: var(--text);
 }
 
-.v2-meta-row code {
-  font-family: var(--v2-font-mono);
-  background: var(--v2-bg);
-  padding: var(--v2-space-1) var(--v2-space-3);
-  border-radius: var(--v2-radius-sm);
-  border: 1px solid var(--v2-border);
+.meta-row code {
+  font-family: var(--font-mono);
+  background: var(--bg);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
 }
 
 /* Reader Toast */
-.v2-reader-toast {
+.reader-toast {
   position: fixed;
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: var(--v2-text);
-  color: var(--v2-bg);
-  padding: var(--v2-space-4) var(--v2-space-6);
-  border-radius: var(--v2-radius-full);
+  background: var(--text);
+  color: var(--bg);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-full);
   font-size: 0.8125rem;
   font-weight: 500;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  z-index: var(--v2-z-toast);
+  z-index: var(--z-toast);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.v2-reader-toast.visible {
+.reader-toast.visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
