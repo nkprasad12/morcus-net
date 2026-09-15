@@ -156,3 +156,20 @@ export function resolveDictAcronym(key: string): string {
     key.toUpperCase()
   );
 }
+
+/**
+ * Computes the DOM element ID for a dictionary's card anchor (e.g. "ls" -> "dict-ls").
+ */
+export function dictCardId(dictKey: string): string {
+  return `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+/**
+ * Resolves the primary ISO language code for a dictionary key, defaulting to "la".
+ */
+export function resolveDictLang(dictKey: string): string {
+  const info = findDictInfo(dictKey);
+  return info && info.languages.from !== "*"
+    ? info.languages.from.toLowerCase()
+    : "la";
+}

@@ -7,6 +7,8 @@ import {
   formatInflectionForm,
   resolveDictDisplayName,
   resolveDictAcronym,
+  dictCardId,
+  resolveDictLang,
 } from "@/web/v2/dict/dict.server";
 import {
   renderNoResultsHtml,
@@ -1207,6 +1209,28 @@ describe("dict_ssr", () => {
     test("falls back to uppercased key for unknown keys", () => {
       expect(resolveDictAcronym("my_dict")).toBe("MY_DICT");
       expect(resolveDictAcronym("")).toBe("");
+    });
+  });
+
+  describe("dictCardId", () => {
+    test("computes sanitized card IDs matching anchor links", () => {
+      expect(dictCardId("ls")).toBe("dict-ls");
+      expect(dictCardId("L&S")).toBe("dict-L-S");
+      expect(dictCardId("gaffiot")).toBe("dict-gaffiot");
+      expect(dictCardId("riddle_arnold")).toBe("dict-riddle_arnold");
+      expect(dictCardId("custom/lexicon:1")).toBe("dict-custom-lexicon-1");
+    });
+  });
+
+  describe("resolveDictLang", () => {
+    test("resolves Latin dictionaries to la", () => {
+      expect(resolveDictLang("ls")).toBe("la");
+      expect(resolveDictLang("L&S")).toBe("la");
+      expect(resolveDictLang("gaffiot")).toBe("la");
+    });
+
+    test("resolves unrecognized dictionaries to default la", () => {
+      expect(resolveDictLang("unknown_dict")).toBe("la");
     });
   });
 
