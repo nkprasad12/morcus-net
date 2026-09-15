@@ -1,5 +1,8 @@
 {
-  "plugins": ["stylelint-declaration-strict-value"],
+  "plugins": [
+    "stylelint-declaration-strict-value",
+    "./src/web/v2/tools/max_file_lines.cjs"
+  ],
   "rules": {},
   "overrides": [
     {
@@ -12,7 +15,8 @@
             "ignoreValues": ["auto"],
             "disableFix": true
           }
-        ]
+        ],
+        "morcus/max-file-lines": 650
       }
     },
     {
