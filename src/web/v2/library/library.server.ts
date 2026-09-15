@@ -54,7 +54,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
 
       return `
         <a href="${readerUrl}"
-           class="v2-work-card"
+           class="v2-card v2-card-interactive v2-work-card"
            data-author="${he.escape((w.author || "").toLowerCase())}"
            data-title="${he.escape((w.title || "").toLowerCase())}"
            data-tags="${tags.join(" ")}"
@@ -110,9 +110,9 @@ export async function renderLibraryPageHtml(): Promise<string> {
       </header>
 
       <!-- Empty Filter State -->
-      <div id="v2-library-empty-state" class="v2-library-empty-state" hidden>
-        <p class="v2-library-empty-title">No classical works match your filter</p>
-        <p class="v2-library-empty-desc">Try clearing your search query or choosing a different feature filter.</p>
+      <div id="v2-library-empty-state" class="v2-empty-state v2-library-empty-state" hidden>
+        <p class="v2-empty-state-title v2-library-empty-title">No classical works match your filter</p>
+        <p class="v2-empty-state-desc v2-library-empty-desc">Try clearing your search query or choosing a different feature filter.</p>
         <button type="button" class="v2-btn v2-btn-secondary" id="v2-library-reset-filter-btn">Show All Works</button>
       </div>
 

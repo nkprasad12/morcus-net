@@ -1,0 +1,169 @@
+/* Shared UI V2 Components & Design Shells */
+
+/* ==========================================================================
+   1. Base Card Shell (.v2-card)
+   ========================================================================== */
+
+.v2-card {
+  background-color: var(--v2-card-surface-bg);
+  border: 1px solid var(--v2-card-border);
+  border-radius: 10px;
+  box-shadow: var(--v2-card-shadow);
+}
+
+.v2-card-interactive {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.v2-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--v2-primary);
+  box-shadow: var(--v2-card-shadow-hover);
+}
+
+/* ==========================================================================
+   2. Button Utility Classes (.v2-btn)
+   ========================================================================== */
+
+.v2-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+    color 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+
+.v2-btn-primary {
+  background-color: var(--v2-primary);
+  color: var(--v2-on-accent);
+  border-color: var(--v2-primary);
+}
+
+.v2-btn-primary:hover:not(:disabled) {
+  background-color: var(--v2-primary-hover);
+}
+
+.v2-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.v2-btn-secondary {
+  background-color: transparent;
+  color: var(--v2-text);
+  border-color: var(--v2-border);
+}
+
+.v2-btn-secondary:hover {
+  background-color: var(--v2-pill-bg);
+}
+
+.v2-btn-sm {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+}
+
+.v2-btn-pill {
+  border-radius: 9999px;
+}
+
+.v2-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   3. Empty State Container (.v2-empty-state)
+   ========================================================================== */
+
+.v2-empty-state,
+.v2-library-empty-state {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  background: var(--v2-card-bg);
+  border: 1px dashed var(--v2-border);
+  border-radius: 12px;
+  margin: 2rem 0;
+}
+
+.v2-empty-state-title,
+.v2-library-empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--v2-text);
+  margin: 0 0 0.5rem;
+}
+
+.v2-empty-state-desc,
+.v2-library-empty-desc {
+  font-size: 0.95rem;
+  color: var(--v2-text-muted);
+  margin: 0 0 1.25rem;
+}
+
+.v2-empty-state-standalone,
+.v2-library-empty-state-standalone,
+.v2-not-found-state {
+  margin: 4rem auto;
+  max-width: 600px;
+}
+
+/* ==========================================================================
+   4. Ghost Scrollbars (.v2-ghost-scrollbar)
+   ========================================================================== */
+
+.v2-ghost-scrollbar,
+.v2-reader-text-panel,
+.v2-reader-dict-panel {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.25s ease;
+}
+
+.v2-ghost-scrollbar:hover,
+.v2-reader-text-panel:hover,
+.v2-reader-dict-panel:hover {
+  scrollbar-color: var(--v2-scrollbar-thumb) transparent;
+}
+
+.v2-ghost-scrollbar::-webkit-scrollbar,
+.v2-reader-text-panel::-webkit-scrollbar,
+.v2-reader-dict-panel::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.v2-ghost-scrollbar::-webkit-scrollbar-track,
+.v2-reader-text-panel::-webkit-scrollbar-track,
+.v2-reader-dict-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.v2-ghost-scrollbar::-webkit-scrollbar-thumb,
+.v2-reader-text-panel::-webkit-scrollbar-thumb,
+.v2-reader-dict-panel::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.25s ease;
+}
+
+.v2-ghost-scrollbar:hover::-webkit-scrollbar-thumb,
+.v2-reader-text-panel:hover::-webkit-scrollbar-thumb,
+.v2-reader-dict-panel:hover::-webkit-scrollbar-thumb {
+  background-color: var(--v2-scrollbar-thumb);
+}
+
+.v2-ghost-scrollbar::-webkit-scrollbar-thumb:hover,
+.v2-reader-text-panel::-webkit-scrollbar-thumb:hover,
+.v2-reader-dict-panel::-webkit-scrollbar-thumb:hover {
+  background-color: var(--v2-scrollbar-thumb-hover);
+}

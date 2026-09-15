@@ -26,9 +26,11 @@ export function renderNotFoundContentHtml(
     : "Could not locate the requested resource in the library catalog.";
 
   return `
-    <div class="v2-library-empty-state v2-not-found-state">
-      <h2 class="v2-library-empty-title">${he.escape(title)}</h2>
-      <p class="v2-library-empty-desc">${descHtml}</p>
+    <div class="v2-empty-state v2-empty-state-standalone v2-library-empty-state v2-not-found-state">
+      <h2 class="v2-empty-state-title v2-library-empty-title">${he.escape(
+        title
+      )}</h2>
+      <p class="v2-empty-state-desc v2-library-empty-desc">${descHtml}</p>
       <a href="/v2/library" class="v2-btn v2-btn-primary">Browse Full Library</a>
     </div>
   `.trim();
