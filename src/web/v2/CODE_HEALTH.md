@@ -240,22 +240,6 @@ to `--v2-z-fab: 110` (strictly above `--v2-z-drawer: 100`) is required.
 
 Verified counts as of the audit.
 
-- [ ] 🟡 **Reduce `!important` — 78 instances**, concentrated in:
-
-      | Count | File |
-      | --- | --- |
-      | 26 | `dict/dict_toc.css` |
-      | 22 | `reader/reader.css` |
-      | 10 | `v2.css` |
-      | 10 | `dict/dictionary.css` |
-      | 9 | `core/drawer.css` |
-      | 1 | `library/library.css` |
-
-      Mostly `display: none !important` used for state toggling, plus a few hard layout overrides
-      (`height: 54px !important`). Introduce a `.v2-hidden` utility (or the native `hidden`
-      attribute) and drive state from a single ancestor class. `dict_toc.css` is the best
-      starting point.
-
 - [ ] 🟢 **Add the ~5 missing semantic color tokens.** Color-token discipline is largely _good_:
       102 of 125 hex values live correctly inside `variables.css` / `critical_variables.css`.
       Only **23 leak**, clustered in `dialog.css` (6, status colors), `library.css` (5, language
@@ -471,6 +455,10 @@ worth not rediscovering is summarised in Phase 5 instead.
   declarations across 8 stylesheets to design tokens (`--v2-z-raised`, `--v2-z-sticky`,
   `--v2-z-overlay`, `--v2-z-drawer`, `--v2-z-fab`, `--v2-z-dropdown`, `--v2-z-nav`, `--v2-z-toast`,
   `--v2-z-modal`), and introduced Stylelint with `stylelint-declaration-strict-value` for `src/web/v2/**/*.css`.
+- **Reduced `!important` from 78 instances to 1**, eliminating desktop overrides in `dict_toc.css`
+  via compound `.v2-drawer.v2-drawer-toc` (0,2,0) selector, unblocking `--v2-drawer-min-height` inheritance,
+  fixing No-JS sticky row display, and enforcing repo-wide via Stylelint `declaration-no-important` with
+  exactly 1 documented `[hidden]` reset exception in `v2.css`.
 
 **Phase 7 — docs & tests**
 
