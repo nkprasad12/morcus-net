@@ -266,7 +266,7 @@ Verified counts as of the audit.
 **Split the two large stylesheets** along their existing section comments:
 
 - [x] 🔴 `dictionary.css` (1,795) → layout / typography / embeds / landing
-- [ ] 🔴 `reader.css` (1,552) → layout / text / dict-sidebar / settings. Note its settings block
+- [x] 🔴 `reader.css` (1,552) → layout / text / dict-sidebar / settings. Note its settings block
       (L1432+) substantially mirrors `dict_settings.css` — merge into a shared `core/settings.css`.
 
 **Other:**
@@ -451,6 +451,7 @@ worth not rediscovering is summarised in Phase 5 instead.
 
 **Phase 6 — CSS**
 
+- **Split `reader.css` (1,514 lines) into modular topic stylesheets and merged settings into `core/settings.css`.** Decomposed layout & viewport shell (`reader/reader_layout.css`), resizable splitter gutter (`reader/reader_splitter.css`), sticky navigation & toolbar (`reader/reader_nav.css`), reading text & Latin typography (`reader/reader_text.css`), embedded dictionary sidebar (`reader/reader_dict.css`), TOC drawer (`reader/reader_toc.css`), metadata dialogs (`reader/reader_dialogs.css`), and extracted shared settings system (`core/settings.css`), slimming `dict_settings.css` to dictionary selection.
 - **Standardized z-index scale in `shell/variables.css` and enforced via Stylelint.** Migrated all 17
   declarations across 8 stylesheets to design tokens (`--v2-z-raised`, `--v2-z-sticky`,
   `--v2-z-overlay`, `--v2-z-drawer`, `--v2-z-fab`, `--v2-z-dropdown`, `--v2-z-nav`, `--v2-z-toast`,

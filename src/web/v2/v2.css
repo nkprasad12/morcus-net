@@ -5,6 +5,7 @@
 @import "./shell/toast.css";
 @import "./core/drawer.css";
 @import "./core/components.css";
+@import "./core/settings.css";
 @import "./dict/search.css";
 @import "./dict/dict_settings.css";
 @import "./dict/dict_layout.css";
@@ -14,7 +15,13 @@
 @import "./dict/dict_embeds.css";
 @import "./dict/dict_landing.css";
 @import "./dict/dict_toc.css";
-@import "./reader/reader.css";
+@import "./reader/reader_layout.css";
+@import "./reader/reader_splitter.css";
+@import "./reader/reader_nav.css";
+@import "./reader/reader_text.css";
+@import "./reader/reader_dict.css";
+@import "./reader/reader_toc.css";
+@import "./reader/reader_dialogs.css";
 @import "./dialog/dialog.css";
 @import "./about/about.css";
 @import "./library/library.css";
