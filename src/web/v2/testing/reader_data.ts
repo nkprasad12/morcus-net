@@ -17,7 +17,7 @@ export const READER_WORKS: Record<string, ReaderWork> = {
     pages: [
       {
         id: ["1", "1"],
-        title: "Liber I, Caput I",
+        title: "Book 1, Chapter 1",
         sections: [
           {
             id: ["1", "1", "1"],
@@ -51,7 +51,7 @@ export const READER_WORKS: Record<string, ReaderWork> = {
       },
       {
         id: ["1", "2"],
-        title: "Liber I, Caput II",
+        title: "Book 1, Chapter 2",
         sections: [
           {
             id: ["1", "2", "1"],
@@ -159,7 +159,7 @@ export const READER_WORKS: Record<string, ReaderWork> = {
     pages: [
       {
         id: ["1"],
-        title: "Liber I",
+        title: "Book 1",
         sections: [
           {
             id: ["1", "1"],

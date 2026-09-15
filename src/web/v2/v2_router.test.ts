@@ -446,6 +446,7 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("Julius Caesar");
       expect(res.text).toContain('id="dict-frame"');
       expect(res.text).toContain("/v2/dicts?embedded=1");
+      expect(res.text).toContain("Open Dictionary Search");
       expect(res.text).toContain("Tap any word to view definitions");
     });
 

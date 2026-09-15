@@ -10,58 +10,13 @@ import type {
 import { XmlNode } from "@/common/xml/xml_node";
 import * as he from "he";
 
-const LATIN_PART_NAMES = new Map<string, string>([
-  ["book", "Liber"],
-  ["chapter", "Caput"],
-  ["section", "Sectio"],
-  ["poem", "Carmen"],
-  ["line", "Versus"],
-  ["act", "Actus"],
-  ["scene", "Scaena"],
-]);
-
-const ROMAN_NUMERALS: [number, string][] = [
-  [1000, "M"],
-  [900, "CM"],
-  [500, "D"],
-  [400, "CD"],
-  [100, "C"],
-  [90, "XC"],
-  [50, "L"],
-  [40, "XL"],
-  [10, "X"],
-  [9, "IX"],
-  [5, "V"],
-  [4, "IV"],
-  [1, "I"],
-];
-
-function toRoman(num: number): string {
-  if (num <= 0 || !Number.isInteger(num)) return String(num);
-  let n = num;
-  let result = "";
-  for (const [val, roman] of ROMAN_NUMERALS) {
-    while (n >= val) {
-      result += roman;
-      n -= val;
-    }
-  }
-  return result;
-}
-
 function formatPartCoordinate(partName: string, value: string): string {
-  const num = Number.parseInt(value, 10);
-  const latinName =
-    LATIN_PART_NAMES.get(partName.toLowerCase()) ??
-    partName.charAt(0).toUpperCase() + partName.slice(1);
-  if (!Number.isNaN(num) && String(num) === value.trim()) {
-    return `${latinName} ${toRoman(num)}`;
-  }
-  return `${latinName} ${value}`;
+  const capitalized = partName.charAt(0).toUpperCase() + partName.slice(1);
+  return `${capitalized} ${value}`;
 }
 
 export function formatPageTitle(pageId: string[], textParts: string[]): string {
-  if (pageId.length === 0) return "Praefatio";
+  if (pageId.length === 0) return "Preface";
   const parts: string[] = [];
   for (let i = 0; i < pageId.length; i++) {
     const partName = textParts[i] ?? `Level ${i + 1}`;

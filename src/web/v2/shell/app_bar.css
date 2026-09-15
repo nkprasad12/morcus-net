@@ -267,7 +267,6 @@ morcus-report-dialog:not(:defined) {
 
 @media (max-width: 640px) {
   .back-to-top {
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     right: 16px;
   }
 }
@@ -288,6 +287,33 @@ morcus-report-dialog:not(:defined) {
     bottom: calc(
       var(--drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px
     );
+  }
+
+  body:has(.drawer:target) .back-to-top {
+    bottom: calc(55dvh + env(safe-area-inset-bottom, 0px) + 16px);
+  }
+}
+
+@media (max-width: 640px) {
+  body:has(.reader-dict-panel) .back-to-top {
+    bottom: calc(
+      var(--drawer-height, 48dvh) + env(safe-area-inset-bottom, 0px) + 16px
+    );
+    transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease,
+      transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease,
+      color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  body:has(.reader-layout-empty .reader-dict-panel) .back-to-top,
+  body:has(.reader-dict-panel.drawer-minimized) .back-to-top,
+  body:has(.reader-split-layout.reader-layout-empty) .back-to-top {
+    bottom: calc(
+      var(--drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px
+    );
+  }
+
+  body:has(.reader-dict-panel:target) .back-to-top {
+    bottom: calc(55dvh + env(safe-area-inset-bottom, 0px) + 16px);
   }
 }
 

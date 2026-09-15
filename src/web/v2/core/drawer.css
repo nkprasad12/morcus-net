@@ -171,3 +171,44 @@ a.reader-sheet-close:active {
   text-decoration: none;
   transform: translateY(-50%) scale(1.15);
 }
+
+/* No-JS Drawer Open Trigger Link and Target Controls */
+a.reader-sheet-open-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+a.reader-sheet-open-link:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.reader-sheet-close-target {
+  display: none;
+}
+
+.reader-dict-panel:target .reader-sheet-close-target {
+  display: inline-flex;
+}
+
+/* Progressive enhancement for drawer teaser text */
+.reader-teaser-nojs {
+  display: inline;
+}
+
+.reader-teaser-js {
+  display: none;
+}
+
+html.has-js .reader-teaser-nojs {
+  display: none;
+}
+
+html.has-js .reader-teaser-js {
+  display: inline;
+}

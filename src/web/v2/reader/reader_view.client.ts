@@ -192,11 +192,21 @@ export class MorcusReaderView extends BaseElement {
 
     // Handle close button click (collapses sheet/clears word)
     const closeBtn = e.target.closest<HTMLAnchorElement>(
-      "a.reader-sheet-close"
+      "a.reader-sheet-close, a.drawer-close"
     );
     if (closeBtn) {
       e.preventDefault();
       this.closeDictionary(true);
+      return;
+    }
+
+    // Handle open link click (expands drawer from teaser)
+    const openLink = e.target.closest<HTMLAnchorElement>(
+      "a.reader-sheet-open-link"
+    );
+    if (openLink) {
+      e.preventDefault();
+      this.restoreDrawer();
       return;
     }
 
@@ -273,15 +283,12 @@ export class MorcusReaderView extends BaseElement {
     } else {
       const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
       const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
-      const splitLayout = this.querySelector<HTMLElement>(
-        ".reader-split-layout"
-      );
       if (dictPanel) {
         dictPanel.classList.add("drawer-minimized");
         dictPanel.style.setProperty("--drawer-height", "54px");
         sheetBar?.setAttribute("aria-valuenow", "0");
       }
-      splitLayout?.style.setProperty("--drawer-height", "54px");
+      document.documentElement.style.setProperty("--drawer-height", "54px");
       this.setSheetLabel(this.currentQuery, true);
     }
   }
@@ -292,9 +299,6 @@ export class MorcusReaderView extends BaseElement {
     } else {
       const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
       const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
-      const splitLayout = this.querySelector<HTMLElement>(
-        ".reader-split-layout"
-      );
       const dvh = Math.min(
         DRAWER_EXPANDED_DVH,
         Math.max(
@@ -309,7 +313,7 @@ export class MorcusReaderView extends BaseElement {
         dictPanel.style.setProperty("--drawer-height", `${dvh}dvh`);
         sheetBar?.setAttribute("aria-valuenow", String(dvh));
       }
-      splitLayout?.style.setProperty("--drawer-height", `${dvh}dvh`);
+      document.documentElement.style.setProperty("--drawer-height", `${dvh}dvh`);
       this.setSheetLabel(this.currentQuery);
       this.resetDictScroll();
     }
@@ -571,7 +575,7 @@ export class MorcusReaderView extends BaseElement {
     this.drawerController = new DrawerController({
       drawer: dictPanel,
       handle: sheetBar,
-      layoutElement: splitLayout,
+      layoutElement: document.documentElement,
       minHeight: DRAWER_MIN_HEIGHT,
       defaultDvh: DRAWER_DEFAULT_DVH,
       floorDvh: DRAWER_FLOOR_DVH,
@@ -849,14 +853,9 @@ export class MorcusReaderView extends BaseElement {
     const expandedRow = this.$<HTMLElement>("#sticky-expanded-row");
     if (!expandBtn || !expandedRow) return;
 
-    const chevron = expandBtn.querySelector(".expand-chevron");
-
     const setExpanded = (expanded: boolean) => {
       expandBtn.setAttribute("aria-expanded", String(expanded));
       expandedRow.hidden = !expanded;
-      // The literal glyphs for &utrif; / &dtrif;, which is what reader.server.ts
-      // emits, so this can be textContent: no markup, no HTML sink.
-      if (chevron) chevron.textContent = expanded ? "▴" : "▾";
       try {
         localStorage.setItem("morcus_sticky_expanded", String(expanded));
       } catch {

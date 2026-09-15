@@ -78,6 +78,22 @@
     display: none;
   }
 
+  /* No-JS Drawer Expansion via :target */
+  .reader-layout-empty .reader-dict-panel:target {
+    flex: none;
+    height: 55dvh;
+    min-height: 54px;
+    max-height: 88dvh;
+  }
+
+  .reader-layout-empty:has(.reader-dict-panel:target) .reader-text-panel {
+    padding-bottom: calc(55dvh + 36px);
+  }
+
+  .reader-layout-empty .reader-dict-panel:target .reader-dict-sticky {
+    display: block;
+  }
+
   /* Minimized active drawer: retains content in DOM but collapses to 54px teaser */
   .reader-layout-active .reader-dict-panel.drawer-minimized {
     height: 54px;
