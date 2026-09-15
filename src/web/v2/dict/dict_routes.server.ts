@@ -19,6 +19,10 @@ import {
 } from "@/web/v2/dict/dict.server";
 import { trimRawQuery } from "@/common/text_cleaning";
 import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
+import {
+  isPartialRequest,
+  isEmbeddedRequest,
+} from "@/web/v2/core/request_params.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
@@ -30,13 +34,8 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
   getAsync("/dicts", async (req, res) => {
     const query =
       typeof req.query.q === "string" ? trimRawQuery(req.query.q) : "";
-    const isPartial =
-      req.query.format === "partial" ||
-      req.headers["x-requested-with"] === "fetch";
-    const isEmbedded =
-      req.query.embedded === "1" ||
-      req.headers["sec-fetch-dest"] === "iframe" ||
-      req.headers.referer?.includes("embedded=1") === true;
+    const isPartial = isPartialRequest(req);
+    const isEmbedded = isEmbeddedRequest(req);
 
     const dictScale = parseDictScale(req.query.scale);
 
@@ -79,7 +78,6 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
 
     if (!query) {
       if (isPartial) {
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.send(
           renderDictResultsHtml("", undefined, {
             queriedDicts: dictKeys,
@@ -89,7 +87,6 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
         );
         return;
       }
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.send(
         renderDictPageHtml({
           query: "",
@@ -104,7 +101,6 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
 
     if (hasGreek(query)) {
       if (isPartial) {
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.send(
           renderDictResultsHtml(query, undefined, {
             queriedDicts: dictKeys,
@@ -114,7 +110,6 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
         );
         return;
       }
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.send(
         renderDictPageHtml({
           query,
@@ -135,7 +130,6 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
       });
 
       if (isPartial) {
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.send(
           renderDictResultsHtml(query, results, {
             queriedDicts: dictKeys,
@@ -146,7 +140,6 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
         return;
       }
 
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.send(
         renderDictPageHtml({
           query,
@@ -177,13 +170,8 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
   // ID-based dictionary lookup route
   getAsync("/dicts/id/:id", async (req, res) => {
     const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
-    const isPartial =
-      req.query.format === "partial" ||
-      req.headers["x-requested-with"] === "fetch";
-    const isEmbedded =
-      req.query.embedded === "1" ||
-      req.headers["sec-fetch-dest"] === "iframe" ||
-      req.headers.referer?.includes("embedded=1") === true;
+    const isPartial = isPartialRequest(req);
+    const isEmbedded = isEmbeddedRequest(req);
 
     const dictScale = parseDictScale(req.query.scale);
 
@@ -208,12 +196,10 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
       });
 
       if (isPartial) {
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.send(renderDictResultsHtml(id, results, { isEmbedded }));
         return;
       }
 
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.send(
         renderDictPageHtml({
           query: id,

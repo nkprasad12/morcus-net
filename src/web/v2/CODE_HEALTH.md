@@ -56,21 +56,6 @@ Every item here is a feature reimplementing something `core/` already provides.
 
 ## Phase 4 — Decomposition
 
-### `v2_router.server.ts` (626 lines)
-
-- [ ] 🟡 **Extract `core/request_params.server.ts`** with `readDictParam`, `isPartialRequest`,
-      `isEmbeddedRequest`, `readLimit`. Current duplication:
-
-      | Repeated block | Occurrences |
-      | --- | --- |
-      | `toStringOrArray(req.query.d) ?? .dict ?? .in` | L88, L147, L239 |
-      | `isPartial` derivation | L229, L359, L445, L529 |
-      | `isEmbedded` derivation | L232, L362 |
-      | `limit` parse + clamp | L93, L152 |
-      | `res.setHeader("Content-Type", "text/html…")` | ~12× (Express does this automatically) |
-      | reader render + error block | L485-509 ≡ L556-580 (**verbatim**) |
-      | jump-redirect block | L472-483 ≡ L543-554 (**verbatim**) |
-
 ### Server-side render functions
 
 - [ ] 🔴 **Split `dict_page.server.ts: renderDictResultsHtml`** (L22-239, 217 lines) into
@@ -488,6 +473,7 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Decouple client from SSR markup shape via `data-tokenize-target`**, emitting semantic data attributes in `v2_preprocessor.ts` and `entry_view.server.ts` with legacy selector fallback, eliminating brittle CSS selector chains in `reader_view.client.ts`.
 - **Extract `library/not_found.server.ts`**, decomposing the inlined 404 classical work-not-found page from `reader_routes.server.ts` into a dedicated SSR renderer and hoisting inline styles to `library.css`, backed by unit and router 404 tests.
 - **Hoist drawer dvh magic numbers (`18`/`48`/`88`) to named constants**, exporting `DRAWER_FLOOR_DVH`, `DRAWER_DEFAULT_DVH`, `DRAWER_EXPANDED_DVH`, and `DRAWER_MIN_HEIGHT` from `core/drawer.client.ts` and consuming them across `reader_view.client.ts`, `dict_toc.client.ts`, and `DrawerController`.
+- **Extract `core/request_params.server.ts`**, centralizing `isPartialRequest`, `isEmbeddedRequest`, `readLimit`, `toStringOrArray`, and `readDictParam`, eliminating duplicated parameter derivation across route slices and removing redundant Express `Content-Type` headers, backed by 26 unit tests.
 
 **Phase 7 — docs & tests**
 

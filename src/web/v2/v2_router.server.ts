@@ -51,7 +51,6 @@ export function createV2Router(
     "/library",
     asyncHandler(async (_req: Request, res: Response) => {
       try {
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
         const html = await renderLibraryPageHtml();
         res.send(html);
       } catch (err) {
@@ -63,7 +62,6 @@ export function createV2Router(
 
   // About page route
   router.get("/about", (_req: Request, res: Response) => {
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(renderAboutPageHtml());
   });
 
