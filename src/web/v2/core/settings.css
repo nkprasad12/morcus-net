@@ -1,0 +1,283 @@
+/* Shared Settings System & Form Controls */
+
+/* ==========================================================================
+   1. Settings Trigger Buttons & Badges
+   ========================================================================== */
+
+.v2-settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  width: 42px;
+  padding: 8px;
+  background-color: var(--v2-input-bg);
+  border: 1px solid var(--v2-input-border, var(--v2-border));
+  box-shadow: var(--v2-input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  border-radius: 6px;
+  color: var(--v2-text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+}
+
+.v2-settings-btn:hover {
+  color: var(--v2-primary);
+  background-color: var(--v2-tag-bg);
+  border-color: var(--v2-border-strong);
+}
+
+.v2-settings-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 1px;
+}
+
+.v2-settings-btn[aria-expanded="true"] {
+  color: var(--v2-primary);
+  border-color: var(--v2-primary);
+  background-color: var(--v2-tag-bg);
+}
+
+.v2-settings-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  display: block;
+}
+
+.v2-settings-glyph {
+  font-family: var(--v2-font-serif);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+/* ==========================================================================
+   2. Settings Containers, Cards & Popovers
+   ========================================================================== */
+
+morcus-reader-settings {
+  display: contents;
+}
+
+.v2-reader-settings-dialog {
+  max-width: 440px;
+}
+
+.v2-settings-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  max-width: calc(100vw - 32px);
+  background: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+  padding: 14px;
+  z-index: var(--v2-z-dropdown);
+  box-sizing: border-box;
+}
+
+.v2-settings-card {
+  padding: 1.25rem 1.25rem 1rem;
+}
+
+.v2-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  padding: 1rem 0;
+}
+
+.v2-settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.v2-settings-group-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--v2-text-muted);
+  margin: 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-settings-section-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--v2-text);
+  margin-bottom: 8px;
+}
+
+.v2-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.v2-settings-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--v2-text);
+}
+
+.v2-settings-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--v2-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.v2-settings-control-row {
+  margin-bottom: 12px;
+}
+
+.v2-settings-divider {
+  height: 1px;
+  background: var(--v2-border);
+  margin: 14px 0 12px;
+}
+
+/* ==========================================================================
+   3. Settings Form Controls & Steppers
+   ========================================================================== */
+
+.v2-settings-label {
+  font-size: 0.85rem;
+  color: var(--v2-text);
+  user-select: none;
+}
+
+.v2-settings-caption {
+  margin: 4px 0 0 22px;
+  font-size: 0.72rem;
+  color: var(--v2-text-muted);
+  line-height: 1.35;
+}
+
+.v2-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--v2-border);
+  border-radius: 6px;
+  background: var(--v2-bg);
+  overflow: hidden;
+}
+
+.v2-stepper-btn {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  color: var(--v2-text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.v2-stepper-btn:hover {
+  background: var(--v2-card-bg);
+  color: var(--v2-primary);
+}
+
+.v2-stepper-val {
+  font-family: var(--v2-font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  min-width: 3.2rem;
+  text-align: center;
+  padding: 0 0.25rem;
+}
+
+.v2-settings-slider {
+  width: 100%;
+  accent-color: var(--v2-primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.v2-settings-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  background-color: var(--v2-tag-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+.v2-settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+
+.v2-toggle-checkbox {
+  width: 1.15rem;
+  height: 1.15rem;
+  cursor: pointer;
+  accent-color: var(--v2-primary);
+}
+
+.v2-dict-checkbox,
+.v2-inflected-checkbox {
+  accent-color: var(--v2-primary);
+  cursor: pointer;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.v2-settings-select {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  background: var(--v2-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 6px;
+  color: var(--v2-text);
+}
+
+/* ==========================================================================
+   4. Settings Actions & Footers
+   ========================================================================== */
+
+.v2-settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.v2-settings-noscript-actions {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--v2-border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.v2-settings-apply-btn {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
