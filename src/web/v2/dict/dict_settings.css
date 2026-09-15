@@ -33,7 +33,7 @@ morcus-dict-settings,
   gap: var(--v2-space-3);
   max-height: 240px;
   overflow-y: auto;
-  padding-right: 2px;
+  padding-right: var(--v2-space-1);
 }
 
 .v2-dict-item {

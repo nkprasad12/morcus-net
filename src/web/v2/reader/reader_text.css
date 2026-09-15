@@ -18,15 +18,15 @@
 
 .v2-reader-text-card-header {
   border-bottom: 1px solid var(--v2-border);
-  padding-bottom: 1rem;
-  margin-bottom: 1.25rem;
+  padding-bottom: var(--v2-space-6);
+  margin-bottom: var(--v2-space-7);
 }
 
 .v2-reader-text-meta {
   display: flex;
   align-items: center;
   gap: var(--v2-space-3);
-  margin-bottom: 0.35rem;
+  margin-bottom: var(--v2-space-2);
   font-size: 0.75rem;
   color: var(--v2-text-muted);
   letter-spacing: 0.03em;
@@ -51,7 +51,7 @@
 }
 
 .v2-reader-passage-heading {
-  margin: 0 0 0.25rem;
+  margin: 0 0 var(--v2-space-2);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--v2-text);
@@ -66,13 +66,13 @@
 }
 
 .v2-reader-paragraph {
-  margin: 0 0 1.25rem;
+  margin: 0 0 var(--v2-space-7);
   text-align: left;
 }
 
 .v2-reader-passage-footer {
-  margin-top: 2rem;
-  padding-top: 1.25rem;
+  margin-top: var(--v2-space-9);
+  padding-top: var(--v2-space-7);
   border-top: 1px solid var(--v2-border);
   font-size: 0.82rem;
   color: var(--v2-text-muted);
@@ -85,7 +85,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--v2-space-4);
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--v2-space-8);
 }
 
 .v2-reader-continue-btn,
@@ -94,7 +94,7 @@
   color: var(--v2-on-accent);
   font-weight: 600;
   justify-content: center;
-  padding: 0.6rem 1rem;
+  padding: var(--v2-space-4) var(--v2-space-6);
   border-radius: var(--v2-radius-md);
 }
 
@@ -106,7 +106,7 @@
 .v2-reader-return-btn {
   justify-content: center;
   font-weight: 600;
-  padding: 0.5rem 1rem;
+  padding: var(--v2-space-4) var(--v2-space-6);
   border-radius: var(--v2-radius-md);
   color: var(--v2-text-muted);
 }
@@ -178,7 +178,7 @@ span.v2-lat-word.v2-word-active {
   grid-template-columns: 3.25rem minmax(0, 1fr);
   gap: var(--v2-space-5);
   align-items: baseline;
-  padding: 0.25rem 0.4rem;
+  padding: var(--v2-space-2) var(--v2-space-3);
   border-radius: var(--v2-radius-md);
   transition: background-color 0.2s ease, border-left-color 0.2s ease;
 }
@@ -194,7 +194,7 @@ span.v2-lat-word.v2-word-active {
   color: var(--v2-text-muted);
   text-decoration: none;
   display: inline-block;
-  padding: 0.1rem 0.2rem;
+  padding: var(--v2-space-1);
   border-radius: var(--v2-radius-sm);
   transition: color 0.15s ease;
 }
@@ -257,7 +257,7 @@ span.v2-lat-word.v2-word-active {
   line-height: 1.8;
   color: var(--v2-text-muted);
   font-style: italic;
-  padding-left: 1rem;
+  padding-left: var(--v2-space-6);
   border-left: 2px solid var(--v2-border);
 }
 
@@ -270,7 +270,7 @@ span.v2-lat-word.v2-word-active {
   font-weight: 600;
   color: var(--v2-text-muted);
   font-style: normal;
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--v2-space-2);
 }
 
 /* ==========================================================================
@@ -285,11 +285,11 @@ span.v2-lat-word.v2-word-active {
     box-sizing: border-box;
     overflow-x: clip;
     overflow-y: visible;
-    padding: 8px 12px 20px;
+    padding: var(--v2-space-4) var(--v2-space-5) var(--v2-space-7);
   }
 
   .v2-reader-text-card {
-    padding: 0.25rem 0 1rem;
+    padding: var(--v2-space-2) 0 var(--v2-space-6);
     box-shadow: none;
     border: none;
     background: transparent;
@@ -303,7 +303,7 @@ span.v2-lat-word.v2-word-active {
   .v2-reader-section {
     grid-template-columns: 1.35rem minmax(0, 1fr);
     gap: var(--v2-space-3);
-    padding: 0.2rem 0;
+    padding: var(--v2-space-1) 0;
   }
 
   .v2-cite-prefix {
@@ -324,16 +324,16 @@ span.v2-lat-word.v2-word-active {
     flex-direction: column;
     gap: var(--v2-space-4);
     background: var(--v2-card-bg);
-    padding: 0.65rem 0.75rem;
+    padding: var(--v2-space-4) var(--v2-space-5);
     border-radius: var(--v2-radius-lg);
     border: 1px solid var(--v2-border);
   }
 
   .v2-passage-english {
     font-size: 0.9375rem;
-    padding-left: 0.5rem;
+    padding-left: var(--v2-space-4);
     border-left: 2px solid var(--v2-border-strong);
-    padding-top: 0.25rem;
+    padding-top: var(--v2-space-2);
   }
 }
 
@@ -345,8 +345,8 @@ span.v2-lat-word.v2-word-active {
     min-width: 320px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 16px;
-    padding-left: 4px;
+    padding-right: var(--v2-space-6);
+    padding-left: var(--v2-space-2);
     scrollbar-width: thin;
   }
 
@@ -355,7 +355,7 @@ span.v2-lat-word.v2-word-active {
     background: transparent;
     border: none;
     border-radius: 0;
-    padding: 0.25rem 0.5rem 2rem 0;
+    padding: var(--v2-space-2) var(--v2-space-4) var(--v2-space-9) 0;
     box-shadow: none;
   }
 }

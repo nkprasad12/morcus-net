@@ -1,7 +1,7 @@
 /* About Page Layout & Sections */
 
 .v2-header {
-  margin-bottom: 24px;
+  margin-bottom: var(--v2-space-8);
 }
 
 .v2-about-header {
@@ -20,7 +20,7 @@
 }
 
 .v2-header h1 {
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--v2-space-4) 0;
   font-size: 1.8rem;
 }
 
@@ -35,28 +35,28 @@
 }
 
 .v2-about-section {
-  margin-bottom: 32px;
+  margin-bottom: var(--v2-space-9);
 }
 
 .v2-about-section h2 {
   font-size: 1.35rem;
-  margin: 0 0 12px 0;
-  padding-bottom: 6px;
+  margin: 0 0 var(--v2-space-5) 0;
+  padding-bottom: var(--v2-space-3);
   border-bottom: 1px solid var(--v2-border);
 }
 
 .v2-about-section p {
-  margin: 0 0 12px 0;
+  margin: 0 0 var(--v2-space-5) 0;
   line-height: 1.6;
 }
 
 .v2-about-section ul {
-  margin: 0 0 16px 0;
-  padding-left: 24px;
+  margin: 0 0 var(--v2-space-6) 0;
+  padding-left: var(--v2-space-8);
 }
 
 .v2-about-section li {
-  margin-bottom: 8px;
+  margin-bottom: var(--v2-space-4);
   line-height: 1.5;
 }
 

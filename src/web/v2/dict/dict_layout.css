@@ -9,7 +9,7 @@
 }
 
 .v2-results > .v2-dict-card + .v2-dict-card {
-  margin-top: 18px;
+  margin-top: var(--v2-space-6);
 }
 
 /* Results Navigation & Quick-Jump Pills (Option 1) */
@@ -18,8 +18,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--v2-space-5);
-  padding-bottom: 2px;
-  margin-bottom: 8px;
+  padding-bottom: var(--v2-space-1);
+  margin-bottom: var(--v2-space-4);
 }
 
 .v2-results-pills {
@@ -28,7 +28,7 @@
   gap: var(--v2-space-4);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 4px 2px;
+  padding: var(--v2-space-2) var(--v2-space-1);
   scrollbar-width: thin;
 }
 
@@ -46,7 +46,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--v2-space-3);
-  padding: 3px 8px;
+  padding: var(--v2-space-1) var(--v2-space-4);
   border-radius: var(--v2-radius-sm);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
@@ -95,7 +95,7 @@
   justify-content: center;
   min-width: 16px;
   height: 16px;
-  padding: 0 4px;
+  padding: 0 var(--v2-space-2);
   font-size: calc(0.7rem * var(--v2-dict-scale, 1));
   font-weight: 700;
   border-radius: var(--v2-radius-sm);
@@ -138,7 +138,7 @@
 .v2-no-results-sub {
   font-size: calc(0.82rem * var(--v2-dict-scale, 1));
   color: var(--v2-text-muted);
-  margin-top: 6px;
+  margin-top: var(--v2-space-3);
 }
 
 @media (max-width: 640px) {
@@ -149,7 +149,7 @@
 
   .v2-results-pills {
     width: 100%;
-    padding: 2px 0;
+    padding: var(--v2-space-1) 0;
   }
 
   .v2-results-total {
@@ -158,11 +158,11 @@
 
   .v2-dict-header,
   .v2-dict-summary {
-    padding: 4px 0 5px;
+    padding: var(--v2-space-2) 0 var(--v2-space-2);
   }
 
   .v2-dict-body {
-    padding: 6px 0 12px;
+    padding: var(--v2-space-3) 0 var(--v2-space-5);
   }
 
   /* Reduced sense indentation on mobile to maximize horizontal reading space */
@@ -186,7 +186,7 @@
      (e.g. the quick-jump bar) can line up with the name rather than the toggle:
      2px summary padding + 14px toggle icon + 6px summary gap. */
   --v2-dict-name-inset: 22px;
-  padding: 3px 0 5px;
+  padding: var(--v2-space-1) 0 var(--v2-space-2);
   background-color: transparent;
   border-bottom: 1px solid var(--v2-border);
   display: flex;
@@ -212,7 +212,7 @@
   letter-spacing: 0.05em;
   color: var(--v2-text-muted);
   gap: var(--v2-space-3);
-  padding: 1px 2px;
+  padding: var(--v2-space-1) var(--v2-space-1);
   width: auto;
   border-radius: var(--v2-radius-sm);
 }
@@ -246,7 +246,7 @@
 }
 
 .v2-dict-header-slim .v2-dict-source-btn {
-  padding: 1px 6px;
+  padding: var(--v2-space-1) var(--v2-space-3);
   font-size: calc(0.68rem * var(--v2-dict-scale, 1));
   min-height: calc(20px * var(--v2-dict-scale, 1));
 }
@@ -282,7 +282,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--v2-space-2);
-  padding: 2px 8px;
+  padding: var(--v2-space-1) var(--v2-space-4);
   border-radius: var(--v2-radius-full);
   font-family: var(--v2-font-sans);
   font-size: calc(0.72rem * var(--v2-dict-scale, 1));
@@ -332,7 +332,7 @@
   right: 0;
   width: min(420px, calc(100vw - 32px));
   box-sizing: border-box;
-  padding: 12px 16px;
+  padding: var(--v2-space-5) var(--v2-space-6);
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-lg);
@@ -350,8 +350,8 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--v2-text-muted);
-  margin-bottom: 6px;
-  padding-bottom: 4px;
+  margin-bottom: var(--v2-space-3);
+  padding-bottom: var(--v2-space-2);
   border-bottom: 1px solid var(--v2-border);
 }
 
@@ -370,7 +370,7 @@
 }
 
 .v2-dict-summary {
-  padding: 2px 4px;
+  padding: var(--v2-space-1) var(--v2-space-2);
   font-weight: bold;
   font-size: calc(1.15rem * var(--v2-dict-scale, 1));
   cursor: pointer;
@@ -441,7 +441,7 @@
 }
 
 .v2-dict-body {
-  padding: 8px 0 14px;
+  padding: var(--v2-space-4) 0 var(--v2-space-5);
 }
 
 /* Entry Quick-Jump Bar (integrated directly inside dictionary header).
@@ -484,7 +484,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--v2-space-2);
-  padding: 1px 8px;
+  padding: var(--v2-space-1) var(--v2-space-4);
   min-height: calc(20px * var(--v2-dict-scale, 1));
   box-sizing: border-box;
   border-radius: var(--v2-radius-full);
@@ -521,7 +521,7 @@
 
 .v2-entry {
   scroll-margin-top: 16px;
-  margin-bottom: 12px;
+  margin-bottom: var(--v2-space-5);
   font-family: var(--v2-font-serif);
   font-size: calc(1.15rem * var(--v2-dict-scale, 1));
   line-height: 1.6;
@@ -537,8 +537,8 @@
 
 /* Demarcation divider between multiple entries in the same dictionary */
 .v2-entry + .v2-entry {
-  margin-top: 16px;
-  padding-top: 12px;
+  margin-top: var(--v2-space-6);
+  padding-top: var(--v2-space-5);
   border-top: 1px dashed var(--v2-border);
 }
 
@@ -546,8 +546,8 @@
 .v2-entry-header {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
-  padding-bottom: 6px;
+  margin-bottom: var(--v2-space-4);
+  padding-bottom: var(--v2-space-3);
   border-bottom: 1px dashed var(--v2-border);
   font-family: var(--v2-font-sans);
 }

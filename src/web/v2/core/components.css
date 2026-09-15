@@ -31,7 +31,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 18px;
+  padding: var(--v2-space-4) var(--v2-space-6);
   font-size: 0.95rem;
   font-weight: 600;
   border-radius: var(--v2-radius-md);
@@ -68,7 +68,7 @@
 }
 
 .v2-btn-sm {
-  padding: 4px 10px;
+  padding: var(--v2-space-2) var(--v2-space-4);
   font-size: 0.85rem;
 }
 
@@ -88,11 +88,11 @@
 .v2-empty-state,
 .v2-library-empty-state {
   text-align: center;
-  padding: 3.5rem 1.5rem;
+  padding: 3.5rem var(--v2-space-8);
   background: var(--v2-card-bg);
   border: 1px dashed var(--v2-border);
   border-radius: var(--v2-radius-xl);
-  margin: 2rem 0;
+  margin: var(--v2-space-9) 0;
 }
 
 .v2-empty-state-title,
@@ -100,14 +100,14 @@
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--v2-text);
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--v2-space-4);
 }
 
 .v2-empty-state-desc,
 .v2-library-empty-desc {
   font-size: 0.95rem;
   color: var(--v2-text-muted);
-  margin: 0 0 1.25rem;
+  margin: 0 0 var(--v2-space-7);
 }
 
 .v2-empty-state-standalone,

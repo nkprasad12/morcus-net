@@ -22,7 +22,7 @@
 }
 
 .v2-results-main > .v2-dict-card + .v2-dict-card {
-  margin-top: 18px;
+  margin-top: var(--v2-space-6);
 }
 
 /* TOC Internal Tree & Typography */
@@ -56,7 +56,7 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 8px 14px 16px;
+  padding: var(--v2-space-4) var(--v2-space-5) var(--v2-space-6);
   font-family: var(--v2-font-sans);
   font-size: 0.88rem;
   line-height: 1.45;
@@ -79,11 +79,11 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--v2-text-muted);
-  margin-bottom: 6px;
+  margin-bottom: var(--v2-space-3);
 }
 
 .v2-toc-entries-summary {
-  padding-bottom: 12px;
+  padding-bottom: var(--v2-space-5);
   border-bottom: 1.5px dashed var(--v2-border-mid);
 }
 
@@ -125,7 +125,7 @@
 .v2-toc-entry-chip {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
+  padding: var(--v2-space-1) var(--v2-space-3);
   border-radius: var(--v2-radius-full);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
@@ -163,7 +163,7 @@
 }
 
 .v2-toc-group + .v2-toc-group {
-  padding-top: 10px;
+  padding-top: var(--v2-space-4);
   border-top: 1px dashed var(--v2-border);
 }
 
@@ -193,7 +193,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 1px 5px;
+  padding: var(--v2-space-1) var(--v2-space-3);
   border-radius: var(--v2-radius-sm);
   background-color: var(--v2-tag-bg);
   border: 1px solid transparent;
@@ -232,7 +232,7 @@
 }
 
 .v2-toc-entry + .v2-toc-entry {
-  margin-top: 6px;
+  margin-top: var(--v2-space-3);
 }
 
 .v2-toc-entry-header {
@@ -260,7 +260,7 @@
 
 .v2-toc-item {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: var(--v2-space-2);
 }
 
 .v2-toc-link,
@@ -279,7 +279,7 @@
 .v2-toc-ordinal {
   font-weight: 700;
   color: var(--v2-primary);
-  margin-right: 4px;
+  margin-right: var(--v2-space-2);
 }
 
 .v2-toc-count {
@@ -327,7 +327,7 @@
   }
 
   .v2-drawer-toc .v2-toc-bar {
-    padding: 10px 14px;
+    padding: var(--v2-space-4) var(--v2-space-5);
     min-height: var(--v2-drawer-min-height, 28px);
     display: flex;
     justify-content: center;
@@ -369,7 +369,7 @@
     background-color: var(--v2-tag-bg);
     border: 1px solid var(--v2-border);
     border-radius: var(--v2-radius-full);
-    padding: 2px 8px;
+    padding: var(--v2-space-1) var(--v2-space-4);
     font-size: 0.8rem;
   }
 }
@@ -422,7 +422,7 @@
   .v2-drawer-toc .v2-toc-bar {
     cursor: default;
     pointer-events: none; /* Desktop TOC rail is permanently open */
-    padding: 10px 14px 8px;
+    padding: var(--v2-space-4) var(--v2-space-5) var(--v2-space-4);
     border-bottom: 1px solid var(--v2-border);
     border-top-left-radius: 7px;
     border-top-right-radius: 7px;
@@ -449,7 +449,7 @@
   .v2-drawer-toc .v2-toc-body {
     max-height: calc(100dvh - 44px);
     overflow-y: auto;
-    padding: 10px 12px 14px;
+    padding: var(--v2-space-4) var(--v2-space-5) var(--v2-space-5);
     font-size: 0.82rem;
     scrollbar-width: thin;
   }

@@ -6,13 +6,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--v2-space-8);
-  margin-top: 0.5rem;
+  margin-top: var(--v2-space-4);
   width: 100%;
 }
 
 .v2-landing-welcome {
   margin: 0;
-  padding: 0 0.25rem;
+  padding: 0 var(--v2-space-2);
   font-size: 0.92rem;
   color: var(--v2-text-muted);
   line-height: 1.5;
@@ -38,8 +38,8 @@
   display: flex;
   align-items: center;
   gap: var(--v2-space-4);
-  margin-bottom: 0.65rem;
-  padding-bottom: 0.4rem;
+  margin-bottom: var(--v2-space-5);
+  padding-bottom: var(--v2-space-3);
   border-bottom: 1px solid var(--v2-border);
 }
 
@@ -54,7 +54,7 @@
 }
 
 .v2-landing-card-desc {
-  margin: 0 0 0.45rem 0;
+  margin: 0 0 var(--v2-space-3) 0;
   font-size: 0.88rem;
   color: var(--v2-text-muted);
   line-height: 1.45;
@@ -64,16 +64,16 @@
 .v2-sample-entry {
   background-color: var(--v2-bg);
   border: 1px solid var(--v2-border);
-  padding: 0.55rem 0.85rem;
+  padding: var(--v2-space-4) var(--v2-space-5);
   border-radius: var(--v2-radius-md);
-  margin-bottom: 0.65rem;
+  margin-bottom: var(--v2-space-4);
   font-family: var(--v2-font-serif);
   font-size: 0.92rem;
   line-height: 1.5;
 }
 
 .v2-sample-entry-line {
-  margin-bottom: 0.35rem;
+  margin-bottom: var(--v2-space-2);
 }
 
 .v2-sample-entry-sense {
@@ -85,8 +85,8 @@
 
 /* Expandable Legend details */
 .v2-legend-details {
-  margin-top: 0.15rem;
-  padding-top: 0.1rem;
+  margin-top: var(--v2-space-1);
+  padding-top: var(--v2-space-1);
 }
 
 .v2-legend-summary {
@@ -96,7 +96,7 @@
   cursor: pointer;
   user-select: none;
   list-style: none;
-  padding: 0.15rem 0.35rem;
+  padding: var(--v2-space-1) var(--v2-space-2);
   border-radius: var(--v2-radius-sm);
   background-color: transparent;
   border: none;
@@ -125,8 +125,8 @@
 }
 
 .v2-legend-body {
-  margin-top: 0.5rem;
-  padding: 0.25rem 0.25rem 0;
+  margin-top: var(--v2-space-4);
+  padding: var(--v2-space-2) var(--v2-space-2) 0;
 }
 
 /* Legend list */
@@ -162,8 +162,8 @@
   display: flex;
   align-items: center;
   gap: var(--v2-space-3);
-  margin-top: 1rem;
-  padding-top: 0.5rem;
+  margin-top: var(--v2-space-6);
+  padding-top: var(--v2-space-4);
   border-top: 1px dashed var(--v2-border);
   font-size: 0.8rem;
   color: var(--v2-text-muted);
@@ -178,7 +178,7 @@
 }
 
 .v2-dict-section-title {
-  margin: 0 0 0.35rem 0;
+  margin: 0 0 var(--v2-space-2) 0;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -208,7 +208,7 @@
 .v2-lexicon-badge {
   display: inline-block;
   min-width: 2.2rem;
-  padding: 1px 5px;
+  padding: var(--v2-space-1) var(--v2-space-3);
   font-size: 0.72rem;
   font-weight: 600;
   text-align: center;
@@ -270,15 +270,15 @@ html:not(.v2-has-js) .v2-js-only {
     gap: var(--v2-space-7);
   }
   .v2-landing-card-header {
-    margin-bottom: 0.45rem;
-    padding-bottom: 0.3rem;
+    margin-bottom: var(--v2-space-3);
+    padding-bottom: var(--v2-space-2);
   }
   .v2-dict-sections {
     gap: var(--v2-space-4);
   }
   .v2-dict-section-title {
     font-size: 0.75rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: var(--v2-space-2);
   }
   .v2-lexicon-list {
     gap: var(--v2-space-2);
@@ -287,14 +287,14 @@ html:not(.v2-has-js) .v2-js-only {
     font-size: 0.8rem;
   }
   .v2-sample-entry {
-    padding: 0.45rem 0.65rem;
-    margin-bottom: 0.45rem;
+    padding: var(--v2-space-3) var(--v2-space-4);
+    margin-bottom: var(--v2-space-3);
     font-size: 0.88rem;
   }
   .v2-card-settings-note,
   .v2-legend-settings-tip {
-    margin-top: 0.65rem;
-    padding-top: 0.5rem;
+    margin-top: var(--v2-space-4);
+    padding-top: var(--v2-space-4);
   }
   .v2-legend-list li {
     grid-template-columns: 80px 1fr;

@@ -10,7 +10,7 @@
   justify-content: center;
   height: 42px;
   width: 42px;
-  padding: 8px;
+  padding: var(--v2-space-4);
   background-color: var(--v2-input-bg);
   border: 1px solid var(--v2-input-border, var(--v2-border));
   box-shadow: var(--v2-input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
@@ -74,20 +74,20 @@ morcus-reader-settings {
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-lg);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
-  padding: 14px;
+  padding: var(--v2-space-5);
   z-index: var(--v2-z-dropdown);
   box-sizing: border-box;
 }
 
 .v2-settings-card {
-  padding: 1.25rem 1.25rem 1rem;
+  padding: var(--v2-space-7) var(--v2-space-7) var(--v2-space-6);
 }
 
 .v2-settings-body {
   display: flex;
   flex-direction: column;
   gap: var(--v2-space-6);
-  padding: 1rem 0;
+  padding: var(--v2-space-6) 0;
 }
 
 .v2-settings-group {
@@ -103,7 +103,7 @@ morcus-reader-settings {
   font-weight: 700;
   color: var(--v2-text-muted);
   margin: 0;
-  padding-bottom: 0.25rem;
+  padding-bottom: var(--v2-space-2);
   border-bottom: 1px solid var(--v2-border);
 }
 
@@ -111,14 +111,14 @@ morcus-reader-settings {
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--v2-text);
-  margin-bottom: 8px;
+  margin-bottom: var(--v2-space-4);
 }
 
 .v2-settings-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: var(--v2-space-4);
 }
 
 .v2-settings-title {
@@ -142,13 +142,13 @@ morcus-reader-settings {
 }
 
 .v2-settings-control-row {
-  margin-bottom: 12px;
+  margin-bottom: var(--v2-space-5);
 }
 
 .v2-settings-divider {
   height: 1px;
   background: var(--v2-border);
-  margin: 14px 0 12px;
+  margin: var(--v2-space-5) 0 var(--v2-space-5);
 }
 
 /* ==========================================================================
@@ -162,7 +162,7 @@ morcus-reader-settings {
 }
 
 .v2-settings-caption {
-  margin: 4px 0 0 22px;
+  margin: var(--v2-space-2) 0 0 var(--v2-space-7);
   font-size: 0.72rem;
   color: var(--v2-text-muted);
   line-height: 1.35;
@@ -178,7 +178,7 @@ morcus-reader-settings {
 }
 
 .v2-stepper-btn {
-  padding: 0.25rem 0.6rem;
+  padding: var(--v2-space-2) var(--v2-space-4);
   font-size: 0.8125rem;
   font-weight: 600;
   background: none;
@@ -200,7 +200,7 @@ morcus-reader-settings {
   color: var(--v2-text-muted);
   min-width: 3.2rem;
   text-align: center;
-  padding: 0 0.25rem;
+  padding: 0 var(--v2-space-2);
 }
 
 .v2-settings-slider {
@@ -214,7 +214,7 @@ morcus-reader-settings {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px;
+  padding: var(--v2-space-4);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-sm);
@@ -227,7 +227,7 @@ morcus-reader-settings {
   justify-content: space-between;
   gap: var(--v2-space-5);
   cursor: pointer;
-  padding: 0.25rem 0;
+  padding: var(--v2-space-2) 0;
 }
 
 .v2-toggle-checkbox {
@@ -247,7 +247,7 @@ morcus-reader-settings {
 }
 
 .v2-settings-select {
-  padding: 0.25rem 0.5rem;
+  padding: var(--v2-space-2) var(--v2-space-4);
   font-size: 0.8125rem;
   background: var(--v2-bg);
   border: 1px solid var(--v2-border);
@@ -264,12 +264,12 @@ morcus-reader-settings {
   align-items: center;
   justify-content: space-between;
   gap: var(--v2-space-5);
-  margin-top: 0.5rem;
+  margin-top: var(--v2-space-4);
 }
 
 .v2-settings-noscript-actions {
-  margin-top: 12px;
-  padding-top: 8px;
+  margin-top: var(--v2-space-5);
+  padding-top: var(--v2-space-4);
   border-top: 1px solid var(--v2-border);
   display: flex;
   justify-content: flex-end;
@@ -277,7 +277,7 @@ morcus-reader-settings {
 
 .v2-settings-apply-btn {
   font-size: 0.78rem;
-  padding: 4px 10px;
+  padding: var(--v2-space-2) var(--v2-space-4);
   border-radius: var(--v2-radius-sm);
   cursor: pointer;
 }

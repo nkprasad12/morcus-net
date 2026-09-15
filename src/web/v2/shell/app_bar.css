@@ -48,7 +48,7 @@ morcus-report-dialog:not(:defined) {
   color: var(--v2-app-bar-nav-text);
   font-weight: 500;
   font-size: 0.95rem;
-  padding: 6px 14px;
+  padding: var(--v2-space-3) var(--v2-space-5);
   border-radius: var(--v2-radius-md);
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
@@ -76,7 +76,7 @@ morcus-report-dialog:not(:defined) {
   border: 1px solid var(--v2-app-bar-toggle-border);
   color: var(--v2-app-bar-text);
   border-radius: var(--v2-radius-md);
-  padding: 6px;
+  padding: var(--v2-space-3);
   cursor: pointer;
   user-select: none;
   transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
@@ -136,7 +136,7 @@ morcus-report-dialog:not(:defined) {
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-lg);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
-  padding: 6px;
+  padding: var(--v2-space-3);
   flex-direction: column;
   align-items: stretch;
   gap: var(--v2-space-2);
@@ -145,7 +145,7 @@ morcus-report-dialog:not(:defined) {
 
 .v2-mobile-menu-dropdown .v2-nav-link {
   display: block;
-  padding: 8px 12px;
+  padding: var(--v2-space-4) var(--v2-space-5);
   color: var(--v2-text);
   font-size: 0.95rem;
 }

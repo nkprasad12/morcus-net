@@ -4,7 +4,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  margin-bottom: 12px;
+  margin-bottom: var(--v2-space-5);
   background-color: var(--v2-input-bg);
   border: 1px solid var(--v2-input-border, var(--v2-border));
   border-radius: var(--v2-radius-lg);
@@ -26,7 +26,7 @@
 
 .v2-input {
   width: 100%;
-  padding: 10px 42px 10px 14px;
+  padding: var(--v2-space-4) 42px var(--v2-space-4) var(--v2-space-5);
   font-size: 1.05rem;
   border: none;
   border-radius: var(--v2-radius-lg) var(--v2-radius-lg) 0 0;
@@ -50,7 +50,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  padding: 6px;
+  padding: var(--v2-space-3);
   background: transparent;
   border: none;
   border-radius: var(--v2-radius-sm);
@@ -82,14 +82,14 @@
   top: 100%;
   left: 0;
   right: 0;
-  margin-top: 4px;
+  margin-top: var(--v2-space-2);
   background: var(--v2-input-bg);
   border: 1px solid var(--v2-input-border, var(--v2-border));
   border-radius: var(--v2-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   z-index: var(--v2-z-dropdown);
   list-style: none;
-  padding: 4px 0;
+  padding: var(--v2-space-2) 0;
   max-height: 240px;
   overflow-y: auto;
 }
@@ -98,7 +98,7 @@
   display: flex;
   align-items: center;
   gap: var(--v2-space-5);
-  padding: 7px 14px;
+  padding: var(--v2-space-3) var(--v2-space-5);
   cursor: pointer;
   font-size: 0.95rem;
   transition: background-color 0.1s ease-in-out;
@@ -127,7 +127,7 @@
 .v2-search-tray {
   border-top: 1px solid var(--v2-border);
   background-color: var(--v2-tag-bg);
-  padding: 5px 12px;
+  padding: var(--v2-space-3) var(--v2-space-5);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -168,7 +168,7 @@
   font-family: var(--v2-font-mono, monospace);
   font-weight: 700;
   line-height: 1;
-  padding: 2px 5px;
+  padding: var(--v2-space-1) var(--v2-space-2);
   border-radius: var(--v2-radius-sm);
   letter-spacing: -0.02em;
 }
@@ -206,7 +206,7 @@
   font-family: var(--v2-font-mono, monospace);
   font-weight: 700;
   line-height: 1;
-  padding: 2px 6px;
+  padding: var(--v2-space-1) var(--v2-space-3);
   border-radius: var(--v2-radius-sm);
 }
 
@@ -230,7 +230,7 @@
 .v2-search-tray-right .v2-settings-btn {
   height: 26px;
   width: 26px;
-  padding: 4px;
+  padding: var(--v2-space-2);
   border: none;
   background: transparent;
   box-shadow: none;
