@@ -2,6 +2,8 @@
  * Attribution and source metadata for Morcus Latin dictionaries.
  * Provides scholarly provenance, digitization sources, and open-access licenses.
  */
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { findDictInfo } from "@/web/v2/dict/dict_clustering.common";
 
 export interface DictAttributionInfo {
   sourceText: string;
@@ -119,3 +121,38 @@ export const DICT_ACRONYMS: Record<string, string> = {
   riddle_arnold: "R&A",
   numeral: "NUM",
 };
+
+/**
+ * Resolves a dictionary key/identifier (canonical, lowercase, or legacy) to its human-readable display name.
+ *
+ * Precedence:
+ * 1. Exact match in DICT_NAMES ("L&S" -> "Lewis & Short")
+ * 2. Case-normalized match in DICT_NAMES ("ls", "LS" -> "Lewis & Short")
+ * 3. LatinDictInfo via LatinDict.BY_KEY ("NUM" -> "Numeral")
+ * 4. Extended fuzzy/alias lookup via findDictInfo
+ * 5. Uppercased key fallback (or empty string if key is empty)
+ */
+export function resolveDictDisplayName(key: string): string {
+  if (!key) return "";
+  return (
+    DICT_NAMES[key] ??
+    DICT_NAMES[key.toLowerCase()] ??
+    LatinDict.BY_KEY.get(key)?.displayName ??
+    findDictInfo(key)?.displayName ??
+    key.toUpperCase()
+  );
+}
+
+/**
+ * Resolves a dictionary key/identifier to its canonical short acronym (e.g. "ls" -> "L&S").
+ */
+export function resolveDictAcronym(key: string): string {
+  if (!key) return "";
+  const info = findDictInfo(key);
+  return (
+    info?.key ??
+    DICT_ACRONYMS[key] ??
+    DICT_ACRONYMS[key.toLowerCase()] ??
+    key.toUpperCase()
+  );
+}

@@ -7,8 +7,9 @@
 
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import {
-  DICT_NAMES,
   DICT_ACRONYMS,
+  resolveDictDisplayName,
+  resolveDictAcronym,
 } from "@/web/v2/dict/dict_attribution.server";
 import { findDictInfo } from "@/web/v2/dict/dict_clustering.common";
 import * as he from "he";
@@ -116,18 +117,8 @@ export function renderDictTocHtml(options: DictTocOptions): string {
       const entries = results[dictKey] || [];
       if (entries.length === 0) return "";
 
-      const info = findDictInfo(dictKey);
-      const dictAcronym =
-        info?.key ??
-        DICT_ACRONYMS[dictKey] ??
-        DICT_ACRONYMS[dictKey.toLowerCase()] ??
-        dictKey.toUpperCase();
-
-      const dictName =
-        DICT_NAMES[dictKey] ??
-        DICT_NAMES[dictKey.toLowerCase()] ??
-        info?.displayName ??
-        dictKey.toUpperCase();
+      const dictAcronym = resolveDictAcronym(dictKey);
+      const dictName = resolveDictDisplayName(dictKey);
 
       const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
@@ -240,11 +231,7 @@ export function renderDictTocHtml(options: DictTocOptions): string {
         if (entries.length === 0) return "";
 
         const info = findDictInfo(dictKey);
-        const dictAcronym =
-          info?.key ??
-          DICT_ACRONYMS[dictKey] ??
-          DICT_ACRONYMS[dictKey.toLowerCase()] ??
-          dictKey.toUpperCase();
+        const dictAcronym = resolveDictAcronym(dictKey);
         const dictLang =
           info && info.languages.from !== "*"
             ? info.languages.from.toLowerCase()

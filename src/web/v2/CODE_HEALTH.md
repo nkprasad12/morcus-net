@@ -66,7 +66,7 @@ Every item here is a feature reimplementing something `core/` already provides.
       a giant HTML blob into plain data assertions.
 - [ ] 🟡 **Split `reader.server.ts: renderReaderContentHtml`** (L122-609) into `renderTocDrawer`,
       `renderBiblioDialog`, etc.
-- [ ] 🟢 **De-duplicate dictionary-name resolution.** The expression
+- [x] 🟢 **De-duplicate dictionary-name resolution.** The expression
       `DICT_NAMES[k] ?? LatinDict.BY_KEY.get(k)?.displayName ?? k.toUpperCase()` is copied at
       `dict_page.server.ts` L56 and L102, `dict_toc.server.ts` L117 and L240. Export one
       `resolveDictDisplayName(key)`.

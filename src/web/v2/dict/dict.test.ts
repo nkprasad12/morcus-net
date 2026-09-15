@@ -5,6 +5,8 @@ import {
   renderDictPageHtml,
   parseDictScale,
   formatInflectionForm,
+  resolveDictDisplayName,
+  resolveDictAcronym,
 } from "@/web/v2/dict/dict.server";
 import { XmlNode } from "@/common/xml/xml_node";
 import { EntryResult } from "@/common/dictionaries/dict_result";
@@ -1118,6 +1120,87 @@ describe("dict_ssr", () => {
       expect(parseDictScale("")).toBeUndefined();
       expect(parseDictScale("abc")).toBeUndefined();
       expect(parseDictScale(NaN)).toBeUndefined();
+    });
+  });
+
+  describe("resolveDictDisplayName", () => {
+    test("resolves canonical keys with proper ampersands and naming", () => {
+      expect(resolveDictDisplayName("L&S")).toBe("Lewis & Short");
+      expect(resolveDictDisplayName("S&H")).toBe("Smith & Hall");
+      expect(resolveDictDisplayName("GAF")).toBe("Gaffiot");
+      expect(resolveDictDisplayName("GRG")).toBe("Georges");
+      expect(resolveDictDisplayName("EGL")).toBe("Pozo");
+      expect(resolveDictDisplayName("GES")).toBe("Gesner");
+      expect(resolveDictDisplayName("FOR")).toBe("Forcellini");
+      expect(resolveDictDisplayName("R&A")).toBe("Riddle & Arnold");
+      expect(resolveDictDisplayName("NUM")).toBe("Latin Numerals");
+    });
+
+    test("resolves legacy and lowercase keys", () => {
+      expect(resolveDictDisplayName("ls")).toBe("Lewis & Short");
+      expect(resolveDictDisplayName("sh")).toBe("Smith & Hall");
+      expect(resolveDictDisplayName("gaffiot")).toBe("Gaffiot");
+      expect(resolveDictDisplayName("georges")).toBe("Georges");
+      expect(resolveDictDisplayName("pozo")).toBe("Pozo");
+      expect(resolveDictDisplayName("gesner")).toBe("Gesner");
+      expect(resolveDictDisplayName("forcellini")).toBe("Forcellini");
+      expect(resolveDictDisplayName("riddle_arnold")).toBe("Riddle & Arnold");
+      expect(resolveDictDisplayName("numeral")).toBe("Latin Numerals");
+    });
+
+    test("resolves case-variant keys via lowercase fallback and findDictInfo", () => {
+      expect(resolveDictDisplayName("LS")).toBe("Lewis & Short");
+      expect(resolveDictDisplayName("SH")).toBe("Smith & Hall");
+      expect(resolveDictDisplayName("gaf")).toBe("Gaffiot");
+      expect(resolveDictDisplayName("grg")).toBe("Georges");
+      expect(resolveDictDisplayName("Gaffiot")).toBe("Gaffiot");
+    });
+
+    test("falls back to uppercased key when key is unrecognized", () => {
+      expect(resolveDictDisplayName("custom_lexicon")).toBe("CUSTOM_LEXICON");
+      expect(resolveDictDisplayName("unknown")).toBe("UNKNOWN");
+    });
+
+    test("returns empty string when key is empty", () => {
+      expect(resolveDictDisplayName("")).toBe("");
+    });
+  });
+
+  describe("resolveDictAcronym", () => {
+    test("resolves canonical keys", () => {
+      expect(resolveDictAcronym("L&S")).toBe("L&S");
+      expect(resolveDictAcronym("S&H")).toBe("S&H");
+      expect(resolveDictAcronym("GAF")).toBe("GAF");
+      expect(resolveDictAcronym("GRG")).toBe("GRG");
+      expect(resolveDictAcronym("EGL")).toBe("EGL");
+      expect(resolveDictAcronym("GES")).toBe("GES");
+      expect(resolveDictAcronym("FOR")).toBe("FOR");
+      expect(resolveDictAcronym("R&A")).toBe("R&A");
+      expect(resolveDictAcronym("NUM")).toBe("NUM");
+    });
+
+    test("resolves legacy and lowercase keys to canonical acronyms", () => {
+      expect(resolveDictAcronym("ls")).toBe("L&S");
+      expect(resolveDictAcronym("sh")).toBe("S&H");
+      expect(resolveDictAcronym("gaffiot")).toBe("GAF");
+      expect(resolveDictAcronym("georges")).toBe("GRG");
+      expect(resolveDictAcronym("pozo")).toBe("EGL");
+      expect(resolveDictAcronym("gesner")).toBe("GES");
+      expect(resolveDictAcronym("forcellini")).toBe("FOR");
+      expect(resolveDictAcronym("riddle_arnold")).toBe("R&A");
+      expect(resolveDictAcronym("numeral")).toBe("NUM");
+    });
+
+    test("resolves case-variant keys", () => {
+      expect(resolveDictAcronym("LS")).toBe("L&S");
+      expect(resolveDictAcronym("SH")).toBe("S&H");
+      expect(resolveDictAcronym("gaf")).toBe("GAF");
+      expect(resolveDictAcronym("grg")).toBe("GRG");
+    });
+
+    test("falls back to uppercased key for unknown keys", () => {
+      expect(resolveDictAcronym("my_dict")).toBe("MY_DICT");
+      expect(resolveDictAcronym("")).toBe("");
     });
   });
 });
