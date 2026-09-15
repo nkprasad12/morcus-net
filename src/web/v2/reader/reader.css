@@ -312,7 +312,7 @@ body.v2-resizing-panels {
     box-shadow: var(--v2-drawer-shadow);
     transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1),
       max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 100;
+    z-index: var(--v2-z-drawer);
   }
 
   .v2-reader-dict-panel.v2-is-dragging {
@@ -475,7 +475,7 @@ body.v2-resizing-panels {
     cursor: col-resize;
     user-select: none;
     touch-action: none;
-    z-index: 10;
+    z-index: var(--v2-z-raised);
     position: relative;
   }
 
@@ -590,7 +590,6 @@ body.v2-resizing-panels {
     position: fixed;
     bottom: 24px;
     right: 28px;
-    z-index: 50;
   }
 }
 
@@ -600,7 +599,7 @@ body.v2-resizing-panels {
 .v2-reader-sticky-bar {
   position: sticky;
   top: 0;
-  z-index: 25;
+  z-index: var(--v2-z-sticky);
   display: flex;
   flex-direction: column;
   background: var(--v2-card-bg);
@@ -1163,7 +1162,7 @@ body.v2-resizing-panels {
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  z-index: 150;
+  z-index: var(--v2-z-nav);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1349,7 +1348,7 @@ body.v2-resizing-panels {
   font-size: 0.8125rem;
   font-weight: 500;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  z-index: 200;
+  z-index: var(--v2-z-toast);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;

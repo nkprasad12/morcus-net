@@ -18,6 +18,17 @@
 @import "./critical_variables.css";
 
 :root {
+  /* Stacking Context & Z-Index Scale */
+  --v2-z-raised: 10;
+  --v2-z-sticky: 20;
+  --v2-z-overlay: 50;
+  --v2-z-drawer: 100;
+  --v2-z-fab: 110;
+  --v2-z-dropdown: 200;
+  --v2-z-nav: 300;
+  --v2-z-toast: 400;
+  --v2-z-modal: 1000;
+
   --v2-font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
   --v2-card-bg: var(--v2-bg);
   --v2-text-muted: #6c757d;

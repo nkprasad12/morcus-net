@@ -119,11 +119,12 @@ Playwright tests require the server to be running (typically configured on port 
 
 Run these before each commit to ensure code compiles and passes fast unit tests:
 
-1. `npx eslint src/web/v2` (lint check)
-2. `npx tsc --noEmit` (TypeScript typecheck)
-3. `npm run tsnp src/bundler/v2.rsbuild.ts -- --minify` (ensure bundle builds cleanly with minification)
-4. `npm run ts-tests:v2` (ensure all fast V2 unit tests pass)
-5. `npx prettier src/web/v2 --check` (or format modified files)
+1. `npx eslint src/web/v2` (TypeScript lint check)
+2. `npm run lint:css` (Stylelint CSS design token check)
+3. `npx tsc --noEmit` (TypeScript typecheck)
+4. `npm run tsnp src/bundler/v2.rsbuild.ts -- --minify` (ensure bundle builds cleanly with minification)
+5. `npm run ts-tests:v2` (ensure all fast V2 unit tests pass)
+6. `npx prettier src/web/v2 --check` (or format modified files)
 
 ### B. Pre-Push Checklist (Full Verification)
 

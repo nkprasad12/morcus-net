@@ -227,20 +227,18 @@ and `inset` property shorthands.
 under the `"dom"` library target in `tsconfig.json`. The `declare global` block in the client bundle
 was completely redundant and safely removed without auxiliary declaration files.
 
+**The floating return-to-top button must stay elevated above mobile drawers (`--v2-z-fab: 110`).**
+On mobile, `.v2-back-to-top` dynamically rests 16px above the top edge of `.v2-drawer` via
+`bottom: calc(var(--v2-drawer-height) + ...)`. During drawer drag transitions and docking, the drawer's
+upward box-shadow and swipe surface occlude lower-z-index elements. A prior attempt setting `z-index: 90`
+caused clicks near the handle to intercept the drawer instead of triggering smooth scroll; elevating
+to `--v2-z-fab: 110` (strictly above `--v2-z-drawer: 100`) is required.
+
 ---
 
 ## Phase 6 — CSS
 
 Verified counts as of the audit.
-
-- [ ] 🟡 **Add a z-index scale to `shell/variables.css`.** 17 declarations across 11 distinct
-      values (`2, 10, 25, 50, 100, 105, 150, 200, 300, 1000`, plus one `z-index: 10 !important`)
-      spread over 8 files — nobody can reason about stacking.
-
-      ```css
-      --v2-z-raised: 10;  --v2-z-overlay: 50;  --v2-z-drawer: 100;
-      --v2-z-nav: 300;    --v2-z-toast: 400;   --v2-z-modal: 1000;
-      ```
 
 - [ ] 🟡 **Reduce `!important` — 78 instances**, concentrated in:
 
@@ -466,6 +464,13 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Split `dict_page.server.ts: renderDictResultsHtml`**, decomposing empty state (`renderNoResultsHtml`), zero-hit status (`renderNoEntriesHtml`), multi-lexicon jump navigation (`renderJumpNavHtml`), and entry cards (`renderDictCardHtml`), backed by 10 new unit tests.
 - **Split `dict_toc.server.ts: renderDictTocHtml` into model (`buildTocTree`) and view (`renderTocSenseListHtml`)**, naming visibility thresholds (`TOC_MIN_TOTAL_SENSES`, `TOC_MIN_SINGLE_ENTRY_SENSES`, `TOC_MIN_MULTI_ENTRIES`), centralizing `dictCardId` / `resolveDictLang` in `dict_attribution.server.ts`, wiring `dict_page.server.ts` to `buildTocTree`, and converting HTML regex tests into typed data assertions.
 - **Split `reader.server.ts: renderReaderContentHtml`**, decomposing reader context resolution (`resolveReaderContext`), sticky quick navigation (`renderReaderStickyBar`), text canvas (`renderReaderTextPanel`), dictionary sidebar (`renderReaderDictPanel`), TOC drawer in `reader_toc.server.ts` (`renderTocDrawer`), and modals in `reader_dialogs.server.ts` (`renderBiblioDialog`, `renderReaderSettingsDialog`), backed by 21 unit tests.
+
+**Phase 6 — CSS**
+
+- **Standardized z-index scale in `shell/variables.css` and enforced via Stylelint.** Migrated all 17
+  declarations across 8 stylesheets to design tokens (`--v2-z-raised`, `--v2-z-sticky`,
+  `--v2-z-overlay`, `--v2-z-drawer`, `--v2-z-fab`, `--v2-z-dropdown`, `--v2-z-nav`, `--v2-z-toast`,
+  `--v2-z-modal`), and introduced Stylelint with `stylelint-declaration-strict-value` for `src/web/v2/**/*.css`.
 
 **Phase 7 — docs & tests**
 

@@ -87,7 +87,7 @@
   border: 1px solid var(--v2-input-border, var(--v2-border));
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  z-index: 100;
+  z-index: var(--v2-z-dropdown);
   list-style: none;
   padding: 4px 0;
   max-height: 240px;

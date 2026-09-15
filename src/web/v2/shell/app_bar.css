@@ -140,7 +140,7 @@ morcus-report-dialog:not(:defined) {
   flex-direction: column;
   align-items: stretch;
   gap: 4px;
-  z-index: 300;
+  z-index: var(--v2-z-nav);
 }
 
 .v2-mobile-menu-dropdown .v2-nav-link {
@@ -213,7 +213,7 @@ morcus-report-dialog:not(:defined) {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 105;
+  z-index: var(--v2-z-fab);
   text-decoration: none;
   cursor: pointer;
   opacity: 0;
