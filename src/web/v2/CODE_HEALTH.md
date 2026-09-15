@@ -58,8 +58,6 @@ Every item here is a feature reimplementing something `core/` already provides.
 
 ### Server-side render functions
 
-- [ ] 🔴 **Split `dict_page.server.ts: renderDictResultsHtml`** (L22-239, 217 lines) into
-      `renderNoResultsView`, `renderJumpNavigation`, `renderDictCard`.
 - [ ] 🔴 **Split `dict_toc.server.ts: renderDictTocHtml`** (L93-337, 244 lines, up to 5 levels of
       nesting) into a model (`buildTocTree(results)`) and a view (`renderTocSenseList(tree)`).
       This is also the single biggest testability win available — it converts regex-matching against
@@ -71,9 +69,8 @@ Every item here is a feature reimplementing something `core/` already provides.
       `dict_page.server.ts` L56 and L102, `dict_toc.server.ts` L117 and L240. Export one
       `resolveDictDisplayName(key)`.
 - [ ] 🟢 **Convert trailing-boolean signatures to option objects**:
-      `renderDictResultsHtml(query, results?, queriedDicts?, isInflected = true)`
-      (`dict_page.server.ts` L22) and `renderDictLandingHtml(activeDicts?, isInflected = true)`
-      (`dict_landing.server.ts` L63). `renderDictPageHtml` already does this correctly.
+      `renderDictLandingHtml(activeDicts?, isInflected = true)` (`dict_landing.server.ts` L63).
+      `renderDictPageHtml` and `renderDictResultsHtml` already do this correctly.
 - [ ] 🟢 **Name the TOC visibility thresholds** in `dict_toc.server.ts` L86
       (`totalSenses < 4 && maxSingleEntrySenses < 3 && totalEntries <= 1`).
 - [ ] 🟢 **Use or delete `linkifyText`'s `activeWord` parameter** (`dict/linkify.server.ts` L26).
@@ -474,6 +471,7 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Extract `library/not_found.server.ts`**, decomposing the inlined 404 classical work-not-found page from `reader_routes.server.ts` into a dedicated SSR renderer and hoisting inline styles to `library.css`, backed by unit and router 404 tests.
 - **Hoist drawer dvh magic numbers (`18`/`48`/`88`) to named constants**, exporting `DRAWER_FLOOR_DVH`, `DRAWER_DEFAULT_DVH`, `DRAWER_EXPANDED_DVH`, and `DRAWER_MIN_HEIGHT` from `core/drawer.client.ts` and consuming them across `reader_view.client.ts`, `dict_toc.client.ts`, and `DrawerController`.
 - **Extract `core/request_params.server.ts`**, centralizing `isPartialRequest`, `isEmbeddedRequest`, `readLimit`, `toStringOrArray`, and `readDictParam`, eliminating duplicated parameter derivation across route slices and removing redundant Express `Content-Type` headers, backed by 26 unit tests.
+- **Split `dict_page.server.ts: renderDictResultsHtml`**, decomposing empty state (`renderNoResultsHtml`), zero-hit status (`renderNoEntriesHtml`), multi-lexicon jump navigation (`renderJumpNavHtml`), and entry cards (`renderDictCardHtml`), backed by 10 new unit tests.
 
 **Phase 7 — docs & tests**
 
