@@ -11,8 +11,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--v2-space-2);
-  margin: 0 0 10px;
-  padding: 6px 12px;
+  margin: 0 0 var(--v2-space-4);
+  padding: var(--v2-space-3) var(--v2-space-5);
   border-radius: var(--v2-radius-md);
   background-color: var(--v2-tag-bg);
   font-family: var(--v2-font-sans);
@@ -50,8 +50,9 @@
   align-items: center;
   gap: var(--v2-space-1);
   min-height: calc(1.55rem * var(--v2-dict-scale, 1));
-  margin-left: 4px;
-  padding: 1px 9px 1px 6px;
+  margin-left: var(--v2-space-2);
+  padding: var(--v2-space-1) var(--v2-space-4) var(--v2-space-1)
+    var(--v2-space-3);
   box-sizing: border-box;
   border-radius: var(--v2-radius-full);
   background-color: var(--v2-card-bg);
@@ -124,7 +125,7 @@
 }
 
 .v2-subsection-note .v2-tool-body {
-  margin-top: 6px;
+  margin-top: var(--v2-space-3);
   max-height: 220px;
 }
 
@@ -157,7 +158,7 @@
 
 @media (max-width: 600px) {
   .v2-subsection-note {
-    padding: 8px 11px;
+    padding: var(--v2-space-4) var(--v2-space-5);
   }
 
   .v2-subsection-note-tail {

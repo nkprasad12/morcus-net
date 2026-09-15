@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--v2-space-5);
-  margin: 1rem 0;
+  margin: var(--v2-space-6) 0;
   font-size: 0.8125rem;
 }
 
@@ -14,7 +14,7 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  margin-bottom: 0.15rem;
+  margin-bottom: var(--v2-space-1);
 }
 
 .v2-meta-row dd {
@@ -25,7 +25,7 @@
 .v2-meta-row code {
   font-family: var(--v2-font-mono);
   background: var(--v2-bg);
-  padding: 0.15rem 0.35rem;
+  padding: var(--v2-space-1) var(--v2-space-3);
   border-radius: var(--v2-radius-sm);
   border: 1px solid var(--v2-border);
 }
@@ -38,7 +38,7 @@
   transform: translateX(-50%) translateY(20px);
   background: var(--v2-text);
   color: var(--v2-bg);
-  padding: 0.5rem 1rem;
+  padding: var(--v2-space-4) var(--v2-space-6);
   border-radius: var(--v2-radius-full);
   font-size: 0.8125rem;
   font-weight: 500;

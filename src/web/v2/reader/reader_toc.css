@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1rem;
+  padding: var(--v2-space-5) var(--v2-space-6);
   border-bottom: 1px solid var(--v2-border);
   background: var(--v2-card-header-bg, var(--v2-bg));
 }
@@ -42,7 +42,7 @@
   font-weight: 600;
   font-size: 0.8125rem;
   cursor: pointer;
-  padding: 0.2rem 0.4rem;
+  padding: var(--v2-space-1) var(--v2-space-3);
   border-radius: var(--v2-radius-sm);
 }
 
@@ -58,14 +58,14 @@
   font-size: 1.25rem;
   color: var(--v2-text-muted);
   cursor: pointer;
-  padding: 0 0.4rem;
+  padding: 0 var(--v2-space-3);
 }
 
 .v2-reader-toc-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1rem;
+  padding: var(--v2-space-4) var(--v2-space-6);
   background: var(--v2-bg);
   border-bottom: 1px solid var(--v2-border);
   font-size: 0.75rem;
@@ -78,14 +78,14 @@
 }
 
 .v2-reader-toc-search-box {
-  padding: 0.6rem 0.85rem;
+  padding: var(--v2-space-4) var(--v2-space-5);
   border-bottom: 1px solid var(--v2-border);
   background: var(--v2-card-bg);
 }
 
 .v2-reader-toc-input {
   width: 100%;
-  padding: 0.4rem 0.65rem;
+  padding: var(--v2-space-3) var(--v2-space-5);
   font-size: 0.8125rem;
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-md);
@@ -96,7 +96,7 @@
 .v2-reader-toc-list {
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem;
+  padding: var(--v2-space-4);
   display: flex;
   flex-direction: column;
   gap: var(--v2-space-2);
@@ -106,7 +106,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 0.6rem 0.75rem;
+  padding: var(--v2-space-4) var(--v2-space-5);
   border-radius: var(--v2-radius-md);
   text-decoration: none;
   color: var(--v2-text);
@@ -140,7 +140,7 @@
   font-size: 0.6875rem;
   color: var(--v2-text-muted);
   flex-shrink: 0;
-  margin-left: 0.5rem;
+  margin-left: var(--v2-space-4);
 }
 
 /* Mobile full-viewport containment for TOC */

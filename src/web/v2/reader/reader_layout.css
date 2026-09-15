@@ -3,7 +3,7 @@
 .v2-reader-view {
   display: block;
   width: 100%;
-  margin-top: 1rem;
+  margin-top: var(--v2-space-6);
 }
 
 /* Two-column split layout */
@@ -130,7 +130,7 @@
   .v2-container.v2-container-reader {
     max-width: 1400px;
     height: calc(100vh - 65px);
-    padding: 14px 20px 14px;
+    padding: var(--v2-space-5) var(--v2-space-7);
     display: flex;
     flex-direction: column;
     overflow: hidden;

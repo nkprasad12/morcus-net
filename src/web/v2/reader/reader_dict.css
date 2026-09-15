@@ -37,7 +37,7 @@ body.v2-resizing-panels .v2-dict-iframe,
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-lg);
-  padding: 1.25rem;
+  padding: var(--v2-space-7);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
@@ -87,7 +87,7 @@ body.v2-resizing-panels .v2-dict-iframe,
     overscroll-behavior-y: contain;
     touch-action: pan-y;
     max-height: none;
-    padding: 0.85rem 1rem 1.5rem;
+    padding: var(--v2-space-5) var(--v2-space-6) var(--v2-space-8);
     box-shadow: none;
     border: none;
   }
@@ -120,8 +120,8 @@ body.v2-resizing-panels .v2-dict-iframe,
     max-width: min(800px, 60vw);
     min-width: 300px;
     overflow-y: auto;
-    padding-left: 16px;
-    padding-right: 6px;
+    padding-left: var(--v2-space-6);
+    padding-right: var(--v2-space-3);
     padding-bottom: 0;
     border-top: none;
     border-top-left-radius: 0;
@@ -138,7 +138,7 @@ body.v2-resizing-panels .v2-dict-iframe,
     background: transparent;
     border: none;
     border-radius: 0;
-    padding: 0.25rem 0 1.5rem;
+    padding: var(--v2-space-2) 0 var(--v2-space-8);
     box-shadow: none;
     max-height: none;
     overflow-y: visible;

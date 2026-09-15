@@ -43,14 +43,14 @@
 .v2-dialog-card {
   display: flex;
   flex-direction: column;
-  padding: 22px 24px;
+  padding: var(--v2-space-7) var(--v2-space-8);
 }
 
 .v2-dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: var(--v2-space-5);
 }
 
 .v2-dialog-title {
@@ -63,7 +63,7 @@
 .v2-dialog-subtitle {
   font-size: 0.8125rem;
   color: var(--v2-text-muted);
-  margin: 0.15rem 0 0;
+  margin: var(--v2-space-1) 0 0;
 }
 
 .v2-dialog-sm {
@@ -78,7 +78,7 @@
   border: none;
   color: var(--v2-text-muted);
   cursor: pointer;
-  padding: 6px;
+  padding: var(--v2-space-3);
   border-radius: var(--v2-radius-md);
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
@@ -101,14 +101,14 @@
 }
 
 .v2-dialog-body {
-  margin-bottom: 4px;
+  margin-bottom: var(--v2-space-2);
 }
 
 .v2-dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--v2-space-5);
-  margin-top: 18px;
+  margin-top: var(--v2-space-6);
 }
 
 /* Report Issue Dialog Specifics */
@@ -116,11 +116,11 @@
   display: flex;
   align-items: flex-start;
   gap: var(--v2-space-5);
-  padding: 10px 14px;
+  padding: var(--v2-space-4) var(--v2-space-5);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-lg);
-  margin-bottom: 16px;
+  margin-bottom: var(--v2-space-6);
   font-size: 0.85rem;
   line-height: 1.45;
   color: var(--v2-text-muted);
@@ -128,7 +128,7 @@
 
 .v2-report-notice-icon {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: var(--v2-space-1);
   color: var(--v2-primary);
 }
 
@@ -138,7 +138,7 @@
 }
 
 .v2-form-group {
-  margin-bottom: 14px;
+  margin-bottom: var(--v2-space-5);
 }
 
 .v2-form-label {
@@ -146,7 +146,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--v2-text);
-  margin-bottom: 6px;
+  margin-bottom: var(--v2-space-3);
 }
 
 .v2-form-label .v2-required {
@@ -158,7 +158,7 @@
   font-weight: 400;
   color: var(--v2-text-muted);
   font-size: 0.8rem;
-  margin-left: 4px;
+  margin-left: var(--v2-space-2);
 }
 
 .v2-report-reporter,
@@ -168,7 +168,7 @@
   font-family: inherit;
   font-size: 0.95rem;
   line-height: 1.45;
-  padding: 9px 12px;
+  padding: var(--v2-space-4) var(--v2-space-5);
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-md);
   background: var(--v2-bg);
@@ -192,12 +192,12 @@
   display: block;
   font-size: 0.775rem;
   color: var(--v2-text-muted);
-  margin-top: 4px;
+  margin-top: var(--v2-space-2);
 }
 
 .v2-report-status {
   min-height: 1.25rem;
-  margin-top: 8px;
+  margin-top: var(--v2-space-4);
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--v2-primary);
@@ -219,7 +219,7 @@
   display: none;
   width: 14px;
   height: 14px;
-  margin-right: 6px;
+  margin-right: var(--v2-space-3);
   border: 2px solid rgba(255, 255, 255, 0.35);
   border-top-color: var(--v2-on-accent);
   border-radius: 50%;

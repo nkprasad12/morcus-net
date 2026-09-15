@@ -13,7 +13,7 @@
   background: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-lg);
-  margin-bottom: 1rem;
+  margin-bottom: var(--v2-space-6);
   font-size: 0.875rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(8px);
@@ -25,7 +25,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--v2-space-4);
-  padding: 0.45rem 0.75rem;
+  padding: var(--v2-space-3) var(--v2-space-5);
   width: 100%;
 }
 
@@ -99,7 +99,7 @@
 
 .v2-sticky-jump-input {
   width: 4.25rem;
-  padding: 0.2rem 0.35rem;
+  padding: var(--v2-space-1) var(--v2-space-3);
   font-family: var(--v2-font-mono);
   font-size: 0.8125rem;
   text-align: center;
@@ -116,7 +116,7 @@
 }
 
 .v2-reader-nav-arrow {
-  padding: 0.25rem 0.55rem;
+  padding: var(--v2-space-2) var(--v2-space-4);
   min-width: 2rem;
   justify-content: center;
   font-weight: 600;
@@ -125,7 +125,7 @@
 
 /* More / Expand Toggle Button */
 .v2-sticky-expand-btn {
-  padding: 0.25rem 0.55rem;
+  padding: var(--v2-space-2) var(--v2-space-4);
   color: var(--v2-text-muted);
 }
 
@@ -162,7 +162,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--v2-space-5);
-  padding: 0.4rem 0.75rem 0.5rem;
+  padding: var(--v2-space-3) var(--v2-space-5) var(--v2-space-4);
   border-top: 1px solid var(--v2-border);
   background: var(--v2-bg);
   width: 100%;
@@ -192,13 +192,13 @@
 }
 
 .v2-reader-settings-btn {
-  padding: 0.25rem 0.55rem;
+  padding: var(--v2-space-2) var(--v2-space-4);
   font-weight: 600;
   letter-spacing: -0.05em;
 }
 
 .v2-reader-info-btn {
-  padding: 0.25rem 0.55rem;
+  padding: var(--v2-space-2) var(--v2-space-4);
 }
 
 /* No-JS Mode: expanded row is always visible, expand button hidden */
@@ -223,7 +223,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--v2-space-2);
-  padding: 0.35rem 0.65rem;
+  padding: var(--v2-space-3) var(--v2-space-5);
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--v2-text);
@@ -263,7 +263,7 @@
 
 .v2-jump-input {
   width: 4.5rem;
-  padding: 0.25rem 0.4rem;
+  padding: var(--v2-space-2) var(--v2-space-3);
   font-family: var(--v2-font-mono);
   font-size: 0.8125rem;
   text-align: center;
@@ -279,7 +279,7 @@
 }
 
 .v2-jump-submit {
-  padding: 0.25rem 0.5rem;
+  padding: var(--v2-space-2) var(--v2-space-4);
   font-size: 0.75rem;
   font-weight: 600;
   background: var(--v2-bg);
@@ -297,12 +297,12 @@
   display: inline-flex;
   border: 1px solid var(--v2-border);
   border-radius: var(--v2-radius-md);
-  padding: 2px;
+  padding: var(--v2-space-1);
   background: var(--v2-bg);
 }
 
 .v2-toggle-option {
-  padding: 0.2rem 0.55rem;
+  padding: var(--v2-space-1) var(--v2-space-4);
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--v2-text-muted);
@@ -329,13 +329,13 @@
 @media (max-width: 640px) {
   .v2-reader-sticky-bar {
     max-width: 100%;
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--v2-space-5);
     box-sizing: border-box;
     overflow-x: clip;
   }
 
   .v2-sticky-primary-row {
-    padding: 0.35rem 0.4rem;
+    padding: var(--v2-space-2) var(--v2-space-3);
     gap: var(--v2-space-2);
     min-width: 0;
     max-width: 100%;
@@ -356,7 +356,7 @@
   }
 
   .v2-sticky-expanded-row {
-    padding: 0.35rem 0.5rem;
+    padding: var(--v2-space-2) var(--v2-space-4);
     gap: var(--v2-space-3);
     flex-wrap: wrap;
     justify-content: space-between;
@@ -410,17 +410,17 @@
 
   .v2-sticky-jump-input {
     width: 2.75rem;
-    padding: 0.2rem 0.2rem;
+    padding: var(--v2-space-1);
     font-size: 0.75rem;
   }
 
   .v2-reader-nav-arrow {
-    padding: 0.2rem 0.35rem;
+    padding: var(--v2-space-1) var(--v2-space-3);
     min-width: 1.6rem;
   }
 
   .v2-jump-input {
     width: 2.75rem;
-    padding: 0.2rem 0.25rem;
+    padding: var(--v2-space-1) var(--v2-space-2);
   }
 }

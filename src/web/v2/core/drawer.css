@@ -58,7 +58,7 @@ body.v2-resizing-drawer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 14px 8px;
+  padding: var(--v2-space-4) var(--v2-space-5);
   border-bottom: 1px solid var(--v2-border);
   background-color: var(--v2-card-header-bg);
   border-top-left-radius: inherit;
@@ -88,7 +88,7 @@ body.v2-resizing-drawer {
   border-radius: var(--v2-radius-full);
   background-color: var(--v2-border-strong);
   opacity: 0.6;
-  margin-bottom: 6px;
+  margin-bottom: var(--v2-space-3);
   transition: opacity 0.15s ease, background-color 0.15s ease;
   flex-shrink: 0;
 }
@@ -123,7 +123,7 @@ body.v2-resizing-drawer {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 0 32px;
+  padding: 0 var(--v2-space-9);
 }
 
 .v2-drawer-label strong,
@@ -141,7 +141,7 @@ a.v2-reader-sheet-close:visited {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 8px;
+  padding: var(--v2-space-2) var(--v2-space-4);
   border: none;
   background: transparent;
   color: var(--v2-border-strong);
