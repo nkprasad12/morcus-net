@@ -8,6 +8,12 @@ import {
   resolveDictDisplayName,
   resolveDictAcronym,
 } from "@/web/v2/dict/dict.server";
+import {
+  renderNoResultsHtml,
+  renderNoEntriesHtml,
+  renderJumpNavHtml,
+  renderDictCardHtml,
+} from "@/web/v2/dict/dict_page.server";
 import { XmlNode } from "@/common/xml/xml_node";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import he from "he";
@@ -1201,6 +1207,280 @@ describe("dict_ssr", () => {
     test("falls back to uppercased key for unknown keys", () => {
       expect(resolveDictAcronym("my_dict")).toBe("MY_DICT");
       expect(resolveDictAcronym("")).toBe("");
+    });
+  });
+
+  describe("decomposed dict results renderers", () => {
+    describe("renderNoResultsHtml", () => {
+      test("renders generic no results container and escapes query", () => {
+        const html = renderNoResultsHtml('<script>alert("xss")</script>');
+        expect(html).toContain('class="v2-no-results"');
+        expect(html).toContain("No results found for");
+        expect(html).not.toContain("<script>");
+        expect(html).toContain(
+          "&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;"
+        );
+      });
+    });
+
+    describe("renderNoEntriesHtml", () => {
+      test("renders zero-hit notice with searched lexica names", () => {
+        const html = renderNoEntriesHtml({
+          query: "ignotus",
+          queriedDicts: ["L&S", "GAF"],
+          isInflected: true,
+        });
+        expect(html).toContain("No dictionary entries found for");
+        expect(html).toContain("ignotus");
+        expect(html).toContain("Searched: Lewis &amp; Short, Gaffiot");
+        expect(html).not.toContain("Exact headword search is active.");
+      });
+
+      test("renders inflected search guidance when isInflected is false", () => {
+        const html = renderNoEntriesHtml({
+          query: "amavi",
+          queriedDicts: ["L&S"],
+          isInflected: false,
+        });
+        expect(html).toContain("Exact headword search is active.");
+        expect(html).toContain("Enable inflected search");
+        expect(html).toContain('/v2/dicts?q=amavi&o=1"');
+      });
+
+      test("handles empty queriedDicts gracefully", () => {
+        const html = renderNoEntriesHtml({
+          query: "test",
+          queriedDicts: [],
+        });
+        expect(html).toContain("No dictionary entries found for");
+        expect(html).not.toContain("Searched:");
+      });
+    });
+
+    describe("renderJumpNavHtml", () => {
+      test("returns empty string when 1 or fewer dictionaries have hits", () => {
+        const results = {
+          "L&S": [
+            {
+              entry: new XmlNode("span", [], ["amo"]),
+              outline: {
+                mainKey: "amo",
+                mainSection: {
+                  text: "amo",
+                  level: 0,
+                  ordinal: "",
+                  sectionId: "n1",
+                },
+              },
+            },
+          ],
+        };
+        expect(
+          renderJumpNavHtml({
+            results,
+            hitKeys: ["L&S"],
+            allQueriedKeys: ["L&S", "GAF"],
+          })
+        ).toBe("");
+      });
+
+      test("renders jump pills and sorts hit lexica before zero-hit lexica", () => {
+        const results = {
+          "L&S": [
+            {
+              entry: new XmlNode("span", [], ["habeo"]),
+              outline: {
+                mainKey: "habeo",
+                mainSection: {
+                  text: "habeo",
+                  level: 0,
+                  ordinal: "",
+                  sectionId: "n1",
+                },
+              },
+            },
+          ],
+          GRG: [
+            {
+              entry: new XmlNode("span", [], ["habeo"]),
+              outline: {
+                mainKey: "habeo",
+                mainSection: {
+                  text: "habeo",
+                  level: 0,
+                  ordinal: "",
+                  sectionId: "g1",
+                },
+              },
+            },
+          ],
+        };
+
+        const html = renderJumpNavHtml({
+          results,
+          hitKeys: ["L&S", "GRG"],
+          allQueriedKeys: ["GAF", "GRG", "L&S"],
+        });
+
+        expect(html).toContain('class="v2-results-nav"');
+        expect(html).toContain('aria-label="Jump to dictionary"');
+        expect(html).toContain("2 results");
+
+        const lAndSIndex = html.indexOf('href="#dict-L-S"');
+        const grgIndex = html.indexOf('href="#dict-GRG"');
+        const gafIndex = html.indexOf("No entries found in Gaffiot");
+
+        expect(lAndSIndex).toBeGreaterThan(-1);
+        expect(grgIndex).toBeGreaterThan(-1);
+        expect(gafIndex).toBeGreaterThan(-1);
+        expect(grgIndex).toBeLessThan(gafIndex);
+        expect(lAndSIndex).toBeLessThan(gafIndex);
+        expect(html).toContain('class="v2-jump-pill v2-jump-pill-zero"');
+      });
+
+      test("formats total results counter correctly", () => {
+        const results = {
+          "L&S": [
+            {
+              entry: new XmlNode("span", [], ["amo"]),
+              outline: {
+                mainKey: "amo",
+                mainSection: {
+                  text: "amo",
+                  level: 0,
+                  ordinal: "",
+                  sectionId: "n1",
+                },
+              },
+            },
+          ],
+          GRG: [
+            {
+              entry: new XmlNode("span", [], ["amo2"]),
+              outline: {
+                mainKey: "amo2",
+                mainSection: {
+                  text: "amo2",
+                  level: 0,
+                  ordinal: "",
+                  sectionId: "g1",
+                },
+              },
+            },
+          ],
+        };
+        const html = renderJumpNavHtml({
+          results,
+          hitKeys: ["L&S", "GRG"],
+          allQueriedKeys: ["L&S", "GRG"],
+        });
+        expect(html).toContain("2 results");
+      });
+    });
+
+    describe("renderDictCardHtml", () => {
+      test("renders single entry card without quick-jump nav", () => {
+        const entries: EntryResult[] = [
+          {
+            entry: new XmlNode("span", [], ["habeo"]),
+            outline: {
+              mainKey: "habeo",
+              mainSection: {
+                text: "habeo",
+                level: 0,
+                ordinal: "",
+                sectionId: "n100",
+              },
+              senses: [],
+            },
+          },
+        ];
+
+        const html = renderDictCardHtml({
+          dictKey: "L&S",
+          entries,
+        });
+
+        expect(html).toContain('<section class="v2-dict-card" id="dict-L-S">');
+        expect(html).toContain('class="v2-dict-acronym">L&amp;S</span>');
+        expect(html).toContain(
+          'class="v2-dict-name v2-dict-title">Lewis &amp; Short</span>'
+        );
+        expect(html).toContain('class="v2-dict-count">(1)</span>');
+        expect(html).not.toContain('class="v2-entry-nav"');
+        expect(html).toContain('id="n100"');
+        expect(html).toContain('class="v2-dict-source-pane"');
+        expect(html).toContain("Perseus Digital Library");
+      });
+
+      test("renders multi-entry card with quick-jump nav links", () => {
+        const entries: EntryResult[] = [
+          {
+            entry: new XmlNode("span", [], ["cum 1"]),
+            outline: {
+              mainKey: "cum1",
+              mainLabel: "1. cum",
+              mainSection: {
+                text: "cum",
+                level: 0,
+                ordinal: "",
+                sectionId: "n1",
+              },
+              senses: [],
+            },
+          },
+          {
+            entry: new XmlNode("span", [], ["cum 2"]),
+            outline: {
+              mainKey: "cum2",
+              mainLabel: "2. cum",
+              mainSection: {
+                text: "cum",
+                level: 0,
+                ordinal: "",
+                sectionId: "n2",
+              },
+              senses: [],
+            },
+          },
+        ];
+
+        const html = renderDictCardHtml({
+          dictKey: "L&S",
+          entries,
+        });
+
+        expect(html).toContain('class="v2-entry-nav"');
+        expect(html).toContain("Jump to");
+        expect(html).toContain('href="#n1"');
+        expect(html).toContain('href="#n2"');
+        expect(html).toContain('class="v2-dict-count">(2)</span>');
+      });
+
+      test("omits source attribution when key lacks attribution info", () => {
+        const entries: EntryResult[] = [
+          {
+            entry: new XmlNode("span", [], ["custom"]),
+            outline: {
+              mainKey: "custom",
+              mainSection: {
+                text: "custom",
+                level: 0,
+                ordinal: "",
+                sectionId: "c1",
+              },
+              senses: [],
+            },
+          },
+        ];
+
+        const html = renderDictCardHtml({
+          dictKey: "UNKNOWN_KEY",
+          entries,
+        });
+
+        expect(html).not.toContain('class="v2-dict-source-pane"');
+      });
     });
   });
 });
