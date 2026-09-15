@@ -32,7 +32,7 @@ export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
   pages: [
     {
       id: "1.1",
-      title: "Liber I, Caput I",
+      title: "Book 1, Chapter 1",
       sectionCount: 4,
       citationRange: ["1.1.1", "1.1.4"],
       singleHtml: `
@@ -80,7 +80,7 @@ export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
     },
     {
       id: "1.2",
-      title: "Liber I, Caput II",
+      title: "Book 1, Chapter 2",
       sectionCount: 1,
       citationRange: ["1.2.1", "1.2.1"],
       singleHtml: `
@@ -208,7 +208,7 @@ export const MOCK_VERGIL_WORK: V2PreprocessedWork = {
   pages: [
     {
       id: "1",
-      title: "Liber I",
+      title: "Book 1",
       sectionCount: 1,
       citationRange: ["1.1", "1.1"],
       singleHtml: `

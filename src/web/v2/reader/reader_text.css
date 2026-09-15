@@ -20,16 +20,19 @@
   border-bottom: 1px solid var(--border);
   padding-bottom: var(--space-6);
   margin-bottom: var(--space-7);
+  text-align: center;
 }
 
 .reader-text-meta {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-3);
   margin-bottom: var(--space-2);
   font-size: 0.75rem;
   color: var(--text-muted);
   letter-spacing: 0.03em;
+  text-align: center;
 }
 
 .reader-author-tag {
@@ -52,8 +55,9 @@
 
 .reader-passage-heading {
   margin: 0 0 var(--space-2);
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-align: center;
   color: var(--text);
   font-family: var(--font-serif);
 }

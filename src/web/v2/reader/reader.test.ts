@@ -42,7 +42,7 @@ describe("reader_ssr", () => {
     // Author and Work headers
     expect(html).toContain("Caesar");
     expect(html).toContain("Gallico");
-    expect(html).toContain("Caput I");
+    expect(html).toContain("Chapter 1");
 
     // Dictionary iframe panel in No-JS view
     expect(html).toContain('id="dict-frame"');
@@ -157,11 +157,11 @@ describe("reader_ssr", () => {
     expect(html).toContain('class="sticky-primary-row"');
     expect(html).toContain('id="pager-prev"');
     expect(html).toContain('id="pager-next"');
-    expect(html).toContain('class="sticky-author"');
     expect(html).toContain('class="sticky-work-title"');
-    expect(html).toContain('class="sticky-page-title"');
+    expect(html).toContain("Bellum Gallicum");
     expect(html).toContain('class="jump-glyph"');
     expect(html).toContain('id="sticky-expand-btn"');
+    expect(html).toContain('class="expand-icon"');
     expect(html).toContain('aria-expanded="false"');
 
     // Main text panel header: Author and Work Name
@@ -401,7 +401,7 @@ describe("decomposed_reader_renderers", () => {
       // First chapter active
       expect(html).toContain('class="reader-toc-item active"');
       expect(html).toContain('aria-current="page"');
-      expect(html).toContain("Liber I, Caput I");
+      expect(html).toContain("Book 1, Chapter 1");
       expect(html).toContain("§ 1.1");
     });
 
@@ -437,6 +437,7 @@ describe("decomposed_reader_renderers", () => {
         'id="pager-next"\n               aria-disabled="true"'
       );
       expect(html).toContain('id="reader-jump-form"');
+      expect(html).toContain('class="sticky-center-group"');
       expect(html).toContain('value="1.1"');
       expect(html).toContain('id="sticky-expand-btn"');
       expect(html).toContain('id="reader-toc-btn"');
@@ -479,7 +480,7 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('class="reader-text-panel"');
       expect(html).toContain("Julius Caesar");
       expect(html).toContain("De bello Gallico");
-      expect(html).toContain("Liber I, Caput I");
+      expect(html).toContain("Book 1, Chapter 1");
       expect(html).toContain('id="reader-passage"');
       expect(html).toContain("Gallia est omnis divisa");
       expect(html).toContain("reader-continue-btn");
@@ -494,8 +495,12 @@ describe("decomposed_reader_renderers", () => {
 
       expect(html).toContain('class="reader-splitter"');
       expect(html).toContain('id="reader-dict"');
+      expect(html).toContain("Open Dictionary Search");
       expect(html).toContain("Tap any word to view definitions");
-      expect(html).not.toContain("reader-sheet-close");
+      expect(html).toContain("reader-teaser-nojs");
+      expect(html).toContain("reader-teaser-js");
+      expect(html).toContain('href="#reader-dict"');
+      expect(html).toContain("reader-sheet-open-link");
       expect(html).toContain('src="/v2/dicts?embedded=1"');
     });
 

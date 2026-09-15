@@ -155,7 +155,6 @@ export async function resolveReaderContext(
 export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
   const {
     work,
-    activePage,
     pageDotId,
     prevPage,
     nextPage,
@@ -193,29 +192,25 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
                 : ""
             }
             
-            <div class="sticky-title-wrapper" title="${he.escape(
-              work.author
-            )}, ${he.escape(work.title)}, ${he.escape(activePage.title)}">
-              <span class="sticky-author">${he.escape(work.author)}</span>
-              <span class="sticky-title-sep">,</span>
-              <span class="sticky-work-title">${he.escape(work.title)}</span>
-              <span class="sticky-title-sep sticky-work-sep">,</span>
-              <span class="sticky-page-title">${he.escape(
-                activePage.title
-              )}</span>
-            </div>
+            <div class="sticky-center-group">
+              <div class="sticky-title-wrapper" title="${he.escape(work.title)}">
+                <span class="sticky-work-title">${he.escape(
+                  work.shortTitle || work.title
+                )}</span>
+              </div>
 
-            <div class="sticky-jump-box">
-              <label for="jump-input" class="jump-glyph" title="Citation section (type and press Enter to jump)">§</label>
-              <input type="text"
-                     id="jump-input"
-                     name="jump"
-                     value="${pageDotId}"
-                     class="jump-input sticky-jump-input"
-                     title="Current citation: § ${pageDotId}. Type new coordinate and press Enter to jump."
-                     autocomplete="off"
-                     onfocus="this.select()">
-              <button type="submit" class="jump-submit sr-only-focusable" aria-label="Go to section">Go</button>
+              <div class="sticky-jump-box">
+                <label for="jump-input" class="jump-glyph" title="Citation section (type and press Enter to jump)">§</label>
+                <input type="text"
+                       id="jump-input"
+                       name="jump"
+                       value="${pageDotId}"
+                       class="jump-input sticky-jump-input"
+                       title="Current citation: § ${pageDotId}. Type new coordinate and press Enter to jump."
+                       autocomplete="off"
+                       onfocus="this.select()">
+                <button type="submit" class="jump-submit sr-only-focusable" aria-label="Go to section">Go</button>
+              </div>
             </div>
           </form>
 
@@ -232,20 +227,17 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
               <span class="pager-arrow" aria-hidden="true">&rarr;</span>
             </a>
 
-            <!-- Expand / More Button -->
+            <!-- Expand / Tools Button -->
             <button type="button"
                     class="reader-btn sticky-expand-btn"
                     id="sticky-expand-btn"
                     aria-expanded="false"
                     aria-controls="sticky-expanded-row"
                     title="Show additional tools (Contents, view mode, settings, info)">
-              <svg class="icon-more" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="currentColor">
-                <circle cx="12" cy="12" r="2"></circle>
-                <circle cx="19" cy="12" r="2"></circle>
-                <circle cx="5" cy="12" r="2"></circle>
+              <span class="expand-label">Tools</span>
+              <svg class="expand-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9l6 6 6-6"/>
               </svg>
-              <span class="expand-label">More</span>
-              <span class="expand-chevron" aria-hidden="true">&dtrif;</span>
             </button>
           </div>
         </div>
@@ -421,17 +413,17 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
                aria-valuenow="48">
             <div class="reader-sheet-handle" aria-hidden="true"></div>
             <div class="reader-sheet-teaser">
-              <span class="reader-sheet-label">
-                ${
-                  query
-                    ? `Definitions for <strong>${he.escape(query)}</strong>`
-                    : "Tap any word to view definitions"
-                }
-              </span>
               ${
                 query
-                  ? `<a href="${activePageUrl}" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
-                  : ""
+                  ? `<span class="reader-sheet-label">Definitions for <strong>${he.escape(
+                      query
+                    )}</strong></span>
+                     <a href="${activePageUrl}" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
+                  : `<a href="#reader-dict" class="reader-sheet-label reader-sheet-open-link" title="Open Dictionary Search">
+                       <span class="reader-teaser-nojs">Open Dictionary Search &uarr;</span>
+                       <span class="reader-teaser-js">Tap any word to view definitions</span>
+                     </a>
+                     <a href="#" class="reader-sheet-close reader-sheet-close-target" aria-label="Close dictionary panel" title="Close">✕</a>`
               }
             </div>
           </div>
