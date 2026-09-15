@@ -45,9 +45,9 @@
         "no-unknown-animations": true,
         "property-no-unknown": true,
         "scale-unlimited/declaration-strict-value": [
-          ["z-index"],
+          ["z-index", "border-radius"],
           {
-            "ignoreValues": ["auto"],
+            "ignoreValues": ["auto", "0", "50%", "inherit", "initial"],
             "disableFix": true
           }
         ],

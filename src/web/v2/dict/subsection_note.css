@@ -10,10 +10,10 @@
 .v2-subsection-note {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--v2-space-2);
   margin: 0 0 10px;
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   background-color: var(--v2-tag-bg);
   font-family: var(--v2-font-sans);
 }
@@ -23,7 +23,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--v2-space-3);
   font-size: calc(0.85rem * var(--v2-dict-scale, 1));
   line-height: 1.6;
   color: var(--v2-text-muted);
@@ -48,12 +48,12 @@
 .v2-subsection-chip:visited {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--v2-space-1);
   min-height: calc(1.55rem * var(--v2-dict-scale, 1));
   margin-left: 4px;
   padding: 1px 9px 1px 6px;
   box-sizing: border-box;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
   color: var(--v2-text);
@@ -94,7 +94,7 @@
 .v2-subsection-namelink:visited {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--v2-space-1);
   text-decoration: none;
   color: var(--v2-text);
   border-bottom: 1px dotted var(--v2-border-strong);
@@ -135,7 +135,7 @@
 .v2-subsection-hit {
   position: relative;
   background-color: var(--v2-tag-bg);
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
 }
 
 .v2-subsection-hit::before {
@@ -151,7 +151,7 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  border-radius: 2px;
+  border-radius: var(--v2-radius-xs);
   background-color: var(--v2-primary);
 }
 

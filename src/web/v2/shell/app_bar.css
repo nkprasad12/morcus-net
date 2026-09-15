@@ -12,14 +12,14 @@ morcus-report-dialog:not(:defined) {
 .v2-brand-group {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--v2-space-6);
 }
 
 .v2-brand-logo-link {
   display: flex;
   align-items: center;
   text-decoration: none;
-  border-radius: 2px;
+  border-radius: var(--v2-radius-xs);
 }
 
 .v2-brand-logo-link:focus-visible {
@@ -39,7 +39,7 @@ morcus-report-dialog:not(:defined) {
 .v2-actions-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--v2-space-4);
 }
 
 .v2-nav-link,
@@ -49,7 +49,7 @@ morcus-report-dialog:not(:defined) {
   font-weight: 500;
   font-size: 0.95rem;
   padding: 6px 14px;
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
@@ -75,7 +75,7 @@ morcus-report-dialog:not(:defined) {
   background: transparent;
   border: 1px solid var(--v2-app-bar-toggle-border);
   color: var(--v2-app-bar-text);
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   padding: 6px;
   cursor: pointer;
   user-select: none;
@@ -134,12 +134,12 @@ morcus-report-dialog:not(:defined) {
   min-width: 170px;
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
   padding: 6px;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: var(--v2-space-2);
   z-index: var(--v2-z-nav);
 }
 
@@ -171,7 +171,7 @@ morcus-report-dialog:not(:defined) {
   .v2-actions-group {
     order: 1;
     justify-self: start;
-    gap: 8px;
+    gap: var(--v2-space-4);
   }
 
   .v2-brand-group {

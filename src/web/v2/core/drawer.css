@@ -31,8 +31,8 @@ body.v2-resizing-drawer {
   overflow: hidden;
   background-color: var(--v2-card-bg);
   border-top: 2px solid var(--v2-border-strong);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  border-top-left-radius: var(--v2-radius-2xl);
+  border-top-right-radius: var(--v2-radius-2xl);
   box-shadow: var(--v2-drawer-shadow);
   transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1),
     max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -85,7 +85,7 @@ body.v2-resizing-drawer {
 .v2-reader-sheet-handle {
   width: 44px;
   height: 5px;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   background-color: var(--v2-border-strong);
   opacity: 0.6;
   margin-bottom: 6px;

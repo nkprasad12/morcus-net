@@ -45,7 +45,7 @@ body.v2-resizing-panels {
     transform: translate(-50%, -50%);
     width: 8px;
     height: 40px;
-    border-radius: 4px;
+    border-radius: var(--v2-radius-sm);
     background-color: var(--v2-card-bg);
     border: 1px solid var(--v2-border);
     display: flex;
@@ -62,7 +62,7 @@ body.v2-resizing-panels {
     width: 2px;
     height: 16px;
     background-color: var(--v2-border-strong);
-    border-radius: 1px;
+    border-radius: var(--v2-radius-xs);
   }
 
   .v2-reader-splitter:hover::before,

@@ -12,7 +12,7 @@
   /* headword | copy pill | Outline | Inflections | filler */
   grid-template-columns: auto auto auto auto 1fr;
   align-items: center;
-  gap: 6px 8px;
+  gap: var(--v2-space-3) var(--v2-space-4);
   width: 100%;
   padding-bottom: 6px;
   border-bottom: 1px dashed var(--v2-border);
@@ -34,7 +34,7 @@
   align-items: center;
   justify-content: center;
   padding: 2px 7px;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
   font-family: var(--v2-font-mono, monospace);
@@ -87,7 +87,7 @@
   grid-row: 1;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--v2-space-2);
   height: calc(1.65rem * var(--v2-dict-scale, 1));
   min-height: calc(1.65rem * var(--v2-dict-scale, 1));
   padding: 0 calc(0.65rem * var(--v2-dict-scale, 1));
@@ -95,7 +95,7 @@
   font-size: calc(0.76rem * var(--v2-dict-scale, 1));
   font-weight: 500;
   line-height: 1;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   color: var(--v2-text);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
@@ -223,7 +223,7 @@
   padding: 12px 16px;
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   max-height: 280px;
   overflow-y: auto;
@@ -285,7 +285,7 @@
 .v2-action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--v2-space-3);
   margin: 4px 0 4px 6px;
   padding: 3px 10px;
   font-family: var(--v2-font-sans);
@@ -295,7 +295,7 @@
   color: var(--v2-primary);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   text-decoration: none;
   cursor: pointer;
   vertical-align: middle;
@@ -337,7 +337,7 @@
     grid-template-columns: none;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px 8px;
+    gap: var(--v2-space-5) var(--v2-space-4);
   }
   .v2-entry-headword {
     max-width: 100%;

@@ -17,7 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--v2-space-5);
   padding-bottom: 2px;
   margin-bottom: 8px;
 }
@@ -25,7 +25,7 @@
 .v2-results-pills {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--v2-space-4);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   padding: 4px 2px;
@@ -38,16 +38,16 @@
 
 .v2-results-pills::-webkit-scrollbar-thumb {
   background: var(--v2-border);
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
 }
 
 .v2-jump-pill,
 .v2-jump-pill:visited {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--v2-space-3);
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
   color: var(--v2-dict-title);
@@ -98,7 +98,7 @@
   padding: 0 4px;
   font-size: calc(0.7rem * var(--v2-dict-scale, 1));
   font-weight: 700;
-  border-radius: 3px;
+  border-radius: var(--v2-radius-sm);
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
   color: var(--v2-text-muted);
@@ -191,7 +191,7 @@
   border-bottom: 1px solid var(--v2-border);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--v2-space-2);
 }
 
 .v2-dict-header-row {
@@ -200,7 +200,7 @@
   align-items: center;
   flex-wrap: wrap;
   min-height: 22px;
-  gap: 6px 12px;
+  gap: var(--v2-space-3) var(--v2-space-5);
   width: 100%;
 }
 
@@ -211,17 +211,17 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--v2-text-muted);
-  gap: 6px;
+  gap: var(--v2-space-3);
   padding: 1px 2px;
   width: auto;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
 }
 
 .v2-dict-header-slim .v2-dict-toggle-icon {
   width: 14px;
   height: 14px;
   font-size: calc(0.68rem * var(--v2-dict-scale, 1));
-  border-radius: 3px;
+  border-radius: var(--v2-radius-sm);
 }
 
 .v2-dict-header-slim .v2-dict-acronym {
@@ -281,9 +281,9 @@
 .v2-dict-source-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--v2-space-2);
   padding: 2px 8px;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   font-family: var(--v2-font-sans);
   font-size: calc(0.72rem * var(--v2-dict-scale, 1));
   font-weight: 500;
@@ -335,7 +335,7 @@
   padding: 12px 16px;
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
   z-index: var(--v2-z-overlay);
   font-family: var(--v2-font-sans);
@@ -377,10 +377,10 @@
   user-select: none;
   background-color: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--v2-space-5);
   width: 100%;
   list-style: none;
   transition: background-color 0.15s ease-in-out;
@@ -410,7 +410,7 @@
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
   color: var(--v2-text-muted);
@@ -451,7 +451,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 8px;
+  gap: var(--v2-space-2) var(--v2-space-4);
   width: 100%;
   box-sizing: border-box;
   margin: 0;
@@ -474,7 +474,7 @@
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--v2-space-2);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -483,11 +483,11 @@
 .v2-entry-nav-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--v2-space-2);
   padding: 1px 8px;
   min-height: calc(20px * var(--v2-dict-scale, 1));
   box-sizing: border-box;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
   text-decoration: none;
@@ -565,7 +565,7 @@
   grid-row: 1;
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--v2-space-3);
   color: var(--v2-text);
 }
 
@@ -612,7 +612,7 @@
 :target,
 .v2-target-active {
   scroll-margin-top: 20px;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
   animation: v2-target-highlight 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;

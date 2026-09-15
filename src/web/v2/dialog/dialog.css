@@ -2,7 +2,7 @@
 
 .v2-dialog {
   border: 1px solid var(--v2-border);
-  border-radius: 12px;
+  border-radius: var(--v2-radius-xl);
   background: var(--v2-card-bg);
   color: var(--v2-text);
   padding: 0;
@@ -79,7 +79,7 @@
   color: var(--v2-text-muted);
   cursor: pointer;
   padding: 6px;
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
@@ -107,7 +107,7 @@
 .v2-dialog-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: var(--v2-space-5);
   margin-top: 18px;
 }
 
@@ -115,11 +115,11 @@
 .v2-report-notice {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--v2-space-5);
   padding: 10px 14px;
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
   margin-bottom: 16px;
   font-size: 0.85rem;
   line-height: 1.45;
@@ -170,7 +170,7 @@
   line-height: 1.45;
   padding: 9px 12px;
   border: 1px solid var(--v2-border);
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   background: var(--v2-bg);
   color: var(--v2-text);
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;

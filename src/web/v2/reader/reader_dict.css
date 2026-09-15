@@ -13,7 +13,7 @@
   flex-direction: column;
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
@@ -36,7 +36,7 @@ body.v2-resizing-panels .v2-dict-iframe,
 .v2-reader-dict-sticky {
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
   padding: 1.25rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }

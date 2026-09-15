@@ -21,7 +21,7 @@
   margin: 10px 0;
   width: 100%;
   max-width: 100%;
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
   overflow: hidden;
   border: 1px solid var(--v2-border-strong);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
@@ -116,7 +116,7 @@
   margin: 12px 0 14px 0;
   width: 100%;
   max-width: 100%;
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
   overflow: hidden;
   border: 1px solid var(--v2-border-strong);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
@@ -136,7 +136,7 @@
 .v2-greek-auto-open-label {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--v2-space-4);
   font-size: calc(0.85rem * var(--v2-dict-scale, 1));
   color: var(--v2-text-muted);
   cursor: pointer;
