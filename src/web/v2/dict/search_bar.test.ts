@@ -8,13 +8,13 @@ describe("renderDictSearchBar", () => {
       action: "/v2/dicts",
     });
 
-    expect(html).toContain('class="v2-search-form"');
+    expect(html).toContain('class="search-form"');
     expect(html).toContain('action="/v2/dicts"');
     expect(html).toContain('value="habeo"');
     expect(html).toContain("<morcus-dict-settings>");
-    expect(html).toContain('class="v2-input"');
+    expect(html).toContain('class="input"');
     expect(html).toContain('placeholder="Search for a word"');
-    expect(html).toContain('class="v2-search-btn"');
+    expect(html).toContain('class="search-btn"');
     expect(html).toContain("<svg");
   });
 
@@ -66,8 +66,8 @@ describe("renderDictSearchBar", () => {
     expect(html.match(/name="dict"/g)).toHaveLength(LatinDict.AVAILABLE.length);
     expect(html.match(/checked/g)).toHaveLength(3); // L&S, GAF, and the inflection toggle
     expect(html).toContain('<input type="hidden" name="o" value="0" />');
-    expect(html).toContain('id="v2-toggle-inflected"');
-    expect(html).toContain('class="v2-inflected-checkbox"');
+    expect(html).toContain('id="toggle-inflected"');
+    expect(html).toContain('class="inflected-checkbox"');
     expect(html).toContain("checked");
   });
 
@@ -93,10 +93,10 @@ describe("renderDictSearchBar", () => {
     });
 
     expect(html).toContain('<input type="hidden" name="o" value="0" />');
-    expect(html).toContain('id="v2-toggle-inflected"');
+    expect(html).toContain('id="toggle-inflected"');
     // Checkbox itself does not have checked attribute
-    expect(html).toMatch(/id="v2-toggle-inflected"[^>]*\/>/);
-    expect(html).not.toMatch(/id="v2-toggle-inflected"[^>]*checked/);
+    expect(html).toMatch(/id="toggle-inflected"[^>]*\/>/);
+    expect(html).not.toMatch(/id="toggle-inflected"[^>]*checked/);
   });
 
   test("renders status tray with active language chips and inflection badge", () => {
@@ -107,11 +107,11 @@ describe("renderDictSearchBar", () => {
       isInflected: true,
     });
 
-    expect(html).toContain('class="v2-search-tray"');
-    expect(html).toContain('class="v2-lang-chip v2-lang-chip-la"');
-    expect(html).toContain('class="v2-lang-chip v2-lang-chip-en"');
-    expect(html).toContain('class="v2-lang-chip v2-lang-chip-de"');
-    expect(html).toContain('class="v2-inflect-chip is-on"');
+    expect(html).toContain('class="search-tray"');
+    expect(html).toContain('class="lang-chip lang-chip-la"');
+    expect(html).toContain('class="lang-chip lang-chip-en"');
+    expect(html).toContain('class="lang-chip lang-chip-de"');
+    expect(html).toContain('class="inflect-chip is-on"');
     expect(html).toContain("On");
   });
 
@@ -123,10 +123,10 @@ describe("renderDictSearchBar", () => {
       isInflected: false,
     });
 
-    expect(html).toContain('class="v2-search-tray"');
-    expect(html).toContain('class="v2-lang-chip v2-lang-chip-la"');
-    expect(html).not.toContain('class="v2-lang-chip v2-lang-chip-en"');
-    expect(html).toContain('class="v2-inflect-chip is-off"');
+    expect(html).toContain('class="search-tray"');
+    expect(html).toContain('class="lang-chip lang-chip-la"');
+    expect(html).not.toContain('class="lang-chip lang-chip-en"');
+    expect(html).toContain('class="inflect-chip is-off"');
     expect(html).toContain("Off");
   });
 
@@ -137,6 +137,6 @@ describe("renderDictSearchBar", () => {
       includeSettings: false,
     });
 
-    expect(html).not.toContain('class="v2-search-tray"');
+    expect(html).not.toContain('class="search-tray"');
   });
 });

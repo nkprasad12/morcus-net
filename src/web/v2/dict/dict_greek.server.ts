@@ -9,36 +9,36 @@ export function renderGreekFallbackHtml(query: string): string {
   const escapedQuery = he.escape(query);
 
   return `
-    <div class="v2-greek-fallback" lang="el">
-      <div class="v2-greek-notice">
-        <p class="v2-greek-title">This site does not (yet) support Greek.</p>
-        <p class="v2-greek-desc">
-          Search for &ldquo;<strong class="v2-greek-word">${escapedQuery}</strong>&rdquo; directly on
-          <a href="${logeionUrl}" target="_blank" rel="noopener noreferrer" class="v2-greek-link">Logeion in a new tab</a>,
+    <div class="greek-fallback" lang="el">
+      <div class="greek-notice">
+        <p class="greek-title">This site does not (yet) support Greek.</p>
+        <p class="greek-desc">
+          Search for &ldquo;<strong class="greek-word">${escapedQuery}</strong>&rdquo; directly on
+          <a href="${logeionUrl}" target="_blank" rel="noopener noreferrer" class="greek-link">Logeion in a new tab</a>,
           or expand the embedded viewer below:
         </p>
       </div>
 
-      <div class="v2-greek-controls">
+      <div class="greek-controls">
         <morcus-greek-embed data-word="${escapedQuery}" data-url="${logeionUrl}">
-          <details class="v2-greek-details">
-            <summary class="v2-action-btn v2-greek-toggle-btn" role="button" title="Toggle embedded Logeion viewer">
-              <span class="v2-greek-toggle-icon" aria-hidden="true">&#x25B8;</span>
-              <span class="v2-greek-toggle-text">Open Logeion Embed</span>
+          <details class="greek-details">
+            <summary class="action-btn greek-toggle-btn" role="button" title="Toggle embedded Logeion viewer">
+              <span class="greek-toggle-icon" aria-hidden="true">&#x25B8;</span>
+              <span class="greek-toggle-text">Open Logeion Embed</span>
             </summary>
-            <div class="v2-greek-frame-wrapper">
+            <div class="greek-frame-wrapper">
               <iframe
                 src="${logeionUrl}"
-                class="v2-greek-frame"
+                class="greek-frame"
                 loading="lazy"
                 title="Logeion Greek Dictionary search for ${escapedQuery}"
               ></iframe>
             </div>
           </details>
 
-          <label class="v2-greek-auto-open-label">
-            <input type="checkbox" class="v2-greek-auto-open-checkbox" />
-            <span class="v2-greek-auto-open-text">Automatically open embedded Logeion searches</span>
+          <label class="greek-auto-open-label">
+            <input type="checkbox" class="greek-auto-open-checkbox" />
+            <span class="greek-auto-open-text">Automatically open embedded Logeion searches</span>
           </label>
         </morcus-greek-embed>
       </div>

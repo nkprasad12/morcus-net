@@ -28,27 +28,27 @@
 
 /* Base link styling */
 a {
-  color: var(--v2-primary);
+  color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 a:visited {
-  color: var(--v2-primary);
+  color: var(--primary);
 }
 
 a:hover {
-  color: var(--v2-primary-hover);
+  color: var(--primary-hover);
 }
 
 /* W3C HTML5 standard UA reset: ensures [hidden] attribute wins over author display: flex/grid */
-[hidden]:not(.v2-sticky-expanded-row) {
+[hidden]:not(.sticky-expanded-row) {
   /* stylelint-disable-next-line declaration-no-important */
   display: none !important;
 }
 
 /* Visually hidden but accessible to screen readers and keyboard focus */
-.v2-sr-only-focusable:not(:focus):not(:focus-within) {
+.sr-only-focusable:not(:focus):not(:focus-within) {
   position: absolute;
   width: 1px;
   height: 1px;

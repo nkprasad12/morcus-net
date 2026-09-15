@@ -42,7 +42,7 @@ export function dedupeInflections(
 
 function usageNoteHtml(inflection: InflectionData): string {
   return inflection.usageNote
-    ? ` <span class="v2-usage-note">(${he.escape(inflection.usageNote)})</span>`
+    ? ` <span class="usage-note">(${he.escape(inflection.usageNote)})</span>`
     : "";
 }
 
@@ -58,8 +58,8 @@ export function renderInflectionTable(inflections: InflectionData[]): string {
     )
     .join("");
   return `
-            <div class="v2-table-scroller">
-              <table class="v2-inflection-table">
+            <div class="table-scroller">
+              <table class="inflection-table">
                 <thead>
                   <tr><th>Form</th><th>Analysis</th></tr>
                 </thead>
@@ -75,7 +75,7 @@ export function renderInflectionTable(inflections: InflectionData[]): string {
  * matters most in the embedded reader panel where subsection matches are common.
  */
 export function renderInflectionInline(inflection: InflectionData): string {
-  return `<p class="v2-subsection-inline-inf"><b>${he.escape(
+  return `<p class="subsection-inline-inf"><b>${he.escape(
     formatInflectionForm(inflection.form)
   )}</b> — ${he.escape(inflection.data)}${usageNoteHtml(inflection)}</p>`;
 }

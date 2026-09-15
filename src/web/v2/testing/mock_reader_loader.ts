@@ -36,43 +36,43 @@ export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
       sectionCount: 4,
       citationRange: ["1.1.1", "1.1.4"],
       singleHtml: `
-        <div class="v2-reader-section" id="sec-1.1.1">
-          <div class="v2-reader-gutter">
-            <a href="#sec-1.1.1" class="v2-section-anchor" title="Citation § 1.1.1 (Click to copy anchor)" aria-label="Section 1.1.1">
-              <span class="v2-cite-prefix">1.1.</span><span class="v2-cite-local">1</span>
+        <div class="reader-section" id="sec-1.1.1">
+          <div class="reader-gutter">
+            <a href="#sec-1.1.1" class="section-anchor" title="Citation § 1.1.1 (Click to copy anchor)" aria-label="Section 1.1.1">
+              <span class="cite-prefix">1.1.</span><span class="cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage" data-tokenize-target="true">
+          <div class="reader-passage" data-tokenize-target="true">
             Gallia est omnis divisa in partes tres, quarum unam incolunt Belgae, aliam Aquitani, tertiam qui ipsorum lingua Celtae, nostra Galli appellantur.
           </div>
         </div>
-        <div class="v2-reader-section" id="sec-1.1.2">
-          <div class="v2-reader-gutter">
-            <a href="#sec-1.1.2" class="v2-section-anchor" title="Citation § 1.1.2 (Click to copy anchor)" aria-label="Section 1.1.2">
-              <span class="v2-cite-prefix">1.1.</span><span class="v2-cite-local">2</span>
+        <div class="reader-section" id="sec-1.1.2">
+          <div class="reader-gutter">
+            <a href="#sec-1.1.2" class="section-anchor" title="Citation § 1.1.2 (Click to copy anchor)" aria-label="Section 1.1.2">
+              <span class="cite-prefix">1.1.</span><span class="cite-local">2</span>
             </a>
           </div>
-          <div class="v2-reader-passage" data-tokenize-target="true">
+          <div class="reader-passage" data-tokenize-target="true">
             Hi omnes lingua, institutis, legibus inter se differunt.
           </div>
         </div>
-        <div class="v2-reader-section" id="sec-1.1.3">
-          <div class="v2-reader-gutter">
-            <a href="#sec-1.1.3" class="v2-section-anchor" title="Citation § 1.1.3 (Click to copy anchor)" aria-label="Section 1.1.3">
-              <span class="v2-cite-prefix">1.1.</span><span class="v2-cite-local">3</span>
+        <div class="reader-section" id="sec-1.1.3">
+          <div class="reader-gutter">
+            <a href="#sec-1.1.3" class="section-anchor" title="Citation § 1.1.3 (Click to copy anchor)" aria-label="Section 1.1.3">
+              <span class="cite-prefix">1.1.</span><span class="cite-local">3</span>
             </a>
           </div>
-          <div class="v2-reader-passage" data-tokenize-target="true">
+          <div class="reader-passage" data-tokenize-target="true">
             Horum omnium fortissimi sunt Belgae.
           </div>
         </div>
-        <div class="v2-reader-section" id="sec-1.1.4">
-          <div class="v2-reader-gutter">
-            <a href="#sec-1.1.4" class="v2-section-anchor" title="Citation § 1.1.4 (Click to copy anchor)" aria-label="Section 1.1.4">
-              <span class="v2-cite-prefix">1.1.</span><span class="v2-cite-local">4</span>
+        <div class="reader-section" id="sec-1.1.4">
+          <div class="reader-gutter">
+            <a href="#sec-1.1.4" class="section-anchor" title="Citation § 1.1.4 (Click to copy anchor)" aria-label="Section 1.1.4">
+              <span class="cite-prefix">1.1.</span><span class="cite-local">4</span>
             </a>
           </div>
-          <div class="v2-reader-passage" data-tokenize-target="true">
+          <div class="reader-passage" data-tokenize-target="true">
             Qua de causa Helvetii.
           </div>
         </div>
@@ -84,13 +84,13 @@ export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
       sectionCount: 1,
       citationRange: ["1.2.1", "1.2.1"],
       singleHtml: `
-        <div class="v2-reader-section" id="sec-1.2.1">
-          <div class="v2-reader-gutter">
-            <a href="#sec-1.2.1" class="v2-section-anchor" title="Citation § 1.2.1" aria-label="Section 1.2.1">
-              <span class="v2-cite-prefix">1.2.</span><span class="v2-cite-local">1</span>
+        <div class="reader-section" id="sec-1.2.1">
+          <div class="reader-gutter">
+            <a href="#sec-1.2.1" class="section-anchor" title="Citation § 1.2.1" aria-label="Section 1.2.1">
+              <span class="cite-prefix">1.2.</span><span class="cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage" data-tokenize-target="true">
+          <div class="reader-passage" data-tokenize-target="true">
             Apud Helvetios longe nobilissimus fuit et ditissimus Orgetorix.
           </div>
         </div>
@@ -122,29 +122,29 @@ export const MOCK_SALLUST_WORK: V2PreprocessedWork = {
       sectionCount: 1,
       citationRange: ["1.1", "1.1"],
       singleHtml: `
-        <div class="v2-reader-section" id="sec-1.1">
-          <div class="v2-reader-gutter">
-            <a href="#sec-1.1" class="v2-section-anchor" title="Citation § 1.1">
-              <span class="v2-cite-prefix">1.</span><span class="v2-cite-local">1</span>
+        <div class="reader-section" id="sec-1.1">
+          <div class="reader-gutter">
+            <a href="#sec-1.1" class="section-anchor" title="Citation § 1.1">
+              <span class="cite-prefix">1.</span><span class="cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage" data-tokenize-target="true">Omnis homines qui sese student praestare ceteris animalibus...</div>
+          <div class="reader-passage" data-tokenize-target="true">Omnis homines qui sese student praestare ceteris animalibus...</div>
         </div>
       `,
       parallelHtml: `
-        <div class="v2-reader-section v2-section-parallel" id="sec-1.1">
-          <div class="v2-reader-gutter">
-            <a href="#sec-1.1" class="v2-section-anchor" title="Citation § 1.1">
-              <span class="v2-cite-prefix">1.</span><span class="v2-cite-local">1</span>
+        <div class="reader-section section-parallel" id="sec-1.1">
+          <div class="reader-gutter">
+            <a href="#sec-1.1" class="section-anchor" title="Citation § 1.1">
+              <span class="cite-prefix">1.</span><span class="cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-parallel-content">
-            <div class="v2-reader-passage-col v2-passage-latin">
-              <div class="v2-reader-passage" data-tokenize-target="true">Omnis homines qui sese student praestare ceteris animalibus...</div>
+          <div class="reader-parallel-content">
+            <div class="reader-passage-col passage-latin">
+              <div class="reader-passage" data-tokenize-target="true">Omnis homines qui sese student praestare ceteris animalibus...</div>
             </div>
-            <div class="v2-reader-passage-col v2-passage-english">
-              <span class="v2-reader-trans-author">John Selby Watson:</span>
-              <div class="v2-reader-passage">It becomes all men, who desire to excel other animals...</div>
+            <div class="reader-passage-col passage-english">
+              <span class="reader-trans-author">John Selby Watson:</span>
+              <div class="reader-passage">It becomes all men, who desire to excel other animals...</div>
             </div>
           </div>
         </div>
@@ -175,13 +175,13 @@ export const MOCK_CATULLUS_WORK: V2PreprocessedWork = {
       sectionCount: 1,
       citationRange: ["5.1", "5.1"],
       singleHtml: `
-        <div class="v2-reader-section v2-section-verse" id="sec-5.1">
-          <div class="v2-reader-gutter">
-            <a href="#sec-5.1" class="v2-section-anchor" title="Citation § 5.1">
-              <span class="v2-cite-prefix">5.</span><span class="v2-cite-local">1</span>
+        <div class="reader-section section-verse" id="sec-5.1">
+          <div class="reader-gutter">
+            <a href="#sec-5.1" class="section-anchor" title="Citation § 5.1">
+              <span class="cite-prefix">5.</span><span class="cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage" data-tokenize-target="true">
+          <div class="reader-passage" data-tokenize-target="true">
             Vivamus, mea Lesbia, atque amemus
           </div>
         </div>
@@ -212,13 +212,13 @@ export const MOCK_VERGIL_WORK: V2PreprocessedWork = {
       sectionCount: 1,
       citationRange: ["1.1", "1.1"],
       singleHtml: `
-        <div class="v2-reader-section v2-section-verse" id="sec-1.1">
-          <div class="v2-reader-gutter">
-            <a href="#sec-1.1" class="v2-section-anchor" title="Citation § 1.1">
-              <span class="v2-cite-prefix">1.</span><span class="v2-cite-local">1</span>
+        <div class="reader-section section-verse" id="sec-1.1">
+          <div class="reader-gutter">
+            <a href="#sec-1.1" class="section-anchor" title="Citation § 1.1">
+              <span class="cite-prefix">1.</span><span class="cite-local">1</span>
             </a>
           </div>
-          <div class="v2-reader-passage" data-tokenize-target="true">
+          <div class="reader-passage" data-tokenize-target="true">
             Arma virumque cano
           </div>
         </div>

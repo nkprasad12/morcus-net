@@ -4,11 +4,11 @@
    1. Reader Text Column & Passage Typography
    ========================================================================== */
 
-.v2-reader-text-panel {
+.reader-text-panel {
   min-width: 0;
 }
 
-.v2-reader-text-card {
+.reader-text-card {
   background: transparent;
   border: none;
   border-radius: 0;
@@ -16,110 +16,110 @@
   box-shadow: none;
 }
 
-.v2-reader-text-card-header {
-  border-bottom: 1px solid var(--v2-border);
-  padding-bottom: var(--v2-space-6);
-  margin-bottom: var(--v2-space-7);
+.reader-text-card-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-6);
+  margin-bottom: var(--space-7);
 }
 
-.v2-reader-text-meta {
+.reader-text-meta {
   display: flex;
   align-items: center;
-  gap: var(--v2-space-3);
-  margin-bottom: var(--v2-space-2);
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
   font-size: 0.75rem;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   letter-spacing: 0.03em;
 }
 
-.v2-reader-author-tag {
+.reader-author-tag {
   font-weight: 600;
   text-transform: uppercase;
 }
 
-.v2-reader-meta-sep {
+.reader-meta-sep {
   opacity: 0.4;
 }
 
-.v2-reader-work-tag {
+.reader-work-tag {
   font-weight: 500;
   text-transform: none;
   font-style: italic;
-  font-family: var(--v2-font-serif);
+  font-family: var(--font-serif);
   font-size: 0.8125rem;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
 }
 
-.v2-reader-passage-heading {
-  margin: 0 0 var(--v2-space-2);
+.reader-passage-heading {
+  margin: 0 0 var(--space-2);
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--v2-text);
-  font-family: var(--v2-font-serif);
+  color: var(--text);
+  font-family: var(--font-serif);
 }
 
-.v2-reader-passage {
-  font-family: var(--v2-reader-font, var(--v2-font-serif));
-  font-size: var(--v2-reader-font-size, 1.25rem);
-  line-height: var(--v2-reader-line-height, 1.95);
-  color: var(--v2-text);
+.reader-passage {
+  font-family: var(--reader-font, var(--font-serif));
+  font-size: var(--reader-font-size, 1.25rem);
+  line-height: var(--reader-line-height, 1.95);
+  color: var(--text);
 }
 
-.v2-reader-paragraph {
-  margin: 0 0 var(--v2-space-7);
+.reader-paragraph {
+  margin: 0 0 var(--space-7);
   text-align: left;
 }
 
-.v2-reader-passage-footer {
-  margin-top: var(--v2-space-9);
-  padding-top: var(--v2-space-7);
-  border-top: 1px solid var(--v2-border);
+.reader-passage-footer {
+  margin-top: var(--space-9);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--border);
   font-size: 0.82rem;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   display: flex;
   flex-direction: column;
-  gap: var(--v2-space-6);
+  gap: var(--space-6);
 }
 
-.v2-reader-continuation-actions {
+.reader-continuation-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--v2-space-4);
-  margin-bottom: var(--v2-space-8);
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
 }
 
-.v2-reader-continue-btn,
-.v2-reader-continue-btn:visited {
-  background: var(--v2-primary);
-  color: var(--v2-on-accent);
+.reader-continue-btn,
+.reader-continue-btn:visited {
+  background: var(--primary);
+  color: var(--on-accent);
   font-weight: 600;
   justify-content: center;
-  padding: var(--v2-space-4) var(--v2-space-6);
-  border-radius: var(--v2-radius-md);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
 }
 
-.v2-reader-continue-btn:hover {
-  background: var(--v2-primary-hover);
-  color: var(--v2-on-accent);
+.reader-continue-btn:hover {
+  background: var(--primary-hover);
+  color: var(--on-accent);
 }
 
-.v2-reader-return-btn {
+.reader-return-btn {
   justify-content: center;
   font-weight: 600;
-  padding: var(--v2-space-4) var(--v2-space-6);
-  border-radius: var(--v2-radius-md);
-  color: var(--v2-text-muted);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
 }
 
-.v2-reader-footer-info {
+.reader-footer-info {
   display: flex;
   flex-direction: column;
-  gap: var(--v2-space-5);
+  gap: var(--space-5);
 }
 
-.v2-reader-footer-note {
+.reader-footer-note {
   font-size: 0.8125rem;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   line-height: 1.5;
 }
 
@@ -127,41 +127,41 @@
    2. Latin Clickable Words in Reading Text
    ========================================================================= */
 
-.v2-reader-passage a,
-a.v2-lat-word,
-span.v2-lat-word {
+.reader-passage a,
+a.lat-word,
+span.lat-word {
   color: inherit;
   text-decoration: none;
   cursor: pointer;
   padding: 0;
   margin: 0;
   border: none;
-  border-radius: var(--v2-radius-sm);
+  border-radius: var(--radius-sm);
   font-weight: inherit;
   transition: background-color 0.12s ease;
   display: inline;
 }
 
-.v2-reader-passage a:visited,
-a.v2-lat-word:visited {
+.reader-passage a:visited,
+a.lat-word:visited {
   color: inherit;
 }
 
-.v2-reader-passage a:hover,
-a.v2-lat-word:hover,
-span.v2-lat-word:hover,
-span.v2-lat-word:focus-visible {
-  background-color: var(--v2-word-hover-bg);
+.reader-passage a:hover,
+a.lat-word:hover,
+span.lat-word:hover,
+span.lat-word:focus-visible {
+  background-color: var(--word-hover-bg);
   color: inherit;
   font-weight: inherit;
   text-decoration: none;
   outline: none;
 }
 
-.v2-reader-passage a.v2-word-active,
-a.v2-lat-word.v2-word-active,
-span.v2-lat-word.v2-word-active {
-  background-color: var(--v2-word-active-bg);
+.reader-passage a.word-active,
+a.lat-word.word-active,
+span.lat-word.word-active {
+  background-color: var(--word-active-bg);
   color: inherit;
   font-weight: inherit;
   text-decoration: none;
@@ -173,55 +173,55 @@ span.v2-lat-word.v2-word-active {
    3. Section Gutter & Responsive Numbering
    ========================================================================== */
 
-.v2-reader-section {
+.reader-section {
   display: grid;
   grid-template-columns: 3.25rem minmax(0, 1fr);
-  gap: var(--v2-space-5);
+  gap: var(--space-5);
   align-items: baseline;
-  padding: var(--v2-space-2) var(--v2-space-3);
-  border-radius: var(--v2-radius-md);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
   transition: background-color 0.2s ease, border-left-color 0.2s ease;
 }
 
-.v2-reader-gutter {
+.reader-gutter {
   text-align: right;
-  font-family: var(--v2-font-mono);
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   user-select: none;
 }
 
-.v2-section-anchor {
-  color: var(--v2-text-muted);
+.section-anchor {
+  color: var(--text-muted);
   text-decoration: none;
   display: inline-block;
-  padding: var(--v2-space-1);
-  border-radius: var(--v2-radius-sm);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
   transition: color 0.15s ease;
 }
 
-.v2-section-anchor:hover {
-  color: var(--v2-primary);
+.section-anchor:hover {
+  color: var(--primary);
 }
 
-.v2-cite-prefix {
+.cite-prefix {
   opacity: 0.65;
 }
 
-.v2-cite-local {
+.cite-local {
   font-weight: 600;
-  color: var(--v2-text);
+  color: var(--text);
 }
 
 /* Native CSS Fragment Highlighting (:target) */
-.v2-reader-section:target,
-.v2-reader-section.target-highlight {
-  background-color: var(--v2-primary-light);
-  box-shadow: inset 3px 0 0 var(--v2-primary);
+.reader-section:target,
+.reader-section.target-highlight {
+  background-color: var(--primary-light);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
-@keyframes v2HighlightFade {
+@keyframes highlightFade {
   0% {
-    background-color: var(--v2-primary-light);
+    background-color: var(--primary-light);
   }
   100% {
     background-color: transparent;
@@ -229,11 +229,11 @@ span.v2-lat-word.v2-word-active {
 }
 
 /* Hide Gutter Toggle Rule */
-.v2-reader-view.v2-hide-gutter .v2-reader-gutter {
+.reader-view.hide-gutter .reader-gutter {
   display: none;
 }
 
-.v2-reader-view.v2-hide-gutter .v2-reader-section {
+.reader-view.hide-gutter .reader-section {
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -241,36 +241,36 @@ span.v2-lat-word.v2-word-active {
    4. Parallel Translation View
    ========================================================================== */
 
-.v2-section-parallel {
+.section-parallel {
   grid-template-columns: 3.25rem minmax(0, 1fr);
 }
 
-.v2-reader-parallel-content {
+.reader-parallel-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--v2-space-8);
+  gap: var(--space-8);
   width: 100%;
 }
 
-.v2-passage-english {
+.passage-english {
   font-size: 1.05rem;
   line-height: 1.8;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   font-style: italic;
-  padding-left: var(--v2-space-6);
-  border-left: 2px solid var(--v2-border);
+  padding-left: var(--space-6);
+  border-left: 2px solid var(--border);
 }
 
-.v2-reader-trans-author {
+.reader-trans-author {
   display: block;
-  font-family: var(--v2-font-sans, sans-serif);
+  font-family: var(--font-sans, sans-serif);
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   font-style: normal;
-  margin-bottom: var(--v2-space-2);
+  margin-bottom: var(--space-2);
 }
 
 /* ==========================================================================
@@ -279,83 +279,83 @@ span.v2-lat-word.v2-word-active {
 
 @media (max-width: 640px) {
   /* Top Column: Latin Reading Passage (Flows naturally down the page) */
-  .v2-reader-text-panel {
+  .reader-text-panel {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     overflow-x: clip;
     overflow-y: visible;
-    padding: var(--v2-space-4) var(--v2-space-5) var(--v2-space-7);
+    padding: var(--space-4) var(--space-5) var(--space-7);
   }
 
-  .v2-reader-text-card {
-    padding: var(--v2-space-2) 0 var(--v2-space-6);
+  .reader-text-card {
+    padding: var(--space-2) 0 var(--space-6);
     box-shadow: none;
     border: none;
     background: transparent;
   }
 
-  .v2-reader-passage {
+  .reader-passage {
     font-size: 1.15rem;
     line-height: 1.8;
   }
 
-  .v2-reader-section {
+  .reader-section {
     grid-template-columns: 1.35rem minmax(0, 1fr);
-    gap: var(--v2-space-3);
-    padding: var(--v2-space-1) 0;
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
   }
 
-  .v2-cite-prefix {
+  .cite-prefix {
     display: none; /* Hides "2.1." on mobile, showing only "2" */
   }
 
-  .v2-cite-local {
-    color: var(--v2-primary);
+  .cite-local {
+    color: var(--primary);
     font-size: 0.8125rem;
   }
 
-  .v2-section-parallel {
+  .section-parallel {
     grid-template-columns: 1.35rem minmax(0, 1fr);
   }
 
-  .v2-reader-parallel-content {
+  .reader-parallel-content {
     display: flex;
     flex-direction: column;
-    gap: var(--v2-space-4);
-    background: var(--v2-card-bg);
-    padding: var(--v2-space-4) var(--v2-space-5);
-    border-radius: var(--v2-radius-lg);
-    border: 1px solid var(--v2-border);
+    gap: var(--space-4);
+    background: var(--card-bg);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
   }
 
-  .v2-passage-english {
+  .passage-english {
     font-size: 0.9375rem;
-    padding-left: var(--v2-space-4);
-    border-left: 2px solid var(--v2-border-strong);
-    padding-top: var(--v2-space-2);
+    padding-left: var(--space-4);
+    border-left: 2px solid var(--border-strong);
+    padding-top: var(--space-2);
   }
 }
 
 @media (min-width: 641px) {
-  .v2-reader-text-panel {
+  .reader-text-panel {
     height: 100%;
     min-height: 0;
     flex: 1 1 0%;
     min-width: 320px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: var(--v2-space-6);
-    padding-left: var(--v2-space-2);
+    padding-right: var(--space-6);
+    padding-left: var(--space-2);
     scrollbar-width: thin;
   }
 
   /* Unboxed flat canvas for reading passage on desktop */
-  .v2-reader-text-card {
+  .reader-text-card {
     background: transparent;
     border: none;
     border-radius: 0;
-    padding: var(--v2-space-2) var(--v2-space-4) var(--v2-space-9) 0;
+    padding: var(--space-2) var(--space-4) var(--space-9) 0;
     box-shadow: none;
   }
 }

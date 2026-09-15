@@ -90,7 +90,7 @@ export class MorcusThemeToggle extends BaseElement {
       html`
         <button
           type="button"
-          class="v2-theme-toggle-btn"
+          class="theme-toggle-btn"
           aria-label="${label}"
           title="${label}">
           <svg viewBox="0 0 24 24" aria-hidden="true">

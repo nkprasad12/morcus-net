@@ -37,7 +37,7 @@ export interface DictResultsOptions {
  * Renders the error partial shown when a dictionary lookup fails.
  *
  * `term` is user-controlled (a raw search query or entry id), so it is escaped.
- * Kept here beside the other `.v2-no-results` renderers so the router never
+ * Kept here beside the other `.no-results` renderers so the router never
  * hand-builds this markup — an earlier inline copy in the router dropped the
  * escaping and reflected the query straight back into the response.
  */
@@ -46,7 +46,7 @@ export function renderDictErrorHtml(
   isIdSearch: boolean = false
 ): string {
   const action = isIdSearch ? "retrieving ID" : "searching for";
-  return `<div class="v2-no-results"><p>An error occurred ${action} "${he.escape(
+  return `<div class="no-results"><p>An error occurred ${action} "${he.escape(
     term
   )}".</p></div>`;
 }
@@ -56,7 +56,7 @@ export function renderDictErrorHtml(
  */
 export function renderNoResultsHtml(query: string): string {
   return `
-      <div class="v2-no-results">
+      <div class="no-results">
         <p>No results found for "<strong>${he.escape(query)}</strong>".</p>
       </div>
     `;
@@ -78,23 +78,23 @@ export function renderNoEntriesHtml(options: NoEntriesOptions): string {
     .map(resolveDictDisplayName)
     .join(", ");
   return `
-      <div class="v2-no-results">
+      <div class="no-results">
         <p>No dictionary entries found for "<strong>${he.escape(
           query
         )}</strong>".</p>
         ${
           !isInflected
-            ? `<p class="v2-no-results-sub v2-inflected-hint">
+            ? `<p class="no-results-sub inflected-hint">
                 Exact headword search is active.
                 <a href="/v2/dicts?q=${encodeURIComponent(
                   query
-                )}&o=1" class="v2-link">Enable inflected search</a> to find conjugated verbs and declined nouns.
+                )}&o=1" class="link">Enable inflected search</a> to find conjugated verbs and declined nouns.
               </p>`
             : ""
         }
         ${
           queriedNames
-            ? `<p class="v2-no-results-sub">Searched: ${he.escape(
+            ? `<p class="no-results-sub">Searched: ${he.escape(
                 queriedNames
               )}</p>`
             : ""
@@ -141,29 +141,29 @@ export function renderJumpNavHtml(options: JumpNavOptions): string {
       const count = entries.length;
       const cardId = dictCardId(dictKey);
       if (count > 0) {
-        return `<a href="#${cardId}" class="v2-jump-pill" title="Jump to ${he.escape(
+        return `<a href="#${cardId}" class="jump-pill" title="Jump to ${he.escape(
           shortName
         )} (${count} ${
           count === 1 ? "entry" : "entries"
-        })"><span class="v2-jump-pill-name">${he.escape(
+        })"><span class="jump-pill-name">${he.escape(
           dictAcronym
-        )}</span><span class="v2-jump-pill-count">${count}</span></a>`;
+        )}</span><span class="jump-pill-count">${count}</span></a>`;
       } else {
-        return `<span class="v2-jump-pill v2-jump-pill-zero" title="No entries found in ${he.escape(
+        return `<span class="jump-pill jump-pill-zero" title="No entries found in ${he.escape(
           shortName
-        )}"><span class="v2-jump-pill-name">${he.escape(
+        )}"><span class="jump-pill-name">${he.escape(
           dictAcronym
-        )}</span><span class="v2-jump-pill-count">0</span></span>`;
+        )}</span><span class="jump-pill-count">0</span></span>`;
       }
     })
     .join("");
 
   return `
-      <nav class="v2-results-nav" aria-label="Jump to dictionary">
-        <div class="v2-results-pills">
+      <nav class="results-nav" aria-label="Jump to dictionary">
+        <div class="results-pills">
           ${pillsHtml}
         </div>
-        <div class="v2-results-total">
+        <div class="results-total">
           ${totalCount} ${totalCount === 1 ? "result" : "results"}
         </div>
       </nav>
@@ -193,16 +193,16 @@ function renderEntryQuickJumpHtml(entries: EntryResult[]): string {
         `Entry ${idx + 1}`;
       const headword = rawHeadword.replace(/<[^>]+>/g, "").trim();
       const entryAnchor = entry.outline.mainSection.sectionId;
-      return `<li><a href="#${entryAnchor}" class="v2-entry-nav-link"><span class="v2-entry-nav-word">${he.escape(
+      return `<li><a href="#${entryAnchor}" class="entry-nav-link"><span class="entry-nav-word">${he.escape(
         headword
       )}</span></a></li>`;
     })
     .join("");
 
   return `
-          <div class="v2-entry-nav" aria-label="Jump to entry">
-            <span class="v2-entry-nav-label">Jump to</span>
-            <ul class="v2-entry-nav-list">
+          <div class="entry-nav" aria-label="Jump to entry">
+            <span class="entry-nav-label">Jump to</span>
+            <ul class="entry-nav-list">
               ${jumpLinks}
             </ul>
           </div>
@@ -219,14 +219,14 @@ function renderDictSourceAttributionHtml(dictKey: string): string {
   }
 
   return `
-          <details class="v2-dict-source-pane" name="v2-dict-source">
-            <summary class="v2-dict-source-btn" title="View dictionary source information">
-              <span class="v2-dict-source-btn-icon" aria-hidden="true">&#x24D8;</span>
-              <span class="v2-dict-source-btn-text">Source</span>
+          <details class="dict-source-pane" name="dict-source">
+            <summary class="dict-source-btn" title="View dictionary source information">
+              <span class="dict-source-btn-icon" aria-hidden="true">&#x24D8;</span>
+              <span class="dict-source-btn-text">Source</span>
             </summary>
-            <div class="v2-dict-source-popover">
-              <div class="v2-dict-source-popover-title">Source &amp; Attribution</div>
-              <div class="v2-dict-source-popover-body">${attrInfo.detailsHtml}</div>
+            <div class="dict-source-popover">
+              <div class="dict-source-popover-title">Source &amp; Attribution</div>
+              <div class="dict-source-popover-body">${attrInfo.detailsHtml}</div>
             </div>
           </details>
         `;
@@ -260,24 +260,24 @@ export function renderDictCardHtml(options: DictCardOptions): string {
     .join("");
 
   return `
-        <section class="v2-dict-card" id="${cardId}">
-          <header class="v2-dict-header v2-dict-header-slim">
-            <div class="v2-dict-header-row">
-              <details class="v2-dict-toggle" open>
-                <summary class="v2-dict-summary">
-                  <span class="v2-dict-toggle-icon" aria-hidden="true"></span>
-                  <span class="v2-dict-acronym">${he.escape(dictAcronym)}</span>
-                  <span class="v2-dict-name v2-dict-title">${he.escape(
+        <section class="dict-card" id="${cardId}">
+          <header class="dict-header dict-header-slim">
+            <div class="dict-header-row">
+              <details class="dict-toggle" open>
+                <summary class="dict-summary">
+                  <span class="dict-toggle-icon" aria-hidden="true"></span>
+                  <span class="dict-acronym">${he.escape(dictAcronym)}</span>
+                  <span class="dict-name dict-title">${he.escape(
                     shortName
                   )}</span>
-                  <span class="v2-dict-count">(${totalEntries})</span>
+                  <span class="dict-count">(${totalEntries})</span>
                 </summary>
               </details>
               ${attrHtml}
             </div>
             ${quickJumpHtml}
           </header>
-          <div class="v2-dict-body">
+          <div class="dict-body">
             ${entriesHtml}
           </div>
         </section>
@@ -346,9 +346,9 @@ export function renderDictResultsHtml(
   const tocHtml = tocTree ? renderDictTocHtml(tocTree) : "";
 
   return `
-    <div class="v2-results-layout${hasToc ? " has-toc" : ""}">
+    <div class="results-layout${hasToc ? " has-toc" : ""}">
       ${tocHtml}
-      <div class="v2-results-main">
+      <div class="results-main">
         ${jumpBarHtml}
         ${cardsHtml}
       </div>
@@ -400,7 +400,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   const dictScale = parseDictScale(options.scale);
   const extraHeadHtml =
     dictScale !== undefined
-      ? `<style>:root { --v2-dict-scale: ${(dictScale / 100).toFixed(
+      ? `<style>:root { --dict-scale: ${(dictScale / 100).toFixed(
           2
         )}; }</style>`
       : undefined;
@@ -415,7 +415,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
         extraHiddenInputs: isEmbedded ? { embedded: "1" } : undefined,
       })}
 
-      <output id="dict-results" class="v2-results">
+      <output id="dict-results" class="results">
         ${resultsHtml}
       </output>
     </morcus-dict-search>

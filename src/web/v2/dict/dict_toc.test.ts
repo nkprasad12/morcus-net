@@ -178,9 +178,9 @@ describe("dict_toc.server", () => {
       });
       expect(hasDictToc(results)).toBe(true);
       const html = renderDictTocHtml({ results });
-      expect(html).toContain("v2-toc-entries-summary");
+      expect(html).toContain("toc-entries-summary");
       expect(html).toContain(
-        'Contents <span class="v2-toc-count">(2 entries · 2 senses)</span>'
+        'Contents <span class="toc-count">(2 entries · 2 senses)</span>'
       );
     });
   });
@@ -250,48 +250,44 @@ describe("dict_toc.server", () => {
       const html = renderDictTocHtml({ results });
 
       // Outer custom element and disclosure
+      expect(html).toContain('<morcus-dict-toc class="drawer drawer-toc">');
+      expect(html).toContain('<details class="toc-details" open>');
+      expect(html).toContain('<summary class="drawer-bar toc-bar"');
       expect(html).toContain(
-        '<morcus-dict-toc class="v2-drawer v2-drawer-toc">'
-      );
-      expect(html).toContain('<details class="v2-toc-details" open>');
-      expect(html).toContain('<summary class="v2-drawer-bar v2-toc-bar"');
-      expect(html).toContain(
-        '<div class="v2-drawer-handle" aria-hidden="true"></div>'
+        '<div class="drawer-handle" aria-hidden="true"></div>'
       );
       expect(html).toContain(
-        'Contents <span class="v2-toc-count">(2 entries · 4 senses)</span>'
+        'Contents <span class="toc-count">(2 entries · 4 senses)</span>'
       );
 
       // Global multi-lexicon entries summary (streamlined without redundant section titles)
-      expect(html).toContain('class="v2-toc-section v2-toc-entries-summary"');
-      expect(html).not.toContain('class="v2-toc-section-title"');
-      expect(html).toContain('class="v2-toc-entries-group"');
+      expect(html).toContain('class="toc-section toc-entries-summary"');
+      expect(html).not.toContain('class="toc-section-title"');
+      expect(html).toContain('class="toc-entries-group"');
       expect(html).toContain(
-        '<span class="v2-toc-entries-divider" aria-hidden="true">|</span>'
+        '<span class="toc-entries-divider" aria-hidden="true">|</span>'
       );
-      expect(html).toContain('href="#n27000" class="v2-toc-entry-chip"');
-      expect(html).toContain('href="#g3000" class="v2-toc-entry-chip"');
+      expect(html).toContain('href="#n27000" class="toc-entry-chip"');
+      expect(html).toContain('href="#g3000" class="toc-entry-chip"');
 
       // Dictionary groups have clean full names without redundant badges in header
-      expect(html).toContain('href="#dict-ls" class="v2-toc-dict-link"');
+      expect(html).toContain('href="#dict-ls" class="toc-dict-link"');
       expect(html).toContain(
-        '<span class="v2-toc-dict-name">Lewis &amp; Short</span>'
+        '<span class="toc-dict-name">Lewis &amp; Short</span>'
       );
-      expect(html).toContain('href="#dict-gaffiot" class="v2-toc-dict-link"');
-      expect(html).toContain('<span class="v2-toc-dict-name">Gaffiot</span>');
+      expect(html).toContain('href="#dict-gaffiot" class="toc-dict-link"');
+      expect(html).toContain('<span class="toc-dict-name">Gaffiot</span>');
 
       // Entry article headers in outline carry the dictionary badge
       expect(html).toContain(
-        '<span class="v2-toc-badge v2-toc-badge-la">L&amp;S</span>'
+        '<span class="toc-badge toc-badge-la">L&amp;S</span>'
       );
-      expect(html).toContain('<span class="v2-toc-entry-word">lex</span>');
-      expect(html).toContain(
-        '<span class="v2-toc-badge v2-toc-badge-la">GAF</span>'
-      );
+      expect(html).toContain('<span class="toc-entry-word">lex</span>');
+      expect(html).toContain('<span class="toc-badge toc-badge-la">GAF</span>');
 
       // TOC links
-      expect(html).toContain('href="#ls1" class="v2-toc-link"');
-      expect(html).toContain('href="#gaf1" class="v2-toc-link"');
+      expect(html).toContain('href="#ls1" class="toc-link"');
+      expect(html).toContain('href="#gaf1" class="toc-link"');
     });
 
     test("distinguishes multiple entries within a single dictionary", () => {
@@ -330,14 +326,10 @@ describe("dict_toc.server", () => {
 
       const html = renderDictTocHtml({ results });
 
-      expect(html).toContain('<div class="v2-toc-entry">');
-      expect(html).toContain(
-        'href="#n12001" class="v2-toc-link v2-toc-entry-link"'
-      );
+      expect(html).toContain('<div class="toc-entry">');
+      expect(html).toContain('href="#n12001" class="toc-link toc-entry-link"');
       expect(html).toContain("cum (1)");
-      expect(html).toContain(
-        'href="#n12002" class="v2-toc-link v2-toc-entry-link"'
-      );
+      expect(html).toContain('href="#n12002" class="toc-link toc-entry-link"');
       expect(html).toContain("cum (2)");
     });
   });
@@ -707,10 +699,10 @@ describe("dict_toc.server", () => {
       ];
 
       const html = renderTocEntriesSummaryHtml(chipGroups);
-      expect(html).toContain('class="v2-toc-section v2-toc-entries-summary"');
-      expect(html).toContain('href="#n1" class="v2-toc-entry-chip"');
+      expect(html).toContain('class="toc-section toc-entries-summary"');
+      expect(html).toContain('href="#n1" class="toc-entry-chip"');
       expect(html).toContain('title="Jump to lex (L&amp;S)"');
-      expect(html).toContain('class="v2-toc-entries-divider"');
+      expect(html).toContain('class="toc-entries-divider"');
     });
 
     test("renderTocSenseListHtml renders outline groups and preserves inline space after ordinal", () => {
@@ -756,12 +748,12 @@ describe("dict_toc.server", () => {
       };
 
       const html = renderTocSenseListHtml(fixtureTree);
-      expect(html).toContain('class="v2-toc-section v2-toc-outline"');
-      expect(html).toContain('href="#dict-ls" class="v2-toc-dict-link"');
-      expect(html).toContain('href="#s1" class="v2-toc-link"');
+      expect(html).toContain('class="toc-section toc-outline"');
+      expect(html).toContain('href="#dict-ls" class="toc-dict-link"');
+      expect(html).toContain('href="#s1" class="toc-link"');
       // Verify load-bearing trailing space in ordinal tag
       expect(html).toContain(
-        '<strong class="v2-toc-ordinal">I.</strong> <span class="v2-toc-text">Physical making</span>'
+        '<strong class="toc-ordinal">I.</strong> <span class="toc-text">Physical making</span>'
       );
       // Verify indentation style on level 2
       expect(html).toContain('style="margin-left: 0.75rem;"');

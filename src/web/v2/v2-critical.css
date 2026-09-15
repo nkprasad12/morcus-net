@@ -27,91 +27,91 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--v2-bg);
-  color: var(--v2-text);
-  font-family: var(--v2-font-sans);
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
   line-height: 1.5;
 }
 
-.v2-app-bar {
+.app-bar {
   min-height: 57px;
-  background-color: var(--v2-app-bar-bg);
-  border-bottom: 1px solid var(--v2-app-bar-border);
+  background-color: var(--app-bar-bg);
+  border-bottom: 1px solid var(--app-bar-border);
 }
 
-.v2-app-bar-inner {
+.app-bar-inner {
   max-width: 900px;
   min-height: 64px;
   margin: 0 auto;
-  padding: var(--v2-space-4) var(--v2-space-6);
+  padding: var(--space-4) var(--space-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.v2-brand-group {
+.brand-group {
   display: flex;
   align-items: center;
-  gap: var(--v2-space-6);
+  gap: var(--space-6);
 }
 
-.v2-actions-group {
+.actions-group {
   display: flex;
   align-items: center;
-  gap: var(--v2-space-4);
+  gap: var(--space-4);
 }
 
-.v2-mobile-menu {
+.mobile-menu {
   position: relative;
   display: none;
 }
 
-.v2-nav {
+.nav {
   display: flex;
   align-items: center;
-  gap: var(--v2-space-4);
+  gap: var(--space-4);
 }
 
-.v2-nav-link {
+.nav-link {
   text-decoration: none;
-  color: var(--v2-app-bar-nav-text);
-  padding: var(--v2-space-3) var(--v2-space-5);
+  color: var(--app-bar-nav-text);
+  padding: var(--space-3) var(--space-5);
 }
 
 @media (max-width: 640px) {
-  .v2-app-bar-inner {
+  .app-bar-inner {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
   }
 
-  .v2-actions-group {
+  .actions-group {
     order: 1;
     justify-self: start;
   }
 
-  .v2-brand-group {
+  .brand-group {
     order: 2;
     justify-self: center;
     gap: 0;
   }
 
-  .v2-nav-desktop {
+  .nav-desktop {
     display: none;
   }
 
-  .v2-mobile-menu {
+  .mobile-menu {
     order: 3;
     justify-self: end;
     display: block;
   }
 }
 
-.v2-container {
+.container {
   max-width: 900px;
   margin: 0 auto;
-  padding: var(--v2-space-5) var(--v2-space-6)
-    max(var(--v2-space-9), calc(24px + env(safe-area-inset-bottom, 0px)));
+  padding: var(--space-5) var(--space-6)
+    max(var(--space-9), calc(24px + env(safe-area-inset-bottom, 0px)));
 }
 
 morcus-theme-toggle:not(:defined),

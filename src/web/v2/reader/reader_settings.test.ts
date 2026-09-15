@@ -117,32 +117,32 @@ describe("MorcusReaderSettings custom element", () => {
     resetBtn: HTMLButtonElement;
   } {
     container.innerHTML = `
-      <button type="button" id="v2-reader-settings-btn">Settings</button>
+      <button type="button" id="reader-settings-btn">Settings</button>
       <morcus-reader-settings>
-        <dialog class="v2-dialog v2-reader-settings-dialog" id="v2-reader-settings-dialog">
-          <button type="button" id="v2-reader-size-dec">-</button>
-          <span id="v2-reader-size-label">100%</span>
-          <button type="button" id="v2-reader-size-inc">+</button>
+        <dialog class="dialog reader-settings-dialog" id="reader-settings-dialog">
+          <button type="button" id="reader-size-dec">-</button>
+          <span id="reader-size-label">100%</span>
+          <button type="button" id="reader-size-inc">+</button>
 
-          <button type="button" id="v2-dict-size-dec">-</button>
-          <span id="v2-dict-size-label">100%</span>
-          <button type="button" id="v2-dict-size-inc">+</button>
+          <button type="button" id="dict-size-dec">-</button>
+          <span id="dict-size-label">100%</span>
+          <button type="button" id="dict-size-inc">+</button>
 
-          <input type="checkbox" id="v2-toggle-macra" checked />
-          <input type="checkbox" id="v2-toggle-gutter" checked />
+          <input type="checkbox" id="toggle-macra" checked />
+          <input type="checkbox" id="toggle-gutter" checked />
 
-          <select id="v2-font-select">
+          <select id="font-select">
             <option value="serif">Serif</option>
             <option value="sans">Sans</option>
           </select>
 
-          <select id="v2-line-height-select">
+          <select id="line-height-select">
             <option value="compact">Compact</option>
             <option value="normal">Normal</option>
             <option value="relaxed">Relaxed</option>
           </select>
 
-          <button type="button" id="v2-reader-settings-reset-btn">Reset</button>
+          <button type="button" id="reader-settings-reset-btn">Reset</button>
         </dialog>
       </morcus-reader-settings>
     `;
@@ -153,38 +153,31 @@ describe("MorcusReaderSettings custom element", () => {
     return {
       el,
       dialog: container.querySelector<HTMLDialogElement>(
-        "#v2-reader-settings-dialog"
+        "#reader-settings-dialog"
       )!,
       triggerBtn: container.querySelector<HTMLButtonElement>(
-        "#v2-reader-settings-btn"
+        "#reader-settings-btn"
       )!,
-      readerSizeDec: container.querySelector<HTMLButtonElement>(
-        "#v2-reader-size-dec"
-      )!,
-      readerSizeInc: container.querySelector<HTMLButtonElement>(
-        "#v2-reader-size-inc"
-      )!,
-      readerSizeLabel: container.querySelector<HTMLElement>(
-        "#v2-reader-size-label"
-      )!,
+      readerSizeDec:
+        container.querySelector<HTMLButtonElement>("#reader-size-dec")!,
+      readerSizeInc:
+        container.querySelector<HTMLButtonElement>("#reader-size-inc")!,
+      readerSizeLabel:
+        container.querySelector<HTMLElement>("#reader-size-label")!,
       dictSizeDec:
-        container.querySelector<HTMLButtonElement>("#v2-dict-size-dec")!,
+        container.querySelector<HTMLButtonElement>("#dict-size-dec")!,
       dictSizeInc:
-        container.querySelector<HTMLButtonElement>("#v2-dict-size-inc")!,
-      dictSizeLabel: container.querySelector<HTMLElement>(
-        "#v2-dict-size-label"
-      )!,
-      toggleMacra:
-        container.querySelector<HTMLInputElement>("#v2-toggle-macra")!,
+        container.querySelector<HTMLButtonElement>("#dict-size-inc")!,
+      dictSizeLabel: container.querySelector<HTMLElement>("#dict-size-label")!,
+      toggleMacra: container.querySelector<HTMLInputElement>("#toggle-macra")!,
       toggleGutter:
-        container.querySelector<HTMLInputElement>("#v2-toggle-gutter")!,
-      fontSelect:
-        container.querySelector<HTMLSelectElement>("#v2-font-select")!,
+        container.querySelector<HTMLInputElement>("#toggle-gutter")!,
+      fontSelect: container.querySelector<HTMLSelectElement>("#font-select")!,
       lineHeightSelect: container.querySelector<HTMLSelectElement>(
-        "#v2-line-height-select"
+        "#line-height-select"
       )!,
       resetBtn: container.querySelector<HTMLButtonElement>(
-        "#v2-reader-settings-reset-btn"
+        "#reader-settings-reset-btn"
       )!,
     };
   }

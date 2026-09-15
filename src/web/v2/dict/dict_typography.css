@@ -1,68 +1,68 @@
 /* Inflections section */
-.v2-inflections {
-  margin-top: var(--v2-space-5);
-  padding: var(--v2-space-4) var(--v2-space-5);
-  background: var(--v2-tag-bg);
-  border-radius: var(--v2-radius-md);
-  font-size: calc(0.95rem * var(--v2-dict-scale, 1));
-  font-family: var(--v2-font-sans);
+.inflections {
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--tag-bg);
+  border-radius: var(--radius-md);
+  font-size: calc(0.95rem * var(--dict-scale, 1));
+  font-family: var(--font-sans);
 }
 
-.v2-inflections summary {
+.inflections summary {
   font-weight: 600;
   cursor: pointer;
 }
 
-.v2-inflection-table {
+.inflection-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 0;
-  font-size: calc(0.95rem * var(--v2-dict-scale, 1));
+  font-size: calc(0.95rem * var(--dict-scale, 1));
 }
 
-.v2-inflection-table th,
-.v2-inflection-table td {
-  padding: var(--v2-space-2) var(--v2-space-4);
-  border-bottom: 1px solid var(--v2-border);
+.inflection-table th,
+.inflection-table td {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
   text-align: left;
 }
 
-.v2-inflection-table th {
-  padding-top: var(--v2-space-2);
+.inflection-table th {
+  padding-top: var(--space-2);
 }
 
-.v2-inflection-table th:first-child,
-.v2-inflection-table td:first-child {
-  padding-left: var(--v2-space-2);
+.inflection-table th:first-child,
+.inflection-table td:first-child {
+  padding-left: var(--space-2);
 }
 
 /* Formatting classes for Morcus dictionary content */
 .lsOrth {
   font-weight: bold;
-  background-color: var(--v2-accent-orth);
-  border-radius: var(--v2-radius-sm);
-  padding: var(--v2-space-1) var(--v2-space-2);
+  background-color: var(--accent-orth);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
 }
 
 .lsGrammar {
   font-style: italic;
-  background-color: var(--v2-accent-grammar);
-  border-radius: var(--v2-radius-sm);
-  padding: var(--v2-space-1) var(--v2-space-1);
+  background-color: var(--accent-grammar);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-1);
 }
 
 .lsQuote {
-  background-color: var(--v2-accent-quote);
-  border-radius: var(--v2-radius-sm);
-  padding: var(--v2-space-1) var(--v2-space-2);
+  background-color: var(--accent-quote);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
 }
 
 .lsBibl,
 .lsAuthor,
 .gafAuth {
-  background-color: var(--v2-accent-bibl);
-  border-radius: var(--v2-radius-sm);
-  padding: var(--v2-space-1) var(--v2-space-1);
+  background-color: var(--accent-bibl);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-1);
 }
 
 .lsEmph {
@@ -81,33 +81,33 @@
 
 .lsSenseBullet {
   display: inline-block;
-  padding: 0 var(--v2-space-2);
-  margin: 0 var(--v2-space-1);
-  background-color: var(--v2-bullet-bg);
-  color: var(--v2-text);
-  border-radius: var(--v2-radius-sm);
+  padding: 0 var(--space-2);
+  margin: 0 var(--space-1);
+  background-color: var(--bullet-bg);
+  color: var(--text);
+  border-radius: var(--radius-sm);
   font-weight: 600;
 }
 
 a.lsSenseBullet,
 a.lsSenseBullet:visited {
-  color: var(--v2-text);
+  color: var(--text);
   text-decoration: none;
 }
 
 .lsHover {
-  text-decoration: underline dotted var(--v2-border-strong);
+  text-decoration: underline dotted var(--border-strong);
   text-underline-offset: 3px;
   cursor: pointer;
   touch-action: manipulation;
-  padding: 0 var(--v2-space-1);
-  border-radius: var(--v2-radius-sm);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
   transition: background-color 0.15s ease-in-out;
 }
 
 .lsHover:hover,
 .lsHover:focus-visible {
-  background-color: var(--v2-accent-quote);
+  background-color: var(--accent-quote);
   outline: none;
 }
 
@@ -115,19 +115,19 @@ a.lsSenseBullet:visited {
 .lsHover:focus::after {
   content: attr(title);
   position: fixed;
-  bottom: var(--v2-space-8);
+  bottom: var(--space-8);
   left: 50%;
   transform: translateX(-50%);
   width: max-content;
   min-width: min(calc(100vw - 32px), 200px);
   max-width: min(calc(100vw - 32px), 32rem);
   box-sizing: border-box;
-  background-color: var(--v2-toast-bg);
-  color: var(--v2-toast-text);
-  border: 1px solid var(--v2-toast-border);
-  padding: var(--v2-space-4) var(--v2-space-6);
-  border-radius: var(--v2-radius-lg);
-  font-family: var(--v2-font-sans);
+  background-color: var(--toast-bg);
+  color: var(--toast-text);
+  border: 1px solid var(--toast-border);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-sans);
   font-size: 0.98rem;
   font-weight: 600;
   font-style: normal;
@@ -135,28 +135,28 @@ a.lsSenseBullet:visited {
   letter-spacing: 0.01em;
   text-align: center;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.15);
-  z-index: var(--v2-z-modal);
+  z-index: var(--z-modal);
   pointer-events: none;
 }
 
 /* Once JS is active, disable static CSS fallback so anchored popover takes over */
-html.v2-has-js .lsHover:focus::after {
+html.has-js .lsHover:focus::after {
   display: none;
 }
 
 /* Single global popover container for progressive JS enhancement */
-.v2-abbr-popover {
+.abbr-popover {
   margin: 0;
-  padding: var(--v2-space-4) var(--v2-space-5);
-  font-family: var(--v2-font-sans);
-  font-size: calc(0.9rem * var(--v2-dict-scale, 1));
+  padding: var(--space-4) var(--space-5);
+  font-family: var(--font-sans);
+  font-size: calc(0.9rem * var(--dict-scale, 1));
   font-weight: 500;
   font-style: normal;
   line-height: 1.4;
-  color: var(--v2-text);
-  background-color: var(--v2-card-bg);
-  border: 1px solid var(--v2-border-focus);
-  border-radius: var(--v2-radius-lg);
+  color: var(--text);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-lg);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
   width: max-content;
   max-width: min(calc(100vw - 32px), 32rem);
@@ -164,14 +164,14 @@ html.v2-has-js .lsHover:focus::after {
   position: absolute;
   inset: unset;
   overflow: visible;
-  animation: v2-popover-fade-in 0.12s ease-out;
+  animation: popover-fade-in 0.12s ease-out;
 }
 
-.v2-abbr-popover::backdrop {
+.abbr-popover::backdrop {
   background: transparent;
 }
 
-@keyframes v2-popover-fade-in {
+@keyframes popover-fade-in {
   from {
     opacity: 0;
     transform: scale(0.96);
@@ -183,78 +183,78 @@ html.v2-has-js .lsHover:focus::after {
 }
 
 .dLink {
-  color: var(--v2-primary);
+  color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
 }
 
 .dLink:hover {
-  color: var(--v2-primary-hover);
+  color: var(--primary-hover);
 }
 
 .numeralTable {
-  margin-top: var(--v2-space-2);
+  margin-top: var(--space-2);
   border-collapse: collapse;
-  border: 1px solid var(--v2-border);
+  border: 1px solid var(--border);
 }
 
 .numeralTable td {
-  padding: var(--v2-space-1) var(--v2-space-4);
-  border: 1px solid var(--v2-border);
+  padding: var(--space-1) var(--space-4);
+  border: 1px solid var(--border);
 }
 
-.v2-no-results {
-  padding: var(--v2-space-9) var(--v2-space-6);
+.no-results {
+  padding: var(--space-9) var(--space-6);
   text-align: center;
-  color: var(--v2-text-muted);
-  font-size: calc(1.1rem * var(--v2-dict-scale, 1));
+  color: var(--text-muted);
+  font-size: calc(1.1rem * var(--dict-scale, 1));
 }
 
-.v2-badge {
+.badge {
   font-size: 0.8rem;
   font-weight: normal;
-  padding: var(--v2-space-1) var(--v2-space-4);
-  border-radius: var(--v2-radius-xl);
-  background: var(--v2-border);
-  color: var(--v2-text-muted);
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--border);
+  color: var(--text-muted);
 }
 
 /* Latin word click-to-lookup link */
-.v2-lat-word,
-.v2-lat-word:visited {
+.lat-word,
+.lat-word:visited {
   color: inherit;
   text-decoration: none;
-  border-radius: var(--v2-radius-xs);
+  border-radius: var(--radius-xs);
   cursor: pointer;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
-.v2-lat-word:hover,
-.v2-lat-word:visited:hover {
-  color: var(--v2-primary);
+.lat-word:hover,
+.lat-word:visited:hover {
+  color: var(--primary);
   text-decoration: underline;
   text-decoration-style: solid;
   text-underline-offset: 2px;
-  background-color: var(--v2-tag-bg);
+  background-color: var(--tag-bg);
 }
 
-.v2-lat-word:focus-visible {
-  outline: 2px solid var(--v2-primary);
+.lat-word:focus-visible {
+  outline: 2px solid var(--primary);
   outline-offset: 1px;
 }
 
 /* Section anchor bullets */
-.v2-section-anchor,
-.v2-section-anchor:visited {
+.section-anchor,
+.section-anchor:visited {
   text-decoration: none;
-  color: var(--v2-text);
+  color: var(--text);
   cursor: pointer;
   transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
 }
 
-.v2-section-anchor:hover,
-.v2-section-anchor:focus-visible {
-  background-color: var(--v2-primary);
-  color: var(--v2-on-accent);
+.section-anchor:hover,
+.section-anchor:focus-visible {
+  background-color: var(--primary);
+  color: var(--on-accent);
 }

@@ -75,47 +75,47 @@ export function renderDictLandingHtml(
     items
       .map((d) => {
         const isEnabled = activeKeysSet.has(d.key.toUpperCase());
-        const statusClass = isEnabled ? "v2-dict-enabled" : "v2-dict-disabled";
+        const statusClass = isEnabled ? "dict-enabled" : "dict-disabled";
         return `
-        <li class="v2-dict-list-item ${statusClass}" data-dict-key="${d.key}">
-          <strong class="v2-lexicon-badge ${statusClass}">${d.key}</strong>
-          <span class="v2-lexicon-name">${d.displayName}</span>
-          <span class="v2-lexicon-lang">(${d.targetLang})</span>
+        <li class="dict-list-item ${statusClass}" data-dict-key="${d.key}">
+          <strong class="lexicon-badge ${statusClass}">${d.key}</strong>
+          <span class="lexicon-name">${d.displayName}</span>
+          <span class="lexicon-lang">(${d.targetLang})</span>
         </li>
       `;
       })
       .join("");
 
   return `
-    <div class="v2-landing-container">
+    <div class="landing-container">
       <!-- Dynamic Welcome message based on active dictionaries -->
-      <p class="v2-landing-welcome" id="v2-landing-welcome">${welcomeText}</p>
+      <p class="landing-welcome" id="landing-welcome">${welcomeText}</p>
 
       <!-- Two-column info grid -->
-      <div class="v2-landing-grid">
+      <div class="landing-grid">
         <!-- Column 1: Dictionaries (First on mobile & desktop) -->
-        <section class="v2-landing-card">
-          <header class="v2-landing-card-header">
-            <h3 class="v2-landing-card-title">All Dictionaries</h3>
+        <section class="landing-card">
+          <header class="landing-card-header">
+            <h3 class="landing-card-title">All Dictionaries</h3>
           </header>
-          <div class="v2-landing-card-body">
-            <div class="v2-dict-sections">
-              <div class="v2-dict-section">
-                <h4 class="v2-dict-section-title">From Latin</h4>
-                <ul class="v2-lexicon-list">
+          <div class="landing-card-body">
+            <div class="dict-sections">
+              <div class="dict-section">
+                <h4 class="dict-section-title">From Latin</h4>
+                <ul class="lexicon-list">
                   ${renderDictList(fromLatin)}
                 </ul>
               </div>
-              <div class="v2-dict-section">
-                <h4 class="v2-dict-section-title">To Latin</h4>
-                <ul class="v2-lexicon-list">
+              <div class="dict-section">
+                <h4 class="dict-section-title">To Latin</h4>
+                <ul class="lexicon-list">
                   ${renderDictList(toLatin)}
                 </ul>
               </div>
             </div>
 
-            <div class="v2-card-settings-note">
-              <svg class="v2-landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <div class="card-settings-note">
+              <svg class="landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="${ICON_PATHS.tune}"></path>
               </svg>
               <span>Enable or disable dictionaries in the settings</span>
@@ -124,24 +124,24 @@ export function renderDictLandingHtml(
         </section>
 
         <!-- Column 2: Understanding the Markup -->
-        <section class="v2-landing-card">
-          <header class="v2-landing-card-header">
-            <h3 class="v2-landing-card-title">Understanding the Markup</h3>
+        <section class="landing-card">
+          <header class="landing-card-header">
+            <h3 class="landing-card-title">Understanding the Markup</h3>
           </header>
-          <div class="v2-landing-card-body">
-            <p class="v2-landing-card-desc">
+          <div class="landing-card-body">
+            <p class="landing-card-desc">
               Entries highlight grammar, citations, and sections:
             </p>
 
             <!-- Minimal mock entry demonstrating all styling classes -->
-            <div class="v2-sample-entry">
-              <div class="v2-sample-entry-line">
+            <div class="sample-entry">
+              <div class="sample-entry-line">
                 <span class="lsOrth">unda</span>, ae,
                 <span class="lsGrammar"><span class="lsHover" title="feminine">f.</span></span>,
                 <em>a wave, billow, surge</em>.
               </div>
-              <div class="v2-sample-entry-sense">
-                <a href="#sample-sense" class="lsSenseBullet v2-section-anchor" title="Direct link to this section">I.</a>
+              <div class="sample-entry-sense">
+                <a href="#sample-sense" class="lsSenseBullet section-anchor" title="Direct link to this section">I.</a>
                 <span class="lsHover" title="literal">Lit.</span>:
                 <span class="lsQuote">mare plenum undarum</span>,
                 <span class="lsBibl"><span class="lsAuthor lsHover" title="Plautus">Plaut.</span> Mil. 2, 6, 33</span>
@@ -149,44 +149,44 @@ export function renderDictLandingHtml(
             </div>
 
             <!-- Expandable legend explaining every color and interactive style (collapsed by default) -->
-            <details class="v2-legend-details">
-              <summary class="v2-legend-summary">
-                <span class="v2-legend-summary-title">What do the colors mean?</span>
-                <span class="v2-legend-summary-arrow" aria-hidden="true">▾</span>
+            <details class="legend-details">
+              <summary class="legend-summary">
+                <span class="legend-summary-title">What do the colors mean?</span>
+                <span class="legend-summary-arrow" aria-hidden="true">▾</span>
               </summary>
-              <div class="v2-legend-body">
-                <ul class="v2-legend-list">
+              <div class="legend-body">
+                <ul class="legend-list">
                   <li>
-                    <span class="v2-legend-sample"><span class="lsOrth">unda</span></span>
-                    <span class="v2-legend-explain"><strong>Red tint:</strong> Lemma headwords</span>
+                    <span class="legend-sample"><span class="lsOrth">unda</span></span>
+                    <span class="legend-explain"><strong>Red tint:</strong> Lemma headwords</span>
                   </li>
                   <li>
-                    <span class="v2-legend-sample"><span class="lsGrammar">f.</span></span>
-                    <span class="v2-legend-explain"><strong>Orange tint:</strong> Grammatical gender, parts of speech, usage notes</span>
+                    <span class="legend-sample"><span class="lsGrammar">f.</span></span>
+                    <span class="legend-explain"><strong>Orange tint:</strong> Grammatical gender, parts of speech, usage notes</span>
                   </li>
                   <li>
-                    <span class="v2-legend-sample"><span class="lsQuote">“mare…”</span></span>
-                    <span class="v2-legend-explain"><strong>Blue tint:</strong> Latin quotations</span>
+                    <span class="legend-sample"><span class="lsQuote">“mare…”</span></span>
+                    <span class="legend-explain"><strong>Blue tint:</strong> Latin quotations</span>
                   </li>
                   <li>
-                    <span class="v2-legend-sample"><span class="lsBibl"><span class="lsAuthor">Cic.</span></span></span>
-                    <span class="v2-legend-explain"><strong>Purple tint:</strong> Ancient authors, works, and passage references</span>
+                    <span class="legend-sample"><span class="lsBibl"><span class="lsAuthor">Cic.</span></span></span>
+                    <span class="legend-explain"><strong>Purple tint:</strong> Ancient authors, works, and passage references</span>
                   </li>
                   <li>
-                    <span class="v2-legend-sample"><span class="lsHover" title="Example tooltip">Lit.</span></span>
-                    <span class="v2-legend-explain"><strong>Dotted underline:</strong> Possible abbreviations (hover or tap to expand)</span>
+                    <span class="legend-sample"><span class="lsHover" title="Example tooltip">Lit.</span></span>
+                    <span class="legend-explain"><strong>Dotted underline:</strong> Possible abbreviations (hover or tap to expand)</span>
                   </li>
                   <li>
-                    <span class="v2-legend-sample"><span class="lsSenseBullet v2-section-anchor">I.</span></span>
-                    <span class="v2-legend-explain"><strong>Grey badge:</strong> Section headers (click to jump or copy URL)</span>
+                    <span class="legend-sample"><span class="lsSenseBullet section-anchor">I.</span></span>
+                    <span class="legend-explain"><strong>Grey badge:</strong> Section headers (click to jump or copy URL)</span>
                   </li>
                 </ul>
               </div>
             </details>
 
             <!-- Only displayed when JS is active since the slider is client-injected -->
-            <div class="v2-legend-settings-tip v2-js-only">
-              <svg class="v2-landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <div class="legend-settings-tip js-only">
+              <svg class="landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="${ICON_PATHS.tune}"></path>
               </svg>
               <span>You can change highlight intensity in the settings</span>

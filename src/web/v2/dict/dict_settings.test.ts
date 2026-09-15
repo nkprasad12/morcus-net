@@ -6,7 +6,7 @@ import "@/web/v2/dict/dict_settings.client";
 describe("MorcusDictSettings", () => {
   beforeEach(() => {
     localStorage.clear();
-    document.documentElement.style.removeProperty("--v2-highlight-scale");
+    document.documentElement.style.removeProperty("--highlight-scale");
     document.body.innerHTML = "";
   });
 
@@ -18,19 +18,19 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const btn = el.querySelector<HTMLElement>(".v2-settings-btn");
+    const btn = el.querySelector<HTMLElement>(".settings-btn");
     const details = el.querySelector<HTMLDetailsElement>(
-      ".v2-dict-settings-details"
+      ".dict-settings-details"
     );
-    const slider = el.querySelector<HTMLInputElement>(".v2-settings-slider");
-    const valueDisplay = el.querySelector<HTMLElement>(".v2-settings-value");
+    const slider = el.querySelector<HTMLInputElement>(".settings-slider");
+    const valueDisplay = el.querySelector<HTMLElement>(".settings-value");
 
     expect(btn).not.toBeNull();
     expect(details?.open).toBe(false);
     expect(slider?.value).toBe("50");
     expect(valueDisplay?.textContent).toBe("50%");
     expect(
-      document.documentElement.style.getPropertyValue("--v2-highlight-scale")
+      document.documentElement.style.getPropertyValue("--highlight-scale")
     ).toBe("1");
   });
 
@@ -43,13 +43,13 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const slider = el.querySelector<HTMLInputElement>(".v2-settings-slider");
-    const valueDisplay = el.querySelector<HTMLElement>(".v2-settings-value");
+    const slider = el.querySelector<HTMLInputElement>(".settings-slider");
+    const valueDisplay = el.querySelector<HTMLElement>(".settings-value");
 
     expect(slider?.value).toBe("20");
     expect(valueDisplay?.textContent).toBe("20%");
     expect(
-      document.documentElement.style.getPropertyValue("--v2-highlight-scale")
+      document.documentElement.style.getPropertyValue("--highlight-scale")
     ).toBe("0.4");
   });
 
@@ -57,9 +57,9 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const btn = el.querySelector<HTMLElement>(".v2-settings-btn")!;
+    const btn = el.querySelector<HTMLElement>(".settings-btn")!;
     const details = el.querySelector<HTMLDetailsElement>(
-      ".v2-dict-settings-details"
+      ".dict-settings-details"
     )!;
 
     expect(details.open).toBe(false);
@@ -75,14 +75,14 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const slider = el.querySelector<HTMLInputElement>(".v2-settings-slider")!;
-    const valueDisplay = el.querySelector<HTMLElement>(".v2-settings-value")!;
+    const slider = el.querySelector<HTMLInputElement>(".settings-slider")!;
+    const valueDisplay = el.querySelector<HTMLElement>(".settings-value")!;
 
     slider.value = "80";
     slider.dispatchEvent(new Event("input"));
 
     expect(
-      document.documentElement.style.getPropertyValue("--v2-highlight-scale")
+      document.documentElement.style.getPropertyValue("--highlight-scale")
     ).toBe("1.6");
     expect(valueDisplay.textContent).toBe("80%");
 
@@ -100,9 +100,9 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const btn = el.querySelector<HTMLElement>(".v2-settings-btn")!;
+    const btn = el.querySelector<HTMLElement>(".settings-btn")!;
     const details = el.querySelector<HTMLDetailsElement>(
-      ".v2-dict-settings-details"
+      ".dict-settings-details"
     )!;
 
     btn.click();
@@ -119,9 +119,9 @@ describe("MorcusDictSettings", () => {
     const outside = document.createElement("div");
     document.body.appendChild(outside);
 
-    const btn = el.querySelector<HTMLElement>(".v2-settings-btn")!;
+    const btn = el.querySelector<HTMLElement>(".settings-btn")!;
     const details = el.querySelector<HTMLDetailsElement>(
-      ".v2-dict-settings-details"
+      ".dict-settings-details"
     )!;
 
     btn.click();
@@ -135,8 +135,7 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const checkboxes =
-      el.querySelectorAll<HTMLInputElement>(".v2-dict-checkbox");
+    const checkboxes = el.querySelectorAll<HTMLInputElement>(".dict-checkbox");
     expect(checkboxes.length).toBeGreaterThan(0);
 
     // L&S should be checked by default
@@ -171,20 +170,19 @@ describe("MorcusDictSettings", () => {
     // Setup with SSR-like markup including inflection checkbox
     document.body.innerHTML = `
       <morcus-dict-settings>
-        <details class="v2-dict-settings-details">
-          <summary class="v2-settings-btn"></summary>
-          <div class="v2-settings-popover">
-            <input type="checkbox" id="v2-toggle-inflected" class="v2-inflected-checkbox" checked />
-            <input type="checkbox" class="v2-dict-checkbox" data-key="L&S" checked />
+        <details class="dict-settings-details">
+          <summary class="settings-btn"></summary>
+          <div class="settings-popover">
+            <input type="checkbox" id="toggle-inflected" class="inflected-checkbox" checked />
+            <input type="checkbox" class="dict-checkbox" data-key="L&S" checked />
           </div>
         </details>
       </morcus-dict-settings>
     `;
 
     const el = document.querySelector<HTMLElement>("morcus-dict-settings")!;
-    const inflectedCheckbox = el.querySelector<HTMLInputElement>(
-      "#v2-toggle-inflected"
-    )!;
+    const inflectedCheckbox =
+      el.querySelector<HTMLInputElement>("#toggle-inflected")!;
     expect(inflectedCheckbox.checked).toBe(true);
 
     let inflectedDetail: any = null;

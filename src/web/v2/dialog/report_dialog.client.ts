@@ -26,15 +26,13 @@ export class MorcusReportDialog extends BaseElement {
   }
 
   private enhanceMarkup() {
-    this.triggerBtn = this.$<HTMLButtonElement>(".v2-report-btn");
-    this.dialogEl = this.$<HTMLDialogElement>("dialog.v2-report-dialog");
-    this.formEl = this.$<HTMLFormElement>("form.v2-report-form");
-    this.textareaEl = this.$<HTMLTextAreaElement>(
-      "textarea.v2-report-textarea"
-    );
-    this.reporterInputEl = this.$<HTMLInputElement>("input.v2-report-reporter");
-    this.statusEl = this.$(".v2-report-status");
-    this.submitBtn = this.$<HTMLButtonElement>(".v2-report-submit-btn");
+    this.triggerBtn = this.$<HTMLButtonElement>(".report-btn");
+    this.dialogEl = this.$<HTMLDialogElement>("dialog.report-dialog");
+    this.formEl = this.$<HTMLFormElement>("form.report-form");
+    this.textareaEl = this.$<HTMLTextAreaElement>("textarea.report-textarea");
+    this.reporterInputEl = this.$<HTMLInputElement>("input.report-reporter");
+    this.statusEl = this.$(".report-status");
+    this.submitBtn = this.$<HTMLButtonElement>(".report-submit-btn");
 
     if (this.dialogEl) {
       this.addDisposable(
@@ -52,7 +50,7 @@ export class MorcusReportDialog extends BaseElement {
       );
     }
 
-    this.hijackForm("form.v2-report-form", (data) => {
+    this.hijackForm("form.report-form", (data) => {
       void this.submitReport(data.reportText || "", data.reporter || "");
     });
 
@@ -70,7 +68,7 @@ export class MorcusReportDialog extends BaseElement {
 
   private readonly clearStatus = () => {
     if (this.statusEl) {
-      this.statusEl.className = "v2-report-status";
+      this.statusEl.className = "report-status";
       this.statusEl.textContent = "";
     }
   };
@@ -127,7 +125,7 @@ export class MorcusReportDialog extends BaseElement {
       this.submitBtn.classList.add("loading");
     }
     if (this.statusEl) {
-      this.statusEl.className = "v2-report-status";
+      this.statusEl.className = "report-status";
       this.statusEl.textContent = "Submitting report...";
     }
 
@@ -151,7 +149,7 @@ export class MorcusReportDialog extends BaseElement {
       }
 
       if (this.statusEl) {
-        this.statusEl.className = "v2-report-status success";
+        this.statusEl.className = "report-status success";
         this.statusEl.textContent =
           "✓ Thank you! Your report has been submitted.";
       }
@@ -163,7 +161,7 @@ export class MorcusReportDialog extends BaseElement {
     } catch (err) {
       console.error("Failed to submit issue report:", err);
       if (this.statusEl) {
-        this.statusEl.className = "v2-report-status error";
+        this.statusEl.className = "report-status error";
         this.statusEl.textContent =
           "Error submitting report. Please check your connection and try again.";
       }

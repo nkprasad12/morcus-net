@@ -45,21 +45,21 @@ describe("ReaderLayoutController", () => {
   function createLayoutFixture(): HTMLDivElement {
     const div = document.createElement("div");
     div.innerHTML = `
-      <div class="v2-reader-split-layout v2-reader-layout-empty">
-        <section class="v2-reader-text-panel">
-          <article class="v2-reader-passage">Text passage</article>
+      <div class="reader-split-layout reader-layout-empty">
+        <section class="reader-text-panel">
+          <article class="reader-passage">Text passage</article>
         </section>
-        <div class="v2-reader-splitter"
+        <div class="reader-splitter"
              role="separator"
              tabindex="0"
              aria-orientation="vertical"
              aria-valuemin="300"
              aria-valuemax="750"
              aria-valuenow="420">
-          <div class="v2-reader-splitter-handle"></div>
+          <div class="reader-splitter-handle"></div>
         </div>
-        <aside class="v2-reader-dict-panel">
-          <div class="v2-reader-sheet-bar">Header</div>
+        <aside class="reader-dict-panel">
+          <div class="reader-sheet-bar">Header</div>
         </aside>
       </div>
     `;
@@ -100,13 +100,13 @@ describe("ReaderLayoutController", () => {
     const controller = new ReaderLayoutController({ root: container });
 
     expect(controller.splitLayout).toBe(
-      container.querySelector(".v2-reader-split-layout")
+      container.querySelector(".reader-split-layout")
     );
     expect(controller.splitter).toBe(
-      container.querySelector(".v2-reader-splitter")
+      container.querySelector(".reader-splitter")
     );
     expect(controller.dictPanel).toBe(
-      container.querySelector(".v2-reader-dict-panel")
+      container.querySelector(".reader-dict-panel")
     );
     expect(controller.getWidth()).toBe(420);
 
@@ -118,9 +118,9 @@ describe("ReaderLayoutController", () => {
     const controller = new ReaderLayoutController({ root: container });
 
     expect(controller.getWidth()).toBe(520);
-    expect(
-      controller.splitLayout?.style.getPropertyValue("--v2-dict-width")
-    ).toBe("520px");
+    expect(controller.splitLayout?.style.getPropertyValue("--dict-width")).toBe(
+      "520px"
+    );
     expect(controller.splitter?.getAttribute("aria-valuenow")).toBe("520");
 
     controller.destroy();
@@ -130,9 +130,9 @@ describe("ReaderLayoutController", () => {
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "150"); // < 300
     let controller = new ReaderLayoutController({ root: container });
     expect(controller.getWidth()).toBe(420);
-    expect(
-      controller.splitLayout?.style.getPropertyValue("--v2-dict-width")
-    ).toBe("");
+    expect(controller.splitLayout?.style.getPropertyValue("--dict-width")).toBe(
+      ""
+    );
     controller.destroy();
 
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "1200"); // > 900
@@ -146,7 +146,7 @@ describe("ReaderLayoutController", () => {
     controller.destroy();
   });
 
-  test("updates --v2-dict-width and aria-valuenow with zero layout reads during pointer drag", () => {
+  test("updates --dict-width and aria-valuenow with zero layout reads during pointer drag", () => {
     const controller = new ReaderLayoutController({ root: container });
     const splitLayout = controller.splitLayout!;
     const splitter = controller.splitter!;
@@ -183,7 +183,7 @@ describe("ReaderLayoutController", () => {
       })
     );
 
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("480px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("480px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("480");
 
     // CRITICAL: Verify zero layout reads occurred during move
@@ -238,7 +238,7 @@ describe("ReaderLayoutController", () => {
       })
     );
 
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("480px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("480px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("480");
 
     // Drag right by 300px (420 - 300 = 120, should clamp to MIN_SPLIT_WIDTH = 300)
@@ -250,7 +250,7 @@ describe("ReaderLayoutController", () => {
       })
     );
 
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("300px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("300px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("300");
 
     splitter.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
@@ -265,11 +265,11 @@ describe("ReaderLayoutController", () => {
     const splitLayout = controller.splitLayout!;
     const splitter = controller.splitter!;
 
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("560px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("560px");
 
     splitter.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
 
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("");
     expect(splitter.getAttribute("aria-valuenow")).toBe(
       String(DEFAULT_SPLIT_WIDTH)
     );
@@ -289,28 +289,28 @@ describe("ReaderLayoutController", () => {
 
     // ArrowLeft: 420 + 24 = 444
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("444px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("444px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("444");
     expect(localStorage.getItem(READER_DICT_WIDTH_STORAGE_KEY)).toBe("444");
 
     // ArrowRight: 444 - 24 = 420
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("420px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("420px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("420");
 
     // Home: collapses to MIN_SPLIT_WIDTH (300)
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("300px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("300px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("300");
 
     // End: expands to max allowable (1200 container -> max 800)
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "End" }));
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("800px");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("800px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("800");
 
     // Escape resets to default
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("");
     expect(splitter.getAttribute("aria-valuenow")).toBe(
       String(DEFAULT_SPLIT_WIDTH)
     );
@@ -323,24 +323,16 @@ describe("ReaderLayoutController", () => {
     const controller = new ReaderLayoutController({ root: container });
     const splitLayout = controller.splitLayout!;
 
-    expect(splitLayout.classList.contains("v2-reader-layout-empty")).toBe(true);
-    expect(splitLayout.classList.contains("v2-reader-layout-active")).toBe(
-      false
-    );
+    expect(splitLayout.classList.contains("reader-layout-empty")).toBe(true);
+    expect(splitLayout.classList.contains("reader-layout-active")).toBe(false);
 
     controller.setActive(true);
-    expect(splitLayout.classList.contains("v2-reader-layout-active")).toBe(
-      true
-    );
-    expect(splitLayout.classList.contains("v2-reader-layout-empty")).toBe(
-      false
-    );
+    expect(splitLayout.classList.contains("reader-layout-active")).toBe(true);
+    expect(splitLayout.classList.contains("reader-layout-empty")).toBe(false);
 
     controller.setActive(false);
-    expect(splitLayout.classList.contains("v2-reader-layout-empty")).toBe(true);
-    expect(splitLayout.classList.contains("v2-reader-layout-active")).toBe(
-      false
-    );
+    expect(splitLayout.classList.contains("reader-layout-empty")).toBe(true);
+    expect(splitLayout.classList.contains("reader-layout-active")).toBe(false);
 
     controller.destroy();
   });
@@ -354,7 +346,7 @@ describe("ReaderLayoutController", () => {
 
     // Keydown after destroy does not modify layout
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
-    expect(splitLayout.style.getPropertyValue("--v2-dict-width")).toBe("");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("");
     expect(localStorage.getItem(READER_DICT_WIDTH_STORAGE_KEY)).toBeNull();
   });
 });

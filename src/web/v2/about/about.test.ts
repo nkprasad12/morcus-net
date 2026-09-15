@@ -5,7 +5,7 @@ import {
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
-  getV2CriticalCss: () => "body{background-color:var(--v2-bg)}",
+  getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
 
@@ -42,16 +42,16 @@ describe("about_ssr", () => {
     const pageHtml = renderAboutPageHtml();
     expect(pageHtml).toContain("<!DOCTYPE html>");
     expect(pageHtml).toContain("<title>About - Morcus Latin Tools</title>");
-    expect(pageHtml).toContain('<header class="v2-app-bar">');
+    expect(pageHtml).toContain('<header class="app-bar">');
     expect(pageHtml).toContain('href="/v2/about"');
-    expect(pageHtml).toContain('class="v2-nav-link active"');
+    expect(pageHtml).toContain('class="nav-link active"');
     expect(pageHtml).toContain('aria-current="page"');
     expect(pageHtml).toContain('href="/v2/dicts"');
-    expect(pageHtml.indexOf('<nav class="v2-nav"')).toBeLessThan(
+    expect(pageHtml.indexOf('<nav class="nav"')).toBeLessThan(
       pageHtml.indexOf("morcus-theme-toggle")
     );
     expect(pageHtml).toContain("morcus-report-dialog");
-    expect(pageHtml).toContain('class="v2-theme-toggle-btn v2-report-btn"');
+    expect(pageHtml).toContain('class="theme-toggle-btn report-btn"');
     expect(pageHtml).toContain('id="report-issue-dialog"');
   });
 });

@@ -116,7 +116,7 @@ export function xmlNodeToHtml(
     attrsMap.set("href", `#${senseId}`);
     attrsMap.set(
       "class",
-      `${attrsMap.get("class") ?? rawClass} v2-section-anchor`.trim()
+      `${attrsMap.get("class") ?? rawClass} section-anchor`.trim()
     );
     attrsMap.set("title", "Copy link to this section");
     // Nothing else in the entry defines this id, so the bullet becomes its own
@@ -145,9 +145,7 @@ export function xmlNodeToHtml(
     tagName = "a";
     attrsMap.set(
       "class",
-      `${
-        attrsMap.get("class") ?? rawClass
-      } v2-action-btn v2-forc-action-btn`.trim()
+      `${attrsMap.get("class") ?? rawClass} action-btn forc-action-btn`.trim()
     );
     attrsMap.set("target", "_blank");
     attrsMap.set("rel", "noopener noreferrer");
@@ -192,7 +190,7 @@ export function xmlNodeToHtml(
   ) {
     attrsMap.set(
       "class",
-      `${attrsMap.get("class") ?? ""} v2-subsection-hit`.trim()
+      `${attrsMap.get("class") ?? ""} subsection-hit`.trim()
     );
     attrsMap.set("aria-current", "location");
   }
@@ -210,9 +208,9 @@ export function xmlNodeToHtml(
     currentClass.includes("lsSenseBullet") ||
     currentClass.includes("dLink") ||
     currentClass.includes("forcNewTab") ||
-    currentClass.includes("v2-action-btn") ||
-    currentClass.includes("v2-section-anchor") ||
-    currentClass.includes("v2-toc");
+    currentClass.includes("action-btn") ||
+    currentClass.includes("section-anchor") ||
+    currentClass.includes("toc");
   const isForeign = sourceTagName === "foreign";
   const nextAllowLinkify =
     Boolean(options?.allowLinkify) &&
@@ -233,7 +231,7 @@ export function xmlNodeToHtml(
   // In Forcellini, render an explicit action button label with external link icon
   if (rawClass.includes("forcNewTab")) {
     const linkText = childrenHtml.trim();
-    childrenHtml = `<span class="v2-action-btn-icon" aria-hidden="true">&#x2197;</span><span class="v2-action-btn-text">Open in new tab${
+    childrenHtml = `<span class="action-btn-icon" aria-hidden="true">&#x2197;</span><span class="action-btn-text">Open in new tab${
       linkText ? ` (${linkText})` : ""
     }</span>`;
   }
@@ -285,15 +283,15 @@ export function xmlNodeToHtml(
   if (isMateoLink && currentHref) {
     const encodedHref = he.escape(currentHref);
     return `
-      <span class="v2-mateo-wrapper">
+      <span class="mateo-wrapper">
         ${baseHtml}
-        <details class="v2-mateo-embed-pane">
-          <summary class="v2-action-btn v2-mateo-toggle-btn" role="button" title="Toggle embedded facsimile viewer">
-            <span class="v2-action-btn-icon" aria-hidden="true">&#x1F5C1;</span>
-            <span class="v2-action-btn-text">Plate Embed</span>
+        <details class="mateo-embed-pane">
+          <summary class="action-btn mateo-toggle-btn" role="button" title="Toggle embedded facsimile viewer">
+            <span class="action-btn-icon" aria-hidden="true">&#x1F5C1;</span>
+            <span class="action-btn-text">Plate Embed</span>
           </summary>
-          <span class="v2-mateo-frame-wrapper">
-            <iframe src="${encodedHref}" class="v2-mateo-frame" loading="lazy" title="Facsimile plate from mateo.uni-mannheim.de"></iframe>
+          <span class="mateo-frame-wrapper">
+            <iframe src="${encodedHref}" class="mateo-frame" loading="lazy" title="Facsimile plate from mateo.uni-mannheim.de"></iframe>
           </span>
         </details>
       </span>

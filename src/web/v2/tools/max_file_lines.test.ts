@@ -62,7 +62,7 @@ describe("morcus/max-file-lines stylelint rule", () => {
   });
 
   it("passes when CSS line count is within limit", () => {
-    const css = `.v2-card {\n  display: block;\n  padding: 8px;\n}\n`;
+    const css = `.card {\n  display: block;\n  padding: 8px;\n}\n`;
     const { warnings, invalidOptions } = runPlugin(css, 10);
 
     expect(invalidOptions).toHaveLength(0);
@@ -70,7 +70,7 @@ describe("morcus/max-file-lines stylelint rule", () => {
   });
 
   it("reports error when CSS line count exceeds limit", () => {
-    const css = `.v2-card {\n  display: block;\n  padding: 8px;\n}\n`;
+    const css = `.card {\n  display: block;\n  padding: 8px;\n}\n`;
     const { warnings, invalidOptions } = runPlugin(css, 3);
 
     expect(invalidOptions).toHaveLength(0);
@@ -82,7 +82,7 @@ describe("morcus/max-file-lines stylelint rule", () => {
   });
 
   it("handles CRLF line endings correctly", () => {
-    const css = `.v2-card {\r\n  display: block;\r\n  padding: 8px;\r\n}\r\n`;
+    const css = `.card {\r\n  display: block;\r\n  padding: 8px;\r\n}\r\n`;
     const { warnings } = runPlugin(css, 3);
 
     expect(warnings).toHaveLength(1);
@@ -99,7 +99,7 @@ describe("morcus/max-file-lines stylelint rule", () => {
   });
 
   it("validates options and rejects non-positive or non-number limits", () => {
-    const css = `.v2-card { display: block; }`;
+    const css = `.card { display: block; }`;
     const { warnings, invalidOptions } = runPlugin(css, -5);
 
     expect(invalidOptions).toHaveLength(1);

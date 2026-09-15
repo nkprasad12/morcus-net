@@ -5,29 +5,29 @@ morcus-report-dialog:not(:defined) {
 }
 
 /* App Bar Navigation */
-.v2-app-bar {
+.app-bar {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.v2-brand-group {
+.brand-group {
   display: flex;
   align-items: center;
-  gap: var(--v2-space-6);
+  gap: var(--space-6);
 }
 
-.v2-brand-logo-link {
+.brand-logo-link {
   display: flex;
   align-items: center;
   text-decoration: none;
-  border-radius: var(--v2-radius-xs);
+  border-radius: var(--radius-xs);
 }
 
-.v2-brand-logo-link:focus-visible {
-  outline: 2px solid var(--v2-primary);
+.brand-logo-link:focus-visible {
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
-.v2-brand-logo {
+.brand-logo {
   width: 48px;
   height: 48px;
   flex-shrink: 0;
@@ -36,65 +36,65 @@ morcus-report-dialog:not(:defined) {
   image-rendering: crisp-edges;
 }
 
-.v2-actions-group {
+.actions-group {
   display: flex;
   align-items: center;
-  gap: var(--v2-space-4);
+  gap: var(--space-4);
 }
 
-.v2-nav-link,
-.v2-nav-link:visited {
+.nav-link,
+.nav-link:visited {
   text-decoration: none;
-  color: var(--v2-app-bar-nav-text);
+  color: var(--app-bar-nav-text);
   font-weight: 500;
   font-size: 0.95rem;
-  padding: var(--v2-space-3) var(--v2-space-5);
-  border-radius: var(--v2-radius-md);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
-.v2-nav-link:hover,
-.v2-nav-link:visited:hover {
-  color: var(--v2-app-bar-text);
-  background-color: var(--v2-app-bar-nav-hover-bg);
+.nav-link:hover,
+.nav-link:visited:hover {
+  color: var(--app-bar-text);
+  background-color: var(--app-bar-nav-hover-bg);
 }
 
-.v2-nav-link.active,
-.v2-nav-link.active:visited {
-  color: var(--v2-app-bar-nav-active-text);
-  background-color: var(--v2-app-bar-nav-active-bg);
+.nav-link.active,
+.nav-link.active:visited {
+  color: var(--app-bar-nav-active-text);
+  background-color: var(--app-bar-nav-active-bg);
   font-weight: 600;
 }
 
 /* Theme toggle icon button */
-.v2-theme-toggle-btn,
-.v2-mobile-menu-btn {
+.theme-toggle-btn,
+.mobile-menu-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: 1px solid var(--v2-app-bar-toggle-border);
-  color: var(--v2-app-bar-text);
-  border-radius: var(--v2-radius-md);
-  padding: var(--v2-space-3);
+  border: 1px solid var(--app-bar-toggle-border);
+  color: var(--app-bar-text);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
   cursor: pointer;
   user-select: none;
   transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
 }
 
-.v2-theme-toggle-btn:hover,
-.v2-mobile-menu-btn:hover {
-  background-color: var(--v2-app-bar-nav-hover-bg);
+.theme-toggle-btn:hover,
+.mobile-menu-btn:hover {
+  background-color: var(--app-bar-nav-hover-bg);
 }
 
-.v2-theme-toggle-btn:focus-visible,
-.v2-mobile-menu-btn:focus-visible {
-  outline: 2px solid var(--v2-primary);
+.theme-toggle-btn:focus-visible,
+.mobile-menu-btn:focus-visible {
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
-.v2-theme-toggle-btn svg,
-.v2-mobile-menu-btn svg {
+.theme-toggle-btn svg,
+.mobile-menu-btn svg {
   width: 20px;
   height: 20px;
   fill: currentColor;
@@ -102,89 +102,89 @@ morcus-report-dialog:not(:defined) {
 }
 
 /* Mobile Menu (<details>) & Responsive Navigation */
-.v2-mobile-menu {
+.mobile-menu {
   position: relative;
   display: none;
 }
 
-.v2-mobile-menu summary {
+.mobile-menu summary {
   list-style: none;
 }
 
-.v2-mobile-menu summary::-webkit-details-marker {
+.mobile-menu summary::-webkit-details-marker {
   display: none;
 }
 
-.v2-mobile-menu .v2-icon-close {
+.mobile-menu .icon-close {
   display: none;
 }
 
-.v2-mobile-menu[open] .v2-icon-menu {
+.mobile-menu[open] .icon-menu {
   display: none;
 }
 
-.v2-mobile-menu[open] .v2-icon-close {
+.mobile-menu[open] .icon-close {
   display: block;
 }
 
-.v2-mobile-menu-dropdown {
+.mobile-menu-dropdown {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   min-width: 170px;
-  background-color: var(--v2-card-bg);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-lg);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
-  padding: var(--v2-space-3);
+  padding: var(--space-3);
   flex-direction: column;
   align-items: stretch;
-  gap: var(--v2-space-2);
-  z-index: var(--v2-z-nav);
+  gap: var(--space-2);
+  z-index: var(--z-nav);
 }
 
-.v2-mobile-menu-dropdown .v2-nav-link {
+.mobile-menu-dropdown .nav-link {
   display: block;
-  padding: var(--v2-space-4) var(--v2-space-5);
-  color: var(--v2-text);
+  padding: var(--space-4) var(--space-5);
+  color: var(--text);
   font-size: 0.95rem;
 }
 
-.v2-mobile-menu-dropdown .v2-nav-link:hover {
-  background-color: var(--v2-tag-bg);
-  color: var(--v2-text);
+.mobile-menu-dropdown .nav-link:hover {
+  background-color: var(--tag-bg);
+  color: var(--text);
 }
 
-.v2-mobile-menu-dropdown .v2-nav-link.active {
-  background-color: var(--v2-accent-quote);
-  color: var(--v2-primary);
+.mobile-menu-dropdown .nav-link.active {
+  background-color: var(--accent-quote);
+  color: var(--primary);
   font-weight: 600;
 }
 
 @media (max-width: 640px) {
-  .v2-app-bar-inner {
+  .app-bar-inner {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
   }
 
-  .v2-actions-group {
+  .actions-group {
     order: 1;
     justify-self: start;
-    gap: var(--v2-space-4);
+    gap: var(--space-4);
   }
 
-  .v2-brand-group {
+  .brand-group {
     order: 2;
     justify-self: center;
     gap: 0;
   }
 
-  .v2-nav-desktop {
+  .nav-desktop {
     display: none;
   }
 
-  .v2-mobile-menu {
+  .mobile-menu {
     order: 3;
     justify-self: end;
     display: block;
@@ -198,22 +198,22 @@ morcus-report-dialog:not(:defined) {
 }
 
 /* Floating "Jump to top" button (Progressive Enhancement) */
-.v2-back-to-top,
-.v2-reader-dict-back-to-top {
+.back-to-top,
+.reader-dict-back-to-top {
   position: fixed;
   bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   right: 20px;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background-color: var(--v2-card-bg);
-  border: 1px solid var(--v2-border);
-  color: var(--v2-text-muted);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--v2-z-fab);
+  z-index: var(--z-fab);
   text-decoration: none;
   cursor: pointer;
   opacity: 0;
@@ -226,47 +226,47 @@ morcus-report-dialog:not(:defined) {
   padding: 0;
 }
 
-.v2-back-to-top svg,
-.v2-reader-dict-back-to-top svg {
+.back-to-top svg,
+.reader-dict-back-to-top svg {
   width: 24px;
   height: 24px;
   fill: currentColor;
   transition: transform 0.15s ease;
 }
 
-.v2-back-to-top:hover,
-.v2-reader-dict-back-to-top:hover {
-  color: var(--v2-primary);
-  border-color: var(--v2-primary);
+.back-to-top:hover,
+.reader-dict-back-to-top:hover {
+  color: var(--primary);
+  border-color: var(--primary);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 
-.v2-back-to-top:hover svg,
-.v2-reader-dict-back-to-top:hover svg {
+.back-to-top:hover svg,
+.reader-dict-back-to-top:hover svg {
   transform: translateY(-1px);
 }
 
-.v2-back-to-top:active,
-.v2-reader-dict-back-to-top:active {
+.back-to-top:active,
+.reader-dict-back-to-top:active {
   transform: translateY(0);
 }
 
-.v2-back-to-top:focus-visible,
-.v2-reader-dict-back-to-top:focus-visible {
-  outline: 2px solid var(--v2-primary);
+.back-to-top:focus-visible,
+.reader-dict-back-to-top:focus-visible {
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
-.v2-back-to-top.v2-visible,
-.v2-reader-dict-back-to-top.v2-visible {
+.back-to-top.visible,
+.reader-dict-back-to-top.visible {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
 }
 
 @media (max-width: 640px) {
-  .v2-back-to-top {
+  .back-to-top {
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     right: 16px;
   }
@@ -274,27 +274,26 @@ morcus-report-dialog:not(:defined) {
 
 /* Float above bottom-docked drawers on mobile & tablet */
 @media (max-width: 1079.98px) {
-  body:has(.v2-drawer) .v2-back-to-top {
+  body:has(.drawer) .back-to-top {
     bottom: calc(
-      var(--v2-drawer-height, 48dvh) + env(safe-area-inset-bottom, 0px) + 16px
+      var(--drawer-height, 48dvh) + env(safe-area-inset-bottom, 0px) + 16px
     );
     transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease,
       transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease,
       color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  body:has(.v2-drawer.v2-drawer-minimized) .v2-back-to-top,
-  body:has(.v2-toc-details:not([open])) .v2-back-to-top {
+  body:has(.drawer.drawer-minimized) .back-to-top,
+  body:has(.toc-details:not([open])) .back-to-top {
     bottom: calc(
-      var(--v2-drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) +
-        16px
+      var(--drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px
     );
   }
 }
 
 /* No-JS fallback: keep button visible if scripting is disabled */
 @media (scripting: none) {
-  .v2-back-to-top {
+  .back-to-top {
     opacity: 0.9;
     pointer-events: auto;
     transform: translateY(0);

@@ -122,11 +122,11 @@ export class MorcusReaderSettings extends BaseElement {
     this.currentPrefs = readerSettingsStore.get();
 
     const dialog =
-      this.$<HTMLDialogElement>("#v2-reader-settings-dialog") ??
+      this.$<HTMLDialogElement>("#reader-settings-dialog") ??
       this.$<HTMLDialogElement>("dialog");
     const settingsBtn =
-      this.$<HTMLButtonElement>("#v2-reader-settings-btn") ??
-      this.ownerDocument.getElementById("v2-reader-settings-btn");
+      this.$<HTMLButtonElement>("#reader-settings-btn") ??
+      this.ownerDocument.getElementById("reader-settings-btn");
 
     if (dialog) {
       this.addDisposable(
@@ -136,17 +136,15 @@ export class MorcusReaderSettings extends BaseElement {
       );
     }
 
-    const resetBtn = this.$<HTMLButtonElement>("#v2-reader-settings-reset-btn");
-    const readerSizeDec = this.$<HTMLButtonElement>("#v2-reader-size-dec");
-    const readerSizeInc = this.$<HTMLButtonElement>("#v2-reader-size-inc");
-    const dictSizeDec = this.$<HTMLButtonElement>("#v2-dict-size-dec");
-    const dictSizeInc = this.$<HTMLButtonElement>("#v2-dict-size-inc");
-    const toggleMacra = this.$<HTMLInputElement>("#v2-toggle-macra");
-    const toggleGutter = this.$<HTMLInputElement>("#v2-toggle-gutter");
-    const fontSelect = this.$<HTMLSelectElement>("#v2-font-select");
-    const lineHeightSelect = this.$<HTMLSelectElement>(
-      "#v2-line-height-select"
-    );
+    const resetBtn = this.$<HTMLButtonElement>("#reader-settings-reset-btn");
+    const readerSizeDec = this.$<HTMLButtonElement>("#reader-size-dec");
+    const readerSizeInc = this.$<HTMLButtonElement>("#reader-size-inc");
+    const dictSizeDec = this.$<HTMLButtonElement>("#dict-size-dec");
+    const dictSizeInc = this.$<HTMLButtonElement>("#dict-size-inc");
+    const toggleMacra = this.$<HTMLInputElement>("#toggle-macra");
+    const toggleGutter = this.$<HTMLInputElement>("#toggle-gutter");
+    const fontSelect = this.$<HTMLSelectElement>("#font-select");
+    const lineHeightSelect = this.$<HTMLSelectElement>("#line-height-select");
 
     this.syncUiWithPrefs(this.currentPrefs);
 
@@ -234,14 +232,12 @@ export class MorcusReaderSettings extends BaseElement {
   }
 
   private syncUiWithPrefs(prefs: ReaderPreferences) {
-    const readerSizeLabel = this.$<HTMLElement>("#v2-reader-size-label");
-    const dictSizeLabel = this.$<HTMLElement>("#v2-dict-size-label");
-    const toggleMacra = this.$<HTMLInputElement>("#v2-toggle-macra");
-    const toggleGutter = this.$<HTMLInputElement>("#v2-toggle-gutter");
-    const fontSelect = this.$<HTMLSelectElement>("#v2-font-select");
-    const lineHeightSelect = this.$<HTMLSelectElement>(
-      "#v2-line-height-select"
-    );
+    const readerSizeLabel = this.$<HTMLElement>("#reader-size-label");
+    const dictSizeLabel = this.$<HTMLElement>("#dict-size-label");
+    const toggleMacra = this.$<HTMLInputElement>("#toggle-macra");
+    const toggleGutter = this.$<HTMLInputElement>("#toggle-gutter");
+    const fontSelect = this.$<HTMLSelectElement>("#font-select");
+    const lineHeightSelect = this.$<HTMLSelectElement>("#line-height-select");
 
     if (readerSizeLabel) {
       readerSizeLabel.textContent = `${prefs.readerScale}%`;

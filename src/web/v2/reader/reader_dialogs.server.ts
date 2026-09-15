@@ -7,22 +7,22 @@ import * as he from "he";
  */
 export function renderBiblioDialog(work: V2PreprocessedWork): string {
   return `      <!-- Bibliographical Metadata Dialog -->
-      <dialog class="v2-dialog v2-reader-biblio-dialog" id="v2-reader-biblio-dialog">
-        <div class="v2-dialog-card">
-          <div class="v2-dialog-header">
+      <dialog class="dialog reader-biblio-dialog" id="reader-biblio-dialog">
+        <div class="dialog-card">
+          <div class="dialog-header">
             <div>
-              <h2 class="v2-dialog-title">${he.escape(work.title)}</h2>
-              <p class="v2-dialog-subtitle">Scholarly editions &amp; CTS citation</p>
+              <h2 class="dialog-title">${he.escape(work.title)}</h2>
+              <p class="dialog-subtitle">Scholarly editions &amp; CTS citation</p>
             </div>
-            <button type="button" class="v2-dialog-close-btn" id="v2-reader-biblio-close-btn" data-dialog-close>&times;</button>
+            <button type="button" class="dialog-close-btn" id="reader-biblio-close-btn" data-dialog-close>&times;</button>
           </div>
 
-          <dl class="v2-reader-meta-list">
-            <div class="v2-meta-row">
+          <dl class="reader-meta-list">
+            <div class="meta-row">
               <dt>Author</dt>
               <dd>${he.escape(work.author)}</dd>
             </div>
-            <div class="v2-meta-row">
+            <div class="meta-row">
               <dt>Structural Hierarchy</dt>
               <dd><code>[${work.textParts
                 .map((p) => `"${p}"`)
@@ -30,7 +30,7 @@ export function renderBiblioDialog(work: V2PreprocessedWork): string {
             </div>
             ${
               work.editor
-                ? `<div class="v2-meta-row">
+                ? `<div class="meta-row">
                     <dt>Critical Edition</dt>
                     <dd>${he.escape(work.editor)}</dd>
                    </div>`
@@ -38,7 +38,7 @@ export function renderBiblioDialog(work: V2PreprocessedWork): string {
             }
             ${
               work.translator
-                ? `<div class="v2-meta-row">
+                ? `<div class="meta-row">
                     <dt>English Translation</dt>
                     <dd>${he.escape(work.translator)}</dd>
                    </div>`
@@ -46,7 +46,7 @@ export function renderBiblioDialog(work: V2PreprocessedWork): string {
             }
             ${
               work.ctsUrn
-                ? `<div class="v2-meta-row">
+                ? `<div class="meta-row">
                     <dt>CTS URN</dt>
                     <dd><code>${he.escape(work.ctsUrn)}</code></dd>
                    </div>`
@@ -54,7 +54,7 @@ export function renderBiblioDialog(work: V2PreprocessedWork): string {
             }
             ${
               work.license
-                ? `<div class="v2-meta-row">
+                ? `<div class="meta-row">
                     <dt>License</dt>
                     <dd>${he.escape(work.license)}</dd>
                    </div>`
@@ -62,7 +62,7 @@ export function renderBiblioDialog(work: V2PreprocessedWork): string {
             }
             ${
               work.sourceRepo
-                ? `<div class="v2-meta-row">
+                ? `<div class="meta-row">
                     <dt>Source Repository</dt>
                     <dd><a href="${he.escape(
                       work.sourceRepo
@@ -74,8 +74,8 @@ export function renderBiblioDialog(work: V2PreprocessedWork): string {
             }
           </dl>
 
-          <div class="v2-dialog-actions">
-            <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-biblio-ok-btn" data-dialog-close>Close</button>
+          <div class="dialog-actions">
+            <button type="button" class="btn btn-primary" id="reader-biblio-ok-btn" data-dialog-close>Close</button>
           </div>
         </div>
       </dialog>`;
@@ -87,68 +87,68 @@ export function renderBiblioDialog(work: V2PreprocessedWork): string {
 export function renderReaderSettingsDialog(): string {
   return `      <!-- Reader Appearance & Settings Dialog -->
       <morcus-reader-settings>
-        <dialog class="v2-dialog v2-reader-settings-dialog" id="v2-reader-settings-dialog">
-          <div class="v2-dialog-card v2-settings-card">
-            <div class="v2-dialog-header">
+        <dialog class="dialog reader-settings-dialog" id="reader-settings-dialog">
+          <div class="dialog-card settings-card">
+            <div class="dialog-header">
               <div>
-                <h2 class="v2-dialog-title">Reader Settings</h2>
-                <p class="v2-dialog-subtitle">Typography &amp; display preferences</p>
+                <h2 class="dialog-title">Reader Settings</h2>
+                <p class="dialog-subtitle">Typography &amp; display preferences</p>
               </div>
-              <button type="button" class="v2-dialog-close-btn" id="v2-reader-settings-close-btn" aria-label="Close settings" data-dialog-close>&times;</button>
+              <button type="button" class="dialog-close-btn" id="reader-settings-close-btn" aria-label="Close settings" data-dialog-close>&times;</button>
             </div>
 
-            <div class="v2-settings-body">
+            <div class="settings-body">
               
               <!-- Font Size Scaling Group -->
-              <div class="v2-settings-group">
-                <h3 class="v2-settings-group-title">Text Size</h3>
-                <div class="v2-settings-row">
-                  <span class="v2-settings-label">Reading Canvas</span>
-                  <div class="v2-stepper">
-                    <button type="button" class="v2-stepper-btn" id="v2-reader-size-dec" aria-label="Decrease reading text size">A&minus;</button>
-                    <span class="v2-stepper-val" id="v2-reader-size-label">100%</span>
-                    <button type="button" class="v2-stepper-btn" id="v2-reader-size-inc" aria-label="Increase reading text size">A+</button>
+              <div class="settings-group">
+                <h3 class="settings-group-title">Text Size</h3>
+                <div class="settings-row">
+                  <span class="settings-label">Reading Canvas</span>
+                  <div class="stepper">
+                    <button type="button" class="stepper-btn" id="reader-size-dec" aria-label="Decrease reading text size">A&minus;</button>
+                    <span class="stepper-val" id="reader-size-label">100%</span>
+                    <button type="button" class="stepper-btn" id="reader-size-inc" aria-label="Increase reading text size">A+</button>
                   </div>
                 </div>
 
-                <div class="v2-settings-row">
-                  <span class="v2-settings-label">Dictionary Sidebar</span>
-                  <div class="v2-stepper">
-                    <button type="button" class="v2-stepper-btn" id="v2-dict-size-dec" aria-label="Decrease dictionary text size">A&minus;</button>
-                    <span class="v2-stepper-val" id="v2-dict-size-label">100%</span>
-                    <button type="button" class="v2-stepper-btn" id="v2-dict-size-inc" aria-label="Increase dictionary text size">A+</button>
+                <div class="settings-row">
+                  <span class="settings-label">Dictionary Sidebar</span>
+                  <div class="stepper">
+                    <button type="button" class="stepper-btn" id="dict-size-dec" aria-label="Decrease dictionary text size">A&minus;</button>
+                    <span class="stepper-val" id="dict-size-label">100%</span>
+                    <button type="button" class="stepper-btn" id="dict-size-inc" aria-label="Increase dictionary text size">A+</button>
                   </div>
                 </div>
               </div>
 
               <!-- Scholarly & Textual Aids -->
-              <div class="v2-settings-group">
-                <h3 class="v2-settings-group-title">Scholarly &amp; Textual Aids</h3>
-                <label class="v2-settings-toggle-row">
-                  <span class="v2-settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
-                  <input type="checkbox" id="v2-toggle-macra" class="v2-toggle-checkbox" checked>
+              <div class="settings-group">
+                <h3 class="settings-group-title">Scholarly &amp; Textual Aids</h3>
+                <label class="settings-toggle-row">
+                  <span class="settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
+                  <input type="checkbox" id="toggle-macra" class="toggle-checkbox" checked>
                 </label>
 
-                <label class="v2-settings-toggle-row">
-                  <span class="v2-settings-label">Show Section Numbers (&sect;)</span>
-                  <input type="checkbox" id="v2-toggle-gutter" class="v2-toggle-checkbox" checked>
+                <label class="settings-toggle-row">
+                  <span class="settings-label">Show Section Numbers (&sect;)</span>
+                  <input type="checkbox" id="toggle-gutter" class="toggle-checkbox" checked>
                 </label>
               </div>
 
               <!-- Typography Style -->
-              <div class="v2-settings-group">
-                <h3 class="v2-settings-group-title">Typography</h3>
-                <div class="v2-settings-row">
-                  <span class="v2-settings-label">Font Family</span>
-                  <select id="v2-font-select" class="v2-settings-select" aria-label="Select font style">
+              <div class="settings-group">
+                <h3 class="settings-group-title">Typography</h3>
+                <div class="settings-row">
+                  <span class="settings-label">Font Family</span>
+                  <select id="font-select" class="settings-select" aria-label="Select font style">
                     <option value="serif" selected>Classical Serif</option>
                     <option value="sans">Modern Sans-Serif</option>
                   </select>
                 </div>
 
-                <div class="v2-settings-row">
-                  <span class="v2-settings-label">Line Spacing</span>
-                  <select id="v2-line-height-select" class="v2-settings-select" aria-label="Select line spacing">
+                <div class="settings-row">
+                  <span class="settings-label">Line Spacing</span>
+                  <select id="line-height-select" class="settings-select" aria-label="Select line spacing">
                     <option value="compact">Compact</option>
                     <option value="normal" selected>Normal</option>
                     <option value="relaxed">Relaxed</option>
@@ -158,9 +158,9 @@ export function renderReaderSettingsDialog(): string {
 
             </div>
 
-            <div class="v2-dialog-actions v2-settings-actions">
-              <button type="button" class="v2-btn v2-btn-secondary" id="v2-reader-settings-reset-btn">Reset Defaults</button>
-              <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-settings-done-btn" data-dialog-close>Done</button>
+            <div class="dialog-actions settings-actions">
+              <button type="button" class="btn btn-secondary" id="reader-settings-reset-btn">Reset Defaults</button>
+              <button type="button" class="btn btn-primary" id="reader-settings-done-btn" data-dialog-close>Done</button>
             </div>
           </div>
         </dialog>

@@ -12,7 +12,7 @@ export class MorcusDictSuggestions extends BaseElement {
   constructor() {
     super();
     this.listEl = document.createElement("ul");
-    this.listEl.className = "v2-suggestions";
+    this.listEl.className = "suggestions";
   }
 
   protected override onConnect() {
@@ -24,7 +24,7 @@ export class MorcusDictSuggestions extends BaseElement {
     this.delegate<HTMLElement>(
       this.listEl,
       "mousedown",
-      ".v2-suggestion-item",
+      ".suggestion-item",
       (e, target) => {
         if (target.dataset.word) {
           e.preventDefault();
@@ -79,17 +79,17 @@ export class MorcusDictSuggestions extends BaseElement {
     const fragment = document.createDocumentFragment();
     this._items.forEach((item, idx) => {
       const li = document.createElement("li");
-      li.className = `v2-suggestion-item${
+      li.className = `suggestion-item${
         idx === this._activeIndex ? " active" : ""
       }`;
       li.dataset.word = item.word;
 
       const chip = document.createElement("span");
-      chip.className = `v2-lang-chip v2-lang-chip-${item.lang.toLowerCase()}`;
+      chip.className = `lang-chip lang-chip-${item.lang.toLowerCase()}`;
       chip.textContent = item.lang;
 
       const wordSpan = document.createElement("span");
-      wordSpan.className = "v2-suggestion-word";
+      wordSpan.className = "suggestion-word";
       wordSpan.textContent = item.word;
 
       li.appendChild(chip);

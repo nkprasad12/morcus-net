@@ -3,17 +3,17 @@
  */
 
 export function triggerAnchorHighlight(targetEl: HTMLElement): void {
-  if (targetEl.id === "top" || targetEl.classList.contains("v2-dict-card")) {
+  if (targetEl.id === "top" || targetEl.classList.contains("dict-card")) {
     return;
   }
-  targetEl.classList.remove("v2-target-active");
+  targetEl.classList.remove("target-active");
   // Force a reflow so browser restarts keyframe animation cleanly
   void targetEl.offsetWidth;
-  targetEl.classList.add("v2-target-active");
+  targetEl.classList.add("target-active");
   targetEl.addEventListener(
     "animationend",
     () => {
-      targetEl.classList.remove("v2-target-active");
+      targetEl.classList.remove("target-active");
     },
     { once: true }
   );
@@ -25,9 +25,8 @@ export function expandAncestorDisclosures(targetEl: HTMLElement): void {
     if (parent instanceof HTMLDetailsElement && !parent.open) {
       parent.open = true;
     }
-    if (parent.classList?.contains("v2-dict-card")) {
-      const toggle =
-        parent.querySelector<HTMLDetailsElement>(".v2-dict-toggle");
+    if (parent.classList?.contains("dict-card")) {
+      const toggle = parent.querySelector<HTMLDetailsElement>(".dict-toggle");
       if (toggle && !toggle.open) {
         toggle.open = true;
       }
@@ -72,7 +71,7 @@ export function setupAnchorScroll(
       !href ||
       href === "#" ||
       href === "#top" ||
-      anchor.classList.contains("v2-back-to-top")
+      anchor.classList.contains("back-to-top")
     ) {
       return;
     }
@@ -84,8 +83,8 @@ export function setupAnchorScroll(
       expandAncestorDisclosures(targetEl);
 
       const isJumpPill =
-        anchor.classList.contains("v2-jump-pill") ||
-        targetEl.classList.contains("v2-dict-card");
+        anchor.classList.contains("jump-pill") ||
+        targetEl.classList.contains("dict-card");
       if (typeof targetEl.scrollIntoView === "function") {
         targetEl.scrollIntoView({
           behavior: isJumpPill ? "instant" : "smooth",

@@ -15,16 +15,16 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
       : "<span>(dev build)</span>";
 
   return `
-    <article class="v2-about-article">
-      <header class="v2-header v2-about-header">
-        <img src="/public/logo192.png" alt="M&oacute;rcus Logo" class="v2-about-logo" width="48" height="48">
+    <article class="about-article">
+      <header class="header about-header">
+        <img src="/public/logo192.png" alt="M&oacute;rcus Logo" class="about-logo" width="48" height="48">
         <div>
           <h1>About M&oacute;rcus</h1>
           <p>A free digital toolkit for Latin learners and scholars.</p>
         </div>
       </header>
 
-      <section id="site" class="v2-about-section">
+      <section id="site" class="about-section">
         <h2>Site</h2>
         <p>
           This website is a free collection of resources for Latin learners. It is provided under the
@@ -39,7 +39,7 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
         </ul>
       </section>
 
-      <section id="dictionary" class="v2-about-section">
+      <section id="dictionary" class="about-section">
         <h2>Dictionary</h2>
         <p>
           Dictionary data is derived from Perseus' digitization of Lewis &amp; Short, which is available
@@ -52,7 +52,7 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
         </p>
       </section>
 
-      <section id="acknowledgements" class="v2-about-section">
+      <section id="acknowledgements" class="about-section">
         <h2>Acknowledgements</h2>
         <p>
           This site is indebted to the
@@ -71,7 +71,7 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
         </div>
       </section>
 
-      <section id="debugging" class="v2-about-section">
+      <section id="debugging" class="about-section">
         <h2>Debugging</h2>
         <p>Commit: ${commitLinkHtml}</p>
       </section>

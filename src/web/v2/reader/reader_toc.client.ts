@@ -10,19 +10,19 @@
 import { DisposableBag } from "@/web/v2/core/disposable.client";
 
 export interface ReaderTocElements {
-  /** The slide-in drawer element (#v2-reader-toc-drawer) */
+  /** The slide-in drawer element (#reader-toc-drawer) */
   drawer: HTMLElement | null;
-  /** Primary trigger button in sticky header (#v2-reader-toc-btn) */
+  /** Primary trigger button in sticky header (#reader-toc-btn) */
   triggerBtn?: HTMLButtonElement | null;
-  /** Optional breadcrumb button (#v2-reader-breadcrumb-btn) */
+  /** Optional breadcrumb button (#reader-breadcrumb-btn) */
   breadcrumbBtn?: HTMLButtonElement | null;
-  /** Close '×' button in drawer header (#v2-reader-toc-close-btn) */
+  /** Close '×' button in drawer header (#reader-toc-close-btn) */
   closeBtn?: HTMLButtonElement | null;
-  /** '← Back' button in drawer header (#v2-reader-toc-back-btn) */
+  /** '← Back' button in drawer header (#reader-toc-back-btn) */
   backBtn?: HTMLButtonElement | null;
-  /** Search/filter text input (#v2-reader-toc-filter) */
+  /** Search/filter text input (#reader-toc-filter) */
   filterInput?: HTMLInputElement | null;
-  /** Container holding the list of TOC items (#v2-reader-toc-list) */
+  /** Container holding the list of TOC items (#reader-toc-list) */
   listContainer?: HTMLElement | null;
 }
 
@@ -56,45 +56,43 @@ export class ReaderTocController {
     this.drawer =
       overrides?.drawer !== undefined
         ? overrides.drawer
-        : root.querySelector<HTMLElement>("#v2-reader-toc-drawer");
+        : root.querySelector<HTMLElement>("#reader-toc-drawer");
 
     this.triggerBtn =
       overrides?.triggerBtn !== undefined
         ? overrides.triggerBtn
-        : root.querySelector<HTMLButtonElement>("#v2-reader-toc-btn");
+        : root.querySelector<HTMLButtonElement>("#reader-toc-btn");
 
     this.breadcrumbBtn =
       overrides?.breadcrumbBtn !== undefined
         ? overrides.breadcrumbBtn
-        : root.querySelector<HTMLButtonElement>("#v2-reader-breadcrumb-btn");
+        : root.querySelector<HTMLButtonElement>("#reader-breadcrumb-btn");
 
     this.closeBtn =
       overrides?.closeBtn !== undefined
         ? overrides.closeBtn
         : this.drawer?.querySelector<HTMLButtonElement>(
-            "#v2-reader-toc-close-btn"
-          ) ??
-          root.querySelector<HTMLButtonElement>("#v2-reader-toc-close-btn");
+            "#reader-toc-close-btn"
+          ) ?? root.querySelector<HTMLButtonElement>("#reader-toc-close-btn");
 
     this.backBtn =
       overrides?.backBtn !== undefined
         ? overrides.backBtn
         : this.drawer?.querySelector<HTMLButtonElement>(
-            "#v2-reader-toc-back-btn"
-          ) ?? root.querySelector<HTMLButtonElement>("#v2-reader-toc-back-btn");
+            "#reader-toc-back-btn"
+          ) ?? root.querySelector<HTMLButtonElement>("#reader-toc-back-btn");
 
     this.filterInput =
       overrides?.filterInput !== undefined
         ? overrides.filterInput
-        : this.drawer?.querySelector<HTMLInputElement>(
-            "#v2-reader-toc-filter"
-          ) ?? root.querySelector<HTMLInputElement>("#v2-reader-toc-filter");
+        : this.drawer?.querySelector<HTMLInputElement>("#reader-toc-filter") ??
+          root.querySelector<HTMLInputElement>("#reader-toc-filter");
 
     this.listContainer =
       overrides?.listContainer !== undefined
         ? overrides.listContainer
-        : this.drawer?.querySelector<HTMLElement>("#v2-reader-toc-list") ??
-          root.querySelector<HTMLElement>("#v2-reader-toc-list");
+        : this.drawer?.querySelector<HTMLElement>("#reader-toc-list") ??
+          root.querySelector<HTMLElement>("#reader-toc-list");
 
     this.onOpen = options.onOpen;
     this.onClose = options.onClose;
@@ -207,9 +205,7 @@ export class ReaderTocController {
   public getItems(): HTMLElement[] {
     const scope = this.listContainer ?? this.drawer;
     if (!scope) return [];
-    return Array.from(
-      scope.querySelectorAll<HTMLElement>(".v2-reader-toc-item")
-    );
+    return Array.from(scope.querySelectorAll<HTMLElement>(".reader-toc-item"));
   }
 
   public filter(rawTerm: string): void {

@@ -26,12 +26,12 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   function createDictSearch(resultsHtml: string = ""): MorcusDictSearch {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="v2-search-form" action="/v2/dicts" method="GET">
-        <div class="v2-input-wrapper">
-          <input type="text" name="q" class="v2-input" value="habeo" />
+      <form class="search-form" action="/v2/dicts" method="GET">
+        <div class="input-wrapper">
+          <input type="text" name="q" class="input" value="habeo" />
         </div>
       </form>
-      <output id="dict-results" class="v2-results">
+      <output id="dict-results" class="results">
         ${resultsHtml}
       </output>
     `;
@@ -41,8 +41,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("progressively enhances Latin words in entry content while respecting denylist", () => {
     const resultsHtml = `
-      <article class="v2-entry">
-        <div class="v2-entry-content">
+      <article class="entry">
+        <div class="entry-content">
           <p>
             <b class="lsOrth">habeo</b>,
             <span class="lsHover" title="verb">v.</span>,
@@ -50,7 +50,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
             <b class="lsEmph">important note</b>,
             <span lang="el">&#x1F35;&#x3C0;&#x3C0;&#x3BF;&#x3C2;</span>,
             <span class="dLink" to="facio">facio</span>,
-            <a href="#sense-1" class="v2-section-anchor">1</a>
+            <a href="#sense-1" class="section-anchor">1</a>
           </p>
         </div>
       </article>
@@ -58,8 +58,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     const el = createDictSearch(resultsHtml);
 
-    // Enhanced words inside .lsQuote are wrapped in .v2-lat-word
-    const words = Array.from(el.querySelectorAll<HTMLElement>(".v2-lat-word"));
+    // Enhanced words inside .lsQuote are wrapped in .lat-word
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
     const wordTexts = words.map((w) => w.textContent);
 
     expect(wordTexts).toContain("Gallia");
@@ -68,41 +68,41 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     // Denylist check: lsOrth (headwords) is NOT wrapped
     const orthEl = el.querySelector(".lsOrth")!;
-    expect(orthEl.querySelector(".v2-lat-word")).toBeNull();
+    expect(orthEl.querySelector(".lat-word")).toBeNull();
     expect(orthEl.textContent).toBe("habeo");
 
     // Denylist check: lsHover (abbreviations with popovers) is NOT wrapped
     const hoverEl = el.querySelector(".lsHover")!;
-    expect(hoverEl.querySelector(".v2-lat-word")).toBeNull();
+    expect(hoverEl.querySelector(".lat-word")).toBeNull();
 
     // Denylist check: lsEmph (emphasized bold) is NOT wrapped
     const emphEl = el.querySelector(".lsEmph")!;
-    expect(emphEl.querySelector(".v2-lat-word")).toBeNull();
+    expect(emphEl.querySelector(".lat-word")).toBeNull();
 
     // Denylist check: Greek text is NOT wrapped
     const greekEl = el.querySelector('[lang="el"]')!;
-    expect(greekEl.querySelector(".v2-lat-word")).toBeNull();
+    expect(greekEl.querySelector(".lat-word")).toBeNull();
 
     // Denylist check: existing anchors are NOT wrapped
-    const anchorEl = el.querySelector(".v2-section-anchor")!;
-    expect(anchorEl.querySelector(".v2-lat-word")).toBeNull();
+    const anchorEl = el.querySelector(".section-anchor")!;
+    expect(anchorEl.querySelector(".lat-word")).toBeNull();
 
     // Denylist check: dLink is preserved
     const dLinkEl = el.querySelector(".dLink")!;
-    expect(dLinkEl.querySelector(".v2-lat-word")).toBeNull();
+    expect(dLinkEl.querySelector(".lat-word")).toBeNull();
   });
 
   test("handles words with macra and cleans data-word attribute", () => {
     const resultsHtml = `
-      <article class="v2-entry">
-        <div class="v2-entry-content">
+      <article class="entry">
+        <div class="entry-content">
           <p>causa\u0304s me\u0304mora\u0304</p>
         </div>
       </article>
     `;
 
     const el = createDictSearch(resultsHtml);
-    const words = Array.from(el.querySelectorAll<HTMLElement>(".v2-lat-word"));
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
 
     expect(words.length).toBe(2);
     // Display text preserves macra
@@ -116,8 +116,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("clicking an enhanced word triggers search for that word", () => {
     const resultsHtml = `
-      <article class="v2-entry">
-        <div class="v2-entry-content">
+      <article class="entry">
+        <div class="entry-content">
           <p><span class="lsQuote">Gallia est</span></p>
         </div>
       </article>
@@ -126,13 +126,13 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const el = createDictSearch(resultsHtml);
 
     const galliaSpan = el.querySelector<HTMLElement>(
-      '.v2-lat-word[data-word="Gallia"]'
+      '.lat-word[data-word="Gallia"]'
     )!;
     expect(galliaSpan).not.toBeNull();
 
     galliaSpan.click();
 
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
     expect(input.value).toBe("Gallia");
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("q=Gallia"),
@@ -142,8 +142,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("clicking a dLink triggers search for the target word", () => {
     const resultsHtml = `
-      <article class="v2-entry">
-        <div class="v2-entry-content">
+      <article class="entry">
+        <div class="entry-content">
           <p><span class="dLink" to="facio">facio</span></p>
         </div>
       </article>
@@ -154,7 +154,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const dLink = el.querySelector<HTMLElement>(".dLink")!;
     dLink.click();
 
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
     expect(input.value).toBe("facio");
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("q=facio"),
@@ -171,8 +171,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
 
     const resultsHtml = `
-      <article class="v2-entry">
-        <div class="v2-entry-content">
+      <article class="entry">
+        <div class="entry-content">
           <p><span class="lsQuote">Gallia est</span></p>
         </div>
       </article>
@@ -180,7 +180,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     const el = createDictSearch(resultsHtml);
     const galliaLink = el.querySelector<HTMLAnchorElement>(
-      '.v2-lat-word[data-word="Gallia"]'
+      '.lat-word[data-word="Gallia"]'
     )!;
 
     expect(galliaLink).not.toBeNull();
@@ -196,8 +196,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("allows native new-tab opening on middle click or modifier clicks (Ctrl, Cmd, Shift, Alt)", () => {
     const resultsHtml = `
-      <article class="v2-entry">
-        <div class="v2-entry-content">
+      <article class="entry">
+        <div class="entry-content">
           <p>
             <span class="lsQuote">Gallia est</span>
             <a class="dLink" to="facio" href="/v2/dicts?q=facio">facio</a>
@@ -208,7 +208,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     const el = createDictSearch(resultsHtml);
     const galliaLink = el.querySelector<HTMLAnchorElement>(
-      '.v2-lat-word[data-word="Gallia"]'
+      '.lat-word[data-word="Gallia"]'
     )!;
     const dLink = el.querySelector<HTMLAnchorElement>(".dLink")!;
 
@@ -263,8 +263,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("sanitizes query by trimming quotes, punctuation, and whitespace on form submission", () => {
     const el = createDictSearch();
-    const form = el.querySelector<HTMLFormElement>("form.v2-search-form")!;
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     input.value = '  "habeo,"  ';
     form.dispatchEvent(
@@ -288,7 +288,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     jest.useFakeTimers();
     const el = createDictSearch();
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     input.value = "amo";
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -310,7 +310,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     jest.useFakeTimers();
     const el = createDictSearch();
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     input.value = "-arum";
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -327,7 +327,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("renders suggestions instantly from chunkCache without network fetch when cached", () => {
     const el = createDictSearch();
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     // Pre-populate chunk cache for "am"
     el.chunkCache.setChunks("am", {
@@ -353,7 +353,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("re-clusters suggestions on dict-selection-change from cache with 0 network calls", () => {
     const el = createDictSearch();
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     // Pre-populate chunk cache with items from both default active dicts (L&S and GAF)
     el.chunkCache.setChunks("am", {
@@ -390,17 +390,17 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("updates landing welcome message and badges on dict-selection-change when query is empty", () => {
     const landingHtml = `
-      <div id="v2-landing-welcome">Initial Welcome</div>
-      <div class="v2-dict-list-item v2-dict-enabled" data-dict-key="GRG">
-        <span class="v2-lexicon-badge v2-dict-enabled">GRG</span>
+      <div id="landing-welcome">Initial Welcome</div>
+      <div class="dict-list-item dict-enabled" data-dict-key="GRG">
+        <span class="lexicon-badge dict-enabled">GRG</span>
       </div>
-      <div class="v2-dict-list-item v2-dict-disabled" data-dict-key="EGL">
-        <span class="v2-lexicon-badge v2-dict-disabled">EGL</span>
+      <div class="dict-list-item dict-disabled" data-dict-key="EGL">
+        <span class="lexicon-badge dict-disabled">EGL</span>
       </div>
     `;
 
     const el = createDictSearch(landingHtml);
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
     input.value = ""; // Empty search query (landing state)
 
     // Fire dict-selection-change with only L&S and S&H (disabling Georges)
@@ -411,16 +411,16 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       })
     );
 
-    const welcomeEl = el.querySelector<HTMLElement>("#v2-landing-welcome")!;
+    const welcomeEl = el.querySelector<HTMLElement>("#landing-welcome")!;
     expect(welcomeEl.textContent).toBe(
       "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English."
     );
 
     const grgItem = el.querySelector<HTMLElement>(
-      '.v2-dict-list-item[data-dict-key="GRG"]'
+      '.dict-list-item[data-dict-key="GRG"]'
     )!;
-    expect(grgItem.classList.contains("v2-dict-disabled")).toBe(true);
-    expect(grgItem.classList.contains("v2-dict-enabled")).toBe(false);
+    expect(grgItem.classList.contains("dict-disabled")).toBe(true);
+    expect(grgItem.classList.contains("dict-enabled")).toBe(false);
 
     // Re-enable Georges
     el.dispatchEvent(
@@ -432,7 +432,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(welcomeEl.textContent).toBe(
       "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
     );
-    expect(grgItem.classList.contains("v2-dict-enabled")).toBe(true);
+    expect(grgItem.classList.contains("dict-enabled")).toBe(true);
   });
 
   test("synchronizes d and o query parameters on dict-selection-change and dict-inflected-change", () => {
@@ -479,8 +479,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const pushStateSpy = jest.spyOn(window.history, "pushState");
 
     const el = createDictSearch();
-    const form = el.querySelector<HTMLFormElement>("form.v2-search-form")!;
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     input.value = "equus";
     form.dispatchEvent(
@@ -509,11 +509,11 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("landing welcome message reacts live to dict-inflected-change", () => {
     const landingHtml = `
-      <div id="v2-landing-welcome">Initial Welcome</div>
+      <div id="landing-welcome">Initial Welcome</div>
     `;
 
     const el = createDictSearch(landingHtml);
-    const welcomeEl = el.querySelector<HTMLElement>("#v2-landing-welcome")!;
+    const welcomeEl = el.querySelector<HTMLElement>("#landing-welcome")!;
 
     // Initial state with default dicts: Latin headwords and inflected forms
     el.dispatchEvent(
@@ -543,17 +543,17 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("status tray updates language chips and inflection badge on settings change events", () => {
     const searchBarHtml = `
-      <div class="v2-search-tray">
-        <div class="v2-lang-chips">
-          <span class="v2-lang-chip v2-lang-chip-la">La</span>
+      <div class="search-tray">
+        <div class="lang-chips">
+          <span class="lang-chip lang-chip-la">La</span>
         </div>
-        <span class="v2-inflect-chip is-on">On</span>
+        <span class="inflect-chip is-on">On</span>
       </div>
     `;
 
     const el = createDictSearch(searchBarHtml);
-    const chipsContainer = el.querySelector<HTMLElement>(".v2-lang-chips")!;
-    const inflectChip = el.querySelector<HTMLElement>(".v2-inflect-chip")!;
+    const chipsContainer = el.querySelector<HTMLElement>(".lang-chips")!;
+    const inflectChip = el.querySelector<HTMLElement>(".inflect-chip")!;
     expect(inflectChip.classList.contains("is-on")).toBe(true);
 
     // 1. Dispatch dict-selection-change with only German (GRG)
@@ -565,10 +565,10 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
 
     expect(chipsContainer.innerHTML).toContain(
-      'class="v2-lang-chip v2-lang-chip-de"'
+      'class="lang-chip lang-chip-de"'
     );
     expect(chipsContainer.innerHTML).not.toContain(
-      'class="v2-lang-chip v2-lang-chip-la"'
+      'class="lang-chip lang-chip-la"'
     );
     expect(chipsContainer.textContent).toContain("De");
 
@@ -580,8 +580,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       })
     );
 
-    const updatedInflectChip =
-      el.querySelector<HTMLElement>(".v2-inflect-chip")!;
+    const updatedInflectChip = el.querySelector<HTMLElement>(".inflect-chip")!;
     expect(updatedInflectChip.classList.contains("is-off")).toBe(true);
     expect(updatedInflectChip.classList.contains("is-on")).toBe(false);
     expect(updatedInflectChip.textContent).toContain("Off");
@@ -590,12 +589,12 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   test("scrolls past search bar to results when loading with a search query and no hash", (done) => {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="v2-search-form" action="/v2/dicts" method="GET">
-        <div class="v2-input-wrapper">
-          <input type="text" name="q" class="v2-input" value="habeo" />
+      <form class="search-form" action="/v2/dicts" method="GET">
+        <div class="input-wrapper">
+          <input type="text" name="q" class="input" value="habeo" />
         </div>
       </form>
-      <output id="dict-results" class="v2-results">
+      <output id="dict-results" class="results">
         <div>Results for habeo</div>
       </output>
     `;
@@ -617,12 +616,12 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   test("focuses search input and does not auto-scroll on empty query landing page", (done) => {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="v2-search-form" action="/v2/dicts" method="GET">
-        <div class="v2-input-wrapper">
-          <input type="text" name="q" class="v2-input" value="" />
+      <form class="search-form" action="/v2/dicts" method="GET">
+        <div class="input-wrapper">
+          <input type="text" name="q" class="input" value="" />
         </div>
       </form>
-      <output id="dict-results" class="v2-results"></output>
+      <output id="dict-results" class="results"></output>
     `;
     const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
     const scrollMock = jest.fn();
@@ -632,7 +631,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     requestAnimationFrame(() => {
       expect(scrollMock).not.toHaveBeenCalled();
-      const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
       expect(document.activeElement).toBe(input);
       done();
     });
@@ -642,7 +641,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const el = createDictSearch();
     const suggestions = el.querySelector("morcus-dict-suggestions");
     expect(suggestions).not.toBeNull();
-    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
     const selectHabeo = () =>
       suggestions!.dispatchEvent(
         new CustomEvent("suggestion-select", {
@@ -708,8 +707,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
     function submit(el: MorcusDictSearch, query: string) {
-      const form = el.querySelector<HTMLFormElement>("form.v2-search-form")!;
-      el.querySelector<HTMLInputElement>("input.v2-input")!.value = query;
+      const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+      el.querySelector<HTMLInputElement>("input.input")!.value = query;
       form.dispatchEvent(new Event("submit", { bubbles: true }));
     }
 
@@ -761,7 +760,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       const pending = controllableFetch();
       jest.useFakeTimers();
       const el = createDictSearch();
-      const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
 
       // A suffix query goes straight to /v2/api/completions. A prefix query
       // would instead hit the shared chunk cache, which is deliberately not

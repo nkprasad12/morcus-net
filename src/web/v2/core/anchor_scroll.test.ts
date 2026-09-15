@@ -30,18 +30,16 @@ describe("expandAncestorDisclosures", () => {
     expect(inner.open).toBe(true);
   });
 
-  test("expands .v2-dict-toggle inside an ancestor .v2-dict-card", () => {
+  test("expands .dict-toggle inside an ancestor .dict-card", () => {
     document.body.innerHTML = `
-      <div class="v2-dict-card">
-        <details class="v2-dict-toggle">
+      <div class="dict-card">
+        <details class="dict-toggle">
           <summary>Toggle</summary>
           <div id="target">Sense text</div>
         </details>
       </div>
     `;
-    const toggle = document.querySelector(
-      ".v2-dict-toggle"
-    ) as HTMLDetailsElement;
+    const toggle = document.querySelector(".dict-toggle") as HTMLDetailsElement;
     const target = document.getElementById("target") as HTMLElement;
 
     expect(toggle.open).toBe(false);
@@ -72,10 +70,10 @@ describe("expandAncestorDisclosures", () => {
 });
 
 describe("triggerAnchorHighlight", () => {
-  test("ignores #top and .v2-dict-card elements", () => {
+  test("ignores #top and .dict-card elements", () => {
     document.body.innerHTML = `
       <div id="top">Top</div>
-      <div id="card" class="v2-dict-card">Card</div>
+      <div id="card" class="dict-card">Card</div>
     `;
     const top = document.getElementById("top") as HTMLElement;
     const card = document.getElementById("card") as HTMLElement;
@@ -83,27 +81,27 @@ describe("triggerAnchorHighlight", () => {
     triggerAnchorHighlight(top);
     triggerAnchorHighlight(card);
 
-    expect(top.classList.contains("v2-target-active")).toBe(false);
-    expect(card.classList.contains("v2-target-active")).toBe(false);
+    expect(top.classList.contains("target-active")).toBe(false);
+    expect(card.classList.contains("target-active")).toBe(false);
   });
 
-  test("adds v2-target-active and removes it upon animationend", () => {
+  test("adds target-active and removes it upon animationend", () => {
     document.body.innerHTML = `<div id="sense-1">Sense</div>`;
     const el = document.getElementById("sense-1") as HTMLElement;
 
     triggerAnchorHighlight(el);
-    expect(el.classList.contains("v2-target-active")).toBe(true);
+    expect(el.classList.contains("target-active")).toBe(true);
 
     el.dispatchEvent(new Event("animationend"));
-    expect(el.classList.contains("v2-target-active")).toBe(false);
+    expect(el.classList.contains("target-active")).toBe(false);
   });
 
   test("re-triggers animation by resetting class and forcing reflow if already active", () => {
-    document.body.innerHTML = `<div id="sense-1" class="v2-target-active">Sense</div>`;
+    document.body.innerHTML = `<div id="sense-1" class="target-active">Sense</div>`;
     const el = document.getElementById("sense-1") as HTMLElement;
 
     triggerAnchorHighlight(el);
-    expect(el.classList.contains("v2-target-active")).toBe(true);
+    expect(el.classList.contains("target-active")).toBe(true);
   });
 });
 
@@ -160,12 +158,12 @@ describe("setupAnchorScroll", () => {
     expect(replaceState).not.toHaveBeenCalled();
   });
 
-  test("ignores clicks on non-hash or excluded anchors (#, #top, .v2-back-to-top)", () => {
+  test("ignores clicks on non-hash or excluded anchors (#, #top, .back-to-top)", () => {
     document.body.innerHTML = `
       <a id="external" href="https://example.com">External</a>
       <a id="bare-hash" href="#">Bare</a>
       <a id="top-hash" href="#top">Top</a>
-      <a id="back-to-top" class="v2-back-to-top" href="#top">Back to top</a>
+      <a id="back-to-top" class="back-to-top" href="#top">Back to top</a>
     `;
     const replaceState = jest.fn();
     const mockWin = {
@@ -231,13 +229,13 @@ describe("setupAnchorScroll", () => {
     expect(event.defaultPrevented).toBe(true);
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth" });
     expect(replaceState).toHaveBeenCalledWith(null, "", "#target");
-    expect(target.classList.contains("v2-target-active")).toBe(true);
+    expect(target.classList.contains("target-active")).toBe(true);
   });
 
-  test("uses instant scroll for .v2-jump-pill and .v2-dict-card targets", () => {
+  test("uses instant scroll for .jump-pill and .dict-card targets", () => {
     document.body.innerHTML = `
-      <a id="pill-link" class="v2-jump-pill" href="#card-target">Jump Pill</a>
-      <div id="card-target" class="v2-dict-card">Card Target</div>
+      <a id="pill-link" class="jump-pill" href="#card-target">Jump Pill</a>
+      <div id="card-target" class="dict-card">Card Target</div>
     `;
     const link = document.getElementById("pill-link") as HTMLAnchorElement;
     const target = document.getElementById("card-target") as HTMLElement;

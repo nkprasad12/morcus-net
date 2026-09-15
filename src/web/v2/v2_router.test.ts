@@ -74,7 +74,7 @@ describe("v2_router integration", () => {
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.text).not.toContain("<!DOCTYPE html>");
-    expect(res.text).toContain("v2-dict-card");
+    expect(res.text).toContain("dict-card");
     expect(res.text).toContain("amo");
   });
 
@@ -294,7 +294,7 @@ describe("v2_router integration", () => {
     );
     expect(res.status).toBe(200);
     expect(res.text).toContain("<!DOCTYPE html>");
-    expect(res.text).toContain('class="v2-greek-fallback"');
+    expect(res.text).toContain('class="greek-fallback"');
     expect(res.text).toContain("This site does not (yet) support Greek.");
     expect(res.text).toContain(
       "https://logeion.uchicago.edu/%CE%BB%CF%8C%CE%B3%CE%BF%CF%82"
@@ -309,7 +309,7 @@ describe("v2_router integration", () => {
     );
     expect(res.status).toBe(200);
     expect(res.text).not.toContain("<!DOCTYPE html>");
-    expect(res.text).toContain('class="v2-greek-fallback"');
+    expect(res.text).toContain('class="greek-fallback"');
     expect(res.text).toContain("This site does not (yet) support Greek.");
   });
 
@@ -393,7 +393,7 @@ describe("v2_router integration", () => {
     expect(res.header["content-type"]).toContain("text/css");
     expect(res.header["cache-control"]).toContain("immutable");
     expect(res.text).toContain(".lsOrth");
-    expect(res.text).toContain("v2-target-highlight");
+    expect(res.text).toContain("target-highlight");
     expect(res.text).not.toContain("2px dashed");
   });
 
@@ -419,7 +419,7 @@ describe("v2_router integration", () => {
     expect(res.text).toContain("GPL-3.0");
     expect(res.text).toContain("CC BY-SA 4.0");
     expect(res.text).toContain('href="/v2/about"');
-    expect(res.text).toContain('class="v2-nav-link active"');
+    expect(res.text).toContain('class="nav-link active"');
   });
 
   test("GET /v2 redirects to /v2/dicts", async () => {
@@ -444,7 +444,7 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("<!DOCTYPE html>");
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain("Julius Caesar");
-      expect(res.text).toContain('id="v2-dict-frame"');
+      expect(res.text).toContain('id="dict-frame"');
       expect(res.text).toContain("/v2/dicts?embedded=1");
       expect(res.text).toContain("Tap any word to view definitions");
     });
@@ -454,7 +454,7 @@ describe("v2_router integration", () => {
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("morcus-reader-view");
-      expect(res.text).toContain('id="v2-dict-frame"');
+      expect(res.text).toContain('id="dict-frame"');
       expect(res.text).toContain(
         "/v2/dicts?q=Gallia&amp;lang=La&amp;o=1&amp;embedded=1"
       );
@@ -480,7 +480,7 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("Classical Work Not Found");
       expect(res.text).toContain("unknown_author/nonexistent_work");
       expect(res.text).toContain('href="/v2/library"');
-      expect(res.text).toContain("v2-not-found-state");
+      expect(res.text).toContain("not-found-state");
       expect(res.text).not.toContain("style=");
     });
   });
@@ -490,8 +490,8 @@ describe("v2_router integration", () => {
       const res = await request(app).get("/v2/dicts?q=Gallia&embedded=1");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
-      expect(res.text).toContain("v2-dict-card");
-      expect(res.text).toContain("v2-body-embedded");
+      expect(res.text).toContain("dict-card");
+      expect(res.text).toContain("body-embedded");
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
         expect.objectContaining({
           query: "Gallia",
@@ -504,7 +504,7 @@ describe("v2_router integration", () => {
       const res = await request(app).get("/v2/dicts?q=Gallia&embedded=1");
       expect(res.status).toBe(200);
       expect(res.text).not.toContain("has-toc");
-      expect(res.text).not.toContain("v2-drawer-toc");
+      expect(res.text).not.toContain("drawer-toc");
     });
 
     test("partial format in embedded mode returns fragment without TOC and with lexicon badges", async () => {
@@ -515,37 +515,37 @@ describe("v2_router integration", () => {
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).not.toContain("<!DOCTYPE html>");
       expect(res.text).not.toContain("has-toc");
-      expect(res.text).not.toContain("v2-drawer-toc");
-      expect(res.text).toContain("v2-dict-card");
-      expect(res.text).toContain("v2-dict-badge");
+      expect(res.text).not.toContain("drawer-toc");
+      expect(res.text).toContain("dict-card");
+      expect(res.text).toContain("dict-badge");
     });
 
     test("SSR injects clamped font scale style tag from ?scale= query param", async () => {
       const res = await request(app).get("/v2/dicts?q=Gallia&scale=120");
       expect(res.status).toBe(200);
       expect(res.text).toContain(
-        "<style>:root { --v2-dict-scale: 1.20; }</style>"
+        "<style>:root { --dict-scale: 1.20; }</style>"
       );
 
       const maxRes = await request(app).get("/v2/dicts?q=Gallia&scale=200");
       expect(maxRes.text).toContain(
-        "<style>:root { --v2-dict-scale: 1.40; }</style>"
+        "<style>:root { --dict-scale: 1.40; }</style>"
       );
 
       const minRes = await request(app).get("/v2/dicts?q=Gallia&scale=40");
       expect(minRes.text).toContain(
-        "<style>:root { --v2-dict-scale: 0.70; }</style>"
+        "<style>:root { --dict-scale: 0.70; }</style>"
       );
 
       const invalidRes = await request(app).get("/v2/dicts?q=Gallia&scale=abc");
-      expect(invalidRes.text).not.toContain("--v2-dict-scale");
+      expect(invalidRes.text).not.toContain("--dict-scale");
     });
 
     test("GET /v2/dicts/id/:id injects font scale style tag from ?scale=", async () => {
       const res = await request(app).get("/v2/dicts/id/n20077?scale=125");
       expect(res.status).toBe(200);
       expect(res.text).toContain(
-        "<style>:root { --v2-dict-scale: 1.25; }</style>"
+        "<style>:root { --dict-scale: 1.25; }</style>"
       );
     });
   });
@@ -557,13 +557,13 @@ describe("v2_router integration", () => {
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("morcus-library-view");
       expect(res.text).toContain("Welcome to the library!");
-      expect(res.text).toContain("v2-search-form");
+      expect(res.text).toContain("search-form");
       expect(res.text).toContain("Julius Caesar");
-      expect(res.text).toContain("v2-work-card");
-      expect(res.text).not.toContain("v2-work-card-btn");
+      expect(res.text).toContain("work-card");
+      expect(res.text).not.toContain("work-card-btn");
       expect(res.text).not.toContain("chapters");
-      expect(res.text).not.toContain("v2-badge-perseus");
-      expect(res.text).not.toContain("v2-badge-phi");
+      expect(res.text).not.toContain("badge-perseus");
+      expect(res.text).not.toContain("badge-phi");
     });
   });
 

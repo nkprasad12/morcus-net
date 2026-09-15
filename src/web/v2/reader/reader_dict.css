@@ -1,24 +1,24 @@
 /* Embedded Dictionary Sidebar & Mobile Bottom Sheet Drawer */
 
-.v2-reader-dict-panel {
+.reader-dict-panel {
   min-width: 0;
 }
 
-.v2-dict-iframe-container {
+.dict-iframe-container {
   width: 100%;
   height: 100%;
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background-color: var(--v2-card-bg);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-lg);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-.v2-dict-iframe {
+.dict-iframe {
   width: 100%;
   height: 100%;
   flex: 1 1 auto;
@@ -28,21 +28,21 @@
   display: block;
 }
 
-body.v2-resizing-panels .v2-dict-iframe,
-.v2-reader-dict-panel.v2-is-dragging .v2-dict-iframe {
+body.resizing-panels .dict-iframe,
+.reader-dict-panel.is-dragging .dict-iframe {
   pointer-events: none;
 }
 
-.v2-reader-dict-sticky {
-  background-color: var(--v2-card-bg);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-lg);
-  padding: var(--v2-space-7);
+.reader-dict-sticky {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-7);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 /* Mobile Sheet Bar & Teaser (Visible on Mobile, Hidden on Desktop) */
-.v2-reader-sheet-bar {
+.reader-sheet-bar {
   display: none;
 }
 
@@ -52,7 +52,7 @@ body.v2-resizing-panels .v2-dict-iframe,
 
 @media (max-width: 640px) {
   /* Bottom Column: Elevated Mobile Drawer (Docked to bottom of screen) */
-  .v2-reader-dict-panel {
+  .reader-dict-panel {
     position: fixed;
     bottom: 0;
     left: 0;
@@ -64,21 +64,21 @@ body.v2-resizing-panels .v2-dict-iframe,
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-color: var(--v2-card-bg);
-    border-top: 2px solid var(--v2-border-strong);
+    background-color: var(--card-bg);
+    border-top: 2px solid var(--border-strong);
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
-    box-shadow: var(--v2-drawer-shadow);
+    box-shadow: var(--drawer-shadow);
     transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1),
       max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: var(--v2-z-drawer);
+    z-index: var(--z-drawer);
   }
 
-  .v2-reader-dict-panel.v2-is-dragging {
+  .reader-dict-panel.is-dragging {
     transition: none;
   }
 
-  .v2-reader-dict-sticky {
+  .reader-dict-sticky {
     position: relative;
     flex: 1 1 auto;
     min-height: 0;
@@ -87,18 +87,18 @@ body.v2-resizing-panels .v2-dict-iframe,
     overscroll-behavior-y: contain;
     touch-action: pan-y;
     max-height: none;
-    padding: var(--v2-space-5) var(--v2-space-6) var(--v2-space-8);
+    padding: var(--space-5) var(--space-6) var(--space-8);
     box-shadow: none;
     border: none;
   }
 
-  .v2-reader-dict-content {
+  .reader-dict-content {
     display: block;
     width: 100%;
   }
 
   /* Mobile Drawer Top Bar & Handle (styles provided by core drawer.css) */
-  .v2-reader-sheet-bar {
+  .reader-sheet-bar {
     display: flex;
   }
 }
@@ -108,20 +108,20 @@ body.v2-resizing-panels .v2-dict-iframe,
    ========================================================================== */
 
 @media (min-width: 641px) {
-  .v2-reader-dict-panel {
+  .reader-dict-panel {
     position: relative;
     bottom: auto;
     left: auto;
     right: auto;
     height: 100%;
     min-height: 0;
-    flex: 0 0 var(--v2-dict-width, 420px);
-    width: var(--v2-dict-width, 420px);
+    flex: 0 0 var(--dict-width, 420px);
+    width: var(--dict-width, 420px);
     max-width: min(800px, 60vw);
     min-width: 300px;
     overflow-y: auto;
-    padding-left: var(--v2-space-6);
-    padding-right: var(--v2-space-3);
+    padding-left: var(--space-6);
+    padding-right: var(--space-3);
     padding-bottom: 0;
     border-top: none;
     border-top-left-radius: 0;
@@ -133,19 +133,19 @@ body.v2-resizing-panels .v2-dict-iframe,
   }
 
   /* Unboxed flat canvas for dictionary pane on desktop */
-  .v2-reader-dict-sticky {
+  .reader-dict-sticky {
     position: static;
     background: transparent;
     border: none;
     border-radius: 0;
-    padding: var(--v2-space-2) 0 var(--v2-space-8);
+    padding: var(--space-2) 0 var(--space-8);
     box-shadow: none;
     max-height: none;
     overflow-y: visible;
   }
 
   /* Position button inside the dictionary right column */
-  .v2-reader-dict-back-to-top {
+  .reader-dict-back-to-top {
     position: fixed;
     bottom: 24px;
     right: 28px;

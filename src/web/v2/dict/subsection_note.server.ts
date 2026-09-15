@@ -132,14 +132,12 @@ export function matchedAnchorIds(groups: SubsectionGroup[]): Set<string> {
 
 function arrowIcon(isBlurb: boolean): string {
   return renderIconSvg(isBlurb ? "chevronUp" : "chevronDown", {
-    className: "v2-subsection-chip-icon",
+    className: "subsection-chip-icon",
   });
 }
 
 function renderGroupLabel(group: SubsectionGroup): string {
-  const name = `<span class="v2-subsection-name">${he.escape(
-    group.name
-  )}</span>`;
+  const name = `<span class="subsection-name">${he.escape(group.name)}</span>`;
 
   // With a single match the headword itself carries the link, which reads more
   // naturally than a bare numbered chip.
@@ -148,7 +146,7 @@ function renderGroupLabel(group: SubsectionGroup): string {
     if (target.anchor === undefined) {
       return name;
     }
-    return `<a class="v2-subsection-namelink" href="#${he.escape(
+    return `<a class="subsection-namelink" href="#${he.escape(
       target.anchor
     )}">${name}${arrowIcon(target.isBlurb)}</a>`;
   }
@@ -157,11 +155,11 @@ function renderGroupLabel(group: SubsectionGroup): string {
     .map((target, index) => {
       const label = `${arrowIcon(target.isBlurb)}${index + 1}`;
       if (target.anchor === undefined) {
-        return `<span class="v2-subsection-chip v2-subsection-chip-dead">${
+        return `<span class="subsection-chip subsection-chip-dead">${
           index + 1
         }</span>`;
       }
-      return `<a class="v2-subsection-chip" href="#${he.escape(
+      return `<a class="subsection-chip" href="#${he.escape(
         target.anchor
       )}" title="Jump to match ${index + 1}">${label}</a>`;
     })
@@ -178,11 +176,11 @@ function renderInflections(group: SubsectionGroup): string {
     return renderInflectionInline(inflections[0]);
   }
   return `
-      <details class="v2-subsection-details">
-        <summary class="v2-tab-pill">Inflections of ${he.escape(group.name)} (${
+      <details class="subsection-details">
+        <summary class="tab-pill">Inflections of ${he.escape(group.name)} (${
     inflections.length
   })</summary>
-        <div class="v2-tool-body v2-inflections-body">${renderInflectionTable(
+        <div class="tool-body inflections-body">${renderInflectionTable(
           inflections
         )}</div>
       </details>`;
@@ -213,11 +211,11 @@ export function renderSubsectionNote(
   const inflections = relevant.map(renderInflections).join("");
 
   return `
-    <aside class="v2-subsection-note" aria-label="Matched sections in this entry">
-      <p class="v2-subsection-note-lead">
-        <span class="v2-subsection-note-label">Matched</span>
+    <aside class="subsection-note" aria-label="Matched sections in this entry">
+      <p class="subsection-note-lead">
+        <span class="subsection-note-label">Matched</span>
         ${joined}
-        <span class="v2-subsection-note-tail">inside this entry.</span>
+        <span class="subsection-note-tail">inside this entry.</span>
       </p>${inflections}
     </aside>`;
 }

@@ -1,56 +1,56 @@
 /* Classical Library Catalog Styling (UI V2) */
 
-.v2-library-view {
+.library-view {
   display: block;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--v2-space-8) var(--v2-space-6) 4rem;
+  padding: var(--space-8) var(--space-6) 4rem;
 }
 
-.v2-library-header {
-  margin-bottom: var(--v2-space-7);
+.library-header {
+  margin-bottom: var(--space-7);
 }
 
-.v2-library-title-group {
-  margin-bottom: var(--v2-space-5);
+.library-title-group {
+  margin-bottom: var(--space-5);
 }
 
-.v2-library-title {
-  font-family: var(--v2-font-serif);
+.library-title {
+  font-family: var(--font-serif);
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--v2-text);
+  color: var(--text);
   margin: 0;
   letter-spacing: -0.01em;
 }
 
 /* Search Bar & Filter Pills (matches Dictionary design) */
-.v2-library-search-form {
+.library-search-form {
   margin-bottom: 0;
 }
 
-.v2-library-search-form .v2-search-tray {
+.library-search-form .search-tray {
   justify-content: flex-start;
-  padding: var(--v2-space-3) var(--v2-space-5);
+  padding: var(--space-3) var(--space-5);
   overflow-x: auto;
 }
 
-.v2-library-filter-pills {
+.library-filter-pills {
   display: inline-flex;
   align-items: center;
-  gap: var(--v2-space-3);
+  gap: var(--space-3);
   flex-wrap: nowrap;
 }
 
-.v2-filter-pill {
+.filter-pill {
   font-size: 0.75rem;
   font-weight: 500;
-  padding: var(--v2-space-1) var(--v2-space-4);
-  border-radius: var(--v2-radius-full);
-  border: 1px solid var(--v2-border);
-  background-color: var(--v2-bg);
-  color: var(--v2-text-muted);
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background-color: var(--bg);
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
   line-height: 1.3;
@@ -58,132 +58,132 @@
   flex-shrink: 0;
 }
 
-.v2-filter-pill:hover {
-  border-color: var(--v2-border-strong);
-  color: var(--v2-text);
+.filter-pill:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
-.v2-filter-pill.active {
-  background-color: var(--v2-primary);
-  border-color: var(--v2-primary);
-  color: var(--v2-on-accent);
+.filter-pill.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-accent);
   font-weight: 600;
 }
 
 /* Continuous Works Grid */
-.v2-library-grid {
+.library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--v2-space-7);
+  gap: var(--space-7);
 }
 
 /* Work Card (Fully Clickable Card) */
-.v2-work-card {
-  background-color: var(--v2-card-surface-bg);
-  border: 1px solid var(--v2-card-border);
-  border-radius: var(--v2-radius-lg);
-  padding: var(--v2-space-6) var(--v2-space-7);
+.work-card {
+  background-color: var(--card-surface-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-7);
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  box-shadow: var(--v2-card-shadow);
+  box-shadow: var(--card-shadow);
   transition: transform 0.15s ease, box-shadow 0.15s ease,
     border-color 0.15s ease;
 }
 
-.v2-work-card[hidden] {
+.work-card[hidden] {
   display: none;
 }
 
-.v2-work-card:hover {
+.work-card:hover {
   transform: translateY(-2px);
-  border-color: var(--v2-primary);
-  box-shadow: var(--v2-card-shadow-hover);
+  border-color: var(--primary);
+  box-shadow: var(--card-shadow-hover);
 }
 
-.v2-work-card:hover .v2-work-card-title {
-  color: var(--v2-primary);
+.work-card:hover .work-card-title {
+  color: var(--primary);
 }
 
-.v2-work-card-content {
+.work-card-content {
   display: flex;
   flex-direction: column;
-  gap: var(--v2-space-2);
+  gap: var(--space-2);
   min-width: 0;
   width: 100%;
 }
 
-.v2-work-card-author {
+.work-card-author {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   line-height: 1.3;
 }
 
-.v2-work-card-title {
-  font-family: var(--v2-font-serif);
+.work-card-title {
+  font-family: var(--font-serif);
   font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.35;
   margin: 0;
-  color: var(--v2-text);
+  color: var(--text);
   overflow-wrap: break-word;
   transition: color 0.15s ease;
 }
 
-.v2-work-card-meta {
+.work-card-meta {
   font-size: 0.8125rem;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   line-height: 1.4;
   margin: 0;
 }
 
-.v2-work-card-badges {
+.work-card-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--v2-space-2);
-  margin-top: var(--v2-space-2);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 /* Subtle metadata labels (Light theme defaults) */
-.v2-badge {
+.badge {
   font-size: 0.72rem;
   font-weight: 500;
   text-transform: none;
   letter-spacing: normal;
-  padding: var(--v2-space-1) var(--v2-space-4);
-  border-radius: var(--v2-radius-sm);
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-sm);
   line-height: 1.3;
   display: inline-flex;
   align-items: center;
 }
 
-.v2-badge-macra {
-  background: var(--v2-badge-macra-bg);
-  color: var(--v2-badge-macra-text);
-  border: 1px solid var(--v2-badge-macra-border);
+.badge-macra {
+  background: var(--badge-macra-bg);
+  color: var(--badge-macra-text);
+  border: 1px solid var(--badge-macra-border);
 }
 
-.v2-badge-trans {
-  background: var(--v2-badge-trans-bg);
-  color: var(--v2-badge-trans-text);
-  border: 1px solid var(--v2-badge-trans-border);
+.badge-trans {
+  background: var(--badge-trans-bg);
+  color: var(--badge-trans-text);
+  border: 1px solid var(--badge-trans-border);
 }
 
 @media (max-width: 640px) {
-  .v2-library-view {
-    padding: var(--v2-space-6) var(--v2-space-5) 3rem;
+  .library-view {
+    padding: var(--space-6) var(--space-5) 3rem;
   }
-  .v2-library-header {
-    margin-bottom: var(--v2-space-6);
+  .library-header {
+    margin-bottom: var(--space-6);
   }
-  .v2-library-title {
+  .library-title {
     font-size: 1.25rem;
   }
-  .v2-library-grid {
+  .library-grid {
     grid-template-columns: 1fr;
   }
 }

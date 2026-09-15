@@ -38,7 +38,7 @@ export class MorcusDictToc extends BaseElement {
     if (this.drawerController) {
       this.drawerController.destroy();
       this.drawerController = null;
-      document.documentElement.style.removeProperty("--v2-drawer-height");
+      document.documentElement.style.removeProperty("--drawer-height");
     }
   }
 
@@ -46,9 +46,8 @@ export class MorcusDictToc extends BaseElement {
     const isMobile = this.mediaQuery?.matches ?? window.innerWidth < 1080;
     if (isMobile) {
       if (!this.drawerController) {
-        const handle = this.querySelector<HTMLElement>(".v2-toc-bar");
-        const details =
-          this.querySelector<HTMLDetailsElement>(".v2-toc-details");
+        const handle = this.querySelector<HTMLElement>(".toc-bar");
+        const details = this.querySelector<HTMLDetailsElement>(".toc-details");
         if (handle && details) {
           this.drawerController = new DrawerController({
             drawer: this,
@@ -65,7 +64,7 @@ export class MorcusDictToc extends BaseElement {
     } else {
       this.destroyDrawer();
       // Ensure details disclosure remains open on desktop
-      const details = this.querySelector<HTMLDetailsElement>(".v2-toc-details");
+      const details = this.querySelector<HTMLDetailsElement>(".toc-details");
       if (details && !details.open) {
         details.open = true;
       }

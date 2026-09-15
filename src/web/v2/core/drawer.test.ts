@@ -20,12 +20,12 @@ describe("DrawerController", () => {
   beforeEach(() => {
     document.body.innerHTML = `
       <div id="layout">
-        <aside id="drawer" class="v2-drawer">
-          <div id="handle" class="v2-drawer-bar" tabindex="0" role="separator">
-            <div class="v2-drawer-handle"></div>
-            <div class="v2-drawer-teaser">
-              <span class="v2-drawer-label">Drawer Title</span>
-              <button class="v2-drawer-close">✕</button>
+        <aside id="drawer" class="drawer">
+          <div id="handle" class="drawer-bar" tabindex="0" role="separator">
+            <div class="drawer-handle"></div>
+            <div class="drawer-teaser">
+              <span class="drawer-label">Drawer Title</span>
+              <button class="drawer-close">✕</button>
             </div>
           </div>
           <div id="content">Drawer content</div>
@@ -59,19 +59,19 @@ describe("DrawerController", () => {
     const controller = new DrawerController({ drawer, handle, layoutElement });
     expect(controller.getPreferredDvh()).toBe(DRAWER_DEFAULT_DVH);
     controller.minimize();
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
       `${DRAWER_MIN_HEIGHT}px`
     );
     // Floor clamp
     controller.restore(DRAWER_FLOOR_DVH - 5);
     expect(controller.getPreferredDvh()).toBe(DRAWER_FLOOR_DVH);
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
       `${DRAWER_FLOOR_DVH}dvh`
     );
     // Expanded clamp
     controller.restore(DRAWER_EXPANDED_DVH + 10);
     expect(controller.getPreferredDvh()).toBe(DRAWER_EXPANDED_DVH);
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
       `${DRAWER_EXPANDED_DVH}dvh`
     );
     controller.destroy();
@@ -90,9 +90,9 @@ describe("DrawerController", () => {
     controller.minimize();
 
     expect(controller.isMinimized()).toBe(true);
-    expect(drawer.classList.contains("v2-drawer-minimized")).toBe(true);
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe("54px");
-    expect(layoutElement.style.getPropertyValue("--v2-drawer-height")).toBe(
+    expect(drawer.classList.contains("drawer-minimized")).toBe(true);
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("54px");
+    expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
       "54px"
     );
     expect(handle.getAttribute("aria-valuenow")).toBe("0");
@@ -117,9 +117,9 @@ describe("DrawerController", () => {
     controller.restore(65);
 
     expect(controller.isMinimized()).toBe(false);
-    expect(drawer.classList.contains("v2-drawer-minimized")).toBe(false);
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe("65dvh");
-    expect(layoutElement.style.getPropertyValue("--v2-drawer-height")).toBe(
+    expect(drawer.classList.contains("drawer-minimized")).toBe(false);
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("65dvh");
+    expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
       "65dvh"
     );
     expect(handle.getAttribute("aria-valuenow")).toBe("65");
@@ -138,19 +138,19 @@ describe("DrawerController", () => {
     });
 
     controller.restore(10); // Below floor
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe("20dvh");
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("20dvh");
 
     controller.restore(95); // Above expanded
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe("80dvh");
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("80dvh");
 
     controller.destroy();
   });
 
   test("coordinates with <details> disclosure element", () => {
     document.body.innerHTML = `
-      <morcus-dict-toc id="drawer" class="v2-drawer">
+      <morcus-dict-toc id="drawer" class="drawer">
         <details open>
-          <summary id="handle" class="v2-drawer-bar">Contents</summary>
+          <summary id="handle" class="drawer-bar">Contents</summary>
           <div id="content">TOC items</div>
         </details>
       </morcus-dict-toc>
@@ -193,13 +193,13 @@ describe("DrawerController", () => {
     // ArrowUp while minimized restores to default (DRAWER_DEFAULT_DVH)
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
     expect(controller.isMinimized()).toBe(false);
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
       `${DRAWER_DEFAULT_DVH}dvh`
     );
 
     // ArrowUp while open expands to expandedDvh (DRAWER_EXPANDED_DVH)
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
-    expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBe(
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
       `${DRAWER_EXPANDED_DVH}dvh`
     );
 
@@ -212,8 +212,8 @@ describe("DrawerController", () => {
 
   test("suppresses synthetic <summary> click when dragged", () => {
     document.body.innerHTML = `
-      <details id="drawer" class="v2-drawer" open>
-        <summary id="handle" class="v2-drawer-bar">Handle</summary>
+      <details id="drawer" class="drawer" open>
+        <summary id="handle" class="drawer-bar">Handle</summary>
         <div>Content</div>
       </details>
     `;
@@ -270,7 +270,7 @@ describe("DrawerController", () => {
    * Pins the viewport read out of the move hot path.
    *
    * `window.innerHeight` is layout-dependent, so reading it per `pointermove`
-   * flushes pending layout — and the move handler writes `--v2-drawer-height`
+   * flushes pending layout — and the move handler writes `--drawer-height`
    * immediately before, making it a read-after-write. The viewport cannot
    * change mid-gesture (the handle is `touch-action: none`, so no scroll-driven
    * URL-bar collapse), so it is measured once in `onStart` and reused by both
@@ -323,7 +323,7 @@ describe("DrawerController", () => {
       // Every move is pure arithmetic plus writes: no layout is forced.
       expect(innerHeightReads).toBe(0);
       expect(rectSpy).not.toHaveBeenCalled();
-      expect(drawer.style.getPropertyValue("--v2-drawer-height")).toBeTruthy();
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBeTruthy();
 
       handle.dispatchEvent(
         new PointerEvent("pointerup", {
@@ -349,17 +349,14 @@ describe("DrawerController", () => {
       drawer,
       handle,
       filter: (e) => {
-        if (
-          e.target instanceof Element &&
-          e.target.closest(".v2-drawer-close")
-        ) {
+        if (e.target instanceof Element && e.target.closest(".drawer-close")) {
           return false;
         }
         return true;
       },
     });
 
-    const closeBtn = drawer.querySelector(".v2-drawer-close")!;
+    const closeBtn = drawer.querySelector(".drawer-close")!;
     closeBtn.dispatchEvent(
       new PointerEvent("pointerdown", {
         button: 0,
@@ -370,7 +367,7 @@ describe("DrawerController", () => {
     );
 
     // Should not have entered active drag state
-    expect(handle.classList.contains("v2-is-dragging")).toBe(false);
+    expect(handle.classList.contains("is-dragging")).toBe(false);
 
     controller.destroy();
   });
@@ -414,20 +411,20 @@ describe("DrawerController", () => {
 
     /**
      * The drawer's `transition: height 0.25s` is suppressed mid-drag by
-     * `.v2-drawer.v2-is-dragging` (core/drawer.css) and, for the reader,
-     * `.v2-reader-dict-panel.v2-is-dragging` (reader/reader.css). Both select the
+     * `.drawer.is-dragging` (core/drawer.css) and, for the reader,
+     * `.reader-dict-panel.is-dragging` (reader/reader.css). Both select the
      * *panel*, but the handle is a child of it, so marking only the handle leaves
      * both rules dead and the drawer eases toward the pointer for the whole drag.
      */
     test("marks the drawer itself, not only the handle, while dragging", () => {
       const controller = new DrawerController({ drawer, handle });
 
-      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
+      expect(drawer.classList.contains("is-dragging")).toBe(false);
 
       pointerDown(handle);
 
-      expect(drawer.classList.contains("v2-is-dragging")).toBe(true);
-      expect(handle.classList.contains("v2-is-dragging")).toBe(true);
+      expect(drawer.classList.contains("is-dragging")).toBe(true);
+      expect(handle.classList.contains("is-dragging")).toBe(true);
 
       controller.destroy();
     });
@@ -438,8 +435,8 @@ describe("DrawerController", () => {
       pointerDown(handle);
       pointerEvent(handle, "pointerup");
 
-      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
-      expect(handle.classList.contains("v2-is-dragging")).toBe(false);
+      expect(drawer.classList.contains("is-dragging")).toBe(false);
+      expect(handle.classList.contains("is-dragging")).toBe(false);
 
       controller.destroy();
     });
@@ -450,8 +447,8 @@ describe("DrawerController", () => {
       pointerDown(handle);
       pointerEvent(handle, "pointercancel");
 
-      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
-      expect(handle.classList.contains("v2-is-dragging")).toBe(false);
+      expect(drawer.classList.contains("is-dragging")).toBe(false);
+      expect(handle.classList.contains("is-dragging")).toBe(false);
 
       controller.destroy();
     });
@@ -461,15 +458,13 @@ describe("DrawerController", () => {
       const controller = new DrawerController({ drawer, handle });
 
       pointerDown(handle);
-      expect(drawer.classList.contains("v2-is-dragging")).toBe(true);
+      expect(drawer.classList.contains("is-dragging")).toBe(true);
 
       controller.destroy();
 
-      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
-      expect(handle.classList.contains("v2-is-dragging")).toBe(false);
-      expect(document.body.classList.contains("v2-resizing-drawer")).toBe(
-        false
-      );
+      expect(drawer.classList.contains("is-dragging")).toBe(false);
+      expect(handle.classList.contains("is-dragging")).toBe(false);
+      expect(document.body.classList.contains("resizing-drawer")).toBe(false);
     });
 
     test("does not mark the drawer when the drag is filtered out", () => {
@@ -477,15 +472,13 @@ describe("DrawerController", () => {
         drawer,
         handle,
         filter: (e) =>
-          !(
-            e.target instanceof Element && e.target.closest(".v2-drawer-close")
-          ),
+          !(e.target instanceof Element && e.target.closest(".drawer-close")),
       });
 
-      pointerDown(drawer.querySelector(".v2-drawer-close")!);
+      pointerDown(drawer.querySelector(".drawer-close")!);
 
-      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
-      expect(handle.classList.contains("v2-is-dragging")).toBe(false);
+      expect(drawer.classList.contains("is-dragging")).toBe(false);
+      expect(handle.classList.contains("is-dragging")).toBe(false);
 
       controller.destroy();
     });
@@ -494,12 +487,10 @@ describe("DrawerController", () => {
       const controller = new DrawerController({ drawer, handle });
 
       pointerDown(handle);
-      expect(document.body.classList.contains("v2-resizing-drawer")).toBe(true);
+      expect(document.body.classList.contains("resizing-drawer")).toBe(true);
 
       pointerEvent(handle, "pointerup");
-      expect(document.body.classList.contains("v2-resizing-drawer")).toBe(
-        false
-      );
+      expect(document.body.classList.contains("resizing-drawer")).toBe(false);
 
       controller.destroy();
     });

@@ -25,7 +25,7 @@ describe("MorcusDictSuggestions Web Component", () => {
       { word: "amicitia", lang: "La" },
     ];
 
-    const items = el.querySelectorAll<HTMLLIElement>(".v2-suggestion-item");
+    const items = el.querySelectorAll<HTMLLIElement>(".suggestion-item");
     expect(items.length).toBe(2);
     expect(items[0].dataset.word).toBe("habeo");
     expect(items[1].dataset.word).toBe("amicitia");
@@ -36,7 +36,7 @@ describe("MorcusDictSuggestions Web Component", () => {
     const onSelect = jest.fn();
     el.addEventListener("suggestion-select", onSelect);
 
-    const item = el.querySelector<HTMLLIElement>(".v2-suggestion-item");
+    const item = el.querySelector<HTMLLIElement>(".suggestion-item");
     expect(item).not.toBeNull();
     const event = new MouseEvent("mousedown", {
       bubbles: true,
@@ -62,7 +62,7 @@ describe("MorcusDictSuggestions Web Component", () => {
     el.remove();
     document.body.appendChild(el);
 
-    const item = el.querySelector<HTMLLIElement>(".v2-suggestion-item");
+    const item = el.querySelector<HTMLLIElement>(".suggestion-item");
     expect(item).not.toBeNull();
     const event = new MouseEvent("mousedown", {
       bubbles: true,

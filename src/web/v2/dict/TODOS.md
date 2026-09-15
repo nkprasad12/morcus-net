@@ -40,7 +40,7 @@ Popular long entries cost several milliseconds of pure CPU per request, every re
 > The tools bar was never cacheable per-entry, so any pre-render scheme was always
 > going to be fragment-level rather than whole-entry-level. The body has exactly one
 > query-dependent input — `matchedSubsectionIds` — and its entire effect is adding
-> `class="v2-subsection-hit"` and `aria-current="location"` to a handful of elements.
+> `class="subsection-hit"` and `aria-current="location"` to a handful of elements.
 >
 > `allowLinkify`, the other option on `XmlNodeToHtmlOptions`, is never passed by any
 > caller; it is only set internally during recursion. So `result.entry` really is the
@@ -69,7 +69,7 @@ replaces, so it does not undermine the win.
 > A naive splice is silently broken. The generator template at
 > [`xml_to_html.server.ts:L268`](xml_to_html.server.ts) is
 > `` `<${tagName}${idAttr}${classNames}…>` ``, so `class` always immediately follows
-> `id`. Inserting ` class="v2-subsection-hit"` after `id="X"` on an element that
+> `id`. Inserting ` class="subsection-hit"` after `id="X"` on an element that
 > **already has a class** produces a duplicate `class` attribute. Browsers keep the
 > first one, so the marker never appears — with no error anywhere.
 
@@ -146,7 +146,7 @@ The browser displays raw text `dog (<i>subs.</i>)` rather than italicized text `
    The source blurb contains raw HTML fragments like `(<i>subs.</i>)`.
 2. `renderEntryResult` in [`entry_view.server.ts`](entry_view.server.ts) selects `result.outline.mainLabel` as `headword`, and runs `he.escape(headword)`:
    ```html
-   <span class="v2-entry-headword-text">${he.escape(headword)}</span>
+   <span class="entry-headword-text">${he.escape(headword)}</span>
    ```
    This converts `<` and `>` into `&lt;` and `&gt;`, causing the browser to render the raw HTML tag text on screen.
 
@@ -240,9 +240,9 @@ Benchmarking across the entire corpus reveals:
 
 ### Motivation & Design
 
-Make individual entry headers/headwords collapsible via the decoupled `<details class="v2-entry-toggle">` pattern, mirroring dictionary card collapse.
+Make individual entry headers/headwords collapsible via the decoupled `<details class="entry-toggle">` pattern, mirroring dictionary card collapse.
 
-- Add a `.v2-entry` case to `expandAncestorDisclosures` in `v2_bundle.client.ts` so anchor deep-links automatically expand collapsed entries.
+- Add a `.entry` case to `expandAncestorDisclosures` in `v2_bundle.client.ts` so anchor deep-links automatically expand collapsed entries.
 - Improves scanability on results with multiple long entries inside the same lexicon.
 
 ---
@@ -260,12 +260,12 @@ Scroll tracking provides live visual feedback indicating which sense, subsection
 ### Proposed Architecture
 
 1. **IntersectionObserver Observation**:
-   - In `MorcusDictToc` (`dict_toc.client.ts`), initialize an `IntersectionObserver` observing all sense target elements (`[id]` targets referenced by `.v2-toc-link`) and dictionary cards (`.v2-dict-card`).
+   - In `MorcusDictToc` (`dict_toc.client.ts`), initialize an `IntersectionObserver` observing all sense target elements (`[id]` targets referenced by `.toc-link`) and dictionary cards (`.dict-card`).
    - Configure observer margins (e.g., `rootMargin: "-10% 0px -70% 0px"`) so the section occupying the top third of the viewport triggers the active state.
 2. **Visual State**:
-   - Apply an `.active` class (or `aria-current="true"`) to the corresponding `.v2-toc-item`.
+   - Apply an `.active` class (or `aria-current="true"`) to the corresponding `.toc-item`.
    - Style with an accent left border, bold ordinal, and subtle background tint in `dict_toc.css`.
 3. **Synchronized Auto-Scroll**:
-   - Automatically scroll `.v2-toc-body` using `scrollIntoView({ block: "nearest", behavior: "smooth" })` to ensure the active sense item remains visible within the desktop rail or mobile drawer as the user reads.
+   - Automatically scroll `.toc-body` using `scrollIntoView({ block: "nearest", behavior: "smooth" })` to ensure the active sense item remains visible within the desktop rail or mobile drawer as the user reads.
 4. **Link Click Decoupling**:
-   - When a user clicks a TOC link (`a.v2-toc-link`), temporarily suppress observer updates until the programmatic smooth-scroll animation settles, avoiding visual jitter or fighting between user clicks and observer callbacks.
+   - When a user clicks a TOC link (`a.toc-link`), temporarily suppress observer updates until the programmatic smooth-scroll animation settles, avoiding visual jitter or fighting between user clicks and observer callbacks.

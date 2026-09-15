@@ -27,12 +27,12 @@ export function computeActiveLanguages(
  */
 export function renderLangChipsHtml(languages: string[]): SafeHtml {
   if (languages.length === 0) {
-    return html`<span class="v2-lang-chip v2-lang-chip-none">None</span>`;
+    return html`<span class="lang-chip lang-chip-none">None</span>`;
   }
   const chips = languages.map(
     (lang) =>
       html`<span
-        class="v2-lang-chip v2-lang-chip-${lang.toLowerCase()}"
+        class="lang-chip lang-chip-${lang.toLowerCase()}"
         title="${lang}"
         >${lang}</span
       >`
@@ -44,7 +44,7 @@ export function renderLangChipsHtml(languages: string[]): SafeHtml {
  * Generates HTML for the inflection status badge.
  */
 export function renderInflectChipHtml(isInflected: boolean): SafeHtml {
-  return html`<span class="v2-inflect-chip ${isInflected ? "is-on" : "is-off"}"
+  return html`<span class="inflect-chip ${isInflected ? "is-on" : "is-off"}"
     >${isInflected ? "On" : "Off"}</span
   >`;
 }

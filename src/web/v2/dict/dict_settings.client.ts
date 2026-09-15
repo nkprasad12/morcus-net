@@ -102,9 +102,9 @@ export class MorcusDictSettings extends BaseElement {
   }
 
   private enhanceMarkup() {
-    this.detailsEl = this.$<HTMLDetailsElement>(".v2-dict-settings-details");
-    this.summaryEl = this.$<HTMLElement>(".v2-settings-btn");
-    this.popoverEl = this.$<HTMLElement>(".v2-settings-popover");
+    this.detailsEl = this.$<HTMLDetailsElement>(".dict-settings-details");
+    this.summaryEl = this.$<HTMLElement>(".settings-btn");
+    this.popoverEl = this.$<HTMLElement>(".settings-popover");
 
     // If SSR details element doesn't exist (e.g. standalone test), build full structure
     if (!this.detailsEl || !this.popoverEl) {
@@ -112,16 +112,16 @@ export class MorcusDictSettings extends BaseElement {
         const isChecked = this.activeDictKeys.has(d.key);
         const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
         return html`
-          <label class="v2-dict-item" title="${d.displayName} (${langText})">
+          <label class="dict-item" title="${d.displayName} (${langText})">
             <input
               type="checkbox"
               name="dict"
               value="${d.key}"
-              class="v2-dict-checkbox"
+              class="dict-checkbox"
               data-key="${d.key}"
               ${isChecked ? "checked" : ""} />
-            <span class="v2-dict-name">${d.displayName}</span>
-            <span class="v2-dict-lang">${langText}</span>
+            <span class="dict-name">${d.displayName}</span>
+            <span class="dict-lang">${langText}</span>
           </label>
         `;
       });
@@ -129,9 +129,9 @@ export class MorcusDictSettings extends BaseElement {
       setHtml(
         this,
         html`
-          <details class="v2-dict-settings-details">
+          <details class="dict-settings-details">
             <summary
-              class="v2-settings-btn"
+              class="settings-btn"
               aria-label="Dictionary and highlight settings"
               title="Dictionary and highlight settings">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -139,22 +139,22 @@ export class MorcusDictSettings extends BaseElement {
               </svg>
             </summary>
 
-            <div class="v2-settings-popover">
-              <div class="v2-settings-section-title">Enabled Dictionaries</div>
-              <div class="v2-dict-list">${joinHtml(dictItems)}</div>
+            <div class="settings-popover">
+              <div class="settings-section-title">Enabled Dictionaries</div>
+              <div class="dict-list">${joinHtml(dictItems)}</div>
             </div>
           </details>
         `
       );
 
-      this.detailsEl = this.$<HTMLDetailsElement>(".v2-dict-settings-details");
-      this.summaryEl = this.$<HTMLElement>(".v2-settings-btn");
-      this.popoverEl = this.$<HTMLElement>(".v2-settings-popover");
+      this.detailsEl = this.$<HTMLDetailsElement>(".dict-settings-details");
+      this.summaryEl = this.$<HTMLElement>(".settings-btn");
+      this.popoverEl = this.$<HTMLElement>(".settings-popover");
     }
 
     // Sync SSR checkboxes with activeDictKeys
     const checkboxes =
-      this.querySelectorAll<HTMLInputElement>(".v2-dict-checkbox");
+      this.querySelectorAll<HTMLInputElement>(".dict-checkbox");
     checkboxes.forEach((cb) => {
       const key = cb.dataset.key || cb.value;
       if (key) {
@@ -163,49 +163,49 @@ export class MorcusDictSettings extends BaseElement {
     });
 
     // Sync inflection checkbox
-    this.inflectedCheckboxEl = this.$<HTMLInputElement>("#v2-toggle-inflected");
+    this.inflectedCheckboxEl = this.$<HTMLInputElement>("#toggle-inflected");
     if (this.inflectedCheckboxEl) {
       this.inflectedCheckboxEl.checked = this.isInflected;
     }
 
     // Progressively inject highlight slider if not present
-    if (this.popoverEl && !this.$(".v2-settings-slider")) {
+    if (this.popoverEl && !this.$(".settings-slider")) {
       const sliderControls = document.createElement("div");
-      sliderControls.className = "v2-settings-slider-section";
+      sliderControls.className = "settings-slider-section";
       setHtml(
         sliderControls,
         html`
-          <div class="v2-settings-header">
-            <span class="v2-settings-title">Highlight Strength</span>
-            <span class="v2-settings-value">${this.strength}%</span>
+          <div class="settings-header">
+            <span class="settings-title">Highlight Strength</span>
+            <span class="settings-value">${this.strength}%</span>
           </div>
 
-          <div class="v2-settings-control-row">
+          <div class="settings-control-row">
             <input
               type="range"
               min="0"
               max="100"
               step="10"
               value="${this.strength}"
-              class="v2-settings-slider"
+              class="settings-slider"
               aria-label="Highlight strength" />
           </div>
 
-          <div class="v2-settings-preview" aria-hidden="true">
+          <div class="settings-preview" aria-hidden="true">
             <span class="lsOrth">Caesar</span>
             <span class="lsGrammar">noun</span>
             <span class="lsBibl">Gall. 1.1</span>
             <span class="lsQuote">omnia</span>
           </div>
 
-          <div class="v2-settings-divider" role="separator"></div>
+          <div class="settings-divider" role="separator"></div>
         `
       );
       this.popoverEl.prepend(sliderControls);
     }
 
-    this.sliderEl = this.$<HTMLInputElement>(".v2-settings-slider");
-    this.valueDisplayEl = this.$(".v2-settings-value");
+    this.sliderEl = this.$<HTMLInputElement>(".settings-slider");
+    this.valueDisplayEl = this.$(".settings-value");
 
     if (this.summaryEl) {
       this.listen(this.summaryEl, "click", (e: MouseEvent) => {
@@ -242,7 +242,7 @@ export class MorcusDictSettings extends BaseElement {
       const target = e.target;
       if (
         target instanceof HTMLInputElement &&
-        target.classList.contains("v2-dict-checkbox")
+        target.classList.contains("dict-checkbox")
       ) {
         const key = target.dataset.key || target.value;
         if (!key) return;
@@ -254,8 +254,8 @@ export class MorcusDictSettings extends BaseElement {
         this.saveDictSelection();
       } else if (
         target instanceof HTMLInputElement &&
-        (target.id === "v2-toggle-inflected" ||
-          target.classList.contains("v2-inflected-checkbox"))
+        (target.id === "toggle-inflected" ||
+          target.classList.contains("inflected-checkbox"))
       ) {
         this.isInflected = target.checked;
         inflectedSettingsStore.set(this.isInflected);
@@ -316,7 +316,7 @@ export class MorcusDictSettings extends BaseElement {
   private applyScale(strength: number) {
     const scale = strength / 50;
     document.documentElement.style.setProperty(
-      "--v2-highlight-scale",
+      "--highlight-scale",
       String(scale)
     );
   }

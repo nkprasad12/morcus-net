@@ -27,15 +27,15 @@ describe("search_bar.common", () => {
   describe("renderLangChipsHtml", () => {
     test("renders language chips with correct css classes", () => {
       const html = renderLangChipsHtml(["La", "En"]);
-      expect(html).toContain('class="v2-lang-chip v2-lang-chip-la"');
-      expect(html).toContain('class="v2-lang-chip v2-lang-chip-en"');
+      expect(html).toContain('class="lang-chip lang-chip-la"');
+      expect(html).toContain('class="lang-chip lang-chip-en"');
       expect(html).toContain("La");
       expect(html).toContain("En");
     });
 
     test("renders None badge when language list is empty", () => {
       const html = renderLangChipsHtml([]);
-      expect(html).toContain('class="v2-lang-chip v2-lang-chip-none"');
+      expect(html).toContain('class="lang-chip lang-chip-none"');
       expect(html).toContain("None");
     });
   });
@@ -43,13 +43,13 @@ describe("search_bar.common", () => {
   describe("renderInflectChipHtml", () => {
     test("renders on state", () => {
       const html = renderInflectChipHtml(true);
-      expect(html).toContain('class="v2-inflect-chip is-on"');
+      expect(html).toContain('class="inflect-chip is-on"');
       expect(html).toContain("On");
     });
 
     test("renders off state", () => {
       const html = renderInflectChipHtml(false);
-      expect(html).toContain('class="v2-inflect-chip is-off"');
+      expect(html).toContain('class="inflect-chip is-off"');
       expect(html).toContain("Off");
     });
   });

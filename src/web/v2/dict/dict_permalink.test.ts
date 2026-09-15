@@ -40,24 +40,24 @@ beforeEach(() => {
   copySucceeds = true;
   document.body.innerHTML = `
     <div id="dict-results">
-      <article class="v2-entry" id="n20077">
-        <a href="/v2/dicts/id/n20077" class="v2-tab-pill v2-copy-pill">Copy link</a>
+      <article class="entry" id="n20077">
+        <a href="/v2/dicts/id/n20077" class="tab-pill copy-pill">Copy link</a>
         <li id="n20077.1">
-          <a href="#n20077.1" class="v2-section-anchor">I.</a>
+          <a href="#n20077.1" class="section-anchor">I.</a>
         </li>
-        <a href="#missing.9" class="v2-section-anchor">II.</a>
+        <a href="#missing.9" class="section-anchor">II.</a>
       </article>
-      <article class="v2-entry">
-        <a href="#orphan.1" class="v2-section-anchor">Orphan</a>
+      <article class="entry">
+        <a href="#orphan.1" class="section-anchor">Orphan</a>
       </article>
-      <a href="#somewhere" class="v2-toc-link">Outline entry</a>
+      <a href="#somewhere" class="toc-link">Outline entry</a>
     </div>
   `;
 });
 
 describe("handleDictPermalinkClick", () => {
   test("copies the article permalink and does not navigate", async () => {
-    const { handled, event } = clickOn("a.v2-copy-pill");
+    const { handled, event } = clickOn("a.copy-pill");
     await flush();
 
     expect(handled).toBe(true);
@@ -97,7 +97,7 @@ describe("handleDictPermalinkClick", () => {
   });
 
   test("ignores outline links, which should still navigate in-page", async () => {
-    const { handled, event } = clickOn("a.v2-toc-link");
+    const { handled, event } = clickOn("a.toc-link");
     await flush();
 
     expect(handled).toBe(false);
@@ -113,7 +113,7 @@ describe("handleDictPermalinkClick", () => {
       writable: true,
     });
 
-    clickOn("a.v2-copy-pill");
+    clickOn("a.copy-pill");
     await flush();
 
     // A blocked clipboard should still leave the user with a shareable URL

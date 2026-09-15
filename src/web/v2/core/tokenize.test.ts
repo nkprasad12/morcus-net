@@ -59,14 +59,14 @@ describe("tokenizeSubtree", () => {
     tokenizeSubtree(div, {
       renderWord: (token, cleanWord) => {
         const span = document.createElement("span");
-        span.className = "v2-lat-word";
+        span.className = "lat-word";
         span.dataset.word = cleanWord;
         span.textContent = token;
         return span;
       },
     });
 
-    const spans = div.querySelectorAll(".v2-lat-word");
+    const spans = div.querySelectorAll(".lat-word");
     expect(spans).toHaveLength(7);
     expect(spans[0].textContent).toBe("Gallia");
     expect(spans[0].getAttribute("data-word")).toBe("Gallia");
@@ -80,18 +80,18 @@ describe("tokenizeSubtree", () => {
 
     const renderWord = (token: string) => {
       const span = document.createElement("span");
-      span.className = "v2-lat-word";
+      span.className = "lat-word";
       span.textContent = token;
       return span;
     };
 
     tokenizeSubtree(div, { renderWord });
-    expect(div.querySelectorAll(".v2-lat-word")).toHaveLength(3);
+    expect(div.querySelectorAll(".lat-word")).toHaveLength(3);
     expect(div.dataset.wordsEnhanced).toBe("true");
 
     // Re-run
     tokenizeSubtree(div, { renderWord });
-    expect(div.querySelectorAll(".v2-lat-word")).toHaveLength(3);
+    expect(div.querySelectorAll(".lat-word")).toHaveLength(3);
   });
 
   it("rejects standard exclusion elements (a, button, script, style, lang=el, data-no-tokenize)", () => {
@@ -112,13 +112,13 @@ describe("tokenizeSubtree", () => {
     tokenizeSubtree(div, {
       renderWord: (token) => {
         const span = document.createElement("span");
-        span.className = "v2-lat-word";
+        span.className = "lat-word";
         span.textContent = token;
         return span;
       },
     });
 
-    const words = Array.from(div.querySelectorAll(".v2-lat-word")).map(
+    const words = Array.from(div.querySelectorAll(".lat-word")).map(
       (w) => w.textContent
     );
     expect(words).toEqual(["Before", "middle", "After", "text"]);
@@ -136,7 +136,7 @@ describe("tokenizeSubtree", () => {
     tokenizeSubtree(div, {
       renderWord: (token) => {
         const span = document.createElement("span");
-        span.className = "v2-lat-word";
+        span.className = "lat-word";
         span.textContent = token;
         return span;
       },
@@ -144,7 +144,7 @@ describe("tokenizeSubtree", () => {
         el.classList.contains("lsOrth") || el.classList.contains("lsHover"),
     });
 
-    const words = Array.from(div.querySelectorAll(".v2-lat-word")).map(
+    const words = Array.from(div.querySelectorAll(".lat-word")).map(
       (w) => w.textContent
     );
     expect(words).toEqual(["validus"]);
@@ -168,13 +168,13 @@ describe("tokenizeTargets", () => {
     tokenizeTargets(container, {
       renderWord: (token) => {
         const span = document.createElement("span");
-        span.className = "v2-lat-word";
+        span.className = "lat-word";
         span.textContent = token;
         return span;
       },
     });
 
-    const words = Array.from(container.querySelectorAll(".v2-lat-word")).map(
+    const words = Array.from(container.querySelectorAll(".lat-word")).map(
       (w) => w.textContent
     );
     expect(words).toEqual(["Gallia", "est", "omnis", "divisa"]);
@@ -189,20 +189,20 @@ describe("tokenizeTargets", () => {
     tokenizeTargets(container, {
       renderWord: (token) => {
         const span = document.createElement("span");
-        span.className = "v2-lat-word";
+        span.className = "lat-word";
         span.textContent = token;
         return span;
       },
     });
 
-    expect(container.querySelectorAll(".v2-lat-word")).toHaveLength(3);
+    expect(container.querySelectorAll(".lat-word")).toHaveLength(3);
   });
 
   it("falls back to fallbackSelector when no primary target matches", () => {
     const container = document.createElement("div");
     container.innerHTML = `
-      <div class="v2-reader-section">
-        <p class="v2-reader-paragraph">Legacy paragraph text</p>
+      <div class="reader-section">
+        <p class="reader-paragraph">Legacy paragraph text</p>
       </div>
       <div class="sidebar">Sidebar text</div>
     `;
@@ -210,16 +210,16 @@ describe("tokenizeTargets", () => {
 
     tokenizeTargets(container, {
       targetSelector: "[data-tokenize-target='true']",
-      fallbackSelector: "p.v2-reader-paragraph",
+      fallbackSelector: "p.reader-paragraph",
       renderWord: (token) => {
         const span = document.createElement("span");
-        span.className = "v2-lat-word";
+        span.className = "lat-word";
         span.textContent = token;
         return span;
       },
     });
 
-    const words = Array.from(container.querySelectorAll(".v2-lat-word")).map(
+    const words = Array.from(container.querySelectorAll(".lat-word")).map(
       (w) => w.textContent
     );
     expect(words).toEqual(["Legacy", "paragraph", "text"]);

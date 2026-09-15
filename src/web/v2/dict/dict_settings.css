@@ -1,57 +1,57 @@
 /* Highlight & Dictionary Selection Settings (Web Component & Dropdown) */
 
 morcus-dict-settings,
-.v2-dict-settings-details {
+.dict-settings-details {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
-.v2-dict-settings-details > summary.v2-settings-btn {
+.dict-settings-details > summary.settings-btn {
   list-style: none;
 }
 
-.v2-dict-settings-details > summary.v2-settings-btn::-webkit-details-marker {
+.dict-settings-details > summary.settings-btn::-webkit-details-marker {
   display: none;
 }
 
-.v2-dict-settings-details[open] > .v2-settings-btn {
-  color: var(--v2-primary);
-  border-color: var(--v2-primary);
-  background-color: var(--v2-tag-bg);
+.dict-settings-details[open] > .settings-btn {
+  color: var(--primary);
+  border-color: var(--primary);
+  background-color: var(--tag-bg);
 }
 
 /* Dictionary Selection Section */
-.v2-settings-inflected-section {
+.settings-inflected-section {
   display: flex;
   flex-direction: column;
 }
 
-.v2-dict-list {
+.dict-list {
   display: flex;
   flex-direction: column;
-  gap: var(--v2-space-3);
+  gap: var(--space-3);
   max-height: 240px;
   overflow-y: auto;
-  padding-right: var(--v2-space-1);
+  padding-right: var(--space-1);
 }
 
-.v2-dict-item {
+.dict-item {
   display: flex;
   align-items: center;
-  gap: var(--v2-space-4);
+  gap: var(--space-4);
   font-size: 0.78rem;
-  color: var(--v2-text);
+  color: var(--text);
   cursor: pointer;
   user-select: none;
 }
 
-.v2-dict-name {
+.dict-name {
   font-weight: 500;
   flex: 1;
 }
 
-.v2-dict-lang {
+.dict-lang {
   font-size: 0.7rem;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
 }

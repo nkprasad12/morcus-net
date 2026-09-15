@@ -23,10 +23,10 @@ export function linkifyText(
       const isActive =
         cleanActiveWord !== undefined &&
         cleanWord.toLowerCase() === cleanActiveWord;
-      const activeClass = isActive ? " v2-word-active" : "";
+      const activeClass = isActive ? " word-active" : "";
       return `<a href="${he.escape(
         href
-      )}" class="v2-lat-word${activeClass}">${he.escape(word)}</a>`;
+      )}" class="lat-word${activeClass}">${he.escape(word)}</a>`;
     }
     return he.escape(word);
   });

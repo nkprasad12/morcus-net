@@ -3,8 +3,8 @@ import { processTokens, removeDiacritics } from "@/common/text_cleaning";
 export interface TokenizeWordOptions {
   /**
    * Factory function that constructs the replacement DOM element for a Latin word token.
-   * - Reader: creates `<span class="v2-lat-word" role="button" tabindex="0" data-word="...">`
-   * - Dictionary: creates `<a class="v2-lat-word" href="..." data-word="...">`
+   * - Reader: creates `<span class="lat-word" role="button" tabindex="0" data-word="...">`
+   * - Dictionary: creates `<a class="lat-word" href="..." data-word="...">`
    */
   renderWord: (token: string, cleanWord: string) => HTMLElement;
 

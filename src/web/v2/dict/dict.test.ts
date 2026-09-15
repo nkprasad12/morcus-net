@@ -22,7 +22,7 @@ import he from "he";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
-  getV2CriticalCss: () => "body{background-color:var(--v2-bg)}",
+  getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
 
@@ -210,13 +210,13 @@ describe("dict_ssr", () => {
     expect(rendered).not.toContain("<strong>ămāvēre</strong>");
     // Usage note is displayed inline in analysis
     expect(rendered).toContain(
-      '<td>3rd pl perf act ind <span class="v2-usage-note">(poetic)</span></td>'
+      '<td>3rd pl perf act ind <span class="usage-note">(poetic)</span></td>'
     );
   });
 
   test("renderDictResultsHtml handles empty query with landing view", () => {
     const html = renderDictResultsHtml("");
-    expect(html).toContain("v2-landing-container");
+    expect(html).toContain("landing-container");
     expect(html).toContain("Understanding the Markup");
     expect(html).toContain("All Dictionaries");
     expect(html).toContain(
@@ -231,8 +231,8 @@ describe("dict_ssr", () => {
     );
     // In default configuration, L&S is enabled and EGL (Pozo) is disabled
     expect(html).toContain('data-dict-key="L&S"');
-    expect(html).toContain('class="v2-lexicon-badge v2-dict-enabled">L&S<');
-    expect(html).toContain('class="v2-lexicon-badge v2-dict-disabled">EGL<');
+    expect(html).toContain('class="lexicon-badge dict-enabled">L&S<');
+    expect(html).toContain('class="lexicon-badge dict-disabled">EGL<');
 
     // Custom dictionaries: Latin only
     const latinOnlyHtml = renderDictResultsHtml("", undefined, {
@@ -311,7 +311,7 @@ describe("dict_ssr", () => {
     const pageHtml = renderDictPageHtml({ query: "caesar" });
     expect(pageHtml).toContain("<!DOCTYPE html>");
     expect(pageHtml).toContain(
-      "<style>body{background-color:var(--v2-bg)}</style>"
+      "<style>body{background-color:var(--bg)}</style>"
     );
     expect(pageHtml).toContain(
       '<link rel="stylesheet" href="/v2/assets/v2.css">'
@@ -320,12 +320,12 @@ describe("dict_ssr", () => {
       '<script type="module" src="/v2/assets/v2.js"></script>'
     );
     expect(pageHtml).toContain(
-      '<form class="v2-search-form" action="/v2/dicts" method="GET">'
+      '<form class="search-form" action="/v2/dicts" method="GET">'
     );
     expect(pageHtml).toContain("<morcus-dict-search>");
     expect(pageHtml).toContain("<morcus-dict-settings>");
     expect(pageHtml).toContain('<div id="top"></div>');
-    expect(pageHtml).toContain('class="v2-back-to-top"');
+    expect(pageHtml).toContain('class="back-to-top"');
     expect(pageHtml).toContain('href="#top"');
   });
 
@@ -337,7 +337,7 @@ describe("dict_ssr", () => {
     );
     const html = xmlNodeToHtml(node);
     expect(html).not.toContain('href="/v2/dicts?q=Gallia"');
-    expect(html).not.toContain('class="v2-lat-word"');
+    expect(html).not.toContain('class="lat-word"');
     expect(html).toContain("Gallia est omnis");
   });
 
@@ -351,7 +351,7 @@ describe("dict_ssr", () => {
     expect(html).toContain('href="/v2/dicts?q=Gallia"');
     expect(html).toContain('href="/v2/dicts?q=est"');
     expect(html).toContain('href="/v2/dicts?q=omnis"');
-    expect(html).toContain('class="v2-lat-word"');
+    expect(html).toContain('class="lat-word"');
   });
 
   test("xmlNodeToHtml transforms sense bullet with senseid into an anchor link", () => {
@@ -366,7 +366,7 @@ describe("dict_ssr", () => {
     const html = xmlNodeToHtml(node);
     expect(html).toContain("<a");
     expect(html).toContain('href="#n20077.1"');
-    expect(html).toContain('class="lsSenseBullet v2-section-anchor"');
+    expect(html).toContain('class="lsSenseBullet section-anchor"');
     expect(html).toContain('title="Copy link to this section"');
     expect(html).toContain("•");
     expect(html).toContain("</a>");
@@ -436,14 +436,14 @@ describe("dict_ssr", () => {
     };
 
     const rendered = renderEntryResult(entryResult);
-    expect(rendered).toContain('class="v2-entry-tools"');
+    expect(rendered).toContain('class="entry-tools"');
     expect(rendered).toContain("Outline");
     expect(rendered).toContain('href="#n20077.1"');
     expect(rendered).toContain("I.");
     expect(rendered).toContain("In general");
     // Level 1 sense has no extra margin-left indent
     expect(rendered).toContain(
-      '<li><a href="#n20077.1" class="v2-toc-link"><strong class="v2-toc-ordinal">I.</strong> In general</a></li>'
+      '<li><a href="#n20077.1" class="toc-link"><strong class="toc-ordinal">I.</strong> In general</a></li>'
     );
     // Level 2 sense has margin-left: 0.75rem
     expect(rendered).toContain('href="#n20077.2"');
@@ -596,18 +596,18 @@ describe("dict_ssr", () => {
     const html = renderDictResultsHtml("cum", results);
 
     // Quick jump bar integrated in header
-    expect(html).toContain('class="v2-dict-header v2-dict-header-slim"');
-    expect(html).toContain('class="v2-dict-toggle" open');
-    expect(html).toContain('class="v2-entry-nav"');
+    expect(html).toContain('class="dict-header dict-header-slim"');
+    expect(html).toContain('class="dict-toggle" open');
+    expect(html).toContain('class="entry-nav"');
     expect(html).toContain("Jump to");
     expect(html).toContain('href="#n1"');
     expect(html).toContain('href="#n2"');
     expect(html).toContain("cum");
-    expect(html).toContain('class="v2-dict-acronym">L&amp;S</span>');
+    expect(html).toContain('class="dict-acronym">L&amp;S</span>');
     expect(html).toContain(
-      'class="v2-dict-name v2-dict-title">Lewis &amp; Short</span>'
+      'class="dict-name dict-title">Lewis &amp; Short</span>'
     );
-    expect(html).toContain('class="v2-dict-count">(2)</span>');
+    expect(html).toContain('class="dict-count">(2)</span>');
 
     // Ensure <summary> does not contain nested interactive elements (links or buttons)
     const summaryMatch = html.match(/<summary[^>]*>([\s\S]*?)<\/summary>/);
@@ -618,8 +618,8 @@ describe("dict_ssr", () => {
     // Entry headers and anchors
     expect(html).toContain('id="n1"');
     expect(html).toContain('id="n2"');
-    expect(html).toContain('class="v2-entry-header has-tools"');
-    expect(html).toContain('class="v2-entry-headword"');
+    expect(html).toContain('class="entry-header has-tools"');
+    expect(html).toContain('class="entry-headword"');
     expect(html).toContain('href="#n1"');
     expect(html).toContain('href="#n2"');
     // Each entry carries a shareable article permalink.
@@ -649,13 +649,13 @@ describe("dict_ssr", () => {
 
     const html = renderDictResultsHtml("habeo", results);
 
-    expect(html).not.toContain('class="v2-entry-nav"');
+    expect(html).not.toContain('class="entry-nav"');
     expect(html).not.toContain("Entry 1 of 1");
     // Article still has anchor id from sectionId
     expect(html).toContain('id="n0"');
     // Entries with no outline and no inflections (Riddle & Arnold, Numerals)
     // used to render no header, and so had no permalink at all.
-    expect(html).toContain('class="v2-entry-header has-tools"');
+    expect(html).toContain('class="entry-header has-tools"');
     expect(html).toContain('href="/v2/dicts/id/n0"');
     expect(html).not.toContain("Outline");
     expect(html).not.toContain("Inflections");
@@ -682,13 +682,11 @@ describe("dict_ssr", () => {
       },
     };
     const rendered = renderEntryResult(entryResult);
-    expect(rendered).toContain('class="v2-entry-headword"');
+    expect(rendered).toContain('class="entry-headword"');
     // The headword is inert text now; the permalink lives in the copy pill.
     expect(rendered).not.toContain('href="#n20077"');
     expect(rendered).toContain('href="/v2/dicts/id/n20077"');
-    expect(rendered).toContain(
-      '<article class="v2-entry has-tools" id="n20077">'
-    );
+    expect(rendered).toContain('<article class="entry has-tools" id="n20077">');
     // Root id="n20077" is omitted from inner div to prevent duplicate IDs in DOM
     const idCount = (rendered.match(/id="n20077"/g) || []).length;
     expect(idCount).toBe(1);
@@ -711,7 +709,7 @@ describe("dict_ssr", () => {
     };
     const rendered = renderEntryResult(entryResult);
     expect(rendered).toContain(
-      '<span class="v2-entry-headword-text">dog (subs.)</span>'
+      '<span class="entry-headword-text">dog (subs.)</span>'
     );
     expect(rendered).not.toContain("&lt;i&gt;");
     expect(rendered).not.toContain("&#x3C;i&#x3E;");
@@ -735,10 +733,10 @@ describe("dict_ssr", () => {
     expect(html).toContain("Cic.");
   });
 
-  test("renderDictPageHtml includes the single global #v2-abbr-popover element", () => {
+  test("renderDictPageHtml includes the single global #abbr-popover element", () => {
     const pageHtml = renderDictPageHtml({ query: "habeo" });
     expect(pageHtml).toContain(
-      '<div id="v2-abbr-popover" popover="auto" class="v2-abbr-popover"></div>'
+      '<div id="abbr-popover" popover="auto" class="abbr-popover"></div>'
     );
   });
 
@@ -787,9 +785,9 @@ describe("dict_ssr", () => {
     expect(gafIndex).toBeGreaterThan(-1);
     expect(lAndSIndex).toBeLessThan(gafIndex);
 
-    expect(html).toContain('<span class="v2-jump-pill-count">1</span>');
-    expect(html).toContain('class="v2-jump-pill v2-jump-pill-zero"');
-    expect(html).toContain('<span class="v2-jump-pill-count">0</span>');
+    expect(html).toContain('<span class="jump-pill-count">1</span>');
+    expect(html).toContain('class="jump-pill jump-pill-zero"');
+    expect(html).toContain('<span class="jump-pill-count">0</span>');
   });
 
   test("renderDictResultsHtml omits jump bar when hitKeys <= 1", () => {
@@ -813,7 +811,7 @@ describe("dict_ssr", () => {
     const html = renderDictResultsHtml("habeo", results, {
       queriedDicts: ["GAF", "L&S"],
     });
-    expect(html).not.toContain('class="v2-results-nav"');
+    expect(html).not.toContain('class="results-nav"');
   });
 
   test("xmlNodeToHtml renders forcNewTab as an action button with external icon", () => {
@@ -828,9 +826,7 @@ describe("dict_ssr", () => {
     );
 
     const html = xmlNodeToHtml(node);
-    expect(html).toContain(
-      'class="forcNewTab v2-action-btn v2-forc-action-btn"'
-    );
+    expect(html).toContain('class="forcNewTab action-btn forc-action-btn"');
     expect(html).toContain('target="_blank"');
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain('role="button"');
@@ -838,10 +834,10 @@ describe("dict_ssr", () => {
       'title="Open full entry on lexica.linguax.com in new tab"'
     );
     expect(html).toContain(
-      '<span class="v2-action-btn-icon" aria-hidden="true">&#x2197;</span>'
+      '<span class="action-btn-icon" aria-hidden="true">&#x2197;</span>'
     );
     expect(html).toContain(
-      '<span class="v2-action-btn-text">Open in new tab (habeo)</span>'
+      '<span class="action-btn-text">Open in new tab (habeo)</span>'
     );
   });
 
@@ -858,21 +854,21 @@ describe("dict_ssr", () => {
     );
 
     const html = xmlNodeToHtml(node);
-    expect(html).toContain('class="v2-mateo-wrapper"');
+    expect(html).toContain('class="mateo-wrapper"');
     expect(html).toContain('target="_blank"');
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain('title="View plate on mateo.uni-mannheim.de"');
-    expect(html).toContain('class="v2-mateo-embed-pane"');
-    expect(html).toContain('class="v2-action-btn v2-mateo-toggle-btn"');
+    expect(html).toContain('class="mateo-embed-pane"');
+    expect(html).toContain('class="action-btn mateo-toggle-btn"');
     expect(html).toContain("Plate Embed");
     expect(html).toContain(
       'iframe src="https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v1/jpg/s0665.html"'
     );
-    expect(html).toContain('class="v2-mateo-frame"');
+    expect(html).toContain('class="mateo-frame"');
     expect(html).toContain('loading="lazy"');
   });
 
-  test("renderDictResultsHtml wraps results in v2-results-layout with TOC when senses exceed threshold", () => {
+  test("renderDictResultsHtml wraps results in results-layout with TOC when senses exceed threshold", () => {
     const results = {
       ls: [
         {
@@ -911,12 +907,12 @@ describe("dict_ssr", () => {
     };
 
     const html = renderDictResultsHtml("habeo", results);
-    expect(html).toContain('class="v2-results-layout has-toc"');
+    expect(html).toContain('class="results-layout has-toc"');
     expect(html).toContain("<morcus-dict-toc");
-    expect(html).toContain('class="v2-results-main"');
+    expect(html).toContain('class="results-main"');
   });
 
-  test("renderDictResultsHtml wraps results in v2-results-layout without has-toc when below threshold", () => {
+  test("renderDictResultsHtml wraps results in results-layout without has-toc when below threshold", () => {
     const results = {
       ls: [
         {
@@ -938,10 +934,10 @@ describe("dict_ssr", () => {
     };
 
     const html = renderDictResultsHtml("abbas", results);
-    expect(html).toContain('class="v2-results-layout"');
+    expect(html).toContain('class="results-layout"');
     expect(html).not.toContain("has-toc");
     expect(html).not.toContain("<morcus-dict-toc");
-    expect(html).toContain('class="v2-results-main"');
+    expect(html).toContain('class="results-main"');
   });
 
   test("renderDictResultsHtml enables TOC with entries summary when multiple entries exist across lexica", () => {
@@ -983,11 +979,11 @@ describe("dict_ssr", () => {
     };
 
     const html = renderDictResultsHtml("canis", results);
-    expect(html).toContain('class="v2-results-layout has-toc"');
+    expect(html).toContain('class="results-layout has-toc"');
     expect(html).toContain("<morcus-dict-toc");
-    expect(html).toContain("v2-toc-entries-summary");
-    expect(html).toContain('href="#n200" class="v2-toc-entry-chip"');
-    expect(html).toContain('href="#g300" class="v2-toc-entry-chip"');
+    expect(html).toContain("toc-entries-summary");
+    expect(html).toContain('href="#n200" class="toc-entry-chip"');
+    expect(html).toContain('href="#g300" class="toc-entry-chip"');
   });
 
   test("renderDictResultsHtml suppresses TOC when isEmbedded is true", () => {
@@ -1034,17 +1030,17 @@ describe("dict_ssr", () => {
     });
     expect(html).not.toContain("has-toc");
     expect(html).not.toContain("<morcus-dict-toc");
-    expect(html).not.toContain("v2-drawer-toc");
-    expect(html).toContain('class="v2-results-layout"');
-    expect(html).toContain('class="v2-results-main"');
+    expect(html).not.toContain("drawer-toc");
+    expect(html).toContain('class="results-layout"');
+    expect(html).toContain('class="results-main"');
 
     // In embedded mode, entries should carry inline lexicon badges
-    expect(html).toContain('class="v2-dict-badge v2-dict-badge-la"');
+    expect(html).toContain('class="dict-badge dict-badge-la"');
     expect(html).toContain('title="Lewis &amp; Short">L&amp;S</span>');
     expect(html).toContain('title="Gaffiot">GAF</span>');
   });
 
-  test("renderEntryResult emits v2-tool-outline class on outline details element", () => {
+  test("renderEntryResult emits tool-outline class on outline details element", () => {
     const entryResult = {
       entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
       outline: {
@@ -1062,8 +1058,8 @@ describe("dict_ssr", () => {
     };
 
     const standaloneHtml = renderEntryResult(entryResult);
-    expect(standaloneHtml).toContain('class="v2-tool-pane v2-tool-outline"');
-    expect(standaloneHtml).not.toContain("v2-dict-badge");
+    expect(standaloneHtml).toContain('class="tool-pane tool-outline"');
+    expect(standaloneHtml).not.toContain("dict-badge");
 
     const embeddedHtml = renderEntryResult(entryResult, 0, 1, 1, {
       dictKey: "L&S",
@@ -1073,23 +1069,23 @@ describe("dict_ssr", () => {
       isEmbedded: true,
     });
     expect(embeddedHtml).toContain(
-      '<span class="v2-dict-badge v2-dict-badge-la" title="Lewis &amp; Short">L&amp;S</span>'
+      '<span class="dict-badge dict-badge-la" title="Lewis &amp; Short">L&amp;S</span>'
     );
-    expect(embeddedHtml).toContain('class="v2-tool-pane v2-tool-outline"');
+    expect(embeddedHtml).toContain('class="tool-pane tool-outline"');
   });
 
-  test("renderDictPageHtml injects clamped --v2-dict-scale style tag when scale is provided", () => {
+  test("renderDictPageHtml injects clamped --dict-scale style tag when scale is provided", () => {
     const unscaledHtml = renderDictPageHtml({
       query: "test",
     });
-    expect(unscaledHtml).not.toContain("--v2-dict-scale");
+    expect(unscaledHtml).not.toContain("--dict-scale");
 
     const scaledHtml = renderDictPageHtml({
       query: "test",
       scale: 120,
     });
     expect(scaledHtml).toContain(
-      "<style>:root { --v2-dict-scale: 1.20; }</style>"
+      "<style>:root { --dict-scale: 1.20; }</style>"
     );
 
     // Clamping: max 140
@@ -1098,7 +1094,7 @@ describe("dict_ssr", () => {
       scale: 200,
     });
     expect(maxClamped).toContain(
-      "<style>:root { --v2-dict-scale: 1.40; }</style>"
+      "<style>:root { --dict-scale: 1.40; }</style>"
     );
 
     // Clamping: min 70
@@ -1107,7 +1103,7 @@ describe("dict_ssr", () => {
       scale: 40,
     });
     expect(minClamped).toContain(
-      "<style>:root { --v2-dict-scale: 0.70; }</style>"
+      "<style>:root { --dict-scale: 0.70; }</style>"
     );
   });
 
@@ -1238,7 +1234,7 @@ describe("dict_ssr", () => {
     describe("renderNoResultsHtml", () => {
       test("renders generic no results container and escapes query", () => {
         const html = renderNoResultsHtml('<script>alert("xss")</script>');
-        expect(html).toContain('class="v2-no-results"');
+        expect(html).toContain('class="no-results"');
         expect(html).toContain("No results found for");
         expect(html).not.toContain("<script>");
         expect(html).toContain(
@@ -1346,7 +1342,7 @@ describe("dict_ssr", () => {
           allQueriedKeys: ["GAF", "GRG", "L&S"],
         });
 
-        expect(html).toContain('class="v2-results-nav"');
+        expect(html).toContain('class="results-nav"');
         expect(html).toContain('aria-label="Jump to dictionary"');
         expect(html).toContain("2 results");
 
@@ -1359,7 +1355,7 @@ describe("dict_ssr", () => {
         expect(gafIndex).toBeGreaterThan(-1);
         expect(grgIndex).toBeLessThan(gafIndex);
         expect(lAndSIndex).toBeLessThan(gafIndex);
-        expect(html).toContain('class="v2-jump-pill v2-jump-pill-zero"');
+        expect(html).toContain('class="jump-pill jump-pill-zero"');
       });
 
       test("formats total results counter correctly", () => {
@@ -1425,15 +1421,15 @@ describe("dict_ssr", () => {
           entries,
         });
 
-        expect(html).toContain('<section class="v2-dict-card" id="dict-L-S">');
-        expect(html).toContain('class="v2-dict-acronym">L&amp;S</span>');
+        expect(html).toContain('<section class="dict-card" id="dict-L-S">');
+        expect(html).toContain('class="dict-acronym">L&amp;S</span>');
         expect(html).toContain(
-          'class="v2-dict-name v2-dict-title">Lewis &amp; Short</span>'
+          'class="dict-name dict-title">Lewis &amp; Short</span>'
         );
-        expect(html).toContain('class="v2-dict-count">(1)</span>');
-        expect(html).not.toContain('class="v2-entry-nav"');
+        expect(html).toContain('class="dict-count">(1)</span>');
+        expect(html).not.toContain('class="entry-nav"');
         expect(html).toContain('id="n100"');
-        expect(html).toContain('class="v2-dict-source-pane"');
+        expect(html).toContain('class="dict-source-pane"');
         expect(html).toContain("Perseus Digital Library");
       });
 
@@ -1474,11 +1470,11 @@ describe("dict_ssr", () => {
           entries,
         });
 
-        expect(html).toContain('class="v2-entry-nav"');
+        expect(html).toContain('class="entry-nav"');
         expect(html).toContain("Jump to");
         expect(html).toContain('href="#n1"');
         expect(html).toContain('href="#n2"');
-        expect(html).toContain('class="v2-dict-count">(2)</span>');
+        expect(html).toContain('class="dict-count">(2)</span>');
       });
 
       test("omits source attribution when key lacks attribution info", () => {
@@ -1503,7 +1499,7 @@ describe("dict_ssr", () => {
           entries,
         });
 
-        expect(html).not.toContain('class="v2-dict-source-pane"');
+        expect(html).not.toContain('class="dict-source-pane"');
       });
     });
   });

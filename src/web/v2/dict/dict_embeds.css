@@ -1,33 +1,33 @@
 /* Mateo (Univ. of Mannheim) Embed Pane */
-.v2-mateo-wrapper {
+.mateo-wrapper {
   display: inline;
 }
 
-.v2-mateo-embed-pane {
+.mateo-embed-pane {
   display: inline;
 }
 
-.v2-mateo-embed-pane summary::-webkit-details-marker {
+.mateo-embed-pane summary::-webkit-details-marker {
   display: none;
 }
 
-.v2-mateo-embed-pane[open] .v2-mateo-toggle-btn {
-  background-color: var(--v2-border);
-  border-color: var(--v2-border-strong);
+.mateo-embed-pane[open] .mateo-toggle-btn {
+  background-color: var(--border);
+  border-color: var(--border-strong);
 }
 
-.v2-mateo-frame-wrapper {
+.mateo-frame-wrapper {
   display: block;
-  margin: var(--v2-space-4) 0;
+  margin: var(--space-4) 0;
   width: 100%;
   max-width: 100%;
-  border-radius: var(--v2-radius-lg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--v2-border-strong);
+  border: 1px solid var(--border-strong);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
-.v2-mateo-frame {
+.mateo-frame {
   display: block;
   width: 100%;
   height: 520px;
@@ -37,92 +37,92 @@
 }
 
 /* Greek Fallback & Logeion Embed */
-.v2-greek-fallback {
-  margin: var(--v2-space-5) 0 var(--v2-space-7) 0;
+.greek-fallback {
+  margin: var(--space-5) 0 var(--space-7) 0;
   padding: 0;
 }
 
-.v2-greek-notice {
-  margin-bottom: var(--v2-space-4);
+.greek-notice {
+  margin-bottom: var(--space-4);
 }
 
-.v2-greek-title {
-  margin: 0 0 var(--v2-space-2) 0;
-  font-size: calc(1rem * var(--v2-dict-scale, 1));
+.greek-title {
+  margin: 0 0 var(--space-2) 0;
+  font-size: calc(1rem * var(--dict-scale, 1));
   font-weight: 500;
   line-height: 1.4;
-  color: var(--v2-text);
+  color: var(--text);
 }
 
-.v2-greek-desc {
-  margin: 0 0 var(--v2-space-4) 0;
-  font-size: calc(0.95rem * var(--v2-dict-scale, 1));
+.greek-desc {
+  margin: 0 0 var(--space-4) 0;
+  font-size: calc(0.95rem * var(--dict-scale, 1));
   line-height: 1.4;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
 }
 
-.v2-greek-desc strong.v2-greek-word {
-  color: var(--v2-text);
+.greek-desc strong.greek-word {
+  color: var(--text);
 }
 
-.v2-greek-link {
-  color: var(--v2-primary);
+.greek-link {
+  color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 2px;
   font-weight: 500;
 }
 
-.v2-greek-link:hover {
-  color: var(--v2-primary-hover);
+.greek-link:hover {
+  color: var(--primary-hover);
 }
 
-.v2-greek-controls {
-  margin-top: var(--v2-space-4);
+.greek-controls {
+  margin-top: var(--space-4);
 }
 
-.v2-greek-details {
+.greek-details {
   display: block;
 }
 
-.v2-greek-details summary::-webkit-details-marker {
+.greek-details summary::-webkit-details-marker {
   display: none;
 }
 
-.v2-greek-toggle-btn {
-  margin: 0 0 var(--v2-space-4) 0;
+.greek-toggle-btn {
+  margin: 0 0 var(--space-4) 0;
   cursor: pointer;
   user-select: none;
 }
 
-.v2-greek-details[open] .v2-greek-toggle-btn {
-  background-color: var(--v2-border);
-  border-color: var(--v2-border-strong);
+.greek-details[open] .greek-toggle-btn {
+  background-color: var(--border);
+  border-color: var(--border-strong);
 }
 
-.v2-greek-toggle-icon {
+.greek-toggle-icon {
   display: inline-block;
   font-size: 0.8em;
-  margin-right: var(--v2-space-2);
+  margin-right: var(--space-2);
   vertical-align: middle;
   transition: transform 0.15s ease-in-out;
 }
 
-.v2-greek-details[open] .v2-greek-toggle-icon {
+.greek-details[open] .greek-toggle-icon {
   transform: rotate(90deg);
 }
 
-.v2-greek-frame-wrapper {
+.greek-frame-wrapper {
   display: block;
-  margin: var(--v2-space-5) 0 var(--v2-space-5) 0;
+  margin: var(--space-5) 0 var(--space-5) 0;
   width: 100%;
   max-width: 100%;
-  border-radius: var(--v2-radius-lg);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--v2-border-strong);
+  border: 1px solid var(--border-strong);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
-.v2-greek-frame {
+.greek-frame {
   display: block;
   width: 100%;
   height: 70vh;
@@ -133,22 +133,22 @@
   color-scheme: light;
 }
 
-.v2-greek-auto-open-label {
+.greek-auto-open-label {
   display: inline-flex;
   align-items: center;
-  gap: var(--v2-space-4);
-  font-size: calc(0.85rem * var(--v2-dict-scale, 1));
-  color: var(--v2-text-muted);
+  gap: var(--space-4);
+  font-size: calc(0.85rem * var(--dict-scale, 1));
+  color: var(--text-muted);
   cursor: pointer;
   user-select: none;
-  margin-top: var(--v2-space-3);
+  margin-top: var(--space-3);
 }
 
-.v2-greek-auto-open-checkbox {
+.greek-auto-open-checkbox {
   cursor: pointer;
-  accent-color: var(--v2-primary);
+  accent-color: var(--primary);
 }
 
-.v2-greek-auto-open-text {
-  font-family: var(--v2-font-sans);
+.greek-auto-open-text {
+  font-family: var(--font-sans);
 }

@@ -47,14 +47,12 @@ export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
       const pageUrl = buildReaderPageUrl(work, p, { viewMode, query });
       return `
         <a href="${pageUrl}"
-           class="v2-reader-toc-item ${isCurrent ? "active" : ""}"
+           class="reader-toc-item ${isCurrent ? "active" : ""}"
            ${isCurrent ? 'aria-current="page"' : ""}>
-          <div class="v2-reader-toc-item-text">
-            <span class="v2-reader-toc-item-title">${he.escape(p.title)}</span>
+          <div class="reader-toc-item-text">
+            <span class="reader-toc-item-title">${he.escape(p.title)}</span>
           </div>
-          <span class="v2-reader-toc-item-id">§ ${he.escape(
-            String(p.id)
-          )}</span>
+          <span class="reader-toc-item-id">§ ${he.escape(String(p.id))}</span>
         </a>
       `;
     })
@@ -82,46 +80,46 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
   });
 
   return `      <!-- Contained Table of Contents (TOC) Drawer -->
-      <div id="v2-reader-toc-drawer"
-           class="v2-reader-toc-drawer"
+      <div id="reader-toc-drawer"
+           class="reader-toc-drawer"
            role="dialog"
            aria-modal="true"
            aria-label="Table of Contents"
            hidden>
-        <div class="v2-reader-toc-header">
-          <div class="v2-reader-toc-header-left">
+        <div class="reader-toc-header">
+          <div class="reader-toc-header-left">
             <button type="button"
-                    class="v2-reader-toc-back-btn"
-                    id="v2-reader-toc-back-btn"
+                    class="reader-toc-back-btn"
+                    id="reader-toc-back-btn"
                     aria-label="Back to reader">
               &larr; Back
             </button>
-            <span class="v2-reader-toc-title">Table of Contents</span>
+            <span class="reader-toc-title">Table of Contents</span>
           </div>
           <button type="button"
-                  class="v2-reader-toc-close-btn"
-                  id="v2-reader-toc-close-btn"
+                  class="reader-toc-close-btn"
+                  id="reader-toc-close-btn"
                   aria-label="Close table of contents">&times;</button>
         </div>
 
-        <div class="v2-reader-toc-banner">
-          <span class="v2-reader-toc-work-title">${he.escape(
+        <div class="reader-toc-banner">
+          <span class="reader-toc-work-title">${he.escape(
             work.author
           )} &middot; ${he.escape(work.title)}</span>
-          <span class="v2-reader-toc-scheme-label">${he.escape(
+          <span class="reader-toc-scheme-label">${he.escape(
             work.textParts.join(" · ")
           )}</span>
         </div>
 
-        <div class="v2-reader-toc-search-box">
+        <div class="reader-toc-search-box">
           <input type="text"
-                 id="v2-reader-toc-filter"
-                 class="v2-reader-toc-input"
+                 id="reader-toc-filter"
+                 class="reader-toc-input"
                  placeholder="Search chapters, summaries..."
                  aria-label="Search Table of Contents">
         </div>
 
-        <div class="v2-reader-toc-list" id="v2-reader-toc-list">
+        <div class="reader-toc-list" id="reader-toc-list">
           ${tocItemsHtml}
         </div>
       </div>`;

@@ -81,7 +81,7 @@ export async function fetchAndSwapPartial(
     }
     console.error("fetchAndSwapPartial failed:", err);
     const errorDiv = document.createElement("div");
-    errorDiv.className = "v2-no-results";
+    errorDiv.className = "no-results";
     const p = document.createElement("p");
     p.textContent = options.errorMessage ?? "Error loading results.";
     errorDiv.appendChild(p);

@@ -29,7 +29,7 @@ try {
         typeof settings.highlightStrength === "number"
       ) {
         document.documentElement.style.setProperty(
-          "--v2-highlight-scale",
+          "--highlight-scale",
           String(settings.highlightStrength / 50)
         );
       }

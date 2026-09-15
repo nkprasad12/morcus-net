@@ -23,7 +23,7 @@ import { getReaderWork } from "@/web/v2/testing/reader_data";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
-  getV2CriticalCss: () => "body{background-color:var(--v2-bg)}",
+  getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
 
@@ -37,7 +37,7 @@ describe("reader_ssr", () => {
 
     // Custom element container
     expect(html).toContain("<morcus-reader-view");
-    expect(html).toContain("v2-reader-view");
+    expect(html).toContain("reader-view");
 
     // Author and Work headers
     expect(html).toContain("Caesar");
@@ -45,7 +45,7 @@ describe("reader_ssr", () => {
     expect(html).toContain("Caput I");
 
     // Dictionary iframe panel in No-JS view
-    expect(html).toContain('id="v2-dict-frame"');
+    expect(html).toContain('id="dict-frame"');
     expect(html).toContain("/v2/dicts?embedded=1");
 
     // Contains Latin words as clean semantic text
@@ -53,8 +53,8 @@ describe("reader_ssr", () => {
     expect(html).toContain("Belgae");
 
     // Desktop splitter & mobile sheet handle
-    expect(html).toContain('class="v2-reader-splitter"');
-    expect(html).toContain('class="v2-reader-sheet-bar"');
+    expect(html).toContain('class="reader-splitter"');
+    expect(html).toContain('class="reader-sheet-bar"');
   });
 
   test("renderReaderContentHtml renders gutter markers with separate prefix and local spans for responsive short numbering", async () => {
@@ -65,19 +65,19 @@ describe("reader_ssr", () => {
 
     // Section 1.1.1
     expect(html).toContain('id="sec-1.1.1"');
-    expect(html).toContain('class="v2-reader-gutter"');
-    expect(html).toContain('class="v2-cite-prefix">1.1.</span>');
-    expect(html).toContain('class="v2-cite-local">1</span>');
+    expect(html).toContain('class="reader-gutter"');
+    expect(html).toContain('class="cite-prefix">1.1.</span>');
+    expect(html).toContain('class="cite-local">1</span>');
     expect(html).toContain('aria-label="Section 1.1.1"');
 
     // Section 1.1.2
     expect(html).toContain('id="sec-1.1.2"');
-    expect(html).toContain('class="v2-cite-prefix">1.1.</span>');
-    expect(html).toContain('class="v2-cite-local">2</span>');
+    expect(html).toContain('class="cite-prefix">1.1.</span>');
+    expect(html).toContain('class="cite-local">2</span>');
 
     // Section 1.1.3
     expect(html).toContain('id="sec-1.1.3"');
-    expect(html).toContain('class="v2-cite-local">3</span>');
+    expect(html).toContain('class="cite-local">3</span>');
   });
 
   test("renderReaderContentHtml with query points dictionary iframe to embedded query", async () => {
@@ -86,13 +86,13 @@ describe("reader_ssr", () => {
     });
 
     // Dictionary iframe points to embedded query with Latin filter and forced inflections (o=1)
-    expect(html).toContain('id="v2-dict-frame"');
+    expect(html).toContain('id="dict-frame"');
     expect(html).toContain(
       "/v2/dicts?q=divisa&amp;lang=La&amp;o=1&amp;embedded=1"
     );
 
     // Close button present in mobile sheet handle bar
-    expect(html).toContain("v2-reader-sheet-close");
+    expect(html).toContain("reader-sheet-close");
   });
 
   test("renderReaderContentHtml supports parallel translation view mode", async () => {
@@ -101,24 +101,24 @@ describe("reader_ssr", () => {
       pageId: "1",
       view: "single",
     });
-    expect(singleHtml).not.toContain("v2-section-parallel");
-    expect(singleHtml).not.toContain("v2-passage-english");
+    expect(singleHtml).not.toContain("section-parallel");
+    expect(singleHtml).not.toContain("passage-english");
     // Translated work renders the Single | Parallel view toggle
-    expect(singleHtml).toContain('id="v2-mode-single"');
-    expect(singleHtml).toContain('id="v2-mode-parallel"');
-    expect(singleHtml).toContain('class="v2-reader-view-toggle"');
+    expect(singleHtml).toContain('id="mode-single"');
+    expect(singleHtml).toContain('id="mode-parallel"');
+    expect(singleHtml).toContain('class="reader-view-toggle"');
 
     const parallelHtml = await renderReaderContentHtml({
       workId: "sallust/catalina1",
       pageId: "1",
       view: "parallel",
     });
-    expect(parallelHtml).toContain("v2-reader-view-parallel");
-    expect(parallelHtml).toContain("v2-section-parallel");
-    expect(parallelHtml).toContain("v2-passage-english");
+    expect(parallelHtml).toContain("reader-view-parallel");
+    expect(parallelHtml).toContain("section-parallel");
+    expect(parallelHtml).toContain("passage-english");
     expect(parallelHtml).toContain("John Selby Watson");
-    expect(parallelHtml).toContain('id="v2-mode-single"');
-    expect(parallelHtml).toContain('id="v2-mode-parallel"');
+    expect(parallelHtml).toContain('id="mode-single"');
+    expect(parallelHtml).toContain('id="mode-parallel"');
 
     // Untranslated work requested with view=parallel cleanly falls back to single
     const untranslatedParallelHtml = await renderReaderContentHtml({
@@ -126,12 +126,12 @@ describe("reader_ssr", () => {
       pageId: "1.1",
       view: "parallel",
     });
-    expect(untranslatedParallelHtml).not.toContain("v2-reader-view-parallel");
-    expect(untranslatedParallelHtml).not.toContain("v2-section-parallel");
+    expect(untranslatedParallelHtml).not.toContain("reader-view-parallel");
+    expect(untranslatedParallelHtml).not.toContain("section-parallel");
     expect(untranslatedParallelHtml).not.toContain(
-      'class="v2-reader-view-toggle"'
+      'class="reader-view-toggle"'
     );
-    expect(untranslatedParallelHtml).not.toContain('id="v2-mode-parallel"');
+    expect(untranslatedParallelHtml).not.toContain('id="mode-parallel"');
     expect(untranslatedParallelHtml).toContain('data-view="single"');
   });
 
@@ -139,13 +139,13 @@ describe("reader_ssr", () => {
     const html = await renderReaderContentHtml({ workId: "dbg" });
 
     // Table of Contents drawer
-    expect(html).toContain('id="v2-reader-toc-drawer"');
-    expect(html).toContain('class="v2-reader-toc-drawer"');
-    expect(html).toContain('id="v2-reader-toc-filter"');
-    expect(html).toContain('class="v2-reader-toc-item active"');
+    expect(html).toContain('id="reader-toc-drawer"');
+    expect(html).toContain('class="reader-toc-drawer"');
+    expect(html).toContain('id="reader-toc-filter"');
+    expect(html).toContain('class="reader-toc-item active"');
 
     // Bibliographical Dialog
-    expect(html).toContain('id="v2-reader-biblio-dialog"');
+    expect(html).toContain('id="reader-biblio-dialog"');
     expect(html).toContain("Holmes");
   });
 
@@ -153,41 +153,41 @@ describe("reader_ssr", () => {
     const html = await renderReaderContentHtml({ workId: "dbg" });
 
     // Primary row: essentials only
-    expect(html).toContain('class="v2-reader-sticky-bar"');
-    expect(html).toContain('class="v2-sticky-primary-row"');
-    expect(html).toContain('id="v2-pager-prev"');
-    expect(html).toContain('id="v2-pager-next"');
-    expect(html).toContain('class="v2-sticky-author"');
-    expect(html).toContain('class="v2-sticky-work-title"');
-    expect(html).toContain('class="v2-sticky-page-title"');
-    expect(html).toContain('class="v2-jump-glyph"');
-    expect(html).toContain('id="v2-sticky-expand-btn"');
+    expect(html).toContain('class="reader-sticky-bar"');
+    expect(html).toContain('class="sticky-primary-row"');
+    expect(html).toContain('id="pager-prev"');
+    expect(html).toContain('id="pager-next"');
+    expect(html).toContain('class="sticky-author"');
+    expect(html).toContain('class="sticky-work-title"');
+    expect(html).toContain('class="sticky-page-title"');
+    expect(html).toContain('class="jump-glyph"');
+    expect(html).toContain('id="sticky-expand-btn"');
     expect(html).toContain('aria-expanded="false"');
 
     // Main text panel header: Author and Work Name
-    expect(html).toContain('class="v2-reader-author-tag"');
-    expect(html).toContain('class="v2-reader-work-tag"');
+    expect(html).toContain('class="reader-author-tag"');
+    expect(html).toContain('class="reader-work-tag"');
 
     // Secondary row: expanded tools (hidden by default)
     expect(html).toContain(
-      'class="v2-sticky-expanded-row" id="v2-sticky-expanded-row" hidden'
+      'class="sticky-expanded-row" id="sticky-expanded-row" hidden'
     );
-    expect(html).toContain('id="v2-reader-toc-btn"');
+    expect(html).toContain('id="reader-toc-btn"');
     // Untranslated work (dbg) should omit the Single | Parallel view toggle
-    expect(html).not.toContain('id="v2-mode-single"');
-    expect(html).not.toContain('id="v2-mode-parallel"');
-    expect(html).not.toContain('class="v2-reader-view-toggle"');
-    expect(html).toContain('id="v2-reader-settings-btn"');
-    expect(html).toContain('id="v2-reader-info-btn"');
+    expect(html).not.toContain('id="mode-single"');
+    expect(html).not.toContain('id="mode-parallel"');
+    expect(html).not.toContain('class="reader-view-toggle"');
+    expect(html).toContain('id="reader-settings-btn"');
+    expect(html).toContain('id="reader-info-btn"');
 
     // Settings dialog
     expect(html).toContain("<morcus-reader-settings>");
-    expect(html).toContain('id="v2-reader-settings-dialog"');
-    expect(html).toContain('id="v2-reader-size-dec"');
-    expect(html).toContain('id="v2-reader-size-inc"');
-    expect(html).toContain('id="v2-toggle-macra"');
-    expect(html).toContain('id="v2-toggle-gutter"');
-    expect(html).toContain('id="v2-font-select"');
+    expect(html).toContain('id="reader-settings-dialog"');
+    expect(html).toContain('id="reader-size-dec"');
+    expect(html).toContain('id="reader-size-inc"');
+    expect(html).toContain('id="toggle-macra"');
+    expect(html).toContain('id="toggle-gutter"');
+    expect(html).toContain('id="font-select"');
   });
 
   test("renderReaderContentHtml renders multi-scheme works with arbitrary depth", async () => {
@@ -199,7 +199,7 @@ describe("reader_ssr", () => {
     expect(catullusHtml).toContain("Catullus");
     expect(catullusHtml).toContain("Carmen V");
     expect(catullusHtml).toContain('id="sec-5.1"');
-    expect(catullusHtml).toContain('class="v2-cite-prefix">5.</span>');
+    expect(catullusHtml).toContain('class="cite-prefix">5.</span>');
     expect(catullusHtml).toContain("Vivamus");
     expect(catullusHtml).toContain("Lesbia");
 
@@ -227,11 +227,11 @@ describe("reader_ssr", () => {
     expect(pageHtml).toContain(
       "<title>Gallia - Latin Reader - Morcus Latin Tools</title>"
     );
-    expect(pageHtml).toContain('<header class="v2-app-bar">');
+    expect(pageHtml).toContain('<header class="app-bar">');
     expect(pageHtml).toContain('href="/v2/library"');
-    expect(pageHtml).toContain('class="v2-nav-link active"');
+    expect(pageHtml).toContain('class="nav-link active"');
     expect(pageHtml).toContain('aria-current="page"');
-    expect(pageHtml).toContain("v2-body-reader");
+    expect(pageHtml).toContain("body-reader");
     expect(pageHtml).toContain("morcus-reader-view");
   });
 });
@@ -331,12 +331,12 @@ describe("decomposed_reader_renderers", () => {
   describe("renderBiblioDialog", () => {
     test("renders scholarly bibliographical dialog with metadata", () => {
       const html = renderBiblioDialog(dbgWork);
-      expect(html).toContain('id="v2-reader-biblio-dialog"');
+      expect(html).toContain('id="reader-biblio-dialog"');
       expect(html).toContain("De bello Gallico");
       expect(html).toContain("Julius Caesar");
       expect(html).toContain('["book", "chapter", "section"]');
       expect(html).toContain("T. Rice Holmes");
-      expect(html).toContain('id="v2-reader-biblio-ok-btn"');
+      expect(html).toContain('id="reader-biblio-ok-btn"');
       expect(html).toContain("data-dialog-close");
     });
 
@@ -367,17 +367,17 @@ describe("decomposed_reader_renderers", () => {
     test("renders settings modal with custom element container and steppers", () => {
       const html = renderReaderSettingsDialog();
       expect(html).toContain("<morcus-reader-settings>");
-      expect(html).toContain('id="v2-reader-settings-dialog"');
-      expect(html).toContain('id="v2-reader-size-dec"');
-      expect(html).toContain('id="v2-reader-size-inc"');
-      expect(html).toContain('id="v2-dict-size-dec"');
-      expect(html).toContain('id="v2-dict-size-inc"');
-      expect(html).toContain('id="v2-toggle-macra"');
-      expect(html).toContain('id="v2-toggle-gutter"');
-      expect(html).toContain('id="v2-font-select"');
-      expect(html).toContain('id="v2-line-height-select"');
-      expect(html).toContain('id="v2-reader-settings-reset-btn"');
-      expect(html).toContain('id="v2-reader-settings-done-btn"');
+      expect(html).toContain('id="reader-settings-dialog"');
+      expect(html).toContain('id="reader-size-dec"');
+      expect(html).toContain('id="reader-size-inc"');
+      expect(html).toContain('id="dict-size-dec"');
+      expect(html).toContain('id="dict-size-inc"');
+      expect(html).toContain('id="toggle-macra"');
+      expect(html).toContain('id="toggle-gutter"');
+      expect(html).toContain('id="font-select"');
+      expect(html).toContain('id="line-height-select"');
+      expect(html).toContain('id="reader-settings-reset-btn"');
+      expect(html).toContain('id="reader-settings-done-btn"');
     });
   });
 
@@ -388,18 +388,18 @@ describe("decomposed_reader_renderers", () => {
         activePageIndex: 0,
       });
 
-      expect(html).toContain('id="v2-reader-toc-drawer"');
+      expect(html).toContain('id="reader-toc-drawer"');
       expect(html).toContain('role="dialog"');
       expect(html).toContain('aria-modal="true"');
       expect(html).toContain("hidden");
-      expect(html).toContain('id="v2-reader-toc-back-btn"');
-      expect(html).toContain('id="v2-reader-toc-close-btn"');
-      expect(html).toContain('id="v2-reader-toc-filter"');
-      expect(html).toContain("v2-reader-toc-work-title");
+      expect(html).toContain('id="reader-toc-back-btn"');
+      expect(html).toContain('id="reader-toc-close-btn"');
+      expect(html).toContain('id="reader-toc-filter"');
+      expect(html).toContain("reader-toc-work-title");
       expect(html).toContain("book · chapter · section");
 
       // First chapter active
-      expect(html).toContain('class="v2-reader-toc-item active"');
+      expect(html).toContain('class="reader-toc-item active"');
       expect(html).toContain('aria-current="page"');
       expect(html).toContain("Liber I, Caput I");
       expect(html).toContain("§ 1.1");
@@ -414,11 +414,11 @@ describe("decomposed_reader_renderers", () => {
 
       // Page 0 should not be active
       expect(itemsHtml).toContain(
-        'href="/v2/reader/caesar/de_bello_gallico/1.1"\n           class="v2-reader-toc-item "'
+        'href="/v2/reader/caesar/de_bello_gallico/1.1"\n           class="reader-toc-item "'
       );
       // Page 1 should be active
       expect(itemsHtml).toContain(
-        'href="/v2/reader/caesar/de_bello_gallico/1.2"\n           class="v2-reader-toc-item active"\n           aria-current="page"'
+        'href="/v2/reader/caesar/de_bello_gallico/1.2"\n           class="reader-toc-item active"\n           aria-current="page"'
       );
     });
   });
@@ -428,20 +428,18 @@ describe("decomposed_reader_renderers", () => {
       const ctx = await resolveReaderContext({ workId: "dbg", pageId: "1.1" });
       const html = renderReaderStickyBar(ctx);
 
-      expect(html).toContain('class="v2-reader-sticky-bar"');
-      expect(html).toContain('id="v2-pager-prev"');
-      expect(html).toContain(
-        'class="v2-reader-btn v2-reader-nav-arrow disabled"'
-      );
+      expect(html).toContain('class="reader-sticky-bar"');
+      expect(html).toContain('id="pager-prev"');
+      expect(html).toContain('class="reader-btn reader-nav-arrow disabled"');
       expect(html).toContain('aria-disabled="true" tabindex="-1"');
-      expect(html).toContain('id="v2-pager-next"');
+      expect(html).toContain('id="pager-next"');
       expect(html).not.toContain(
-        'id="v2-pager-next"\n               aria-disabled="true"'
+        'id="pager-next"\n               aria-disabled="true"'
       );
-      expect(html).toContain('id="v2-reader-jump-form"');
+      expect(html).toContain('id="reader-jump-form"');
       expect(html).toContain('value="1.1"');
-      expect(html).toContain('id="v2-sticky-expand-btn"');
-      expect(html).toContain('id="v2-reader-toc-btn"');
+      expect(html).toContain('id="sticky-expand-btn"');
+      expect(html).toContain('id="reader-toc-btn"');
     });
 
     test("disables next button on last chapter", async () => {
@@ -453,23 +451,23 @@ describe("decomposed_reader_renderers", () => {
       const ctx = await resolveReaderContext({ workId: "dbg", pageId });
       const html = renderReaderStickyBar(ctx);
 
-      expect(html).toContain('id="v2-pager-next"');
+      expect(html).toContain('id="pager-next"');
       expect(html).toContain('aria-disabled="true" tabindex="-1"');
     });
 
     test("renders view toggle for translated work and omits it for untranslated work", async () => {
       const untranslatedCtx = await resolveReaderContext({ workId: "dbg" });
       const untranslatedHtml = renderReaderStickyBar(untranslatedCtx);
-      expect(untranslatedHtml).not.toContain("v2-reader-view-toggle");
+      expect(untranslatedHtml).not.toContain("reader-view-toggle");
 
       const translatedCtx = await resolveReaderContext({
         workId: "sallust/catalina1",
         pageId: "1",
       });
       const translatedHtml = renderReaderStickyBar(translatedCtx);
-      expect(translatedHtml).toContain("v2-reader-view-toggle");
-      expect(translatedHtml).toContain('id="v2-mode-single"');
-      expect(translatedHtml).toContain('id="v2-mode-parallel"');
+      expect(translatedHtml).toContain("reader-view-toggle");
+      expect(translatedHtml).toContain('id="mode-single"');
+      expect(translatedHtml).toContain('id="mode-parallel"');
     });
   });
 
@@ -478,13 +476,13 @@ describe("decomposed_reader_renderers", () => {
       const ctx = await resolveReaderContext({ workId: "dbg", pageId: "1.1" });
       const html = renderReaderTextPanel(ctx);
 
-      expect(html).toContain('class="v2-reader-text-panel"');
+      expect(html).toContain('class="reader-text-panel"');
       expect(html).toContain("Julius Caesar");
       expect(html).toContain("De bello Gallico");
       expect(html).toContain("Liber I, Caput I");
-      expect(html).toContain('id="v2-reader-passage"');
+      expect(html).toContain('id="reader-passage"');
       expect(html).toContain("Gallia est omnis divisa");
-      expect(html).toContain("v2-reader-continue-btn");
+      expect(html).toContain("reader-continue-btn");
       expect(html).toContain('href="/v2/library"');
     });
   });
@@ -494,10 +492,10 @@ describe("decomposed_reader_renderers", () => {
       const ctx = await resolveReaderContext({ workId: "dbg" });
       const html = renderReaderDictPanel(ctx);
 
-      expect(html).toContain('class="v2-reader-splitter"');
-      expect(html).toContain('id="v2-reader-dict"');
+      expect(html).toContain('class="reader-splitter"');
+      expect(html).toContain('id="reader-dict"');
       expect(html).toContain("Tap any word to view definitions");
-      expect(html).not.toContain("v2-reader-sheet-close");
+      expect(html).not.toContain("reader-sheet-close");
       expect(html).toContain('src="/v2/dicts?embedded=1"');
     });
 
@@ -509,7 +507,7 @@ describe("decomposed_reader_renderers", () => {
       const html = renderReaderDictPanel(ctx);
 
       expect(html).toContain("Definitions for <strong>omnis</strong>");
-      expect(html).toContain('class="v2-reader-sheet-close"');
+      expect(html).toContain('class="reader-sheet-close"');
       expect(html).toContain(
         'src="/v2/dicts?q=omnis&amp;lang=La&amp;o=1&amp;embedded=1"'
       );
@@ -527,14 +525,14 @@ describe("decomposed_reader_renderers", () => {
       expect(ctx.nextPage).not.toBeNull();
       expect(ctx.viewMode).toBe("single");
       expect(ctx.hasParallel).toBe(false);
-      expect(ctx.layoutStateClass).toBe("v2-reader-layout-empty");
+      expect(ctx.layoutStateClass).toBe("reader-layout-empty");
       expect(ctx.dictIframeSrc).toBe("/v2/dicts?embedded=1");
     });
 
     test("resolves layout state and dictionary iframe src when query is provided", async () => {
       const ctx = await resolveReaderContext({ workId: "dbg", query: "arma" });
       expect(ctx.query).toBe("arma");
-      expect(ctx.layoutStateClass).toBe("v2-reader-layout-active");
+      expect(ctx.layoutStateClass).toBe("reader-layout-active");
       expect(ctx.dictIframeSrc).toBe("/v2/dicts?q=arma&lang=La&o=1&embedded=1");
     });
   });

@@ -4,50 +4,50 @@
    1. Settings Trigger Buttons & Badges
    ========================================================================== */
 
-.v2-settings-btn {
+.settings-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 42px;
   width: 42px;
-  padding: var(--v2-space-4);
-  background-color: var(--v2-input-bg);
-  border: 1px solid var(--v2-input-border, var(--v2-border));
-  box-shadow: var(--v2-input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
-  border-radius: var(--v2-radius-md);
-  color: var(--v2-text-muted);
+  padding: var(--space-4);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border, var(--border));
+  box-shadow: var(--input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
   cursor: pointer;
   user-select: none;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
     border-color 0.15s ease-in-out;
 }
 
-.v2-settings-btn:hover {
-  color: var(--v2-primary);
-  background-color: var(--v2-tag-bg);
-  border-color: var(--v2-border-strong);
+.settings-btn:hover {
+  color: var(--primary);
+  background-color: var(--tag-bg);
+  border-color: var(--border-strong);
 }
 
-.v2-settings-btn:focus-visible {
-  outline: 2px solid var(--v2-primary);
+.settings-btn:focus-visible {
+  outline: 2px solid var(--primary);
   outline-offset: 1px;
 }
 
-.v2-settings-btn[aria-expanded="true"] {
-  color: var(--v2-primary);
-  border-color: var(--v2-primary);
-  background-color: var(--v2-tag-bg);
+.settings-btn[aria-expanded="true"] {
+  color: var(--primary);
+  border-color: var(--primary);
+  background-color: var(--tag-bg);
 }
 
-.v2-settings-btn svg {
+.settings-btn svg {
   width: 20px;
   height: 20px;
   fill: currentColor;
   display: block;
 }
 
-.v2-settings-glyph {
-  font-family: var(--v2-font-serif);
+.settings-glyph {
+  font-family: var(--font-serif);
   font-size: 0.95rem;
   line-height: 1;
 }
@@ -60,224 +60,224 @@ morcus-reader-settings {
   display: contents;
 }
 
-.v2-reader-settings-dialog {
+.reader-settings-dialog {
   max-width: 440px;
 }
 
-.v2-settings-popover {
+.settings-popover {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   width: 280px;
   max-width: calc(100vw - 32px);
-  background: var(--v2-card-bg);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
-  padding: var(--v2-space-5);
-  z-index: var(--v2-z-dropdown);
+  padding: var(--space-5);
+  z-index: var(--z-dropdown);
   box-sizing: border-box;
 }
 
-.v2-settings-card {
-  padding: var(--v2-space-7) var(--v2-space-7) var(--v2-space-6);
+.settings-card {
+  padding: var(--space-7) var(--space-7) var(--space-6);
 }
 
-.v2-settings-body {
+.settings-body {
   display: flex;
   flex-direction: column;
-  gap: var(--v2-space-6);
-  padding: var(--v2-space-6) 0;
+  gap: var(--space-6);
+  padding: var(--space-6) 0;
 }
 
-.v2-settings-group {
+.settings-group {
   display: flex;
   flex-direction: column;
-  gap: var(--v2-space-4);
+  gap: var(--space-4);
 }
 
-.v2-settings-group-title {
+.settings-group-title {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 700;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   margin: 0;
-  padding-bottom: var(--v2-space-2);
-  border-bottom: 1px solid var(--v2-border);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
 }
 
-.v2-settings-section-title {
+.settings-section-title {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--v2-text);
-  margin-bottom: var(--v2-space-4);
+  color: var(--text);
+  margin-bottom: var(--space-4);
 }
 
-.v2-settings-header {
+.settings-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--v2-space-4);
+  margin-bottom: var(--space-4);
 }
 
-.v2-settings-title {
+.settings-title {
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--v2-text);
+  color: var(--text);
 }
 
-.v2-settings-value {
+.settings-value {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--v2-primary);
+  color: var(--primary);
   font-variant-numeric: tabular-nums;
 }
 
-.v2-settings-row {
+.settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--v2-space-5);
+  gap: var(--space-5);
 }
 
-.v2-settings-control-row {
-  margin-bottom: var(--v2-space-5);
+.settings-control-row {
+  margin-bottom: var(--space-5);
 }
 
-.v2-settings-divider {
+.settings-divider {
   height: 1px;
-  background: var(--v2-border);
-  margin: var(--v2-space-5) 0 var(--v2-space-5);
+  background: var(--border);
+  margin: var(--space-5) 0 var(--space-5);
 }
 
 /* ==========================================================================
    3. Settings Form Controls & Steppers
    ========================================================================== */
 
-.v2-settings-label {
+.settings-label {
   font-size: 0.85rem;
-  color: var(--v2-text);
+  color: var(--text);
   user-select: none;
 }
 
-.v2-settings-caption {
-  margin: var(--v2-space-2) 0 0 var(--v2-space-7);
+.settings-caption {
+  margin: var(--space-2) 0 0 var(--space-7);
   font-size: 0.72rem;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   line-height: 1.35;
 }
 
-.v2-stepper {
+.stepper {
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-md);
-  background: var(--v2-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
   overflow: hidden;
 }
 
-.v2-stepper-btn {
-  padding: var(--v2-space-2) var(--v2-space-4);
+.stepper-btn {
+  padding: var(--space-2) var(--space-4);
   font-size: 0.8125rem;
   font-weight: 600;
   background: none;
   border: none;
-  color: var(--v2-text);
+  color: var(--text);
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
-.v2-stepper-btn:hover {
-  background: var(--v2-card-bg);
-  color: var(--v2-primary);
+.stepper-btn:hover {
+  background: var(--card-bg);
+  color: var(--primary);
 }
 
-.v2-stepper-val {
-  font-family: var(--v2-font-mono);
+.stepper-val {
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--v2-text-muted);
+  color: var(--text-muted);
   min-width: 3.2rem;
   text-align: center;
-  padding: 0 var(--v2-space-2);
+  padding: 0 var(--space-2);
 }
 
-.v2-settings-slider {
+.settings-slider {
   width: 100%;
-  accent-color: var(--v2-primary);
+  accent-color: var(--primary);
   cursor: pointer;
   margin: 0;
 }
 
-.v2-settings-preview {
+.settings-preview {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--v2-space-4);
-  background-color: var(--v2-tag-bg);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-sm);
+  padding: var(--space-4);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 0.78rem;
 }
 
-.v2-settings-toggle-row {
+.settings-toggle-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--v2-space-5);
+  gap: var(--space-5);
   cursor: pointer;
-  padding: var(--v2-space-2) 0;
+  padding: var(--space-2) 0;
 }
 
-.v2-toggle-checkbox {
+.toggle-checkbox {
   width: 1.15rem;
   height: 1.15rem;
   cursor: pointer;
-  accent-color: var(--v2-primary);
+  accent-color: var(--primary);
 }
 
-.v2-dict-checkbox,
-.v2-inflected-checkbox {
-  accent-color: var(--v2-primary);
+.dict-checkbox,
+.inflected-checkbox {
+  accent-color: var(--primary);
   cursor: pointer;
   margin: 0;
   width: 14px;
   height: 14px;
 }
 
-.v2-settings-select {
-  padding: var(--v2-space-2) var(--v2-space-4);
+.settings-select {
+  padding: var(--space-2) var(--space-4);
   font-size: 0.8125rem;
-  background: var(--v2-bg);
-  border: 1px solid var(--v2-border);
-  border-radius: var(--v2-radius-md);
-  color: var(--v2-text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
 }
 
 /* ==========================================================================
    4. Settings Actions & Footers
    ========================================================================== */
 
-.v2-settings-actions {
+.settings-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--v2-space-5);
-  margin-top: var(--v2-space-4);
+  gap: var(--space-5);
+  margin-top: var(--space-4);
 }
 
-.v2-settings-noscript-actions {
-  margin-top: var(--v2-space-5);
-  padding-top: var(--v2-space-4);
-  border-top: 1px solid var(--v2-border);
+.settings-noscript-actions {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
 }
 
-.v2-settings-apply-btn {
+.settings-apply-btn {
   font-size: 0.78rem;
-  padding: var(--v2-space-2) var(--v2-space-4);
-  border-radius: var(--v2-radius-sm);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }

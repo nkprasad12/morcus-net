@@ -2,7 +2,7 @@ import { copyText, showToast } from "@/web/v2/core/index.client";
 
 const COPIED_CLASS = "is-copied";
 const COPIED_DURATION_MS = 1400;
-const HIGHLIGHT_CLASS = "v2-target-active";
+const HIGHLIGHT_CLASS = "target-active";
 
 /**
  * Click-to-copy behaviour for dictionary permalinks.
@@ -19,16 +19,14 @@ export function handleDictPermalinkClick(
   event: MouseEvent,
   target: Element
 ): boolean {
-  const pill = target.closest<HTMLAnchorElement>("a.v2-copy-pill");
+  const pill = target.closest<HTMLAnchorElement>("a.copy-pill");
   if (pill) {
     event.preventDefault();
     void copyOrNavigate(pill.href, "Copied link to this article", pill);
     return true;
   }
 
-  const sectionAnchor = target.closest<HTMLAnchorElement>(
-    "a.v2-section-anchor"
-  );
+  const sectionAnchor = target.closest<HTMLAnchorElement>("a.section-anchor");
   if (sectionAnchor) {
     const url = sectionPermalink(sectionAnchor);
     if (url === undefined) {
@@ -54,7 +52,7 @@ function sectionPermalink(anchor: HTMLAnchorElement): string | undefined {
   }
   // Recovered from the DOM rather than by splitting the sense id, because sense
   // id conventions differ per lexicon and the article already carries its id.
-  const articleId = anchor.closest<HTMLElement>(".v2-entry")?.id;
+  const articleId = anchor.closest<HTMLElement>(".entry")?.id;
   if (!articleId) {
     return undefined;
   }

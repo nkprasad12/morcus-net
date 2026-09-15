@@ -79,8 +79,8 @@ export function renderEntryResult(
   // has Outline / Inflections panes beside it.
   const headwordHtml = headword
     ? `
-      <span class="v2-entry-headword">
-        <span class="v2-entry-headword-text">${he.escape(headword)}</span>
+      <span class="entry-headword">
+        <span class="entry-headword-text">${he.escape(headword)}</span>
       </span>
     `
     : "";
@@ -90,16 +90,16 @@ export function renderEntryResult(
   const copyPillHtml = headword
     ? `
       <a href="/v2/dicts/id/${encodeURIComponent(entryAnchorId)}"
-         class="v2-tab-pill v2-copy-pill"
+         class="tab-pill copy-pill"
          title="Copy link to this article">
-        <span class="v2-copy-pill-icon" aria-hidden="true">${renderIconSvg(
+        <span class="copy-pill-icon" aria-hidden="true">${renderIconSvg(
           "link",
-          { className: "v2-copy-pill-glyph v2-copy-pill-link" }
+          { className: "copy-pill-glyph copy-pill-link" }
         )}${renderIconSvg("check", {
-        className: "v2-copy-pill-glyph v2-copy-pill-check",
+        className: "copy-pill-glyph copy-pill-check",
       })}</span>
-        <span class="v2-copy-pill-long">Copy link</span>
-        <span class="v2-copy-pill-short">Link</span>
+        <span class="copy-pill-long">Copy link</span>
+        <span class="copy-pill-short">Link</span>
       </a>
     `
     : "";
@@ -114,24 +114,24 @@ export function renderEntryResult(
               ? ` style="margin-left: ${indentLevel * 0.75}rem;"`
               : "";
           const ordinalHtml = sense.ordinal
-            ? `<strong class="v2-toc-ordinal">${he.escape(
+            ? `<strong class="toc-ordinal">${he.escape(
                 sense.ordinal
               )}</strong> `
             : "";
           const textHtml = he.escape(sense.text.trim());
           return `<li${indentStyle}><a href="#${he.escape(
             sense.sectionId
-          )}" class="v2-toc-link">${ordinalHtml}${textHtml}</a></li>`;
+          )}" class="toc-link">${ordinalHtml}${textHtml}</a></li>`;
         })
         .join("")
     : "";
 
   const outlinePanelHtml = outlineSenses
     ? `
-      <details class="v2-tool-pane v2-tool-outline" name="${groupName}">
-        <summary class="v2-tab-pill">Outline</summary>
-        <div class="v2-tool-body">
-          <ul class="v2-toc-list">
+      <details class="tool-pane tool-outline" name="${groupName}">
+        <summary class="tab-pill">Outline</summary>
+        <div class="tool-body">
+          <ul class="toc-list">
             ${outlineItems}
           </ul>
         </div>
@@ -141,9 +141,9 @@ export function renderEntryResult(
 
   const inflectionsPanelHtml = inflections
     ? `
-      <details class="v2-tool-pane" name="${groupName}">
-        <summary class="v2-tab-pill">Inflections</summary>
-        <div class="v2-tool-body v2-inflections-body">${renderInflectionTable(
+      <details class="tool-pane" name="${groupName}">
+        <summary class="tab-pill">Inflections</summary>
+        <div class="tool-body inflections-body">${renderInflectionTable(
           dedupeInflections(inflections)
         )}</div>
       </details>
@@ -156,7 +156,7 @@ export function renderEntryResult(
   const dictBadgeHtml =
     options?.isEmbedded && options.dictAcronym
       ? `
-        <span class="v2-dict-badge v2-dict-badge-${safeLang}" title="${he.escape(
+        <span class="dict-badge dict-badge-${safeLang}" title="${he.escape(
           options.dictName || options.dictAcronym
         )}">${he.escape(options.dictAcronym)}</span>
       `
@@ -174,9 +174,9 @@ export function renderEntryResult(
   );
   const topBarHtml = hasHeader
     ? `
-      <header class="v2-entry-header has-tools">
-        <div class="v2-entry-tools">
-          <div class="v2-segmented-bar${
+      <header class="entry-header has-tools">
+        <div class="entry-tools">
+          <div class="segmented-bar${
             options?.isEmbedded && options.dictAcronym ? " has-badge" : ""
           }">
             ${dictBadgeHtml}
@@ -197,11 +197,9 @@ export function renderEntryResult(
   });
 
   return `
-    <article class="v2-entry ${
-      hasTools ? "has-tools" : ""
-    }" id="${entryAnchorId}">
+    <article class="entry ${hasTools ? "has-tools" : ""}" id="${entryAnchorId}">
       ${topBarHtml}${subsectionNoteHtml}
-      <div class="v2-entry-content" data-tokenize-target="true">
+      <div class="entry-content" data-tokenize-target="true">
         ${entryHtml}
       </div>
     </article>

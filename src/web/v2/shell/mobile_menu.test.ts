@@ -19,15 +19,13 @@ describe("setupMobileMenu", () => {
 
   test("closes open mobile menu when pointerdown is outside", () => {
     document.body.innerHTML = `
-      <details class="v2-mobile-menu" open>
+      <details class="mobile-menu" open>
         <summary>Menu</summary>
         <nav><a href="/v2/dicts">Dict</a></nav>
       </details>
       <div id="outside">Outside</div>
     `;
-    const menu = document.querySelector(
-      ".v2-mobile-menu"
-    ) as HTMLDetailsElement;
+    const menu = document.querySelector(".mobile-menu") as HTMLDetailsElement;
     const outside = document.getElementById("outside") as HTMLElement;
 
     cleanup = setupMobileMenu(document);
@@ -39,14 +37,12 @@ describe("setupMobileMenu", () => {
 
   test("leaves open mobile menu open when pointerdown is inside", () => {
     document.body.innerHTML = `
-      <details class="v2-mobile-menu" open>
+      <details class="mobile-menu" open>
         <summary>Menu</summary>
         <nav><a id="inside-link" href="/v2/dicts">Dict</a></nav>
       </details>
     `;
-    const menu = document.querySelector(
-      ".v2-mobile-menu"
-    ) as HTMLDetailsElement;
+    const menu = document.querySelector(".mobile-menu") as HTMLDetailsElement;
     const inside = document.getElementById("inside-link") as HTMLElement;
 
     cleanup = setupMobileMenu(document);
@@ -58,14 +54,12 @@ describe("setupMobileMenu", () => {
 
   test("does nothing if mobile menu is already closed", () => {
     document.body.innerHTML = `
-      <details class="v2-mobile-menu">
+      <details class="mobile-menu">
         <summary>Menu</summary>
       </details>
       <div id="outside">Outside</div>
     `;
-    const menu = document.querySelector(
-      ".v2-mobile-menu"
-    ) as HTMLDetailsElement;
+    const menu = document.querySelector(".mobile-menu") as HTMLDetailsElement;
     const outside = document.getElementById("outside") as HTMLElement;
 
     cleanup = setupMobileMenu(document);
@@ -85,14 +79,12 @@ describe("setupMobileMenu", () => {
 
   test("cleanup removes pointerdown listener", () => {
     document.body.innerHTML = `
-      <details class="v2-mobile-menu" open>
+      <details class="mobile-menu" open>
         <summary>Menu</summary>
       </details>
       <div id="outside">Outside</div>
     `;
-    const menu = document.querySelector(
-      ".v2-mobile-menu"
-    ) as HTMLDetailsElement;
+    const menu = document.querySelector(".mobile-menu") as HTMLDetailsElement;
     const outside = document.getElementById("outside") as HTMLElement;
 
     cleanup = setupMobileMenu(document);

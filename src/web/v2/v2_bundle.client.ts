@@ -8,4 +8,4 @@ import "@/web/v2/shell/mobile_menu.client";
 import "@/web/v2/dict/abbr_popover.client";
 
 // Mark document as JS-enhanced to disable static No-JS CSS fallbacks
-document.documentElement.classList.add("v2-has-js");
+document.documentElement.classList.add("has-js");

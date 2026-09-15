@@ -127,8 +127,8 @@ export async function resolveReaderContext(
     : `/v2/dicts?embedded=1`;
 
   const layoutStateClass = query
-    ? "v2-reader-layout-active"
-    : "v2-reader-layout-empty";
+    ? "reader-layout-active"
+    : "reader-layout-empty";
 
   return {
     work,
@@ -169,25 +169,23 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
   const nextPageUrl = buildReaderPageUrl(work, nextPage, { viewMode, query });
 
   return `      <!-- Sticky Quick Navigation Bar (Essentials Default with Expandable Tools) -->
-      <header class="v2-reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
+      <header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
         
         <!-- Primary Row: Essentials Only (Left arrow, Name of work, Section Jump, Right arrow, Expand toggle) -->
-        <div class="v2-sticky-primary-row">
+        <div class="sticky-primary-row">
           <a href="${prevPageUrl}"
-             class="v2-reader-btn v2-reader-nav-arrow ${
-               !prevPage ? "disabled" : ""
-             }"
-             id="v2-pager-prev"
+             class="reader-btn reader-nav-arrow ${!prevPage ? "disabled" : ""}"
+             id="pager-prev"
              ${!prevPage ? 'aria-disabled="true" tabindex="-1"' : ""}
              aria-label="Previous chapter"
              title="Previous ([)">
-            <span class="v2-pager-arrow" aria-hidden="true">&larr;</span>
+            <span class="pager-arrow" aria-hidden="true">&larr;</span>
           </a>
 
           <!-- Center: Work/Chapter Title + Section Symbol (§) + Pre-populated Jump Input -->
           <form action="/v2/reader/${work.urlAuthor}/${
     work.urlName
-  }" method="GET" class="v2-reader-sticky-form" id="v2-reader-jump-form">
+  }" method="GET" class="reader-sticky-form" id="reader-jump-form">
             <input type="hidden" name="curr_page" value="${pageDotId}">
             ${
               viewMode === "parallel"
@@ -195,74 +193,74 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
                 : ""
             }
             
-            <div class="v2-sticky-title-wrapper" title="${he.escape(
+            <div class="sticky-title-wrapper" title="${he.escape(
               work.author
             )}, ${he.escape(work.title)}, ${he.escape(activePage.title)}">
-              <span class="v2-sticky-author">${he.escape(work.author)}</span>
-              <span class="v2-sticky-title-sep">,</span>
-              <span class="v2-sticky-work-title">${he.escape(work.title)}</span>
-              <span class="v2-sticky-title-sep v2-sticky-work-sep">,</span>
-              <span class="v2-sticky-page-title">${he.escape(
+              <span class="sticky-author">${he.escape(work.author)}</span>
+              <span class="sticky-title-sep">,</span>
+              <span class="sticky-work-title">${he.escape(work.title)}</span>
+              <span class="sticky-title-sep sticky-work-sep">,</span>
+              <span class="sticky-page-title">${he.escape(
                 activePage.title
               )}</span>
             </div>
 
-            <div class="v2-sticky-jump-box">
-              <label for="v2-jump-input" class="v2-jump-glyph" title="Citation section (type and press Enter to jump)">§</label>
+            <div class="sticky-jump-box">
+              <label for="jump-input" class="jump-glyph" title="Citation section (type and press Enter to jump)">§</label>
               <input type="text"
-                     id="v2-jump-input"
+                     id="jump-input"
                      name="jump"
                      value="${pageDotId}"
-                     class="v2-jump-input v2-sticky-jump-input"
+                     class="jump-input sticky-jump-input"
                      title="Current citation: § ${pageDotId}. Type new coordinate and press Enter to jump."
                      autocomplete="off"
                      onfocus="this.select()">
-              <button type="submit" class="v2-jump-submit v2-sr-only-focusable" aria-label="Go to section">Go</button>
+              <button type="submit" class="jump-submit sr-only-focusable" aria-label="Go to section">Go</button>
             </div>
           </form>
 
           <!-- Right Controls: Next Arrow + Expand Button -->
-          <div class="v2-sticky-primary-right">
+          <div class="sticky-primary-right">
             <a href="${nextPageUrl}"
-               class="v2-reader-btn v2-reader-nav-arrow ${
+               class="reader-btn reader-nav-arrow ${
                  !nextPage ? "disabled" : ""
                }"
-               id="v2-pager-next"
+               id="pager-next"
                ${!nextPage ? 'aria-disabled="true" tabindex="-1"' : ""}
                aria-label="Next chapter"
                title="Next (])">
-              <span class="v2-pager-arrow" aria-hidden="true">&rarr;</span>
+              <span class="pager-arrow" aria-hidden="true">&rarr;</span>
             </a>
 
             <!-- Expand / More Button -->
             <button type="button"
-                    class="v2-reader-btn v2-sticky-expand-btn"
-                    id="v2-sticky-expand-btn"
+                    class="reader-btn sticky-expand-btn"
+                    id="sticky-expand-btn"
                     aria-expanded="false"
-                    aria-controls="v2-sticky-expanded-row"
+                    aria-controls="sticky-expanded-row"
                     title="Show additional tools (Contents, view mode, settings, info)">
-              <svg class="v2-icon-more" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="currentColor">
+              <svg class="icon-more" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="currentColor">
                 <circle cx="12" cy="12" r="2"></circle>
                 <circle cx="19" cy="12" r="2"></circle>
                 <circle cx="5" cy="12" r="2"></circle>
               </svg>
-              <span class="v2-expand-label">More</span>
-              <span class="v2-expand-chevron" aria-hidden="true">&dtrif;</span>
+              <span class="expand-label">More</span>
+              <span class="expand-chevron" aria-hidden="true">&dtrif;</span>
             </button>
           </div>
         </div>
 
         <!-- Secondary Expanded Row (Hidden by default, smooth animated reveal) -->
-        <div class="v2-sticky-expanded-row" id="v2-sticky-expanded-row" hidden>
+        <div class="sticky-expanded-row" id="sticky-expanded-row" hidden>
           <!-- Left: TOC Drawer Button -->
-          <div class="v2-expanded-left">
+          <div class="expanded-left">
             <button type="button"
-                    class="v2-reader-btn v2-reader-toc-trigger"
-                    id="v2-reader-toc-btn"
+                    class="reader-btn reader-toc-trigger"
+                    id="reader-toc-btn"
                     aria-expanded="false"
-                    aria-controls="v2-reader-toc-drawer"
+                    aria-controls="reader-toc-drawer"
                     title="Table of Contents (T)">
-              <svg class="v2-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <svg class="icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                 <path d="M4 6h16M4 12h16M4 18h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
               <span>Contents</span>
@@ -270,42 +268,40 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
           </div>
 
           <!-- Right: View Mode Toggle + Settings + Scholarly Info -->
-          <div class="v2-expanded-right">
+          <div class="expanded-right">
             ${
               hasParallel
-                ? `<div class="v2-reader-view-toggle" role="group" aria-label="Reading View Mode">
+                ? `<div class="reader-view-toggle" role="group" aria-label="Reading View Mode">
               <a href="${singleViewUrl}"
-                 class="v2-toggle-option ${
-                   viewMode === "single" ? "active" : ""
-                 }"
-                 id="v2-mode-single"
+                 class="toggle-option ${viewMode === "single" ? "active" : ""}"
+                 id="mode-single"
                  title="Single Column">Single</a>
               <a href="${parallelViewUrl}"
-                 class="v2-toggle-option ${
+                 class="toggle-option ${
                    viewMode === "parallel" ? "active" : ""
                  }"
-                 id="v2-mode-parallel"
+                 id="mode-parallel"
                  title="Dual Column Parallel Translation">Parallel</a>
             </div>`
                 : ""
             }
 
             <button type="button"
-                    class="v2-reader-btn v2-reader-settings-btn"
-                    id="v2-reader-settings-btn"
+                    class="reader-btn reader-settings-btn"
+                    id="reader-settings-btn"
                     aria-expanded="false"
-                    aria-controls="v2-reader-settings-dialog"
+                    aria-controls="reader-settings-dialog"
                     title="Appearance & Settings (Aa)">
-              <span class="v2-settings-glyph">Aa</span>
-              <span class="v2-btn-text">Settings</span>
+              <span class="settings-glyph">Aa</span>
+              <span class="btn-text">Settings</span>
             </button>
 
             <button type="button"
-                    class="v2-reader-btn v2-reader-info-btn"
-                    id="v2-reader-info-btn"
+                    class="reader-btn reader-info-btn"
+                    id="reader-info-btn"
                     title="Scholarly Edition & Metadata (ℹ)">
               <span>ℹ</span>
-              <span class="v2-btn-text">Info</span>
+              <span class="btn-text">Info</span>
             </button>
           </div>
         </div>
@@ -324,33 +320,31 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
   const nextPageUrl = buildReaderPageUrl(work, nextPage, { viewMode, query });
 
   return `        <!-- Left Column: Reading Text Canvas -->
-        <section class="v2-reader-text-panel" aria-label="Reading Text">
-          <div class="v2-reader-text-card">
+        <section class="reader-text-panel" aria-label="Reading Text">
+          <div class="reader-text-card">
             
-            <header class="v2-reader-text-card-header">
-              <div class="v2-reader-text-meta">
-                <span class="v2-reader-author-tag">${he.escape(
-                  work.author
-                )}</span>
-                <span class="v2-reader-meta-sep">&middot;</span>
-                <span class="v2-reader-work-tag">${he.escape(work.title)}</span>
+            <header class="reader-text-card-header">
+              <div class="reader-text-meta">
+                <span class="reader-author-tag">${he.escape(work.author)}</span>
+                <span class="reader-meta-sep">&middot;</span>
+                <span class="reader-work-tag">${he.escape(work.title)}</span>
               </div>
-              <h1 class="v2-reader-passage-heading">${he.escape(
+              <h1 class="reader-passage-heading">${he.escape(
                 activePage.title
               )}</h1>
             </header>
 
             <!-- Reader Passage Container -->
-            <article class="v2-reader-passage" id="v2-reader-passage">
+            <article class="reader-passage" id="reader-passage">
               ${passageHtml}
             </article>
 
             <!-- Bottom Paging Continuation Actions & Prototype Switcher -->
-            <footer class="v2-reader-passage-footer">
-              <div class="v2-reader-continuation-actions">
+            <footer class="reader-passage-footer">
+              <div class="reader-continuation-actions">
                 ${
                   nextPage
-                    ? `<a href="${nextPageUrl}" class="v2-reader-btn v2-reader-continue-btn">
+                    ? `<a href="${nextPageUrl}" class="reader-btn reader-continue-btn">
                         <span>Continue to ${he.escape(
                           nextPage.title
                         )}</span> &rarr;
@@ -359,7 +353,7 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
                 }
                 ${
                   prevPage
-                    ? `<a href="${prevPageUrl}" class="v2-reader-btn v2-reader-return-btn">
+                    ? `<a href="${prevPageUrl}" class="reader-btn reader-return-btn">
                         &larr; <span>Return to ${he.escape(
                           prevPage.title
                         )}</span>
@@ -368,8 +362,8 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
                 }
               </div>
 
-              <div class="v2-reader-footer-info">
-                <span class="v2-reader-footer-note">
+              <div class="reader-footer-info">
+                <span class="reader-footer-note">
                   Text: ${he.escape(work.author)}, <em>${he.escape(
     work.title
   )}</em>.
@@ -381,8 +375,8 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
                 </span>
 
                 <!-- Return to Library Link -->
-                <div class="v2-reader-library-nav">
-                  <a href="/v2/library" class="v2-reader-library-link">&larr; Return to Library Catalog</a>
+                <div class="reader-library-nav">
+                  <a href="/v2/library" class="reader-library-link">&larr; Return to Library Catalog</a>
                 </div>
               </div>
             </footer>
@@ -403,7 +397,7 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
   });
 
   return `        <!-- Desktop Resizable Splitter Bar -->
-        <div class="v2-reader-splitter"
+        <div class="reader-splitter"
              role="separator"
              tabindex="0"
              aria-orientation="vertical"
@@ -411,13 +405,13 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
              aria-valuemin="300"
              aria-valuemax="750"
              aria-valuenow="420">
-          <div class="v2-reader-splitter-handle" aria-hidden="true"></div>
+          <div class="reader-splitter-handle" aria-hidden="true"></div>
         </div>
 
         <!-- Right / Bottom Column: Dictionary Panel (Adaptive Sheet on Mobile) -->
-        <aside class="v2-reader-dict-panel" id="v2-reader-dict" aria-label="Dictionary">
+        <aside class="reader-dict-panel" id="reader-dict" aria-label="Dictionary">
           <!-- Mobile sheet handle & teaser bar (visible on mobile) -->
-          <div class="v2-reader-sheet-bar"
+          <div class="reader-sheet-bar"
                role="separator"
                tabindex="0"
                aria-orientation="horizontal"
@@ -425,9 +419,9 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
                aria-valuemin="54"
                aria-valuemax="90"
                aria-valuenow="48">
-            <div class="v2-reader-sheet-handle" aria-hidden="true"></div>
-            <div class="v2-reader-sheet-teaser">
-              <span class="v2-reader-sheet-label">
+            <div class="reader-sheet-handle" aria-hidden="true"></div>
+            <div class="reader-sheet-teaser">
+              <span class="reader-sheet-label">
                 ${
                   query
                     ? `Definitions for <strong>${he.escape(query)}</strong>`
@@ -436,18 +430,18 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
               </span>
               ${
                 query
-                  ? `<a href="${activePageUrl}" class="v2-reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
+                  ? `<a href="${activePageUrl}" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
                   : ""
               }
             </div>
           </div>
 
           <!-- Dictionary Iframe Container -->
-          <div class="v2-dict-iframe-container">
-            <iframe id="v2-dict-frame"
-                    name="v2-dict-frame"
+          <div class="dict-iframe-container">
+            <iframe id="dict-frame"
+                    name="dict-frame"
                     src="${he.escape(dictIframeSrc)}"
-                    class="v2-dict-iframe"
+                    class="dict-iframe"
                     title="Dictionary Search and Definitions"
                     loading="lazy"></iframe>
           </div>
@@ -462,8 +456,8 @@ export function renderReaderContentHtmlFromContext(
   ctx: ReaderRenderContext
 ): string {
   return `
-    <morcus-reader-view class="v2-reader-view ${
-      ctx.viewMode === "parallel" ? "v2-reader-view-parallel" : ""
+    <morcus-reader-view class="reader-view ${
+      ctx.viewMode === "parallel" ? "reader-view-parallel" : ""
     }"
       data-work="${ctx.work.id}"
       data-page="${ctx.pageDotId}"
@@ -474,10 +468,10 @@ export function renderReaderContentHtmlFromContext(
 ${renderReaderStickyBar(ctx)}
 
       <!-- Floating Confirmation Toast -->
-      <div id="v2-reader-toast" class="v2-reader-toast" aria-live="polite"></div>
+      <div id="reader-toast" class="reader-toast" aria-live="polite"></div>
 
       <!-- Main Split Layout -->
-      <div class="v2-reader-split-layout ${ctx.layoutStateClass}">
+      <div class="reader-split-layout ${ctx.layoutStateClass}">
 ${renderReaderTextPanel(ctx)}
 ${renderReaderDictPanel(ctx)}
       </div>

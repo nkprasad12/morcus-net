@@ -325,33 +325,33 @@ export function renderTocEntriesSummaryHtml(
     const chipsHtml = group.chips
       .map(
         (chip) =>
-          `<li class="v2-toc-entry-chip-item"><a href="${he.escape(
+          `<li class="toc-entry-chip-item"><a href="${he.escape(
             chip.anchor
-          )}" class="v2-toc-entry-chip" title="${he.escape(
+          )}" class="toc-entry-chip" title="${he.escape(
             chip.title
-          )}"><span class="v2-toc-chip-text">${he.escape(
+          )}"><span class="toc-chip-text">${he.escape(
             chip.headword
           )}</span></a></li>`
       )
       .join("\n");
 
     return `
-      <div class="v2-toc-entries-group">
-        <span class="v2-toc-badge v2-toc-badge-${group.dictLang}">${he.escape(
+      <div class="toc-entries-group">
+        <span class="toc-badge toc-badge-${group.dictLang}">${he.escape(
       group.dictAcronym
     )}</span>
-        <ul class="v2-toc-entries-sublist">
+        <ul class="toc-entries-sublist">
           ${chipsHtml}
         </ul>
       </div>
     `;
   });
 
-  const dividerHtml = `<span class="v2-toc-entries-divider" aria-hidden="true">|</span>`;
+  const dividerHtml = `<span class="toc-entries-divider" aria-hidden="true">|</span>`;
 
   return `
-    <div class="v2-toc-section v2-toc-entries-summary">
-      <div class="v2-toc-entries-groups">
+    <div class="toc-section toc-entries-summary">
+      <div class="toc-entries-groups">
         ${groupItems.join(`\n${dividerHtml}\n`)}
       </div>
     </div>
@@ -359,7 +359,7 @@ export function renderTocEntriesSummaryHtml(
 }
 
 /**
- * Renders the sense list (<ul class="v2-toc-list">) for a single entry.
+ * Renders the sense list (<ul class="toc-list">) for a single entry.
  */
 export function renderTocSensesHtml(entry: TocEntryNode): string {
   if (entry.senses.length > 0) {
@@ -370,22 +370,20 @@ export function renderTocSensesHtml(entry: TocEntryNode): string {
             ? ` style="margin-left: ${sense.indentLevel * 0.75}rem;"`
             : "";
         const ordinalHtml = sense.ordinal
-          ? `<strong class="v2-toc-ordinal">${he.escape(
-              sense.ordinal
-            )}</strong> `
+          ? `<strong class="toc-ordinal">${he.escape(sense.ordinal)}</strong> `
           : "";
         const textHtml = he.escape(sense.text);
 
-        return `<li class="v2-toc-item v2-toc-level-${
+        return `<li class="toc-item toc-level-${
           sense.level
         }"${indentStyle}><a href="#${he.escape(
           sense.sectionId
-        )}" class="v2-toc-link">${ordinalHtml}<span class="v2-toc-text">${textHtml}</span></a></li>`;
+        )}" class="toc-link">${ordinalHtml}<span class="toc-text">${textHtml}</span></a></li>`;
       })
       .join("\n");
 
     return `
-      <ul class="v2-toc-list">
+      <ul class="toc-list">
         ${itemsHtml}
       </ul>
     `;
@@ -393,11 +391,11 @@ export function renderTocSensesHtml(entry: TocEntryNode): string {
 
   if (entry.isLoneEntry && entry.entryAnchorId) {
     return `
-      <ul class="v2-toc-list">
-        <li class="v2-toc-item v2-toc-level-1">
+      <ul class="toc-list">
+        <li class="toc-item toc-level-1">
           <a href="#${he.escape(
             entry.entryAnchorId
-          )}" class="v2-toc-link"><span class="v2-toc-text">${he.escape(
+          )}" class="toc-link"><span class="toc-text">${he.escape(
       entry.headword
     )}</span></a>
         </li>
@@ -418,15 +416,15 @@ export function renderTocEntryHtml(entry: TocEntryNode): string {
   }
 
   return `
-    <div class="v2-toc-entry">
-      <div class="v2-toc-entry-header">
+    <div class="toc-entry">
+      <div class="toc-entry-header">
         <a href="#${he.escape(
           entry.entryAnchorId
-        )}" class="v2-toc-link v2-toc-entry-link">
-          <span class="v2-toc-badge v2-toc-badge-${entry.dictLang}">${he.escape(
+        )}" class="toc-link toc-entry-link">
+          <span class="toc-badge toc-badge-${entry.dictLang}">${he.escape(
     entry.dictAcronym
   )}</span>
-          <span class="v2-toc-entry-word">${he.escape(entry.headword)}</span>
+          <span class="toc-entry-word">${he.escape(entry.headword)}</span>
         </a>
       </div>
       ${sensesHtml}
@@ -440,10 +438,10 @@ export function renderTocEntryHtml(entry: TocEntryNode): string {
 export function renderTocGroupHtml(group: TocGroupNode): string {
   const entriesHtml = group.entries.map(renderTocEntryHtml).join("\n");
   return `
-    <div class="v2-toc-group">
-      <div class="v2-toc-dict-header">
-        <a href="#${group.cardId}" class="v2-toc-dict-link">
-          <span class="v2-toc-dict-name">${he.escape(group.dictName)}</span>
+    <div class="toc-group">
+      <div class="toc-dict-header">
+        <a href="#${group.cardId}" class="toc-dict-link">
+          <span class="toc-dict-name">${he.escape(group.dictName)}</span>
         </a>
       </div>
       ${entriesHtml}
@@ -460,7 +458,7 @@ export function renderTocSenseListHtml(tree: DictTocTree): string {
   if (!groupsHtml.trim()) return "";
 
   return `
-    <div class="v2-toc-section v2-toc-outline">
+    <div class="toc-section toc-outline">
       ${groupsHtml}
     </div>
   `;
@@ -481,16 +479,16 @@ export function renderDictTocHtml(input: DictTocOptions | DictTocTree): string {
   const outlineSectionHtml = renderTocSenseListHtml(tree);
 
   return `
-    <morcus-dict-toc class="v2-drawer v2-drawer-toc">
-      <details class="v2-toc-details" open>
-        <summary class="v2-drawer-bar v2-toc-bar" role="button" aria-label="Table of Contents">
-          <div class="v2-drawer-handle" aria-hidden="true"></div>
-          <div class="v2-drawer-teaser">
-            <span class="v2-drawer-label v2-toc-teaser-label">Contents <span class="v2-toc-count">${tree.teaserCount}</span></span>
+    <morcus-dict-toc class="drawer drawer-toc">
+      <details class="toc-details" open>
+        <summary class="drawer-bar toc-bar" role="button" aria-label="Table of Contents">
+          <div class="drawer-handle" aria-hidden="true"></div>
+          <div class="drawer-teaser">
+            <span class="drawer-label toc-teaser-label">Contents <span class="toc-count">${tree.teaserCount}</span></span>
           </div>
         </summary>
-        <div class="v2-toc-body">
-          <nav class="v2-toc-nav" aria-label="Table of Contents Outline">
+        <div class="toc-body">
+          <nav class="toc-nav" aria-label="Table of Contents Outline">
             ${entriesSummaryHtml}
             ${outlineSectionHtml}
           </nav>

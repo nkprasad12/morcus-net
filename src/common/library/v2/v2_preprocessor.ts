@@ -101,13 +101,13 @@ function renderXmlNodeCleanHtml(
     return "<br>";
   }
   if (tag === "space") {
-    return '<span class="v2-line-space" aria-hidden="true"></span>';
+    return '<span class="line-space" aria-hidden="true"></span>';
   }
   if (tag === "gap") {
-    return '<span class="v2-reader-gap text-muted">[gap]</span>';
+    return '<span class="reader-gap text-muted">[gap]</span>';
   }
   if (tag === "note" && noteId !== undefined) {
-    return `<button type="button" class="v2-reader-note-ref" data-note-id="${he.escape(
+    return `<button type="button" class="reader-note-ref" data-note-id="${he.escape(
       noteId
     )}" aria-label="Note ${he.escape(noteId)}"><sup>*</sup></button>`;
   }
@@ -115,13 +115,13 @@ function renderXmlNodeCleanHtml(
   const childrenHtml = node.children.map(renderXmlNodeCleanHtml).join("");
 
   if (tag === "head" || isSectionHead) {
-    return `<h3 class="v2-reader-subheading">${childrenHtml}</h3>`;
+    return `<h3 class="reader-subheading">${childrenHtml}</h3>`;
   }
   if (tag === "b") {
     return `<strong>${childrenHtml}</strong>`;
   }
   if (tag === "ul") {
-    return `<ul class="v2-reader-list">${childrenHtml}</ul>`;
+    return `<ul class="reader-list">${childrenHtml}</ul>`;
   }
   if (tag === "li") {
     return `<li>${childrenHtml}</li>`;
@@ -129,15 +129,14 @@ function renderXmlNodeCleanHtml(
 
   // Handle attributes and renditions
   const classes: string[] = [];
-  if (isLine) classes.push("v2-reader-line");
-  if (isBlock) classes.push("v2-reader-block");
-  if (rend === "italic") classes.push("v2-italic");
-  if (rend === "bold") classes.push("v2-bold");
-  if (rend === "blockquote") classes.push("v2-blockquote");
-  if (rend === "sup" || rend === "superscript") classes.push("v2-superscript");
-  if (rend === "uppercase" || rend === "smallcaps")
-    classes.push("v2-smallcaps");
-  if (rend === "indent") classes.push("v2-indent");
+  if (isLine) classes.push("reader-line");
+  if (isBlock) classes.push("reader-block");
+  if (rend === "italic") classes.push("italic");
+  if (rend === "bold") classes.push("bold");
+  if (rend === "blockquote") classes.push("blockquote");
+  if (rend === "sup" || rend === "superscript") classes.push("superscript");
+  if (rend === "uppercase" || rend === "smallcaps") classes.push("smallcaps");
+  if (rend === "indent") classes.push("indent");
 
   const classAttr = classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
 
@@ -164,13 +163,13 @@ function renderPassageContent(
   const rendered = renderXmlNodeCleanHtml(node);
   if (isVerseWork) {
     if (
-      rendered.startsWith('<span class="v2-reader-line"') ||
+      rendered.startsWith('<span class="reader-line"') ||
       rendered.startsWith("<h") ||
-      rendered.startsWith('<span class="v2-line-space"')
+      rendered.startsWith('<span class="line-space"')
     ) {
       return rendered;
     }
-    return `<span class="v2-reader-line">${rendered}</span>`;
+    return `<span class="reader-line">${rendered}</span>`;
   }
   // For prose, if it's not already wrapped in a paragraph or block, wrap in paragraph
   if (
@@ -181,7 +180,7 @@ function renderPassageContent(
   ) {
     return rendered;
   }
-  return `<p class="v2-reader-paragraph">${rendered}</p>`;
+  return `<p class="reader-paragraph">${rendered}</p>`;
 }
 
 export function preprocessWorkToV2(
@@ -229,27 +228,27 @@ export function preprocessWorkToV2(
       citationIds.push(dotId);
 
       const gutterHtml = `
-        <div class="v2-reader-gutter">
+        <div class="reader-gutter">
           <a href="#sec-${dotId}"
-             class="v2-section-anchor"
+             class="section-anchor"
              title="Citation § ${dotId} (Click to copy anchor)"
              aria-label="Section ${dotId}">
-            <span class="v2-cite-prefix">${he.escape(
+            <span class="cite-prefix">${he.escape(
               prefix
-            )}</span><span class="v2-cite-local">${he.escape(localId)}</span>
+            )}</span><span class="cite-local">${he.escape(localId)}</span>
           </a>
         </div>
       `.trim();
 
       const sectionClass = isVerseWork
-        ? "v2-reader-section v2-section-verse"
-        : "v2-reader-section";
+        ? "reader-section section-verse"
+        : "reader-section";
 
       singleSectionsHtml.push(
         `
         <div class="${sectionClass}" id="sec-${dotId}">
           ${gutterHtml}
-          <div class="v2-reader-passage" data-tokenize-target="true">
+          <div class="reader-passage" data-tokenize-target="true">
             ${latinHtml}
           </div>
         </div>
@@ -266,17 +265,17 @@ export function preprocessWorkToV2(
 
         parallelSectionsHtml.push(
           `
-          <div class="${sectionClass} v2-section-parallel" id="sec-${dotId}">
+          <div class="${sectionClass} section-parallel" id="sec-${dotId}">
             ${gutterHtml}
-            <div class="v2-reader-parallel-content">
-              <div class="v2-reader-passage-col v2-passage-latin">
-                <div class="v2-reader-passage" data-tokenize-target="true">${latinHtml}</div>
+            <div class="reader-parallel-content">
+              <div class="reader-passage-col passage-latin">
+                <div class="reader-passage" data-tokenize-target="true">${latinHtml}</div>
               </div>
-              <div class="v2-reader-passage-col v2-passage-english">
-                <span class="v2-reader-trans-author">${he.escape(
+              <div class="reader-passage-col passage-english">
+                <span class="reader-trans-author">${he.escape(
                   translator
                 )}:</span>
-                <div class="v2-reader-passage">${transHtml}</div>
+                <div class="reader-passage">${transHtml}</div>
               </div>
             </div>
           </div>
