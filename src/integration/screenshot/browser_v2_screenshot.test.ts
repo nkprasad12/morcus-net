@@ -51,4 +51,24 @@ test.describe("UI V2 Visual Regression Suite", () => {
     path: "/v2/dicts?q=abbatissa",
     waitFor: ".v2-subsection-note",
   });
+
+  // ==========================================================================
+  // Dark Mode Curated Token Samples (High-Density Views)
+  // ==========================================================================
+
+  // 9. Dark Mode Sample - Dictionary Results View (cards, chips, tags, tables)
+  v2VisualScenario("v2-dicts-results-gladius", {
+    path: "/v2/dicts?q=gladius",
+    waitFor: ".v2-dict-card",
+    jsModes: ["js"],
+    themes: ["dark"],
+  });
+
+  // 10. Dark Mode Sample - Reader Passage View (reading canvas, active words, sticky bar)
+  v2VisualScenario("v2-reader-passage", {
+    path: "/v2/reader",
+    waitFor: ".v2-reader-passage",
+    jsModes: ["js"],
+    themes: ["dark"],
+  });
 });
