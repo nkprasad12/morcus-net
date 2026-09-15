@@ -58,8 +58,6 @@ Every item here is a feature reimplementing something `core/` already provides.
 
 ### Server-side render functions
 
-- [ ] 🟡 **Split `reader.server.ts: renderReaderContentHtml`** (L122-609) into `renderTocDrawer`,
-      `renderBiblioDialog`, etc.
 - [x] 🟢 **De-duplicate dictionary-name resolution.** The expression
       `DICT_NAMES[k] ?? LatinDict.BY_KEY.get(k)?.displayName ?? k.toUpperCase()` is copied at
       `dict_page.server.ts` L56 and L102, `dict_toc.server.ts` L117 and L240. Export one
@@ -467,6 +465,7 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Extract `core/request_params.server.ts`**, centralizing `isPartialRequest`, `isEmbeddedRequest`, `readLimit`, `toStringOrArray`, and `readDictParam`, eliminating duplicated parameter derivation across route slices and removing redundant Express `Content-Type` headers, backed by 26 unit tests.
 - **Split `dict_page.server.ts: renderDictResultsHtml`**, decomposing empty state (`renderNoResultsHtml`), zero-hit status (`renderNoEntriesHtml`), multi-lexicon jump navigation (`renderJumpNavHtml`), and entry cards (`renderDictCardHtml`), backed by 10 new unit tests.
 - **Split `dict_toc.server.ts: renderDictTocHtml` into model (`buildTocTree`) and view (`renderTocSenseListHtml`)**, naming visibility thresholds (`TOC_MIN_TOTAL_SENSES`, `TOC_MIN_SINGLE_ENTRY_SENSES`, `TOC_MIN_MULTI_ENTRIES`), centralizing `dictCardId` / `resolveDictLang` in `dict_attribution.server.ts`, wiring `dict_page.server.ts` to `buildTocTree`, and converting HTML regex tests into typed data assertions.
+- **Split `reader.server.ts: renderReaderContentHtml`**, decomposing reader context resolution (`resolveReaderContext`), sticky quick navigation (`renderReaderStickyBar`), text canvas (`renderReaderTextPanel`), dictionary sidebar (`renderReaderDictPanel`), TOC drawer in `reader_toc.server.ts` (`renderTocDrawer`), and modals in `reader_dialogs.server.ts` (`renderBiblioDialog`, `renderReaderSettingsDialog`), backed by 21 unit tests.
 
 **Phase 7 — docs & tests**
 
