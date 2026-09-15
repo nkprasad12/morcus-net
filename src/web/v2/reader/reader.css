@@ -167,47 +167,6 @@ body.v2-resizing-panels .v2-dict-iframe,
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-/* Ghost Scrollbars: completely hidden at rest, sleek floating pill on hover */
-.v2-reader-text-panel,
-.v2-reader-dict-panel {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.25s ease;
-}
-
-.v2-reader-text-panel:hover,
-.v2-reader-dict-panel:hover {
-  scrollbar-color: var(--v2-scrollbar-thumb) transparent;
-}
-
-.v2-reader-text-panel::-webkit-scrollbar,
-.v2-reader-dict-panel::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.v2-reader-text-panel::-webkit-scrollbar-track,
-.v2-reader-dict-panel::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.v2-reader-text-panel::-webkit-scrollbar-thumb,
-.v2-reader-dict-panel::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border-radius: 9999px;
-  transition: background-color 0.25s ease;
-}
-
-.v2-reader-text-panel:hover::-webkit-scrollbar-thumb,
-.v2-reader-dict-panel:hover::-webkit-scrollbar-thumb {
-  background-color: var(--v2-scrollbar-thumb);
-}
-
-.v2-reader-text-panel::-webkit-scrollbar-thumb:hover,
-.v2-reader-dict-panel::-webkit-scrollbar-thumb:hover {
-  background-color: var(--v2-scrollbar-thumb-hover);
-}
-
 /* Splitter Bar: hidden on mobile, interactive gutter on desktop */
 .v2-reader-splitter {
   display: none;

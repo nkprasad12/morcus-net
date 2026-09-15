@@ -14,6 +14,20 @@
           }
         ]
       }
+    },
+    {
+      "files": ["src/web/v2/**/*.css"],
+      "rules": {
+        "selector-disallowed-list": ["/:root\\[data-theme/", "/\\[data-theme/"],
+        "media-feature-name-disallowed-list": ["prefers-color-scheme"]
+      }
+    },
+    {
+      "files": ["src/web/v2/shell/**/*.css"],
+      "rules": {
+        "selector-disallowed-list": null,
+        "media-feature-name-disallowed-list": null
+      }
     }
   ]
 }

@@ -70,35 +70,6 @@
   font-weight: 600;
 }
 
-/* Empty State */
-.v2-library-empty-state {
-  text-align: center;
-  padding: 3.5rem 1.5rem;
-  background: var(--v2-card-bg);
-  border: 1px dashed var(--v2-border);
-  border-radius: 12px;
-  margin: 2rem 0;
-}
-
-.v2-library-empty-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--v2-text);
-  margin: 0 0 0.5rem;
-}
-
-.v2-library-empty-desc {
-  font-size: 0.95rem;
-  color: var(--v2-text-muted);
-  margin: 0 0 1.25rem;
-}
-
-.v2-not-found-state,
-.v2-library-empty-state-standalone {
-  margin: 4rem auto;
-  max-width: 600px;
-}
-
 /* Continuous Works Grid */
 .v2-library-grid {
   display: grid;
@@ -108,8 +79,8 @@
 
 /* Work Card (Fully Clickable Card) */
 .v2-work-card {
-  background-color: #ffffff;
-  border: 1px solid var(--v2-border);
+  background-color: var(--v2-card-surface-bg);
+  border: 1px solid var(--v2-card-border);
   border-radius: 10px;
   padding: 1.15rem 1.25rem;
   display: flex;
@@ -118,7 +89,7 @@
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--v2-card-shadow);
   transition: transform 0.15s ease, box-shadow 0.15s ease,
     border-color 0.15s ease;
 }
@@ -130,7 +101,7 @@
 .v2-work-card:hover {
   transform: translateY(-2px);
   border-color: var(--v2-primary);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.09), 0 2px 6px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--v2-card-shadow-hover);
 }
 
 .v2-work-card:hover .v2-work-card-title {
@@ -200,39 +171,6 @@
   background: var(--v2-badge-trans-bg);
   color: var(--v2-badge-trans-text);
   border: 1px solid var(--v2-badge-trans-border);
-}
-
-/* Dark theme card prominence */
-@media (prefers-color-scheme: dark) {
-  .v2-work-card {
-    background-color: #22262a;
-    border-color: #383d46;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  }
-  .v2-work-card:hover {
-    border-color: var(--v2-primary);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
-  }
-}
-
-:root[data-theme="dark"] .v2-work-card,
-[data-theme="dark"] .v2-work-card {
-  background-color: #22262a;
-  border-color: #383d46;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
-
-:root[data-theme="dark"] .v2-work-card:hover,
-[data-theme="dark"] .v2-work-card:hover {
-  border-color: var(--v2-primary);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
-}
-
-:root[data-theme="light"] .v2-work-card,
-[data-theme="light"] .v2-work-card {
-  background-color: #ffffff;
-  border-color: var(--v2-border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 @media (max-width: 640px) {

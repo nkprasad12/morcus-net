@@ -258,10 +258,10 @@ Verified counts as of the audit.
 | `.v2-empty-state`     | `.v2-library-empty-state`                                                                         | the inlined router 404 already wants this           |
 | `.v2-ghost-scrollbar` | —                                                                                                 | polished in `reader.css` L169-208, absent elsewhere |
 
-- [ ] 🟡 Extract `.v2-card`
-- [ ] 🟡 Extract `.v2-btn` + modifiers
-- [ ] 🟢 Extract `.v2-empty-state`
-- [ ] 🟢 Extract `.v2-ghost-scrollbar`
+- [x] 🟡 Extract `.v2-card`
+- [x] 🟡 Extract `.v2-btn` + modifiers
+- [x] 🟢 Extract `.v2-empty-state`
+- [x] 🟢 Extract `.v2-ghost-scrollbar`
 
 **Split the two large stylesheets** along their existing section comments:
 

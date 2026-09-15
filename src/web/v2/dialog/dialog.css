@@ -111,51 +111,6 @@
   margin-top: 18px;
 }
 
-/* Button utility classes */
-.v2-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 18px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
-    color 0.15s ease-in-out, opacity 0.15s ease-in-out;
-}
-
-.v2-btn-primary {
-  background-color: var(--v2-primary);
-  color: var(--v2-on-accent);
-  border-color: var(--v2-primary);
-}
-
-.v2-btn-primary:hover:not(:disabled) {
-  background-color: var(--v2-primary-hover);
-}
-
-.v2-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.v2-btn-secondary {
-  background-color: transparent;
-  color: var(--v2-text);
-  border-color: var(--v2-border);
-}
-
-.v2-btn-secondary:hover {
-  background-color: var(--v2-pill-bg);
-}
-
-.v2-btn:focus-visible {
-  outline: 2px solid var(--v2-primary);
-  outline-offset: 2px;
-}
-
 /* Report Issue Dialog Specifics */
 .v2-report-notice {
   display: flex;
