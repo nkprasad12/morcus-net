@@ -7,7 +7,12 @@
 @import "./core/components.css";
 @import "./dict/search.css";
 @import "./dict/dict_settings.css";
-@import "./dict/dictionary.css";
+@import "./dict/dict_layout.css";
+@import "./dict/dict_entry.css";
+@import "./dict/subsection_note.css";
+@import "./dict/dict_typography.css";
+@import "./dict/dict_embeds.css";
+@import "./dict/dict_landing.css";
 @import "./dict/dict_toc.css";
 @import "./reader/reader.css";
 @import "./dialog/dialog.css";

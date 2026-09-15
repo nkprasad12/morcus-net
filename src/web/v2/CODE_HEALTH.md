@@ -265,7 +265,7 @@ Verified counts as of the audit.
 
 **Split the two large stylesheets** along their existing section comments:
 
-- [ ] 🔴 `dictionary.css` (1,795) → layout / typography / embeds / landing
+- [x] 🔴 `dictionary.css` (1,795) → layout / typography / embeds / landing
 - [ ] 🔴 `reader.css` (1,552) → layout / text / dict-sidebar / settings. Note its settings block
       (L1432+) substantially mirrors `dict_settings.css` — merge into a shared `core/settings.css`.
 
