@@ -39,6 +39,9 @@
   --v2-border-strong: #8c919a;
   --v2-border-focus: #80bdff;
   --v2-focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.2);
+  --v2-success: #198754;
+  --v2-danger: #dc3545;
+  --v2-on-accent: #ffffff;
   --v2-tag-bg: #e9ecef;
   --v2-card-header-bg: #e4e7e4;
   --v2-input-bg: #fafafa;
@@ -94,6 +97,12 @@
   --v2-chip-de-text: #96281e;
   --v2-chip-es-bg: rgba(68, 56, 178, 0.13);
   --v2-chip-es-text: #372a9e;
+  --v2-badge-macra-bg: rgba(16, 185, 129, 0.1);
+  --v2-badge-macra-text: #065f46;
+  --v2-badge-macra-border: rgba(16, 185, 129, 0.24);
+  --v2-badge-trans-bg: rgba(99, 102, 241, 0.1);
+  --v2-badge-trans-text: #3730a3;
+  --v2-badge-trans-border: rgba(99, 102, 241, 0.24);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -106,6 +115,9 @@
     --v2-border-strong: #656a76;
     --v2-border-focus: #8ab4f8;
     --v2-focus-ring: 0 0 0 3px rgba(77, 163, 255, 0.25);
+    --v2-success: #5cdb95;
+    --v2-danger: #ff6b6b;
+    --v2-on-accent: #ffffff;
     --v2-tag-bg: #26292e;
     --v2-card-header-bg: #26292d;
     --v2-input-bg: #22262a;
@@ -159,6 +171,12 @@
     --v2-chip-de-text: #f29b9b;
     --v2-chip-es-bg: rgba(179, 157, 219, 0.2);
     --v2-chip-es-text: #cebeec;
+    --v2-badge-macra-bg: rgba(52, 211, 153, 0.18);
+    --v2-badge-macra-text: #6ee7b7;
+    --v2-badge-macra-border: rgba(52, 211, 153, 0.35);
+    --v2-badge-trans-bg: rgba(165, 180, 252, 0.18);
+    --v2-badge-trans-text: #a5b4fc;
+    --v2-badge-trans-border: rgba(165, 180, 252, 0.35);
   }
 }
 
@@ -171,6 +189,9 @@
   --v2-border-strong: #656a76;
   --v2-border-focus: #8ab4f8;
   --v2-focus-ring: 0 0 0 3px rgba(77, 163, 255, 0.25);
+  --v2-success: #5cdb95;
+  --v2-danger: #ff6b6b;
+  --v2-on-accent: #ffffff;
   --v2-tag-bg: #26292e;
   --v2-card-header-bg: #26292d;
   --v2-input-bg: #22262a;
@@ -224,6 +245,12 @@
   --v2-chip-de-text: #f29b9b;
   --v2-chip-es-bg: rgba(179, 157, 219, 0.2);
   --v2-chip-es-text: #cebeec;
+  --v2-badge-macra-bg: rgba(52, 211, 153, 0.18);
+  --v2-badge-macra-text: #6ee7b7;
+  --v2-badge-macra-border: rgba(52, 211, 153, 0.35);
+  --v2-badge-trans-bg: rgba(165, 180, 252, 0.18);
+  --v2-badge-trans-text: #a5b4fc;
+  --v2-badge-trans-border: rgba(165, 180, 252, 0.35);
 }
 
 :root[data-theme="light"],
@@ -235,6 +262,9 @@
   --v2-border-strong: #8c919a;
   --v2-border-focus: #80bdff;
   --v2-focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.2);
+  --v2-success: #198754;
+  --v2-danger: #dc3545;
+  --v2-on-accent: #ffffff;
   --v2-tag-bg: #e9ecef;
   --v2-card-header-bg: #e4e7e4;
   --v2-input-bg: #fafafa;
@@ -288,4 +318,10 @@
   --v2-chip-de-text: #96281e;
   --v2-chip-es-bg: rgba(68, 56, 178, 0.13);
   --v2-chip-es-text: #372a9e;
+  --v2-badge-macra-bg: rgba(16, 185, 129, 0.1);
+  --v2-badge-macra-text: #065f46;
+  --v2-badge-macra-border: rgba(16, 185, 129, 0.24);
+  --v2-badge-trans-bg: rgba(99, 102, 241, 0.1);
+  --v2-badge-trans-text: #3730a3;
+  --v2-badge-trans-border: rgba(99, 102, 241, 0.24);
 }

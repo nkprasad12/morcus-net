@@ -837,7 +837,7 @@ html.v2-has-js .lsHover:focus::after {
 .v2-section-anchor:hover,
 .v2-section-anchor:focus-visible {
   background-color: var(--v2-primary);
-  color: var(--v2-on-accent, #ffffff);
+  color: var(--v2-on-accent);
 }
 
 /* Anchored target animation effect (one-shot subtle flash & fade) */
