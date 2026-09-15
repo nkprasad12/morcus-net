@@ -1,7 +1,17 @@
 import {
+  TOC_MIN_MULTI_ENTRIES,
+  TOC_MIN_SINGLE_ENTRY_SENSES,
+  TOC_MIN_TOTAL_SENSES,
+  DictTocTree,
+  buildTocTree,
   countTotalSenses,
+  extractHeadword,
+  formatTeaserCount,
   hasDictToc,
+  meetsTocThreshold,
   renderDictTocHtml,
+  renderTocEntriesSummaryHtml,
+  renderTocSenseListHtml,
   truncateSenseText,
 } from "@/web/v2/dict/dict_toc.server";
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
@@ -329,6 +339,432 @@ describe("dict_toc.server", () => {
         'href="#n12002" class="v2-toc-link v2-toc-entry-link"'
       );
       expect(html).toContain("cum (2)");
+    });
+  });
+
+  describe("characterization snapshot pinning", () => {
+    test("matches snapshot for all primary structural shapes", () => {
+      // 1. single dict, 1 entry, 5 senses at levels 1–5 (depth capping, no entry header)
+      const fixtureSingleDictDepthCapping: DictsFusedResponse = {
+        ls: [
+          makeMockEntry("facio", "n17800", [
+            {
+              level: 1,
+              ordinal: "I.",
+              text: "Physical making",
+              sectionId: "s1",
+            },
+            { level: 2, ordinal: "A.", text: "Constructing", sectionId: "s2" },
+            { level: 3, ordinal: "1.", text: "Buildings", sectionId: "s3" },
+            { level: 4, ordinal: "a.", text: "Houses", sectionId: "s4" },
+            { level: 5, ordinal: "α.", text: "Villas", sectionId: "s5" },
+          ]),
+        ],
+      };
+
+      // 2. single dict, 2 entries (entries.length > 1 header path)
+      const fixtureSingleDictMultiEntry: DictsFusedResponse = {
+        ls: [
+          makeMockEntry("cum (1)", "n12001", [
+            {
+              level: 1,
+              ordinal: "I.",
+              text: "Preposition with ablative",
+              sectionId: "c1.1",
+            },
+            {
+              level: 1,
+              ordinal: "II.",
+              text: "In compounds",
+              sectionId: "c1.2",
+            },
+          ]),
+          makeMockEntry("cum (2)", "n12002", [
+            {
+              level: 1,
+              ordinal: "I.",
+              text: "Conjunction temporal",
+              sectionId: "c2.1",
+            },
+            {
+              level: 1,
+              ordinal: "II.",
+              text: "Conjunction causal",
+              sectionId: "c2.2",
+            },
+          ]),
+        ],
+      };
+
+      // 3. 2 dicts, 1 entry each (totalEntries > 1 header path + chip summary)
+      const fixtureMultiLexicon: DictsFusedResponse = {
+        ls: [
+          makeMockEntry("lex", "n27000", [
+            { level: 1, ordinal: "I.", text: "Proposition", sectionId: "ls1" },
+            {
+              level: 1,
+              ordinal: "II.",
+              text: "Enacted bill",
+              sectionId: "ls2",
+            },
+          ]),
+        ],
+        gaffiot: [
+          makeMockEntry("lex", "g3000", [
+            { level: 1, ordinal: "1.", text: "Loi", sectionId: "gaf1" },
+            {
+              level: 1,
+              ordinal: "2.",
+              text: "Projet de loi",
+              sectionId: "gaf2",
+            },
+          ]),
+        ],
+      };
+
+      // 4. multi dict where one has lone entry with 0 senses
+      const fixtureLoneEntry: DictsFusedResponse = {
+        ls: [
+          makeMockEntry("facio", "n17800", [
+            { level: 1, ordinal: "I.", text: "Sense 1", sectionId: "s1" },
+            { level: 1, ordinal: "II.", text: "Sense 2", sectionId: "s2" },
+            { level: 1, ordinal: "III.", text: "Sense 3", sectionId: "s3" },
+          ]),
+        ],
+        gaffiot: [makeMockEntry("facio_lone", "g5000", [])],
+      };
+
+      // 5. escaping: entry with & and < in headword and ordinal
+      const fixtureEscaping: DictsFusedResponse = {
+        ls: [
+          makeMockEntry("pars & <sectio>", "n999", [
+            {
+              level: 1,
+              ordinal: "I & <A>",
+              text: "Part & parcel <first>",
+              sectionId: "p1",
+            },
+            { level: 1, ordinal: "II.", text: "Division", sectionId: "p2" },
+            { level: 1, ordinal: "III.", text: "Share", sectionId: "p3" },
+          ]),
+        ],
+      };
+
+      const normalize = (html: string) => html.replace(/\s+/g, " ").trim();
+
+      expect(
+        normalize(renderDictTocHtml({ results: fixtureSingleDictDepthCapping }))
+      ).toMatchSnapshot();
+      expect(
+        normalize(renderDictTocHtml({ results: fixtureSingleDictMultiEntry }))
+      ).toMatchSnapshot();
+      expect(
+        normalize(renderDictTocHtml({ results: fixtureMultiLexicon }))
+      ).toMatchSnapshot();
+      expect(
+        normalize(renderDictTocHtml({ results: fixtureLoneEntry }))
+      ).toMatchSnapshot();
+      expect(
+        normalize(renderDictTocHtml({ results: fixtureEscaping }))
+      ).toMatchSnapshot();
+    });
+  });
+
+  describe("meetsTocThreshold and threshold constants", () => {
+    test("exports named threshold constants", () => {
+      expect(TOC_MIN_TOTAL_SENSES).toBe(4);
+      expect(TOC_MIN_SINGLE_ENTRY_SENSES).toBe(3);
+      expect(TOC_MIN_MULTI_ENTRIES).toBe(2);
+    });
+
+    test("evaluates sense and entry thresholds consistently", () => {
+      expect(
+        meetsTocThreshold({
+          totalSenses: 0,
+          maxSingleEntrySenses: 0,
+          totalEntries: 0,
+        })
+      ).toBe(false);
+      expect(
+        meetsTocThreshold({
+          totalSenses: 3,
+          maxSingleEntrySenses: 2,
+          totalEntries: 1,
+        })
+      ).toBe(false);
+      expect(
+        meetsTocThreshold({
+          totalSenses: 4,
+          maxSingleEntrySenses: 2,
+          totalEntries: 1,
+        })
+      ).toBe(true);
+      expect(
+        meetsTocThreshold({
+          totalSenses: 3,
+          maxSingleEntrySenses: 3,
+          totalEntries: 1,
+        })
+      ).toBe(true);
+      expect(
+        meetsTocThreshold({
+          totalSenses: 1,
+          maxSingleEntrySenses: 1,
+          totalEntries: 2,
+        })
+      ).toBe(true);
+    });
+  });
+
+  describe("extractHeadword and formatTeaserCount helpers", () => {
+    test("extractHeadword strips XML tags and falls back properly", () => {
+      const entryWithTags = makeMockEntry('<hi rend="b">facio</hi>', "n1", []);
+      expect(extractHeadword(entryWithTags, 0)).toBe("facio");
+
+      const entryWithoutLabels = {
+        entry: new XmlNode("entry", [], []),
+        outline: undefined,
+      };
+      expect(extractHeadword(entryWithoutLabels, 2)).toBe("Entry 3");
+    });
+
+    test("formatTeaserCount produces properly pluralized strings", () => {
+      expect(formatTeaserCount(1, 1)).toBe("(1 sense)");
+      expect(formatTeaserCount(1, 4)).toBe("(4 senses)");
+      expect(formatTeaserCount(2, 1)).toBe("(2 entries · 1 sense)");
+      expect(formatTeaserCount(3, 8)).toBe("(3 entries · 8 senses)");
+      expect(formatTeaserCount(2, 0)).toBe("(2 entries)");
+    });
+  });
+
+  describe("buildTocTree model extraction", () => {
+    test("returns null when gating conditions are not met", () => {
+      expect(buildTocTree({ results: {} })).toBeNull();
+      const resultsBelowThreshold: DictsFusedResponse = {
+        ls: [
+          makeMockEntry("abbas", "n100", [
+            { level: 1, ordinal: "I.", text: "An abbot", sectionId: "n100.1" },
+            { level: 1, ordinal: "II.", text: "A father", sectionId: "n100.2" },
+          ]),
+        ],
+      };
+      expect(buildTocTree({ results: resultsBelowThreshold })).toBeNull();
+    });
+
+    test("extracts normalized tree with depth capping at level 3", () => {
+      const results: DictsFusedResponse = {
+        ls: [
+          makeMockEntry("facio", "n17800", [
+            {
+              level: 1,
+              ordinal: "I.",
+              text: "Physical making",
+              sectionId: "s1",
+            },
+            { level: 2, ordinal: "A.", text: "Constructing", sectionId: "s2" },
+            { level: 3, ordinal: "1.", text: "Buildings", sectionId: "s3" },
+            { level: 4, ordinal: "a.", text: "Houses", sectionId: "s4" },
+            { level: 5, ordinal: "α.", text: "Villas", sectionId: "s5" },
+          ]),
+        ],
+      };
+
+      const tree = buildTocTree({ results, maxLevel: 3 });
+      expect(tree).not.toBeNull();
+      expect(tree!.totalEntries).toBe(1);
+      expect(tree!.totalSenses).toBe(5);
+      expect(tree!.teaserCount).toBe("(5 senses)");
+      expect(tree!.chipGroups).toHaveLength(0); // single entry, no chips summary
+
+      expect(tree!.groups).toHaveLength(1);
+      const group = tree!.groups[0];
+      expect(group.dictKey).toBe("ls");
+      expect(group.dictName).toBe("Lewis & Short");
+      expect(group.dictAcronym).toBe("L&S");
+      expect(group.cardId).toBe("dict-ls");
+
+      expect(group.entries).toHaveLength(1);
+      const entry = group.entries[0];
+      expect(entry.headword).toBe("facio");
+      expect(entry.entryAnchorId).toBe("n17800");
+      expect(entry.showHeader).toBe(false); // single entry in single dict
+      expect(entry.isLoneEntry).toBe(false);
+
+      // Depth capping: levels 1-3 included, 4 and 5 excluded
+      expect(entry.senses).toHaveLength(3);
+      expect(entry.senses.map((s) => s.sectionId)).toEqual(["s1", "s2", "s3"]);
+      expect(entry.senses.map((s) => s.level)).toEqual([1, 2, 3]);
+      expect(entry.senses.map((s) => s.indentLevel)).toEqual([0, 1, 2]);
+      expect(entry.senses[0].text).toBe("Physical making");
+    });
+
+    test("extracts multi-lexicon structure and chips summary", () => {
+      const results: DictsFusedResponse = {
+        ls: [
+          makeMockEntry('<hi rend="b">lex</hi>', "n27000", [
+            { level: 1, ordinal: "I.", text: "Proposition", sectionId: "ls1" },
+            {
+              level: 1,
+              ordinal: "II.",
+              text: "Enacted bill",
+              sectionId: "ls2",
+            },
+          ]),
+        ],
+        gaffiot: [
+          makeMockEntry("lex", "g3000", [
+            { level: 1, ordinal: "1.", text: "Loi", sectionId: "gaf1" },
+            {
+              level: 1,
+              ordinal: "2.",
+              text: "Projet de loi",
+              sectionId: "gaf2",
+            },
+          ]),
+        ],
+      };
+
+      const tree = buildTocTree({ results });
+      expect(tree).not.toBeNull();
+      expect(tree!.totalEntries).toBe(2);
+      expect(tree!.totalSenses).toBe(4);
+      expect(tree!.teaserCount).toBe("(2 entries · 4 senses)");
+
+      // Multi-lexicon chips
+      expect(tree!.chipGroups).toHaveLength(2);
+      expect(tree!.chipGroups[0]).toEqual({
+        dictKey: "ls",
+        dictAcronym: "L&S",
+        dictLang: "la",
+        chips: [
+          {
+            headword: "lex",
+            anchor: "#n27000",
+            title: "Jump to lex (L&S)",
+          },
+        ],
+      });
+      expect(tree!.chipGroups[1]).toEqual({
+        dictKey: "gaffiot",
+        dictAcronym: "GAF",
+        dictLang: "la",
+        chips: [
+          {
+            headword: "lex",
+            anchor: "#g3000",
+            title: "Jump to lex (GAF)",
+          },
+        ],
+      });
+
+      // Outline groups show header when totalEntries > 1
+      expect(tree!.groups).toHaveLength(2);
+      expect(tree!.groups[0].entries[0].showHeader).toBe(true);
+      expect(tree!.groups[1].entries[0].showHeader).toBe(true);
+      // Stripped tag in outline headword too
+      expect(tree!.groups[0].entries[0].headword).toBe("lex");
+    });
+
+    test("flags isLoneEntry when single entry has no outlined senses", () => {
+      const results: DictsFusedResponse = {
+        ls: [
+          makeMockEntry("facio", "n17800", [
+            { level: 1, ordinal: "I.", text: "Sense 1", sectionId: "s1" },
+            { level: 1, ordinal: "II.", text: "Sense 2", sectionId: "s2" },
+            { level: 1, ordinal: "III.", text: "Sense 3", sectionId: "s3" },
+          ]),
+        ],
+        gaffiot: [makeMockEntry("solus", "g100", [])],
+      };
+
+      const tree = buildTocTree({ results });
+      expect(tree).not.toBeNull();
+      const gaffiotGroup = tree!.groups.find((g) => g.dictKey === "gaffiot")!;
+      expect(gaffiotGroup.entries[0].isLoneEntry).toBe(true);
+      expect(gaffiotGroup.entries[0].senses).toHaveLength(0);
+    });
+  });
+
+  describe("isolated view renderers", () => {
+    test("renderTocEntriesSummaryHtml renders chips and separators", () => {
+      const chipGroups = [
+        {
+          dictKey: "ls",
+          dictAcronym: "L&S",
+          dictLang: "la",
+          chips: [
+            { headword: "lex", anchor: "#n1", title: "Jump to lex (L&S)" },
+          ],
+        },
+        {
+          dictKey: "gaffiot",
+          dictAcronym: "GAF",
+          dictLang: "la",
+          chips: [
+            { headword: "lex", anchor: "#g1", title: "Jump to lex (GAF)" },
+          ],
+        },
+      ];
+
+      const html = renderTocEntriesSummaryHtml(chipGroups);
+      expect(html).toContain('class="v2-toc-section v2-toc-entries-summary"');
+      expect(html).toContain('href="#n1" class="v2-toc-entry-chip"');
+      expect(html).toContain('title="Jump to lex (L&amp;S)"');
+      expect(html).toContain('class="v2-toc-entries-divider"');
+    });
+
+    test("renderTocSenseListHtml renders outline groups and preserves inline space after ordinal", () => {
+      const fixtureTree: DictTocTree = {
+        totalEntries: 1,
+        totalSenses: 2,
+        teaserCount: "(2 senses)",
+        chipGroups: [],
+        groups: [
+          {
+            dictKey: "ls",
+            dictName: "Lewis & Short",
+            dictAcronym: "L&S",
+            cardId: "dict-ls",
+            entries: [
+              {
+                headword: "facio",
+                entryAnchorId: "n17800",
+                dictAcronym: "L&S",
+                dictLang: "la",
+                showHeader: false,
+                isLoneEntry: false,
+                senses: [
+                  {
+                    sectionId: "s1",
+                    level: 1,
+                    indentLevel: 0,
+                    ordinal: "I.",
+                    text: "Physical making",
+                  },
+                  {
+                    sectionId: "s2",
+                    level: 2,
+                    indentLevel: 1,
+                    ordinal: "A.",
+                    text: "Constructing",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      const html = renderTocSenseListHtml(fixtureTree);
+      expect(html).toContain('class="v2-toc-section v2-toc-outline"');
+      expect(html).toContain('href="#dict-ls" class="v2-toc-dict-link"');
+      expect(html).toContain('href="#s1" class="v2-toc-link"');
+      // Verify load-bearing trailing space in ordinal tag
+      expect(html).toContain(
+        '<strong class="v2-toc-ordinal">I.</strong> <span class="v2-toc-text">Physical making</span>'
+      );
+      // Verify indentation style on level 2
+      expect(html).toContain('style="margin-left: 0.75rem;"');
     });
   });
 });

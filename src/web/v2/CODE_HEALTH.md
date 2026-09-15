@@ -58,10 +58,6 @@ Every item here is a feature reimplementing something `core/` already provides.
 
 ### Server-side render functions
 
-- [ ] 🔴 **Split `dict_toc.server.ts: renderDictTocHtml`** (L93-337, 244 lines, up to 5 levels of
-      nesting) into a model (`buildTocTree(results)`) and a view (`renderTocSenseList(tree)`).
-      This is also the single biggest testability win available — it converts regex-matching against
-      a giant HTML blob into plain data assertions.
 - [ ] 🟡 **Split `reader.server.ts: renderReaderContentHtml`** (L122-609) into `renderTocDrawer`,
       `renderBiblioDialog`, etc.
 - [x] 🟢 **De-duplicate dictionary-name resolution.** The expression
@@ -71,8 +67,6 @@ Every item here is a feature reimplementing something `core/` already provides.
 - [ ] 🟢 **Convert trailing-boolean signatures to option objects**:
       `renderDictLandingHtml(activeDicts?, isInflected = true)` (`dict_landing.server.ts` L63).
       `renderDictPageHtml` and `renderDictResultsHtml` already do this correctly.
-- [ ] 🟢 **Name the TOC visibility thresholds** in `dict_toc.server.ts` L86
-      (`totalSenses < 4 && maxSingleEntrySenses < 3 && totalEntries <= 1`).
 - [ ] 🟢 **Use or delete `linkifyText`'s `activeWord` parameter** (`dict/linkify.server.ts` L26).
       Its only caller, `xml_to_html.server.ts` L63, never passes it, so nothing emits
       `v2-word-active` server-side today. That makes it a latent trap rather than dead weight:
@@ -472,6 +466,7 @@ worth not rediscovering is summarised in Phase 5 instead.
 - **Hoist drawer dvh magic numbers (`18`/`48`/`88`) to named constants**, exporting `DRAWER_FLOOR_DVH`, `DRAWER_DEFAULT_DVH`, `DRAWER_EXPANDED_DVH`, and `DRAWER_MIN_HEIGHT` from `core/drawer.client.ts` and consuming them across `reader_view.client.ts`, `dict_toc.client.ts`, and `DrawerController`.
 - **Extract `core/request_params.server.ts`**, centralizing `isPartialRequest`, `isEmbeddedRequest`, `readLimit`, `toStringOrArray`, and `readDictParam`, eliminating duplicated parameter derivation across route slices and removing redundant Express `Content-Type` headers, backed by 26 unit tests.
 - **Split `dict_page.server.ts: renderDictResultsHtml`**, decomposing empty state (`renderNoResultsHtml`), zero-hit status (`renderNoEntriesHtml`), multi-lexicon jump navigation (`renderJumpNavHtml`), and entry cards (`renderDictCardHtml`), backed by 10 new unit tests.
+- **Split `dict_toc.server.ts: renderDictTocHtml` into model (`buildTocTree`) and view (`renderTocSenseListHtml`)**, naming visibility thresholds (`TOC_MIN_TOTAL_SENSES`, `TOC_MIN_SINGLE_ENTRY_SENSES`, `TOC_MIN_MULTI_ENTRIES`), centralizing `dictCardId` / `resolveDictLang` in `dict_attribution.server.ts`, wiring `dict_page.server.ts` to `buildTocTree`, and converting HTML regex tests into typed data assertions.
 
 **Phase 7 — docs & tests**
 

@@ -9,12 +9,13 @@ import {
   DICT_ACRONYMS,
   resolveDictDisplayName,
   resolveDictAcronym,
+  dictCardId,
+  resolveDictLang,
 } from "@/web/v2/dict/dict_attribution.server";
 import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
 import { hasGreek } from "@/web/v2/dict/dict_greek.common";
 import { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
-import { renderDictTocHtml } from "@/web/v2/dict/dict_toc.server";
-import { findDictInfo } from "@/web/v2/dict/dict_clustering.common";
+import { buildTocTree, renderDictTocHtml } from "@/web/v2/dict/dict_toc.server";
 import * as he from "he";
 
 export {
@@ -22,6 +23,8 @@ export {
   DICT_ACRONYMS,
   resolveDictDisplayName,
   resolveDictAcronym,
+  dictCardId,
+  resolveDictLang,
 };
 
 export interface DictResultsOptions {
@@ -136,7 +139,7 @@ export function renderJumpNavHtml(options: JumpNavOptions): string {
       const shortName = resolveDictDisplayName(dictKey);
       const dictAcronym = resolveDictAcronym(dictKey);
       const count = entries.length;
-      const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+      const cardId = dictCardId(dictKey);
       if (count > 0) {
         return `<a href="#${cardId}" class="v2-jump-pill" title="Jump to ${he.escape(
           shortName
@@ -237,13 +240,9 @@ export function renderDictCardHtml(options: DictCardOptions): string {
   const { dictKey, entries, isEmbedded = false } = options;
   const shortName = resolveDictDisplayName(dictKey);
   const dictAcronym = resolveDictAcronym(dictKey);
-  const info = findDictInfo(dictKey);
-  const dictLang =
-    info && info.languages.from !== "*"
-      ? info.languages.from.toLowerCase()
-      : "la";
+  const dictLang = resolveDictLang(dictKey);
   const totalEntries = entries.length;
-  const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+  const cardId = dictCardId(dictKey);
 
   const quickJumpHtml = renderEntryQuickJumpHtml(entries);
   const attrHtml = renderDictSourceAttributionHtml(dictKey);
@@ -341,11 +340,10 @@ export function renderDictResultsHtml(
     )
     .join("\n");
 
-  const tocHtml =
-    !isEmbedded && results
-      ? renderDictTocHtml({ results, hitKeys, maxLevel: 3 })
-      : "";
-  const hasToc = Boolean(tocHtml);
+  const tocTree =
+    !isEmbedded && results ? buildTocTree({ results, hitKeys }) : null;
+  const hasToc = tocTree !== null;
+  const tocHtml = tocTree ? renderDictTocHtml(tocTree) : "";
 
   return `
     <div class="v2-results-layout${hasToc ? " has-toc" : ""}">

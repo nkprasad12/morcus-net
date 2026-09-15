@@ -47,6 +47,8 @@ export {
   DictAttributionInfo,
   resolveDictDisplayName,
   resolveDictAcronym,
+  dictCardId,
+  resolveDictLang,
 } from "@/web/v2/dict/dict_attribution.server";
 
 export {
