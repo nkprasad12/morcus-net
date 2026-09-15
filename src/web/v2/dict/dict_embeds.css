@@ -1,0 +1,154 @@
+/* Mateo (Univ. of Mannheim) Embed Pane */
+.v2-mateo-wrapper {
+  display: inline;
+}
+
+.v2-mateo-embed-pane {
+  display: inline;
+}
+
+.v2-mateo-embed-pane summary::-webkit-details-marker {
+  display: none;
+}
+
+.v2-mateo-embed-pane[open] .v2-mateo-toggle-btn {
+  background-color: var(--v2-border);
+  border-color: var(--v2-border-strong);
+}
+
+.v2-mateo-frame-wrapper {
+  display: block;
+  margin: 10px 0;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--v2-border-strong);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.v2-mateo-frame {
+  display: block;
+  width: 100%;
+  height: 520px;
+  border: none;
+  background-color: #ffffff;
+  color-scheme: light;
+}
+
+/* Greek Fallback & Logeion Embed */
+.v2-greek-fallback {
+  margin: 12px 0 20px 0;
+  padding: 0;
+}
+
+.v2-greek-notice {
+  margin-bottom: 8px;
+}
+
+.v2-greek-title {
+  margin: 0 0 4px 0;
+  font-size: calc(1rem * var(--v2-dict-scale, 1));
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--v2-text);
+}
+
+.v2-greek-desc {
+  margin: 0 0 10px 0;
+  font-size: calc(0.95rem * var(--v2-dict-scale, 1));
+  line-height: 1.4;
+  color: var(--v2-text-muted);
+}
+
+.v2-greek-desc strong.v2-greek-word {
+  color: var(--v2-text);
+}
+
+.v2-greek-link {
+  color: var(--v2-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+}
+
+.v2-greek-link:hover {
+  color: var(--v2-primary-hover);
+}
+
+.v2-greek-controls {
+  margin-top: 8px;
+}
+
+.v2-greek-details {
+  display: block;
+}
+
+.v2-greek-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.v2-greek-toggle-btn {
+  margin: 0 0 10px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.v2-greek-details[open] .v2-greek-toggle-btn {
+  background-color: var(--v2-border);
+  border-color: var(--v2-border-strong);
+}
+
+.v2-greek-toggle-icon {
+  display: inline-block;
+  font-size: 0.8em;
+  margin-right: 4px;
+  vertical-align: middle;
+  transition: transform 0.15s ease-in-out;
+}
+
+.v2-greek-details[open] .v2-greek-toggle-icon {
+  transform: rotate(90deg);
+}
+
+.v2-greek-frame-wrapper {
+  display: block;
+  margin: 12px 0 14px 0;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--v2-border-strong);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.v2-greek-frame {
+  display: block;
+  width: 100%;
+  height: 70vh;
+  min-height: 480px;
+  max-height: 800px;
+  border: none;
+  background-color: #ffffff;
+  color-scheme: light;
+}
+
+.v2-greek-auto-open-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(0.85rem * var(--v2-dict-scale, 1));
+  color: var(--v2-text-muted);
+  cursor: pointer;
+  user-select: none;
+  margin-top: 6px;
+}
+
+.v2-greek-auto-open-checkbox {
+  cursor: pointer;
+  accent-color: var(--v2-primary);
+}
+
+.v2-greek-auto-open-text {
+  font-family: var(--v2-font-sans);
+}
