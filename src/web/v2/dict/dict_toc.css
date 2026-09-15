@@ -408,7 +408,7 @@
     border-radius: 8px !important;
     background-color: var(--v2-card-bg);
     box-shadow: var(--v2-dict-toc-shadow) !important;
-    z-index: 10 !important;
+    z-index: var(--v2-z-raised) !important;
     padding-bottom: 0 !important;
     margin: 0 !important;
   }

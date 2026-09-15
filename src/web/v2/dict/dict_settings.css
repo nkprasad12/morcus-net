@@ -70,7 +70,7 @@ morcus-dict-settings,
   border-radius: 8px;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
   padding: 14px;
-  z-index: 200;
+  z-index: var(--v2-z-dropdown);
   box-sizing: border-box;
 }
 

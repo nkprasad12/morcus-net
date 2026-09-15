@@ -1,0 +1,18 @@
+{
+  "plugins": ["stylelint-declaration-strict-value"],
+  "rules": {},
+  "overrides": [
+    {
+      "files": ["src/web/v2/**/*.css"],
+      "rules": {
+        "scale-unlimited/declaration-strict-value": [
+          ["z-index"],
+          {
+            "ignoreValues": ["auto"],
+            "disableFix": true
+          }
+        ]
+      }
+    }
+  ]
+}
