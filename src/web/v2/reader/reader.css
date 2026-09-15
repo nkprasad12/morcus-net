@@ -913,7 +913,7 @@ body.v2-resizing-panels {
 .v2-toggle-option.active,
 .v2-toggle-option.active:visited {
   background: var(--v2-primary);
-  color: var(--v2-on-accent, #ffffff);
+  color: var(--v2-on-accent);
   font-weight: 600;
 }
 
@@ -1407,15 +1407,15 @@ body.v2-resizing-panels {
 .v2-reader-continue-btn,
 .v2-reader-continue-btn:visited {
   background: var(--v2-primary);
-  color: var(--v2-on-accent, #ffffff);
+  color: var(--v2-on-accent);
   font-weight: 600;
   justify-content: center;
   padding: 0.6rem 1rem;
 }
 
 .v2-reader-continue-btn:hover {
-  background: var(--v2-primary-hover, #7b1d1d);
-  color: var(--v2-on-accent, #ffffff);
+  background: var(--v2-primary-hover);
+  color: var(--v2-on-accent);
 }
 
 .v2-reader-return-btn {

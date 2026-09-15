@@ -128,7 +128,7 @@
 
 .v2-btn-primary {
   background-color: var(--v2-primary);
-  color: #ffffff;
+  color: var(--v2-on-accent);
   border-color: var(--v2-primary);
 }
 
@@ -249,19 +249,11 @@
 }
 
 .v2-report-status.success {
-  color: #198754;
-}
-
-:root[data-theme="dark"] .v2-report-status.success {
-  color: #5cdb95;
+  color: var(--v2-success);
 }
 
 .v2-report-status.error {
-  color: #dc3545;
-}
-
-:root[data-theme="dark"] .v2-report-status.error {
-  color: #ff6b6b;
+  color: var(--v2-danger);
 }
 
 .v2-report-submit-btn {
@@ -274,7 +266,7 @@
   height: 14px;
   margin-right: 6px;
   border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #ffffff;
+  border-top-color: var(--v2-on-accent);
   border-radius: 50%;
   animation: v2-spin 0.6s linear infinite;
 }

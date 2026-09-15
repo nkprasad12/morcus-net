@@ -240,12 +240,12 @@ to `--v2-z-fab: 110` (strictly above `--v2-z-drawer: 100`) is required.
 
 Verified counts as of the audit.
 
-- [ ] 🟢 **Add the ~5 missing semantic color tokens.** Color-token discipline is largely _good_:
+- [x] 🟢 **Add the ~5 missing semantic color tokens.** Color-token discipline is largely _good_:
       102 of 125 hex values live correctly inside `variables.css` / `critical_variables.css`.
       Only **23 leak**, clustered in `dialog.css` (6, status colors), `library.css` (5, language
       badges), `reader.css` (4), `dictionary.css` (4), `search.css` (3), `dict_settings.css` (1).
       Adding `--v2-success`, `--v2-danger`, `--v2-on-accent` closes most of it.
-- [ ] 🟢 **Stop branching themes inside component stylesheets.** e.g. `dialog.css` L255-264
+- [x] 🟢 **Stop branching themes inside component stylesheets.** e.g. `dialog.css` L255-264
       (`:root[data-theme="dark"] .v2-report-status.success { color: #5cdb95; }`). Put the flip in
       the token instead.
       **Extract shared component classes.** These shells are re-declared per feature — each row is one
