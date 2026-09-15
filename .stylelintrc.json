@@ -5,6 +5,7 @@
     {
       "files": ["src/web/v2/**/*.css"],
       "rules": {
+        "declaration-no-important": true,
         "scale-unlimited/declaration-strict-value": [
           ["z-index"],
           {

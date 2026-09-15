@@ -124,7 +124,7 @@
 }
 
 .v2-work-card[hidden] {
-  display: none !important;
+  display: none;
 }
 
 .v2-work-card:hover {

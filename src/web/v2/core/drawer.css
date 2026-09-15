@@ -12,8 +12,8 @@
 
 /* Resizing drag states */
 body.v2-resizing-drawer {
-  user-select: none !important;
-  cursor: grabbing !important;
+  user-select: none;
+  cursor: grabbing;
 }
 
 /* Core Docked Bottom Drawer */
@@ -41,12 +41,12 @@ body.v2-resizing-drawer {
 }
 
 .v2-drawer.v2-is-dragging {
-  transition: none !important;
+  transition: none;
 }
 
 /* Minimized state: Collapses to handle teaser height */
 .v2-drawer.v2-drawer-minimized {
-  height: var(--v2-drawer-min-height, 54px) !important;
+  height: var(--v2-drawer-min-height, 54px);
   overflow: hidden;
 }
 
@@ -144,8 +144,8 @@ a.v2-reader-sheet-close:visited {
   padding: 4px 8px;
   border: none;
   background: transparent;
-  color: var(--v2-border-strong) !important;
-  text-decoration: none !important;
+  color: var(--v2-border-strong);
+  text-decoration: none;
   font-size: 1.15rem;
   font-weight: 500;
   line-height: 1;
@@ -167,7 +167,7 @@ a.v2-reader-sheet-close:hover,
 a.v2-reader-sheet-close:visited:hover,
 a.v2-reader-sheet-close:active {
   background: transparent;
-  color: var(--v2-text) !important;
-  text-decoration: none !important;
+  color: var(--v2-text);
+  text-decoration: none;
   transform: translateY(-50%) scale(1.15);
 }

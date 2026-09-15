@@ -87,7 +87,7 @@
 a.v2-lat-word,
 span.v2-lat-word {
   color: inherit;
-  text-decoration: none !important;
+  text-decoration: none;
   cursor: pointer;
   padding: 0;
   margin: 0;
@@ -110,7 +110,7 @@ span.v2-lat-word:focus-visible {
   background-color: var(--v2-word-hover-bg);
   color: inherit;
   font-weight: inherit;
-  text-decoration: none !important;
+  text-decoration: none;
   outline: none;
 }
 
@@ -120,7 +120,7 @@ span.v2-lat-word.v2-word-active {
   background-color: var(--v2-word-active-bg);
   color: inherit;
   font-weight: inherit;
-  text-decoration: none !important;
+  text-decoration: none;
   border: none;
   box-shadow: none;
 }
@@ -215,8 +215,8 @@ body.v2-resizing-panels .v2-dict-iframe,
 
 /* Resizing drag states */
 body.v2-resizing-panels {
-  user-select: none !important;
-  cursor: col-resize !important;
+  user-select: none;
+  cursor: col-resize;
 }
 
 /* Mobile & Responsive Breakpoint */
@@ -316,7 +316,7 @@ body.v2-resizing-panels {
   }
 
   .v2-reader-dict-panel.v2-is-dragging {
-    transition: none !important;
+    transition: none;
   }
 
   .v2-reader-dict-sticky {
@@ -361,12 +361,12 @@ body.v2-resizing-panels {
 
   /* Minimized active drawer: retains content in DOM but collapses to 54px teaser */
   .v2-reader-layout-active .v2-reader-dict-panel.v2-drawer-minimized {
-    height: 54px !important;
+    height: 54px;
     overflow: hidden;
   }
 
   .v2-reader-layout-active:has(.v2-drawer-minimized) .v2-reader-text-panel {
-    padding-bottom: 74px !important;
+    padding-bottom: 74px;
   }
 
   .v2-reader-layout-active
@@ -383,7 +383,7 @@ body.v2-resizing-panels {
   }
 
   .v2-reader-split-layout:has(.v2-is-dragging) .v2-reader-text-panel {
-    transition: none !important;
+    transition: none;
   }
 
   .v2-reader-layout-active .v2-reader-dict-panel {
@@ -762,7 +762,7 @@ body.v2-resizing-panels {
 }
 
 .v2-sticky-expanded-row[hidden] {
-  display: none !important;
+  display: none;
 }
 
 @keyframes v2SlideDown {
@@ -802,19 +802,19 @@ body.v2-resizing-panels {
 /* No-JS Mode: expanded row is always visible, expand button hidden */
 @media (scripting: none) {
   .v2-sticky-expanded-row[hidden] {
-    display: flex !important;
+    display: flex;
   }
   .v2-sticky-expand-btn {
-    display: none !important;
+    display: none;
   }
 }
 
 :root:not(.v2-has-js) .v2-sticky-expanded-row[hidden] {
-  display: flex !important;
+  display: flex;
 }
 
 :root:not(.v2-has-js) .v2-sticky-expand-btn {
-  display: none !important;
+  display: none;
 }
 
 .v2-reader-btn {
@@ -910,9 +910,10 @@ body.v2-resizing-panels {
   color: var(--v2-text);
 }
 
-.v2-toggle-option.active {
+.v2-toggle-option.active,
+.v2-toggle-option.active:visited {
   background: var(--v2-primary);
-  color: #ffffff !important;
+  color: var(--v2-on-accent, #ffffff);
   font-weight: 600;
 }
 
@@ -1080,7 +1081,7 @@ body.v2-resizing-panels {
   }
 
   .v2-cite-prefix {
-    display: none !important; /* Hides "2.1." on mobile, showing only "2" */
+    display: none; /* Hides "2.1." on mobile, showing only "2" */
   }
 
   .v2-cite-local {
@@ -1167,7 +1168,7 @@ body.v2-resizing-panels {
 }
 
 .v2-reader-toc-drawer[hidden] {
-  display: none !important;
+  display: none;
 }
 
 .v2-reader-toc-header {
@@ -1403,9 +1404,10 @@ body.v2-resizing-panels {
   margin-bottom: 1.5rem;
 }
 
-.v2-reader-continue-btn {
+.v2-reader-continue-btn,
+.v2-reader-continue-btn:visited {
   background: var(--v2-primary);
-  color: #ffffff !important;
+  color: var(--v2-on-accent, #ffffff);
   font-weight: 600;
   justify-content: center;
   padding: 0.6rem 1rem;
@@ -1413,7 +1415,7 @@ body.v2-resizing-panels {
 
 .v2-reader-continue-btn:hover {
   background: var(--v2-primary-hover, #7b1d1d);
-  color: #ffffff !important;
+  color: var(--v2-on-accent, #ffffff);
 }
 
 .v2-reader-return-btn {
@@ -1544,9 +1546,9 @@ morcus-reader-settings {
 
 /* Hide Gutter Toggle Rule */
 .v2-reader-view.v2-hide-gutter .v2-reader-gutter {
-  display: none !important;
+  display: none;
 }
 
 .v2-reader-view.v2-hide-gutter .v2-reader-section {
-  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-columns: minmax(0, 1fr);
 }

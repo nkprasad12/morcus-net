@@ -47,7 +47,7 @@
 }
 
 .v2-toc-details:not([open]) .v2-toc-body {
-  display: none !important;
+  display: none;
 }
 
 .v2-toc-body {
@@ -311,19 +311,19 @@
   }
 
   .v2-drawer-toc.v2-drawer-minimized {
-    height: var(--v2-drawer-min-height, 28px) !important;
+    height: var(--v2-drawer-min-height, 28px);
   }
 
   .v2-drawer-toc:not(:has(.v2-toc-details[open])) {
-    height: var(--v2-drawer-min-height, 28px) !important;
+    height: var(--v2-drawer-min-height, 28px);
   }
 
   .v2-drawer-toc .v2-drawer-teaser {
-    display: none !important;
+    display: none;
   }
 
   .v2-drawer-toc .v2-drawer-handle {
-    margin-bottom: 0 !important;
+    margin-bottom: 0;
   }
 
   .v2-drawer-toc .v2-toc-bar {
@@ -394,35 +394,35 @@
   }
 
   /* Sticky Desktop Left Rail: Starts directly from the top when scrolled */
-  .v2-drawer-toc {
-    position: sticky !important;
-    top: 0 !important;
-    bottom: auto !important;
-    left: auto !important;
-    right: auto !important;
-    width: 240px !important;
-    max-width: 240px !important;
-    height: auto !important;
-    max-height: 100dvh !important;
+  .v2-drawer.v2-drawer-toc {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 240px;
+    max-width: 240px;
+    height: auto;
+    max-height: 100dvh;
     border: 1px solid var(--v2-dict-toc-rail-border);
-    border-radius: 8px !important;
+    border-radius: 8px;
     background-color: var(--v2-card-bg);
-    box-shadow: var(--v2-dict-toc-shadow) !important;
-    z-index: var(--v2-z-raised) !important;
-    padding-bottom: 0 !important;
-    margin: 0 !important;
+    box-shadow: var(--v2-dict-toc-shadow);
+    z-index: var(--v2-z-raised);
+    padding-bottom: 0;
+    margin: 0;
   }
 
   /* Hide drag pill handle on desktop */
   .v2-drawer-toc .v2-drawer-handle {
-    display: none !important;
+    display: none;
   }
 
   /* Header in Desktop Left Rail */
   .v2-drawer-toc .v2-toc-bar {
-    cursor: default !important;
+    cursor: default;
     pointer-events: none; /* Desktop TOC rail is permanently open */
-    padding: 10px 14px 8px !important;
+    padding: 10px 14px 8px;
     border-bottom: 1px solid var(--v2-border);
     border-top-left-radius: 7px;
     border-top-right-radius: 7px;
@@ -430,16 +430,16 @@
   }
 
   .v2-drawer-toc .v2-toc-bar::-webkit-details-marker {
-    display: none !important;
+    display: none;
   }
 
   .v2-drawer-toc .v2-drawer-teaser {
-    justify-content: flex-start !important;
+    justify-content: flex-start;
   }
 
   .v2-drawer-toc .v2-toc-teaser-label {
-    padding: 0 !important;
-    text-align: left !important;
+    padding: 0;
+    text-align: left;
     font-size: 0.85rem;
     font-weight: 700;
     color: var(--v2-dict-toc-header-text);

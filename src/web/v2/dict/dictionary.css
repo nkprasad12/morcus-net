@@ -178,7 +178,7 @@
   border: none;
   border-radius: 0;
   overflow: visible;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 .v2-dict-header {
@@ -258,7 +258,7 @@
   .v2-entry-nav,
 .v2-dict-card:has(.v2-dict-toggle):not(:has(.v2-dict-toggle[open]))
   .v2-dict-source-pane {
-  display: none !important;
+  display: none;
 }
 
 .v2-dict-toggle {
@@ -510,11 +510,11 @@
 /* Declutter standalone desktop navigation when left TOC rail is active */
 @media (min-width: 1080px) {
   .has-toc .v2-entry-nav {
-    display: none !important;
+    display: none;
   }
 
   .has-toc .v2-tool-outline {
-    display: none !important;
+    display: none;
   }
 }
 
@@ -722,7 +722,7 @@ a.lsSenseBullet:visited {
 
 /* Once JS is active, disable static CSS fallback so anchored popover takes over */
 html.v2-has-js .lsHover:focus::after {
-  display: none !important;
+  display: none;
 }
 
 /* Single global popover container for progressive JS enhancement */
@@ -837,7 +837,7 @@ html.v2-has-js .lsHover:focus::after {
 .v2-section-anchor:hover,
 .v2-section-anchor:focus-visible {
   background-color: var(--v2-primary);
-  color: #ffffff !important;
+  color: var(--v2-on-accent, #ffffff);
 }
 
 /* Anchored target animation effect (one-shot subtle flash & fade) */
@@ -867,18 +867,18 @@ html.v2-has-js .lsHover:focus::after {
 
 .v2-dict-card:target,
 .v2-dict-card.v2-target-active {
-  animation: none !important;
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   :target,
   .v2-target-active {
-    animation: none !important;
+    animation: none;
     background-color: var(--v2-target-highlight);
   }
   .v2-dict-card:target,
   .v2-dict-card.v2-target-active {
-    background-color: transparent !important;
+    background-color: transparent;
   }
 }
 
@@ -956,11 +956,11 @@ html.v2-has-js .lsHover:focus::after {
 }
 
 .v2-tool-pane:not([open]) > :not(summary) {
-  display: none !important;
+  display: none;
 }
 
 .v2-tool-pane:not([open])::details-content {
-  display: none !important;
+  display: none;
 }
 
 .v2-tool-pane[open]::details-content {
@@ -1675,7 +1675,7 @@ html.v2-has-js .lsHover:focus::after {
 
 /* Hide JS-only features when JavaScript is disabled */
 html:not(.v2-has-js) .v2-js-only {
-  display: none !important;
+  display: none;
 }
 
 @media (max-width: 600px) {
