@@ -5,8 +5,11 @@ import {
   resolveActiveDicts,
   resolveDictParams,
   dictParamsFromQuery,
-  toStringOrArray,
 } from "@/web/v2/dict/dict.server";
+import {
+  readLimit,
+  toStringOrArray,
+} from "@/web/v2/core/request_params.server";
 import {
   getV2Completions,
   getV2DictChunks,
@@ -40,13 +43,7 @@ export function createApiRoutes(
 
     const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
     const langParam = toStringOrArray(req.query.lang);
-    const rawLimit =
-      typeof req.query.limit === "string" ? req.query.limit : undefined;
-    const limitParam = rawLimit ? parseInt(rawLimit, 10) : NaN;
-    const limit =
-      Number.isFinite(limitParam) && limitParam > 0
-        ? Math.min(limitParam, 50000)
-        : 25;
+    const limit = readLimit(req);
 
     const { dictKeys } = resolveActiveDicts({
       keysFromQuery,

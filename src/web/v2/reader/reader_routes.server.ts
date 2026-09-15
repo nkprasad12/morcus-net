@@ -10,6 +10,7 @@ import {
 } from "@/web/v2/reader/reader_loader.server";
 import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
 import { renderNotFoundPageHtml } from "@/web/v2/library/not_found.server";
+import { isPartialRequest } from "@/web/v2/core/request_params.server";
 
 function redirectReaderJump(
   res: Response,
@@ -45,7 +46,6 @@ async function sendReaderPassage(
   }
 ): Promise<void> {
   try {
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
     if (options.isPartial) {
       res.send(
         await renderReaderContentHtml({
@@ -84,9 +84,7 @@ export function createReaderRoutes(): Router {
     const view = req.query.view === "parallel" ? "parallel" : "single";
     const jump =
       typeof req.query.jump === "string" ? req.query.jump.trim() : "";
-    const isPartial =
-      req.query.format === "partial" ||
-      req.headers["x-requested-with"] === "fetch";
+    const isPartial = isPartialRequest(req);
 
     const work =
       (await getV2Work(`${author}/${name}`)) ||
@@ -133,9 +131,7 @@ export function createReaderRoutes(): Router {
     const jump =
       typeof req.query.jump === "string" ? req.query.jump.trim() : "";
     const view = req.query.view === "parallel" ? "parallel" : "single";
-    const isPartial =
-      req.query.format === "partial" ||
-      req.headers["x-requested-with"] === "fetch";
+    const isPartial = isPartialRequest(req);
 
     const work =
       (await getV2Work(workId)) ||

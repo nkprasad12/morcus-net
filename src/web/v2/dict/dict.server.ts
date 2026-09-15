@@ -68,6 +68,7 @@ export {
   resolveActiveDicts,
   toStringOrArray,
   dictParamsFromQuery,
+  readDictParam,
 } from "@/web/v2/dict/dict_selection.server";
 
 export {
