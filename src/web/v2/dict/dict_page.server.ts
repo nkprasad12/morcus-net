@@ -1,5 +1,4 @@
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { renderEntryResult } from "@/web/v2/dict/entry_view.server";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
@@ -7,6 +6,8 @@ import {
   DICT_ATTRIBUTIONS,
   DICT_NAMES,
   DICT_ACRONYMS,
+  resolveDictDisplayName,
+  resolveDictAcronym,
 } from "@/web/v2/dict/dict_attribution.server";
 import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
 import { hasGreek } from "@/web/v2/dict/dict_greek.common";
@@ -15,7 +16,12 @@ import { renderDictTocHtml } from "@/web/v2/dict/dict_toc.server";
 import { findDictInfo } from "@/web/v2/dict/dict_clustering.common";
 import * as he from "he";
 
-export { DICT_NAMES, DICT_ACRONYMS };
+export {
+  DICT_NAMES,
+  DICT_ACRONYMS,
+  resolveDictDisplayName,
+  resolveDictAcronym,
+};
 
 export interface DictResultsOptions {
   queriedDicts?: string[];
@@ -78,9 +84,7 @@ export function renderDictResultsHtml(
     queriedDicts && queriedDicts.length > 0 ? queriedDicts : hitKeys;
 
   if (hitKeys.length === 0) {
-    const queriedNames = allQueriedKeys
-      .map((k) => DICT_NAMES[k] ?? LatinDict.BY_KEY.get(k)?.displayName ?? k)
-      .join(", ");
+    const queriedNames = allQueriedKeys.map(resolveDictDisplayName).join(", ");
     return `
       <div class="v2-no-results">
         <p>No dictionary entries found for "<strong>${he.escape(
@@ -126,14 +130,8 @@ export function renderDictResultsHtml(
     const pillsHtml = sortedPillKeys
       .map((dictKey) => {
         const entries = results[dictKey] || [];
-        const shortName =
-          DICT_NAMES[dictKey] ??
-          LatinDict.BY_KEY.get(dictKey)?.displayName ??
-          dictKey.toUpperCase();
-        const dictAcronym =
-          DICT_ACRONYMS[dictKey] ??
-          DICT_ACRONYMS[dictKey.toLowerCase()] ??
-          dictKey.toUpperCase();
+        const shortName = resolveDictDisplayName(dictKey);
+        const dictAcronym = resolveDictAcronym(dictKey);
         const count = entries.length;
         const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
         if (count > 0) {
@@ -169,14 +167,8 @@ export function renderDictResultsHtml(
   const cardsHtml = hitKeys
     .map((dictKey) => {
       const entries = results[dictKey];
-      const shortName =
-        DICT_NAMES[dictKey] ??
-        LatinDict.BY_KEY.get(dictKey)?.displayName ??
-        dictKey.toUpperCase();
-      const dictAcronym =
-        DICT_ACRONYMS[dictKey] ??
-        DICT_ACRONYMS[dictKey.toLowerCase()] ??
-        dictKey.toUpperCase();
+      const shortName = resolveDictDisplayName(dictKey);
+      const dictAcronym = resolveDictAcronym(dictKey);
       const info = findDictInfo(dictKey);
       const dictLang =
         info && info.languages.from !== "*"
