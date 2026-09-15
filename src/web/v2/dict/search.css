@@ -7,7 +7,7 @@
   margin-bottom: 12px;
   background-color: var(--v2-input-bg);
   border: 1px solid var(--v2-input-border, var(--v2-border));
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
   box-shadow: var(--v2-input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
@@ -29,7 +29,7 @@
   padding: 10px 42px 10px 14px;
   font-size: 1.05rem;
   border: none;
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--v2-radius-lg) var(--v2-radius-lg) 0 0;
   background-color: transparent;
   color: var(--v2-text);
   box-shadow: none;
@@ -37,7 +37,7 @@
 }
 
 .v2-search-form:not(:has(.v2-search-tray)) .v2-input {
-  border-radius: 8px;
+  border-radius: var(--v2-radius-lg);
 }
 
 .v2-search-btn {
@@ -53,7 +53,7 @@
   padding: 6px;
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
   color: var(--v2-text-muted);
   cursor: pointer;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
@@ -85,7 +85,7 @@
   margin-top: 4px;
   background: var(--v2-input-bg);
   border: 1px solid var(--v2-input-border, var(--v2-border));
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   z-index: var(--v2-z-dropdown);
   list-style: none;
@@ -97,7 +97,7 @@
 .v2-suggestion-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--v2-space-5);
   padding: 7px 14px;
   cursor: pointer;
   font-size: 0.95rem;
@@ -131,7 +131,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 0 0 7px 7px;
+  border-radius: 0 0 var(--v2-radius-md) var(--v2-radius-md);
   font-size: 0.75rem;
   user-select: none;
 }
@@ -140,7 +140,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--v2-space-3);
 }
 
 .v2-tray-label {
@@ -157,7 +157,7 @@
 .v2-lang-chips {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--v2-space-2);
 }
 
 .v2-lang-chip {
@@ -169,7 +169,7 @@
   font-weight: 700;
   line-height: 1;
   padding: 2px 5px;
-  border-radius: 3px;
+  border-radius: var(--v2-radius-sm);
   letter-spacing: -0.02em;
 }
 
@@ -207,7 +207,7 @@
   font-weight: 700;
   line-height: 1;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
 }
 
 .v2-inflect-chip.is-on {
@@ -234,7 +234,7 @@
   border: none;
   background: transparent;
   box-shadow: none;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
   color: var(--v2-text-muted);
 }
 

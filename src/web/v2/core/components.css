@@ -7,7 +7,7 @@
 .v2-card {
   background-color: var(--v2-card-surface-bg);
   border: 1px solid var(--v2-card-border);
-  border-radius: 10px;
+  border-radius: var(--v2-radius-lg);
   box-shadow: var(--v2-card-shadow);
 }
 
@@ -34,7 +34,7 @@
   padding: 8px 18px;
   font-size: 0.95rem;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   cursor: pointer;
   border: 1px solid transparent;
   text-decoration: none;
@@ -73,7 +73,7 @@
 }
 
 .v2-btn-pill {
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
 }
 
 .v2-btn:focus-visible {
@@ -91,7 +91,7 @@
   padding: 3.5rem 1.5rem;
   background: var(--v2-card-bg);
   border: 1px dashed var(--v2-border);
-  border-radius: 12px;
+  border-radius: var(--v2-radius-xl);
   margin: 2rem 0;
 }
 
@@ -152,7 +152,7 @@
 .v2-reader-text-panel::-webkit-scrollbar-thumb,
 .v2-reader-dict-panel::-webkit-scrollbar-thumb {
   background-color: transparent;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   transition: background-color 0.25s ease;
 }
 

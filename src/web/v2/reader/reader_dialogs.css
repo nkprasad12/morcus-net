@@ -3,7 +3,7 @@
 .v2-reader-meta-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--v2-space-5);
   margin: 1rem 0;
   font-size: 0.8125rem;
 }
@@ -26,7 +26,7 @@
   font-family: var(--v2-font-mono);
   background: var(--v2-bg);
   padding: 0.15rem 0.35rem;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
   border: 1px solid var(--v2-border);
 }
 
@@ -39,7 +39,7 @@
   background: var(--v2-text);
   color: var(--v2-bg);
   padding: 0.5rem 1rem;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   font-size: 0.8125rem;
   font-weight: 500;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);

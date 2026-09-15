@@ -30,7 +30,7 @@ morcus-dict-settings,
 .v2-dict-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--v2-space-3);
   max-height: 240px;
   overflow-y: auto;
   padding-right: 2px;
@@ -39,7 +39,7 @@ morcus-dict-settings,
 .v2-dict-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--v2-space-4);
   font-size: 0.78rem;
   color: var(--v2-text);
   cursor: pointer;

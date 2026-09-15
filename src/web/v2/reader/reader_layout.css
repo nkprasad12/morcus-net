@@ -10,7 +10,7 @@
 .v2-reader-split-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(360px, 480px);
-  gap: 1.75rem;
+  gap: var(--v2-space-8);
   align-items: start;
 }
 

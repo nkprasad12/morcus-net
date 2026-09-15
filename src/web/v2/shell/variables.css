@@ -29,6 +29,26 @@
   --v2-z-toast: 400;
   --v2-z-modal: 1000;
 
+  /* Border Radius Scale */
+  --v2-radius-xs: 2px;
+  --v2-radius-sm: 4px;
+  --v2-radius-md: 6px;
+  --v2-radius-lg: 8px;
+  --v2-radius-xl: 12px;
+  --v2-radius-2xl: 16px;
+  --v2-radius-full: 9999px;
+
+  /* Spacing Scale (4px base grid) */
+  --v2-space-1: 0.125rem;
+  --v2-space-2: 0.25rem;
+  --v2-space-3: 0.375rem;
+  --v2-space-4: 0.5rem;
+  --v2-space-5: 0.75rem;
+  --v2-space-6: 1rem;
+  --v2-space-7: 1.25rem;
+  --v2-space-8: 1.5rem;
+  --v2-space-9: 2rem;
+
   --v2-font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
   --v2-card-bg: var(--v2-bg);
   --v2-text-muted: #6c757d;

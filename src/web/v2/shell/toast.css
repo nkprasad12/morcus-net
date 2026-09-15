@@ -11,7 +11,7 @@
   background: var(--v2-text);
   color: var(--v2-bg);
   padding: 0.5rem 1rem;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   font-family: var(--v2-font-sans);
   font-size: 0.8125rem;
   font-weight: 500;

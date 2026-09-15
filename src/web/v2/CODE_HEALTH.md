@@ -269,12 +269,6 @@ Verified counts as of the audit.
 - [x] 🔴 `reader.css` (1,552) → layout / text / dict-sidebar / settings. Note its settings block
       (L1432+) substantially mirrors `dict_settings.css` — merge into a shared `core/settings.css`.
 
-**Other:**
-
-- [ ] 🟢 Add spacing and radius scales (`--v2-space-*`, `--v2-radius-sm/md/lg`) — currently ~300
-      arbitrary `padding`/`margin`/`border-radius` values (e.g. `reader.css` mixes `3px`/`6px`/`8px`
-      radii; `library.css` L65 uses `10px 100px 10px 42px`).
-
 ---
 
 ## Phase 7 — Docs & tests
@@ -456,6 +450,10 @@ worth not rediscovering is summarised in Phase 5 instead.
   nesting limits ($\le 3$), duplicate selector prevention (`no-duplicate-selectors`), theme branching
   bans outside `shell/`, and custom `src/web/v2/tools/max_file_lines.cjs` enforcing a 650-line maximum per
   stylesheet backed by 6 unit tests.
+- **Standardized border radius and spacing scales in `shell/variables.css` and enforced via Stylelint.** Defined
+  `--v2-radius-xs` through `--v2-radius-full` and `--v2-space-1` through `--v2-space-9` (4px base grid), migrated
+  all ~110 `border-radius` declarations and ~80 `gap` declarations across all 28 stylesheets, and locked in
+  `border-radius` token usage in `.stylelintrc.json` via `scale-unlimited/declaration-strict-value`.
 
 **Phase 7 — docs & tests**
 

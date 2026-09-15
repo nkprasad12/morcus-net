@@ -65,7 +65,7 @@
 .v2-toc-nav {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--v2-space-5);
 }
 
 .v2-toc-section {
@@ -90,7 +90,7 @@
 .v2-toc-entries-groups {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--v2-space-3);
 }
 
 .v2-toc-entries-group {
@@ -98,7 +98,7 @@
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: var(--v2-space-3);
 }
 
 .v2-toc-entries-group .v2-toc-badge {
@@ -126,7 +126,7 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 7px;
-  border-radius: 9999px;
+  border-radius: var(--v2-radius-full);
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
   color: var(--v2-primary);
@@ -159,7 +159,7 @@
 .v2-toc-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--v2-space-3);
 }
 
 .v2-toc-group + .v2-toc-group {
@@ -176,7 +176,7 @@
 .v2-toc-dict-link:visited {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--v2-space-3);
   text-decoration: none;
   color: var(--v2-dict-title);
   font-weight: 700;
@@ -194,7 +194,7 @@
   align-items: center;
   justify-content: center;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--v2-radius-sm);
   background-color: var(--v2-tag-bg);
   border: 1px solid transparent;
   font-family: var(--v2-font-mono, monospace);
@@ -228,7 +228,7 @@
 .v2-toc-entry {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--v2-space-2);
 }
 
 .v2-toc-entry + .v2-toc-entry {
@@ -244,7 +244,7 @@
 .v2-toc-entry-link:visited {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--v2-space-3);
   color: var(--v2-text);
   text-decoration: none;
 }
@@ -346,13 +346,13 @@
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px 10px;
+    gap: var(--v2-space-3) var(--v2-space-5);
   }
 
   .v2-drawer-toc .v2-toc-entries-group {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--v2-space-3);
   }
 
   .v2-drawer-toc .v2-toc-entries-divider {
@@ -368,7 +368,7 @@
   .v2-drawer-toc .v2-toc-entry-chip {
     background-color: var(--v2-tag-bg);
     border: 1px solid var(--v2-border);
-    border-radius: 9999px;
+    border-radius: var(--v2-radius-full);
     padding: 2px 8px;
     font-size: 0.8rem;
   }
@@ -405,7 +405,7 @@
     height: auto;
     max-height: 100dvh;
     border: 1px solid var(--v2-dict-toc-rail-border);
-    border-radius: 8px;
+    border-radius: var(--v2-radius-lg);
     background-color: var(--v2-card-bg);
     box-shadow: var(--v2-dict-toc-shadow);
     z-index: var(--v2-z-raised);

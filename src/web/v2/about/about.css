@@ -7,7 +7,7 @@
 .v2-about-header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--v2-space-6);
 }
 
 .v2-about-logo {

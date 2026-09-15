@@ -5,7 +5,7 @@
 .v2-landing-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--v2-space-8);
   margin-top: 0.5rem;
   width: 100%;
 }
@@ -21,7 +21,7 @@
 .v2-landing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
+  gap: var(--v2-space-9);
   align-items: start;
 }
 
@@ -37,7 +37,7 @@
 .v2-landing-card-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--v2-space-4);
   margin-bottom: 0.65rem;
   padding-bottom: 0.4rem;
   border-bottom: 1px solid var(--v2-border);
@@ -65,7 +65,7 @@
   background-color: var(--v2-bg);
   border: 1px solid var(--v2-border);
   padding: 0.55rem 0.85rem;
-  border-radius: 6px;
+  border-radius: var(--v2-radius-md);
   margin-bottom: 0.65rem;
   font-family: var(--v2-font-serif);
   font-size: 0.92rem;
@@ -80,7 +80,7 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: var(--v2-space-2);
 }
 
 /* Expandable Legend details */
@@ -92,12 +92,12 @@
 .v2-legend-summary {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--v2-space-2);
   cursor: pointer;
   user-select: none;
   list-style: none;
   padding: 0.15rem 0.35rem;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
   background-color: transparent;
   border: none;
   font-size: 0.8rem;
@@ -136,14 +136,14 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: var(--v2-space-4);
 }
 
 .v2-legend-list li {
   display: grid;
   grid-template-columns: 100px 1fr;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--v2-space-5);
   font-size: 0.85rem;
 }
 
@@ -161,7 +161,7 @@
 .v2-card-settings-note {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: var(--v2-space-3);
   margin-top: 1rem;
   padding-top: 0.5rem;
   border-top: 1px dashed var(--v2-border);
@@ -174,7 +174,7 @@
 .v2-dict-sections {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--v2-space-5);
 }
 
 .v2-dict-section-title {
@@ -192,13 +192,13 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--v2-space-2);
 }
 
 .v2-lexicon-list li {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: var(--v2-space-3);
   font-size: 0.85rem;
   white-space: nowrap;
   overflow: hidden;
@@ -212,7 +212,7 @@
   font-size: 0.72rem;
   font-weight: 600;
   text-align: center;
-  border-radius: 4px;
+  border-radius: var(--v2-radius-sm);
   font-family: monospace;
   flex-shrink: 0;
   letter-spacing: 0.02em;
@@ -263,25 +263,25 @@ html:not(.v2-has-js) .v2-js-only {
 
 @media (max-width: 600px) {
   .v2-landing-container {
-    gap: 1rem;
+    gap: var(--v2-space-6);
   }
   .v2-landing-grid {
     grid-template-columns: 1fr;
-    gap: 1.25rem;
+    gap: var(--v2-space-7);
   }
   .v2-landing-card-header {
     margin-bottom: 0.45rem;
     padding-bottom: 0.3rem;
   }
   .v2-dict-sections {
-    gap: 0.5rem;
+    gap: var(--v2-space-4);
   }
   .v2-dict-section-title {
     font-size: 0.75rem;
     margin-bottom: 0.25rem;
   }
   .v2-lexicon-list {
-    gap: 0.25rem;
+    gap: var(--v2-space-2);
   }
   .v2-lexicon-list li {
     font-size: 0.8rem;
@@ -298,7 +298,7 @@ html:not(.v2-has-js) .v2-js-only {
   }
   .v2-legend-list li {
     grid-template-columns: 80px 1fr;
-    gap: 0.5rem;
+    gap: var(--v2-space-4);
     font-size: 0.8rem;
   }
 }
