@@ -274,16 +274,6 @@ Verified counts as of the audit.
 - [ ] 🟢 Add spacing and radius scales (`--v2-space-*`, `--v2-radius-sm/md/lg`) — currently ~300
       arbitrary `padding`/`margin`/`border-radius` values (e.g. `reader.css` mixes `3px`/`6px`/`8px`
       radii; `library.css` L65 uses `10px 100px 10px 42px`).
-- [ ] 🟡 **Add Stylelint — ESLint cannot see CSS, so every item in this phase is unenforceable.**
-      The ESLint guardrails in Phase 2 protect the TypeScript; nothing protects the stylesheets, and
-      this phase is the larger pile of debt: **78** `!important` declarations, **23 of 125** hex
-      colours living outside the two token files, and **11** distinct z-index values across 17
-      declarations. `stylelint-declaration-strict-value` can require that colours and z-index come
-      from custom properties, which converts each cleanup below from a one-off sweep into an
-      invariant.
-      Start warn-only and ratchet. The value is stopping the _next_ hardcoded colour, not
-      relitigating the existing 23 — otherwise this blocks on the full token migration and
-      therefore never lands.
 
 ---
 
@@ -460,6 +450,12 @@ worth not rediscovering is summarised in Phase 5 instead.
   via compound `.v2-drawer.v2-drawer-toc` (0,2,0) selector, unblocking `--v2-drawer-min-height` inheritance,
   fixing No-JS sticky row display, and enforcing repo-wide via Stylelint `declaration-no-important` with
   exactly 1 documented `[hidden]` reset exception in `v2.css`.
+- **Enforced complete Stylelint 17 correctness suite and modular file-size limits.** Configured
+  `.stylelintrc.json` with CSSTree value validation (`declaration-property-value-no-unknown`), calc
+  operator spacing, unitless zeroes (`length-zero-no-unit`), named color and ID selector bans, selector
+  nesting limits ($\le 3$), duplicate selector prevention (`no-duplicate-selectors`), theme branching
+  bans outside `shell/`, and custom `src/web/v2/tools/max_file_lines.cjs` enforcing a 650-line maximum per
+  stylesheet backed by 6 unit tests.
 
 **Phase 7 — docs & tests**
 
