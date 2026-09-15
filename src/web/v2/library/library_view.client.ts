@@ -1,0 +1,85 @@
+import { BaseElement, registerElement } from "@/web/v2/core/index.client";
+
+export class MorcusLibraryView extends BaseElement {
+  private currentFilter: string = "all";
+  private currentQuery: string = "";
+
+  protected override onConnect() {
+    const input = this.$<HTMLInputElement>("#library-search-input");
+    const emptyResetBtn = this.$<HTMLButtonElement>(
+      "#library-reset-filter-btn"
+    );
+
+    if (input) {
+      this.listen(input, "input", () => {
+        this.currentQuery = input.value.trim().toLowerCase();
+        this.applyFilter();
+      });
+    }
+
+    this.listen(this, "click", (e) => {
+      if (!(e.target instanceof Element)) return;
+      const pill = e.target.closest<HTMLButtonElement>(".filter-pill");
+      if (pill) {
+        e.preventDefault();
+        const filter = pill.dataset.filter || "all";
+        this.setFilter(filter);
+      }
+    });
+
+    if (emptyResetBtn && input) {
+      this.listen(emptyResetBtn, "click", () => {
+        input.value = "";
+        this.currentQuery = "";
+        this.setFilter("all");
+      });
+    }
+  }
+
+  protected override onDisconnect() {
+    // cleanup
+  }
+
+  private setFilter(filter: string) {
+    this.currentFilter = filter;
+    const pills = this.$$<HTMLButtonElement>(".filter-pill");
+    for (const p of pills) {
+      if (p.dataset.filter === filter) {
+        p.classList.add("active");
+      } else {
+        p.classList.remove("active");
+      }
+    }
+    this.applyFilter();
+  }
+
+  private applyFilter() {
+    const cards = this.$$<HTMLElement>(".work-card");
+    const emptyState = this.$<HTMLElement>("#library-empty-state");
+
+    let visibleCount = 0;
+    const tokens = this.currentQuery.split(/\s+/).filter((t) => t.length > 0);
+
+    for (const card of cards) {
+      const author = card.dataset.author || "";
+      const title = card.dataset.title || "";
+      const tags = (card.dataset.tags || "").split(" ");
+
+      const matchesTag =
+        this.currentFilter === "all" || tags.includes(this.currentFilter);
+      const matchesQuery =
+        tokens.length === 0 ||
+        tokens.every((tok) => author.includes(tok) || title.includes(tok));
+
+      const isVisible = matchesTag && matchesQuery;
+      card.hidden = !isVisible;
+      if (isVisible) visibleCount++;
+    }
+
+    if (emptyState) {
+      emptyState.hidden = visibleCount > 0;
+    }
+  }
+}
+
+registerElement("morcus-library-view", MorcusLibraryView);

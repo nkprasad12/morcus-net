@@ -1,0 +1,199 @@
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
+import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
+import { ICON_PATHS } from "@/web/v2/core/icons.common";
+
+function fullLang(code: string): string {
+  switch (code) {
+    case "La":
+      return "Latin";
+    case "En":
+      return "English";
+    case "Fr":
+      return "French";
+    case "De":
+      return "German";
+    case "Es":
+      return "Spanish";
+    default:
+      return code;
+  }
+}
+
+interface DictItem {
+  key: string;
+  displayName: string;
+  targetLang: string;
+}
+
+/**
+ * Categorizes available dictionaries into "From Latin" and "To Latin".
+ */
+function getDirectionalDicts(): {
+  fromLatin: DictItem[];
+  toLatin: DictItem[];
+} {
+  const fromLatin: DictItem[] = [];
+  const toLatin: DictItem[] = [];
+
+  for (const dict of LatinDict.AVAILABLE) {
+    if (dict.key === "NUM") continue;
+    if (dict.languages.from === "La") {
+      const targetLang = fullLang(dict.languages.to);
+      fromLatin.push({
+        key: dict.key,
+        displayName: dict.displayName,
+        targetLang: targetLang === "Latin" ? "Latin" : targetLang,
+      });
+    } else if (dict.languages.to === "La") {
+      toLatin.push({
+        key: dict.key,
+        displayName: dict.displayName,
+        targetLang: fullLang(dict.languages.from),
+      });
+    }
+  }
+
+  return { fromLatin, toLatin };
+}
+
+/**
+ * Renders the rich landing state for empty dictionary searches in V2.
+ */
+export function renderDictLandingHtml(
+  activeDicts?: string[],
+  isInflected: boolean = true
+): string {
+  const { fromLatin, toLatin } = getDirectionalDicts();
+  const dictKeys =
+    activeDicts && activeDicts.length > 0 ? activeDicts : DEFAULT_DICT_KEYS;
+  const welcomeText = buildWelcomeMessage(dictKeys, isInflected);
+
+  const activeKeysSet = new Set(dictKeys.map((k) => k.toUpperCase()));
+
+  const renderDictList = (items: DictItem[]) =>
+    items
+      .map((d) => {
+        const isEnabled = activeKeysSet.has(d.key.toUpperCase());
+        const statusClass = isEnabled ? "dict-enabled" : "dict-disabled";
+        return `
+        <li class="dict-list-item ${statusClass}" data-dict-key="${d.key}">
+          <strong class="lexicon-badge ${statusClass}">${d.key}</strong>
+          <span class="lexicon-name">${d.displayName}</span>
+          <span class="lexicon-lang">(${d.targetLang})</span>
+        </li>
+      `;
+      })
+      .join("");
+
+  return `
+    <div class="landing-container">
+      <!-- Dynamic Welcome message based on active dictionaries -->
+      <p class="landing-welcome" id="landing-welcome">${welcomeText}</p>
+
+      <!-- Two-column info grid -->
+      <div class="landing-grid">
+        <!-- Column 1: Dictionaries (First on mobile & desktop) -->
+        <section class="landing-card">
+          <header class="landing-card-header">
+            <h3 class="landing-card-title">All Dictionaries</h3>
+          </header>
+          <div class="landing-card-body">
+            <div class="dict-sections">
+              <div class="dict-section">
+                <h4 class="dict-section-title">From Latin</h4>
+                <ul class="lexicon-list">
+                  ${renderDictList(fromLatin)}
+                </ul>
+              </div>
+              <div class="dict-section">
+                <h4 class="dict-section-title">To Latin</h4>
+                <ul class="lexicon-list">
+                  ${renderDictList(toLatin)}
+                </ul>
+              </div>
+            </div>
+
+            <div class="card-settings-note">
+              <svg class="landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="${ICON_PATHS.tune}"></path>
+              </svg>
+              <span>Enable or disable dictionaries in the settings</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Column 2: Understanding the Markup -->
+        <section class="landing-card">
+          <header class="landing-card-header">
+            <h3 class="landing-card-title">Understanding the Markup</h3>
+          </header>
+          <div class="landing-card-body">
+            <p class="landing-card-desc">
+              Entries highlight grammar, citations, and sections:
+            </p>
+
+            <!-- Minimal mock entry demonstrating all styling classes -->
+            <div class="sample-entry">
+              <div class="sample-entry-line">
+                <span class="lsOrth">unda</span>, ae,
+                <span class="lsGrammar"><span class="lsHover" title="feminine">f.</span></span>,
+                <em>a wave, billow, surge</em>.
+              </div>
+              <div class="sample-entry-sense">
+                <a href="#sample-sense" class="lsSenseBullet section-anchor" title="Direct link to this section">I.</a>
+                <span class="lsHover" title="literal">Lit.</span>:
+                <span class="lsQuote">mare plenum undarum</span>,
+                <span class="lsBibl"><span class="lsAuthor lsHover" title="Plautus">Plaut.</span> Mil. 2, 6, 33</span>
+              </div>
+            </div>
+
+            <!-- Expandable legend explaining every color and interactive style (collapsed by default) -->
+            <details class="legend-details">
+              <summary class="legend-summary">
+                <span class="legend-summary-title">What do the colors mean?</span>
+                <span class="legend-summary-arrow" aria-hidden="true">▾</span>
+              </summary>
+              <div class="legend-body">
+                <ul class="legend-list">
+                  <li>
+                    <span class="legend-sample"><span class="lsOrth">unda</span></span>
+                    <span class="legend-explain"><strong>Red tint:</strong> Lemma headwords</span>
+                  </li>
+                  <li>
+                    <span class="legend-sample"><span class="lsGrammar">f.</span></span>
+                    <span class="legend-explain"><strong>Orange tint:</strong> Grammatical gender, parts of speech, usage notes</span>
+                  </li>
+                  <li>
+                    <span class="legend-sample"><span class="lsQuote">“mare…”</span></span>
+                    <span class="legend-explain"><strong>Blue tint:</strong> Latin quotations</span>
+                  </li>
+                  <li>
+                    <span class="legend-sample"><span class="lsBibl"><span class="lsAuthor">Cic.</span></span></span>
+                    <span class="legend-explain"><strong>Purple tint:</strong> Ancient authors, works, and passage references</span>
+                  </li>
+                  <li>
+                    <span class="legend-sample"><span class="lsHover" title="Example tooltip">Lit.</span></span>
+                    <span class="legend-explain"><strong>Dotted underline:</strong> Possible abbreviations (hover or tap to expand)</span>
+                  </li>
+                  <li>
+                    <span class="legend-sample"><span class="lsSenseBullet section-anchor">I.</span></span>
+                    <span class="legend-explain"><strong>Grey badge:</strong> Section headers (click to jump or copy URL)</span>
+                  </li>
+                </ul>
+              </div>
+            </details>
+
+            <!-- Only displayed when JS is active since the slider is client-injected -->
+            <div class="legend-settings-tip js-only">
+              <svg class="landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="${ICON_PATHS.tune}"></path>
+              </svg>
+              <span>You can change highlight intensity in the settings</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+}

@@ -1,0 +1,633 @@
+:root {
+  --dict-scale: 1;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  scroll-margin-top: 8px;
+}
+
+.results > .dict-card + .dict-card {
+  margin-top: var(--space-6);
+}
+
+/* Results Navigation & Quick-Jump Pills (Option 1) */
+.results-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding-bottom: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.results-pills {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-2) var(--space-1);
+  scrollbar-width: thin;
+}
+
+.results-pills::-webkit-scrollbar {
+  height: 4px;
+}
+
+.results-pills::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.jump-pill,
+.jump-pill:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-sm);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  color: var(--dict-title);
+  text-decoration: none;
+  font-size: calc(0.78rem * var(--dict-scale, 1));
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.jump-pill:hover {
+  background-color: var(--card-bg);
+  border-color: var(--border-strong);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.jump-pill:focus:not(:focus-visible) {
+  outline: none;
+  background-color: var(--tag-bg);
+  border-color: var(--border);
+  color: var(--dict-title);
+}
+
+.jump-pill:focus:not(:focus-visible) .jump-pill-count {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.jump-pill:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.jump-pill-name {
+  font-family: monospace;
+  font-size: calc(0.76rem * var(--dict-scale, 1));
+  letter-spacing: 0.02em;
+}
+
+.jump-pill-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 var(--space-2);
+  font-size: calc(0.7rem * var(--dict-scale, 1));
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  transition: color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.jump-pill:hover .jump-pill-count {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.jump-pill.jump-pill-zero {
+  opacity: 0.55;
+  cursor: default;
+  border-style: dashed;
+}
+
+.jump-pill.jump-pill-zero:hover {
+  border-color: var(--border);
+  color: var(--text);
+  transform: none;
+}
+
+.jump-pill.jump-pill-zero:hover .jump-pill-count {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.results-total {
+  font-size: calc(0.82rem * var(--dict-scale, 1));
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.no-results-sub {
+  font-size: calc(0.82rem * var(--dict-scale, 1));
+  color: var(--text-muted);
+  margin-top: var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .results-nav {
+    display: block;
+    padding-bottom: 0;
+  }
+
+  .results-pills {
+    width: 100%;
+    padding: var(--space-1) 0;
+  }
+
+  .results-total {
+    display: none;
+  }
+
+  .dict-header,
+  .dict-summary {
+    padding: var(--space-2) 0 var(--space-2);
+  }
+
+  .dict-body {
+    padding: var(--space-3) 0 var(--space-5);
+  }
+
+  /* Reduced sense indentation on mobile to maximize horizontal reading space */
+  .entry-content ol,
+  .entry-content ul {
+    padding-left: 0.85em;
+  }
+}
+
+.dict-card {
+  scroll-margin-top: 20px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+}
+
+.dict-header {
+  /* Left inset of the dictionary acronym within the header row, so sibling rows
+     (e.g. the quick-jump bar) can line up with the name rather than the toggle:
+     2px summary padding + 14px toggle icon + 6px summary gap. */
+  --dict-name-inset: 22px;
+  padding: var(--space-1) 0 var(--space-2);
+  background-color: transparent;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dict-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: 22px;
+  gap: var(--space-3) var(--space-5);
+  width: 100%;
+}
+
+.dict-header-slim .dict-summary {
+  font-family: var(--font-sans);
+  font-size: calc(0.72rem * var(--dict-scale, 1));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-1);
+  width: auto;
+  border-radius: var(--radius-sm);
+}
+
+.dict-header-slim .dict-toggle-icon {
+  width: 14px;
+  height: 14px;
+  font-size: calc(0.68rem * var(--dict-scale, 1));
+  border-radius: var(--radius-sm);
+}
+
+.dict-header-slim .dict-acronym {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.dict-header-slim .dict-name,
+.dict-header-slim .dict-title {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dict-header-slim .dict-count {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: calc(0.7rem * var(--dict-scale, 1));
+}
+
+.dict-header-slim .dict-source-btn {
+  padding: var(--space-1) var(--space-3);
+  font-size: calc(0.68rem * var(--dict-scale, 1));
+  min-height: calc(20px * var(--dict-scale, 1));
+}
+
+/* Hide card body, entry quick-jump, and source button when collapsed */
+.dict-card:has(.dict-toggle):not(:has(.dict-toggle[open])) .dict-body,
+.dict-card:has(.dict-toggle):not(:has(.dict-toggle[open])) .entry-nav,
+.dict-card:has(.dict-toggle):not(:has(.dict-toggle[open])) .dict-source-pane {
+  display: none;
+}
+
+.dict-toggle {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Source Pill and Anchored Popover in Dictionary Header */
+.dict-source-pane {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  z-index: var(--z-raised);
+}
+
+.dict-source-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: calc(0.72rem * var(--dict-scale, 1));
+  font-weight: 500;
+  color: var(--text-muted);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.dict-source-btn::-webkit-details-marker {
+  display: none;
+}
+
+.dict-source-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.dict-source-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.dict-source-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.dict-source-pane[open] > .dict-source-btn {
+  color: var(--primary);
+  background-color: var(--tag-bg);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.dict-source-btn-icon {
+  font-size: calc(0.8rem * var(--dict-scale, 1));
+  line-height: 1;
+}
+
+.dict-source-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(420px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: var(--space-5) var(--space-6);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+  z-index: var(--z-overlay);
+  font-family: var(--font-sans);
+  font-size: calc(0.8rem * var(--dict-scale, 1));
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.dict-source-popover-title {
+  font-weight: 700;
+  font-size: calc(0.74rem * var(--dict-scale, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.dict-source-popover-body {
+  margin: 0;
+}
+
+.dict-source-popover-body a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.dict-source-popover-body a:hover {
+  color: var(--primary-hover);
+}
+
+.dict-summary {
+  padding: var(--space-1) var(--space-2);
+  font-weight: bold;
+  font-size: calc(1.15rem * var(--dict-scale, 1));
+  cursor: pointer;
+  user-select: none;
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  list-style: none;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.dict-summary::-webkit-details-marker {
+  display: none;
+}
+
+.dict-summary:hover {
+  background-color: var(--word-hover-bg);
+}
+
+.dict-summary:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.dict-summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.dict-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: calc(0.85rem * var(--dict-scale, 1));
+  line-height: 1;
+  user-select: none;
+  transition: all 0.15s ease-in-out;
+}
+
+/* Minus icon when open */
+.dict-toggle[open] .dict-toggle-icon::before {
+  content: "−";
+  font-weight: 700;
+  margin-top: -1px;
+}
+
+/* Plus icon when collapsed */
+.dict-toggle:not([open]) .dict-toggle-icon::before {
+  content: "+";
+  font-weight: 700;
+  margin-top: -1px;
+}
+
+.dict-summary:hover .dict-toggle-icon {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.dict-body {
+  padding: var(--space-4) 0 var(--space-5);
+}
+
+/* Entry Quick-Jump Bar (integrated directly inside dictionary header).
+   Indented by the toggle-icon column so it lines up with the dictionary acronym,
+   and styled to match the neighbouring `.dict-source-btn` hairline pill. */
+.entry-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 0 0 var(--dict-name-inset, 22px);
+  background: transparent;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: calc(0.78rem * var(--dict-scale, 1));
+}
+
+.entry-nav-label {
+  font-size: calc(0.65rem * var(--dict-scale, 1));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.entry-nav-list {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.entry-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4);
+  min-height: calc(20px * var(--dict-scale, 1));
+  box-sizing: border-box;
+  border-radius: var(--radius-full);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: 400;
+  transition: all 0.15s ease-in-out;
+}
+
+.entry-nav-link:hover {
+  color: var(--primary-hover);
+  border-color: var(--primary);
+}
+
+.entry-nav-word {
+  font-family: var(--font-serif);
+  font-size: calc(0.82rem * var(--dict-scale, 1));
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+/* Declutter standalone desktop navigation when left TOC rail is active */
+@media (min-width: 1080px) {
+  .has-toc .entry-nav {
+    display: none;
+  }
+
+  .has-toc .tool-outline {
+    display: none;
+  }
+}
+
+.entry {
+  scroll-margin-top: 16px;
+  margin-bottom: var(--space-5);
+  font-family: var(--font-serif);
+  font-size: calc(1.15rem * var(--dict-scale, 1));
+  line-height: 1.6;
+}
+
+.entry [id] {
+  scroll-margin-top: 16px;
+}
+
+.entry:last-child {
+  margin-bottom: 0;
+}
+
+/* Demarcation divider between multiple entries in the same dictionary */
+.entry + .entry {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px dashed var(--border);
+}
+
+/* Entry Header (demarcation banner at top of each entry in multi-entry dictionaries) */
+.entry-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px dashed var(--border);
+  font-family: var(--font-sans);
+}
+
+.entry-header.has-tools {
+  display: block;
+  padding-bottom: 0;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* Prominent editorial headword title. Inert text: the permalink lives in the
+   adjacent copy pill, so the headword stays freely selectable. */
+.entry-headword {
+  grid-row: 1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  color: var(--text);
+}
+
+.entry-headword-text {
+  font-family: var(--font-serif);
+  font-size: calc(1.2rem * var(--dict-scale, 1));
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.entry-content {
+  font-size: calc(1.15rem * var(--dict-scale, 1));
+}
+
+.entry-content ol,
+.entry-content ul {
+  margin: 0;
+  padding-left: 1.5em;
+  list-style: none;
+}
+
+.entry-content > :first-child {
+  margin-top: 0;
+}
+
+/* Anchored target animation effect (one-shot subtle flash & fade) */
+@keyframes target-highlight {
+  0% {
+    background-color: var(--target-highlight);
+    box-shadow: 0 0 0 3px var(--target-highlight);
+  }
+  35% {
+    background-color: var(--target-highlight);
+    box-shadow: 0 0 0 3px var(--target-highlight);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+:target,
+.target-active {
+  scroll-margin-top: 20px;
+  border-radius: var(--radius-sm);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  animation: target-highlight 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dict-card:target,
+.dict-card.target-active {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :target,
+  .target-active {
+    animation: none;
+    background-color: var(--target-highlight);
+  }
+  .dict-card:target,
+  .dict-card.target-active {
+    background-color: transparent;
+  }
+}

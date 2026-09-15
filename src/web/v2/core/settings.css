@@ -1,0 +1,283 @@
+/* Shared Settings System & Form Controls */
+
+/* ==========================================================================
+   1. Settings Trigger Buttons & Badges
+   ========================================================================== */
+
+.settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  width: 42px;
+  padding: var(--space-4);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border, var(--border));
+  box-shadow: var(--input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+}
+
+.settings-btn:hover {
+  color: var(--primary);
+  background-color: var(--tag-bg);
+  border-color: var(--border-strong);
+}
+
+.settings-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.settings-btn[aria-expanded="true"] {
+  color: var(--primary);
+  border-color: var(--primary);
+  background-color: var(--tag-bg);
+}
+
+.settings-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  display: block;
+}
+
+.settings-glyph {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+/* ==========================================================================
+   2. Settings Containers, Cards & Popovers
+   ========================================================================== */
+
+morcus-reader-settings {
+  display: contents;
+}
+
+.reader-settings-dialog {
+  max-width: 440px;
+}
+
+.settings-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  max-width: calc(100vw - 32px);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+  padding: var(--space-5);
+  z-index: var(--z-dropdown);
+  box-sizing: border-box;
+}
+
+.settings-card {
+  padding: var(--space-7) var(--space-7) var(--space-6);
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6) 0;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.settings-group-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-section-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-4);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.settings-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.settings-control-row {
+  margin-bottom: var(--space-5);
+}
+
+.settings-divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-5) 0 var(--space-5);
+}
+
+/* ==========================================================================
+   3. Settings Form Controls & Steppers
+   ========================================================================== */
+
+.settings-label {
+  font-size: 0.85rem;
+  color: var(--text);
+  user-select: none;
+}
+
+.settings-caption {
+  margin: var(--space-2) 0 0 var(--space-7);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.stepper-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.stepper-btn:hover {
+  background: var(--card-bg);
+  color: var(--primary);
+}
+
+.stepper-val {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 3.2rem;
+  text-align: center;
+  padding: 0 var(--space-2);
+}
+
+.settings-slider {
+  width: 100%;
+  accent-color: var(--primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.settings-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+}
+
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  cursor: pointer;
+  padding: var(--space-2) 0;
+}
+
+.toggle-checkbox {
+  width: 1.15rem;
+  height: 1.15rem;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.dict-checkbox,
+.inflected-checkbox {
+  accent-color: var(--primary);
+  cursor: pointer;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.settings-select {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.8125rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+}
+
+/* ==========================================================================
+   4. Settings Actions & Footers
+   ========================================================================== */
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.settings-noscript-actions {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-apply-btn {
+  font-size: 0.78rem;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}

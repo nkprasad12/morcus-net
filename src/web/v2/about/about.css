@@ -1,0 +1,70 @@
+/* About Page Layout & Sections */
+
+.header {
+  margin-bottom: var(--space-8);
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.about-logo {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.header h1 {
+  margin: 0 0 var(--space-4) 0;
+  font-size: 1.8rem;
+}
+
+.header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.about-article {
+  max-width: 760px;
+}
+
+.about-section {
+  margin-bottom: var(--space-9);
+}
+
+.about-section h2 {
+  font-size: 1.35rem;
+  margin: 0 0 var(--space-5) 0;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.about-section p {
+  margin: 0 0 var(--space-5) 0;
+  line-height: 1.6;
+}
+
+.about-section ul {
+  margin: 0 0 var(--space-6) 0;
+  padding-left: var(--space-8);
+}
+
+.about-section li {
+  margin-bottom: var(--space-4);
+  line-height: 1.5;
+}
+
+.about-section a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.about-section a:hover {
+  color: var(--primary-hover);
+}

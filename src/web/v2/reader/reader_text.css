@@ -1,0 +1,361 @@
+/* Reader Reading Text Panel, Latin Typography, Section Gutter, and Parallel View */
+
+/* ==========================================================================
+   1. Reader Text Column & Passage Typography
+   ========================================================================== */
+
+.reader-text-panel {
+  min-width: 0;
+}
+
+.reader-text-card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.reader-text-card-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-6);
+  margin-bottom: var(--space-7);
+}
+
+.reader-text-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.reader-author-tag {
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.reader-meta-sep {
+  opacity: 0.4;
+}
+
+.reader-work-tag {
+  font-weight: 500;
+  text-transform: none;
+  font-style: italic;
+  font-family: var(--font-serif);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.reader-passage-heading {
+  margin: 0 0 var(--space-2);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--font-serif);
+}
+
+.reader-passage {
+  font-family: var(--reader-font, var(--font-serif));
+  font-size: var(--reader-font-size, 1.25rem);
+  line-height: var(--reader-line-height, 1.95);
+  color: var(--text);
+}
+
+.reader-paragraph {
+  margin: 0 0 var(--space-7);
+  text-align: left;
+}
+
+.reader-passage-footer {
+  margin-top: var(--space-9);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.reader-continuation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.reader-continue-btn,
+.reader-continue-btn:visited {
+  background: var(--primary);
+  color: var(--on-accent);
+  font-weight: 600;
+  justify-content: center;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
+}
+
+.reader-continue-btn:hover {
+  background: var(--primary-hover);
+  color: var(--on-accent);
+}
+
+.reader-return-btn {
+  justify-content: center;
+  font-weight: 600;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+
+.reader-footer-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.reader-footer-note {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   2. Latin Clickable Words in Reading Text
+   ========================================================================= */
+
+.reader-passage a,
+a.lat-word,
+span.lat-word {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: inherit;
+  transition: background-color 0.12s ease;
+  display: inline;
+}
+
+.reader-passage a:visited,
+a.lat-word:visited {
+  color: inherit;
+}
+
+.reader-passage a:hover,
+a.lat-word:hover,
+span.lat-word:hover,
+span.lat-word:focus-visible {
+  background-color: var(--word-hover-bg);
+  color: inherit;
+  font-weight: inherit;
+  text-decoration: none;
+  outline: none;
+}
+
+.reader-passage a.word-active,
+a.lat-word.word-active,
+span.lat-word.word-active {
+  background-color: var(--word-active-bg);
+  color: inherit;
+  font-weight: inherit;
+  text-decoration: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* ==========================================================================
+   3. Section Gutter & Responsive Numbering
+   ========================================================================== */
+
+.reader-section {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: baseline;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background-color 0.2s ease, border-left-color 0.2s ease;
+}
+
+.reader-gutter {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.section-anchor {
+  color: var(--text-muted);
+  text-decoration: none;
+  display: inline-block;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease;
+}
+
+.section-anchor:hover {
+  color: var(--primary);
+}
+
+.cite-prefix {
+  opacity: 0.65;
+}
+
+.cite-local {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Native CSS Fragment Highlighting (:target) */
+.reader-section:target,
+.reader-section.target-highlight {
+  background-color: var(--primary-light);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+@keyframes highlightFade {
+  0% {
+    background-color: var(--primary-light);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Hide Gutter Toggle Rule */
+.reader-view.hide-gutter .reader-gutter {
+  display: none;
+}
+
+.reader-view.hide-gutter .reader-section {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ==========================================================================
+   4. Parallel Translation View
+   ========================================================================== */
+
+.section-parallel {
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+}
+
+.reader-parallel-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+  width: 100%;
+}
+
+.passage-english {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-left: var(--space-6);
+  border-left: 2px solid var(--border);
+}
+
+.reader-trans-author {
+  display: block;
+  font-family: var(--font-sans, sans-serif);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-style: normal;
+  margin-bottom: var(--space-2);
+}
+
+/* ==========================================================================
+   5. Responsive Overrides: Mobile (<= 640px) & Desktop (>= 641px)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  /* Top Column: Latin Reading Passage (Flows naturally down the page) */
+  .reader-text-panel {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: clip;
+    overflow-y: visible;
+    padding: var(--space-4) var(--space-5) var(--space-7);
+  }
+
+  .reader-text-card {
+    padding: var(--space-2) 0 var(--space-6);
+    box-shadow: none;
+    border: none;
+    background: transparent;
+  }
+
+  .reader-passage {
+    font-size: 1.15rem;
+    line-height: 1.8;
+  }
+
+  .reader-section {
+    grid-template-columns: 1.35rem minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+  }
+
+  .cite-prefix {
+    display: none; /* Hides "2.1." on mobile, showing only "2" */
+  }
+
+  .cite-local {
+    color: var(--primary);
+    font-size: 0.8125rem;
+  }
+
+  .section-parallel {
+    grid-template-columns: 1.35rem minmax(0, 1fr);
+  }
+
+  .reader-parallel-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    background: var(--card-bg);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+  }
+
+  .passage-english {
+    font-size: 0.9375rem;
+    padding-left: var(--space-4);
+    border-left: 2px solid var(--border-strong);
+    padding-top: var(--space-2);
+  }
+}
+
+@media (min-width: 641px) {
+  .reader-text-panel {
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 0%;
+    min-width: 320px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: var(--space-6);
+    padding-left: var(--space-2);
+    scrollbar-width: thin;
+  }
+
+  /* Unboxed flat canvas for reading passage on desktop */
+  .reader-text-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: var(--space-2) var(--space-4) var(--space-9) 0;
+    box-shadow: none;
+  }
+}

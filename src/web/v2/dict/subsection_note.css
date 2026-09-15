@@ -1,0 +1,166 @@
+/* ==========================================================================
+   Subsection Match Note
+   Shown when a query matched inside an entry rather than at its headword.
+   ========================================================================== */
+
+/* No left accent bar here on purpose: the primary-coloured bar is reserved as
+   the "a match is here" marker in the entry body. The banner is identified by
+   its tint and sans-serif face instead, so the two never stack into what looks
+   like one interrupted rule. */
+.subsection-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  background-color: var(--tag-bg);
+  font-family: var(--font-sans);
+}
+
+.subsection-note-lead {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: calc(0.85rem * var(--dict-scale, 1));
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* The matched headword reads as prose, in the dictionary's serif face. */
+.subsection-name {
+  font-family: var(--font-serif);
+  font-size: calc(0.98rem * var(--dict-scale, 1));
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Entry markup carries its own orth highlight, which would read as a
+   pill-inside-a-pill here. */
+.subsection-note .lsOrth {
+  background: none;
+  padding: 0;
+}
+
+.subsection-chip,
+.subsection-chip:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: calc(1.55rem * var(--dict-scale, 1));
+  margin-left: var(--space-2);
+  padding: var(--space-1) var(--space-4) var(--space-1) var(--space-3);
+  box-sizing: border-box;
+  border-radius: var(--radius-full);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  font-size: calc(0.78rem * var(--dict-scale, 1));
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transition: all 0.15s ease-in-out;
+}
+
+.subsection-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.subsection-chip:focus-visible,
+.subsection-namelink:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Retained for anchors we could not resolve, so the match is still reported. */
+.subsection-chip-dead {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.subsection-chip-icon {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+  opacity: 0.7;
+}
+
+/* With a single match the headword itself is the link. */
+.subsection-namelink,
+.subsection-namelink:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  text-decoration: none;
+  color: var(--text);
+  border-bottom: 1px dotted var(--border-strong);
+}
+
+.subsection-namelink:hover {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* A lone analysis is shown inline: a table costs far more vertical space than
+   one fact justifies, which matters most in the narrow reader panel. */
+.subsection-inline-inf {
+  margin: 0;
+  font-size: calc(0.8rem * var(--dict-scale, 1));
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.subsection-inline-inf b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.subsection-details {
+  margin: 0;
+}
+
+.subsection-note .tool-body {
+  margin-top: var(--space-3);
+  max-height: 220px;
+}
+
+/* Persistent marker on the matched element within the entry body.
+   The bar is drawn with an absolutely positioned pseudo-element rather than a
+   border plus padding: in-flow properties would indent this element relative
+   to its unmarked siblings and break the alignment of sibling sense ordinals. */
+.subsection-hit {
+  position: relative;
+  background-color: var(--tag-bg);
+  border-radius: var(--radius-sm);
+}
+
+.subsection-hit::before {
+  content: "";
+  position: absolute;
+  /* Always offset into the margin so the bar never abuts the text. For nested
+     senses this is the list gutter (1.5em desktop / 0.85em mobile). Top level
+     elements have no gutter of their own, but every ancestor up to
+     .container is overflow-visible with zero horizontal padding, so the bar
+     simply sits in the container's 16px padding. 0.5em is ~9px, which clears
+     the 3px bar comfortably; much more than that would reach the card edge. */
+  left: -0.5em;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: var(--radius-xs);
+  background-color: var(--primary);
+}
+
+@media (max-width: 600px) {
+  .subsection-note {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .subsection-note-tail {
+    display: none;
+  }
+}

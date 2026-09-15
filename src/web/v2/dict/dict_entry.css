@@ -1,0 +1,362 @@
+/* ==========================================================================
+   Dictionary Entry Toolbars, Segmented Controls & Action Buttons
+   ========================================================================== */
+
+/* Top Unified Segmented Tab Bar */
+.entry-tools {
+  margin-bottom: var(--space-3);
+}
+
+.segmented-bar {
+  display: grid;
+  /* headword | copy pill | Outline | Inflections | filler */
+  grid-template-columns: auto auto auto auto 1fr;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  width: 100%;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px dashed var(--border);
+  background-color: transparent;
+  font-family: var(--font-sans);
+  font-size: calc(0.95rem * var(--dict-scale, 1));
+}
+
+.segmented-bar.has-badge,
+.segmented-bar:has(.dict-badge) {
+  /* badge | headword | copy pill | Outline | Inflections | filler */
+  grid-template-columns: auto auto auto auto auto 1fr;
+}
+
+/* Inline Lexicon Badge for Entry Toolbar (Embedded Mode) */
+.dict-badge {
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono, monospace);
+  font-size: calc(0.72rem * var(--dict-scale, 1));
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.dict-badge-la {
+  background-color: var(--chip-la-bg, var(--tag-bg));
+  color: var(--chip-la-text, var(--text-muted));
+}
+
+.dict-badge-en {
+  background-color: var(--chip-en-bg, var(--tag-bg));
+  color: var(--chip-en-text, var(--text-muted));
+}
+
+.dict-badge-de {
+  background-color: var(--chip-de-bg, var(--tag-bg));
+  color: var(--chip-de-text, var(--text-muted));
+}
+
+.dict-badge-es {
+  background-color: var(--chip-es-bg, var(--tag-bg));
+  color: var(--chip-es-text, var(--text-muted));
+}
+
+.tool-pane {
+  display: contents;
+}
+
+.tool-pane:not([open]) > :not(summary) {
+  display: none;
+}
+
+.tool-pane:not([open])::details-content {
+  display: none;
+}
+
+.tool-pane[open]::details-content {
+  display: contents;
+}
+
+.tab-pill {
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: calc(1.65rem * var(--dict-scale, 1));
+  min-height: calc(1.65rem * var(--dict-scale, 1));
+  padding: 0 calc(0.65rem * var(--dict-scale, 1));
+  box-sizing: border-box;
+  font-size: calc(0.76rem * var(--dict-scale, 1));
+  font-weight: 500;
+  line-height: 1;
+  border-radius: var(--radius-full);
+  color: var(--text);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease-in-out;
+}
+
+.tab-pill::-webkit-details-marker {
+  display: none;
+}
+
+.tab-pill::after {
+  content: " ▾";
+  font-size: calc(0.68rem * var(--dict-scale, 1));
+  color: var(--text-muted);
+  transition: transform 0.2s ease-in-out;
+}
+
+.tool-pane[open] > .tab-pill {
+  background-color: var(--card-bg);
+  color: var(--text);
+  border-color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tool-pane[open] > .tab-pill::after {
+  content: " ▴";
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.tab-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.tool-pane[open] > .tab-pill:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.tab-pill:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.tab-pill:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ---- Copy-link pill --------------------------------------------------- */
+/* Shares .tab-pill so every entry header has the same composition, but it
+   is an action rather than a disclosure. */
+.copy-pill {
+  text-decoration: none;
+}
+
+.copy-pill::after {
+  /* No disclosure caret: this pill does not expand anything. */
+  content: none;
+}
+
+/* Beats the global `a:visited` rule (0,1,1), which would otherwise tint the
+   pill primary-blue once the no-JS path has been followed even once. */
+.copy-pill,
+.copy-pill:visited {
+  color: var(--text);
+}
+
+.copy-pill:hover,
+.copy-pill:hover:visited {
+  color: var(--primary);
+}
+
+.copy-pill-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.copy-pill-glyph {
+  width: 0.92em;
+  height: 0.92em;
+  fill: currentColor;
+  opacity: 0.6;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.copy-pill:hover .copy-pill-glyph {
+  opacity: 1;
+}
+
+/* Exactly one glyph is visible at a time. These selectors are deliberately
+   more specific than `.copy-pill-glyph` above; a bare `.copy-pill-check`
+   would lose to it and both glyphs would render. */
+.copy-pill .copy-pill-check,
+.copy-pill.is-copied .copy-pill-link {
+  display: none;
+}
+
+.copy-pill.is-copied .copy-pill-check {
+  display: inline;
+  opacity: 1;
+}
+
+.copy-pill.is-copied {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Long label by default; the 600px block below swaps in the short one. */
+.copy-pill-short {
+  display: none;
+}
+
+.tool-body {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: var(--space-2);
+  padding: var(--space-5) var(--space-6);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  max-height: 280px;
+  overflow-y: auto;
+  font-size: calc(0.92rem * var(--dict-scale, 1));
+}
+
+.entry .toc-list,
+.toc-list {
+  margin: 0;
+  padding: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.toc-list li {
+  margin-bottom: var(--space-3);
+  line-height: 1.45;
+}
+
+.toc-link,
+.toc-link:visited {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.toc-link:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.toc-link:focus:not(:focus-visible) {
+  color: var(--text);
+  text-decoration: none;
+  outline: none;
+}
+
+.toc-ordinal {
+  font-weight: 700;
+  color: var(--primary);
+  margin-right: var(--space-3);
+}
+
+.table-scroller {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.inflections-body {
+  padding: var(--space-4) var(--space-5) var(--space-5) var(--space-5);
+}
+
+.usage-note {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+/* Action buttons inside entry content (e.g. Forcellini external new-tab action) */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 var(--space-2) var(--space-3);
+  padding: var(--space-1) var(--space-5);
+  font-family: var(--font-sans);
+  font-size: calc(0.8rem * var(--dict-scale, 1));
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--primary);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: all 0.15s ease-in-out;
+}
+
+.action-btn:hover {
+  color: var(--primary);
+  background-color: var(--border);
+  border-color: var(--border-strong);
+  text-decoration: none;
+}
+
+.action-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.action-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.action-btn-icon {
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+.action-btn-text {
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .segmented-bar,
+  .segmented-bar.has-badge,
+  .segmented-bar:has(.dict-badge) {
+    display: flex;
+    /* Clear the desktop track definitions (base and badge variants); they still
+       apply to a grid container and would otherwise fight the flex fallback. */
+    grid-template-columns: none;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-5) var(--space-4);
+  }
+  .entry-headword {
+    max-width: 100%;
+    margin-bottom: var(--space-1);
+  }
+  .tab-pill {
+    flex: 0 0 auto;
+  }
+  /* Shorten "Copy link" to "Link" so all three pills still fit beside the
+     headword on a narrow screen. */
+  .copy-pill-long {
+    display: none;
+  }
+  .copy-pill-short {
+    display: inline;
+  }
+  .tool-body {
+    width: 100%;
+    order: 10;
+    margin-top: var(--space-3);
+  }
+}

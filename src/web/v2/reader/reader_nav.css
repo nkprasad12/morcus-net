@@ -1,0 +1,426 @@
+/* Reader Sticky Quick Navigation Bar, Jump Controls, and View Mode Switcher */
+
+/* ==========================================================================
+   1. Reader Sticky Quick Navigation Bar (Essentials Default with Expandable Tools)
+   ========================================================================== */
+
+.reader-sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.sticky-primary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  width: 100%;
+}
+
+.sticky-primary-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.reader-sticky-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-width: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+}
+
+.sticky-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sticky-author {
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+.sticky-work-title {
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 2;
+}
+
+.sticky-title-sep {
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+
+.sticky-page-title {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+.sticky-jump-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.sticky-jump-input {
+  width: 4.25rem;
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.sticky-jump-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.reader-nav-arrow {
+  padding: var(--space-2) var(--space-4);
+  min-width: 2rem;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* More / Expand Toggle Button */
+.sticky-expand-btn {
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-muted);
+}
+
+.sticky-expand-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--card-bg);
+}
+
+.sticky-expand-btn[aria-expanded="true"] {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.icon-more {
+  flex-shrink: 0;
+}
+
+.expand-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.expand-chevron {
+  font-size: 0.65rem;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+/* Secondary Expanded Row */
+.sticky-expanded-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-3) var(--space-5) var(--space-4);
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  width: 100%;
+  animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sticky-expanded-row[hidden] {
+  display: none;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.expanded-left,
+.expanded-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.reader-settings-btn {
+  padding: var(--space-2) var(--space-4);
+  font-weight: 600;
+  letter-spacing: -0.05em;
+}
+
+.reader-info-btn {
+  padding: var(--space-2) var(--space-4);
+}
+
+/* No-JS Mode: expanded row is always visible, expand button hidden */
+@media (scripting: none) {
+  .sticky-expanded-row[hidden] {
+    display: flex;
+  }
+  .sticky-expand-btn {
+    display: none;
+  }
+}
+
+:root:not(.has-js) .sticky-expanded-row[hidden] {
+  display: flex;
+}
+
+:root:not(.has-js) .sticky-expand-btn {
+  display: none;
+}
+
+.reader-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.reader-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--primary);
+}
+
+.pager-arrow {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+/* ==========================================================================
+   2. Quick Jump Form & View Mode Switcher
+   ========================================================================== */
+
+.reader-jump-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.jump-glyph {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.jump-input {
+  width: 4.5rem;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.jump-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.jump-submit {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.jump-submit:hover {
+  background: var(--border);
+}
+
+.reader-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  background: var(--bg);
+}
+
+.toggle-option {
+  padding: var(--space-1) var(--space-4);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: all 0.12s ease;
+}
+
+.toggle-option:hover {
+  color: var(--text);
+}
+
+.toggle-option.active,
+.toggle-option.active:visited {
+  background: var(--primary);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   3. Responsive Breakpoint: Mobile Sticky Navigation Overrides (<= 640px)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .reader-sticky-bar {
+    max-width: 100%;
+    margin-bottom: var(--space-5);
+    box-sizing: border-box;
+    overflow-x: clip;
+  }
+
+  .sticky-primary-row {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .reader-sticky-form {
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: var(--space-2);
+  }
+
+  .sticky-title-wrapper {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    gap: var(--space-1);
+  }
+
+  .sticky-expanded-row {
+    padding: var(--space-2) var(--space-4);
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  .expanded-left,
+  .expanded-right {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .expand-label {
+    display: none;
+  }
+
+  .btn-text {
+    display: none;
+  }
+
+  .sticky-author {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    max-width: 75px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .sticky-work-title,
+  .sticky-work-sep {
+    display: none;
+  }
+
+  .sticky-page-title {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    max-width: 75px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .sticky-jump-box {
+    flex-shrink: 0;
+    gap: var(--space-1);
+  }
+
+  .sticky-jump-input {
+    width: 2.75rem;
+    padding: var(--space-1);
+    font-size: 0.75rem;
+  }
+
+  .reader-nav-arrow {
+    padding: var(--space-1) var(--space-3);
+    min-width: 1.6rem;
+  }
+
+  .jump-input {
+    width: 2.75rem;
+    padding: var(--space-1) var(--space-2);
+  }
+}

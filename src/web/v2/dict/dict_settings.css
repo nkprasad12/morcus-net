@@ -1,0 +1,57 @@
+/* Highlight & Dictionary Selection Settings (Web Component & Dropdown) */
+
+morcus-dict-settings,
+.dict-settings-details {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.dict-settings-details > summary.settings-btn {
+  list-style: none;
+}
+
+.dict-settings-details > summary.settings-btn::-webkit-details-marker {
+  display: none;
+}
+
+.dict-settings-details[open] > .settings-btn {
+  color: var(--primary);
+  border-color: var(--primary);
+  background-color: var(--tag-bg);
+}
+
+/* Dictionary Selection Section */
+.settings-inflected-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.dict-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.dict-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: 0.78rem;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dict-name {
+  font-weight: 500;
+  flex: 1;
+}
+
+.dict-lang {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}

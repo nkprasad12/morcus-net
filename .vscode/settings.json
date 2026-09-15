@@ -61,6 +61,7 @@
   },
   "rust-analyzer.check.command": "clippy",
   "chat.tools.terminal.autoApprove": {
-    "docker run": true
+    "docker run": true,
+    "npm i": true
   }
 }
