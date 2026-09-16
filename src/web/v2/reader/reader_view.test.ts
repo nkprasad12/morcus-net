@@ -12,10 +12,44 @@ import {
   DRAWER_EXPANDED_DVH,
   DRAWER_FLOOR_DVH,
 } from "@/web/v2/core/drawer.client";
+import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
 installPointerEventShims();
+
+function createReaderView(innerPassageHtml: string): MorcusReaderView {
+  const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+  el.innerHTML = `
+    <div class="reader-split-layout reader-layout-empty">
+      <section class="reader-text-panel">
+        <div class="reader-text-card">
+          <article class="reader-passage" id="reader-passage">
+            ${innerPassageHtml}
+          </article>
+        </div>
+      </section>
+      <aside class="reader-dict-panel">
+        <div class="reader-sheet-bar">
+          <div class="reader-sheet-teaser">
+            <span class="reader-sheet-label">Tap any word</span>
+          </div>
+        </div>
+        <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
+      </aside>
+      <morcus-reader-settings>
+        <dialog id="reader-settings-dialog">
+          <input type="checkbox" id="toggle-macra" checked />
+          <button id="dict-size-dec">-</button>
+          <span id="dict-size-label">100%</span>
+          <button id="dict-size-inc">+</button>
+        </dialog>
+      </morcus-reader-settings>
+    </div>
+  `;
+  document.body.appendChild(el);
+  return el;
+}
 
 describe("MorcusReaderView client tokenization & macra handling", () => {
   beforeEach(() => {
@@ -26,39 +60,6 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   afterEach(() => {
     document.body.innerHTML = "";
   });
-
-  function createReaderView(innerPassageHtml: string): MorcusReaderView {
-    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
-    el.innerHTML = `
-      <div class="reader-split-layout reader-layout-empty">
-        <section class="reader-text-panel">
-          <div class="reader-text-card">
-            <article class="reader-passage" id="reader-passage">
-              ${innerPassageHtml}
-            </article>
-          </div>
-        </section>
-        <aside class="reader-dict-panel">
-          <div class="reader-sheet-bar">
-            <div class="reader-sheet-teaser">
-              <span class="reader-sheet-label">Tap any word</span>
-            </div>
-          </div>
-          <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
-        </aside>
-        <morcus-reader-settings>
-          <dialog id="reader-settings-dialog">
-            <input type="checkbox" id="toggle-macra" checked />
-            <button id="dict-size-dec">-</button>
-            <span id="dict-size-label">100%</span>
-            <button id="dict-size-inc">+</button>
-          </dialog>
-        </morcus-reader-settings>
-      </div>
-    `;
-    document.body.appendChild(el);
-    return el;
-  }
 
   test("tokenizes Aeneid text with decomposed NFD macra without splitting words", () => {
     // Aeneid 1.8 with combining macrons (\u0304): Mūsa, mihī causās memorā, quō nūmine laesō
@@ -791,5 +792,42 @@ describe("MorcusReaderView desktop splitter drag", () => {
     // Disconnect removes controller
     el.remove();
     expect(el.getTocController()).toBeNull();
+  });
+
+  test("saves current page spot to savedSpotsStore on connect", () => {
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.dataset.work = "phi0448.phi001.perseus-lat2";
+    el.dataset.page = "1.2";
+    document.body.appendChild(el);
+
+    expect(savedSpotsStore.get("phi0448.phi001.perseus-lat2")).toBe("1.2");
+  });
+
+  test("saves hash section spot to savedSpotsStore on connect when hash present", () => {
+    window.location.hash = "#sec-1.2.3";
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.dataset.work = "phi0448.phi001.perseus-lat2";
+    el.dataset.page = "1.2";
+    document.body.appendChild(el);
+
+    expect(savedSpotsStore.get("phi0448.phi001.perseus-lat2")).toBe("1.2.3");
+    window.location.hash = "";
+  });
+
+  test("updates saved spot when section anchor is clicked", () => {
+    const passageHtml = `
+      <div class="reader-section" id="sec-1.5">
+        <a href="#sec-1.5" class="section-anchor">§ 1.5</a>
+        <p class="reader-paragraph">Some text</p>
+      </div>
+    `;
+    const el = createReaderView(passageHtml);
+    el.dataset.work = "phi0448.phi001.perseus-lat2";
+    el.dataset.page = "1.1";
+
+    const anchor = el.querySelector<HTMLAnchorElement>("a.section-anchor")!;
+    anchor.click();
+
+    expect(savedSpotsStore.get("phi0448.phi001.perseus-lat2")).toBe("1.5");
   });
 });

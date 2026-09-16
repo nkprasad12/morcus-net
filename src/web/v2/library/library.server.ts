@@ -55,6 +55,8 @@ export async function renderLibraryPageHtml(): Promise<string> {
       return `
         <a href="${readerUrl}"
            class="card card-interactive work-card"
+           data-work-id="${he.escape(w.id)}"
+           data-reader-url="${readerUrl}"
            data-author="${he.escape((w.author || "").toLowerCase())}"
            data-title="${he.escape((w.title || "").toLowerCase())}"
            data-tags="${tags.join(" ")}"

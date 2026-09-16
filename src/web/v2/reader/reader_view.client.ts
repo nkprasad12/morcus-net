@@ -25,6 +25,7 @@ import {
   READER_SETTINGS_KEY,
   readerSettingsStore,
 } from "@/web/v2/reader/reader_settings.client";
+import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 import { ReaderTocController } from "@/web/v2/reader/reader_toc.client";
 import {
   ReaderLayoutController,
@@ -90,6 +91,7 @@ export class MorcusReaderView extends BaseElement {
 
   protected override onConnect() {
     this.currentPrefs = readerSettingsStore.get();
+    this.saveCurrentSpot();
     this.enhancePassage();
     this.applyPreferences(this.currentPrefs);
 
@@ -221,14 +223,17 @@ export class MorcusReaderView extends BaseElement {
       }
       const secEl = document.getElementById(`sec-${secId}`);
       if (secEl) {
-        secEl.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-          inline: "nearest",
-        });
+        if (typeof secEl.scrollIntoView === "function") {
+          secEl.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
+        }
         secEl.classList.add("target-highlight");
         setTimeout(() => secEl.classList.remove("target-highlight"), 3000);
       }
+      this.saveCurrentSpot(secId);
       this.showToast(`Copied permalink: § ${secId}`);
       return;
     }
@@ -242,6 +247,29 @@ export class MorcusReaderView extends BaseElement {
 
     this.lookupWord(word, wordEl, true);
   };
+
+  private saveCurrentSpot(explicitSecId?: string): void {
+    const workId = this.dataset.work;
+    if (!workId) return;
+
+    let secId = explicitSecId;
+    if (!secId) {
+      const hash = window.location.hash;
+      if (hash.startsWith("#sec-")) {
+        const parsed = hash.slice(5).trim();
+        if (parsed) {
+          secId = parsed;
+        }
+      }
+    }
+    if (!secId) {
+      secId = this.dataset.page;
+    }
+
+    if (secId) {
+      savedSpotsStore.set(workId, secId);
+    }
+  }
 
   private closeDictionary(updateHistory: boolean = true) {
     this.dismissDictionary(updateHistory);
