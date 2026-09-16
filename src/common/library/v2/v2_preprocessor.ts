@@ -123,7 +123,11 @@ function renderNoteMarker(
     // have no marker position of its own to link back to.
     bodyHtml: renderXmlNodeCleanHtml(body),
   });
-  return `<a class="reader-note-ref" id="${refId}" href="#${bodyId}" role="doc-noteref" aria-label="Note ${label}"><sup>${label}</sup></a>`;
+  // Bracketed, as on Wikipedia: a bare superscript numeral is a ~14px tap
+  // target, and the brackets also keep the marker legible against the digits
+  // of a citation or a date in the text itself. The CSS pads this out to a
+  // real hit area on top of the extra glyph width.
+  return `<a class="reader-note-ref" id="${refId}" href="#${bodyId}" role="doc-noteref" aria-label="Note ${label}"><sup>[${label}]</sup></a>`;
 }
 
 function renderXmlNodeCleanHtml(
@@ -267,7 +271,7 @@ function renderNotesSection(groups: NoteGroup[]): string | undefined {
       .map(
         (note) =>
           `<li class="reader-note" id="${note.bodyId}">
-            <a class="reader-note-backref" href="#${note.refId}" role="doc-backlink" aria-label="Back to note ${note.label} in the text">${note.label}</a>
+            <a class="reader-note-backref" href="#${note.refId}" role="doc-backlink" aria-label="Back to note ${note.label} in the text">[${note.label}]</a>
             <div class="reader-note-body">${note.bodyHtml}</div>
           </li>`
       )
