@@ -11,6 +11,7 @@ import {
 import {
   CitationId,
   citationToString,
+  getDifferentialCitationLabel,
 } from "@/web/v2/reader/reader_types.server";
 import {
   buildReaderPageUrl,
@@ -181,38 +182,34 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
             <span class="pager-arrow" aria-hidden="true">&larr;</span>
           </a>
 
-          <!-- Center: Work/Chapter Title + Section Symbol (§) + Pre-populated Jump Input -->
-          <form action="/v2/reader/${work.urlAuthor}/${
-    work.urlName
-  }" method="GET" class="reader-sticky-form" id="reader-jump-form">
-            <input type="hidden" name="curr_page" value="${pageDotId}">
-            ${
-              viewMode === "parallel"
-                ? '<input type="hidden" name="view" value="parallel">'
-                : ""
-            }
-            
+          <!-- Center: Work/Chapter Title + Section Jump Dropdown Trigger -->
+          <div class="reader-sticky-form" id="reader-jump-form">
             <div class="sticky-center-group">
-              <div class="sticky-title-wrapper" title="${he.escape(work.title)}">
+              <div class="sticky-title-wrapper" title="${he.escape(
+                work.title
+              )}">
                 <span class="sticky-work-title">${he.escape(
                   work.shortTitle || work.title
                 )}</span>
               </div>
 
               <div class="sticky-jump-box">
-                <label for="jump-input" class="jump-glyph" title="Citation section (type and press Enter to jump)">§</label>
-                <input type="text"
-                       id="jump-input"
-                       name="jump"
-                       value="${pageDotId}"
-                       class="jump-input sticky-jump-input"
-                       title="Current citation: § ${pageDotId}. Type new coordinate and press Enter to jump."
-                       autocomplete="off"
-                       onfocus="this.select()">
-                <button type="submit" class="jump-submit sr-only-focusable" aria-label="Go to section">Go</button>
+                <a href="#reader-toc-drawer"
+                   class="reader-btn sticky-section-btn"
+                   id="reader-toc-btn"
+                   role="button"
+                   aria-expanded="false"
+                   aria-controls="reader-toc-drawer"
+                   title="Contents & Sections (T)">
+                  <span class="jump-glyph" aria-hidden="true">&sect;</span>
+                  <span class="jump-val">${pageDotId}</span>
+                  <svg class="jump-chevron" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </a>
               </div>
             </div>
-          </form>
+          </div>
 
           <!-- Right Controls: Next Arrow + Expand Button -->
           <div class="sticky-primary-right">
@@ -244,21 +241,6 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
 
         <!-- Secondary Expanded Row (Hidden by default, smooth animated reveal) -->
         <div class="sticky-expanded-row" id="sticky-expanded-row" hidden>
-          <!-- Left: TOC Drawer Button -->
-          <div class="expanded-left">
-            <button type="button"
-                    class="reader-btn reader-toc-trigger"
-                    id="reader-toc-btn"
-                    aria-expanded="false"
-                    aria-controls="reader-toc-drawer"
-                    title="Table of Contents (T)">
-              <svg class="icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <path d="M4 6h16M4 12h16M4 18h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              <span>Contents</span>
-            </button>
-          </div>
-
           <!-- Right: View Mode Toggle + Settings + Scholarly Info -->
           <div class="expanded-right">
             ${
@@ -310,6 +292,12 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
     ctx;
   const prevPageUrl = buildReaderPageUrl(work, prevPage, { viewMode, query });
   const nextPageUrl = buildReaderPageUrl(work, nextPage, { viewMode, query });
+  const prevLabel = prevPage
+    ? getDifferentialCitationLabel(activePage.id, prevPage.id, work.textParts)
+    : "";
+  const nextLabel = nextPage
+    ? getDifferentialCitationLabel(activePage.id, nextPage.id, work.textParts)
+    : "";
 
   return `        <!-- Left Column: Reading Text Canvas -->
         <section class="reader-text-panel" aria-label="Reading Text">
@@ -333,43 +321,32 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
 
             <!-- Bottom Paging Continuation Actions & Prototype Switcher -->
             <footer class="reader-passage-footer">
-              <div class="reader-continuation-actions">
-                ${
-                  nextPage
-                    ? `<a href="${nextPageUrl}" class="reader-btn reader-continue-btn">
-                        <span>Continue to ${he.escape(
-                          nextPage.title
-                        )}</span> &rarr;
-                       </a>`
-                    : ""
-                }
+              <nav class="reader-continuation-actions" aria-label="Chapter Pagination">
                 ${
                   prevPage
-                    ? `<a href="${prevPageUrl}" class="reader-btn reader-return-btn">
-                        &larr; <span>Return to ${he.escape(
-                          prevPage.title
+                    ? `<a href="${prevPageUrl}" class="reader-continuation-card reader-return-btn prev-card" rel="prev">
+                        <span class="continuation-kicker">&larr; Previous</span>
+                        <span class="continuation-title">${he.escape(
+                          prevLabel
                         )}</span>
                        </a>`
                     : ""
                 }
-              </div>
+                ${
+                  nextPage
+                    ? `<a href="${nextPageUrl}" class="reader-continuation-card reader-continue-btn next-card" rel="next">
+                        <span class="continuation-kicker">Next &rarr;</span>
+                        <span class="continuation-title">${he.escape(
+                          nextLabel
+                        )}</span>
+                       </a>`
+                    : ""
+                }
+              </nav>
 
-              <div class="reader-footer-info">
-                <span class="reader-footer-note">
-                  Text: ${he.escape(work.author)}, <em>${he.escape(
-    work.title
-  )}</em>.
-                  ${
-                    work.editor
-                      ? `Critical edition: ${he.escape(work.editor)}.`
-                      : ""
-                  }
-                </span>
-
-                <!-- Return to Library Link -->
-                <div class="reader-library-nav">
-                  <a href="/v2/library" class="reader-library-link">&larr; Return to Library Catalog</a>
-                </div>
+              <!-- Return to Library Link -->
+              <div class="reader-library-nav">
+                <a href="/v2/library" class="reader-library-link">&larr; Return to Library Catalog</a>
               </div>
             </footer>
 
@@ -459,6 +436,17 @@ export function renderReaderContentHtmlFromContext(
 
 ${renderReaderStickyBar(ctx)}
 
+      <!-- Backdrop overlay for Table of Contents (TOC) dropdown dismissal -->
+      <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
+
+      <!-- Contained Table of Contents (TOC) Dropdown -->
+      ${renderTocDrawer({
+        work: ctx.work,
+        activePageIndex: ctx.activePageIndex,
+        viewMode: ctx.viewMode,
+        query: ctx.query,
+      })}
+
       <!-- Floating Confirmation Toast -->
       <div id="reader-toast" class="reader-toast" aria-live="polite"></div>
 
@@ -467,13 +455,6 @@ ${renderReaderStickyBar(ctx)}
 ${renderReaderTextPanel(ctx)}
 ${renderReaderDictPanel(ctx)}
       </div>
-
-${renderTocDrawer({
-  work: ctx.work,
-  activePageIndex: ctx.activePageIndex,
-  viewMode: ctx.viewMode,
-  query: ctx.query,
-})}
 
 ${renderBiblioDialog(ctx.work)}
 

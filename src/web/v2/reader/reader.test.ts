@@ -15,6 +15,7 @@ import {
   citationToString,
   parseCitationString,
   citationToSemanticLabel,
+  getDifferentialCitationLabel,
   getSectionLocalId,
   getSectionPrefix,
   resolveCitationJump,
@@ -141,7 +142,7 @@ describe("reader_ssr", () => {
     // Table of Contents drawer
     expect(html).toContain('id="reader-toc-drawer"');
     expect(html).toContain('class="reader-toc-drawer"');
-    expect(html).toContain('id="reader-toc-filter"');
+    expect(html).toContain('id="reader-toc-close-btn"');
     expect(html).toContain('class="reader-toc-item active"');
 
     // Bibliographical Dialog
@@ -382,7 +383,7 @@ describe("decomposed_reader_renderers", () => {
   });
 
   describe("renderTocDrawer", () => {
-    test("renders TOC drawer with search filter and marked active chapter", () => {
+    test("renders TOC drawer with tree structure and marked active chapter", () => {
       const html = renderTocDrawer({
         work: dbgWork,
         activePageIndex: 0,
@@ -390,19 +391,22 @@ describe("decomposed_reader_renderers", () => {
 
       expect(html).toContain('id="reader-toc-drawer"');
       expect(html).toContain('role="dialog"');
-      expect(html).toContain('aria-modal="true"');
+      expect(html).not.toContain('aria-modal="true"');
       expect(html).toContain("hidden");
-      expect(html).toContain('id="reader-toc-back-btn"');
       expect(html).toContain('id="reader-toc-close-btn"');
-      expect(html).toContain('id="reader-toc-filter"');
-      expect(html).toContain("reader-toc-work-title");
-      expect(html).toContain("book · chapter · section");
 
-      // First chapter active
+      // Clutter removed
+      expect(html).not.toContain('id="reader-toc-back-btn"');
+      expect(html).not.toContain('id="reader-toc-filter"');
+      expect(html).not.toContain("reader-toc-work-title");
+      expect(html).not.toContain("book · chapter · section");
+
+      // Tree groups and items
+      expect(html).toContain("reader-toc-group");
+      expect(html).toContain("Book 1");
       expect(html).toContain('class="reader-toc-item active"');
       expect(html).toContain('aria-current="page"');
-      expect(html).toContain("Book 1, Chapter 1");
-      expect(html).toContain("§ 1.1");
+      expect(html).toContain("Chapter 1");
     });
 
     test("renderTocItemsHtml marks selected index active and leaves other inactive", () => {
@@ -438,7 +442,7 @@ describe("decomposed_reader_renderers", () => {
       );
       expect(html).toContain('id="reader-jump-form"');
       expect(html).toContain('class="sticky-center-group"');
-      expect(html).toContain('value="1.1"');
+      expect(html).toContain('class="jump-val">1.1</span>');
       expect(html).toContain('id="sticky-expand-btn"');
       expect(html).toContain('id="reader-toc-btn"');
     });
@@ -539,6 +543,50 @@ describe("decomposed_reader_renderers", () => {
       expect(ctx.query).toBe("arma");
       expect(ctx.layoutStateClass).toBe("reader-layout-active");
       expect(ctx.dictIframeSrc).toBe("/v2/dicts?q=arma&lang=La&o=1&embedded=1");
+    });
+  });
+
+  describe("getDifferentialCitationLabel (Proposal 1 Boundary-Aware Leaf Label)", () => {
+    test("returns leaf tier label when navigating within the same parent section", () => {
+      expect(
+        getDifferentialCitationLabel(
+          ["1", "2"],
+          ["1", "3"],
+          ["book", "chapter"]
+        )
+      ).toBe("Chapter 3");
+
+      expect(
+        getDifferentialCitationLabel(
+          ["14", "1", "1"],
+          ["14", "1", "2"],
+          ["book", "topic", "chapter"]
+        )
+      ).toBe("Chapter 2");
+    });
+
+    test("returns higher boundary tier label when navigating across parent boundaries", () => {
+      expect(
+        getDifferentialCitationLabel(
+          ["1", "29"],
+          ["2", "1"],
+          ["book", "chapter"]
+        )
+      ).toBe("Book 2");
+
+      expect(
+        getDifferentialCitationLabel(
+          ["14", "1", "14"],
+          ["14", "2", "1"],
+          ["book", "topic", "chapter"]
+        )
+      ).toBe("Topic 2");
+    });
+
+    test("handles fallback when textParts are shorter than citation depth", () => {
+      expect(
+        getDifferentialCitationLabel(["1", "1"], ["1", "2"], ["book"])
+      ).toBe("Section 2");
     });
   });
 });

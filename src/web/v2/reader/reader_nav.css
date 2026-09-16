@@ -29,6 +29,17 @@
   width: 100%;
 }
 
+/* Ensure all interactive buttons in the primary row share a uniform height and vertical alignment */
+.sticky-primary-row .reader-btn {
+  box-sizing: border-box;
+  height: var(--pill-height);
+  padding-top: 0;
+  padding-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .sticky-primary-right {
   display: flex;
   align-items: center;
@@ -86,6 +97,67 @@
   flex-shrink: 0;
 }
 
+/* Section Dropdown Trigger Button */
+.sticky-section-btn,
+.sticky-section-btn:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--tag-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.15s ease;
+  line-height: 1;
+}
+
+.sticky-section-btn:hover {
+  background: var(--card-bg);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-0.5px);
+}
+
+.sticky-section-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.sticky-section-btn[aria-expanded="true"] {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.sticky-section-btn .jump-glyph {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.sticky-section-btn .jump-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sticky-section-btn:hover .jump-chevron,
+.sticky-section-btn[aria-expanded="true"] .jump-chevron {
+  color: var(--primary);
+}
+
+.sticky-section-btn[aria-expanded="true"] .jump-chevron {
+  transform: rotate(180deg);
+}
+
 .sticky-jump-input {
   width: 4.25rem;
   padding: var(--space-1) var(--space-3);
@@ -101,20 +173,24 @@
 .sticky-jump-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary-light);
+  box-shadow: var(--focus-ring);
 }
 
-.reader-nav-arrow {
-  padding: var(--space-2) var(--space-4);
-  min-width: 2rem;
+.sticky-primary-row .reader-nav-arrow,
+.reader-nav-arrow,
+.reader-nav-arrow:visited {
+  width: var(--pill-height);
+  min-width: var(--pill-height);
+  padding: 0;
   justify-content: center;
   font-weight: 600;
   font-size: 0.95rem;
+  color: var(--text);
 }
 
 /* More / Expand Toggle Button */
 .sticky-expand-btn {
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
   color: var(--text-muted);
   gap: var(--space-1);
 }
@@ -149,7 +225,7 @@
 .sticky-expanded-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: var(--space-5);
   padding: var(--space-3) var(--space-5) var(--space-4);
   border-top: 1px solid var(--border);
@@ -208,7 +284,8 @@
   display: none;
 }
 
-.reader-btn {
+.reader-btn,
+.reader-btn:visited {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -224,9 +301,22 @@
   transition: all 0.15s ease;
 }
 
-.reader-btn:hover {
+.reader-btn:hover,
+.reader-btn:visited:hover {
   border-color: var(--border-strong);
   color: var(--primary);
+}
+
+.reader-btn.disabled,
+.reader-btn:disabled,
+.reader-btn[aria-disabled="true"],
+.reader-btn.disabled:visited,
+.reader-btn:disabled:visited,
+.reader-btn[aria-disabled="true"]:visited {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+  color: var(--text-muted);
 }
 
 .pager-arrow {
@@ -373,7 +463,8 @@
   }
 
   .sticky-expand-btn {
-    padding: var(--space-1) var(--space-2);
+    padding: 0 var(--space-2);
+    min-width: var(--pill-height);
   }
 
   .expand-label {
@@ -408,8 +499,9 @@
   }
 
   .reader-nav-arrow {
-    padding: var(--space-1) var(--space-3);
-    min-width: 1.6rem;
+    width: var(--pill-height);
+    min-width: var(--pill-height);
+    padding: 0;
   }
 
   .jump-input {
