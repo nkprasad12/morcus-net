@@ -52,6 +52,21 @@ For all tasks involving UI V2 (`src/web/v2/`), consult the dedicated guides befo
 **Do NOT proactively run slow E2E or visual regression test suites without user confirmation.**
 Fast unit tests (`npm run ts-tests:v2`) may be run when verifying logic, but multi-browser E2E and visual diff tests require a running server, consume significant resources, and should only be run when requested or during final pre-commit verification.
 
+### ⛔ Visual Baseline Approval Rule
+
+**NEVER commit updated screenshot baselines without explicit human approval.**
+
+A baseline update (`--update`) rewrites the definition of "correct" for the UI. An agent that both changes the pixels and re-blesses them has removed the only check on its own visual judgement, so this decision belongs to the user every time.
+
+When a change causes pixel diffs:
+
+1. Run the visual suite **without** `--update` first, to see exactly what moved.
+2. Report which snapshots differ and why, with screenshots of the new rendering.
+3. **Wait for approval.** Do not run `--update`, and do not `git add` anything under `*-snapshots/`, until the user has said yes.
+4. Only then update and commit, listing the affected files.
+
+This applies to amending or fixing up an earlier baseline commit too.
+
 ### ✅ Standard UI V2 Test Commands
 
 #### A. Unit Tests (Jest)
@@ -83,7 +98,7 @@ Functional browser tests verifying both No-JS baseline and JS-enhanced behavior 
 
 #### C. Visual Regression Tests (Multi-Dimensional Screen-Diff via `run_morcus`)
 
-Verifies pixel-perfect UI fidelity across 7 core views, 4 form-factors/browsers, light/dark modes, and JS/No-JS modes (112 tests total):
+Verifies pixel-perfect UI fidelity across 18 view/mode scenarios and 4 form-factors/browsers, covering light/dark and JS/No-JS modes (72 tests total):
 
 ```bash
 # Fast check (Chromium + Mobile Chrome):
@@ -92,9 +107,13 @@ Verifies pixel-perfect UI fidelity across 7 core views, 4 form-factors/browsers,
 # Full verification across all engines:
 ./morcus.sh e2e --visual --all
 
-# Update visual baseline snapshots (only when intentionally recording new baselines):
+# Update visual baseline snapshots — requires explicit human approval first,
+# see the Visual Baseline Approval Rule above:
 ./morcus.sh e2e --visual --all --update
 ```
+
+> [!NOTE]
+> The suite currently holds 72 baselines (18 views × 4 projects). Reader coverage is thin: `v2-reader-passage` points at `/v2/reader`, which is the landing view and contains no passage text, so the only scenario exercising real passage rendering is `v2-reader-parallel`.
 
 ---
 
@@ -132,4 +151,6 @@ Before pushing to the remote repository, ensure full browser matrix parity and 0
 
 1. Start dev server: `PORT=5757 ./morcus.sh web -w` (if not already running)
 2. Run functional E2E tests: `./morcus.sh e2e --v2 --all`
-3. Run visual regression tests: `./morcus.sh e2e --visual --all` (ensure 0 pixel diffs across all 112 baseline snapshots)
+3. Run visual regression tests: `./morcus.sh e2e --visual --all` (ensure 0 pixel diffs across all 72 baseline snapshots)
+
+> [!NOTE] > `v2-dicts-*` scenarios in `[nojs]` mode may time out on a restricted network. Their SSR output embeds an `<iframe>` pointing at `https://mateo.uni-mannheim.de` (the Gesner facsimile viewer); when that host is unreachable the connection hangs rather than failing fast, so the `load` event never fires and `page.goto` times out at 30s. This is an environment artifact, not a regression — the timeout is in the browser, not the server, which renders the same page in ~13ms.
