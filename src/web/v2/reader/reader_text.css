@@ -335,7 +335,101 @@ span.lat-word.word-active {
 }
 
 /* ==========================================================================
-   5. Responsive Overrides: Mobile (<= 640px) & Desktop (>= 641px)
+   5. Text Renditions (verse lines, indentation, emphasis)
+
+   These classes are emitted by v2_preprocessor.ts from the TEI `rend`, `l` and
+   `block` attributes. Lengths are in `em` rather than spacing tokens so that
+   indentation tracks the reader's font-size preference.
+   ========================================================================== */
+
+/* Verse lines and TEI blocks are block-level. Without this, any structure that
+   puts several of them in one citation section - blockquotes above all -
+   collapses into undifferentiated running text. */
+.reader-passage .reader-line,
+.reader-passage .reader-block {
+  display: block;
+}
+
+/* Verse sections are one line each, so the section padding is what separates
+   the lines; a paragraph's worth of it makes a poem read as a list. */
+.section-verse {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Elegiac pentameters and other indented verse: the whole line shifts. */
+.reader-passage .indent {
+  display: inline-block;
+  padding-left: 1.5em;
+}
+
+/* Inside a paragraph, an indent opens the paragraph: only the first line moves. */
+.reader-passage .indent-para {
+  padding-left: 0;
+  text-indent: 1.5em;
+}
+
+.reader-passage .blockquote {
+  display: block;
+  margin: 0.4em 0 0.4em 1.5em;
+  font-style: italic;
+}
+
+.reader-passage .reader-subheading {
+  font-family: var(--font-serif);
+  font-size: 1em;
+  font-weight: 600;
+  text-align: center;
+  margin: 1em 0 0.6em;
+}
+
+.reader-passage .reader-list {
+  margin: 0.4em 0;
+  padding-left: 1.5em;
+}
+
+.reader-passage .italic {
+  font-style: italic;
+}
+
+.reader-passage .bold {
+  font-weight: 600;
+}
+
+/* Inscriptional and legal quotations. The source text is usually already
+   lowercase, so small caps renders it as the edition sets it. */
+.reader-passage .smallcaps {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.02em;
+}
+
+.reader-passage .uppercase {
+  text-transform: uppercase;
+}
+
+/* Overlined Roman numerals (thousands), e.g. Petronius' sums of money. */
+.reader-passage .overline {
+  text-decoration: overline;
+}
+
+.reader-passage .superscript {
+  vertical-align: super;
+  font-size: smaller;
+}
+
+/* `<space>` marks a break between line groups in the source. */
+.reader-passage .line-space {
+  display: block;
+  height: 0.75em;
+}
+
+.reader-passage .reader-gap {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   6. Responsive Overrides: Mobile (<= 640px) & Desktop (>= 641px)
    ========================================================================== */
 
 @media (max-width: 640px) {

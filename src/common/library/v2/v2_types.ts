@@ -31,8 +31,18 @@ export interface V2PreprocessedPage {
   singleHtml: string;
   /** Pre-compiled HTML for synchronized parallel Latin + English view */
   parallelHtml?: string;
-  /** Critical apparatus notes for this page if available */
+  /**
+   * Rendered footnote list for the critical apparatus notes referenced on this
+   * page, or undefined if it references none. Scoped per page so a work with
+   * thousands of notes only ships the handful a reader is looking at.
+   */
   notesHtml?: string;
+  /**
+   * Footnote list for the parallel view, covering the translation's own notes
+   * as well as the text's. Undefined when the translation adds nothing, in
+   * which case the parallel view falls back to {@link notesHtml}.
+   */
+  parallelNotesHtml?: string;
 }
 
 export interface V2PreprocessedWork {

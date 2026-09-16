@@ -298,6 +298,12 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
   const nextLabel = nextPage
     ? getDifferentialCitationLabel(activePage.id, nextPage.id, work.textParts)
     : "";
+  // The parallel list also covers the translation's notes, so it exists only
+  // for the works whose translations carry any.
+  const notesHtml =
+    (viewMode === "parallel" ? activePage.parallelNotesHtml : undefined) ??
+    activePage.notesHtml ??
+    "";
 
   return `        <!-- Left Column: Reading Text Canvas -->
         <section class="reader-text-panel" aria-label="Reading Text">
@@ -318,6 +324,9 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
             <article class="reader-passage" id="reader-passage">
               ${passageHtml}
             </article>
+
+            <!-- Critical Apparatus Footnotes (empty for works without notes) -->
+            ${notesHtml}
 
             <!-- Bottom Paging Continuation Actions & Prototype Switcher -->
             <footer class="reader-passage-footer">

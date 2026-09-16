@@ -15,8 +15,8 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 | Feature Area                      | V1 UI (SPA)                                                                                      | V2 UI (SSR + Progressive Enhancement)                                                   | Parity Status          |
 | :-------------------------------- | :----------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------- | :--------------------- |
-| **Critical Apparatus Notes**      | `TextNote` resolves `work.notes[i]` and renders a tooltip                                        | Marker buttons render with correct `data-note-id`; note bodies never reach the client   | ❌ **Missing in V2**   |
-| **Text Rendition / Verse Layout** | CSS-in-JS rules for `.l`, `.blockquote`, `.indent`; handles `overline`, `rend="7"`, `rendParent` | Preprocessor emits 12 rendition classes; **none of them have any CSS rule at all**      | ❌ **Missing in V2**   |
+| **Critical Apparatus Notes**      | `TextNote` resolves `work.notes[i]` and renders a tooltip                                        | Markers link to per-page numbered footnotes rendered after the passage; no JS required  | ✅ **Completed in V2** |
+| **Text Rendition / Verse Layout** | CSS-in-JS rules for `.l`, `.blockquote`, `.indent`; handles `overline`, `rend="7"`, `rendParent` | All emitted rendition classes styled in `reader_text.css`, including `rendParent`       | ✅ **Completed in V2** |
 | **In-Flow "Edit and Report"**     | Section anchor opens a menu offering Copy link **and** Edit and Report                           | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit` | ❌ **Missing in V2**   |
 | **External Content Reader**       | Paste text or scrape a URL, then read it with full dictionary support                            | No equivalent route or component                                                        | ❌ **Missing in V2**   |
 | **Saved Reading Position**        | `LibrarySavedSpot` persists last section per work; library offers resume                         | No equivalent                                                                           | ❌ **Missing in V2**   |
@@ -34,31 +34,35 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 2.1. Critical Apparatus Notes
 
-**This is the largest single gap, and it is user-visible today as dead controls.**
+**Shipped.** The note bodies now reach the page, and the markers that carry them are links rather than dead controls.
 
 - **V1 (`reader.tsx:L1141-1166`)**: `TextNote` reads the `noteId` attribute, looks up `work.notes[i]`, and renders the note body in a toggleable tooltip via `renderTooltip`.
-- **V2**: ❌ **Missing**. The pipeline breaks in three places:
+- **V2**: notes travel the whole pipeline:
 
-  1. [`process_work.ts:L435-462`](../../../common/library/process_work.ts) (shared by both UIs) hoists note bodies into a `notes` array on the work and leaves positional `<note noteId="N"/>` markers in the tree. This half works correctly for V2.
-  2. [`v2_preprocessor.ts:L64-68`](../../../common/library/v2/v2_preprocessor.ts) emits `<button type="button" class="reader-note-ref" data-note-id="N"><sup>*</sup></button>` — the marker is correct and carries the right ID — but the `notes` array is **never copied onto `V2PreprocessedWork`**.
-  3. [`V2PreprocessedPage.notesHtml`](../../../common/library/v2/v2_types.ts) is declared (`/** Critical apparatus notes for this page if available */`) and **never assigned**.
+  1. [`process_work.ts:L435-462`](../../../common/library/process_work.ts) (shared by both UIs) hoists note bodies into a work-level `notes` array and leaves positional `<note noteId="N"/>` markers in the tree. Unchanged.
+  2. [`v2_preprocessor.ts`](../../../common/library/v2/v2_preprocessor.ts) resolves each marker against that array while rendering a page, emitting `<a class="reader-note-ref" href="#note-n3"><sup>3</sup></a>` and accumulating the bodies it referenced.
+  3. Those bodies are rendered into [`V2PreprocessedPage.notesHtml`](../../../common/library/v2/v2_types.ts) as an endnote list, which [`reader.server.ts`](reader.server.ts) places between the passage and the pagination footer.
 
-  There is additionally no client handler and no CSS for `.reader-note-ref`.
+**Design decisions worth knowing before changing this:**
 
-**Measured impact** (over `build/library_processed/*.v2.json.gz`):
+- **Numbered footnotes, not tooltips.** At ~12 notes per page (Ammianus) a per-marker tooltip does not scale, and a list in page flow is the scholarly convention, prints, and works with no JavaScript. A synchronized Notes _panel_ remains the intended JS enhancement — see [`UX_STRUCTURE.md`](UX_STRUCTURE.md) §6 — but it is now an enhancement over a working baseline rather than the only way to read the apparatus.
+- **Markers are renumbered per page**, not per work: a page opening at work-level note 2,314 still labels its first marker "1". The `noteId` in the source data remains work-global; only the display label and the DOM ids are page-scoped.
+- **Translation notes are lettered** (`a`, `b`, …) and listed under their own subheading, so a parallel row never shows two unrelated markers both labelled "3". Six of the translated works carry notes of their own (465 in Vergil's, 363 in another), which is why this case is handled rather than dropped.
+- **A marker with no resolvable body renders nothing at all.** Emitting a marker that points nowhere is the defect this replaced.
 
-| Metric                                       |                                         Value |
-| :------------------------------------------- | --------------------------------------------: |
-| Inert note buttons shipped to users          |                                    **85,876** |
-| Works affected                               |                                        **48** |
-| Ammianus _Res Gestae_ (`stoa0023.stoa001`)   | **2,525** markers across 216 pages (~12/page) |
-| Note bodies present in V1 data for that work |                                     **2,526** |
-| Note bodies reaching V2                      |                                         **0** |
+**Result across `build/library_processed/*.v2.json.gz`:**
 
-> [!WARNING]
-> The marker is a `<button type="button">` with no handler attached — a dead control repeated 85,876 times, and invisible to the No-JS baseline by construction. Changing it to `<a href="#note-N">` makes it functional with zero JavaScript once the note bodies are rendered into the page, and costs nothing.
+| Metric                                    |               Before |                 After |
+| :---------------------------------------- | -------------------: | --------------------: |
+| Note markers shipped                      |               85,876 |                85,876 |
+| ...of them inert `<button>` dead controls |               85,876 |                 **0** |
+| Note bodies reaching the reader           |                **0** |            **85,876** |
+| Works affected                            |                   48 |                    48 |
+| Ammianus _Res Gestae_ (`14.1`)            | 13 markers, 0 bodies | 13 markers, 13 bodies |
 
-**Content being dropped** is genuine editorial commentary, not just sigla — e.g. _"These summaries, which are not the work of Ammianus but of some early editor, are put for convenience at the beginning of each chapter…"_
+> [!WARNING] > **Pliny is the one work where this is expensive.** _Naturalis Historia_ paginates one whole book per page and carries 69,113 of the 85,876 notes, so its worst page now ships ~1.3 MB of footnotes on top of ~0.5 MB of text. The median page across the corpus has **4** notes and the 90th percentile has **10**; only Pliny's 37 pages are pathological, and the root cause is the pagination depth, not the apparatus. See the roadmap's "Repaginate Pliny" item.
+
+**Content recovered** is genuine editorial commentary, not just sigla — e.g. _"These summaries, which are not the work of Ammianus but of some early editor, are put for convenience at the beginning of each chapter…"_
 
 ### 2.2. External Content Reader
 
@@ -90,40 +94,39 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 2.7. Text Rendition & Verse Layout
 
-**This is a pure CSS gap, not a data gap.** The preprocessor preserves the rendition semantics faithfully; nothing downstream consumes them.
+**Shipped.** The preprocessor always preserved the rendition semantics; nothing downstream consumed them. [`reader_text.css`](reader_text.css) §5 now does.
 
-Ovid, _Amores_ 1.1.1–2 renders in V2 as:
+Ovid, _Amores_ 1.1.1–2 used to render as a redundant nest with no styling behind it:
 
 ```html
+<!-- before -->
 <span class="reader-line">Arma gravi numero violentaque bella parabam</span>
 <span class="reader-line"
   ><span class="reader-line indent"
     >Edere, materia conveniente modis.</span
   ></span
 >
+
+<!-- after -->
+<span class="reader-line">Arma gravi numero violentaque bella parabam</span>
+<span class="reader-line indent">Edere, materia conveniente modis.</span>
 ```
 
-The pentameter correctly carries `indent`. It is simply never styled, so the elegiac couplet loses its traditional alternating indentation and reads as a flat block of equal-length lines.
+- **V1 (`styles.tsx:L795-830`)**: the equivalent rules lived in CSS-in-JS, e.g. `".readerMain .blockquote": { display: "block", … }` and `".readerMain .block .l": { display: "block" }`, with parallel `.readerSide` variants.
+- **V2**: every emitted class now has a rule, scoped under `.reader-passage` so the generic names (`italic`, `bold`, `indent`) cannot leak into the dictionary views that share the stylesheet. Lengths are in `em`, so indentation tracks the reader's font-size preference rather than ignoring it.
 
-- **V1 (`styles.tsx:L795-830`)**: the equivalent rules live in CSS-in-JS, e.g. `".readerMain .blockquote": { display: "block", margin: "0.25em 0", fontStyle: "italic", marginLeft: "1em" }` and `".readerMain .block .l": { display: "block" }`, with parallel `.readerSide` variants.
-- **V2**: ❌ **Missing**. Every one of the twelve classes emitted by [`v2_preprocessor.ts:L41-110`](../../../common/library/v2/v2_preprocessor.ts) has **zero** matching rules anywhere under `src/web/v2/**/*.css`:
+Three behaviours that V1 had were also restored **in the preprocessor**, not just in CSS:
 
-  `indent` · `reader-line` · `reader-block` · `line-space` · `reader-gap` · `reader-subheading` · `reader-list` · `superscript` · `smallcaps` · `blockquote` · `italic` · `bold`
-
-  `.section-verse`, emitted on verse sections, is likewise unstyled — [`reader_text.css`](reader_text.css) only defines `.reader-gutter`, `.cite-prefix`, and `.hide-gutter`.
+| `rend` value         | V1                                                                    | V2 now                                                        |
+| :------------------- | :-------------------------------------------------------------------- | :------------------------------------------------------------ |
+| `overline`           | `text-decoration: overline`                                           | Same, via an `overline` class (901 occurrences, all numerals) |
+| `"7"`                | Mapped to uppercase                                                   | Mapped to the `smallcaps` class (129 occurrences)             |
+| `rendParent === "p"` | Indents only the **first line** for paragraphs, whole block otherwise | Same, via an extra `indent-para` class                        |
 
 > [!NOTE]
-> Verse lines still _appear_ to break correctly, but only by accident: each line is its own `.reader-section` div with its own citation gutter, so the block separation comes from the section wrapper rather than from `.reader-line`. Any structure where multiple rendition spans share a section — blockquotes, lists, sub-headings, inline emphasis — degrades to undifferentiated running text.
+> One deliberate divergence from V1: `smallcaps` renders as `font-variant-caps: small-caps` rather than `text-transform: uppercase`. The affected text is inscriptional and legal quotation that the source sets in lowercase (`pro consvle`, `tribvno plebi`), which is exactly what small caps is for. `rend="uppercase"` — two occurrences, both an epitaph — keeps the uppercase transform and now has its own class instead of being folded into `smallcaps`.
 
-Three rendition behaviours are additionally dropped **before** CSS, in the preprocessor's `rend` mapping ([`v2_preprocessor.ts:L85-95`](../../../common/library/v2/v2_preprocessor.ts) vs `reader.tsx:L1215-1245`):
-
-| `rend` value         | V1                                                                    | V2                             |
-| :------------------- | :-------------------------------------------------------------------- | :----------------------------- |
-| `overline`           | Rendered                                                              | Dropped silently               |
-| `"7"`                | Mapped to smallcaps                                                   | Dropped silently               |
-| `rendParent === "p"` | Indents only the **first line** for paragraphs, whole block otherwise | No `rendParent` concept exists |
-
-**Minor oddity worth cleaning up while here**: the nested `<span class="reader-line"><span class="reader-line indent">` above is redundant markup from the same mapping.
+Also fixed while here: the redundant nested `reader-line` span above, and the `blockquote` rendition, which emitted a real `<blockquote>` inside the wrapping `<p class="reader-paragraph">`. That is invalid HTML and the browser silently reparents it; it is now a `<span class="blockquote">` made block-level by CSS, as it was in V1.
 
 ### 2.8. In-Flow "Edit and Report"
 
@@ -186,30 +189,34 @@ This confirms both of your observations and adds a third:
 
 ## 3. Recommended Remediation Roadmap
 
+### Done
+
+- ~~**Port the rendition CSS**~~ — shipped, along with the missing `overline` / `rend="7"` / `rendParent` mappings and the redundant nested `reader-line` span (§2.7).
+- ~~**Render note markers as links, not dead buttons**~~ — shipped; 0 dead controls remain (§2.1).
+- ~~**Plumb note bodies into V2**~~ — shipped via page-scoped `notesHtml` (§2.1).
+
 ### High Priority (Correctness / Dead Controls)
 
-1. **Port the rendition CSS** — add rules for the twelve emitted classes (and `.section-verse`) to `reader_text.css`, using `styles.tsx:L795-830` as the reference. This is the cheapest high-value fix in this document: it is self-contained, touches no data pipeline, needs no JavaScript, and repairs a text-quality regression that affects every verse work in the corpus. Fold in the missing `overline` / `rend="7"` mappings and drop the redundant nested `reader-line` span at the same time.
-2. **Render note markers as links, not dead buttons** — change `v2_preprocessor.ts` to emit `<a href="#note-N">` so the marker is inert-but-honest today and functional the moment note bodies land. Small, independent, and removes 85,876 non-functional controls.
-3. **Plumb note bodies into V2** — copy `notes` onto `V2PreprocessedWork` (or populate the existing `V2PreprocessedPage.notesHtml` stub, scoped per page to avoid shipping the whole array with every page). **The fix must start in the preprocessor**; wiring a client handler first has nothing to resolve against.
-4. **Make attribution reachable without JavaScript** — move the provenance/license block into page flow (e.g. a colophon in `reader-passage-footer`) so it survives No-JS and appears in print.
+1. **Repaginate Pliny, _Naturalis Historia_** — surfaced by the apparatus port, not caused by it. One page is one whole book: ~0.5 MB of text and, now, up to ~1.3 MB of footnotes on the worst page. Every other work in the corpus is fine (median 4 notes per page). The fix is the work's `paginationDepth`, which is a data-pipeline change (§2.1).
+2. **Make attribution reachable without JavaScript** — move the provenance/license block into page flow (e.g. a colophon in `reader-passage-footer`) so it survives No-JS and appears in print.
 
 ### Medium Priority (Feature Restoration)
 
-5. **Note presentation** — at ~12 notes per page, V1's per-marker tooltip does not scale. Prefer numbered footnotes at the end of the passage for the No-JS baseline (the scholarly convention, and printable), enhancing to a synchronized notes surface for JS users. This is the first case that justifies giving the reader's side panel a second tab.
-6. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
-7. **Saved reading position** — restore `LibrarySavedSpot` equivalence and surface a resume link on the V2 library page.
-8. **Per-work macra scoping** — key the preference by `workId`, or auto-default from the existing `hasMacra` flag.
+3. **Notes panel as the JS enhancement** — the footnote baseline is in place (§2.1), so the remaining work is the synchronized Notes tab: marker click reveals the note in the side panel without losing the reading position, with the footnote list staying as the No-JS and print path. This is the first real content for the panel model in [`UX_STRUCTURE.md`](UX_STRUCTURE.md) §6, and should be designed with the panel-arbitration question there, not ahead of it.
+4. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
+5. **Saved reading position** — restore `LibrarySavedSpot` equivalence and surface a resume link on the V2 library page.
+6. **Per-work macra scoping** — key the preference by `workId`, or auto-default from the existing `hasMacra` flag.
 
 ### Low Priority (Larger Scope)
 
-9. **Swipe / tap navigation** — requires touch gesture handling; `DrawerController` already contains comparable drag/velocity logic to borrow from.
-10. **External content reader** — the largest missing surface, and effectively a new vertical slice rather than a port.
+7. **Swipe / tap navigation** — requires touch gesture handling; `DrawerController` already contains comparable drag/velocity logic to borrow from.
+8. **External content reader** — the largest missing surface, and effectively a new vertical slice rather than a port.
 
 ### Cleanups (independent of any decision above)
 
-11. **Hoist the translator credit** — emit `reader-trans-author` once per page instead of once per section (§2.9).
-12. **Guard the translation join** — `translationRowsByDotId.get(dotId)` fails silently to an empty cell when citation granularities differ; fall back to the nearest ancestor ID, or at minimum surface the mismatch at build time (§2.9).
+9. **Hoist the translator credit** — emit `reader-trans-author` once per page instead of once per section (§2.9).
+10. **Guard the translation join** — `translationRowsByDotId.get(dotId)` fails silently to an empty cell when citation granularities differ; fall back to the nearest ancestor ID, or at minimum surface the mismatch at build time (§2.9).
 
 ### Blocked on a Product Decision
 
-13. **Translation presentation (§2.9)** — do not build against the current parallel view as though it were final. The measurement in §2.9 is intended as input to that decision, not a recommendation.
+11. **Translation presentation (§2.9)** — do not build against the current parallel view as though it were final. The measurement in §2.9 is intended as input to that decision, not a recommendation.
