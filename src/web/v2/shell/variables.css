@@ -110,6 +110,9 @@
   --badge-trans-bg: rgba(99, 102, 241, 0.1);
   --badge-trans-text: #3730a3;
   --badge-trans-border: rgba(99, 102, 241, 0.24);
+  --badge-resume-bg: rgba(217, 119, 6, 0.12);
+  --badge-resume-text: #92400e;
+  --badge-resume-border: rgba(217, 119, 6, 0.28);
   --dropdown-backdrop: rgba(0, 0, 0, 0.22);
 }
 
@@ -184,6 +187,9 @@
     --badge-trans-bg: rgba(165, 180, 252, 0.18);
     --badge-trans-text: #a5b4fc;
     --badge-trans-border: rgba(165, 180, 252, 0.35);
+    --badge-resume-bg: rgba(251, 191, 36, 0.16);
+    --badge-resume-text: #fde68a;
+    --badge-resume-border: rgba(251, 191, 36, 0.35);
     --dropdown-backdrop: rgba(0, 0, 0, 0.45);
   }
 }
@@ -255,6 +261,9 @@
   --badge-trans-bg: rgba(165, 180, 252, 0.18);
   --badge-trans-text: #a5b4fc;
   --badge-trans-border: rgba(165, 180, 252, 0.35);
+  --badge-resume-bg: rgba(251, 191, 36, 0.16);
+  --badge-resume-text: #fde68a;
+  --badge-resume-border: rgba(251, 191, 36, 0.35);
   --dropdown-backdrop: rgba(0, 0, 0, 0.45);
 }
 
@@ -326,5 +335,8 @@
   --badge-trans-bg: rgba(99, 102, 241, 0.1);
   --badge-trans-text: #3730a3;
   --badge-trans-border: rgba(99, 102, 241, 0.24);
+  --badge-resume-bg: rgba(217, 119, 6, 0.12);
+  --badge-resume-text: #92400e;
+  --badge-resume-border: rgba(217, 119, 6, 0.28);
   --dropdown-backdrop: rgba(0, 0, 0, 0.22);
 }

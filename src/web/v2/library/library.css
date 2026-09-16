@@ -79,6 +79,7 @@
 
 /* Work Card (Fully Clickable Card) */
 .work-card {
+  position: relative;
   background-color: var(--card-surface-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
@@ -171,6 +172,31 @@
   background: var(--badge-trans-bg);
   color: var(--badge-trans-text);
   border: 1px solid var(--badge-trans-border);
+}
+
+.badge-resume {
+  background: var(--badge-resume-bg);
+  color: var(--badge-resume-text);
+  border: 1px solid var(--badge-resume-border);
+  gap: var(--space-1);
+}
+
+.badge-resume .resume-label {
+  font-size: 0.65rem;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.work-card-corner-tag {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-5);
+  pointer-events: none;
+}
+
+.work-card:has(.work-card-corner-tag) .work-card-content {
+  padding-right: 4.5rem;
 }
 
 @media (max-width: 640px) {

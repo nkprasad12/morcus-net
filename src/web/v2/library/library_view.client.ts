@@ -1,10 +1,18 @@
-import { BaseElement, registerElement } from "@/web/v2/core/index.client";
+import {
+  BaseElement,
+  registerElement,
+  setHtml,
+  html,
+} from "@/web/v2/core/index.client";
+import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 
 export class MorcusLibraryView extends BaseElement {
   private currentFilter: string = "all";
   private currentQuery: string = "";
 
   protected override onConnect() {
+    this.hydrateSavedSpots();
+
     const input = this.$<HTMLInputElement>("#library-search-input");
     const emptyResetBtn = this.$<HTMLButtonElement>(
       "#library-reset-filter-btn"
@@ -78,6 +86,47 @@ export class MorcusLibraryView extends BaseElement {
 
     if (emptyState) {
       emptyState.hidden = visibleCount > 0;
+    }
+  }
+
+  private hydrateSavedSpots(): void {
+    const spots = savedSpotsStore.getAll();
+    const cards = this.$$<HTMLAnchorElement>(".work-card");
+    for (const card of cards) {
+      const workId = card.dataset.workId || card.getAttribute("data-work-id");
+      if (!workId) continue;
+      const spot = spots[workId];
+      if (!spot || !spot.sectionId) continue;
+
+      const secId = spot.sectionId;
+      const baseUrl =
+        card.dataset.readerUrl ||
+        card.getAttribute("data-reader-url") ||
+        card.getAttribute("href") ||
+        "";
+
+      // Update card href to jump directly to saved spot
+      const jumpUrl = `${baseUrl}?jump=${encodeURIComponent(
+        secId
+      )}#sec-${secId}`;
+      card.setAttribute("href", jumpUrl);
+
+      // Add or update the corner tag
+      let tag = card.querySelector<HTMLElement>(".work-card-corner-tag");
+      if (!tag) {
+        tag = document.createElement("div");
+        tag.className = "work-card-corner-tag";
+        card.prepend(tag);
+      }
+      setHtml(
+        tag,
+        html`<span
+          class="badge badge-resume"
+          title="Resume at section ${secId}">
+          &sect;&nbsp;${secId}
+          <span class="resume-label">saved</span>
+        </span>`
+      );
     }
   }
 }

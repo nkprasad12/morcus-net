@@ -13,20 +13,20 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 1. Remaining Gaps Matrix
 
-| Feature Area                      | V1 UI (SPA)                                                                                      | V2 UI (SSR + Progressive Enhancement)                                                   | Parity Status          |
-| :-------------------------------- | :----------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------- | :--------------------- |
-| **Critical Apparatus Notes**      | `TextNote` resolves `work.notes[i]` and renders a tooltip                                        | Markers link to per-page numbered footnotes rendered after the passage; no JS required  | ✅ **Completed in V2** |
-| **Text Rendition / Verse Layout** | CSS-in-JS rules for `.l`, `.blockquote`, `.indent`; handles `overline`, `rend="7"`, `rendParent` | All emitted rendition classes styled in `reader_text.css`, including `rendParent`       | ✅ **Completed in V2** |
-| **In-Flow "Edit and Report"**     | Section anchor opens a menu offering Copy link **and** Edit and Report                           | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit` | ❌ **Missing in V2**   |
-| **External Content Reader**       | Paste text or scrape a URL, then read it with full dictionary support                            | No equivalent route or component                                                        | ❌ **Missing in V2**   |
-| **Saved Reading Position**        | `LibrarySavedSpot` persists last section per work; library offers resume                         | No equivalent                                                                           | ❌ **Missing in V2**   |
-| **Swipe / Tap Page Navigation**   | Touch swipe paging with a progress overlay (`SwipeFeedback`)                                     | Arrows, `[` / `]` shortcuts, and footer continuation cards only                         | ❌ **Missing in V2**   |
-| **Work Attribution / Provenance** | Persistent `Attribution` sidebar tab (`WorkInfo`, `SourceRefInfo`)                               | `<dialog>` modal opened only via JS; unreachable with no JS and absent from print       | ⚠️ **Degraded in V2**  |
-| **Per-Work Macra Preference**     | Stored per work (`macronButton-${workId}`)                                                       | Single global `showMacra` in `morcus_reader_settings`                                   | ⚠️ **Degraded in V2**  |
-| **Translation Presentation**      | Independently scrollable `Translation` sidebar tab                                               | Two-column parallel view, linkable via `?view=parallel`; columns share one scroll       | ❓ **Open Question**   |
-| **Outline / Table of Contents**   | `Outline` sidebar tab (`WorkNavigationSection`)                                                  | Anchored TOC drawer with live filter (`ReaderTocController`), `:target` No-JS fallback  | ✅ **Completed in V2** |
-| **Embedded Dictionary**           | Dictionary sidebar tab                                                                           | Resizable split panel (desktop) / draggable bottom drawer (mobile) with embedded iframe | ✅ **Completed in V2** |
-| **Section Label Visibility**      | `LabelsButton` toggling `hideLabels`                                                             | `showGutter` preference in reader settings                                              | ✅ **Completed in V2** |
+| Feature Area                      | V1 UI (SPA)                                                                                      | V2 UI (SSR + Progressive Enhancement)                                                       | Parity Status          |
+| :-------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------ | :--------------------- |
+| **Critical Apparatus Notes**      | `TextNote` resolves `work.notes[i]` and renders a tooltip                                        | Markers link to per-page numbered footnotes rendered after the passage; no JS required      | ✅ **Completed in V2** |
+| **Text Rendition / Verse Layout** | CSS-in-JS rules for `.l`, `.blockquote`, `.indent`; handles `overline`, `rend="7"`, `rendParent` | All emitted rendition classes styled in `reader_text.css`, including `rendParent`           | ✅ **Completed in V2** |
+| **In-Flow "Edit and Report"**     | Section anchor opens a menu offering Copy link **and** Edit and Report                           | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit`     | ❌ **Missing in V2**   |
+| **External Content Reader**       | Paste text or scrape a URL, then read it with full dictionary support                            | No equivalent route or component                                                            | ❌ **Missing in V2**   |
+| **Saved Reading Position**        | `LibrarySavedSpot` persists last section per work; library offers resume                         | Bi-directional `LIBRARY_SPOTS` persistence in reader + corner resume badge on library cards | ✅ **Completed in V2** |
+| **Swipe / Tap Page Navigation**   | Touch swipe paging with a progress overlay (`SwipeFeedback`)                                     | Arrows, `[` / `]` shortcuts, and footer continuation cards only                             | ❌ **Missing in V2**   |
+| **Work Attribution / Provenance** | Persistent `Attribution` sidebar tab (`WorkInfo`, `SourceRefInfo`)                               | `<dialog>` modal opened only via JS; unreachable with no JS and absent from print           | ⚠️ **Degraded in V2**  |
+| **Per-Work Macra Preference**     | Stored per work (`macronButton-${workId}`)                                                       | Single global `showMacra` in `morcus_reader_settings`                                       | ⚠️ **Degraded in V2**  |
+| **Translation Presentation**      | Independently scrollable `Translation` sidebar tab                                               | Two-column parallel view, linkable via `?view=parallel`; columns share one scroll           | ❓ **Open Question**   |
+| **Outline / Table of Contents**   | `Outline` sidebar tab (`WorkNavigationSection`)                                                  | Anchored TOC drawer with live filter (`ReaderTocController`), `:target` No-JS fallback      | ✅ **Completed in V2** |
+| **Embedded Dictionary**           | Dictionary sidebar tab                                                                           | Resizable split panel (desktop) / draggable bottom drawer (mobile) with embedded iframe     | ✅ **Completed in V2** |
+| **Section Label Visibility**      | `LabelsButton` toggling `hideLabels`                                                             | `showGutter` preference in reader settings                                                  | ✅ **Completed in V2** |
 
 ---
 
@@ -60,7 +60,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 | Works affected                            |                   48 |                    48 |
 | Ammianus _Res Gestae_ (`14.1`)            | 13 markers, 0 bodies | 13 markers, 13 bodies |
 
-> [!WARNING] > **Pliny is the one work where this is expensive.** _Naturalis Historia_ paginates one whole book per page and carries 69,113 of the 85,876 notes, so its worst page now ships ~1.3 MB of footnotes on top of ~0.5 MB of text. The median page across the corpus has **4** notes and the 90th percentile has **10**; only Pliny's 37 pages are pathological, and the root cause is the pagination depth, not the apparatus. See the roadmap's "Repaginate Pliny" item.
+> [!WARNING] > **Pliny is the one work where this is expensive.** _Naturalis Historia_ paginates one whole book per page and carries 69,113 of the 85,876 notes, so its worst page now ships ~1.3 MB of footnotes on top of ~0.5 MB of text. The median page across the corpus has **4** notes and the 90th percentile has **10**; only Pliny's 37 pages are pathological, and the root cause is the pagination depth, not the apparatus. Deferred for future pipeline tuning once note presentation is finalized.
 
 **Content recovered** is genuine editorial commentary, not just sigla — e.g. _"These summaries, which are not the work of Ammianus but of some early editor, are put for convenience at the beginning of each chapter…"_
 
@@ -71,8 +71,14 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 2.3. Saved Reading Position
 
-- **V1 (`saved_spots.ts`)**: `LibrarySavedSpot` maps `workId → sectionId` in `localStorage` under `LIBRARY_SPOTS`, letting the library page offer "resume where you left off".
-- **V2**: ❌ **Missing**. Reader URLs are fully addressable, so the data model supports this trivially — the gap is purely the persistence and the resume affordance on the library page.
+**Shipped.** Bi-directional parity with V1's `LIBRARY_SPOTS` is now implemented across reader and library views without regressions.
+
+- **V1 (`saved_spots.ts`)**: `LibrarySavedSpot` maps `workId → { sectionId: string }` in `localStorage` under `LIBRARY_SPOTS`, letting the library page offer "resume where you left off".
+- **V2 (`saved_spots.client.ts`, `reader_view.client.ts`, `library_view.client.ts`)**:
+  - `savedSpotsStore` provides typed, validated reading spot persistence using the exact same `LIBRARY_SPOTS` key and schema as V1 for seamless interoperability across versions.
+  - Reader automatically records spots on mount, page turns, and section anchor clicks.
+  - Reader routes accept `?jump=<secId>` and redirect with the fragment identifier (`#sec-<secId>`) for instant in-page anchoring.
+  - Library view client-side progressively enhances work cards when a saved spot exists: prepends an unobtrusive corner badge (`§ X.Y saved`) and repoints card navigation directly to the jump URL.
 
 ### 2.4. Swipe / Tap Page Navigation
 
@@ -194,29 +200,32 @@ This confirms both of your observations and adds a third:
 - ~~**Port the rendition CSS**~~ — shipped, along with the missing `overline` / `rend="7"` / `rendParent` mappings and the redundant nested `reader-line` span (§2.7).
 - ~~**Render note markers as links, not dead buttons**~~ — shipped; 0 dead controls remain (§2.1).
 - ~~**Plumb note bodies into V2**~~ — shipped via page-scoped `notesHtml` (§2.1).
+- ~~**Saved reading position**~~ — shipped; bi-directional V1 `LIBRARY_SPOTS` compatibility, reader auto-save on connect/turn/section anchor click, `#sec-*` jump anchoring, and progressive corner badge with direct jump in `/v2/library` (§2.3).
 
 ### High Priority (Correctness / Dead Controls)
 
-1. **Repaginate Pliny, _Naturalis Historia_** — surfaced by the apparatus port, not caused by it. One page is one whole book: ~0.5 MB of text and, now, up to ~1.3 MB of footnotes on the worst page. Every other work in the corpus is fine (median 4 notes per page). The fix is the work's `paginationDepth`, which is a data-pipeline change (§2.1).
-2. **Make attribution reachable without JavaScript** — move the provenance/license block into page flow (e.g. a colophon in `reader-passage-footer`) so it survives No-JS and appears in print.
+1. **Make attribution reachable without JavaScript** — move the provenance/license block into page flow (e.g. a colophon in `reader-passage-footer`) so it survives No-JS and appears in print.
 
 ### Medium Priority (Feature Restoration)
 
-3. **Notes panel as the JS enhancement** — the footnote baseline is in place (§2.1), so the remaining work is the synchronized Notes tab: marker click reveals the note in the side panel without losing the reading position, with the footnote list staying as the No-JS and print path. This is the first real content for the panel model in [`UX_STRUCTURE.md`](UX_STRUCTURE.md) §6, and should be designed with the panel-arbitration question there, not ahead of it.
-4. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
-5. **Saved reading position** — restore `LibrarySavedSpot` equivalence and surface a resume link on the V2 library page.
-6. **Per-work macra scoping** — key the preference by `workId`, or auto-default from the existing `hasMacra` flag.
+2. **Notes panel as the JS enhancement** — the footnote baseline is in place (§2.1), so the remaining work is the synchronized Notes tab: marker click reveals the note in the side panel without losing the reading position, with the footnote list staying as the No-JS and print path. This is the first real content for the panel model in [`UX_STRUCTURE.md`](UX_STRUCTURE.md) §6, and should be designed with the panel-arbitration question there, not ahead of it.
+3. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
+4. **Per-work macra scoping** — key the preference by `workId`, or auto-default from the existing `hasMacra` flag.
 
 ### Low Priority (Larger Scope)
 
-7. **Swipe / tap navigation** — requires touch gesture handling; `DrawerController` already contains comparable drag/velocity logic to borrow from.
-8. **External content reader** — the largest missing surface, and effectively a new vertical slice rather than a port.
+6. **Swipe / tap navigation** — requires touch gesture handling; `DrawerController` already contains comparable drag/velocity logic to borrow from.
+7. **External content reader** — the largest missing surface, and effectively a new vertical slice rather than a port.
 
 ### Cleanups (independent of any decision above)
 
-9. **Hoist the translator credit** — emit `reader-trans-author` once per page instead of once per section (§2.9).
-10. **Guard the translation join** — `translationRowsByDotId.get(dotId)` fails silently to an empty cell when citation granularities differ; fall back to the nearest ancestor ID, or at minimum surface the mismatch at build time (§2.9).
+8. **Hoist the translator credit** — emit `reader-trans-author` once per page instead of once per section (§2.9).
+9. **Guard the translation join** — `translationRowsByDotId.get(dotId)` fails silently to an empty cell when citation granularities differ; fall back to the nearest ancestor ID, or at minimum surface the mismatch at build time (§2.9).
 
 ### Blocked on a Product Decision
 
-11. **Translation presentation (§2.9)** — do not build against the current parallel view as though it were final. The measurement in §2.9 is intended as input to that decision, not a recommendation.
+10. **Translation presentation (§2.9)** — do not build against the current parallel view as though it were final. The measurement in §2.9 is intended as input to that decision, not a recommendation.
+
+### Deferred / Edge Cases (Post-Parity)
+
+11. **Repaginate Pliny, _Naturalis Historia_** — deferred edge case; handling of notes is not a settled issue. Pliny paginates one whole book per page (identical to V1) and contains 69,113 notes. Under the zero-JS footnote baseline, this inflates page payload for Pliny's 37 books. Revisit in upstream data processing once overall note presentation is finalized.

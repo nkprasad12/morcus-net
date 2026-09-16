@@ -27,9 +27,10 @@ function redirectReaderJump(
   const pageId = Array.isArray(resolved.page.id)
     ? resolved.page.id.join(".")
     : resolved.page.id;
+  const hash = jump && jump !== pageId ? `#sec-${jump}` : "";
   res.redirect(
     302,
-    `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}`
+    `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}${hash}`
   );
 }
 
