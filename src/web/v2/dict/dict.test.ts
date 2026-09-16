@@ -858,14 +858,33 @@ describe("dict_ssr", () => {
     expect(html).toContain('target="_blank"');
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain('title="View plate on mateo.uni-mannheim.de"');
-    expect(html).toContain('class="mateo-embed-pane"');
+    expect(html).toContain('class="mateo-embed-pane js-only"');
     expect(html).toContain('class="action-btn mateo-toggle-btn"');
     expect(html).toContain("Plate Embed");
     expect(html).toContain(
-      'iframe src="https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v1/jpg/s0665.html"'
+      'data-deferred-src="https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v1/jpg/s0665.html"'
     );
     expect(html).toContain('class="mateo-frame"');
-    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('referrerpolicy="no-referrer"');
+  });
+
+  test("xmlNodeToHtml does not give the Mateo iframe an eager src", () => {
+    // The point of the whole data-deferred-src dance: no third-party request may be
+    // issued for a plate the reader has not asked to see. An iframe with a
+    // real `src` is fetched during parse regardless of the <details> state.
+    const node = new XmlNode(
+      "a",
+      [
+        [
+          "href",
+          "https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v1/jpg/s0665.html",
+        ],
+      ],
+      ["[…]"]
+    );
+
+    const html = xmlNodeToHtml(node);
+    expect(html).not.toMatch(/<iframe[^>]*\ssrc=/);
   });
 
   test("renderDictResultsHtml wraps results in results-layout with TOC when senses exceed threshold", () => {

@@ -6,6 +6,7 @@ import "@/web/v2/core/anchor_scroll.client";
 import "@/web/v2/core/back_to_top.client";
 import "@/web/v2/shell/mobile_menu.client";
 import "@/web/v2/dict/abbr_popover.client";
+import "@/web/v2/core/deferred_iframe.client";
 
 // Mark document as JS-enhanced to disable static No-JS CSS fallbacks
 document.documentElement.classList.add("has-js");
