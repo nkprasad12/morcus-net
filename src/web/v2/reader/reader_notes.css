@@ -9,11 +9,30 @@
 
    Selector note: `.reader-passage a` in reader_text.css styles the clickable
    words, and sets `color: inherit` and `padding: 0`. It is (0,1,1), so a bare
-   `.reader-note-ref` loses to it — the marker has to name the element too. */
+   `.reader-note-ref` loses to it — the marker has to name the element too.
+   The colour below is the same value that rule would have imposed, but it is
+   now declared on purpose rather than inherited by accident.
+
+   Deliberately not coloured at rest. Two reasons:
+
+   1. Nothing else in the passage advertises itself with colour. Every word is
+      clickable (that is the whole dictionary interaction) and every word is
+      body-coloured, so a blue marker would be the single chromatic exception
+      on a surface where interactivity is universal and unmarked.
+   2. A page of Ammianus carries a marker every few lines. In blue the eye
+      lands on the apparatus before the prose.
+
+   The brackets, not the colour, are what distinguish the marker — which is
+   also how a printed critical edition does it, and what keeps this clear of
+   colour-only signalling. Muted grey was tried and rejected: it is no less
+   conspicuous (the eye catches the lightness change just as readily), it is
+   harder to read at superscript size, it only manages 4.22:1 on the light
+   background, and in dark mode --text-muted sits 2.09:1 from the body colour,
+   so it collapses back to this anyway. Blue is held for hover/focus. */
 a.reader-note-ref,
 a.reader-note-ref:visited {
   position: relative;
-  color: var(--primary);
+  color: inherit;
   text-decoration: none;
   font-family: var(--font-sans);
   white-space: nowrap;
@@ -36,7 +55,9 @@ a.reader-note-ref::after {
   inset: -0.35em -0.3em;
 }
 
-a.reader-note-ref:hover {
+a.reader-note-ref:hover,
+a.reader-note-ref:focus-visible {
+  color: var(--primary);
   text-decoration: underline;
   background-color: transparent;
 }
@@ -102,6 +123,10 @@ a.reader-note-ref:target {
   box-shadow: inset 3px 0 0 var(--primary);
 }
 
+/* Keeps the blue the in-text marker gives up. Nothing here has to stay out of
+   the way of reading: the whole block is already de-emphasised, the note
+   bodies are themselves --text-muted, and this column is the one interactive
+   thing in it, so muting it too would erase the distinction. */
 .reader-note-backref,
 .reader-note-backref:visited {
   color: var(--primary);
