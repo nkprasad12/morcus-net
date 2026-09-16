@@ -10,6 +10,7 @@ describe("ReaderTocController", () => {
   function createTocFixture(): HTMLDivElement {
     const div = document.createElement("div");
     div.innerHTML = `
+      <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
       <div class="sticky-expanded-row">
         <button type="button" id="reader-toc-btn" aria-expanded="false" aria-controls="reader-toc-drawer">
           Contents
@@ -104,17 +105,19 @@ describe("ReaderTocController", () => {
     controller.destroy();
   });
 
-  test("open() removes hidden, updates aria-expanded, focuses filter input, and triggers onOpen callback", () => {
+  test("open() removes hidden, updates aria-expanded, focuses active item, and triggers onOpen callback", () => {
     const onOpen = jest.fn();
     const controller = new ReaderTocController({ root: container, onOpen });
     const drawer = controller.drawer!;
     const triggerBtn = controller.triggerBtn!;
-    const filterInput = controller.filterInput!;
+    const activeItem = drawer.querySelector<HTMLElement>(
+      ".reader-toc-item.active"
+    )!;
 
     expect(drawer.hasAttribute("hidden")).toBe(true);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
 
-    const focusSpy = jest.spyOn(filterInput, "focus");
+    const focusSpy = jest.spyOn(activeItem, "focus");
 
     controller.open();
 
@@ -123,6 +126,20 @@ describe("ReaderTocController", () => {
     expect(controller.isOpen()).toBe(true);
     expect(focusSpy).toHaveBeenCalled();
     expect(onOpen).toHaveBeenCalledTimes(1);
+
+    controller.destroy();
+  });
+
+  test("open() falls back to focusing filter input or close button when no active item exists", () => {
+    const activeItem = container.querySelector(".reader-toc-item.active");
+    activeItem?.classList.remove("active");
+
+    const controller = new ReaderTocController({ root: container });
+    const filterInput = controller.filterInput!;
+    const focusSpy = jest.spyOn(filterInput, "focus");
+
+    controller.open();
+    expect(focusSpy).toHaveBeenCalled();
 
     controller.destroy();
   });
@@ -263,6 +280,24 @@ describe("ReaderTocController", () => {
     // Click outside on document dismisses
     document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(controller.isOpen()).toBe(false);
+
+    controller.destroy();
+  });
+
+  test("synchronizes backdrop visibility and dismisses on backdrop click", () => {
+    const controller = new ReaderTocController({ root: container });
+    expect(controller.backdrop).not.toBeNull();
+    expect(controller.backdrop?.hasAttribute("hidden")).toBe(true);
+
+    controller.open();
+    expect(controller.backdrop?.hasAttribute("hidden")).toBe(false);
+
+    // Clicking backdrop closes drawer and re-hides backdrop
+    controller.backdrop?.dispatchEvent(
+      new MouseEvent("click", { bubbles: true })
+    );
+    expect(controller.isOpen()).toBe(false);
+    expect(controller.backdrop?.hasAttribute("hidden")).toBe(true);
 
     controller.destroy();
   });

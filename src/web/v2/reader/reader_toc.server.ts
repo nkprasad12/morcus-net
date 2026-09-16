@@ -2,6 +2,7 @@ import {
   V2PreprocessedPage,
   V2PreprocessedWork,
 } from "@/common/library/v2/v2_types";
+import { NavTreeNode } from "@/common/library/library_types";
 import { citationToString } from "@/web/v2/reader/reader_types.server";
 import * as he from "he";
 
@@ -29,34 +30,106 @@ export function buildReaderPageUrl(
 }
 
 export interface RenderTocItemsOptions {
-  pages: V2PreprocessedPage[];
+  pages?: V2PreprocessedPage[];
+  work: Pick<V2PreprocessedWork, "urlAuthor" | "urlName"> & {
+    pages?: V2PreprocessedPage[];
+    textParts?: string[];
+    navTree?: NavTreeNode;
+  };
   activePageIndex: number;
-  work: Pick<V2PreprocessedWork, "urlAuthor" | "urlName">;
   viewMode?: "single" | "parallel";
   query?: string;
 }
 
+function normalizeId(id: string | string[]): string {
+  return Array.isArray(id) ? id.join(".") : String(id);
+}
+
+function buildNavTreeFromPages(pages: V2PreprocessedPage[]): NavTreeNode {
+  const root: NavTreeNode = { id: [], children: [] };
+  for (const p of pages) {
+    const segments = Array.isArray(p.id) ? p.id : String(p.id).split(".");
+    let current = root;
+    for (let i = 0; i < segments.length; i++) {
+      const subId = segments.slice(0, i + 1);
+      let child = current.children.find(
+        (c) =>
+          c.id.length === subId.length &&
+          c.id.every((seg, idx) => seg === subId[idx])
+      );
+      if (!child) {
+        child = { id: subId, children: [] };
+        current.children.push(child);
+      }
+      current = child;
+    }
+  }
+  return root;
+}
+
 /**
- * Renders the list of chapter links inside the Table of Contents drawer.
+ * Renders the hierarchical tree of chapters and sections inside the TOC drawer.
  */
 export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
-  const { pages, activePageIndex, work, viewMode, query } = options;
-  return pages
-    .map((p, idx) => {
-      const isCurrent = idx === activePageIndex;
-      const pageUrl = buildReaderPageUrl(work, p, { viewMode, query });
+  const { activePageIndex, work, viewMode, query } = options;
+  const pages = options.pages ?? work.pages ?? [];
+  const textParts = work.textParts ?? [];
+
+  const pageMap = new Map<string, V2PreprocessedPage>();
+  for (const p of pages) {
+    pageMap.set(normalizeId(p.id), p);
+  }
+
+  const activePage = pages[activePageIndex];
+  const activeId = activePage ? normalizeId(activePage.id) : "";
+
+  const tree =
+    work.navTree && work.navTree.children && work.navTree.children.length > 0
+      ? work.navTree
+      : buildNavTreeFromPages(pages);
+
+  function renderNode(node: NavTreeNode): string {
+    const key = node.id.join(".");
+    const partName = textParts[node.id.length - 1] || "section";
+    const coord = node.id[node.id.length - 1] || "";
+    const formattedPart = partName.charAt(0).toUpperCase() + partName.slice(1);
+    const label = coord ? `${formattedPart} ${coord}` : "Contents";
+
+    if (node.children.length === 0) {
+      const page = pageMap.get(key);
+      const pageUrl = buildReaderPageUrl(work, page ?? null, {
+        viewMode,
+        query,
+      });
+      const isCurrent = key === activeId;
       return `
         <a href="${pageUrl}"
            class="reader-toc-item ${isCurrent ? "active" : ""}"
            ${isCurrent ? 'aria-current="page"' : ""}>
-          <div class="reader-toc-item-text">
-            <span class="reader-toc-item-title">${he.escape(p.title)}</span>
-          </div>
-          <span class="reader-toc-item-id">§ ${he.escape(String(p.id))}</span>
+          <span class="reader-toc-item-title">${he.escape(label)}</span>
         </a>
       `;
-    })
-    .join("\n");
+    }
+
+    const isOpen = activeId === key || activeId.startsWith(key + ".");
+    const childrenHtml = node.children
+      .map((child) => renderNode(child))
+      .join("\n");
+
+    return `
+      <details class="reader-toc-group" ${isOpen ? "open" : ""}>
+        <summary class="reader-toc-summary">
+          <span class="reader-toc-chevron" aria-hidden="true">▸</span>
+          <span class="reader-toc-group-label">${he.escape(label)}</span>
+        </summary>
+        <div class="reader-toc-group-children">
+          ${childrenHtml}
+        </div>
+      </details>
+    `;
+  }
+
+  return tree.children.map((child) => renderNode(child)).join("\n");
 }
 
 export interface ReaderTocDrawerOptions {
@@ -72,9 +145,8 @@ export interface ReaderTocDrawerOptions {
 export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
   const { work, activePageIndex, viewMode, query } = options;
   const tocItemsHtml = renderTocItemsHtml({
-    pages: work.pages,
-    activePageIndex,
     work,
+    activePageIndex,
     viewMode,
     query,
   });
@@ -83,40 +155,15 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
       <div id="reader-toc-drawer"
            class="reader-toc-drawer"
            role="dialog"
-           aria-modal="true"
            aria-label="Table of Contents"
            hidden>
         <div class="reader-toc-header">
-          <div class="reader-toc-header-left">
-            <button type="button"
-                    class="reader-toc-back-btn"
-                    id="reader-toc-back-btn"
-                    aria-label="Back to reader">
-              &larr; Back
-            </button>
-            <span class="reader-toc-title">Table of Contents</span>
-          </div>
-          <button type="button"
-                  class="reader-toc-close-btn"
-                  id="reader-toc-close-btn"
-                  aria-label="Close table of contents">&times;</button>
-        </div>
-
-        <div class="reader-toc-banner">
-          <span class="reader-toc-work-title">${he.escape(
-            work.author
-          )} &middot; ${he.escape(work.title)}</span>
-          <span class="reader-toc-scheme-label">${he.escape(
-            work.textParts.join(" · ")
-          )}</span>
-        </div>
-
-        <div class="reader-toc-search-box">
-          <input type="text"
-                 id="reader-toc-filter"
-                 class="reader-toc-input"
-                 placeholder="Search chapters, summaries..."
-                 aria-label="Search Table of Contents">
+          <span class="reader-toc-title">Contents</span>
+          <a href="#"
+             class="reader-toc-close-btn"
+             id="reader-toc-close-btn"
+             role="button"
+             aria-label="Close table of contents">&times;</a>
         </div>
 
         <div class="reader-toc-list" id="reader-toc-list">

@@ -139,7 +139,6 @@ export class MorcusReaderView extends BaseElement {
     });
     this.initBiblioModal();
     this.initStickyExpand();
-    this.initQuickJump();
     this.initKeyboardShortcuts();
     this.initIframeThemeSync();
 
@@ -313,7 +312,10 @@ export class MorcusReaderView extends BaseElement {
         dictPanel.style.setProperty("--drawer-height", `${dvh}dvh`);
         sheetBar?.setAttribute("aria-valuenow", String(dvh));
       }
-      document.documentElement.style.setProperty("--drawer-height", `${dvh}dvh`);
+      document.documentElement.style.setProperty(
+        "--drawer-height",
+        `${dvh}dvh`
+      );
       this.setSheetLabel(this.currentQuery);
       this.resetDictScroll();
     }
@@ -569,7 +571,6 @@ export class MorcusReaderView extends BaseElement {
   private initMobileDrawer() {
     const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
     const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-    const splitLayout = this.querySelector<HTMLElement>(".reader-split-layout");
     if (!sheetBar || !dictPanel) return;
 
     this.drawerController = new DrawerController({
@@ -758,48 +759,6 @@ export class MorcusReaderView extends BaseElement {
 
     this.classList.toggle("hide-gutter", !prefs.showGutter);
     this.applyMacra(prefs.showMacra);
-  }
-
-  // --- Quick Jump In-Page Smooth Scroll ---
-  private initQuickJump() {
-    const form = this.$<HTMLFormElement>("#reader-jump-form");
-    const input = this.$<HTMLInputElement>("#jump-input");
-    if (!form || !input) return;
-
-    this.listen(input, "focus", () => input.select());
-    this.listen(input, "click", () => input.select());
-
-    this.listen(form, "submit", (e) => {
-      const val = input.value.trim();
-      if (!val) {
-        e.preventDefault();
-        return;
-      }
-
-      const currentPage = this.getAttribute("data-page") || "1.1";
-
-      // Check full match (e.g. "1.1.2") or relative match (e.g. "2")
-      let targetSecId = val;
-      let targetEl = document.getElementById(`sec-${targetSecId}`);
-      if (!targetEl && /^\d+$/.test(val)) {
-        targetSecId = `${currentPage}.${val}`;
-        targetEl = document.getElementById(`sec-${targetSecId}`);
-      }
-
-      if (targetEl) {
-        e.preventDefault();
-        targetEl.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-          inline: "nearest",
-        });
-        targetEl.classList.add("target-highlight");
-        setTimeout(() => targetEl?.classList.remove("target-highlight"), 3000);
-        this.showToast(`Jumped to § ${targetSecId}`);
-        input.value = targetSecId;
-      }
-      // If not on current page, standard form submission will navigate
-    });
   }
 
   // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC) ---

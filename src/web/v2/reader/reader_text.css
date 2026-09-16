@@ -86,45 +86,98 @@
 }
 
 .reader-continuation-actions {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
   margin-bottom: var(--space-8);
 }
 
-.reader-continue-btn,
-.reader-continue-btn:visited {
-  background: var(--primary);
-  color: var(--on-accent);
-  font-weight: 600;
-  justify-content: center;
-  padding: var(--space-4) var(--space-6);
-  border-radius: var(--radius-md);
-}
-
-.reader-continue-btn:hover {
-  background: var(--primary-hover);
-  color: var(--on-accent);
-}
-
-.reader-return-btn {
-  justify-content: center;
-  font-weight: 600;
-  padding: var(--space-4) var(--space-6);
-  border-radius: var(--radius-md);
-  color: var(--text-muted);
-}
-
-.reader-footer-info {
+.reader-continuation-card,
+.reader-continuation-card:visited {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.15s ease;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
-.reader-footer-note {
-  font-size: 0.8125rem;
+.reader-continuation-card.prev-card {
+  grid-column: 1;
+  text-align: left;
+  align-items: flex-start;
+}
+
+.reader-continuation-card.next-card {
+  grid-column: 2;
+  text-align: right;
+  align-items: flex-end;
+  border-color: var(--border);
+  background: var(--tag-bg);
+}
+
+.continuation-kicker {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-muted);
-  line-height: 1.5;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  line-height: 1;
+}
+
+.continuation-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.3;
+}
+
+.reader-continuation-card:hover,
+.reader-continuation-card:visited:hover {
+  border-color: var(--primary);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  transform: translateY(-1px);
+}
+
+.reader-continuation-card:hover .continuation-kicker,
+.reader-continuation-card:visited:hover .continuation-kicker {
+  color: var(--primary);
+}
+
+.reader-continuation-card.next-card:hover .continuation-title,
+.reader-continuation-card.next-card:visited:hover .continuation-title {
+  color: var(--primary);
+}
+
+.reader-library-nav {
+  margin-top: var(--space-2);
+}
+
+.reader-library-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.reader-library-link:hover {
+  text-decoration: underline;
 }
 
 /* ==========================================================================
@@ -194,26 +247,30 @@ span.lat-word.word-active {
   user-select: none;
 }
 
-.section-anchor {
+.section-anchor,
+.section-anchor:visited {
   color: var(--text-muted);
+  opacity: 0.75;
   text-decoration: none;
   display: inline-block;
   padding: var(--space-1);
   border-radius: var(--radius-sm);
-  transition: color 0.15s ease;
+  transition: color 0.15s ease, opacity 0.15s ease;
 }
 
-.section-anchor:hover {
+.section-anchor:hover,
+.section-anchor:visited:hover {
   color: var(--primary);
+  opacity: 1;
 }
 
 .cite-prefix {
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
 .cite-local {
-  font-weight: 600;
-  color: var(--text);
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 /* Native CSS Fragment Highlighting (:target) */
@@ -315,8 +372,9 @@ span.lat-word.word-active {
   }
 
   .cite-local {
-    color: var(--primary);
-    font-size: 0.8125rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
   }
 
   .section-parallel {
@@ -338,6 +396,22 @@ span.lat-word.word-active {
     padding-left: var(--space-4);
     border-left: 2px solid var(--border-strong);
     padding-top: var(--space-2);
+  }
+
+  .reader-continuation-actions {
+    gap: var(--space-3);
+  }
+
+  .reader-continuation-card {
+    padding: var(--space-3) var(--space-5);
+  }
+
+  .continuation-kicker {
+    font-size: 0.625rem;
+  }
+
+  .continuation-title {
+    font-size: 0.8125rem;
   }
 }
 

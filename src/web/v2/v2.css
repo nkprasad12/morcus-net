@@ -42,7 +42,7 @@ a:hover {
 }
 
 /* W3C HTML5 standard UA reset: ensures [hidden] attribute wins over author display: flex/grid */
-[hidden]:not(.sticky-expanded-row) {
+[hidden]:not(.sticky-expanded-row):not(.reader-toc-drawer:target) {
   /* stylelint-disable-next-line declaration-no-important */
   display: none !important;
 }
