@@ -167,17 +167,17 @@ The proportionate shape:
 
 ## 6. What makes the panel side real
 
-The panel model would be aspirational if it had only vocabulary lists to hold. It doesn't: the critical apparatus already exists in the data and is already marked up in the page — **85,876 note markers across 48 works**, every one of them an inert `<button>` with no handler. Ammianus alone carries ~12 per page.
+The panel model would be aspirational if it had only vocabulary lists to hold. It doesn't: the critical apparatus is **85,876 notes across 48 works**, and Ammianus alone carries ~12 per page.
 
-That settles two things the discussion had left open. A "too thin to earn a tab" objection no longer applies — the tab would carry 2,526 notes for Ammianus, not seven static rows. And at ~12 notes per page, V1's per-marker tooltip model does not scale, which argues for numbered footnotes in flow as the No-JS baseline plus a synchronized Notes tab as the enhancement.
+Those notes used to be inert `<button>` markers with no handler and no bodies in the page. They are now numbered footnotes rendered after the passage, linked both ways, and readable with no JavaScript — see [`FEATURE_PARITY.md`](FEATURE_PARITY.md) §2.1.
 
-Full analysis and measurements: [`FEATURE_PARITY.md`](FEATURE_PARITY.md) §2.1.
+That does not retire the panel argument; it grounds it. A "too thin to earn a tab" objection no longer applies — the tab would carry 2,526 notes for Ammianus, not seven static rows — and the remaining work is exactly the enhancement the panel exists for: letting a reader consult a note without leaving the line they are on. The difference is that the baseline now works, so the panel can be designed when the arbitration questions in §7 are settled rather than under pressure to rescue a broken feature.
 
 ---
 
 ## 7. Status
 
-**Adopted as the working model; nothing here has been built.** The refactor that prompted the discussion was reverted rather than landed, so the reader chrome is unchanged and no source file has been modified on the strength of this document.
+**Adopted as the working model; none of the _chrome_ changes here have been built.** The refactor that prompted the discussion was reverted rather than landed, so the reader's top bar and settings dialog are unchanged. The apparatus port described in §6 has since shipped, but it touched the preprocessor, the text panel and CSS — no chrome.
 
 Settled in discussion:
 
@@ -194,4 +194,4 @@ Still open:
 - Whether the mobile drawer's ~3-chip budget at 390px can carry four tabs at all.
 - Translation presentation, which interacts directly with the top bar's view toggle — see [`FEATURE_PARITY.md`](FEATURE_PARITY.md) §2.9.
 
-> [!NOTE] > **Sequencing.** The apparatus port is a bigger and more user-visible win than any top-bar rework: 85,876 inert buttons is a more serious defect than settings ergonomics. It is also what makes the panel side of the model real rather than aspirational, so it is the natural change to drive the restructure — and doing it first means the chrome work can be designed against a panel that actually has tabs in it.
+> [!NOTE] > **Sequencing.** The apparatus port went first, ahead of any top-bar rework: 85,876 inert buttons was a more serious defect than settings ergonomics. Its footnote baseline has landed, so the panel side of the model now has real content waiting for it — the chrome work can be designed against a panel that has something to put in a tab, and the Notes tab itself should follow the arbitration decisions above rather than precede them.

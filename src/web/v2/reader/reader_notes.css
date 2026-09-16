@@ -1,0 +1,115 @@
+/* Critical Apparatus: in-text note markers and the page's footnote list */
+
+/* ==========================================================================
+   1. In-Text Marker
+   ========================================================================== */
+
+/* A link, not a button: the jump to the footnote body works with no JS, and
+   the tokenizer skips <a> subtrees so the label is never treated as a word. */
+.reader-note-ref,
+.reader-note-ref:visited {
+  color: var(--primary);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  padding: 0 0.1em;
+}
+
+.reader-note-ref sup {
+  font-size: 0.7em;
+  line-height: 0;
+}
+
+.reader-note-ref:hover {
+  text-decoration: underline;
+}
+
+/* Marks where the reader was when they follow a note's back-link. */
+.reader-note-ref:target {
+  background-color: var(--primary-light);
+  border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   2. Footnote List
+   ========================================================================== */
+
+.reader-notes {
+  margin-top: var(--space-9);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.reader-notes-heading {
+  margin: 0 0 var(--space-5);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+/* Only rendered when a page has both text and translation notes. */
+.reader-notes-subheading {
+  margin: var(--space-6) 0 var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.reader-notes-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Mirrors the passage's citation gutter: label column, then body. */
+.reader-note {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+.reader-note:target {
+  background-color: var(--primary-light);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.reader-note-backref,
+.reader-note-backref:visited {
+  color: var(--primary);
+  text-align: right;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.reader-note-backref:hover {
+  text-decoration: underline;
+}
+
+.reader-note-body {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .reader-notes {
+    margin-top: var(--space-8);
+    font-size: 0.8125rem;
+  }
+
+  .reader-note {
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+  }
+}

@@ -38,8 +38,97 @@ function getSectionPrefix(secId: string[], pageId: string[]): string {
   return full.slice(0, full.length - local.length);
 }
 
+/** A critical apparatus note referenced from the page being rendered. */
+interface CollectedNote {
+  /** Display label, e.g. `"3"` for a text note or `"c"` for a translation note. */
+  label: string;
+  /** DOM id of the note body in the footnote list, e.g. `"note-n3"`. */
+  bodyId: string;
+  /** DOM id of the in-text marker, e.g. `"noteref-n3"`. */
+  refId: string;
+  /** Rendered HTML of the note body. */
+  bodyHtml: string;
+}
+
+/**
+ * Accumulates the note bodies referenced by a single page.
+ *
+ * `process_work.ts` hoists note bodies into a work-level array and leaves
+ * positional `<note noteId="N"/>` markers behind, where `N` indexes that array
+ * across the whole work. Readers see one page at a time, so markers are
+ * renumbered per page: a page that happens to open at note 2,314 still labels
+ * its first marker "1".
+ */
+interface NoteCollector {
+  /** Work-level note bodies, indexed by a marker's `noteId`. */
+  bodies: XmlNode[];
+  /** Separates text notes (`"n"`) from translation notes (`"t"`) in DOM ids. */
+  idPrefix: string;
+  /**
+   * Text notes are numbered and translation notes lettered, so a parallel row
+   * never shows two unrelated markers both labelled "3".
+   */
+  labelStyle: "numeric" | "alpha";
+  /** Notes referenced so far on this page, in document order. */
+  collected: CollectedNote[];
+}
+
+function createNoteCollector(
+  bodies: XmlNode[] | undefined,
+  idPrefix: string,
+  labelStyle: "numeric" | "alpha"
+): NoteCollector {
+  return { bodies: bodies ?? [], idPrefix, labelStyle, collected: [] };
+}
+
+/** Converts a 1-based sequence number to `a`, `b`, ... `z`, `aa`, `ab`, ... */
+function alphabeticLabel(seq: number): string {
+  let remaining = seq;
+  let label = "";
+  while (remaining > 0) {
+    const digit = (remaining - 1) % 26;
+    label = String.fromCharCode(97 + digit) + label;
+    remaining = Math.floor((remaining - 1) / 26);
+  }
+  return label;
+}
+
+/**
+ * Renders an in-text note marker as a link to its footnote body, registering
+ * that body with `collector` so the page can render it.
+ *
+ * Returns the empty string when the body cannot be resolved: a marker with
+ * nothing behind it is worse than no marker, and that dead control is exactly
+ * what this replaces.
+ */
+function renderNoteMarker(
+  noteId: string,
+  collector: NoteCollector | undefined
+): string {
+  const index = Number.parseInt(noteId, 10);
+  const body = collector?.bodies[index];
+  if (collector === undefined || body === undefined) {
+    return "";
+  }
+  const seq = collector.collected.length + 1;
+  const label =
+    collector.labelStyle === "alpha" ? alphabeticLabel(seq) : String(seq);
+  const bodyId = `note-${collector.idPrefix}${seq}`;
+  const refId = `noteref-${collector.idPrefix}${seq}`;
+  collector.collected.push({
+    label,
+    bodyId,
+    refId,
+    // Rendered without a collector: a note nested inside a note body would
+    // have no marker position of its own to link back to.
+    bodyHtml: renderXmlNodeCleanHtml(body),
+  });
+  return `<a class="reader-note-ref" id="${refId}" href="#${bodyId}" role="doc-noteref" aria-label="Note ${label}"><sup>${label}</sup></a>`;
+}
+
 function renderXmlNodeCleanHtml(
-  node: XmlNode<ProcessedWorkContentNodeType> | string
+  node: XmlNode | string,
+  notes?: NoteCollector
 ): string {
   if (typeof node === "string") {
     return he.escape(node);
@@ -62,12 +151,12 @@ function renderXmlNodeCleanHtml(
     return '<span class="reader-gap text-muted">[gap]</span>';
   }
   if (tag === "note" && noteId !== undefined) {
-    return `<button type="button" class="reader-note-ref" data-note-id="${he.escape(
-      noteId
-    )}" aria-label="Note ${he.escape(noteId)}"><sup>*</sup></button>`;
+    return renderNoteMarker(noteId, notes);
   }
 
-  const childrenHtml = node.children.map(renderXmlNodeCleanHtml).join("");
+  const childrenHtml = node.children
+    .map((child) => renderXmlNodeCleanHtml(child, notes))
+    .join("");
 
   if (tag === "head" || isSectionHead) {
     return `<h3 class="reader-subheading">${childrenHtml}</h3>`;
@@ -90,14 +179,21 @@ function renderXmlNodeCleanHtml(
   if (rend === "bold") classes.push("bold");
   if (rend === "blockquote") classes.push("blockquote");
   if (rend === "sup" || rend === "superscript") classes.push("superscript");
-  if (rend === "uppercase" || rend === "smallcaps") classes.push("smallcaps");
-  if (rend === "indent") classes.push("indent");
+  // Perseus marks the inscriptional and legal quotations that other editions
+  // set in small caps with a bare `rend="7"`.
+  if (rend === "smallcaps" || rend === "7") classes.push("smallcaps");
+  if (rend === "uppercase") classes.push("uppercase");
+  if (rend === "overline") classes.push("overline");
+  if (rend === "indent") {
+    classes.push("indent");
+    // Inside a paragraph an indent opens the paragraph, so only the first line
+    // moves; anywhere else (verse, above all) the whole block shifts. Mirrors
+    // the textIndent / paddingLeft split in `reader.tsx`.
+    if (node.getAttr("rendParent") === "p") classes.push("indent-para");
+  }
 
   const classAttr = classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
 
-  if (rend === "blockquote") {
-    return `<blockquote${classAttr}>${childrenHtml}</blockquote>`;
-  }
   if (isLine) {
     return `<span${classAttr}>${childrenHtml}</span>`;
   }
@@ -108,17 +204,23 @@ function renderXmlNodeCleanHtml(
     return childrenHtml;
   }
 
+  // A `blockquote` rendition stays a `<span>` made block-level by CSS, as it
+  // was in V1: prose sections are wrapped in a `<p>`, and a `<blockquote>`
+  // inside a `<p>` is invalid and gets silently reparented by the browser.
   return `<span${classAttr}>${childrenHtml}</span>`;
 }
 
 function renderPassageContent(
   node: XmlNode<ProcessedWorkContentNodeType>,
-  isVerseWork: boolean
+  isVerseWork: boolean,
+  notes?: NoteCollector
 ): string {
-  const rendered = renderXmlNodeCleanHtml(node);
+  const rendered = renderXmlNodeCleanHtml(node, notes);
   if (isVerseWork) {
+    // Matches `reader-line` with or without trailing rendition classes, so an
+    // indented pentameter is not wrapped in a second, redundant line span.
     if (
-      rendered.startsWith('<span class="reader-line"') ||
+      rendered.startsWith('<span class="reader-line') ||
       rendered.startsWith("<h") ||
       rendered.startsWith('<span class="line-space"')
     ) {
@@ -130,12 +232,52 @@ function renderPassageContent(
   if (
     rendered.startsWith("<p") ||
     rendered.startsWith("<h") ||
-    rendered.startsWith("<blockquote") ||
     rendered.startsWith("<ul")
   ) {
     return rendered;
   }
   return `<p class="reader-paragraph">${rendered}</p>`;
+}
+
+/** One labelled group of footnotes, e.g. the notes on the translation. */
+interface NoteGroup {
+  /** Shown only when a page carries more than one group. */
+  title: string;
+  notes: CollectedNote[];
+}
+
+/**
+ * Renders a page's collected notes as an endnote list.
+ *
+ * This is the No-JS baseline, and deliberately the scholarly convention rather
+ * than V1's per-marker tooltip: at ~12 notes per page (Ammianus) tooltips do
+ * not scale, and a list in page flow also survives printing.
+ */
+function renderNotesSection(groups: NoteGroup[]): string | undefined {
+  const populated = groups.filter((group) => group.notes.length > 0);
+  if (populated.length === 0) {
+    return undefined;
+  }
+  const showTitles = populated.length > 1;
+  const sections = populated.map((group) => {
+    const heading = showTitles
+      ? `<h3 class="reader-notes-subheading">${he.escape(group.title)}</h3>`
+      : "";
+    const items = group.notes
+      .map(
+        (note) =>
+          `<li class="reader-note" id="${note.bodyId}">
+            <a class="reader-note-backref" href="#${note.refId}" role="doc-backlink" aria-label="Back to note ${note.label} in the text">${note.label}</a>
+            <div class="reader-note-body">${note.bodyHtml}</div>
+          </li>`
+      )
+      .join("\n");
+    return `${heading}<ol class="reader-notes-list">${items}</ol>`;
+  });
+  return `<aside class="reader-notes" role="doc-endnotes" aria-labelledby="reader-notes-heading">
+      <h2 class="reader-notes-heading" id="reader-notes-heading">Notes</h2>
+      ${sections.join("\n")}
+    </aside>`;
 }
 
 export function preprocessWorkToV2(
@@ -172,13 +314,21 @@ export function preprocessWorkToV2(
     const singleSectionsHtml: string[] = [];
     const parallelSectionsHtml: string[] = [];
     const citationIds: string[] = [];
+    const textNotes = createNoteCollector(work.notes, "n", "numeric");
+    const translationNotes = createNoteCollector(
+      translationWork?.notes,
+      "t",
+      "alpha"
+    );
 
     for (let j = startIdx; j < endIdx; j++) {
       const [secId, node] = work.rows[j];
       const dotId = secId.join(".");
       const localId = getSectionLocalId(secId, pageId);
       const prefix = getSectionPrefix(secId, pageId);
-      const latinHtml = renderPassageContent(node, isVerseWork);
+      // Rendered once and reused by both views, so a note keeps the same label
+      // whether the reader is in single or parallel mode.
+      const latinHtml = renderPassageContent(node, isVerseWork, textNotes);
 
       citationIds.push(dotId);
 
@@ -214,7 +364,7 @@ export function preprocessWorkToV2(
       if (translationWork) {
         const transNode = translationRowsByDotId.get(dotId);
         const transHtml = transNode
-          ? renderPassageContent(transNode, isVerseWork)
+          ? renderPassageContent(transNode, isVerseWork, translationNotes)
           : "";
         const translator = translationWork.info.translator ?? "Translation";
 
@@ -253,6 +403,21 @@ export function preprocessWorkToV2(
       parallelHtml:
         translationWork && parallelSectionsHtml.length > 0
           ? parallelSectionsHtml.join("\n")
+          : undefined,
+      notesHtml: renderNotesSection([
+        { title: "Notes on the text", notes: textNotes.collected },
+      ]),
+      // Only differs from `notesHtml` when the translation carries notes of its
+      // own; otherwise the parallel view reuses the text notes.
+      parallelNotesHtml:
+        translationNotes.collected.length > 0
+          ? renderNotesSection([
+              { title: "Notes on the text", notes: textNotes.collected },
+              {
+                title: "Notes on the translation",
+                notes: translationNotes.collected,
+              },
+            ])
           : undefined,
     });
   }
