@@ -10,29 +10,25 @@
    Selector note: `.reader-passage a` in reader_text.css styles the clickable
    words, and sets `color: inherit` and `padding: 0`. It is (0,1,1), so a bare
    `.reader-note-ref` loses to it — the marker has to name the element too.
-   The colour below is the same value that rule would have imposed, but it is
-   now declared on purpose rather than inherited by accident.
 
-   Deliberately not coloured at rest. Two reasons:
+   Muted grey, not link blue. A page of Ammianus carries a marker every few
+   lines, and in blue the eye lands on the apparatus before the prose. Grey
+   groups the marker with the other editorial furniture — the citation gutter
+   uses this same token — and keeps it legible as a distinct thing rather than
+   letting it dissolve into the text. Blue is held for hover/focus, where it
+   confirms the affordance.
 
-   1. Nothing else in the passage advertises itself with colour. Every word is
-      clickable (that is the whole dictionary interaction) and every word is
-      body-coloured, so a blue marker would be the single chromatic exception
-      on a surface where interactivity is universal and unmarked.
-   2. A page of Ammianus carries a marker every few lines. In blue the eye
-      lands on the apparatus before the prose.
+   Not colour-only signalling: the brackets distinguish the marker on their
+   own, as in a printed critical edition.
 
-   The brackets, not the colour, are what distinguish the marker — which is
-   also how a printed critical edition does it, and what keeps this clear of
-   colour-only signalling. Muted grey was tried and rejected: it is no less
-   conspicuous (the eye catches the lightness change just as readily), it is
-   harder to read at superscript size, it only manages 4.22:1 on the light
-   background, and in dark mode --text-muted sits 2.09:1 from the body colour,
-   so it collapses back to this anyway. Blue is held for hover/focus. */
+   Contrast, measured: 4.22:1 against the light background, just under the 4.5
+   AA floor for body text, and the same shortfall the citation gutter already
+   carries. Dark mode is 6.42:1. If that floor ever needs to be met, darken
+   --text-muted globally rather than giving the marker a bespoke colour. */
 a.reader-note-ref,
 a.reader-note-ref:visited {
   position: relative;
-  color: inherit;
+  color: var(--text-muted);
   text-decoration: none;
   font-family: var(--font-sans);
   white-space: nowrap;
