@@ -152,5 +152,3 @@ Before pushing to the remote repository, ensure full browser matrix parity and 0
 1. Start dev server: `PORT=5757 ./morcus.sh web -w` (if not already running)
 2. Run functional E2E tests: `./morcus.sh e2e --v2 --all`
 3. Run visual regression tests: `./morcus.sh e2e --visual --all` (ensure 0 pixel diffs across all 72 baseline snapshots)
-
-> [!NOTE] > `v2-dicts-*` scenarios in `[nojs]` mode may time out on a restricted network. Their SSR output embeds an `<iframe>` pointing at `https://mateo.uni-mannheim.de` (the Gesner facsimile viewer); when that host is unreachable the connection hangs rather than failing fast, so the `load` event never fires and `page.goto` times out at 30s. This is an environment artifact, not a regression — the timeout is in the browser, not the server, which renders the same page in ~13ms.

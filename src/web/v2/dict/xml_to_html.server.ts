@@ -282,16 +282,29 @@ export function xmlNodeToHtml(
 
   if (isMateoLink && currentHref) {
     const encodedHref = he.escape(currentHref);
+    // The iframe carries `data-deferred-src`, not `src`: an iframe with a
+    // real `src` is fetched as soon as markup is parsed, whatever the <details>
+    // state, since `display: none` does not prevent loading and
+    // `loading="lazy"` is ignored when scripting is disabled. That meant
+    // every pageview of an entry with a plate silently hit a third-party
+    // university server — disclosing the reader's IP and costing them a
+    // request — for a viewer nobody had asked to see.
+    // deferred_iframe.client.ts promotes `data-deferred-src` to `src` the
+    // first time the containing <details> is opened.
+    //
+    // Consequently the pane is `js-only`: without JS there is nothing to
+    // perform that promotion, so the disclosure is hidden and the plain
+    // "view plate" link immediately above it remains the way in.
     return `
       <span class="mateo-wrapper">
         ${baseHtml}
-        <details class="mateo-embed-pane">
+        <details class="mateo-embed-pane js-only">
           <summary class="action-btn mateo-toggle-btn" role="button" title="Toggle embedded facsimile viewer">
             <span class="action-btn-icon" aria-hidden="true">&#x1F5C1;</span>
             <span class="action-btn-text">Plate Embed</span>
           </summary>
           <span class="mateo-frame-wrapper">
-            <iframe src="${encodedHref}" class="mateo-frame" loading="lazy" title="Facsimile plate from mateo.uni-mannheim.de"></iframe>
+            <iframe data-deferred-src="${encodedHref}" class="mateo-frame" referrerpolicy="no-referrer" title="Facsimile plate from mateo.uni-mannheim.de"></iframe>
           </span>
         </details>
       </span>
