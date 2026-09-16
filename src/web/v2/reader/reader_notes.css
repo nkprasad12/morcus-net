@@ -5,26 +5,44 @@
    ========================================================================== */
 
 /* A link, not a button: the jump to the footnote body works with no JS, and
-   the tokenizer skips <a> subtrees so the label is never treated as a word. */
-.reader-note-ref,
-.reader-note-ref:visited {
+   the tokenizer skips <a> subtrees so the label is never treated as a word.
+
+   Selector note: `.reader-passage a` in reader_text.css styles the clickable
+   words, and sets `color: inherit` and `padding: 0`. It is (0,1,1), so a bare
+   `.reader-note-ref` loses to it — the marker has to name the element too. */
+a.reader-note-ref,
+a.reader-note-ref:visited {
+  position: relative;
   color: var(--primary);
   text-decoration: none;
   font-family: var(--font-sans);
-  padding: 0 0.1em;
+  white-space: nowrap;
 }
 
-.reader-note-ref sup {
-  font-size: 0.7em;
+a.reader-note-ref sup {
+  font-size: 0.75em;
   line-height: 0;
 }
 
-.reader-note-ref:hover {
+/* The marker glyphs are ~24x24 including the superscript's lift, which is the
+   bare WCAG 2.5.8 minimum and smaller than that on mobile. This overlay grows
+   the target to ~36x38 (desktop) / ~33x34 (mobile) without moving anything:
+   an absolutely positioned child does not affect the line box, and clicks on
+   it still land on the anchor. Measured not to cover any word's centre, so it
+   cannot steal a dictionary lookup from the lines above or below. */
+a.reader-note-ref::after {
+  content: "";
+  position: absolute;
+  inset: -0.35em -0.3em;
+}
+
+a.reader-note-ref:hover {
   text-decoration: underline;
+  background-color: transparent;
 }
 
 /* Marks where the reader was when they follow a note's back-link. */
-.reader-note-ref:target {
+a.reader-note-ref:target {
   background-color: var(--primary-light);
   border-radius: var(--radius-sm);
 }
@@ -73,7 +91,7 @@
 /* Mirrors the passage's citation gutter: label column, then body. */
 .reader-note {
   display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
+  grid-template-columns: 2.25rem minmax(0, 1fr);
   gap: var(--space-4);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
@@ -91,6 +109,14 @@
   text-decoration: none;
   font-family: var(--font-mono);
   font-size: 0.75rem;
+  /* Same reasoning as the in-text marker: a lone digit is not a tap target.
+     Block display lets min-height apply, and the negative margin keeps the
+     enlarged box from pushing the note body down. */
+  display: block;
+  min-height: 1.5rem;
+  padding: var(--space-2) var(--space-1);
+  margin: calc(-1 * var(--space-2)) 0;
+  white-space: nowrap;
 }
 
 .reader-note-backref:hover {
@@ -107,8 +133,9 @@
     font-size: 0.8125rem;
   }
 
+  /* Not narrowed below the desktop width: the bracketed label has to fit, and
+     mobile is where the tap target matters most. */
   .reader-note {
-    grid-template-columns: 1.25rem minmax(0, 1fr);
     gap: var(--space-3);
     padding: var(--space-2) 0;
   }

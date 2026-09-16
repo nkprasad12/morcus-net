@@ -234,7 +234,7 @@ describe("preprocessWorkToV2 critical apparatus", () => {
     const page = preprocessWorkToV2(latin, METADATA, translation).pages[0];
 
     expect(page.parallelHtml).toContain('href="#note-t1"');
-    expect(page.parallelHtml).toContain("<sup>a</sup>");
+    expect(page.parallelHtml).toContain("<sup>[a]</sup>");
     expect(page.parallelNotesHtml).toContain("Notes on the text");
     expect(page.parallelNotesHtml).toContain("Notes on the translation");
     expect(page.parallelNotesHtml).toContain("Translation note body.");
