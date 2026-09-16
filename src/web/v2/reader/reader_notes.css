@@ -36,6 +36,13 @@ a.reader-note-ref:visited {
   text-decoration: none;
   font-family: var(--font-sans);
   white-space: nowrap;
+  /* Keeps the label out of copied text. Someone quoting a passage wants the
+     Latin, not "infudere[2] communibus". The citation gutter is excluded the
+     same way (reader_text.css). Verified against the real clipboard, not just
+     Selection.toString(), in Chromium and Firefox — note that Chromium still
+     reports the label in Selection.toString() while correctly omitting it
+     from the clipboard, so the cheap check is the misleading one. */
+  user-select: none;
 }
 
 a.reader-note-ref sup {
