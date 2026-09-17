@@ -75,7 +75,6 @@
   }
 
   .reader-layout-empty .reader-dict-sticky,
-  .reader-layout-empty .reader-dict-panel:not(:target) .reader-panel-tabs,
   .reader-layout-empty .reader-dict-panel:not(:target) .reader-panel-views,
   .reader-layout-empty .reader-dict-panel:not(:target) .dict-iframe-container {
     display: none;
@@ -109,7 +108,6 @@
   }
 
   .reader-layout-active .reader-dict-panel.drawer-minimized .reader-dict-sticky,
-  .reader-layout-active .reader-dict-panel.drawer-minimized .reader-panel-tabs,
   .reader-layout-active .reader-dict-panel.drawer-minimized .reader-panel-views,
   .reader-layout-active
     .reader-dict-panel.drawer-minimized
