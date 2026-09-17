@@ -370,7 +370,6 @@ export function preprocessWorkToV2(
         const transHtml = transNode
           ? renderPassageContent(transNode, isVerseWork, translationNotes)
           : "";
-        const translator = translationWork.info.translator ?? "Translation";
 
         parallelSectionsHtml.push(
           `
@@ -381,9 +380,6 @@ export function preprocessWorkToV2(
                 <div class="reader-passage" data-tokenize-target="true">${latinHtml}</div>
               </div>
               <div class="reader-passage-col passage-english">
-                <span class="reader-trans-author">${he.escape(
-                  translator
-                )}:</span>
                 <div class="reader-passage">${transHtml}</div>
               </div>
             </div>

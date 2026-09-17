@@ -147,3 +147,10 @@ export async function buildV2Library(
 
   return summaries;
 }
+
+if (require.main === module) {
+  buildV2Library().catch((err) => {
+    console.error("Error building V2 library:", err);
+    process.exit(1);
+  });
+}

@@ -81,10 +81,18 @@ export function renderBiblioDialog(work: V2PreprocessedWork): string {
       </dialog>`;
 }
 
+export interface ReaderSettingsDialogOptions {
+  hasMacra?: boolean;
+}
+
 /**
  * Renders the reader typography and display settings dialog, hydrated by <morcus-reader-settings>.
+ * When hasMacra is false (e.g. for unmacronized editions), the macra toggle is omitted from the DOM.
  */
-export function renderReaderSettingsDialog(): string {
+export function renderReaderSettingsDialog(
+  options: ReaderSettingsDialogOptions = {}
+): string {
+  const hasMacra = options.hasMacra ?? true;
   return `      <!-- Reader Appearance & Settings Dialog -->
       <morcus-reader-settings>
         <dialog class="dialog reader-settings-dialog" id="reader-settings-dialog">
@@ -124,10 +132,14 @@ export function renderReaderSettingsDialog(): string {
               <!-- Scholarly & Textual Aids -->
               <div class="settings-group">
                 <h3 class="settings-group-title">Scholarly &amp; Textual Aids</h3>
-                <label class="settings-toggle-row">
+                ${
+                  hasMacra
+                    ? `<label class="settings-toggle-row">
                   <span class="settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
                   <input type="checkbox" id="toggle-macra" class="toggle-checkbox" checked>
-                </label>
+                </label>`
+                    : ""
+                }
 
                 <label class="settings-toggle-row">
                   <span class="settings-label">Show Section Numbers (&sect;)</span>

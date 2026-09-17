@@ -26,6 +26,7 @@ import * as he from "he";
 export {
   renderBiblioDialog,
   renderReaderSettingsDialog,
+  type ReaderSettingsDialogOptions,
 } from "@/web/v2/reader/reader_dialogs.server";
 
 export {
@@ -441,7 +442,8 @@ export function renderReaderContentHtmlFromContext(
       data-page="${ctx.pageDotId}"
       data-view="${ctx.viewMode}"
       data-author="${ctx.work.urlAuthor}"
-      data-name="${ctx.work.urlName}">
+      data-name="${ctx.work.urlName}"
+      data-has-macra="${ctx.work.hasMacra}">
 
 ${renderReaderStickyBar(ctx)}
 
@@ -467,7 +469,7 @@ ${renderReaderDictPanel(ctx)}
 
 ${renderBiblioDialog(ctx.work)}
 
-${renderReaderSettingsDialog()}
+${renderReaderSettingsDialog({ hasMacra: ctx.work.hasMacra })}
 
     </morcus-reader-view>
   `;

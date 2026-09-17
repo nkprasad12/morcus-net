@@ -103,6 +103,7 @@ Shipped. The note bodies now reach the page, and the markers that carry them are
   - `showMacra` is **not** stored in global `morcus_reader_settings` (which strictly tracks global layout/font preferences), eliminating dead or cross-contaminating state.
   - **Intentional default flip**: V1 defaulted macra to `off` (`false`). V2 defaults to `on` (`true`) to match server-side rendered text and avoid a jarring Flash of Modified Content on client hydration.
   - Reset Defaults cleans up the per-work override in storage and restores defaults.
+  - **Server-side omission on non-macronized editions**: For texts lacking vowel length markings in source data (`work.hasMacra === false` across 101 of 126 works), `renderReaderSettingsDialog({ hasMacra })` omits the toggle row entirely from the server HTML, avoiding displaying an inoperable control. Client hydration and text processing also bypass macra DOM mutations when `data-has-macra="false"`.
 
 ### 2.7. Text Rendition & Verse Layout
 
@@ -181,7 +182,7 @@ This confirms both of your observations and adds a third:
 
 **Minor implementation notes** surfaced while measuring, worth fixing regardless of how the larger question resolves:
 
-- The translator credit (`<span class="reader-trans-author">`) is emitted **once per section** — 20,296 times in Livy — rather than once per page.
+- The translator credit (`<span class="reader-trans-author">`) was originally emitted **once per section** — 20,296 times in Livy. It is now omitted entirely from the passage canvas to keep the parallel text clean, with the translator credit housed in the Info modal / bibliographical metadata.
 - The translation join is an exact citation-ID match (`translationRowsByDotId.get(dotId)`) with **no fallback**: a translation whose citation granularity is coarser than the Latin's yields an empty English cell. No shipped work hits this today (0 blanks across all six), but nothing guards against it either, and the failure mode is silent.
 
 **Options worth weighing (none chosen):**
@@ -208,6 +209,9 @@ This confirms both of your observations and adds a third:
 - ~~**Plumb note bodies into V2**~~ — shipped via page-scoped `notesHtml` (§2.1).
 - ~~**Saved reading position**~~ — shipped; bi-directional V1 `LIBRARY_SPOTS` compatibility, reader auto-save on connect/turn/section anchor click, `#sec-*` jump anchoring, and progressive corner badge with direct jump in `/v2/library` (§2.3).
 - ~~**Per-work macra scoping**~~ — shipped; scoped per work via `macronButton-${workId}` (§2.6).
+- ~~**Omit macra toggle on non-macronized editions**~~ — shipped; server omits the toggle row when `work.hasMacra === false`, avoiding exposing a dead toggle on the ~80% of works without macra (§2.6).
+
+- ~~**Omit translator credit from passage sections**~~ — shipped; previously emitted `<span class="reader-trans-author">` on every single section (20,296 times in Livy). Omitted entirely from the passage canvas to eliminate repetitive DOM nodes and visual clutter; translator attribution is housed cleanly in the Info modal / bibliographical metadata (§2.9).
 
 ### High Priority (Correctness / Dead Controls)
 
@@ -217,7 +221,6 @@ This confirms both of your observations and adds a third:
 
 2. **Notes panel as the JS enhancement** — the footnote baseline is in place (§2.1), so the remaining work is the synchronized Notes tab: marker click reveals the note in the side panel without losing the reading position, with the footnote list staying as the No-JS and print path. This is the first real content for the panel model in [`UX_STRUCTURE.md`](UX_STRUCTURE.md) §6, and should be designed with the panel-arbitration question there, not ahead of it.
 3. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
-4. **Hide or disable macra toggle on non-macronized editions** — when an edition lacks vowel macra in source data (e.g. Perseus editions where `hasMacra === false`), hide or disable the macra checkbox in the settings dialog (with an explanatory notice) to avoid exposing a non-functional toggle.
 
 ### Low Priority (Larger Scope)
 
@@ -226,8 +229,7 @@ This confirms both of your observations and adds a third:
 
 ### Cleanups (independent of any decision above)
 
-8. **Hoist the translator credit** — emit `reader-trans-author` once per page instead of once per section (§2.9).
-9. **Guard the translation join** — `translationRowsByDotId.get(dotId)` fails silently to an empty cell when citation granularities differ; fall back to the nearest ancestor ID, or at minimum surface the mismatch at build time (§2.9).
+8. **Guard the translation join** — `translationRowsByDotId.get(dotId)` fails silently to an empty cell when citation granularities differ; fall back to the nearest ancestor ID, or at minimum surface the mismatch at build time (§2.9).
 
 ### Blocked on a Product Decision
 

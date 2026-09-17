@@ -20,10 +20,14 @@ installPointerEventShims();
 
 function createReaderView(
   innerPassageHtml: string,
-  options: { workId?: string } = {}
+  options: { workId?: string; hasMacra?: boolean } = {}
 ): MorcusReaderView {
   const el = document.createElement("morcus-reader-view") as MorcusReaderView;
   if (options.workId) el.dataset.work = options.workId;
+  if (options.hasMacra !== undefined) {
+    el.dataset.hasMacra = String(options.hasMacra);
+  }
+  const hasMacra = options.hasMacra ?? true;
   el.innerHTML = `
     <div class="reader-split-layout reader-layout-empty">
       <section class="reader-text-panel">
@@ -43,7 +47,11 @@ function createReaderView(
       </aside>
       <morcus-reader-settings>
         <dialog id="reader-settings-dialog">
-          <input type="checkbox" id="toggle-macra" checked />
+          ${
+            hasMacra
+              ? '<input type="checkbox" id="toggle-macra" checked />'
+              : ""
+          }
           <button id="dict-size-dec">-</button>
           <span id="dict-size-label">100%</span>
           <button id="dict-size-inc">+</button>
@@ -266,6 +274,27 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     // Macra stripped on connect because macronButton-phi0690 is false
     expect(words[0].textContent).toBe("Musa");
     expect(words[2].textContent).toBe("causas");
+  });
+
+  test("skips macra preference hydration and text mutation when hasMacra is false", () => {
+    localStorage.setItem("macronButton-caesar_dbg", "false");
+
+    const passageHtml = `
+      <div class="reader-section" id="sec-1.1">
+        <span class="reader-line">Gallia est omnis divisa in partes tres.</span>
+      </div>
+    `;
+
+    const el = createReaderView(passageHtml, {
+      workId: "caesar_dbg",
+      hasMacra: false,
+    });
+
+    expect(el.querySelector("#toggle-macra")).toBeNull();
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
+    // Words are tokenized cleanly but no data-original-text overhead is added
+    expect(words[0].textContent).toBe("Gallia");
+    expect(words[0].hasAttribute("data-original-text")).toBe(false);
   });
 
   test("synchronizes reader data-theme to dictionary iframe on connect and on iframe load", () => {

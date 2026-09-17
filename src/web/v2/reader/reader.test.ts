@@ -117,6 +117,8 @@ describe("reader_ssr", () => {
     expect(parallelHtml).toContain("reader-view-parallel");
     expect(parallelHtml).toContain("section-parallel");
     expect(parallelHtml).toContain("passage-english");
+    expect(parallelHtml).not.toContain("reader-trans-author");
+    // Translator attribution is housed in the biblio dialog metadata
     expect(parallelHtml).toContain("John Selby Watson");
     expect(parallelHtml).toContain('id="mode-single"');
     expect(parallelHtml).toContain('id="mode-parallel"');
@@ -181,12 +183,14 @@ describe("reader_ssr", () => {
     expect(html).toContain('id="reader-settings-btn"');
     expect(html).toContain('id="reader-info-btn"');
 
-    // Settings dialog
-    expect(html).toContain("<morcus-reader-settings>");
+    // Settings dialog (Caesar dbgWork has hasMacra: false, so toggle-macra is omitted)
+    expect(html).toContain("<morcus-reader-settings");
+    expect(html).toContain('data-has-macra="false"');
     expect(html).toContain('id="reader-settings-dialog"');
     expect(html).toContain('id="reader-size-dec"');
     expect(html).toContain('id="reader-size-inc"');
-    expect(html).toContain('id="toggle-macra"');
+    expect(html).not.toContain('id="toggle-macra"');
+    expect(html).not.toContain("Show Macra");
     expect(html).toContain('id="toggle-gutter"');
     expect(html).toContain('id="font-select"');
   });
@@ -203,6 +207,9 @@ describe("reader_ssr", () => {
     expect(catullusHtml).toContain('class="cite-prefix">5.</span>');
     expect(catullusHtml).toContain("Vivamus");
     expect(catullusHtml).toContain("Lesbia");
+    // Catullus has hasMacra: true, so toggle-macra should be present
+    expect(catullusHtml).toContain('id="toggle-macra"');
+    expect(catullusHtml).toContain("Show Macra");
 
     // Virgil Aeneid: 2 levels (book, line)
     const aeneidHtml = await renderReaderContentHtml({ workId: "aeneid" });
@@ -365,20 +372,37 @@ describe("decomposed_reader_renderers", () => {
   });
 
   describe("renderReaderSettingsDialog", () => {
-    test("renders settings modal with custom element container and steppers", () => {
+    test("renders settings modal with custom element container and steppers (default hasMacra true)", () => {
       const html = renderReaderSettingsDialog();
-      expect(html).toContain("<morcus-reader-settings>");
+      expect(html).toContain("<morcus-reader-settings");
+      expect(html).not.toContain('data-has-macra="false"');
       expect(html).toContain('id="reader-settings-dialog"');
       expect(html).toContain('id="reader-size-dec"');
       expect(html).toContain('id="reader-size-inc"');
       expect(html).toContain('id="dict-size-dec"');
       expect(html).toContain('id="dict-size-inc"');
       expect(html).toContain('id="toggle-macra"');
+      expect(html).toContain("Show Macra");
       expect(html).toContain('id="toggle-gutter"');
       expect(html).toContain('id="font-select"');
       expect(html).toContain('id="line-height-select"');
       expect(html).toContain('id="reader-settings-reset-btn"');
       expect(html).toContain('id="reader-settings-done-btn"');
+    });
+
+    test("renders macra toggle when hasMacra is explicitly true", () => {
+      const html = renderReaderSettingsDialog({ hasMacra: true });
+      expect(html).toContain("<morcus-reader-settings>");
+      expect(html).toContain('id="toggle-macra"');
+      expect(html).toContain("Show Macra");
+    });
+
+    test("omits macra toggle when hasMacra is false", () => {
+      const html = renderReaderSettingsDialog({ hasMacra: false });
+      expect(html).toContain("<morcus-reader-settings>");
+      expect(html).not.toContain('id="toggle-macra"');
+      expect(html).not.toContain("Show Macra");
+      expect(html).toContain('id="toggle-gutter"');
     });
   });
 
