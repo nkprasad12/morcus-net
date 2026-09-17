@@ -514,6 +514,24 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain("reader-continue-btn");
       expect(html).toContain('href="/v2/library"');
     });
+
+    test("renders notesHtml directly inside reader-text-card for No-JS baseline", async () => {
+      const ctx = await resolveReaderContext({ workId: "dbg", pageId: "1.1" });
+      const ctxWithNotes = {
+        ...ctx,
+        activePage: {
+          ...ctx.activePage,
+          notesHtml:
+            '<aside class="reader-notes"><ol class="reader-notes-list"><li id="note-1">Note 1</li></ol></aside>',
+        },
+      };
+      const html = renderReaderTextPanel(ctxWithNotes);
+
+      expect(html).toContain('class="reader-notes"');
+      expect(html).toContain('id="note-1"');
+      expect(html).not.toContain("reader-notes-stub");
+      expect(html).not.toContain("reader-panel-tabs");
+    });
   });
 
   describe("renderReaderDictPanel", () => {
@@ -530,6 +548,8 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('href="#reader-dict"');
       expect(html).toContain("reader-sheet-open-link");
       expect(html).toContain('src="/v2/dicts?embedded=1"');
+      expect(html).not.toContain("reader-panel-tabs");
+      expect(html).not.toContain("panel-view-notes");
     });
 
     test("renders query definition label and close link when query is present", async () => {

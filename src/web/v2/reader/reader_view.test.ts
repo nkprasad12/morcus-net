@@ -20,7 +20,7 @@ installPointerEventShims();
 
 function createReaderView(
   innerPassageHtml: string,
-  options: { workId?: string; hasMacra?: boolean } = {}
+  options: { workId?: string; hasMacra?: boolean; notesHtml?: string } = {}
 ): MorcusReaderView {
   const el = document.createElement("morcus-reader-view") as MorcusReaderView;
   if (options.workId) el.dataset.work = options.workId;
@@ -35,6 +35,7 @@ function createReaderView(
           <article class="reader-passage" id="reader-passage">
             ${innerPassageHtml}
           </article>
+          ${options.notesHtml ?? ""}
         </div>
       </section>
       <aside class="reader-dict-panel">
@@ -43,7 +44,9 @@ function createReaderView(
             <span class="reader-sheet-label">Tap any word</span>
           </div>
         </div>
-        <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
+        <div class="dict-iframe-container">
+          <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
+        </div>
       </aside>
       <morcus-reader-settings>
         <dialog id="reader-settings-dialog">
@@ -882,5 +885,192 @@ describe("MorcusReaderView desktop splitter drag", () => {
     anchor.click();
 
     expect(savedSpotsStore.get("phi0448.phi001.perseus-lat2")).toBe("1.5");
+  });
+});
+
+describe("MorcusReaderView companion panel & notes integration", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    window.history.replaceState({}, "", "/");
+    document.body.innerHTML = "";
+  });
+
+  afterEach(() => {
+    window.history.replaceState({}, "", "/");
+    document.body.innerHTML = "";
+  });
+
+  const samplePassageWithNotes = `
+    <div class="reader-section" id="sec-1.1">
+      <span class="reader-line">Gallia <span class="lat-word" data-word="divisa">divisa</span> in partes tres.
+        <a class="reader-note-ref" id="noteref-n1" href="#note-n1" role="doc-noteref" aria-label="Note 1"><sup>[1]</sup></a>
+      </span>
+      <span class="reader-line">Aliam incolunt Belgae.
+        <a class="reader-note-ref" id="noteref-n2" href="#note-n2" role="doc-noteref" aria-label="Note 2"><sup>[2]</sup></a>
+      </span>
+    </div>
+  `;
+
+  const sampleNotesHtml = `
+    <aside class="reader-notes" role="doc-endnotes" aria-labelledby="reader-notes-heading">
+      <h2 class="reader-notes-heading" id="reader-notes-heading">Notes</h2>
+      <ol class="reader-notes-list">
+        <li class="reader-note" id="note-n1">
+          <a class="reader-note-backref" href="#noteref-n1" role="doc-backlink" aria-label="Back to note 1 in the text">[1]</a>
+          <div class="reader-note-body">First apparatus critical note on divisa.</div>
+        </li>
+        <li class="reader-note" id="note-n2">
+          <a class="reader-note-backref" href="#noteref-n2" role="doc-backlink" aria-label="Back to note 2 in the text">[2]</a>
+          <div class="reader-note-body">Second apparatus critical note on Belgae.</div>
+        </li>
+      </ol>
+    </aside>
+  `;
+
+  test("clicking note marker opens notes panel, highlights note, activates layout, and leaves reader scroll position intact", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+    });
+
+    const panelController = el.getPanelController();
+    expect(panelController?.hasNotes).toBe(true);
+    expect(panelController?.activeTab).toBe("dict");
+
+    const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout");
+    expect(splitLayout?.classList.contains("reader-layout-empty")).toBe(true);
+
+    const note1 = el.querySelector<HTMLElement>("#note-n1")!;
+    const scrollMock = jest.fn();
+    note1.scrollIntoView = scrollMock;
+
+    const marker1 = el.querySelector<HTMLAnchorElement>("#noteref-n1")!;
+    marker1.click();
+
+    expect(splitLayout?.classList.contains("reader-layout-active")).toBe(true);
+    expect(panelController?.activeTab).toBe("notes");
+    expect(marker1.classList.contains("marker-active")).toBe(true);
+    expect(note1.classList.contains("note-active")).toBe(true);
+    expect(el.getActiveNoteId()).toBe("note-n1");
+    expect(el.getActiveNoteLabel()).toBe("1");
+    expect(scrollMock).toHaveBeenCalled();
+    expect(window.location.hash).toBe("");
+
+    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
+    expect(sheetLabel?.textContent).toBe("Note 1");
+  });
+
+  test("clicking Latin word while in notes tab force-switches panel back to dictionary (Arbitration Rule A1)", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+    });
+
+    const panelController = el.getPanelController();
+    const marker1 = el.querySelector<HTMLAnchorElement>("#noteref-n1")!;
+    marker1.click();
+    expect(panelController?.activeTab).toBe("notes");
+    expect(marker1.classList.contains("marker-active")).toBe(true);
+
+    const latWord = el.querySelector<HTMLElement>(
+      '.lat-word[data-word="divisa"]'
+    )!;
+    latWord.click();
+
+    // Switched back to dictionary
+    expect(panelController?.activeTab).toBe("dict");
+    expect(latWord.classList.contains("word-active")).toBe(true);
+    expect(marker1.classList.contains("marker-active")).toBe(false);
+
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame");
+    expect(iframe?.src).toContain("q=divisa");
+
+    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
+    expect(sheetLabel?.textContent).toContain("divisa");
+  });
+
+  test("clicking in-flow notes stub link opens notes tab", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+    });
+
+    const panelController = el.getPanelController();
+    const stubLink = el.querySelector<HTMLAnchorElement>(
+      ".reader-notes-stub a"
+    );
+    expect(stubLink).not.toBeNull();
+
+    stubLink?.click();
+
+    expect(panelController?.activeTab).toBe("notes");
+    const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout");
+    expect(splitLayout?.classList.contains("reader-layout-active")).toBe(true);
+
+    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
+    expect(sheetLabel?.textContent).toContain("Notes (2)");
+  });
+
+  test("clicking note backlink marks the corresponding marker in the passage", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+    });
+
+    const backlink = el.querySelector<HTMLAnchorElement>(
+      'a.reader-note-backref[href="#noteref-n1"]'
+    )!;
+    expect(backlink).not.toBeNull();
+
+    backlink.click();
+
+    const marker = el.querySelector<HTMLElement>("#noteref-n1");
+    expect(marker?.classList.contains("marker-active")).toBe(true);
+  });
+
+  test("dismissing dictionary resets companion panel to dictionary tab (Arbitration Rule A4) and clears active highlights", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+    });
+
+    const marker = el.querySelector<HTMLAnchorElement>("#noteref-n1")!;
+    marker.click();
+
+    const panelController = el.getPanelController();
+    expect(panelController?.activeTab).toBe("notes");
+    expect(marker.classList.contains("marker-active")).toBe(true);
+
+    // @ts-expect-error accessing private method for test verification
+    el.dismissDictionary(false);
+
+    expect(panelController?.activeTab).toBe("dict");
+    expect(marker.classList.contains("marker-active")).toBe(false);
+    expect(el.getActiveNoteId()).toBe("");
+  });
+
+  test("pressing 'n' or 'N' toggles between dictionary and notes tabs when notes are present", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+    });
+
+    const panelController = el.getPanelController();
+    expect(panelController?.activeTab).toBe("dict");
+
+    // Press 'n'
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "n" }));
+    expect(panelController?.activeTab).toBe("notes");
+
+    // Press 'n' again to toggle back
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "n" }));
+    expect(panelController?.activeTab).toBe("dict");
+
+    // Press 'N'
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "N" }));
+    expect(panelController?.activeTab).toBe("notes");
+  });
+
+  test("pressing 'n' does nothing when page has no notes", () => {
+    const el = createReaderView("<p>No notes here</p>");
+    const panelController = el.getPanelController();
+    expect(panelController?.hasNotes).toBe(false);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "n" }));
+    expect(panelController?.activeTab).toBe("dict");
   });
 });
