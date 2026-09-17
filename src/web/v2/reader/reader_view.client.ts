@@ -7,6 +7,7 @@ import {
   DRAWER_FLOOR_DVH,
   DRAWER_MIN_HEIGHT,
   ICON_PATHS,
+  fetchAndSwapPartial,
   html,
   registerElement,
   setHtml,
@@ -67,6 +68,13 @@ export {
   type PanelTab,
 };
 
+function escapeCss(id: string): string {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(id);
+  }
+  return id.replace(/([ #;&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
+}
+
 /**
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
  *
@@ -79,8 +87,9 @@ export {
  * - Tokenizes text nodes into clickable <span class="lat-word" role="button"> on mount (< 2ms).
  * - Clicking or pressing Enter on a word updates the dictionary iframe src and history state.
  * - Manages mobile bottom sheet expansion and desktop resizable panels.
+ * - Performs seamless in-place partial page swaps without full reload or losing iframe state.
  * */
-export class MorcusReaderView extends BaseElement {
+export class MorcusReaderView extends BaseElement<"page"> {
   private currentQuery: string = "";
   private preferredDrawerDvh: number = DRAWER_DEFAULT_DVH;
   private drawerController?: DrawerController;
@@ -91,6 +100,7 @@ export class MorcusReaderView extends BaseElement {
   private currentNoteLabel: string = "";
   private router: QueryParamSync | null = null;
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
+  private originalScrollRestoration: ScrollRestoration = "auto";
 
   public getTocController(): ReaderTocController | null {
     return this.tocController;
@@ -113,6 +123,15 @@ export class MorcusReaderView extends BaseElement {
   }
 
   protected override onConnect() {
+    if (typeof window !== "undefined" && window.history) {
+      this.originalScrollRestoration = window.history.scrollRestoration;
+      try {
+        window.history.scrollRestoration = "manual";
+      } catch {
+        // Ignored in test environments
+      }
+    }
+
     this.currentPrefs = readerSettingsStore.get();
     const workId = this.dataset.work;
     if (workId) {
@@ -139,11 +158,42 @@ export class MorcusReaderView extends BaseElement {
           return;
         }
         this.lookupWord(q, this.findWordElement(q), false);
+        this.refreshTitle();
       },
-      title: (q) =>
-        q
-          ? `${q} - Latin Reader - Morcus Latin Tools`
-          : "Latin Reader - Morcus Latin Tools",
+      onNavigate: (event) => {
+        const prevUrl = new URL(event.prevPath, window.location.origin);
+        const newUrl = new URL(event.newPath, window.location.origin);
+
+        const prevView =
+          prevUrl.searchParams.get("view") === "parallel"
+            ? "parallel"
+            : "single";
+        const newView =
+          newUrl.searchParams.get("view") === "parallel"
+            ? "parallel"
+            : "single";
+
+        const isPathChange = newUrl.pathname !== prevUrl.pathname;
+        const isViewChange = newView !== prevView;
+
+        if (isPathChange || isViewChange) {
+          void this.swapPage(window.location.href, {
+            push: false,
+            isPopState: true,
+          });
+        } else {
+          if (!event.value) {
+            this.closeDictionary(false);
+          } else {
+            this.lookupWord(
+              event.value,
+              this.findWordElement(event.value),
+              false
+            );
+          }
+          this.refreshTitle();
+        }
+      },
     });
 
     this.currentQuery = this.router.get();
@@ -153,6 +203,7 @@ export class MorcusReaderView extends BaseElement {
     }
 
     this.listen(this, "click", this.handleClick);
+    this.listen(this, "keydown", this.handlePassageKeydown);
 
     this.layoutController = new ReaderLayoutController({ root: this });
     this.addDisposable(() => {
@@ -224,7 +275,13 @@ export class MorcusReaderView extends BaseElement {
   }
 
   protected override onDisconnect() {
-    // cleanup
+    if (typeof window !== "undefined" && window.history) {
+      try {
+        window.history.scrollRestoration = this.originalScrollRestoration;
+      } catch {
+        // Ignored
+      }
+    }
   }
 
   private readonly handleClick = (e: MouseEvent) => {
@@ -312,13 +369,135 @@ export class MorcusReaderView extends BaseElement {
     }
 
     const wordEl = e.target.closest<HTMLElement>(".lat-word");
-    if (!wordEl) return;
+    if (wordEl) {
+      e.preventDefault();
+      const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
+      if (word) {
+        this.lookupWord(word, wordEl, true);
+      }
+      return;
+    }
+
+    // Intercept in-work navigation links (pager arrows, continuation cards, TOC links, view toggles)
+    const link = e.target.closest<HTMLAnchorElement>("a[href]");
+    if (
+      !link ||
+      e.defaultPrevented ||
+      e.button !== 0 ||
+      e.metaKey ||
+      e.ctrlKey ||
+      e.shiftKey ||
+      e.altKey ||
+      (link.target && link.target !== "_self") ||
+      link.hasAttribute("download")
+    ) {
+      return;
+    }
+
+    if (
+      link.classList.contains("disabled") ||
+      link.getAttribute("aria-disabled") === "true"
+    ) {
+      e.preventDefault();
+      return;
+    }
+
+    const rawHref = link.getAttribute("href");
+    if (!rawHref || rawHref === "#" || rawHref.startsWith("javascript:")) {
+      return;
+    }
+
+    if (rawHref.startsWith("#")) {
+      if (rawHref.startsWith("#sec-")) {
+        e.preventDefault();
+        this.scrollToHash(rawHref);
+      }
+      return;
+    }
+
+    let targetUrl: URL;
+    try {
+      targetUrl = new URL(link.href, window.location.href);
+    } catch {
+      return;
+    }
+
+    if (this.currentQuery) {
+      targetUrl.searchParams.set("q", this.currentQuery);
+    } else {
+      targetUrl.searchParams.delete("q");
+    }
+
+    if (targetUrl.origin !== window.location.origin) {
+      return;
+    }
+
+    const author = this.dataset.author;
+    const name = this.dataset.name;
+    if (!author || !name) {
+      return;
+    }
+
+    const workPrefix = `/v2/reader/${author}/${name}`;
+    if (
+      targetUrl.pathname !== workPrefix &&
+      !targetUrl.pathname.startsWith(`${workPrefix}/`)
+    ) {
+      return;
+    }
+
+    const currentView = this.dataset.view ?? "single";
+    const targetView =
+      targetUrl.searchParams.get("view") === "parallel" ? "parallel" : "single";
+    const isSamePath = targetUrl.pathname === window.location.pathname;
+    const isSameView = targetView === currentView;
+
+    if (isSamePath && isSameView) {
+      if (targetUrl.hash) {
+        e.preventDefault();
+        this.scrollToHash(targetUrl.hash);
+        if (this.tocController?.isOpen()) {
+          this.tocController.close();
+        }
+        return;
+      }
+      if (this.tocController?.isOpen()) {
+        e.preventDefault();
+        this.tocController.close();
+        return;
+      }
+      return;
+    }
 
     e.preventDefault();
-    const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
-    if (!word) return;
+    if (this.tocController?.isOpen()) {
+      this.tocController.close();
+    }
+    void this.swapPage(targetUrl.href, { push: true });
+  };
 
-    this.lookupWord(word, wordEl, true);
+  private readonly handlePassageKeydown = (e: KeyboardEvent) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    if (!(e.target instanceof HTMLElement)) return;
+    if (!e.target.closest("#reader-passage")) return;
+
+    if (e.target.classList.contains("lat-word")) {
+      e.preventDefault();
+      const word = e.target.dataset.word || e.target.textContent?.trim() || "";
+      if (word) {
+        this.lookupWord(word, e.target, true);
+      }
+    } else {
+      const noteRef = e.target.closest<HTMLAnchorElement>("a.reader-note-ref");
+      if (noteRef) {
+        e.preventDefault();
+        const href = noteRef.getAttribute("href") || "";
+        const bodyId = href.replace(/^#/, "");
+        if (bodyId && this.panelController) {
+          this.openNote(bodyId, noteRef, { focus: true });
+        }
+      }
+    }
   };
 
   private saveCurrentSpot(explicitSecId?: string): void {
@@ -713,38 +892,6 @@ export class MorcusReaderView extends BaseElement {
         },
       });
     }
-
-    // Outside the guard: `BaseElement` disposes this on disconnect, and the
-    // marker above would otherwise stop it ever being registered again.
-    this.listen(passage, "keydown", (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        if (
-          e.target instanceof HTMLElement &&
-          e.target.classList.contains("lat-word")
-        ) {
-          e.preventDefault();
-          const word =
-            e.target.dataset.word || e.target.textContent?.trim() || "";
-          if (word) {
-            this.lookupWord(word, e.target, true);
-          }
-        } else if (
-          e.target instanceof HTMLElement &&
-          e.target.closest("a.reader-note-ref")
-        ) {
-          const noteRef =
-            e.target.closest<HTMLAnchorElement>("a.reader-note-ref");
-          if (noteRef) {
-            e.preventDefault();
-            const href = noteRef.getAttribute("href") || "";
-            const bodyId = href.replace(/^#/, "");
-            if (bodyId && this.panelController) {
-              this.openNote(bodyId, noteRef, { focus: true });
-            }
-          }
-        }
-      }
-    });
   }
 
   private findWordElement(word: string): HTMLElement | undefined {
@@ -1060,6 +1207,313 @@ export class MorcusReaderView extends BaseElement {
       const isExpanded = expandBtn.getAttribute("aria-expanded") === "true";
       setExpanded(!isExpanded);
     });
+  }
+
+  // --- In-Place Page Swapping & Partial Navigation ---
+
+  private scrollToHash(hash: string): void {
+    if (!hash) return;
+    const targetId = hash.replace(/^#/, "");
+    if (!targetId) return;
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      if (typeof targetEl.scrollIntoView === "function") {
+        targetEl.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+          inline: "nearest",
+        });
+      }
+      if (targetId.startsWith("sec-")) {
+        targetEl.classList.add("target-highlight");
+        setTimeout(() => targetEl.classList.remove("target-highlight"), 3000);
+      }
+    }
+  }
+
+  private patchStickyBar(
+    textPanel: HTMLElement,
+    newPageId: string,
+    newViewMode: string
+  ): void {
+    if (newPageId) {
+      this.dataset.page = newPageId;
+    }
+    this.dataset.view = newViewMode;
+    this.classList.toggle("reader-view-parallel", newViewMode === "parallel");
+
+    const jumpVal = this.querySelector<HTMLElement>(
+      "#reader-toc-btn .jump-val"
+    );
+    if (jumpVal && newPageId) {
+      jumpVal.textContent = newPageId;
+    }
+
+    const syncUrlQuery = (rawHref: string): string => {
+      if (!rawHref || rawHref === "#") return rawHref;
+      try {
+        const u = new URL(rawHref, window.location.href);
+        if (this.currentQuery) {
+          u.searchParams.set("q", this.currentQuery);
+        } else {
+          u.searchParams.delete("q");
+        }
+        return u.pathname + u.search + u.hash;
+      } catch {
+        return rawHref;
+      }
+    };
+
+    const prevCard = textPanel.querySelector<HTMLAnchorElement>(
+      ".reader-continuation-card.prev-card"
+    );
+    const pagerPrev = this.querySelector<HTMLAnchorElement>("#pager-prev");
+    if (pagerPrev) {
+      const prevHref = prevCard?.getAttribute("href");
+      if (prevHref) {
+        const href = syncUrlQuery(prevHref);
+        pagerPrev.setAttribute("href", href);
+        pagerPrev.classList.remove("disabled");
+        pagerPrev.removeAttribute("aria-disabled");
+        pagerPrev.removeAttribute("tabindex");
+      } else {
+        pagerPrev.setAttribute("href", "#");
+        pagerPrev.classList.add("disabled");
+        pagerPrev.setAttribute("aria-disabled", "true");
+        pagerPrev.setAttribute("tabindex", "-1");
+      }
+    }
+
+    const nextCard = textPanel.querySelector<HTMLAnchorElement>(
+      ".reader-continuation-card.next-card"
+    );
+    const pagerNext = this.querySelector<HTMLAnchorElement>("#pager-next");
+    if (pagerNext) {
+      const nextHref = nextCard?.getAttribute("href");
+      if (nextHref) {
+        const href = syncUrlQuery(nextHref);
+        pagerNext.setAttribute("href", href);
+        pagerNext.classList.remove("disabled");
+        pagerNext.removeAttribute("aria-disabled");
+        pagerNext.removeAttribute("tabindex");
+      } else {
+        pagerNext.setAttribute("href", "#");
+        pagerNext.classList.add("disabled");
+        pagerNext.setAttribute("aria-disabled", "true");
+        pagerNext.setAttribute("tabindex", "-1");
+      }
+    }
+
+    const viewToggles = this.querySelectorAll<HTMLAnchorElement>(
+      ".reader-view-toggle a"
+    );
+    for (const toggle of viewToggles) {
+      const isParallel =
+        toggle.getAttribute("href")?.includes("view=parallel") ||
+        toggle.textContent?.trim().toLowerCase() === "parallel";
+      const targetView = isParallel ? "parallel" : "single";
+      const isActive = targetView === newViewMode;
+      toggle.classList.toggle("active", isActive);
+      if (isActive) {
+        toggle.setAttribute("aria-current", "page");
+      } else {
+        toggle.removeAttribute("aria-current");
+      }
+
+      const toggleHref = toggle.getAttribute("href");
+      if (toggleHref && toggleHref !== "#") {
+        try {
+          const toggleUrl = new URL(toggleHref, window.location.href);
+          toggleUrl.pathname = window.location.pathname;
+          if (isParallel) {
+            toggleUrl.searchParams.set("view", "parallel");
+          } else {
+            toggleUrl.searchParams.delete("view");
+          }
+          if (this.currentQuery) {
+            toggleUrl.searchParams.set("q", this.currentQuery);
+          } else {
+            toggleUrl.searchParams.delete("q");
+          }
+          toggle.setAttribute(
+            "href",
+            toggleUrl.pathname + toggleUrl.search + toggleUrl.hash
+          );
+        } catch {
+          // Ignored
+        }
+      }
+    }
+  }
+
+  private patchToc(newPageId: string): void {
+    if (!newPageId) return;
+
+    const prevActive = this.querySelectorAll<HTMLElement>(
+      ".reader-toc-drawer .reader-toc-item.active, .reader-toc-drawer [aria-current='page']"
+    );
+    prevActive.forEach((el) => {
+      el.classList.remove("active");
+      el.removeAttribute("aria-current");
+    });
+
+    const target = this.querySelector<HTMLElement>(
+      `.reader-toc-drawer .reader-toc-item[data-page-id="${escapeCss(
+        newPageId
+      )}"]`
+    );
+    if (target) {
+      target.classList.add("active");
+      target.setAttribute("aria-current", "page");
+
+      let parent = target.parentElement;
+      while (parent && !parent.classList.contains("reader-toc-drawer")) {
+        if (parent instanceof HTMLDetailsElement) {
+          parent.open = true;
+        }
+        parent = parent.parentElement;
+      }
+    }
+  }
+
+  private refreshTitle(): void {
+    const workTag = this.querySelector(".reader-work-tag")?.textContent?.trim();
+    const heading = this.querySelector(
+      ".reader-passage-heading"
+    )?.textContent?.trim();
+    if (this.currentQuery) {
+      document.title = `${this.currentQuery} - Latin Reader - Morcus Latin Tools`;
+    } else if (heading && workTag) {
+      document.title = `${workTag}: ${heading} - Latin Reader - Morcus Latin Tools`;
+    } else if (workTag) {
+      document.title = `${workTag} - Latin Reader - Morcus Latin Tools`;
+    }
+  }
+
+  private hydratePage(
+    options: {
+      isPopState?: boolean;
+      hash?: string;
+    } = {}
+  ): void {
+    const textPanel = this.querySelector<HTMLElement>(".reader-text-panel");
+    const newNotes =
+      textPanel?.querySelector<HTMLElement>(".reader-notes") ?? null;
+    this.panelController?.adoptNotes(newNotes);
+
+    this.saveCurrentSpot();
+    this.enhancePassage();
+    this.applyPreferences(this.currentPrefs);
+
+    if (this.currentQuery) {
+      const el = this.findWordElement(this.currentQuery);
+      if (el) el.classList.add("word-active");
+    } else {
+      this.setActiveWord(null);
+      const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
+      if (iframe && iframe.getAttribute("src") !== "/v2/dicts?embedded=1") {
+        iframe.src = "/v2/dicts?embedded=1";
+      }
+    }
+
+    this.refreshTitle();
+
+    if (options.isPopState) {
+      let targetY = 0;
+      if (
+        typeof window.history.state === "object" &&
+        window.history.state !== null &&
+        "scrollY" in window.history.state
+      ) {
+        const val: unknown = Reflect.get(window.history.state, "scrollY");
+        if (typeof val === "number") {
+          targetY = val;
+        }
+      }
+      window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
+    } else if (options.hash) {
+      this.scrollToHash(options.hash);
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }
+
+  public async swapPage(
+    targetUrl: string,
+    options: { push?: boolean; isPopState?: boolean } = {}
+  ): Promise<boolean> {
+    const textPanel = this.querySelector<HTMLElement>(".reader-text-panel");
+    if (!textPanel) {
+      window.location.href = targetUrl;
+      return false;
+    }
+
+    const url = new URL(targetUrl, window.location.href);
+    const push = options.push ?? true;
+    const isPopState = options.isPopState ?? false;
+
+    if (push && typeof window !== "undefined" && window.history) {
+      try {
+        const scrollState: Record<string, unknown> = {
+          scrollY: window.scrollY,
+        };
+        if (
+          typeof window.history.state === "object" &&
+          window.history.state !== null
+        ) {
+          Object.assign(scrollState, window.history.state);
+          scrollState.scrollY = window.scrollY;
+        }
+        window.history.replaceState(scrollState, "", window.location.href);
+      } catch {
+        // Ignored
+      }
+    }
+
+    const isPageTurn = url.pathname !== window.location.pathname;
+    if (isPageTurn) {
+      this.minimizeDrawer();
+    }
+
+    const signal = this.latest("page");
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const success = await fetchAndSwapPartial(textPanel, url.href, {
+      signal,
+      loadingOpacity: prefersReducedMotion ? 1 : 0.5,
+      errorMessage: "Unable to load passage. Please try refreshing.",
+    });
+
+    if (!success) {
+      return false;
+    }
+
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    const newPageId = pathParts.slice(4).join(".") || pathParts[4] || "";
+    const newViewMode =
+      url.searchParams.get("view") === "parallel" ? "parallel" : "single";
+
+    this.currentQuery = url.searchParams.get("q") ?? "";
+
+    if (push) {
+      window.history.pushState(
+        { q: this.currentQuery, scrollY: 0 },
+        "",
+        url.pathname + url.search + url.hash
+      );
+      this.router?.updatePath(url.pathname + url.search);
+    } else {
+      this.router?.updatePath();
+    }
+
+    this.patchStickyBar(textPanel, newPageId, newViewMode);
+    this.patchToc(newPageId);
+    this.hydratePage({ isPopState, hash: url.hash });
+
+    return true;
   }
 }
 

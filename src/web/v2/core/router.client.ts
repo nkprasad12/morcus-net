@@ -2,11 +2,22 @@
  * Lightweight client-side query-string router for Progressive Enhancement / MPA state.
  */
 
+export interface NavigateEvent {
+  prevPath: string;
+  newPath: string;
+  value: string;
+}
+
 export interface SyncQueryParamOptions {
   /** Callback fired when the query parameter changes via browser back/forward (popstate). */
   onChange: (value: string) => void;
   /** Optional formatter to update document.title when the query changes. */
   title?: (value: string) => string;
+  /**
+   * Optional callback fired on popstate navigation when path or query changes.
+   * If provided, caller handles both path transitions and query synchronization.
+   */
+  onNavigate?: (event: NavigateEvent) => void;
 }
 
 export interface QueryParamSync {
@@ -16,6 +27,8 @@ export interface QueryParamSync {
   push(value: string): void;
   /** Updates the query parameter and replaces the current browser history entry. */
   replace(value: string): void;
+  /** Updates internal tracked path when application navigation occurs outside this router. */
+  updatePath(path?: string): void;
   /** Unregisters the popstate listener. */
   dispose(): void;
 }
@@ -39,6 +52,7 @@ export function syncQueryParam(
       // In-page hash navigation only (e.g. #top or #card-1) - don't re-trigger route
       return;
     }
+    const prevSearchPath = currentSearchPath;
     currentSearchPath = newSearchPath;
     const urlParams = new URLSearchParams(window.location.search);
     const value = urlParams.get(paramName) ?? "";
@@ -46,7 +60,15 @@ export function syncQueryParam(
     if (options.title) {
       document.title = options.title(value);
     }
-    options.onChange(value);
+    if (options.onNavigate) {
+      options.onNavigate({
+        prevPath: prevSearchPath,
+        newPath: newSearchPath,
+        value,
+      });
+    } else {
+      options.onChange(value);
+    }
   };
 
   window.addEventListener("popstate", onPopState);
@@ -81,6 +103,10 @@ export function syncQueryParam(
     },
     replace(value: string) {
       navigate(value, false);
+    },
+    updatePath(path?: string) {
+      currentSearchPath =
+        path ?? window.location.pathname + window.location.search;
     },
     dispose() {
       window.removeEventListener("popstate", onPopState);

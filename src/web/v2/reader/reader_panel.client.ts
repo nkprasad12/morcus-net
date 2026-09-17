@@ -37,18 +37,18 @@ function escapeId(id: string): string {
 export class ReaderPanelController {
   private readonly disposables = new DisposableBag();
   private _activeTab: PanelTab = "dict";
-  public readonly hasNotes: boolean;
-  public readonly noteCount: number;
+  public hasNotes: boolean = false;
+  public noteCount: number = 0;
 
   public readonly dictPanel: HTMLElement | null = null;
   public readonly iframeContainer: HTMLElement | null = null;
-  public readonly notesNode: HTMLElement | null = null;
-  public readonly tabsContainer: HTMLElement | null = null;
-  public readonly dictTab: HTMLButtonElement | null = null;
-  public readonly notesTab: HTMLButtonElement | null = null;
-  public readonly viewsContainer: HTMLElement | null = null;
-  public readonly dictView: HTMLElement | null = null;
-  public readonly notesView: HTMLElement | null = null;
+  public notesNode: HTMLElement | null = null;
+  public tabsContainer: HTMLElement | null = null;
+  public dictTab: HTMLButtonElement | null = null;
+  public notesTab: HTMLButtonElement | null = null;
+  public viewsContainer: HTMLElement | null = null;
+  public dictView: HTMLElement | null = null;
+  public notesView: HTMLElement | null = null;
 
   private readonly notesOriginalParent: Node | null = null;
   private readonly notesOriginalNextSibling: Node | null = null;
@@ -82,23 +82,23 @@ export class ReaderPanelController {
     this.iframeContainer = iframeContainer;
     this.notesNode = notesNode;
 
-    if (!dictPanel || !iframeContainer || !notesNode) {
+    if (!dictPanel || !iframeContainer) {
       this.hasNotes = false;
       this.noteCount = 0;
       return;
     }
 
-    const noteItems = notesNode.querySelectorAll(".reader-note");
+    const noteItems = notesNode
+      ? notesNode.querySelectorAll(".reader-note")
+      : [];
     this.noteCount = noteItems.length;
     this.hasNotes = this.noteCount > 0;
 
-    if (!this.hasNotes) {
-      return;
-    }
-
     // Capture original DOM positions for clean teardown / symmetry
-    this.notesOriginalParent = notesNode.parentNode;
-    this.notesOriginalNextSibling = notesNode.nextSibling;
+    if (notesNode) {
+      this.notesOriginalParent = notesNode.parentNode;
+      this.notesOriginalNextSibling = notesNode.nextSibling;
+    }
     this.iframeOriginalParent = iframeContainer.parentNode;
     this.iframeOriginalNextSibling = iframeContainer.nextSibling;
     this.iframeOriginalId = iframeContainer.getAttribute("id");
@@ -108,6 +108,9 @@ export class ReaderPanelController {
     tabs.className = "reader-panel-tabs";
     tabs.setAttribute("role", "tablist");
     tabs.setAttribute("aria-label", "Companion panel");
+    if (!this.hasNotes) {
+      tabs.hidden = true;
+    }
 
     const dictTab = document.createElement("button");
     dictTab.type = "button";
@@ -128,6 +131,9 @@ export class ReaderPanelController {
     notesTab.setAttribute("aria-controls", "panel-view-notes");
     notesTab.tabIndex = -1;
     notesTab.textContent = "Notes";
+    if (!this.hasNotes) {
+      notesTab.hidden = true;
+    }
 
     tabs.appendChild(dictTab);
     tabs.appendChild(notesTab);
@@ -153,8 +159,10 @@ export class ReaderPanelController {
     notesView.setAttribute("aria-labelledby", "panel-tab-notes");
     notesView.setAttribute("aria-live", "polite");
 
-    // Eagerly relocate notes into panel
-    notesView.appendChild(notesNode);
+    // Relocate notes into panel if present
+    if (notesNode && this.hasNotes) {
+      notesView.appendChild(notesNode);
+    }
     views.appendChild(notesView);
     this.notesView = notesView;
     this.viewsContainer = views;
@@ -163,7 +171,9 @@ export class ReaderPanelController {
     const sheetBar = dictPanel.querySelector(".reader-sheet-bar");
     const teaser = sheetBar?.querySelector(".reader-sheet-teaser");
     if (sheetBar && teaser) {
-      dictPanel.classList.add("has-companion-tabs");
+      if (this.hasNotes) {
+        dictPanel.classList.add("has-companion-tabs");
+      }
       const closeBtn = teaser.querySelector(".reader-sheet-close");
       if (closeBtn) {
         teaser.insertBefore(tabs, closeBtn);
@@ -172,9 +182,15 @@ export class ReaderPanelController {
       }
       dictPanel.insertBefore(views, sheetBar.nextSibling);
     } else if (sheetBar && sheetBar.nextSibling) {
+      if (this.hasNotes) {
+        dictPanel.classList.add("has-companion-tabs");
+      }
       dictPanel.insertBefore(tabs, sheetBar.nextSibling);
       dictPanel.insertBefore(views, tabs.nextSibling);
     } else {
+      if (this.hasNotes) {
+        dictPanel.classList.add("has-companion-tabs");
+      }
       dictPanel.appendChild(tabs);
       dictPanel.appendChild(views);
     }
@@ -276,6 +292,40 @@ export class ReaderPanelController {
     }
   }
 
+  public adoptNotes(newNotes: HTMLElement | null): void {
+    if (!this.notesView) return;
+
+    // 1. Remove previous notes from notesView
+    const oldNotes = this.notesView.querySelector(".reader-notes");
+    if (oldNotes) {
+      oldNotes.remove();
+    }
+
+    this.notesNode = newNotes;
+
+    // 2. Count new notes
+    const noteItems = newNotes ? newNotes.querySelectorAll(".reader-note") : [];
+    this.noteCount = noteItems.length;
+    this.hasNotes = this.noteCount > 0;
+
+    // 3. If new notes exist, append to notesView
+    if (newNotes && this.hasNotes) {
+      this.notesView.appendChild(newNotes);
+    }
+
+    // 4. Update tab visibility and container state
+    if (this.tabsContainer && this.notesTab && this.dictPanel) {
+      this.tabsContainer.hidden = !this.hasNotes;
+      this.notesTab.hidden = !this.hasNotes;
+      this.dictPanel.classList.toggle("has-companion-tabs", this.hasNotes);
+    }
+
+    // 5. If active tab was notes, but new page has no notes, fall back to dict
+    if (this._activeTab === "notes" && !this.hasNotes) {
+      this.setTab("dict");
+    }
+  }
+
   public reset(): void {
     this.setTab("dict");
     if (this.notesView) {
@@ -287,7 +337,11 @@ export class ReaderPanelController {
   public destroy(): void {
     this.disposables.dispose();
 
-    if (this.notesOriginalParent && this.notesNode) {
+    if (
+      this.notesOriginalParent &&
+      this.notesOriginalParent.isConnected &&
+      this.notesNode
+    ) {
       this.notesOriginalParent.insertBefore(
         this.notesNode,
         this.notesOriginalNextSibling

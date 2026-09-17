@@ -1089,3 +1089,512 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(notesView.scrollTop).toBe(0);
   });
 });
+
+describe("MorcusReaderView client-side partial page navigation", () => {
+  const originalFetch = window.fetch;
+  const originalScrollTo = window.scrollTo;
+
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = "";
+    window.scrollTo = jest.fn();
+  });
+
+  afterEach(() => {
+    window.fetch = originalFetch;
+    window.scrollTo = originalScrollTo;
+    document.body.innerHTML = "";
+  });
+
+  function createNavigableReaderView(
+    options: {
+      pageId?: string;
+      author?: string;
+      name?: string;
+      workId?: string;
+      viewMode?: "single" | "parallel";
+      passageHtml?: string;
+      prevPageUrl?: string;
+      nextPageUrl?: string;
+      notesHtml?: string;
+    } = {}
+  ): MorcusReaderView {
+    const pageId = options.pageId ?? "1";
+    const author = options.author ?? "caesar";
+    const name = options.name ?? "de-bello-gallico";
+    const workId = options.workId ?? `${author}_${name.replace(/-/g, "_")}`;
+    const viewMode = options.viewMode ?? "single";
+
+    window.history.replaceState(
+      {},
+      "",
+      `/v2/reader/${author}/${name}/${pageId}${
+        viewMode === "parallel" ? "?view=parallel" : ""
+      }`
+    );
+
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.dataset.work = workId;
+    el.dataset.author = author;
+    el.dataset.name = name;
+    el.dataset.page = pageId;
+    el.dataset.view = viewMode;
+    el.dataset.hasMacra = "true";
+
+    const prevUrl = options.prevPageUrl;
+    const nextUrl = options.nextPageUrl ?? `/v2/reader/${author}/${name}/2`;
+
+    el.innerHTML = `
+      <div class="reader-sticky-bar" id="reader-sticky-bar">
+        <div class="sticky-primary-row">
+          <div class="sticky-primary-left">
+            <a href="${prevUrl ?? "#"}"
+               class="reader-btn reader-nav-arrow ${!prevUrl ? "disabled" : ""}"
+               id="pager-prev"
+               ${
+                 !prevUrl ? 'aria-disabled="true" tabindex="-1"' : ""
+               }>&larr;</a>
+          </div>
+          <div class="sticky-jump-box">
+            <a href="#reader-toc-drawer" class="reader-btn" id="reader-toc-btn" role="button" aria-expanded="false">
+              <span class="jump-val">${pageId}</span>
+            </a>
+          </div>
+          <div class="sticky-primary-right">
+            <a href="${nextUrl ?? "#"}"
+               class="reader-btn reader-nav-arrow ${!nextUrl ? "disabled" : ""}"
+               id="pager-next"
+               ${
+                 !nextUrl ? 'aria-disabled="true" tabindex="-1"' : ""
+               }>&rarr;</a>
+          </div>
+        </div>
+        <div class="sticky-expanded-row" id="sticky-expanded-row" hidden>
+          <div class="reader-view-toggle">
+            <a href="/v2/reader/${author}/${name}/${pageId}" class="reader-toggle-btn ${
+      viewMode === "single" ? "active" : ""
+    }">Single</a>
+            <a href="/v2/reader/${author}/${name}/${pageId}?view=parallel" class="reader-toggle-btn ${
+      viewMode === "parallel" ? "active" : ""
+    }">Parallel</a>
+          </div>
+        </div>
+      </div>
+
+      <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
+      <aside id="reader-toc-drawer" class="reader-toc-drawer" hidden>
+        <button id="reader-toc-close-btn">&times;</button>
+        <div class="reader-toc-content">
+          <details open>
+            <summary>Liber I</summary>
+            <ul class="reader-toc-list">
+              <li><a href="/v2/reader/${author}/${name}/1" class="reader-toc-item ${
+      pageId === "1" ? "active" : ""
+    }" data-page-id="1">Caput 1</a></li>
+              <li><a href="/v2/reader/${author}/${name}/2" class="reader-toc-item ${
+      pageId === "2" ? "active" : ""
+    }" data-page-id="2">Caput 2</a></li>
+            </ul>
+          </details>
+        </div>
+      </aside>
+
+      <div class="reader-split-layout reader-layout-empty">
+        <section class="reader-text-panel">
+          <div class="reader-text-card">
+            <header class="reader-text-card-header">
+              <span class="reader-work-tag">De Bello Gallico</span>
+              <h1 class="reader-passage-heading">Liber I: Caput ${pageId}</h1>
+            </header>
+            <article class="reader-passage" id="reader-passage">
+              ${
+                options.passageHtml ??
+                `<div class="reader-section" id="sec-1.1"><p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p></div>`
+              }
+            </article>
+            ${options.notesHtml ?? ""}
+            <footer class="reader-passage-footer">
+              <nav class="reader-continuation-actions">
+                ${
+                  prevUrl
+                    ? `<a href="${prevUrl}" class="reader-continuation-card prev-card">Previous</a>`
+                    : ""
+                }
+                ${
+                  nextUrl
+                    ? `<a href="${nextUrl}" class="reader-continuation-card next-card">Next</a>`
+                    : ""
+                }
+              </nav>
+              <div class="reader-library-nav">
+                <a href="/v2/library" class="reader-library-link">Return to Library Catalog</a>
+              </div>
+            </footer>
+          </div>
+        </section>
+        <aside class="reader-dict-panel">
+          <div class="reader-sheet-bar">
+            <div class="reader-sheet-teaser">
+              <span class="reader-sheet-label">Tap any word</span>
+            </div>
+          </div>
+          <div class="dict-iframe-container">
+            <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
+          </div>
+        </aside>
+      </div>
+    `;
+
+    document.body.appendChild(el);
+    return el;
+  }
+
+  const page2CardHtml = `
+    <div class="reader-text-card">
+      <header class="reader-text-card-header">
+        <span class="reader-work-tag">De Bello Gallico</span>
+        <h1 class="reader-passage-heading">Liber I: Caput 2</h1>
+      </header>
+      <article class="reader-passage" id="reader-passage">
+        <div class="reader-section" id="sec-1.2">
+          <p class="reader-paragraph">Apud Helvetios longe nobilissimus fuit Orgetorix.</p>
+        </div>
+      </article>
+      <footer class="reader-passage-footer">
+        <nav class="reader-continuation-actions">
+          <a href="/v2/reader/caesar/de-bello-gallico/1" class="reader-continuation-card prev-card">Previous</a>
+          <a href="/v2/reader/caesar/de-bello-gallico/3" class="reader-continuation-card next-card">Next</a>
+        </nav>
+      </footer>
+    </div>
+  `;
+
+  test("swapPage fetches partial HTML and swaps .reader-text-panel children without touching dictionary iframe", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    const iframeBefore = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2CardHtml,
+    });
+
+    const success = await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    expect(success).toBe(true);
+
+    expect(window.fetch).toHaveBeenCalledWith(
+      "http://localhost/v2/reader/caesar/de-bello-gallico/2",
+      expect.objectContaining({
+        headers: { "X-Requested-With": "fetch" },
+        signal: expect.any(AbortSignal),
+      })
+    );
+
+    // Dataset and sticky bar updated
+    expect(el.dataset.page).toBe("2");
+    expect(el.querySelector("#reader-toc-btn .jump-val")?.textContent).toBe(
+      "2"
+    );
+
+    // Iframe preserved (same instance in DOM)
+    const iframeAfter = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    expect(iframeAfter).toBe(iframeBefore);
+
+    // Sticky navigation arrows updated
+    const pagerPrev = el.querySelector<HTMLAnchorElement>("#pager-prev")!;
+    const pagerNext = el.querySelector<HTMLAnchorElement>("#pager-next")!;
+    expect(pagerPrev.getAttribute("href")).toBe(
+      "/v2/reader/caesar/de-bello-gallico/1"
+    );
+    expect(pagerPrev.classList.contains("disabled")).toBe(false);
+    expect(pagerNext.getAttribute("href")).toBe(
+      "/v2/reader/caesar/de-bello-gallico/3"
+    );
+    expect(pagerNext.classList.contains("disabled")).toBe(false);
+
+    // Table of contents active item updated
+    const tocItem1 = el.querySelector<HTMLElement>(
+      '.reader-toc-item[data-page-id="1"]'
+    )!;
+    const tocItem2 = el.querySelector<HTMLElement>(
+      '.reader-toc-item[data-page-id="2"]'
+    )!;
+    expect(tocItem1.classList.contains("active")).toBe(false);
+    expect(tocItem2.classList.contains("active")).toBe(true);
+    expect(tocItem2.getAttribute("aria-current")).toBe("page");
+
+    // New passage is tokenized
+    const words = el.querySelectorAll<HTMLElement>(".lat-word");
+    expect(words.length).toBeGreaterThan(0);
+    const wordTexts = Array.from(words).map((w) => w.textContent);
+    expect(wordTexts).toContain("Apud");
+    expect(wordTexts).toContain("Orgetorix");
+
+    // Saved spot updated
+    expect(savedSpotsStore.get("caesar_de_bello_gallico")).toBe("2");
+  });
+
+  test("clicking #pager-next intercepts click and swaps page", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2CardHtml,
+    });
+
+    const pagerNext = el.querySelector<HTMLAnchorElement>("#pager-next")!;
+    pagerNext.click();
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(window.fetch).toHaveBeenCalled();
+    expect(el.dataset.page).toBe("2");
+  });
+
+  test("clicking continuation card next-card intercepts click and swaps page", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2CardHtml,
+    });
+
+    const nextCard = el.querySelector<HTMLAnchorElement>(
+      ".reader-continuation-card.next-card"
+    )!;
+    nextCard.click();
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(window.fetch).toHaveBeenCalled();
+    expect(el.dataset.page).toBe("2");
+  });
+
+  test("clicking Table of Contents link closes TOC drawer and swaps page", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    const tocController = el.getTocController()!;
+
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2CardHtml,
+    });
+
+    tocController.open();
+    expect(tocController.isOpen()).toBe(true);
+
+    const tocItem2 = el.querySelector<HTMLAnchorElement>(
+      '.reader-toc-item[data-page-id="2"]'
+    )!;
+    tocItem2.click();
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(tocController.isOpen()).toBe(false);
+    expect(el.dataset.page).toBe("2");
+  });
+
+  test("page turn minimizes mobile drawer, whereas view toggle preserves drawer state", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+
+    // 1. Expand drawer
+    el.restoreDrawer(60);
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+
+    // 2. Perform page turn to page 2
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2CardHtml,
+    });
+
+    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    // Drawer should be minimized on page turn
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+
+    // 3. Restore drawer on page 2
+    el.restoreDrawer(60);
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+
+    // 4. Perform view mode toggle on page 2
+    const parallelCardHtml = `
+      <div class="reader-text-card">
+        <header class="reader-text-card-header">
+          <h1 class="reader-passage-heading">Liber I: Caput 2</h1>
+        </header>
+        <article class="reader-passage" id="reader-passage">
+          <p>Parallel text</p>
+        </article>
+      </div>
+    `;
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => parallelCardHtml,
+    });
+
+    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2?view=parallel");
+    // Drawer should NOT be minimized on view mode toggle!
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    expect(el.dataset.view).toBe("parallel");
+    expect(el.classList.contains("reader-view-parallel")).toBe(true);
+  });
+
+  test("disabled pager arrow prevents navigation and does not fetch", () => {
+    const el = createNavigableReaderView({
+      pageId: "1",
+      prevPageUrl: undefined,
+    });
+    window.fetch = jest.fn();
+
+    const pagerPrev = el.querySelector<HTMLAnchorElement>("#pager-prev")!;
+    expect(pagerPrev.classList.contains("disabled")).toBe(true);
+
+    pagerPrev.click();
+    expect(window.fetch).not.toHaveBeenCalled();
+    expect(el.dataset.page).toBe("1");
+  });
+
+  test("external links and library catalog links are not intercepted", () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    window.fetch = jest.fn();
+
+    const libraryLink = el.querySelector<HTMLAnchorElement>(
+      ".reader-library-link"
+    )!;
+    const evt = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    libraryLink.dispatchEvent(evt);
+
+    expect(evt.defaultPrevented).toBe(false);
+    expect(window.fetch).not.toHaveBeenCalled();
+  });
+
+  test("modified clicks (Ctrl/Cmd) are not intercepted", () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    window.fetch = jest.fn();
+
+    const pagerNext = el.querySelector<HTMLAnchorElement>("#pager-next")!;
+    const evt = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+    });
+    pagerNext.dispatchEvent(evt);
+
+    expect(evt.defaultPrevented).toBe(false);
+    expect(window.fetch).not.toHaveBeenCalled();
+  });
+
+  test("swapping to page with notes adopts notes dynamically and updates companion tabs", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    const panelController = el.getPanelController()!;
+    expect(panelController.hasNotes).toBe(false);
+
+    const pageWithNotesHtml = `
+      <div class="reader-text-card">
+        <header class="reader-text-card-header">
+          <h1 class="reader-passage-heading">Liber I: Caput 2</h1>
+        </header>
+        <article class="reader-passage" id="reader-passage">
+          <p>Text with note <a href="#note-n1" class="reader-note-ref" id="noteref-n1">[1]</a></p>
+        </article>
+        <section class="reader-notes" id="reader-notes">
+          <div class="reader-note" id="note-n1">
+            <span class="reader-note-num">[1]</span>
+            <span class="reader-note-text">Critical note content</span>
+          </div>
+        </section>
+        <footer class="reader-passage-footer">
+          <nav class="reader-continuation-actions">
+            <a href="/v2/reader/caesar/de-bello-gallico/1" class="reader-continuation-card prev-card">Previous</a>
+          </nav>
+        </footer>
+      </div>
+    `;
+
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => pageWithNotesHtml,
+    });
+
+    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+
+    expect(panelController.hasNotes).toBe(true);
+    expect(panelController.noteCount).toBe(1);
+    expect(panelController.notesTab?.hidden).toBe(false);
+  });
+
+  test("popstate navigation triggers page swap without pushing history and restores scroll position", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+
+    // Swap to page 2
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2CardHtml,
+    });
+    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    expect(el.dataset.page).toBe("2");
+
+    // Mock page 1 HTML for popstate return
+    const page1CardHtml = `
+      <div class="reader-text-card">
+        <header class="reader-text-card-header">
+          <h1 class="reader-passage-heading">Liber I: Caput 1</h1>
+        </header>
+        <article class="reader-passage" id="reader-passage">
+          <div class="reader-section" id="sec-1.1"><p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p></div>
+        </article>
+      </div>
+    `;
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page1CardHtml,
+    });
+
+    // Simulate browser back button to page 1 with saved scrollY: 180
+    window.history.replaceState(
+      { scrollY: 180 },
+      "",
+      "/v2/reader/caesar/de-bello-gallico/1"
+    );
+    window.dispatchEvent(
+      new PopStateEvent("popstate", { state: { scrollY: 180 } })
+    );
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(window.fetch).toHaveBeenCalledWith(
+      "http://localhost/v2/reader/caesar/de-bello-gallico/1",
+      expect.any(Object)
+    );
+    expect(el.dataset.page).toBe("1");
+    expect(window.scrollTo).toHaveBeenCalledWith({
+      top: 180,
+      left: 0,
+      behavior: "instant",
+    });
+  });
+
+  test("network failure during swap renders error placeholder and does not push history", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    const pushStateSpy = jest.spyOn(window.history, "pushState");
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+    });
+
+    const success = await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    expect(success).toBe(false);
+
+    expect(pushStateSpy).not.toHaveBeenCalled();
+    expect(el.dataset.page).toBe("1");
+    expect(el.querySelector(".no-results")).not.toBeNull();
+
+    pushStateSpy.mockRestore();
+    consoleSpy.mockRestore();
+  });
+});

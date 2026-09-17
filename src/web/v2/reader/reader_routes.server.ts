@@ -2,7 +2,7 @@ import { Router, Response } from "express";
 import type { V2PreprocessedWork } from "@/common/library/v2/v2_types";
 import {
   renderReaderPageHtml,
-  renderReaderContentHtml,
+  renderReaderPartialHtml,
 } from "@/web/v2/reader/reader.server";
 import {
   getV2Work,
@@ -49,7 +49,7 @@ async function sendReaderPassage(
   try {
     if (options.isPartial) {
       res.send(
-        await renderReaderContentHtml({
+        await renderReaderPartialHtml({
           work: options.work,
           pageId: options.pageId,
           query: options.query,

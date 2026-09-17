@@ -288,7 +288,7 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
  * Renders the main reading text card containing passage header metadata,
  * the Latin text article body, continuation buttons, and library catalog link.
  */
-export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
+export function renderReaderTextCard(ctx: ReaderRenderContext): string {
   const { work, activePage, passageHtml, prevPage, nextPage, viewMode, query } =
     ctx;
   const prevPageUrl = buildReaderPageUrl(work, prevPage, { viewMode, query });
@@ -306,9 +306,7 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
     activePage.notesHtml ??
     "";
 
-  return `        <!-- Left Column: Reading Text Canvas -->
-        <section class="reader-text-panel" aria-label="Reading Text">
-          <div class="reader-text-card">
+  return `          <div class="reader-text-card">
             
             <header class="reader-text-card-header">
               <div class="reader-text-meta">
@@ -316,7 +314,7 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
                 <span class="reader-meta-sep">&middot;</span>
                 <span class="reader-work-tag">${he.escape(work.title)}</span>
               </div>
-              <h1 class="reader-passage-heading">${he.escape(
+              <h1 class="reader-passage-heading" aria-live="polite">${he.escape(
                 activePage.title
               )}</h1>
             </header>
@@ -360,7 +358,17 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
               </div>
             </footer>
 
-          </div>
+          </div>`;
+}
+
+/**
+ * Renders the main reading text card containing passage header metadata,
+ * the Latin text article body, continuation buttons, and library catalog link.
+ */
+export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
+  return `        <!-- Left Column: Reading Text Canvas -->
+        <section class="reader-text-panel" aria-label="Reading Text">
+${renderReaderTextCard(ctx)}
         </section>`;
 }
 
@@ -473,6 +481,13 @@ ${renderReaderSettingsDialog({ hasMacra: ctx.work.hasMacra })}
 
     </morcus-reader-view>
   `;
+}
+
+export async function renderReaderPartialHtml(
+  options: ReaderPageOptions = {}
+): Promise<string> {
+  const ctx = await resolveReaderContext(options);
+  return renderReaderTextCard(ctx);
 }
 
 export async function renderReaderContentHtml(

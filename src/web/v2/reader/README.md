@@ -18,7 +18,7 @@ sequenceDiagram
     participant Loader as reader_loader.server
     participant Render as reader.server
 
-    alt Initial Load / No-JS Navigation
+    alt Initial Load / Direct Link
         User->>Router: GET /v2/reader/caesar/de_bello_gallico/1.1
         Router->>Loader: getV2Work("caesar/de_bello_gallico")
         Loader-->>Router: V2PreprocessedWork (in-memory cached)
@@ -29,15 +29,21 @@ sequenceDiagram
         User->>Router: GET /v2/reader?work=dbg&jump=2.3
         Router->>Loader: resolvePageInWork(work, "2.3")
         Router-->>User: 302 -> canonical /v2/reader/:author/:name/:page
-    else Page Turn (arrows, TOC, continuation cards)
+    else In-Place Page Turn (With JS: arrows, TOC, continuation cards)
+        User->>View: Click pager / continuation / TOC link
+        View->>Router: GET <targetUrl> (X-Requested-With: fetch)
+        Router->>Loader: resolvePageInWork(work, target)
+        Router->>Render: renderReaderPartialHtml(work, page, view)
+        Render-->>View: 200 OK (Partial HTML: .reader-text-card)
+        View->>View: Swap .reader-text-card, patch sticky bar & TOC, adopt notes, enhance & save spot
+    else No-JS Page Turn (SSR Fallback)
         User->>Router: GET <page url>
-        Note over User,Router: A full document load, with or without JS
         Router-->>User: 200 OK (Full SSR document)
     end
 ```
 
 > [!NOTE]
-> The route **can** serve a passage-only fragment — `reader_routes.server.ts` honours `isPartialRequest` and `renderReaderContentHtml` returns one — but no client code requests it today, so every page turn is a full reload. Restoring V1's in-place page turns is tracked as [`FEATURE_PARITY.md`](FEATURE_PARITY.md) §2.10.
+> When JavaScript is active, page turns (pager arrows, continuation cards, TOC links) and browser history (popstate) perform fast in-place partial swaps (`X-Requested-With: fetch`), swapping only the `.reader-text-card` while dynamically patching sticky bar controls, updating the TOC, adopting footnotes into the dictionary panel, and saving reading progress without full-page reloads. Native `<a>` links ensure a robust zero-JS fallback.
 
 ---
 

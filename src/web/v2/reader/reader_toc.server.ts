@@ -105,6 +105,7 @@ export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
       return `
         <a href="${pageUrl}"
            class="reader-toc-item ${isCurrent ? "active" : ""}"
+           data-page-id="${he.escape(key)}"
            ${isCurrent ? 'aria-current="page"' : ""}>
           <span class="reader-toc-item-title">${he.escape(label)}</span>
         </a>
