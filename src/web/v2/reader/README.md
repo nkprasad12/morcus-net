@@ -17,7 +17,6 @@ sequenceDiagram
     participant Router as Express (/v2/reader)
     participant Loader as reader_loader.server
     participant Render as reader.server
-    participant Client as Web Components (Client)
 
     alt Initial Load / No-JS Navigation
         User->>Router: GET /v2/reader/caesar/de_bello_gallico/1.1
@@ -30,14 +29,15 @@ sequenceDiagram
         User->>Router: GET /v2/reader?work=dbg&jump=2.3
         Router->>Loader: resolvePageInWork(work, "2.3")
         Router-->>User: 302 -> canonical /v2/reader/:author/:name/:page
-    else With JS: Partial Page Swap
-        User->>Client: Click a TOC entry or a page arrow
-        Client->>Router: GET <page url> (X-Requested-With: fetch)
-        Router->>Render: renderReaderContentHtml(...)
-        Router-->>Client: HTML fragment (passage only)
-        Client->>User: replaceChildren(fragment) & history.pushState()
+    else Page Turn (arrows, TOC, continuation cards)
+        User->>Router: GET <page url>
+        Note over User,Router: A full document load, with or without JS
+        Router-->>User: 200 OK (Full SSR document)
     end
 ```
+
+> [!NOTE]
+> The route **can** serve a passage-only fragment — `reader_routes.server.ts` honours `isPartialRequest` and `renderReaderContentHtml` returns one — but no client code requests it today, so every page turn is a full reload. Restoring V1's in-place page turns is tracked as [`FEATURE_PARITY.md`](FEATURE_PARITY.md) §2.10.
 
 ---
 
