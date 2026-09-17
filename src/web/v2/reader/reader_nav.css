@@ -262,10 +262,6 @@
   letter-spacing: -0.05em;
 }
 
-.reader-info-btn {
-  padding: var(--space-2) var(--space-4);
-}
-
 /* No-JS Mode: expanded row is always visible, expand button hidden */
 @media (scripting: none) {
   .sticky-expanded-row[hidden] {

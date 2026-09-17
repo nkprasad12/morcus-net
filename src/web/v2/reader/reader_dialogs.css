@@ -30,6 +30,35 @@
   border: 1px solid var(--border);
 }
 
+.meta-row dd a {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.meta-row dd a:hover,
+.meta-row dd a:focus-visible {
+  color: var(--primary);
+}
+
+.reader-about-attribution {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.reader-about-attribution a {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.reader-about-attribution a:hover,
+.reader-about-attribution a:focus-visible {
+  color: var(--primary);
+}
+
 /* Reader Toast */
 .reader-toast {
   position: fixed;

@@ -20,7 +20,12 @@ installPointerEventShims();
 
 function createReaderView(
   innerPassageHtml: string,
-  options: { workId?: string; hasMacra?: boolean; notesHtml?: string } = {}
+  options: {
+    workId?: string;
+    hasMacra?: boolean;
+    notesHtml?: string;
+    aboutHtml?: string;
+  } = {}
 ): MorcusReaderView {
   const el = document.createElement("morcus-reader-view") as MorcusReaderView;
   if (options.workId) el.dataset.work = options.workId;
@@ -32,10 +37,16 @@ function createReaderView(
     <div class="reader-split-layout reader-layout-empty">
       <section class="reader-text-panel">
         <div class="reader-text-card">
+          <header class="reader-text-card-header">
+            <div class="reader-text-meta">
+              <a href="#reader-work-about" class="reader-about-link">About ⓘ</a>
+            </div>
+          </header>
           <article class="reader-passage" id="reader-passage">
             ${innerPassageHtml}
           </article>
           ${options.notesHtml ?? ""}
+          ${options.aboutHtml ?? ""}
         </div>
       </section>
       <aside class="reader-dict-panel">
@@ -1072,21 +1083,129 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(panelController?.activeTab).toBe("dict");
   });
 
-  test("resetDictScroll resets scroll position on dict panel and notes view", () => {
+  const sampleAboutHtml = `
+    <section class="reader-work-about" id="reader-work-about" aria-labelledby="reader-about-heading">
+      <div class="reader-about-card">
+        <h2 class="reader-about-title" id="reader-about-heading">About this text</h2>
+        <dl class="reader-meta-list">
+          <div class="meta-row"><dt>Author</dt><dd>Julius Caesar</dd></div>
+        </dl>
+      </div>
+    </section>
+  `;
+
+  test("clicking .reader-about-link switches companion panel to about tab and opens drawer/panel", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa</p>", {
+      aboutHtml: sampleAboutHtml,
+    });
+
+    const panelController = el.getPanelController();
+    expect(panelController?.hasAbout).toBe(true);
+    expect(panelController?.activeTab).toBe("dict");
+
+    const aboutLink = el.querySelector<HTMLAnchorElement>(
+      "a.reader-about-link"
+    );
+    expect(aboutLink).not.toBeNull();
+
+    aboutLink?.click();
+
+    expect(panelController?.activeTab).toBe("about");
+    const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout");
+    expect(splitLayout?.classList.contains("reader-layout-active")).toBe(true);
+
+    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
+    expect(sheetLabel?.textContent).toContain("About this text");
+  });
+
+  test("clicking About tab switches companion panel to about", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa</p>", {
+      aboutHtml: sampleAboutHtml,
+    });
+
+    const panelController = el.getPanelController();
+    const aboutTab = el.querySelector<HTMLButtonElement>("#panel-tab-about");
+    expect(aboutTab).not.toBeNull();
+
+    aboutTab?.click();
+
+    expect(panelController?.activeTab).toBe("about");
+    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
+    expect(sheetLabel?.textContent).toContain("About this text");
+  });
+
+  test("pressing 'i' or 'I' toggles between dictionary and about tabs when about is present", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa</p>", {
+      aboutHtml: sampleAboutHtml,
+    });
+
+    const panelController = el.getPanelController();
+    expect(panelController?.activeTab).toBe("dict");
+
+    // Press 'i'
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "i" }));
+    expect(panelController?.activeTab).toBe("about");
+
+    // Press 'i' again to toggle back
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "i" }));
+    expect(panelController?.activeTab).toBe("dict");
+
+    // Press 'I'
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "I" }));
+    expect(panelController?.activeTab).toBe("about");
+  });
+
+  test("pressing 'i' does nothing when page has no about section", () => {
+    const el = createReaderView("<p>No about here</p>");
+    const panelController = el.getPanelController();
+    expect(panelController?.hasAbout).toBe(false);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "i" }));
+    expect(panelController?.activeTab).toBe("dict");
+  });
+
+  test("pressing 'i' with modifier keys (Ctrl, Meta, Alt) does not trigger tab toggle", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa</p>", {
+      aboutHtml: sampleAboutHtml,
+    });
+    const panelController = el.getPanelController();
+    expect(panelController?.activeTab).toBe("dict");
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "i", ctrlKey: true })
+    );
+    expect(panelController?.activeTab).toBe("dict");
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "i", metaKey: true })
+    );
+    expect(panelController?.activeTab).toBe("dict");
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "i", altKey: true })
+    );
+    expect(panelController?.activeTab).toBe("dict");
+  });
+
+  test("resetDictScroll resets scroll position on dict panel, notes view, and about view", () => {
     const el = createReaderView(samplePassageWithNotes, {
       notesHtml: sampleNotesHtml,
+      aboutHtml: sampleAboutHtml,
     });
     const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
     const notesView = el.querySelector<HTMLElement>(".reader-panel-notes")!;
+    const aboutView = el.querySelector<HTMLElement>(".reader-panel-about")!;
 
     dictPanel.scrollTop = 50;
     notesView.scrollTop = 120;
+    aboutView.scrollTop = 80;
 
     // @ts-expect-error accessing private method for test verification
     el.resetDictScroll();
 
     expect(dictPanel.scrollTop).toBe(0);
     expect(notesView.scrollTop).toBe(0);
+    expect(aboutView.scrollTop).toBe(0);
   });
 });
 

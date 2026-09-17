@@ -2,36 +2,69 @@ import { V2PreprocessedWork } from "@/common/library/v2/v2_types";
 import * as he from "he";
 
 /**
- * Renders the bibliographical metadata modal dialog detailing scholarly editions,
- * CTS URNs, structural hierarchy, and source provenance for a classical work.
+ * Returns the scholarly license and provenance notice for the classical work.
  */
-export function renderBiblioDialog(work: V2PreprocessedWork): string {
-  return `      <!-- Bibliographical Metadata Dialog -->
-      <dialog class="dialog reader-biblio-dialog" id="reader-biblio-dialog">
-        <div class="dialog-card">
-          <div class="dialog-header">
-            <div>
-              <h2 class="dialog-title">${he.escape(work.title)}</h2>
-              <p class="dialog-subtitle">Scholarly editions &amp; CTS citation</p>
-            </div>
-            <button type="button" class="dialog-close-btn" id="reader-biblio-close-btn" data-dialog-close>&times;</button>
-          </div>
+function getAttributionNoticeHtml(attribution?: string): string {
+  switch (attribution) {
+    case "hypotactic":
+      return `<p class="reader-about-attribution">The raw text was provided by David Chamberlain of <a href="https://hypotactic.com" target="_blank" rel="noopener noreferrer">https://hypotactic.com</a> under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-SA-4.0</a> license.</p>`;
+    case "publicDomain":
+      return `<p class="reader-about-attribution">The raw text is in the public domain.</p>`;
+    case "perseus":
+    default:
+      return `<p class="reader-about-attribution">The raw text was provided by the Perseus Digital Library and was accessed originally from <a href="https://github.com/PerseusDL/canonical-latinLit" target="_blank" rel="noopener noreferrer">https://github.com/PerseusDL/canonical-latinLit</a>. It is provided under Perseus&#39; conditions of the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-SA-4.0</a> license, and you must offer Perseus any modifications you make.</p>`;
+  }
+}
 
+/**
+ * Renders the scholarly attribution and work metadata colophon detailing authors,
+ * critical editors, funding, sponsors, CTS URN / work ID, source links, and license.
+ * Rendered as a collapsed <details> in document flow for No-JS, and adopted into
+ * the companion panel by JS.
+ */
+export function renderReaderAboutSection(work: V2PreprocessedWork): string {
+  const sources =
+    work.sourceRef && work.sourceRef.length > 0
+      ? work.sourceRef
+      : work.sourceRepo
+      ? [work.sourceRepo]
+      : [];
+
+  const sourcesHtml =
+    sources.length > 0
+      ? `<div class="meta-row">
+              <dt>Source(s)</dt>
+              <dd>${sources
+                .map((url) => {
+                  const isHttp =
+                    url.startsWith("http://") ||
+                    url.startsWith("https://") ||
+                    url.startsWith("/");
+                  return isHttp
+                    ? `<a href="${he.escape(
+                        url
+                      )}" target="_blank" rel="noopener noreferrer">Link</a>`
+                    : he.escape(url);
+                })
+                .join(", ")}</dd>
+             </div>`
+      : "";
+
+  const attributionHtml = getAttributionNoticeHtml(work.attribution);
+
+  return `      <!-- Scholarly Attribution & Work Metadata -->
+      <details class="reader-work-about" id="reader-work-about">
+        <summary class="reader-about-summary">About this text</summary>
+        <div class="reader-about-card">
           <dl class="reader-meta-list">
             <div class="meta-row">
               <dt>Author</dt>
               <dd>${he.escape(work.author)}</dd>
             </div>
-            <div class="meta-row">
-              <dt>Structural Hierarchy</dt>
-              <dd><code>[${work.textParts
-                .map((p) => `"${p}"`)
-                .join(", ")}]</code></dd>
-            </div>
             ${
               work.editor
                 ? `<div class="meta-row">
-                    <dt>Critical Edition</dt>
+                    <dt>Editor</dt>
                     <dd>${he.escape(work.editor)}</dd>
                    </div>`
                 : ""
@@ -39,46 +72,43 @@ export function renderBiblioDialog(work: V2PreprocessedWork): string {
             ${
               work.translator
                 ? `<div class="meta-row">
-                    <dt>English Translation</dt>
+                    <dt>Translator</dt>
                     <dd>${he.escape(work.translator)}</dd>
                    </div>`
                 : ""
             }
             ${
-              work.ctsUrn
+              work.funder
                 ? `<div class="meta-row">
-                    <dt>CTS URN</dt>
-                    <dd><code>${he.escape(work.ctsUrn)}</code></dd>
+                    <dt>Funder</dt>
+                    <dd>${he.escape(work.funder)}</dd>
                    </div>`
                 : ""
             }
             ${
-              work.license
+              work.sponsor
                 ? `<div class="meta-row">
-                    <dt>License</dt>
-                    <dd>${he.escape(work.license)}</dd>
+                    <dt>Sponsor</dt>
+                    <dd>${he.escape(work.sponsor)}</dd>
                    </div>`
                 : ""
             }
-            ${
-              work.sourceRepo
-                ? `<div class="meta-row">
-                    <dt>Source Repository</dt>
-                    <dd><a href="${he.escape(
-                      work.sourceRepo
-                    )}" target="_blank" rel="noopener noreferrer">${he.escape(
-                    work.sourceRepo
-                  )}</a></dd>
-                   </div>`
-                : ""
-            }
+            <div class="meta-row">
+              <dt>ID</dt>
+              <dd><code>${he.escape(work.ctsUrn || work.id)}</code></dd>
+            </div>
+            ${sourcesHtml}
           </dl>
-
-          <div class="dialog-actions">
-            <button type="button" class="btn btn-primary" id="reader-biblio-ok-btn" data-dialog-close>Close</button>
-          </div>
+          ${attributionHtml}
         </div>
-      </dialog>`;
+      </details>`;
+}
+
+/**
+ * @deprecated Use renderReaderAboutSection instead. Retained for backward compatibility.
+ */
+export function renderBiblioDialog(work: V2PreprocessedWork): string {
+  return renderReaderAboutSection(work);
 }
 
 export interface ReaderSettingsDialogOptions {

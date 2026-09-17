@@ -10,7 +10,7 @@ import {
 describe("ReaderPanelController", () => {
   let container: HTMLElement;
 
-  function createFixture(hasNotes = true): HTMLElement {
+  function createFixture(hasNotes = true, hasAbout = false): HTMLElement {
     const root = document.createElement("div");
     root.className = "reader-split-layout";
     root.innerHTML = `
@@ -35,6 +35,18 @@ describe("ReaderPanelController", () => {
                      </li>
                    </ol>
                  </aside>`
+              : ""
+          }
+          ${
+            hasAbout
+              ? `<details class="reader-work-about" id="reader-work-about">
+                   <summary class="reader-about-summary">About this text</summary>
+                   <div class="reader-about-card">
+                     <dl class="reader-meta-list">
+                       <div class="meta-row"><dt>Author</dt><dd>Julius Caesar</dd></div>
+                     </dl>
+                   </div>
+                 </details>`
               : ""
           }
           <div class="card-footer">Footer</div>
@@ -334,6 +346,216 @@ describe("ReaderPanelController", () => {
       expect(
         emptyContainer.querySelector("#panel-view-notes #note-dyn1")
       ).toBeNull();
+    });
+  });
+
+  describe("when page HAS about section (3 tabs: Dict, Notes, About)", () => {
+    let controller: ReaderPanelController;
+    let tabChangeCalls: PanelTab[];
+
+    beforeEach(() => {
+      container = createFixture(true, true);
+      tabChangeCalls = [];
+      controller = new ReaderPanelController({
+        root: container,
+        onTabChange: (tab) => tabChangeCalls.push(tab),
+      });
+    });
+
+    afterEach(() => {
+      controller.destroy();
+    });
+
+    it("initializes 3 tabs with proper ARIA attributes", () => {
+      expect(controller.hasNotes).toBe(true);
+      expect(controller.hasAbout).toBe(true);
+      expect(controller.activeTab).toBe("dict");
+
+      const tabs = container.querySelector(".reader-panel-tabs");
+      expect(tabs).not.toBeNull();
+      expect(tabs?.getAttribute("role")).toBe("tablist");
+
+      const dictTab = container.querySelector("#panel-tab-dict");
+      const notesTab = container.querySelector("#panel-tab-notes");
+      const aboutTab = container.querySelector("#panel-tab-about");
+
+      expect(dictTab?.getAttribute("aria-selected")).toBe("true");
+      expect(notesTab?.getAttribute("aria-selected")).toBe("false");
+      expect(aboutTab?.getAttribute("aria-selected")).toBe("false");
+
+      expect(aboutTab?.getAttribute("role")).toBe("tab");
+      expect(aboutTab?.getAttribute("aria-controls")).toBe("panel-view-about");
+      expect(aboutTab?.getAttribute("tabindex")).toBe("-1");
+      expect(aboutTab?.textContent).toBe("About");
+    });
+
+    it("relocates #reader-work-about into #panel-view-about", () => {
+      const textCard = container.querySelector(".reader-text-card");
+      expect(textCard?.querySelector(".reader-work-about")).toBeNull();
+
+      const aboutView = container.querySelector("#panel-view-about");
+      expect(aboutView).not.toBeNull();
+      expect(aboutView?.getAttribute("role")).toBe("tabpanel");
+      expect(aboutView?.classList.contains("active")).toBe(false);
+
+      const relocatedAbout =
+        aboutView?.querySelector<HTMLDetailsElement>(".reader-work-about");
+      expect(relocatedAbout).not.toBeNull();
+      expect(relocatedAbout?.open).toBe(true);
+      expect(relocatedAbout?.querySelector("dd")?.textContent).toBe(
+        "Julius Caesar"
+      );
+    });
+
+    it("switches to about tab via setTab('about') and updates active classes", () => {
+      controller.setTab("about");
+      expect(controller.activeTab).toBe("about");
+      expect(tabChangeCalls).toEqual(["about"]);
+
+      const dictTab = container.querySelector("#panel-tab-dict");
+      const notesTab = container.querySelector("#panel-tab-notes");
+      const aboutTab = container.querySelector("#panel-tab-about");
+      const dictView = container.querySelector("#panel-view-dict");
+      const notesView = container.querySelector("#panel-view-notes");
+      const aboutView = container.querySelector("#panel-view-about");
+
+      expect(dictTab?.getAttribute("aria-selected")).toBe("false");
+      expect(dictTab?.getAttribute("tabindex")).toBe("-1");
+      expect(notesTab?.getAttribute("aria-selected")).toBe("false");
+      expect(notesTab?.getAttribute("tabindex")).toBe("-1");
+      expect(aboutTab?.getAttribute("aria-selected")).toBe("true");
+      expect(aboutTab?.getAttribute("tabindex")).toBe("0");
+
+      expect(dictView?.classList.contains("active")).toBe(false);
+      expect(notesView?.classList.contains("active")).toBe(false);
+      expect(aboutView?.classList.contains("active")).toBe(true);
+    });
+
+    it("clicking about tab switches tab", () => {
+      const aboutTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-about")!;
+      aboutTab.click();
+      expect(controller.activeTab).toBe("about");
+    });
+
+    it("supports keyboard arrow navigation cycling through 3 tabs", () => {
+      const tabs = container.querySelector<HTMLElement>(".reader-panel-tabs")!;
+      const dictTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-dict")!;
+      const notesTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-notes")!;
+      const aboutTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-about")!;
+
+      dictTab.focus();
+      // dict -> notes
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("notes");
+      expect(document.activeElement).toBe(notesTab);
+
+      // notes -> about
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("about");
+      expect(document.activeElement).toBe(aboutTab);
+
+      // about -> dict (wrap around)
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("dict");
+      expect(document.activeElement).toBe(dictTab);
+
+      // dict -> about (wrap backwards)
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("about");
+      expect(document.activeElement).toBe(aboutTab);
+
+      // Home -> dict
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Home", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("dict");
+      expect(document.activeElement).toBe(dictTab);
+
+      // End -> about
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "End", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("about");
+      expect(document.activeElement).toBe(aboutTab);
+    });
+
+    it("restores #reader-work-about to original DOM on destroy()", () => {
+      controller.destroy();
+
+      const textCard = container.querySelector(".reader-text-card");
+      const about =
+        textCard?.querySelector<HTMLDetailsElement>(".reader-work-about");
+      const footer = textCard?.querySelector(".card-footer");
+      expect(about).not.toBeNull();
+      expect(about?.open).toBe(false);
+      expect(about?.nextElementSibling).toBe(footer);
+    });
+
+    it("adopts dynamic about and falls back to dict if removed", () => {
+      controller.setTab("about");
+      expect(controller.activeTab).toBe("about");
+
+      // Adopt null
+      controller.adoptAbout(null);
+      expect(controller.hasAbout).toBe(false);
+      expect(controller.activeTab).toBe("dict"); // fell back to dict!
+
+      // Adopt new about
+      const newAbout = document.createElement("section");
+      newAbout.className = "reader-work-about";
+      newAbout.id = "reader-work-about";
+      newAbout.innerHTML = "<div>New edition metadata</div>";
+      controller.adoptAbout(newAbout);
+
+      expect(controller.hasAbout).toBe(true);
+      expect(
+        container.querySelector("#panel-view-about .reader-work-about")
+      ).not.toBeNull();
+    });
+  });
+
+  describe("when page HAS about but NO notes (2 tabs: Dict, About)", () => {
+    it("renders Dict and About tabs with Notes tab hidden", () => {
+      container = createFixture(false, true);
+      const controller = new ReaderPanelController({ root: container });
+
+      expect(controller.hasNotes).toBe(false);
+      expect(controller.hasAbout).toBe(true);
+
+      const tabs = container.querySelector<HTMLElement>(".reader-panel-tabs");
+      expect(tabs?.hidden).toBe(false);
+      expect(container.querySelector(".has-companion-tabs")).not.toBeNull();
+
+      const notesTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-notes");
+      const aboutTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-about");
+      expect(notesTab?.hidden).toBe(true);
+      expect(aboutTab?.hidden).toBe(false);
+
+      // Keyboard navigation skips hidden notes tab
+      const dictTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-dict")!;
+      dictTab.focus();
+      tabs?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("about");
+      expect(document.activeElement).toBe(aboutTab);
+
+      controller.destroy();
     });
   });
 });

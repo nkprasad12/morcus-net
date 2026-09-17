@@ -12,7 +12,6 @@ import {
   registerElement,
   setHtml,
   settingsStore,
-  setupModalDialog,
   storage,
   tokenizeTargets,
 } from "@/web/v2/core/index.client";
@@ -229,7 +228,6 @@ export class MorcusReaderView extends BaseElement<"page"> {
       this.panelController = null;
     });
     this.resetDictScroll();
-    this.initBiblioModal();
     this.initStickyExpand();
     this.initKeyboardShortcuts();
     this.initIframeThemeSync();
@@ -343,6 +341,17 @@ export class MorcusReaderView extends BaseElement<"page"> {
       if (bodyId && this.panelController) {
         this.openNote(bodyId, noteRef);
       }
+      return;
+    }
+
+    // Handle edition/about link click (reveals scholarly attribution in companion panel)
+    const aboutLink = e.target.closest<HTMLAnchorElement>(
+      "a.reader-about-link"
+    );
+    if (aboutLink) {
+      e.preventDefault();
+      this.activatePanelTab("about");
+      this.panelController?.aboutTab?.focus();
       return;
     }
 
@@ -579,6 +588,12 @@ export class MorcusReaderView extends BaseElement<"page"> {
     this.renderSheetTeaser([strong], showExpandHint);
   }
 
+  private setSheetAboutLabel(showExpandHint: boolean = false): void {
+    const strong = document.createElement("strong");
+    strong.textContent = "About this text";
+    this.renderSheetTeaser([strong], showExpandHint);
+  }
+
   private updateSheetLabel(showExpandHint: boolean = false): void {
     if (this.panelController?.activeTab === "notes") {
       if (this.currentNoteLabel) {
@@ -586,6 +601,8 @@ export class MorcusReaderView extends BaseElement<"page"> {
       } else {
         this.setSheetNotesListLabel(showExpandHint);
       }
+    } else if (this.panelController?.activeTab === "about") {
+      this.setSheetAboutLabel(showExpandHint);
     } else if (this.currentQuery) {
       this.setSheetLabel(this.currentQuery, showExpandHint);
     }
@@ -922,17 +939,17 @@ export class MorcusReaderView extends BaseElement<"page"> {
   }
 
   private resetDictScroll() {
-    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-    if (typeof dictPanel?.scrollTo === "function") {
-      dictPanel.scrollTo({ top: 0, behavior: "instant" });
-    } else if (dictPanel) {
-      dictPanel.scrollTop = 0;
-    }
-    const notesView = this.querySelector<HTMLElement>(".reader-panel-notes");
-    if (typeof notesView?.scrollTo === "function") {
-      notesView.scrollTo({ top: 0, behavior: "instant" });
-    } else if (notesView) {
-      notesView.scrollTop = 0;
+    for (const sel of [
+      ".reader-dict-panel",
+      ".reader-panel-notes",
+      ".reader-panel-about",
+    ]) {
+      const el = this.querySelector<HTMLElement>(sel);
+      if (typeof el?.scrollTo === "function") {
+        el.scrollTo({ top: 0, behavior: "instant" });
+      } else if (el) {
+        el.scrollTop = 0;
+      }
     }
   }
 
@@ -1071,19 +1088,6 @@ export class MorcusReaderView extends BaseElement<"page"> {
     }, 2200);
   }
 
-  // --- Bibliographical Metadata Modal Dialog ---
-  private initBiblioModal() {
-    const dialog = this.$<HTMLDialogElement>("#reader-biblio-dialog");
-    const infoBtn = this.$<HTMLButtonElement>("#reader-info-btn");
-    if (!dialog) return;
-
-    this.addDisposable(
-      setupModalDialog(dialog, {
-        trigger: infoBtn,
-      })
-    );
-  }
-
   // --- Reader Preferences & Canvas Styling ---
   private applyMacra(show: boolean) {
     if (this.dataset.hasMacra === "false") return;
@@ -1134,10 +1138,12 @@ export class MorcusReaderView extends BaseElement<"page"> {
     this.applyMacra(prefs.showMacra);
   }
 
-  // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC) ---
+  // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC, N Notes, I About) ---
   private initKeyboardShortcuts() {
     this.listen(window, "keydown", (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.target instanceof HTMLElement) {
+        if (e.target.isContentEditable) return;
         const tag = e.target.tagName.toLowerCase();
         if (tag === "input" || tag === "textarea" || tag === "select") return;
       }
@@ -1180,6 +1186,13 @@ export class MorcusReaderView extends BaseElement<"page"> {
           e.preventDefault();
           const current = this.panelController.activeTab;
           const nextTab = current === "notes" ? "dict" : "notes";
+          this.activatePanelTab(nextTab);
+        }
+      } else if (e.key === "i" || e.key === "I") {
+        if (this.panelController?.hasAbout) {
+          e.preventDefault();
+          const current = this.panelController.activeTab;
+          const nextTab = current === "about" ? "dict" : "about";
           this.activatePanelTab(nextTab);
         }
       }
@@ -1400,6 +1413,9 @@ export class MorcusReaderView extends BaseElement<"page"> {
     const newNotes =
       textPanel?.querySelector<HTMLElement>(".reader-notes") ?? null;
     this.panelController?.adoptNotes(newNotes);
+    const newAbout =
+      textPanel?.querySelector<HTMLElement>("#reader-work-about") ?? null;
+    this.panelController?.adoptAbout(newAbout);
 
     this.saveCurrentSpot();
     this.enhancePassage();

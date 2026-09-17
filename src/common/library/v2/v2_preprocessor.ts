@@ -434,6 +434,9 @@ export function preprocessWorkToV2(
     hasTranslation: translationWork !== undefined,
     translator: translationWork?.info.translator,
     editor: work.info.editor,
+    funder: work.info.funder,
+    sponsor: work.info.sponsor,
+    sourceRef: work.info.sourceRef,
     ctsUrn: work.info.workId.startsWith("urn:cts:")
       ? work.info.workId
       : undefined,
