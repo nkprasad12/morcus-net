@@ -18,8 +18,12 @@ import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
 installPointerEventShims();
 
-function createReaderView(innerPassageHtml: string): MorcusReaderView {
+function createReaderView(
+  innerPassageHtml: string,
+  options: { workId?: string } = {}
+): MorcusReaderView {
   const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+  if (options.workId) el.dataset.work = options.workId;
   el.innerHTML = `
     <div class="reader-split-layout reader-layout-empty">
       <section class="reader-text-panel">
@@ -244,6 +248,24 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     expect(words[0].textContent).toBe("Mu\u0304sa");
     expect(words[2].textContent).toBe("causa\u0304s");
+  });
+
+  test("initializes with work-scoped macra preference from localStorage on connect", () => {
+    localStorage.setItem("macronButton-phi0690", "false");
+
+    const passageHtml = `
+      <div class="reader-section" id="sec-1.1">
+        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+      </div>
+    `;
+
+    const el = createReaderView(passageHtml, {
+      workId: "phi0690",
+    });
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
+    // Macra stripped on connect because macronButton-phi0690 is false
+    expect(words[0].textContent).toBe("Musa");
+    expect(words[2].textContent).toBe("causas");
   });
 
   test("synchronizes reader data-theme to dictionary iframe on connect and on iframe load", () => {
@@ -524,12 +546,14 @@ describe("Reader preferences validation & hydration", () => {
     const valid = {
       readerScale: 120,
       dictScale: 90,
-      showMacra: false,
       showGutter: false,
       fontFamily: "sans",
       lineHeight: "compact",
     };
-    expect(parseReaderPreferences(JSON.stringify(valid))).toEqual(valid);
+    expect(parseReaderPreferences(JSON.stringify(valid))).toEqual({
+      ...valid,
+      showMacra: DEFAULT_READER_PREFS.showMacra,
+    });
   });
 
   it("partially parses valid fields and falls back to defaults for missing ones", () => {

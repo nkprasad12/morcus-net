@@ -4,6 +4,7 @@ import {
   pickValid,
   registerElement,
   setupModalDialog,
+  storage,
 } from "@/web/v2/core/index.client";
 import {
   isBoolean,
@@ -50,16 +51,38 @@ export const isReaderLineHeight: Validator<ReaderLineHeight> = isOneOf(
   isOneOf(isLiteral("normal"), isLiteral("relaxed"))
 );
 
-export const READER_PREFS_CHECKERS: FieldCheckers<ReaderPreferences> = {
-  readerScale: isNumber,
-  dictScale: isNumber,
-  showMacra: isBoolean,
-  showGutter: isBoolean,
-  fontFamily: isReaderFontFamily,
-  lineHeight: isReaderLineHeight,
-};
+export type PersistedReaderPreferences = Omit<ReaderPreferences, "showMacra">;
+
+export const READER_PREFS_CHECKERS: FieldCheckers<PersistedReaderPreferences> =
+  {
+    readerScale: isNumber,
+    dictScale: isNumber,
+    showGutter: isBoolean,
+    fontFamily: isReaderFontFamily,
+    lineHeight: isReaderLineHeight,
+  };
 
 export const READER_SETTINGS_KEY = "morcus_reader_settings";
+
+/**
+ * Generates the per-work localStorage key for macra toggle, matching V1 exactly.
+ */
+export function macronStorageKey(workId: string): string {
+  return `macronButton-${workId}`;
+}
+
+export function getWorkMacra(workId?: string | null): boolean {
+  if (!workId) return true;
+  return storage.getBoolean(macronStorageKey(workId), true);
+}
+
+export function setWorkMacra(workId: string, show: boolean): void {
+  storage.setBoolean(macronStorageKey(workId), show);
+}
+
+export function removeWorkMacra(workId: string): void {
+  storage.remove(macronStorageKey(workId));
+}
 
 export function parseReaderPreferences(raw: string | null): ReaderPreferences {
   if (!raw) return { ...DEFAULT_READER_PREFS };
@@ -67,7 +90,7 @@ export function parseReaderPreferences(raw: string | null): ReaderPreferences {
     const parsed: unknown = JSON.parse(raw);
     return {
       ...DEFAULT_READER_PREFS,
-      ...pickValid<ReaderPreferences>(parsed, READER_PREFS_CHECKERS),
+      ...pickValid<PersistedReaderPreferences>(parsed, READER_PREFS_CHECKERS),
     };
   } catch {
     return { ...DEFAULT_READER_PREFS };
@@ -76,19 +99,18 @@ export function parseReaderPreferences(raw: string | null): ReaderPreferences {
 
 export const readerSettingsStore = {
   get(): ReaderPreferences {
-    try {
-      return parseReaderPreferences(localStorage.getItem(READER_SETTINGS_KEY));
-    } catch {
-      return { ...DEFAULT_READER_PREFS };
-    }
+    return parseReaderPreferences(storage.get(READER_SETTINGS_KEY));
   },
 
   set(prefs: ReaderPreferences): void {
-    try {
-      localStorage.setItem(READER_SETTINGS_KEY, JSON.stringify(prefs));
-    } catch {
-      // Ignore storage errors
-    }
+    const persisted: PersistedReaderPreferences = {
+      readerScale: prefs.readerScale,
+      dictScale: prefs.dictScale,
+      showGutter: prefs.showGutter,
+      fontFamily: prefs.fontFamily,
+      lineHeight: prefs.lineHeight,
+    };
+    storage.setJson(READER_SETTINGS_KEY, persisted);
   },
 
   update(patch: Partial<ReaderPreferences>): ReaderPreferences {
@@ -118,8 +140,20 @@ export class MorcusReaderSettings extends BaseElement {
     return { ...this.currentPrefs };
   }
 
+  public getWorkId(): string | null {
+    return (
+      this.dataset.work ||
+      this.closest("morcus-reader-view")?.dataset.work ||
+      null
+    );
+  }
+
   protected override onConnect() {
     this.currentPrefs = readerSettingsStore.get();
+    const workId = this.getWorkId();
+    if (workId) {
+      this.currentPrefs.showMacra = getWorkMacra(workId);
+    }
 
     const dialog =
       this.$<HTMLDialogElement>("#reader-settings-dialog") ??
@@ -192,6 +226,10 @@ export class MorcusReaderSettings extends BaseElement {
     // Toggle bindings
     if (toggleMacra) {
       this.listen(toggleMacra, "change", () => {
+        const workId = this.getWorkId();
+        if (workId) {
+          setWorkMacra(workId, toggleMacra.checked);
+        }
         this.currentPrefs.showMacra = toggleMacra.checked;
         this.saveAndEmit();
       });
@@ -225,6 +263,10 @@ export class MorcusReaderSettings extends BaseElement {
     // Reset defaults binding
     if (resetBtn) {
       this.listen(resetBtn, "click", () => {
+        const workId = this.getWorkId();
+        if (workId) {
+          removeWorkMacra(workId);
+        }
         this.currentPrefs = { ...DEFAULT_READER_PREFS };
         this.saveAndEmit();
       });
