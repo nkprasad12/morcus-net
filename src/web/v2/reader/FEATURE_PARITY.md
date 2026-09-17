@@ -106,11 +106,13 @@ Shipped. The note bodies now reach the page, and the markers that carry them are
 
 ### 2.5. Work Attribution & Provenance
 
-- **V1 (`reader.tsx:L960-1009`)**: `WorkInfo` and `SourceRefInfo` render inside a persistent `Attribution` sidebar tab, alongside the dictionary and outline.
-- **V2 (`reader_dialogs.server.ts:L8-82`)**: ⚠️ **Degraded**. The same fields are rendered into a `<dialog>` opened only through `setupModalDialog`. Consequences:
-  - A `<dialog>` without `open` is `display: none` per the UA stylesheet, so with JavaScript disabled the block is **present in the HTML but unreachable**.
-  - Dialog content does not appear in print output.
-  - This includes the license line, which [`v2_preprocessor.ts:L275-281`](../../../common/library/v2/v2_preprocessor.ts) sets to `"Creative Commons Attribution-ShareAlike 3.0"` for all Perseus texts. Attribution for a CC BY-SA work should not depend on JavaScript.
+**Shipped.** Retired the inaccessible `<dialog class="reader-biblio-dialog">` modal in favor of the footnote adoption pattern:
+
+- **No-JS Baseline**: Renders `#reader-work-about` as a native collapsed `<details>` at the bottom of the article and provides an anchor link directly next to the title in the header metadata (`<a href="#reader-work-about" class="reader-about-link" title="About this text" aria-label="About this text"><span aria-hidden="true">ⓘ</span></a>`). This keeps the bottom pagination cards unobtrusive while offering zero-JS jump navigation to the colophon and license.
+- **JS Companion Tab**: `ReaderPanelController` adopts `#reader-work-about` into `#panel-view-about` as an `About` tab (`Dictionary` | `Notes` | `About`), available in both desktop sidebar and mobile bottom drawer.
+- **Mobile Active Expands Pill**: Uses 12px (`0.75rem`) base font and custom feathered SVG icons (`book`, `notes`, `info`), collapsing inactive labels and expanding the active pill to prevent overflow on mobile.
+- **Full V1 Scholarly Parity**: Carries `Author`, `Editor`, `Translator`, `Funder`, `Sponsor`, `ID`, `Source(s)`, and full provenance attribution notices (`ATTRIBUTION_MAP`), omitting preprocessor internal details like structural hierarchy.
+- **Keyboard & Click Parity**: Clicking the header icon link or pressing `i` / `I` toggles the About tab without page scroll shift. Full ARIA tablist keyboard navigation (`ArrowLeft`/`ArrowRight`/`Home`/`End`).
 
 ### 2.6. Per-Work Macra Preference
 

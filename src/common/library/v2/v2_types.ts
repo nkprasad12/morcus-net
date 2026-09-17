@@ -68,6 +68,12 @@ export interface V2PreprocessedWork {
   translator?: string;
   /** Critical editor if recorded in TEI */
   editor?: string;
+  /** Funding source if recorded in TEI */
+  funder?: string;
+  /** Sponsoring institution if recorded in TEI */
+  sponsor?: string;
+  /** Bibliographic source references or repository URLs */
+  sourceRef?: string[];
   /** Canonical Text Services URN */
   ctsUrn?: string;
   /** License details */

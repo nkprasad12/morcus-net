@@ -6,6 +6,7 @@ import {
   renderReaderTextPanel,
   renderReaderDictPanel,
   renderBiblioDialog,
+  renderReaderAboutSection,
   renderReaderSettingsDialog,
   renderTocDrawer,
   renderTocItemsHtml,
@@ -138,7 +139,7 @@ describe("reader_ssr", () => {
     expect(untranslatedParallelHtml).toContain('data-view="single"');
   });
 
-  test("renderReaderContentHtml renders Table of Contents drawer and Bibliographical modal", async () => {
+  test("renderReaderContentHtml renders Table of Contents drawer and About section", async () => {
     const html = await renderReaderContentHtml({ workId: "dbg" });
 
     // Table of Contents drawer
@@ -147,9 +148,12 @@ describe("reader_ssr", () => {
     expect(html).toContain('id="reader-toc-close-btn"');
     expect(html).toContain('class="reader-toc-item active"');
 
-    // Bibliographical Dialog
-    expect(html).toContain('id="reader-biblio-dialog"');
+    // Scholarly About section in document flow (and no legacy biblio dialog)
+    expect(html).toContain('id="reader-work-about"');
+    expect(html).toContain('class="reader-work-about"');
     expect(html).toContain("Holmes");
+    expect(html).toContain('class="reader-about-link"');
+    expect(html).not.toContain('id="reader-biblio-dialog"');
   });
 
   test("renderReaderContentHtml renders sticky navigation bar with essentials and expandable tools", async () => {
@@ -167,9 +171,10 @@ describe("reader_ssr", () => {
     expect(html).toContain('class="expand-icon"');
     expect(html).toContain('aria-expanded="false"');
 
-    // Main text panel header: Author and Work Name
+    // Main text panel header: Author, Work Name, and About Link
     expect(html).toContain('class="reader-author-tag"');
     expect(html).toContain('class="reader-work-tag"');
+    expect(html).toContain('class="reader-about-link"');
 
     // Secondary row: expanded tools (hidden by default)
     expect(html).toContain(
@@ -181,7 +186,7 @@ describe("reader_ssr", () => {
     expect(html).not.toContain('id="mode-parallel"');
     expect(html).not.toContain('class="reader-view-toggle"');
     expect(html).toContain('id="reader-settings-btn"');
-    expect(html).toContain('id="reader-info-btn"');
+    expect(html).not.toContain('id="reader-info-btn"');
 
     // Settings dialog (Caesar dbgWork has hasMacra: false, so toggle-macra is omitted)
     expect(html).toContain("<morcus-reader-settings");
@@ -336,38 +341,47 @@ describe("decomposed_reader_renderers", () => {
     });
   });
 
-  describe("renderBiblioDialog", () => {
-    test("renders scholarly bibliographical dialog with metadata", () => {
-      const html = renderBiblioDialog(dbgWork);
-      expect(html).toContain('id="reader-biblio-dialog"');
-      expect(html).toContain("De bello Gallico");
+  describe("renderReaderAboutSection", () => {
+    test("renders scholarly attribution section with metadata", () => {
+      const html = renderReaderAboutSection(dbgWork);
+      expect(html).toContain('id="reader-work-about"');
+      expect(html).toContain('class="reader-work-about"');
       expect(html).toContain("Julius Caesar");
-      expect(html).toContain('["book", "chapter", "section"]');
       expect(html).toContain("T. Rice Holmes");
-      expect(html).toContain('id="reader-biblio-ok-btn"');
-      expect(html).toContain("data-dialog-close");
+      expect(html).toContain("About this text");
+      expect(html).toContain("Perseus Digital Library");
+      expect(html).not.toContain('["book", "chapter", "section"]');
     });
 
     test("conditionally renders translator when present", () => {
-      const html = renderBiblioDialog(sallustWork);
-      expect(html).toContain("English Translation");
+      const html = renderReaderAboutSection(sallustWork);
+      expect(html).toContain("Translator");
       expect(html).toContain("John Selby Watson");
     });
 
-    test("conditionally renders optional URN, license, and source repository", () => {
+    test("conditionally renders optional funder, sponsor, URN, and source repository", () => {
       const workWithMetadata = {
         ...dbgWork,
+        funder: "The National Endowment for the Humanities",
+        sponsor: "Perseus Project, Tufts University",
         ctsUrn: "urn:cts:latinLit:phi0448.phi001",
-        license: "CC BY-SA 4.0",
-        sourceRepo: "https://github.com/PerseusDL/canonical-latinLit",
+        sourceRef: [
+          "https://archive.org/details/desenectutedeami0000cice/page/108",
+        ],
       };
-      const html = renderBiblioDialog(workWithMetadata);
+      const html = renderReaderAboutSection(workWithMetadata);
+      expect(html).toContain("The National Endowment for the Humanities");
+      expect(html).toContain("Perseus Project, Tufts University");
       expect(html).toContain("<code>urn:cts:latinLit:phi0448.phi001</code>");
-      expect(html).toContain("CC BY-SA 4.0");
       expect(html).toContain(
-        'href="https://github.com/PerseusDL/canonical-latinLit"'
+        'href="https://archive.org/details/desenectutedeami0000cice/page/108"'
       );
       expect(html).toContain('rel="noopener noreferrer"');
+    });
+
+    test("maintains backward compatibility with renderBiblioDialog alias", () => {
+      const html = renderBiblioDialog(dbgWork);
+      expect(html).toBe(renderReaderAboutSection(dbgWork));
     });
   });
 

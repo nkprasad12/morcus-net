@@ -18,13 +18,14 @@ import {
   renderTocDrawer,
 } from "@/web/v2/reader/reader_toc.server";
 import {
-  renderBiblioDialog,
+  renderReaderAboutSection,
   renderReaderSettingsDialog,
 } from "@/web/v2/reader/reader_dialogs.server";
 import * as he from "he";
 
 export {
   renderBiblioDialog,
+  renderReaderAboutSection,
   renderReaderSettingsDialog,
   type ReaderSettingsDialogOptions,
 } from "@/web/v2/reader/reader_dialogs.server";
@@ -231,7 +232,7 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
                     id="sticky-expand-btn"
                     aria-expanded="false"
                     aria-controls="sticky-expanded-row"
-                    title="Show additional tools (Contents, view mode, settings, info)">
+                    title="Show additional tools (View mode, appearance settings)">
               <span class="expand-label">Tools</span>
               <svg class="expand-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M6 9l6 6 6-6"/>
@@ -242,7 +243,7 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
 
         <!-- Secondary Expanded Row (Hidden by default, smooth animated reveal) -->
         <div class="sticky-expanded-row" id="sticky-expanded-row" hidden>
-          <!-- Right: View Mode Toggle + Settings + Scholarly Info -->
+          <!-- Right: View Mode Toggle + Settings -->
           <div class="expanded-right">
             ${
               hasParallel
@@ -269,14 +270,6 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
                     title="Appearance & Settings (Aa)">
               <span class="settings-glyph">Aa</span>
               <span class="btn-text">Settings</span>
-            </button>
-
-            <button type="button"
-                    class="reader-btn reader-info-btn"
-                    id="reader-info-btn"
-                    title="Scholarly Edition & Metadata (ℹ)">
-              <span>ℹ</span>
-              <span class="btn-text">Info</span>
             </button>
           </div>
         </div>
@@ -313,6 +306,7 @@ export function renderReaderTextCard(ctx: ReaderRenderContext): string {
                 <span class="reader-author-tag">${he.escape(work.author)}</span>
                 <span class="reader-meta-sep">&middot;</span>
                 <span class="reader-work-tag">${he.escape(work.title)}</span>
+                <a href="#reader-work-about" class="reader-about-link" title="About this text" aria-label="About this text"><span aria-hidden="true">ⓘ</span></a>
               </div>
               <h1 class="reader-passage-heading" aria-live="polite">${he.escape(
                 activePage.title
@@ -326,6 +320,9 @@ export function renderReaderTextCard(ctx: ReaderRenderContext): string {
 
             <!-- Critical Apparatus Footnotes (empty for works without notes) -->
             ${notesHtml}
+
+            <!-- Scholarly Attribution & Work Metadata (Adopted into companion panel by JS) -->
+            ${renderReaderAboutSection(work)}
 
             <!-- Bottom Paging Continuation Actions & Prototype Switcher -->
             <footer class="reader-passage-footer">
@@ -474,8 +471,6 @@ ${renderReaderStickyBar(ctx)}
 ${renderReaderTextPanel(ctx)}
 ${renderReaderDictPanel(ctx)}
       </div>
-
-${renderBiblioDialog(ctx.work)}
 
 ${renderReaderSettingsDialog({ hasMacra: ctx.work.hasMacra })}
 

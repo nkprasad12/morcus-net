@@ -260,3 +260,25 @@ describe("preprocessWorkToV2 critical apparatus", () => {
     expect(page.parallelNotesHtml).toBeUndefined();
   });
 });
+
+describe("preprocessWorkToV2 metadata and attribution", () => {
+  it("preserves funder, sponsor, editor, and sourceRef from work.info", () => {
+    const work = makeWork({
+      rows: [[["1", "1"], span([], "Test text")]],
+    });
+    work.info.editor = "William Armistead Falconer";
+    work.info.funder = "The National Endowment for the Humanities";
+    work.info.sponsor = "Perseus Project, Tufts University";
+    work.info.sourceRef = [
+      "https://archive.org/details/desenectutedeami0000cice/page/108",
+    ];
+
+    const v2Work = preprocessWorkToV2(work, METADATA);
+    expect(v2Work.editor).toBe("William Armistead Falconer");
+    expect(v2Work.funder).toBe("The National Endowment for the Humanities");
+    expect(v2Work.sponsor).toBe("Perseus Project, Tufts University");
+    expect(v2Work.sourceRef).toEqual([
+      "https://archive.org/details/desenectutedeami0000cice/page/108",
+    ]);
+  });
+});
