@@ -781,5 +781,49 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
       expect(completions!.signal?.aborted).toBe(true);
     });
+
+    test("does not autofocus search input when embedded in an iframe (embedded=1)", () => {
+      delete (window as any).location;
+      (window as any).location = new URL(
+        "http://localhost/v2/dicts?embedded=1"
+      );
+      const el = document.createElement(
+        "morcus-dict-search"
+      ) as MorcusDictSearch;
+      el.innerHTML = `
+        <form class="search-form" action="/v2/dicts" method="GET">
+          <div class="input-wrapper">
+            <input type="text" name="q" class="input" value="" />
+          </div>
+        </form>
+        <output id="dict-results" class="results"></output>
+      `;
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const focusSpy = jest.spyOn(input, "focus");
+      document.body.appendChild(el);
+
+      expect(focusSpy).not.toHaveBeenCalled();
+    });
+
+    test("autofocuses search input on landing when not embedded and query is empty", () => {
+      delete (window as any).location;
+      (window as any).location = new URL("http://localhost/v2/dicts");
+      const el = document.createElement(
+        "morcus-dict-search"
+      ) as MorcusDictSearch;
+      el.innerHTML = `
+        <form class="search-form" action="/v2/dicts" method="GET">
+          <div class="input-wrapper">
+            <input type="text" name="q" class="input" value="" />
+          </div>
+        </form>
+        <output id="dict-results" class="results"></output>
+      `;
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const focusSpy = jest.spyOn(input, "focus");
+      document.body.appendChild(el);
+
+      expect(focusSpy).toHaveBeenCalled();
+    });
   });
 });

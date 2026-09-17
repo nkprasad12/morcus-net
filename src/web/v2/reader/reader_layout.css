@@ -74,7 +74,10 @@
     overflow: hidden;
   }
 
-  .reader-layout-empty .reader-dict-sticky {
+  .reader-layout-empty .reader-dict-sticky,
+  .reader-layout-empty .reader-dict-panel:not(:target) .reader-panel-tabs,
+  .reader-layout-empty .reader-dict-panel:not(:target) .reader-panel-views,
+  .reader-layout-empty .reader-dict-panel:not(:target) .dict-iframe-container {
     display: none;
   }
 
@@ -90,8 +93,9 @@
     padding-bottom: calc(55dvh + 36px);
   }
 
-  .reader-layout-empty .reader-dict-panel:target .reader-dict-sticky {
-    display: block;
+  .reader-layout-empty .reader-dict-panel:target .reader-dict-sticky,
+  .reader-layout-empty .reader-dict-panel:target .dict-iframe-container {
+    display: flex;
   }
 
   /* Minimized active drawer: retains content in DOM but collapses to 54px teaser */
@@ -104,9 +108,12 @@
     padding-bottom: 74px;
   }
 
+  .reader-layout-active .reader-dict-panel.drawer-minimized .reader-dict-sticky,
+  .reader-layout-active .reader-dict-panel.drawer-minimized .reader-panel-tabs,
+  .reader-layout-active .reader-dict-panel.drawer-minimized .reader-panel-views,
   .reader-layout-active
     .reader-dict-panel.drawer-minimized
-    .reader-dict-sticky {
+    .dict-iframe-container {
     display: none;
   }
 
