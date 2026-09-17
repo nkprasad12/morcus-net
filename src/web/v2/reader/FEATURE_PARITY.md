@@ -64,6 +64,26 @@ Shipped. The note bodies now reach the page, and the markers that carry them are
 
 **Content recovered** is genuine editorial commentary, not just sigla — e.g. _"These summaries, which are not the work of Ammianus but of some early editor, are put for convenience at the beginning of each chapter…"_
 
+#### 2.1.1. Synchronized Notes Companion Panel (JS Progressive Enhancement)
+
+**Shipped.** The JS enhancement (`reader_panel.client.ts`, `reader_panel.css`, wired into `reader_view.client.ts`) relocates footnotes into a synchronized companion tab panel:
+
+1. **Eager Relocation on Connect**:
+   - For pages with critical apparatus notes, the server-rendered `.reader-notes` subtree is eagerly moved into `#panel-view-notes` inside the companion panel.
+   - An in-flow stub (`.reader-notes-stub`, e.g. `Notes (13) →`) is left in the reading passage where the notes originally sat, giving readers who scroll to the end a clear one-click path to open the Notes tab.
+   - For pages without notes, no tab strip is rendered, keeping the dictionary-only UI clean with 0 visual regression churn.
+2. **Tab Arbitration Rules**:
+   - **Rule A1 (Word Priority)**: Clicking any Latin word in the passage force-switches the companion panel back to the **Dictionary** tab and looks up the word.
+   - **Rule A4 (Dismissal Reset)**: Dismissing the dictionary/panel resets the active tab back to **Dictionary** and clears active highlights.
+3. **Synchronized Markers & Teaser Labels**:
+   - Clicking `a.reader-note-ref` keeps the reader at their reading scroll position (`scrollY` unchanged), highlights the marker (`marker-active`), switches the panel to the Notes tab, and scrolls to/highlights the note (`note-active`).
+   - Clicking backrefs in the panel (`a.reader-note-backref`) highlights the corresponding marker in the text.
+   - Mobile bottom drawer updates its teaser label dynamically (`Note [1]` or `Notes (13)`).
+4. **Keyboard Affordances & Accessibility**:
+   - `n` / `N` toggles between the Dictionary and Notes tabs when notes exist.
+   - Roving `tabindex` and arrow keys cycle tabs; Home/End jumps to first/last tab.
+   - Keyboard activation (Enter/Space on marker) moves focus directly to the note in the panel; the companion container carries `role="tabpanel"` linked to the tab via `aria-labelledby`.
+
 ### 2.2. External Content Reader
 
 - **V1 (`external_content_reader.tsx`, `external_content_storage.tsx`)**: A separate reader accepting pasted text or a scraped URL (`ScrapeUrlApi`), persisting saved documents locally (`useSavedExternalContent`) and offering the same word-lookup affordances as the library reader.

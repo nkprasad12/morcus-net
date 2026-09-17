@@ -30,6 +30,10 @@ import {
 import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 import { ReaderTocController } from "@/web/v2/reader/reader_toc.client";
 import {
+  ReaderPanelController,
+  type PanelTab,
+} from "@/web/v2/reader/reader_panel.client";
+import {
   ReaderLayoutController,
   type ReaderLayoutElements,
   type ReaderLayoutOptions,
@@ -59,6 +63,8 @@ export {
   DEFAULT_SPLIT_WIDTH,
   READER_DICT_WIDTH_STORAGE_KEY,
   computeMaxSplitWidth,
+  ReaderPanelController,
+  type PanelTab,
 };
 
 /**
@@ -80,6 +86,9 @@ export class MorcusReaderView extends BaseElement {
   private drawerController?: DrawerController;
   private tocController: ReaderTocController | null = null;
   private layoutController: ReaderLayoutController | null = null;
+  private panelController: ReaderPanelController | null = null;
+  private currentNoteId: string = "";
+  private currentNoteLabel: string = "";
   private router: QueryParamSync | null = null;
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
 
@@ -89,6 +98,18 @@ export class MorcusReaderView extends BaseElement {
 
   public getLayoutController(): ReaderLayoutController | null {
     return this.layoutController;
+  }
+
+  public getPanelController(): ReaderPanelController | null {
+    return this.panelController;
+  }
+
+  public getActiveNoteId(): string {
+    return this.currentNoteId;
+  }
+
+  public getActiveNoteLabel(): string {
+    return this.currentNoteLabel;
   }
 
   protected override onConnect() {
@@ -144,6 +165,16 @@ export class MorcusReaderView extends BaseElement {
     this.addDisposable(() => {
       this.tocController?.destroy();
       this.tocController = null;
+    });
+    this.panelController = new ReaderPanelController({
+      root: this,
+      onTabChange: () => {
+        this.updateSheetLabel(false);
+      },
+    });
+    this.addDisposable(() => {
+      this.panelController?.destroy();
+      this.panelController = null;
     });
     this.initBiblioModal();
     this.initStickyExpand();
@@ -244,6 +275,52 @@ export class MorcusReaderView extends BaseElement {
       return;
     }
 
+    // Handle in-text note marker click (reveals critical apparatus in notes panel)
+    const noteRef = e.target.closest<HTMLAnchorElement>("a.reader-note-ref");
+    if (noteRef) {
+      e.preventDefault();
+      const href = noteRef.getAttribute("href") || "";
+      const bodyId = href.replace(/^#/, "");
+      if (bodyId && this.panelController) {
+        this.openNote(bodyId, noteRef);
+      }
+      return;
+    }
+
+    // Handle in-flow notes stub click (opens companion panel to Notes tab)
+    const stubLink = e.target.closest<HTMLAnchorElement>(
+      "a.reader-notes-stub-link, .reader-notes-stub a"
+    );
+    if (stubLink) {
+      e.preventDefault();
+      if (this.panelController) {
+        this.activatePanelTab("notes");
+      }
+      return;
+    }
+
+    // Handle note backlink click (jumps passage to the marker and flashes it)
+    const backref = e.target.closest<HTMLAnchorElement>(
+      "a.reader-note-backref"
+    );
+    if (backref) {
+      const href = backref.getAttribute("href") || "";
+      const refId = href.replace(/^#/, "");
+      const markerEl = document.getElementById(refId);
+      if (markerEl) {
+        e.preventDefault();
+        if (typeof markerEl.scrollIntoView === "function") {
+          markerEl.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
+        }
+        this.setActiveMarker(markerEl);
+      }
+      return;
+    }
+
     const wordEl = e.target.closest<HTMLElement>(".lat-word");
     if (!wordEl) return;
 
@@ -291,14 +368,14 @@ export class MorcusReaderView extends BaseElement {
    *
    * Mirrors the server-rendered markup in reader.server.ts.
    */
-  private setSheetLabel(query: string, showExpandHint: boolean = false): void {
+  private renderSheetTeaser(
+    contentNodes: (Node | string)[],
+    showExpandHint: boolean = false
+  ): void {
     const sheetLabel = this.querySelector<HTMLElement>(".reader-sheet-label");
-    if (!sheetLabel || !query) return;
+    if (!sheetLabel) return;
 
-    const strong = document.createElement("strong");
-    strong.textContent = query;
-
-    const nodes: (Node | string)[] = ["Definitions for ", strong];
+    const nodes: (Node | string)[] = [...contentNodes];
     if (showExpandHint) {
       const hint = document.createElement("span");
       hint.style.opacity = "0.8";
@@ -308,6 +385,41 @@ export class MorcusReaderView extends BaseElement {
     }
 
     sheetLabel.replaceChildren(...nodes);
+  }
+
+  private setSheetLabel(query: string, showExpandHint: boolean = false): void {
+    if (!query) return;
+    const strong = document.createElement("strong");
+    strong.textContent = query;
+    this.renderSheetTeaser(["Definitions for ", strong], showExpandHint);
+  }
+
+  private setSheetNoteLabel(
+    label: string,
+    showExpandHint: boolean = false
+  ): void {
+    const strong = document.createElement("strong");
+    strong.textContent = `Note ${label}`;
+    this.renderSheetTeaser([strong], showExpandHint);
+  }
+
+  private setSheetNotesListLabel(showExpandHint: boolean = false): void {
+    const count = this.panelController?.noteCount ?? 0;
+    const strong = document.createElement("strong");
+    strong.textContent = `Notes (${count})`;
+    this.renderSheetTeaser([strong], showExpandHint);
+  }
+
+  private updateSheetLabel(showExpandHint: boolean = false): void {
+    if (this.panelController?.activeTab === "notes") {
+      if (this.currentNoteLabel) {
+        this.setSheetNoteLabel(this.currentNoteLabel, showExpandHint);
+      } else {
+        this.setSheetNotesListLabel(showExpandHint);
+      }
+    } else if (this.currentQuery) {
+      this.setSheetLabel(this.currentQuery, showExpandHint);
+    }
   }
 
   public minimizeDrawer(): void {
@@ -322,7 +434,7 @@ export class MorcusReaderView extends BaseElement {
         sheetBar?.setAttribute("aria-valuenow", "0");
       }
       document.documentElement.style.setProperty("--drawer-height", "54px");
-      this.setSheetLabel(this.currentQuery, true);
+      this.updateSheetLabel(true);
     }
   }
 
@@ -350,9 +462,82 @@ export class MorcusReaderView extends BaseElement {
         "--drawer-height",
         `${dvh}dvh`
       );
-      this.setSheetLabel(this.currentQuery);
+      this.updateSheetLabel(false);
       this.resetDictScroll();
     }
+  }
+
+  public activatePanelLayout(): void {
+    if (this.layoutController) {
+      this.layoutController.setActive(true);
+    } else {
+      const splitLayout = this.querySelector<HTMLElement>(
+        ".reader-split-layout"
+      );
+      if (splitLayout) {
+        splitLayout.classList.remove("reader-layout-empty");
+        splitLayout.classList.add("reader-layout-active");
+      }
+    }
+    this.restoreDrawer();
+  }
+
+  public activatePanelTab(tab: PanelTab): void {
+    this.panelController?.setTab(tab);
+    this.activatePanelLayout();
+  }
+
+  public openNote(
+    bodyId: string,
+    markerEl: HTMLElement,
+    opts: { focus?: boolean } = {}
+  ): void {
+    this.currentNoteId = bodyId;
+    const label = markerEl.textContent?.replace(/[[\]]/g, "").trim() || "";
+    this.currentNoteLabel = label;
+
+    // Clear active word highlight if any
+    this.setActiveWord(null);
+
+    // Highlight marker in passage
+    this.setActiveMarker(markerEl);
+
+    // Show note in companion panel
+    this.panelController?.showNote(bodyId, opts);
+
+    // Ensure layout is active
+    this.activatePanelLayout();
+
+    // Update mobile teaser label
+    this.setSheetNoteLabel(label);
+
+    // Mobile scroll guard: Ensure tapped marker is not occluded by the newly opened/restored drawer
+    if (window.innerWidth <= 640) {
+      requestAnimationFrame(() => {
+        const rect = markerEl.getBoundingClientRect();
+        const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+        const drawerTop =
+          dictPanel?.getBoundingClientRect().top ??
+          window.innerHeight *
+            (1 - (this.preferredDrawerDvh ?? DRAWER_DEFAULT_DVH) / 100);
+        if (rect.bottom > drawerTop - 24) {
+          const scrollNeeded = rect.bottom - (drawerTop - 24);
+          window.scrollBy({
+            top: scrollNeeded,
+            left: 0,
+            behavior: "smooth",
+          });
+        }
+      });
+    }
+  }
+
+  private setActiveMarker(el?: HTMLElement | null): void {
+    const active = this.querySelectorAll<HTMLElement>(
+      ".reader-text-panel a.reader-note-ref.marker-active"
+    );
+    active.forEach((m) => m.classList.remove("marker-active"));
+    el?.classList.add("marker-active");
   }
 
   /**
@@ -376,9 +561,15 @@ export class MorcusReaderView extends BaseElement {
 
   private dismissDictionary(updateHistory: boolean = true) {
     this.currentQuery = "";
+    this.currentNoteId = "";
+    this.currentNoteLabel = "";
 
     // Remove active highlights
     this.setActiveWord(null);
+    this.setActiveMarker(null);
+
+    // Arbitration Rule A4: Reset companion panel to Dictionary tab
+    this.panelController?.reset();
 
     // Reset iframe to default embedded state
     const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
@@ -435,6 +626,12 @@ export class MorcusReaderView extends BaseElement {
     }
 
     this.currentQuery = word;
+
+    // Arbitration Rule A1: Force switch to Dictionary tab if Notes tab was open
+    this.setActiveMarker(null);
+    this.currentNoteId = "";
+    this.currentNoteLabel = "";
+    this.panelController?.setTab("dict");
 
     // Update active highlight in the text
     this.setActiveWord(activeAnchor ?? this.findWordElement(word));
@@ -541,6 +738,20 @@ export class MorcusReaderView extends BaseElement {
           if (word) {
             this.lookupWord(word, e.target, true);
           }
+        } else if (
+          e.target instanceof HTMLElement &&
+          e.target.closest("a.reader-note-ref")
+        ) {
+          const noteRef =
+            e.target.closest<HTMLAnchorElement>("a.reader-note-ref");
+          if (noteRef) {
+            e.preventDefault();
+            const href = noteRef.getAttribute("href") || "";
+            const bodyId = href.replace(/^#/, "");
+            if (bodyId && this.panelController) {
+              this.openNote(bodyId, noteRef, { focus: true });
+            }
+          }
         }
       }
     });
@@ -626,11 +837,11 @@ export class MorcusReaderView extends BaseElement {
         return true;
       },
       onMinimize: () => {
-        this.setSheetLabel(this.currentQuery, true);
+        this.updateSheetLabel(true);
       },
       onRestore: (dvh) => {
         this.preferredDrawerDvh = dvh;
-        this.setSheetLabel(this.currentQuery);
+        this.updateSheetLabel(false);
         this.resetDictScroll();
       },
       onEscape: () => {
@@ -836,6 +1047,13 @@ export class MorcusReaderView extends BaseElement {
         if (expandBtn) {
           e.preventDefault();
           expandBtn.click();
+        }
+      } else if (e.key === "n" || e.key === "N") {
+        if (this.panelController?.hasNotes) {
+          e.preventDefault();
+          const current = this.panelController.activeTab;
+          const nextTab = current === "notes" ? "dict" : "notes";
+          this.activatePanelTab(nextTab);
         }
       }
     });

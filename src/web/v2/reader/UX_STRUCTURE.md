@@ -179,18 +179,18 @@ That does not retire the panel argument; it grounds it. A "too thin to earn a ta
 
 **Adopted as the working model; none of the _chrome_ changes here have been built.** The refactor that prompted the discussion was reverted rather than landed, so the reader's top bar and settings dialog are unchanged. The apparatus port described in §6 has since shipped, but it touched the preprocessor, the text panel and CSS — no chrome.
 
-Settled in discussion:
+Settled in discussion and implementation:
 
 - The preference duplication is a design fault, not a sync bug — fix the structure, not the symptom.
 - The bar is a fixed surface; the panel is the extension point.
 - The tiebreak and sustained-consultation rules above.
 - Info does not belong in a settings menu.
+- **Companion Panel Arbitration**: Settled and shipped in `ReaderPanelController` (`reader_panel.client.ts`). Word priority (Rule A1) force-switches the panel back to Dictionary whenever a Latin word is clicked, dismiss (Rule A4) resets to Dictionary, and note markers activate the Notes tab with non-destructive in-place scrolling.
 
 Still open:
 
 - Whether to delete the settings dialog outright and consolidate into a single anchored panel (recommended — it removes the blur-over-preview problem and makes the duplication bug class structurally impossible), or to keep the dialog and promote only text size into the bar directly.
 - Whether the editorial-provenance subtitle reads as useful or as clutter — needs a mockup.
-- How the panel arbitrates between tabs when a word is clicked in the text. Dictionary must stay the default and force-switch back, or word lookup silently breaks while you are on another tab.
 - Whether the mobile drawer's ~3-chip budget at 390px can carry four tabs at all.
 - Translation presentation, which interacts directly with the top bar's view toggle — see [`FEATURE_PARITY.md`](FEATURE_PARITY.md) §2.9.
 
