@@ -26,6 +26,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 | **Outline / Table of Contents**   | `Outline` sidebar tab (`WorkNavigationSection`)                                                  | Anchored TOC drawer with live filter (`ReaderTocController`), `:target` No-JS fallback      | ✅ **Completed in V2** |
 | **Embedded Dictionary**           | Dictionary sidebar tab                                                                           | Resizable split panel (desktop) / draggable bottom drawer (mobile) with embedded iframe     | ✅ **Completed in V2** |
 | **Section Label Visibility**      | `LabelsButton` toggling `hideLabels`                                                             | `showGutter` preference in reader settings                                                  | ✅ **Completed in V2** |
+| **Client-Side Page Navigation**   | Whole work fetched once; page turns are in-SPA state changes with no document reload             | Every page turn is a full document load; no partial swap exists despite the README claim    | ❌ **Missing in V2**   |
 
 ---
 
@@ -198,6 +199,17 @@ This confirms both of your observations and adds a third:
 > [!NOTE]
 > The dictionary panel already solves the "independently scrollable companion surface" problem on both form factors (`ReaderLayoutController` splitter + `DrawerController`). If a sidebar translation returns, it should almost certainly reuse that machinery rather than introduce a third layout pattern — which also means the two features would be competing for the same panel, and that competition is itself part of the open question.
 
+### 2.10. Client-Side Page Navigation
+
+- **V1 (`reader.tsx:L179`, `L125-135`)**: the work was fetched **once** on mount into `useState`, and every page turn after that — arrows, TOC entries, `navigateToSection` — was an in-SPA state change routed through `router_v2`'s `nav.to`. No document reload, no refetch, and the dictionary sidebar's contents survived the turn.
+- **V2**: ❌ **Missing**. Every page turn is a full document load. The sticky bar arrows and continuation cards are plain `<a href>`, the TOC entries likewise, and there is no `fetchAndSwapPartial` call anywhere under `src/web/v2/reader/`.
+
+> [!WARNING] > [`README.md`](README.md) currently documents a "With JS: Partial Page Swap" branch in its request-lifecycle diagram, including an `X-Requested-With: fetch` round trip and a `history.pushState`. **That branch does not exist in the client.** The server half is real — [`reader_routes.server.ts`](reader_routes.server.ts) honours `isPartialRequest` and `renderReaderContentHtml` will happily return a fragment — but nothing ever asks it to.
+
+So the infrastructure is half-built already: the route serves partials, and `fetchAndSwapPartial` exists in [`core/partial.client.ts`](../core/partial.client.ts) and is used elsewhere in V2. What is missing is the reader-side controller that intercepts the navigation links, swaps `<morcus-reader-view>`'s contents, and re-runs the enhancement passes.
+
+The cost is not the fetch; it is that a swap invalidates everything hydrated against the old passage. Anything holding a node reference across the swap has to be re-established: tokenization (`enhancePassage`), the per-work macra pass, saved-spot recording, the TOC's active-page marker, and — once it lands — whatever the companion panel is holding. That argues for doing the swap **after** the panel work rather than before it, so there is one re-hydration contract to write instead of two.
+
 ---
 
 ## 3. Recommended Remediation Roadmap
@@ -219,13 +231,14 @@ This confirms both of your observations and adds a third:
 
 ### Medium Priority (Feature Restoration)
 
-2. **Notes panel as the JS enhancement** — the footnote baseline is in place (§2.1), so the remaining work is the synchronized Notes tab: marker click reveals the note in the side panel without losing the reading position, with the footnote list staying as the No-JS and print path. This is the first real content for the panel model in [`UX_STRUCTURE.md`](UX_STRUCTURE.md) §6, and should be designed with the panel-arbitration question there, not ahead of it.
+2. **Notes panel as the JS enhancement** — the footnote baseline is in place (§2.1), so the remaining work is the synchronized Notes tab: marker click reveals the note in the side panel without losing the reading position. Under JS the list is **relocated** into the panel rather than duplicated, so the in-flow footnotes remain the No-JS path only. This is the first real content for the panel model in [`UX_STRUCTURE.md`](UX_STRUCTURE.md) §6.
 3. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
 
 ### Low Priority (Larger Scope)
 
 6. **Swipe / tap navigation** — requires touch gesture handling; `DrawerController` already contains comparable drag/velocity logic to borrow from.
 7. **External content reader** — the largest missing surface, and effectively a new vertical slice rather than a port.
+8. **Client-side page navigation (§2.10)** — restore SPA-feel page turns by intercepting the pager, TOC, and continuation links and swapping the passage via the partial route that `reader_routes.server.ts` already serves. Sequence this **after** the notes panel: a swap invalidates every hydration pass held against the old passage, and doing it once with the panel in place means writing one re-hydration contract rather than two. Fix the `README.md` lifecycle diagram, which documents this as though it already exists.
 
 ### Cleanups (independent of any decision above)
 
