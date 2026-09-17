@@ -5,7 +5,6 @@
  * and Notes (Critical Apparatus):
  * - Conditionally constructs the tab bar when a page contains critical notes
  * - Relocates the server-rendered footnote list into the companion notes panel
- * - Inserts an in-flow stub link in the passage where notes previously resided
  * - Synchronizes active note state and auto-scrolls the panel without shifting page scroll
  * - Implements strict arbitration: word lookups always force-switch back to Dictionary
  * - Preserves zero-JS markup on the server and ensures clean teardown on destroy
@@ -50,7 +49,6 @@ export class ReaderPanelController {
   public readonly viewsContainer: HTMLElement | null = null;
   public readonly dictView: HTMLElement | null = null;
   public readonly notesView: HTMLElement | null = null;
-  public readonly stub: HTMLElement | null = null;
 
   private readonly notesOriginalParent: Node | null = null;
   private readonly notesOriginalNextSibling: Node | null = null;
@@ -181,26 +179,7 @@ export class ReaderPanelController {
       dictPanel.appendChild(views);
     }
 
-    // 3. Leave an in-flow stub where notes used to be in the passage
-    const stub = document.createElement("p");
-    stub.className = "reader-notes-stub";
-    stub.id = "reader-notes-stub";
-
-    const stubLink = document.createElement("a");
-    stubLink.href = "#panel-view-notes";
-    stubLink.className = "reader-notes-stub-link";
-    stubLink.textContent = `Notes (${this.noteCount}) \u2192`;
-    stub.appendChild(stubLink);
-    this.stub = stub;
-
-    if (this.notesOriginalParent) {
-      this.notesOriginalParent.insertBefore(
-        stub,
-        this.notesOriginalNextSibling
-      );
-    }
-
-    // 4. Register Event Listeners
+    // 3. Register Event Listeners
     this.initTabEvents();
   }
 
@@ -314,8 +293,6 @@ export class ReaderPanelController {
         this.notesOriginalNextSibling
       );
     }
-
-    this.stub?.remove();
 
     if (this.iframeOriginalParent && this.iframeContainer) {
       this.iframeContainer.classList.remove("reader-panel-view", "active");

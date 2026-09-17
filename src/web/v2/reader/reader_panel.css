@@ -43,8 +43,6 @@
   border-radius: var(--radius-sm);
 }
 
-
-
 .reader-panel-views {
   position: relative;
   width: 100%;
@@ -105,29 +103,6 @@ a.reader-note-ref.marker-active {
   background-color: var(--primary-light);
   color: var(--primary);
   border-radius: var(--radius-sm);
-}
-
-/* In-flow stub where notes were moved from */
-.reader-notes-stub {
-  margin-top: var(--space-8);
-  padding: var(--space-3) var(--space-4);
-  font-family: var(--font-sans);
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  text-align: center;
-}
-
-.reader-notes-stub-link {
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.reader-notes-stub-link:hover {
-  text-decoration: underline;
 }
 
 @media (max-width: 640px) {

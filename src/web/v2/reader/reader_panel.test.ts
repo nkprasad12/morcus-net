@@ -133,13 +133,10 @@ describe("ReaderPanelController", () => {
       expect(notesTab?.textContent).toBe("Notes");
     });
 
-    it("relocates .reader-notes into #panel-view-notes and leaves an in-flow stub", () => {
+    it("relocates .reader-notes into #panel-view-notes", () => {
       const textCard = container.querySelector(".reader-text-card");
       expect(textCard?.querySelector(".reader-notes")).toBeNull();
-
-      const stub = textCard?.querySelector(".reader-notes-stub");
-      expect(stub).not.toBeNull();
-      expect(stub?.textContent).toContain("Notes (2) →");
+      expect(textCard?.querySelector(".reader-notes-stub")).toBeNull();
 
       const notesView = container.querySelector("#panel-view-notes");
       expect(notesView).not.toBeNull();

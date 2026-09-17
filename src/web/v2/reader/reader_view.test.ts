@@ -987,18 +987,16 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(sheetLabel?.textContent).toContain("divisa");
   });
 
-  test("clicking in-flow notes stub link opens notes tab", () => {
+  test("clicking Notes tab switches companion panel to notes", () => {
     const el = createReaderView(samplePassageWithNotes, {
       notesHtml: sampleNotesHtml,
     });
 
     const panelController = el.getPanelController();
-    const stubLink = el.querySelector<HTMLAnchorElement>(
-      ".reader-notes-stub a"
-    );
-    expect(stubLink).not.toBeNull();
+    const notesTab = el.querySelector<HTMLButtonElement>("#panel-tab-notes");
+    expect(notesTab).not.toBeNull();
 
-    stubLink?.click();
+    notesTab?.click();
 
     expect(panelController?.activeTab).toBe("notes");
     const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout");

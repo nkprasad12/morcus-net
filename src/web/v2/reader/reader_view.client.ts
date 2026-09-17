@@ -289,18 +289,6 @@ export class MorcusReaderView extends BaseElement {
       return;
     }
 
-    // Handle in-flow notes stub click (opens companion panel to Notes tab)
-    const stubLink = e.target.closest<HTMLAnchorElement>(
-      "a.reader-notes-stub-link, .reader-notes-stub a"
-    );
-    if (stubLink) {
-      e.preventDefault();
-      if (this.panelController) {
-        this.activatePanelTab("notes");
-      }
-      return;
-    }
-
     // Handle note backlink click (jumps passage to the marker and flashes it)
     const backref = e.target.closest<HTMLAnchorElement>(
       "a.reader-note-backref"

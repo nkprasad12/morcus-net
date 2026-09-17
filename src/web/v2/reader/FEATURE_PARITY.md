@@ -70,7 +70,6 @@ Shipped. The note bodies now reach the page, and the markers that carry them are
 
 1. **Eager Relocation on Connect**:
    - For pages with critical apparatus notes, the server-rendered `.reader-notes` subtree is eagerly moved into `#panel-view-notes` inside the companion panel.
-   - An in-flow stub (`.reader-notes-stub`, e.g. `Notes (13) →`) is left in the reading passage where the notes originally sat, giving readers who scroll to the end a clear one-click path to open the Notes tab.
    - For pages without notes, no tab strip is rendered, keeping the dictionary-only UI clean with 0 visual regression churn.
 2. **Tab Arbitration Rules**:
    - **Rule A1 (Word Priority)**: Clicking any Latin word in the passage force-switches the companion panel back to the **Dictionary** tab and looks up the word.
