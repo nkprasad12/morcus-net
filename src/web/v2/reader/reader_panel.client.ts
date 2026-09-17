@@ -129,12 +129,7 @@ export class ReaderPanelController {
     notesTab.setAttribute("aria-selected", "false");
     notesTab.setAttribute("aria-controls", "panel-view-notes");
     notesTab.tabIndex = -1;
-    notesTab.appendChild(document.createTextNode("Notes "));
-
-    const badge = document.createElement("span");
-    badge.className = "tab-count";
-    badge.textContent = String(this.noteCount);
-    notesTab.appendChild(badge);
+    notesTab.textContent = "Notes";
 
     tabs.appendChild(dictTab);
     tabs.appendChild(notesTab);

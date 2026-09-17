@@ -43,20 +43,7 @@
   border-radius: var(--radius-sm);
 }
 
-.reader-panel-tab .tab-count {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 1px var(--space-2);
-  border-radius: var(--radius-full);
-  background: var(--bullet-bg);
-  color: var(--text-muted);
-}
 
-.reader-panel-tab[aria-selected="true"] .tab-count {
-  background: var(--primary-light);
-  color: var(--primary);
-}
 
 .reader-panel-views {
   position: relative;

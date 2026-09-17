@@ -130,8 +130,7 @@ describe("ReaderPanelController", () => {
       expect(notesTab?.getAttribute("aria-controls")).toBe("panel-view-notes");
       expect(notesTab?.getAttribute("tabindex")).toBe("-1");
 
-      const badge = notesTab?.querySelector(".tab-count");
-      expect(badge?.textContent).toBe("2");
+      expect(notesTab?.textContent).toBe("Notes");
     });
 
     it("relocates .reader-notes into #panel-view-notes and leaves an in-flow stub", () => {
