@@ -1073,4 +1073,21 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "n" }));
     expect(panelController?.activeTab).toBe("dict");
   });
+
+  test("resetDictScroll resets scroll position on dict panel and notes view", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+    });
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+    const notesView = el.querySelector<HTMLElement>(".reader-panel-notes")!;
+
+    dictPanel.scrollTop = 50;
+    notesView.scrollTop = 120;
+
+    // @ts-expect-error accessing private method for test verification
+    el.resetDictScroll();
+
+    expect(dictPanel.scrollTop).toBe(0);
+    expect(notesView.scrollTop).toBe(0);
+  });
 });

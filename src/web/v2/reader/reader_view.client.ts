@@ -176,6 +176,7 @@ export class MorcusReaderView extends BaseElement {
       this.panelController?.destroy();
       this.panelController = null;
     });
+    this.resetDictScroll();
     this.initBiblioModal();
     this.initStickyExpand();
     this.initKeyboardShortcuts();
@@ -785,30 +786,17 @@ export class MorcusReaderView extends BaseElement {
   }
 
   private resetDictScroll() {
-    if (window.innerWidth > 640) {
-      // Desktop: Reset outer dict panel to top
-      const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-      if (typeof dictPanel?.scrollTo === "function") {
-        dictPanel.scrollTo({ top: 0, behavior: "instant" });
-      } else if (dictPanel) {
-        dictPanel.scrollTop = 0;
-      }
-    } else {
-      // Mobile: Instant scroll to the semantic content wrapper
-      const scrollContainer = this.querySelector<HTMLElement>(
-        ".reader-dict-sticky"
-      );
-      const contentEl = this.querySelector<HTMLElement>(".reader-dict-content");
-      if (scrollContainer && contentEl) {
-        if (typeof scrollContainer.scrollTo === "function") {
-          scrollContainer.scrollTo({
-            top: contentEl.offsetTop,
-            behavior: "instant",
-          });
-        } else {
-          scrollContainer.scrollTop = contentEl.offsetTop;
-        }
-      }
+    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+    if (typeof dictPanel?.scrollTo === "function") {
+      dictPanel.scrollTo({ top: 0, behavior: "instant" });
+    } else if (dictPanel) {
+      dictPanel.scrollTop = 0;
+    }
+    const notesView = this.querySelector<HTMLElement>(".reader-panel-notes");
+    if (typeof notesView?.scrollTo === "function") {
+      notesView.scrollTo({ top: 0, behavior: "instant" });
+    } else if (notesView) {
+      notesView.scrollTop = 0;
     }
   }
 
@@ -838,6 +826,7 @@ export class MorcusReaderView extends BaseElement {
       },
       onMinimize: () => {
         this.updateSheetLabel(true);
+        this.resetDictScroll();
       },
       onRestore: (dvh) => {
         this.preferredDrawerDvh = dvh;

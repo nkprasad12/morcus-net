@@ -406,11 +406,15 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       navEntry instanceof PerformanceNavigationTiming &&
       navEntry.type === "back_forward";
 
+    const currentParams = new URLSearchParams(window.location.search);
+    const isEmbedded = currentParams.get("embedded") === "1";
+
     if (currentQuery && !hasHash && !isBackForward && this.resultsElement) {
       requestAnimationFrame(() => {
         this.scrollToResults("instant");
       });
     } else if (
+      !isEmbedded &&
       !currentQuery &&
       this.inputElement &&
       document.activeElement === document.body
