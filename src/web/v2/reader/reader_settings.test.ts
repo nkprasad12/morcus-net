@@ -9,13 +9,26 @@ import {
   MIN_READER_SCALE,
   MorcusReaderSettings,
   READER_SETTINGS_KEY,
+  getWorkMacra,
+  macronStorageKey,
   parseReaderPreferences,
   readerSettingsStore,
+  removeWorkMacra,
+  setWorkMacra,
 } from "@/web/v2/reader/reader_settings.client";
 
 describe("Reader preferences validation & schema", () => {
   beforeEach(() => {
     localStorage.clear();
+  });
+
+  describe("macronStorageKey", () => {
+    it("generates exact V1-compatible storage keys", () => {
+      expect(macronStorageKey("dbg")).toBe("macronButton-dbg");
+      expect(macronStorageKey("phi0690.phi003.perseus-lat2")).toBe(
+        "macronButton-phi0690.phi003.perseus-lat2"
+      );
+    });
   });
 
   it("returns default preferences on null, empty string, or invalid JSON", () => {
@@ -36,12 +49,32 @@ describe("Reader preferences validation & schema", () => {
     const valid = {
       readerScale: 120,
       dictScale: 90,
-      showMacra: false,
       showGutter: false,
       fontFamily: "sans" as const,
       lineHeight: "compact" as const,
     };
-    expect(parseReaderPreferences(JSON.stringify(valid))).toEqual(valid);
+    expect(parseReaderPreferences(JSON.stringify(valid))).toEqual({
+      ...valid,
+      showMacra: DEFAULT_READER_PREFS.showMacra,
+    });
+  });
+
+  it("ignores showMacra in global settings JSON because macra is scoped per work", () => {
+    const raw = JSON.stringify({
+      readerScale: 110,
+      showMacra: false,
+    });
+    expect(parseReaderPreferences(raw).showMacra).toBe(true);
+  });
+
+  it("strips showMacra when persisting readerSettingsStore to localStorage", () => {
+    readerSettingsStore.set({
+      ...DEFAULT_READER_PREFS,
+      showMacra: false,
+    });
+    const stored = JSON.parse(localStorage.getItem(READER_SETTINGS_KEY)!);
+    expect(stored.showMacra).toBeUndefined();
+    expect(stored.readerScale).toBe(100);
   });
 
   it("partially parses valid fields and falls back to defaults for missing ones", () => {
@@ -86,6 +119,44 @@ describe("Reader preferences validation & schema", () => {
   });
 });
 
+describe("per-work macra storage helpers", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("returns default showMacra (true) when no per-work preference is set or workId is null", () => {
+    expect(getWorkMacra("vergil/aeneid")).toBe(true);
+    expect(getWorkMacra(null)).toBe(true);
+    expect(getWorkMacra(undefined)).toBe(true);
+  });
+
+  it("persists per-work macra preference to macronButton-${workId}", () => {
+    setWorkMacra("vergil/aeneid", false);
+    expect(localStorage.getItem("macronButton-vergil/aeneid")).toBe("false");
+    expect(getWorkMacra("vergil/aeneid")).toBe(false);
+
+    // Other works remain unaffected (defaults to true)
+    expect(getWorkMacra("ovid/amores")).toBe(true);
+  });
+
+  it("reads V1-format string boolean values seamlessly", () => {
+    localStorage.setItem("macronButton-caesar/dbg", "false");
+    expect(getWorkMacra("caesar/dbg")).toBe(false);
+
+    localStorage.setItem("macronButton-catullus", "true");
+    expect(getWorkMacra("catullus")).toBe(true);
+  });
+
+  it("removes per-work macra override and restores default (true)", () => {
+    setWorkMacra("vergil/aeneid", false);
+    expect(getWorkMacra("vergil/aeneid")).toBe(false);
+
+    removeWorkMacra("vergil/aeneid");
+    expect(localStorage.getItem("macronButton-vergil/aeneid")).toBeNull();
+    expect(getWorkMacra("vergil/aeneid")).toBe(true);
+  });
+});
+
 describe("MorcusReaderSettings custom element", () => {
   let container: HTMLDivElement;
 
@@ -100,7 +171,7 @@ describe("MorcusReaderSettings custom element", () => {
     document.body.innerHTML = "";
   });
 
-  function createSettingsElement(): {
+  function createSettingsElement(attrs: { workId?: string } = {}): {
     el: MorcusReaderSettings;
     dialog: HTMLDialogElement;
     triggerBtn: HTMLButtonElement;
@@ -116,9 +187,10 @@ describe("MorcusReaderSettings custom element", () => {
     lineHeightSelect: HTMLSelectElement;
     resetBtn: HTMLButtonElement;
   } {
+    const workAttr = attrs.workId ? ` data-work="${attrs.workId}"` : "";
     container.innerHTML = `
       <button type="button" id="reader-settings-btn">Settings</button>
-      <morcus-reader-settings>
+      <morcus-reader-settings${workAttr}>
         <dialog class="dialog reader-settings-dialog" id="reader-settings-dialog">
           <button type="button" id="reader-size-dec">-</button>
           <span id="reader-size-label">100%</span>
@@ -206,12 +278,12 @@ describe("MorcusReaderSettings custom element", () => {
       JSON.stringify({
         readerScale: 120,
         dictScale: 90,
-        showMacra: false,
         showGutter: false,
         fontFamily: "sans",
         lineHeight: "compact",
       })
     );
+    setWorkMacra("phi0690", false);
 
     const {
       readerSizeLabel,
@@ -220,7 +292,7 @@ describe("MorcusReaderSettings custom element", () => {
       toggleGutter,
       fontSelect,
       lineHeightSelect,
-    } = createSettingsElement();
+    } = createSettingsElement({ workId: "phi0690" });
 
     expect(readerSizeLabel.textContent).toBe("120%");
     expect(dictSizeLabel.textContent).toBe("90%");
@@ -308,7 +380,9 @@ describe("MorcusReaderSettings custom element", () => {
   });
 
   test("toggles macra and gutter update store and dispatch events", () => {
-    const { el, toggleMacra, toggleGutter } = createSettingsElement();
+    const { el, toggleMacra, toggleGutter } = createSettingsElement({
+      workId: "phi0690",
+    });
 
     const changeEvents: unknown[] = [];
     el.addEventListener("reader-settings-change", (e: Event) => {
@@ -317,7 +391,7 @@ describe("MorcusReaderSettings custom element", () => {
 
     toggleMacra.checked = false;
     toggleMacra.dispatchEvent(new Event("change"));
-    expect(readerSettingsStore.get().showMacra).toBe(false);
+    expect(getWorkMacra("phi0690")).toBe(false);
 
     toggleGutter.checked = false;
     toggleGutter.dispatchEvent(new Event("change"));
@@ -365,5 +439,59 @@ describe("MorcusReaderSettings custom element", () => {
 
     triggerBtn.click();
     expect(showModalSpy).toHaveBeenCalled();
+  });
+
+  test("scopes macra toggle to workId and persists to macronButton-${workId}", () => {
+    const { el, toggleMacra } = createSettingsElement({
+      workId: "phi0690.phi003.perseus-lat2",
+    });
+
+    expect(el.getWorkId()).toBe("phi0690.phi003.perseus-lat2");
+    expect(toggleMacra.checked).toBe(true);
+
+    // Toggle off
+    toggleMacra.checked = false;
+    toggleMacra.dispatchEvent(new Event("change"));
+
+    expect(
+      localStorage.getItem("macronButton-phi0690.phi003.perseus-lat2")
+    ).toBe("false");
+    expect(getWorkMacra("phi0690.phi003.perseus-lat2")).toBe(false);
+
+    // Other works unaffected
+    expect(getWorkMacra("other-work")).toBe(true);
+  });
+
+  test("reset button clears per-work macra preference in localStorage", () => {
+    setWorkMacra("vergil/aeneid", false);
+    expect(localStorage.getItem("macronButton-vergil/aeneid")).toBe("false");
+
+    const { toggleMacra, resetBtn } = createSettingsElement({
+      workId: "vergil/aeneid",
+    });
+
+    expect(toggleMacra.checked).toBe(false);
+
+    resetBtn.click();
+    expect(toggleMacra.checked).toBe(true);
+    expect(localStorage.getItem("macronButton-vergil/aeneid")).toBeNull();
+    expect(getWorkMacra("vergil/aeneid")).toBe(true);
+  });
+
+  test("inherits workId from parent morcus-reader-view", () => {
+    container.innerHTML = `
+      <morcus-reader-view data-work="parent-work">
+        <morcus-reader-settings>
+          <dialog class="dialog reader-settings-dialog">
+            <input type="checkbox" id="toggle-macra" checked />
+          </dialog>
+        </morcus-reader-settings>
+      </morcus-reader-view>
+    `;
+
+    const el = container.querySelector<MorcusReaderSettings>(
+      "morcus-reader-settings"
+    )!;
+    expect(el.getWorkId()).toBe("parent-work");
   });
 });

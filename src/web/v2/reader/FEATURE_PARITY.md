@@ -21,8 +21,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 | **External Content Reader**       | Paste text or scrape a URL, then read it with full dictionary support                            | No equivalent route or component                                                            | ❌ **Missing in V2**   |
 | **Saved Reading Position**        | `LibrarySavedSpot` persists last section per work; library offers resume                         | Bi-directional `LIBRARY_SPOTS` persistence in reader + corner resume badge on library cards | ✅ **Completed in V2** |
 | **Swipe / Tap Page Navigation**   | Touch swipe paging with a progress overlay (`SwipeFeedback`)                                     | Arrows, `[` / `]` shortcuts, and footer continuation cards only                             | ❌ **Missing in V2**   |
-| **Work Attribution / Provenance** | Persistent `Attribution` sidebar tab (`WorkInfo`, `SourceRefInfo`)                               | `<dialog>` modal opened only via JS; unreachable with no JS and absent from print           | ⚠️ **Degraded in V2**  |
-| **Per-Work Macra Preference**     | Stored per work (`macronButton-${workId}`)                                                       | Single global `showMacra` in `morcus_reader_settings`                                       | ⚠️ **Degraded in V2**  |
+| **Per-Work Macra Preference**     | Stored per work (`macronButton-${workId}`)                                                       | Scoped per work via `macronButton-${workId}`                                                | ✅ **Completed in V2** |
 | **Translation Presentation**      | Independently scrollable `Translation` sidebar tab                                               | Two-column parallel view, linkable via `?view=parallel`; columns share one scroll           | ❓ **Open Question**   |
 | **Outline / Table of Contents**   | `Outline` sidebar tab (`WorkNavigationSection`)                                                  | Anchored TOC drawer with live filter (`ReaderTocController`), `:target` No-JS fallback      | ✅ **Completed in V2** |
 | **Embedded Dictionary**           | Dictionary sidebar tab                                                                           | Resizable split panel (desktop) / draggable bottom drawer (mobile) with embedded iframe     | ✅ **Completed in V2** |
@@ -34,7 +33,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 2.1. Critical Apparatus Notes
 
-**Shipped.** The note bodies now reach the page, and the markers that carry them are links rather than dead controls.
+Shipped. The note bodies now reach the page, and the markers that carry them are links rather than dead controls.
 
 - **V1 (`reader.tsx:L1141-1166`)**: `TextNote` reads the `noteId` attribute, looks up `work.notes[i]`, and renders the note body in a toggleable tooltip via `renderTooltip`.
 - **V2**: notes travel the whole pipeline:
@@ -95,8 +94,15 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 2.6. Per-Work Macra Preference
 
-- **V1 (`reader.tsx:L627-648`)**: `MacronButton` persists per work under `macronButton-${workId}`, so macra can be shown for an unmacronized edition and hidden for a macronized one independently.
-- **V2 (`reader_settings.client.ts`)**: ⚠️ **Degraded**. `showMacra` is a single global flag. Note that `hasMacra` already exists on `V2PreprocessedWork` (true only for `hypotactic` texts), so V2 has the metadata needed to scope or auto-default this per work.
+**Shipped.** V2 now stores macra visibility per work matching V1's `macronButton-${workId}` localStorage schema seamlessly.
+
+- **V1 (`reader.tsx:L627-648`)**: `MacronButton` persists per work under `macronButton-${workId}` (wrapped in `{ w: boolean }` RPC envelope, default: `off` / `false`).
+- **V2 (`reader_settings.client.ts`, `reader_view.client.ts`, `storage.client.ts`)**:
+  - `storage.getBoolean` and `setBoolean` support both raw string booleans and legacy V1 `{ w: boolean }` envelopes for seamless cross-version compatibility.
+  - `getWorkMacra(workId)`, `setWorkMacra(workId, show)`, and `removeWorkMacra(workId)` directly access `macronButton-${workId}`.
+  - `showMacra` is **not** stored in global `morcus_reader_settings` (which strictly tracks global layout/font preferences), eliminating dead or cross-contaminating state.
+  - **Intentional default flip**: V1 defaulted macra to `off` (`false`). V2 defaults to `on` (`true`) to match server-side rendered text and avoid a jarring Flash of Modified Content on client hydration.
+  - Reset Defaults cleans up the per-work override in storage and restores defaults.
 
 ### 2.7. Text Rendition & Verse Layout
 
@@ -201,6 +207,7 @@ This confirms both of your observations and adds a third:
 - ~~**Render note markers as links, not dead buttons**~~ — shipped; 0 dead controls remain (§2.1).
 - ~~**Plumb note bodies into V2**~~ — shipped via page-scoped `notesHtml` (§2.1).
 - ~~**Saved reading position**~~ — shipped; bi-directional V1 `LIBRARY_SPOTS` compatibility, reader auto-save on connect/turn/section anchor click, `#sec-*` jump anchoring, and progressive corner badge with direct jump in `/v2/library` (§2.3).
+- ~~**Per-work macra scoping**~~ — shipped; scoped per work via `macronButton-${workId}` (§2.6).
 
 ### High Priority (Correctness / Dead Controls)
 
@@ -210,7 +217,7 @@ This confirms both of your observations and adds a third:
 
 2. **Notes panel as the JS enhancement** — the footnote baseline is in place (§2.1), so the remaining work is the synchronized Notes tab: marker click reveals the note in the side panel without losing the reading position, with the footnote list staying as the No-JS and print path. This is the first real content for the panel model in [`UX_STRUCTURE.md`](UX_STRUCTURE.md) §6, and should be designed with the panel-arbitration question there, not ahead of it.
 3. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
-4. **Per-work macra scoping** — key the preference by `workId`, or auto-default from the existing `hasMacra` flag.
+4. **Hide or disable macra toggle on non-macronized editions** — when an edition lacks vowel macra in source data (e.g. Perseus editions where `hasMacra === false`), hide or disable the macra checkbox in the settings dialog (with an explanatory notice) to avoid exposing a non-functional toggle.
 
 ### Low Priority (Larger Scope)
 

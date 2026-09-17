@@ -12,11 +12,13 @@ import {
   setHtml,
   settingsStore,
   setupModalDialog,
+  storage,
   tokenizeTargets,
 } from "@/web/v2/core/index.client";
 import { removeMacrons } from "@/common/text_cleaning";
 import {
   DEFAULT_READER_PREFS,
+  getWorkMacra,
   parseReaderPreferences,
   type ReaderFontFamily,
   type ReaderLineHeight,
@@ -91,6 +93,10 @@ export class MorcusReaderView extends BaseElement {
 
   protected override onConnect() {
     this.currentPrefs = readerSettingsStore.get();
+    const workId = this.dataset.work;
+    if (workId) {
+      this.currentPrefs.showMacra = getWorkMacra(workId);
+    }
     this.saveCurrentSpot();
     this.enhancePassage();
     this.applyPreferences(this.currentPrefs);
@@ -843,21 +849,12 @@ export class MorcusReaderView extends BaseElement {
     const setExpanded = (expanded: boolean) => {
       expandBtn.setAttribute("aria-expanded", String(expanded));
       expandedRow.hidden = !expanded;
-      try {
-        localStorage.setItem("morcus_sticky_expanded", String(expanded));
-      } catch {
-        // Ignore storage errors
-      }
+      storage.setBoolean("morcus_sticky_expanded", expanded);
     };
 
     // Restore preference if saved
-    try {
-      const saved = localStorage.getItem("morcus_sticky_expanded");
-      if (saved === "true") {
-        setExpanded(true);
-      }
-    } catch {
-      // Ignore storage errors
+    if (storage.getBoolean("morcus_sticky_expanded", false)) {
+      setExpanded(true);
     }
 
     this.listen(expandBtn, "click", () => {
