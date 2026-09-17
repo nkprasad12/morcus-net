@@ -177,15 +177,15 @@ describe("UI V2 Bundle Budget", () => {
     expect(formatted).toContain("JS:");
     expect(formatted).toContain("CSS:");
     expect(formatted).toContain("Combined:");
-    expect(formatted).toContain("< 90.0 kB raw / < 26.0 kB gzip");
-    expect(formatted).toContain("< 115.0 kB raw / < 20.0 kB gzip");
-    expect(formatted).toContain("< 200.0 kB raw / < 45.0 kB gzip");
+    expect(formatted).toContain("< 115.0 kB raw / < 32.0 kB gzip");
+    expect(formatted).toContain("< 125.0 kB raw / < 22.0 kB gzip");
+    expect(formatted).toContain("< 235.0 kB raw / < 52.0 kB gzip");
   });
 
   test("accepts realistic production bundle sizes corresponding to current baseline", () => {
-    // Current baseline is ~72 kB raw / ~20 kB gzip JS and ~94 kB raw / ~15 kB gzip CSS
-    const jsContent = "const x = 1;\n".repeat(4500); // ~72 kB
-    const cssContent = ".card { border: 1px solid #ccc; }\n".repeat(2500); // ~92 kB
+    // Current baseline is ~97 kB raw / ~27 kB gzip JS and ~105 kB raw / ~17 kB gzip CSS
+    const jsContent = "const x = 1;\n".repeat(6000); // ~96 kB
+    const cssContent = ".card { border: 1px solid #ccc; }\n".repeat(2800); // ~103 kB
 
     fs.writeFileSync(path.join(tmpDir, "v2_bundle.js"), jsContent);
     fs.writeFileSync(path.join(tmpDir, "v2.css"), cssContent);

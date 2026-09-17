@@ -64,7 +64,7 @@ describe("ReaderPanelController", () => {
   });
 
   describe("when page has NO notes", () => {
-    it("does not construct tab strip or move anything", () => {
+    it("keeps tab strip hidden and inactive", () => {
       container = createFixture(false);
       const controller = new ReaderPanelController({ root: container });
 
@@ -72,14 +72,15 @@ describe("ReaderPanelController", () => {
       expect(controller.noteCount).toBe(0);
       expect(controller.activeTab).toBe("dict");
 
-      // No tab strip in DOM
-      expect(container.querySelector(".reader-panel-tabs")).toBeNull();
-      expect(container.querySelector(".reader-notes-stub")).toBeNull();
-      expect(container.querySelector("#panel-view-notes")).toBeNull();
+      // Tab strip is hidden in DOM
+      const tabs = container.querySelector<HTMLElement>(".reader-panel-tabs");
+      expect(tabs).not.toBeNull();
+      expect(tabs?.hidden).toBe(true);
+      expect(container.querySelector(".has-companion-tabs")).toBeNull();
 
-      // Iframe remains unchanged
+      // Iframe container is ready in views
       const iframeContainer = container.querySelector(".dict-iframe-container");
-      expect(iframeContainer?.getAttribute("role")).toBeNull();
+      expect(iframeContainer?.getAttribute("role")).toBe("tabpanel");
 
       // Calling setTab or showNote does nothing
       controller.setTab("notes");
@@ -283,6 +284,56 @@ describe("ReaderPanelController", () => {
       expect(iframeContainer?.classList.contains("reader-panel-view")).toBe(
         false
       );
+    });
+
+    it("adopts new notes dynamically and updates tab state", () => {
+      // 1. Start with note-less container
+      const emptyContainer = createFixture(false);
+      const emptyController = new ReaderPanelController({
+        root: emptyContainer,
+      });
+      expect(emptyController.hasNotes).toBe(false);
+      expect(
+        emptyContainer.querySelector<HTMLElement>(".reader-panel-tabs")?.hidden
+      ).toBe(true);
+
+      // 2. Adopt new notes
+      const newNotesEl = document.createElement("aside");
+      newNotesEl.className = "reader-notes";
+      newNotesEl.innerHTML = `
+        <ol class="reader-notes-list">
+          <li class="reader-note" id="note-dyn1"><div class="reader-note-body">Dynamic note</div></li>
+        </ol>
+      `;
+      emptyController.adoptNotes(newNotesEl);
+
+      expect(emptyController.hasNotes).toBe(true);
+      expect(emptyController.noteCount).toBe(1);
+      expect(
+        emptyContainer.querySelector<HTMLElement>(".reader-panel-tabs")?.hidden
+      ).toBe(false);
+      expect(
+        emptyContainer.querySelector(".has-companion-tabs")
+      ).not.toBeNull();
+      expect(
+        emptyContainer.querySelector("#panel-view-notes #note-dyn1")
+      ).not.toBeNull();
+
+      // 3. Switch to notes tab, then adopt null (simulating page turn to a chapter with no notes)
+      emptyController.setTab("notes");
+      expect(emptyController.activeTab).toBe("notes");
+
+      emptyController.adoptNotes(null);
+      expect(emptyController.hasNotes).toBe(false);
+      expect(emptyController.noteCount).toBe(0);
+      expect(emptyController.activeTab).toBe("dict"); // fell back to dict!
+      expect(
+        emptyContainer.querySelector<HTMLElement>(".reader-panel-tabs")?.hidden
+      ).toBe(true);
+      expect(emptyContainer.querySelector(".has-companion-tabs")).toBeNull();
+      expect(
+        emptyContainer.querySelector("#panel-view-notes #note-dyn1")
+      ).toBeNull();
     });
   });
 });

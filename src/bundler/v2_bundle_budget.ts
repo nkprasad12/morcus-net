@@ -14,22 +14,22 @@ export interface V2BundleBudget {
 /**
  * Production bundle size budget for UI V2 assets (minified).
  *
- * Current baseline (2026-09-14):
- *   v2_bundle.js: 75.8 kB raw / 21.6 kB gzip
- *   v2.css:       94.6 kB raw / 15.7 kB gzip
- *   Combined:    170.4 kB raw / 37.3 kB gzip
+ * Current baseline (2026-09-17):
+ *   v2_bundle.js:  97.1 kB raw / 26.7 kB gzip
+ *   v2.css:       105.4 kB raw / 17.2 kB gzip
+ *   Combined:     202.5 kB raw / 43.9 kB gzip
  *
  * Ceilings provide ~15-20% headroom to absorb routine fixes and features without
  * false positives, while hard-blocking major regressions or accidental imports
  * (e.g. un-tree-shaken heavy modules).
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
-  maxJsRawBytes: 90 * 1024,
-  maxJsGzipBytes: 26 * 1024,
-  maxCssRawBytes: 115 * 1024,
-  maxCssGzipBytes: 20 * 1024,
-  maxCombinedRawBytes: 200 * 1024,
-  maxCombinedGzipBytes: 45 * 1024,
+  maxJsRawBytes: 115 * 1024,
+  maxJsGzipBytes: 32 * 1024,
+  maxCssRawBytes: 125 * 1024,
+  maxCssGzipBytes: 22 * 1024,
+  maxCombinedRawBytes: 235 * 1024,
+  maxCombinedGzipBytes: 52 * 1024,
 };
 
 export interface V2AssetSizeInfo {

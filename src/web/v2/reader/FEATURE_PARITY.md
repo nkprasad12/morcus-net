@@ -221,13 +221,16 @@ This confirms both of your observations and adds a third:
 ### 2.10. Client-Side Page Navigation
 
 - **V1 (`reader.tsx:L179`, `L125-135`)**: the work was fetched **once** on mount into `useState`, and every page turn after that — arrows, TOC entries, `navigateToSection` — was an in-SPA state change routed through `router_v2`'s `nav.to`. No document reload, no refetch, and the dictionary sidebar's contents survived the turn.
-- **V2**: ❌ **Missing**. Every page turn is a full document load. The sticky bar arrows and continuation cards are plain `<a href>`, the TOC entries likewise, and there is no `fetchAndSwapPartial` call anywhere under `src/web/v2/reader/`.
-
-> [!WARNING] > [`README.md`](README.md) currently documents a "With JS: Partial Page Swap" branch in its request-lifecycle diagram, including an `X-Requested-With: fetch` round trip and a `history.pushState`. **That branch does not exist in the client.** The server half is real — [`reader_routes.server.ts`](reader_routes.server.ts) honours `isPartialRequest` and `renderReaderContentHtml` will happily return a fragment — but nothing ever asks it to.
-
-So the infrastructure is half-built already: the route serves partials, and `fetchAndSwapPartial` exists in [`core/partial.client.ts`](../core/partial.client.ts) and is used elsewhere in V2. What is missing is the reader-side controller that intercepts the navigation links, swaps `<morcus-reader-view>`'s contents, and re-runs the enhancement passes.
-
-The cost is not the fetch; it is that a swap invalidates everything hydrated against the old passage. Anything holding a node reference across the swap has to be re-established: tokenization (`enhancePassage`), the per-work macra pass, saved-spot recording, the TOC's active-page marker, and — once it lands — whatever the companion panel is holding. That argues for doing the swap **after** the panel work rather than before it, so there is one re-hydration contract to write instead of two.
+- **V2**: ✅ **Shipped**. Restores fast in-place page navigation with progressive enhancement:
+  - Clicks on pager arrows (`#pager-prev`, `#pager-next`), continuation cards, and TOC links are intercepted by `reader_view.client.ts`. External links, modified clicks (`ctrl`/`meta`/`shift`/`alt`), disabled arrows, same-page hashes, and view mode toggles pass through unmodified.
+  - Browser back/forward navigation (`popstate`) is intercepted and synchronized through `QueryParamSync` (`onNavigate` / `updatePath`).
+  - Partial requests fetch only the `.reader-text-card` fragment (`X-Requested-With: fetch`), keeping payload sizes minimal.
+  - Swaps DOM nodes via `fetchAndSwapPartial`, with a graceful 200ms ease-in opacity ramp affordance on `.reader-text-panel`.
+  - Sticky bar controls (`#pager-prev`, `#pager-next`, jump input, and view toggles) are patched in place without DOM re-creation, preserving focus and input states.
+  - Table of Contents updates active item markers and auto-expands parent section `<details>` trees.
+  - Embedded Notes are dynamically adopted (`adoptNotes`), recalculating count badges and gracefully defaulting to the Dictionary tab if a new page has no footnotes.
+  - Full passage re-hydration occurs seamlessly: tokenization (`enhancePassage`), typography preferences, saved spots recording, and scroll restoration (top of passage or preserved scroll position on popstate).
+  - Mobile dictionary/notes drawer is automatically minimized on page turn to let passage text shine.
 
 ---
 
@@ -243,6 +246,8 @@ The cost is not the fetch; it is that a swap invalidates everything hydrated aga
 - ~~**Omit macra toggle on non-macronized editions**~~ — shipped; server omits the toggle row when `work.hasMacra === false`, avoiding exposing a dead toggle on the ~80% of works without macra (§2.6).
 
 - ~~**Omit translator credit from passage sections**~~ — shipped; previously emitted `<span class="reader-trans-author">` on every single section (20,296 times in Livy). Omitted entirely from the passage canvas to eliminate repetitive DOM nodes and visual clutter; translator attribution is housed cleanly in the Info modal / bibliographical metadata (§2.9).
+- ~~**Notes panel as the JS enhancement**~~ — shipped; footnote marker clicks reveal and scroll to notes in the synchronized Notes tab of the companion panel / drawer, with dynamic note adoption across page turns (§2.1).
+- ~~**Client-side page navigation**~~ — shipped; in-place partial swaps with progressive enhancement, sticky bar patching, TOC active synchronization, dynamic note adoption, and scroll restoration (§2.10).
 
 ### High Priority (Correctness / Dead Controls)
 
@@ -250,18 +255,16 @@ The cost is not the fetch; it is that a swap invalidates everything hydrated aga
 
 ### Medium Priority (Feature Restoration)
 
-2. **Notes panel as the JS enhancement** — the footnote baseline is in place (§2.1), so the remaining work is the synchronized Notes tab: marker click reveals the note in the side panel without losing the reading position. Under JS the list is **relocated** into the panel rather than duplicated, so the in-flow footnotes remain the No-JS path only. This is the first real content for the panel model in [`UX_STRUCTURE.md`](UX_STRUCTURE.md) §6.
-3. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
+2. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
 
 ### Low Priority (Larger Scope)
 
-6. **Swipe / tap navigation** — requires touch gesture handling; `DrawerController` already contains comparable drag/velocity logic to borrow from.
-7. **External content reader** — the largest missing surface, and effectively a new vertical slice rather than a port.
-8. **Client-side page navigation (§2.10)** — restore SPA-feel page turns by intercepting the pager, TOC, and continuation links and swapping the passage via the partial route that `reader_routes.server.ts` already serves. Sequence this **after** the notes panel: a swap invalidates every hydration pass held against the old passage, and doing it once with the panel in place means writing one re-hydration contract rather than two. Fix the `README.md` lifecycle diagram, which documents this as though it already exists.
+3. **Swipe / tap navigation** — requires touch gesture handling; `DrawerController` already contains comparable drag/velocity logic to borrow from.
+4. **External content reader** — the largest missing surface, and effectively a new vertical slice rather than a port.
 
 ### Cleanups (independent of any decision above)
 
-8. **Guard the translation join** — `translationRowsByDotId.get(dotId)` fails silently to an empty cell when citation granularities differ; fall back to the nearest ancestor ID, or at minimum surface the mismatch at build time (§2.9).
+5. **Guard the translation join** — `translationRowsByDotId.get(dotId)` fails silently to an empty cell when citation granularities differ; fall back to the nearest ancestor ID, or at minimum surface the mismatch at build time (§2.9).
 
 ### Blocked on a Product Decision
 

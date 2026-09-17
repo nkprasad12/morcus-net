@@ -10,6 +10,10 @@
   padding-bottom: var(--space-2);
 }
 
+.reader-panel-tabs[hidden] {
+  display: none;
+}
+
 .reader-panel-tab {
   appearance: none;
   background: transparent;

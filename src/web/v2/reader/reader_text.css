@@ -6,6 +6,13 @@
 
 .reader-text-panel {
   min-width: 0;
+  transition: opacity 200ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-text-panel {
+    transition: none;
+  }
 }
 
 .reader-text-card {
@@ -321,7 +328,6 @@ span.lat-word.word-active {
   padding-left: var(--space-6);
   border-left: 2px solid var(--border);
 }
-
 
 /* ==========================================================================
    5. Text Renditions (verse lines, indentation, emphasis)

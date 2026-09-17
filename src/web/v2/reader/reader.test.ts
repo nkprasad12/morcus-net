@@ -442,11 +442,11 @@ describe("decomposed_reader_renderers", () => {
 
       // Page 0 should not be active
       expect(itemsHtml).toContain(
-        'href="/v2/reader/caesar/de_bello_gallico/1.1"\n           class="reader-toc-item "'
+        'href="/v2/reader/caesar/de_bello_gallico/1.1"\n           class="reader-toc-item "\n           data-page-id="1.1"'
       );
       // Page 1 should be active
       expect(itemsHtml).toContain(
-        'href="/v2/reader/caesar/de_bello_gallico/1.2"\n           class="reader-toc-item active"\n           aria-current="page"'
+        'href="/v2/reader/caesar/de_bello_gallico/1.2"\n           class="reader-toc-item active"\n           data-page-id="1.2"\n           aria-current="page"'
       );
     });
   });
