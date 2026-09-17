@@ -143,7 +143,6 @@ export const MOCK_SALLUST_WORK: V2PreprocessedWork = {
               <div class="reader-passage" data-tokenize-target="true">Omnis homines qui sese student praestare ceteris animalibus...</div>
             </div>
             <div class="reader-passage-col passage-english">
-              <span class="reader-trans-author">John Selby Watson:</span>
               <div class="reader-passage">It becomes all men, who desire to excel other animals...</div>
             </div>
           </div>

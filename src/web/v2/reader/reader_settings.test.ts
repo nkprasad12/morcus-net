@@ -494,4 +494,38 @@ describe("MorcusReaderSettings custom element", () => {
     )!;
     expect(el.getWorkId()).toBe("parent-work");
   });
+
+  describe("non-macronized editions (omitted toggle-macra)", () => {
+    test("mounts and functions cleanly when toggle-macra is omitted from DOM", () => {
+      container.innerHTML = `
+        <button type="button" id="reader-settings-btn">Settings</button>
+        <morcus-reader-settings data-work="caesar_dbg">
+          <dialog class="dialog reader-settings-dialog" id="reader-settings-dialog">
+            <button type="button" id="reader-size-dec">-</button>
+            <span id="reader-size-label">100%</span>
+            <button type="button" id="reader-size-inc">+</button>
+            <input type="checkbox" id="toggle-gutter" checked />
+            <button type="button" id="reader-settings-reset-btn">Reset</button>
+          </dialog>
+        </morcus-reader-settings>
+      `;
+
+      const el = container.querySelector<MorcusReaderSettings>(
+        "morcus-reader-settings"
+      )!;
+      const resetBtn = container.querySelector<HTMLButtonElement>(
+        "#reader-settings-reset-btn"
+      )!;
+      const readerSizeInc =
+        container.querySelector<HTMLButtonElement>("#reader-size-inc")!;
+
+      // Interactions on other controls work normally
+      readerSizeInc.click();
+      expect(el.getPreferences().readerScale).toBe(110);
+
+      // Reset works cleanly
+      resetBtn.click();
+      expect(el.getPreferences().readerScale).toBe(100);
+    });
+  });
 });

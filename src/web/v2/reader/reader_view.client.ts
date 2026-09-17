@@ -748,6 +748,7 @@ export class MorcusReaderView extends BaseElement {
 
   // --- Reader Preferences & Canvas Styling ---
   private applyMacra(show: boolean) {
+    if (this.dataset.hasMacra === "false") return;
     const words = this.$$<HTMLElement>(".reader-passage .lat-word");
     for (const w of words) {
       if (!w.hasAttribute("data-original-text")) {
