@@ -169,6 +169,7 @@ export class MorcusReaderView extends BaseElement {
     this.panelController = new ReaderPanelController({
       root: this,
       onTabChange: () => {
+        this.activatePanelLayout();
         this.updateSheetLabel(false);
       },
     });
@@ -818,7 +819,9 @@ export class MorcusReaderView extends BaseElement {
       filter: (e) => {
         if (
           e.target instanceof Element &&
-          e.target.closest("a.reader-sheet-close, a.drawer-close")
+          e.target.closest(
+            "a.reader-sheet-close, a.drawer-close, .reader-panel-tab, [role='tab']"
+          )
         ) {
           return false;
         }

@@ -144,8 +144,24 @@ a.reader-note-ref.marker-active {
 }
 
 @media (max-width: 640px) {
-  .reader-panel-tabs {
-    padding: 0 var(--space-4) var(--space-2);
+  .has-companion-tabs .reader-sheet-teaser {
+    justify-content: flex-start;
+    padding-right: var(--space-8);
+  }
+
+  .has-companion-tabs .reader-sheet-label {
+    display: none;
+  }
+
+  .reader-sheet-bar .reader-panel-tabs {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding: 0;
+  }
+
+  .reader-sheet-bar .reader-panel-tab {
+    padding: var(--space-1) var(--space-2);
+    margin-bottom: 0;
   }
 
   .reader-panel-notes {
@@ -153,5 +169,46 @@ a.reader-note-ref.marker-active {
     border: none;
     box-shadow: none;
     padding: var(--space-4) var(--space-5) var(--space-8);
+  }
+}
+
+@media (min-width: 641px) {
+  .has-companion-tabs .reader-sheet-bar {
+    display: block;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    cursor: default;
+    touch-action: auto;
+    user-select: auto;
+    box-shadow: none;
+  }
+
+  .reader-dict-panel:not(.has-companion-tabs) .reader-sheet-bar {
+    display: none;
+  }
+
+  .has-companion-tabs .reader-sheet-handle,
+  .has-companion-tabs .reader-sheet-close {
+    display: none;
+  }
+
+  .has-companion-tabs .reader-sheet-teaser {
+    display: block;
+    padding: 0;
+    min-height: 0;
+  }
+
+  .has-companion-tabs .reader-sheet-label {
+    display: none;
+  }
+
+  .has-companion-tabs .reader-panel-tabs {
+    display: flex;
+    margin-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: var(--space-2);
   }
 }

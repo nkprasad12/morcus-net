@@ -166,9 +166,19 @@ export class ReaderPanelController {
     this.notesView = notesView;
     this.viewsContainer = views;
 
-    // Insert tabs and views into dict panel
+    // Insert tabs into sheet teaser bar (or dict panel) and views container
     const sheetBar = dictPanel.querySelector(".reader-sheet-bar");
-    if (sheetBar && sheetBar.nextSibling) {
+    const teaser = sheetBar?.querySelector(".reader-sheet-teaser");
+    if (sheetBar && teaser) {
+      dictPanel.classList.add("has-companion-tabs");
+      const closeBtn = teaser.querySelector(".reader-sheet-close");
+      if (closeBtn) {
+        teaser.insertBefore(tabs, closeBtn);
+      } else {
+        teaser.appendChild(tabs);
+      }
+      dictPanel.insertBefore(views, sheetBar.nextSibling);
+    } else if (sheetBar && sheetBar.nextSibling) {
       dictPanel.insertBefore(tabs, sheetBar.nextSibling);
       dictPanel.insertBefore(views, tabs.nextSibling);
     } else {
@@ -327,6 +337,7 @@ export class ReaderPanelController {
       );
     }
 
+    this.dictPanel?.classList.remove("has-companion-tabs");
     this.tabsContainer?.remove();
     this.viewsContainer?.remove();
   }
