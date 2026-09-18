@@ -75,10 +75,18 @@ describe("ReaderPanelController", () => {
     document.body.innerHTML = "";
   });
 
+  function connectController(
+    options: ConstructorParameters<typeof ReaderPanelController>[0]
+  ): ReaderPanelController {
+    const controller = new ReaderPanelController(options);
+    controller.connect();
+    return controller;
+  }
+
   describe("when page has NO notes", () => {
     it("keeps tab strip hidden and inactive", () => {
       container = createFixture(false);
-      const controller = new ReaderPanelController({ root: container });
+      const controller = connectController({ root: container });
 
       expect(controller.hasNotes).toBe(false);
       expect(controller.noteCount).toBe(0);
@@ -112,7 +120,7 @@ describe("ReaderPanelController", () => {
     beforeEach(() => {
       container = createFixture(true);
       tabChangeCalls = [];
-      controller = new ReaderPanelController({
+      controller = connectController({
         root: container,
         onTabChange: (tab) => tabChangeCalls.push(tab),
       });
@@ -301,7 +309,7 @@ describe("ReaderPanelController", () => {
     it("adopts new notes dynamically and updates tab state", () => {
       // 1. Start with note-less container
       const emptyContainer = createFixture(false);
-      const emptyController = new ReaderPanelController({
+      const emptyController = connectController({
         root: emptyContainer,
       });
       expect(emptyController.hasNotes).toBe(false);
@@ -346,6 +354,7 @@ describe("ReaderPanelController", () => {
       expect(
         emptyContainer.querySelector("#panel-view-notes #note-dyn1")
       ).toBeNull();
+      emptyController.dispose();
     });
   });
 
@@ -356,7 +365,7 @@ describe("ReaderPanelController", () => {
     beforeEach(() => {
       container = createFixture(true, true);
       tabChangeCalls = [];
-      controller = new ReaderPanelController({
+      controller = connectController({
         root: container,
         onTabChange: (tab) => tabChangeCalls.push(tab),
       });
@@ -529,7 +538,7 @@ describe("ReaderPanelController", () => {
   describe("when page HAS about but NO notes (2 tabs: Dict, About)", () => {
     it("renders Dict and About tabs with Notes tab hidden", () => {
       container = createFixture(false, true);
-      const controller = new ReaderPanelController({ root: container });
+      const controller = connectController({ root: container });
 
       expect(controller.hasNotes).toBe(false);
       expect(controller.hasAbout).toBe(true);
@@ -573,7 +582,7 @@ describe("ReaderPanelController", () => {
           </div>
         </div>
       `);
-      controller = new ReaderPanelController({
+      controller = connectController({
         root: container,
         hasTranslation: true,
         onLoadTranslation: loadTranslationMock,
@@ -657,13 +666,13 @@ describe("ReaderPanelController", () => {
       expect(loadTranslationMock).not.toHaveBeenCalled();
     });
 
-    it("handles error during onLoadTranslation with retry button", async () => {
+    it("handles error during onLoadTranslation with retry button and cleans up on dispose", async () => {
       const failingMock = jest
         .fn()
         .mockRejectedValueOnce(new Error("Network error"))
         .mockResolvedValueOnce("<div>Recovered!</div>");
       const errContainer = createFixture(true, true);
-      const errController = new ReaderPanelController({
+      const errController = connectController({
         root: errContainer,
         hasTranslation: true,
         onLoadTranslation: failingMock,
@@ -754,7 +763,7 @@ describe("ReaderPanelController", () => {
 
     it("highlights note inside translation tab without switching to notes tab", () => {
       const noLatinNotesContainer = createFixture(false, false);
-      const transController = new ReaderPanelController({
+      const transController = connectController({
         root: noLatinNotesContainer,
         hasTranslation: true,
       });
@@ -786,6 +795,74 @@ describe("ReaderPanelController", () => {
       transController.reset();
       expect(transNote.classList.contains("note-active")).toBe(false);
       transController.dispose();
+    });
+  });
+
+  describe("Step 5: Sink-driven onContentSwap and post-swap reconnect symmetry", () => {
+    it("automatically adopts notes/about via swapElementContent and restores them to the new live .reader-text-card across dispose/connect", () => {
+      const { swapElementContent } = jest.requireActual<
+        typeof import("@/web/v2/core/partial.client")
+      >("@/web/v2/core/partial.client");
+
+      container = createFixture(true, true);
+      const controller = connectController({ root: container });
+      controller.setTab("notes");
+      expect(controller.activeTab).toBe("notes");
+      expect(controller.noteCount).toBe(2);
+
+      // Swap .reader-text-panel with a new page containing 1 note and updated about section
+      const textPanel =
+        container.querySelector<HTMLElement>(".reader-text-panel")!;
+      swapElementContent(
+        textPanel,
+        `
+        <div class="reader-text-card">
+          <article class="reader-passage"><p>Page 2 text</p></article>
+          <aside class="reader-notes" id="reader-notes-p2">
+            <ol class="reader-notes-list">
+              <li class="reader-note" id="note-p2-1">
+                <div class="reader-note-body">Page 2 note</div>
+              </li>
+            </ol>
+          </aside>
+          <details class="reader-work-about" id="reader-work-about">
+            <summary class="reader-about-summary">About Page 2</summary>
+          </details>
+          <div class="card-footer">Page 2 Footer</div>
+        </div>
+        `
+      );
+
+      // Without calling adoptNotes manually, sink-driven onContentSwap adopted the new notes!
+      expect(controller.hasNotes).toBe(true);
+      expect(controller.noteCount).toBe(1);
+      expect(
+        container.querySelector("#panel-view-notes #note-p2-1")
+      ).not.toBeNull();
+      expect(controller.activeTab).toBe("notes");
+
+      // Disposing after the partial page swap restores the adopted nodes to the NEW live .reader-text-card
+      // rather than deleting them when viewsContainer is removed!
+      controller.dispose();
+      const newTextCard = container.querySelector(".reader-text-card")!;
+      expect(newTextCard.querySelector("#note-p2-1")).not.toBeNull();
+      expect(newTextCard.querySelector("#reader-work-about")).not.toBeNull();
+
+      // Reconnecting preserves _activeTab ("notes") and re-adopts the nodes from the new .reader-text-card!
+      controller.connect();
+      expect(controller.activeTab).toBe("notes");
+      expect(controller.hasNotes).toBe(true);
+      expect(controller.noteCount).toBe(1);
+      expect(
+        container.querySelector("#panel-view-notes #note-p2-1")
+      ).not.toBeNull();
+      expect(
+        container
+          .querySelector("#panel-tab-notes")
+          ?.getAttribute("aria-selected")
+      ).toBe("true");
+
+      controller.dispose();
     });
   });
 });

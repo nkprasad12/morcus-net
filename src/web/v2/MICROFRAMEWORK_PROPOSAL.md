@@ -9,6 +9,7 @@ This document proposes a focused, dependency-free evolution of UI V2's client-si
 UI V2 is an **SSR-first, Zero-JS Light DOM** architecture where the server (`*.server.ts`) renders the HTML structure, content updates swap server-rendered `SafeHtml` subtrees via `setHtml()` / `replaceWithHtml()` / `fetchAndSwapPartial()`, and client Custom Elements (`BaseElement`) act as behavioral islands.
 
 An empirical survey of our 41 `*.client.ts` modules revealed a clear pattern: **almost every defect in the client codebase today is a lifecycle/ownership, content-swap, or server↔client selector drift bug, whereas only one (`dict_settings.client.ts`) is a state-fan-out bug:**
+
 1. **Three dead client features caused by unverified server↔client selector removal**:
    - `#reader-breadcrumb-btn` ([`reader_toc.client.ts:132-140`](reader/reader_toc.client.ts)), `#reader-toc-back-btn` ([`L154-163`](reader/reader_toc.client.ts)), and `#reader-toc-filter` + `filter()` ([`L166-171`](reader/reader_toc.client.ts)) are bound by `ReaderTocController` and tested against hand-written fixtures in `reader_toc.test.ts`, **but are never rendered by any `*.server.ts` template** (`reader.test.ts:431-432` explicitly asserts the server omits the back button and filter).
    - Because `#reader-breadcrumb-btn` is never rendered, `ReaderTocController.open()`'s missing re-entrancy guard ([`reader_toc.client.ts:284-299`](reader/reader_toc.client.ts), which unconditionally adds `window` `resize` + `scroll` into `openDisposables` when `open()` is called directly) is currently a **latent defect** rather than reachable in production (`toggle()` guards via `isOpen()`).
@@ -18,6 +19,7 @@ An empirical survey of our 41 `*.client.ts` modules revealed a clear pattern: **
 5. **Detached DOM reference bug across partial page swaps**: `ReaderPanelController` caches ~15 DOM references in its constructor ([`L73-94`](reader/reader_panel.client.ts)), including `notesOriginalParent` and `aboutOriginalParent`. After `swapPage()` replaces the `.reader-text-panel` subtree underneath the still-connected `<morcus-reader-view>`, those cached parents are detached, causing `destroy()` to skip reinsertion and `viewsContainer.remove()` to delete the notes/about subtrees outright.
 
 ### Architectural Verdict
+
 - **Proceed immediately with Part 1 (`LifetimeScope` / `BaseController` / `addController` / `use`) and Part 2 (`AnchoredPopoverController`, Sink-Driven `onContentSwap`, & Selector Contract Tests).** Part 2's consolidation of the ~185-line popover block in `MorcusReaderSettings` (L176–362 of the 562-line file) and the ~160-line popover block in `ReaderTocController` (L186–345 of the 371-line file, after deleting dead breadcrumb/back/filter handlers) requires **only Part 1**, not a reactive signals engine.
 - **Defer Part 3 (Reactive Signals Engine)** until Parts 1 and 2 have landed. A custom ~90-line depth-sorted push scheduler glitches on dynamic conditional dependency graphs (`if (!open) return;`), so if reactivity is still desired after lifecycle hardening, we will choose between a **~25-line depth-1 `Observable<T>` (`this.watch`)** or **`@preact/signals-core`** (1.4 kB gzip).
 
@@ -53,18 +55,19 @@ export type Disposable = (() => void) | { dispose(): void };
 - **`this.addController<T extends Controller>(controller: T): T`** lives on **`BaseElement` and `BaseController`**. It registers `controller` in the host's permanent controller list. Whenever the host connects, it calls `controller.connect?.()`; whenever the host disconnects, it calls `controller.dispose()`.
 - **`scope.use<T extends Disposable>(resource: T): () => void`** (and `this.use(resource)` on the active connect scope) registers a cleanup that runs when the current `LifetimeScope` is disposed, and returns an `unregister()` handle so child scopes can detach themselves cleanly before parent disposal.
 
-> [!IMPORTANT]
-> **Unify `.destroy()` $\rightarrow$ `.dispose()` in a single commit.**
+> [!IMPORTANT] > **Unify `.destroy()` $\rightarrow$ `.dispose()` in a single commit.**
 > Do not maintain duck-typed `{ dispose(): void } | { destroy(): void }` dual protocols. Rename `.destroy()` to `.dispose()` across `DrawerController`, `ReaderLayoutController`, `ReaderPanelController`, and `ReaderTocController` in one atomic commit.
 
 ### B. One-Shot `LifetimeScope` & Bounded Child Scopes (`createScope()`)
 
 `DisposableBag` is reusable after `dispose()`, whereas `AbortController` is one-shot. `LifetimeScope<Lane>` resolves this by being **explicitly one-shot**:
+
 - When `BaseElement.connectedCallback()` (or `BaseController.connect()`) runs, it creates a fresh active `LifetimeScope` (with a fresh `AbortController`).
 - When `disconnectedCallback()` (or `dispose()`) runs, it disposes that `LifetimeScope` and drops it. This eliminates the `if (this.lifetime.signal.aborted)` special case in `BaseElement`.
 
 **Preventing Parent-Bag Accumulation in `createScope()`:**
 When a controller creates a child scope for transient "while-open" listeners (`const openScope = this.createScope()`):
+
 1. `DisposableBag.add(fn)` returns an `unregister: () => void` function that removes `fn` from the bag.
 2. `openScope` registers with its parent scope via `const detach = parentScope.use(() => openScope.dispose())`. When `openScope.dispose()` is called directly on popover close, it immediately invokes `detach()`, removing the dead `openScope` from `parentScope` so repeated open/close cycles are strictly $O(1)$ in memory.
 
@@ -115,12 +118,12 @@ classDiagram
 
 ### C. Capabilities Propagated to `BaseController<Lane>` & `BaseElement<Lane>`
 
-| Capability | Design & Guardrails |
-| :--- | :--- |
-| **1. `this.timeout(fn, ms)`, `this.debounce(fn, ms)`, & `this.rAF(fn)`** | Automatically clears pending `setTimeout`, `requestAnimationFrame`, and debounced functions when the scope disposes. Fixes 7 unmanaged `setTimeout`s and 4 unmanaged `rAF`s across `report_dialog.client.ts`, `dict_search.client.ts`, and `reader_view.client.ts`. |
-| **2. `addController(c)` (Instance Reuse Across Reconnects)** | Controllers are instantiated once as fields (`private readonly toc = this.addController(new ReaderTocController(this));`) with inert constructors. Moving an element in the DOM (`reattach_conformance.test.ts`) or crossing a media query preserves controller state (`_activeTab`, `isTranslationLoaded`, `preferredDvh`) while re-binding DOM listeners in `onConnect()`. |
-| **3. Nullable `this.listen(el \| null, ...)` + `this.require<T>(selector)` + Declared Selector Inventory Tests** | `this.listen` accepts `EventTarget \| null \| undefined` as a quiet no-op for genuinely conditional SSR controls (such as `#toggle-macra`), while mandatory elements use `this.require<T>(selector)` and **Declared Selector Inventory Contract Tests** (see §3.C) enforce that every selector appears in at least one server scenario. |
-| **4. Async Lifetime (`this.signal`, `this.latest(lane)`)** | Sub-controllers gain `AbortSignal` lanes so async operations like `ReaderPanelController`'s translation fetch abort cleanly on disconnect. |
+| Capability                                                                                                       | Design & Guardrails                                                                                                                                                                                                                                                                                                                                                          |
+| :--------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. `this.timeout(fn, ms)`, `this.debounce(fn, ms)`, & `this.rAF(fn)`**                                         | Automatically clears pending `setTimeout`, `requestAnimationFrame`, and debounced functions when the scope disposes. Fixes 7 unmanaged `setTimeout`s and 4 unmanaged `rAF`s across `report_dialog.client.ts`, `dict_search.client.ts`, and `reader_view.client.ts`.                                                                                                          |
+| **2. `addController(c)` (Instance Reuse Across Reconnects)**                                                     | Controllers are instantiated once as fields (`private readonly toc = this.addController(new ReaderTocController(this));`) with inert constructors. Moving an element in the DOM (`reattach_conformance.test.ts`) or crossing a media query preserves controller state (`_activeTab`, `isTranslationLoaded`, `preferredDvh`) while re-binding DOM listeners in `onConnect()`. |
+| **3. Nullable `this.listen(el \| null, ...)` + `this.require<T>(selector)` + Declared Selector Inventory Tests** | `this.listen` accepts `EventTarget \| null \| undefined` as a quiet no-op for genuinely conditional SSR controls (such as `#toggle-macra`), while mandatory elements use `this.require<T>(selector)` and **Declared Selector Inventory Contract Tests** (see §3.C) enforce that every selector appears in at least one server scenario.                                      |
+| **4. Async Lifetime (`this.signal`, `this.latest(lane)`)**                                                       | Sub-controllers gain `AbortSignal` lanes so async operations like `ReaderPanelController`'s translation fetch abort cleanly on disconnect.                                                                                                                                                                                                                                   |
 
 ---
 
@@ -247,9 +250,9 @@ To make stale DOM references across partial page swaps (`swapPage()`, `fetchAndS
    - Each slice declares an explicit selector inventory enumerating which server scenarios render each selector:
      ```ts
      export const READER_SELECTORS = {
-       tocDrawer:   { id: "reader-toc-drawer", requiredIn: ["work-page"] },
-       tocBtn:      { id: "reader-toc-btn",    requiredIn: ["work-page"] },
-       toggleMacra: { id: "toggle-macra",      optionalIn: ["work-with-macra"] },
+       tocDrawer: { id: "reader-toc-drawer", requiredIn: ["work-page"] },
+       tocBtn: { id: "reader-toc-btn", requiredIn: ["work-page"] },
+       toggleMacra: { id: "toggle-macra", optionalIn: ["work-with-macra"] },
      } as const;
      ```
    - **Contract Test Invariant**: Every declared selector must resolve in all its `requiredIn` scenarios AND in all its named `optionalIn` scenarios—and **any selector bound by the client that resolves in zero server scenarios fails the test**.
@@ -263,6 +266,7 @@ To make stale DOM references across partial page swaps (`swapPage()`, `fetchAndS
 ## 4. Part 3: Deferred Reactivity Evaluation (Post-Lifecycle Migration)
 
 Once Steps 1–5 below are complete, we will evaluate whether any residual state-synchronization boilerplate justifies a reactive primitive. If it does, we will choose between:
+
 1. **Option A (Preferred if depth-1 watching suffices): ~25-Line `Observable<T>` + `this.watch(obs, fn)`** (no `computed()` nodes $\rightarrow$ depth is always 1, making diamonds and ordering glitches impossible).
 2. **Option B (If derived `computed()` graphs are needed): `@preact/signals-core`** (~1.4 kB gzip).
 

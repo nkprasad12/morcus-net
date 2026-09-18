@@ -33,6 +33,7 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
 ### B. Managed Timers (`this.timeout`) & Auto-Disposed Debounce (`this.debounce`)
 
 - [x] 🟢 **Add `this.timeout(fn, ms)` and `this.debounce(fn, ms)` to `LifetimeScope` (`BaseElement` & `BaseController`).** (Completed in Step 1)
+
   - **Smell**: `BaseElement` cleans up DOM listeners and `AbortSignal` lanes on disconnect, **but not timers (`setTimeout`) or debounced functions**.
   - **Where it bites**:
     - [`dialog/report_dialog.client.ts`](dialog/report_dialog.client.ts) (`setTimeout(() => this.textareaEl?.focus(), 50)` at L43 & L96; `setTimeout(() => { this.closeDialog(); this.resetForm(); }, 1200)` at L157–160) runs unmanaged timers that can fire after the element is removed.
@@ -40,6 +41,7 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
     - [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (`setTimeout` at L335, L1129, L1271) runs unmanaged highlight/toast timers.
     - [`dict/dict_search.client.ts`](dict/dict_search.client.ts) (L178–182) only overrides `onDisconnect()` to call `.cancel()` on `this.debouncedFetchPrefixChunk` and `this.debouncedFetchSuffixCompletions`.
   - **Proposed API**:
+
     ```ts
     protected timeout(fn: () => void, ms: number): number {
       const id = window.setTimeout(fn, ms);
@@ -146,7 +148,7 @@ Several `core/` utilities were created specifically to standardize browser opera
   - **Bug caused by this duplication**: `--border-mid` is defined in `:root` (`#b7bac1` at L49) and `@media (prefers-color-scheme: dark)` (`#4d525c` at L126), **but is missing from both `[data-theme="dark"]` and `[data-theme="light"]`**. When a user manually toggles the theme opposite to their OS preference, `--border-mid` stays stuck on the OS theme color.
   - **Fix**: Combine `:root, :root[data-theme="light"], [data-theme="light"]` into a single selector block (saving ~75 lines in `variables.css` and `critical_variables.css`), and ensure dark tokens are defined in one shared place or kept in strict parity.
 - [ ] 🟡 **Scope `.lat-word`, `.section-anchor`, and `.badge` so Reader/Library rules do not clobber Dictionary styles.**
-  - Because [`v2.css`](v2.css) imports `reader/*.css` and `library/*.css` *after* `dict/*.css`, unscoped selectors in the later files overwrite earlier rules globally:
+  - Because [`v2.css`](v2.css) imports `reader/*.css` and `library/*.css` _after_ `dict/*.css`, unscoped selectors in the later files overwrite earlier rules globally:
     1. **`.lat-word` collision**: [`reader/reader_text.css`](reader/reader_text.css) (L246–285) styles bare `a.lat-word:hover` (`background-color: var(--word-hover-bg); color: inherit; text-decoration: none;`), which **globally clobbers** [`dict/dict_typography.css`](dict/dict_typography.css) (L233–240: `.lat-word:hover { color: var(--primary); text-decoration: underline; background-color: var(--tag-bg); }`) even on Dictionary pages. Scope the reader rules under `.reader-view` / `.reader-passage`.
     2. **`.section-anchor` collision**: Defined globally in [`dict/dict_typography.css`](dict/dict_typography.css) (L248–260: `:hover, :focus-visible { background-color: var(--primary); color: var(--on-accent); }`) and redefined globally in [`reader/reader_text.css`](reader/reader_text.css) (L308–323), which overrides `:hover` (`color: var(--primary); opacity: 1`) **without overriding `:focus-visible`**. Keyboard-focusing a `.section-anchor` in the Reader therefore renders the Dictionary's solid blue background box.
     3. **`.badge` collision**: Defined globally in [`dict/dict_typography.css`](dict/dict_typography.css) (L214–221: `font-size: 0.8rem; border-radius: var(--radius-xl); background: var(--border);`) and redefined globally in [`library/library.css`](library/library.css) (L153–163: `font-size: 0.72rem; border-radius: var(--radius-sm);`). Move `.badge` to `core/components.css` with explicit modifiers.

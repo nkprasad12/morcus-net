@@ -12,6 +12,7 @@
  *    codebase.
  */
 
+import { notifyContentSwap } from "@/web/v2/core/base_element.client";
 import type { SafeHtml } from "@/web/v2/core/html.common";
 
 /** Replaces the children of `target` with the given markup. */
@@ -22,13 +23,23 @@ export function setHtml(target: Element, content: SafeHtml): void {
   // `disable-next-line` would then apply to that comment instead.
   // eslint-disable-next-line no-unsanitized/property
   target.innerHTML = content;
+  notifyContentSwap(target);
 }
 
 /** Replaces `target` itself with the given markup. */
 export function replaceWithHtml(target: Element, content: SafeHtml): void {
+  const parent = target.parentElement;
+  const prevSibling = target.previousElementSibling;
   // The audited sink; the `SafeHtml` parameter is the guarantee.
   // eslint-disable-next-line no-unsanitized/property
   target.outerHTML = content;
+  if (parent) {
+    const replacement =
+      (prevSibling
+        ? prevSibling.nextElementSibling
+        : parent.firstElementChild) ?? parent;
+    notifyContentSwap(replacement);
+  }
 }
 
 /**

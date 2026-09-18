@@ -78,9 +78,17 @@ describe("ReaderLayoutController", () => {
     localStorage.clear();
   });
 
+  function connectController(
+    options: ConstructorParameters<typeof ReaderLayoutController>[0]
+  ): ReaderLayoutController {
+    const controller = new ReaderLayoutController(options);
+    controller.connect();
+    return controller;
+  }
+
   test("gracefully handles missing elements without throwing", () => {
     const emptyDiv = document.createElement("div");
-    const controller = new ReaderLayoutController({ root: emptyDiv });
+    const controller = connectController({ root: emptyDiv });
 
     expect(controller.splitter).toBeNull();
     expect(controller.splitLayout).toBeNull();
@@ -97,7 +105,7 @@ describe("ReaderLayoutController", () => {
   });
 
   test("resolves layout elements from root container and restores default state", () => {
-    const controller = new ReaderLayoutController({ root: container });
+    const controller = connectController({ root: container });
 
     expect(controller.splitLayout).toBe(
       container.querySelector(".reader-split-layout")
@@ -115,7 +123,7 @@ describe("ReaderLayoutController", () => {
 
   test("hydrates valid saved width from localStorage on initialization", () => {
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "520");
-    const controller = new ReaderLayoutController({ root: container });
+    const controller = connectController({ root: container });
 
     expect(controller.getWidth()).toBe(520);
     expect(controller.splitLayout?.style.getPropertyValue("--dict-width")).toBe(
@@ -128,7 +136,7 @@ describe("ReaderLayoutController", () => {
 
   test("ignores invalid or out-of-bounds widths in localStorage", () => {
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "150"); // < 300
-    let controller = new ReaderLayoutController({ root: container });
+    let controller = connectController({ root: container });
     expect(controller.getWidth()).toBe(420);
     expect(controller.splitLayout?.style.getPropertyValue("--dict-width")).toBe(
       ""
@@ -136,18 +144,18 @@ describe("ReaderLayoutController", () => {
     controller.dispose();
 
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "1200"); // > 900
-    controller = new ReaderLayoutController({ root: container });
+    controller = connectController({ root: container });
     expect(controller.getWidth()).toBe(420);
     controller.dispose();
 
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "not-a-number");
-    controller = new ReaderLayoutController({ root: container });
+    controller = connectController({ root: container });
     expect(controller.getWidth()).toBe(420);
     controller.dispose();
   });
 
   test("updates --dict-width and aria-valuenow with zero layout reads during pointer drag", () => {
-    const controller = new ReaderLayoutController({ root: container });
+    const controller = connectController({ root: container });
     const splitLayout = controller.splitLayout!;
     const splitter = controller.splitter!;
     const dictPanel = controller.dictPanel!;
@@ -207,7 +215,7 @@ describe("ReaderLayoutController", () => {
   });
 
   test("clamps width to computed max when dragging beyond allowable bounds", () => {
-    const controller = new ReaderLayoutController({ root: container });
+    const controller = connectController({ root: container });
     const splitLayout = controller.splitLayout!;
     const splitter = controller.splitter!;
     const dictPanel = controller.dictPanel!;
@@ -261,7 +269,7 @@ describe("ReaderLayoutController", () => {
 
   test("double-clicking the splitter resets width and clears localStorage", () => {
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "560");
-    const controller = new ReaderLayoutController({ root: container });
+    const controller = connectController({ root: container });
     const splitLayout = controller.splitLayout!;
     const splitter = controller.splitter!;
 
@@ -279,7 +287,7 @@ describe("ReaderLayoutController", () => {
   });
 
   test("keyboard navigation adjusts width and respects bounds", () => {
-    const controller = new ReaderLayoutController({ root: container });
+    const controller = connectController({ root: container });
     const splitLayout = controller.splitLayout!;
     const splitter = controller.splitter!;
 
@@ -320,7 +328,7 @@ describe("ReaderLayoutController", () => {
   });
 
   test("setActive toggles active and empty CSS classes on splitLayout", () => {
-    const controller = new ReaderLayoutController({ root: container });
+    const controller = connectController({ root: container });
     const splitLayout = controller.splitLayout!;
 
     expect(splitLayout.classList.contains("reader-layout-empty")).toBe(true);
@@ -337,16 +345,26 @@ describe("ReaderLayoutController", () => {
     controller.dispose();
   });
 
-  test("calling destroy unbinds all listeners and prevents further updates", () => {
-    const controller = new ReaderLayoutController({ root: container });
+  test("calling dispose unbinds all listeners and connect re-registers them", () => {
+    const controller = connectController({ root: container });
     const splitter = controller.splitter!;
     const splitLayout = controller.splitLayout!;
 
+    jest
+      .spyOn(splitLayout, "getBoundingClientRect")
+      .mockReturnValue({ width: 1200 } as DOMRect);
+
     controller.dispose();
 
-    // Keydown after destroy does not modify layout
+    // Keydown after dispose does not modify layout
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
     expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("");
     expect(localStorage.getItem(READER_DICT_WIDTH_STORAGE_KEY)).toBeNull();
+
+    // Reconnecting re-binds keyboard listener
+    controller.connect();
+    splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("444px");
+    controller.dispose();
   });
 });
