@@ -21,10 +21,70 @@ describe("DisposableBag", () => {
     expect(order).toEqual([1, 2, 3]);
   });
 
-  test("add() returns the passed callback for chaining", () => {
-    const fn = () => {};
-    const returned = bag.add(fn);
-    expect(returned).toBe(fn);
+  test("add() returns an unregister function that prevents execution on dispose", () => {
+    const fn = jest.fn();
+    const unregister = bag.add(fn);
+    unregister();
+    bag.dispose();
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  test("unregister() is idempotent", () => {
+    const fn = jest.fn();
+    const unregister = bag.add(fn);
+    unregister();
+    unregister();
+    bag.dispose();
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  test("unregister() removes only the intended callback and preserves FIFO order of others", () => {
+    const order: number[] = [];
+    bag.add(() => order.push(1));
+    const unregister2 = bag.add(() => order.push(2));
+    bag.add(() => order.push(3));
+
+    unregister2();
+    bag.dispose();
+
+    expect(order).toEqual([1, 3]);
+  });
+
+  test("calling unregister() after dispose() is a safe no-op", () => {
+    const fn = jest.fn();
+    const unregister = bag.add(fn);
+    bag.dispose();
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    expect(() => unregister()).not.toThrow();
+    bag.dispose();
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  test("supports nested child scopes detaching themselves cleanly before parent disposal", () => {
+    const parentBag = new DisposableBag();
+    const childCleanup1 = jest.fn();
+    const childCleanup2 = jest.fn();
+
+    // Child scope 1 created and registered in parent
+    const childBag1 = new DisposableBag();
+    childBag1.add(childCleanup1);
+    const detach1 = parentBag.add(() => childBag1.dispose());
+
+    // Child scope 1 closes early and detaches from parent
+    childBag1.dispose();
+    detach1();
+    expect(childCleanup1).toHaveBeenCalledTimes(1);
+
+    // Child scope 2 created and registered in parent
+    const childBag2 = new DisposableBag();
+    childBag2.add(childCleanup2);
+    parentBag.add(() => childBag2.dispose());
+
+    // Parent disposes: childBag1 is not disposed again; childBag2 is disposed
+    parentBag.dispose();
+    expect(childCleanup1).toHaveBeenCalledTimes(1);
+    expect(childCleanup2).toHaveBeenCalledTimes(1);
   });
 
   test("isolates errors so subsequent disposables execute", () => {

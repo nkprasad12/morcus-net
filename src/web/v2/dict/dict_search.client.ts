@@ -1,7 +1,6 @@
 import {
   BaseElement,
   bindDismissable,
-  debounce,
   fetchAndSwapPartial,
   registerElement,
   replaceWithHtml,
@@ -85,27 +84,30 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
   // Deliberately takes no query: by the time the debounce fires the one the
   // caller had is up to 180ms stale, so the live input value is re-read below.
-  private readonly debouncedFetchPrefixChunk = debounce((prefix: string) => {
-    const signal = this.latest("completions");
-    this.chunkCache
-      .loadPrefix(prefix)
-      .then(() => {
-        if (signal.aborted) return;
-        if (document.activeElement !== this.inputElement) return;
-        const currentRaw = this.inputElement?.value ?? "";
-        const currentClean = cleanCompletionQuery(currentRaw).query;
-        if (!currentClean.toLowerCase().startsWith(prefix)) return;
+  private readonly debouncedFetchPrefixChunk = this.debounce(
+    (prefix: string) => {
+      const signal = this.latest("completions");
+      this.chunkCache
+        .loadPrefix(prefix)
+        .then(() => {
+          if (signal.aborted) return;
+          if (document.activeElement !== this.inputElement) return;
+          const currentRaw = this.inputElement?.value ?? "";
+          const currentClean = cleanCompletionQuery(currentRaw).query;
+          if (!currentClean.toLowerCase().startsWith(prefix)) return;
 
-        this.renderCachedCompletions(prefix, currentClean);
-      })
-      .catch((e: unknown) => {
-        if (e instanceof Error && e.name !== "AbortError") {
-          console.error("Failed to load completions chunk", e);
-        }
-      });
-  }, 180);
+          this.renderCachedCompletions(prefix, currentClean);
+        })
+        .catch((e: unknown) => {
+          if (e instanceof Error && e.name !== "AbortError") {
+            console.error("Failed to load completions chunk", e);
+          }
+        });
+    },
+    180
+  );
 
-  private readonly debouncedFetchSuffixCompletions = debounce(
+  private readonly debouncedFetchSuffixCompletions = this.debounce(
     (query: string) => {
       const signal = this.latest("completions");
       const currentParams = new URLSearchParams(window.location.search);
@@ -173,12 +175,6 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     // The bitmask is what we send to the server and write back to the URL, so it must never drift
     // from activeDictKeys.
     this.activeDictBitmask = encodeDictBitmask(keys);
-  }
-
-  protected override onDisconnect() {
-    // In-flight lanes are aborted by BaseElement; these are the pending timers.
-    this.debouncedFetchPrefixChunk.cancel();
-    this.debouncedFetchSuffixCompletions.cancel();
   }
 
   private enhanceExistingMarkup() {
@@ -410,7 +406,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     const isEmbedded = currentParams.get("embedded") === "1";
 
     if (currentQuery && !hasHash && !isBackForward && this.resultsElement) {
-      requestAnimationFrame(() => {
+      this.rAF(() => {
         this.scrollToResults("instant");
       });
     } else if (
@@ -513,7 +509,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
   private readonly handleBlur = () => {
     // Delay closing suggestions so click events on suggestions can register
-    window.setTimeout(() => {
+    this.timeout(() => {
       this.clearSuggestions();
     }, 200);
   };
@@ -552,7 +548,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     window.history.pushState({ q: cleanQuery }, "", newSearchPath);
     document.title = `${cleanQuery} - Morcus Dictionary`;
     await this.fetchResults(cleanQuery);
-    requestAnimationFrame(() => {
+    this.rAF(() => {
       this.scrollToResults("smooth");
     });
   }

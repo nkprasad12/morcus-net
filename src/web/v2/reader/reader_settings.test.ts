@@ -650,9 +650,9 @@ describe("MorcusReaderSettings custom element", () => {
     container.innerHTML = `
       <morcus-reader-view data-work="parent-work">
         <morcus-reader-settings>
-          <dialog class="dialog reader-settings-dialog">
+          <div id="reader-settings-popover" hidden>
             <input type="checkbox" id="toggle-macra" checked />
-          </dialog>
+          </div>
         </morcus-reader-settings>
       </morcus-reader-view>
     `;
@@ -668,13 +668,13 @@ describe("MorcusReaderSettings custom element", () => {
       container.innerHTML = `
         <button type="button" id="reader-settings-btn">Settings</button>
         <morcus-reader-settings data-work="caesar_dbg">
-          <dialog class="dialog reader-settings-dialog" id="reader-settings-dialog">
+          <div id="reader-settings-popover" hidden>
             <button type="button" id="reader-size-dec">-</button>
             <span id="reader-size-label">100%</span>
             <button type="button" id="reader-size-inc">+</button>
             <input type="checkbox" id="toggle-gutter" checked />
             <button type="button" id="reader-settings-reset-btn">Reset</button>
-          </dialog>
+          </div>
         </morcus-reader-settings>
       `;
 

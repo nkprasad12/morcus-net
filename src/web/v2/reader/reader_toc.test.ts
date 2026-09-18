@@ -15,20 +15,12 @@ describe("ReaderTocController", () => {
         <button type="button" id="reader-toc-btn" aria-expanded="false" aria-controls="reader-toc-drawer">
           Contents
         </button>
-        <button type="button" id="reader-breadcrumb-btn" aria-expanded="false">
-          Book 1
-        </button>
       </div>
 
       <div id="reader-toc-drawer" class="reader-toc-drawer" role="dialog" aria-label="Table of Contents" hidden>
         <div class="reader-toc-header">
-          <button type="button" id="reader-toc-back-btn" class="reader-toc-back-btn">&larr; Back</button>
           <span class="reader-toc-title">Table of Contents</span>
           <button type="button" id="reader-toc-close-btn" class="reader-toc-close-btn">&times;</button>
-        </div>
-
-        <div class="reader-toc-search-box">
-          <input type="text" id="reader-toc-filter" class="reader-toc-input" placeholder="Search..." />
         </div>
 
         <div class="reader-toc-list" id="reader-toc-list">
@@ -72,12 +64,11 @@ describe("ReaderTocController", () => {
       controller.open();
       controller.close();
       controller.toggle();
-      controller.filter("test");
       controller.destroy();
     }).not.toThrow();
   });
 
-  test("resolves drawer, triggers, and inputs from root container", () => {
+  test("resolves drawer, trigger, close button, and list container from root container", () => {
     const controller = new ReaderTocController({ root: container });
 
     expect(controller.drawer).toBe(
@@ -86,17 +77,8 @@ describe("ReaderTocController", () => {
     expect(controller.triggerBtn).toBe(
       container.querySelector("#reader-toc-btn")
     );
-    expect(controller.breadcrumbBtn).toBe(
-      container.querySelector("#reader-breadcrumb-btn")
-    );
     expect(controller.closeBtn).toBe(
       container.querySelector("#reader-toc-close-btn")
-    );
-    expect(controller.backBtn).toBe(
-      container.querySelector("#reader-toc-back-btn")
-    );
-    expect(controller.filterInput).toBe(
-      container.querySelector("#reader-toc-filter")
     );
     expect(controller.listContainer).toBe(
       container.querySelector("#reader-toc-list")
@@ -127,16 +109,20 @@ describe("ReaderTocController", () => {
     expect(focusSpy).toHaveBeenCalled();
     expect(onOpen).toHaveBeenCalledTimes(1);
 
+    // Re-entrant open() is a no-op
+    controller.open();
+    expect(onOpen).toHaveBeenCalledTimes(1);
+
     controller.destroy();
   });
 
-  test("open() falls back to focusing filter input or close button when no active item exists", () => {
+  test("open() falls back to focusing close button when no active item exists", () => {
     const activeItem = container.querySelector(".reader-toc-item.active");
     activeItem?.classList.remove("active");
 
     const controller = new ReaderTocController({ root: container });
-    const filterInput = controller.filterInput!;
-    const focusSpy = jest.spyOn(filterInput, "focus");
+    const closeBtn = controller.closeBtn!;
+    const focusSpy = jest.spyOn(closeBtn, "focus");
 
     controller.open();
     expect(focusSpy).toHaveBeenCalled();
@@ -192,75 +178,15 @@ describe("ReaderTocController", () => {
     controller.destroy();
   });
 
-  test("clicking breadcrumb button opens drawer", () => {
-    const controller = new ReaderTocController({ root: container });
-    const breadcrumbBtn = controller.breadcrumbBtn!;
-
-    expect(controller.isOpen()).toBe(false);
-
-    breadcrumbBtn.click();
-    expect(controller.isOpen()).toBe(true);
-
-    controller.destroy();
-  });
-
-  test("clicking close button or back button closes drawer", () => {
+  test("clicking close button closes drawer", () => {
     const controller = new ReaderTocController({ root: container });
     const closeBtn = controller.closeBtn!;
-    const backBtn = controller.backBtn!;
 
     controller.open();
     expect(controller.isOpen()).toBe(true);
 
     closeBtn.click();
     expect(controller.isOpen()).toBe(false);
-
-    controller.open();
-    expect(controller.isOpen()).toBe(true);
-
-    backBtn.click();
-    expect(controller.isOpen()).toBe(false);
-
-    controller.destroy();
-  });
-
-  test("live filtering matches titles and section IDs and hides non-matches", () => {
-    const controller = new ReaderTocController({ root: container });
-    const items = controller.getItems();
-    expect(items).toHaveLength(3);
-
-    // Search for "Troy" -> should match Book II only
-    controller.filter("troy");
-    expect(items[0].style.display).toBe("none");
-    expect(items[1].style.display).toBe("");
-    expect(items[2].style.display).toBe("none");
-
-    // Search by section id "6.1" -> should match Book VI only
-    controller.filter("6.1");
-    expect(items[0].style.display).toBe("none");
-    expect(items[1].style.display).toBe("none");
-    expect(items[2].style.display).toBe("");
-
-    // Empty search -> all visible
-    controller.filter("");
-    expect(items[0].style.display).toBe("");
-    expect(items[1].style.display).toBe("");
-    expect(items[2].style.display).toBe("");
-
-    controller.destroy();
-  });
-
-  test("typing into filter input automatically updates filtered items", () => {
-    const controller = new ReaderTocController({ root: container });
-    const filterInput = controller.filterInput!;
-    const items = controller.getItems();
-
-    filterInput.value = "underworld";
-    filterInput.dispatchEvent(new Event("input", { bubbles: true }));
-
-    expect(items[0].style.display).toBe("none");
-    expect(items[1].style.display).toBe("none");
-    expect(items[2].style.display).toBe("");
 
     controller.destroy();
   });

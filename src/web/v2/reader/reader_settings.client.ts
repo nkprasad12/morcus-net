@@ -368,10 +368,7 @@ export class MorcusReaderSettings extends BaseElement {
       this.currentPrefs.showMacra = getWorkMacra(workId);
     }
 
-    this.popoverEl =
-      this.$<HTMLElement>("#reader-settings-popover") ??
-      this.$<HTMLElement>("#reader-settings-dialog") ??
-      this.$<HTMLElement>("dialog");
+    this.popoverEl = this.$<HTMLElement>("#reader-settings-popover");
 
     this.triggerBtn =
       this.$<HTMLButtonElement>("#reader-settings-btn") ??
@@ -389,9 +386,7 @@ export class MorcusReaderSettings extends BaseElement {
       });
     }
 
-    const closeBtn =
-      this.$<HTMLButtonElement>("#reader-settings-close-btn") ??
-      this.$<HTMLButtonElement>("[data-dialog-close]");
+    const closeBtn = this.$<HTMLButtonElement>("#reader-settings-close-btn");
     if (closeBtn) {
       this.listen(closeBtn, "click", (e: MouseEvent) => {
         e.preventDefault();

@@ -16,14 +16,8 @@ export interface ReaderTocElements {
   backdrop?: HTMLElement | null;
   /** Primary trigger button in sticky header (#reader-toc-btn) */
   triggerBtn?: HTMLElement | null;
-  /** Optional breadcrumb button (#reader-breadcrumb-btn) */
-  breadcrumbBtn?: HTMLElement | null;
   /** Close '×' button in drawer header (#reader-toc-close-btn) */
   closeBtn?: HTMLElement | null;
-  /** '← Back' button in drawer header (#reader-toc-back-btn) */
-  backBtn?: HTMLElement | null;
-  /** Search/filter text input (#reader-toc-filter) */
-  filterInput?: HTMLInputElement | null;
   /** Container holding the list of TOC items (#reader-toc-list) */
   listContainer?: HTMLElement | null;
 }
@@ -45,10 +39,7 @@ export class ReaderTocController {
   public readonly drawer: HTMLElement | null;
   public readonly backdrop: HTMLElement | null;
   public readonly triggerBtn: HTMLElement | null;
-  public readonly breadcrumbBtn: HTMLElement | null;
   public readonly closeBtn: HTMLElement | null;
-  public readonly backBtn: HTMLElement | null;
-  public readonly filterInput: HTMLInputElement | null;
   public readonly listContainer: HTMLElement | null;
   private readonly onOpen?: () => void;
   private readonly onClose?: () => void;
@@ -77,28 +68,11 @@ export class ReaderTocController {
         ? overrides.triggerBtn
         : root.querySelector<HTMLElement>("#reader-toc-btn");
 
-    this.breadcrumbBtn =
-      overrides?.breadcrumbBtn !== undefined
-        ? overrides.breadcrumbBtn
-        : root.querySelector<HTMLElement>("#reader-breadcrumb-btn");
-
     this.closeBtn =
       overrides?.closeBtn !== undefined
         ? overrides.closeBtn
         : this.drawer?.querySelector<HTMLElement>("#reader-toc-close-btn") ??
           root.querySelector<HTMLElement>("#reader-toc-close-btn");
-
-    this.backBtn =
-      overrides?.backBtn !== undefined
-        ? overrides.backBtn
-        : this.drawer?.querySelector<HTMLElement>("#reader-toc-back-btn") ??
-          root.querySelector<HTMLElement>("#reader-toc-back-btn");
-
-    this.filterInput =
-      overrides?.filterInput !== undefined
-        ? overrides.filterInput
-        : this.drawer?.querySelector<HTMLInputElement>("#reader-toc-filter") ??
-          root.querySelector<HTMLInputElement>("#reader-toc-filter");
 
     this.listContainer =
       overrides?.listContainer !== undefined
@@ -128,18 +102,7 @@ export class ReaderTocController {
       this.disposables.add(() => btn.removeEventListener("click", onToggle));
     }
 
-    // Breadcrumb trigger opens drawer
-    if (this.breadcrumbBtn) {
-      const btn = this.breadcrumbBtn;
-      const onOpen = (e: MouseEvent) => {
-        e.preventDefault();
-        this.open();
-      };
-      btn.addEventListener("click", onOpen);
-      this.disposables.add(() => btn.removeEventListener("click", onOpen));
-    }
-
-    // Close & Back buttons inside drawer
+    // Close button inside drawer
     if (this.closeBtn) {
       const btn = this.closeBtn;
       const onClose = (e: MouseEvent) => {
@@ -149,25 +112,6 @@ export class ReaderTocController {
       };
       btn.addEventListener("click", onClose);
       this.disposables.add(() => btn.removeEventListener("click", onClose));
-    }
-
-    if (this.backBtn) {
-      const btn = this.backBtn;
-      const onBack = (e: MouseEvent) => {
-        e.preventDefault();
-        this.close();
-        this.triggerBtn?.focus();
-      };
-      btn.addEventListener("click", onBack);
-      this.disposables.add(() => btn.removeEventListener("click", onBack));
-    }
-
-    // Live search filter
-    if (this.filterInput) {
-      const input = this.filterInput;
-      const onInput = () => this.filter(input.value);
-      input.addEventListener("input", onInput);
-      this.disposables.add(() => input.removeEventListener("input", onInput));
     }
 
     // Dismiss on backdrop click: stopPropagation prevents bubbling to doc click listener
@@ -183,14 +127,13 @@ export class ReaderTocController {
       );
     }
 
-    // Dismiss on outside click (fallback when clicking outside drawer or buttons)
+    // Dismiss on outside click (fallback when clicking outside drawer or trigger button)
     const doc = this.drawer?.ownerDocument ?? document;
     const onDocClick = (e: MouseEvent) => {
       if (this.isOpen() && e.target instanceof Node) {
         if (
           !this.drawer?.contains(e.target) &&
-          !this.triggerBtn?.contains(e.target) &&
-          !this.breadcrumbBtn?.contains(e.target)
+          !this.triggerBtn?.contains(e.target)
         ) {
           this.close();
         }
@@ -282,7 +225,7 @@ export class ReaderTocController {
   }
 
   public open(): void {
-    if (!this.drawer) return;
+    if (!this.drawer || this.isOpen()) return;
     this.drawer.removeAttribute("hidden");
     this.backdrop?.removeAttribute("hidden");
 
@@ -299,9 +242,8 @@ export class ReaderTocController {
     });
 
     this.triggerBtn?.setAttribute("aria-expanded", "true");
-    this.breadcrumbBtn?.setAttribute("aria-expanded", "true");
 
-    // Focus landing spot: prioritize active section, then search input, then close button
+    // Focus landing spot: prioritize active section, then close button
     const activeItem = this.drawer.querySelector<HTMLElement>(
       ".reader-toc-item.active"
     );
@@ -310,8 +252,6 @@ export class ReaderTocController {
       if (typeof activeItem.scrollIntoView === "function") {
         activeItem.scrollIntoView({ block: "nearest" });
       }
-    } else if (this.filterInput) {
-      this.filterInput.focus();
     } else {
       this.closeBtn?.focus();
     }
@@ -328,7 +268,6 @@ export class ReaderTocController {
     this.drawer.style.removeProperty("left");
     this.drawer.style.removeProperty("--caret-left");
     this.triggerBtn?.setAttribute("aria-expanded", "false");
-    this.breadcrumbBtn?.setAttribute("aria-expanded", "false");
     this.onClose?.();
   }
 
@@ -344,23 +283,8 @@ export class ReaderTocController {
     return Boolean(this.drawer && !this.drawer.hasAttribute("hidden"));
   }
 
-  public getItems(): HTMLElement[] {
-    const scope = this.listContainer ?? this.drawer;
-    if (!scope) return [];
-    return Array.from(scope.querySelectorAll<HTMLElement>(".reader-toc-item"));
-  }
-
-  public filter(rawTerm: string): void {
-    const term = rawTerm.trim().toLowerCase();
-    const items = this.getItems();
-    for (const item of items) {
-      const text = item.textContent?.toLowerCase() || "";
-      item.style.display = term && !text.includes(term) ? "none" : "";
-    }
-  }
-
   public destroy(): void {
-    this.openDisposables.dispose();
+    this.close();
     this.disposables.dispose();
   }
 

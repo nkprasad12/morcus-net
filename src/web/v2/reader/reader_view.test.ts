@@ -64,7 +64,7 @@ function createReaderView(
         </div>
       </aside>
       <morcus-reader-settings>
-        <dialog id="reader-settings-dialog">
+        <div id="reader-settings-popover" hidden>
           ${
             hasMacra
               ? '<input type="checkbox" id="toggle-macra" checked />'
@@ -73,7 +73,7 @@ function createReaderView(
           <button id="dict-size-dec">-</button>
           <span id="dict-size-label">100%</span>
           <button id="dict-size-inc">+</button>
-        </dialog>
+        </div>
       </morcus-reader-settings>
     </div>
   `;
@@ -662,7 +662,7 @@ describe("Reader preferences validation & hydration", () => {
           <article class="reader-passage"></article>
         </section>
         <morcus-reader-settings>
-          <dialog id="reader-settings-dialog">
+          <div id="reader-settings-popover" hidden>
             <button id="reader-settings-btn"></button>
             <span id="reader-size-label"></span>
             <span id="dict-size-label"></span>
@@ -677,7 +677,7 @@ describe("Reader preferences validation & hydration", () => {
             </select>
             <input type="checkbox" id="toggle-macra" />
             <input type="checkbox" id="toggle-gutter" />
-          </dialog>
+          </div>
         </morcus-reader-settings>
       </div>
     `;
@@ -966,6 +966,44 @@ describe("MorcusReaderView desktop splitter drag", () => {
     anchor.click();
 
     expect(savedSpotsStore.get("phi0448.phi001.perseus-lat2")).toBe("1.5");
+  });
+
+  test("handles rapid consecutive section anchor clicks without premature toast dismissal", () => {
+    jest.useFakeTimers();
+    try {
+      const passageHtml = `
+        <div class="reader-section" id="sec-1.5">
+          <a href="#sec-1.5" class="section-anchor">§ 1.5</a>
+          <p class="reader-paragraph">Some text</p>
+        </div>
+        <div id="reader-toast"></div>
+      `;
+      const el = createReaderView(passageHtml);
+      el.dataset.work = "phi0448.phi001.perseus-lat2";
+      el.dataset.page = "1.1";
+
+      const anchor = el.querySelector<HTMLAnchorElement>("a.section-anchor")!;
+      const toast = el.querySelector<HTMLElement>("#reader-toast")!;
+
+      anchor.click();
+      expect(toast.classList.contains("visible")).toBe(true);
+
+      // Advance 1500ms (less than 2200ms timeout), then click again
+      jest.advanceTimersByTime(1500);
+      anchor.click();
+      expect(toast.classList.contains("visible")).toBe(true);
+
+      // Advance another 1000ms (total 2500ms from 1st click, 1000ms from 2nd click)
+      // The toast should STILL be visible because the second click reset the timer!
+      jest.advanceTimersByTime(1000);
+      expect(toast.classList.contains("visible")).toBe(true);
+
+      // Advance remaining 1300ms (2300ms from 2nd click)
+      jest.advanceTimersByTime(1300);
+      expect(toast.classList.contains("visible")).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
 
