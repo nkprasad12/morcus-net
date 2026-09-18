@@ -263,32 +263,37 @@ To make stale DOM references across partial page swaps (`swapPage()`, `fetchAndS
 
 ---
 
-## 4. Part 3: Deferred Reactivity Evaluation (Post-Lifecycle Migration)
+## 4. Part 3: Post-Lifecycle Reactivity Evaluation (Closed — No Reactive Primitive Needed)
 
-Once Steps 1–5 below are complete, we will evaluate whether any residual state-synchronization boilerplate justifies a reactive primitive. If it does, we will choose between:
+With Steps 1–5 complete and `MorcusDictSettings` unified around `syncUi()`, `this.delegate()`, and `this.emit()`, we re-evaluated whether any remaining state-synchronization code in `src/web/v2/` warrants introducing a ~25-line `Observable<T>` (`this.watch`) or `@preact/signals-core`:
 
-1. **Option A (Preferred if depth-1 watching suffices): ~25-Line `Observable<T>` + `this.watch(obs, fn)`** (no `computed()` nodes $\rightarrow$ depth is always 1, making diamonds and ordering glitches impossible).
-2. **Option B (If derived `computed()` graphs are needed): `@preact/signals-core`** (~1.4 kB gzip).
+1. **Zero multi-hop derived state graphs (`computed()`) exist in `src/web/v2/`**: All state in UI V2 is flat view/controller state (`_isOpen`, `_activeTab`, `preferredDvh`, `currentPrefs`, `activeDictKeys`) rendered directly to DOM attributes/properties via single-pass `sync()` / `syncUi()` methods.
+2. **Cross-component state fan-out is already cleanly handled by standard bubbling DOM `CustomEvent`s (`this.emit()` + `this.listen()`)**:
+   - `<morcus-reader-settings>` $\rightarrow$ `<morcus-reader-view>` (`reader-settings-change`)
+   - `<morcus-dict-settings>` $\rightarrow$ `<morcus-dict-search>` (`dict-selection-change`, `dict-inflected-change`)
+   - Peer popovers (`AnchoredPopoverController` via `morcus:popover-will-open` on `ownerDocument`)
+     Because the settings islands live inside the host custom elements they configure, standard bubbling DOM events connect them with automatic `LifetimeScope` disposal on disconnect—without global singleton stores or listener-leak risks.
+3. **Verdict**: **Do not add `Observable<T>` or `@preact/signals-core`.** `BaseElement` + `BaseController` + `LifetimeScope` + explicit `sync()` methods completely resolve the lifecycle and state-synchronization pain while keeping a single, standard DOM event model across all 41 client modules.
 
 ---
 
-## 5. Sequenced Implementation Plan
+## 5. Sequenced Implementation Plan (Completed)
 
-1. **Step 1 — Managed Timers (`this.timeout`, `this.debounce`, `this.rAF`)** (🟢)
-   - Land on `BaseElement` immediately and migrate the 11 unmanaged `setTimeout` / `rAF` call sites (`report_dialog.client.ts`, `dict_search.client.ts`, `reader_view.client.ts`).
-2. **Step 2 — Selector Inventory Contract Test & Expanded `reattach_conformance.test.ts`** (🟢)
-   - Run the selector inventory across `reader_toc.client.ts` and `reader_settings.client.ts` first to verify all dead vs. live selectors.
-   - Expand `reattach_conformance.test.ts` fixtures (`#reader-toc-drawer`, `#reader-toc-btn`, `.reader-splitter`, plus open-before-move popover assertions) and add `unregister()` tests to `disposable.test.ts`.
-3. **Step 3 — `LifetimeScope` + `BaseController` + `addController(c)` / `use(cleanup)`** (🟡)
-   - Unify `.destroy()` $\rightarrow$ `.dispose()` across `DrawerController`, `ReaderLayoutController`, `ReaderPanelController`, and `ReaderTocController`.
-   - Extract one-shot per-connect `LifetimeScope` and `BaseController<Lane>` in `core/base_element.client.ts`.
-   - Migrate `ReaderTocController` first as the proof case—**deleting** the dead `#reader-breadcrumb-btn`, `#reader-toc-back-btn`, and `#reader-toc-filter` handlers rather than porting them.
-4. **Step 4 — `AnchoredPopoverController` (`core/popover.client.ts`)** (🟡)
-   - Extract `AnchoredPopoverController` + `trapFocus` with `bindDismissable` focus semantics, `close()` on disconnect, `assertConnected()`, and grouped `morcus:popover-will-open` mutual exclusion.
-   - Refactor `MorcusReaderSettings` and `ReaderTocController` to use `AnchoredPopoverController`, deleting `getTocController()` and the `#reader-toc-drawer[hidden]` DOM-poking fallback.
-5. **Step 5 — Sink-Driven `onContentSwap(swappedRoot)` & Remaining Controllers** (🟡)
-   - Wire automatic `notifyContentSwap(container)` into `setHtml` / `replaceWithHtml` / `fetchAndSwapPartial`.
-   - Update `ReaderPanelController` to implement `onContentSwap(swappedRoot)`, delete `notesOriginalParent` / `aboutOriginalParent`, and fix the retry listener leak in `showTranslationError()`.
-   - Migrate `DrawerController` and `ReaderLayoutController` to `BaseController` + `addController()`.
-6. **Step 6 — Re-evaluate Reactivity** (🟢)
-   - Assess whether any remaining state-sync code warrants a ~25-line `Observable<T>` (`this.watch`) or if `BaseController` + `sync()` methods already resolved the pain.
+- [x] **Step 1 — Managed Timers (`this.timeout`, `this.debounce`, `this.rAF`)** (🟢)
+  - Landed on `BaseElement` / `LifetimeScope` and migrated unmanaged `setTimeout` / `rAF` call sites (`report_dialog.client.ts`, `dict_search.client.ts`, `reader_view.client.ts`).
+- [x] **Step 2 — Selector Inventory Contract Test & Expanded `reattach_conformance.test.ts`** (🟢)
+  - Added `reader_selector_contract.test.ts` verifying all reader selectors across server scenarios and deleted dead `#reader-breadcrumb-btn`, `#reader-toc-back-btn`, and `#reader-toc-filter` handlers.
+  - Expanded `reattach_conformance.test.ts` fixtures (`#reader-toc-drawer`, `#reader-toc-btn`, `.reader-splitter`, plus open-before-move popover assertions) and added `unregister()` tests to `disposable.test.ts`.
+- [x] **Step 3 — `LifetimeScope` + `BaseController` + `addController(c)` / `use(cleanup)`** (🟡)
+  - Unified `.destroy()` $\rightarrow$ `.dispose()` across `DrawerController`, `ReaderLayoutController`, `ReaderPanelController`, and `ReaderTocController`.
+  - Extracted one-shot per-connect `LifetimeScope` and `BaseController<Lane>` in `core/base_element.client.ts`.
+  - Migrated `ReaderTocController` as the proof case.
+- [x] **Step 4 — `AnchoredPopoverController` (`core/popover.client.ts`)** (🟡)
+  - Extracted `AnchoredPopoverController` + `trapFocus` with `bindDismissable` focus semantics, `close()` on disconnect, `assertConnected()`, and grouped `morcus:popover-will-open` mutual exclusion.
+  - Refactored `MorcusReaderSettings` and `ReaderTocController` to use `AnchoredPopoverController`, deleting `getTocController()` and the `#reader-toc-drawer[hidden]` DOM-poking fallback.
+- [x] **Step 5 — Sink-Driven `onContentSwap(swappedRoot)` & Remaining Controllers** (🟡)
+  - Wired automatic `notifyContentSwap(container)` into `setHtml` / `replaceWithHtml` / `fetchAndSwapPartial`.
+  - Updated `ReaderPanelController` to implement `onContentSwap(swappedRoot)`, deleted `notesOriginalParent` / `aboutOriginalParent`, and fixed the retry listener leak in `showTranslationError()`.
+  - Migrated `DrawerController` and `ReaderLayoutController` to `BaseController` + `addController()`.
+- [x] **Step 6 — Re-evaluate Reactivity** (🟢)
+  - Refactored `MorcusDictSettings` to use `syncUi()`, `this.delegate()`, `this.emit()`, and `this.use()`. Confirmed that `BaseController` + explicit `sync()` / `syncUi()` methods and bubbling DOM `CustomEvent`s eliminate any need for a separate reactive `Observable<T>` or signals primitive.

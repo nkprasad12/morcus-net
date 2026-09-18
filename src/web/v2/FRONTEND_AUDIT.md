@@ -15,7 +15,7 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
 
 ### A. Shared `LifetimeScope` + `BaseController`, `addController(c)`, & `use(cleanup)`
 
-- [ ] 🟡 **Extract a one-shot per-connect `LifetimeScope` and `BaseController<Lane>` base class, and split host controller registration (`this.addController(c)`) from scope cleanup (`this.use(cleanup)`).**
+- [x] 🟡 **Extract a one-shot per-connect `LifetimeScope` and `BaseController<Lane>` base class, and split host controller registration (`this.addController(c)`) from scope cleanup (`this.use(cleanup)`).** (Completed in Steps 3 & 5)
   - **Smell 1 (Repetitive teardown boilerplate & inconsistent `.destroy()` vs `.dispose()`)**: `this.addDisposable(fn)` currently accepts only `() => void` (and returns no `unregister` handle). Every time a component instantiates a sub-controller (`DrawerController`, `ReaderLayoutController`, `ReaderTocController`, `ReaderPanelController`, `QueryParamSync`), it repeats 4–5 lines of teardown boilerplate (**5 times** across [`reader/reader_view.client.ts`](reader/reader_view.client.ts) L204–237, L1005–1042 and [`dict/dict_toc.client.ts`](dict/dict_toc.client.ts) L32–43) and mixes `.dispose()` vs `.destroy()`.
   - **Smell 2 (Sub-controllers register listeners in `constructor()` & lose state on reconnect)**:
     - In [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) (`initListeners()`, 126 lines) and [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts), every listener takes 6 lines of `const btn = ...; btn.addEventListener(...); this.disposables.add(() => btn.removeEventListener(...))`.
@@ -63,8 +63,8 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
 
 - [ ] 🟢 **Use `this.delegate()` instead of manual `e.target.closest(...)` inside `this.listen()`**:
   - [`library/library_view.client.ts`](library/library_view.client.ts) (L28–36) manually writes `this.listen(this, "click", (e) => { if (!(e.target instanceof Element)) return; const pill = e.target.closest<HTMLButtonElement>(".filter-pill"); ... })` instead of `this.delegate<HTMLButtonElement>(this, "click", ".filter-pill", ...)`. Also remove its empty `protected override onDisconnect() {}` at L47–49.
-  - [`dict/dict_settings.client.ts`](dict/dict_settings.client.ts) (L241–270) manually inspects `e.target instanceof HTMLInputElement && target.classList.contains(...)` inside `this.listen(this, "change", ...)`.
-- [ ] 🟢 **Use `this.emit()` instead of manual `new CustomEvent(...)` dispatch**:
+  - [x] [`dict/dict_settings.client.ts`](dict/dict_settings.client.ts) (L241–270) manually inspects `e.target instanceof HTMLInputElement && target.classList.contains(...)` inside `this.listen(this, "change", ...)`. (Completed in Step 6)
+- [x] 🟢 **Use `this.emit()` instead of manual `new CustomEvent(...)` dispatch**: (Completed in Step 6)
   - [`dict/dict_settings.client.ts`](dict/dict_settings.client.ts) (L262–268 and L277–283) manually constructs `this.dispatchEvent(new CustomEvent("dict-...", { bubbles: true, composed: true, detail: ... }))`, which is identical to `this.emit(name, detail)` on `BaseElement` (`core/base_element.client.ts` L254–267).
 - [ ] 🟢 **Add missing `HTMLElementTagNameMap` augmentations**:
   - 8 of the 10 custom elements declare `HTMLElementTagNameMap` at the bottom of their module, but [`dict/dict_toc.client.ts`](dict/dict_toc.client.ts) (`"morcus-dict-toc"`) and [`library/library_view.client.ts`](library/library_view.client.ts) (`"morcus-library-view"`) omit it.
@@ -75,7 +75,7 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
 
 ### A. Extract an Anchored Popover + Focus Trap Controller (`core/popover.client.ts`)
 
-- [ ] 🟡 **Unify `MorcusReaderSettings` and `ReaderTocController` anchored popover & focus-trap logic into `core/popover.client.ts`.**
+- [x] 🟡 **Unify `MorcusReaderSettings` and `ReaderTocController` anchored popover & focus-trap logic into `core/popover.client.ts`.** (Completed in Step 4)
   - **High-Impact Duplication**: [`reader/reader_settings.client.ts`](reader/reader_settings.client.ts) (L176–362, ~185 lines) and [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) (L186–345, ~160 lines) are near-clones of the same anchored dropdown/popover lifecycle:
     1. **`open()` / `close()` / `toggle()` / `isOpen()`**: Toggling `[hidden]` on the popover and backdrop, toggling `aria-expanded="true" | "false"` on trigger buttons, and managing transient open-state listeners via `openDisposables = new DisposableBag()`.
     2. **`updatePosition()`**: Measuring `triggerBtn.getBoundingClientRect()`, setting `top = Math.round(rect.bottom + 8)`, clamping horizontal position within `[12, viewportWidth - width - 12]`, computing the diamond caret offset `--caret-left` clamped to `[16, width - 16]`, and attaching `resize` + passive `scroll` listeners while open. ([`dict/abbr_popover.client.ts`](dict/abbr_popover.client.ts) L35–60 implements a 3rd viewport-clamped anchor positioner.)
