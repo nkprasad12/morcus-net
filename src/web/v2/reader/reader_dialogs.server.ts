@@ -115,96 +115,101 @@ export interface ReaderSettingsDialogOptions {
   hasMacra?: boolean;
 }
 
+export type ReaderSettingsPopoverOptions = ReaderSettingsDialogOptions;
+
 /**
- * Renders the reader typography and display settings dialog, hydrated by <morcus-reader-settings>.
+ * Renders the reader typography and display settings popover, hydrated by <morcus-reader-settings>.
  * When hasMacra is false (e.g. for unmacronized editions), the macra toggle is omitted from the DOM.
  */
-export function renderReaderSettingsDialog(
-  options: ReaderSettingsDialogOptions = {}
+export function renderReaderSettingsPopover(
+  options: ReaderSettingsPopoverOptions = {}
 ): string {
   const hasMacra = options.hasMacra ?? true;
-  return `      <!-- Reader Appearance & Settings Dialog -->
+  return `      <!-- Reader Appearance & Typography Popover -->
       <morcus-reader-settings>
-        <dialog class="dialog reader-settings-dialog" id="reader-settings-dialog">
-          <div class="dialog-card settings-card">
-            <div class="dialog-header">
-              <div>
-                <h2 class="dialog-title">Reader Settings</h2>
-                <p class="dialog-subtitle">Typography &amp; display preferences</p>
-              </div>
-              <button type="button" class="dialog-close-btn" id="reader-settings-close-btn" aria-label="Close settings" data-dialog-close>&times;</button>
-            </div>
-
-            <div class="settings-body">
-              
-              <!-- Font Size Scaling Group -->
-              <div class="settings-group">
-                <h3 class="settings-group-title">Text Size</h3>
-                <div class="settings-row">
-                  <span class="settings-label">Reading Canvas</span>
-                  <div class="stepper">
-                    <button type="button" class="stepper-btn" id="reader-size-dec" aria-label="Decrease reading text size">A&minus;</button>
-                    <span class="stepper-val" id="reader-size-label">100%</span>
-                    <button type="button" class="stepper-btn" id="reader-size-inc" aria-label="Increase reading text size">A+</button>
-                  </div>
-                </div>
-
-                <div class="settings-row">
-                  <span class="settings-label">Dictionary Sidebar</span>
-                  <div class="stepper">
-                    <button type="button" class="stepper-btn" id="dict-size-dec" aria-label="Decrease dictionary text size">A&minus;</button>
-                    <span class="stepper-val" id="dict-size-label">100%</span>
-                    <button type="button" class="stepper-btn" id="dict-size-inc" aria-label="Increase dictionary text size">A+</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Scholarly & Textual Aids -->
-              <div class="settings-group">
-                <h3 class="settings-group-title">Scholarly &amp; Textual Aids</h3>
-                ${
-                  hasMacra
-                    ? `<label class="settings-toggle-row">
-                  <span class="settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
-                  <input type="checkbox" id="toggle-macra" class="toggle-checkbox" checked>
-                </label>`
-                    : ""
-                }
-
-                <label class="settings-toggle-row">
-                  <span class="settings-label">Show Section Numbers (&sect;)</span>
-                  <input type="checkbox" id="toggle-gutter" class="toggle-checkbox" checked>
-                </label>
-              </div>
-
-              <!-- Typography Style -->
-              <div class="settings-group">
-                <h3 class="settings-group-title">Typography</h3>
-                <div class="settings-row">
-                  <span class="settings-label">Font Family</span>
-                  <select id="font-select" class="settings-select" aria-label="Select font style">
-                    <option value="serif" selected>Classical Serif</option>
-                    <option value="sans">Modern Sans-Serif</option>
-                  </select>
-                </div>
-
-                <div class="settings-row">
-                  <span class="settings-label">Line Spacing</span>
-                  <select id="line-height-select" class="settings-select" aria-label="Select line spacing">
-                    <option value="compact">Compact</option>
-                    <option value="normal" selected>Normal</option>
-                    <option value="relaxed">Relaxed</option>
-                  </select>
-                </div>
-              </div>
-
-            </div>
-
-            <div class="dialog-actions settings-actions">
-              <button type="button" class="btn btn-secondary" id="reader-settings-reset-btn">Reset Defaults</button>
-              <button type="button" class="btn btn-primary" id="reader-settings-done-btn" data-dialog-close>Done</button>
-            </div>
+        <div class="reader-settings-popover"
+             id="reader-settings-popover"
+             role="dialog"
+             aria-label="Appearance &amp; Typography"
+             hidden>
+          <div class="settings-popover-header">
+            <h2 class="settings-popover-title">Appearance</h2>
+            <button type="button"
+                    class="settings-popover-close"
+                    id="reader-settings-close-btn"
+                    aria-label="Close appearance settings">&times;</button>
           </div>
-        </dialog>
+
+          <div class="settings-body">
+            
+            <!-- Typography Style -->
+            <div class="settings-group">
+              <h3 class="settings-group-title">Typography</h3>
+              <div class="settings-row">
+                <span class="settings-label">Font Family</span>
+                <select id="font-select" class="settings-select" aria-label="Select font style">
+                  <option value="serif" selected>Classical Serif</option>
+                  <option value="sans">Modern Sans-Serif</option>
+                </select>
+              </div>
+
+              <div class="settings-row">
+                <span class="settings-label">Line Spacing</span>
+                <select id="line-height-select" class="settings-select" aria-label="Select line spacing">
+                  <option value="compact">Compact</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="relaxed">Relaxed</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Font Size Scaling Group -->
+            <div class="settings-group">
+              <h3 class="settings-group-title">Text Size</h3>
+              <div class="settings-row">
+                <span class="settings-label">Reading Canvas</span>
+                <div class="stepper">
+                  <button type="button" class="stepper-btn" id="reader-size-dec" aria-label="Decrease reading text size">A&minus;</button>
+                  <span class="stepper-val" id="reader-size-label">100%</span>
+                  <button type="button" class="stepper-btn" id="reader-size-inc" aria-label="Increase reading text size">A+</button>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <span class="settings-label">Dictionary Sidebar</span>
+                <div class="stepper">
+                  <button type="button" class="stepper-btn" id="dict-size-dec" aria-label="Decrease dictionary text size">A&minus;</button>
+                  <span class="stepper-val" id="dict-size-label">100%</span>
+                  <button type="button" class="stepper-btn" id="dict-size-inc" aria-label="Increase dictionary text size">A+</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scholarly & Textual Aids -->
+            <div class="settings-group">
+              <h3 class="settings-group-title">Scholarly &amp; Textual Aids</h3>
+              ${
+                hasMacra
+                  ? `<label class="settings-toggle-row">
+                <span class="settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
+                <input type="checkbox" id="toggle-macra" class="toggle-checkbox" checked>
+              </label>`
+                  : ""
+              }
+
+              <label class="settings-toggle-row">
+                <span class="settings-label">Show Section Numbers (&sect;)</span>
+                <input type="checkbox" id="toggle-gutter" class="toggle-checkbox" checked>
+              </label>
+            </div>
+
+          </div>
+
+          <div class="settings-popover-footer">
+            <button type="button" class="btn btn-secondary settings-reset-btn" id="reader-settings-reset-btn">Reset Defaults</button>
+          </div>
+        </div>
       </morcus-reader-settings>`;
 }
+
+export const renderReaderSettingsDialog = renderReaderSettingsPopover;

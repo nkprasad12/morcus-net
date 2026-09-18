@@ -188,95 +188,48 @@
   color: var(--text);
 }
 
-/* More / Expand Toggle Button */
-.sticky-expand-btn {
-  padding: 0 var(--space-3);
+/* Reader Settings (Aa) Trigger Button */
+.reader-settings-btn,
+.reader-settings-btn:visited {
+  width: var(--pill-height);
+  min-width: var(--pill-height);
+  padding: 0;
+  justify-content: center;
+  font-weight: 600;
   color: var(--text-muted);
-  gap: var(--space-1);
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.sticky-expand-btn:hover {
-  color: var(--text);
+.reader-settings-btn:hover {
+  color: var(--primary);
   border-color: var(--border-strong);
   background: var(--card-bg);
 }
 
-.sticky-expand-btn[aria-expanded="true"] {
+.reader-settings-btn[aria-expanded="true"] {
   background: var(--primary-light);
   border-color: var(--primary);
   color: var(--primary);
+  box-shadow: var(--focus-ring);
 }
 
-.expand-icon {
-  flex-shrink: 0;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.sticky-expand-btn[aria-expanded="true"] .expand-icon {
-  transform: rotate(180deg);
-}
-
-.expand-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-/* Secondary Expanded Row */
-.sticky-expanded-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-5);
-  padding: var(--space-3) var(--space-5) var(--space-4);
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-  width: 100%;
-  animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.sticky-expanded-row[hidden] {
-  display: none;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.expanded-left,
-.expanded-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.reader-settings-btn {
-  padding: var(--space-2) var(--space-4);
-  font-weight: 600;
+.reader-settings-btn .settings-glyph {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
   letter-spacing: -0.05em;
 }
 
-/* No-JS Mode: expanded row is always visible, expand button hidden */
+/* No-JS Mode: reader settings button is hidden because typography preferences mutate client state */
 @media (scripting: none) {
-  .sticky-expanded-row[hidden] {
-    display: flex;
-  }
-  .sticky-expand-btn {
+  .reader-settings-btn {
     display: none;
   }
 }
 
-:root:not(.has-js) .sticky-expanded-row[hidden] {
-  display: flex;
-}
-
-:root:not(.has-js) .sticky-expand-btn {
+:root:not(.has-js) .reader-settings-btn {
   display: none;
 }
 
@@ -444,33 +397,6 @@
     text-align: center;
   }
 
-  .sticky-expanded-row {
-    padding: var(--space-2) var(--space-4);
-    gap: var(--space-3);
-    flex-wrap: wrap;
-    justify-content: space-between;
-    box-sizing: border-box;
-  }
-
-  .expanded-left,
-  .expanded-right {
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .sticky-expand-btn {
-    padding: 0 var(--space-2);
-    min-width: var(--pill-height);
-  }
-
-  .expand-label {
-    display: none;
-  }
-
-  .btn-text {
-    display: none;
-  }
-
   .sticky-work-title {
     font-size: 0.75rem;
     font-weight: 500;
@@ -494,7 +420,8 @@
     font-size: 0.75rem;
   }
 
-  .reader-nav-arrow {
+  .reader-nav-arrow,
+  .reader-settings-btn {
     width: var(--pill-height);
     min-width: var(--pill-height);
     padding: 0;

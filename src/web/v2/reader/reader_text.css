@@ -122,7 +122,7 @@ details.reader-work-about[open] summary.reader-about-summary {
 
 .reader-passage {
   font-family: var(--reader-font, var(--font-serif));
-  font-size: var(--reader-font-size, 1.25rem);
+  font-size: calc(1.25rem * var(--reader-scale, 1));
   line-height: var(--reader-line-height, 1.95);
   color: var(--text);
 }
@@ -473,8 +473,8 @@ span.lat-word.word-active {
   }
 
   .reader-passage {
-    font-size: 1.15rem;
-    line-height: 1.8;
+    font-size: calc(1.15rem * var(--reader-scale, 1));
+    line-height: var(--reader-line-height, 1.8);
   }
 
   .reader-section {

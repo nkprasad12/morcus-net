@@ -4,7 +4,7 @@ A design record, not a spec. It captures why the reader's top bar is organized t
 
 Origin: a review of a proposed sticky-top-bar refactor surfaced a settings desync between the quick tools popover it introduced and the existing settings dialog. The desync turned out to be a symptom rather than the problem, and working out what it was a symptom _of_ produced the model below.
 
-> [!NOTE] > **That refactor is not in the tree.** It was reverted pending this assessment, so the popover described in §1 does not currently exist. What ships today is an expandable secondary toolbar (`sticky-expanded-row` in [`reader.server.ts`](reader.server.ts)) holding the Single/Parallel toggle and two launcher buttons — `Aa` Settings and `ℹ` Info — with every preference living in the settings dialog. §1 is retained because the failure it describes is what the next attempt needs to avoid; everything from §2 onward applies to the code as it stands.
+> [!NOTE] > **Implementation update**: The single-row primary sticky bar and anchored typography popover have landed. The secondary expandable toolbar (`sticky-expanded-row`, `sticky-expand-btn`) has been retired, `Aa` is promoted directly into the primary row next to `pager-next`, and the modal `<dialog>` is replaced with `#reader-settings-popover` (zero canvas blur/dimming, live preview, caret anchoring). §1 is retained for historical design context on why settings must never be split across surfaces.
 
 Companion docs: [`FEATURE_PARITY.md`](FEATURE_PARITY.md) (V1 → V2 gaps), [`README.md`](README.md) (slice architecture).
 
@@ -188,8 +188,6 @@ Settled in discussion and implementation:
 - **Attribution & Colophon**: Settled and shipped. Decided against header subtitle clutter; scholarly provenance and citation metadata live in the companion About tab (`#panel-view-about`) and zero-JS `<details>` colophon (`#reader-work-about`).
 - **Translation Presentation**: Settled and shipped. The primary reading canvas is strictly a single-column Latin baseline. Dual-column parallel mode and the sticky bar `Single | Parallel` toggle are retired. For translated works, translations are housed in the companion panel's 4th tab (`#panel-view-translation`), loaded on-demand via `/v2/reader/:author/:name/:page/translation`, and synchronized with native scrolling.
 
-Still open:
+- **Single Anchored Typography Popover**: Settled and shipped. The modal `<dialog>` is retired and replaced with `#reader-settings-popover` (`reader_settings.client.ts`). The secondary expandable toolbar is removed, promoting `Aa` directly to the primary sticky bar. All typography controls live together in a single surface over an undimmed reading canvas with caret anchoring and mutual exclusion with the TOC drawer.
 
-- Whether to delete the settings dialog outright and consolidate into a single anchored panel (recommended — it removes the blur-over-preview problem and makes the duplication bug class structurally impossible), or to keep the dialog and promote only text size into the bar directly.
-
-> [!NOTE] > **Sequencing.** The apparatus port went first, ahead of any top-bar rework: 85,876 inert buttons was a more serious defect than settings ergonomics. Its footnote baseline has landed, so the panel side of the model now has real content waiting for it — the chrome work can be designed against a panel that has something to put in a tab, and the Notes tab itself should follow the arbitration decisions above rather than precede them.
+> [!NOTE] > **Sequencing completed.** The apparatus footnote baseline, companion arbitration tabs, and the top-bar unified single row with anchored typography popover have all landed cleanly.

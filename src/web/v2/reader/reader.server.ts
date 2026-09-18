@@ -19,7 +19,7 @@ import {
 } from "@/web/v2/reader/reader_toc.server";
 import {
   renderReaderAboutSection,
-  renderReaderSettingsDialog,
+  renderReaderSettingsPopover,
 } from "@/web/v2/reader/reader_dialogs.server";
 import * as he from "he";
 
@@ -27,7 +27,9 @@ export {
   renderBiblioDialog,
   renderReaderAboutSection,
   renderReaderSettingsDialog,
+  renderReaderSettingsPopover,
   type ReaderSettingsDialogOptions,
+  type ReaderSettingsPopoverOptions,
 } from "@/web/v2/reader/reader_dialogs.server";
 
 export {
@@ -186,7 +188,7 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
             </div>
           </div>
 
-          <!-- Right Controls: Next Arrow + Expand Button -->
+          <!-- Right Controls: Next Arrow + Appearance & Typography Settings Popover Trigger -->
           <div class="sticky-primary-right">
             <a href="${nextPageUrl}"
                class="reader-btn reader-nav-arrow ${
@@ -199,33 +201,15 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
               <span class="pager-arrow" aria-hidden="true">&rarr;</span>
             </a>
 
-            <!-- Expand / Tools Button -->
-            <button type="button"
-                    class="reader-btn sticky-expand-btn"
-                    id="sticky-expand-btn"
-                    aria-expanded="false"
-                    aria-controls="sticky-expanded-row"
-                    title="Show additional tools (View mode, appearance settings)">
-              <span class="expand-label">Tools</span>
-              <svg class="expand-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 9l6 6 6-6"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Secondary Expanded Row (Hidden by default, smooth animated reveal) -->
-        <div class="sticky-expanded-row" id="sticky-expanded-row" hidden>
-          <!-- Right: Settings -->
-          <div class="expanded-right">
+            <!-- Appearance & Typography Settings Popover Trigger -->
             <button type="button"
                     class="reader-btn reader-settings-btn"
                     id="reader-settings-btn"
                     aria-expanded="false"
-                    aria-controls="reader-settings-dialog"
-                    title="Appearance & Settings (Aa)">
-              <span class="settings-glyph">Aa</span>
-              <span class="btn-text">Settings</span>
+                    aria-controls="reader-settings-popover"
+                    aria-label="Appearance &amp; Typography"
+                    title="Appearance &amp; Typography">
+              <span class="settings-glyph" aria-hidden="true">Aa</span>
             </button>
           </div>
         </div>
@@ -402,6 +386,9 @@ ${renderReaderStickyBar(ctx)}
       <!-- Backdrop overlay for Table of Contents (TOC) dropdown dismissal -->
       <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
 
+      <!-- Backdrop overlay for Reader Settings popover dismissal -->
+      <div id="reader-settings-backdrop" class="reader-settings-backdrop" hidden></div>
+
       <!-- Contained Table of Contents (TOC) Dropdown -->
       ${renderTocDrawer({
         work: ctx.work,
@@ -418,7 +405,7 @@ ${renderReaderTextPanel(ctx)}
 ${renderReaderDictPanel(ctx)}
       </div>
 
-${renderReaderSettingsDialog({ hasMacra: ctx.work.hasMacra })}
+${renderReaderSettingsPopover({ hasMacra: ctx.work.hasMacra })}
 
     </morcus-reader-view>
   `;

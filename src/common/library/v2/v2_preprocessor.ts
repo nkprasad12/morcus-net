@@ -283,7 +283,9 @@ function renderNotesSection(
     return `${heading}<ol class="reader-notes-list">${items}</ol>`;
   });
   return `<aside class="reader-notes" role="doc-endnotes" aria-labelledby="${headingId}">
-      <h2 class="reader-notes-heading" id="${headingId}">${he.escape(mainHeading)}</h2>
+      <h2 class="reader-notes-heading" id="${headingId}">${he.escape(
+    mainHeading
+  )}</h2>
       ${sections.join("\n")}
     </aside>`;
 }
@@ -378,7 +380,9 @@ export function preprocessWorkToV2(
         translationSectionsHtml.push(
           `
           <div class="reader-translation-section" id="trans-sec-${dotId}">
-            <div class="reader-translation-gutter"><span class="cite-local">${he.escape(localId)}</span></div>
+            <div class="reader-translation-gutter"><span class="cite-local">${he.escape(
+              localId
+            )}</span></div>
             <div class="reader-translation-text">${transHtml}</div>
           </div>
         `.trim()

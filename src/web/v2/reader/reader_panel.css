@@ -203,7 +203,7 @@
 .reader-translation-text {
   flex: 1 1 auto;
   font-family: var(--font-serif);
-  font-size: 0.95rem;
+  font-size: calc(0.95rem * var(--reader-scale, 1));
   line-height: 1.6;
   color: var(--text);
 }

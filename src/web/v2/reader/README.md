@@ -53,16 +53,16 @@ sequenceDiagram
 
 - `reader_routes.server.ts`: Registers `/reader/:author/:name/:page?` and the legacy `/reader?work=&jump=` entry point, handles alias/jump redirects to canonical URLs, and serves full pages or partials depending on `isPartialRequest`.
 - `reader_loader.server.ts`: Reads preprocessed works from `LIB_DEFAULT_DIR`, transparently gunzips them, and caches works, slug→id mappings, and library summaries in memory. Also resolves a citation string to a concrete page.
-- `reader.server.ts`: Renders the page shell — sticky navigation bar (including the expandable secondary toolbar holding the view toggle and the Settings / Info launchers), passage text with citation gutters, parallel translation column, and the passage footer with continuation cards.
+- `reader.server.ts`: Renders the page shell — primary sticky navigation bar (TOC drawer launcher, pager controls, anchored `Aa` typography launcher, and Info launcher), passage text with citation gutters, parallel translation column, and the passage footer with continuation cards.
 - `reader_toc.server.ts`: Renders the table of contents, including its `:target`-addressable No-JS fallback.
-- `reader_dialogs.server.ts`: Renders the bibliography/provenance dialog and the reader settings dialog.
+- `reader_dialogs.server.ts`: Renders the bibliography/provenance modal dialog and the anchored reader settings typography popover.
 - `reader_types.server.ts`: Domain types for the citation hierarchy (`CitationId`, `ReaderSection`, `ReaderPage`, `ReaderWork`) supporting works of arbitrary citation depth.
 
 ### Client
 
 - `reader_view.client.ts`: The main controller — partial navigation, section anchors, word lookup into the dictionary panel, dialog wiring, and keyboard shortcuts.
 - `reader_toc.client.ts`: `ReaderTocController` — opens/closes the TOC drawer and applies the live filter.
-- `reader_settings.client.ts`: `MorcusReaderSettings` — the settings dialog, persisting to `morcus_reader_settings` in `localStorage`.
+- `reader_settings.client.ts`: `MorcusReaderSettings` — the anchored typography popover, persisting to `morcus_reader_settings` in `localStorage`.
 - `reader_layout.client.ts`: `ReaderLayoutController` — the desktop resizable splitter and the mobile bottom drawer hosting the embedded dictionary.
 
 ### Styles

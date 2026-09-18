@@ -145,16 +145,17 @@ const FIXTURES: Record<string, string> = {
           </div>
           <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
         </aside>
-        <dialog id="reader-settings-dialog">
+        <div id="reader-settings-popover" hidden>
           <input type="checkbox" id="toggle-macra" checked />
-        </dialog>
+        </div>
       </div>
     </morcus-reader-view>`,
 
   "morcus-reader-settings": `
     <morcus-reader-settings>
       <button id="reader-settings-btn"></button>
-      <dialog class="dialog reader-settings-dialog" id="reader-settings-dialog">
+      <div id="reader-settings-backdrop" hidden></div>
+      <div class="reader-settings-popover" id="reader-settings-popover" role="dialog" hidden>
         <button id="reader-size-dec">-</button>
         <span id="reader-size-label">100%</span>
         <button id="reader-size-inc">+</button>
@@ -173,8 +174,8 @@ const FIXTURES: Record<string, string> = {
           <option value="relaxed">Relaxed</option>
         </select>
         <button id="reader-settings-reset-btn">Reset</button>
-        <button id="reader-settings-close-btn" data-dialog-close>&times;</button>
-      </dialog>
+        <button id="reader-settings-close-btn">&times;</button>
+      </div>
     </morcus-reader-settings>`,
 };
 
