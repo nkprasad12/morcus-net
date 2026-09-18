@@ -257,7 +257,11 @@ interface NoteGroup {
  * than V1's per-marker tooltip: at ~12 notes per page (Ammianus) tooltips do
  * not scale, and a list in page flow also survives printing.
  */
-function renderNotesSection(groups: NoteGroup[]): string | undefined {
+function renderNotesSection(
+  groups: NoteGroup[],
+  mainHeading = "Notes",
+  headingId = "reader-notes-heading"
+): string | undefined {
   const populated = groups.filter((group) => group.notes.length > 0);
   if (populated.length === 0) {
     return undefined;
@@ -278,8 +282,8 @@ function renderNotesSection(groups: NoteGroup[]): string | undefined {
       .join("\n");
     return `${heading}<ol class="reader-notes-list">${items}</ol>`;
   });
-  return `<aside class="reader-notes" role="doc-endnotes" aria-labelledby="reader-notes-heading">
-      <h2 class="reader-notes-heading" id="reader-notes-heading">Notes</h2>
+  return `<aside class="reader-notes" role="doc-endnotes" aria-labelledby="${headingId}">
+      <h2 class="reader-notes-heading" id="${headingId}">${he.escape(mainHeading)}</h2>
       ${sections.join("\n")}
     </aside>`;
 }
@@ -316,7 +320,7 @@ export function preprocessWorkToV2(
     const [startIdx, endIdx] = page.rows;
 
     const singleSectionsHtml: string[] = [];
-    const parallelSectionsHtml: string[] = [];
+    const translationSectionsHtml: string[] = [];
     const citationIds: string[] = [];
     const textNotes = createNoteCollector(work.notes, "n", "numeric");
     const translationNotes = createNoteCollector(
@@ -371,18 +375,11 @@ export function preprocessWorkToV2(
           ? renderPassageContent(transNode, isVerseWork, translationNotes)
           : "";
 
-        parallelSectionsHtml.push(
+        translationSectionsHtml.push(
           `
-          <div class="${sectionClass} section-parallel" id="sec-${dotId}">
-            ${gutterHtml}
-            <div class="reader-parallel-content">
-              <div class="reader-passage-col passage-latin">
-                <div class="reader-passage" data-tokenize-target="true">${latinHtml}</div>
-              </div>
-              <div class="reader-passage-col passage-english">
-                <div class="reader-passage">${transHtml}</div>
-              </div>
-            </div>
+          <div class="reader-translation-section" id="trans-sec-${dotId}">
+            <div class="reader-translation-gutter"><span class="cite-local">${he.escape(localId)}</span></div>
+            <div class="reader-translation-text">${transHtml}</div>
           </div>
         `.trim()
         );
@@ -394,31 +391,36 @@ export function preprocessWorkToV2(
       citationIds[citationIds.length - 1] ?? "",
     ];
 
+    let transPageHtml: string | undefined = undefined;
+    if (translationWork && translationSectionsHtml.length > 0) {
+      const transNotesHtml =
+        translationNotes.collected.length > 0
+          ? renderNotesSection(
+              [
+                {
+                  title: "Notes on the translation",
+                  notes: translationNotes.collected,
+                },
+              ],
+              "Notes on the translation",
+              "reader-trans-notes-heading"
+            )
+          : undefined;
+      transPageHtml = transNotesHtml
+        ? `${translationSectionsHtml.join("\n")}\n${transNotesHtml}`
+        : translationSectionsHtml.join("\n");
+    }
+
     v2Pages.push({
       id: pageId.join("."),
       title: pageTitle,
       sectionCount: citationIds.length,
       citationRange,
       singleHtml: singleSectionsHtml.join("\n"),
-      parallelHtml:
-        translationWork && parallelSectionsHtml.length > 0
-          ? parallelSectionsHtml.join("\n")
-          : undefined,
+      translationHtml: transPageHtml,
       notesHtml: renderNotesSection([
         { title: "Notes on the text", notes: textNotes.collected },
       ]),
-      // Only differs from `notesHtml` when the translation carries notes of its
-      // own; otherwise the parallel view reuses the text notes.
-      parallelNotesHtml:
-        translationNotes.collected.length > 0
-          ? renderNotesSection([
-              { title: "Notes on the text", notes: textNotes.collected },
-              {
-                title: "Notes on the translation",
-                notes: translationNotes.collected,
-              },
-            ])
-          : undefined,
     });
   }
 

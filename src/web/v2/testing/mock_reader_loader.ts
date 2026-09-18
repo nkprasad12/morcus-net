@@ -131,21 +131,10 @@ export const MOCK_SALLUST_WORK: V2PreprocessedWork = {
           <div class="reader-passage" data-tokenize-target="true">Omnis homines qui sese student praestare ceteris animalibus...</div>
         </div>
       `,
-      parallelHtml: `
-        <div class="reader-section section-parallel" id="sec-1.1">
-          <div class="reader-gutter">
-            <a href="#sec-1.1" class="section-anchor" title="Citation § 1.1">
-              <span class="cite-prefix">1.</span><span class="cite-local">1</span>
-            </a>
-          </div>
-          <div class="reader-parallel-content">
-            <div class="reader-passage-col passage-latin">
-              <div class="reader-passage" data-tokenize-target="true">Omnis homines qui sese student praestare ceteris animalibus...</div>
-            </div>
-            <div class="reader-passage-col passage-english">
-              <div class="reader-passage">It becomes all men, who desire to excel other animals...</div>
-            </div>
-          </div>
+      translationHtml: `
+        <div class="reader-translation-section" id="trans-sec-1.1">
+          <div class="reader-translation-gutter"><span class="cite-local">1</span></div>
+          <div class="reader-translation-text"><p class="reader-paragraph">It becomes all men, who desire to excel other animals...</p></div>
         </div>
       `,
     },

@@ -95,7 +95,8 @@ The mobile sticky bar is already at capacity: [`reader_nav.css`](reader_nav.css)
 CHROME (fixed, small)              PANEL (scalable, large)
 ├─ Navigate   §  drawer            ├─ Dictionary       (default)
 ├─ Display    Aa popover           ├─ Notes            ← critical apparatus
-└─ Cite       colophon in flow     ├─ Vocabulary       (frequent lemmata)
+└─ Cite       colophon in flow     ├─ Translation      ← on-demand English text
+                                   ├─ Vocabulary       (frequent lemmata)
                                    └─ About this text  (editorial provenance)
 ```
 
@@ -155,13 +156,11 @@ The biblio record lumps seven fields together because they arrive on the same ob
 | Source repository    | No — provenance for machines                                                                                                | page flow     |
 | Structural hierarchy | No — a schema                                                                                                               | page flow     |
 
-**Editorial provenance is apparatus**; knowing you are in Rice Holmes rather than Klotz is a substantive interpretive fact. **Citation mechanics are not** — and they carry the No-JS and print constraints, which a panel tab would regress.
-
 The proportionate shape:
 
-- Editorial provenance → a **subtitle in the text-card header** (`Caesar · De Bello Gallico · ed. T. Rice Holmes, 1914`). Always visible, zero clicks, no new surface. _Not yet mocked up or agreed._
-- Citation mechanics → **colophon in page flow**, near the Previous/Next continuation cards, where sequential readers already land at the end of every chapter.
-- The `ⓘ` trigger then has nothing left to launch and disappears.
+- **Editorial provenance and citation mechanics** live together in the **companion About tab** (desktop sidebar & mobile bottom drawer) and the **No-JS colophon `<details>`** at the bottom of the article flow.
+- A subtle `ⓘ` trigger beside the work title jumps to the colophon (or toggles the About tab when JS is active).
+- **Text-card header subtitle rejected**: Decided against displaying an editorial subtitle in the text-card header to keep the passage canvas header clean and uncluttered.
 
 ---
 
@@ -186,12 +185,11 @@ Settled in discussion and implementation:
 - The tiebreak and sustained-consultation rules above.
 - Info does not belong in a settings menu.
 - **Companion Panel Arbitration**: Settled and shipped in `ReaderPanelController` (`reader_panel.client.ts`). Word priority (Rule A1) force-switches the panel back to Dictionary whenever a Latin word is clicked, dismiss (Rule A4) resets to Dictionary, and note markers activate the Notes tab with non-destructive in-place scrolling.
+- **Attribution & Colophon**: Settled and shipped. Decided against header subtitle clutter; scholarly provenance and citation metadata live in the companion About tab (`#panel-view-about`) and zero-JS `<details>` colophon (`#reader-work-about`).
+- **Translation Presentation**: Settled and shipped. The primary reading canvas is strictly a single-column Latin baseline. Dual-column parallel mode and the sticky bar `Single | Parallel` toggle are retired. For translated works, translations are housed in the companion panel's 4th tab (`#panel-view-translation`), loaded on-demand via `/v2/reader/:author/:name/:page/translation`, and synchronized with native scrolling.
 
 Still open:
 
 - Whether to delete the settings dialog outright and consolidate into a single anchored panel (recommended — it removes the blur-over-preview problem and makes the duplication bug class structurally impossible), or to keep the dialog and promote only text size into the bar directly.
-- Whether the editorial-provenance subtitle reads as useful or as clutter — needs a mockup.
-- Whether the mobile drawer's ~3-chip budget at 390px can carry four tabs at all.
-- Translation presentation, which interacts directly with the top bar's view toggle — see [`FEATURE_PARITY.md`](FEATURE_PARITY.md) §2.9.
 
 > [!NOTE] > **Sequencing.** The apparatus port went first, ahead of any top-bar rework: 85,876 inert buttons was a more serious defect than settings ergonomics. Its footnote baseline has landed, so the panel side of the model now has real content waiting for it — the chrome work can be designed against a panel that has something to put in a tab, and the Notes tab itself should follow the arbitration decisions above rather than precede them.

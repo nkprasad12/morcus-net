@@ -217,7 +217,7 @@ describe("preprocessWorkToV2 critical apparatus", () => {
     expect(page.notesHtml).toBeUndefined();
   });
 
-  it("letters translation notes and groups them separately", () => {
+  it("letters translation notes and includes them inside translationHtml", () => {
     const latin = makeWork({
       textParts: ["book", "chapter", "section"],
       rows: [[["1", "1"], span([], "Prima pars. ", noteMarker("0"))]],
@@ -233,16 +233,17 @@ describe("preprocessWorkToV2 critical apparatus", () => {
 
     const page = preprocessWorkToV2(latin, METADATA, translation).pages[0];
 
-    expect(page.parallelHtml).toContain('href="#note-t1"');
-    expect(page.parallelHtml).toContain("<sup>[a]</sup>");
-    expect(page.parallelNotesHtml).toContain("Notes on the text");
-    expect(page.parallelNotesHtml).toContain("Notes on the translation");
-    expect(page.parallelNotesHtml).toContain("Translation note body.");
-    // The single view never shows the translation, so it never lists its notes.
+    expect(page.translationHtml).toContain("reader-translation-section");
+    expect(page.translationHtml).toContain('href="#note-t1"');
+    expect(page.translationHtml).toContain("<sup>[a]</sup>");
+    expect(page.translationHtml).toContain("Notes on the translation");
+    expect(page.translationHtml).toContain("Translation note body.");
+    // The Latin notesHtml only lists the Latin text notes.
+    expect(page.notesHtml).toContain("Latin note body.");
     expect(page.notesHtml).not.toContain("Translation note body.");
   });
 
-  it("leaves the parallel list undefined when the translation has no notes", () => {
+  it("leaves the translation note list omitted when the translation has no notes", () => {
     const latin = makeWork({
       textParts: ["book", "chapter", "section"],
       rows: [[["1", "1"], span([], "Prima pars. ", noteMarker("0"))]],
@@ -257,7 +258,8 @@ describe("preprocessWorkToV2 critical apparatus", () => {
     const page = preprocessWorkToV2(latin, METADATA, translation).pages[0];
 
     expect(page.notesHtml).toContain("Latin note body.");
-    expect(page.parallelNotesHtml).toBeUndefined();
+    expect(page.translationHtml).toContain("The first part.");
+    expect(page.translationHtml).not.toContain("Notes on the translation");
   });
 });
 

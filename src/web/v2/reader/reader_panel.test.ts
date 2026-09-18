@@ -558,4 +558,234 @@ describe("ReaderPanelController", () => {
       controller.destroy();
     });
   });
+
+  describe("when work HAS translation (4 tabs: Dict, Notes, Translation, About)", () => {
+    let controller: ReaderPanelController;
+    let loadTranslationMock: jest.Mock<Promise<string>>;
+
+    beforeEach(() => {
+      container = createFixture(true, true);
+      loadTranslationMock = jest.fn().mockResolvedValue(`
+        <div class="reader-translation-content">
+          <div class="reader-translation-header">Translated by John Selby Watson</div>
+          <div class="reader-translation-body">
+            <div class="reader-translation-section" id="trans-sec-1.1"><span class="cite-local">1</span><div class="reader-translation-text">All Gaul is divided...</div></div>
+          </div>
+        </div>
+      `);
+      controller = new ReaderPanelController({
+        root: container,
+        hasTranslation: true,
+        onLoadTranslation: loadTranslationMock,
+      });
+    });
+
+    afterEach(() => {
+      controller.destroy();
+    });
+
+    it("initializes 4 tabs with proper ARIA attributes", () => {
+      const tabs = container.querySelector<HTMLElement>(".reader-panel-tabs");
+      expect(tabs?.hidden).toBe(false);
+      expect(container.querySelector(".has-companion-tabs")).not.toBeNull();
+
+      const transTab = container.querySelector("#panel-tab-translation");
+      expect(transTab).not.toBeNull();
+      expect(transTab?.getAttribute("aria-selected")).toBe("false");
+      expect(transTab?.getAttribute("role")).toBe("tab");
+      expect(transTab?.getAttribute("aria-controls")).toBe(
+        "panel-view-translation"
+      );
+      expect(transTab?.getAttribute("tabindex")).toBe("-1");
+      expect(transTab?.textContent).toContain("Translation");
+
+      const transView = container.querySelector("#panel-view-translation");
+      expect(transView).not.toBeNull();
+      expect(transView?.getAttribute("role")).toBe("tabpanel");
+      expect(transView?.classList.contains("active")).toBe(false);
+    });
+
+    it("triggers onLoadTranslation on first switch to translation tab", async () => {
+      expect(loadTranslationMock).not.toHaveBeenCalled();
+
+      controller.setTab("translation");
+      expect(controller.activeTab).toBe("translation");
+      expect(loadTranslationMock).toHaveBeenCalledTimes(1);
+
+      // Wait for promise resolution
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const transView = container.querySelector("#panel-view-translation");
+      expect(transView?.classList.contains("active")).toBe(true);
+      expect(transView?.textContent).toContain(
+        "Translated by John Selby Watson"
+      );
+      expect(transView?.textContent).toContain("All Gaul is divided...");
+
+      // Switching away and back does not re-fetch
+      controller.setTab("dict");
+      expect(controller.activeTab).toBe("dict");
+      controller.setTab("translation");
+      expect(controller.activeTab).toBe("translation");
+      expect(loadTranslationMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("resets translation loaded state and clears content on resetTranslation()", async () => {
+      controller.setTab("translation");
+      await Promise.resolve();
+      await Promise.resolve();
+
+      controller.resetTranslation();
+      const transView = container.querySelector("#panel-view-translation");
+      expect(transView?.textContent).toBe("");
+
+      // Subsequent setTab fetches again because state was reset
+      controller.setTab("translation");
+      expect(loadTranslationMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("updates content directly via setTranslationHtml()", () => {
+      controller.setTranslationHtml(
+        '<div class="reader-translation-content">Direct HTML</div>'
+      );
+      const transView = container.querySelector("#panel-view-translation");
+      expect(transView?.textContent).toContain("Direct HTML");
+
+      // Switching to translation does not re-fetch
+      controller.setTab("translation");
+      expect(loadTranslationMock).not.toHaveBeenCalled();
+    });
+
+    it("handles error during onLoadTranslation with retry button", async () => {
+      const failingMock = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("Network error"))
+        .mockResolvedValueOnce("<div>Recovered!</div>");
+      const errContainer = createFixture(true, true);
+      const errController = new ReaderPanelController({
+        root: errContainer,
+        hasTranslation: true,
+        onLoadTranslation: failingMock,
+      });
+
+      errController.setTab("translation");
+      expect(failingMock).toHaveBeenCalledTimes(1);
+
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const transView = errContainer.querySelector("#panel-view-translation");
+      expect(
+        transView?.querySelector(".reader-translation-error")
+      ).not.toBeNull();
+      const retryBtn = transView?.querySelector<HTMLButtonElement>(
+        "#btn-retry-translation"
+      );
+      expect(retryBtn).not.toBeNull();
+
+      // Clicking retry attempts to load again
+      retryBtn?.click();
+      expect(failingMock).toHaveBeenCalledTimes(2);
+
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(transView?.textContent).toContain("Recovered!");
+
+      errController.destroy();
+    });
+
+    it("supports keyboard arrow navigation cycling through 4 tabs", () => {
+      const tabs = container.querySelector<HTMLElement>(".reader-panel-tabs")!;
+      const dictTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-dict")!;
+      const notesTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-notes")!;
+      const transTab = container.querySelector<HTMLButtonElement>(
+        "#panel-tab-translation"
+      )!;
+      const aboutTab =
+        container.querySelector<HTMLButtonElement>("#panel-tab-about")!;
+
+      dictTab.focus();
+
+      // dict -> notes
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("notes");
+      expect(document.activeElement).toBe(notesTab);
+
+      // notes -> translation
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("translation");
+      expect(document.activeElement).toBe(transTab);
+
+      // translation -> about
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("about");
+      expect(document.activeElement).toBe(aboutTab);
+
+      // about -> dict (wrap)
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("dict");
+      expect(document.activeElement).toBe(dictTab);
+
+      // dict -> about (wrap backward)
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("about");
+      expect(document.activeElement).toBe(aboutTab);
+
+      // about -> translation
+      tabs.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true })
+      );
+      expect(controller.activeTab).toBe("translation");
+      expect(document.activeElement).toBe(transTab);
+    });
+
+    it("highlights note inside translation tab without switching to notes tab", () => {
+      const noLatinNotesContainer = createFixture(false, false);
+      const transController = new ReaderPanelController({
+        root: noLatinNotesContainer,
+        hasTranslation: true,
+      });
+
+      transController.setTranslationHtml(`
+        <div class="reader-translation-section">
+          <p>Some translated text<a class="reader-note-ref" id="noteref-t1" href="#note-t1">[a]</a></p>
+        </div>
+        <aside class="reader-notes" id="reader-trans-notes">
+          <ol class="reader-notes-list">
+            <li class="reader-note" id="note-t1">
+              <a class="reader-note-backref" href="#noteref-t1">[a]</a>
+              <div class="reader-note-body">Translation footnote body</div>
+            </li>
+          </ol>
+        </aside>
+      `);
+
+      const transNote =
+        noLatinNotesContainer.querySelector<HTMLElement>("#note-t1")!;
+      transNote.scrollIntoView = jest.fn();
+
+      // Even though Latin text has 0 notes (hasNotes === false), showNote("note-t1") works and activates "translation" tab
+      transController.showNote("note-t1");
+      expect(transController.activeTab).toBe("translation");
+      expect(transNote.classList.contains("note-active")).toBe(true);
+      expect(transNote.scrollIntoView).toHaveBeenCalled();
+
+      transController.reset();
+      expect(transNote.classList.contains("note-active")).toBe(false);
+      transController.destroy();
+    });
+  });
 });

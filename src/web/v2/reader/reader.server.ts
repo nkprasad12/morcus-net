@@ -48,19 +48,17 @@ export interface ReaderPageOptions {
   work?: V2PreprocessedWork;
 }
 
+// TODO(reader-canvas): 3-panel split-pane view (Latin | English || Dictionary).
 export interface ReaderRenderContext {
   work: V2PreprocessedWork;
   activePage: V2PreprocessedPage;
   activePageIndex: number;
   pageDotId: string;
-  hasParallel: boolean;
-  viewMode: "single" | "parallel";
   prevPage: V2PreprocessedPage | null;
   nextPage: V2PreprocessedPage | null;
   query: string;
   passageHtml: string;
   singleViewUrl: string;
-  parallelViewUrl: string;
   dictIframeSrc: string;
   layoutStateClass: string;
 }
@@ -96,9 +94,6 @@ export async function resolveReaderContext(
     work,
     pageIdStr
   );
-  const hasParallel = Boolean(work.hasTranslation && activePage.parallelHtml);
-  const viewMode =
-    hasParallel && options.view === "parallel" ? "parallel" : "single";
   const pageDotId = Array.isArray(activePage.id)
     ? citationToString(activePage.id)
     : activePage.id;
@@ -112,16 +107,7 @@ export async function resolveReaderContext(
     query: query || undefined,
   });
 
-  const parallelViewUrl = buildReaderPageUrl(work, activePage, {
-    viewMode: "parallel",
-    query: query || undefined,
-  });
-
-  // Select passage HTML (single or parallel)
-  const passageHtml =
-    viewMode === "parallel" && activePage.parallelHtml
-      ? activePage.parallelHtml
-      : activePage.singleHtml;
+  const passageHtml = activePage.singleHtml;
 
   // Dictionary iframe src
   // When a word is looked up from the Latin reader, force inflected search (o=1) and restrict initial query to Latin lexica (lang=La)
@@ -138,14 +124,11 @@ export async function resolveReaderContext(
     activePage,
     activePageIndex,
     pageDotId,
-    hasParallel,
-    viewMode,
     prevPage,
     nextPage,
     query,
     passageHtml,
     singleViewUrl,
-    parallelViewUrl,
     dictIframeSrc,
     layoutStateClass,
   };
@@ -156,19 +139,9 @@ export async function resolveReaderContext(
  * controls and the expandable secondary toolbar.
  */
 export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
-  const {
-    work,
-    pageDotId,
-    prevPage,
-    nextPage,
-    viewMode,
-    hasParallel,
-    query,
-    singleViewUrl,
-    parallelViewUrl,
-  } = ctx;
-  const prevPageUrl = buildReaderPageUrl(work, prevPage, { viewMode, query });
-  const nextPageUrl = buildReaderPageUrl(work, nextPage, { viewMode, query });
+  const { work, pageDotId, prevPage, nextPage, query } = ctx;
+  const prevPageUrl = buildReaderPageUrl(work, prevPage, { query });
+  const nextPageUrl = buildReaderPageUrl(work, nextPage, { query });
 
   return `      <!-- Sticky Quick Navigation Bar (Essentials Default with Expandable Tools) -->
       <header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
@@ -243,25 +216,8 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
 
         <!-- Secondary Expanded Row (Hidden by default, smooth animated reveal) -->
         <div class="sticky-expanded-row" id="sticky-expanded-row" hidden>
-          <!-- Right: View Mode Toggle + Settings -->
+          <!-- Right: Settings -->
           <div class="expanded-right">
-            ${
-              hasParallel
-                ? `<div class="reader-view-toggle" role="group" aria-label="Reading View Mode">
-              <a href="${singleViewUrl}"
-                 class="toggle-option ${viewMode === "single" ? "active" : ""}"
-                 id="mode-single"
-                 title="Single Column">Single</a>
-              <a href="${parallelViewUrl}"
-                 class="toggle-option ${
-                   viewMode === "parallel" ? "active" : ""
-                 }"
-                 id="mode-parallel"
-                 title="Dual Column Parallel Translation">Parallel</a>
-            </div>`
-                : ""
-            }
-
             <button type="button"
                     class="reader-btn reader-settings-btn"
                     id="reader-settings-btn"
@@ -282,22 +238,16 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
  * the Latin text article body, continuation buttons, and library catalog link.
  */
 export function renderReaderTextCard(ctx: ReaderRenderContext): string {
-  const { work, activePage, passageHtml, prevPage, nextPage, viewMode, query } =
-    ctx;
-  const prevPageUrl = buildReaderPageUrl(work, prevPage, { viewMode, query });
-  const nextPageUrl = buildReaderPageUrl(work, nextPage, { viewMode, query });
+  const { work, activePage, passageHtml, prevPage, nextPage, query } = ctx;
+  const prevPageUrl = buildReaderPageUrl(work, prevPage, { query });
+  const nextPageUrl = buildReaderPageUrl(work, nextPage, { query });
   const prevLabel = prevPage
     ? getDifferentialCitationLabel(activePage.id, prevPage.id, work.textParts)
     : "";
   const nextLabel = nextPage
     ? getDifferentialCitationLabel(activePage.id, nextPage.id, work.textParts)
     : "";
-  // The parallel list also covers the translation's notes, so it exists only
-  // for the works whose translations carry any.
-  const notesHtml =
-    (viewMode === "parallel" ? activePage.parallelNotesHtml : undefined) ??
-    activePage.notesHtml ??
-    "";
+  const notesHtml = activePage.notesHtml ?? "";
 
   return `          <div class="reader-text-card">
             
@@ -374,9 +324,8 @@ ${renderReaderTextCard(ctx)}
  * containing word definition teasers and the embedded dictionary iframe.
  */
 export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
-  const { work, activePage, query, dictIframeSrc, viewMode } = ctx;
+  const { work, activePage, query, dictIframeSrc } = ctx;
   const activePageUrl = buildReaderPageUrl(work, activePage, {
-    viewMode,
     query: query || undefined,
   });
 
@@ -440,15 +389,13 @@ export function renderReaderContentHtmlFromContext(
   ctx: ReaderRenderContext
 ): string {
   return `
-    <morcus-reader-view class="reader-view ${
-      ctx.viewMode === "parallel" ? "reader-view-parallel" : ""
-    }"
+    <morcus-reader-view class="reader-view"
       data-work="${ctx.work.id}"
       data-page="${ctx.pageDotId}"
-      data-view="${ctx.viewMode}"
       data-author="${ctx.work.urlAuthor}"
       data-name="${ctx.work.urlName}"
-      data-has-macra="${ctx.work.hasMacra}">
+      data-has-macra="${ctx.work.hasMacra}"
+      data-has-translation="${ctx.work.hasTranslation}">
 
 ${renderReaderStickyBar(ctx)}
 
@@ -459,7 +406,6 @@ ${renderReaderStickyBar(ctx)}
       ${renderTocDrawer({
         work: ctx.work,
         activePageIndex: ctx.activePageIndex,
-        viewMode: ctx.viewMode,
         query: ctx.query,
       })}
 
