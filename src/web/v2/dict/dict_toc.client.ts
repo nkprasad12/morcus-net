@@ -37,22 +37,28 @@ export class MorcusDictToc extends BaseElement {
   );
 
   private isMobileViewport(): boolean {
-    if (!this.mediaQuery && typeof window.matchMedia === "function") {
-      this.mediaQuery = window.matchMedia("(max-width: 1079.98px)");
-    }
     return this.mediaQuery?.matches ?? window.innerWidth < 1080;
   }
 
   protected override onConnect() {
-    if (!this.mediaQuery && typeof window.matchMedia === "function") {
+    if (typeof window.matchMedia === "function") {
       this.mediaQuery = window.matchMedia("(max-width: 1079.98px)");
     }
     this.scope.listen(this.mediaQuery, "change", this.onMediaChange);
-    this.syncDrawerState();
+    if (!this.isMobileViewport()) {
+      this.ensureDesktopDetailsOpen();
+    }
   }
 
   protected override onDisconnect() {
     this.mediaQuery = null;
+  }
+
+  private ensureDesktopDetailsOpen() {
+    const details = this.querySelector<HTMLDetailsElement>(".toc-details");
+    if (details && !details.open) {
+      details.open = true;
+    }
   }
 
   private syncDrawerState() {
@@ -62,11 +68,7 @@ export class MorcusDictToc extends BaseElement {
       }
     } else {
       this.drawerController.dispose();
-      // Ensure details disclosure remains open on desktop
-      const details = this.querySelector<HTMLDetailsElement>(".toc-details");
-      if (details && !details.open) {
-        details.open = true;
-      }
+      this.ensureDesktopDetailsOpen();
     }
   }
 

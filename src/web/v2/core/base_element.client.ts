@@ -407,10 +407,12 @@ export abstract class BaseController<Lane extends string = never>
       ACTIVE_CONTROLLERS_BY_ROOT.set(this.root, set);
     }
     set.add(this);
-    for (const controller of this.controllers) {
+    const existingControllers = [...this.controllers];
+    this.onConnect();
+    if (!this._scope || this._scope.disposed) return;
+    for (const controller of existingControllers) {
       controller.connect?.();
     }
-    this.onConnect();
   }
 
   public dispose(): void {
@@ -534,10 +536,12 @@ export abstract class BaseElement<
       this._scope.dispose();
     }
     this._scope = new LifetimeScope<Lane>(this);
-    for (const controller of this.controllers) {
+    const existingControllers = [...this.controllers];
+    this.onConnect();
+    if (!this._scope || this._scope.disposed) return;
+    for (const controller of existingControllers) {
       controller.connect?.();
     }
-    this.onConnect();
   }
 
   disconnectedCallback() {

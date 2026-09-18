@@ -95,6 +95,27 @@ describe("ReaderTocController", () => {
     controller.dispose();
   });
 
+  test("onConnect() resolves elements before child popover connects, binding trigger and panel without getPanel workaround", () => {
+    const controller = new ReaderTocController({ root: container });
+    expect(controller.drawer).toBeNull();
+    expect(controller.triggerBtn).toBeNull();
+
+    controller.connect();
+
+    expect(controller.drawer).not.toBeNull();
+    expect(controller.triggerBtn).not.toBeNull();
+
+    // Child popover wired trigger successfully because elements were resolved before child connected
+    const triggerBtn = container.querySelector<HTMLElement>("#reader-toc-btn")!;
+    triggerBtn.click();
+    expect(controller.isOpen()).toBe(true);
+
+    controller.close();
+    expect(controller.isOpen()).toBe(false);
+
+    controller.dispose();
+  });
+
   test("open() removes hidden, updates aria-expanded, focuses active item, and triggers onOpen callback", () => {
     const onOpen = jest.fn();
     const controller = connectController({ root: container, onOpen });

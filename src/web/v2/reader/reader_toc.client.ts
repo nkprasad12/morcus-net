@@ -57,10 +57,7 @@ export class ReaderTocController extends BaseController {
         group: "reader-chrome",
         align: "center",
         defaultWidth: 360,
-        getPanel: () => {
-          this.resolveElements();
-          return this.drawer;
-        },
+        getPanel: () => this.drawer,
         getTrigger: () => this.triggerBtn,
         getBackdrop: () => this.backdrop,
         getCloseBtn: () => this.closeBtn,
