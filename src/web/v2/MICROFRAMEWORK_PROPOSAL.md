@@ -297,3 +297,97 @@ With Steps 1–5 complete and `MorcusDictSettings` unified around `syncUi()`, `t
   - Migrated `DrawerController` and `ReaderLayoutController` to `BaseController` + `addController()`.
 - [x] **Step 6 — Re-evaluate Reactivity** (🟢)
   - Refactored `MorcusDictSettings` to use `syncUi()`, `this.delegate()`, `this.emit()`, and `this.use()`. Confirmed that `BaseController` + explicit `sync()` / `syncUi()` methods and bubbling DOM `CustomEvent`s eliminate any need for a separate reactive `Observable<T>` or signals primitive.
+- [x] **Step 7 — Collapse Forwarder Duplication into `LifetimeScope`** (🟡)
+
+  - Exposed `protected get scope(): LifetimeScope<Lane>` on `BaseElement` and `BaseController`, backed by a `DEAD_SCOPE` singleton when disconnected, and deleted ~30 forwarding methods that existed in triplicate.
+  - Extracted `createDurableDebounce()` as a single shared helper so a debounced function declared as a `readonly` class field keeps working across disconnect/reconnect cycles (pending work still cancels on disconnect).
+  - Kept `LifetimeScope.$` / `.$$` **ungated**: DOM reads must succeed during teardown, so they are deliberately not tied to disposal state.
+  - Aligned `BaseElement.disconnectedCallback()` to run `onDisconnect()` _before_ disposing the scope, matching `BaseController.dispose()`.
+
+  > [!IMPORTANT] > **API change:** §2 and §3 above describe the pre-Step-7 surface (`this.listen(...)`, `this.use(...)`, `this.$(...)`, `this.createScope()`). These now live on the scope: **`this.scope.listen(...)`, `this.scope.use(...)`, `this.scope.$(...)`, `this.scope.createScope()`**. Still on the host itself: `addController()`, `emit()`, `hijackForm()`, `syncQueryParam()`, and `debounce()`.
+
+  > [!NOTE] > **On bundle size:** this refactor was originally motivated by an estimate that the triplicated forwarders cost ~1 kB gzipped. That estimate was wrong by roughly two orders of magnitude. Measured outcome: **−511 B raw / −27 B gzip.** Two reasons, both worth remembering before optimizing for bundle size again:
+  >
+  > 1. **Gzip already deduplicates repetition.** Three byte-identical copies of `debounce` measured 470 B raw but only **7 B gzipped** — repetition inside DEFLATE's 32 kB window is ~98.5% free. Only _distinct_ tokens cost.
+  > 2. **Removing an abstraction relocates its cost to call sites.** Deleting the forwarders added 161 `this.scope.*` call sites × 6 unmangled bytes = +966 B raw, against ~1,372 B of forwarders removed.
+  >
+  > Step 7 is worth keeping on **design** grounds — one implementation per primitive, ~15 null-guards eliminated, and lifetime made visible at the call site. Do not repeat it expecting bytes.
+
+---
+
+## 6. Post-Implementation Review: Outstanding Follow-Ups
+
+A review of the landed implementation confirmed all five defects in §1 are fixed and pinned by tests. The items below were identified during that review and are **not yet done**. They are ordered by value, not by effort.
+
+### 6.1 Restore exception safety in teardown (🟢 small, introduced by Step 7)
+
+`onDisconnect()` now runs _before_ the scope is disposed in both `BaseElement.disconnectedCallback()` and `BaseController.dispose()`. That ordering is correct, but it means a throw inside `onDisconnect()` skips `_scope.dispose()` entirely and leaks every listener:
+
+```ts
+for (const controller of this.controllers) {
+  controller.dispose();
+}
+this.onDisconnect(); // throws here...
+this._scope?.dispose(); // ...and this never runs
+```
+
+- [ ] Wrap both teardown paths in `try { ... } finally { this._scope?.dispose(); this._scope = null; }`.
+- [ ] Consider the same isolation for the `controller.dispose()` loop — one throwing child currently aborts the rest. `DisposableBag.dispose()` already does per-callback error isolation, so this is the codebase's established standard.
+
+This matters because `ReaderPanelController.onDisconnect()` performs real DOM surgery (`insertBefore` can throw `NotFoundError`).
+
+### 6.2 Connect hosts before their child controllers (🟡)
+
+`BaseController.connect()` and `BaseElement.connectedCallback()` both run `controller.connect?.()` for every child **before** `this.onConnect()`. A host therefore cannot resolve its own elements before its children ask for them.
+
+This already forced a workaround: `ReaderTocController` calls `this.resolveElements()` from inside its `getPanel()` callback, and `getTrigger()` silently depends on `getPanel()` having run first in the same `sync()` pass.
+
+- [ ] Run `this.onConnect()` before connecting child controllers, and remove the `resolveElements()`-inside-`getPanel()` workaround in `reader_toc.client.ts`.
+
+### 6.3 Move `assertConnected` into the HTML sinks (🟢)
+
+§3.B.4 specified this for "DOM write helpers", but it only landed in `popover.client.ts` (5 call sites, `sync()` and `updatePosition()`). The ESLint-enforced choke points are where the detached-write bug class actually lives.
+
+- [ ] Call `assertConnected(target)` from `setHtml`, `replaceWithHtml` (`core/dom.client.ts`) and `swapElementContent` (`core/partial.client.ts`).
+- [ ] Known detached-write path to verify: `ReaderPanelController.setTab()` writes into `this.translationView` from a `.then()`. The `latest("translation")` abort lane covers the network path, but a **cache hit** in `MorcusReaderView.translationCache` resolves without consulting the signal.
+
+### 6.4 Widen the selector inventory contract test (🟡)
+
+`reader_selector_contract.test.ts` is the guard against the dead-selector class that produced three dead features. It currently covers less than it appears to:
+
+- [ ] Scan more than `reader_toc.client.ts` + `reader_settings.client.ts` — `reader_view.client.ts` alone binds ~32 selectors and is unscanned, as are `reader_panel`, `drawer`, and every `dict_*` module.
+- [ ] Match `this.scope.require(...)` — the extractor regex misses it.
+- [ ] Match delegated selectors — the 3rd argument of `delegate(root, type, selector, fn)` (e.g. `#btn-retry-translation`) is invisible today.
+- [ ] Stop skipping comma-containing selectors (`if (!raw.includes(","))`), which silently exempts real bindings such as `#toggle-inflected, .inflected-checkbox`.
+
+### 6.5 Disambiguate the two `() => void` conventions (🟢)
+
+Two opposite meanings currently share one type, one keystroke apart at the call site:
+
+| Returns an **unregister** handle             | Returns a **run-cleanup** handle                         |
+| :------------------------------------------- | :------------------------------------------------------- |
+| `DisposableBag.add()`, `LifetimeScope.use()` | `bindDismissable()`, `trapFocus()`, `trackPointerDrag()` |
+
+Nothing depends on the ambiguity today (`DisposableBag.add` was changed from returning the callback itself, and no caller captured the old value), but the next person to capture one will get the wrong one silently.
+
+- [ ] Introduce distinct named types (`Unregister` vs `Dispose`), or rename the methods.
+
+### 6.6 Finish the popover consolidation, or document why not (🟡)
+
+Two hand-rolled popovers remain — exactly the pattern §3.A was built to delete:
+
+- [ ] `MorcusDictSettings` keeps its own `isOpen` field _and_ reads `detailsEl.open` — two sources of truth synchronized by a `toggle` listener — plus a bespoke `closeSettingsPopover()`.
+- [ ] `abbr_popover.client.ts` still binds `click` + `pointerdown` + `keydown` + `resize` on `document`/`window` by hand.
+
+If the `<details>`-based one genuinely cannot fit `AnchoredPopoverController`, record that in a comment; it currently reads as an unfinished migration.
+
+### 6.7 Get the test environment out of the shipped bundle (🟢)
+
+- [ ] `trapFocus` branches on `navigator.userAgent.includes("jsdom")` at runtime, in production code (`core/popover.client.ts`).
+- [ ] `trapFocus` **and** `bindDismissable` both register `keydown` on `document` _and_ `window`. Since keydown bubbles `document → window`, each handler runs twice per keypress in a real browser. Both are currently saved by guards (`e.defaultPrevented`, an `isOpen()` re-check) — load-bearing accident rather than design.
+
+A jsdom-side shim in the test setup, or the existing injected-option pattern (`defaultWidth`), is cleaner than either.
+
+### 6.8 Migrate the last raw listener block (🟢)
+
+- [ ] `MorcusReaderView.initBackToTop()` still uses raw `addEventListener` with a hand-written `addDisposable` teardown. It is correct, just off-pattern — and off-pattern is how the `showTranslationError()` listener leak (§1.3) happened.
