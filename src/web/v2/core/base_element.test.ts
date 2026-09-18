@@ -135,6 +135,82 @@ class TestDisconnectOrderController extends BaseController {
   }
 }
 
+class TestThrowingDisconnectElement extends BaseElement {
+  public onDisconnectRan = false;
+
+  public getScope(): LifetimeScope {
+    return this.scope;
+  }
+
+  protected override onDisconnect(): void {
+    this.onDisconnectRan = true;
+    throw new Error("Element onDisconnect failure");
+  }
+}
+
+registerElement(
+  "test-throwing-disconnect-element",
+  TestThrowingDisconnectElement
+);
+
+class TestThrowingDisconnectController extends BaseController {
+  public onDisconnectRan = false;
+
+  public getScope(): LifetimeScope {
+    return this.scope;
+  }
+
+  protected override onDisconnect(): void {
+    this.onDisconnectRan = true;
+    throw new Error("Controller onDisconnect failure");
+  }
+}
+
+class TestFaultyChildController extends BaseController {
+  public disposed = false;
+  constructor(root: ParentNode = document, public shouldThrow = false) {
+    super(root);
+  }
+
+  public getScope(): LifetimeScope {
+    return this.scope;
+  }
+
+  protected override onDisconnect(): void {
+    this.disposed = true;
+    if (this.shouldThrow) {
+      throw new Error("Faulty child onDisconnect failure");
+    }
+  }
+}
+
+class TestControllerIsolationElement extends BaseElement {
+  public readonly child1: TestFaultyChildController;
+  public readonly child2: TestFaultyChildController;
+  public onDisconnectRan = false;
+
+  constructor() {
+    super();
+    this.child1 = this.addController(new TestFaultyChildController(this, true));
+    this.child2 = this.addController(
+      new TestFaultyChildController(this, false)
+    );
+  }
+
+  public getScope(): LifetimeScope {
+    return this.scope;
+  }
+
+  protected override onDisconnect(): void {
+    this.onDisconnectRan = true;
+  }
+}
+
+registerElement(
+  "test-controller-isolation-element",
+  TestControllerIsolationElement
+);
+
 describe("BaseElement async cancellation", () => {
   let el: TestElement;
 
@@ -481,6 +557,155 @@ describe("BaseElement async cancellation", () => {
       expect(ctrl.observedDuringDisconnect).not.toBeNull();
       expect(ctrl.observedDuringDisconnect?.textContent).toBe("world");
       expect(ctrl.scopeWasActive).toBe(true);
+    });
+  });
+
+  describe("Teardown exception safety and controller error isolation (Item 6.1)", () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    test("BaseElement disposes scope even when onDisconnect throws", () => {
+      const el = document.createElement(
+        "test-throwing-disconnect-element"
+      ) as TestThrowingDisconnectElement;
+      el.connectedCallback();
+
+      const activeScope = el.getScope();
+      expect(activeScope.disposed).toBe(false);
+      expect(activeScope.signal.aborted).toBe(false);
+
+      expect(() => {
+        el.disconnectedCallback();
+      }).toThrow("Element onDisconnect failure");
+
+      expect(el.onDisconnectRan).toBe(true);
+      expect(activeScope.disposed).toBe(true);
+      expect(activeScope.signal.aborted).toBe(true);
+      expect(el.getScope()).toBe(DEAD_SCOPE);
+    });
+
+    test("BaseElement isolates child controller disposal errors so siblings dispose, onDisconnect runs, and scope disposes", () => {
+      const el = document.createElement(
+        "test-controller-isolation-element"
+      ) as TestControllerIsolationElement;
+      document.body.appendChild(el);
+
+      const activeScope = el.getScope();
+      const child1Scope = el.child1.getScope();
+      const child2Scope = el.child2.getScope();
+      expect(activeScope.disposed).toBe(false);
+      expect(child1Scope.disposed).toBe(false);
+      expect(child2Scope.disposed).toBe(false);
+
+      expect(() => {
+        el.remove();
+      }).not.toThrow();
+
+      expect(el.child1.disposed).toBe(true);
+      expect(el.child2.disposed).toBe(true);
+      expect(child1Scope.disposed).toBe(true);
+      expect(child2Scope.disposed).toBe(true);
+      expect(el.child1.isConnected).toBe(false);
+      expect(el.child2.isConnected).toBe(false);
+      expect(el.onDisconnectRan).toBe(true);
+      expect(activeScope.disposed).toBe(true);
+      expect(el.getScope()).toBe(DEAD_SCOPE);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error during controller disposal:",
+        expect.any(Error)
+      );
+
+      // Reconnecting recovers cleanly with fresh scopes on host and both children
+      el.child1.shouldThrow = false;
+      document.body.appendChild(el);
+      expect(el.getScope().disposed).toBe(false);
+      expect(el.child1.isConnected).toBe(true);
+      expect(el.child2.isConnected).toBe(true);
+      el.remove();
+    });
+
+    test("BaseController disposes scope even when onDisconnect throws", () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+
+      const ctrl = new TestThrowingDisconnectController(container);
+      ctrl.connect();
+
+      const activeScope = ctrl.getScope();
+      expect(activeScope.disposed).toBe(false);
+      expect(activeScope.signal.aborted).toBe(false);
+      expect(ctrl.isConnected).toBe(true);
+
+      expect(() => {
+        ctrl.dispose();
+      }).toThrow("Controller onDisconnect failure");
+
+      expect(ctrl.onDisconnectRan).toBe(true);
+      expect(activeScope.disposed).toBe(true);
+      expect(activeScope.signal.aborted).toBe(true);
+      expect(ctrl.isConnected).toBe(false);
+      expect(ctrl.getScope()).toBe(DEAD_SCOPE);
+    });
+
+    test("BaseController isolates child controller disposal errors so siblings dispose, onDisconnect runs, and scope disposes", () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+
+      class ParentController extends BaseController {
+        public readonly child1 = this.addController(
+          new TestFaultyChildController(container, true)
+        );
+        public readonly child2 = this.addController(
+          new TestFaultyChildController(container, false)
+        );
+        public onDisconnectRan = false;
+
+        public getScope(): LifetimeScope {
+          return this.scope;
+        }
+
+        protected override onDisconnect(): void {
+          this.onDisconnectRan = true;
+        }
+      }
+
+      const parent = new ParentController(container);
+      parent.connect();
+
+      const activeScope = parent.getScope();
+      const child1Scope = parent.child1.getScope();
+      const child2Scope = parent.child2.getScope();
+      expect(activeScope.disposed).toBe(false);
+      expect(child1Scope.disposed).toBe(false);
+      expect(child2Scope.disposed).toBe(false);
+
+      expect(() => {
+        parent.dispose();
+      }).not.toThrow();
+
+      expect(parent.child1.disposed).toBe(true);
+      expect(parent.child2.disposed).toBe(true);
+      expect(child1Scope.disposed).toBe(true);
+      expect(child2Scope.disposed).toBe(true);
+      expect(parent.child1.isConnected).toBe(false);
+      expect(parent.child2.isConnected).toBe(false);
+      expect(parent.onDisconnectRan).toBe(true);
+      expect(activeScope.disposed).toBe(true);
+      expect(parent.isConnected).toBe(false);
+      expect(parent.getScope()).toBe(DEAD_SCOPE);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error during controller disposal:",
+        expect.any(Error)
+      );
     });
   });
 });

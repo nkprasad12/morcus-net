@@ -331,8 +331,8 @@ this.onDisconnect(); // throws here...
 this._scope?.dispose(); // ...and this never runs
 ```
 
-- [ ] Wrap both teardown paths in `try { ... } finally { this._scope?.dispose(); this._scope = null; }`.
-- [ ] Consider the same isolation for the `controller.dispose()` loop — one throwing child currently aborts the rest. `DisposableBag.dispose()` already does per-callback error isolation, so this is the codebase's established standard.
+- [x] Wrap both teardown paths in `try { ... } finally { this._scope?.dispose(); this._scope = null; }`.
+- [x] Consider the same isolation for the `controller.dispose()` loop — one throwing child currently aborts the rest. `DisposableBag.dispose()` already does per-callback error isolation, so this is the codebase's established standard.
 
 This matters because `ReaderPanelController.onDisconnect()` performs real DOM surgery (`insertBefore` can throw `NotFoundError`).
 
