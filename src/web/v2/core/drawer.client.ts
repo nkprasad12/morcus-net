@@ -330,9 +330,9 @@ export class DrawerController {
   }
 
   /**
-   * Destroys all event listeners and gesture tracking.
+   * Disposes all event listeners and gesture tracking.
    */
-  destroy(): void {
+  dispose(): void {
     this.layoutElement?.style.removeProperty("--drawer-height");
     this.disposables.dispose();
   }

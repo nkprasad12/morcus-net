@@ -295,7 +295,7 @@ export class ReaderLayoutController {
   /**
    * Cleans up all registered event listeners and gesture tracking.
    */
-  public destroy(): void {
+  public dispose(): void {
     this.disposables.dispose();
   }
 }

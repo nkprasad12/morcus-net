@@ -36,7 +36,7 @@ export class MorcusDictToc extends BaseElement {
 
   private destroyDrawer() {
     if (this.drawerController) {
-      this.drawerController.destroy();
+      this.drawerController.dispose();
       this.drawerController = null;
       document.documentElement.style.removeProperty("--drawer-height");
     }

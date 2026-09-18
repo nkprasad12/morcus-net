@@ -101,7 +101,7 @@ describe("ReaderPanelController", () => {
       expect(controller.activeTab).toBe("dict");
 
       // Destroy is safe
-      expect(() => controller.destroy()).not.toThrow();
+      expect(() => controller.dispose()).not.toThrow();
     });
   });
 
@@ -119,7 +119,7 @@ describe("ReaderPanelController", () => {
     });
 
     afterEach(() => {
-      controller.destroy();
+      controller.dispose();
     });
 
     it("initializes tab list with badge count and proper ARIA attributes", () => {
@@ -274,7 +274,7 @@ describe("ReaderPanelController", () => {
     });
 
     it("restores original DOM tree on destroy()", () => {
-      controller.destroy();
+      controller.dispose();
 
       const textCard = container.querySelector(".reader-text-card");
       expect(textCard?.querySelector(".reader-notes")).not.toBeNull();
@@ -363,7 +363,7 @@ describe("ReaderPanelController", () => {
     });
 
     afterEach(() => {
-      controller.destroy();
+      controller.dispose();
     });
 
     it("initializes 3 tabs with proper ARIA attributes", () => {
@@ -492,7 +492,7 @@ describe("ReaderPanelController", () => {
     });
 
     it("restores #reader-work-about to original DOM on destroy()", () => {
-      controller.destroy();
+      controller.dispose();
 
       const textCard = container.querySelector(".reader-text-card");
       const about =
@@ -555,7 +555,7 @@ describe("ReaderPanelController", () => {
       expect(controller.activeTab).toBe("about");
       expect(document.activeElement).toBe(aboutTab);
 
-      controller.destroy();
+      controller.dispose();
     });
   });
 
@@ -581,7 +581,7 @@ describe("ReaderPanelController", () => {
     });
 
     afterEach(() => {
-      controller.destroy();
+      controller.dispose();
     });
 
     it("initializes 4 tabs with proper ARIA attributes", () => {
@@ -692,7 +692,7 @@ describe("ReaderPanelController", () => {
       await Promise.resolve();
       expect(transView?.textContent).toContain("Recovered!");
 
-      errController.destroy();
+      errController.dispose();
     });
 
     it("supports keyboard arrow navigation cycling through 4 tabs", () => {
@@ -785,7 +785,7 @@ describe("ReaderPanelController", () => {
 
       transController.reset();
       expect(transNote.classList.contains("note-active")).toBe(false);
-      transController.destroy();
+      transController.dispose();
     });
   });
 });

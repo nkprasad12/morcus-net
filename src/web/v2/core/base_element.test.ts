@@ -2,14 +2,51 @@
  * @jest-environment jsdom
  */
 import {
+  BaseController,
   BaseElement,
+  LifetimeScope,
   registerElement,
 } from "@/web/v2/core/base_element.client";
 
 type Lane = "alpha" | "beta";
 
+class TestSubController extends BaseController<"sub"> {
+  connectCount = 0;
+  disconnectCount = 0;
+  swapCount = 0;
+  lastSwappedRoot: Element | null = null;
+  customState = "initial";
+
+  protected override onConnect(): void {
+    this.connectCount++;
+    const btn = this.$<HTMLButtonElement>(".sub-btn");
+    this.listen(btn, "click", () => {
+      this.customState = "clicked";
+    });
+  }
+
+  protected override onDisconnect(): void {
+    this.disconnectCount++;
+  }
+
+  public override onContentSwap(swappedRoot: Element): void {
+    super.onContentSwap(swappedRoot);
+    this.swapCount++;
+    this.lastSwappedRoot = swappedRoot;
+  }
+
+  openTransientScope(): LifetimeScope {
+    return this.createScope();
+  }
+
+  startSubLane(): AbortSignal {
+    return this.latest("sub");
+  }
+}
+
 class TestElement extends BaseElement<Lane> {
   connectCount = 0;
+  readonly sub = this.addController(new TestSubController(this));
 
   protected override onConnect(): void {
     this.connectCount++;
@@ -46,6 +83,18 @@ class TestElement extends BaseElement<Lane> {
 
   createDebounce<T extends (...args: never[]) => void>(fn: T, ms: number) {
     return this.debounce(fn, ms);
+  }
+
+  requireEl<T extends HTMLElement = HTMLElement>(selector: string): T {
+    return this.require<T>(selector);
+  }
+
+  listenNullable(
+    target: EventTarget | null | undefined,
+    type: string,
+    fn: EventListener
+  ): void {
+    this.listen(target, type, fn);
   }
 }
 
@@ -254,6 +303,74 @@ describe("BaseElement async cancellation", () => {
       debounced.cancel();
       jest.advanceTimersByTime(100);
       expect(fn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("BaseController, addController, and LifetimeScope", () => {
+    test("preserves controller instance and state across disconnect/reconnect cycles while rebinding listeners", () => {
+      el.remove();
+      el.innerHTML = `<button class="sub-btn">Click</button>`;
+      document.body.appendChild(el);
+
+      const subInstance = el.sub;
+      expect(subInstance.connectCount).toBe(2);
+      expect(subInstance.disconnectCount).toBe(1);
+
+      const btn = el.requireEl<HTMLButtonElement>(".sub-btn");
+      btn.click();
+      expect(subInstance.customState).toBe("clicked");
+
+      // Mutate state, move element in DOM, and verify state survives while listeners rebind
+      subInstance.customState = "preserved-across-move";
+      const wrapper = document.createElement("div");
+      document.body.appendChild(wrapper);
+      wrapper.appendChild(el);
+
+      expect(el.sub).toBe(subInstance);
+      expect(subInstance.connectCount).toBe(3);
+      expect(subInstance.disconnectCount).toBe(2);
+      expect(subInstance.customState).toBe("preserved-across-move");
+
+      btn.click();
+      expect(subInstance.customState).toBe("clicked");
+    });
+
+    test("child scopes detach cleanly on early dispose and also dispose when parent disconnects", () => {
+      const child1 = el.sub.openTransientScope();
+      const child1Cleanup = jest.fn();
+      child1.use(child1Cleanup);
+
+      // Early dispose runs cleanup immediately and detaches from parent
+      child1.dispose();
+      expect(child1Cleanup).toHaveBeenCalledTimes(1);
+
+      // Active child scope disposes automatically when host element disconnects
+      const child2 = el.sub.openTransientScope();
+      const child2Cleanup = jest.fn();
+      child2.use(child2Cleanup);
+      const subLaneSignal = el.sub.startSubLane();
+      expect(subLaneSignal.aborted).toBe(false);
+
+      el.remove();
+
+      expect(child1Cleanup).toHaveBeenCalledTimes(1);
+      expect(child2Cleanup).toHaveBeenCalledTimes(1);
+      expect(subLaneSignal.aborted).toBe(true);
+    });
+
+    test("require() throws descriptive error when selector is missing and listen(null) is a no-op", () => {
+      expect(() => el.requireEl("#missing-node")).toThrow(
+        /Required element matching selector "#missing-node" not found in <morcus-test-base-element>/
+      );
+      expect(() => el.listenNullable(null, "click", jest.fn())).not.toThrow();
+    });
+
+    test("notifyContentSwap forwards swappedRoot to registered controllers", () => {
+      const swapped = document.createElement("section");
+      el.notifyContentSwap(swapped);
+
+      expect(el.sub.swapCount).toBe(1);
+      expect(el.sub.lastSwappedRoot).toBe(swapped);
     });
   });
 });

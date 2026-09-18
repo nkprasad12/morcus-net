@@ -7,7 +7,10 @@
  * dismissal, and keyboard accessibility (Escape to close).
  */
 
-import { DisposableBag } from "@/web/v2/core/disposable.client";
+import {
+  BaseController,
+  type LifetimeScope,
+} from "@/web/v2/core/base_element.client";
 
 export interface ReaderTocElements {
   /** The slide-in drawer element (#reader-toc-drawer) */
@@ -33,103 +36,92 @@ export interface ReaderTocOptions {
   onClose?: () => void;
 }
 
-export class ReaderTocController {
-  private readonly disposables = new DisposableBag();
-  private readonly openDisposables = new DisposableBag();
-  public readonly drawer: HTMLElement | null;
-  public readonly backdrop: HTMLElement | null;
-  public readonly triggerBtn: HTMLElement | null;
-  public readonly closeBtn: HTMLElement | null;
-  public readonly listContainer: HTMLElement | null;
+export class ReaderTocController extends BaseController {
+  private openScope: LifetimeScope | null = null;
+  public drawer: HTMLElement | null = null;
+  public backdrop: HTMLElement | null = null;
+  public triggerBtn: HTMLElement | null = null;
+  public closeBtn: HTMLElement | null = null;
+  public listContainer: HTMLElement | null = null;
+  private readonly overrides?: Partial<ReaderTocElements>;
   private readonly onOpen?: () => void;
   private readonly onClose?: () => void;
 
   constructor(options: ReaderTocOptions = {}) {
-    const root = options.root ?? document;
-    const overrides = options.elements;
+    super(options.root ?? document);
+    this.overrides = options.elements;
+    this.onOpen = options.onOpen;
+    this.onClose = options.onClose;
+  }
+
+  protected override onConnect(): void {
+    this.resolveElements();
+    if (!this.drawer) {
+      return;
+    }
+    this.initListeners();
+  }
+
+  protected override onDisconnect(): void {
+    this.close();
+  }
+
+  private resolveElements(): void {
+    const overrides = this.overrides;
 
     this.drawer =
       overrides?.drawer !== undefined
         ? overrides.drawer
-        : root.querySelector<HTMLElement>("#reader-toc-drawer");
+        : this.$("#reader-toc-drawer");
 
     this.backdrop =
       overrides?.backdrop !== undefined
         ? overrides.backdrop
-        : root.querySelector<HTMLElement>("#reader-toc-backdrop") ??
-          (root instanceof Element
-            ? root.ownerDocument.querySelector<HTMLElement>(
-                "#reader-toc-backdrop"
-              )
-            : document.querySelector<HTMLElement>("#reader-toc-backdrop"));
+        : this.$("#reader-toc-backdrop") ??
+          this.ownerDocument.querySelector<HTMLElement>("#reader-toc-backdrop");
 
     this.triggerBtn =
       overrides?.triggerBtn !== undefined
         ? overrides.triggerBtn
-        : root.querySelector<HTMLElement>("#reader-toc-btn");
+        : this.$("#reader-toc-btn");
 
     this.closeBtn =
       overrides?.closeBtn !== undefined
         ? overrides.closeBtn
         : this.drawer?.querySelector<HTMLElement>("#reader-toc-close-btn") ??
-          root.querySelector<HTMLElement>("#reader-toc-close-btn");
+          this.$("#reader-toc-close-btn");
 
     this.listContainer =
       overrides?.listContainer !== undefined
         ? overrides.listContainer
         : this.drawer?.querySelector<HTMLElement>("#reader-toc-list") ??
-          root.querySelector<HTMLElement>("#reader-toc-list");
-
-    this.onOpen = options.onOpen;
-    this.onClose = options.onClose;
-
-    if (!this.drawer) {
-      return;
-    }
-
-    this.initListeners();
+          this.$("#reader-toc-list");
   }
 
   private initListeners(): void {
     // Trigger button toggles drawer (preventDefault suppresses hash navigation in JS mode)
-    if (this.triggerBtn) {
-      const btn = this.triggerBtn;
-      const onToggle = (e: MouseEvent) => {
-        e.preventDefault();
-        this.toggle();
-      };
-      btn.addEventListener("click", onToggle);
-      this.disposables.add(() => btn.removeEventListener("click", onToggle));
-    }
+    this.listen(this.triggerBtn, "click", (e: MouseEvent) => {
+      e.preventDefault();
+      this.toggle();
+    });
 
     // Close button inside drawer
-    if (this.closeBtn) {
-      const btn = this.closeBtn;
-      const onClose = (e: MouseEvent) => {
-        e.preventDefault();
-        this.close();
-        this.triggerBtn?.focus();
-      };
-      btn.addEventListener("click", onClose);
-      this.disposables.add(() => btn.removeEventListener("click", onClose));
-    }
+    this.listen(this.closeBtn, "click", (e: MouseEvent) => {
+      e.preventDefault();
+      this.close();
+      this.triggerBtn?.focus();
+    });
 
     // Dismiss on backdrop click: stopPropagation prevents bubbling to doc click listener
-    if (this.backdrop) {
-      const onBackdropClick = (e: MouseEvent) => {
-        e.stopPropagation();
-        e.preventDefault();
-        this.close();
-      };
-      this.backdrop.addEventListener("click", onBackdropClick);
-      this.disposables.add(() =>
-        this.backdrop?.removeEventListener("click", onBackdropClick)
-      );
-    }
+    this.listen(this.backdrop, "click", (e: MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.close();
+    });
 
     // Dismiss on outside click (fallback when clicking outside drawer or trigger button)
-    const doc = this.drawer?.ownerDocument ?? document;
-    const onDocClick = (e: MouseEvent) => {
+    const doc = this.drawer?.ownerDocument ?? this.ownerDocument;
+    this.listen(doc, "click", (e: MouseEvent) => {
       if (this.isOpen() && e.target instanceof Node) {
         if (
           !this.drawer?.contains(e.target) &&
@@ -138,13 +130,11 @@ export class ReaderTocController {
           this.close();
         }
       }
-    };
-    doc.addEventListener("click", onDocClick);
-    this.disposables.add(() => doc.removeEventListener("click", onDocClick));
+    });
 
     // Keyboard navigation (Escape key dismissal & Tab focus cycling within dropdown)
     const win = doc.defaultView ?? window;
-    const onKeyDown = (e: KeyboardEvent) => {
+    this.listen(win, "keydown", (e: KeyboardEvent) => {
       if (!this.isOpen()) return;
 
       if (e.key === "Escape") {
@@ -181,9 +171,7 @@ export class ReaderTocController {
           }
         }
       }
-    };
-    win.addEventListener("keydown", onKeyDown);
-    this.disposables.add(() => win.removeEventListener("keydown", onKeyDown));
+    });
   }
 
   /**
@@ -232,14 +220,12 @@ export class ReaderTocController {
     this.updatePosition();
 
     // Dynamically update position on resize or scroll while open
+    this.openScope?.dispose();
+    const scope = (this.openScope = this.createScope());
     const win = this.drawer.ownerDocument?.defaultView ?? window;
     const onReposition = () => this.updatePosition();
-    win.addEventListener("resize", onReposition);
-    win.addEventListener("scroll", onReposition, { passive: true });
-    this.openDisposables.add(() => {
-      win.removeEventListener("resize", onReposition);
-      win.removeEventListener("scroll", onReposition);
-    });
+    scope.listen(win, "resize", onReposition);
+    scope.listen(win, "scroll", onReposition, { passive: true });
 
     this.triggerBtn?.setAttribute("aria-expanded", "true");
 
@@ -261,7 +247,8 @@ export class ReaderTocController {
 
   public close(): void {
     if (!this.drawer) return;
-    this.openDisposables.dispose();
+    this.openScope?.dispose();
+    this.openScope = null;
     this.drawer.setAttribute("hidden", "");
     this.backdrop?.setAttribute("hidden", "");
     this.drawer.style.removeProperty("top");
@@ -281,14 +268,5 @@ export class ReaderTocController {
 
   public isOpen(): boolean {
     return Boolean(this.drawer && !this.drawer.hasAttribute("hidden"));
-  }
-
-  public destroy(): void {
-    this.close();
-    this.disposables.dispose();
-  }
-
-  public dispose(): void {
-    this.destroy();
   }
 }
