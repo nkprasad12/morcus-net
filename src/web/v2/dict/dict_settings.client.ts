@@ -33,18 +33,15 @@ export class MorcusDictSettings extends BaseElement {
   private detailsEl: HTMLDetailsElement | null = null;
   private summaryEl: HTMLElement | null = null;
   private popoverEl: HTMLElement | null = null;
-  private sliderEl: HTMLInputElement | null = null;
-  private valueDisplayEl: HTMLElement | null = null;
-  private inflectedCheckboxEl: HTMLInputElement | null = null;
 
   protected override onConnect() {
     this.strength = this.computeInitialStrength();
     this.initActiveDicts();
     this.initInflectedState();
     this.enhanceMarkup();
-    this.applyScale(this.strength);
+    this.syncUi();
 
-    this.addDisposable(
+    this.use(
       bindDismissable({
         container: () => this.popoverEl,
         isOpen: () => (this.detailsEl ? this.detailsEl.open : this.isOpen),
@@ -152,22 +149,6 @@ export class MorcusDictSettings extends BaseElement {
       this.popoverEl = this.$<HTMLElement>(".settings-popover");
     }
 
-    // Sync SSR checkboxes with activeDictKeys
-    const checkboxes =
-      this.querySelectorAll<HTMLInputElement>(".dict-checkbox");
-    checkboxes.forEach((cb) => {
-      const key = cb.dataset.key || cb.value;
-      if (key) {
-        cb.checked = this.activeDictKeys.has(key);
-      }
-    });
-
-    // Sync inflection checkbox
-    this.inflectedCheckboxEl = this.$<HTMLInputElement>("#toggle-inflected");
-    if (this.inflectedCheckboxEl) {
-      this.inflectedCheckboxEl.checked = this.isInflected;
-    }
-
     // Progressively inject highlight slider if not present
     if (this.popoverEl && !this.$(".settings-slider")) {
       const sliderControls = document.createElement("div");
@@ -204,46 +185,36 @@ export class MorcusDictSettings extends BaseElement {
       this.popoverEl.prepend(sliderControls);
     }
 
-    this.sliderEl = this.$<HTMLInputElement>(".settings-slider");
-    this.valueDisplayEl = this.$(".settings-value");
+    this.listen(this.summaryEl, "click", (e: MouseEvent) => {
+      if (this.detailsEl) {
+        // JSDOM does not natively toggle details.open on summary click
+        this.detailsEl.open = !this.detailsEl.open;
+        this.isOpen = this.detailsEl.open;
+        e.preventDefault();
+      }
+    });
 
-    if (this.summaryEl) {
-      this.listen(this.summaryEl, "click", (e: MouseEvent) => {
-        if (this.detailsEl) {
-          // JSDOM does not natively toggle details.open on summary click
-          this.detailsEl.open = !this.detailsEl.open;
-          this.isOpen = this.detailsEl.open;
-          e.preventDefault();
-        }
-      });
-    }
+    this.listen(this.detailsEl, "toggle", () => {
+      this.isOpen = Boolean(this.detailsEl?.open);
+    });
 
-    if (this.detailsEl) {
-      this.listen(this.detailsEl, "toggle", () => {
-        this.isOpen = Boolean(this.detailsEl?.open);
-      });
-    }
+    const sliderEl = this.$<HTMLInputElement>(".settings-slider");
+    this.listen(sliderEl, "input", (e: Event) => {
+      if (e.target instanceof HTMLInputElement) {
+        this.updateStrength(Number(e.target.value), false);
+      }
+    });
+    this.listen(sliderEl, "change", (e: Event) => {
+      if (e.target instanceof HTMLInputElement) {
+        this.updateStrength(Number(e.target.value), true);
+      }
+    });
 
-    if (this.sliderEl) {
-      this.listen(this.sliderEl, "input", (e: Event) => {
-        if (e.target instanceof HTMLInputElement) {
-          this.updateStrength(Number(e.target.value), false);
-        }
-      });
-      this.listen(this.sliderEl, "change", (e: Event) => {
-        if (e.target instanceof HTMLInputElement) {
-          this.updateStrength(Number(e.target.value), true);
-        }
-      });
-    }
-
-    // Checkbox listener for both dict selection and inflection toggle
-    this.listen(this, "change", (e: Event) => {
-      const target = e.target;
-      if (
-        target instanceof HTMLInputElement &&
-        target.classList.contains("dict-checkbox")
-      ) {
+    this.delegate<HTMLInputElement>(
+      this,
+      "change",
+      ".dict-checkbox",
+      (_e, target) => {
         const key = target.dataset.key || target.value;
         if (!key) return;
         if (target.checked) {
@@ -252,35 +223,54 @@ export class MorcusDictSettings extends BaseElement {
           this.activeDictKeys.delete(key);
         }
         this.saveDictSelection();
-      } else if (
-        target instanceof HTMLInputElement &&
-        (target.id === "toggle-inflected" ||
-          target.classList.contains("inflected-checkbox"))
-      ) {
+      }
+    );
+
+    this.delegate<HTMLInputElement>(
+      this,
+      "change",
+      "#toggle-inflected, .inflected-checkbox",
+      (_e, target) => {
         this.isInflected = target.checked;
         inflectedSettingsStore.set(this.isInflected);
-        this.dispatchEvent(
-          new CustomEvent("dict-inflected-change", {
-            bubbles: true,
-            composed: true,
-            detail: { isInflected: this.isInflected },
-          })
-        );
+        this.emit("dict-inflected-change", { isInflected: this.isInflected });
       }
-    });
+    );
+  }
+
+  private syncUi() {
+    for (const cb of this.$$<HTMLInputElement>(".dict-checkbox")) {
+      const key = cb.dataset.key || cb.value;
+      if (key) {
+        cb.checked = this.activeDictKeys.has(key);
+      }
+    }
+
+    const inflectedCheckbox = this.$<HTMLInputElement>(
+      "#toggle-inflected, .inflected-checkbox"
+    );
+    if (inflectedCheckbox) {
+      inflectedCheckbox.checked = this.isInflected;
+    }
+
+    const sliderEl = this.$<HTMLInputElement>(".settings-slider");
+    if (sliderEl && Number(sliderEl.value) !== this.strength) {
+      sliderEl.value = String(this.strength);
+    }
+
+    const valueDisplayEl = this.$(".settings-value");
+    if (valueDisplayEl) {
+      valueDisplayEl.textContent = `${this.strength}%`;
+    }
+
+    this.applyScale(this.strength);
   }
 
   private saveDictSelection() {
     const keys = Array.from(this.activeDictKeys);
     dictSettingsStore.set(keys);
     const bitmask = encodeDictBitmask(keys);
-    this.dispatchEvent(
-      new CustomEvent("dict-selection-change", {
-        bubbles: true,
-        composed: true,
-        detail: { dictKeys: keys, bitmask },
-      })
-    );
+    this.emit("dict-selection-change", { dictKeys: keys, bitmask });
   }
 
   private closeSettingsPopover() {
@@ -299,14 +289,7 @@ export class MorcusDictSettings extends BaseElement {
 
   private updateStrength(newStrength: number, persist: boolean) {
     this.strength = newStrength;
-    this.applyScale(newStrength);
-
-    if (this.sliderEl && Number(this.sliderEl.value) !== newStrength) {
-      this.sliderEl.value = String(newStrength);
-    }
-    if (this.valueDisplayEl) {
-      this.valueDisplayEl.textContent = `${newStrength}%`;
-    }
+    this.syncUi();
 
     if (persist) {
       settingsStore.update({ highlightStrength: newStrength });
