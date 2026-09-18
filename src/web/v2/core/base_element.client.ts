@@ -416,14 +416,21 @@ export abstract class BaseController<Lane extends string = never>
   public dispose(): void {
     const wasConnected = this._scope !== null && !this._scope.disposed;
     ACTIVE_CONTROLLERS_BY_ROOT.get(this.root)?.delete(this);
-    for (const controller of this.controllers) {
-      controller.dispose();
+    try {
+      for (const controller of this.controllers) {
+        try {
+          controller.dispose();
+        } catch (err) {
+          console.error("Error during controller disposal:", err);
+        }
+      }
+      if (wasConnected) {
+        this.onDisconnect();
+      }
+    } finally {
+      this._scope?.dispose();
+      this._scope = null;
     }
-    if (wasConnected) {
-      this.onDisconnect();
-    }
-    this._scope?.dispose();
-    this._scope = null;
   }
 
   public onContentSwap(swappedRoot: Element): void {
@@ -534,12 +541,19 @@ export abstract class BaseElement<
   }
 
   disconnectedCallback() {
-    for (const controller of this.controllers) {
-      controller.dispose();
+    try {
+      for (const controller of this.controllers) {
+        try {
+          controller.dispose();
+        } catch (err) {
+          console.error("Error during controller disposal:", err);
+        }
+      }
+      this.onDisconnect();
+    } finally {
+      this._scope?.dispose();
+      this._scope = null;
     }
-    this.onDisconnect();
-    this._scope?.dispose();
-    this._scope = null;
   }
 
   /**
