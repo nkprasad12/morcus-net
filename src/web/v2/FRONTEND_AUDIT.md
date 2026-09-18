@@ -32,7 +32,7 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
 
 ### B. Managed Timers (`this.timeout`) & Auto-Disposed Debounce (`this.debounce`)
 
-- [ ] 🟢 **Add `this.timeout(fn, ms)` and `this.debounce(fn, ms)` to `LifetimeScope` (`BaseElement` & `BaseController`).**
+- [x] 🟢 **Add `this.timeout(fn, ms)` and `this.debounce(fn, ms)` to `LifetimeScope` (`BaseElement` & `BaseController`).** (Completed in Step 1)
   - **Smell**: `BaseElement` cleans up DOM listeners and `AbortSignal` lanes on disconnect, **but not timers (`setTimeout`) or debounced functions**.
   - **Where it bites**:
     - [`dialog/report_dialog.client.ts`](dialog/report_dialog.client.ts) (`setTimeout(() => this.textareaEl?.focus(), 50)` at L43 & L96; `setTimeout(() => { this.closeDialog(); this.resetForm(); }, 1200)` at L157–160) runs unmanaged timers that can fire after the element is removed.

@@ -4,14 +4,14 @@ import {
   type QueryParamSync,
   type SyncQueryParamOptions,
 } from "@/web/v2/core/router.client";
-import { LatestTask } from "@/web/v2/core/task.client";
+import { LatestTask, type DebouncedFunction } from "@/web/v2/core/task.client";
 
 /**
  * Lightweight base class for UI V2 Light DOM Web Components.
  *
  * Provides automatic cleanup for event listeners, delegation, subscriptions,
- * and in-flight async work when disconnected from the DOM, eliminating manual
- * removeEventListener / AbortController boilerplate.
+ * timers, and in-flight async work when disconnected from the DOM, eliminating
+ * manual removeEventListener / AbortController boilerplate.
  *
  * `Lane` names the supersession lanes this component uses with {@link latest}.
  * It defaults to `never`, so calling `latest()` without declaring lanes is a
@@ -27,6 +27,8 @@ export abstract class BaseElement<
   private readonly disposables = new DisposableBag();
   private lifetime = new AbortController();
   private readonly lanes = new Map<Lane, LatestTask>();
+  private readonly timeouts = new Set<number>();
+  private readonly rafs = new Set<number>();
 
   /**
    * Lifecycle hook invoked when the element is inserted into the document.
@@ -266,6 +268,84 @@ export abstract class BaseElement<
     );
   }
 
+  /**
+   * Schedules a one-shot timer that is automatically cancelled on disconnect.
+   * If called when the element is disconnected from the DOM, does nothing and returns 0.
+   */
+  protected timeout(fn: () => void, ms: number): number {
+    if (!this.isConnected) return 0;
+    const id = window.setTimeout(() => {
+      this.timeouts.delete(id);
+      fn();
+    }, ms);
+    this.timeouts.add(id);
+    return id;
+  }
+
+  /**
+   * Cancels a pending timer previously scheduled with {@link timeout}.
+   */
+  protected clearTimeout(id: number): void {
+    window.clearTimeout(id);
+    this.timeouts.delete(id);
+  }
+
+  /**
+   * Schedules an animation frame callback that is automatically cancelled on disconnect.
+   * If called when the element is disconnected from the DOM, does nothing and returns 0.
+   */
+  protected rAF(fn: FrameRequestCallback): number {
+    if (!this.isConnected) return 0;
+    const id = window.requestAnimationFrame((time) => {
+      this.rafs.delete(id);
+      fn(time);
+    });
+    this.rafs.add(id);
+    return id;
+  }
+
+  /**
+   * Cancels a pending animation frame callback previously scheduled with {@link rAF}.
+   */
+  protected cancelRAF(id: number): void {
+    window.cancelAnimationFrame(id);
+    this.rafs.delete(id);
+  }
+
+  /**
+   * Returns a debounced version of `fn` whose pending timer is automatically
+   * managed through {@link timeout} and cancelled on disconnect.
+   *
+   * Reusable across reconnect cycles with zero memory retention across disconnects.
+   */
+  protected debounce<T extends (...args: never[]) => void>(
+    fn: T,
+    waitMs: number
+  ): DebouncedFunction<T> {
+    let timer: number | null = null;
+
+    const debounced = (...args: Parameters<T>) => {
+      if (timer !== null) {
+        this.clearTimeout(timer);
+        timer = null;
+      }
+      if (!this.isConnected) return;
+      timer = this.timeout(() => {
+        timer = null;
+        fn(...args);
+      }, waitMs);
+    };
+
+    debounced.cancel = () => {
+      if (timer !== null) {
+        this.clearTimeout(timer);
+        timer = null;
+      }
+    };
+
+    return debounced;
+  }
+
   private dispose() {
     // Cancel in-flight async work first, so listener teardown below cannot be
     // raced by a late response.
@@ -273,6 +353,14 @@ export abstract class BaseElement<
       task.cancel();
     }
     this.lanes.clear();
+    for (const id of this.timeouts) {
+      window.clearTimeout(id);
+    }
+    this.timeouts.clear();
+    for (const id of this.rafs) {
+      window.cancelAnimationFrame(id);
+    }
+    this.rafs.clear();
     this.lifetime.abort();
     this.disposables.dispose();
   }

@@ -40,7 +40,7 @@ export class MorcusReportDialog extends BaseElement {
           trigger: this.triggerBtn,
           onOpen: () => {
             this.clearStatus();
-            setTimeout(() => this.textareaEl?.focus(), 50);
+            this.timeout(() => this.textareaEl?.focus(), 50);
           },
           onClose: () => {
             this.clearStatus();
@@ -93,7 +93,7 @@ export class MorcusReportDialog extends BaseElement {
       this.dialogEl.setAttribute("open", "");
     }
     this.clearStatus();
-    setTimeout(() => {
+    this.timeout(() => {
       this.textareaEl?.focus();
     }, 50);
   }
@@ -154,7 +154,7 @@ export class MorcusReportDialog extends BaseElement {
           "✓ Thank you! Your report has been submitted.";
       }
 
-      setTimeout(() => {
+      this.timeout(() => {
         this.closeDialog();
         this.resetForm();
       }, 1200);

@@ -102,6 +102,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private originalScrollRestoration: ScrollRestoration = "auto";
   private hasTranslation: boolean = false;
   private readonly translationCache = new Map<string, string>();
+  private toastTimer: number | null = null;
 
   public getTocController(): ReaderTocController | null {
     return this.tocController;
@@ -332,7 +333,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           });
         }
         secEl.classList.add("target-highlight");
-        setTimeout(() => secEl.classList.remove("target-highlight"), 3000);
+        this.timeout(() => secEl.classList.remove("target-highlight"), 3000);
       }
       this.saveCurrentSpot(secId);
       this.showToast(`Copied permalink: § ${secId}`);
@@ -744,7 +745,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     // Mobile scroll guard: Ensure tapped marker in passage is not occluded by the newly opened/restored drawer
     if (window.innerWidth <= 640 && !markerEl.closest(".reader-dict-panel")) {
-      requestAnimationFrame(() => {
+      this.rAF(() => {
         const rect = markerEl.getBoundingClientRect();
         const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
         const drawerTop =
@@ -898,7 +899,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (window.innerWidth <= 640) {
       const targetEl = activeAnchor || this.findWordElement(word);
       if (targetEl) {
-        requestAnimationFrame(() => {
+        this.rAF(() => {
           const rect = targetEl.getBoundingClientRect();
           const drawerTop =
             dictPanel?.getBoundingClientRect().top ??
@@ -1082,7 +1083,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     const onScroll = () => {
       if (!ticking) {
-        window.requestAnimationFrame(updateVisibility);
+        this.rAF(updateVisibility);
         ticking = true;
       }
     };
@@ -1126,8 +1127,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (!toast) return;
     toast.textContent = msg;
     toast.classList.add("visible");
-    setTimeout(() => {
+    if (this.toastTimer !== null) {
+      this.clearTimeout(this.toastTimer);
+    }
+    this.toastTimer = this.timeout(() => {
       toast.classList.remove("visible");
+      this.toastTimer = null;
     }, 2200);
   }
 
@@ -1268,7 +1273,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       }
       if (targetId.startsWith("sec-")) {
         targetEl.classList.add("target-highlight");
-        setTimeout(() => targetEl.classList.remove("target-highlight"), 3000);
+        this.timeout(() => targetEl.classList.remove("target-highlight"), 3000);
       }
     }
   }

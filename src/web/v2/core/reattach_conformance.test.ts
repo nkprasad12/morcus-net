@@ -28,6 +28,9 @@ interface ListenerRecord {
 
 const originalAdd = EventTarget.prototype.addEventListener;
 const originalRemove = EventTarget.prototype.removeEventListener;
+const originalWinAdd: EventTarget["addEventListener"] = window.addEventListener;
+const originalWinRemove: EventTarget["removeEventListener"] =
+  window.removeEventListener;
 
 let added: ListenerRecord[] = [];
 let removed: ListenerRecord[] = [];
@@ -127,6 +130,16 @@ const FIXTURES: Record<string, string> = {
 
   "morcus-reader-view": `
     <morcus-reader-view class="reader-view">
+      <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
+      <div id="reader-toc-drawer" class="reader-toc-drawer" role="dialog" hidden>
+        <button type="button" id="reader-toc-close-btn">&times;</button>
+        <div id="reader-toc-list" class="reader-toc-list">
+          <a href="#sec-1" class="reader-toc-item">Section 1</a>
+        </div>
+      </div>
+      <div class="reader-sticky-bar">
+        <button type="button" id="reader-toc-btn" aria-expanded="false">Contents</button>
+      </div>
       <div class="reader-split-layout">
         <section class="reader-text-panel">
           <div class="reader-text-card">
@@ -137,6 +150,7 @@ const FIXTURES: Record<string, string> = {
             </article>
           </div>
         </section>
+        <div class="reader-splitter" role="separator" tabindex="0"></div>
         <aside class="reader-dict-panel">
           <div class="reader-sheet-bar">
             <div class="reader-sheet-teaser">
@@ -212,11 +226,29 @@ beforeAll(() => {
     if (recording) removed.push({ target: this, type });
     originalRemove.call(this, type, listener, options);
   };
+  window.addEventListener = function (
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | AddEventListenerOptions
+  ) {
+    if (recording) added.push({ target: window, type });
+    originalWinAdd.call(window, type, listener, options);
+  };
+  window.removeEventListener = function (
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: boolean | EventListenerOptions
+  ) {
+    if (recording) removed.push({ target: window, type });
+    originalWinRemove.call(window, type, listener, options);
+  };
 });
 
 afterAll(() => {
   EventTarget.prototype.addEventListener = originalAdd;
   EventTarget.prototype.removeEventListener = originalRemove;
+  window.addEventListener = originalWinAdd;
+  window.removeEventListener = originalWinRemove;
 });
 
 function findCustomElementFiles(dir: string): string[] {
@@ -337,4 +369,117 @@ describe("V2 custom elements survive being moved in the DOM", () => {
       );
     });
   }
+});
+
+describe("open-state popovers survive being moved in the DOM", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = "";
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(""),
+      json: () => Promise.resolve([]),
+    } as unknown as Response);
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+    jest.restoreAllMocks();
+  });
+
+  test("morcus-reader-settings resets open state on move, tears down open-state listeners, and re-binds trigger listener", () => {
+    document.body.innerHTML = FIXTURES["morcus-reader-settings"];
+    const settingsEl = document.querySelector<
+      HTMLElement & { isOpen(): boolean; open(): void }
+    >("morcus-reader-settings")!;
+    const triggerBtn = settingsEl.querySelector<HTMLButtonElement>(
+      "#reader-settings-btn"
+    )!;
+    const popoverEl = settingsEl.querySelector<HTMLElement>(
+      "#reader-settings-popover"
+    )!;
+
+    // Open settings popover and record transient open-state listeners
+    const opened = record(() => settingsEl.open());
+    expect(opened.added.length).toBeGreaterThan(0);
+    expect(settingsEl.isOpen()).toBe(true);
+    expect(popoverEl.hasAttribute("hidden")).toBe(false);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+
+    // Move in DOM (disconnect then reconnect)
+    const disconnected = record(() => settingsEl.remove());
+    expect(settingsEl.isOpen()).toBe(false);
+    expect(popoverEl.hasAttribute("hidden")).toBe(true);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+
+    // Every listener added by open() must be removed on disconnect
+    const leakedOpenListeners = opened.added.filter(
+      (a) =>
+        !disconnected.removed.some(
+          (r) => r.target === a.target && r.type === a.type
+        )
+    );
+    expect(leakedOpenListeners).toEqual([]);
+
+    document.body.appendChild(settingsEl);
+    expect(settingsEl.isOpen()).toBe(false);
+    expect(popoverEl.hasAttribute("hidden")).toBe(true);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+
+    // Re-trigger opens popover cleanly
+    triggerBtn.click();
+    expect(settingsEl.isOpen()).toBe(true);
+    expect(popoverEl.hasAttribute("hidden")).toBe(false);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  test("ReaderTocController resets open state on move, tears down open-state listeners, and re-binds trigger listener", () => {
+    document.body.innerHTML = FIXTURES["morcus-reader-view"];
+    const readerView = document.querySelector<
+      HTMLElement & {
+        getTocController(): {
+          isOpen(): boolean;
+          open(): void;
+          close(): void;
+        } | null;
+      }
+    >("morcus-reader-view")!;
+    const tocBtn =
+      readerView.querySelector<HTMLButtonElement>("#reader-toc-btn")!;
+    const tocDrawer =
+      readerView.querySelector<HTMLElement>("#reader-toc-drawer")!;
+
+    const toc = readerView.getTocController()!;
+    const opened = record(() => toc.open());
+    expect(opened.added.length).toBeGreaterThan(0);
+
+    expect(toc.isOpen()).toBe(true);
+    expect(tocDrawer.hasAttribute("hidden")).toBe(false);
+    expect(tocBtn.getAttribute("aria-expanded")).toBe("true");
+
+    // Move in DOM (disconnect then reconnect)
+    const disconnected = record(() => readerView.remove());
+    expect(tocDrawer.hasAttribute("hidden")).toBe(true);
+    expect(tocBtn.getAttribute("aria-expanded")).toBe("false");
+
+    const leakedOpenListeners = opened.added.filter(
+      (a) =>
+        !disconnected.removed.some(
+          (r) => r.target === a.target && r.type === a.type
+        )
+    );
+    expect(leakedOpenListeners).toEqual([]);
+
+    document.body.appendChild(readerView);
+    const newToc = readerView.getTocController()!;
+    expect(newToc.isOpen()).toBe(false);
+    expect(tocDrawer.hasAttribute("hidden")).toBe(true);
+    expect(tocBtn.getAttribute("aria-expanded")).toBe("false");
+
+    // Re-trigger opens drawer cleanly
+    tocBtn.click();
+    expect(newToc.isOpen()).toBe(true);
+    expect(tocDrawer.hasAttribute("hidden")).toBe(false);
+    expect(tocBtn.getAttribute("aria-expanded")).toBe("true");
+  });
 });

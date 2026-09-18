@@ -14,11 +14,20 @@ export class DisposableBag {
 
   /**
    * Registers a cleanup callback.
-   * Returns the registered callback for convenient inline chaining.
+   * Returns an unregister handle that removes the callback from the bag
+   * so it will not run when dispose() is called.
    */
   add(fn: () => void): () => void {
     this.disposables.push(fn);
-    return fn;
+    let unregistered = false;
+    return () => {
+      if (unregistered) return;
+      unregistered = true;
+      const idx = this.disposables.indexOf(fn);
+      if (idx !== -1) {
+        this.disposables.splice(idx, 1);
+      }
+    };
   }
 
   /**

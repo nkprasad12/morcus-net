@@ -27,6 +27,26 @@ class TestElement extends BaseElement<Lane> {
   cancelLane(lane: Lane): void {
     this.cancel(lane);
   }
+
+  scheduleTimeout(fn: () => void, ms: number): number {
+    return this.timeout(fn, ms);
+  }
+
+  scheduleRaf(fn: FrameRequestCallback): number {
+    return this.rAF(fn);
+  }
+
+  cancelTimeout(id: number): void {
+    this.clearTimeout(id);
+  }
+
+  cancelRaf(id: number): void {
+    this.cancelRAF(id);
+  }
+
+  createDebounce<T extends (...args: never[]) => void>(fn: T, ms: number) {
+    return this.debounce(fn, ms);
+  }
 }
 
 registerElement("morcus-test-base-element", TestElement);
@@ -125,6 +145,115 @@ describe("BaseElement async cancellation", () => {
     test("cancel is a no-op for a lane that was never started", () => {
       expect(() => el.cancelLane("alpha")).not.toThrow();
       expect(el.laneSignal("alpha").aborted).toBe(false);
+    });
+  });
+
+  describe("managed timers", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test("timeout fires when connected and cancels on disconnect", () => {
+      const fired = jest.fn();
+      const cancelled = jest.fn();
+
+      el.scheduleTimeout(fired, 50);
+      jest.advanceTimersByTime(50);
+      expect(fired).toHaveBeenCalledTimes(1);
+
+      el.scheduleTimeout(cancelled, 50);
+      el.remove();
+      jest.advanceTimersByTime(50);
+      expect(cancelled).not.toHaveBeenCalled();
+    });
+
+    test("rAF fires when connected and cancels on disconnect", () => {
+      const fired = jest.fn();
+      const cancelled = jest.fn();
+
+      el.scheduleRaf(fired);
+      jest.runAllTimers();
+      expect(fired).toHaveBeenCalledTimes(1);
+
+      el.scheduleRaf(cancelled);
+      el.remove();
+      jest.runAllTimers();
+      expect(cancelled).not.toHaveBeenCalled();
+    });
+
+    test("debounce cancels pending calls on every disconnect across reconnect cycles", () => {
+      const fn = jest.fn();
+      const debounced = el.createDebounce(fn, 100);
+
+      // Disconnect before first debounce elapses
+      debounced();
+      el.remove();
+      jest.advanceTimersByTime(100);
+      expect(fn).not.toHaveBeenCalled();
+
+      // Reconnect and allow debounce to fire
+      document.body.appendChild(el);
+      debounced();
+      jest.advanceTimersByTime(100);
+      expect(fn).toHaveBeenCalledTimes(1);
+
+      // Disconnect a second time before pending debounce elapses
+      debounced();
+      el.remove();
+      jest.advanceTimersByTime(100);
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    test("does not schedule timeout or rAF if called while disconnected", () => {
+      el.remove();
+
+      const timerCb = jest.fn();
+      const rafCb = jest.fn();
+      const debounceCb = jest.fn();
+      const debounced = el.createDebounce(debounceCb, 50);
+
+      const timerId = el.scheduleTimeout(timerCb, 50);
+      const rafId = el.scheduleRaf(rafCb);
+      debounced();
+
+      expect(timerId).toBe(0);
+      expect(rafId).toBe(0);
+
+      jest.advanceTimersByTime(100);
+      jest.runAllTimers();
+
+      expect(timerCb).not.toHaveBeenCalled();
+      expect(rafCb).not.toHaveBeenCalled();
+      expect(debounceCb).not.toHaveBeenCalled();
+    });
+
+    test("clearTimeout and cancelRAF manually cancel pending work", () => {
+      const timerCb = jest.fn();
+      const rafCb = jest.fn();
+
+      const timerId = el.scheduleTimeout(timerCb, 50);
+      el.cancelTimeout(timerId);
+      jest.advanceTimersByTime(50);
+      expect(timerCb).not.toHaveBeenCalled();
+
+      const rafId = el.scheduleRaf(rafCb);
+      el.cancelRaf(rafId);
+      jest.runAllTimers();
+      expect(rafCb).not.toHaveBeenCalled();
+    });
+
+    test("debounced.cancel() manually cancels pending invocation", () => {
+      const fn = jest.fn();
+      const debounced = el.createDebounce(fn, 100);
+
+      debounced();
+      debounced.cancel();
+      jest.advanceTimersByTime(100);
+      expect(fn).not.toHaveBeenCalled();
     });
   });
 });
