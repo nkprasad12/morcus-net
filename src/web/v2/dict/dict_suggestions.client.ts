@@ -21,7 +21,7 @@ export class MorcusDictSuggestions extends BaseElement {
     }
 
     // Event delegation on container: avoids creating closure listeners for each item
-    this.delegate<HTMLElement>(
+    this.scope.delegate<HTMLElement>(
       this.listEl,
       "mousedown",
       ".suggestion-item",

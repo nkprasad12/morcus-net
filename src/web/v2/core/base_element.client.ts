@@ -5,6 +5,7 @@ import {
   type SyncQueryParamOptions,
 } from "@/web/v2/core/router.client";
 import { LatestTask, type DebouncedFunction } from "@/web/v2/core/task.client";
+export type { DebouncedFunction } from "@/web/v2/core/task.client";
 
 /**
  * Long-lived sub-controller attached to a BaseElement (or parent BaseController).
@@ -25,17 +26,11 @@ export interface Controller {
  */
 export type Disposable = (() => void) | { dispose(): void };
 
-const ABORTED_SIGNAL: AbortSignal = (() => {
-  const controller = new AbortController();
-  controller.abort();
-  return controller.signal;
-})();
-
 function requireFromRoot<T extends HTMLElement = HTMLElement>(
-  root: ParentNode,
+  root: ParentNode | null,
   selector: string
 ): T {
-  const el = root.querySelector<T>(selector);
+  const el = root?.querySelector<T>(selector);
   if (!el) {
     const hostName =
       root instanceof Element ? `<${root.tagName.toLowerCase()}>` : "root";
@@ -47,12 +42,51 @@ function requireFromRoot<T extends HTMLElement = HTMLElement>(
 }
 
 /**
+ * Creates a host-lifetime debounced function that survives disconnect/reconnect
+ * cycles. Pending executions are bound to the host's active LifetimeScope and
+ * cancel automatically on disconnect, but the function handle remains valid and
+ * schedules work on the renewed scope upon reconnect.
+ */
+export function createDurableDebounce<T extends (...args: never[]) => void>(
+  isConnected: () => boolean,
+  getScope: () => {
+    timeout(fn: () => void, ms: number): number;
+    clearTimeout(id: number): void;
+  },
+  fn: T,
+  waitMs: number
+): DebouncedFunction<T> {
+  let timer: number | null = null;
+
+  const debounced = (...args: Parameters<T>) => {
+    if (timer !== null) {
+      getScope().clearTimeout(timer);
+      timer = null;
+    }
+    if (!isConnected()) return;
+    timer = getScope().timeout(() => {
+      timer = null;
+      fn(...args);
+    }, waitMs);
+  };
+
+  debounced.cancel = () => {
+    if (timer !== null) {
+      getScope().clearTimeout(timer);
+      timer = null;
+    }
+  };
+
+  return debounced;
+}
+
+/**
  * One-shot lifecycle scope that owns event listeners, delegated listeners,
  * supersession lanes, AbortSignals, managed timers/rAFs, and child scopes
  * for a single connection or open cycle.
  */
 export class LifetimeScope<Lane extends string = never> {
-  public readonly root: ParentNode;
+  public readonly root: ParentNode | null;
   private readonly disposables = new DisposableBag();
   private readonly lifetime = new AbortController();
   private readonly lanes = new Map<Lane, LatestTask>();
@@ -61,7 +95,7 @@ export class LifetimeScope<Lane extends string = never> {
   private _disposed = false;
   private readonly onDisposeCallback?: () => void;
 
-  constructor(root: ParentNode, onDisposeCallback?: () => void) {
+  constructor(root: ParentNode | null, onDisposeCallback?: () => void) {
     this.root = root;
     this.onDisposeCallback = onDisposeCallback;
   }
@@ -75,7 +109,7 @@ export class LifetimeScope<Lane extends string = never> {
   }
 
   private isScopeActive(): boolean {
-    if (this._disposed) return false;
+    if (this._disposed || !this.root) return false;
     if (this.root instanceof BaseElement && !this.root.isConnected) {
       return false;
     }
@@ -114,7 +148,7 @@ export class LifetimeScope<Lane extends string = never> {
    * open/close cycles are strictly O(1) in memory.
    */
   public createScope<ChildLane extends string = never>(
-    root: ParentNode = this.root
+    root: ParentNode = this.root ?? document
   ): LifetimeScope<ChildLane> {
     if (this._disposed) {
       const dead = new LifetimeScope<ChildLane>(root);
@@ -183,11 +217,11 @@ export class LifetimeScope<Lane extends string = never> {
   }
 
   public $<T extends HTMLElement = HTMLElement>(selector: string): T | null {
-    return this.root.querySelector<T>(selector);
+    return this.root?.querySelector<T>(selector) ?? null;
   }
 
   public $$<T extends HTMLElement = HTMLElement>(selector: string): T[] {
-    return Array.from(this.root.querySelectorAll<T>(selector));
+    return this.root ? Array.from(this.root.querySelectorAll<T>(selector)) : [];
   }
 
   public require<T extends HTMLElement = HTMLElement>(selector: string): T {
@@ -228,28 +262,12 @@ export class LifetimeScope<Lane extends string = never> {
     fn: T,
     waitMs: number
   ): DebouncedFunction<T> {
-    let timer: number | null = null;
-
-    const debounced = (...args: Parameters<T>) => {
-      if (timer !== null) {
-        this.clearTimeout(timer);
-        timer = null;
-      }
-      if (!this.isScopeActive()) return;
-      timer = this.timeout(() => {
-        timer = null;
-        fn(...args);
-      }, waitMs);
-    };
-
-    debounced.cancel = () => {
-      if (timer !== null) {
-        this.clearTimeout(timer);
-        timer = null;
-      }
-    };
-
-    return debounced;
+    return createDurableDebounce(
+      () => this.isScopeActive(),
+      () => this,
+      fn,
+      waitMs
+    );
   }
 
   public dispose(): void {
@@ -274,6 +292,14 @@ export class LifetimeScope<Lane extends string = never> {
     this.disposables.dispose();
   }
 }
+
+export const DEAD_SCOPE: LifetimeScope<never> = (() => {
+  const dummyRoot =
+    typeof document !== "undefined" ? document.createDocumentFragment() : null;
+  const dead = new LifetimeScope<never>(dummyRoot);
+  dead.dispose();
+  return dead;
+})();
 
 const ACTIVE_CONTROLLERS_BY_ROOT = new WeakMap<ParentNode, Set<Controller>>();
 
@@ -319,7 +345,7 @@ export abstract class BaseController<Lane extends string = never>
   implements Controller
 {
   public readonly root: ParentNode;
-  private scope: LifetimeScope<Lane> | null = null;
+  private _scope: LifetimeScope<Lane> | null = null;
   private readonly controllers: Controller[] = [];
 
   constructor(root: ParentNode = document) {
@@ -337,17 +363,33 @@ export abstract class BaseController<Lane extends string = never>
   }
 
   public get isConnected(): boolean {
-    return this.scope !== null && !this.scope.disposed;
+    return this._scope !== null && !this._scope.disposed;
+  }
+
+  protected get scope(): LifetimeScope<Lane> {
+    return this._scope ?? DEAD_SCOPE;
   }
 
   protected onConnect(): void {}
 
   protected onDisconnect(): void {}
 
+  protected debounce<T extends (...args: never[]) => void>(
+    fn: T,
+    waitMs: number
+  ): DebouncedFunction<T> {
+    return createDurableDebounce(
+      () => this.isConnected,
+      () => this.scope,
+      fn,
+      waitMs
+    );
+  }
+
   public addController<T extends Controller>(controller: T): T {
     if (!this.controllers.includes(controller)) {
       this.controllers.push(controller);
-      if (this.scope && !this.scope.disposed) {
+      if (this._scope && !this._scope.disposed) {
         controller.connect?.();
       }
     }
@@ -355,10 +397,10 @@ export abstract class BaseController<Lane extends string = never>
   }
 
   public connect(): void {
-    if (this.scope && !this.scope.disposed) {
+    if (this._scope && !this._scope.disposed) {
       this.dispose();
     }
-    this.scope = new LifetimeScope<Lane>(this.root);
+    this._scope = new LifetimeScope<Lane>(this.root);
     let set = ACTIVE_CONTROLLERS_BY_ROOT.get(this.root);
     if (!set) {
       set = new Set<Controller>();
@@ -372,7 +414,7 @@ export abstract class BaseController<Lane extends string = never>
   }
 
   public dispose(): void {
-    const wasConnected = this.scope !== null && !this.scope.disposed;
+    const wasConnected = this._scope !== null && !this._scope.disposed;
     ACTIVE_CONTROLLERS_BY_ROOT.get(this.root)?.delete(this);
     for (const controller of this.controllers) {
       controller.dispose();
@@ -380,140 +422,14 @@ export abstract class BaseController<Lane extends string = never>
     if (wasConnected) {
       this.onDisconnect();
     }
-    this.scope?.dispose();
-    this.scope = null;
+    this._scope?.dispose();
+    this._scope = null;
   }
 
   public onContentSwap(swappedRoot: Element): void {
     for (const controller of this.controllers) {
       controller.onContentSwap?.(swappedRoot);
     }
-  }
-
-  protected get signal(): AbortSignal {
-    return this.scope?.signal ?? ABORTED_SIGNAL;
-  }
-
-  protected latest(lane: Lane): AbortSignal {
-    return this.scope ? this.scope.latest(lane) : ABORTED_SIGNAL;
-  }
-
-  protected cancel(lane: Lane): void {
-    this.scope?.cancel(lane);
-  }
-
-  protected use(resource: Disposable): () => void {
-    if (!this.scope) {
-      return () => {};
-    }
-    return this.scope.use(resource);
-  }
-
-  protected createScope<ChildLane extends string = never>(
-    root: ParentNode = this.root
-  ): LifetimeScope<ChildLane> {
-    if (!this.scope) {
-      const dead = new LifetimeScope<ChildLane>(root);
-      dead.dispose();
-      return dead;
-    }
-    return this.scope.createScope<ChildLane>(root);
-  }
-
-  protected listen<K extends keyof HTMLElementEventMap>(
-    target: EventTarget | null | undefined,
-    type: K,
-    listener: (e: HTMLElementEventMap[K]) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  protected listen<T = unknown>(
-    target: EventTarget | null | undefined,
-    type: string,
-    listener: (e: CustomEvent<T>) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  protected listen(
-    target: EventTarget | null | undefined,
-    type: string,
-    listener: EventListenerOrEventListenerObject,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  protected listen(
-    target: EventTarget | null | undefined,
-    type: string,
-    listener: unknown,
-    options?: boolean | AddEventListenerOptions
-  ): void {
-    if (!this.scope || !target) return;
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const handler = listener as EventListenerOrEventListenerObject;
-    this.scope.listen(target, type, handler, options);
-  }
-
-  protected delegate<T extends HTMLElement = HTMLElement>(
-    root: EventTarget | null | undefined,
-    type: string,
-    selector: string,
-    handler: (e: Event, matched: T) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void {
-    this.scope?.delegate(root, type, selector, handler, options);
-  }
-
-  protected $<T extends HTMLElement = HTMLElement>(selector: string): T | null {
-    return this.root.querySelector<T>(selector);
-  }
-
-  protected $$<T extends HTMLElement = HTMLElement>(selector: string): T[] {
-    return Array.from(this.root.querySelectorAll<T>(selector));
-  }
-
-  protected require<T extends HTMLElement = HTMLElement>(selector: string): T {
-    return requireFromRoot<T>(this.root, selector);
-  }
-
-  protected timeout(fn: () => void, ms: number): number {
-    return this.scope ? this.scope.timeout(fn, ms) : 0;
-  }
-
-  protected clearTimeout(id: number): void {
-    this.scope?.clearTimeout(id);
-  }
-
-  protected rAF(fn: FrameRequestCallback): number {
-    return this.scope ? this.scope.rAF(fn) : 0;
-  }
-
-  protected cancelRAF(id: number): void {
-    this.scope?.cancelRAF(id);
-  }
-
-  protected debounce<T extends (...args: never[]) => void>(
-    fn: T,
-    waitMs: number
-  ): DebouncedFunction<T> {
-    let timer: number | null = null;
-
-    const debounced = (...args: Parameters<T>) => {
-      if (timer !== null) {
-        this.clearTimeout(timer);
-        timer = null;
-      }
-      if (!this.isConnected) return;
-      timer = this.timeout(() => {
-        timer = null;
-        fn(...args);
-      }, waitMs);
-    };
-
-    debounced.cancel = () => {
-      if (timer !== null) {
-        this.clearTimeout(timer);
-        timer = null;
-      }
-    };
-
-    return debounced;
   }
 }
 
@@ -535,8 +451,15 @@ export abstract class BaseController<Lane extends string = never>
 export abstract class BaseElement<
   Lane extends string = never
 > extends HTMLElement {
-  private scope: LifetimeScope<Lane> | null = null;
+  private _scope: LifetimeScope<Lane> | null = null;
   private readonly controllers: Controller[] = [];
+
+  /**
+   * Active connection scope. Backed by DEAD_SCOPE when disconnected.
+   */
+  protected get scope(): LifetimeScope<Lane> {
+    return this._scope ?? DEAD_SCOPE;
+  }
 
   /**
    * Lifecycle hook invoked when the element is inserted into the document.
@@ -544,13 +467,25 @@ export abstract class BaseElement<
    * **Must be idempotent, and must re-register every listener it needs each
    * time it runs.** Moving an element in the DOM disconnects and reconnects it,
    * and `disconnectedCallback` disposes the active {@link LifetimeScope} — so
-   * by the time this runs again, everything registered through {@link listen},
-   * {@link delegate} or {@link use} is already gone.
+   * by the time this runs again, everything registered through `this.scope.listen`,
+   * `this.scope.delegate` or `this.scope.use` is already gone.
    */
   protected onConnect(): void {}
 
   /** Lifecycle hook invoked when the element is removed from the document. */
   protected onDisconnect(): void {}
+
+  protected debounce<T extends (...args: never[]) => void>(
+    fn: T,
+    waitMs: number
+  ): DebouncedFunction<T> {
+    return createDurableDebounce(
+      () => this.isConnected,
+      () => this.scope,
+      fn,
+      waitMs
+    );
+  }
 
   /** Optional hook invoked automatically by HTML sinks when a subtree inside the host is swapped. */
   protected onContentSwap(swappedRoot: Element): void {
@@ -564,7 +499,7 @@ export abstract class BaseElement<
   public addController<T extends Controller>(controller: T): T {
     if (!this.controllers.includes(controller)) {
       this.controllers.push(controller);
-      if (this.scope && !this.scope.disposed) {
+      if (this._scope && !this._scope.disposed) {
         controller.connect?.();
       }
     }
@@ -588,10 +523,10 @@ export abstract class BaseElement<
   }
 
   connectedCallback() {
-    if (this.scope && !this.scope.disposed) {
-      this.scope.dispose();
+    if (this._scope && !this._scope.disposed) {
+      this._scope.dispose();
     }
-    this.scope = new LifetimeScope<Lane>(this);
+    this._scope = new LifetimeScope<Lane>(this);
     for (const controller of this.controllers) {
       controller.connect?.();
     }
@@ -602,124 +537,9 @@ export abstract class BaseElement<
     for (const controller of this.controllers) {
       controller.dispose();
     }
-    this.scope?.dispose();
-    this.scope = null;
     this.onDisconnect();
-  }
-
-  /**
-   * An AbortSignal aborted when this element disconnects.
-   *
-   * Use for one-shot async work that should simply stop if the element goes
-   * away. For work where a newer request should supersede an older one, use
-   * {@link latest} instead.
-   */
-  protected get signal(): AbortSignal {
-    return this.scope?.signal ?? ABORTED_SIGNAL;
-  }
-
-  /**
-   * Returns an AbortSignal for a named supersession lane, aborting whatever
-   * was previously in flight *in that lane only*.
-   *
-   * Lanes are independent: starting `latest("results")` does not disturb
-   * `latest("completions")`. This matters because a single component can run
-   * genuinely concurrent requests whose results are both still wanted.
-   *
-   * All lanes are also aborted when the element disconnects.
-   */
-  protected latest(lane: Lane): AbortSignal {
-    return this.scope ? this.scope.latest(lane) : ABORTED_SIGNAL;
-  }
-
-  /**
-   * Aborts whatever is in flight in `lane` without starting anything new.
-   *
-   * Use when the result stops being wanted for a reason other than being
-   * superseded, e.g. the UI that would display it has been dismissed.
-   */
-  protected cancel(lane: Lane): void {
-    this.scope?.cancel(lane);
-  }
-
-  /**
-   * Registers a cleanup callback or disposable resource to be disposed when
-   * the current connection scope ends, returning an unregister handle.
-   */
-  protected use(resource: Disposable): () => void {
-    if (!this.scope) {
-      return () => {};
-    }
-    return this.scope.use(resource);
-  }
-
-  /**
-   * Registers a cleanup callback to be called when disconnectedCallback executes.
-   */
-  protected addDisposable(fn: () => void): () => void {
-    return this.use(fn);
-  }
-
-  /**
-   * Creates a bounded child scope tied to the current connection scope.
-   */
-  protected createScope<ChildLane extends string = never>(
-    root: ParentNode = this
-  ): LifetimeScope<ChildLane> {
-    if (!this.scope) {
-      const dead = new LifetimeScope<ChildLane>(root);
-      dead.dispose();
-      return dead;
-    }
-    return this.scope.createScope<ChildLane>(root);
-  }
-
-  /**
-   * Attaches an event listener that is automatically unregistered on disconnect.
-   * Quietly no-ops if target is null or undefined.
-   */
-  protected listen<K extends keyof HTMLElementEventMap>(
-    target: EventTarget | null | undefined,
-    type: K,
-    listener: (e: HTMLElementEventMap[K]) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  protected listen<T = unknown>(
-    target: EventTarget | null | undefined,
-    type: string,
-    listener: (e: CustomEvent<T>) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  protected listen(
-    target: EventTarget | null | undefined,
-    type: string,
-    listener: EventListenerOrEventListenerObject,
-    options?: boolean | AddEventListenerOptions
-  ): void;
-  protected listen(
-    target: EventTarget | null | undefined,
-    type: string,
-    listener: unknown,
-    options?: boolean | AddEventListenerOptions
-  ): void {
-    if (!this.scope || !target) return;
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const handler = listener as EventListenerOrEventListenerObject;
-    this.scope.listen(target, type, handler, options);
-  }
-
-  /**
-   * Attaches a delegated event listener that fires only when matching the selector.
-   * Automatically cleaned up on disconnect.
-   */
-  protected delegate<T extends HTMLElement = HTMLElement>(
-    root: EventTarget | null | undefined,
-    type: string,
-    selector: string,
-    handler: (e: Event, matched: T) => void,
-    options?: boolean | AddEventListenerOptions
-  ): void {
-    this.scope?.delegate(root, type, selector, handler, options);
+    this._scope?.dispose();
+    this._scope = null;
   }
 
   /**
@@ -737,11 +557,11 @@ export abstract class BaseElement<
   ): HTMLFormElement | null {
     const form =
       typeof formOrSelector === "string"
-        ? this.$<HTMLFormElement>(formOrSelector)
+        ? this.scope.$<HTMLFormElement>(formOrSelector)
         : formOrSelector;
     if (!form) return null;
 
-    this.listen(form, "submit", (e: Event) => {
+    this.scope.listen(form, "submit", (e: Event) => {
       e.preventDefault();
       const formData = new FormData(form);
       const data: Record<string, string> = {};
@@ -765,23 +585,8 @@ export abstract class BaseElement<
     options: SyncQueryParamOptions
   ): QueryParamSync {
     const sync = syncQueryParam(paramName, options);
-    this.use(sync);
+    this.scope.use(sync);
     return sync;
-  }
-
-  /** Scoped querySelector returning typed element or null. */
-  protected $<T extends HTMLElement = HTMLElement>(selector: string): T | null {
-    return this.querySelector<T>(selector);
-  }
-
-  /** Scoped querySelectorAll returning typed array of elements. */
-  protected $$<T extends HTMLElement = HTMLElement>(selector: string): T[] {
-    return Array.from(this.querySelectorAll<T>(selector));
-  }
-
-  /** Scoped querySelector that throws a descriptive error if the element is missing. */
-  protected require<T extends HTMLElement = HTMLElement>(selector: string): T {
-    return requireFromRoot<T>(this, selector);
   }
 
   /** Dispatches a bubbling, composed custom event. */
@@ -798,72 +603,6 @@ export abstract class BaseElement<
         ...options,
       })
     );
-  }
-
-  /**
-   * Schedules a one-shot timer that is automatically cancelled on disconnect.
-   * If called when the element is disconnected from the DOM, does nothing and returns 0.
-   */
-  protected timeout(fn: () => void, ms: number): number {
-    if (!this.isConnected || !this.scope) return 0;
-    return this.scope.timeout(fn, ms);
-  }
-
-  /**
-   * Cancels a pending timer previously scheduled with {@link timeout}.
-   */
-  protected clearTimeout(id: number): void {
-    this.scope?.clearTimeout(id);
-  }
-
-  /**
-   * Schedules an animation frame callback that is automatically cancelled on disconnect.
-   * If called when the element is disconnected from the DOM, does nothing and returns 0.
-   */
-  protected rAF(fn: FrameRequestCallback): number {
-    if (!this.isConnected || !this.scope) return 0;
-    return this.scope.rAF(fn);
-  }
-
-  /**
-   * Cancels a pending animation frame callback previously scheduled with {@link rAF}.
-   */
-  protected cancelRAF(id: number): void {
-    this.scope?.cancelRAF(id);
-  }
-
-  /**
-   * Returns a debounced version of `fn` whose pending timer is automatically
-   * managed through {@link timeout} and cancelled on disconnect.
-   *
-   * Reusable across reconnect cycles with zero memory retention across disconnects.
-   */
-  protected debounce<T extends (...args: never[]) => void>(
-    fn: T,
-    waitMs: number
-  ): DebouncedFunction<T> {
-    let timer: number | null = null;
-
-    const debounced = (...args: Parameters<T>) => {
-      if (timer !== null) {
-        this.clearTimeout(timer);
-        timer = null;
-      }
-      if (!this.isConnected) return;
-      timer = this.timeout(() => {
-        timer = null;
-        fn(...args);
-      }, waitMs);
-    };
-
-    debounced.cancel = () => {
-      if (timer !== null) {
-        this.clearTimeout(timer);
-        timer = null;
-      }
-    };
-
-    return debounced;
   }
 }
 

@@ -92,30 +92,30 @@ export class ReaderTocController extends BaseController {
     this.drawer =
       overrides?.drawer !== undefined
         ? overrides.drawer
-        : this.$("#reader-toc-drawer");
+        : this.scope.$("#reader-toc-drawer");
 
     this.backdrop =
       overrides?.backdrop !== undefined
         ? overrides.backdrop
-        : this.$("#reader-toc-backdrop") ??
+        : this.scope.$("#reader-toc-backdrop") ??
           this.ownerDocument.querySelector<HTMLElement>("#reader-toc-backdrop");
 
     this.triggerBtn =
       overrides?.triggerBtn !== undefined
         ? overrides.triggerBtn
-        : this.$("#reader-toc-btn");
+        : this.scope.$("#reader-toc-btn");
 
     this.closeBtn =
       overrides?.closeBtn !== undefined
         ? overrides.closeBtn
         : this.drawer?.querySelector<HTMLElement>("#reader-toc-close-btn") ??
-          this.$("#reader-toc-close-btn");
+          this.scope.$("#reader-toc-close-btn");
 
     this.listContainer =
       overrides?.listContainer !== undefined
         ? overrides.listContainer
         : this.drawer?.querySelector<HTMLElement>("#reader-toc-list") ??
-          this.$("#reader-toc-list");
+          this.scope.$("#reader-toc-list");
   }
 
   public updatePosition(): void {

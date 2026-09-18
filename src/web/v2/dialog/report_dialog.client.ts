@@ -26,21 +26,25 @@ export class MorcusReportDialog extends BaseElement {
   }
 
   private enhanceMarkup() {
-    this.triggerBtn = this.$<HTMLButtonElement>(".report-btn");
-    this.dialogEl = this.$<HTMLDialogElement>("dialog.report-dialog");
-    this.formEl = this.$<HTMLFormElement>("form.report-form");
-    this.textareaEl = this.$<HTMLTextAreaElement>("textarea.report-textarea");
-    this.reporterInputEl = this.$<HTMLInputElement>("input.report-reporter");
-    this.statusEl = this.$(".report-status");
-    this.submitBtn = this.$<HTMLButtonElement>(".report-submit-btn");
+    this.triggerBtn = this.scope.$<HTMLButtonElement>(".report-btn");
+    this.dialogEl = this.scope.$<HTMLDialogElement>("dialog.report-dialog");
+    this.formEl = this.scope.$<HTMLFormElement>("form.report-form");
+    this.textareaEl = this.scope.$<HTMLTextAreaElement>(
+      "textarea.report-textarea"
+    );
+    this.reporterInputEl = this.scope.$<HTMLInputElement>(
+      "input.report-reporter"
+    );
+    this.statusEl = this.scope.$(".report-status");
+    this.submitBtn = this.scope.$<HTMLButtonElement>(".report-submit-btn");
 
     if (this.dialogEl) {
-      this.addDisposable(
+      this.scope.use(
         setupModalDialog(this.dialogEl, {
           trigger: this.triggerBtn,
           onOpen: () => {
             this.clearStatus();
-            this.timeout(() => this.textareaEl?.focus(), 50);
+            this.scope.timeout(() => this.textareaEl?.focus(), 50);
           },
           onClose: () => {
             this.clearStatus();
@@ -55,7 +59,7 @@ export class MorcusReportDialog extends BaseElement {
     });
 
     if (this.formEl) {
-      this.listen(this.formEl, "keydown", this.handleFormKeyDown);
+      this.scope.listen(this.formEl, "keydown", this.handleFormKeyDown);
     }
   }
 
@@ -93,7 +97,7 @@ export class MorcusReportDialog extends BaseElement {
       this.dialogEl.setAttribute("open", "");
     }
     this.clearStatus();
-    this.timeout(() => {
+    this.scope.timeout(() => {
       this.textareaEl?.focus();
     }, 50);
   }
@@ -154,7 +158,7 @@ export class MorcusReportDialog extends BaseElement {
           "✓ Thank you! Your report has been submitted.";
       }
 
-      this.timeout(() => {
+      this.scope.timeout(() => {
         this.closeDialog();
         this.resetForm();
       }, 1200);

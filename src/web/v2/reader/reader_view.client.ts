@@ -139,7 +139,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       hasTranslation: () =>
         this.getAttribute("data-has-translation") === "true",
       onLoadTranslation: () =>
-        this.fetchTranslation(this.currentPageUrl, this.latest("translation")),
+        this.fetchTranslation(
+          this.currentPageUrl,
+          this.scope.latest("translation")
+        ),
       onTabChange: () => {
         this.activatePanelLayout();
         this.updateSheetLabel(false);
@@ -194,7 +197,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.enhancePassage();
     this.applyPreferences(this.currentPrefs);
 
-    this.listen<ReaderSettingsChangeEventDetail>(
+    this.scope.listen<ReaderSettingsChangeEventDetail>(
       this,
       "reader-settings-change",
       (e) => {
@@ -245,8 +248,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (el) el.classList.add("word-active");
     }
 
-    this.listen(this, "click", this.handleClick);
-    this.listen(this, "keydown", this.handlePassageKeydown);
+    this.scope.listen(this, "click", this.handleClick);
+    this.scope.listen(this, "keydown", this.handlePassageKeydown);
 
     this.initBackToTop();
     this.resetDictScroll();
@@ -255,7 +258,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
     if (iframe) {
-      this.listen(iframe, "load", () => {
+      this.scope.listen(iframe, "load", () => {
         this.applyDictScale(this.currentPrefs.dictScale);
       });
       if (this.currentPrefs.dictScale !== 100) {
@@ -289,7 +292,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       }
     };
 
-    this.listen(iframe, "load", syncTheme);
+    this.scope.listen(iframe, "load", syncTheme);
     syncTheme();
   }
 
@@ -346,7 +349,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           });
         }
         secEl.classList.add("target-highlight");
-        this.timeout(() => secEl.classList.remove("target-highlight"), 3000);
+        this.scope.timeout(
+          () => secEl.classList.remove("target-highlight"),
+          3000
+        );
       }
       this.saveCurrentSpot(secId);
       this.showToast(`Copied permalink: § ${secId}`);
@@ -711,7 +717,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     // Mobile scroll guard: Ensure tapped marker in passage is not occluded by the newly opened/restored drawer
     if (window.innerWidth <= 640 && !markerEl.closest(".reader-dict-panel")) {
-      this.rAF(() => {
+      this.scope.rAF(() => {
         const rect = markerEl.getBoundingClientRect();
         const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
         const drawerTop =
@@ -865,7 +871,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (window.innerWidth <= 640) {
       const targetEl = activeAnchor || this.findWordElement(word);
       if (targetEl) {
-        this.rAF(() => {
+        this.scope.rAF(() => {
           const rect = targetEl.getBoundingClientRect();
           const drawerTop =
             dictPanel?.getBoundingClientRect().top ??
@@ -1003,7 +1009,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     const onScroll = () => {
       if (!ticking) {
-        this.rAF(updateVisibility);
+        this.scope.rAF(updateVisibility);
         ticking = true;
       }
     };
@@ -1033,7 +1039,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     btn.addEventListener("click", onClick);
 
-    this.addDisposable(() => {
+    this.scope.use(() => {
       dictPanel.removeEventListener("scroll", onScroll);
       mobileSticky?.removeEventListener("scroll", onScroll);
       btn.removeEventListener("click", onClick);
@@ -1043,14 +1049,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   // --- Reader Confirmation Toast ---
   private showToast(msg: string) {
-    const toast = this.$<HTMLElement>("#reader-toast");
+    const toast = this.scope.$<HTMLElement>("#reader-toast");
     if (!toast) return;
     toast.textContent = msg;
     toast.classList.add("visible");
     if (this.toastTimer !== null) {
-      this.clearTimeout(this.toastTimer);
+      this.scope.clearTimeout(this.toastTimer);
     }
-    this.toastTimer = this.timeout(() => {
+    this.toastTimer = this.scope.timeout(() => {
       toast.classList.remove("visible");
       this.toastTimer = null;
     }, 2200);
@@ -1059,7 +1065,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   // --- Reader Preferences & Canvas Styling ---
   private applyMacra(show: boolean) {
     if (this.dataset.hasMacra === "false") return;
-    const words = this.$$<HTMLElement>(".reader-passage .lat-word");
+    const words = this.scope.$$<HTMLElement>(".reader-passage .lat-word");
     for (const w of words) {
       if (!w.hasAttribute("data-original-text")) {
         w.setAttribute("data-original-text", w.textContent || "");
@@ -1071,7 +1077,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   private applyDictScale(scalePercent: number) {
     const scale = (scalePercent / 100).toFixed(2);
-    const iframe = this.$<HTMLIFrameElement>("#dict-frame");
+    const iframe = this.scope.$<HTMLIFrameElement>("#dict-frame");
     try {
       if (iframe?.contentDocument?.documentElement) {
         iframe.contentDocument.documentElement.style.setProperty(
@@ -1111,7 +1117,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC, N Notes, I About, A Appearance) ---
   private initKeyboardShortcuts() {
-    this.listen(window, "keydown", (e: KeyboardEvent) => {
+    this.scope.listen(window, "keydown", (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.target instanceof HTMLElement) {
         if (e.target.isContentEditable) return;
@@ -1120,13 +1126,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       }
 
       if (e.key === "[") {
-        const prevBtn = this.$<HTMLAnchorElement>("#pager-prev");
+        const prevBtn = this.scope.$<HTMLAnchorElement>("#pager-prev");
         if (prevBtn && !prevBtn.classList.contains("disabled")) {
           e.preventDefault();
           prevBtn.click();
         }
       } else if (e.key === "]") {
-        const nextBtn = this.$<HTMLAnchorElement>("#pager-next");
+        const nextBtn = this.scope.$<HTMLAnchorElement>("#pager-next");
         if (nextBtn && !nextBtn.classList.contains("disabled")) {
           e.preventDefault();
           nextBtn.click();
@@ -1136,13 +1142,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           e.preventDefault();
           this.tocController.toggle();
         } else {
-          const tocDrawer = this.$<HTMLElement>("#reader-toc-drawer");
+          const tocDrawer = this.scope.$<HTMLElement>("#reader-toc-drawer");
           if (tocDrawer) {
             e.preventDefault();
             if (tocDrawer.hasAttribute("hidden")) {
-              this.$<HTMLButtonElement>("#reader-toc-btn")?.click();
+              this.scope.$<HTMLButtonElement>("#reader-toc-btn")?.click();
             } else {
-              this.$<HTMLButtonElement>("#reader-toc-close-btn")?.click();
+              this.scope.$<HTMLButtonElement>("#reader-toc-close-btn")?.click();
             }
           }
         }
@@ -1166,7 +1172,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           e.preventDefault();
           settings.toggle();
         } else {
-          const btn = this.$<HTMLButtonElement>("#reader-settings-btn");
+          const btn = this.scope.$<HTMLButtonElement>("#reader-settings-btn");
           if (btn) {
             e.preventDefault();
             btn.click();
@@ -1193,7 +1199,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       }
       if (targetId.startsWith("sec-")) {
         targetEl.classList.add("target-highlight");
-        this.timeout(() => targetEl.classList.remove("target-highlight"), 3000);
+        this.scope.timeout(
+          () => targetEl.classList.remove("target-highlight"),
+          3000
+        );
       }
     }
   }
@@ -1458,7 +1467,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       this.minimizeDrawer();
     }
 
-    const signal = this.latest("page");
+    const signal = this.scope.latest("page");
     const prefersReducedMotion =
       typeof window !== "undefined" &&
       typeof window.matchMedia === "function" &&

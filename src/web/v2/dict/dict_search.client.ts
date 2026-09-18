@@ -86,7 +86,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   // caller had is up to 180ms stale, so the live input value is re-read below.
   private readonly debouncedFetchPrefixChunk = this.debounce(
     (prefix: string) => {
-      const signal = this.latest("completions");
+      const signal = this.scope.latest("completions");
       this.chunkCache
         .loadPrefix(prefix)
         .then(() => {
@@ -109,7 +109,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
   private readonly debouncedFetchSuffixCompletions = this.debounce(
     (query: string) => {
-      const signal = this.latest("completions");
+      const signal = this.scope.latest("completions");
       const currentParams = new URLSearchParams(window.location.search);
       const fetchParams = new URLSearchParams();
       fetchParams.set("q", query);
@@ -178,8 +178,8 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   }
 
   private enhanceExistingMarkup() {
-    this.inputElement = this.$<HTMLInputElement>("input.input");
-    this.resultsElement = this.$<HTMLElement>("#dict-results");
+    this.inputElement = this.scope.$<HTMLInputElement>("input.input");
+    this.resultsElement = this.scope.$<HTMLElement>("#dict-results");
 
     this.hijackForm("form.search-form", ({ q }) => {
       this.clearSuggestions();
@@ -190,15 +190,15 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     });
 
     if (this.inputElement) {
-      this.listen(this.inputElement, "input", this.handleInput);
-      this.listen(this.inputElement, "keydown", this.handleKeyDown);
-      this.listen(this.inputElement, "blur", this.handleBlur);
+      this.scope.listen(this.inputElement, "input", this.handleInput);
+      this.scope.listen(this.inputElement, "keydown", this.handleKeyDown);
+      this.scope.listen(this.inputElement, "blur", this.handleBlur);
     }
 
     if (this.resultsElement) {
       this.enhanceWords(this.resultsElement);
 
-      this.listen(this.resultsElement, "click", (e: MouseEvent) => {
+      this.scope.listen(this.resultsElement, "click", (e: MouseEvent) => {
         if (!(e.target instanceof Element)) return;
 
         // Allow middle-click (e.button !== 0) or modifier clicks (Ctrl, Cmd, Shift, Alt)
@@ -248,7 +248,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
     // Create and attach child component for suggestions. Creating it is
     // one-time; listening to it is not.
-    const inputWrapper = this.$(".input-wrapper");
+    const inputWrapper = this.scope.$(".input-wrapper");
     if (inputWrapper && !this.suggestionsEl) {
       this.suggestionsEl = document.createElement("morcus-dict-suggestions");
       inputWrapper.appendChild(this.suggestionsEl);
@@ -258,7 +258,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     // disconnect, so registering this alongside the one-time creation would
     // leave a re-attached element holding a child it can no longer hear.
     if (this.suggestionsEl) {
-      this.listen(this.suggestionsEl, "suggestion-select", (e: Event) => {
+      this.scope.listen(this.suggestionsEl, "suggestion-select", (e: Event) => {
         if (e instanceof CustomEvent) {
           const detail: unknown = e.detail;
           if (
@@ -274,7 +274,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     }
 
     // Dismiss suggestions on outside clicks
-    this.addDisposable(
+    this.scope.use(
       bindDismissable({
         container: () => this.suggestionsEl,
         isOpen: () => this.suggestions.length > 0,
@@ -285,7 +285,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     );
 
     // Listen for dictionary selection changes to re-fetch or update active search
-    this.listen<{ dictKeys: string[]; bitmask?: string }>(
+    this.scope.listen<{ dictKeys: string[]; bitmask?: string }>(
       this,
       "dict-selection-change",
       (e) => {
@@ -301,7 +301,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         }
 
         // Update hidden input in form if present
-        const hiddenD = this.$<HTMLInputElement>('input[name="d"]');
+        const hiddenD = this.scope.$<HTMLInputElement>('input[name="d"]');
         if (hiddenD && bitmask) {
           hiddenD.value = bitmask;
         }
@@ -326,7 +326,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
           }
         }
 
-        const welcomeEl = this.$<HTMLElement>("#landing-welcome");
+        const welcomeEl = this.scope.$<HTMLElement>("#landing-welcome");
         if (welcomeEl && this.activeDictKeys) {
           welcomeEl.textContent = buildWelcomeMessage(
             this.activeDictKeys,
@@ -339,7 +339,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
           const activeSet = new Set(
             e.detail.dictKeys.map((k) => k.toUpperCase())
           );
-          const items = this.$$<HTMLElement>(".dict-list-item");
+          const items = this.scope.$$<HTMLElement>(".dict-list-item");
           for (const item of items) {
             const key = item.dataset.dictKey?.toUpperCase();
             if (!key) continue;
@@ -356,7 +356,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         }
 
         // Update language chips in the search bar tray live
-        const langChipsContainer = this.$<HTMLElement>(".lang-chips");
+        const langChipsContainer = this.scope.$<HTMLElement>(".lang-chips");
         if (langChipsContainer && this.activeDictKeys) {
           const activeLangs = computeActiveLanguages(this.activeDictKeys);
           setHtml(langChipsContainer, renderLangChipsHtml(activeLangs));
@@ -365,7 +365,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     );
 
     // Listen for inflection mode toggle changes
-    this.listen<{ isInflected: boolean }>(
+    this.scope.listen<{ isInflected: boolean }>(
       this,
       "dict-inflected-change",
       (e) => {
@@ -374,12 +374,12 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         this.syncUrlParams({ o: this.isInflected ? "1" : "0" });
 
         // Update inflection badge in the search bar tray live
-        const inflectChip = this.$<HTMLElement>(".inflect-chip");
+        const inflectChip = this.scope.$<HTMLElement>(".inflect-chip");
         if (inflectChip) {
           replaceWithHtml(inflectChip, renderInflectChipHtml(this.isInflected));
         }
 
-        const welcomeEl = this.$<HTMLElement>("#landing-welcome");
+        const welcomeEl = this.scope.$<HTMLElement>("#landing-welcome");
         if (welcomeEl && this.activeDictKeys) {
           welcomeEl.textContent = buildWelcomeMessage(
             this.activeDictKeys,
@@ -406,7 +406,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     const isEmbedded = currentParams.get("embedded") === "1";
 
     if (currentQuery && !hasHash && !isBackForward && this.resultsElement) {
-      this.rAF(() => {
+      this.scope.rAF(() => {
         this.scrollToResults("instant");
       });
     } else if (
@@ -446,7 +446,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   private clearSuggestions() {
     this.debouncedFetchPrefixChunk.cancel();
     this.debouncedFetchSuffixCompletions.cancel();
-    this.cancel("completions");
+    this.scope.cancel("completions");
     this.suggestions = [];
     this.selectedSuggestionIndex = -1;
     this.updateSuggestionsView();
@@ -509,7 +509,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
   private readonly handleBlur = () => {
     // Delay closing suggestions so click events on suggestions can register
-    this.timeout(() => {
+    this.scope.timeout(() => {
       this.clearSuggestions();
     }, 200);
   };
@@ -548,7 +548,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     window.history.pushState({ q: cleanQuery }, "", newSearchPath);
     document.title = `${cleanQuery} - Morcus Dictionary`;
     await this.fetchResults(cleanQuery);
-    this.rAF(() => {
+    this.scope.rAF(() => {
       this.scrollToResults("smooth");
     });
   }
@@ -576,7 +576,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
     const url = `/v2/dicts?${fetchParams.toString()}`;
     const success = await fetchAndSwapPartial(this.resultsElement, url, {
-      signal: this.latest("results"),
+      signal: this.scope.latest("results"),
       errorMessage: "Error loading results.",
       loadingOpacity: 0.5,
     });

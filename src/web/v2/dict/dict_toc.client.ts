@@ -47,7 +47,7 @@ export class MorcusDictToc extends BaseElement {
     if (!this.mediaQuery && typeof window.matchMedia === "function") {
       this.mediaQuery = window.matchMedia("(max-width: 1079.98px)");
     }
-    this.listen(this.mediaQuery, "change", this.onMediaChange);
+    this.scope.listen(this.mediaQuery, "change", this.onMediaChange);
     this.syncDrawerState();
   }
 

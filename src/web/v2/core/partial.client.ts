@@ -37,7 +37,7 @@ export interface FetchAndSwapOptions {
    * Required so that every call site has to decide what cancels this request.
    * Callers that genuinely want an uncancellable fetch can pass
    * `AbortSignal.timeout` or a never-aborted controller, but they have to say so.
-   * Components should normally pass `this.signal` or `this.latest(lane)`.
+   * Components should normally pass `this.scope.signal` or `this.scope.latest(lane)`.
    */
   signal: AbortSignal;
   loadingOpacity?: number;

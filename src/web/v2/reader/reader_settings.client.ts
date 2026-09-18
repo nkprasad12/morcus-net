@@ -141,15 +141,15 @@ export class MorcusReaderSettings extends BaseElement {
       group: "reader-chrome",
       align: "end",
       defaultWidth: 320,
-      getPanel: () => this.$<HTMLElement>("#reader-settings-popover"),
+      getPanel: () => this.scope.$<HTMLElement>("#reader-settings-popover"),
       getTrigger: () =>
-        this.$<HTMLButtonElement>("#reader-settings-btn") ??
+        this.scope.$<HTMLButtonElement>("#reader-settings-btn") ??
         this.ownerDocument.getElementById("reader-settings-btn"),
       getBackdrop: () =>
-        this.$<HTMLElement>("#reader-settings-backdrop") ??
+        this.scope.$<HTMLElement>("#reader-settings-backdrop") ??
         this.ownerDocument.getElementById("reader-settings-backdrop"),
       getCloseBtn: () =>
-        this.$<HTMLButtonElement>("#reader-settings-close-btn"),
+        this.scope.$<HTMLButtonElement>("#reader-settings-close-btn"),
     })
   );
 
@@ -192,21 +192,25 @@ export class MorcusReaderSettings extends BaseElement {
       this.currentPrefs.showMacra = getWorkMacra(workId);
     }
 
-    const resetBtn = this.$<HTMLButtonElement>("#reader-settings-reset-btn");
-    const readerSizeDec = this.$<HTMLButtonElement>("#reader-size-dec");
-    const readerSizeInc = this.$<HTMLButtonElement>("#reader-size-inc");
-    const dictSizeDec = this.$<HTMLButtonElement>("#dict-size-dec");
-    const dictSizeInc = this.$<HTMLButtonElement>("#dict-size-inc");
-    const toggleMacra = this.$<HTMLInputElement>("#toggle-macra");
-    const toggleGutter = this.$<HTMLInputElement>("#toggle-gutter");
-    const fontSelect = this.$<HTMLSelectElement>("#font-select");
-    const lineHeightSelect = this.$<HTMLSelectElement>("#line-height-select");
+    const resetBtn = this.scope.$<HTMLButtonElement>(
+      "#reader-settings-reset-btn"
+    );
+    const readerSizeDec = this.scope.$<HTMLButtonElement>("#reader-size-dec");
+    const readerSizeInc = this.scope.$<HTMLButtonElement>("#reader-size-inc");
+    const dictSizeDec = this.scope.$<HTMLButtonElement>("#dict-size-dec");
+    const dictSizeInc = this.scope.$<HTMLButtonElement>("#dict-size-inc");
+    const toggleMacra = this.scope.$<HTMLInputElement>("#toggle-macra");
+    const toggleGutter = this.scope.$<HTMLInputElement>("#toggle-gutter");
+    const fontSelect = this.scope.$<HTMLSelectElement>("#font-select");
+    const lineHeightSelect = this.scope.$<HTMLSelectElement>(
+      "#line-height-select"
+    );
 
     this.syncUiWithPrefs(this.currentPrefs);
 
     // Stepper bindings
     if (readerSizeDec) {
-      this.listen(readerSizeDec, "click", () => {
+      this.scope.listen(readerSizeDec, "click", () => {
         this.currentPrefs.readerScale = Math.max(
           MIN_READER_SCALE,
           this.currentPrefs.readerScale - SCALE_STEP
@@ -216,7 +220,7 @@ export class MorcusReaderSettings extends BaseElement {
     }
 
     if (readerSizeInc) {
-      this.listen(readerSizeInc, "click", () => {
+      this.scope.listen(readerSizeInc, "click", () => {
         this.currentPrefs.readerScale = Math.min(
           MAX_READER_SCALE,
           this.currentPrefs.readerScale + SCALE_STEP
@@ -226,7 +230,7 @@ export class MorcusReaderSettings extends BaseElement {
     }
 
     if (dictSizeDec) {
-      this.listen(dictSizeDec, "click", () => {
+      this.scope.listen(dictSizeDec, "click", () => {
         this.currentPrefs.dictScale = Math.max(
           MIN_DICT_SCALE,
           this.currentPrefs.dictScale - SCALE_STEP
@@ -236,7 +240,7 @@ export class MorcusReaderSettings extends BaseElement {
     }
 
     if (dictSizeInc) {
-      this.listen(dictSizeInc, "click", () => {
+      this.scope.listen(dictSizeInc, "click", () => {
         this.currentPrefs.dictScale = Math.min(
           MAX_DICT_SCALE,
           this.currentPrefs.dictScale + SCALE_STEP
@@ -247,7 +251,7 @@ export class MorcusReaderSettings extends BaseElement {
 
     // Toggle bindings
     if (toggleMacra) {
-      this.listen(toggleMacra, "change", () => {
+      this.scope.listen(toggleMacra, "change", () => {
         const workId = this.getWorkId();
         if (workId) {
           setWorkMacra(workId, toggleMacra.checked);
@@ -258,7 +262,7 @@ export class MorcusReaderSettings extends BaseElement {
     }
 
     if (toggleGutter) {
-      this.listen(toggleGutter, "change", () => {
+      this.scope.listen(toggleGutter, "change", () => {
         this.currentPrefs.showGutter = toggleGutter.checked;
         this.saveAndEmit();
       });
@@ -266,7 +270,7 @@ export class MorcusReaderSettings extends BaseElement {
 
     // Select bindings
     if (fontSelect) {
-      this.listen(fontSelect, "change", () => {
+      this.scope.listen(fontSelect, "change", () => {
         this.currentPrefs.fontFamily =
           fontSelect.value === "sans" ? "sans" : "serif";
         this.saveAndEmit();
@@ -274,7 +278,7 @@ export class MorcusReaderSettings extends BaseElement {
     }
 
     if (lineHeightSelect) {
-      this.listen(lineHeightSelect, "change", () => {
+      this.scope.listen(lineHeightSelect, "change", () => {
         const val = lineHeightSelect.value;
         this.currentPrefs.lineHeight =
           val === "compact" || val === "relaxed" ? val : "normal";
@@ -284,7 +288,7 @@ export class MorcusReaderSettings extends BaseElement {
 
     // Reset defaults binding
     if (resetBtn) {
-      this.listen(resetBtn, "click", () => {
+      this.scope.listen(resetBtn, "click", () => {
         const workId = this.getWorkId();
         if (workId) {
           removeWorkMacra(workId);
@@ -296,12 +300,14 @@ export class MorcusReaderSettings extends BaseElement {
   }
 
   private syncUiWithPrefs(prefs: ReaderPreferences) {
-    const readerSizeLabel = this.$<HTMLElement>("#reader-size-label");
-    const dictSizeLabel = this.$<HTMLElement>("#dict-size-label");
-    const toggleMacra = this.$<HTMLInputElement>("#toggle-macra");
-    const toggleGutter = this.$<HTMLInputElement>("#toggle-gutter");
-    const fontSelect = this.$<HTMLSelectElement>("#font-select");
-    const lineHeightSelect = this.$<HTMLSelectElement>("#line-height-select");
+    const readerSizeLabel = this.scope.$<HTMLElement>("#reader-size-label");
+    const dictSizeLabel = this.scope.$<HTMLElement>("#dict-size-label");
+    const toggleMacra = this.scope.$<HTMLInputElement>("#toggle-macra");
+    const toggleGutter = this.scope.$<HTMLInputElement>("#toggle-gutter");
+    const fontSelect = this.scope.$<HTMLSelectElement>("#font-select");
+    const lineHeightSelect = this.scope.$<HTMLSelectElement>(
+      "#line-height-select"
+    );
 
     if (readerSizeLabel) {
       readerSizeLabel.textContent = `${prefs.readerScale}%`;

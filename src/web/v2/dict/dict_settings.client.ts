@@ -41,7 +41,7 @@ export class MorcusDictSettings extends BaseElement {
     this.enhanceMarkup();
     this.syncUi();
 
-    this.use(
+    this.scope.use(
       bindDismissable({
         container: () => this.popoverEl,
         isOpen: () => (this.detailsEl ? this.detailsEl.open : this.isOpen),
@@ -99,9 +99,9 @@ export class MorcusDictSettings extends BaseElement {
   }
 
   private enhanceMarkup() {
-    this.detailsEl = this.$<HTMLDetailsElement>(".dict-settings-details");
-    this.summaryEl = this.$<HTMLElement>(".settings-btn");
-    this.popoverEl = this.$<HTMLElement>(".settings-popover");
+    this.detailsEl = this.scope.$<HTMLDetailsElement>(".dict-settings-details");
+    this.summaryEl = this.scope.$<HTMLElement>(".settings-btn");
+    this.popoverEl = this.scope.$<HTMLElement>(".settings-popover");
 
     // If SSR details element doesn't exist (e.g. standalone test), build full structure
     if (!this.detailsEl || !this.popoverEl) {
@@ -144,13 +144,15 @@ export class MorcusDictSettings extends BaseElement {
         `
       );
 
-      this.detailsEl = this.$<HTMLDetailsElement>(".dict-settings-details");
-      this.summaryEl = this.$<HTMLElement>(".settings-btn");
-      this.popoverEl = this.$<HTMLElement>(".settings-popover");
+      this.detailsEl = this.scope.$<HTMLDetailsElement>(
+        ".dict-settings-details"
+      );
+      this.summaryEl = this.scope.$<HTMLElement>(".settings-btn");
+      this.popoverEl = this.scope.$<HTMLElement>(".settings-popover");
     }
 
     // Progressively inject highlight slider if not present
-    if (this.popoverEl && !this.$(".settings-slider")) {
+    if (this.popoverEl && !this.scope.$(".settings-slider")) {
       const sliderControls = document.createElement("div");
       sliderControls.className = "settings-slider-section";
       setHtml(
@@ -185,7 +187,7 @@ export class MorcusDictSettings extends BaseElement {
       this.popoverEl.prepend(sliderControls);
     }
 
-    this.listen(this.summaryEl, "click", (e: MouseEvent) => {
+    this.scope.listen(this.summaryEl, "click", (e: MouseEvent) => {
       if (this.detailsEl) {
         // JSDOM does not natively toggle details.open on summary click
         this.detailsEl.open = !this.detailsEl.open;
@@ -194,23 +196,23 @@ export class MorcusDictSettings extends BaseElement {
       }
     });
 
-    this.listen(this.detailsEl, "toggle", () => {
+    this.scope.listen(this.detailsEl, "toggle", () => {
       this.isOpen = Boolean(this.detailsEl?.open);
     });
 
-    const sliderEl = this.$<HTMLInputElement>(".settings-slider");
-    this.listen(sliderEl, "input", (e: Event) => {
+    const sliderEl = this.scope.$<HTMLInputElement>(".settings-slider");
+    this.scope.listen(sliderEl, "input", (e: Event) => {
       if (e.target instanceof HTMLInputElement) {
         this.updateStrength(Number(e.target.value), false);
       }
     });
-    this.listen(sliderEl, "change", (e: Event) => {
+    this.scope.listen(sliderEl, "change", (e: Event) => {
       if (e.target instanceof HTMLInputElement) {
         this.updateStrength(Number(e.target.value), true);
       }
     });
 
-    this.delegate<HTMLInputElement>(
+    this.scope.delegate<HTMLInputElement>(
       this,
       "change",
       ".dict-checkbox",
@@ -226,7 +228,7 @@ export class MorcusDictSettings extends BaseElement {
       }
     );
 
-    this.delegate<HTMLInputElement>(
+    this.scope.delegate<HTMLInputElement>(
       this,
       "change",
       "#toggle-inflected, .inflected-checkbox",
@@ -239,26 +241,26 @@ export class MorcusDictSettings extends BaseElement {
   }
 
   private syncUi() {
-    for (const cb of this.$$<HTMLInputElement>(".dict-checkbox")) {
+    for (const cb of this.scope.$$<HTMLInputElement>(".dict-checkbox")) {
       const key = cb.dataset.key || cb.value;
       if (key) {
         cb.checked = this.activeDictKeys.has(key);
       }
     }
 
-    const inflectedCheckbox = this.$<HTMLInputElement>(
+    const inflectedCheckbox = this.scope.$<HTMLInputElement>(
       "#toggle-inflected, .inflected-checkbox"
     );
     if (inflectedCheckbox) {
       inflectedCheckbox.checked = this.isInflected;
     }
 
-    const sliderEl = this.$<HTMLInputElement>(".settings-slider");
+    const sliderEl = this.scope.$<HTMLInputElement>(".settings-slider");
     if (sliderEl && Number(sliderEl.value) !== this.strength) {
       sliderEl.value = String(this.strength);
     }
 
-    const valueDisplayEl = this.$(".settings-value");
+    const valueDisplayEl = this.scope.$(".settings-value");
     if (valueDisplayEl) {
       valueDisplayEl.textContent = `${this.strength}%`;
     }

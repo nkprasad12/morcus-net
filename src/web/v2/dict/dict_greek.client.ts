@@ -20,16 +20,16 @@ export class MorcusGreekEmbed extends BaseElement {
   private checkbox: HTMLInputElement | null = null;
 
   protected override onConnect() {
-    this.detailsEl = this.$<HTMLDetailsElement>(".greek-details");
-    this.toggleText = this.$<HTMLElement>(".greek-toggle-text");
-    this.toggleIcon = this.$<HTMLElement>(".greek-toggle-icon");
-    this.checkbox = this.$<HTMLInputElement>(".greek-auto-open-checkbox");
+    this.detailsEl = this.scope.$<HTMLDetailsElement>(".greek-details");
+    this.toggleText = this.scope.$<HTMLElement>(".greek-toggle-text");
+    this.toggleIcon = this.scope.$<HTMLElement>(".greek-toggle-icon");
+    this.checkbox = this.scope.$<HTMLInputElement>(".greek-auto-open-checkbox");
 
     const isAutoOpen = this.getAutoOpenPreference();
 
     if (this.checkbox) {
       this.checkbox.checked = isAutoOpen;
-      this.listen(this.checkbox, "change", () => {
+      this.scope.listen(this.checkbox, "change", () => {
         const enabled = Boolean(this.checkbox?.checked);
         this.saveAutoOpenPreference(enabled);
         if (enabled && this.detailsEl && !this.detailsEl.open) {
@@ -45,7 +45,7 @@ export class MorcusGreekEmbed extends BaseElement {
       }
       this.updateToggleState(this.detailsEl.open);
 
-      this.listen(this.detailsEl, "toggle", () => {
+      this.scope.listen(this.detailsEl, "toggle", () => {
         this.updateToggleState(Boolean(this.detailsEl?.open));
       });
     }

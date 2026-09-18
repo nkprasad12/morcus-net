@@ -4,6 +4,7 @@
 import {
   BaseController,
   BaseElement,
+  DEAD_SCOPE,
   LifetimeScope,
   registerElement,
 } from "@/web/v2/core/base_element.client";
@@ -19,8 +20,8 @@ class TestSubController extends BaseController<"sub"> {
 
   protected override onConnect(): void {
     this.connectCount++;
-    const btn = this.$<HTMLButtonElement>(".sub-btn");
-    this.listen(btn, "click", () => {
+    const btn = this.scope.$<HTMLButtonElement>(".sub-btn");
+    this.scope.listen(btn, "click", () => {
       this.customState = "clicked";
     });
   }
@@ -36,11 +37,15 @@ class TestSubController extends BaseController<"sub"> {
   }
 
   openTransientScope(): LifetimeScope {
-    return this.createScope();
+    return this.scope.createScope();
   }
 
   startSubLane(): AbortSignal {
-    return this.latest("sub");
+    return this.scope.latest("sub");
+  }
+
+  getScope(): LifetimeScope<"sub"> {
+    return this.scope;
   }
 }
 
@@ -53,32 +58,36 @@ class TestElement extends BaseElement<Lane> {
   }
 
   // Expose the protected surface for testing.
+  getScope(): LifetimeScope<Lane> {
+    return this.scope;
+  }
+
   lifetimeSignal(): AbortSignal {
-    return this.signal;
+    return this.scope.signal;
   }
 
   laneSignal(lane: Lane): AbortSignal {
-    return this.latest(lane);
+    return this.scope.latest(lane);
   }
 
   cancelLane(lane: Lane): void {
-    this.cancel(lane);
+    this.scope.cancel(lane);
   }
 
   scheduleTimeout(fn: () => void, ms: number): number {
-    return this.timeout(fn, ms);
+    return this.scope.timeout(fn, ms);
   }
 
   scheduleRaf(fn: FrameRequestCallback): number {
-    return this.rAF(fn);
+    return this.scope.rAF(fn);
   }
 
   cancelTimeout(id: number): void {
-    this.clearTimeout(id);
+    this.scope.clearTimeout(id);
   }
 
   cancelRaf(id: number): void {
-    this.cancelRAF(id);
+    this.scope.cancelRAF(id);
   }
 
   createDebounce<T extends (...args: never[]) => void>(fn: T, ms: number) {
@@ -86,7 +95,7 @@ class TestElement extends BaseElement<Lane> {
   }
 
   requireEl<T extends HTMLElement = HTMLElement>(selector: string): T {
-    return this.require<T>(selector);
+    return this.scope.require<T>(selector);
   }
 
   listenNullable(
@@ -94,11 +103,37 @@ class TestElement extends BaseElement<Lane> {
     type: string,
     fn: EventListener
   ): void {
-    this.listen(target, type, fn);
+    this.scope.listen(target, type, fn);
   }
 }
 
 registerElement("morcus-test-base-element", TestElement);
+
+class TestDisconnectOrderElement extends BaseElement {
+  public observedDuringDisconnect: HTMLElement | null = null;
+  public scopeWasActive = false;
+
+  public getScope(): LifetimeScope {
+    return this.scope;
+  }
+
+  protected override onDisconnect(): void {
+    this.observedDuringDisconnect = this.scope.$<HTMLElement>(".child");
+    this.scopeWasActive = !this.scope.disposed;
+  }
+}
+
+registerElement("test-disconnect-order-element", TestDisconnectOrderElement);
+
+class TestDisconnectOrderController extends BaseController {
+  public observedDuringDisconnect: HTMLElement | null = null;
+  public scopeWasActive = false;
+
+  protected override onDisconnect(): void {
+    this.observedDuringDisconnect = this.scope.$<HTMLElement>(".ctrl-child");
+    this.scopeWasActive = !this.scope.disposed;
+  }
+}
 
 describe("BaseElement async cancellation", () => {
   let el: TestElement;
@@ -371,6 +406,81 @@ describe("BaseElement async cancellation", () => {
 
       expect(el.sub.swapCount).toBe(1);
       expect(el.sub.lastSwappedRoot).toBe(swapped);
+    });
+  });
+
+  describe("DEAD_SCOPE fallback when disconnected", () => {
+    test("returns DEAD_SCOPE singleton with aborted signal, no-op timers, and safe queries", () => {
+      el.remove();
+
+      const scope = el.getScope();
+      expect(scope).toBe(DEAD_SCOPE);
+      expect(scope.signal.aborted).toBe(true);
+      expect(scope.latest("alpha").aborted).toBe(true);
+      expect(scope.timeout(jest.fn(), 100)).toBe(0);
+      expect(scope.rAF(jest.fn())).toBe(0);
+      expect(scope.$(".any")).toBeNull();
+      expect(scope.$$(".any")).toEqual([]);
+      expect(() => scope.require(".any")).toThrow(
+        /Required element matching selector ".any" not found/
+      );
+      expect(() => scope.listen(null, "click", jest.fn())).not.toThrow();
+
+      // Sub-controller also falls back to DEAD_SCOPE when host is disconnected
+      const subScope = el.sub.getScope();
+      expect(subScope).toBe(DEAD_SCOPE);
+      expect(subScope.signal.aborted).toBe(true);
+      expect(subScope.latest("sub").aborted).toBe(true);
+    });
+  });
+
+  describe("onDisconnect ordering and ungated DOM queries", () => {
+    test("LifetimeScope $ and $$ query DOM even after scope disposal", () => {
+      const container = document.createElement("div");
+      container.innerHTML = `<span class="item">one</span><span class="item">two</span>`;
+      const scope = new LifetimeScope(container);
+
+      expect(scope.$(".item")?.textContent).toBe("one");
+      expect(scope.$$(".item")).toHaveLength(2);
+
+      scope.dispose();
+
+      // DOM reads remain ungated after disposal
+      expect(scope.$(".item")?.textContent).toBe("one");
+      expect(scope.$$(".item")).toHaveLength(2);
+      // While async/timer facilities ARE disabled upon disposal
+      expect(scope.signal.aborted).toBe(true);
+      expect(scope.timeout(jest.fn(), 50)).toBe(0);
+    });
+
+    test("BaseElement onDisconnect runs before scope is disposed and can query DOM via this.scope.$", () => {
+      const testEl = document.createElement(
+        "test-disconnect-order-element"
+      ) as TestDisconnectOrderElement;
+      testEl.innerHTML = `<span class="child">hello</span>`;
+      document.body.appendChild(testEl);
+
+      testEl.remove();
+
+      expect(testEl.observedDuringDisconnect).not.toBeNull();
+      expect(testEl.observedDuringDisconnect?.textContent).toBe("hello");
+      expect(testEl.scopeWasActive).toBe(true);
+      expect(testEl.getScope()).toBe(DEAD_SCOPE);
+    });
+
+    test("BaseController onDisconnect runs before scope is disposed and can query DOM via this.scope.$", () => {
+      const container = document.createElement("div");
+      container.innerHTML = `<span class="ctrl-child">world</span>`;
+      document.body.appendChild(container);
+
+      const ctrl = new TestDisconnectOrderController(container);
+      ctrl.connect();
+
+      ctrl.dispose();
+
+      expect(ctrl.observedDuringDisconnect).not.toBeNull();
+      expect(ctrl.observedDuringDisconnect?.textContent).toBe("world");
+      expect(ctrl.scopeWasActive).toBe(true);
     });
   });
 });
