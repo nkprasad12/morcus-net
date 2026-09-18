@@ -211,6 +211,82 @@ registerElement(
   TestControllerIsolationElement
 );
 
+class TestConnectOrderChildController extends BaseController {
+  public parentHeaderSeenAtConnect: HTMLElement | null = null;
+
+  constructor(
+    root: ParentNode,
+    private readonly tracker: {
+      resolvedHeader: HTMLElement | null;
+      executionLog: string[];
+    }
+  ) {
+    super(root);
+  }
+
+  protected override onConnect(): void {
+    this.tracker.executionLog.push("child:connect");
+    this.parentHeaderSeenAtConnect = this.tracker.resolvedHeader;
+  }
+}
+
+class TestConnectOrderElement extends BaseElement {
+  public executionLog: string[] = [];
+  public resolvedHeader: HTMLElement | null = null;
+  public readonly child = this.addController(
+    new TestConnectOrderChildController(this, this)
+  );
+
+  protected override onConnect(): void {
+    this.executionLog.push("host:connect");
+    this.resolvedHeader = this.scope.$<HTMLElement>(".header");
+  }
+}
+
+registerElement("test-connect-order-element", TestConnectOrderElement);
+
+class TestConnectOrderParentController extends BaseController {
+  public executionLog: string[] = [];
+  public resolvedHeader: HTMLElement | null = null;
+  public readonly child = this.addController(
+    new TestConnectOrderChildController(this.root, this)
+  );
+
+  protected override onConnect(): void {
+    this.executionLog.push("parent:connect");
+    this.resolvedHeader = this.scope.$<HTMLElement>(".ctrl-header");
+  }
+}
+
+class TestDynamicChildController extends BaseController {
+  public connectCount = 0;
+
+  protected override onConnect(): void {
+    this.connectCount++;
+  }
+}
+
+class TestDynamicControllerHostElement extends BaseElement {
+  public dynamicChild = new TestDynamicChildController(this);
+
+  protected override onConnect(): void {
+    this.addController(this.dynamicChild);
+  }
+}
+
+registerElement(
+  "test-dynamic-controller-element",
+  TestDynamicControllerHostElement
+);
+
+class TestDynamicControllerHostController extends BaseController {
+  public dynamicChild = new TestDynamicChildController(this.root);
+
+  protected override onConnect(): void {
+    this.addController(this.dynamicChild);
+  }
+}
+
 describe("BaseElement async cancellation", () => {
   let el: TestElement;
 
@@ -706,6 +782,78 @@ describe("BaseElement async cancellation", () => {
         "Error during controller disposal:",
         expect.any(Error)
       );
+    });
+  });
+
+  describe("Host and child controller connection ordering (Item 6.2)", () => {
+    test("BaseElement onConnect runs before child controller connect(), allowing children to access host-resolved elements", () => {
+      const testEl = document.createElement(
+        "test-connect-order-element"
+      ) as TestConnectOrderElement;
+      testEl.innerHTML = `<div class="header">App Header</div>`;
+
+      // Before connect, neither has run
+      expect(testEl.executionLog).toEqual([]);
+      expect(testEl.resolvedHeader).toBeNull();
+      expect(testEl.child.parentHeaderSeenAtConnect).toBeNull();
+
+      document.body.appendChild(testEl);
+
+      // Host onConnect must execute before child onConnect
+      expect(testEl.executionLog).toEqual(["host:connect", "child:connect"]);
+      expect(testEl.resolvedHeader).not.toBeNull();
+      expect(testEl.resolvedHeader?.textContent).toBe("App Header");
+      expect(testEl.child.parentHeaderSeenAtConnect).toBe(
+        testEl.resolvedHeader
+      );
+    });
+
+    test("BaseController onConnect runs before child controller connect(), allowing children to access host-resolved elements", () => {
+      const container = document.createElement("div");
+      container.innerHTML = `<div class="ctrl-header">Controller Header</div>`;
+      document.body.appendChild(container);
+
+      const parent = new TestConnectOrderParentController(container);
+
+      // Before connect, neither has run
+      expect(parent.executionLog).toEqual([]);
+      expect(parent.resolvedHeader).toBeNull();
+      expect(parent.child.parentHeaderSeenAtConnect).toBeNull();
+
+      parent.connect();
+
+      // Parent onConnect must execute before child onConnect
+      expect(parent.executionLog).toEqual(["parent:connect", "child:connect"]);
+      expect(parent.resolvedHeader).not.toBeNull();
+      expect(parent.resolvedHeader?.textContent).toBe("Controller Header");
+      expect(parent.child.parentHeaderSeenAtConnect).toBe(
+        parent.resolvedHeader
+      );
+    });
+
+    test("BaseElement does not double-connect controllers dynamically registered in onConnect", () => {
+      const testEl = document.createElement(
+        "test-dynamic-controller-element"
+      ) as TestDynamicControllerHostElement;
+
+      expect(testEl.dynamicChild.connectCount).toBe(0);
+
+      document.body.appendChild(testEl);
+
+      expect(testEl.dynamicChild.connectCount).toBe(1);
+    });
+
+    test("BaseController does not double-connect controllers dynamically registered in onConnect", () => {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+
+      const host = new TestDynamicControllerHostController(container);
+
+      expect(host.dynamicChild.connectCount).toBe(0);
+
+      host.connect();
+
+      expect(host.dynamicChild.connectCount).toBe(1);
     });
   });
 });

@@ -41,27 +41,33 @@ describe("MorcusDictToc custom element", () => {
     document.body.innerHTML = "";
   });
 
-  test("initializes DrawerController on mobile viewport (< 1080px)", () => {
+  test("initializes DrawerController exactly once on mobile viewport (< 1080px)", () => {
     matchesMobile = true;
-    document.body.innerHTML = `
-      <morcus-dict-toc class="drawer drawer-toc">
-        <details class="toc-details" open>
-          <summary class="drawer-bar toc-bar">Contents</summary>
-          <div class="toc-body">Outline items</div>
-        </details>
-      </morcus-dict-toc>
+    const tocEl = document.createElement("morcus-dict-toc") as MorcusDictToc;
+    tocEl.className = "drawer drawer-toc";
+    tocEl.innerHTML = `
+      <details class="toc-details" open>
+        <summary class="drawer-bar toc-bar">Contents</summary>
+        <div class="toc-body">Outline items</div>
+      </details>
     `;
 
-    const tocEl = document.querySelector<MorcusDictToc>("morcus-dict-toc")!;
+    const drawerCtrl = Reflect.get(tocEl, "drawerController");
+    const connectSpy = jest.spyOn(drawerCtrl, "connect");
+
+    document.body.appendChild(tocEl);
+
     expect(tocEl).toBeInstanceOf(MorcusDictToc);
     expect(tocEl.getDrawerController()).not.toBeNull();
+    expect(connectSpy).toHaveBeenCalledTimes(1);
+    connectSpy.mockRestore();
   });
 
-  test("does not initialize DrawerController on desktop viewport (>= 1080px)", () => {
+  test("does not initialize DrawerController on desktop viewport (>= 1080px) and ensures details is open", () => {
     matchesMobile = false;
     document.body.innerHTML = `
       <morcus-dict-toc class="drawer drawer-toc">
-        <details class="toc-details" open>
+        <details class="toc-details">
           <summary class="drawer-bar toc-bar">Contents</summary>
           <div class="toc-body">Outline items</div>
         </details>
@@ -71,6 +77,9 @@ describe("MorcusDictToc custom element", () => {
     const tocEl = document.querySelector<MorcusDictToc>("morcus-dict-toc")!;
     expect(tocEl).toBeInstanceOf(MorcusDictToc);
     expect(tocEl.getDrawerController()).toBeNull();
+    expect(tocEl.querySelector<HTMLDetailsElement>(".toc-details")?.open).toBe(
+      true
+    );
   });
 
   test("cleans up DrawerController when disconnected from DOM", () => {

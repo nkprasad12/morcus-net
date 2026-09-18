@@ -342,7 +342,7 @@ This matters because `ReaderPanelController.onDisconnect()` performs real DOM su
 
 This already forced a workaround: `ReaderTocController` calls `this.resolveElements()` from inside its `getPanel()` callback, and `getTrigger()` silently depends on `getPanel()` having run first in the same `sync()` pass.
 
-- [ ] Run `this.onConnect()` before connecting child controllers, and remove the `resolveElements()`-inside-`getPanel()` workaround in `reader_toc.client.ts`.
+- [x] Run `this.onConnect()` before connecting child controllers, and remove the `resolveElements()`-inside-`getPanel()` workaround in `reader_toc.client.ts`.
 
 ### 6.3 Move `assertConnected` into the HTML sinks (🟢)
 
