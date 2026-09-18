@@ -2,17 +2,37 @@
 
 Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and stylesheets (`*.css`) under `src/web/v2/` on 2026-09-18. Kept separate from [CODE_HEALTH.md](CODE_HEALTH.md) as a standalone reference and checklist for client/CSS consolidation.
 
+> [!NOTE]
+> For the architectural design of **`LifetimeScope`**, **`BaseController`**, **`addController(c)` / `use(cleanup)`**, **`AnchoredPopoverController`**, and the **`onContentSwap()`** lifecycle that addresses the lifecycle bugs in Sections 1 and 2 below, see **[MICROFRAMEWORK_PROPOSAL.md](MICROFRAMEWORK_PROPOSAL.md)**.
+
 **Sizes**: 🟢 < 30 min · 🟡 1–2 hours · 🔴 half a day+
 
 ---
 
-## 1. Patterns to Add to `BaseElement` (`core/base_element.client.ts`)
+## 1. Patterns to Add to `BaseElement` & `BaseController` (`core/base_element.client.ts`)
 
-`BaseElement` already centralizes DOM event cleanup (`this.listen`, `this.delegate`), `AbortSignal` supersession lanes (`this.latest`, `this.signal`), form hijacking (`this.hijackForm`), and URL query sync (`this.syncQueryParam`). The following recurring patterns in feature components should be promoted into `BaseElement` (or adopted where `BaseElement` already provides them).
+`BaseElement` already centralizes DOM event cleanup (`this.listen`, `this.delegate`), `AbortSignal` supersession lanes (`this.latest`, `this.signal`), form hijacking (`this.hijackForm`), and URL query sync (`this.syncQueryParam`). However, because those capabilities live exclusively on `BaseElement extends HTMLElement`, **none of our sub-controllers (`ReaderTocController`, `ReaderPanelController`, `ReaderLayoutController`, `DrawerController`) can use them**, forcing sub-controllers to drop down to verbose `addEventListener` + `DisposableBag` boilerplate in their constructors.
 
-### A. Managed Timers (`this.timeout`) & Auto-Disposed Debounce (`this.debounce`)
+### A. Shared `LifetimeScope` + `BaseController`, `addController(c)`, & `use(cleanup)`
 
-- [ ] 🟢 **Add `this.timeout(fn, ms)` and `this.debounce(fn, ms)` to `BaseElement`.**
+- [ ] 🟡 **Extract a one-shot per-connect `LifetimeScope` and `BaseController<Lane>` base class, and split host controller registration (`this.addController(c)`) from scope cleanup (`this.use(cleanup)`).**
+  - **Smell 1 (Repetitive teardown boilerplate & inconsistent `.destroy()` vs `.dispose()`)**: `this.addDisposable(fn)` currently accepts only `() => void` (and returns no `unregister` handle). Every time a component instantiates a sub-controller (`DrawerController`, `ReaderLayoutController`, `ReaderTocController`, `ReaderPanelController`, `QueryParamSync`), it repeats 4–5 lines of teardown boilerplate (**5 times** across [`reader/reader_view.client.ts`](reader/reader_view.client.ts) L204–237, L1005–1042 and [`dict/dict_toc.client.ts`](dict/dict_toc.client.ts) L32–43) and mixes `.dispose()` vs `.destroy()`.
+  - **Smell 2 (Sub-controllers register listeners in `constructor()` & lose state on reconnect)**:
+    - In [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) (`initListeners()`, 126 lines) and [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts), every listener takes 6 lines of `const btn = ...; btn.addEventListener(...); this.disposables.add(() => btn.removeEventListener(...))`.
+    - Because all four DOM sub-controllers register listeners in `constructor()` instead of an idempotent `onConnect()`, the parent element destroys and re-instantiates them on every reconnect—discarding controller state (`_activeTab`, `isTranslationLoaded`, `preferredDvh`).
+    - Sub-controllers lack `this.signal` / `this.latest(lane)` (e.g., `ReaderPanelController`'s async translation loader is un-cancellable on disconnect).
+  - **Proposed Architecture (detailed in [MICROFRAMEWORK_PROPOSAL.md](MICROFRAMEWORK_PROPOSAL.md))**:
+    1. **Unify `.destroy()` $\rightarrow$ `.dispose()` in a single commit**, and split `this.addController(c)` (`Controller = { connect?(): void; dispose(): void; onContentSwap?(): void }`, surviving across reconnects) from `scope.use(cleanup)` (`Disposable = (() => void) | { dispose(): void }`, dying with the current scope and returning an `unregister` handle).
+    2. **Rich `BaseController<Lane>` (sharing a one-shot per-connect `LifetimeScope` with `BaseElement<Lane>`)**:
+       - **Lifecycle**: `onConnect()`, `onDisconnect()`, and `onContentSwap()`.
+       - **Scoped DOM**: `this.root`, `this.$<T>(selector)`, `this.$$<T>(selector)`, `this.require<T>(selector)`, and `this.emit(name, detail)`.
+       - **Nullable-safe `this.listen(target | null | undefined, ...)` & `this.delegate(...)`**: Accepting `null | undefined` as a no-op eliminates ~39 `if (el) { ... }` guards across UI V2 (20 across `MorcusReaderSettings`, `ReaderTocController`, and `ReaderPanelController`), paired with Server↔Client Selector Contract tests.
+       - **Async Lifetime**: `this.signal`, `this.latest(lane)`, `this.cancel(lane)`, `this.timeout(fn, ms)`, `this.debounce(fn, ms)`, and `this.rAF(fn)`.
+       - **Bounded Nested Sub-Scopes (`this.createScope()`)**: Replaces the second `openDisposables = new DisposableBag()` in [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) (L43–44) and [`reader/reader_settings.client.ts`](reader/reader_settings.client.ts) (L31–32), automatically detaching itself from its parent scope when disposed on popover close.
+
+### B. Managed Timers (`this.timeout`) & Auto-Disposed Debounce (`this.debounce`)
+
+- [ ] 🟢 **Add `this.timeout(fn, ms)` and `this.debounce(fn, ms)` to `LifetimeScope` (`BaseElement` & `BaseController`).**
   - **Smell**: `BaseElement` cleans up DOM listeners and `AbortSignal` lanes on disconnect, **but not timers (`setTimeout`) or debounced functions**.
   - **Where it bites**:
     - [`dialog/report_dialog.client.ts`](dialog/report_dialog.client.ts) (`setTimeout(() => this.textareaEl?.focus(), 50)` at L43 & L96; `setTimeout(() => { this.closeDialog(); this.resetForm(); }, 1200)` at L157–160) runs unmanaged timers that can fire after the element is removed.
@@ -35,27 +55,6 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
       this.addDisposable(() => debounced.cancel());
       return debounced;
     }
-    ```
-
-### B. Sub-Controller Ownership (`this.own(controller)`) & Unified `Disposable` Interface
-
-- [ ] 🟢 **Unify controller teardown (`dispose()`) and add `this.own(controller)` to `BaseElement`.**
-  - **Smell**: `this.addDisposable(fn)` currently accepts only `() => void`. Every time a component instantiates a sub-controller (`DrawerController`, `ReaderLayoutController`, `ReaderTocController`, `ReaderPanelController`, `QueryParamSync`), it repeats 4–5 lines of teardown boilerplate:
-    ```ts
-    this.layoutController = new ReaderLayoutController({ root: this });
-    this.addDisposable(() => {
-      this.layoutController?.destroy();
-      this.layoutController = null;
-    });
-    ```
-    This boilerplate appears **5 times** across [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (L204–208, L211–223, L224–237, L1005–1042) and [`dict/dict_toc.client.ts`](dict/dict_toc.client.ts) (L32–43).
-  - **Inconsistent teardown naming**:
-    - `QueryParamSync` (`core/router.client.ts`) uses `.dispose()`
-    - `DrawerController` (`core/drawer.client.ts`), `ReaderLayoutController` (`reader/reader_layout.client.ts`), and `ReaderPanelController` (`reader/reader_panel.client.ts`) use `.destroy()`
-    - `ReaderTocController` (`reader/reader_toc.client.ts` L362–370) defines *both* `destroy()` and `dispose()`
-  - **Proposed API**: Accept `Disposable = (() => void) | { dispose(): void } | { destroy(): void }` in `DisposableBag.add()`, and add `protected own<T extends Disposable>(resource: T): T` on `BaseElement`:
-    ```ts
-    this.layoutController = this.own(new ReaderLayoutController({ root: this }));
     ```
 
 ### C. Existing `BaseElement` Primitives Bypassed in Subclasses
