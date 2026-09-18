@@ -92,7 +92,7 @@ describe("ReaderLayoutController", () => {
       controller.resetWidth();
       controller.setActive(true);
       controller.setActive(false);
-      controller.destroy();
+      controller.dispose();
     }).not.toThrow();
   });
 
@@ -110,7 +110,7 @@ describe("ReaderLayoutController", () => {
     );
     expect(controller.getWidth()).toBe(420);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("hydrates valid saved width from localStorage on initialization", () => {
@@ -123,7 +123,7 @@ describe("ReaderLayoutController", () => {
     );
     expect(controller.splitter?.getAttribute("aria-valuenow")).toBe("520");
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("ignores invalid or out-of-bounds widths in localStorage", () => {
@@ -133,17 +133,17 @@ describe("ReaderLayoutController", () => {
     expect(controller.splitLayout?.style.getPropertyValue("--dict-width")).toBe(
       ""
     );
-    controller.destroy();
+    controller.dispose();
 
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "1200"); // > 900
     controller = new ReaderLayoutController({ root: container });
     expect(controller.getWidth()).toBe(420);
-    controller.destroy();
+    controller.dispose();
 
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "not-a-number");
     controller = new ReaderLayoutController({ root: container });
     expect(controller.getWidth()).toBe(420);
-    controller.destroy();
+    controller.dispose();
   });
 
   test("updates --dict-width and aria-valuenow with zero layout reads during pointer drag", () => {
@@ -203,7 +203,7 @@ describe("ReaderLayoutController", () => {
 
     splitSpy.mockRestore();
     dictSpy.mockRestore();
-    controller.destroy();
+    controller.dispose();
   });
 
   test("clamps width to computed max when dragging beyond allowable bounds", () => {
@@ -256,7 +256,7 @@ describe("ReaderLayoutController", () => {
     splitter.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
     expect(localStorage.getItem(READER_DICT_WIDTH_STORAGE_KEY)).toBe("300");
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("double-clicking the splitter resets width and clears localStorage", () => {
@@ -275,7 +275,7 @@ describe("ReaderLayoutController", () => {
     );
     expect(localStorage.getItem(READER_DICT_WIDTH_STORAGE_KEY)).toBeNull();
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("keyboard navigation adjusts width and respects bounds", () => {
@@ -316,7 +316,7 @@ describe("ReaderLayoutController", () => {
     );
     expect(localStorage.getItem(READER_DICT_WIDTH_STORAGE_KEY)).toBeNull();
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("setActive toggles active and empty CSS classes on splitLayout", () => {
@@ -334,7 +334,7 @@ describe("ReaderLayoutController", () => {
     expect(splitLayout.classList.contains("reader-layout-empty")).toBe(true);
     expect(splitLayout.classList.contains("reader-layout-active")).toBe(false);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("calling destroy unbinds all listeners and prevents further updates", () => {
@@ -342,7 +342,7 @@ describe("ReaderLayoutController", () => {
     const splitter = controller.splitter!;
     const splitLayout = controller.splitLayout!;
 
-    controller.destroy();
+    controller.dispose();
 
     // Keydown after destroy does not modify layout
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));

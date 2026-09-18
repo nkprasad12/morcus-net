@@ -860,9 +860,13 @@ describe("MorcusReaderView desktop splitter drag", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "T" }));
     expect(tocController?.isOpen()).toBe(false);
 
-    // Disconnect removes controller
+    // Disconnect disposes controller scope while preserving controller instance across reconnects
     el.remove();
-    expect(el.getTocController()).toBeNull();
+    expect(el.getTocController()).toBe(tocController);
+    expect(tocController?.isConnected).toBe(false);
+
+    document.body.appendChild(el);
+    expect(tocController?.isConnected).toBe(true);
   });
 
   test("closes settings popover when Table of Contents opens", () => {

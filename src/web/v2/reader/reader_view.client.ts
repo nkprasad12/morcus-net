@@ -92,7 +92,17 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private currentQuery: string = "";
   private preferredDrawerDvh: number = DRAWER_DEFAULT_DVH;
   private drawerController?: DrawerController;
-  private tocController: ReaderTocController | null = null;
+  private readonly tocController = this.addController(
+    new ReaderTocController({
+      root: this,
+      onOpen: () => {
+        const settings = this.getSettingsElement();
+        if (settings?.isOpen()) {
+          settings.close();
+        }
+      },
+    })
+  );
   private layoutController: ReaderLayoutController | null = null;
   private panelController: ReaderPanelController | null = null;
   private currentNoteId: string = "";
@@ -203,25 +213,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.listen(this, "keydown", this.handlePassageKeydown);
 
     this.layoutController = new ReaderLayoutController({ root: this });
-    this.addDisposable(() => {
-      this.layoutController?.destroy();
+    this.use(() => {
+      this.layoutController?.dispose();
       this.layoutController = null;
     });
     this.initMobileDrawer();
     this.initBackToTop();
-    this.tocController = new ReaderTocController({
-      root: this,
-      onOpen: () => {
-        const settings = this.getSettingsElement();
-        if (settings?.isOpen()) {
-          settings.close();
-        }
-      },
-    });
-    this.addDisposable(() => {
-      this.tocController?.destroy();
-      this.tocController = null;
-    });
     this.panelController = new ReaderPanelController({
       root: this,
       hasTranslation: this.hasTranslation,
@@ -232,8 +229,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         this.updateSheetLabel(false);
       },
     });
-    this.addDisposable(() => {
-      this.panelController?.destroy();
+    this.use(() => {
+      this.panelController?.dispose();
       this.panelController = null;
     });
     this.resetDictScroll();
@@ -1037,8 +1034,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       },
     });
 
-    this.addDisposable(() => {
-      this.drawerController?.destroy();
+    this.use(() => {
+      this.drawerController?.dispose();
       this.drawerController = undefined;
     });
   }

@@ -52,9 +52,17 @@ describe("ReaderTocController", () => {
     document.body.innerHTML = "";
   });
 
+  function connectController(
+    options: ConstructorParameters<typeof ReaderTocController>[0]
+  ): ReaderTocController {
+    const controller = new ReaderTocController(options);
+    controller.connect();
+    return controller;
+  }
+
   test("gracefully handles missing drawer without throwing", () => {
     const emptyDiv = document.createElement("div");
-    const controller = new ReaderTocController({ root: emptyDiv });
+    const controller = connectController({ root: emptyDiv });
 
     expect(controller.drawer).toBeNull();
     expect(controller.isOpen()).toBe(false);
@@ -64,12 +72,12 @@ describe("ReaderTocController", () => {
       controller.open();
       controller.close();
       controller.toggle();
-      controller.destroy();
+      controller.dispose();
     }).not.toThrow();
   });
 
   test("resolves drawer, trigger, close button, and list container from root container", () => {
-    const controller = new ReaderTocController({ root: container });
+    const controller = connectController({ root: container });
 
     expect(controller.drawer).toBe(
       container.querySelector("#reader-toc-drawer")
@@ -84,12 +92,12 @@ describe("ReaderTocController", () => {
       container.querySelector("#reader-toc-list")
     );
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("open() removes hidden, updates aria-expanded, focuses active item, and triggers onOpen callback", () => {
     const onOpen = jest.fn();
-    const controller = new ReaderTocController({ root: container, onOpen });
+    const controller = connectController({ root: container, onOpen });
     const drawer = controller.drawer!;
     const triggerBtn = controller.triggerBtn!;
     const activeItem = drawer.querySelector<HTMLElement>(
@@ -113,26 +121,26 @@ describe("ReaderTocController", () => {
     controller.open();
     expect(onOpen).toHaveBeenCalledTimes(1);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("open() falls back to focusing close button when no active item exists", () => {
     const activeItem = container.querySelector(".reader-toc-item.active");
     activeItem?.classList.remove("active");
 
-    const controller = new ReaderTocController({ root: container });
+    const controller = connectController({ root: container });
     const closeBtn = controller.closeBtn!;
     const focusSpy = jest.spyOn(closeBtn, "focus");
 
     controller.open();
     expect(focusSpy).toHaveBeenCalled();
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("close() adds hidden, updates aria-expanded, and triggers onClose callback", () => {
     const onClose = jest.fn();
-    const controller = new ReaderTocController({ root: container, onClose });
+    const controller = connectController({ root: container, onClose });
     const drawer = controller.drawer!;
     const triggerBtn = controller.triggerBtn!;
 
@@ -146,11 +154,11 @@ describe("ReaderTocController", () => {
     expect(controller.isOpen()).toBe(false);
     expect(onClose).toHaveBeenCalledTimes(1);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("toggle() alternates between open and closed state", () => {
-    const controller = new ReaderTocController({ root: container });
+    const controller = connectController({ root: container });
 
     expect(controller.isOpen()).toBe(false);
 
@@ -160,11 +168,11 @@ describe("ReaderTocController", () => {
     controller.toggle();
     expect(controller.isOpen()).toBe(false);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("clicking trigger button toggles drawer", () => {
-    const controller = new ReaderTocController({ root: container });
+    const controller = connectController({ root: container });
     const triggerBtn = controller.triggerBtn!;
 
     expect(controller.isOpen()).toBe(false);
@@ -175,11 +183,11 @@ describe("ReaderTocController", () => {
     triggerBtn.click();
     expect(controller.isOpen()).toBe(false);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("clicking close button closes drawer", () => {
-    const controller = new ReaderTocController({ root: container });
+    const controller = connectController({ root: container });
     const closeBtn = controller.closeBtn!;
 
     controller.open();
@@ -188,11 +196,11 @@ describe("ReaderTocController", () => {
     closeBtn.click();
     expect(controller.isOpen()).toBe(false);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("dismisses drawer on click outside", () => {
-    const controller = new ReaderTocController({ root: container });
+    const controller = connectController({ root: container });
 
     controller.open();
     expect(controller.isOpen()).toBe(true);
@@ -207,11 +215,11 @@ describe("ReaderTocController", () => {
     document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(controller.isOpen()).toBe(false);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("synchronizes backdrop visibility and dismisses on backdrop click", () => {
-    const controller = new ReaderTocController({ root: container });
+    const controller = connectController({ root: container });
     expect(controller.backdrop).not.toBeNull();
     expect(controller.backdrop?.hasAttribute("hidden")).toBe(true);
 
@@ -225,11 +233,11 @@ describe("ReaderTocController", () => {
     expect(controller.isOpen()).toBe(false);
     expect(controller.backdrop?.hasAttribute("hidden")).toBe(true);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("closes on Escape key and returns focus to trigger button", () => {
-    const controller = new ReaderTocController({ root: container });
+    const controller = connectController({ root: container });
     const triggerBtn = controller.triggerBtn!;
     const focusSpy = jest.spyOn(triggerBtn, "focus");
 
@@ -241,21 +249,34 @@ describe("ReaderTocController", () => {
     expect(controller.isOpen()).toBe(false);
     expect(focusSpy).toHaveBeenCalled();
 
-    controller.destroy();
+    controller.dispose();
   });
 
-  test("destroy() removes all listeners and prevents memory leaks", () => {
+  test("dispose() removes all listeners and prevents memory leaks, and connect() re-binds cleanly", () => {
+    // Constructor is inert before connect()
     const controller = new ReaderTocController({ root: container });
-    const triggerBtn = controller.triggerBtn!;
-
-    controller.destroy();
-
-    // Clicking trigger button no longer opens drawer
+    const triggerBtn = container.querySelector<HTMLElement>("#reader-toc-btn")!;
     triggerBtn.click();
     expect(controller.isOpen()).toBe(false);
 
-    // Outside click no longer throws or errors
+    // First connect() binds listeners
+    controller.connect();
+    triggerBtn.click();
+    expect(controller.isOpen()).toBe(true);
+
+    // dispose() closes drawer and removes all listeners
+    controller.dispose();
+    expect(controller.isOpen()).toBe(false);
+
+    triggerBtn.click();
+    expect(controller.isOpen()).toBe(false);
     document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+
+    // Reconnecting re-binds listeners on the same controller instance
+    controller.connect();
+    triggerBtn.click();
+    expect(controller.isOpen()).toBe(true);
+    controller.dispose();
   });
 });

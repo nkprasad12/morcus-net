@@ -52,7 +52,7 @@ describe("DrawerController", () => {
     expect(controller.isMinimized()).toBe(false);
     expect(controller.getPreferredDvh()).toBe(DRAWER_DEFAULT_DVH);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("uses DRAWER_* constants when dvh and height options are omitted", () => {
@@ -74,7 +74,7 @@ describe("DrawerController", () => {
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
       `${DRAWER_EXPANDED_DVH}dvh`
     );
-    controller.destroy();
+    controller.dispose();
   });
 
   test("minimize() updates styles, classes, ARIA, and invokes onMinimize callback", () => {
@@ -98,7 +98,7 @@ describe("DrawerController", () => {
     expect(handle.getAttribute("aria-valuenow")).toBe("0");
     expect(onMinimize).toHaveBeenCalledTimes(1);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("restore() restores drawer height, updates classes, and invokes onRestore callback", () => {
@@ -126,7 +126,7 @@ describe("DrawerController", () => {
     expect(controller.getPreferredDvh()).toBe(65);
     expect(onRestore).toHaveBeenCalledWith(65);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("restore() clamps target dvh within [floorDvh, expandedDvh]", () => {
@@ -143,7 +143,7 @@ describe("DrawerController", () => {
     controller.restore(95); // Above expanded
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe("80dvh");
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("coordinates with <details> disclosure element", () => {
@@ -175,7 +175,7 @@ describe("DrawerController", () => {
     expect(detailsEl.open).toBe(true);
     expect(controller.isMinimized()).toBe(false);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("handles keyboard navigation (ArrowUp, ArrowDown, Escape)", () => {
@@ -207,7 +207,7 @@ describe("DrawerController", () => {
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(onEscape).toHaveBeenCalledTimes(1);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("suppresses synthetic <summary> click when dragged", () => {
@@ -263,7 +263,7 @@ describe("DrawerController", () => {
     // Click should be suppressed / defaultPrevented
     expect(clickEvent.defaultPrevented).toBe(true);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   /**
@@ -340,7 +340,7 @@ describe("DrawerController", () => {
       if (original) {
         Object.defineProperty(window, "innerHeight", original);
       }
-      controller.destroy();
+      controller.dispose();
     }
   });
 
@@ -369,7 +369,7 @@ describe("DrawerController", () => {
     // Should not have entered active drag state
     expect(handle.classList.contains("is-dragging")).toBe(false);
 
-    controller.destroy();
+    controller.dispose();
   });
 
   test("destroy() removes all listeners cleanly", () => {
@@ -380,7 +380,7 @@ describe("DrawerController", () => {
       onEscape,
     });
 
-    controller.destroy();
+    controller.dispose();
 
     // After destroy, keydown should no longer invoke onEscape
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
@@ -426,7 +426,7 @@ describe("DrawerController", () => {
       expect(drawer.classList.contains("is-dragging")).toBe(true);
       expect(handle.classList.contains("is-dragging")).toBe(true);
 
-      controller.destroy();
+      controller.dispose();
     });
 
     test("clears the drawer marker on pointerup", () => {
@@ -438,7 +438,7 @@ describe("DrawerController", () => {
       expect(drawer.classList.contains("is-dragging")).toBe(false);
       expect(handle.classList.contains("is-dragging")).toBe(false);
 
-      controller.destroy();
+      controller.dispose();
     });
 
     test("clears the drawer marker on pointercancel", () => {
@@ -450,7 +450,7 @@ describe("DrawerController", () => {
       expect(drawer.classList.contains("is-dragging")).toBe(false);
       expect(handle.classList.contains("is-dragging")).toBe(false);
 
-      controller.destroy();
+      controller.dispose();
     });
 
     // Without this, a drawer torn down mid-drag keeps `transition: none` forever.
@@ -460,7 +460,7 @@ describe("DrawerController", () => {
       pointerDown(handle);
       expect(drawer.classList.contains("is-dragging")).toBe(true);
 
-      controller.destroy();
+      controller.dispose();
 
       expect(drawer.classList.contains("is-dragging")).toBe(false);
       expect(handle.classList.contains("is-dragging")).toBe(false);
@@ -480,7 +480,7 @@ describe("DrawerController", () => {
       expect(drawer.classList.contains("is-dragging")).toBe(false);
       expect(handle.classList.contains("is-dragging")).toBe(false);
 
-      controller.destroy();
+      controller.dispose();
     });
 
     test("toggles the body resizing class across the drag", () => {
@@ -492,7 +492,7 @@ describe("DrawerController", () => {
       pointerEvent(handle, "pointerup");
       expect(document.body.classList.contains("resizing-drawer")).toBe(false);
 
-      controller.destroy();
+      controller.dispose();
     });
   });
 });

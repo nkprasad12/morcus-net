@@ -643,7 +643,7 @@ export class ReaderPanelController {
     this.clearActiveNotes();
   }
 
-  public destroy(): void {
+  public dispose(): void {
     this.disposables.dispose();
 
     if (
