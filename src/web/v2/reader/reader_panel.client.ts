@@ -120,23 +120,23 @@ export class ReaderPanelController extends BaseController {
     const dictPanel =
       overrides?.dictPanel !== undefined
         ? overrides.dictPanel
-        : this.$<HTMLElement>(".reader-dict-panel");
+        : this.scope.$<HTMLElement>(".reader-dict-panel");
 
     const iframeContainer =
       overrides?.iframeContainer !== undefined
         ? overrides.iframeContainer
         : dictPanel?.querySelector<HTMLElement>(".dict-iframe-container") ??
-          this.$<HTMLElement>(".dict-iframe-container");
+          this.scope.$<HTMLElement>(".dict-iframe-container");
 
     const notesNode =
       overrides?.notesNode !== undefined
         ? overrides.notesNode
-        : this.$<HTMLElement>(".reader-notes");
+        : this.scope.$<HTMLElement>(".reader-notes");
 
     const aboutNode =
       overrides?.aboutNode !== undefined
         ? overrides.aboutNode
-        : this.$<HTMLElement>("#reader-work-about");
+        : this.scope.$<HTMLElement>("#reader-work-about");
 
     this.dictPanel = dictPanel;
     this.iframeContainer = iframeContainer;
@@ -359,8 +359,8 @@ export class ReaderPanelController extends BaseController {
   protected override onDisconnect(): void {
     const liveTextCard =
       this.overrides?.textCard ??
-      this.$<HTMLElement>(".reader-text-card") ??
-      this.$<HTMLElement>(".reader-text-panel");
+      this.scope.$<HTMLElement>(".reader-text-card") ??
+      this.scope.$<HTMLElement>(".reader-text-panel");
     const liveFooter =
       liveTextCard?.querySelector<HTMLElement>(
         ".card-footer, .reader-passage-footer"
@@ -447,27 +447,27 @@ export class ReaderPanelController extends BaseController {
     )
       return;
 
-    this.listen(this.dictTab, "click", (e: MouseEvent) => {
+    this.scope.listen(this.dictTab, "click", (e: MouseEvent) => {
       e.preventDefault();
       this.setTab("dict");
     });
 
-    this.listen(this.notesTab, "click", (e: MouseEvent) => {
+    this.scope.listen(this.notesTab, "click", (e: MouseEvent) => {
       e.preventDefault();
       this.setTab("notes");
     });
 
-    this.listen(this.translationTab, "click", (e: MouseEvent) => {
+    this.scope.listen(this.translationTab, "click", (e: MouseEvent) => {
       e.preventDefault();
       this.setTab("translation");
     });
 
-    this.listen(this.aboutTab, "click", (e: MouseEvent) => {
+    this.scope.listen(this.aboutTab, "click", (e: MouseEvent) => {
       e.preventDefault();
       this.setTab("about");
     });
 
-    this.listen(this.tabsContainer, "keydown", (e: KeyboardEvent) => {
+    this.scope.listen(this.tabsContainer, "keydown", (e: KeyboardEvent) => {
       if (!this.dictTab) return;
       const activeTabs = this.getAvailableTabs();
       const currentIndex = activeTabs.findIndex(
@@ -501,7 +501,7 @@ export class ReaderPanelController extends BaseController {
       }
     });
 
-    this.delegate(
+    this.scope.delegate(
       this.translationView,
       "click",
       "#btn-retry-translation",

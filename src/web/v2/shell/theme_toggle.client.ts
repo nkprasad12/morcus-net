@@ -100,10 +100,10 @@ export class MorcusThemeToggle extends BaseElement {
       `
     );
 
-    this.buttonEl = this.$<HTMLButtonElement>("button");
+    this.buttonEl = this.scope.$<HTMLButtonElement>("button");
     this.pathEl = this.querySelector<SVGPathElement>("path");
     if (this.buttonEl) {
-      this.listen(this.buttonEl, "click", this.toggleTheme);
+      this.scope.listen(this.buttonEl, "click", this.toggleTheme);
     }
   }
 }

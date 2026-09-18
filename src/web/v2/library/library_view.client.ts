@@ -13,19 +13,19 @@ export class MorcusLibraryView extends BaseElement {
   protected override onConnect() {
     this.hydrateSavedSpots();
 
-    const input = this.$<HTMLInputElement>("#library-search-input");
-    const emptyResetBtn = this.$<HTMLButtonElement>(
+    const input = this.scope.$<HTMLInputElement>("#library-search-input");
+    const emptyResetBtn = this.scope.$<HTMLButtonElement>(
       "#library-reset-filter-btn"
     );
 
     if (input) {
-      this.listen(input, "input", () => {
+      this.scope.listen(input, "input", () => {
         this.currentQuery = input.value.trim().toLowerCase();
         this.applyFilter();
       });
     }
 
-    this.listen(this, "click", (e) => {
+    this.scope.listen(this, "click", (e) => {
       if (!(e.target instanceof Element)) return;
       const pill = e.target.closest<HTMLButtonElement>(".filter-pill");
       if (pill) {
@@ -36,7 +36,7 @@ export class MorcusLibraryView extends BaseElement {
     });
 
     if (emptyResetBtn && input) {
-      this.listen(emptyResetBtn, "click", () => {
+      this.scope.listen(emptyResetBtn, "click", () => {
         input.value = "";
         this.currentQuery = "";
         this.setFilter("all");
@@ -50,7 +50,7 @@ export class MorcusLibraryView extends BaseElement {
 
   private setFilter(filter: string) {
     this.currentFilter = filter;
-    const pills = this.$$<HTMLButtonElement>(".filter-pill");
+    const pills = this.scope.$$<HTMLButtonElement>(".filter-pill");
     for (const p of pills) {
       if (p.dataset.filter === filter) {
         p.classList.add("active");
@@ -62,8 +62,8 @@ export class MorcusLibraryView extends BaseElement {
   }
 
   private applyFilter() {
-    const cards = this.$$<HTMLElement>(".work-card");
-    const emptyState = this.$<HTMLElement>("#library-empty-state");
+    const cards = this.scope.$$<HTMLElement>(".work-card");
+    const emptyState = this.scope.$<HTMLElement>("#library-empty-state");
 
     let visibleCount = 0;
     const tokens = this.currentQuery.split(/\s+/).filter((t) => t.length > 0);
@@ -91,7 +91,7 @@ export class MorcusLibraryView extends BaseElement {
 
   private hydrateSavedSpots(): void {
     const spots = savedSpotsStore.getAll();
-    const cards = this.$$<HTMLAnchorElement>(".work-card");
+    const cards = this.scope.$$<HTMLAnchorElement>(".work-card");
     for (const card of cards) {
       const workId = card.dataset.workId || card.getAttribute("data-work-id");
       if (!workId) continue;

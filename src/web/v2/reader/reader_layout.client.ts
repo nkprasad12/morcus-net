@@ -76,17 +76,17 @@ export class ReaderLayoutController extends BaseController {
     this.splitLayout =
       overrides?.splitLayout !== undefined
         ? overrides.splitLayout
-        : this.$<HTMLElement>(".reader-split-layout");
+        : this.root.querySelector<HTMLElement>(".reader-split-layout");
 
     this.splitter =
       overrides?.splitter !== undefined
         ? overrides.splitter
-        : this.$<HTMLElement>(".reader-splitter");
+        : this.root.querySelector<HTMLElement>(".reader-splitter");
 
     this.dictPanel =
       overrides?.dictPanel !== undefined
         ? overrides.dictPanel
-        : this.$<HTMLElement>(".reader-dict-panel");
+        : this.root.querySelector<HTMLElement>(".reader-dict-panel");
   }
 
   protected override onConnect(): void {
@@ -129,7 +129,7 @@ export class ReaderLayoutController extends BaseController {
     let startWidth = 0;
     let maxWidth = MAX_SPLIT_WIDTH;
 
-    this.use(
+    this.scope.use(
       trackPointerDrag(splitter, {
         handleActiveClass: "is-resizing",
         bodyActiveClass: "resizing-panels",
@@ -179,7 +179,7 @@ export class ReaderLayoutController extends BaseController {
     const splitter = this.splitter;
     if (!splitter) return;
 
-    this.listen(splitter, "dblclick", () => {
+    this.scope.listen(splitter, "dblclick", () => {
       this.resetWidth();
     });
   }
@@ -189,7 +189,7 @@ export class ReaderLayoutController extends BaseController {
     const splitLayout = this.splitLayout;
     if (!splitter || !splitLayout) return;
 
-    this.listen(splitter, "keydown", (e: KeyboardEvent) => {
+    this.scope.listen(splitter, "keydown", (e: KeyboardEvent) => {
       const currentWidth = parseInt(
         splitter.getAttribute("aria-valuenow") || String(DEFAULT_SPLIT_WIDTH),
         10

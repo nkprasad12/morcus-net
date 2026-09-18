@@ -103,7 +103,9 @@ export class DrawerController extends BaseController {
     } else if (options.drawerSelector === ":scope") {
       this.drawer = this.host;
     } else if (options.drawerSelector) {
-      this.drawer = this.$<HTMLElement>(options.drawerSelector);
+      this.drawer = this.root.querySelector<HTMLElement>(
+        options.drawerSelector
+      );
     } else if (this.host) {
       this.drawer = this.host;
     } else {
@@ -113,7 +115,9 @@ export class DrawerController extends BaseController {
     if (options.handle !== undefined) {
       this.handle = options.handle;
     } else if (options.handleSelector) {
-      this.handle = this.$<HTMLElement>(options.handleSelector);
+      this.handle = this.root.querySelector<HTMLElement>(
+        options.handleSelector
+      );
     } else {
       this.handle = null;
     }
@@ -121,7 +125,9 @@ export class DrawerController extends BaseController {
     if (options.detailsElement !== undefined) {
       this.details = options.detailsElement;
     } else if (options.detailsSelector) {
-      this.details = this.$<HTMLDetailsElement>(options.detailsSelector);
+      this.details = this.root.querySelector<HTMLDetailsElement>(
+        options.detailsSelector
+      );
     } else if (this.drawer instanceof HTMLDetailsElement) {
       this.details = this.drawer;
     } else {
@@ -252,7 +258,7 @@ export class DrawerController extends BaseController {
     let maxHeight = 800;
     let wasDragged = false;
 
-    this.use(
+    this.scope.use(
       trackPointerDrag(handle, {
         handleActiveClass: "is-dragging",
         // The handle is a child of the drawer, so `.drawer.is-dragging`
@@ -342,7 +348,7 @@ export class DrawerController extends BaseController {
     );
 
     if (this.summary) {
-      this.listen(
+      this.scope.listen(
         this.summary,
         "click",
         (e: MouseEvent) => {
@@ -362,7 +368,7 @@ export class DrawerController extends BaseController {
     const handle = this.handle;
     if (!drawer || !handle) return;
 
-    this.listen(handle, "keydown", (e: KeyboardEvent) => {
+    this.scope.listen(handle, "keydown", (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") {
         e.preventDefault();
         if (this.isMinimized()) {
@@ -392,7 +398,7 @@ export class DrawerController extends BaseController {
 
   private initDetailsSync(): void {
     if (!this.details) return;
-    this.listen(this.details, "toggle", () => {
+    this.scope.listen(this.details, "toggle", () => {
       if (this.isUpdatingDetails || !this.details) return;
       if (this.details.open) {
         this.restore();

@@ -145,19 +145,19 @@ export class AnchoredPopoverController extends BaseController {
     const closeBtn = this.getCloseBtn();
     const backdrop = this.getBackdrop();
 
-    this.listen(trigger, "click", (e: MouseEvent) => {
+    this.scope.listen(trigger, "click", (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       this.toggle();
     });
 
-    this.listen(closeBtn, "click", (e: MouseEvent) => {
+    this.scope.listen(closeBtn, "click", (e: MouseEvent) => {
       e.preventDefault();
       this.close();
       this.getTrigger()?.focus();
     });
 
-    this.listen(backdrop, "click", (e: MouseEvent) => {
+    this.scope.listen(backdrop, "click", (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       this.close();
@@ -323,7 +323,7 @@ export class AnchoredPopoverController extends BaseController {
     const win = doc.defaultView ?? window;
     this.updatePosition();
 
-    const scope = (this.openScope = this.createScope());
+    const scope = (this.openScope = this.scope.createScope());
     scope.listen(win, "resize", () => this.updatePosition());
     scope.listen(win, "scroll", () => this.updatePosition(), {
       passive: true,
