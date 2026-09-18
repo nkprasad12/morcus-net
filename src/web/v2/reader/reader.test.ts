@@ -8,6 +8,7 @@ import {
   renderBiblioDialog,
   renderReaderAboutSection,
   renderReaderSettingsDialog,
+  renderReaderSettingsPopover,
   renderTocDrawer,
   renderTocItemsHtml,
   buildReaderPageUrl,
@@ -142,10 +143,10 @@ describe("reader_ssr", () => {
     expect(html).not.toContain('id="reader-biblio-dialog"');
   });
 
-  test("renderReaderContentHtml renders sticky navigation bar with essentials and expandable tools", async () => {
+  test("renderReaderContentHtml renders unified primary sticky navigation bar with Aa trigger", async () => {
     const html = await renderReaderContentHtml({ workId: "dbg" });
 
-    // Primary row: essentials only
+    // Primary row: essentials, Contents trigger, pager arrows, and Aa trigger
     expect(html).toContain('class="reader-sticky-bar"');
     expect(html).toContain('class="sticky-primary-row"');
     expect(html).toContain('id="pager-prev"');
@@ -153,31 +154,34 @@ describe("reader_ssr", () => {
     expect(html).toContain('class="sticky-work-title"');
     expect(html).toContain("Bellum Gallicum");
     expect(html).toContain('class="jump-glyph"');
-    expect(html).toContain('id="sticky-expand-btn"');
-    expect(html).toContain('class="expand-icon"');
-    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain('id="sticky-expand-btn"');
+    expect(html).not.toContain('class="expand-icon"');
+    expect(html).toContain('id="reader-settings-btn"');
+    expect(html).toContain('aria-controls="reader-settings-popover"');
 
     // Main text panel header: Author, Work Name, and About Link
     expect(html).toContain('class="reader-author-tag"');
     expect(html).toContain('class="reader-work-tag"');
     expect(html).toContain('class="reader-about-link"');
 
-    // Secondary row: expanded tools (hidden by default)
-    expect(html).toContain(
-      'class="sticky-expanded-row" id="sticky-expanded-row" hidden'
-    );
+    // Primary sticky bar: unified single row with Contents trigger, arrows, and Aa trigger
+    expect(html).not.toContain('id="sticky-expand-btn"');
+    expect(html).not.toContain('id="sticky-expanded-row"');
     expect(html).toContain('id="reader-toc-btn"');
-    // Untranslated work (dbg) should omit the Single | Parallel view toggle
+    expect(html).toContain('id="reader-settings-btn"');
     expect(html).not.toContain('id="mode-single"');
     expect(html).not.toContain('id="mode-parallel"');
     expect(html).not.toContain('class="reader-view-toggle"');
-    expect(html).toContain('id="reader-settings-btn"');
     expect(html).not.toContain('id="reader-info-btn"');
 
-    // Settings dialog (Caesar dbgWork has hasMacra: false, so toggle-macra is omitted)
+    // Dismissal backdrops
+    expect(html).toContain('id="reader-toc-backdrop"');
+    expect(html).toContain('id="reader-settings-backdrop"');
+
+    // Settings popover (Caesar dbgWork has hasMacra: false, so toggle-macra is omitted)
     expect(html).toContain("<morcus-reader-settings");
     expect(html).toContain('data-has-macra="false"');
-    expect(html).toContain('id="reader-settings-dialog"');
+    expect(html).toContain('id="reader-settings-popover"');
     expect(html).toContain('id="reader-size-dec"');
     expect(html).toContain('id="reader-size-inc"');
     expect(html).not.toContain('id="toggle-macra"');
@@ -371,11 +375,11 @@ describe("decomposed_reader_renderers", () => {
   });
 
   describe("renderReaderSettingsDialog", () => {
-    test("renders settings modal with custom element container and steppers (default hasMacra true)", () => {
+    test("renders settings popover with custom element container and steppers (default hasMacra true)", () => {
       const html = renderReaderSettingsDialog();
       expect(html).toContain("<morcus-reader-settings");
       expect(html).not.toContain('data-has-macra="false"');
-      expect(html).toContain('id="reader-settings-dialog"');
+      expect(html).toContain('id="reader-settings-popover"');
       expect(html).toContain('id="reader-size-dec"');
       expect(html).toContain('id="reader-size-inc"');
       expect(html).toContain('id="dict-size-dec"');
@@ -386,7 +390,12 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('id="font-select"');
       expect(html).toContain('id="line-height-select"');
       expect(html).toContain('id="reader-settings-reset-btn"');
-      expect(html).toContain('id="reader-settings-done-btn"');
+      expect(html).not.toContain('id="reader-settings-done-btn"');
+    });
+
+    test("maintains backward compatibility with renderReaderSettingsPopover alias", () => {
+      const html = renderReaderSettingsPopover();
+      expect(html).toBe(renderReaderSettingsDialog());
     });
 
     test("renders macra toggle when hasMacra is explicitly true", () => {
@@ -465,8 +474,8 @@ describe("decomposed_reader_renderers", () => {
       );
       expect(html).toContain('id="reader-jump-form"');
       expect(html).toContain('class="sticky-center-group"');
-      expect(html).toContain('class="jump-val">1.1</span>');
-      expect(html).toContain('id="sticky-expand-btn"');
+      expect(html).not.toContain('id="sticky-expand-btn"');
+      expect(html).toContain('id="reader-settings-btn"');
       expect(html).toContain('id="reader-toc-btn"');
     });
 

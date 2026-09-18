@@ -12,12 +12,12 @@ import {
   registerElement,
   setHtml,
   settingsStore,
-  storage,
   tokenizeTargets,
 } from "@/web/v2/core/index.client";
 import { removeMacrons } from "@/common/text_cleaning";
 import {
   DEFAULT_READER_PREFS,
+  MorcusReaderSettings,
   getWorkMacra,
   parseReaderPreferences,
   type ReaderFontFamily,
@@ -115,6 +115,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     return this.panelController;
   }
 
+  public getSettingsElement(): MorcusReaderSettings | null {
+    return this.querySelector<MorcusReaderSettings>("morcus-reader-settings");
+  }
+
   public getActiveNoteId(): string {
     return this.currentNoteId;
   }
@@ -204,7 +208,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     });
     this.initMobileDrawer();
     this.initBackToTop();
-    this.tocController = new ReaderTocController({ root: this });
+    this.tocController = new ReaderTocController({
+      root: this,
+      onOpen: () => {
+        const settings = this.getSettingsElement();
+        if (settings?.isOpen()) {
+          settings.close();
+        }
+      },
+    });
     this.addDisposable(() => {
       this.tocController?.destroy();
       this.tocController = null;
@@ -224,7 +236,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       this.panelController = null;
     });
     this.resetDictScroll();
-    this.initStickyExpand();
     this.initKeyboardShortcuts();
     this.initIframeThemeSync();
 
@@ -1150,17 +1161,20 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   private applyPreferences(prefs: ReaderPreferences) {
     this.currentPrefs = prefs;
+    const scale = (prefs.readerScale / 100).toFixed(2);
+    this.style.setProperty("--reader-scale", scale);
     const readerRem = `${((1.25 * prefs.readerScale) / 100).toFixed(3)}rem`;
     this.style.setProperty("--reader-font-size", readerRem);
+
     this.applyDictScale(prefs.dictScale);
 
-    const lhVal =
-      prefs.lineHeight === "compact"
-        ? "1.6"
-        : prefs.lineHeight === "relaxed"
-        ? "2.3"
-        : "1.95";
-    this.style.setProperty("--reader-line-height", lhVal);
+    if (prefs.lineHeight === "compact") {
+      this.style.setProperty("--reader-line-height", "1.6");
+    } else if (prefs.lineHeight === "relaxed") {
+      this.style.setProperty("--reader-line-height", "2.3");
+    } else {
+      this.style.removeProperty("--reader-line-height");
+    }
 
     const fontVal =
       prefs.fontFamily === "sans" ? "var(--font-sans)" : "var(--font-serif)";
@@ -1170,7 +1184,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.applyMacra(prefs.showMacra);
   }
 
-  // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC, N Notes, I About) ---
+  // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC, N Notes, I About, A Appearance) ---
   private initKeyboardShortcuts() {
     this.listen(window, "keydown", (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -1207,12 +1221,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
             }
           }
         }
-      } else if (e.key === "m" || e.key === "M") {
-        const expandBtn = this.$<HTMLButtonElement>("#sticky-expand-btn");
-        if (expandBtn) {
-          e.preventDefault();
-          expandBtn.click();
-        }
       } else if (e.key === "n" || e.key === "N") {
         if (this.panelController?.hasNotes) {
           e.preventDefault();
@@ -1227,30 +1235,19 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           const nextTab = current === "about" ? "dict" : "about";
           this.activatePanelTab(nextTab);
         }
+      } else if (e.key === "a" || e.key === "A") {
+        const settings = this.getSettingsElement();
+        if (settings) {
+          e.preventDefault();
+          settings.toggle();
+        } else {
+          const btn = this.$<HTMLButtonElement>("#reader-settings-btn");
+          if (btn) {
+            e.preventDefault();
+            btn.click();
+          }
+        }
       }
-    });
-  }
-
-  // --- Sticky Navigation Bar Expand / Collapse ---
-  private initStickyExpand() {
-    const expandBtn = this.$<HTMLButtonElement>("#sticky-expand-btn");
-    const expandedRow = this.$<HTMLElement>("#sticky-expanded-row");
-    if (!expandBtn || !expandedRow) return;
-
-    const setExpanded = (expanded: boolean) => {
-      expandBtn.setAttribute("aria-expanded", String(expanded));
-      expandedRow.hidden = !expanded;
-      storage.setBoolean("morcus_sticky_expanded", expanded);
-    };
-
-    // Restore preference if saved
-    if (storage.getBoolean("morcus_sticky_expanded", false)) {
-      setExpanded(true);
-    }
-
-    this.listen(expandBtn, "click", () => {
-      const isExpanded = expandBtn.getAttribute("aria-expanded") === "true";
-      setExpanded(!isExpanded);
     });
   }
 

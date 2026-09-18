@@ -836,7 +836,7 @@ describe("MorcusReaderView desktop splitter drag", () => {
   test("initializes ReaderTocController and toggles on KeyT", () => {
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     el.innerHTML = `
-      <div class="sticky-expanded-row">
+      <div class="sticky-primary-row">
         <button type="button" id="reader-toc-btn" aria-expanded="false">Contents</button>
       </div>
       <div id="reader-toc-drawer" class="reader-toc-drawer" hidden>
@@ -863,6 +863,72 @@ describe("MorcusReaderView desktop splitter drag", () => {
     // Disconnect removes controller
     el.remove();
     expect(el.getTocController()).toBeNull();
+  });
+
+  test("closes settings popover when Table of Contents opens", () => {
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.innerHTML = `
+      <div class="sticky-primary-row">
+        <button type="button" id="reader-toc-btn" aria-expanded="false">Contents</button>
+        <button type="button" id="reader-settings-btn" aria-expanded="false">Aa</button>
+      </div>
+      <div id="reader-toc-drawer" class="reader-toc-drawer" hidden>
+        <button type="button" id="reader-toc-close-btn">&times;</button>
+      </div>
+      <div id="reader-settings-backdrop" hidden></div>
+      <morcus-reader-settings>
+        <div id="reader-settings-popover" class="reader-settings-popover" role="dialog" hidden>
+          <button id="reader-settings-close-btn">&times;</button>
+        </div>
+      </morcus-reader-settings>
+    `;
+    document.body.appendChild(el);
+
+    const settings = el.getSettingsElement();
+    const toc = el.getTocController();
+    expect(settings).not.toBeNull();
+    expect(toc).not.toBeNull();
+
+    // Open settings popover
+    settings?.open();
+    expect(settings?.isOpen()).toBe(true);
+
+    // Opening TOC closes settings
+    toc?.open();
+    expect(toc?.isOpen()).toBe(true);
+    expect(settings?.isOpen()).toBe(false);
+
+    el.remove();
+  });
+
+  test("toggles settings popover on KeyA", () => {
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.innerHTML = `
+      <div class="sticky-primary-row">
+        <button type="button" id="reader-settings-btn" aria-expanded="false">Aa</button>
+      </div>
+      <div id="reader-settings-backdrop" hidden></div>
+      <morcus-reader-settings>
+        <div id="reader-settings-popover" class="reader-settings-popover" role="dialog" hidden>
+          <button id="reader-settings-close-btn">&times;</button>
+        </div>
+      </morcus-reader-settings>
+    `;
+    document.body.appendChild(el);
+
+    const settings = el.getSettingsElement();
+    expect(settings).not.toBeNull();
+    expect(settings?.isOpen()).toBe(false);
+
+    // Press 'a'
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
+    expect(settings?.isOpen()).toBe(true);
+
+    // Press 'A'
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "A" }));
+    expect(settings?.isOpen()).toBe(false);
+
+    el.remove();
   });
 
   test("saves current page spot to savedSpotsStore on connect", () => {
@@ -1335,9 +1401,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
                }>&rarr;</a>
           </div>
         </div>
-        <div class="sticky-expanded-row" id="sticky-expanded-row" hidden>
         </div>
-      </div>
 
       <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
       <aside id="reader-toc-drawer" class="reader-toc-drawer" hidden>

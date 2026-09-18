@@ -11,7 +11,7 @@ describe("ReaderTocController", () => {
     const div = document.createElement("div");
     div.innerHTML = `
       <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
-      <div class="sticky-expanded-row">
+      <div class="sticky-primary-row">
         <button type="button" id="reader-toc-btn" aria-expanded="false" aria-controls="reader-toc-drawer">
           Contents
         </button>
