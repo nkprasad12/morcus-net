@@ -12,8 +12,10 @@
 
 import { DisposableBag } from "@/web/v2/core/disposable.client";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
+import { swapElementContent } from "@/web/v2/core/partial.client";
 
-export type PanelTab = "dict" | "notes" | "about";
+// TODO(reader-shortcuts): Unified companion panel keyboard shortcuts.
+export type PanelTab = "dict" | "notes" | "translation" | "about";
 
 export interface ReaderPanelElements {
   dictPanel?: HTMLElement | null;
@@ -26,6 +28,8 @@ export interface ReaderPanelElements {
 export interface ReaderPanelOptions {
   root?: ParentNode;
   elements?: ReaderPanelElements;
+  hasTranslation?: boolean;
+  onLoadTranslation?: () => Promise<string | null>;
   onTabChange?: (tab: PanelTab) => void;
 }
 
@@ -60,8 +64,11 @@ export class ReaderPanelController {
   private readonly disposables = new DisposableBag();
   private _activeTab: PanelTab = "dict";
   public hasNotes: boolean = false;
+  public hasTranslation: boolean = false;
   public hasAbout: boolean = false;
   public noteCount: number = 0;
+  private isTranslationLoaded: boolean = false;
+  private readonly onLoadTranslation?: () => Promise<string | null>;
 
   public readonly dictPanel: HTMLElement | null = null;
   public readonly iframeContainer: HTMLElement | null = null;
@@ -70,10 +77,12 @@ export class ReaderPanelController {
   public tabsContainer: HTMLElement | null = null;
   public dictTab: HTMLButtonElement | null = null;
   public notesTab: HTMLButtonElement | null = null;
+  public translationTab: HTMLButtonElement | null = null;
   public aboutTab: HTMLButtonElement | null = null;
   public viewsContainer: HTMLElement | null = null;
   public dictView: HTMLElement | null = null;
   public notesView: HTMLElement | null = null;
+  public translationView: HTMLElement | null = null;
   public aboutView: HTMLElement | null = null;
 
   private readonly notesOriginalParent: Node | null = null;
@@ -89,6 +98,8 @@ export class ReaderPanelController {
     const root = options.root ?? document;
     const overrides = options.elements;
     this.onTabChange = options.onTabChange;
+    this.hasTranslation = Boolean(options.hasTranslation);
+    this.onLoadTranslation = options.onLoadTranslation;
 
     const dictPanel =
       overrides?.dictPanel !== undefined
@@ -143,7 +154,8 @@ export class ReaderPanelController {
     this.iframeOriginalNextSibling = iframeContainer.nextSibling;
     this.iframeOriginalId = iframeContainer.getAttribute("id");
 
-    const hasMultipleTabs = this.hasNotes || this.hasAbout;
+    const hasMultipleTabs =
+      this.hasNotes || this.hasTranslation || this.hasAbout;
 
     // 1. Build Tab List
     const tabs = document.createElement("div");
@@ -190,6 +202,26 @@ export class ReaderPanelController {
       notesTab.hidden = true;
     }
 
+    const translationTab = document.createElement("button");
+    translationTab.type = "button";
+    translationTab.className = "reader-panel-tab tab-translation";
+    translationTab.id = "panel-tab-translation";
+    translationTab.setAttribute("role", "tab");
+    translationTab.setAttribute("aria-selected", "false");
+    translationTab.setAttribute("aria-controls", "panel-view-translation");
+    translationTab.setAttribute("aria-label", "Translation");
+    translationTab.tabIndex = -1;
+
+    const translationLabel = document.createElement("span");
+    translationLabel.className = "reader-tab-label";
+    translationLabel.textContent = "Translation";
+    translationTab.appendChild(createTabIcon(ICON_PATHS.translation));
+    translationTab.appendChild(translationLabel);
+
+    if (!this.hasTranslation) {
+      translationTab.hidden = true;
+    }
+
     const aboutTab = document.createElement("button");
     aboutTab.type = "button";
     aboutTab.className = "reader-panel-tab";
@@ -212,10 +244,12 @@ export class ReaderPanelController {
 
     tabs.appendChild(dictTab);
     tabs.appendChild(notesTab);
+    tabs.appendChild(translationTab);
     tabs.appendChild(aboutTab);
     this.tabsContainer = tabs;
     this.dictTab = dictTab;
     this.notesTab = notesTab;
+    this.translationTab = translationTab;
     this.aboutTab = aboutTab;
 
     // 2. Build Views Container and Relocate Subtrees
@@ -241,6 +275,15 @@ export class ReaderPanelController {
     }
     views.appendChild(notesView);
     this.notesView = notesView;
+
+    const translationView = document.createElement("div");
+    translationView.id = "panel-view-translation";
+    translationView.className = "reader-panel-translation reader-panel-view";
+    translationView.setAttribute("role", "tabpanel");
+    translationView.setAttribute("aria-labelledby", "panel-tab-translation");
+    translationView.setAttribute("aria-live", "polite");
+    views.appendChild(translationView);
+    this.translationView = translationView;
 
     const aboutView = document.createElement("div");
     aboutView.id = "panel-view-about";
@@ -292,6 +335,18 @@ export class ReaderPanelController {
     this.initTabEvents();
   }
 
+  public getAvailableTabs(): { id: PanelTab; btn: HTMLButtonElement }[] {
+    const tabs: { id: PanelTab; btn: HTMLButtonElement }[] = [];
+    if (this.dictTab) tabs.push({ id: "dict", btn: this.dictTab });
+    if (this.hasNotes && this.notesTab)
+      tabs.push({ id: "notes", btn: this.notesTab });
+    if (this.hasTranslation && this.translationTab)
+      tabs.push({ id: "translation", btn: this.translationTab });
+    if (this.hasAbout && this.aboutTab)
+      tabs.push({ id: "about", btn: this.aboutTab });
+    return tabs;
+  }
+
   private initTabEvents(): void {
     if (
       !this.dictTab ||
@@ -311,6 +366,11 @@ export class ReaderPanelController {
       this.setTab("notes");
     };
 
+    const onTranslationClick = (e: MouseEvent) => {
+      e.preventDefault();
+      this.setTab("translation");
+    };
+
     const onAboutClick = (e: MouseEvent) => {
       e.preventDefault();
       this.setTab("about");
@@ -318,15 +378,7 @@ export class ReaderPanelController {
 
     const onKeydown = (e: KeyboardEvent) => {
       if (!this.dictTab) return;
-      const activeTabs: { id: PanelTab; btn: HTMLButtonElement }[] = [
-        { id: "dict", btn: this.dictTab },
-      ];
-      if (this.hasNotes && this.notesTab) {
-        activeTabs.push({ id: "notes", btn: this.notesTab });
-      }
-      if (this.hasAbout && this.aboutTab) {
-        activeTabs.push({ id: "about", btn: this.aboutTab });
-      }
+      const activeTabs = this.getAvailableTabs();
       const currentIndex = activeTabs.findIndex(
         (t) => t.id === this._activeTab
       );
@@ -360,12 +412,14 @@ export class ReaderPanelController {
 
     this.dictTab.addEventListener("click", onDictClick);
     this.notesTab.addEventListener("click", onNotesClick);
+    this.translationTab?.addEventListener("click", onTranslationClick);
     this.aboutTab.addEventListener("click", onAboutClick);
     this.tabsContainer.addEventListener("keydown", onKeydown);
 
     this.disposables.add(() => {
       this.dictTab?.removeEventListener("click", onDictClick);
       this.notesTab?.removeEventListener("click", onNotesClick);
+      this.translationTab?.removeEventListener("click", onTranslationClick);
       this.aboutTab?.removeEventListener("click", onAboutClick);
       this.tabsContainer?.removeEventListener("keydown", onKeydown);
     });
@@ -377,6 +431,7 @@ export class ReaderPanelController {
 
   public setTab(tab: PanelTab): void {
     if (tab === "notes" && !this.hasNotes) return;
+    if (tab === "translation" && !this.hasTranslation) return;
     if (tab === "about" && !this.hasAbout) return;
     this._activeTab = tab;
 
@@ -394,6 +449,31 @@ export class ReaderPanelController {
       this.notesView.classList.toggle("active", isNotes);
     }
 
+    if (this.translationTab && this.translationView) {
+      const isTrans = tab === "translation";
+      this.translationTab.setAttribute(
+        "aria-selected",
+        isTrans ? "true" : "false"
+      );
+      this.translationTab.tabIndex = isTrans ? 0 : -1;
+      this.translationView.classList.toggle("active", isTrans);
+
+      if (isTrans && !this.isTranslationLoaded && this.onLoadTranslation) {
+        this.translationView.innerHTML = `<div class="reader-translation-loading" style="min-height: 200px;"><span class="loading-spinner"></span></div>`;
+        this.onLoadTranslation()
+          .then((html) => {
+            if (html !== null && this.translationView) {
+              swapElementContent(this.translationView, html);
+              this.isTranslationLoaded = true;
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to load translation:", err);
+            this.showTranslationError();
+          });
+      }
+    }
+
     if (this.aboutTab && this.aboutView) {
       const isAbout = tab === "about";
       this.aboutTab.setAttribute("aria-selected", isAbout ? "true" : "false");
@@ -404,13 +484,70 @@ export class ReaderPanelController {
     this.onTabChange?.(tab);
   }
 
+  public setActiveTab(tab: PanelTab): void {
+    this.setTab(tab);
+  }
+
+  public showTranslationError(): void {
+    if (!this.translationView) return;
+    this.isTranslationLoaded = false;
+    this.translationView.innerHTML = `<div class="reader-translation-error" style="min-height: 200px;"><p>Failed to load translation.</p><button type="button" class="btn btn-secondary btn-sm" id="btn-retry-translation">Retry</button></div>`;
+    const retryBtn = this.translationView.querySelector<HTMLButtonElement>(
+      "#btn-retry-translation"
+    );
+    if (retryBtn) {
+      retryBtn.addEventListener("click", () => {
+        this.isTranslationLoaded = false;
+        this.setTab("translation");
+      });
+    }
+  }
+
+  public setTranslationHtml(html: string): void {
+    if (!this.translationView) return;
+    swapElementContent(this.translationView, html);
+    this.isTranslationLoaded = true;
+    this.translationView.scrollTop = 0;
+  }
+
+  public resetTranslation(): void {
+    if (!this.translationView) return;
+    this.translationView.replaceChildren();
+    this.isTranslationLoaded = false;
+    this.translationView.scrollTop = 0;
+  }
+
+  private clearActiveNotes(): void {
+    this.notesView
+      ?.querySelectorAll(".note-active")
+      .forEach((el) => el.classList.remove("note-active"));
+    this.translationView
+      ?.querySelectorAll(".note-active")
+      .forEach((el) => el.classList.remove("note-active"));
+  }
+
   public showNote(bodyId: string, opts: { focus?: boolean } = {}): void {
+    const transTarget = this.translationView?.querySelector<HTMLElement>(
+      `#${escapeId(bodyId)}`
+    );
+    if (transTarget && this.translationView) {
+      this.setTab("translation");
+      this.clearActiveNotes();
+      transTarget.classList.add("note-active");
+      if (typeof transTarget.scrollIntoView === "function") {
+        transTarget.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      if (opts.focus) {
+        const link = transTarget.querySelector<HTMLElement>("a") || transTarget;
+        link.focus?.();
+      }
+      return;
+    }
+
     if (!this.hasNotes || !this.notesView) return;
 
     this.setTab("notes");
-
-    const prevActive = this.notesView.querySelectorAll(".note-active");
-    prevActive.forEach((el) => el.classList.remove("note-active"));
+    this.clearActiveNotes();
 
     const target =
       this.notesView.querySelector<HTMLElement>(`#${escapeId(bodyId)}`) ??
@@ -451,7 +588,8 @@ export class ReaderPanelController {
 
     // 4. Update tab visibility and container state
     if (this.tabsContainer && this.notesTab && this.dictPanel) {
-      const hasMultipleTabs = this.hasNotes || this.hasAbout;
+      const hasMultipleTabs =
+        this.hasNotes || this.hasTranslation || this.hasAbout;
       this.tabsContainer.hidden = !hasMultipleTabs;
       this.notesTab.hidden = !this.hasNotes;
       this.dictPanel.classList.toggle("has-companion-tabs", hasMultipleTabs);
@@ -487,7 +625,8 @@ export class ReaderPanelController {
 
     // 3. Update tab visibility and container state
     if (this.tabsContainer && this.aboutTab && this.dictPanel) {
-      const hasMultipleTabs = this.hasNotes || this.hasAbout;
+      const hasMultipleTabs =
+        this.hasNotes || this.hasTranslation || this.hasAbout;
       this.tabsContainer.hidden = !hasMultipleTabs;
       this.aboutTab.hidden = !this.hasAbout;
       this.dictPanel.classList.toggle("has-companion-tabs", hasMultipleTabs);
@@ -501,10 +640,7 @@ export class ReaderPanelController {
 
   public reset(): void {
     this.setTab("dict");
-    if (this.notesView) {
-      const active = this.notesView.querySelectorAll(".note-active");
-      active.forEach((el) => el.classList.remove("note-active"));
-    }
+    this.clearActiveNotes();
   }
 
   public destroy(): void {

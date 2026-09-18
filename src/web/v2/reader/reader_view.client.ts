@@ -88,7 +88,7 @@ function escapeCss(id: string): string {
  * - Manages mobile bottom sheet expansion and desktop resizable panels.
  * - Performs seamless in-place partial page swaps without full reload or losing iframe state.
  * */
-export class MorcusReaderView extends BaseElement<"page"> {
+export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private currentQuery: string = "";
   private preferredDrawerDvh: number = DRAWER_DEFAULT_DVH;
   private drawerController?: DrawerController;
@@ -100,6 +100,8 @@ export class MorcusReaderView extends BaseElement<"page"> {
   private router: QueryParamSync | null = null;
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
   private originalScrollRestoration: ScrollRestoration = "auto";
+  private hasTranslation: boolean = false;
+  private readonly translationCache = new Map<string, string>();
 
   public getTocController(): ReaderTocController | null {
     return this.tocController;
@@ -131,6 +133,7 @@ export class MorcusReaderView extends BaseElement<"page"> {
       }
     }
 
+    this.hasTranslation = this.getAttribute("data-has-translation") === "true";
     this.currentPrefs = readerSettingsStore.get();
     const workId = this.dataset.work;
     if (workId) {
@@ -163,19 +166,9 @@ export class MorcusReaderView extends BaseElement<"page"> {
         const prevUrl = new URL(event.prevPath, window.location.origin);
         const newUrl = new URL(event.newPath, window.location.origin);
 
-        const prevView =
-          prevUrl.searchParams.get("view") === "parallel"
-            ? "parallel"
-            : "single";
-        const newView =
-          newUrl.searchParams.get("view") === "parallel"
-            ? "parallel"
-            : "single";
-
         const isPathChange = newUrl.pathname !== prevUrl.pathname;
-        const isViewChange = newView !== prevView;
 
-        if (isPathChange || isViewChange) {
+        if (isPathChange) {
           void this.swapPage(window.location.href, {
             push: false,
             isPopState: true,
@@ -218,6 +211,9 @@ export class MorcusReaderView extends BaseElement<"page"> {
     });
     this.panelController = new ReaderPanelController({
       root: this,
+      hasTranslation: this.hasTranslation,
+      onLoadTranslation: () =>
+        this.fetchTranslation(this.currentPageUrl, this.latest("translation")),
       onTabChange: () => {
         this.activatePanelLayout();
         this.updateSheetLabel(false);
@@ -488,7 +484,13 @@ export class MorcusReaderView extends BaseElement<"page"> {
   private readonly handlePassageKeydown = (e: KeyboardEvent) => {
     if (e.key !== "Enter" && e.key !== " ") return;
     if (!(e.target instanceof HTMLElement)) return;
-    if (!e.target.closest("#reader-passage")) return;
+    if (
+      !e.target.closest("#reader-passage") &&
+      !e.target.closest(".reader-panel-translation") &&
+      !e.target.closest(".reader-panel-notes")
+    ) {
+      return;
+    }
 
     if (e.target.classList.contains("lat-word")) {
       e.preventDefault();
@@ -504,6 +506,28 @@ export class MorcusReaderView extends BaseElement<"page"> {
         const bodyId = href.replace(/^#/, "");
         if (bodyId && this.panelController) {
           this.openNote(bodyId, noteRef, { focus: true });
+        }
+        return;
+      }
+
+      const backref = e.target.closest<HTMLAnchorElement>(
+        "a.reader-note-backref"
+      );
+      if (backref) {
+        const href = backref.getAttribute("href") || "";
+        const refId = href.replace(/^#/, "");
+        const markerEl = document.getElementById(refId);
+        if (markerEl) {
+          e.preventDefault();
+          if (typeof markerEl.scrollIntoView === "function") {
+            markerEl.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+              inline: "nearest",
+            });
+          }
+          this.setActiveMarker(markerEl);
+          markerEl.focus?.();
         }
       }
     }
@@ -588,6 +612,12 @@ export class MorcusReaderView extends BaseElement<"page"> {
     this.renderSheetTeaser([strong], showExpandHint);
   }
 
+  private setSheetTranslationLabel(showExpandHint: boolean = false): void {
+    const strong = document.createElement("strong");
+    strong.textContent = "Translation";
+    this.renderSheetTeaser([strong], showExpandHint);
+  }
+
   private setSheetAboutLabel(showExpandHint: boolean = false): void {
     const strong = document.createElement("strong");
     strong.textContent = "About this text";
@@ -601,6 +631,8 @@ export class MorcusReaderView extends BaseElement<"page"> {
       } else {
         this.setSheetNotesListLabel(showExpandHint);
       }
+    } else if (this.panelController?.activeTab === "translation") {
+      this.setSheetTranslationLabel(showExpandHint);
     } else if (this.panelController?.activeTab === "about") {
       this.setSheetAboutLabel(showExpandHint);
     } else if (this.currentQuery) {
@@ -694,11 +726,13 @@ export class MorcusReaderView extends BaseElement<"page"> {
     // Ensure layout is active
     this.activatePanelLayout();
 
-    // Update mobile teaser label
-    this.setSheetNoteLabel(label);
+    // Update mobile teaser label if on notes tab
+    if (this.panelController?.activeTab === "notes") {
+      this.setSheetNoteLabel(label);
+    }
 
-    // Mobile scroll guard: Ensure tapped marker is not occluded by the newly opened/restored drawer
-    if (window.innerWidth <= 640) {
+    // Mobile scroll guard: Ensure tapped marker in passage is not occluded by the newly opened/restored drawer
+    if (window.innerWidth <= 640 && !markerEl.closest(".reader-dict-panel")) {
       requestAnimationFrame(() => {
         const rect = markerEl.getBoundingClientRect();
         const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
@@ -720,7 +754,7 @@ export class MorcusReaderView extends BaseElement<"page"> {
 
   private setActiveMarker(el?: HTMLElement | null): void {
     const active = this.querySelectorAll<HTMLElement>(
-      ".reader-text-panel a.reader-note-ref.marker-active"
+      "a.reader-note-ref.marker-active"
     );
     active.forEach((m) => m.classList.remove("marker-active"));
     el?.classList.add("marker-active");
@@ -893,10 +927,8 @@ export class MorcusReaderView extends BaseElement<"page"> {
       tokenizeTargets(passage, {
         targetSelector: "[data-tokenize-target='true']",
         fallbackSelector:
-          ".reader-section:not(.section-parallel) p.reader-paragraph, " +
-          ".reader-section:not(.section-parallel) .reader-line, " +
-          ".passage-latin p.reader-paragraph, " +
-          ".passage-latin .reader-line",
+          ".reader-section p.reader-paragraph, " +
+          ".reader-section .reader-line",
         enhancedDatasetKey: "wordsEnhanced",
         renderWord: (token) => {
           const span = document.createElement("span");
@@ -1244,16 +1276,78 @@ export class MorcusReaderView extends BaseElement<"page"> {
     }
   }
 
-  private patchStickyBar(
-    textPanel: HTMLElement,
-    newPageId: string,
-    newViewMode: string
-  ): void {
+  public get currentPageUrl(): string {
+    const author = this.getAttribute("data-author");
+    const name = this.getAttribute("data-name");
+    const page = this.dataset.page || this.getAttribute("data-page");
+    if (author && name && page) {
+      return `/v2/reader/${author}/${name}/${page}`;
+    }
+    return typeof window !== "undefined" && window.location
+      ? window.location.pathname.replace(/\/$/, "")
+      : "";
+  }
+
+  private getTranslationKey(pageUrl: string): string {
+    try {
+      const origin =
+        typeof window !== "undefined" && window.location
+          ? window.location.origin
+          : "http://localhost";
+      const u = new URL(pageUrl, origin);
+      const parts = u.pathname.split("/").filter(Boolean);
+      if (parts.length >= 4 && parts[0] === "v2" && parts[1] === "reader") {
+        const author = parts[2];
+        const name = parts[3];
+        const pageId = parts.slice(4).join(".") || this.dataset.page || "1";
+        return `${author}/${name}/${pageId}`;
+      }
+      return u.pathname;
+    } catch {
+      return pageUrl.split("?")[0].split("#")[0].replace(/\/$/, "");
+    }
+  }
+
+  public async fetchTranslation(
+    pageUrl: string,
+    signal: AbortSignal
+  ): Promise<string | null> {
+    const key = this.getTranslationKey(pageUrl);
+    const cached = this.translationCache.get(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    try {
+      let cleanUrl = pageUrl.split("?")[0].split("#")[0].replace(/\/$/, "");
+      const parts = cleanUrl.split("/").filter(Boolean);
+      if (parts.length === 3 && parts[0] === "v2" && parts[1] === "reader") {
+        cleanUrl = `${cleanUrl}/${this.dataset.page || "1"}`;
+      }
+      const res = await fetch(`${cleanUrl}/translation`, {
+        headers: { "X-Requested-With": "fetch" },
+        signal,
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const html = await res.text();
+      this.translationCache.set(key, html);
+      return html;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return null;
+      }
+      throw err;
+    }
+  }
+
+  private patchStickyBar(textPanel: HTMLElement, newPageId: string): void {
     if (newPageId) {
       this.dataset.page = newPageId;
     }
-    this.dataset.view = newViewMode;
-    this.classList.toggle("reader-view-parallel", newViewMode === "parallel");
 
     const jumpVal = this.querySelector<HTMLElement>(
       "#reader-toc-btn .jump-val"
@@ -1314,47 +1408,6 @@ export class MorcusReaderView extends BaseElement<"page"> {
         pagerNext.classList.add("disabled");
         pagerNext.setAttribute("aria-disabled", "true");
         pagerNext.setAttribute("tabindex", "-1");
-      }
-    }
-
-    const viewToggles = this.querySelectorAll<HTMLAnchorElement>(
-      ".reader-view-toggle a"
-    );
-    for (const toggle of viewToggles) {
-      const isParallel =
-        toggle.getAttribute("href")?.includes("view=parallel") ||
-        toggle.textContent?.trim().toLowerCase() === "parallel";
-      const targetView = isParallel ? "parallel" : "single";
-      const isActive = targetView === newViewMode;
-      toggle.classList.toggle("active", isActive);
-      if (isActive) {
-        toggle.setAttribute("aria-current", "page");
-      } else {
-        toggle.removeAttribute("aria-current");
-      }
-
-      const toggleHref = toggle.getAttribute("href");
-      if (toggleHref && toggleHref !== "#") {
-        try {
-          const toggleUrl = new URL(toggleHref, window.location.href);
-          toggleUrl.pathname = window.location.pathname;
-          if (isParallel) {
-            toggleUrl.searchParams.set("view", "parallel");
-          } else {
-            toggleUrl.searchParams.delete("view");
-          }
-          if (this.currentQuery) {
-            toggleUrl.searchParams.set("q", this.currentQuery);
-          } else {
-            toggleUrl.searchParams.delete("q");
-          }
-          toggle.setAttribute(
-            "href",
-            toggleUrl.pathname + toggleUrl.search + toggleUrl.hash
-          );
-        } catch {
-          // Ignored
-        }
       }
     }
   }
@@ -1497,11 +1550,33 @@ export class MorcusReaderView extends BaseElement<"page"> {
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const success = await fetchAndSwapPartial(textPanel, url.href, {
-      signal,
-      loadingOpacity: prefersReducedMotion ? 1 : 0.5,
-      errorMessage: "Unable to load passage. Please try refreshing.",
-    });
+    const isTransActive = this.panelController?.activeTab === "translation";
+    let success = false;
+    let transHtml: string | null = null;
+    let transError = false;
+
+    if (isTransActive) {
+      const [passageSuccess, translationResult] = await Promise.all([
+        fetchAndSwapPartial(textPanel, url.href, {
+          signal,
+          loadingOpacity: prefersReducedMotion ? 1 : 0.5,
+          errorMessage: "Unable to load passage. Please try refreshing.",
+        }),
+        this.fetchTranslation(url.pathname, signal).catch((err) => {
+          console.error("fetchTranslation failed:", err);
+          transError = true;
+          return null;
+        }),
+      ]);
+      success = passageSuccess;
+      transHtml = translationResult;
+    } else {
+      success = await fetchAndSwapPartial(textPanel, url.href, {
+        signal,
+        loadingOpacity: prefersReducedMotion ? 1 : 0.5,
+        errorMessage: "Unable to load passage. Please try refreshing.",
+      });
+    }
 
     if (!success) {
       return false;
@@ -1509,8 +1584,6 @@ export class MorcusReaderView extends BaseElement<"page"> {
 
     const pathParts = url.pathname.split("/").filter(Boolean);
     const newPageId = pathParts.slice(4).join(".") || pathParts[4] || "";
-    const newViewMode =
-      url.searchParams.get("view") === "parallel" ? "parallel" : "single";
 
     this.currentQuery = url.searchParams.get("q") ?? "";
 
@@ -1525,9 +1598,19 @@ export class MorcusReaderView extends BaseElement<"page"> {
       this.router?.updatePath();
     }
 
-    this.patchStickyBar(textPanel, newPageId, newViewMode);
+    this.patchStickyBar(textPanel, newPageId);
     this.patchToc(newPageId);
     this.hydratePage({ isPopState, hash: url.hash });
+
+    if (isTransActive) {
+      if (transHtml !== null && this.panelController) {
+        this.panelController.setTranslationHtml(transHtml);
+      } else if (transError && this.panelController) {
+        this.panelController.showTranslationError();
+      }
+    } else {
+      this.panelController?.resetTranslation();
+    }
 
     return true;
   }

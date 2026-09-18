@@ -97,46 +97,32 @@ describe("reader_ssr", () => {
     expect(html).toContain("reader-sheet-close");
   });
 
-  test("renderReaderContentHtml supports parallel translation view mode", async () => {
-    const singleHtml = await renderReaderContentHtml({
+  test("renderReaderContentHtml uses single-column Latin canvas and exposes data-has-translation", async () => {
+    const translatedHtml = await renderReaderContentHtml({
       workId: "sallust/catalina1",
       pageId: "1",
-      view: "single",
     });
-    expect(singleHtml).not.toContain("section-parallel");
-    expect(singleHtml).not.toContain("passage-english");
-    // Translated work renders the Single | Parallel view toggle
-    expect(singleHtml).toContain('id="mode-single"');
-    expect(singleHtml).toContain('id="mode-parallel"');
-    expect(singleHtml).toContain('class="reader-view-toggle"');
+    // Single-column Latin canvas, no dual-column parallel DOM
+    expect(translatedHtml).not.toContain("section-parallel");
+    expect(translatedHtml).not.toContain("passage-english");
+    expect(translatedHtml).not.toContain("reader-view-parallel");
+    // Sticky bar omits view toggle
+    expect(translatedHtml).not.toContain('id="mode-single"');
+    expect(translatedHtml).not.toContain('id="mode-parallel"');
+    expect(translatedHtml).not.toContain('class="reader-view-toggle"');
+    // Root element indicates translation availability for client controller
+    expect(translatedHtml).toContain('data-has-translation="true"');
 
-    const parallelHtml = await renderReaderContentHtml({
-      workId: "sallust/catalina1",
-      pageId: "1",
-      view: "parallel",
-    });
-    expect(parallelHtml).toContain("reader-view-parallel");
-    expect(parallelHtml).toContain("section-parallel");
-    expect(parallelHtml).toContain("passage-english");
-    expect(parallelHtml).not.toContain("reader-trans-author");
-    // Translator attribution is housed in the biblio dialog metadata
-    expect(parallelHtml).toContain("John Selby Watson");
-    expect(parallelHtml).toContain('id="mode-single"');
-    expect(parallelHtml).toContain('id="mode-parallel"');
-
-    // Untranslated work requested with view=parallel cleanly falls back to single
-    const untranslatedParallelHtml = await renderReaderContentHtml({
+    // Untranslated work has data-has-translation="false"
+    const untranslatedHtml = await renderReaderContentHtml({
       workId: "dbg",
       pageId: "1.1",
-      view: "parallel",
     });
-    expect(untranslatedParallelHtml).not.toContain("reader-view-parallel");
-    expect(untranslatedParallelHtml).not.toContain("section-parallel");
-    expect(untranslatedParallelHtml).not.toContain(
-      'class="reader-view-toggle"'
-    );
-    expect(untranslatedParallelHtml).not.toContain('id="mode-parallel"');
-    expect(untranslatedParallelHtml).toContain('data-view="single"');
+    expect(untranslatedHtml).not.toContain("reader-view-parallel");
+    expect(untranslatedHtml).not.toContain("section-parallel");
+    expect(untranslatedHtml).not.toContain('class="reader-view-toggle"');
+    expect(untranslatedHtml).not.toContain('id="mode-parallel"');
+    expect(untranslatedHtml).toContain('data-has-translation="false"');
   });
 
   test("renderReaderContentHtml renders Table of Contents drawer and About section", async () => {
@@ -331,13 +317,12 @@ describe("decomposed_reader_renderers", () => {
       );
     });
 
-    test("appends view and query parameters when specified", () => {
+    test("appends query parameter when specified", () => {
       expect(
         buildReaderPageUrl(dbgWork, dbgWork.pages[0], {
-          viewMode: "parallel",
           query: "gallia",
         })
-      ).toBe("/v2/reader/caesar/de_bello_gallico/1.1?view=parallel&q=gallia");
+      ).toBe("/v2/reader/caesar/de_bello_gallico/1.1?q=gallia");
     });
   });
 
@@ -498,19 +483,21 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('aria-disabled="true" tabindex="-1"');
     });
 
-    test("renders view toggle for translated work and omits it for untranslated work", async () => {
+    test("omits view toggle in sticky bar for both translated and untranslated works", async () => {
       const untranslatedCtx = await resolveReaderContext({ workId: "dbg" });
       const untranslatedHtml = renderReaderStickyBar(untranslatedCtx);
       expect(untranslatedHtml).not.toContain("reader-view-toggle");
+      expect(untranslatedHtml).not.toContain('id="mode-single"');
+      expect(untranslatedHtml).not.toContain('id="mode-parallel"');
 
       const translatedCtx = await resolveReaderContext({
         workId: "sallust/catalina1",
         pageId: "1",
       });
       const translatedHtml = renderReaderStickyBar(translatedCtx);
-      expect(translatedHtml).toContain("reader-view-toggle");
-      expect(translatedHtml).toContain('id="mode-single"');
-      expect(translatedHtml).toContain('id="mode-parallel"');
+      expect(translatedHtml).not.toContain("reader-view-toggle");
+      expect(translatedHtml).not.toContain('id="mode-single"');
+      expect(translatedHtml).not.toContain('id="mode-parallel"');
     });
   });
 
@@ -590,8 +577,7 @@ describe("decomposed_reader_renderers", () => {
       expect(ctx.activePageIndex).toBe(0);
       expect(ctx.prevPage).toBeNull();
       expect(ctx.nextPage).not.toBeNull();
-      expect(ctx.viewMode).toBe("single");
-      expect(ctx.hasParallel).toBe(false);
+      expect(ctx.work.hasTranslation).toBe(false);
       expect(ctx.layoutStateClass).toBe("reader-layout-empty");
       expect(ctx.dictIframeSrc).toBe("/v2/dicts?embedded=1");
     });

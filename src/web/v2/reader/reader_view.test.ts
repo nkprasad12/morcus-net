@@ -23,6 +23,7 @@ function createReaderView(
   options: {
     workId?: string;
     hasMacra?: boolean;
+    hasTranslation?: boolean;
     notesHtml?: string;
     aboutHtml?: string;
   } = {}
@@ -31,6 +32,9 @@ function createReaderView(
   if (options.workId) el.dataset.work = options.workId;
   if (options.hasMacra !== undefined) {
     el.dataset.hasMacra = String(options.hasMacra);
+  }
+  if (options.hasTranslation !== undefined) {
+    el.dataset.hasTranslation = String(options.hasTranslation);
   }
   const hasMacra = options.hasMacra ?? true;
   el.innerHTML = `
@@ -1164,6 +1168,51 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(panelController?.activeTab).toBe("dict");
   });
 
+  test("clicking note marker and backlink inside translation panel stays in translation tab", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+      hasTranslation: true,
+    });
+
+    const panelController = el.getPanelController()!;
+    panelController.setTranslationHtml(`
+      <div class="reader-translation-section">
+        <p>Gaul is divided<a class="reader-note-ref" id="noteref-t1" href="#note-t1">[a]</a> into three parts.</p>
+      </div>
+      <aside class="reader-notes" id="reader-trans-notes">
+        <ol class="reader-notes-list">
+          <li class="reader-note" id="note-t1">
+            <a class="reader-note-backref" href="#noteref-t1">[a]</a>
+            <div class="reader-note-body">Translation note body</div>
+          </li>
+        </ol>
+      </aside>
+    `);
+    panelController.setTab("translation");
+    expect(panelController.activeTab).toBe("translation");
+
+    const transMarker = el.querySelector<HTMLAnchorElement>("#noteref-t1")!;
+    const transNote = el.querySelector<HTMLElement>("#note-t1")!;
+    transNote.scrollIntoView = jest.fn();
+    transMarker.scrollIntoView = jest.fn();
+
+    // Clicking [a] inside translation panel should highlight #note-t1 and stay on "translation" tab
+    transMarker.click();
+    expect(panelController.activeTab).toBe("translation");
+    expect(transMarker.classList.contains("marker-active")).toBe(true);
+    expect(transNote.classList.contains("note-active")).toBe(true);
+    expect(transNote.scrollIntoView).toHaveBeenCalled();
+
+    // Clicking backlink [a] inside translation note should scroll back to transMarker and highlight it
+    transMarker.classList.remove("marker-active");
+    const backref = transNote.querySelector<HTMLAnchorElement>(
+      "a.reader-note-backref"
+    )!;
+    backref.click();
+    expect(transMarker.classList.contains("marker-active")).toBe(true);
+    expect(transMarker.scrollIntoView).toHaveBeenCalled();
+  });
+
   test("pressing 'i' with modifier keys (Ctrl, Meta, Alt) does not trigger tab toggle", () => {
     const el = createReaderView("<p>Gallia est omnis divisa</p>", {
       aboutHtml: sampleAboutHtml,
@@ -1231,7 +1280,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       author?: string;
       name?: string;
       workId?: string;
-      viewMode?: "single" | "parallel";
+      hasTranslation?: boolean;
       passageHtml?: string;
       prevPageUrl?: string;
       nextPageUrl?: string;
@@ -1242,14 +1291,12 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     const author = options.author ?? "caesar";
     const name = options.name ?? "de-bello-gallico";
     const workId = options.workId ?? `${author}_${name.replace(/-/g, "_")}`;
-    const viewMode = options.viewMode ?? "single";
+    const hasTranslation = options.hasTranslation ?? false;
 
     window.history.replaceState(
       {},
       "",
-      `/v2/reader/${author}/${name}/${pageId}${
-        viewMode === "parallel" ? "?view=parallel" : ""
-      }`
+      `/v2/reader/${author}/${name}/${pageId}`
     );
 
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
@@ -1257,7 +1304,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     el.dataset.author = author;
     el.dataset.name = name;
     el.dataset.page = pageId;
-    el.dataset.view = viewMode;
+    el.dataset.hasTranslation = String(hasTranslation);
     el.dataset.hasMacra = "true";
 
     const prevUrl = options.prevPageUrl;
@@ -1289,14 +1336,6 @@ describe("MorcusReaderView client-side partial page navigation", () => {
           </div>
         </div>
         <div class="sticky-expanded-row" id="sticky-expanded-row" hidden>
-          <div class="reader-view-toggle">
-            <a href="/v2/reader/${author}/${name}/${pageId}" class="reader-toggle-btn ${
-      viewMode === "single" ? "active" : ""
-    }">Single</a>
-            <a href="/v2/reader/${author}/${name}/${pageId}?view=parallel" class="reader-toggle-btn ${
-      viewMode === "parallel" ? "active" : ""
-    }">Parallel</a>
-          </div>
         </div>
       </div>
 
@@ -1511,7 +1550,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     expect(el.dataset.page).toBe("2");
   });
 
-  test("page turn minimizes mobile drawer, whereas view toggle preserves drawer state", async () => {
+  test("page turn minimizes mobile drawer", async () => {
     const el = createNavigableReaderView({ pageId: "1" });
     const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
 
@@ -1528,32 +1567,70 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
     // Drawer should be minimized on page turn
     expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+  });
 
-    // 3. Restore drawer on page 2
-    el.restoreDrawer(60);
-    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
-
-    // 4. Perform view mode toggle on page 2
-    const parallelCardHtml = `
-      <div class="reader-text-card">
-        <header class="reader-text-card-header">
-          <h1 class="reader-passage-heading">Liber I: Caput 2</h1>
-        </header>
-        <article class="reader-passage" id="reader-passage">
-          <p>Parallel text</p>
-        </article>
-      </div>
-    `;
-    window.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      text: async () => parallelCardHtml,
+  test("swapPage coordinates with translation companion tab when work has translation", async () => {
+    const el = createNavigableReaderView({
+      pageId: "1",
+      author: "sallust",
+      name: "catalina1",
+      hasTranslation: true,
     });
 
-    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2?view=parallel");
-    // Drawer should NOT be minimized on view mode toggle!
-    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
-    expect(el.dataset.view).toBe("parallel");
-    expect(el.classList.contains("reader-view-parallel")).toBe(true);
+    const panelController = el.getPanelController();
+    expect(panelController).not.toBeNull();
+
+    const translationHtml =
+      '<div class="reader-translation-content">Trans Page 2</div>';
+
+    const fetchMock = jest.fn().mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("/translation")) {
+        return Promise.resolve({
+          ok: true,
+          text: async () => translationHtml,
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        text: async () => page2CardHtml,
+      });
+    });
+    window.fetch = fetchMock;
+
+    // 1. When Translation tab is active, page swap fetches translation in parallel
+    panelController?.setTab("translation");
+    expect(panelController?.activeTab).toBe("translation");
+
+    await el.swapPage("/v2/reader/sallust/catalina1/2");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/v2/reader/sallust/catalina1/2"),
+      expect.anything()
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/v2/reader/sallust/catalina1/2/translation",
+      expect.anything()
+    );
+
+    const transView = el.querySelector("#panel-view-translation");
+    expect(transView?.textContent).toContain("Trans Page 2");
+
+    // 2. When switching away from Translation tab, swapPage resets translation state
+    panelController?.setTab("dict");
+    expect(panelController?.activeTab).toBe("dict");
+
+    fetchMock.mockClear();
+    await el.swapPage("/v2/reader/sallust/catalina1/1");
+
+    // Only page partial is fetched, not translation
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/v2/reader/sallust/catalina1/1"),
+      expect.anything()
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "/v2/reader/sallust/catalina1/1/translation",
+      expect.anything()
+    );
   });
 
   test("disabled pager arrow prevents navigation and does not fetch", () => {

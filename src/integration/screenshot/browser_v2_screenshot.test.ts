@@ -26,10 +26,19 @@ test.describe("UI V2 Visual Regression Suite", () => {
     waitFor: ".reader-passage",
   });
 
-  // 5. Reader Parallel Translation View
+  // 5. Reader Companion Panel Translation View
   v2VisualScenario("v2-reader-parallel", {
-    path: "/v2/reader/sallust/catalina1?view=parallel",
-    waitFor: ".reader-parallel-content",
+    path: "/v2/reader/sallust/catalina1",
+    waitFor: ".reader-passage",
+    action: async (page) => {
+      const tab = page.locator("#panel-tab-translation");
+      if (await tab.isVisible()) {
+        await tab.click();
+        await page.waitForSelector(".reader-translation-content", {
+          state: "visible",
+        });
+      }
+    },
   });
 
   // 6. Library Browse Catalog

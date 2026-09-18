@@ -357,30 +357,6 @@ span.lat-word.word-active {
 }
 
 /* ==========================================================================
-   4. Parallel Translation View
-   ========================================================================== */
-
-.section-parallel {
-  grid-template-columns: 3.25rem minmax(0, 1fr);
-}
-
-.reader-parallel-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-8);
-  width: 100%;
-}
-
-.passage-english {
-  font-size: 1.05rem;
-  line-height: 1.8;
-  color: var(--text-muted);
-  font-style: italic;
-  padding-left: var(--space-6);
-  border-left: 2px solid var(--border);
-}
-
-/* ==========================================================================
    5. Text Renditions (verse lines, indentation, emphasis)
 
    These classes are emitted by v2_preprocessor.ts from the TEI `rend`, `l` and
@@ -515,27 +491,6 @@ span.lat-word.word-active {
     color: var(--text-muted);
     font-size: 0.75rem;
     font-weight: 500;
-  }
-
-  .section-parallel {
-    grid-template-columns: 1.35rem minmax(0, 1fr);
-  }
-
-  .reader-parallel-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    background: var(--card-bg);
-    padding: var(--space-4) var(--space-5);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-  }
-
-  .passage-english {
-    font-size: 0.9375rem;
-    padding-left: var(--space-4);
-    border-left: 2px solid var(--border-strong);
-    padding-top: var(--space-2);
   }
 
   .reader-continuation-actions {

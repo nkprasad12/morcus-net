@@ -7,7 +7,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 > - **Unified Responsive Layout**: V1 offered several mobile layout preferences. V2 unifies on a desktop resizable splitter (`ReaderLayoutController`) plus a mobile bottom drawer (`DrawerController`), matching the approach already taken in `dict/`.
 > - **In-Work Text Search Was Never Shipped**: V1 declares a `TextSearch` sidebar tab but leaves it commented out (`reader.tsx:L332`). It is a _planned_ feature in both UIs, not a V2 regression — do not file it as one.
 
-> [!IMPORTANT] > **Open question, not a settled decision**: the replacement of V1's translation sidebar tab with V2's two-column parallel view is **not** yet agreed to be an upgrade. It is better for some works and clearly worse for others. See [§2.9](#29-open-question-parallel-view-vs-translation-sidebar) before treating the current design as final.
+> [!NOTE] > **Companion Panel Translation Shipped**: The legacy dual-column parallel layout has been retired. For translated works, translations are presented via an on-demand, independently scrollable **Translation** tab inside the companion panel. See [§2.9](#29-companion-panel-translation-tab) for architecture and future roadmap.
 
 ---
 
@@ -22,7 +22,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 | **Saved Reading Position**        | `LibrarySavedSpot` persists last section per work; library offers resume                         | Bi-directional `LIBRARY_SPOTS` persistence in reader + corner resume badge on library cards | ✅ **Completed in V2** |
 | **Swipe / Tap Page Navigation**   | Touch swipe paging with a progress overlay (`SwipeFeedback`)                                     | Arrows, `[` / `]` shortcuts, and footer continuation cards only                             | ❌ **Missing in V2**   |
 | **Per-Work Macra Preference**     | Stored per work (`macronButton-${workId}`)                                                       | Scoped per work via `macronButton-${workId}`                                                | ✅ **Completed in V2** |
-| **Translation Presentation**      | Independently scrollable `Translation` sidebar tab                                               | Two-column parallel view, linkable via `?view=parallel`; columns share one scroll           | ❓ **Open Question**   |
+| **Translation Presentation**      | Independently scrollable `Translation` sidebar tab                                               | Companion panel `Translation` tab with on-demand lazy loading and native scrolling          | ✅ **Completed in V2** |
 | **Outline / Table of Contents**   | `Outline` sidebar tab (`WorkNavigationSection`)                                                  | Anchored TOC drawer with live filter (`ReaderTocController`), `:target` No-JS fallback      | ✅ **Completed in V2** |
 | **Embedded Dictionary**           | Dictionary sidebar tab                                                                           | Resizable split panel (desktop) / draggable bottom drawer (mobile) with embedded iframe     | ✅ **Completed in V2** |
 | **Section Label Visibility**      | `LabelsButton` toggling `hideLabels`                                                             | `showGutter` preference in reader settings                                                  | ✅ **Completed in V2** |
@@ -173,62 +173,33 @@ The blocker is structural rather than mechanical. V2 already has a general feedb
 > [!NOTE]
 > The value of this feature is that it captures the correction _in context_ with the exact section ID and the before/after text, which a generic feedback dialog cannot do. Typo reports that require the reader to describe where the typo is are reports that mostly do not get filed.
 
-### 2.9. Open Question: Parallel View vs Translation Sidebar
+### 2.9. Companion Panel Translation Tab
 
-**Status: unresolved.** This was previously recorded here as a settled upgrade. It is not. The parallel view is genuinely better for line-aligned verse and genuinely worse for chapter-granularity prose, and the current design offers no way to opt into the other behaviour.
+**Status: Shipped.** The dual-column parallel layout (`?view=parallel`, `.reader-parallel-content`, `.section-parallel`) and sticky bar `Single | Parallel` toggle have been retired.
 
-- **V1 (`reader.tsx`)**: translations lived in a `Translation` sidebar panel — a **separately scrolling** surface next to the text.
-- **V2 ([`v2_preprocessor.ts:L221-238`](../../../common/library/v2/v2_preprocessor.ts), [`reader_text.css:L305-314`](reader_text.css))**: each section becomes one CSS-grid row, `grid-template-columns: 1fr 1fr`, Latin left and English right, inside the normal document flow. On mobile ([`reader_text.css:L384-392`](reader_text.css)) the same row becomes `flex-direction: column` — Latin stacked above English.
+Instead, translations are integrated directly into the reader's **Companion Panel** (`ReaderPanelController`):
 
-**Two structural consequences follow directly from that markup, and neither is tunable today:**
+1. **Strictly Single-Column Latin Baseline**: The primary reading canvas is always a single column of Latin text, preserving consistent typographic focus and reading rhythm across all works.
+2. **Companion Panel 4th Tab**: For works with translations (`work.hasTranslation === true`), the companion panel adds a 4th tab: `[📖 Dictionary] [📝 Notes] [🌐 Translation] [ⓘ About]`.
+3. **On-Demand Lazy Loading**: Initial SSR payloads carry **0 bytes** of translation markup. Selecting the `Translation` tab sends an asynchronous request to `/v2/reader/:author/:name/:page/translation`, caching results in memory per page.
+4. **Native Scrolling & Page Synchronization**: The translation container scrolls natively (`overflow-y: auto`), preserved across tab switches on the same page and reset cleanly to top upon page navigation. During client-side page navigation (`swapPage`), if the Translation tab is currently active, the new page's translation is fetched in parallel with the page partial.
+5. **Mobile Viewport Optimization**: Under the "Active Expands Pill" pattern on 390px screens, inactive tabs show only 14×14 icons while the active tab expands to show icon and label, comfortably fitting all 4 tabs (~184px total) without horizontal overflow.
 
-1. **The columns cannot scroll independently.** They are grid cells in one document, not two scroll containers. The pairing is re-synchronized at every section boundary, which is why alignment never _drifts_ — but it also means the only unit of alignment available is the citation section, whatever size that happens to be.
-2. **Row height is `max(latin, english)`.** Whichever column is shorter is padded with whitespace to the bottom of the row.
+#### Future Architecture Roadmap & Planned Enhancements
 
-**Measured over every work that currently has a translation** (`build/library_processed/`, character counts of rendered text):
-
-| Work                        | Verse | Sections / page | Avg Latin | Avg English | Eng ÷ Lat | Largest single row (Lat / Eng) |
-| :-------------------------- | :---- | --------------: | --------: | ----------: | --------: | -----------------------------: |
-| Ovid, _Amores_              | yes   |            47.3 |        88 |          54 |  **0.61** |                       124 / 91 |
-| Livy, _Ab Urbe Condita_     | no    |            11.5 |       223 |          95 |  **0.42** |                    583 / 1,192 |
-| Cicero, _De Lege Agraria_   | no    |            51.0 |       679 |         926 |  **1.36** |                  1,160 / 1,684 |
-| Cicero, _Laelius_           | no    |         **1.0** |       648 |         832 |  **1.28** |                  1,166 / 1,637 |
-| Cicero, _Pro Rabirio_       | no    |         **1.0** |       673 |         882 |  **1.31** |                  1,475 / 1,910 |
-| Sallust, _Bellum Catilinae_ | no    |         **1.0** |     1,295 |       1,754 |  **1.35** |              **7,053 / 9,977** |
-
-This confirms both of your observations and adds a third:
-
-- **Prose English is systematically longer than the Latin** — 1.28× to 1.36×, remarkably consistent across four independent works. So in prose the right column essentially _always_ overruns the left, and every row ends with dead whitespace under the Latin. (Verse inverts this: Amores runs 0.61.)
-- **Section size is the real variable, and it is set by the edition, not by us.** Amores pairs a single verse line (88 chars) with a single translated line (54) — the parallel view is excellent here. Sallust pairs an entire chapter with an entire chapter: **one grid row holding 7,053 characters of Latin beside 9,977 characters of English**. On a 390px phone that one section stacks to something on the order of forty screenfuls of Latin followed by forty of English. Seeing a sentence next to its translation is not merely inconvenient there; it is impossible.
-- **Three of the six translated works have exactly one section per page**, so for half the corpus "parallel view" degenerates to "the whole chapter, then the whole chapter again".
-
-**Minor implementation notes** surfaced while measuring, worth fixing regardless of how the larger question resolves:
-
-- The translator credit (`<span class="reader-trans-author">`) was originally emitted **once per section** — 20,296 times in Livy. It is now omitted entirely from the passage canvas to keep the parallel text clean, with the translator credit housed in the Info modal / bibliographical metadata.
-- The translation join is an exact citation-ID match (`translationRowsByDotId.get(dotId)`) with **no fallback**: a translation whose citation granularity is coarser than the Latin's yields an empty English cell. No shipped work hits this today (0 blanks across all six), but nothing guards against it either, and the failure mode is silent.
-
-**Options worth weighing (none chosen):**
-
-| Option                                             | Helps with                                           | Costs                                                                         |
-| :------------------------------------------------- | :--------------------------------------------------- | :---------------------------------------------------------------------------- |
-| Keep parallel as-is                                | Verse, and any fine-grained citation scheme          | Unusable for chapter-granularity prose, especially on mobile                  |
-| Restore a sidebar/drawer panel as a **third** view | Independent scrolling; long sections                 | A third view mode to explain; competes with the dictionary for the panel      |
-| Per-section disclosure (translation under Latin)   | Mobile; keeps pairing local                          | Loses at-a-glance comparison; extra interaction per section                   |
-| Sub-section alignment (sentence-level pairing)     | The root cause — makes rows small regardless of work | Needs real alignment data; a data problem, not a CSS one                      |
-| Choose the default per work from measured ratio    | Cheap; uses data we already compute                  | Heuristic; a reader on a 27" monitor and one on a phone want different things |
-
-> [!NOTE]
-> The dictionary panel already solves the "independently scrollable companion surface" problem on both form factors (`ReaderLayoutController` splitter + `DrawerController`). If a sidebar translation returns, it should almost certainly reuse that machinery rather than introduce a third layout pattern — which also means the two features would be competing for the same panel, and that competition is itself part of the open question.
+- `// TODO(reader-canvas): 3-panel split-pane view (Latin | English || Dictionary).` Dedicated multi-column desktop reading workstation for deep parallel study.
+- `// TODO(reader-nojs): Zero-JS translation baseline support.` Inline collapsible `<details>` or server-rendered fallback for clients without JavaScript.
+- `// TODO(reader-shortcuts): Unified companion panel keyboard shortcuts.` Global shortcut affordance to cycle through all companion panel views.
 
 ### 2.10. Client-Side Page Navigation
 
 - **V1 (`reader.tsx:L179`, `L125-135`)**: the work was fetched **once** on mount into `useState`, and every page turn after that — arrows, TOC entries, `navigateToSection` — was an in-SPA state change routed through `router_v2`'s `nav.to`. No document reload, no refetch, and the dictionary sidebar's contents survived the turn.
 - **V2**: ✅ **Shipped**. Restores fast in-place page navigation with progressive enhancement:
-  - Clicks on pager arrows (`#pager-prev`, `#pager-next`), continuation cards, and TOC links are intercepted by `reader_view.client.ts`. External links, modified clicks (`ctrl`/`meta`/`shift`/`alt`), disabled arrows, same-page hashes, and view mode toggles pass through unmodified.
+  - Clicks on pager arrows (`#pager-prev`, `#pager-next`), continuation cards, and TOC links are intercepted by `reader_view.client.ts`. External links, modified clicks (`ctrl`/`meta`/`shift`/`alt`), disabled arrows, and same-page hashes pass through unmodified.
   - Browser back/forward navigation (`popstate`) is intercepted and synchronized through `QueryParamSync` (`onNavigate` / `updatePath`).
   - Partial requests fetch only the `.reader-text-card` fragment (`X-Requested-With: fetch`), keeping payload sizes minimal.
   - Swaps DOM nodes via `fetchAndSwapPartial`, with a graceful 200ms ease-in opacity ramp affordance on `.reader-text-panel`.
-  - Sticky bar controls (`#pager-prev`, `#pager-next`, jump input, and view toggles) are patched in place without DOM re-creation, preserving focus and input states.
+  - Sticky bar controls (`#pager-prev`, `#pager-next`, and jump input) are patched in place without DOM re-creation, preserving focus and input states.
   - Table of Contents updates active item markers and auto-expands parent section `<details>` trees.
   - Embedded Notes are dynamically adopted (`adoptNotes`), recalculating count badges and gracefully defaulting to the Dictionary tab if a new page has no footnotes.
   - Full passage re-hydration occurs seamlessly: tokenization (`enhancePassage`), typography preferences, saved spots recording, and scroll restoration (top of passage or preserved scroll position on popstate).
@@ -246,18 +217,15 @@ This confirms both of your observations and adds a third:
 - ~~**Saved reading position**~~ — shipped; bi-directional V1 `LIBRARY_SPOTS` compatibility, reader auto-save on connect/turn/section anchor click, `#sec-*` jump anchoring, and progressive corner badge with direct jump in `/v2/library` (§2.3).
 - ~~**Per-work macra scoping**~~ — shipped; scoped per work via `macronButton-${workId}` (§2.6).
 - ~~**Omit macra toggle on non-macronized editions**~~ — shipped; server omits the toggle row when `work.hasMacra === false`, avoiding exposing a dead toggle on the ~80% of works without macra (§2.6).
-
 - ~~**Omit translator credit from passage sections**~~ — shipped; previously emitted `<span class="reader-trans-author">` on every single section (20,296 times in Livy). Omitted entirely from the passage canvas to eliminate repetitive DOM nodes and visual clutter; translator attribution is housed cleanly in the Info modal / bibliographical metadata (§2.9).
 - ~~**Notes panel as the JS enhancement**~~ — shipped; footnote marker clicks reveal and scroll to notes in the synchronized Notes tab of the companion panel / drawer, with dynamic note adoption across page turns (§2.1).
+- ~~**Companion panel translation tab**~~ — shipped; retired dual-column parallel layout and sticky bar view toggle, added 4th tab to companion panel (`reader_panel.client.ts`), on-demand lazy loading endpoint (`/reader/.../translation`), and parallel fetch coordination on page turns (§2.9).
 - ~~**Client-side page navigation**~~ — shipped; in-place partial swaps with progressive enhancement, sticky bar patching, TOC active synchronization, dynamic note adoption, and scroll restoration (§2.10).
-
-### High Priority (Correctness / Dead Controls)
-
-1. **Make attribution reachable without JavaScript** — move the provenance/license block into page flow (e.g. a colophon in `reader-passage-footer`) so it survives No-JS and appears in print.
+- ~~**Make attribution reachable without JavaScript**~~ — shipped; retired biblio modal in favor of companion About tab and No-JS `<details>` colophon in page flow (§2.5).
 
 ### Medium Priority (Feature Restoration)
 
-2. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
+1. **Restore in-flow Edit and Report** — introduce a small menu on `a.section-anchor` (Copy link / Edit and Report) and port `onEditRequest` plus the `["userEdit"]` report tag. Blocked on the menu decision, not on the reporting plumbing, which already exists.
 
 ### Low Priority (Larger Scope)
 
@@ -267,10 +235,6 @@ This confirms both of your observations and adds a third:
 ### Cleanups (independent of any decision above)
 
 5. **Guard the translation join** — `translationRowsByDotId.get(dotId)` fails silently to an empty cell when citation granularities differ; fall back to the nearest ancestor ID, or at minimum surface the mismatch at build time (§2.9).
-
-### Blocked on a Product Decision
-
-10. **Translation presentation (§2.9)** — do not build against the current parallel view as though it were final. The measurement in §2.9 is intended as input to that decision, not a recommendation.
 
 ### Deferred / Edge Cases (Post-Parity)
 

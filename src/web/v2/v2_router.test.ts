@@ -484,6 +484,34 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("not-found-state");
       expect(res.text).not.toContain("style=");
     });
+
+    test("GET /v2/reader/:author/:name/:page/translation returns 200 and translation snippet for translated works", async () => {
+      const res = await request(app).get(
+        "/v2/reader/sallust/catalina1/1/translation"
+      );
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("text/html");
+      expect(res.text).toContain("reader-translation-content");
+      expect(res.text).toContain("reader-translation-header");
+      expect(res.text).toContain("John Selby Watson");
+      expect(res.text).toContain("reader-translation-body");
+    });
+
+    test("GET /v2/reader/:author/:name/:page/translation returns 404 for untranslated works", async () => {
+      const res = await request(app).get(
+        "/v2/reader/caesar/de_bello_gallico/1.1/translation"
+      );
+      expect(res.status).toBe(404);
+      expect(res.text).toBe("Translation not found");
+    });
+
+    test("GET /v2/reader/:author/:name/:page/translation returns 404 for unknown works", async () => {
+      const res = await request(app).get(
+        "/v2/reader/unknown_author/nonexistent_work/1/translation"
+      );
+      expect(res.status).toBe(404);
+      expect(res.text).toBe("Translation not found");
+    });
   });
 
   describe("GET /v2/dicts with embedded mode", () => {
