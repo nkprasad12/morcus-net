@@ -275,6 +275,42 @@ export class LifetimeScope<Lane extends string = never> {
   }
 }
 
+const ACTIVE_CONTROLLERS_BY_ROOT = new WeakMap<ParentNode, Set<Controller>>();
+
+/**
+ * Propagates a content-swap notification from an HTML sink (`setHtml`,
+ * `replaceWithHtml`, `swapElementContent`, `fetchAndSwapPartial`) up the
+ * ancestor chain of `swappedRoot`, invoking `notifyContentSwap(swappedRoot)`
+ * on any enclosing `BaseElement` and `onContentSwap(swappedRoot)` on any
+ * connected standalone `BaseController` whose root contains `swappedRoot`.
+ */
+export function notifyContentSwap(swappedRoot: Element): void {
+  const notified = new Set<Controller>();
+  let current: Node | null = swappedRoot;
+
+  while (current) {
+    if (current instanceof BaseElement) {
+      current.notifyContentSwap(swappedRoot, notified);
+    }
+    if (
+      current instanceof Element ||
+      current instanceof Document ||
+      current instanceof DocumentFragment
+    ) {
+      const rootControllers = ACTIVE_CONTROLLERS_BY_ROOT.get(current);
+      if (rootControllers) {
+        for (const controller of rootControllers) {
+          if (!notified.has(controller)) {
+            notified.add(controller);
+            controller.onContentSwap?.(swappedRoot);
+          }
+        }
+      }
+    }
+    current = current.parentNode;
+  }
+}
+
 /**
  * Base class for reusable DOM sub-controllers with automatic per-connect
  * LifetimeScope management and instance preservation across host reconnects.
@@ -323,6 +359,12 @@ export abstract class BaseController<Lane extends string = never>
       this.dispose();
     }
     this.scope = new LifetimeScope<Lane>(this.root);
+    let set = ACTIVE_CONTROLLERS_BY_ROOT.get(this.root);
+    if (!set) {
+      set = new Set<Controller>();
+      ACTIVE_CONTROLLERS_BY_ROOT.set(this.root, set);
+    }
+    set.add(this);
     for (const controller of this.controllers) {
       controller.connect?.();
     }
@@ -331,6 +373,7 @@ export abstract class BaseController<Lane extends string = never>
 
   public dispose(): void {
     const wasConnected = this.scope !== null && !this.scope.disposed;
+    ACTIVE_CONTROLLERS_BY_ROOT.get(this.root)?.delete(this);
     for (const controller of this.controllers) {
       controller.dispose();
     }
@@ -532,9 +575,14 @@ export abstract class BaseElement<
    * Notifies this element and all registered controllers that a DOM subtree
    * within this element was swapped via an HTML sink.
    */
-  public notifyContentSwap(swappedRoot: Element): void {
+  public notifyContentSwap(
+    swappedRoot: Element,
+    notified?: Set<Controller>
+  ): void {
     this.onContentSwap(swappedRoot);
     for (const controller of this.controllers) {
+      if (notified?.has(controller)) continue;
+      notified?.add(controller);
       controller.onContentSwap?.(swappedRoot);
     }
   }

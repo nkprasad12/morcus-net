@@ -157,7 +157,9 @@ const FIXTURES: Record<string, string> = {
               <span class="reader-sheet-label">Tap any word</span>
             </div>
           </div>
-          <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
+          <div class="dict-iframe-container">
+            <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
+          </div>
         </aside>
         <div id="reader-settings-popover" hidden>
           <input type="checkbox" id="toggle-macra" checked />

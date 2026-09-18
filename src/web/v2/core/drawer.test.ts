@@ -37,13 +37,21 @@ describe("DrawerController", () => {
     layoutElement = document.getElementById("layout")!;
   });
 
+  function connectController(
+    options: ConstructorParameters<typeof DrawerController>[0]
+  ): DrawerController {
+    const controller = new DrawerController(options);
+    controller.connect();
+    return controller;
+  }
+
   afterEach(() => {
     document.body.innerHTML = "";
     jest.clearAllMocks();
   });
 
   test("initializes with default options and tracks preferred dvh", () => {
-    const controller = new DrawerController({
+    const controller = connectController({
       drawer,
       handle,
       layoutElement,
@@ -56,7 +64,7 @@ describe("DrawerController", () => {
   });
 
   test("uses DRAWER_* constants when dvh and height options are omitted", () => {
-    const controller = new DrawerController({ drawer, handle, layoutElement });
+    const controller = connectController({ drawer, handle, layoutElement });
     expect(controller.getPreferredDvh()).toBe(DRAWER_DEFAULT_DVH);
     controller.minimize();
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
@@ -79,7 +87,7 @@ describe("DrawerController", () => {
 
   test("minimize() updates styles, classes, ARIA, and invokes onMinimize callback", () => {
     const onMinimize = jest.fn();
-    const controller = new DrawerController({
+    const controller = connectController({
       drawer,
       handle,
       layoutElement,
@@ -103,7 +111,7 @@ describe("DrawerController", () => {
 
   test("restore() restores drawer height, updates classes, and invokes onRestore callback", () => {
     const onRestore = jest.fn();
-    const controller = new DrawerController({
+    const controller = connectController({
       drawer,
       handle,
       layoutElement,
@@ -130,7 +138,7 @@ describe("DrawerController", () => {
   });
 
   test("restore() clamps target dvh within [floorDvh, expandedDvh]", () => {
-    const controller = new DrawerController({
+    const controller = connectController({
       drawer,
       handle,
       floorDvh: 20,
@@ -159,7 +167,7 @@ describe("DrawerController", () => {
     const detailsHandle = document.getElementById("handle")!;
     const detailsEl = detailsDrawer.querySelector("details")!;
 
-    const controller = new DrawerController({
+    const controller = connectController({
       drawer: detailsDrawer,
       handle: detailsHandle,
     });
@@ -180,7 +188,7 @@ describe("DrawerController", () => {
 
   test("handles keyboard navigation (ArrowUp, ArrowDown, Escape)", () => {
     const onEscape = jest.fn();
-    const controller = new DrawerController({
+    const controller = connectController({
       drawer,
       handle,
       onEscape,
@@ -220,7 +228,7 @@ describe("DrawerController", () => {
     const detailsDrawer = document.getElementById("drawer")!;
     const summaryHandle = document.getElementById("handle")!;
 
-    const controller = new DrawerController({
+    const controller = connectController({
       drawer: detailsDrawer,
       handle: summaryHandle,
     });
@@ -281,7 +289,7 @@ describe("DrawerController", () => {
    * the two versions apart.
    */
   test("reads the viewport once per gesture, never during pointermove", () => {
-    const controller = new DrawerController({ drawer, handle });
+    const controller = connectController({ drawer, handle });
 
     const original = Object.getOwnPropertyDescriptor(window, "innerHeight");
     let innerHeightReads = 0;
@@ -345,7 +353,7 @@ describe("DrawerController", () => {
   });
 
   test("filter ignores pointerdown on specified elements", () => {
-    const controller = new DrawerController({
+    const controller = connectController({
       drawer,
       handle,
       filter: (e) => {
@@ -372,19 +380,31 @@ describe("DrawerController", () => {
     controller.dispose();
   });
 
-  test("destroy() removes all listeners cleanly", () => {
+  test("dispose() removes all listeners cleanly and connect() preserves preferredDvh", () => {
     const onEscape = jest.fn();
-    const controller = new DrawerController({
+    const controller = connectController({
       drawer,
       handle,
+      layoutElement,
       onEscape,
     });
 
+    controller.restore(72);
+    expect(controller.getPreferredDvh()).toBe(72);
+
     controller.dispose();
 
-    // After destroy, keydown should no longer invoke onEscape
+    // After dispose, keydown should no longer invoke onEscape
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(onEscape).not.toHaveBeenCalled();
+
+    // Reconnecting preserves preferredDvh and re-binds listeners
+    controller.connect();
+    expect(controller.getPreferredDvh()).toBe(72);
+    handle.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(onEscape).toHaveBeenCalledTimes(1);
+
+    controller.dispose();
   });
 
   describe("drag state classes", () => {
@@ -417,7 +437,7 @@ describe("DrawerController", () => {
      * both rules dead and the drawer eases toward the pointer for the whole drag.
      */
     test("marks the drawer itself, not only the handle, while dragging", () => {
-      const controller = new DrawerController({ drawer, handle });
+      const controller = connectController({ drawer, handle });
 
       expect(drawer.classList.contains("is-dragging")).toBe(false);
 
@@ -430,7 +450,7 @@ describe("DrawerController", () => {
     });
 
     test("clears the drawer marker on pointerup", () => {
-      const controller = new DrawerController({ drawer, handle });
+      const controller = connectController({ drawer, handle });
 
       pointerDown(handle);
       pointerEvent(handle, "pointerup");
@@ -442,7 +462,7 @@ describe("DrawerController", () => {
     });
 
     test("clears the drawer marker on pointercancel", () => {
-      const controller = new DrawerController({ drawer, handle });
+      const controller = connectController({ drawer, handle });
 
       pointerDown(handle);
       pointerEvent(handle, "pointercancel");
@@ -455,7 +475,7 @@ describe("DrawerController", () => {
 
     // Without this, a drawer torn down mid-drag keeps `transition: none` forever.
     test("clears the drawer marker when destroyed mid-drag", () => {
-      const controller = new DrawerController({ drawer, handle });
+      const controller = connectController({ drawer, handle });
 
       pointerDown(handle);
       expect(drawer.classList.contains("is-dragging")).toBe(true);
@@ -468,7 +488,7 @@ describe("DrawerController", () => {
     });
 
     test("does not mark the drawer when the drag is filtered out", () => {
-      const controller = new DrawerController({
+      const controller = connectController({
         drawer,
         handle,
         filter: (e) =>
@@ -484,7 +504,7 @@ describe("DrawerController", () => {
     });
 
     test("toggles the body resizing class across the drag", () => {
-      const controller = new DrawerController({ drawer, handle });
+      const controller = connectController({ drawer, handle });
 
       pointerDown(handle);
       expect(document.body.classList.contains("resizing-drawer")).toBe(true);

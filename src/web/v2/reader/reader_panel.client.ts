@@ -10,7 +10,9 @@
  * - Preserves zero-JS markup on the server and ensures clean teardown on destroy
  */
 
-import { DisposableBag } from "@/web/v2/core/disposable.client";
+import { BaseController } from "@/web/v2/core/base_element.client";
+import { setHtml } from "@/web/v2/core/dom.client";
+import { html } from "@/web/v2/core/html.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 import { swapElementContent } from "@/web/v2/core/partial.client";
 
@@ -28,7 +30,7 @@ export interface ReaderPanelElements {
 export interface ReaderPanelOptions {
   root?: ParentNode;
   elements?: ReaderPanelElements;
-  hasTranslation?: boolean;
+  hasTranslation?: boolean | (() => boolean);
   onLoadTranslation?: () => Promise<string | null>;
   onTabChange?: (tab: PanelTab) => void;
 }
@@ -60,18 +62,21 @@ function createTabIcon(pathD: string): HTMLSpanElement {
   return span;
 }
 
-export class ReaderPanelController {
-  private readonly disposables = new DisposableBag();
+export class ReaderPanelController extends BaseController {
   private _activeTab: PanelTab = "dict";
   public hasNotes: boolean = false;
   public hasTranslation: boolean = false;
   public hasAbout: boolean = false;
   public noteCount: number = 0;
   private isTranslationLoaded: boolean = false;
+  private loadedTranslationHtml: string | null = null;
+  private readonly hasTranslationOption?: boolean | (() => boolean);
+  private readonly overrides?: ReaderPanelElements;
   private readonly onLoadTranslation?: () => Promise<string | null>;
+  private readonly onTabChange?: (tab: PanelTab) => void;
 
-  public readonly dictPanel: HTMLElement | null = null;
-  public readonly iframeContainer: HTMLElement | null = null;
+  public dictPanel: HTMLElement | null = null;
+  public iframeContainer: HTMLElement | null = null;
   public notesNode: HTMLElement | null = null;
   public aboutNode: HTMLElement | null = null;
   public tabsContainer: HTMLElement | null = null;
@@ -85,42 +90,53 @@ export class ReaderPanelController {
   public translationView: HTMLElement | null = null;
   public aboutView: HTMLElement | null = null;
 
-  private readonly notesOriginalParent: Node | null = null;
-  private readonly notesOriginalNextSibling: Node | null = null;
-  private readonly aboutOriginalParent: Node | null = null;
-  private readonly aboutOriginalNextSibling: Node | null = null;
-  private readonly iframeOriginalParent: Node | null = null;
-  private readonly iframeOriginalNextSibling: Node | null = null;
-  private readonly iframeOriginalId: string | null = null;
-  private readonly onTabChange?: (tab: PanelTab) => void;
+  private iframeOriginalParent: Node | null = null;
+  private iframeOriginalNextSibling: Node | null = null;
+  private iframeOriginalId: string | null = null;
 
   constructor(options: ReaderPanelOptions = {}) {
-    const root = options.root ?? document;
-    const overrides = options.elements;
+    super(options.root ?? document);
+    this.overrides = options.elements;
     this.onTabChange = options.onTabChange;
-    this.hasTranslation = Boolean(options.hasTranslation);
+    this.hasTranslationOption = options.hasTranslation;
+    this.hasTranslation = this.resolveHasTranslation();
     this.onLoadTranslation = options.onLoadTranslation;
+  }
+
+  private resolveHasTranslation(): boolean {
+    if (typeof this.hasTranslationOption === "function") {
+      return this.hasTranslationOption();
+    }
+    if (this.hasTranslationOption !== undefined) {
+      return Boolean(this.hasTranslationOption);
+    }
+    return this.host?.getAttribute("data-has-translation") === "true";
+  }
+
+  protected override onConnect(): void {
+    const overrides = this.overrides;
+    this.hasTranslation = this.resolveHasTranslation();
 
     const dictPanel =
       overrides?.dictPanel !== undefined
         ? overrides.dictPanel
-        : root.querySelector<HTMLElement>(".reader-dict-panel");
+        : this.$<HTMLElement>(".reader-dict-panel");
 
     const iframeContainer =
       overrides?.iframeContainer !== undefined
         ? overrides.iframeContainer
         : dictPanel?.querySelector<HTMLElement>(".dict-iframe-container") ??
-          root.querySelector<HTMLElement>(".dict-iframe-container");
+          this.$<HTMLElement>(".dict-iframe-container");
 
     const notesNode =
       overrides?.notesNode !== undefined
         ? overrides.notesNode
-        : root.querySelector<HTMLElement>(".reader-notes");
+        : this.$<HTMLElement>(".reader-notes");
 
     const aboutNode =
       overrides?.aboutNode !== undefined
         ? overrides.aboutNode
-        : root.querySelector<HTMLElement>("#reader-work-about");
+        : this.$<HTMLElement>("#reader-work-about");
 
     this.dictPanel = dictPanel;
     this.iframeContainer = iframeContainer;
@@ -141,15 +157,6 @@ export class ReaderPanelController {
     this.hasNotes = this.noteCount > 0;
     this.hasAbout = !!aboutNode;
 
-    // Capture original DOM positions for clean teardown / symmetry
-    if (notesNode) {
-      this.notesOriginalParent = notesNode.parentNode;
-      this.notesOriginalNextSibling = notesNode.nextSibling;
-    }
-    if (aboutNode) {
-      this.aboutOriginalParent = aboutNode.parentNode;
-      this.aboutOriginalNextSibling = aboutNode.nextSibling;
-    }
     this.iframeOriginalParent = iframeContainer.parentNode;
     this.iframeOriginalNextSibling = iframeContainer.nextSibling;
     this.iframeOriginalId = iframeContainer.getAttribute("id");
@@ -285,6 +292,10 @@ export class ReaderPanelController {
     views.appendChild(translationView);
     this.translationView = translationView;
 
+    if (this.isTranslationLoaded && this.loadedTranslationHtml !== null) {
+      swapElementContent(translationView, this.loadedTranslationHtml);
+    }
+
     const aboutView = document.createElement("div");
     aboutView.id = "panel-view-about";
     aboutView.className = "reader-panel-about reader-panel-view";
@@ -331,8 +342,88 @@ export class ReaderPanelController {
       dictPanel.appendChild(views);
     }
 
+    // Restore preserved _activeTab if still valid, else fall back to dict
+    if (
+      (this._activeTab === "notes" && !this.hasNotes) ||
+      (this._activeTab === "translation" && !this.hasTranslation) ||
+      (this._activeTab === "about" && !this.hasAbout)
+    ) {
+      this._activeTab = "dict";
+    }
+    this.syncTabDomState(this._activeTab);
+
     // 3. Register Event Listeners
     this.initTabEvents();
+  }
+
+  protected override onDisconnect(): void {
+    const liveTextCard =
+      this.overrides?.textCard ??
+      this.$<HTMLElement>(".reader-text-card") ??
+      this.$<HTMLElement>(".reader-text-panel");
+    const liveFooter =
+      liveTextCard?.querySelector<HTMLElement>(
+        ".card-footer, .reader-passage-footer"
+      ) ?? null;
+
+    if (liveTextCard && this.notesNode) {
+      if (liveFooter && liveFooter.parentNode === liveTextCard) {
+        liveTextCard.insertBefore(this.notesNode, liveFooter);
+      } else {
+        liveTextCard.appendChild(this.notesNode);
+      }
+    }
+
+    if (liveTextCard && this.aboutNode) {
+      if (this.aboutNode instanceof HTMLDetailsElement) {
+        this.aboutNode.open = false;
+      } else {
+        this.aboutNode.removeAttribute("open");
+      }
+      if (liveFooter && liveFooter.parentNode === liveTextCard) {
+        liveTextCard.insertBefore(this.aboutNode, liveFooter);
+      } else {
+        liveTextCard.appendChild(this.aboutNode);
+      }
+    }
+
+    if (this.iframeOriginalParent && this.iframeContainer) {
+      this.iframeContainer.classList.remove("reader-panel-view", "active");
+      if (this.iframeOriginalId) {
+        this.iframeContainer.id = this.iframeOriginalId;
+      } else {
+        this.iframeContainer.removeAttribute("id");
+      }
+      this.iframeContainer.removeAttribute("role");
+      this.iframeContainer.removeAttribute("aria-labelledby");
+      this.iframeOriginalParent.insertBefore(
+        this.iframeContainer,
+        this.iframeOriginalNextSibling
+      );
+    }
+
+    this.dictPanel?.classList.remove("has-companion-tabs");
+    this.tabsContainer?.remove();
+    this.viewsContainer?.remove();
+  }
+
+  public override onContentSwap(swappedRoot: Element): void {
+    super.onContentSwap(swappedRoot);
+    if (!this.isConnected) return;
+    const textPanel = swappedRoot.matches(
+      ".reader-text-panel, .reader-text-card"
+    )
+      ? swappedRoot
+      : swappedRoot.querySelector<HTMLElement>(
+          ".reader-text-panel, .reader-text-card"
+        );
+    if (!textPanel) return;
+
+    const newNotes = textPanel.querySelector<HTMLElement>(".reader-notes");
+    this.adoptNotes(newNotes);
+
+    const newAbout = textPanel.querySelector<HTMLElement>("#reader-work-about");
+    this.adoptAbout(newAbout);
   }
 
   public getAvailableTabs(): { id: PanelTab; btn: HTMLButtonElement }[] {
@@ -356,27 +447,27 @@ export class ReaderPanelController {
     )
       return;
 
-    const onDictClick = (e: MouseEvent) => {
+    this.listen(this.dictTab, "click", (e: MouseEvent) => {
       e.preventDefault();
       this.setTab("dict");
-    };
+    });
 
-    const onNotesClick = (e: MouseEvent) => {
+    this.listen(this.notesTab, "click", (e: MouseEvent) => {
       e.preventDefault();
       this.setTab("notes");
-    };
+    });
 
-    const onTranslationClick = (e: MouseEvent) => {
+    this.listen(this.translationTab, "click", (e: MouseEvent) => {
       e.preventDefault();
       this.setTab("translation");
-    };
+    });
 
-    const onAboutClick = (e: MouseEvent) => {
+    this.listen(this.aboutTab, "click", (e: MouseEvent) => {
       e.preventDefault();
       this.setTab("about");
-    };
+    });
 
-    const onKeydown = (e: KeyboardEvent) => {
+    this.listen(this.tabsContainer, "keydown", (e: KeyboardEvent) => {
       if (!this.dictTab) return;
       const activeTabs = this.getAvailableTabs();
       const currentIndex = activeTabs.findIndex(
@@ -408,33 +499,25 @@ export class ReaderPanelController {
         this.setTab(lastTab.id);
         lastTab.btn.focus();
       }
-    };
-
-    this.dictTab.addEventListener("click", onDictClick);
-    this.notesTab.addEventListener("click", onNotesClick);
-    this.translationTab?.addEventListener("click", onTranslationClick);
-    this.aboutTab.addEventListener("click", onAboutClick);
-    this.tabsContainer.addEventListener("keydown", onKeydown);
-
-    this.disposables.add(() => {
-      this.dictTab?.removeEventListener("click", onDictClick);
-      this.notesTab?.removeEventListener("click", onNotesClick);
-      this.translationTab?.removeEventListener("click", onTranslationClick);
-      this.aboutTab?.removeEventListener("click", onAboutClick);
-      this.tabsContainer?.removeEventListener("keydown", onKeydown);
     });
+
+    this.delegate(
+      this.translationView,
+      "click",
+      "#btn-retry-translation",
+      () => {
+        this.isTranslationLoaded = false;
+        this.loadedTranslationHtml = null;
+        this.setTab("translation");
+      }
+    );
   }
 
   public get activeTab(): PanelTab {
     return this._activeTab;
   }
 
-  public setTab(tab: PanelTab): void {
-    if (tab === "notes" && !this.hasNotes) return;
-    if (tab === "translation" && !this.hasTranslation) return;
-    if (tab === "about" && !this.hasAbout) return;
-    this._activeTab = tab;
-
+  private syncTabDomState(tab: PanelTab): void {
     if (this.dictTab && this.dictView) {
       const isDict = tab === "dict";
       this.dictTab.setAttribute("aria-selected", isDict ? "true" : "false");
@@ -457,21 +540,6 @@ export class ReaderPanelController {
       );
       this.translationTab.tabIndex = isTrans ? 0 : -1;
       this.translationView.classList.toggle("active", isTrans);
-
-      if (isTrans && !this.isTranslationLoaded && this.onLoadTranslation) {
-        this.translationView.innerHTML = `<div class="reader-translation-loading" style="min-height: 200px;"><span class="loading-spinner"></span></div>`;
-        this.onLoadTranslation()
-          .then((html) => {
-            if (html !== null && this.translationView) {
-              swapElementContent(this.translationView, html);
-              this.isTranslationLoaded = true;
-            }
-          })
-          .catch((err) => {
-            console.error("Failed to load translation:", err);
-            this.showTranslationError();
-          });
-      }
     }
 
     if (this.aboutTab && this.aboutView) {
@@ -479,6 +547,41 @@ export class ReaderPanelController {
       this.aboutTab.setAttribute("aria-selected", isAbout ? "true" : "false");
       this.aboutTab.tabIndex = isAbout ? 0 : -1;
       this.aboutView.classList.toggle("active", isAbout);
+    }
+  }
+
+  public setTab(tab: PanelTab): void {
+    if (tab === "notes" && !this.hasNotes) return;
+    if (tab === "translation" && !this.hasTranslation) return;
+    if (tab === "about" && !this.hasAbout) return;
+    this._activeTab = tab;
+
+    this.syncTabDomState(tab);
+
+    if (
+      tab === "translation" &&
+      this.translationView &&
+      !this.isTranslationLoaded &&
+      this.onLoadTranslation
+    ) {
+      setHtml(
+        this.translationView,
+        html`<div class="reader-translation-loading" style="min-height: 200px;">
+          <span class="loading-spinner"></span>
+        </div>`
+      );
+      this.onLoadTranslation()
+        .then((transHtml) => {
+          if (transHtml !== null && this.translationView) {
+            swapElementContent(this.translationView, transHtml);
+            this.isTranslationLoaded = true;
+            this.loadedTranslationHtml = transHtml;
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load translation:", err);
+          this.showTranslationError();
+        });
     }
 
     this.onTabChange?.(tab);
@@ -491,22 +594,26 @@ export class ReaderPanelController {
   public showTranslationError(): void {
     if (!this.translationView) return;
     this.isTranslationLoaded = false;
-    this.translationView.innerHTML = `<div class="reader-translation-error" style="min-height: 200px;"><p>Failed to load translation.</p><button type="button" class="btn btn-secondary btn-sm" id="btn-retry-translation">Retry</button></div>`;
-    const retryBtn = this.translationView.querySelector<HTMLButtonElement>(
-      "#btn-retry-translation"
+    this.loadedTranslationHtml = null;
+    setHtml(
+      this.translationView,
+      html`<div class="reader-translation-error" style="min-height: 200px;">
+        <p>Failed to load translation.</p>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          id="btn-retry-translation">
+          Retry
+        </button>
+      </div>`
     );
-    if (retryBtn) {
-      retryBtn.addEventListener("click", () => {
-        this.isTranslationLoaded = false;
-        this.setTab("translation");
-      });
-    }
   }
 
-  public setTranslationHtml(html: string): void {
+  public setTranslationHtml(transHtml: string): void {
     if (!this.translationView) return;
-    swapElementContent(this.translationView, html);
+    swapElementContent(this.translationView, transHtml);
     this.isTranslationLoaded = true;
+    this.loadedTranslationHtml = transHtml;
     this.translationView.scrollTop = 0;
   }
 
@@ -514,6 +621,7 @@ export class ReaderPanelController {
     if (!this.translationView) return;
     this.translationView.replaceChildren();
     this.isTranslationLoaded = false;
+    this.loadedTranslationHtml = null;
     this.translationView.scrollTop = 0;
   }
 
@@ -570,7 +678,7 @@ export class ReaderPanelController {
 
     // 1. Remove previous notes from notesView
     const oldNotes = this.notesView.querySelector(".reader-notes");
-    if (oldNotes) {
+    if (oldNotes && oldNotes !== newNotes) {
       oldNotes.remove();
     }
 
@@ -606,7 +714,7 @@ export class ReaderPanelController {
 
     // 1. Remove previous about from aboutView
     const oldAbout = this.aboutView.querySelector(".reader-work-about");
-    if (oldAbout) {
+    if (oldAbout && oldAbout !== newAbout) {
       oldAbout.remove();
     }
 
@@ -641,55 +749,5 @@ export class ReaderPanelController {
   public reset(): void {
     this.setTab("dict");
     this.clearActiveNotes();
-  }
-
-  public dispose(): void {
-    this.disposables.dispose();
-
-    if (
-      this.notesOriginalParent &&
-      this.notesOriginalParent.isConnected &&
-      this.notesNode
-    ) {
-      this.notesOriginalParent.insertBefore(
-        this.notesNode,
-        this.notesOriginalNextSibling
-      );
-    }
-
-    if (
-      this.aboutOriginalParent &&
-      this.aboutOriginalParent.isConnected &&
-      this.aboutNode
-    ) {
-      if (this.aboutNode instanceof HTMLDetailsElement) {
-        this.aboutNode.open = false;
-      } else {
-        this.aboutNode.removeAttribute("open");
-      }
-      this.aboutOriginalParent.insertBefore(
-        this.aboutNode,
-        this.aboutOriginalNextSibling
-      );
-    }
-
-    if (this.iframeOriginalParent && this.iframeContainer) {
-      this.iframeContainer.classList.remove("reader-panel-view", "active");
-      if (this.iframeOriginalId) {
-        this.iframeContainer.id = this.iframeOriginalId;
-      } else {
-        this.iframeContainer.removeAttribute("id");
-      }
-      this.iframeContainer.removeAttribute("role");
-      this.iframeContainer.removeAttribute("aria-labelledby");
-      this.iframeOriginalParent.insertBefore(
-        this.iframeContainer,
-        this.iframeOriginalNextSibling
-      );
-    }
-
-    this.dictPanel?.classList.remove("has-companion-tabs");
-    this.tabsContainer?.remove();
-    this.viewsContainer?.remove();
   }
 }

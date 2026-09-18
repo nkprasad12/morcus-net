@@ -5,7 +5,7 @@
  * and <details>/<summary> disclosure coordination for bottom sheet drawers.
  */
 
-import { DisposableBag } from "@/web/v2/core/disposable.client";
+import { BaseController } from "@/web/v2/core/base_element.client";
 import { trackPointerDrag } from "@/web/v2/core/gesture.client";
 
 /**
@@ -17,16 +17,26 @@ export const DRAWER_EXPANDED_DVH = 88;
 export const DRAWER_MIN_HEIGHT = 54;
 
 export interface DrawerControllerOptions {
+  /** Optional root container used to resolve selectors (defaults to drawer or document) */
+  root?: ParentNode;
   /** The drawer element whose height and styles are modified */
-  drawer: HTMLElement;
+  drawer?: HTMLElement | null;
+  /** Selector to resolve the drawer element from root on connect (use ":scope" for root itself) */
+  drawerSelector?: string;
   /** The drag handle element where pointer drag and keyboard events are listened to */
-  handle: HTMLElement;
+  handle?: HTMLElement | null;
+  /** Selector to resolve the handle element from root on connect */
+  handleSelector?: string;
   /** Optional layout/container element that also tracks drawer height via CSS variable */
-  layoutElement?: HTMLElement | null;
+  layoutElement?: HTMLElement | (() => HTMLElement | null) | null;
   /** Optional <details> element (for disclosure drawers). If omitted, inferred from drawer or its children. */
   detailsElement?: HTMLDetailsElement | null;
+  /** Optional selector to resolve the <details> element from root on connect */
+  detailsSelector?: string;
   /** Optional <summary> element (for drag suppression). If omitted, inferred from handle or details. */
   summaryElement?: HTMLElement | null;
+  /** Optional guard callback; if it returns false, onConnect() skips binding listeners. */
+  enabled?: () => boolean;
   /** Minimum height in pixels (peek / minimized height). Defaults to DRAWER_MIN_HEIGHT (54). */
   minHeight?: number;
   /** Default / initial height in dvh (1-100). Defaults to DRAWER_DEFAULT_DVH (48). */
@@ -52,38 +62,22 @@ export interface DrawerControllerOptions {
   onEscape?: () => void;
 }
 
-export class DrawerController {
-  private readonly drawer: HTMLElement;
-  private readonly handle: HTMLElement;
-  private readonly layoutElement?: HTMLElement | null;
-  private readonly details: HTMLDetailsElement | null;
-  private readonly summary: HTMLElement | null;
+export class DrawerController extends BaseController {
+  public drawer: HTMLElement | null = null;
+  public handle: HTMLElement | null = null;
+  private details: HTMLDetailsElement | null = null;
+  private summary: HTMLElement | null = null;
 
   private readonly minHeight: number;
   private readonly defaultDvh: number;
   private readonly floorDvh: number;
   private readonly expandedDvh: number;
   private preferredDvh: number;
-  private readonly disposables = new DisposableBag();
 
   private isUpdatingDetails = false;
 
   constructor(private readonly options: DrawerControllerOptions) {
-    this.drawer = options.drawer;
-    this.handle = options.handle;
-    this.layoutElement = options.layoutElement;
-
-    this.details =
-      options.detailsElement ??
-      (options.drawer instanceof HTMLDetailsElement
-        ? options.drawer
-        : options.drawer.querySelector("details"));
-
-    this.summary =
-      options.summaryElement ??
-      (options.handle.tagName.toLowerCase() === "summary"
-        ? options.handle
-        : this.details?.querySelector("summary") ?? null);
+    super(options.root ?? options.drawer ?? document);
 
     this.minHeight = options.minHeight ?? DRAWER_MIN_HEIGHT;
     this.defaultDvh = options.defaultDvh ?? DRAWER_DEFAULT_DVH;
@@ -91,19 +85,87 @@ export class DrawerController {
     this.expandedDvh = options.expandedDvh ?? DRAWER_EXPANDED_DVH;
     this.preferredDvh = options.preferredDvh ?? this.defaultDvh;
 
+    this.resolveElements();
+  }
+
+  private getLayoutElement(): HTMLElement | null {
+    if (typeof this.options.layoutElement === "function") {
+      return this.options.layoutElement();
+    }
+    return this.options.layoutElement ?? null;
+  }
+
+  private resolveElements(): void {
+    const options = this.options;
+
+    if (options.drawer !== undefined) {
+      this.drawer = options.drawer;
+    } else if (options.drawerSelector === ":scope") {
+      this.drawer = this.host;
+    } else if (options.drawerSelector) {
+      this.drawer = this.$<HTMLElement>(options.drawerSelector);
+    } else if (this.host) {
+      this.drawer = this.host;
+    } else {
+      this.drawer = null;
+    }
+
+    if (options.handle !== undefined) {
+      this.handle = options.handle;
+    } else if (options.handleSelector) {
+      this.handle = this.$<HTMLElement>(options.handleSelector);
+    } else {
+      this.handle = null;
+    }
+
+    if (options.detailsElement !== undefined) {
+      this.details = options.detailsElement;
+    } else if (options.detailsSelector) {
+      this.details = this.$<HTMLDetailsElement>(options.detailsSelector);
+    } else if (this.drawer instanceof HTMLDetailsElement) {
+      this.details = this.drawer;
+    } else {
+      this.details = this.drawer?.querySelector("details") ?? null;
+    }
+
+    if (options.summaryElement !== undefined) {
+      this.summary = options.summaryElement;
+    } else if (this.handle?.tagName.toLowerCase() === "summary") {
+      this.summary = this.handle;
+    } else {
+      this.summary = this.details?.querySelector("summary") ?? null;
+    }
+  }
+
+  protected override onConnect(): void {
+    if (this.options.enabled && !this.options.enabled()) {
+      this.dispose();
+      return;
+    }
+    this.resolveElements();
+    if (!this.drawer || !this.handle) {
+      this.dispose();
+      return;
+    }
+
     this.initDrag();
     this.initKeyboard();
     this.initDetailsSync();
+  }
+
+  protected override onDisconnect(): void {
+    this.getLayoutElement()?.style.removeProperty("--drawer-height");
   }
 
   /**
    * Returns true if the drawer is currently in a minimized/collapsed state.
    */
   isMinimized(): boolean {
+    this.resolveElements();
     if (this.details && !this.details.open) {
       return true;
     }
-    return this.drawer.classList.contains("drawer-minimized");
+    return this.drawer?.classList.contains("drawer-minimized") ?? false;
   }
 
   /**
@@ -117,18 +179,21 @@ export class DrawerController {
    * Minimizes the drawer to peek height (54px).
    */
   minimize(): void {
-    this.drawer.classList.add("drawer-minimized");
+    this.resolveElements();
+    if (this.drawer) {
+      this.drawer.classList.add("drawer-minimized");
+      this.drawer.style.setProperty("--drawer-height", `${this.minHeight}px`);
+    }
     if (this.details && this.details.open) {
       this.isUpdatingDetails = true;
       this.details.open = false;
       this.isUpdatingDetails = false;
     }
-    this.drawer.style.setProperty("--drawer-height", `${this.minHeight}px`);
-    this.layoutElement?.style.setProperty(
+    this.getLayoutElement()?.style.setProperty(
       "--drawer-height",
       `${this.minHeight}px`
     );
-    this.handle.setAttribute("aria-valuenow", "0");
+    this.handle?.setAttribute("aria-valuenow", "0");
     this.options.onMinimize?.();
   }
 
@@ -136,21 +201,24 @@ export class DrawerController {
    * Restores the drawer to the specified or preferred dvh height.
    */
   restore(targetDvh?: number): void {
+    this.resolveElements();
     const dvh = Math.min(
       this.expandedDvh,
       Math.max(this.floorDvh, targetDvh ?? this.preferredDvh ?? this.defaultDvh)
     );
     this.preferredDvh = dvh;
 
-    this.drawer.classList.remove("drawer-minimized");
+    if (this.drawer) {
+      this.drawer.classList.remove("drawer-minimized");
+      this.drawer.style.setProperty("--drawer-height", `${dvh}dvh`);
+    }
     if (this.details && !this.details.open) {
       this.isUpdatingDetails = true;
       this.details.open = true;
       this.isUpdatingDetails = false;
     }
-    this.drawer.style.setProperty("--drawer-height", `${dvh}dvh`);
-    this.layoutElement?.style.setProperty("--drawer-height", `${dvh}dvh`);
-    this.handle.setAttribute("aria-valuenow", String(dvh));
+    this.getLayoutElement()?.style.setProperty("--drawer-height", `${dvh}dvh`);
+    this.handle?.setAttribute("aria-valuenow", String(dvh));
 
     this.options.onRestore?.(dvh);
   }
@@ -159,31 +227,39 @@ export class DrawerController {
    * Directly sets the drawer height in pixels within the allowed bounds.
    */
   setHeight(heightPx: number): void {
+    this.resolveElements();
     const winHeight = window.innerHeight || 800;
     const maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
     const clamped = Math.max(this.minHeight, Math.min(maxHeight, heightPx));
-    this.drawer.style.setProperty("--drawer-height", `${clamped}px`);
-    this.layoutElement?.style.setProperty("--drawer-height", `${clamped}px`);
+    this.drawer?.style.setProperty("--drawer-height", `${clamped}px`);
+    this.getLayoutElement()?.style.setProperty(
+      "--drawer-height",
+      `${clamped}px`
+    );
     const percent = Math.round((clamped / winHeight) * 100);
-    this.handle.setAttribute("aria-valuenow", String(percent));
+    this.handle?.setAttribute("aria-valuenow", String(percent));
     this.options.onHeightChange?.(clamped, percent);
   }
 
   private initDrag(): void {
+    const drawer = this.drawer;
+    const handle = this.handle;
+    if (!drawer || !handle) return;
+
     let wasMinimized = false;
     let startHeight = 0;
     let winHeight = 800;
     let maxHeight = 800;
     let wasDragged = false;
 
-    this.disposables.add(
-      trackPointerDrag(this.handle, {
+    this.use(
+      trackPointerDrag(handle, {
         handleActiveClass: "is-dragging",
         // The handle is a child of the drawer, so `.drawer.is-dragging`
         // (and the reader's `.reader-dict-panel.is-dragging`) only match
         // if the panel is marked too. Those rules are what disable the height
         // transition mid-drag.
-        activeClassTarget: this.drawer,
+        activeClassTarget: drawer,
         bodyActiveClass: "resizing-drawer",
         filter: this.options.filter,
         /**
@@ -199,16 +275,16 @@ export class DrawerController {
           winHeight = window.innerHeight || 800;
           maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
           wasMinimized = this.isMinimized();
-          startHeight = this.drawer.getBoundingClientRect().height;
+          startHeight = drawer.getBoundingClientRect().height;
           if (this.details && !this.details.open) {
             this.isUpdatingDetails = true;
             this.details.open = true;
             this.isUpdatingDetails = false;
             startHeight =
-              this.drawer.getBoundingClientRect().height || this.minHeight;
+              drawer.getBoundingClientRect().height || this.minHeight;
           }
           if (wasMinimized) {
-            this.drawer.classList.remove("drawer-minimized");
+            drawer.classList.remove("drawer-minimized");
           }
           wasDragged = false;
         },
@@ -220,17 +296,17 @@ export class DrawerController {
             this.minHeight,
             Math.min(maxHeight, startHeight - dy)
           );
-          this.drawer.style.setProperty("--drawer-height", `${newHeight}px`);
-          this.layoutElement?.style.setProperty(
+          drawer.style.setProperty("--drawer-height", `${newHeight}px`);
+          this.getLayoutElement()?.style.setProperty(
             "--drawer-height",
             `${newHeight}px`
           );
           const percent = Math.round((newHeight / winHeight) * 100);
-          this.handle.setAttribute("aria-valuenow", String(percent));
+          handle.setAttribute("aria-valuenow", String(percent));
           this.options.onHeightChange?.(newHeight, percent);
         },
         onEnd: ({ dy, elapsedMs, velocityY }) => {
-          const currentHeight = this.drawer.getBoundingClientRect().height;
+          const currentHeight = drawer.getBoundingClientRect().height;
           const currentDvh = Math.round((currentHeight / winHeight) * 100);
 
           // Handle simple tap (minimal movement)
@@ -266,22 +342,27 @@ export class DrawerController {
     );
 
     if (this.summary) {
-      const onSummaryClick = (e: MouseEvent) => {
-        if (wasDragged) {
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          wasDragged = false;
-        }
-      };
-      this.summary.addEventListener("click", onSummaryClick, true);
-      this.disposables.add(() => {
-        this.summary?.removeEventListener("click", onSummaryClick, true);
-      });
+      this.listen(
+        this.summary,
+        "click",
+        (e: MouseEvent) => {
+          if (wasDragged) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            wasDragged = false;
+          }
+        },
+        true
+      );
     }
   }
 
   private initKeyboard(): void {
-    const onKeyDown = (e: KeyboardEvent) => {
+    const drawer = this.drawer;
+    const handle = this.handle;
+    if (!drawer || !handle) return;
+
+    this.listen(handle, "keydown", (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") {
         e.preventDefault();
         if (this.isMinimized()) {
@@ -291,7 +372,7 @@ export class DrawerController {
         }
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        const currentHeight = this.drawer.getBoundingClientRect().height;
+        const currentHeight = drawer.getBoundingClientRect().height;
         const winHeight = window.innerHeight || 800;
         if (currentHeight > winHeight * 0.6) {
           this.restore(this.defaultDvh);
@@ -306,34 +387,26 @@ export class DrawerController {
           this.minimize();
         }
       }
-    };
-    this.handle.addEventListener("keydown", onKeyDown);
-    this.disposables.add(() => {
-      this.handle.removeEventListener("keydown", onKeyDown);
     });
   }
 
   private initDetailsSync(): void {
     if (!this.details) return;
-    const onToggle = () => {
+    this.listen(this.details, "toggle", () => {
       if (this.isUpdatingDetails || !this.details) return;
       if (this.details.open) {
         this.restore();
       } else {
         this.minimize();
       }
-    };
-    this.details.addEventListener("toggle", onToggle);
-    this.disposables.add(() => {
-      this.details?.removeEventListener("toggle", onToggle);
     });
   }
 
   /**
    * Disposes all event listeners and gesture tracking.
    */
-  dispose(): void {
-    this.layoutElement?.style.removeProperty("--drawer-height");
-    this.disposables.dispose();
+  override dispose(): void {
+    this.getLayoutElement()?.style.removeProperty("--drawer-height");
+    super.dispose();
   }
 }

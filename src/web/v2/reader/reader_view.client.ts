@@ -91,27 +91,75 @@ function escapeCss(id: string): string {
 export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private currentQuery: string = "";
   private preferredDrawerDvh: number = DRAWER_DEFAULT_DVH;
-  private drawerController?: DrawerController;
   private readonly tocController = this.addController(
     new ReaderTocController({ root: this })
   );
-  private layoutController: ReaderLayoutController | null = null;
-  private panelController: ReaderPanelController | null = null;
+  private readonly layoutController = this.addController(
+    new ReaderLayoutController({ root: this })
+  );
+  private readonly drawerController = this.addController(
+    new DrawerController({
+      root: this,
+      drawerSelector: ".reader-dict-panel",
+      handleSelector: ".reader-sheet-bar",
+      layoutElement: () => document.documentElement,
+      minHeight: DRAWER_MIN_HEIGHT,
+      defaultDvh: DRAWER_DEFAULT_DVH,
+      floorDvh: DRAWER_FLOOR_DVH,
+      expandedDvh: DRAWER_EXPANDED_DVH,
+      preferredDvh: DRAWER_DEFAULT_DVH,
+      filter: (e) => {
+        if (
+          e.target instanceof Element &&
+          e.target.closest(
+            "a.reader-sheet-close, a.drawer-close, .reader-panel-tab, [role='tab']"
+          )
+        ) {
+          return false;
+        }
+        return true;
+      },
+      onMinimize: () => {
+        this.updateSheetLabel(true);
+        this.resetDictScroll();
+      },
+      onRestore: (dvh) => {
+        this.preferredDrawerDvh = dvh;
+        this.updateSheetLabel(false);
+        this.resetDictScroll();
+      },
+      onEscape: () => {
+        this.dismissDictionary(true);
+      },
+    })
+  );
+  private readonly panelController = this.addController(
+    new ReaderPanelController({
+      root: this,
+      hasTranslation: () =>
+        this.getAttribute("data-has-translation") === "true",
+      onLoadTranslation: () =>
+        this.fetchTranslation(this.currentPageUrl, this.latest("translation")),
+      onTabChange: () => {
+        this.activatePanelLayout();
+        this.updateSheetLabel(false);
+      },
+    })
+  );
   private currentNoteId: string = "";
   private currentNoteLabel: string = "";
   private router: QueryParamSync | null = null;
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
   private originalScrollRestoration: ScrollRestoration = "auto";
-  private hasTranslation: boolean = false;
   private readonly translationCache = new Map<string, string>();
   private toastTimer: number | null = null;
 
   public getLayoutController(): ReaderLayoutController | null {
-    return this.layoutController;
+    return this.layoutController.isConnected ? this.layoutController : null;
   }
 
   public getPanelController(): ReaderPanelController | null {
-    return this.panelController;
+    return this.panelController.isConnected ? this.panelController : null;
   }
 
   public getSettingsElement(): MorcusReaderSettings | null {
@@ -136,7 +184,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       }
     }
 
-    this.hasTranslation = this.getAttribute("data-has-translation") === "true";
+    this.preferredDrawerDvh = this.drawerController.getPreferredDvh();
     this.currentPrefs = readerSettingsStore.get();
     const workId = this.dataset.work;
     if (workId) {
@@ -200,27 +248,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.listen(this, "click", this.handleClick);
     this.listen(this, "keydown", this.handlePassageKeydown);
 
-    this.layoutController = new ReaderLayoutController({ root: this });
-    this.use(() => {
-      this.layoutController?.dispose();
-      this.layoutController = null;
-    });
-    this.initMobileDrawer();
     this.initBackToTop();
-    this.panelController = new ReaderPanelController({
-      root: this,
-      hasTranslation: this.hasTranslation,
-      onLoadTranslation: () =>
-        this.fetchTranslation(this.currentPageUrl, this.latest("translation")),
-      onTabChange: () => {
-        this.activatePanelLayout();
-        this.updateSheetLabel(false);
-      },
-    });
-    this.use(() => {
-      this.panelController?.dispose();
-      this.panelController = null;
-    });
     this.resetDictScroll();
     this.initKeyboardShortcuts();
     this.initIframeThemeSync();
@@ -638,62 +666,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   public minimizeDrawer(): void {
-    if (this.drawerController) {
-      this.drawerController.minimize();
-    } else {
-      const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-      const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
-      if (dictPanel) {
-        dictPanel.classList.add("drawer-minimized");
-        dictPanel.style.setProperty("--drawer-height", "54px");
-        sheetBar?.setAttribute("aria-valuenow", "0");
-      }
-      document.documentElement.style.setProperty("--drawer-height", "54px");
-      this.updateSheetLabel(true);
-    }
+    this.drawerController.minimize();
   }
 
   public restoreDrawer(targetDvh?: number): void {
-    if (this.drawerController) {
-      this.drawerController.restore(targetDvh);
-    } else {
-      const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-      const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
-      const dvh = Math.min(
-        DRAWER_EXPANDED_DVH,
-        Math.max(
-          DRAWER_FLOOR_DVH,
-          targetDvh ?? this.preferredDrawerDvh ?? DRAWER_DEFAULT_DVH
-        )
-      );
-      this.preferredDrawerDvh = dvh;
-
-      if (dictPanel) {
-        dictPanel.classList.remove("drawer-minimized");
-        dictPanel.style.setProperty("--drawer-height", `${dvh}dvh`);
-        sheetBar?.setAttribute("aria-valuenow", String(dvh));
-      }
-      document.documentElement.style.setProperty(
-        "--drawer-height",
-        `${dvh}dvh`
-      );
-      this.updateSheetLabel(false);
-      this.resetDictScroll();
-    }
+    this.drawerController.restore(targetDvh);
   }
 
   public activatePanelLayout(): void {
-    if (this.layoutController) {
-      this.layoutController.setActive(true);
-    } else {
-      const splitLayout = this.querySelector<HTMLElement>(
-        ".reader-split-layout"
-      );
-      if (splitLayout) {
-        splitLayout.classList.remove("reader-layout-empty");
-        splitLayout.classList.add("reader-layout-active");
-      }
-    }
+    this.layoutController.setActive(true);
     this.restoreDrawer();
   }
 
@@ -980,52 +961,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         el.scrollTop = 0;
       }
     }
-  }
-
-  // --- Mobile Bottom Drawer Resizer ---
-  private initMobileDrawer() {
-    const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
-    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-    if (!sheetBar || !dictPanel) return;
-
-    this.drawerController = new DrawerController({
-      drawer: dictPanel,
-      handle: sheetBar,
-      layoutElement: document.documentElement,
-      minHeight: DRAWER_MIN_HEIGHT,
-      defaultDvh: DRAWER_DEFAULT_DVH,
-      floorDvh: DRAWER_FLOOR_DVH,
-      expandedDvh: DRAWER_EXPANDED_DVH,
-      preferredDvh: this.preferredDrawerDvh,
-      filter: (e) => {
-        if (
-          e.target instanceof Element &&
-          e.target.closest(
-            "a.reader-sheet-close, a.drawer-close, .reader-panel-tab, [role='tab']"
-          )
-        ) {
-          return false;
-        }
-        return true;
-      },
-      onMinimize: () => {
-        this.updateSheetLabel(true);
-        this.resetDictScroll();
-      },
-      onRestore: (dvh) => {
-        this.preferredDrawerDvh = dvh;
-        this.updateSheetLabel(false);
-        this.resetDictScroll();
-      },
-      onEscape: () => {
-        this.dismissDictionary(true);
-      },
-    });
-
-    this.use(() => {
-      this.drawerController?.dispose();
-      this.drawerController = undefined;
-    });
   }
 
   // --- Embedded Dictionary "Jump to top" Button ---
@@ -1449,14 +1384,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       hash?: string;
     } = {}
   ): void {
-    const textPanel = this.querySelector<HTMLElement>(".reader-text-panel");
-    const newNotes =
-      textPanel?.querySelector<HTMLElement>(".reader-notes") ?? null;
-    this.panelController?.adoptNotes(newNotes);
-    const newAbout =
-      textPanel?.querySelector<HTMLElement>("#reader-work-about") ?? null;
-    this.panelController?.adoptAbout(newAbout);
-
     this.saveCurrentSpot();
     this.enhancePassage();
     this.applyPreferences(this.currentPrefs);

@@ -2,6 +2,8 @@
  * Utilities for safe DOM fragment parsing and progressive enhancement partial swapping.
  */
 
+import { notifyContentSwap } from "@/web/v2/core/base_element.client";
+
 /**
  * Parses an HTML string into a contextual DocumentFragment using the browser's
  * Range API.
@@ -27,6 +29,7 @@ export function createHtmlFragment(html: string): DocumentFragment {
 export function swapElementContent(container: HTMLElement, html: string): void {
   const fragment = createHtmlFragment(html);
   container.replaceChildren(fragment);
+  notifyContentSwap(container);
 }
 
 export interface FetchAndSwapOptions {

@@ -9,7 +9,7 @@
  * - Preserves zero-reflow layout writes during active drag gestures
  */
 
-import { DisposableBag } from "@/web/v2/core/disposable.client";
+import { BaseController } from "@/web/v2/core/base_element.client";
 import { trackPointerDrag } from "@/web/v2/core/gesture.client";
 
 /**
@@ -54,40 +54,44 @@ export interface ReaderLayoutOptions {
   onWidthChange?: (width: number) => void;
 }
 
-export class ReaderLayoutController {
-  private readonly disposables = new DisposableBag();
-  public readonly splitLayout: HTMLElement | null;
-  public readonly splitter: HTMLElement | null;
-  public readonly dictPanel: HTMLElement | null;
+export class ReaderLayoutController extends BaseController {
+  public splitLayout: HTMLElement | null = null;
+  public splitter: HTMLElement | null = null;
+  public dictPanel: HTMLElement | null = null;
+  private readonly overrides?: Partial<ReaderLayoutElements>;
   private readonly storageKey: string;
   private readonly onWidthChange?: (width: number) => void;
 
   constructor(options: ReaderLayoutOptions = {}) {
-    const root = options.root ?? document;
-    const overrides = options.elements;
+    super(options.root ?? document);
+    this.overrides = options.elements;
+    this.storageKey = options.storageKey ?? READER_DICT_WIDTH_STORAGE_KEY;
+    this.onWidthChange = options.onWidthChange;
+    this.resolveElements();
+  }
+
+  private resolveElements(): void {
+    const overrides = this.overrides;
 
     this.splitLayout =
       overrides?.splitLayout !== undefined
         ? overrides.splitLayout
-        : root.querySelector<HTMLElement>(".reader-split-layout");
+        : this.$<HTMLElement>(".reader-split-layout");
 
     this.splitter =
       overrides?.splitter !== undefined
         ? overrides.splitter
-        : root.querySelector<HTMLElement>(".reader-splitter");
+        : this.$<HTMLElement>(".reader-splitter");
 
     this.dictPanel =
       overrides?.dictPanel !== undefined
         ? overrides.dictPanel
-        : root.querySelector<HTMLElement>(".reader-dict-panel");
+        : this.$<HTMLElement>(".reader-dict-panel");
+  }
 
-    this.storageKey = options.storageKey ?? READER_DICT_WIDTH_STORAGE_KEY;
-    this.onWidthChange = options.onWidthChange;
-
-    const splitter = this.splitter;
-    const splitLayout = this.splitLayout;
-    const dictPanel = this.dictPanel;
-    if (!splitter || !splitLayout || !dictPanel) {
+  protected override onConnect(): void {
+    this.resolveElements();
+    if (!this.splitter || !this.splitLayout || !this.dictPanel) {
       return;
     }
 
@@ -125,62 +129,58 @@ export class ReaderLayoutController {
     let startWidth = 0;
     let maxWidth = MAX_SPLIT_WIDTH;
 
-    const unbind = trackPointerDrag(splitter, {
-      handleActiveClass: "is-resizing",
-      bodyActiveClass: "resizing-panels",
-      /**
-       * Both measurements are taken once, here, because `onMove` writes
-       * `--dict-width`: reading either one per move would be a
-       * read-after-write and would force a synchronous layout of the whole
-       * passage on every pointer event.
-       *
-       * Safe because the container width does not depend on the value being
-       * written. At this breakpoint `.reader-split-layout` is a `flex: 1`
-       * row whose width comes from its parent, and `--dict-width` only
-       * divides space between its children (reader.css). The drag classes
-       * applied immediately after this callback are `user-select` / `cursor` /
-       * `pointer-events` only, so measuring before them is equivalent.
-       */
-      onStart: () => {
-        startWidth = dictPanel.getBoundingClientRect().width;
-        const containerWidth = splitLayout.getBoundingClientRect().width;
-        maxWidth = computeMaxSplitWidth(containerWidth);
-      },
-      onMove: ({ dx }) => {
-        const newWidth = Math.round(
-          Math.max(MIN_SPLIT_WIDTH, Math.min(maxWidth, startWidth - dx))
-        );
-        splitLayout.style.setProperty("--dict-width", `${newWidth}px`);
-        splitter.setAttribute("aria-valuenow", String(newWidth));
-        this.onWidthChange?.(newWidth);
-      },
-      onEnd: () => {
-        const finalWidth = parseInt(
-          splitter.getAttribute("aria-valuenow") || String(DEFAULT_SPLIT_WIDTH),
-          10
-        );
-        try {
-          localStorage.setItem(this.storageKey, String(finalWidth));
-        } catch {
-          // ignore
-        }
-      },
-    });
-
-    this.disposables.add(unbind);
+    this.use(
+      trackPointerDrag(splitter, {
+        handleActiveClass: "is-resizing",
+        bodyActiveClass: "resizing-panels",
+        /**
+         * Both measurements are taken once, here, because `onMove` writes
+         * `--dict-width`: reading either one per move would be a
+         * read-after-write and would force a synchronous layout of the whole
+         * passage on every pointer event.
+         *
+         * Safe because the container width does not depend on the value being
+         * written. At this breakpoint `.reader-split-layout` is a `flex: 1`
+         * row whose width comes from its parent, and `--dict-width` only
+         * divides space between its children (reader.css). The drag classes
+         * applied immediately after this callback are `user-select` / `cursor` /
+         * `pointer-events` only, so measuring before them is equivalent.
+         */
+        onStart: () => {
+          startWidth = dictPanel.getBoundingClientRect().width;
+          const containerWidth = splitLayout.getBoundingClientRect().width;
+          maxWidth = computeMaxSplitWidth(containerWidth);
+        },
+        onMove: ({ dx }) => {
+          const newWidth = Math.round(
+            Math.max(MIN_SPLIT_WIDTH, Math.min(maxWidth, startWidth - dx))
+          );
+          splitLayout.style.setProperty("--dict-width", `${newWidth}px`);
+          splitter.setAttribute("aria-valuenow", String(newWidth));
+          this.onWidthChange?.(newWidth);
+        },
+        onEnd: () => {
+          const finalWidth = parseInt(
+            splitter.getAttribute("aria-valuenow") ||
+              String(DEFAULT_SPLIT_WIDTH),
+            10
+          );
+          try {
+            localStorage.setItem(this.storageKey, String(finalWidth));
+          } catch {
+            // ignore
+          }
+        },
+      })
+    );
   }
 
   private initDblClick() {
     const splitter = this.splitter;
     if (!splitter) return;
 
-    const onDblClick = () => {
+    this.listen(splitter, "dblclick", () => {
       this.resetWidth();
-    };
-
-    splitter.addEventListener("dblclick", onDblClick);
-    this.disposables.add(() => {
-      splitter.removeEventListener("dblclick", onDblClick);
     });
   }
 
@@ -189,7 +189,7 @@ export class ReaderLayoutController {
     const splitLayout = this.splitLayout;
     if (!splitter || !splitLayout) return;
 
-    const onKeyDown = (e: KeyboardEvent) => {
+    this.listen(splitter, "keydown", (e: KeyboardEvent) => {
       const currentWidth = parseInt(
         splitter.getAttribute("aria-valuenow") || String(DEFAULT_SPLIT_WIDTH),
         10
@@ -215,11 +215,6 @@ export class ReaderLayoutController {
         e.preventDefault();
         this.setWidth(nextWidth, true);
       }
-    };
-
-    splitter.addEventListener("keydown", onKeyDown);
-    this.disposables.add(() => {
-      splitter.removeEventListener("keydown", onKeyDown);
     });
   }
 
@@ -228,6 +223,7 @@ export class ReaderLayoutController {
    * aria-valuenow attribute (falling back to DEFAULT_SPLIT_WIDTH).
    */
   public getWidth(): number {
+    this.resolveElements();
     if (this.splitter) {
       const parsed = parseInt(
         this.splitter.getAttribute("aria-valuenow") || "",
@@ -243,6 +239,7 @@ export class ReaderLayoutController {
    * Optionally persists the new width to localStorage.
    */
   public setWidth(width: number, persist: boolean = false): void {
+    this.resolveElements();
     if (this.splitLayout) {
       this.splitLayout.style.setProperty("--dict-width", `${width}px`);
     }
@@ -264,6 +261,7 @@ export class ReaderLayoutController {
    * resets ARIA attributes, and clears the persisted entry from localStorage.
    */
   public resetWidth(): void {
+    this.resolveElements();
     if (this.splitLayout) {
       this.splitLayout.style.removeProperty("--dict-width");
     }
@@ -282,6 +280,7 @@ export class ReaderLayoutController {
    * Updates split layout CSS classes between active (expanded content) and empty.
    */
   public setActive(active: boolean): void {
+    this.resolveElements();
     if (!this.splitLayout) return;
     if (active) {
       this.splitLayout.classList.remove("reader-layout-empty");
@@ -290,13 +289,6 @@ export class ReaderLayoutController {
       this.splitLayout.classList.remove("reader-layout-active");
       this.splitLayout.classList.add("reader-layout-empty");
     }
-  }
-
-  /**
-   * Cleans up all registered event listeners and gesture tracking.
-   */
-  public dispose(): void {
-    this.disposables.dispose();
   }
 }
 
