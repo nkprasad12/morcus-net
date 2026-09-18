@@ -1,11 +1,11 @@
 import {
+  AnchoredPopoverController,
   BaseElement,
   type FieldCheckers,
   pickValid,
   registerElement,
   storage,
 } from "@/web/v2/core/index.client";
-import { DisposableBag } from "@/web/v2/core/disposable.client";
 import {
   isBoolean,
   isLiteral,
@@ -125,23 +125,6 @@ export interface ReaderSettingsChangeEventDetail {
   prefs: ReaderPreferences;
 }
 
-interface HasTocController {
-  getTocController(): {
-    isOpen(): boolean;
-    close(): void;
-  } | null;
-}
-
-function hasTocController(
-  el: Element | null
-): el is Element & HasTocController {
-  return (
-    el !== null &&
-    "getTocController" in el &&
-    typeof el.getTocController === "function"
-  );
-}
-
 /**
  * Progressively enhanced Reader Appearance & Typography popover component (Light DOM mode).
  *
@@ -152,10 +135,23 @@ function hasTocController(
  */
 export class MorcusReaderSettings extends BaseElement {
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
-  private readonly openDisposables = new DisposableBag();
-  private popoverEl: HTMLElement | null = null;
-  private triggerBtn: HTMLElement | null = null;
-  private backdropEl: HTMLElement | null = null;
+  private readonly popoverController = this.addController(
+    new AnchoredPopoverController({
+      root: this,
+      group: "reader-chrome",
+      align: "end",
+      defaultWidth: 320,
+      getPanel: () => this.$<HTMLElement>("#reader-settings-popover"),
+      getTrigger: () =>
+        this.$<HTMLButtonElement>("#reader-settings-btn") ??
+        this.ownerDocument.getElementById("reader-settings-btn"),
+      getBackdrop: () =>
+        this.$<HTMLElement>("#reader-settings-backdrop") ??
+        this.ownerDocument.getElementById("reader-settings-backdrop"),
+      getCloseBtn: () =>
+        this.$<HTMLButtonElement>("#reader-settings-close-btn"),
+    })
+  );
 
   public getPreferences(): ReaderPreferences {
     return { ...this.currentPrefs };
@@ -170,195 +166,23 @@ export class MorcusReaderSettings extends BaseElement {
   }
 
   public isOpen(): boolean {
-    return !!this.popoverEl && !this.popoverEl.hasAttribute("hidden");
+    return this.popoverController.isOpen;
   }
 
   public open(): void {
-    if (this.isOpen() || !this.popoverEl) return;
-
-    // Mutual exclusion: Close Table of Contents (TOC) dropdown if open
-    const readerView = this.closest("morcus-reader-view");
-    const tocController = hasTocController(readerView)
-      ? readerView.getTocController()
-      : null;
-
-    if (tocController?.isOpen()) {
-      tocController.close();
-    } else {
-      const tocDrawer = this.ownerDocument.getElementById("reader-toc-drawer");
-      if (tocDrawer && !tocDrawer.hasAttribute("hidden")) {
-        tocDrawer.setAttribute("hidden", "");
-        this.ownerDocument
-          .getElementById("reader-toc-btn")
-          ?.setAttribute("aria-expanded", "false");
-        this.ownerDocument
-          .getElementById("reader-toc-backdrop")
-          ?.setAttribute("hidden", "");
-      }
-    }
-
-    this.popoverEl.removeAttribute("hidden");
-    this.backdropEl?.removeAttribute("hidden");
-    this.triggerBtn?.setAttribute("aria-expanded", "true");
-
-    this.updatePosition();
-
-    // Initial focus landing spot within the popover
-    const closeBtn = this.popoverEl.querySelector<HTMLElement>(
-      "#reader-settings-close-btn"
-    );
-    if (closeBtn) {
-      closeBtn.focus();
-    }
-
-    // Attach transient listeners while open
-    const win = this.ownerDocument.defaultView ?? window;
-    const doc = this.ownerDocument;
-
-    const onResize = () => this.updatePosition();
-    win.addEventListener("resize", onResize);
-    this.openDisposables.add(() => win.removeEventListener("resize", onResize));
-
-    const onScroll = () => this.updatePosition();
-    win.addEventListener("scroll", onScroll, { passive: true });
-    this.openDisposables.add(() => win.removeEventListener("scroll", onScroll));
-
-    // Outside click dismissal fallback
-    const onDocClick = (e: MouseEvent) => {
-      if (!this.isOpen()) return;
-      const target = e.target;
-      if (target instanceof Node) {
-        if (
-          !this.popoverEl?.contains(target) &&
-          !this.triggerBtn?.contains(target)
-        ) {
-          this.close();
-        }
-      }
-    };
-    doc.addEventListener("click", onDocClick);
-    this.openDisposables.add(() =>
-      doc.removeEventListener("click", onDocClick)
-    );
-
-    // Keyboard navigation (Escape to dismiss, Tab to cycle focus within popover)
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!this.isOpen()) return;
-
-      if (e.key === "Escape") {
-        e.preventDefault();
-        this.close();
-        this.triggerBtn?.focus();
-        return;
-      }
-
-      if (e.key === "Tab" && this.popoverEl) {
-        const isJsdom = Boolean(
-          this.ownerDocument.defaultView?.navigator?.userAgent?.includes(
-            "jsdom"
-          )
-        );
-        const focusables = Array.from(
-          this.popoverEl.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-          )
-        ).filter(
-          (el) =>
-            !el.hasAttribute("hidden") &&
-            !el.closest("[hidden]") &&
-            (el.offsetParent !== null ||
-              el.getClientRects().length > 0 ||
-              isJsdom)
-        );
-
-        if (focusables.length === 0) return;
-
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-
-        if (
-          e.shiftKey &&
-          (doc.activeElement === first ||
-            !this.popoverEl.contains(doc.activeElement))
-        ) {
-          e.preventDefault();
-          last.focus();
-        } else if (
-          !e.shiftKey &&
-          (doc.activeElement === last ||
-            !this.popoverEl.contains(doc.activeElement))
-        ) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-    doc.addEventListener("keydown", onKeyDown);
-    this.openDisposables.add(() =>
-      doc.removeEventListener("keydown", onKeyDown)
-    );
+    this.popoverController.open();
   }
 
   public close(): void {
-    if (!this.isOpen() && this.popoverEl?.hasAttribute("hidden")) {
-      return;
-    }
-
-    this.popoverEl?.setAttribute("hidden", "");
-    this.backdropEl?.setAttribute("hidden", "");
-    this.triggerBtn?.setAttribute("aria-expanded", "false");
-    this.openDisposables.dispose();
+    this.popoverController.close();
   }
 
   public toggle(): void {
-    if (this.isOpen()) {
-      this.close();
-    } else {
-      this.open();
-    }
+    this.popoverController.toggle();
   }
 
   public updatePosition(): void {
-    if (!this.isOpen() || !this.popoverEl) return;
-
-    const docEl = this.ownerDocument.documentElement;
-    const win = this.ownerDocument.defaultView ?? window;
-    const viewportWidth = win.innerWidth || docEl.clientWidth || 1024;
-    const margin = 12;
-
-    const popoverWidth = this.popoverEl.offsetWidth || 320;
-
-    let top = 48;
-    let btnCenterX = viewportWidth - 28;
-    let targetLeft = viewportWidth - popoverWidth - margin;
-
-    if (this.triggerBtn) {
-      const btnRect = this.triggerBtn.getBoundingClientRect();
-      if (btnRect.bottom || btnRect.top) {
-        top = btnRect.bottom + 8;
-      }
-      if (btnRect.width || btnRect.height) {
-        btnCenterX = btnRect.left + btnRect.width / 2;
-        targetLeft = btnRect.right - popoverWidth;
-      }
-    }
-
-    const maxLeft = Math.max(margin, viewportWidth - popoverWidth - margin);
-    const left = Math.max(margin, Math.min(targetLeft, maxLeft));
-
-    const caretLeft = btnCenterX - left;
-    const clampedCaretLeft = Math.max(
-      16,
-      Math.min(caretLeft, popoverWidth - 16)
-    );
-
-    this.popoverEl.style.position = "fixed";
-    this.popoverEl.style.top = `${Math.round(top)}px`;
-    this.popoverEl.style.left = `${Math.round(left)}px`;
-    this.popoverEl.style.setProperty(
-      "--caret-left",
-      `${Math.round(clampedCaretLeft)}px`
-    );
+    this.popoverController.updatePosition();
   }
 
   protected override onConnect() {
@@ -367,45 +191,6 @@ export class MorcusReaderSettings extends BaseElement {
     if (workId) {
       this.currentPrefs.showMacra = getWorkMacra(workId);
     }
-
-    this.popoverEl = this.$<HTMLElement>("#reader-settings-popover");
-
-    this.triggerBtn =
-      this.$<HTMLButtonElement>("#reader-settings-btn") ??
-      this.ownerDocument.getElementById("reader-settings-btn");
-
-    this.backdropEl =
-      this.$<HTMLElement>("#reader-settings-backdrop") ??
-      this.ownerDocument.getElementById("reader-settings-backdrop");
-
-    if (this.triggerBtn) {
-      this.listen(this.triggerBtn, "click", (e: MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.toggle();
-      });
-    }
-
-    const closeBtn = this.$<HTMLButtonElement>("#reader-settings-close-btn");
-    if (closeBtn) {
-      this.listen(closeBtn, "click", (e: MouseEvent) => {
-        e.preventDefault();
-        this.close();
-        this.triggerBtn?.focus();
-      });
-    }
-
-    if (this.backdropEl) {
-      this.listen(this.backdropEl, "click", (e: MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.close();
-      });
-    }
-
-    this.addDisposable(() => {
-      this.close();
-    });
 
     const resetBtn = this.$<HTMLButtonElement>("#reader-settings-reset-btn");
     const readerSizeDec = this.$<HTMLButtonElement>("#reader-size-dec");

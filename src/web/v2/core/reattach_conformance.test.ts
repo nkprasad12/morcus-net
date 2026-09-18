@@ -435,25 +435,16 @@ describe("open-state popovers survive being moved in the DOM", () => {
 
   test("ReaderTocController resets open state on move, tears down open-state listeners, and re-binds trigger listener", () => {
     document.body.innerHTML = FIXTURES["morcus-reader-view"];
-    const readerView = document.querySelector<
-      HTMLElement & {
-        getTocController(): {
-          isOpen(): boolean;
-          open(): void;
-          close(): void;
-        } | null;
-      }
-    >("morcus-reader-view")!;
+    const readerView =
+      document.querySelector<HTMLElement>("morcus-reader-view")!;
     const tocBtn =
       readerView.querySelector<HTMLButtonElement>("#reader-toc-btn")!;
     const tocDrawer =
       readerView.querySelector<HTMLElement>("#reader-toc-drawer")!;
 
-    const toc = readerView.getTocController()!;
-    const opened = record(() => toc.open());
+    const opened = record(() => tocBtn.click());
     expect(opened.added.length).toBeGreaterThan(0);
 
-    expect(toc.isOpen()).toBe(true);
     expect(tocDrawer.hasAttribute("hidden")).toBe(false);
     expect(tocBtn.getAttribute("aria-expanded")).toBe("true");
 
@@ -471,14 +462,11 @@ describe("open-state popovers survive being moved in the DOM", () => {
     expect(leakedOpenListeners).toEqual([]);
 
     document.body.appendChild(readerView);
-    const newToc = readerView.getTocController()!;
-    expect(newToc.isOpen()).toBe(false);
     expect(tocDrawer.hasAttribute("hidden")).toBe(true);
     expect(tocBtn.getAttribute("aria-expanded")).toBe("false");
 
     // Re-trigger opens drawer cleanly
     tocBtn.click();
-    expect(newToc.isOpen()).toBe(true);
     expect(tocDrawer.hasAttribute("hidden")).toBe(false);
     expect(tocBtn.getAttribute("aria-expanded")).toBe("true");
   });
