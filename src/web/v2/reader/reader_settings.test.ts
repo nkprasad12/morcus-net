@@ -566,47 +566,45 @@ describe("MorcusReaderSettings custom element", () => {
     expect(document.activeElement).toBe(resetBtn);
   });
 
-  test("enforces mutual exclusion by closing TOC drawer when settings popover opens", () => {
+  test("enforces bidirectional mutual exclusion with ReaderTocController via reader-chrome popover group", () => {
     const { el } = createSettingsElement();
     const tocDrawer = document.createElement("div");
     tocDrawer.id = "reader-toc-drawer";
+    tocDrawer.setAttribute("hidden", "");
     const tocBackdrop = document.createElement("div");
     tocBackdrop.id = "reader-toc-backdrop";
+    tocBackdrop.setAttribute("hidden", "");
     const tocBtn = document.createElement("button");
     tocBtn.id = "reader-toc-btn";
-    tocBtn.setAttribute("aria-expanded", "true");
-    document.body.appendChild(tocDrawer);
-    document.body.appendChild(tocBackdrop);
-    document.body.appendChild(tocBtn);
+    tocBtn.setAttribute("aria-expanded", "false");
+    container.appendChild(tocDrawer);
+    container.appendChild(tocBackdrop);
+    container.appendChild(tocBtn);
 
-    // TOC is initially open
+    const { ReaderTocController } = jest.requireActual<
+      typeof import("@/web/v2/reader/reader_toc.client")
+    >("@/web/v2/reader/reader_toc.client");
+    const toc = new ReaderTocController({ root: container });
+    toc.connect();
+
+    // 1. Open TOC drawer -> TOC is open
+    toc.open();
+    expect(toc.isOpen()).toBe(true);
     expect(tocDrawer.hasAttribute("hidden")).toBe(false);
 
-    // Opening settings closes TOC
+    // 2. Opening settings closes TOC via morcus:popover-will-open ("reader-chrome")
     el.open();
     expect(el.isOpen()).toBe(true);
+    expect(toc.isOpen()).toBe(false);
     expect(tocDrawer.hasAttribute("hidden")).toBe(true);
+    expect(tocBtn.getAttribute("aria-expanded")).toBe("false");
 
-    tocDrawer.remove();
-    tocBackdrop.remove();
-    tocBtn.remove();
-  });
+    // 3. Re-opening TOC closes settings via morcus:popover-will-open ("reader-chrome")
+    toc.open();
+    expect(toc.isOpen()).toBe(true);
+    expect(el.isOpen()).toBe(false);
 
-  test("enforces mutual exclusion by invoking getTocController().close() when hosted in morcus-reader-view", () => {
-    const parent = document.createElement("morcus-reader-view");
-    const closeSpy = jest.fn();
-    (parent as any).getTocController = () => ({
-      isOpen: () => true,
-      close: closeSpy,
-    });
-    const { el } = createSettingsElement();
-    parent.appendChild(el);
-    document.body.appendChild(parent);
-
-    el.open();
-    expect(closeSpy).toHaveBeenCalled();
-
-    parent.remove();
+    toc.dispose();
   });
 
   test("scopes macra toggle to workId and persists to macronButton-${workId}", () => {

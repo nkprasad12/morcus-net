@@ -47,6 +47,7 @@ export function bindDismissable(options: DismissableOptions): () => void {
 
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "Escape" && options.isOpen()) {
+      e.preventDefault();
       options.onDismiss();
       const trigger = getTrigger();
       trigger?.focus();
@@ -59,11 +60,13 @@ export function bindDismissable(options: DismissableOptions): () => void {
 
   pointerEvents.forEach((evt) => document.addEventListener(evt, onPointer));
   document.addEventListener("keydown", onKey);
+  window.addEventListener("keydown", onKey);
 
   return () => {
     pointerEvents.forEach((evt) =>
       document.removeEventListener(evt, onPointer)
     );
     document.removeEventListener("keydown", onKey);
+    window.removeEventListener("keydown", onKey);
   };
 }

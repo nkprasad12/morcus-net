@@ -30,3 +30,28 @@ export function replaceWithHtml(target: Element, content: SafeHtml): void {
   // eslint-disable-next-line no-unsanitized/property
   target.outerHTML = content;
 }
+
+/**
+ * Dev-only invariant ensuring DOM writes never target detached elements.
+ *
+ * When a host element is inside `disconnectedCallback()`, the browser has
+ * already detached the host tree from `document` before invoking `onDisconnect()`.
+ * Elements still attached to that disconnecting host root are allowed to reset
+ * their attributes cleanly, whereas elements orphaned from their host or written
+ * while the host is connected log an error.
+ */
+export function assertConnected(el: Element, hostRoot?: ParentNode): void {
+  if (process.env.NODE_ENV === "production") return;
+  if (el.isConnected) return;
+  if (
+    hostRoot instanceof Node &&
+    !hostRoot.isConnected &&
+    hostRoot.getRootNode() === el.getRootNode()
+  ) {
+    return;
+  }
+  const idSuffix = el.id ? `#${el.id}` : "";
+  console.error(
+    `[UI V2] DOM write targeting detached element <${el.tagName.toLowerCase()}${idSuffix}>.`
+  );
+}

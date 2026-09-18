@@ -848,25 +848,27 @@ describe("MorcusReaderView desktop splitter drag", () => {
     `;
     document.body.appendChild(el);
 
-    const tocController = el.getTocController();
+    // @ts-expect-error accessing private tocController for instance preservation verification
+    const tocController = el.tocController;
     expect(tocController).not.toBeNull();
-    expect(tocController?.isOpen()).toBe(false);
+    expect(tocController.isOpen()).toBe(false);
 
     // Press 't' shortcut
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
-    expect(tocController?.isOpen()).toBe(true);
+    expect(tocController.isOpen()).toBe(true);
 
     // Press 'T' shortcut
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "T" }));
-    expect(tocController?.isOpen()).toBe(false);
+    expect(tocController.isOpen()).toBe(false);
 
     // Disconnect disposes controller scope while preserving controller instance across reconnects
     el.remove();
-    expect(el.getTocController()).toBe(tocController);
-    expect(tocController?.isConnected).toBe(false);
+    // @ts-expect-error accessing private tocController for instance preservation verification
+    expect(el.tocController).toBe(tocController);
+    expect(tocController.isConnected).toBe(false);
 
     document.body.appendChild(el);
-    expect(tocController?.isConnected).toBe(true);
+    expect(tocController.isConnected).toBe(true);
   });
 
   test("closes settings popover when Table of Contents opens", () => {
@@ -889,17 +891,17 @@ describe("MorcusReaderView desktop splitter drag", () => {
     document.body.appendChild(el);
 
     const settings = el.getSettingsElement();
-    const toc = el.getTocController();
+    const tocBtn = el.querySelector<HTMLButtonElement>("#reader-toc-btn")!;
+    const tocDrawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
     expect(settings).not.toBeNull();
-    expect(toc).not.toBeNull();
 
     // Open settings popover
     settings?.open();
     expect(settings?.isOpen()).toBe(true);
 
     // Opening TOC closes settings
-    toc?.open();
-    expect(toc?.isOpen()).toBe(true);
+    tocBtn.click();
+    expect(tocDrawer.hasAttribute("hidden")).toBe(false);
     expect(settings?.isOpen()).toBe(false);
 
     el.remove();
@@ -1635,15 +1637,16 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
   test("clicking Table of Contents link closes TOC drawer and swaps page", async () => {
     const el = createNavigableReaderView({ pageId: "1" });
-    const tocController = el.getTocController()!;
+    const tocBtn = el.querySelector<HTMLButtonElement>("#reader-toc-btn")!;
+    const tocDrawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
 
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
       text: async () => page2CardHtml,
     });
 
-    tocController.open();
-    expect(tocController.isOpen()).toBe(true);
+    tocBtn.click();
+    expect(tocDrawer.hasAttribute("hidden")).toBe(false);
 
     const tocItem2 = el.querySelector<HTMLAnchorElement>(
       '.reader-toc-item[data-page-id="2"]'
@@ -1652,7 +1655,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
     await new Promise((r) => setTimeout(r, 20));
 
-    expect(tocController.isOpen()).toBe(false);
+    expect(tocDrawer.hasAttribute("hidden")).toBe(true);
     expect(el.dataset.page).toBe("2");
   });
 

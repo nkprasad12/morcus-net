@@ -93,15 +93,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private preferredDrawerDvh: number = DRAWER_DEFAULT_DVH;
   private drawerController?: DrawerController;
   private readonly tocController = this.addController(
-    new ReaderTocController({
-      root: this,
-      onOpen: () => {
-        const settings = this.getSettingsElement();
-        if (settings?.isOpen()) {
-          settings.close();
-        }
-      },
-    })
+    new ReaderTocController({ root: this })
   );
   private layoutController: ReaderLayoutController | null = null;
   private panelController: ReaderPanelController | null = null;
@@ -113,10 +105,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private hasTranslation: boolean = false;
   private readonly translationCache = new Map<string, string>();
   private toastTimer: number | null = null;
-
-  public getTocController(): ReaderTocController | null {
-    return this.tocController;
-  }
 
   public getLayoutController(): ReaderLayoutController | null {
     return this.layoutController;
