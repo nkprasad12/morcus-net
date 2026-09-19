@@ -348,8 +348,8 @@ This already forced a workaround: `ReaderTocController` calls `this.resolveEleme
 
 §3.B.4 specified this for "DOM write helpers", but it only landed in `popover.client.ts` (5 call sites, `sync()` and `updatePosition()`). The ESLint-enforced choke points are where the detached-write bug class actually lives.
 
-- [ ] Call `assertConnected(target)` from `setHtml`, `replaceWithHtml` (`core/dom.client.ts`) and `swapElementContent` (`core/partial.client.ts`).
-- [ ] Known detached-write path to verify: `ReaderPanelController.setTab()` writes into `this.translationView` from a `.then()`. The `latest("translation")` abort lane covers the network path, but a **cache hit** in `MorcusReaderView.translationCache` resolves without consulting the signal.
+- [x] Call `assertConnected(target)` from `setHtml`, `replaceWithHtml` (`core/dom.client.ts`) and `swapElementContent` (`core/partial.client.ts`).
+- [x] Known detached-write path to verify: `ReaderPanelController.setTab()` writes into `this.translationView` from a `.then()`. The `latest("translation")` abort lane covers the network path, but a **cache hit** in `MorcusReaderView.translationCache` resolves without consulting the signal.
 
 ### 6.4 Widen the selector inventory contract test (🟡)
 

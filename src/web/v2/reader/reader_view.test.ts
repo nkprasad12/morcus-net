@@ -1902,4 +1902,83 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     pushStateSpy.mockRestore();
     consoleSpy.mockRestore();
   });
+
+  describe("fetchTranslation abort signal and cache behavior", () => {
+    it("returns cached translation on cache hit when signal is not aborted", async () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      const controller = new AbortController();
+
+      window.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        text: async () => "<p>Cached Translation</p>",
+      });
+
+      const res1 = await el.fetchTranslation(
+        "/v2/reader/caesar/de-bello-gallico/1",
+        controller.signal
+      );
+      expect(res1).toBe("<p>Cached Translation</p>");
+      expect(window.fetch).toHaveBeenCalledTimes(1);
+
+      // Second call hits cache without calling fetch
+      const res2 = await el.fetchTranslation(
+        "/v2/reader/caesar/de-bello-gallico/1",
+        controller.signal
+      );
+      expect(res2).toBe("<p>Cached Translation</p>");
+      expect(window.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns null on cache hit if signal is already aborted or aborted before microtask resolves", async () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      const liveCtrl = new AbortController();
+
+      window.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        text: async () => "<p>Cached Translation</p>",
+      });
+
+      await el.fetchTranslation(
+        "/v2/reader/caesar/de-bello-gallico/1",
+        liveCtrl.signal
+      );
+
+      // 1. Pre-aborted signal
+      const abortedCtrl = new AbortController();
+      abortedCtrl.abort();
+
+      const res1 = await el.fetchTranslation(
+        "/v2/reader/caesar/de-bello-gallico/1",
+        abortedCtrl.signal
+      );
+      expect(res1).toBeNull();
+
+      // 2. Signal aborted synchronously after fetchTranslation is called (mid-microtask)
+      const midCtrl = new AbortController();
+      const pending = el.fetchTranslation(
+        "/v2/reader/caesar/de-bello-gallico/1",
+        midCtrl.signal
+      );
+      midCtrl.abort();
+
+      const res2 = await pending;
+      expect(res2).toBeNull();
+    });
+
+    it("returns null before network fetch if signal is already aborted", async () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      const fetchSpy = jest.fn();
+      window.fetch = fetchSpy;
+
+      const abortedCtrl = new AbortController();
+      abortedCtrl.abort();
+
+      const res = await el.fetchTranslation(
+        "/v2/reader/caesar/de-bello-gallico/99",
+        abortedCtrl.signal
+      );
+      expect(res).toBeNull();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+  });
 });

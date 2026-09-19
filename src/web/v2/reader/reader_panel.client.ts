@@ -292,10 +292,6 @@ export class ReaderPanelController extends BaseController {
     views.appendChild(translationView);
     this.translationView = translationView;
 
-    if (this.isTranslationLoaded && this.loadedTranslationHtml !== null) {
-      swapElementContent(translationView, this.loadedTranslationHtml);
-    }
-
     const aboutView = document.createElement("div");
     aboutView.id = "panel-view-about";
     aboutView.className = "reader-panel-about reader-panel-view";
@@ -340,6 +336,10 @@ export class ReaderPanelController extends BaseController {
       }
       dictPanel.appendChild(tabs);
       dictPanel.appendChild(views);
+    }
+
+    if (this.isTranslationLoaded && this.loadedTranslationHtml !== null) {
+      swapElementContent(translationView, this.loadedTranslationHtml);
     }
 
     // Restore preserved _activeTab if still valid, else fall back to dict
@@ -405,6 +405,16 @@ export class ReaderPanelController extends BaseController {
     this.dictPanel?.classList.remove("has-companion-tabs");
     this.tabsContainer?.remove();
     this.viewsContainer?.remove();
+    this.tabsContainer = null;
+    this.viewsContainer = null;
+    this.dictView = null;
+    this.notesView = null;
+    this.translationView = null;
+    this.aboutView = null;
+    this.dictTab = null;
+    this.notesTab = null;
+    this.translationTab = null;
+    this.aboutTab = null;
   }
 
   public override onContentSwap(swappedRoot: Element): void {
@@ -572,13 +582,14 @@ export class ReaderPanelController extends BaseController {
       );
       this.onLoadTranslation()
         .then((transHtml) => {
-          if (transHtml !== null && this.translationView) {
+          if (transHtml !== null && this.isConnected && this.translationView) {
             swapElementContent(this.translationView, transHtml);
             this.isTranslationLoaded = true;
             this.loadedTranslationHtml = transHtml;
           }
         })
         .catch((err) => {
+          if (!this.isConnected) return;
           console.error("Failed to load translation:", err);
           this.showTranslationError();
         });
