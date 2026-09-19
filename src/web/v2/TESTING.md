@@ -105,7 +105,7 @@ npx jest src/web/v2/core/dialog.test.ts
 
 1. **Linting check**:
    ```bash
-   npx eslint src/web/v2
+   npx eslint --cache src/web/v2
    ```
 2. **TypeScript check**:
    ```bash
@@ -121,7 +121,7 @@ npx jest src/web/v2/core/dialog.test.ts
    ```
 5. **Code formatting**:
    ```bash
-   npx prettier src/web/v2 --check
+   npx prettier --cache src/web/v2 --check
    ```
 
 ### B. Pre-Push Checklist (Full Verification)

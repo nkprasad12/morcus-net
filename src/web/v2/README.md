@@ -121,8 +121,8 @@ UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
 Comprehensive instructions for running unit tests and Playwright E2E tests are detailed in [TESTING.md](TESTING.md). Run these when finalizing features or before committing:
 
-- **Linting & Import Rules**: `npx eslint src/web/v2`
-- **Code Style**: `npx prettier src/web/v2 --check`
-- **Type Checking**: `npx tsc --noEmit`
+- **Linting & Import Rules**: `npx eslint --cache src/web/v2`
+- **Code Style**: `npx prettier --cache src/web/v2 --check`
+- **Type Checking**: `npx tsc --noEmit` (incremental via `.cache/.tsbuildinfo`)
 - **Unit Tests**: `npx jest src/web/v2`
 - **E2E Tests**: `REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e`
