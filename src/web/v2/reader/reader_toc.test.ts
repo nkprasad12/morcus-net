@@ -265,7 +265,7 @@ describe("ReaderTocController", () => {
     controller.open();
     expect(controller.isOpen()).toBe(true);
 
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
 
     expect(controller.isOpen()).toBe(false);
     expect(focusSpy).toHaveBeenCalled();
@@ -292,7 +292,7 @@ describe("ReaderTocController", () => {
     triggerBtn.click();
     expect(controller.isOpen()).toBe(false);
     document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
 
     // Reconnecting re-binds listeners on the same controller instance
     controller.connect();

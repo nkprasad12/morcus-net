@@ -2,6 +2,9 @@ import {
   detachedDomWrites,
   clearDetachedDomWrites,
 } from "@/web/v2/core/dom_invariants.client";
+import { installLayoutShims } from "@/web/v2/testing/layout_shims";
+
+installLayoutShims();
 
 let isDetachedWriteAllowed = false;
 

@@ -47,3 +47,56 @@ describe("setup_tests detached DOM write enforcement fixture", () => {
     expect(detachedDomWrites.length).toBe(0);
   });
 });
+
+describe("setup_tests layout visibility shims", () => {
+  it("reports non-zero rects and valid offsetParent for live visible elements", () => {
+    const el = document.createElement("button");
+    document.body.appendChild(el);
+
+    expect(el.getClientRects().length).toBeGreaterThan(0);
+    expect(el.offsetParent).toBe(document.body);
+
+    el.remove();
+  });
+
+  it("reports empty rects and null offsetParent when element has hidden attribute", () => {
+    const el = document.createElement("button");
+    el.hidden = true;
+    document.body.appendChild(el);
+
+    expect(el.getClientRects().length).toBe(0);
+    expect(el.offsetParent).toBeNull();
+
+    el.remove();
+  });
+
+  it("reports empty rects and null offsetParent when ancestor is hidden", () => {
+    const parent = document.createElement("div");
+    parent.hidden = true;
+    const child = document.createElement("button");
+    parent.appendChild(child);
+    document.body.appendChild(parent);
+
+    expect(child.getClientRects().length).toBe(0);
+    expect(child.offsetParent).toBeNull();
+
+    parent.remove();
+  });
+
+  it("reports empty rects and null offsetParent when display is none", () => {
+    const el = document.createElement("button");
+    el.style.display = "none";
+    document.body.appendChild(el);
+
+    expect(el.getClientRects().length).toBe(0);
+    expect(el.offsetParent).toBeNull();
+
+    el.remove();
+  });
+
+  it("reports empty rects and null offsetParent for detached elements", () => {
+    const el = document.createElement("button");
+    expect(el.getClientRects().length).toBe(0);
+    expect(el.offsetParent).toBeNull();
+  });
+});

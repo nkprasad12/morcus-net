@@ -5,6 +5,7 @@
 import {
   AnchoredPopoverController,
   assertConnected,
+  bindDismissable,
   trapFocus,
 } from "@/web/v2/core/index.client";
 import { allowDetachedDomWritesForTest } from "@/web/v2/testing/setup_tests";
@@ -195,6 +196,79 @@ describe("AnchoredPopoverController & trapFocus", () => {
     expect(document.activeElement).toBe(fix.actionBtn);
 
     unbind();
+  });
+
+  test("trapFocus skips hidden and display:none elements when cycling focus", () => {
+    const fix = createPopoverFixture("trap-hidden");
+    fix.panel.hidden = false;
+    fix.item1.hidden = true;
+    fix.actionBtn.style.display = "none";
+
+    const unbind = trapFocus(fix.panel);
+    fix.closeBtn.focus();
+    expect(document.activeElement).toBe(fix.closeBtn);
+
+    // Tab wraps directly back to closeBtn because it is the only visible focusable element
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    expect(document.activeElement).toBe(fix.closeBtn);
+
+    unbind();
+  });
+
+  test("trapFocus registers keydown on document and not on window", () => {
+    const fix = createPopoverFixture("trap-listeners");
+    fix.panel.hidden = false;
+
+    const docSpy = jest.spyOn(document, "addEventListener");
+    const winSpy = jest.spyOn(window, "addEventListener");
+
+    const unbind = trapFocus(fix.panel);
+
+    expect(docSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+    expect(winSpy).not.toHaveBeenCalledWith("keydown", expect.anything());
+
+    unbind();
+    docSpy.mockRestore();
+    winSpy.mockRestore();
+  });
+
+  test("bindDismissable registers keydown on document and invokes onDismiss exactly once on Escape", () => {
+    const fix = createPopoverFixture("dismiss-test");
+    const onDismiss = jest.fn();
+
+    const winSpy = jest.spyOn(window, "addEventListener");
+    const docSpy = jest.spyOn(document, "addEventListener");
+
+    const unbind = bindDismissable({
+      container: fix.panel,
+      triggerEl: fix.trigger,
+      isOpen: () => true,
+      onDismiss,
+    });
+
+    expect(docSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+    expect(winSpy).not.toHaveBeenCalledWith("keydown", expect.anything());
+
+    // Dispatch Escape with bubbles: true so it bubbles document -> window
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+
+    unbind();
+    winSpy.mockRestore();
+    docSpy.mockRestore();
   });
 
   test("assertConnected logs console.error when targeting detached element", () => {

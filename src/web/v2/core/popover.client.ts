@@ -58,8 +58,6 @@ const FOCUSABLE_SELECTOR =
  */
 export function trapFocus(panel: HTMLElement): CleanupFn {
   const doc = panel.ownerDocument ?? document;
-  const win = doc.defaultView ?? window;
-  const isJsdom = Boolean(win.navigator?.userAgent?.includes("jsdom"));
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== "Tab" || e.defaultPrevented) return;
@@ -70,7 +68,7 @@ export function trapFocus(panel: HTMLElement): CleanupFn {
       (el) =>
         !el.hasAttribute("hidden") &&
         !el.closest("[hidden]") &&
-        (el.offsetParent !== null || el.getClientRects().length > 0 || isJsdom)
+        (el.offsetParent !== null || el.getClientRects().length > 0)
     );
 
     if (focusables.length === 0) return;
@@ -93,11 +91,9 @@ export function trapFocus(panel: HTMLElement): CleanupFn {
   };
 
   doc.addEventListener("keydown", onKeyDown);
-  win.addEventListener("keydown", onKeyDown);
 
   return () => {
     doc.removeEventListener("keydown", onKeyDown);
-    win.removeEventListener("keydown", onKeyDown);
   };
 }
 
