@@ -413,6 +413,7 @@ export class DrawerController extends BaseController {
    * and layout elements.
    */
   public reset(): void {
+    this.resolveElements();
     if (this.drawer) {
       this.drawer.classList.remove("drawer-minimized");
       this.drawer.style.removeProperty("--drawer-height");

@@ -17,6 +17,8 @@ export interface DismissableOptions {
   listenPointerDown?: boolean;
   /** Optional predicate to ignore clicks on certain elements (e.g. trigger buttons). */
   ignore?: (target: Node) => boolean;
+  /** Optional Document instance to bind listeners on (defaults to global document). */
+  doc?: Document;
 }
 
 /**
@@ -24,6 +26,7 @@ export interface DismissableOptions {
  * Returns an unbind cleanup function.
  */
 export function bindDismissable(options: DismissableOptions): CleanupFn {
+  const doc = options.doc ?? document;
   const getContainer = (): HTMLElement | null =>
     typeof options.container === "function"
       ? options.container()
@@ -60,13 +63,11 @@ export function bindDismissable(options: DismissableOptions): CleanupFn {
     ? ["pointerdown", "mousedown"]
     : ["click"];
 
-  pointerEvents.forEach((evt) => document.addEventListener(evt, onPointer));
-  document.addEventListener("keydown", onKey);
+  pointerEvents.forEach((evt) => doc.addEventListener(evt, onPointer));
+  doc.addEventListener("keydown", onKey);
 
   return () => {
-    pointerEvents.forEach((evt) =>
-      document.removeEventListener(evt, onPointer)
-    );
-    document.removeEventListener("keydown", onKey);
+    pointerEvents.forEach((evt) => doc.removeEventListener(evt, onPointer));
+    doc.removeEventListener("keydown", onKey);
   };
 }

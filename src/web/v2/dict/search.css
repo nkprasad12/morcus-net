@@ -173,26 +173,6 @@
   letter-spacing: -0.02em;
 }
 
-.lang-chip-la {
-  background-color: var(--chip-la-bg);
-  color: var(--chip-la-text);
-}
-
-.lang-chip-en {
-  background-color: var(--chip-en-bg);
-  color: var(--chip-en-text);
-}
-
-.lang-chip-de {
-  background-color: var(--chip-de-bg);
-  color: var(--chip-de-text);
-}
-
-.lang-chip-es {
-  background-color: var(--chip-es-bg);
-  color: var(--chip-es-text);
-}
-
 .lang-chip-none {
   color: var(--text-muted);
   font-style: italic;

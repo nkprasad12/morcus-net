@@ -167,3 +167,162 @@
 .reader-dict-panel::-webkit-scrollbar-thumb:hover {
   background-color: var(--scrollbar-thumb-hover);
 }
+
+/* ==========================================================================
+   5. Loading Spinners (@keyframes spin)
+   ========================================================================== */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.report-submit-spinner,
+.loading-spinner {
+  animation: spin 0.6s linear infinite;
+}
+
+/* ==========================================================================
+   6. Language Badges & Chips (-la, -en, -de, -es)
+   ========================================================================== */
+
+.lang-chip-la,
+.toc-badge-la,
+.dict-badge-la {
+  background-color: var(--chip-la-bg);
+  color: var(--chip-la-text);
+}
+
+.lang-chip-en,
+.toc-badge-en,
+.dict-badge-en {
+  background-color: var(--chip-en-bg);
+  color: var(--chip-en-text);
+}
+
+.lang-chip-de,
+.toc-badge-de,
+.dict-badge-de {
+  background-color: var(--chip-de-bg);
+  color: var(--chip-de-text);
+}
+
+.lang-chip-es,
+.toc-badge-es,
+.dict-badge-es {
+  background-color: var(--chip-es-bg);
+  color: var(--chip-es-text);
+}
+
+/* ==========================================================================
+   7. Anchored Popover Shell (.anchored-popover)
+   ========================================================================== */
+
+@keyframes anchoredPopoverSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes anchoredPopoverSlideCentered {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.anchored-popover,
+.reader-settings-popover,
+.reader-toc-drawer {
+  position: fixed;
+  z-index: var(--z-dropdown);
+  max-width: calc(100vw - 24px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+}
+
+.anchored-popover,
+.reader-settings-popover {
+  animation: anchoredPopoverSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.anchored-popover-centered,
+.reader-toc-drawer {
+  animation: anchoredPopoverSlideCentered 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anchored-popover,
+  .anchored-popover-centered,
+  .reader-settings-popover,
+  .reader-toc-drawer,
+  .report-submit-spinner,
+  .loading-spinner {
+    animation: none;
+  }
+}
+
+/* Caret indicator pointing at trigger button */
+.anchored-popover::before,
+.reader-settings-popover::before,
+.reader-toc-drawer::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: var(--caret-left, 50%);
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* Popover Header & Close Controls */
+.popover-header,
+.settings-popover-header,
+.reader-toc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.popover-close-btn,
+.settings-popover-close,
+.reader-toc-close-btn {
+  background: none;
+  border: none;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.popover-close-btn:hover,
+.settings-popover-close:hover,
+.reader-toc-close-btn:hover {
+  color: var(--text);
+  background: var(--tag-bg);
+}

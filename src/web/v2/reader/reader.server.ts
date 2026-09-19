@@ -326,7 +326,7 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
         </div>
 
         <!-- Right / Bottom Column: Dictionary Panel (Adaptive Sheet on Mobile) -->
-        <aside class="reader-dict-panel" id="reader-dict" aria-label="Dictionary">
+        <aside class="reader-dict-panel drawer" id="reader-dict" aria-label="Dictionary">
           <!-- Mobile sheet handle & teaser bar (visible on mobile) -->
           <div class="reader-sheet-bar"
                role="separator"
@@ -395,9 +395,6 @@ ${renderReaderStickyBar(ctx)}
         activePageIndex: ctx.activePageIndex,
         query: ctx.query,
       })}
-
-      <!-- Floating Confirmation Toast -->
-      <div id="reader-toast" class="reader-toast" aria-live="polite"></div>
 
       <!-- Main Split Layout -->
       <div class="reader-split-layout ${ctx.layoutStateClass}">

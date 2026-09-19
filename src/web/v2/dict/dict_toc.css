@@ -205,26 +205,6 @@
   color: var(--text-muted);
 }
 
-.toc-badge-la {
-  background-color: var(--chip-la-bg);
-  color: var(--chip-la-text);
-}
-
-.toc-badge-en {
-  background-color: var(--chip-en-bg);
-  color: var(--chip-en-text);
-}
-
-.toc-badge-de {
-  background-color: var(--chip-de-bg);
-  color: var(--chip-de-text);
-}
-
-.toc-badge-es {
-  background-color: var(--chip-es-bg);
-  color: var(--chip-es-text);
-}
-
 .toc-entry {
   display: flex;
   flex-direction: column;

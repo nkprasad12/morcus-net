@@ -122,13 +122,13 @@ Several `core/` utilities were created specifically to standardize browser opera
 
 ### B. Duplicated CSS Component Blocks to Consolidate
 
-- [ ] 🟢 **Delete `.reader-toast` from `reader/reader_dialogs.css` (L63–84)**:
-  - Exact duplicate of `.toast` in [`shell/toast.css`](shell/toast.css) (L6–28) (and lacks `.toast`'s `@media (prefers-reduced-motion: reduce)` rule). Remove once `MorcusReaderView` calls `showToast()`.
-- [ ] 🟢 **Reuse `.drawer` (`core/drawer.css`) on `.reader-dict-panel` instead of duplicating mobile sheet rules in `reader/reader_dict.css` (L55–79)**:
-  - `reader_dict.css` (L55–79) copies the 22-line `position: fixed; bottom: 0; border-top: 2px solid var(--border-strong); transition: ...` block from `core/drawer.css` (L20–45) (and uses raw `16px` instead of `var(--radius-2xl)`).
-- [ ] 🟡 **Extract shared `.anchored-popover` CSS shell (`core/components.css` or `core/settings.css`)**:
-  - `.reader-settings-popover` ([`core/settings.css`](core/settings.css) L77–129) and `.reader-toc-drawer` ([`reader/reader_toc.css`](reader/reader_toc.css) L33–63) duplicate the fixed card shell, slide-down `@keyframes` (`settingsPopoverSlide` vs `tocDropdownSlide`), header/close button row, and the rotated `10px × 10px` `--caret-left` `::before` diamond.
-- [ ] 🟢 **Consolidate 3× duplicated language badge color rules (`-la`, `-en`, `-de`, `-es`)**:
-  - The 4-language token mapping (`--chip-la-bg`/`text`, `--chip-en-bg`/`text`, `--chip-de-bg`/`text`, `--chip-es-bg`/`text`) is written three separate times across `.lang-chip-*` ([`dict/search.css`](dict/search.css) L176–194), `.toc-badge-*` ([`dict/dict_toc.css`](dict/dict_toc.css) L208–226), and `.dict-badge-*` ([`dict/dict_entry.css`](dict/dict_entry.css) L50–68).
-- [ ] 🟢 **Deduplicate `@keyframes spin`**:
-  - Defined identically in [`dialog/dialog.css`](dialog/dialog.css) (L233–237) and [`reader/reader_panel.css`](reader/reader_panel.css) (L234–238); move once to `core/components.css`.
+- [x] 🟢 **Delete `.reader-toast` from `reader/reader_dialogs.css` (L63–84) and `#reader-toast` SSR markup**: (Completed)
+  - Removed `.reader-toast` and `.reader-toast.visible` from [`reader/reader_dialogs.css`](reader/reader_dialogs.css), removed `<div id="reader-toast" ...>` from [`reader/reader.server.ts`](reader/reader.server.ts), dropped the temporary fallback from `ensureToastElement()` in [`core/toast.client.ts`](core/toast.client.ts), and updated [`reader/reader_view.test.ts`](reader/reader_view.test.ts) to query `#toast`.
+- [x] 🟢 **Reuse `.drawer` (`core/drawer.css`) on `.reader-dict-panel` instead of duplicating mobile sheet rules in `reader/reader_dict.css` (L55–79)**: (Completed)
+  - Added `.drawer` class to `<aside class="reader-dict-panel drawer">` in [`reader/reader.server.ts`](reader/reader.server.ts), deleted the duplicate 22-line `.reader-dict-panel` mobile fixed dock block from [`reader/reader_dict.css`](reader/reader_dict.css), ensured desktop reset specificity with `.drawer.reader-dict-panel`, and scoped drawer back-to-top queries in [`shell/app_bar.css`](shell/app_bar.css) to exclude the desktop reader sidebar between 641px and 1080px.
+- [x] 🟡 **Extract shared `.anchored-popover` CSS shell (`core/components.css` or `core/settings.css`)**: (Completed)
+  - Extracted `.anchored-popover` shell, slide-down `@keyframes anchoredPopoverSlide` / `anchoredPopoverSlideCentered`, caret indicator diamond (`::before`), header row, and title/close button styles into [`core/components.css`](core/components.css). Deduplicated fixed card properties, `@keyframes`, and header/close buttons across [`.reader-settings-popover`](core/settings.css) and [`.reader-toc-drawer`](reader/reader_toc.css).
+- [x] 🟢 **Consolidate 3× duplicated language badge color rules (`-la`, `-en`, `-de`, `-es`)**: (Completed)
+  - Consolidated the 4-language token mapping (`--chip-la-bg`/`text`, `--chip-en-bg`/`text`, `--chip-de-bg`/`text`, `--chip-es-bg`/`text`) into a single multi-selector rule in [`core/components.css`](core/components.css) and removed duplicate rules from [`dict/search.css`](dict/search.css), [`dict/dict_toc.css`](dict/dict_toc.css), and [`dict/dict_entry.css`](dict/dict_entry.css).
+- [x] 🟢 **Deduplicate `@keyframes spin`**: (Completed)
+  - Centralized `@keyframes spin` and shared spinner animations once in [`core/components.css`](core/components.css); removed duplicate keyframe definitions from [`dialog/dialog.css`](dialog/dialog.css) and [`reader/reader_panel.css`](reader/reader_panel.css).

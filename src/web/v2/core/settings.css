@@ -75,66 +75,23 @@ morcus-reader-settings {
 }
 
 .reader-settings-popover {
-  position: fixed;
-  z-index: var(--z-dropdown);
   width: 320px;
-  max-width: calc(100vw - 24px);
   max-height: calc(100vh - 72px);
   overflow: visible;
-  display: flex;
-  flex-direction: column;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
   padding: var(--space-4) var(--space-5);
-  box-sizing: border-box;
-  animation: settingsPopoverSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .reader-settings-popover[hidden] {
   display: none;
 }
 
-@keyframes settingsPopoverSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reader-settings-popover {
-    animation: none;
-  }
-}
-
-/* Caret indicator pointing at the Aa trigger button */
 .reader-settings-popover::before {
-  content: "";
-  position: absolute;
-  top: -6px;
   left: var(--caret-left, 85%);
-  transform: translateX(-50%) rotate(45deg);
-  width: 10px;
-  height: 10px;
-  background: var(--card-bg);
-  border-top: 1px solid var(--border);
-  border-left: 1px solid var(--border);
-  pointer-events: none;
 }
 
 .settings-popover-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .settings-popover-title {
@@ -145,23 +102,7 @@ morcus-reader-settings {
 }
 
 .settings-popover-close {
-  background: none;
-  border: none;
   font-size: 1.25rem;
-  line-height: 1;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: var(--space-1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  transition: color 0.15s ease, background 0.15s ease;
-}
-
-.settings-popover-close:hover {
-  color: var(--text);
-  background: var(--tag-bg);
 }
 
 .reader-settings-popover .settings-body {
