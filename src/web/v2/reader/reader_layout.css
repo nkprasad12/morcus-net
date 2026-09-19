@@ -67,79 +67,50 @@
     overflow-y: visible;
   }
 
-  /* Empty state: Collapsed Bottom Drawer (~40px drawer handle bar, full height for text) */
-  .reader-layout-empty .reader-text-panel {
+  /* Static bottom scroll cushion: sized to max drawer height so passage text is never
+     occluded and scrollHeight never jumps during scroll or drawer state changes */
+  .reader-text-panel {
     flex: 1 1 auto;
-    padding-bottom: 58px;
+    padding-bottom: calc(88svh + 36px);
   }
 
-  .reader-layout-empty .reader-dict-panel {
+  /* Active state: Height drawer in stable svh units */
+  .reader-layout-active .reader-dict-panel {
+    flex: none;
+    height: var(--drawer-height, 48svh);
+    min-height: 40px;
+    max-height: 88svh;
+  }
+
+  .reader-layout-active .reader-dict-sticky {
+    display: block;
+  }
+
+  /* Minimized drawer (both initial empty state and collapsed active state):
+     retains content in DOM but collapses to 40px teaser */
+  .reader-dict-panel.drawer-minimized:not(:target) {
     flex: 0 0 40px;
     height: 40px;
     overflow: hidden;
   }
 
-  .reader-layout-empty .reader-dict-sticky,
-  .reader-layout-empty .reader-dict-panel:not(:target) .reader-panel-views,
-  .reader-layout-empty .reader-dict-panel:not(:target) .dict-iframe-container {
+  .reader-dict-panel.drawer-minimized:not(:target) .reader-dict-sticky,
+  .reader-dict-panel.drawer-minimized:not(:target) .reader-panel-views,
+  .reader-dict-panel.drawer-minimized:not(:target) .dict-iframe-container {
     display: none;
   }
 
   /* No-JS Drawer Expansion via :target */
   .reader-layout-empty .reader-dict-panel:target {
     flex: none;
-    height: 55dvh;
+    height: 55svh;
     min-height: 40px;
-    max-height: 88dvh;
-  }
-
-  .reader-layout-empty:has(.reader-dict-panel:target) .reader-text-panel {
-    padding-bottom: calc(55dvh + 36px);
+    max-height: 88svh;
   }
 
   .reader-layout-empty .reader-dict-panel:target .reader-dict-sticky,
   .reader-layout-empty .reader-dict-panel:target .dict-iframe-container {
     display: flex;
-  }
-
-  /* Minimized active drawer: retains content in DOM but collapses to 40px teaser */
-  .reader-layout-active .reader-dict-panel.drawer-minimized {
-    height: 40px;
-    overflow: hidden;
-  }
-
-  .reader-layout-active:has(.drawer-minimized) .reader-text-panel {
-    padding-bottom: 58px;
-  }
-
-  .reader-layout-active .reader-dict-panel.drawer-minimized .reader-dict-sticky,
-  .reader-layout-active .reader-dict-panel.drawer-minimized .reader-panel-views,
-  .reader-layout-active
-    .reader-dict-panel.drawer-minimized
-    .dict-iframe-container {
-    display: none;
-  }
-
-  /* Active state: Dynamic height drawer with arbitrary % dvh */
-  .reader-layout-active .reader-text-panel {
-    flex: 1 1 auto;
-    padding-bottom: calc(var(--drawer-height, 48dvh) + 36px);
-    transition: padding-bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .reader-split-layout:has(.is-dragging) .reader-text-panel {
-    transition: none;
-  }
-
-  .reader-layout-active .reader-dict-panel {
-    flex: none;
-    height: var(--drawer-height, 48dvh);
-    min-height: 40px;
-    max-height: 88dvh;
-  }
-
-  .reader-layout-active .reader-dict-sticky {
-    display: block;
   }
 
   /* Floating restore FAB (revealed when drawer is dismissed via 'x' button) */
@@ -207,13 +178,6 @@
     .reader-dict-panel {
     transform: translateY(100%);
     pointer-events: none;
-  }
-
-  .drawer-dismissed .reader-text-panel,
-  .reader-drawer-dismiss-target:target
-    ~ .reader-split-layout
-    .reader-text-panel {
-    padding-bottom: var(--space-5);
   }
 
   .drawer-dismissed .reader-drawer-fab,

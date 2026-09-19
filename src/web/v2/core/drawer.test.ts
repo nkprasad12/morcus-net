@@ -3,9 +3,9 @@
  */
 import {
   DrawerController,
-  DRAWER_DEFAULT_DVH,
-  DRAWER_EXPANDED_DVH,
-  DRAWER_FLOOR_DVH,
+  DRAWER_DEFAULT_SVH,
+  DRAWER_EXPANDED_SVH,
+  DRAWER_FLOOR_SVH,
   DRAWER_MIN_HEIGHT,
 } from "@/web/v2/core/drawer.client";
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
@@ -50,7 +50,7 @@ describe("DrawerController", () => {
     jest.clearAllMocks();
   });
 
-  test("initializes with default options and tracks preferred dvh", () => {
+  test("initializes with default options and tracks preferred svh", () => {
     const controller = connectController({
       drawer,
       handle,
@@ -58,29 +58,29 @@ describe("DrawerController", () => {
     });
 
     expect(controller.isMinimized()).toBe(false);
-    expect(controller.getPreferredDvh()).toBe(DRAWER_DEFAULT_DVH);
+    expect(controller.getPreferredSvh()).toBe(DRAWER_DEFAULT_SVH);
 
     controller.dispose();
   });
 
-  test("uses DRAWER_* constants when dvh and height options are omitted", () => {
+  test("uses DRAWER_* constants when svh and height options are omitted", () => {
     const controller = connectController({ drawer, handle, layoutElement });
-    expect(controller.getPreferredDvh()).toBe(DRAWER_DEFAULT_DVH);
+    expect(controller.getPreferredSvh()).toBe(DRAWER_DEFAULT_SVH);
     controller.minimize();
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
       `${DRAWER_MIN_HEIGHT}px`
     );
     // Floor clamp
-    controller.restore(DRAWER_FLOOR_DVH - 5);
-    expect(controller.getPreferredDvh()).toBe(DRAWER_FLOOR_DVH);
+    controller.restore(DRAWER_FLOOR_SVH - 5);
+    expect(controller.getPreferredSvh()).toBe(DRAWER_FLOOR_SVH);
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
-      `${DRAWER_FLOOR_DVH}dvh`
+      `${DRAWER_FLOOR_SVH}svh`
     );
     // Expanded clamp
-    controller.restore(DRAWER_EXPANDED_DVH + 10);
-    expect(controller.getPreferredDvh()).toBe(DRAWER_EXPANDED_DVH);
+    controller.restore(DRAWER_EXPANDED_SVH + 10);
+    expect(controller.getPreferredSvh()).toBe(DRAWER_EXPANDED_SVH);
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
-      `${DRAWER_EXPANDED_DVH}dvh`
+      `${DRAWER_EXPANDED_SVH}svh`
     );
     controller.dispose();
   });
@@ -115,7 +115,7 @@ describe("DrawerController", () => {
       drawer,
       handle,
       layoutElement,
-      defaultDvh: 48,
+      defaultSvh: 48,
       onRestore,
     });
 
@@ -126,30 +126,30 @@ describe("DrawerController", () => {
 
     expect(controller.isMinimized()).toBe(false);
     expect(drawer.classList.contains("drawer-minimized")).toBe(false);
-    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("65dvh");
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("65svh");
     expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
-      "65dvh"
+      "65svh"
     );
     expect(handle.getAttribute("aria-valuenow")).toBe("65");
-    expect(controller.getPreferredDvh()).toBe(65);
+    expect(controller.getPreferredSvh()).toBe(65);
     expect(onRestore).toHaveBeenCalledWith(65);
 
     controller.dispose();
   });
 
-  test("restore() clamps target dvh within [floorDvh, expandedDvh]", () => {
+  test("restore() clamps target svh within [floorSvh, expandedSvh]", () => {
     const controller = connectController({
       drawer,
       handle,
-      floorDvh: 20,
-      expandedDvh: 80,
+      floorSvh: 20,
+      expandedSvh: 80,
     });
 
     controller.restore(10); // Below floor
-    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("20dvh");
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("20svh");
 
     controller.restore(95); // Above expanded
-    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("80dvh");
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("80svh");
 
     controller.dispose();
   });
@@ -198,17 +198,17 @@ describe("DrawerController", () => {
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown" }));
     expect(controller.isMinimized()).toBe(true);
 
-    // ArrowUp while minimized restores to default (DRAWER_DEFAULT_DVH)
+    // ArrowUp while minimized restores to default (DRAWER_DEFAULT_SVH)
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
     expect(controller.isMinimized()).toBe(false);
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
-      `${DRAWER_DEFAULT_DVH}dvh`
+      `${DRAWER_DEFAULT_SVH}svh`
     );
 
-    // ArrowUp while open expands to expandedDvh (DRAWER_EXPANDED_DVH)
+    // ArrowUp while open expands to expandedSvh (DRAWER_EXPANDED_SVH)
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp" }));
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
-      `${DRAWER_EXPANDED_DVH}dvh`
+      `${DRAWER_EXPANDED_SVH}svh`
     );
 
     // Escape calls onEscape
@@ -277,7 +277,7 @@ describe("DrawerController", () => {
   /**
    * Pins the viewport read out of the move hot path.
    *
-   * `window.innerHeight` is layout-dependent, so reading it per `pointermove`
+   * `100svh` (`measureSvh100()`) is layout-dependent, so reading it per `pointermove`
    * flushes pending layout — and the move handler writes `--drawer-height`
    * immediately before, making it a read-after-write. The viewport cannot
    * change mid-gesture (the handle is `touch-action: none`, so no scroll-driven
@@ -380,7 +380,7 @@ describe("DrawerController", () => {
     controller.dispose();
   });
 
-  test("dispose() removes all listeners cleanly and connect() preserves preferredDvh", () => {
+  test("dispose() removes all listeners cleanly and connect() preserves preferredSvh", () => {
     const onEscape = jest.fn();
     const controller = connectController({
       drawer,
@@ -390,7 +390,7 @@ describe("DrawerController", () => {
     });
 
     controller.restore(72);
-    expect(controller.getPreferredDvh()).toBe(72);
+    expect(controller.getPreferredSvh()).toBe(72);
 
     controller.dispose();
 
@@ -398,9 +398,9 @@ describe("DrawerController", () => {
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(onEscape).not.toHaveBeenCalled();
 
-    // Reconnecting preserves preferredDvh and re-binds listeners
+    // Reconnecting preserves preferredSvh and re-binds listeners
     controller.connect();
-    expect(controller.getPreferredDvh()).toBe(72);
+    expect(controller.getPreferredSvh()).toBe(72);
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(onEscape).toHaveBeenCalledTimes(1);
 
@@ -430,11 +430,10 @@ describe("DrawerController", () => {
       );
 
     /**
-     * The drawer's `transition: height 0.25s` is suppressed mid-drag by
-     * `.drawer.is-dragging` (core/drawer.css) and, for the reader,
-     * `.reader-dict-panel.is-dragging` (reader/reader.css). Both select the
-     * *panel*, but the handle is a child of it, so marking only the handle leaves
-     * both rules dead and the drawer eases toward the pointer for the whole drag.
+     * `.reader-dict-panel.is-dragging .dict-iframe` (src/web/v2/reader/reader_dict.css#L31-L34)
+     * disables pointer events on the dictionary iframe mid-drag. It selects the panel,
+     * and the handle is a child of it, so marking both ensures the iframe never captures
+     * pointermove/pointerup events during a drag.
      */
     test("marks the drawer itself, not only the handle, while dragging", () => {
       const controller = connectController({ drawer, handle });
@@ -473,7 +472,6 @@ describe("DrawerController", () => {
       controller.dispose();
     });
 
-    // Without this, a drawer torn down mid-drag keeps `transition: none` forever.
     test("clears the drawer marker when destroyed mid-drag", () => {
       const controller = connectController({ drawer, handle });
 
@@ -515,30 +513,28 @@ describe("DrawerController", () => {
       controller.dispose();
     });
 
-    test("reset() clears drawer-minimized, removes custom height from drawer and layout, and resets aria-valuenow", () => {
+    test("reset() applies drawer-minimized, removes custom height from drawer and layout, and sets aria-valuenow to 0", () => {
       const controller = connectController({
         drawer,
         handle,
         layoutElement,
-        defaultDvh: 48,
+        defaultSvh: 48,
         minHeight: 54,
       });
 
       controller.restore(70);
-      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("70dvh");
+      expect(drawer.classList.contains("drawer-minimized")).toBe(false);
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("70svh");
       expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
-        "70dvh"
+        "70svh"
       );
 
-      controller.minimize();
-      expect(drawer.classList.contains("drawer-minimized")).toBe(true);
-      expect(handle.getAttribute("aria-valuenow")).toBe("0");
-
       controller.reset();
-      expect(drawer.classList.contains("drawer-minimized")).toBe(false);
+      expect(drawer.classList.contains("drawer-minimized")).toBe(true);
+      expect(controller.isMinimized()).toBe(true);
       expect(drawer.style.getPropertyValue("--drawer-height")).toBe("");
       expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe("");
-      expect(handle.getAttribute("aria-valuenow")).toBe("54");
+      expect(handle.getAttribute("aria-valuenow")).toBe("0");
 
       controller.dispose();
     });
@@ -550,7 +546,7 @@ describe("DrawerController", () => {
         drawer,
         handle,
         layoutElement,
-        defaultDvh: 48,
+        defaultSvh: 48,
         minHeight: 38,
         onDragStart,
         onRestore,
@@ -582,7 +578,195 @@ describe("DrawerController", () => {
         })
       );
       expect(onRestore).toHaveBeenCalled();
-      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("44dvh");
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("44svh");
+
+      controller.dispose();
+    });
+  });
+
+  describe("100svh drag inference and tap early-return", () => {
+    let origInnerHeight: PropertyDescriptor | undefined;
+    let origClientHeight: PropertyDescriptor | undefined;
+
+    beforeEach(() => {
+      origInnerHeight = Object.getOwnPropertyDescriptor(window, "innerHeight");
+      origClientHeight = Object.getOwnPropertyDescriptor(
+        document.documentElement,
+        "clientHeight"
+      );
+      // Simulate mobile URL bar retracted: 100dvh = 800px, 100svh = 700px
+      Object.defineProperty(window, "innerHeight", {
+        configurable: true,
+        value: 800,
+      });
+      Object.defineProperty(document.documentElement, "clientHeight", {
+        configurable: true,
+        value: 700,
+      });
+    });
+
+    afterEach(() => {
+      if (origInnerHeight) {
+        Object.defineProperty(window, "innerHeight", origInnerHeight);
+      }
+      if (origClientHeight) {
+        Object.defineProperty(
+          document.documentElement,
+          "clientHeight",
+          origClientHeight
+        );
+      } else {
+        delete (document.documentElement as { clientHeight?: number })
+          .clientHeight;
+      }
+    });
+
+    test("computes svh percentage from 100svh (700px) rather than 100dvh (800px) when dragging an open drawer", () => {
+      const controller = connectController({
+        drawer,
+        handle,
+        layoutElement,
+        defaultSvh: 48,
+      });
+
+      // Open drawer at 48svh = 336px (out of 700px)
+      let mockedHeight = 336;
+      drawer.getBoundingClientRect = jest.fn(
+        () => ({ height: mockedHeight } as DOMRect)
+      );
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          bubbles: true,
+          clientX: 100,
+          clientY: 400,
+          pointerId: 1,
+        })
+      );
+
+      // Drag upward by 140px (336 + 140 = 476px -> 68% of 700px svh, vs 60% of 800px dvh)
+      mockedHeight = 476;
+      handle.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 260,
+          pointerId: 1,
+        })
+      );
+      expect(handle.getAttribute("aria-valuenow")).toBe("68");
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerup", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 260,
+          pointerId: 1,
+        })
+      );
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("68svh");
+      expect(controller.getPreferredSvh()).toBe(68);
+
+      controller.dispose();
+    });
+
+    test("computes svh percentage from 100svh (700px) when dragging upward from minimized state", () => {
+      const controller = connectController({
+        drawer,
+        handle,
+        layoutElement,
+        minHeight: 54,
+      });
+
+      controller.minimize();
+      expect(controller.isMinimized()).toBe(true);
+
+      let mockedHeight = 54;
+      drawer.getBoundingClientRect = jest.fn(
+        () => ({ height: mockedHeight } as DOMRect)
+      );
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          bubbles: true,
+          clientX: 100,
+          clientY: 746,
+          pointerId: 1,
+        })
+      );
+
+      // Drag upward by 296px (54 + 296 = 350px -> 50% of 700px svh, vs 44% of 800px dvh)
+      mockedHeight = 350;
+      handle.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 450,
+          pointerId: 1,
+        })
+      );
+      expect(handle.getAttribute("aria-valuenow")).toBe("50");
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerup", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 450,
+          pointerId: 1,
+        })
+      );
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("50svh");
+      expect(controller.getPreferredSvh()).toBe(50);
+
+      controller.dispose();
+    });
+
+    test("tap early-return on already-open drawer restores --drawer-height back to preferredSvh (not stuck in px)", () => {
+      const controller = connectController({
+        drawer,
+        handle,
+        layoutElement,
+        defaultSvh: 48,
+      });
+
+      controller.restore(65);
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("65svh");
+
+      drawer.getBoundingClientRect = jest.fn(
+        () => ({ height: 455 } as DOMRect)
+      );
+
+      // Pointerdown sets --drawer-height to 455px
+      handle.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          bubbles: true,
+          clientX: 100,
+          clientY: 300,
+          pointerId: 1,
+        })
+      );
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("455px");
+      expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
+        "455px"
+      );
+
+      // Tap release without drag (dy = 2 < 6) restores --drawer-height to 65svh
+      handle.dispatchEvent(
+        new PointerEvent("pointerup", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 302,
+          pointerId: 1,
+        })
+      );
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("65svh");
+      expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
+        "65svh"
+      );
+      expect(controller.getPreferredSvh()).toBe(65);
 
       controller.dispose();
     });

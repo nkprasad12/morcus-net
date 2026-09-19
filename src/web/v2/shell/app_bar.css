@@ -277,11 +277,11 @@ morcus-report-dialog:not(:defined) {
 @media (max-width: 1079.98px) {
   body:has(.drawer:not(.reader-dict-panel)) .back-to-top {
     bottom: calc(
-      var(--drawer-height, 48dvh) + env(safe-area-inset-bottom, 0px) + 16px
+      var(--drawer-height, 48svh) + env(safe-area-inset-bottom, 0px) + 16px
     );
-    transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease,
-      transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease,
-      color 0.15s ease, box-shadow 0.15s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease,
+      background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   body:has(.drawer.drawer-minimized:not(.reader-dict-panel)) .back-to-top,
@@ -292,18 +292,18 @@ morcus-report-dialog:not(:defined) {
   }
 
   body:has(.drawer:target:not(.reader-dict-panel)) .back-to-top {
-    bottom: calc(55dvh + env(safe-area-inset-bottom, 0px) + 16px);
+    bottom: calc(55svh + env(safe-area-inset-bottom, 0px) + 16px);
   }
 }
 
 @media (max-width: 640px) {
   body:has(.reader-dict-panel) .back-to-top {
     bottom: calc(
-      var(--drawer-height, 48dvh) + env(safe-area-inset-bottom, 0px) + 16px
+      var(--drawer-height, 48svh) + env(safe-area-inset-bottom, 0px) + 16px
     );
-    transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease,
-      transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease,
-      color 0.15s ease, box-shadow 0.15s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease,
+      background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   body:has(.reader-layout-empty .reader-dict-panel) .back-to-top,
@@ -315,7 +315,7 @@ morcus-report-dialog:not(:defined) {
   }
 
   body:has(.reader-dict-panel:target) .back-to-top {
-    bottom: calc(55dvh + env(safe-area-inset-bottom, 0px) + 16px);
+    bottom: calc(55svh + env(safe-area-inset-bottom, 0px) + 16px);
   }
 
   body:has(.drawer-dismissed) .back-to-top,

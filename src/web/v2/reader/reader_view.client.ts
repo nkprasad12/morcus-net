@@ -2,15 +2,16 @@ import {
   BaseElement,
   type QueryParamSync,
   DrawerController,
-  DRAWER_DEFAULT_DVH,
-  DRAWER_EXPANDED_DVH,
-  DRAWER_FLOOR_DVH,
+  DRAWER_DEFAULT_SVH,
+  DRAWER_EXPANDED_SVH,
+  DRAWER_FLOOR_SVH,
   ICON_PATHS,
   copyText,
   escapeId,
   fetchAndSwapPartial,
   html,
   isPlainLeftClick,
+  measureSvh100,
   registerElement,
   setHtml,
   settingsStore,
@@ -89,7 +90,7 @@ export {
  * */
 export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private currentQuery: string = "";
-  private preferredDrawerDvh: number = DRAWER_DEFAULT_DVH;
+  private preferredDrawerSvh: number = DRAWER_DEFAULT_SVH;
   private readonly tocController = this.addController(
     new ReaderTocController({ root: this })
   );
@@ -103,10 +104,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       handleSelector: ".reader-sheet-bar",
       layoutElement: () => document.documentElement,
       minHeight: READER_DRAWER_MIN_HEIGHT,
-      defaultDvh: DRAWER_DEFAULT_DVH,
-      floorDvh: DRAWER_FLOOR_DVH,
-      expandedDvh: DRAWER_EXPANDED_DVH,
-      preferredDvh: DRAWER_DEFAULT_DVH,
+      defaultSvh: DRAWER_DEFAULT_SVH,
+      floorSvh: DRAWER_FLOOR_SVH,
+      expandedSvh: DRAWER_EXPANDED_SVH,
+      preferredSvh: DRAWER_DEFAULT_SVH,
       filter: (e) => {
         if (
           e.target instanceof Element &&
@@ -126,10 +127,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         this.updateSheetLabel(true);
         this.resetDictScroll();
       },
-      onRestore: (dvh) => {
+      onRestore: (svh) => {
         this.undismissDrawer();
         this.layoutController.setActive(true);
-        this.preferredDrawerDvh = dvh;
+        this.preferredDrawerSvh = svh;
         this.updateSheetLabel(false);
         this.resetDictScroll();
       },
@@ -191,7 +192,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       }
     }
 
-    this.preferredDrawerDvh = this.drawerController.getPreferredDvh();
+    this.preferredDrawerSvh = this.drawerController.getPreferredSvh();
     this.currentPrefs = readerSettingsStore.get();
     const workId = this.dataset.work;
     if (workId) {
@@ -686,10 +687,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.drawerController.minimize();
   }
 
-  public restoreDrawer(targetDvh?: number): void {
+  public restoreDrawer(targetSvh?: number): void {
     this.undismissDrawer();
     this.layoutController.setActive(true);
-    this.drawerController.restore(targetDvh);
+    this.drawerController.restore(targetSvh);
   }
 
   public activatePanelLayout(): void {
@@ -856,11 +857,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (window.innerWidth <= 640 && !targetEl.closest(".reader-dict-panel")) {
       this.scope.rAF(() => {
         const rect = targetEl.getBoundingClientRect();
-        const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-        const drawerTop =
-          dictPanel?.getBoundingClientRect().top ??
-          window.innerHeight *
-            (1 - (this.preferredDrawerDvh ?? DRAWER_DEFAULT_DVH) / 100);
+        const svh = this.preferredDrawerSvh || DRAWER_DEFAULT_SVH;
+        const svh100 = measureSvh100();
+        const winHeight = window.innerHeight || svh100;
+        const drawerTop = winHeight - svh100 * (svh / 100);
         if (rect.bottom > drawerTop - 24) {
           const scrollNeeded = rect.bottom - (drawerTop - 24);
           window.scrollBy({

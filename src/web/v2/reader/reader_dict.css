@@ -99,6 +99,7 @@ body.resizing-panels .dict-iframe,
    ========================================================================== */
 
 @media (min-width: 641px) {
+  .drawer.drawer-minimized.reader-dict-panel,
   .drawer.reader-dict-panel,
   .reader-dict-panel {
     display: block;
