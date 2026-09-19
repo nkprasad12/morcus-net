@@ -257,20 +257,21 @@ a.reader-note-ref.marker-active {
   .reader-sheet-bar .reader-panel-tabs {
     margin-bottom: 0;
     border-bottom: none;
-    padding: var(--space-1);
+    padding: 1px;
     background-color: var(--tag-bg);
     border-radius: var(--radius-full);
-    gap: var(--space-1);
+    gap: 2px;
   }
 
   .reader-sheet-bar .reader-panel-tab {
-    min-height: 28px;
-    min-width: 28px;
+    min-height: 24px;
+    min-width: 24px;
     justify-content: center;
-    padding: var(--space-1) var(--space-2);
+    padding: 1px var(--space-2);
     margin-bottom: 0;
     border-bottom: none;
     border-radius: var(--radius-full);
+    font-size: 0.6875rem;
     transition: background-color 0.15s ease, color 0.15s ease,
       box-shadow 0.15s ease;
   }

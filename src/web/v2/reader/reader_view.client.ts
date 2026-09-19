@@ -50,6 +50,8 @@ import {
   computeMaxSplitWidth,
 } from "@/web/v2/reader/reader_layout.client";
 
+export const READER_DRAWER_MIN_HEIGHT = 38;
+
 export {
   type ReaderFontFamily,
   type ReaderLineHeight,
@@ -101,7 +103,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       drawerSelector: ".reader-dict-panel",
       handleSelector: ".reader-sheet-bar",
       layoutElement: () => document.documentElement,
-      minHeight: DRAWER_MIN_HEIGHT,
+      minHeight: READER_DRAWER_MIN_HEIGHT,
       defaultDvh: DRAWER_DEFAULT_DVH,
       floorDvh: DRAWER_FLOOR_DVH,
       expandedDvh: DRAWER_EXPANDED_DVH,

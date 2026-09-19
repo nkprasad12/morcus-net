@@ -62,15 +62,15 @@
     overflow-y: visible;
   }
 
-  /* Empty state: Collapsed Bottom Drawer (~54px drawer handle bar, full height for text) */
+  /* Empty state: Collapsed Bottom Drawer (~38px drawer handle bar, full height for text) */
   .reader-layout-empty .reader-text-panel {
     flex: 1 1 auto;
-    padding-bottom: 74px;
+    padding-bottom: 52px;
   }
 
   .reader-layout-empty .reader-dict-panel {
-    flex: 0 0 54px;
-    height: 54px;
+    flex: 0 0 38px;
+    height: 38px;
     overflow: hidden;
   }
 
@@ -84,7 +84,7 @@
   .reader-layout-empty .reader-dict-panel:target {
     flex: none;
     height: 55dvh;
-    min-height: 54px;
+    min-height: 38px;
     max-height: 88dvh;
   }
 
@@ -97,14 +97,14 @@
     display: flex;
   }
 
-  /* Minimized active drawer: retains content in DOM but collapses to 54px teaser */
+  /* Minimized active drawer: retains content in DOM but collapses to 38px teaser */
   .reader-layout-active .reader-dict-panel.drawer-minimized {
-    height: 54px;
+    height: 38px;
     overflow: hidden;
   }
 
   .reader-layout-active:has(.drawer-minimized) .reader-text-panel {
-    padding-bottom: 74px;
+    padding-bottom: 52px;
   }
 
   .reader-layout-active .reader-dict-panel.drawer-minimized .reader-dict-sticky,
@@ -129,7 +129,7 @@
   .reader-layout-active .reader-dict-panel {
     flex: none;
     height: var(--drawer-height, 48dvh);
-    min-height: 54px;
+    min-height: 38px;
     max-height: 88dvh;
   }
 
