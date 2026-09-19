@@ -1,3 +1,5 @@
+import type { CleanupFn } from "@/web/v2/core/disposable.client";
+
 /**
  * In-page anchor navigation, smooth scroll, disclosure auto-expansion, and target highlight.
  */
@@ -35,7 +37,7 @@ export function expandAncestorDisclosures(targetEl: HTMLElement): void {
   }
 }
 
-let activeCleanup: (() => void) | null = null;
+let activeCleanup: CleanupFn | null = null;
 
 /**
  * Initializes anchor scroll and deep-link expansion. Returns a cleanup function.
@@ -43,7 +45,7 @@ let activeCleanup: (() => void) | null = null;
 export function setupAnchorScroll(
   doc: Document = document,
   win: Window = window
-): () => void {
+): CleanupFn {
   if (activeCleanup) {
     activeCleanup();
     activeCleanup = null;

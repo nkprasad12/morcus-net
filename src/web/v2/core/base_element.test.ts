@@ -7,6 +7,7 @@ import {
   DEAD_SCOPE,
   LifetimeScope,
   registerElement,
+  type CleanupFn,
 } from "@/web/v2/core/base_element.client";
 
 type Lane = "alpha" | "beta";
@@ -545,6 +546,27 @@ describe("BaseElement async cancellation", () => {
       expect(subLaneSignal.aborted).toBe(true);
     });
 
+    test("use() supports function and object Disposables and executes immediately if already disposed", () => {
+      const scope = el.sub.openTransientScope();
+      const fnCleanup: CleanupFn = jest.fn();
+      const objCleanup = { dispose: jest.fn() };
+
+      scope.use(fnCleanup);
+      scope.use(objCleanup);
+
+      expect(fnCleanup).not.toHaveBeenCalled();
+      expect(objCleanup.dispose).not.toHaveBeenCalled();
+
+      scope.dispose();
+      expect(fnCleanup).toHaveBeenCalledTimes(1);
+      expect(objCleanup.dispose).toHaveBeenCalledTimes(1);
+
+      // Registering against an already-disposed scope runs cleanup synchronously
+      const postDisposeCleanup: CleanupFn = jest.fn();
+      scope.use(postDisposeCleanup);
+      expect(postDisposeCleanup).toHaveBeenCalledTimes(1);
+    });
+
     test("require() throws descriptive error when selector is missing and listen(null) is a no-op", () => {
       expect(() => el.requireEl("#missing-node")).toThrow(
         /Required element matching selector "#missing-node" not found in <morcus-test-base-element>/
@@ -562,7 +584,7 @@ describe("BaseElement async cancellation", () => {
   });
 
   describe("DEAD_SCOPE fallback when disconnected", () => {
-    test("returns DEAD_SCOPE singleton with aborted signal, no-op timers, and safe queries", () => {
+    test("returns DEAD_SCOPE singleton with aborted signal, no-op timers, immediate use() cleanup, and safe queries", () => {
       el.remove();
 
       const scope = el.getScope();
@@ -577,6 +599,10 @@ describe("BaseElement async cancellation", () => {
         /Required element matching selector ".any" not found/
       );
       expect(() => scope.listen(null, "click", jest.fn())).not.toThrow();
+
+      const deadCleanup = jest.fn();
+      scope.use(deadCleanup);
+      expect(deadCleanup).toHaveBeenCalledTimes(1);
 
       // Sub-controller also falls back to DEAD_SCOPE when host is disconnected
       const subScope = el.sub.getScope();

@@ -1,10 +1,12 @@
+import type { CleanupFn } from "@/web/v2/core/disposable.client";
+
 /**
  * Mobile navigation menu outside-click dismissal.
  */
 
-let activeCleanup: (() => void) | null = null;
+let activeCleanup: CleanupFn | null = null;
 
-export function setupMobileMenu(doc: Document = document): () => void {
+export function setupMobileMenu(doc: Document = document): CleanupFn {
   if (activeCleanup) {
     activeCleanup();
     activeCleanup = null;

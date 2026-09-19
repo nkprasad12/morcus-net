@@ -9,15 +9,27 @@
  * executing. The bag is safe to call dispose() on multiple times (no-op when empty),
  * and remains reusable after disposal (e.g. for re-attaching elements).
  */
+/**
+ * Handle returned when registering a cleanup callback with a DisposableBag.
+ * Calling it cancels the registration so the cleanup will not execute on disposal.
+ */
+export type Unregister = () => void;
+
+/**
+ * Run-cleanup callback or teardown function (e.g. unbind, listener removal, timer cancellation).
+ * Calling it executes the teardown immediately.
+ */
+export type CleanupFn = () => void;
+
 export class DisposableBag {
-  private disposables: (() => void)[] = [];
+  private disposables: CleanupFn[] = [];
 
   /**
    * Registers a cleanup callback.
    * Returns an unregister handle that removes the callback from the bag
    * so it will not run when dispose() is called.
    */
-  add(fn: () => void): () => void {
+  add(fn: CleanupFn): Unregister {
     this.disposables.push(fn);
     let unregistered = false;
     return () => {

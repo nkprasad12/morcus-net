@@ -1,3 +1,5 @@
+import type { CleanupFn } from "@/web/v2/core/disposable.client";
+
 /**
  * Gesture and Pointer Event utilities.
  */
@@ -54,7 +56,7 @@ export interface TrackPointerDragOptions {
 export function trackPointerDrag(
   handle: HTMLElement,
   options: TrackPointerDragOptions
-): () => void {
+): CleanupFn {
   let isDragging = false;
   let startX = 0;
   let startY = 0;

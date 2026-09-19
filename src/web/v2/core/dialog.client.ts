@@ -9,7 +9,7 @@
  * - ARIA expanded state tracking on opening trigger buttons
  */
 
-import { DisposableBag } from "@/web/v2/core/disposable.client";
+import { type CleanupFn, DisposableBag } from "@/web/v2/core/disposable.client";
 
 export interface ModalDialogOptions {
   /** Optional trigger element(s) that open this dialog. */
@@ -27,7 +27,7 @@ export interface ModalDialogOptions {
 export function setupModalDialog(
   dialog: HTMLDialogElement,
   options: ModalDialogOptions = {}
-): () => void {
+): CleanupFn {
   const triggers = options.trigger
     ? Array.isArray(options.trigger)
       ? options.trigger
