@@ -3,6 +3,7 @@
  */
 
 import { notifyContentSwap } from "@/web/v2/core/base_element.client";
+import { assertConnected } from "@/web/v2/core/dom.client";
 
 /**
  * Parses an HTML string into a contextual DocumentFragment using the browser's
@@ -27,6 +28,7 @@ export function createHtmlFragment(html: string): DocumentFragment {
  * Safely replaces all children of `container` with parsed nodes from `html`.
  */
 export function swapElementContent(container: HTMLElement, html: string): void {
+  assertConnected(container);
   const fragment = createHtmlFragment(html);
   container.replaceChildren(fragment);
   notifyContentSwap(container);

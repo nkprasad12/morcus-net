@@ -155,6 +155,7 @@ export class MorcusDictSettings extends BaseElement {
     if (this.popoverEl && !this.scope.$(".settings-slider")) {
       const sliderControls = document.createElement("div");
       sliderControls.className = "settings-slider-section";
+      this.popoverEl.prepend(sliderControls);
       setHtml(
         sliderControls,
         html`
@@ -184,7 +185,6 @@ export class MorcusDictSettings extends BaseElement {
           <div class="settings-divider" role="separator"></div>
         `
       );
-      this.popoverEl.prepend(sliderControls);
     }
 
     this.scope.listen(this.summaryEl, "click", (e: MouseEvent) => {

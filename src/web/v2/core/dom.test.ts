@@ -1,8 +1,15 @@
 /**
  * @jest-environment jsdom
  */
-import { setHtml, replaceWithHtml } from "@/web/v2/core/dom.client";
+import {
+  setHtml,
+  replaceWithHtml,
+  assertConnected,
+} from "@/web/v2/core/dom.client";
+import { detachedDomWrites } from "@/web/v2/core/dom_invariants.client";
+import { swapElementContent } from "@/web/v2/core/partial.client";
 import { html } from "@/web/v2/core/html.common";
+import { allowDetachedDomWritesForTest } from "@/web/v2/testing/setup_tests";
 
 describe("core/dom.client", () => {
   beforeEach(() => {
@@ -130,6 +137,79 @@ describe("core/dom.client", () => {
           ".reader-split-layout:has(.is-dragging) .reader-text-panel"
         )
       ).toBeNull();
+    });
+  });
+
+  describe("HTML sink assertConnected invariant enforcement", () => {
+    it("assertConnected records detached writes on disconnected elements", () => {
+      allowDetachedDomWritesForTest();
+      const detached = document.createElement("div");
+      detached.id = "direct-assert-detached";
+
+      const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      assertConnected(detached);
+
+      expect(
+        detachedDomWrites.some((w) =>
+          w.includes("<div#direct-assert-detached>")
+        )
+      ).toBe(true);
+      errSpy.mockRestore();
+    });
+
+    it("setHtml reports detached write when target is not connected", () => {
+      allowDetachedDomWritesForTest();
+      const detached = document.createElement("div");
+      detached.id = "sink-detached-set";
+
+      const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      setHtml(detached, html`<span>should flag</span>`);
+
+      expect(
+        detachedDomWrites.some((w) => w.includes("<div#sink-detached-set>"))
+      ).toBe(true);
+      errSpy.mockRestore();
+    });
+
+    it("replaceWithHtml reports detached write when target is not connected", () => {
+      allowDetachedDomWritesForTest();
+      const detached = document.createElement("div");
+      detached.id = "sink-detached-replace";
+
+      const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      replaceWithHtml(detached, html`<span>should flag</span>`);
+
+      expect(
+        detachedDomWrites.some((w) => w.includes("<div#sink-detached-replace>"))
+      ).toBe(true);
+      errSpy.mockRestore();
+    });
+
+    it("swapElementContent reports detached write when container is not connected", () => {
+      allowDetachedDomWritesForTest();
+      const detached = document.createElement("div");
+      detached.id = "sink-detached-swap";
+
+      const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      swapElementContent(detached, "<p>should flag</p>");
+
+      expect(
+        detachedDomWrites.some((w) => w.includes("<div#sink-detached-swap>"))
+      ).toBe(true);
+      errSpy.mockRestore();
+    });
+
+    it("does not report detached write when target is connected to document", () => {
+      const live = document.createElement("div");
+      live.id = "live-container";
+      document.body.appendChild(live);
+
+      const errSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+      setHtml(live, html`<span>valid write</span>`);
+
+      expect(detachedDomWrites.length).toBe(0);
+      expect(errSpy).not.toHaveBeenCalled();
+      errSpy.mockRestore();
     });
   });
 });

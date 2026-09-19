@@ -18,4 +18,5 @@ module.exports = {
       },
     ],
   },
+  setupFilesAfterEnv: ["<rootDir>/src/web/v2/testing/setup_tests.ts"],
 };

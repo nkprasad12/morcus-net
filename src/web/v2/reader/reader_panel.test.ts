@@ -704,6 +704,36 @@ describe("ReaderPanelController", () => {
       errController.dispose();
     });
 
+    it("does not write to detached translationView if controller disconnects before resolution", async () => {
+      let resolvePromise!: (val: string) => void;
+      const delayedMock = jest.fn().mockImplementation(() => {
+        return new Promise<string>((resolve) => {
+          resolvePromise = resolve;
+        });
+      });
+
+      const disconnectContainer = createFixture(true, true);
+      const testCtrl = connectController({
+        root: disconnectContainer,
+        hasTranslation: true,
+        onLoadTranslation: delayedMock,
+      });
+
+      testCtrl.setTab("translation");
+      expect(delayedMock).toHaveBeenCalledTimes(1);
+
+      // Disconnect the controller while translation load is still in-flight
+      testCtrl.dispose();
+      expect(testCtrl.isConnected).toBe(false);
+
+      // Now resolve the promise (simulating late arrival or microtask resolution)
+      resolvePromise("<div>Late arrival</div>");
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Verified: no detached DOM writes occurred (enforced by setup_tests afterEach)
+    });
+
     it("supports keyboard arrow navigation cycling through 4 tabs", () => {
       const tabs = container.querySelector<HTMLElement>(".reader-panel-tabs")!;
       const dictTab =

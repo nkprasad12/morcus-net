@@ -983,14 +983,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     btn.className = "reader-dict-back-to-top";
     btn.setAttribute("aria-label", "Scroll dictionary to top");
     btn.title = "Jump to top";
+    dictPanel.appendChild(btn);
     setHtml(
       btn,
       html`<svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="${ICON_PATHS.chevronUp}"></path>
       </svg>`
     );
-
-    dictPanel.appendChild(btn);
 
     const getScroller = () => {
       if (window.innerWidth > 640) {
@@ -1243,10 +1242,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     pageUrl: string,
     signal: AbortSignal
   ): Promise<string | null> {
+    if (signal.aborted) {
+      return null;
+    }
     const key = this.getTranslationKey(pageUrl);
     const cached = this.translationCache.get(key);
     if (cached !== undefined) {
-      return cached;
+      await Promise.resolve();
+      return signal.aborted ? null : cached;
     }
 
     try {
@@ -1266,7 +1269,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
       const html = await res.text();
       this.translationCache.set(key, html);
-      return html;
+      return signal.aborted ? null : html;
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") {
         return null;

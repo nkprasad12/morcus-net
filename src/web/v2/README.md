@@ -67,6 +67,7 @@ Two consequences worth knowing before you "clean up" such a module:
 
 - **They return `SafeHtml`, not DOM nodes.** The client updates the DOM via typed sinks
   (`setHtml` / `replaceWithHtml` in `core/dom.client.ts`), so returning DOM nodes is not an option.
+- **Attach-before-write convention.** When dynamically creating new elements in client code, attach the element to its live parent before calling `setHtml` (e.g. `parent.appendChild(el); setHtml(el, content);`). Calling `setHtml`, `replaceWithHtml`, or `swapElementContent` on a detached node trips the `assertConnected` invariant. For offline markup parsing without attaching, use `createHtmlFragment(html)` from `core/partial.client.ts`.
 - **Escaping is provided by `core/html.common.ts`.** Escaping in a `.common.ts` cannot use `he`,
   which is ~100 KB of poorly tree-shakeable CommonJS and must not enter the client bundle
   (enforced mechanically by ESLint). Instead, isomorphic renderers use the `html` tagged template

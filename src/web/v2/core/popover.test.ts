@@ -7,6 +7,7 @@ import {
   assertConnected,
   trapFocus,
 } from "@/web/v2/core/index.client";
+import { allowDetachedDomWritesForTest } from "@/web/v2/testing/setup_tests";
 
 describe("AnchoredPopoverController & trapFocus", () => {
   let container: HTMLDivElement;
@@ -197,6 +198,7 @@ describe("AnchoredPopoverController & trapFocus", () => {
   });
 
   test("assertConnected logs console.error when targeting detached element", () => {
+    allowDetachedDomWritesForTest();
     const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     const connectedEl = document.createElement("div");
     connectedEl.id = "live-el";

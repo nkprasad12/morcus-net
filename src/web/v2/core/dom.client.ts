@@ -13,10 +13,12 @@
  */
 
 import { notifyContentSwap } from "@/web/v2/core/base_element.client";
+import { recordDetachedDomWrite } from "@/web/v2/core/dom_invariants.client";
 import type { SafeHtml } from "@/web/v2/core/html.common";
 
 /** Replaces the children of `target` with the given markup. */
 export function setHtml(target: Element, content: SafeHtml): void {
+  assertConnected(target);
   // The audited sink; the `SafeHtml` parameter is the guarantee. The rationale
   // has to sit above the directive rather than after it on the same line:
   // prettier wraps a long trailing `--` description onto a second line, and
@@ -28,6 +30,7 @@ export function setHtml(target: Element, content: SafeHtml): void {
 
 /** Replaces `target` itself with the given markup. */
 export function replaceWithHtml(target: Element, content: SafeHtml): void {
+  assertConnected(target);
   const parent = target.parentElement;
   const prevSibling = target.previousElementSibling;
   // The audited sink; the `SafeHtml` parameter is the guarantee.
@@ -62,7 +65,9 @@ export function assertConnected(el: Element, hostRoot?: ParentNode): void {
     return;
   }
   const idSuffix = el.id ? `#${el.id}` : "";
-  console.error(
-    `[UI V2] DOM write targeting detached element <${el.tagName.toLowerCase()}${idSuffix}>.`
-  );
+  const msg = `[UI V2] DOM write targeting detached element <${el.tagName.toLowerCase()}${idSuffix}>.`;
+  console.error(msg);
+  if (process.env.NODE_ENV === "test") {
+    recordDetachedDomWrite(msg);
+  }
 }
