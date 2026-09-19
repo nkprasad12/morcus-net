@@ -386,8 +386,8 @@ If the `<details>`-based one genuinely cannot fit `AnchoredPopoverController`, r
 
 ### 6.7 Get the test environment out of the shipped bundle (🟢)
 
-- [ ] `trapFocus` branches on `navigator.userAgent.includes("jsdom")` at runtime, in production code (`core/popover.client.ts`).
-- [ ] `trapFocus` **and** `bindDismissable` both register `keydown` on `document` _and_ `window`. Since keydown bubbles `document → window`, each handler runs twice per keypress in a real browser. Both are currently saved by guards (`e.defaultPrevented`, an `isOpen()` re-check) — load-bearing accident rather than design.
+- [x] `trapFocus` branches on `navigator.userAgent.includes("jsdom")` at runtime, in production code (`core/popover.client.ts`).
+- [x] `trapFocus` **and** `bindDismissable` both register `keydown` on `document` _and_ `window`. Since keydown bubbles `document → window`, each handler runs twice per keypress in a real browser. Both are currently saved by guards (`e.defaultPrevented`, an `isOpen()` re-check) — load-bearing accident rather than design.
 
 A jsdom-side shim in the test setup, or the existing injected-option pattern (`defaultWidth`), is cleaner than either.
 

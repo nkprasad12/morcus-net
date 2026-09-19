@@ -62,13 +62,11 @@ export function bindDismissable(options: DismissableOptions): CleanupFn {
 
   pointerEvents.forEach((evt) => document.addEventListener(evt, onPointer));
   document.addEventListener("keydown", onKey);
-  window.addEventListener("keydown", onKey);
 
   return () => {
     pointerEvents.forEach((evt) =>
       document.removeEventListener(evt, onPointer)
     );
     document.removeEventListener("keydown", onKey);
-    window.removeEventListener("keydown", onKey);
   };
 }
