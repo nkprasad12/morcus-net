@@ -15,57 +15,38 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
 
 ### A. Shared `LifetimeScope` + `BaseController`, `addController(c)`, & `use(cleanup)`
 
-- [x] 🟡 **Extract a one-shot per-connect `LifetimeScope` and `BaseController<Lane>` base class, and split host controller registration (`this.addController(c)`) from scope cleanup (`this.use(cleanup)`).** (Completed in Steps 3 & 5)
-  - **Smell 1 (Repetitive teardown boilerplate & inconsistent `.destroy()` vs `.dispose()`)**: `this.addDisposable(fn)` currently accepts only `() => void` (and returns no `unregister` handle). Every time a component instantiates a sub-controller (`DrawerController`, `ReaderLayoutController`, `ReaderTocController`, `ReaderPanelController`, `QueryParamSync`), it repeats 4–5 lines of teardown boilerplate (**5 times** across [`reader/reader_view.client.ts`](reader/reader_view.client.ts) L204–237, L1005–1042 and [`dict/dict_toc.client.ts`](dict/dict_toc.client.ts) L32–43) and mixes `.dispose()` vs `.destroy()`.
+- [x] 🟡 **Extract a one-shot per-connect `LifetimeScope` and `BaseController<Lane>` base class, and split host controller registration (`this.addController(c)`) from scope cleanup (`this.scope.use(cleanup)`).** (Completed in Steps 3, 5, 7, 6.1, 6.2, & 6.5)
+  - **Smell 1 (Repetitive teardown boilerplate & inconsistent `.destroy()` vs `.dispose()`)**: `this.addDisposable(fn)` originally accepted only `() => void` (and returned no `unregister` handle). Every time a component instantiated a sub-controller (`DrawerController`, `ReaderLayoutController`, `ReaderTocController`, `ReaderPanelController`, `QueryParamSync`), it repeated 4–5 lines of teardown boilerplate (**5 times** across [`reader/reader_view.client.ts`](reader/reader_view.client.ts) and [`dict/dict_toc.client.ts`](dict/dict_toc.client.ts)) and mixed `.dispose()` vs `.destroy()`.
   - **Smell 2 (Sub-controllers register listeners in `constructor()` & lose state on reconnect)**:
-    - In [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) (`initListeners()`, 126 lines) and [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts), every listener takes 6 lines of `const btn = ...; btn.addEventListener(...); this.disposables.add(() => btn.removeEventListener(...))`.
-    - Because all four DOM sub-controllers register listeners in `constructor()` instead of an idempotent `onConnect()`, the parent element destroys and re-instantiates them on every reconnect—discarding controller state (`_activeTab`, `isTranslationLoaded`, `preferredDvh`).
-    - Sub-controllers lack `this.signal` / `this.latest(lane)` (e.g., `ReaderPanelController`'s async translation loader is un-cancellable on disconnect).
-  - **Proposed Architecture (detailed in [MICROFRAMEWORK_PROPOSAL.md](MICROFRAMEWORK_PROPOSAL.md))**:
-    1. **Unify `.destroy()` $\rightarrow$ `.dispose()` in a single commit**, and split `this.addController(c)` (`Controller = { connect?(): void; dispose(): void; onContentSwap?(): void }`, surviving across reconnects) from `scope.use(cleanup)` (`Disposable = (() => void) | { dispose(): void }`, dying with the current scope and returning an `unregister` handle).
-    2. **Rich `BaseController<Lane>` (sharing a one-shot per-connect `LifetimeScope` with `BaseElement<Lane>`)**:
-       - **Lifecycle**: `onConnect()`, `onDisconnect()`, and `onContentSwap()`.
-       - **Scoped DOM**: `this.root`, `this.$<T>(selector)`, `this.$$<T>(selector)`, `this.require<T>(selector)`, and `this.emit(name, detail)`.
-       - **Nullable-safe `this.listen(target | null | undefined, ...)` & `this.delegate(...)`**: Accepting `null | undefined` as a no-op eliminates ~39 `if (el) { ... }` guards across UI V2 (20 across `MorcusReaderSettings`, `ReaderTocController`, and `ReaderPanelController`), paired with Server↔Client Selector Contract tests.
-       - **Async Lifetime**: `this.signal`, `this.latest(lane)`, `this.cancel(lane)`, `this.timeout(fn, ms)`, `this.debounce(fn, ms)`, and `this.rAF(fn)`.
-       - **Bounded Nested Sub-Scopes (`this.createScope()`)**: Replaces the second `openDisposables = new DisposableBag()` in [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) (L43–44) and [`reader/reader_settings.client.ts`](reader/reader_settings.client.ts) (L31–32), automatically detaching itself from its parent scope when disposed on popover close.
+    - In [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) and [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts), every listener took 6 lines of `const btn = ...; btn.addEventListener(...); this.disposables.add(() => btn.removeEventListener(...))`.
+    - Because all four DOM sub-controllers registered listeners in `constructor()` instead of an idempotent `onConnect()`, the parent element destroyed and re-instantiated them on every reconnect—discarding controller state (`_activeTab`, `isTranslationLoaded`, `preferredDvh`).
+    - Sub-controllers lacked `this.scope.signal` / `this.scope.latest(lane)` (e.g., `ReaderPanelController`'s async translation loader was un-cancellable on disconnect).
+  - **Landed Architecture (detailed in [MICROFRAMEWORK_PROPOSAL.md](MICROFRAMEWORK_PROPOSAL.md))**:
+    1. **Unified `.destroy()` $\rightarrow$ `.dispose()`**, and split `this.addController(c)` (`Controller = { connect?(): void; dispose(): void; onContentSwap?(): void }`, surviving across reconnects) from `this.scope.use(cleanup)` (`Disposable = CleanupFn | { dispose(): void }`, dying with the current scope and returning `void` per Step 6.5).
+    2. **Rich `BaseController<Lane>` (sharing a one-shot per-connect `LifetimeScope` exposed via `this.scope` with `BaseElement<Lane>` per Step 7)**:
+       - **Lifecycle**: `onConnect()`, `onDisconnect()`, and sink-driven `onContentSwap(swappedRoot)`.
+       - **Scoped DOM**: `this.root`, `this.scope.$<T>(selector)`, `this.scope.$$<T>(selector)`, `this.scope.require<T>(selector)`, and `this.emit(name, detail)`.
+       - **Nullable-safe `this.scope.listen(target | null | undefined, ...)` & `this.scope.delegate(...)`**: Accepting `null | undefined` as a no-op eliminates `if (el) { ... }` guards across UI V2, paired with Server↔Client Selector Contract tests.
+       - **Async Lifetime**: `this.scope.signal`, `this.scope.latest(lane)`, `this.scope.cancel(lane)`, `this.scope.timeout(fn, ms)`, `this.scope.rAF(fn)`, and host `this.debounce(fn, ms)` (`createDurableDebounce`).
+       - **Bounded Nested Sub-Scopes (`this.scope.createScope()`)**: Replaces the second `openDisposables = new DisposableBag()` in [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) and [`reader/reader_settings.client.ts`](reader/reader_settings.client.ts), automatically detaching itself from its parent scope via `DisposableBag`'s internal `Unregister` handle when disposed on popover close.
 
-### B. Managed Timers (`this.timeout`) & Auto-Disposed Debounce (`this.debounce`)
+### B. Managed Timers (`this.scope.timeout`) & Auto-Disposed Debounce (`this.debounce`)
 
-- [x] 🟢 **Add `this.timeout(fn, ms)` and `this.debounce(fn, ms)` to `LifetimeScope` (`BaseElement` & `BaseController`).** (Completed in Step 1)
+- [x] 🟢 **Add `this.scope.timeout(fn, ms)`, `this.scope.rAF(fn)`, and `this.debounce(fn, ms)` to `LifetimeScope` / `BaseElement` / `BaseController`.** (Completed in Steps 1 & 7)
 
-  - **Smell**: `BaseElement` cleans up DOM listeners and `AbortSignal` lanes on disconnect, **but not timers (`setTimeout`) or debounced functions**.
-  - **Where it bites**:
-    - [`dialog/report_dialog.client.ts`](dialog/report_dialog.client.ts) (`setTimeout(() => this.textareaEl?.focus(), 50)` at L43 & L96; `setTimeout(() => { this.closeDialog(); this.resetForm(); }, 1200)` at L157–160) runs unmanaged timers that can fire after the element is removed.
-    - [`dict/dict_search.client.ts`](dict/dict_search.client.ts) (`window.setTimeout(() => this.clearSuggestions(), 200)` at L516–518) runs an unmanaged blur timer.
-    - [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (`setTimeout` at L335, L1129, L1271) runs unmanaged highlight/toast timers.
-    - [`dict/dict_search.client.ts`](dict/dict_search.client.ts) (L178–182) only overrides `onDisconnect()` to call `.cancel()` on `this.debouncedFetchPrefixChunk` and `this.debouncedFetchSuffixCompletions`.
-  - **Proposed API**:
-
-    ```ts
-    protected timeout(fn: () => void, ms: number): number {
-      const id = window.setTimeout(fn, ms);
-      this.addDisposable(() => window.clearTimeout(id));
-      return id;
-    }
-
-    protected debounce<T extends (...args: never[]) => void>(
-      fn: T,
-      waitMs: number
-    ): DebouncedFunction<T> {
-      const debounced = debounce(fn, waitMs);
-      this.addDisposable(() => debounced.cancel());
-      return debounced;
-    }
-    ```
+  - **Smell**: `BaseElement` cleaned up DOM listeners and `AbortSignal` lanes on disconnect, **but not timers (`setTimeout`), `requestAnimationFrame`, or debounced functions**.
+  - **Where it bit (all migrated)**:
+    - [`dialog/report_dialog.client.ts`](dialog/report_dialog.client.ts) (`setTimeout(() => this.textareaEl?.focus(), 50)` and `setTimeout(() => { this.closeDialog(); this.resetForm(); }, 1200)`) ran unmanaged timers that could fire after the element was removed.
+    - [`dict/dict_search.client.ts`](dict/dict_search.client.ts) (`window.setTimeout(() => this.clearSuggestions(), 200)`) ran an unmanaged blur timer and manually overrode `onDisconnect()` to call `.cancel()` on `this.debouncedFetchPrefixChunk` and `this.debouncedFetchSuffixCompletions`.
+    - [`reader/reader_view.client.ts`](reader/reader_view.client.ts) ran unmanaged highlight/toast timers and `requestAnimationFrame` callbacks.
 
 ### C. Existing `BaseElement` Primitives Bypassed in Subclasses
 
-- [ ] 🟢 **Use `this.delegate()` instead of manual `e.target.closest(...)` inside `this.listen()`**:
-  - [`library/library_view.client.ts`](library/library_view.client.ts) (L28–36) manually writes `this.listen(this, "click", (e) => { if (!(e.target instanceof Element)) return; const pill = e.target.closest<HTMLButtonElement>(".filter-pill"); ... })` instead of `this.delegate<HTMLButtonElement>(this, "click", ".filter-pill", ...)`. Also remove its empty `protected override onDisconnect() {}` at L47–49.
-  - [x] [`dict/dict_settings.client.ts`](dict/dict_settings.client.ts) (L241–270) manually inspects `e.target instanceof HTMLInputElement && target.classList.contains(...)` inside `this.listen(this, "change", ...)`. (Completed in Step 6)
+- [ ] 🟢 **Use `this.scope.delegate()` instead of manual `e.target.closest(...)` inside `this.scope.listen()`**:
+  - [ ] [`library/library_view.client.ts`](library/library_view.client.ts) (L28–36) manually writes `this.scope.listen(this, "click", (e) => { if (!(e.target instanceof Element)) return; const pill = e.target.closest<HTMLButtonElement>(".filter-pill"); ... })` instead of `this.scope.delegate<HTMLButtonElement>(this, "click", ".filter-pill", ...)`. Also remove its empty `protected override onDisconnect() {}` at L47–49.
+  - [x] [`dict/dict_settings.client.ts`](dict/dict_settings.client.ts) (L241–270) manually inspected `e.target instanceof HTMLInputElement && target.classList.contains(...)` inside `this.listen(this, "change", ...)`. (Completed in Step 6)
 - [x] 🟢 **Use `this.emit()` instead of manual `new CustomEvent(...)` dispatch**: (Completed in Step 6)
-  - [`dict/dict_settings.client.ts`](dict/dict_settings.client.ts) (L262–268 and L277–283) manually constructs `this.dispatchEvent(new CustomEvent("dict-...", { bubbles: true, composed: true, detail: ... }))`, which is identical to `this.emit(name, detail)` on `BaseElement` (`core/base_element.client.ts` L254–267).
+  - [`dict/dict_settings.client.ts`](dict/dict_settings.client.ts) (L262–268 and L277–283) manually constructed `this.dispatchEvent(new CustomEvent("dict-...", { bubbles: true, composed: true, detail: ... }))`, which is identical to `this.emit(name, detail)` on `BaseElement`.
 - [ ] 🟢 **Add missing `HTMLElementTagNameMap` augmentations**:
   - 8 of the 10 custom elements declare `HTMLElementTagNameMap` at the bottom of their module, but [`dict/dict_toc.client.ts`](dict/dict_toc.client.ts) (`"morcus-dict-toc"`) and [`library/library_view.client.ts`](library/library_view.client.ts) (`"morcus-library-view"`) omit it.
 
@@ -75,12 +56,9 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
 
 ### A. Extract an Anchored Popover + Focus Trap Controller (`core/popover.client.ts`)
 
-- [x] 🟡 **Unify `MorcusReaderSettings` and `ReaderTocController` anchored popover & focus-trap logic into `core/popover.client.ts`.** (Completed in Step 4)
-  - **High-Impact Duplication**: [`reader/reader_settings.client.ts`](reader/reader_settings.client.ts) (L176–362, ~185 lines) and [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) (L186–345, ~160 lines) are near-clones of the same anchored dropdown/popover lifecycle:
-    1. **`open()` / `close()` / `toggle()` / `isOpen()`**: Toggling `[hidden]` on the popover and backdrop, toggling `aria-expanded="true" | "false"` on trigger buttons, and managing transient open-state listeners via `openDisposables = new DisposableBag()`.
-    2. **`updatePosition()`**: Measuring `triggerBtn.getBoundingClientRect()`, setting `top = Math.round(rect.bottom + 8)`, clamping horizontal position within `[12, viewportWidth - width - 12]`, computing the diamond caret offset `--caret-left` clamped to `[16, width - 16]`, and attaching `resize` + passive `scroll` listeners while open. ([`dict/abbr_popover.client.ts`](dict/abbr_popover.client.ts) L35–60 implements a 3rd viewport-clamped anchor positioner.)
-    3. **Keyboard `Tab` / `Shift+Tab` focus-trap cycling** (~45 lines each) and `Escape` + outside-click dismissal.
-  - **Bug caused by divergence**: `MorcusReaderSettings` (L256–272) includes `select:not([disabled])`, `!el.hasAttribute("hidden") && !el.closest("[hidden]")`, and a `jsdom` visibility fallback (`isJsdom`) in its focus-trap query; `ReaderTocController` (L215–222) omits all three, meaning hidden elements in the TOC drawer can steal focus and `Tab` cycling fails in `jsdom` unit tests.
+- [x] 🟡 **Unify `MorcusReaderSettings` and `ReaderTocController` anchored popover & focus-trap logic into `core/popover.client.ts`.** (Completed in Steps 4, 6.6, & 6.7)
+  - **High-Impact Duplication**: [`reader/reader_settings.client.ts`](reader/reader_settings.client.ts) (~185 lines) and [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) (~160 lines) were near-clones of the same anchored dropdown/popover lifecycle (`open()` / `close()` / `toggle()` / `isOpen()`, `updatePosition()`, `Tab` / `Shift+Tab` focus-trap cycling, and `Escape` + outside-click dismissal).
+  - **Resolved**: Extracted `AnchoredPopoverController` and `trapFocus` in `core/popover.client.ts`, evaluated and documented why `MorcusDictSettings` (native `<details>` / `<summary>` Zero-JS form baseline) and `abbr_popover.client.ts` (1-to-N delegated top-layer tooltip) remain distinct in Step 6.6, and removed runtime `jsdom` detection and duplicate `document`/`window` keydown listeners in Step 6.7.
 
 ### B. Adopt `core/` Helpers That Are Currently Bypassed
 
@@ -96,44 +74,41 @@ Several `core/` utilities were created specifically to standardize browser opera
     5. [`reader/saved_spots.client.ts`](reader/saved_spots.client.ts) (L47–85) — which also re-declares `function isRecord(val: unknown)` (L14–16) identically to `core/settings.client.ts` (L24–26).
 - [ ] 🟢 **Replace `MorcusReaderView`'s private toast & clipboard code with `showToast` (`core/toast.client.ts`) and `copyText` (`core/clipboard.client.ts`).**
   - [`shell/toast.css`](shell/toast.css) (L1–4) explicitly notes that `core/toast.client.ts` generalized `.reader-toast` so views do not need SSR toast markup.
-  - Yet [`reader/reader_view.client.ts`](reader/reader_view.client.ts) still maintains a private `this.showToast(msg)` (L1124–1132) querying `#reader-toast`, and section permalink copying (L322–324) calls `navigator.clipboard?.writeText(fullUrl).catch(() => {})` directly instead of `copyText(fullUrl)` (missing the fallback and boolean check).
-- [ ] 🟢 **Use `bindDismissable` (`core/dismissable.client.ts`) across all popovers and menus.**
-  - Hand-rolled outside-click / `pointerdown` / `Escape` dismissal listeners remain in:
-    1. [`shell/mobile_menu.client.ts`](shell/mobile_menu.client.ts) (L13–22)
-    2. [`dict/abbr_popover.client.ts`](dict/abbr_popover.client.ts) (L93–130)
-    3. [`reader/reader_settings.client.ts`](reader/reader_settings.client.ts) (L227–254)
-    4. [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) (L188–212)
-- [ ] 🟢 **Return a controller `{ open, close, dispose }` from `setupModalDialog` (`core/dialog.client.ts`).**
-  - Because `setupModalDialog` returns only an `unbind` function, [`dialog/report_dialog.client.ts`](dialog/report_dialog.client.ts) (L89–109) had to re-implement `openDialog()` and `closeDialog()` (`typeof dialog.showModal === "function"`, `setAttribute("open", "")`, `clearStatus()`, `focus()`), duplicating `setupModalDialog`'s internal open/close handlers.
+  - Yet [`reader/reader_view.client.ts`](reader/reader_view.client.ts) still maintains a private `this.showToast(msg)` (L1124–1132) querying `#reader-toast`, and section permalink copying (L339–341) calls `navigator.clipboard?.writeText(fullUrl).catch(() => {})` directly instead of `copyText(fullUrl)` (missing the fallback and boolean check).
+- [ ] 🟢 **Finish adopting `bindDismissable` (`core/dismissable.client.ts`) in `shell/mobile_menu.client.ts` (3 of 4 completed).**
+  - Status across the 4 menus/popovers:
+  1. [ ] [`shell/mobile_menu.client.ts`](shell/mobile_menu.client.ts) (L15–24) — **still remains**: uses raw `doc.addEventListener("pointerdown", ...)` and lacks `Escape` dismissal and `<summary>` trigger focus restoration.
+  2. [x] [`dict/abbr_popover.client.ts`](dict/abbr_popover.client.ts) (L141–153) — migrated to `bindDismissable` + `DisposableBag` in Step 6.6.
+  3. [x] [`reader/reader_settings.client.ts`](reader/reader_settings.client.ts) — migrated via `AnchoredPopoverController` in Step 4.
+  4. [x] [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) — migrated via `AnchoredPopoverController` in Step 4.
+- [ ] 🟢 **Return `{ open, close, dispose }` (or attach `.open` / `.close` to `CleanupFn`) from `setupModalDialog` (`core/dialog.client.ts`).**
+  - Because `setupModalDialog` returns only an `unbind` function (`CleanupFn`), [`dialog/report_dialog.client.ts`](dialog/report_dialog.client.ts) (L93–113) had to re-implement `openDialog()` and `closeDialog()` (`typeof dialog.showModal === "function"`, `setAttribute("open", "")`, `clearStatus()`, `focus()`), duplicating `setupModalDialog`'s internal open/close handlers.
 
 ### C. Small Duplicated Helpers to Move to `core/dom.client.ts`
 
 - [ ] 🟢 **Consolidate `escapeCss` / `escapeId` into `core/dom.client.ts`**:
-  - Duplicated verbatim between [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (L70–75) and [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts) (L36–41).
+  - Duplicated verbatim between [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (L70–75) and [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts) (L38–43).
 - [ ] 🟢 **Consolidate one-shot keyframe flash (`flashElement`)**:
   - [`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts) (`triggerAnchorHighlight`, L5–20) and [`dict/dict_permalink.client.ts`](dict/dict_permalink.client.ts) (`flashSection`, L65–78) implement identical reflow-triggered CSS keyframe restart (`classList.remove("target-active"); void el.offsetWidth; classList.add("target-active"); addEventListener("animationend", ..., { once: true })`).
 - [ ] 🟢 **Extract `isPlainLeftClick(e: MouseEvent)`**:
   - Checking `e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey` is repeated in [`dict/dict_search.client.ts`](dict/dict_search.client.ts) (L210–218) and [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (L400–409).
 - [ ] 🟢 **Extract `syncIframeTheme(iframe, theme?)`**:
-  - Duplicated between [`shell/theme_toggle.client.ts`](shell/theme_toggle.client.ts) (`syncIframesTheme`, L55–69) and [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (`initIframeThemeSync`, L258–280).
+  - Duplicated between [`shell/theme_toggle.client.ts`](shell/theme_toggle.client.ts) (`syncIframesTheme`, L55–69) and [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (`initIframeThemeSync`, L275–297).
 - [ ] 🟢 **Extract a `createSingletonSetup(setupFn)` wrapper for global enhancers**:
-  - All 5 global enhancers ([`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts), [`core/back_to_top.client.ts`](core/back_to_top.client.ts), [`core/deferred_iframe.client.ts`](core/deferred_iframe.client.ts), [`shell/mobile_menu.client.ts`](shell/mobile_menu.client.ts), [`dict/abbr_popover.client.ts`](dict/abbr_popover.client.ts)) repeat the exact same `let activeCleanup: (() => void) | null = null` re-initialization guard and teardown check.
+  - All 5 global enhancers ([`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts), [`core/back_to_top.client.ts`](core/back_to_top.client.ts), [`core/deferred_iframe.client.ts`](core/deferred_iframe.client.ts), [`shell/mobile_menu.client.ts`](shell/mobile_menu.client.ts), [`dict/abbr_popover.client.ts`](dict/abbr_popover.client.ts)) repeat the exact same `let activeCleanup: CleanupFn | null = null` re-initialization guard and teardown check.
 
 ---
 
 ## 3. Client-Side JS Code Smells & Correctness Traps
 
-- [ ] 🟢 **Replace the 2 raw `.innerHTML` writes in `reader/reader_panel.client.ts` with `setHtml` + `html`.**
-  - [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts) at L462 and L494 assigns directly to `this.translationView.innerHTML = ...` with inline `style="min-height: 200px;"`:
-    ```ts
-    this.translationView.innerHTML = `<div class="reader-translation-loading" style="min-height: 200px;"><span class="loading-spinner"></span></div>`;
-    ```
-    These are the **only** two places in `src/web/v2/` that bypass `setHtml` from `core/dom.client.ts` (they slipped past `eslint-plugin-no-unsanitized` only because the template literals have zero interpolations). Move `min-height: 200px` to `.reader-translation-loading, .reader-translation-error` in `reader/reader_panel.css` and route both writes through `setHtml(this.translationView, html`...`)`.
-- [ ] 🟡 **Fix drawer state split-brain in `MorcusReaderView` (`reader/reader_view.client.ts`).**
-  - `minimizeDrawer()` (L654–668) and `restoreDrawer()` (L670–697) each contain a 15-line `else` fallback that manually mutates `.drawer-minimized`, `--drawer-height`, and `aria-valuenow` in parallel with `DrawerController`.
-  - In `dismissDictionary()` (L823–831), `MorcusReaderView` bypasses `this.drawerController` and directly calls `dictPanel.style.removeProperty("--drawer-height")` and `splitLayout?.style.removeProperty("--drawer-height")`, **forgetting `document.documentElement`** (which is where `DrawerController` writes `--drawer-height` via `layoutElement: document.documentElement` at L1008). As a result, `document.documentElement` retains a stale `--drawer-height` after closing the dictionary.
+- [ ] 🟢 **Move inline `style="min-height: 200px;"` in `reader/reader_panel.client.ts` to `reader/reader_panel.css` (`.innerHTML` writes already migrated to `setHtml`).**
+  - [x] Both raw `this.translationView.innerHTML = ...` assignments in [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts) (L577–582 and L609–620) were converted to `setHtml(this.translationView, html`...`)` in Step 5.
+  - [ ] Move the remaining inline `style="min-height: 200px;"` attribute out of those two `html` templates into `.reader-translation-loading, .reader-translation-error` in [`reader/reader_panel.css`](reader/reader_panel.css).
+- [ ] 🟡 **Fix remaining drawer state split-brain in `MorcusReaderView.dismissDictionary()` (`reader/reader_view.client.ts`).**
+  - [x] The 15-line `else` fallbacks in `minimizeDrawer()` (L674–676) and `restoreDrawer()` (L678–680) were deleted in Step 5 when `DrawerController` migrated to `addController()`.
+  - [ ] In `dismissDictionary()` (L785–804), `MorcusReaderView` still bypasses `this.drawerController` and directly calls `dictPanel.style.removeProperty("--drawer-height")` and `splitLayout?.style.removeProperty("--drawer-height")`, **forgetting `document.documentElement`** (which is where `DrawerController` writes `--drawer-height` via `layoutElement: () => document.documentElement`). As a result, `document.documentElement` retains a stale `--drawer-height` after closing the dictionary. Add a `reset()` method to `DrawerController` and remove the dead `if (this.layoutController) ... else` branches in `dismissDictionary()` (L788–793) and `lookupWord()` (L855–865).
 - [ ] 🟢 **De-duplicate mobile scroll-past-drawer calculation in `MorcusReaderView`.**
-  - `openNote()` (L746–763) and `lookupWord()` (L898–917) in [`reader/reader_view.client.ts`](reader/reader_view.client.ts) contain identical 18-line `requestAnimationFrame` blocks computing `drawerTop` and calling `window.scrollBy({ top: scrollNeeded, left: 0, behavior: "smooth" })` when `window.innerWidth <= 640`. Extract a private `scrollTargetAboveDrawer(targetEl: HTMLElement)` helper.
+  - `openNote()` (L719–736) and `lookupWord()` (L871–890) in [`reader/reader_view.client.ts`](reader/reader_view.client.ts) contain identical 18-line `this.scope.rAF` blocks computing `drawerTop` and calling `window.scrollBy({ top: scrollNeeded, left: 0, behavior: "smooth" })` when `window.innerWidth <= 640`. Extract a private `scrollTargetAboveDrawer(targetEl: HTMLElement)` helper.
 
 ---
 
