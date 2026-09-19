@@ -1,4 +1,5 @@
 import { copyText, showToast } from "@/web/v2/core/index.client";
+import { flashElement } from "@/web/v2/core/dom.client";
 
 const COPIED_CLASS = "is-copied";
 const COPIED_DURATION_MS = 1400;
@@ -66,15 +67,7 @@ function flashSection(anchor: HTMLAnchorElement): void {
   const targetId = (anchor.getAttribute("href") ?? "").slice(1);
   const targetEl = targetId ? document.getElementById(targetId) : null;
   const element = targetEl ?? anchor;
-  element.classList.remove(HIGHLIGHT_CLASS);
-  // Force a reflow so the keyframe restarts on repeated clicks.
-  void element.offsetWidth;
-  element.classList.add(HIGHLIGHT_CLASS);
-  element.addEventListener(
-    "animationend",
-    () => element.classList.remove(HIGHLIGHT_CLASS),
-    { once: true }
-  );
+  flashElement(element, HIGHLIGHT_CLASS);
 }
 
 async function copyOrNavigate(

@@ -71,3 +71,61 @@ export function assertConnected(el: Element, hostRoot?: ParentNode): void {
     recordDetachedDomWrite(msg);
   }
 }
+
+/**
+ * Escapes an element ID for safe use in CSS selector queries.
+ */
+export function escapeId(id: string): string {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(id);
+  }
+  return id.replace(/([ #;&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
+}
+
+/**
+ * Triggers a one-shot CSS keyframe animation by reflow-restarting an active class.
+ */
+export function flashElement(
+  el: HTMLElement,
+  className: string = "target-active"
+): void {
+  el.classList.remove(className);
+  // Force a reflow so the browser cleanly restarts the keyframe animation
+  void el.offsetWidth;
+  el.classList.add(className);
+  el.addEventListener(
+    "animationend",
+    () => {
+      el.classList.remove(className);
+    },
+    { once: true }
+  );
+}
+
+/**
+ * Returns true if a mouse event is a primary (left) click without modifier keys (Ctrl, Meta, Shift, Alt).
+ */
+export function isPlainLeftClick(e: MouseEvent): boolean {
+  return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+}
+
+/**
+ * Synchronizes the data-theme attribute on an iframe's document to match the parent document theme.
+ */
+export function syncIframeTheme(
+  iframe: HTMLIFrameElement,
+  theme?: string
+): void {
+  const currentTheme =
+    theme ?? document.documentElement.getAttribute("data-theme") ?? "light";
+  try {
+    if (iframe.contentDocument?.documentElement) {
+      iframe.contentDocument.documentElement.setAttribute(
+        "data-theme",
+        currentTheme
+      );
+    }
+  } catch {
+    // Cross-origin barrier safely ignored
+  }
+}

@@ -409,6 +409,19 @@ export class DrawerController extends BaseController {
   }
 
   /**
+   * Resets drawer DOM state and removes custom height styles on the drawer
+   * and layout elements.
+   */
+  public reset(): void {
+    if (this.drawer) {
+      this.drawer.classList.remove("drawer-minimized");
+      this.drawer.style.removeProperty("--drawer-height");
+    }
+    this.getLayoutElement()?.style.removeProperty("--drawer-height");
+    this.handle?.setAttribute("aria-valuenow", String(this.minHeight));
+  }
+
+  /**
    * Disposes all event listeners and gesture tracking.
    */
   override dispose(): void {

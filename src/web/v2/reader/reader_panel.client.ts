@@ -11,7 +11,7 @@
  */
 
 import { BaseController } from "@/web/v2/core/base_element.client";
-import { setHtml } from "@/web/v2/core/dom.client";
+import { escapeId, setHtml } from "@/web/v2/core/dom.client";
 import { html } from "@/web/v2/core/html.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 import { swapElementContent } from "@/web/v2/core/partial.client";
@@ -33,13 +33,6 @@ export interface ReaderPanelOptions {
   hasTranslation?: boolean | (() => boolean);
   onLoadTranslation?: () => Promise<string | null>;
   onTabChange?: (tab: PanelTab) => void;
-}
-
-function escapeId(id: string): string {
-  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
-    return CSS.escape(id);
-  }
-  return id.replace(/([ #;&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
 }
 
 function createTabIcon(pathD: string): HTMLSpanElement {
@@ -576,7 +569,7 @@ export class ReaderPanelController extends BaseController {
     ) {
       setHtml(
         this.translationView,
-        html`<div class="reader-translation-loading" style="min-height: 200px;">
+        html`<div class="reader-translation-loading">
           <span class="loading-spinner"></span>
         </div>`
       );
@@ -608,7 +601,7 @@ export class ReaderPanelController extends BaseController {
     this.loadedTranslationHtml = null;
     setHtml(
       this.translationView,
-      html`<div class="reader-translation-error" style="min-height: 200px;">
+      html`<div class="reader-translation-error">
         <p>Failed to load translation.</p>
         <button
           type="button"

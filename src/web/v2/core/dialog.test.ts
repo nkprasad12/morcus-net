@@ -79,4 +79,26 @@ describe("setupModalDialog client coordination", () => {
     triggerBtn.click();
     expect(dialog.showModal).not.toHaveBeenCalled();
   });
+
+  test("handle.open() and handle.close() programmatically control the dialog", () => {
+    const onOpen = jest.fn();
+    const onClose = jest.fn();
+    const handle = setupModalDialog(dialog, {
+      trigger: triggerBtn,
+      onOpen,
+      onClose,
+    });
+
+    handle.open();
+    expect(dialog.showModal).toHaveBeenCalled();
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+    expect(onOpen).toHaveBeenCalled();
+
+    handle.close();
+    expect(dialog.close).toHaveBeenCalled();
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+    expect(onClose).toHaveBeenCalled();
+
+    handle.dispose();
+  });
 });

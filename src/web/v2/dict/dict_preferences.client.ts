@@ -1,5 +1,6 @@
 import { hasCookie } from "@/web/v2/core/cookies.common";
 import { settingsStore } from "@/web/v2/core/settings.client";
+import { storage } from "@/web/v2/core/storage.client";
 import {
   DICT_COOKIE_NAME,
   INFLECTED_COOKIE_NAME,
@@ -14,27 +15,19 @@ export const SEARCH_SETTINGS_KEY = "SEARCH_SETTINGS_KEY";
 
 export const dictSettingsStore = {
   get(): string[] | null {
-    try {
-      const stored = localStorage.getItem(SEARCH_SETTINGS_KEY);
-      if (!stored) return null;
-      const keys = stored
-        .split(";")
-        .map((k) => k.trim())
-        .filter(Boolean);
-      return keys.length > 0 ? keys : null;
-    } catch {
-      return null;
-    }
+    const stored = storage.get(SEARCH_SETTINGS_KEY);
+    if (!stored) return null;
+    const keys = stored
+      .split(";")
+      .map((k) => k.trim())
+      .filter(Boolean);
+    return keys.length > 0 ? keys : null;
   },
 
   set(dictKeys: string[]): void {
-    try {
-      localStorage.setItem(SEARCH_SETTINGS_KEY, dictKeys.join(";"));
-      // Also update the functional UI cookie so future SSR calls reflect this choice
-      document.cookie = formatDictsCookie(dictKeys);
-    } catch (e) {
-      console.warn("Could not persist dict settings", e);
-    }
+    storage.set(SEARCH_SETTINGS_KEY, dictKeys.join(";"));
+    // Also update the functional UI cookie so future SSR calls reflect this choice
+    document.cookie = formatDictsCookie(dictKeys);
   },
 
   /**

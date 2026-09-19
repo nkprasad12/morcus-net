@@ -11,6 +11,7 @@
 
 import { BaseController } from "@/web/v2/core/base_element.client";
 import { trackPointerDrag } from "@/web/v2/core/gesture.client";
+import { storage } from "@/web/v2/core/storage.client";
 
 /**
  * Bounds for the desktop dictionary panel, in px. `MIN_TEXT_PANEL_WIDTH` is the
@@ -106,17 +107,13 @@ export class ReaderLayoutController extends BaseController {
     const splitter = this.splitter;
     if (!splitLayout || !splitter) return;
 
-    try {
-      const savedWidth = localStorage.getItem(this.storageKey);
-      if (savedWidth) {
-        const parsed = parseInt(savedWidth, 10);
-        if (!isNaN(parsed) && parsed >= MIN_SPLIT_WIDTH && parsed <= 900) {
-          splitLayout.style.setProperty("--dict-width", `${parsed}px`);
-          splitter.setAttribute("aria-valuenow", String(parsed));
-        }
+    const savedWidth = storage.get(this.storageKey);
+    if (savedWidth) {
+      const parsed = parseInt(savedWidth, 10);
+      if (!isNaN(parsed) && parsed >= MIN_SPLIT_WIDTH && parsed <= 900) {
+        splitLayout.style.setProperty("--dict-width", `${parsed}px`);
+        splitter.setAttribute("aria-valuenow", String(parsed));
       }
-    } catch {
-      // localStorage may be disabled
     }
   }
 
@@ -248,11 +245,7 @@ export class ReaderLayoutController extends BaseController {
     }
     this.onWidthChange?.(width);
     if (persist) {
-      try {
-        localStorage.setItem(this.storageKey, String(width));
-      } catch {
-        // ignore
-      }
+      storage.set(this.storageKey, String(width));
     }
   }
 
@@ -268,11 +261,7 @@ export class ReaderLayoutController extends BaseController {
     if (this.splitter) {
       this.splitter.setAttribute("aria-valuenow", String(DEFAULT_SPLIT_WIDTH));
     }
-    try {
-      localStorage.removeItem(this.storageKey);
-    } catch {
-      // ignore
-    }
+    storage.remove(this.storageKey);
     this.onWidthChange?.(DEFAULT_SPLIT_WIDTH);
   }
 

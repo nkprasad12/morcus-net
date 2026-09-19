@@ -25,15 +25,16 @@ export class MorcusLibraryView extends BaseElement {
       });
     }
 
-    this.scope.listen(this, "click", (e) => {
-      if (!(e.target instanceof Element)) return;
-      const pill = e.target.closest<HTMLButtonElement>(".filter-pill");
-      if (pill) {
+    this.scope.delegate<HTMLButtonElement>(
+      this,
+      "click",
+      ".filter-pill",
+      (e, pill) => {
         e.preventDefault();
         const filter = pill.dataset.filter || "all";
         this.setFilter(filter);
       }
-    });
+    );
 
     if (emptyResetBtn && input) {
       this.scope.listen(emptyResetBtn, "click", () => {
@@ -42,10 +43,6 @@ export class MorcusLibraryView extends BaseElement {
         this.setFilter("all");
       });
     }
-  }
-
-  protected override onDisconnect() {
-    // cleanup
   }
 
   private setFilter(filter: string) {
@@ -132,3 +129,9 @@ export class MorcusLibraryView extends BaseElement {
 }
 
 registerElement("morcus-library-view", MorcusLibraryView);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "morcus-library-view": MorcusLibraryView;
+  }
+}

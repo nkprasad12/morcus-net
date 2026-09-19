@@ -1,4 +1,7 @@
-import type { CleanupFn } from "@/web/v2/core/disposable.client";
+import {
+  createSingletonSetup,
+  type CleanupFn,
+} from "@/web/v2/core/disposable.client";
 
 /**
  * Generic handler for deferred iframes (`iframe[data-deferred-src]` / `iframe[data-src]`).
@@ -17,8 +20,6 @@ import type { CleanupFn } from "@/web/v2/core/disposable.client";
  */
 
 const DEFERRED_IFRAME_SELECTOR = "iframe[data-deferred-src], iframe[data-src]";
-
-let activeCleanup: CleanupFn | null = null;
 
 export function hydrateIframe(frame: HTMLIFrameElement): void {
   const src = frame.dataset.deferredSrc ?? frame.dataset.src;
@@ -51,34 +52,24 @@ export function hydrateDeferredIframes(root: ParentNode = document): void {
  * Attaches a capturing `toggle` listener to handle any disclosure opening
  * across the document, and hydrates any currently open or top-level deferred iframes.
  */
-export function setupDeferredIframes(doc: Document = document): CleanupFn {
-  if (activeCleanup) {
-    activeCleanup();
-    activeCleanup = null;
-  }
+export const setupDeferredIframes: (doc?: Document) => CleanupFn =
+  createSingletonSetup((doc: Document = document): CleanupFn => {
+    const onToggle = (event: Event) => {
+      const target = event.target;
+      if (target instanceof HTMLDetailsElement && target.open) {
+        hydrateDeferredIframes(target);
+      }
+    };
 
-  const onToggle = (event: Event) => {
-    const target = event.target;
-    if (target instanceof HTMLDetailsElement && target.open) {
-      hydrateDeferredIframes(target);
-    }
-  };
+    // `toggle` does not bubble, but capture intercepts it at the document level
+    // for any <details> element, including dynamically swapped partials.
+    doc.addEventListener("toggle", onToggle, true);
+    hydrateDeferredIframes(doc);
 
-  // `toggle` does not bubble, but capture intercepts it at the document level
-  // for any <details> element, including dynamically swapped partials.
-  doc.addEventListener("toggle", onToggle, true);
-  hydrateDeferredIframes(doc);
-
-  const unbind = () => {
-    doc.removeEventListener("toggle", onToggle, true);
-    if (activeCleanup === unbind) {
-      activeCleanup = null;
-    }
-  };
-
-  activeCleanup = unbind;
-  return unbind;
-}
+    return () => {
+      doc.removeEventListener("toggle", onToggle, true);
+    };
+  });
 
 if (typeof document !== "undefined") {
   if (document.readyState === "loading") {

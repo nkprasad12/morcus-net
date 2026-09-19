@@ -11,7 +11,9 @@ const DEFAULT_DURATION_MS = 2200;
 let hideTimer: number | undefined;
 
 function ensureToastElement(): HTMLElement {
-  const existing = document.getElementById(TOAST_ID);
+  const existing =
+    document.getElementById(TOAST_ID) ||
+    document.getElementById("reader-toast");
   if (existing) {
     return existing;
   }

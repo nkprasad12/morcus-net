@@ -1,4 +1,5 @@
 import { isBoolean, isNumber, Validator } from "@/web/utils/rpc/parsing";
+import { storage } from "@/web/v2/core/storage.client";
 
 /**
  * Typed LocalStorage settings store for UI V2.
@@ -21,7 +22,7 @@ export type FieldCheckers<T> = {
  * Extracts and validates properties from an unknown value based on a schema of validators.
  * Invalid or undefined fields are omitted from the returned partial object.
  */
-function isRecord(val: unknown): val is Record<string, unknown> {
+export function isRecord(val: unknown): val is Record<string, unknown> {
   return typeof val === "object" && val !== null && !Array.isArray(val);
 }
 
@@ -63,22 +64,13 @@ export function parseSettings(raw: string | null): GlobalSettings {
 
 export const settingsStore = {
   get(): GlobalSettings {
-    try {
-      return parseSettings(localStorage.getItem(GLOBAL_SETTINGS_KEY));
-    } catch {
-      return {};
-    }
+    return parseSettings(storage.get(GLOBAL_SETTINGS_KEY));
   },
 
   update(patch: Partial<GlobalSettings>): GlobalSettings {
-    try {
-      const current = settingsStore.get();
-      const next = { ...current, ...patch };
-      localStorage.setItem(GLOBAL_SETTINGS_KEY, JSON.stringify(next));
-      return next;
-    } catch (e) {
-      console.warn("Could not persist settings to localStorage", e);
-      return patch;
-    }
+    const current = settingsStore.get();
+    const next = { ...current, ...patch };
+    storage.setJson(GLOBAL_SETTINGS_KEY, next);
+    return next;
   },
 };

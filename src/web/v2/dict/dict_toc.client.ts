@@ -81,3 +81,9 @@ export class MorcusDictToc extends BaseElement {
 }
 
 registerElement("morcus-dict-toc", MorcusDictToc);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "morcus-dict-toc": MorcusDictToc;
+  }
+}

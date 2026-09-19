@@ -60,3 +60,37 @@ export class DisposableBag {
     }
   }
 }
+
+/**
+ * Wraps an enhancer setup function with singleton activeCleanup lifecycle management.
+ * Disposes any active previous instance on re-entrant setup calls and clears activeCleanup
+ * when the returned unbind handle is invoked.
+ */
+export function createSingletonSetup<Args extends unknown[]>(
+  setupFn: (...args: Args) => CleanupFn
+): (...args: Args) => CleanupFn {
+  let activeCleanup: CleanupFn | null = null;
+
+  return (...args: Args): CleanupFn => {
+    if (activeCleanup) {
+      activeCleanup();
+      activeCleanup = null;
+    }
+
+    const cleanup = setupFn(...args);
+    let disposed = false;
+    const unbind: CleanupFn = () => {
+      if (disposed) return;
+      disposed = true;
+      try {
+        cleanup();
+      } finally {
+        if (activeCleanup === unbind) {
+          activeCleanup = null;
+        }
+      }
+    };
+    activeCleanup = unbind;
+    return unbind;
+  };
+}

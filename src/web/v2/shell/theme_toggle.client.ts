@@ -4,6 +4,7 @@ import {
   registerElement,
   setHtml,
   settingsStore,
+  syncIframeTheme,
 } from "@/web/v2/core/index.client";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
@@ -55,16 +56,7 @@ export class MorcusThemeToggle extends BaseElement {
   private syncIframesTheme(themeName: string) {
     const iframes = document.querySelectorAll<HTMLIFrameElement>("iframe");
     for (const iframe of iframes) {
-      try {
-        if (iframe.contentDocument?.documentElement) {
-          iframe.contentDocument.documentElement.setAttribute(
-            "data-theme",
-            themeName
-          );
-        }
-      } catch {
-        // Cross-origin security barrier; safely ignored
-      }
+      syncIframeTheme(iframe, themeName);
     }
   }
 

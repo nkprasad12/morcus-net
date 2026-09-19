@@ -7,11 +7,16 @@ import {
   DRAWER_FLOOR_DVH,
   DRAWER_MIN_HEIGHT,
   ICON_PATHS,
+  copyText,
+  escapeId,
   fetchAndSwapPartial,
   html,
+  isPlainLeftClick,
   registerElement,
   setHtml,
   settingsStore,
+  showToast,
+  syncIframeTheme,
   tokenizeTargets,
 } from "@/web/v2/core/index.client";
 import { removeMacrons } from "@/common/text_cleaning";
@@ -66,13 +71,6 @@ export {
   ReaderPanelController,
   type PanelTab,
 };
-
-function escapeCss(id: string): string {
-  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
-    return CSS.escape(id);
-  }
-  return id.replace(/([ #;&,.+*~':"!^$[\]()=>|/@])/g, "\\$1");
-}
 
 /**
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
@@ -155,7 +153,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
   private originalScrollRestoration: ScrollRestoration = "auto";
   private readonly translationCache = new Map<string, string>();
-  private toastTimer: number | null = null;
 
   public getLayoutController(): ReaderLayoutController | null {
     return this.layoutController.isConnected ? this.layoutController : null;
@@ -280,16 +277,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       const currentTheme =
         document.documentElement.getAttribute("data-theme") ||
         (settingsStore.get().darkMode ? "dark" : "light");
-      try {
-        if (iframe.contentDocument?.documentElement) {
-          iframe.contentDocument.documentElement.setAttribute(
-            "data-theme",
-            currentTheme
-          );
-        }
-      } catch {
-        // Cross-origin fallback
-      }
+      syncIframeTheme(iframe, currentTheme);
     };
 
     this.scope.listen(iframe, "load", syncTheme);
@@ -336,9 +324,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       const href = secAnchor.getAttribute("href") || "";
       const secId = href.replace(/^#sec-/, "");
       const fullUrl = `${window.location.origin}${window.location.pathname}${window.location.search}#sec-${secId}`;
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(fullUrl).catch(() => {});
-      }
+      void copyText(fullUrl);
       const secEl = document.getElementById(`sec-${secId}`);
       if (secEl) {
         if (typeof secEl.scrollIntoView === "function") {
@@ -355,7 +341,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         );
       }
       this.saveCurrentSpot(secId);
-      this.showToast(`Copied permalink: § ${secId}`);
+      showToast(`Copied permalink: § ${secId}`);
       return;
     }
 
@@ -419,11 +405,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (
       !link ||
       e.defaultPrevented ||
-      e.button !== 0 ||
-      e.metaKey ||
-      e.ctrlKey ||
-      e.shiftKey ||
-      e.altKey ||
+      !isPlainLeftClick(e) ||
       (link.target && link.target !== "_self") ||
       link.hasAttribute("download")
     ) {
@@ -716,24 +698,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     // Mobile scroll guard: Ensure tapped marker in passage is not occluded by the newly opened/restored drawer
-    if (window.innerWidth <= 640 && !markerEl.closest(".reader-dict-panel")) {
-      this.scope.rAF(() => {
-        const rect = markerEl.getBoundingClientRect();
-        const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-        const drawerTop =
-          dictPanel?.getBoundingClientRect().top ??
-          window.innerHeight *
-            (1 - (this.preferredDrawerDvh ?? DRAWER_DEFAULT_DVH) / 100);
-        if (rect.bottom > drawerTop - 24) {
-          const scrollNeeded = rect.bottom - (drawerTop - 24);
-          window.scrollBy({
-            top: scrollNeeded,
-            left: 0,
-            behavior: "smooth",
-          });
-        }
-      });
-    }
+    this.scrollTargetAboveDrawer(markerEl);
   }
 
   private setActiveMarker(el?: HTMLElement | null): void {
@@ -782,25 +747,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     // Update split layout class to empty
-    const splitLayout =
-      this.layoutController?.splitLayout ??
-      this.querySelector<HTMLElement>(".reader-split-layout");
-    if (this.layoutController) {
-      this.layoutController.setActive(false);
-    } else if (splitLayout) {
-      splitLayout.classList.remove("reader-layout-active");
-      splitLayout.classList.add("reader-layout-empty");
-    }
+    this.layoutController.setActive(false);
 
     // Reset drawer height and ARIA on mobile
-    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-    const sheetBar = this.querySelector<HTMLElement>(".reader-sheet-bar");
-    if (dictPanel) {
-      dictPanel.classList.remove("drawer-minimized");
-      dictPanel.style.removeProperty("--drawer-height");
-      sheetBar?.setAttribute("aria-valuenow", "54");
-    }
-    splitLayout?.style.removeProperty("--drawer-height");
+    this.drawerController.reset();
 
     // Update mobile teaser label
     const sheetLabel = this.querySelector<HTMLElement>(".reader-sheet-label");
@@ -852,41 +802,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     // Update split layout class to active (expands mobile sheet)
-    if (this.layoutController) {
-      this.layoutController.setActive(true);
-    } else {
-      const splitLayout = this.querySelector<HTMLElement>(
-        ".reader-split-layout"
-      );
-      if (splitLayout) {
-        splitLayout.classList.remove("reader-layout-empty");
-        splitLayout.classList.add("reader-layout-active");
-      }
-    }
+    this.layoutController.setActive(true);
 
     // Ensure drawer is open and restored to preferred dvh
     this.restoreDrawer();
 
     // Mobile scroll guard: Ensure tapped word is not occluded by the newly opened/restored drawer
-    if (window.innerWidth <= 640) {
-      const targetEl = activeAnchor || this.findWordElement(word);
-      if (targetEl) {
-        this.scope.rAF(() => {
-          const rect = targetEl.getBoundingClientRect();
-          const drawerTop =
-            dictPanel?.getBoundingClientRect().top ??
-            window.innerHeight *
-              (1 - (this.preferredDrawerDvh ?? DRAWER_DEFAULT_DVH) / 100);
-          if (rect.bottom > drawerTop - 24) {
-            const scrollNeeded = rect.bottom - (drawerTop - 24);
-            window.scrollBy({
-              top: scrollNeeded,
-              left: 0,
-              behavior: "smooth",
-            });
-          }
-        });
-      }
+    const targetEl = activeAnchor || this.findWordElement(word);
+    if (targetEl) {
+      this.scrollTargetAboveDrawer(targetEl);
     }
 
     // Update mobile teaser bar label
@@ -895,6 +819,27 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // Synchronize browser history and page title
     if (updateHistory) {
       this.router?.push(word);
+    }
+  }
+
+  private scrollTargetAboveDrawer(targetEl: HTMLElement): void {
+    if (window.innerWidth <= 640 && !targetEl.closest(".reader-dict-panel")) {
+      this.scope.rAF(() => {
+        const rect = targetEl.getBoundingClientRect();
+        const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+        const drawerTop =
+          dictPanel?.getBoundingClientRect().top ??
+          window.innerHeight *
+            (1 - (this.preferredDrawerDvh ?? DRAWER_DEFAULT_DVH) / 100);
+        if (rect.bottom > drawerTop - 24) {
+          const scrollNeeded = rect.bottom - (drawerTop - 24);
+          window.scrollBy({
+            top: scrollNeeded,
+            left: 0,
+            behavior: "smooth",
+          });
+        }
+      });
     }
   }
 
@@ -1041,21 +986,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.scope.use(() => {
       btn.remove();
     });
-  }
-
-  // --- Reader Confirmation Toast ---
-  private showToast(msg: string) {
-    const toast = this.scope.$<HTMLElement>("#reader-toast");
-    if (!toast) return;
-    toast.textContent = msg;
-    toast.classList.add("visible");
-    if (this.toastTimer !== null) {
-      this.scope.clearTimeout(this.toastTimer);
-    }
-    this.toastTimer = this.scope.timeout(() => {
-      toast.classList.remove("visible");
-      this.toastTimer = null;
-    }, 2200);
   }
 
   // --- Reader Preferences & Canvas Styling ---
@@ -1355,7 +1285,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     });
 
     const target = this.querySelector<HTMLElement>(
-      `.reader-toc-drawer .reader-toc-item[data-page-id="${escapeCss(
+      `.reader-toc-drawer .reader-toc-item[data-page-id="${escapeId(
         newPageId
       )}"]`
     );

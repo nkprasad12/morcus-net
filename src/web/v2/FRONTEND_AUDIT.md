@@ -42,13 +42,13 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
 
 ### C. Existing `BaseElement` Primitives Bypassed in Subclasses
 
-- [ ] 🟢 **Use `this.scope.delegate()` instead of manual `e.target.closest(...)` inside `this.scope.listen()`**:
-  - [ ] [`library/library_view.client.ts`](library/library_view.client.ts) (L28–36) manually writes `this.scope.listen(this, "click", (e) => { if (!(e.target instanceof Element)) return; const pill = e.target.closest<HTMLButtonElement>(".filter-pill"); ... })` instead of `this.scope.delegate<HTMLButtonElement>(this, "click", ".filter-pill", ...)`. Also remove its empty `protected override onDisconnect() {}` at L47–49.
+- [x] 🟢 **Use `this.scope.delegate()` instead of manual `e.target.closest(...)` inside `this.scope.listen()`**: (Completed in Batch 1)
+  - [x] [`library/library_view.client.ts`](library/library_view.client.ts) (L28–36) adopted `this.scope.delegate<HTMLButtonElement>(this, "click", ".filter-pill", ...)` and removed its empty `protected override onDisconnect() {}`.
   - [x] [`dict/dict_settings.client.ts`](dict/dict_settings.client.ts) (L241–270) manually inspected `e.target instanceof HTMLInputElement && target.classList.contains(...)` inside `this.listen(this, "change", ...)`. (Completed in Step 6)
 - [x] 🟢 **Use `this.emit()` instead of manual `new CustomEvent(...)` dispatch**: (Completed in Step 6)
   - [`dict/dict_settings.client.ts`](dict/dict_settings.client.ts) (L262–268 and L277–283) manually constructed `this.dispatchEvent(new CustomEvent("dict-...", { bubbles: true, composed: true, detail: ... }))`, which is identical to `this.emit(name, detail)` on `BaseElement`.
-- [ ] 🟢 **Add missing `HTMLElementTagNameMap` augmentations**:
-  - 8 of the 10 custom elements declare `HTMLElementTagNameMap` at the bottom of their module, but [`dict/dict_toc.client.ts`](dict/dict_toc.client.ts) (`"morcus-dict-toc"`) and [`library/library_view.client.ts`](library/library_view.client.ts) (`"morcus-library-view"`) omit it.
+- [x] 🟢 **Add missing `HTMLElementTagNameMap` augmentations**: (Completed in Batch 1)
+  - Added `HTMLElementTagNameMap` declarations to [`dict/dict_toc.client.ts`](dict/dict_toc.client.ts) (`"morcus-dict-toc"`) and [`library/library_view.client.ts`](library/library_view.client.ts) (`"morcus-library-view"`).
 
 ---
 
@@ -64,51 +64,43 @@ Derived from a focused audit of all client-side TypeScript (`*.client.ts`) and s
 
 Several `core/` utilities were created specifically to standardize browser operations, but feature modules still hand-roll the raw equivalents:
 
-- [ ] 🟢 **Route all `localStorage` reads/writes through `storage` (`core/storage.client.ts`).**
-  - Currently **only** `reader/reader_settings.client.ts` uses `storage`.
-  - The following 5 modules bypass `storage` with manual `try { localStorage.getItem(...) } catch {}` blocks:
-    1. [`core/settings.client.ts`](core/settings.client.ts) (L67–77)
-    2. [`dict/dict_preferences.client.ts`](dict/dict_preferences.client.ts) (L18–32)
-    3. [`dict/dict_greek.client.ts`](dict/dict_greek.client.ts) (L69–82)
-    4. [`reader/reader_layout.client.ts`](reader/reader_layout.client.ts) (L106–165, L255–276)
-    5. [`reader/saved_spots.client.ts`](reader/saved_spots.client.ts) (L47–85) — which also re-declares `function isRecord(val: unknown)` (L14–16) identically to `core/settings.client.ts` (L24–26).
-- [ ] 🟢 **Replace `MorcusReaderView`'s private toast & clipboard code with `showToast` (`core/toast.client.ts`) and `copyText` (`core/clipboard.client.ts`).**
-  - [`shell/toast.css`](shell/toast.css) (L1–4) explicitly notes that `core/toast.client.ts` generalized `.reader-toast` so views do not need SSR toast markup.
-  - Yet [`reader/reader_view.client.ts`](reader/reader_view.client.ts) still maintains a private `this.showToast(msg)` (L1124–1132) querying `#reader-toast`, and section permalink copying (L339–341) calls `navigator.clipboard?.writeText(fullUrl).catch(() => {})` directly instead of `copyText(fullUrl)` (missing the fallback and boolean check).
-- [ ] 🟢 **Finish adopting `bindDismissable` (`core/dismissable.client.ts`) in `shell/mobile_menu.client.ts` (3 of 4 completed).**
-  - Status across the 4 menus/popovers:
-  1. [ ] [`shell/mobile_menu.client.ts`](shell/mobile_menu.client.ts) (L15–24) — **still remains**: uses raw `doc.addEventListener("pointerdown", ...)` and lacks `Escape` dismissal and `<summary>` trigger focus restoration.
-  2. [x] [`dict/abbr_popover.client.ts`](dict/abbr_popover.client.ts) (L141–153) — migrated to `bindDismissable` + `DisposableBag` in Step 6.6.
-  3. [x] [`reader/reader_settings.client.ts`](reader/reader_settings.client.ts) — migrated via `AnchoredPopoverController` in Step 4.
-  4. [x] [`reader/reader_toc.client.ts`](reader/reader_toc.client.ts) — migrated via `AnchoredPopoverController` in Step 4.
-- [ ] 🟢 **Return `{ open, close, dispose }` (or attach `.open` / `.close` to `CleanupFn`) from `setupModalDialog` (`core/dialog.client.ts`).**
-  - Because `setupModalDialog` returns only an `unbind` function (`CleanupFn`), [`dialog/report_dialog.client.ts`](dialog/report_dialog.client.ts) (L93–113) had to re-implement `openDialog()` and `closeDialog()` (`typeof dialog.showModal === "function"`, `setAttribute("open", "")`, `clearStatus()`, `focus()`), duplicating `setupModalDialog`'s internal open/close handlers.
+- [x] 🟢 **Route all `localStorage` reads/writes through `storage` (`core/storage.client.ts`).** (Completed in Batch 1)
+  - Routed all 5 callers through `storage` with safe private browsing/disabled localStorage fallbacks:
+    1. [`core/settings.client.ts`](core/settings.client.ts)
+    2. [`dict/dict_preferences.client.ts`](dict/dict_preferences.client.ts)
+    3. [`dict/dict_greek.client.ts`](dict/dict_greek.client.ts)
+    4. [`reader/reader_layout.client.ts`](reader/reader_layout.client.ts)
+    5. [`reader/saved_spots.client.ts`](reader/saved_spots.client.ts) — and consolidated `isRecord(val: unknown)` into `core/settings.client.ts`.
+- [x] 🟢 **Replace `MorcusReaderView`'s private toast & clipboard code with `showToast` (`core/toast.client.ts`) and `copyText` (`core/clipboard.client.ts`).** (Completed in Batch 1)
+  - Removed private `showToast` and `toastTimer` from [`reader/reader_view.client.ts`](reader/reader_view.client.ts), migrated to `showToast` and `copyText` with multi-toast/fallback support.
+- [x] 🟢 **Finish adopting `bindDismissable` (`core/dismissable.client.ts`) in `shell/mobile_menu.client.ts` (4 of 4 completed).** (Completed in Batch 1)
+  - Migrated [`shell/mobile_menu.client.ts`](shell/mobile_menu.client.ts) to `bindDismissable` with outside-pointerdown and Escape key dismissal.
+- [x] 🟢 **Return `{ open, close, dispose }` (or attach `.open` / `.close` to `CleanupFn`) from `setupModalDialog` (`core/dialog.client.ts`).** (Completed in Batch 1)
+  - Extended `setupModalDialog` to return a callable `ModalDialogHandle` (`{ open, close, dispose }`), eliminated duplicate open/close DOM logic in [`dialog/report_dialog.client.ts`](dialog/report_dialog.client.ts).
 
 ### C. Small Duplicated Helpers to Move to `core/dom.client.ts`
 
-- [ ] 🟢 **Consolidate `escapeCss` / `escapeId` into `core/dom.client.ts`**:
-  - Duplicated verbatim between [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (L70–75) and [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts) (L38–43).
-- [ ] 🟢 **Consolidate one-shot keyframe flash (`flashElement`)**:
-  - [`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts) (`triggerAnchorHighlight`, L5–20) and [`dict/dict_permalink.client.ts`](dict/dict_permalink.client.ts) (`flashSection`, L65–78) implement identical reflow-triggered CSS keyframe restart (`classList.remove("target-active"); void el.offsetWidth; classList.add("target-active"); addEventListener("animationend", ..., { once: true })`).
-- [ ] 🟢 **Extract `isPlainLeftClick(e: MouseEvent)`**:
-  - Checking `e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey` is repeated in [`dict/dict_search.client.ts`](dict/dict_search.client.ts) (L210–218) and [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (L400–409).
-- [ ] 🟢 **Extract `syncIframeTheme(iframe, theme?)`**:
-  - Duplicated between [`shell/theme_toggle.client.ts`](shell/theme_toggle.client.ts) (`syncIframesTheme`, L55–69) and [`reader/reader_view.client.ts`](reader/reader_view.client.ts) (`initIframeThemeSync`, L275–297).
-- [ ] 🟢 **Extract a `createSingletonSetup(setupFn)` wrapper for global enhancers**:
-  - All 5 global enhancers ([`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts), [`core/back_to_top.client.ts`](core/back_to_top.client.ts), [`core/deferred_iframe.client.ts`](core/deferred_iframe.client.ts), [`shell/mobile_menu.client.ts`](shell/mobile_menu.client.ts), [`dict/abbr_popover.client.ts`](dict/abbr_popover.client.ts)) repeat the exact same `let activeCleanup: CleanupFn | null = null` re-initialization guard and teardown check.
+- [x] 🟢 **Consolidate `escapeCss` / `escapeId` into `core/dom.client.ts`**: (Completed in Batch 1)
+  - Extracted `escapeId` in `core/dom.client.ts`, adopted across `reader_view.client.ts` and `reader_panel.client.ts`.
+- [x] 🟢 **Consolidate one-shot keyframe flash (`flashElement`)**: (Completed in Batch 1)
+  - Extracted `flashElement` in `core/dom.client.ts`, adopted in [`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts) and [`dict/dict_permalink.client.ts`](dict/dict_permalink.client.ts).
+- [x] 🟢 **Extract `isPlainLeftClick(e: MouseEvent)`**: (Completed in Batch 1)
+  - Extracted `isPlainLeftClick` in `core/dom.client.ts`, adopted in [`dict/dict_search.client.ts`](dict/dict_search.client.ts) and [`reader/reader_view.client.ts`](reader/reader_view.client.ts).
+- [x] 🟢 **Extract `syncIframeTheme(iframe, theme?)`**: (Completed in Batch 1)
+  - Extracted `syncIframeTheme` in `core/dom.client.ts`, adopted in [`shell/theme_toggle.client.ts`](shell/theme_toggle.client.ts) and [`reader/reader_view.client.ts`](reader/reader_view.client.ts).
+- [x] 🟢 **Extract a `createSingletonSetup(setupFn)` wrapper for global enhancers**: (Completed in Batch 1)
+  - Extracted `createSingletonSetup` in `core/disposable.client.ts`, adopted across [`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts), [`core/back_to_top.client.ts`](core/back_to_top.client.ts), [`core/deferred_iframe.client.ts`](core/deferred_iframe.client.ts), [`shell/mobile_menu.client.ts`](shell/mobile_menu.client.ts), and [`dict/abbr_popover.client.ts`](dict/abbr_popover.client.ts).
 
 ---
 
 ## 3. Client-Side JS Code Smells & Correctness Traps
 
-- [ ] 🟢 **Move inline `style="min-height: 200px;"` in `reader/reader_panel.client.ts` to `reader/reader_panel.css` (`.innerHTML` writes already migrated to `setHtml`).**
-  - [x] Both raw `this.translationView.innerHTML = ...` assignments in [`reader/reader_panel.client.ts`](reader/reader_panel.client.ts) (L577–582 and L609–620) were converted to `setHtml(this.translationView, html`...`)` in Step 5.
-  - [ ] Move the remaining inline `style="min-height: 200px;"` attribute out of those two `html` templates into `.reader-translation-loading, .reader-translation-error` in [`reader/reader_panel.css`](reader/reader_panel.css).
-- [ ] 🟡 **Fix remaining drawer state split-brain in `MorcusReaderView.dismissDictionary()` (`reader/reader_view.client.ts`).**
-  - [x] The 15-line `else` fallbacks in `minimizeDrawer()` (L674–676) and `restoreDrawer()` (L678–680) were deleted in Step 5 when `DrawerController` migrated to `addController()`.
-  - [ ] In `dismissDictionary()` (L785–804), `MorcusReaderView` still bypasses `this.drawerController` and directly calls `dictPanel.style.removeProperty("--drawer-height")` and `splitLayout?.style.removeProperty("--drawer-height")`, **forgetting `document.documentElement`** (which is where `DrawerController` writes `--drawer-height` via `layoutElement: () => document.documentElement`). As a result, `document.documentElement` retains a stale `--drawer-height` after closing the dictionary. Add a `reset()` method to `DrawerController` and remove the dead `if (this.layoutController) ... else` branches in `dismissDictionary()` (L788–793) and `lookupWord()` (L855–865).
-- [ ] 🟢 **De-duplicate mobile scroll-past-drawer calculation in `MorcusReaderView`.**
-  - `openNote()` (L719–736) and `lookupWord()` (L871–890) in [`reader/reader_view.client.ts`](reader/reader_view.client.ts) contain identical 18-line `this.scope.rAF` blocks computing `drawerTop` and calling `window.scrollBy({ top: scrollNeeded, left: 0, behavior: "smooth" })` when `window.innerWidth <= 640`. Extract a private `scrollTargetAboveDrawer(targetEl: HTMLElement)` helper.
+- [x] 🟢 **Move inline `style="min-height: 200px;"` in `reader/reader_panel.client.ts` to `reader/reader_panel.css` (`.innerHTML` writes already migrated to `setHtml`).** (Completed in Batch 1)
+  - Moved `min-height: 200px;` to `.reader-translation-loading, .reader-translation-error` in [`reader/reader_panel.css`](reader/reader_panel.css) and dropped inline style attributes from `reader_panel.client.ts`.
+- [x] 🟡 **Fix remaining drawer state split-brain in `MorcusReaderView.dismissDictionary()` (`reader/reader_view.client.ts`).** (Completed in Batch 1)
+  - Added `reset()` to `DrawerController` clearing `drawer-minimized`, custom height on drawer and `documentElement`, and ARIA state. Routed `MorcusReaderView.dismissDictionary()` to `this.drawerController.reset()` and removed dead `if (this.layoutController) ... else` fallbacks.
+- [x] 🟢 **De-duplicate mobile scroll-past-drawer calculation in `MorcusReaderView`.** (Completed in Batch 1)
+  - Extracted `scrollTargetAboveDrawer(targetEl: HTMLElement)` in [`reader/reader_view.client.ts`](reader/reader_view.client.ts) called from both `openNote()` and `lookupWord()`.
 
 ---
 
