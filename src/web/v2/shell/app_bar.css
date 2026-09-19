@@ -273,7 +273,7 @@ morcus-report-dialog:not(:defined) {
 
 /* Float above bottom-docked drawers on mobile & tablet */
 @media (max-width: 1079.98px) {
-  body:has(.drawer) .back-to-top {
+  body:has(.drawer:not(.reader-dict-panel)) .back-to-top {
     bottom: calc(
       var(--drawer-height, 48dvh) + env(safe-area-inset-bottom, 0px) + 16px
     );
@@ -282,14 +282,14 @@ morcus-report-dialog:not(:defined) {
       color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  body:has(.drawer.drawer-minimized) .back-to-top,
+  body:has(.drawer.drawer-minimized:not(.reader-dict-panel)) .back-to-top,
   body:has(.toc-details:not([open])) .back-to-top {
     bottom: calc(
       var(--drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px
     );
   }
 
-  body:has(.drawer:target) .back-to-top {
+  body:has(.drawer:target:not(.reader-dict-panel)) .back-to-top {
     bottom: calc(55dvh + env(safe-area-inset-bottom, 0px) + 16px);
   }
 }

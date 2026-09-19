@@ -20,8 +20,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reader-toc-backdrop,
-  .reader-toc-drawer {
+  .reader-toc-backdrop {
     animation: none;
   }
 }
@@ -31,46 +30,18 @@
 }
 
 .reader-toc-drawer {
-  position: fixed;
   top: 132px; /* Baseline fallback; dynamically set below #reader-toc-btn on open */
   left: 50%;
   transform: translateX(-50%);
   width: 360px;
-  max-width: calc(100vw - 24px);
   max-height: min(72vh, 540px);
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  z-index: var(--z-dropdown);
   overflow: hidden;
-  animation: tocDropdownSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .reader-toc-drawer::before {
-  content: "";
-  position: absolute;
   top: -5px;
-  left: var(--caret-left, 50%);
-  transform: translateX(-50%) rotate(45deg);
-  width: 10px;
-  height: 10px;
   background: var(--card-header-bg, var(--bg));
-  border-left: 1px solid var(--border);
-  border-top: 1px solid var(--border);
-}
-
-@keyframes tocDropdownSlide {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
 }
 
 /* Progressive enhancement: Reveal via CSS :target when JavaScript is disabled */
@@ -84,11 +55,7 @@
 }
 
 .reader-toc-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: var(--space-3) var(--space-5);
-  border-bottom: 1px solid var(--border);
   background: var(--card-header-bg, var(--bg));
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
@@ -100,19 +67,8 @@
 }
 
 .reader-toc-close-btn {
-  background: none;
-  border: none;
   font-size: 1.125rem;
-  color: var(--text-muted);
-  cursor: pointer;
   padding: 0 var(--space-1);
-  line-height: 1;
-  border-radius: var(--radius-sm);
-  transition: color 0.12s ease;
-}
-
-.reader-toc-close-btn:hover {
-  color: var(--text);
 }
 
 .reader-toc-list {

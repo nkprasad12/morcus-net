@@ -162,11 +162,7 @@ export class ReaderLayoutController extends BaseController {
               String(DEFAULT_SPLIT_WIDTH),
             10
           );
-          try {
-            localStorage.setItem(this.storageKey, String(finalWidth));
-          } catch {
-            // ignore
-          }
+          storage.set(this.storageKey, String(finalWidth));
         },
       })
     );

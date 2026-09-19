@@ -982,16 +982,15 @@ describe("MorcusReaderView desktop splitter drag", () => {
           <a href="#sec-1.5" class="section-anchor">§ 1.5</a>
           <p class="reader-paragraph">Some text</p>
         </div>
-        <div id="reader-toast"></div>
       `;
       const el = createReaderView(passageHtml);
       el.dataset.work = "phi0448.phi001.perseus-lat2";
       el.dataset.page = "1.1";
 
       const anchor = el.querySelector<HTMLAnchorElement>("a.section-anchor")!;
-      const toast = el.querySelector<HTMLElement>("#reader-toast")!;
-
       anchor.click();
+      const toast = document.getElementById("toast")!;
+      expect(toast).not.toBeNull();
       expect(toast.classList.contains("visible")).toBe(true);
 
       // Advance 1500ms (less than 2200ms timeout), then click again

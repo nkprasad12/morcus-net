@@ -229,13 +229,6 @@
   border: 2px solid var(--border);
   border-top-color: var(--primary);
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .reader-panel-translation .reader-notes {
@@ -353,9 +346,5 @@ a.reader-note-ref.marker-active {
 @media (prefers-reduced-motion: reduce) {
   .reader-panel-tab {
     transition: none;
-  }
-
-  .reader-panel-translation .loading-spinner {
-    animation: none;
   }
 }

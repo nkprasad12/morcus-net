@@ -25,6 +25,7 @@ export const setupMobileMenu: (doc?: Document) => CleanupFn =
       },
       listenPointerDown: true,
       ignore: (target) => Boolean(getTrigger()?.contains(target)),
+      doc,
     });
   });
 

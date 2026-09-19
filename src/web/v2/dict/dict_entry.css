@@ -47,26 +47,6 @@
   flex-shrink: 0;
 }
 
-.dict-badge-la {
-  background-color: var(--chip-la-bg, var(--tag-bg));
-  color: var(--chip-la-text, var(--text-muted));
-}
-
-.dict-badge-en {
-  background-color: var(--chip-en-bg, var(--tag-bg));
-  color: var(--chip-en-text, var(--text-muted));
-}
-
-.dict-badge-de {
-  background-color: var(--chip-de-bg, var(--tag-bg));
-  color: var(--chip-de-text, var(--text-muted));
-}
-
-.dict-badge-es {
-  background-color: var(--chip-es-bg, var(--tag-bg));
-  color: var(--chip-es-text, var(--text-muted));
-}
-
 .tool-pane {
   display: contents;
 }
