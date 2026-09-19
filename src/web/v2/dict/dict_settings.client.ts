@@ -24,8 +24,21 @@ const DEFAULT_STRENGTH = 50;
 
 const TUNE_PATH = ICON_PATHS.tune;
 
+/**
+ * Dictionary & typography preferences dropdown (<morcus-dict-settings>).
+ *
+ * Architecture Note (Item 6.6):
+ * This component intentionally uses native `<details>` / `<summary>` disclosure semantics
+ * rather than `AnchoredPopoverController`. The `<details>` structure is a mandatory requirement
+ * of UI V2's Zero-JS baseline (Core Principle 1), enabling dictionary selection and form
+ * submission via `<noscript>` without JavaScript.
+ *
+ * In client enhancement, `detailsEl.open` acts as the single canonical source of truth for
+ * open/closed state (preventing `hidden`/`<details open>` attribute desync), dismissal is
+ * managed via `bindDismissable`, and dropdown positioning is handled by standard CSS
+ * relative anchoring without fixed coordinate recalculations or modal focus-trapping.
+ */
 export class MorcusDictSettings extends BaseElement {
-  private isOpen: boolean = false;
   private strength: number = DEFAULT_STRENGTH;
   private activeDictKeys: Set<string> = new Set();
   private isInflected: boolean = true;
@@ -44,13 +57,17 @@ export class MorcusDictSettings extends BaseElement {
     this.scope.use(
       bindDismissable({
         container: () => this.popoverEl,
-        isOpen: () => (this.detailsEl ? this.detailsEl.open : this.isOpen),
+        isOpen: () => Boolean(this.detailsEl?.open),
         onDismiss: () => this.closeSettingsPopover(),
         triggerEl: () => this.summaryEl,
         listenPointerDown: true,
         ignore: (target) => Boolean(this.summaryEl?.contains(target)),
       })
     );
+  }
+
+  protected override onDisconnect() {
+    this.closeSettingsPopover();
   }
 
   private computeInitialStrength(): number {
@@ -191,13 +208,21 @@ export class MorcusDictSettings extends BaseElement {
       if (this.detailsEl) {
         // JSDOM does not natively toggle details.open on summary click
         this.detailsEl.open = !this.detailsEl.open;
-        this.isOpen = this.detailsEl.open;
+        this.summaryEl?.setAttribute(
+          "aria-expanded",
+          String(this.detailsEl.open)
+        );
         e.preventDefault();
       }
     });
 
     this.scope.listen(this.detailsEl, "toggle", () => {
-      this.isOpen = Boolean(this.detailsEl?.open);
+      if (this.detailsEl && this.summaryEl) {
+        this.summaryEl.setAttribute(
+          "aria-expanded",
+          String(this.detailsEl.open)
+        );
+      }
     });
 
     const sliderEl = this.scope.$<HTMLInputElement>(".settings-slider");
@@ -276,16 +301,11 @@ export class MorcusDictSettings extends BaseElement {
   }
 
   private closeSettingsPopover() {
-    if (!this.isOpen) return;
-    this.isOpen = false;
     if (this.detailsEl) {
       this.detailsEl.open = false;
     }
     if (this.summaryEl) {
       this.summaryEl.setAttribute("aria-expanded", "false");
-    }
-    if (this.popoverEl && !this.detailsEl) {
-      this.popoverEl.hidden = true;
     }
   }
 

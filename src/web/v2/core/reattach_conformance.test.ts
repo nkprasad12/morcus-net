@@ -435,6 +435,36 @@ describe("open-state popovers survive being moved in the DOM", () => {
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
   });
 
+  test("morcus-dict-settings resets open state on move and re-binds trigger listener", () => {
+    document.body.innerHTML = FIXTURES["morcus-dict-settings"];
+    const settingsEl = document.querySelector<HTMLElement>(
+      "morcus-dict-settings"
+    )!;
+    const triggerBtn = settingsEl.querySelector<HTMLElement>(".settings-btn")!;
+    const detailsEl = settingsEl.querySelector<HTMLDetailsElement>(
+      ".dict-settings-details"
+    )!;
+
+    // Open settings popover
+    triggerBtn.click();
+    expect(detailsEl.open).toBe(true);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+
+    // Move in DOM (disconnect then reconnect)
+    settingsEl.remove();
+    expect(detailsEl.open).toBe(false);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+
+    document.body.appendChild(settingsEl);
+    expect(detailsEl.open).toBe(false);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+
+    // Re-trigger opens popover cleanly
+    triggerBtn.click();
+    expect(detailsEl.open).toBe(true);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+  });
+
   test("ReaderTocController resets open state on move, tears down open-state listeners, and re-binds trigger listener", () => {
     document.body.innerHTML = FIXTURES["morcus-reader-view"];
     const readerView =
