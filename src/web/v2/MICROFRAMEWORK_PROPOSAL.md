@@ -393,4 +393,4 @@ A jsdom-side shim in the test setup, or the existing injected-option pattern (`d
 
 ### 6.8 Migrate the last raw listener block (🟢)
 
-- [ ] `MorcusReaderView.initBackToTop()` still uses raw `addEventListener` with a hand-written `addDisposable` teardown. It is correct, just off-pattern — and off-pattern is how the `showTranslationError()` listener leak (§1.3) happened.
+- [x] `MorcusReaderView.initBackToTop()` still uses raw `addEventListener` with a hand-written `addDisposable` teardown. It is correct, just off-pattern — and off-pattern is how the `showTranslationError()` listener leak (§1.3) happened.

@@ -1015,8 +1015,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     // Listen on both possible scroll containers
     const mobileSticky = this.querySelector<HTMLElement>(".reader-dict-sticky");
-    dictPanel.addEventListener("scroll", onScroll, { passive: true });
-    mobileSticky?.addEventListener("scroll", onScroll, { passive: true });
+    this.scope.listen(dictPanel, "scroll", onScroll, { passive: true });
+    this.scope.listen(mobileSticky, "scroll", onScroll, { passive: true });
 
     // Click handler: Instant scroll straight to top (no smooth animation)
     const onClick = (e: MouseEvent) => {
@@ -1036,12 +1036,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       btn.classList.remove("visible");
     };
 
-    btn.addEventListener("click", onClick);
+    this.scope.listen(btn, "click", onClick);
 
     this.scope.use(() => {
-      dictPanel.removeEventListener("scroll", onScroll);
-      mobileSticky?.removeEventListener("scroll", onScroll);
-      btn.removeEventListener("click", onClick);
       btn.remove();
     });
   }
