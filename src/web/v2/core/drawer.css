@@ -6,7 +6,7 @@
  */
 
 :root {
-  --drawer-height: 48dvh;
+  --drawer-height: 48svh;
   --drawer-min-height: 54px;
 }
 
@@ -34,15 +34,9 @@ body.resizing-drawer {
   border-top-left-radius: var(--radius-2xl);
   border-top-right-radius: var(--radius-2xl);
   box-shadow: var(--drawer-shadow);
-  transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    max-height 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: none;
   z-index: var(--z-drawer);
   padding-bottom: env(safe-area-inset-bottom, 0);
-}
-
-.drawer.is-dragging {
-  transition: none;
 }
 
 /* Minimized state: Collapses to handle teaser height */

@@ -282,8 +282,8 @@
 
   .drawer-toc {
     --drawer-min-height: 28px;
-    height: var(--drawer-height, 48dvh);
-    max-height: 88dvh;
+    height: var(--drawer-height, 48svh);
+    max-height: 88svh;
     border-top: 2px solid var(--border-strong);
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
@@ -316,7 +316,7 @@
 
   .drawer-toc .toc-body {
     max-height: calc(
-      var(--drawer-height, 48dvh) - var(--drawer-min-height, 28px)
+      var(--drawer-height, 48svh) - var(--drawer-min-height, 28px)
     );
     overflow-y: auto;
   }

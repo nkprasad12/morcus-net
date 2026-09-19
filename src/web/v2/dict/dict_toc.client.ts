@@ -13,9 +13,9 @@ import {
 } from "@/web/v2/core/base_element.client";
 import {
   DrawerController,
-  DRAWER_DEFAULT_DVH,
-  DRAWER_EXPANDED_DVH,
-  DRAWER_FLOOR_DVH,
+  DRAWER_DEFAULT_SVH,
+  DRAWER_EXPANDED_SVH,
+  DRAWER_FLOOR_SVH,
 } from "@/web/v2/core/drawer.client";
 
 export class MorcusDictToc extends BaseElement {
@@ -29,9 +29,9 @@ export class MorcusDictToc extends BaseElement {
       detailsSelector: ".toc-details",
       layoutElement: () => document.documentElement,
       minHeight: 28,
-      defaultDvh: DRAWER_DEFAULT_DVH,
-      floorDvh: DRAWER_FLOOR_DVH,
-      expandedDvh: DRAWER_EXPANDED_DVH,
+      defaultSvh: DRAWER_DEFAULT_SVH,
+      floorSvh: DRAWER_FLOOR_SVH,
+      expandedSvh: DRAWER_EXPANDED_SVH,
       enabled: () => this.isMobileViewport(),
     })
   );

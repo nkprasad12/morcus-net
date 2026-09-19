@@ -327,16 +327,18 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
         </div>
 
         <!-- Right / Bottom Column: Dictionary Panel (Adaptive Sheet on Mobile) -->
-        <aside class="reader-dict-panel drawer" id="reader-dict" aria-label="Dictionary">
+        <aside class="reader-dict-panel drawer${
+          query ? "" : " drawer-minimized"
+        }" id="reader-dict" aria-label="Dictionary">
           <!-- Mobile sheet handle & teaser bar (visible on mobile) -->
           <div class="reader-sheet-bar"
                role="separator"
                tabindex="0"
                aria-orientation="horizontal"
                aria-label="Resize dictionary drawer"
-               aria-valuemin="40"
-               aria-valuemax="90"
-               aria-valuenow="48">
+               aria-valuemin="18"
+               aria-valuemax="88"
+               aria-valuenow="${query ? "48" : "0"}">
             <div class="reader-sheet-handle" aria-hidden="true"></div>
             <div class="reader-sheet-teaser">
               ${

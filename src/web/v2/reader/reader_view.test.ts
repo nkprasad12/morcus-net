@@ -8,9 +8,9 @@ import {
   parseReaderPreferences,
 } from "@/web/v2/reader/reader_view.client";
 import {
-  DRAWER_DEFAULT_DVH,
-  DRAWER_EXPANDED_DVH,
-  DRAWER_FLOOR_DVH,
+  DRAWER_DEFAULT_SVH,
+  DRAWER_EXPANDED_SVH,
+  DRAWER_FLOOR_SVH,
 } from "@/web/v2/core/drawer.client";
 import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 
@@ -53,7 +53,7 @@ function createReaderView(
           ${options.aboutHtml ?? ""}
         </div>
       </section>
-      <aside class="reader-dict-panel">
+      <aside class="reader-dict-panel drawer drawer-minimized">
         <div class="reader-sheet-bar">
           <div class="reader-sheet-teaser">
             <span class="reader-sheet-label">Tap any word</span>
@@ -431,37 +431,100 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       expect(sheetLabelOf(el).textContent).toBe("Definitions for Arma");
     });
 
-    test("restoreDrawer clamps target dvh within [DRAWER_FLOOR_DVH, DRAWER_EXPANDED_DVH] and falls back to DRAWER_DEFAULT_DVH", () => {
+    test("restoreDrawer clamps target svh within [DRAWER_FLOOR_SVH, DRAWER_EXPANDED_SVH] and falls back to DRAWER_DEFAULT_SVH", () => {
       const el = createReaderView(passageHtml);
       const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
       const sheetBar = el.querySelector<HTMLElement>(".reader-sheet-bar")!;
 
-      // Default restore (omitted targetDvh) sets DRAWER_DEFAULT_DVH
+      // Default restore (omitted targetSvh) sets DRAWER_DEFAULT_SVH
       el.restoreDrawer();
       expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe(
-        `${DRAWER_DEFAULT_DVH}dvh`
+        `${DRAWER_DEFAULT_SVH}svh`
       );
       expect(sheetBar.getAttribute("aria-valuenow")).toBe(
-        String(DRAWER_DEFAULT_DVH)
+        String(DRAWER_DEFAULT_SVH)
       );
 
-      // Clamps below floor threshold to DRAWER_FLOOR_DVH
-      el.restoreDrawer(DRAWER_FLOOR_DVH - 10);
+      // Clamps below floor threshold to DRAWER_FLOOR_SVH
+      el.restoreDrawer(DRAWER_FLOOR_SVH - 10);
       expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe(
-        `${DRAWER_FLOOR_DVH}dvh`
+        `${DRAWER_FLOOR_SVH}svh`
       );
       expect(sheetBar.getAttribute("aria-valuenow")).toBe(
-        String(DRAWER_FLOOR_DVH)
+        String(DRAWER_FLOOR_SVH)
       );
 
-      // Clamps above expanded threshold to DRAWER_EXPANDED_DVH
-      el.restoreDrawer(DRAWER_EXPANDED_DVH + 10);
+      // Clamps above expanded threshold to DRAWER_EXPANDED_SVH
+      el.restoreDrawer(DRAWER_EXPANDED_SVH + 10);
       expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe(
-        `${DRAWER_EXPANDED_DVH}dvh`
+        `${DRAWER_EXPANDED_SVH}svh`
       );
       expect(sheetBar.getAttribute("aria-valuenow")).toBe(
-        String(DRAWER_EXPANDED_DVH)
+        String(DRAWER_EXPANDED_SVH)
       );
+    });
+
+    test("scrollTargetAboveDrawer computes drawerTop deterministically from preferredDrawerSvh without reading dictPanel geometry", () => {
+      const origInnerWidth = Object.getOwnPropertyDescriptor(
+        window,
+        "innerWidth"
+      );
+      const origInnerHeight = Object.getOwnPropertyDescriptor(
+        window,
+        "innerHeight"
+      );
+      const origRaf = window.requestAnimationFrame;
+      const origScrollBy = window.scrollBy;
+
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        value: 375,
+      });
+      Object.defineProperty(window, "innerHeight", {
+        configurable: true,
+        value: 800,
+      });
+      const rafCallbacks: FrameRequestCallback[] = [];
+      window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+        rafCallbacks.push(cb);
+        return rafCallbacks.length;
+      }) as typeof window.requestAnimationFrame;
+      const scrollByMock = jest.fn();
+      window.scrollBy = scrollByMock;
+
+      try {
+        const el = createReaderView(passageHtml);
+        const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+        const dictRectSpy = jest.spyOn(dictPanel, "getBoundingClientRect");
+
+        // Set preferredDrawerSvh to 50 -> drawerTop = 800 * (1 - 0.5) = 400 (threshold = 400 - 24 = 376)
+        el.restoreDrawer(50);
+        dictRectSpy.mockClear();
+
+        const word = el.querySelector<HTMLElement>(".lat-word")!;
+        word.getBoundingClientRect = jest.fn(
+          () => ({ bottom: 500 } as DOMRect)
+        );
+
+        word.click();
+        rafCallbacks.forEach((cb) => cb(0));
+
+        expect(dictRectSpy).not.toHaveBeenCalled();
+        expect(scrollByMock).toHaveBeenCalledWith({
+          top: 124, // 500 - (400 - 24)
+          left: 0,
+          behavior: "smooth",
+        });
+      } finally {
+        if (origInnerWidth) {
+          Object.defineProperty(window, "innerWidth", origInnerWidth);
+        }
+        if (origInnerHeight) {
+          Object.defineProperty(window, "innerHeight", origInnerHeight);
+        }
+        window.requestAnimationFrame = origRaf;
+        window.scrollBy = origScrollBy;
+      }
     });
 
     test("does not execute markup supplied via the ?q= parameter", () => {
@@ -2129,7 +2192,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       expect(splitLayout.classList.contains("drawer-dismissed")).toBe(false);
       expect(splitLayout.classList.contains("reader-layout-active")).toBe(true);
       expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe(
-        `${DRAWER_DEFAULT_DVH}dvh`
+        `${DRAWER_DEFAULT_SVH}svh`
       );
     });
 
@@ -2201,7 +2264,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
           pointerId: 1,
         })
       );
-      expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe("38dvh");
+      expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe("38svh");
     });
   });
 });

@@ -95,51 +95,54 @@ describe("core/dom.client", () => {
       ]);
     });
 
-    it("evaluates load-bearing UI V2 reader.css :has() selectors", () => {
-      // reader.css L368: .reader-layout-active:has(.drawer-minimized) .reader-text-panel
-      // reader.css L385: .reader-split-layout:has(.is-dragging) .reader-text-panel
+    it("evaluates load-bearing UI V2 app_bar.css :has() selectors", () => {
+      // app_bar.css L310: body:has(.reader-dict-panel.drawer-minimized) .back-to-top
+      // app_bar.css L321: body:has(.drawer-dismissed) .back-to-top
       document.body.innerHTML = `
-        <div id="reader-layout" class="reader-split-layout reader-layout-active">
+        <div id="reader-layout" class="reader-split-layout reader-layout-active drawer-dismissed">
           <section id="text-panel" class="reader-text-panel">Content</section>
-          <aside id="dict-panel" class="reader-dict-panel drawer-minimized">
-            <div id="handle" class="drawer-bar is-dragging">Handle</div>
+          <aside id="dict-panel" class="reader-dict-panel drawer drawer-minimized">
+            <div id="handle" class="drawer-bar">Handle</div>
           </aside>
         </div>
+        <a id="back-to-top" href="#top" class="back-to-top">Top</a>
       `;
 
-      const layout = document.getElementById("reader-layout")!;
-
-      // 1. Minimized drawer rule: drives text panel bottom padding
-      expect(layout.matches(":has(.drawer-minimized)")).toBe(true);
-      const textPanelWithMinimized = document.querySelector(
-        ".reader-layout-active:has(.drawer-minimized) .reader-text-panel"
+      // 1. Minimized drawer rule: positions back-to-top button above collapsed drawer bar
+      expect(
+        document.body.matches(":has(.reader-dict-panel.drawer-minimized)")
+      ).toBe(true);
+      const backToTopMinimized = document.querySelector(
+        "body:has(.reader-dict-panel.drawer-minimized) .back-to-top"
       );
-      expect(textPanelWithMinimized?.id).toBe("text-panel");
+      expect(backToTopMinimized?.id).toBe("back-to-top");
 
-      // 2. Drag transition suppression rule: suppresses transition mid-drag
-      expect(layout.matches(":has(.is-dragging)")).toBe(true);
-      const textPanelDragging = document.querySelector(
-        ".reader-split-layout:has(.is-dragging) .reader-text-panel"
+      // 2. Dismissed drawer rule: positions back-to-top button above restore FAB
+      expect(document.body.matches(":has(.drawer-dismissed)")).toBe(true);
+      const backToTopDismissed = document.querySelector(
+        "body:has(.drawer-dismissed) .back-to-top"
       );
-      expect(textPanelDragging?.id).toBe("text-panel");
+      expect(backToTopDismissed?.id).toBe("back-to-top");
 
       // 3. Negative controls: when state classes are removed
       document
         .getElementById("dict-panel")!
         .classList.remove("drawer-minimized");
-      document.getElementById("handle")!.classList.remove("is-dragging");
+      document
+        .getElementById("reader-layout")!
+        .classList.remove("drawer-dismissed");
 
-      expect(layout.matches(":has(.drawer-minimized)")).toBe(false);
-      expect(layout.matches(":has(.is-dragging)")).toBe(false);
+      expect(
+        document.body.matches(":has(.reader-dict-panel.drawer-minimized)")
+      ).toBe(false);
+      expect(document.body.matches(":has(.drawer-dismissed)")).toBe(false);
       expect(
         document.querySelector(
-          ".reader-layout-active:has(.drawer-minimized) .reader-text-panel"
+          "body:has(.reader-dict-panel.drawer-minimized) .back-to-top"
         )
       ).toBeNull();
       expect(
-        document.querySelector(
-          ".reader-split-layout:has(.is-dragging) .reader-text-panel"
-        )
+        document.querySelector("body:has(.drawer-dismissed) .back-to-top")
       ).toBeNull();
     });
   });

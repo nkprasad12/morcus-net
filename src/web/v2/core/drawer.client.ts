@@ -9,12 +9,42 @@ import { BaseController } from "@/web/v2/core/base_element.client";
 import { trackPointerDrag } from "@/web/v2/core/gesture.client";
 
 /**
- * Snap points and bounds for bottom sheet drawers in dynamic viewport height units (dvh).
+ * Snap points and bounds for bottom sheet drawers in small viewport height units (svh).
  */
-export const DRAWER_DEFAULT_DVH = 48;
-export const DRAWER_FLOOR_DVH = 18;
-export const DRAWER_EXPANDED_DVH = 88;
+export const DRAWER_DEFAULT_SVH = 48;
+export const DRAWER_FLOOR_SVH = 18;
+export const DRAWER_EXPANDED_SVH = 88;
 export const DRAWER_MIN_HEIGHT = 54;
+
+let svhProbe: HTMLElement | null = null;
+
+/**
+ * Measures `100svh` in pixels using a cached fixed-position `height: 100svh`
+ * probe element, falling back to `document.documentElement.clientHeight` or
+ * `window.innerHeight` when layout engines (such as jsdom) report `0`.
+ */
+export function measureSvh100(): number {
+  if (typeof document !== "undefined" && document.body) {
+    if (!svhProbe || !svhProbe.isConnected) {
+      svhProbe = document.createElement("div");
+      svhProbe.setAttribute("aria-hidden", "true");
+      svhProbe.style.cssText =
+        "position:fixed;top:0;left:0;width:0;height:100svh;pointer-events:none;visibility:hidden;z-index:-1;";
+      document.body.appendChild(svhProbe);
+    }
+    const probeHeight = svhProbe.clientHeight;
+    if (probeHeight > 0) {
+      return probeHeight;
+    }
+  }
+  if (
+    typeof document !== "undefined" &&
+    document.documentElement?.clientHeight > 0
+  ) {
+    return document.documentElement.clientHeight;
+  }
+  return (typeof window !== "undefined" && window.innerHeight) || 800;
+}
 
 export interface DrawerControllerOptions {
   /** Optional root container used to resolve selectors (defaults to drawer or document) */
@@ -39,14 +69,14 @@ export interface DrawerControllerOptions {
   enabled?: () => boolean;
   /** Minimum height in pixels (peek / minimized height). Defaults to DRAWER_MIN_HEIGHT (54). */
   minHeight?: number;
-  /** Default / initial height in dvh (1-100). Defaults to DRAWER_DEFAULT_DVH (48). */
-  defaultDvh?: number;
-  /** Floor / collapse threshold in dvh. Defaults to DRAWER_FLOOR_DVH (18). */
-  floorDvh?: number;
-  /** Expanded snap height in dvh. Defaults to DRAWER_EXPANDED_DVH (88). */
-  expandedDvh?: number;
-  /** Initial preferred dvh. Defaults to defaultDvh. */
-  preferredDvh?: number;
+  /** Default / initial height in svh (1-100). Defaults to DRAWER_DEFAULT_SVH (48). */
+  defaultSvh?: number;
+  /** Floor / collapse threshold in svh. Defaults to DRAWER_FLOOR_SVH (18). */
+  floorSvh?: number;
+  /** Expanded snap height in svh. Defaults to DRAWER_EXPANDED_SVH (88). */
+  expandedSvh?: number;
+  /** Initial preferred svh. Defaults to defaultSvh. */
+  preferredSvh?: number;
   /** Optional filter callback; return false to ignore pointerdown (e.g. clicking child buttons). */
   filter?: (e: PointerEvent) => boolean;
   /** Callback fired when pointer drag starts on the handle */
@@ -54,12 +84,12 @@ export interface DrawerControllerOptions {
   /** Callback fired when drawer is minimized */
   onMinimize?: () => void;
   /** Callback fired when drawer is restored or expanded */
-  onRestore?: (dvh: number) => void;
+  onRestore?: (svh: number) => void;
   /**
    * Callback fired continuously during drag move. Must avoid layout reads
    * (e.g. getBoundingClientRect, clientWidth) to prevent forced reflows.
    */
-  onHeightChange?: (heightPx: number, dvhPercent: number) => void;
+  onHeightChange?: (heightPx: number, svhPercent: number) => void;
   /** Callback fired when Escape key is pressed */
   onEscape?: () => void;
 }
@@ -71,10 +101,10 @@ export class DrawerController extends BaseController {
   private summary: HTMLElement | null = null;
 
   private readonly minHeight: number;
-  private readonly defaultDvh: number;
-  private readonly floorDvh: number;
-  private readonly expandedDvh: number;
-  private preferredDvh: number;
+  private readonly defaultSvh: number;
+  private readonly floorSvh: number;
+  private readonly expandedSvh: number;
+  private preferredSvh: number;
 
   private isUpdatingDetails = false;
 
@@ -82,10 +112,10 @@ export class DrawerController extends BaseController {
     super(options.root ?? options.drawer ?? document);
 
     this.minHeight = options.minHeight ?? DRAWER_MIN_HEIGHT;
-    this.defaultDvh = options.defaultDvh ?? DRAWER_DEFAULT_DVH;
-    this.floorDvh = options.floorDvh ?? DRAWER_FLOOR_DVH;
-    this.expandedDvh = options.expandedDvh ?? DRAWER_EXPANDED_DVH;
-    this.preferredDvh = options.preferredDvh ?? this.defaultDvh;
+    this.defaultSvh = options.defaultSvh ?? DRAWER_DEFAULT_SVH;
+    this.floorSvh = options.floorSvh ?? DRAWER_FLOOR_SVH;
+    this.expandedSvh = options.expandedSvh ?? DRAWER_EXPANDED_SVH;
+    this.preferredSvh = options.preferredSvh ?? this.defaultSvh;
 
     this.resolveElements();
   }
@@ -177,10 +207,10 @@ export class DrawerController extends BaseController {
   }
 
   /**
-   * Returns the current preferred height in dvh.
+   * Returns the current preferred height in svh.
    */
-  getPreferredDvh(): number {
-    return this.preferredDvh;
+  getPreferredSvh(): number {
+    return this.preferredSvh;
   }
 
   /**
@@ -206,29 +236,29 @@ export class DrawerController extends BaseController {
   }
 
   /**
-   * Restores the drawer to the specified or preferred dvh height.
+   * Restores the drawer to the specified or preferred svh height.
    */
-  restore(targetDvh?: number): void {
+  restore(targetSvh?: number): void {
     this.resolveElements();
-    const dvh = Math.min(
-      this.expandedDvh,
-      Math.max(this.floorDvh, targetDvh ?? this.preferredDvh ?? this.defaultDvh)
+    const svh = Math.min(
+      this.expandedSvh,
+      Math.max(this.floorSvh, targetSvh ?? this.preferredSvh ?? this.defaultSvh)
     );
-    this.preferredDvh = dvh;
+    this.preferredSvh = svh;
 
     if (this.drawer) {
       this.drawer.classList.remove("drawer-minimized");
-      this.drawer.style.setProperty("--drawer-height", `${dvh}dvh`);
+      this.drawer.style.setProperty("--drawer-height", `${svh}svh`);
     }
     if (this.details && !this.details.open) {
       this.isUpdatingDetails = true;
       this.details.open = true;
       this.isUpdatingDetails = false;
     }
-    this.getLayoutElement()?.style.setProperty("--drawer-height", `${dvh}dvh`);
-    this.handle?.setAttribute("aria-valuenow", String(dvh));
+    this.getLayoutElement()?.style.setProperty("--drawer-height", `${svh}svh`);
+    this.handle?.setAttribute("aria-valuenow", String(svh));
 
-    this.options.onRestore?.(dvh);
+    this.options.onRestore?.(svh);
   }
 
   /**
@@ -236,8 +266,8 @@ export class DrawerController extends BaseController {
    */
   setHeight(heightPx: number): void {
     this.resolveElements();
-    const winHeight = window.innerHeight || 800;
-    const maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
+    const winHeight = measureSvh100();
+    const maxHeight = Math.round(winHeight * (this.expandedSvh / 100));
     const clamped = Math.max(this.minHeight, Math.min(maxHeight, heightPx));
     this.drawer?.style.setProperty("--drawer-height", `${clamped}px`);
     this.getLayoutElement()?.style.setProperty(
@@ -263,15 +293,15 @@ export class DrawerController extends BaseController {
     this.scope.use(
       trackPointerDrag(handle, {
         handleActiveClass: "is-dragging",
-        // The handle is a child of the drawer, so `.drawer.is-dragging`
-        // (and the reader's `.reader-dict-panel.is-dragging`) only match
-        // if the panel is marked too. Those rules are what disable the height
-        // transition mid-drag.
+        // The handle is a child of the drawer, so `.reader-dict-panel.is-dragging .dict-iframe`
+        // (src/web/v2/reader/reader_dict.css#L31-L34) only matches if the panel is marked too.
+        // That rule sets `pointer-events: none` on `.dict-iframe` so the dictionary iframe
+        // cannot capture pointer events mid-drag.
         activeClassTarget: drawer,
         bodyActiveClass: "resizing-drawer",
         filter: this.options.filter,
         /**
-         * `window.innerHeight` is measured once per gesture and reused by
+         * `100svh` (`measureSvh100()`) is measured once per gesture and reused by
          * `onMove` and `onEnd`. It is layout-dependent, so reading it per move —
          * right after the previous move wrote `--drawer-height` — forces a
          * synchronous layout. The viewport cannot change mid-gesture: the handle
@@ -280,10 +310,10 @@ export class DrawerController extends BaseController {
          * snap decision on the same basis as the heights the drag just painted.
          */
         onStart: () => {
-          winHeight = window.innerHeight || 800;
-          maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
+          winHeight = measureSvh100();
           wasMinimized = this.isMinimized();
           startHeight = drawer.getBoundingClientRect().height || this.minHeight;
+          maxHeight = Math.round(winHeight * (this.expandedSvh / 100));
           if (this.details && !this.details.open) {
             this.isUpdatingDetails = true;
             this.details.open = true;
@@ -325,16 +355,22 @@ export class DrawerController extends BaseController {
             measuredHeight > 0
               ? measuredHeight
               : Math.max(this.minHeight, Math.min(maxHeight, startHeight - dy));
-          const currentDvh = Math.round((currentHeight / winHeight) * 100);
+          const currentSvh = Math.round((currentHeight / winHeight) * 100);
 
           // Handle simple tap (minimal movement)
           if (Math.abs(dy) < 6 && elapsedMs < 350) {
             wasDragged = false;
-            if (
-              (wasMinimized || startHeight <= this.minHeight + 4) &&
-              !this.details
-            ) {
+            if (!this.details) {
               this.restore();
+            } else if (!wasMinimized) {
+              drawer.style.setProperty(
+                "--drawer-height",
+                `${this.preferredSvh}svh`
+              );
+              this.getLayoutElement()?.style.setProperty(
+                "--drawer-height",
+                `${this.preferredSvh}svh`
+              );
             }
             return;
           }
@@ -346,18 +382,18 @@ export class DrawerController extends BaseController {
 
           // Dragged into floor threshold
           const isDraggedToFloor =
-            currentDvh < this.floorDvh || currentHeight < 110;
+            currentSvh < this.floorSvh || currentHeight < 110;
 
           if (isFastFlickDown || isDraggedToFloor) {
             this.minimize();
             return;
           }
 
-          const clampedDvh = Math.min(
-            this.expandedDvh,
-            Math.max(this.floorDvh, currentDvh)
+          const clampedSvh = Math.min(
+            this.expandedSvh,
+            Math.max(this.floorSvh, currentSvh)
           );
-          this.restore(clampedDvh);
+          this.restore(clampedSvh);
         },
       })
     );
@@ -387,16 +423,16 @@ export class DrawerController extends BaseController {
       if (e.key === "ArrowUp") {
         e.preventDefault();
         if (this.isMinimized()) {
-          this.restore(this.defaultDvh);
+          this.restore(this.defaultSvh);
         } else {
-          this.restore(this.expandedDvh);
+          this.restore(this.expandedSvh);
         }
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
         const currentHeight = drawer.getBoundingClientRect().height;
-        const winHeight = window.innerHeight || 800;
+        const winHeight = measureSvh100();
         if (currentHeight > winHeight * 0.6) {
-          this.restore(this.defaultDvh);
+          this.restore(this.defaultSvh);
         } else {
           this.minimize();
         }
@@ -424,17 +460,17 @@ export class DrawerController extends BaseController {
   }
 
   /**
-   * Resets drawer DOM state and removes custom height styles on the drawer
-   * and layout elements.
+   * Resets drawer DOM state to its collapsed initial state and removes custom
+   * height styles on the drawer and layout elements.
    */
   public reset(): void {
     this.resolveElements();
     if (this.drawer) {
-      this.drawer.classList.remove("drawer-minimized");
+      this.drawer.classList.add("drawer-minimized");
       this.drawer.style.removeProperty("--drawer-height");
     }
     this.getLayoutElement()?.style.removeProperty("--drawer-height");
-    this.handle?.setAttribute("aria-valuenow", String(this.minHeight));
+    this.handle?.setAttribute("aria-valuenow", "0");
   }
 
   /**
