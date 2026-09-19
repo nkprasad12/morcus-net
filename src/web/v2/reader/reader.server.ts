@@ -21,6 +21,7 @@ import {
   renderReaderAboutSection,
   renderReaderSettingsPopover,
 } from "@/web/v2/reader/reader_dialogs.server";
+import { renderIconSvg } from "@/web/v2/core/icons.common";
 import * as he from "he";
 
 export {
@@ -333,7 +334,7 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
                tabindex="0"
                aria-orientation="horizontal"
                aria-label="Resize dictionary drawer"
-               aria-valuemin="38"
+               aria-valuemin="40"
                aria-valuemax="90"
                aria-valuenow="48">
             <div class="reader-sheet-handle" aria-hidden="true"></div>
@@ -343,12 +344,12 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
                   ? `<span class="reader-sheet-label">Definitions for <strong>${he.escape(
                       query
                     )}</strong></span>
-                     <a href="${activePageUrl}" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
+                     <a href="${activePageUrl}#reader-dict-dismissed" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
                   : `<a href="#reader-dict" class="reader-sheet-label reader-sheet-open-link" title="Open Dictionary Search">
                        <span class="reader-teaser-nojs">Open Dictionary Search &uarr;</span>
                        <span class="reader-teaser-js">Tap any word to view definitions</span>
                      </a>
-                     <a href="#" class="reader-sheet-close reader-sheet-close-target" aria-label="Close dictionary panel" title="Close">✕</a>`
+                     <a href="#reader-dict-dismissed" class="reader-sheet-close reader-sheet-close-target" aria-label="Close dictionary panel" title="Close">✕</a>`
               }
             </div>
           </div>
@@ -362,7 +363,18 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
                     title="Dictionary Search and Definitions"
                     loading="lazy"></iframe>
           </div>
-        </aside>`;
+        </aside>
+        <a href="#reader-dict"
+           class="reader-drawer-fab"
+           aria-label="Open dictionary drawer"
+           title="Open dictionary drawer">
+          ${renderIconSvg("drawer", {
+            width: 18,
+            height: 18,
+            extraAttrs:
+              'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"',
+          })}
+        </a>`;
 }
 
 /**
@@ -395,6 +407,8 @@ ${renderReaderStickyBar(ctx)}
         activePageIndex: ctx.activePageIndex,
         query: ctx.query,
       })}
+
+      <span id="reader-dict-dismissed" class="reader-drawer-dismiss-target" aria-hidden="true"></span>
 
       <!-- Main Split Layout -->
       <div class="reader-split-layout ${ctx.layoutStateClass}">

@@ -15,6 +15,7 @@ describe("icons", () => {
     expect(ICON_PATHS.notes).toBeDefined();
     expect(ICON_PATHS.info).toBeDefined();
     expect(ICON_PATHS.translate).toBeDefined();
+    expect(ICON_PATHS.drawer).toBeDefined();
   });
 
   it("renders an SVG with expected attributes", () => {

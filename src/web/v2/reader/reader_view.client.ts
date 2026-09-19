@@ -5,7 +5,6 @@ import {
   DRAWER_DEFAULT_DVH,
   DRAWER_EXPANDED_DVH,
   DRAWER_FLOOR_DVH,
-  DRAWER_MIN_HEIGHT,
   ICON_PATHS,
   copyText,
   escapeId,
@@ -50,7 +49,7 @@ import {
   computeMaxSplitWidth,
 } from "@/web/v2/reader/reader_layout.client";
 
-export const READER_DRAWER_MIN_HEIGHT = 38;
+export const READER_DRAWER_MIN_HEIGHT = 40;
 
 export {
   type ReaderFontFamily,
@@ -119,11 +118,17 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         }
         return true;
       },
+      onDragStart: () => {
+        this.undismissDrawer();
+        this.layoutController.setActive(true);
+      },
       onMinimize: () => {
         this.updateSheetLabel(true);
         this.resetDictScroll();
       },
       onRestore: (dvh) => {
+        this.undismissDrawer();
+        this.layoutController.setActive(true);
         this.preferredDrawerDvh = dvh;
         this.updateSheetLabel(false);
         this.resetDictScroll();
@@ -209,7 +214,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.router = this.syncQueryParam("q", {
       onChange: (q) => {
         if (!q) {
-          this.closeDictionary(false);
+          this.dismissDictionary(false);
           return;
         }
         this.lookupWord(q, this.findWordElement(q), false);
@@ -228,7 +233,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           });
         } else {
           if (!event.value) {
-            this.closeDictionary(false);
+            this.dismissDictionary(false);
           } else {
             this.lookupWord(
               event.value,
@@ -299,7 +304,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private readonly handleClick = (e: MouseEvent) => {
     if (!(e.target instanceof Element)) return;
 
-    // Handle close button click (collapses sheet/clears word)
+    // Handle close button click (dismisses mobile drawer & clears word)
     const closeBtn = e.target.closest<HTMLAnchorElement>(
       "a.reader-sheet-close, a.drawer-close"
     );
@@ -309,9 +314,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    // Handle open link click (expands drawer from teaser)
+    // Handle open link or floating restore FAB click (expands drawer)
     const openLink = e.target.closest<HTMLAnchorElement>(
-      "a.reader-sheet-open-link"
+      "a.reader-sheet-open-link, a.reader-drawer-fab"
     );
     if (openLink) {
       e.preventDefault();
@@ -573,6 +578,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   private closeDictionary(updateHistory: boolean = true) {
     this.dismissDictionary(updateHistory);
+    this.dismissDrawer();
   }
 
   /**
@@ -655,16 +661,38 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
+  public dismissDrawer(): void {
+    const splitLayout =
+      this.layoutController.splitLayout ??
+      this.querySelector<HTMLElement>(".reader-split-layout");
+    splitLayout?.classList.add("drawer-dismissed");
+  }
+
+  public undismissDrawer(): void {
+    const splitLayout =
+      this.layoutController.splitLayout ??
+      this.querySelector<HTMLElement>(".reader-split-layout");
+    splitLayout?.classList.remove("drawer-dismissed");
+    if (window.location.hash === "#reader-dict-dismissed") {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + window.location.search
+      );
+    }
+  }
+
   public minimizeDrawer(): void {
     this.drawerController.minimize();
   }
 
   public restoreDrawer(targetDvh?: number): void {
+    this.undismissDrawer();
+    this.layoutController.setActive(true);
     this.drawerController.restore(targetDvh);
   }
 
   public activatePanelLayout(): void {
-    this.layoutController.setActive(true);
     this.restoreDrawer();
   }
 

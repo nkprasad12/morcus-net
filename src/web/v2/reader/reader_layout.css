@@ -14,6 +14,11 @@
   align-items: start;
 }
 
+.reader-drawer-dismiss-target,
+.reader-drawer-fab {
+  display: none;
+}
+
 /* ==========================================================================
    Responsive Breakpoints: Mobile (<= 640px)
    ========================================================================== */
@@ -62,15 +67,15 @@
     overflow-y: visible;
   }
 
-  /* Empty state: Collapsed Bottom Drawer (~38px drawer handle bar, full height for text) */
+  /* Empty state: Collapsed Bottom Drawer (~40px drawer handle bar, full height for text) */
   .reader-layout-empty .reader-text-panel {
     flex: 1 1 auto;
-    padding-bottom: 52px;
+    padding-bottom: 58px;
   }
 
   .reader-layout-empty .reader-dict-panel {
-    flex: 0 0 38px;
-    height: 38px;
+    flex: 0 0 40px;
+    height: 40px;
     overflow: hidden;
   }
 
@@ -84,7 +89,7 @@
   .reader-layout-empty .reader-dict-panel:target {
     flex: none;
     height: 55dvh;
-    min-height: 38px;
+    min-height: 40px;
     max-height: 88dvh;
   }
 
@@ -97,14 +102,14 @@
     display: flex;
   }
 
-  /* Minimized active drawer: retains content in DOM but collapses to 38px teaser */
+  /* Minimized active drawer: retains content in DOM but collapses to 40px teaser */
   .reader-layout-active .reader-dict-panel.drawer-minimized {
-    height: 38px;
+    height: 40px;
     overflow: hidden;
   }
 
   .reader-layout-active:has(.drawer-minimized) .reader-text-panel {
-    padding-bottom: 52px;
+    padding-bottom: 58px;
   }
 
   .reader-layout-active .reader-dict-panel.drawer-minimized .reader-dict-sticky,
@@ -129,12 +134,93 @@
   .reader-layout-active .reader-dict-panel {
     flex: none;
     height: var(--drawer-height, 48dvh);
-    min-height: 38px;
+    min-height: 40px;
     max-height: 88dvh;
   }
 
   .reader-layout-active .reader-dict-sticky {
     display: block;
+  }
+
+  /* Floating restore FAB (revealed when drawer is dismissed via 'x' button) */
+  .reader-drawer-fab {
+    position: fixed;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-fab);
+    text-decoration: none;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity 0.2s ease, transform 0.15s ease, color 0.15s ease,
+      border-color 0.15s ease, box-shadow 0.15s ease,
+      background-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+  }
+
+  .reader-drawer-fab svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.15s ease;
+  }
+
+  .reader-drawer-fab:hover,
+  .reader-drawer-fab:focus-visible {
+    opacity: 1;
+    color: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  }
+
+  .reader-drawer-fab:hover svg {
+    transform: translateY(-1px);
+  }
+
+  .reader-drawer-fab:active {
+    transform: translateY(0);
+  }
+
+  .reader-drawer-fab:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  /* Dismissed state (closed via 'x' button): slides drawer off-screen & shows corner FAB */
+  .drawer-dismissed .reader-dict-panel,
+  .reader-drawer-dismiss-target:target
+    ~ .reader-split-layout
+    .reader-dict-panel {
+    transform: translateY(100%);
+    pointer-events: none;
+  }
+
+  .drawer-dismissed .reader-text-panel,
+  .reader-drawer-dismiss-target:target
+    ~ .reader-split-layout
+    .reader-text-panel {
+    padding-bottom: var(--space-5);
+  }
+
+  .drawer-dismissed .reader-drawer-fab,
+  .reader-drawer-dismiss-target:target
+    ~ .reader-split-layout
+    .reader-drawer-fab {
+    display: flex;
   }
 }
 
