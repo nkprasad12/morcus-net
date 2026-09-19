@@ -333,7 +333,7 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
                tabindex="0"
                aria-orientation="horizontal"
                aria-label="Resize dictionary drawer"
-               aria-valuemin="54"
+               aria-valuemin="38"
                aria-valuemax="90"
                aria-valuenow="48">
             <div class="reader-sheet-handle" aria-hidden="true"></div>

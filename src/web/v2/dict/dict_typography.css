@@ -211,15 +211,6 @@ html.has-js .lsHover:focus::after {
   font-size: calc(1.1rem * var(--dict-scale, 1));
 }
 
-.badge {
-  font-size: 0.8rem;
-  font-weight: normal;
-  padding: var(--space-1) var(--space-4);
-  border-radius: var(--radius-xl);
-  background: var(--border);
-  color: var(--text-muted);
-}
-
 /* Latin word click-to-lookup link */
 .lat-word,
 .lat-word:visited {
@@ -245,16 +236,24 @@ html.has-js .lsHover:focus::after {
 }
 
 /* Section anchor bullets */
-.section-anchor,
-.section-anchor:visited {
+.lsSenseBullet.section-anchor,
+.lsSenseBullet.section-anchor:visited,
+.dict-layout .section-anchor,
+.dict-layout .section-anchor:visited,
+.reader-dict-panel .section-anchor,
+.reader-dict-panel .section-anchor:visited {
   text-decoration: none;
   color: var(--text);
   cursor: pointer;
   transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
 }
 
-.section-anchor:hover,
-.section-anchor:focus-visible {
+.lsSenseBullet.section-anchor:hover,
+.lsSenseBullet.section-anchor:focus-visible,
+.dict-layout .section-anchor:hover,
+.dict-layout .section-anchor:focus-visible,
+.reader-dict-panel .section-anchor:hover,
+.reader-dict-panel .section-anchor:focus-visible {
   background-color: var(--primary);
   color: var(--on-accent);
 }

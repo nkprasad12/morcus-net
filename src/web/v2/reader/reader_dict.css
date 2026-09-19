@@ -70,9 +70,27 @@ body.resizing-panels .dict-iframe,
     width: 100%;
   }
 
-  /* Mobile Drawer Top Bar & Handle (styles provided by core drawer.css) */
+  /* Mobile Drawer Top Bar & Handle (ultra-compact) */
   .reader-sheet-bar {
     display: flex;
+    padding: 5px var(--space-4) var(--space-1);
+  }
+
+  .reader-sheet-handle {
+    width: 32px;
+    height: 3px;
+    margin-bottom: var(--space-1);
+  }
+
+  .reader-sheet-teaser {
+    min-height: 22px;
+    font-size: 0.8125rem;
+  }
+
+  a.reader-sheet-close,
+  a.reader-sheet-close:visited {
+    padding: 0 var(--space-2);
+    font-size: 0.95rem;
   }
 }
 

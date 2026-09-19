@@ -12,7 +12,9 @@
  *    Those belong in variables.css.
  */
 
-:root {
+:root,
+:root[data-theme="light"],
+[data-theme="light"] {
   /* Spacing Scale (4px base grid) */
   --space-1: 0.125rem;
   --space-2: 0.25rem;
@@ -35,7 +37,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #191b1d;
     --text: #e1e3e6;
     --app-bar-bg: #8fae9f;
@@ -53,14 +55,4 @@
   --app-bar-border: #7c9b8c;
   --app-bar-text: #10261e;
   --app-bar-nav-text: #1d3b33;
-}
-
-:root[data-theme="light"],
-[data-theme="light"] {
-  --bg: #f2f3f2;
-  --text: #212529;
-  --app-bar-bg: #bfdecf;
-  --app-bar-border: #a8cebe;
-  --app-bar-text: #1d3b33;
-  --app-bar-nav-text: #305449;
 }

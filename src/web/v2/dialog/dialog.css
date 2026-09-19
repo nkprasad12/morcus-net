@@ -85,7 +85,7 @@
 
 .dialog-close-btn:hover {
   color: var(--text);
-  background: var(--pill-bg);
+  background: var(--tag-bg);
 }
 
 .dialog-close-btn:focus-visible {
