@@ -19,3 +19,8 @@ playwright-report/
 e2e_metrics/
 corpus_driver.js
 target/
+.cache/
+*.tsbuildinfo
+.eslintcache
+.prettiercache
+.stylelintcache
