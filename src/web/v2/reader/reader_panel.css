@@ -215,6 +215,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
+  min-height: 200px;
   padding: var(--space-8) var(--space-4);
   color: var(--text-muted);
   font-family: var(--font-sans);

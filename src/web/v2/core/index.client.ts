@@ -17,3 +17,4 @@ export * from "@/web/v2/core/tokenize.client";
 export * from "@/web/v2/core/deferred_iframe.client";
 export * from "@/web/v2/core/storage.client";
 export * from "@/web/v2/core/popover.client";
+export * from "@/web/v2/core/disposable.client";

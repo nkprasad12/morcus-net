@@ -5,6 +5,7 @@ import {
   type CleanupFn,
   type Unregister,
   DisposableBag,
+  createSingletonSetup,
 } from "@/web/v2/core/disposable.client";
 
 describe("DisposableBag", () => {
@@ -151,5 +152,48 @@ describe("DisposableBag", () => {
 
     bag.dispose();
     expect(deferred).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("createSingletonSetup", () => {
+  test("runs setupFn and returns unbind cleanup handle", () => {
+    const cleanup = jest.fn();
+    const setup = createSingletonSetup(() => cleanup);
+
+    const unbind = setup();
+    expect(cleanup).not.toHaveBeenCalled();
+
+    unbind();
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  test("disposes previous active instance when setup is invoked again", () => {
+    const cleanup1 = jest.fn();
+    const cleanup2 = jest.fn();
+    let count = 0;
+    const setup = createSingletonSetup(() => {
+      count++;
+      return count === 1 ? cleanup1 : cleanup2;
+    });
+
+    setup();
+    expect(cleanup1).not.toHaveBeenCalled();
+
+    // Second call should tear down the first instance
+    setup();
+    expect(cleanup1).toHaveBeenCalledTimes(1);
+    expect(cleanup2).not.toHaveBeenCalled();
+  });
+
+  test("clears activeCleanup when unbind is called so subsequent unbind is a no-op", () => {
+    const cleanup = jest.fn();
+    const setup = createSingletonSetup(() => cleanup);
+
+    const unbind = setup();
+    unbind();
+    expect(cleanup).toHaveBeenCalledTimes(1);
+
+    unbind();
+    expect(cleanup).toHaveBeenCalledTimes(1);
   });
 });

@@ -514,5 +514,33 @@ describe("DrawerController", () => {
 
       controller.dispose();
     });
+
+    test("reset() clears drawer-minimized, removes custom height from drawer and layout, and resets aria-valuenow", () => {
+      const controller = connectController({
+        drawer,
+        handle,
+        layoutElement,
+        defaultDvh: 48,
+        minHeight: 54,
+      });
+
+      controller.restore(70);
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("70dvh");
+      expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
+        "70dvh"
+      );
+
+      controller.minimize();
+      expect(drawer.classList.contains("drawer-minimized")).toBe(true);
+      expect(handle.getAttribute("aria-valuenow")).toBe("0");
+
+      controller.reset();
+      expect(drawer.classList.contains("drawer-minimized")).toBe(false);
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("");
+      expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe("");
+      expect(handle.getAttribute("aria-valuenow")).toBe("54");
+
+      controller.dispose();
+    });
   });
 });

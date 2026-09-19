@@ -2,6 +2,7 @@ import {
   BaseElement,
   bindDismissable,
   fetchAndSwapPartial,
+  isPlainLeftClick,
   registerElement,
   replaceWithHtml,
   setHtml,
@@ -201,15 +202,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       this.scope.listen(this.resultsElement, "click", (e: MouseEvent) => {
         if (!(e.target instanceof Element)) return;
 
-        // Allow middle-click (e.button !== 0) or modifier clicks (Ctrl, Cmd, Shift, Alt)
-        // to follow standard browser navigation (e.g. open in a new tab / new window)
-        if (
-          e.button !== 0 ||
-          e.metaKey ||
-          e.ctrlKey ||
-          e.shiftKey ||
-          e.altKey
-        ) {
+        if (!isPlainLeftClick(e)) {
           return;
         }
 

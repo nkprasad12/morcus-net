@@ -5,6 +5,10 @@ import {
   setHtml,
   replaceWithHtml,
   assertConnected,
+  escapeId,
+  flashElement,
+  isPlainLeftClick,
+  syncIframeTheme,
 } from "@/web/v2/core/dom.client";
 import { detachedDomWrites } from "@/web/v2/core/dom_invariants.client";
 import { swapElementContent } from "@/web/v2/core/partial.client";
@@ -210,6 +214,110 @@ describe("core/dom.client", () => {
       expect(detachedDomWrites.length).toBe(0);
       expect(errSpy).not.toHaveBeenCalled();
       errSpy.mockRestore();
+    });
+  });
+
+  describe("escapeId", () => {
+    it("escapes special characters using CSS.escape or regex fallback", () => {
+      expect(escapeId("sec-1.2.3")).toBe("sec-1\\.2\\.3");
+      expect(escapeId("item:4")).toBe("item\\:4");
+      expect(escapeId("entry#1")).toBe("entry\\#1");
+    });
+  });
+
+  describe("flashElement", () => {
+    it("adds target class and removes it after animationend", () => {
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+
+      flashElement(el, "target-active");
+      expect(el.classList.contains("target-active")).toBe(true);
+
+      el.dispatchEvent(new Event("animationend"));
+      expect(el.classList.contains("target-active")).toBe(false);
+    });
+
+    it("re-triggers class when invoked repeatedly", () => {
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+
+      flashElement(el, "target-active");
+      expect(el.classList.contains("target-active")).toBe(true);
+
+      // Flash again before animationend
+      flashElement(el, "target-active");
+      expect(el.classList.contains("target-active")).toBe(true);
+
+      el.dispatchEvent(new Event("animationend"));
+      expect(el.classList.contains("target-active")).toBe(false);
+    });
+  });
+
+  describe("isPlainLeftClick", () => {
+    it("returns true for primary click with no modifier keys", () => {
+      const event = new MouseEvent("click", {
+        button: 0,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        altKey: false,
+      });
+      expect(isPlainLeftClick(event)).toBe(true);
+    });
+
+    it("returns false for non-primary buttons", () => {
+      const middleClick = new MouseEvent("click", { button: 1 });
+      const rightClick = new MouseEvent("click", { button: 2 });
+      expect(isPlainLeftClick(middleClick)).toBe(false);
+      expect(isPlainLeftClick(rightClick)).toBe(false);
+    });
+
+    it("returns false when modifier keys are pressed", () => {
+      expect(
+        isPlainLeftClick(new MouseEvent("click", { button: 0, ctrlKey: true }))
+      ).toBe(false);
+      expect(
+        isPlainLeftClick(new MouseEvent("click", { button: 0, metaKey: true }))
+      ).toBe(false);
+      expect(
+        isPlainLeftClick(new MouseEvent("click", { button: 0, shiftKey: true }))
+      ).toBe(false);
+      expect(
+        isPlainLeftClick(new MouseEvent("click", { button: 0, altKey: true }))
+      ).toBe(false);
+    });
+  });
+
+  describe("syncIframeTheme", () => {
+    it("synchronizes data-theme to same-origin iframe contentDocument", () => {
+      const iframe = document.createElement("iframe");
+      document.body.appendChild(iframe);
+      iframe.contentDocument!.write("<html><body></body></html>");
+      iframe.contentDocument!.close();
+
+      syncIframeTheme(iframe, "dark");
+      expect(
+        iframe.contentDocument!.documentElement.getAttribute("data-theme")
+      ).toBe("dark");
+
+      syncIframeTheme(iframe, "light");
+      expect(
+        iframe.contentDocument!.documentElement.getAttribute("data-theme")
+      ).toBe("light");
+    });
+
+    it("safely ignores cross-origin access exceptions without throwing", () => {
+      const iframe = document.createElement("iframe");
+      Object.defineProperty(iframe, "contentDocument", {
+        get() {
+          throw new DOMException(
+            "Cross-origin security barrier",
+            "SecurityError"
+          );
+        },
+      });
+
+      expect(() => syncIframeTheme(iframe, "dark")).not.toThrow();
     });
   });
 });

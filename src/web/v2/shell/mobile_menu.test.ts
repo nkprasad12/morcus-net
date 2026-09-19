@@ -93,4 +93,19 @@ describe("setupMobileMenu", () => {
     outside.dispatchEvent(new Event("pointerdown", { bubbles: true }));
     expect(menu.open).toBe(true);
   });
+
+  test("closes open mobile menu on Escape key", () => {
+    document.body.innerHTML = `
+      <details class="mobile-menu" open>
+        <summary>Menu</summary>
+      </details>
+    `;
+    const menu = document.querySelector(".mobile-menu") as HTMLDetailsElement;
+
+    cleanup = setupMobileMenu(document);
+    expect(menu.open).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(menu.open).toBe(false);
+  });
 });

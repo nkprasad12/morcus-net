@@ -2,6 +2,7 @@ import {
   BaseElement,
   registerElement,
   setupModalDialog,
+  type ModalDialogHandle,
 } from "@/web/v2/core/index.client";
 
 /**
@@ -15,6 +16,7 @@ import {
 export class MorcusReportDialog extends BaseElement {
   private triggerBtn: HTMLButtonElement | null = null;
   private dialogEl: HTMLDialogElement | null = null;
+  private dialogController: ModalDialogHandle | null = null;
   private formEl: HTMLFormElement | null = null;
   private textareaEl: HTMLTextAreaElement | null = null;
   private reporterInputEl: HTMLInputElement | null = null;
@@ -39,19 +41,18 @@ export class MorcusReportDialog extends BaseElement {
     this.submitBtn = this.scope.$<HTMLButtonElement>(".report-submit-btn");
 
     if (this.dialogEl) {
-      this.scope.use(
-        setupModalDialog(this.dialogEl, {
-          trigger: this.triggerBtn,
-          onOpen: () => {
-            this.clearStatus();
-            this.scope.timeout(() => this.textareaEl?.focus(), 50);
-          },
-          onClose: () => {
-            this.clearStatus();
-            this.triggerBtn?.focus();
-          },
-        })
-      );
+      this.dialogController = setupModalDialog(this.dialogEl, {
+        trigger: this.triggerBtn,
+        onOpen: () => {
+          this.clearStatus();
+          this.scope.timeout(() => this.textareaEl?.focus(), 50);
+        },
+        onClose: () => {
+          this.clearStatus();
+          this.triggerBtn?.focus();
+        },
+      });
+      this.scope.use(this.dialogController);
     }
 
     this.hijackForm("form.report-form", (data) => {
@@ -91,25 +92,11 @@ export class MorcusReportDialog extends BaseElement {
   }
 
   public openDialog() {
-    if (typeof this.dialogEl?.showModal === "function") {
-      this.dialogEl.showModal();
-    } else if (this.dialogEl) {
-      this.dialogEl.setAttribute("open", "");
-    }
-    this.clearStatus();
-    this.scope.timeout(() => {
-      this.textareaEl?.focus();
-    }, 50);
+    this.dialogController?.open();
   }
 
   public closeDialog() {
-    if (typeof this.dialogEl?.close === "function") {
-      this.dialogEl.close();
-    } else if (this.dialogEl) {
-      this.dialogEl.removeAttribute("open");
-    }
-    this.clearStatus();
-    this.triggerBtn?.focus();
+    this.dialogController?.close();
   }
 
   private readonly submitReport = async (text: string, reporter?: string) => {

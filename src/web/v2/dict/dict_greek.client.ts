@@ -2,6 +2,7 @@ import {
   BaseElement,
   registerElement,
   settingsStore,
+  storage,
 } from "@/web/v2/core/index.client";
 import { EMBEDDED_LOGEION_SETTING_KEY } from "@/web/v2/dict/dict_greek.common";
 
@@ -65,25 +66,17 @@ export class MorcusGreekEmbed extends BaseElement {
   }
 
   private getAutoOpenPreference(): boolean {
-    try {
-      const stored = localStorage.getItem(EMBEDDED_LOGEION_SETTING_KEY);
-      if (stored !== null) {
-        return stored === "true";
-      }
-      const globalSettings = settingsStore.get();
-      return Boolean(globalSettings.autoOpenLogeion);
-    } catch {
-      return false;
+    const stored = storage.get(EMBEDDED_LOGEION_SETTING_KEY);
+    if (stored !== null) {
+      return stored === "true";
     }
+    const globalSettings = settingsStore.get();
+    return Boolean(globalSettings.autoOpenLogeion);
   }
 
   private saveAutoOpenPreference(enabled: boolean) {
-    try {
-      localStorage.setItem(EMBEDDED_LOGEION_SETTING_KEY, String(enabled));
-      settingsStore.update({ autoOpenLogeion: enabled });
-    } catch (e) {
-      console.warn("Could not save Logeion auto-open preference", e);
-    }
+    storage.setBoolean(EMBEDDED_LOGEION_SETTING_KEY, enabled);
+    settingsStore.update({ autoOpenLogeion: enabled });
   }
 }
 

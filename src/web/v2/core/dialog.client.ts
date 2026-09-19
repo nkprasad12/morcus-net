@@ -20,14 +20,22 @@ export interface ModalDialogOptions {
   onClose?: () => void;
 }
 
+export interface ModalDialogController {
+  open: (e?: Event) => void;
+  close: (e?: Event) => void;
+  dispose: CleanupFn;
+}
+
+export type ModalDialogHandle = CleanupFn & ModalDialogController;
+
 /**
  * Attaches standardized modal lifecycle behavior to an HTML5 <dialog> element.
- * Returns an unbind / cleanup function.
+ * Returns a callable cleanup function augmented with open(), close(), and dispose() methods.
  */
 export function setupModalDialog(
   dialog: HTMLDialogElement,
   options: ModalDialogOptions = {}
-): CleanupFn {
+): ModalDialogHandle {
   const triggers = options.trigger
     ? Array.isArray(options.trigger)
       ? options.trigger
@@ -113,7 +121,13 @@ export function setupModalDialog(
     disposables.add(() => btn.removeEventListener("click", closeDialog));
   }
 
-  return () => {
+  const unbind: CleanupFn = () => {
     disposables.dispose();
   };
+
+  return Object.assign(unbind, {
+    open: openDialog,
+    close: closeDialog,
+    dispose: unbind,
+  });
 }
