@@ -1,7 +1,11 @@
 /**
  * @jest-environment jsdom
  */
-import { DisposableBag } from "@/web/v2/core/disposable.client";
+import {
+  type CleanupFn,
+  type Unregister,
+  DisposableBag,
+} from "@/web/v2/core/disposable.client";
 
 describe("DisposableBag", () => {
   let bag: DisposableBag;
@@ -22,8 +26,8 @@ describe("DisposableBag", () => {
   });
 
   test("add() returns an unregister function that prevents execution on dispose", () => {
-    const fn = jest.fn();
-    const unregister = bag.add(fn);
+    const fn: CleanupFn = jest.fn();
+    const unregister: Unregister = bag.add(fn);
     unregister();
     bag.dispose();
     expect(fn).not.toHaveBeenCalled();

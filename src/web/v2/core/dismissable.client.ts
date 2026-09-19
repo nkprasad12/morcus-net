@@ -1,3 +1,5 @@
+import type { CleanupFn } from "@/web/v2/core/disposable.client";
+
 /**
  * Dismissable overlay coordination (click/pointerdown outside + Escape key).
  */
@@ -19,9 +21,9 @@ export interface DismissableOptions {
 
 /**
  * Binds global outside-click and Escape key listeners for a popover, dropdown, or modal.
- * Returns an unbind function.
+ * Returns an unbind cleanup function.
  */
-export function bindDismissable(options: DismissableOptions): () => void {
+export function bindDismissable(options: DismissableOptions): CleanupFn {
   const getContainer = (): HTMLElement | null =>
     typeof options.container === "function"
       ? options.container()

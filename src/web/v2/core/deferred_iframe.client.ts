@@ -1,3 +1,5 @@
+import type { CleanupFn } from "@/web/v2/core/disposable.client";
+
 /**
  * Generic handler for deferred iframes (`iframe[data-deferred-src]` / `iframe[data-src]`).
  *
@@ -16,7 +18,7 @@
 
 const DEFERRED_IFRAME_SELECTOR = "iframe[data-deferred-src], iframe[data-src]";
 
-let activeCleanup: (() => void) | null = null;
+let activeCleanup: CleanupFn | null = null;
 
 export function hydrateIframe(frame: HTMLIFrameElement): void {
   const src = frame.dataset.deferredSrc ?? frame.dataset.src;
@@ -49,7 +51,7 @@ export function hydrateDeferredIframes(root: ParentNode = document): void {
  * Attaches a capturing `toggle` listener to handle any disclosure opening
  * across the document, and hydrates any currently open or top-level deferred iframes.
  */
-export function setupDeferredIframes(doc: Document = document): () => void {
+export function setupDeferredIframes(doc: Document = document): CleanupFn {
   if (activeCleanup) {
     activeCleanup();
     activeCleanup = null;

@@ -53,7 +53,7 @@ export type Disposable = (() => void) | { dispose(): void };
 ```
 
 - **`this.addController<T extends Controller>(controller: T): T`** lives on **`BaseElement` and `BaseController`**. It registers `controller` in the host's permanent controller list. Whenever the host connects, it calls `controller.connect?.()`; whenever the host disconnects, it calls `controller.dispose()`.
-- **`scope.use<T extends Disposable>(resource: T): () => void`** (and `this.use(resource)` on the active connect scope) registers a cleanup that runs when the current `LifetimeScope` is disposed, and returns an `unregister()` handle so child scopes can detach themselves cleanly before parent disposal.
+- **`scope.use(resource: Disposable): void`** (and `this.use(resource)` on the active connect scope) registers a cleanup that runs when the current `LifetimeScope` is disposed. Internal child-parent scope detachment is handled directly via `this.disposables.add()` in `createScope()` without exposing an unregister handle to external callers.
 
 > [!IMPORTANT] > **Unify `.destroy()` $\rightarrow$ `.dispose()` in a single commit.**
 > Do not maintain duck-typed `{ dispose(): void } | { destroy(): void }` dual protocols. Rename `.destroy()` to `.dispose()` across `DrawerController`, `ReaderLayoutController`, `ReaderPanelController`, and `ReaderTocController` in one atomic commit.
@@ -68,8 +68,8 @@ export type Disposable = (() => void) | { dispose(): void };
 **Preventing Parent-Bag Accumulation in `createScope()`:**
 When a controller creates a child scope for transient "while-open" listeners (`const openScope = this.createScope()`):
 
-1. `DisposableBag.add(fn)` returns an `unregister: () => void` function that removes `fn` from the bag.
-2. `openScope` registers with its parent scope via `const detach = parentScope.use(() => openScope.dispose())`. When `openScope.dispose()` is called directly on popover close, it immediately invokes `detach()`, removing the dead `openScope` from `parentScope` so repeated open/close cycles are strictly $O(1)$ in memory.
+1. `DisposableBag.add(fn)` returns an `Unregister` function that removes `fn` from the bag.
+2. `openScope` registers with its parent scope's bag via `const detach = this.disposables.add(() => openScope.dispose())`. When `openScope.dispose()` is called directly on popover close, it immediately invokes `detach()`, removing the dead `openScope` from `parentScope` so repeated open/close cycles are strictly $O(1)$ in memory.
 
 ```mermaid
 classDiagram
@@ -89,7 +89,7 @@ classDiagram
         +timeout(fn, ms) number
         +debounce(fn, ms) DebouncedFunction
         +rAF(fn) number
-        +use~T extends Disposable~(d: T) () => void
+        +use(d: Disposable) void
         +createScope() LifetimeScope
         +$(selector) Element
         +$$(selector) Element[]
@@ -362,15 +362,18 @@ This already forced a workaround: `ReaderTocController` calls `this.resolveEleme
 
 ### 6.5 Disambiguate the two `() => void` conventions (🟢)
 
-Two opposite meanings currently share one type, one keystroke apart at the call site:
+Two opposite meanings originally shared one type, one keystroke apart at the call site:
 
-| Returns an **unregister** handle             | Returns a **run-cleanup** handle                         |
-| :------------------------------------------- | :------------------------------------------------------- |
-| `DisposableBag.add()`, `LifetimeScope.use()` | `bindDismissable()`, `trapFocus()`, `trackPointerDrag()` |
+| Returns an **unregister** handle | Returns a **run-cleanup** handle                                                                                                                                                               |
+| :------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DisposableBag.add()`            | `bindDismissable()`, `trapFocus()`, `trackPointerDrag()`, `setupModalDialog()`, `setupAnchorScroll()`, `setupBackToTop()`, `setupDeferredIframes()`, `setupAbbrPopover()`, `setupMobileMenu()` |
 
-Nothing depends on the ambiguity today (`DisposableBag.add` was changed from returning the callback itself, and no caller captured the old value), but the next person to capture one will get the wrong one silently.
+Nothing depended on capturing `LifetimeScope.use()` outside of internal child-parent scope detachment in `LifetimeScope.createScope()`.
 
-- [ ] Introduce distinct named types (`Unregister` vs `Dispose`), or rename the methods.
+- [x] Introduce distinct named types (`Unregister` vs `CleanupFn`).
+- [x] Make `LifetimeScope.use(resource: Disposable): void` return `void`, eliminating the public unregister footgun on element and controller scopes.
+- [x] Update `LifetimeScope.createScope()` to register child scope detachment directly via `this.disposables.add(...)`.
+- [x] Standardize return types of all 9 teardown helpers (`bindDismissable`, `trapFocus`, `trackPointerDrag`, `setupModalDialog`, `setupAnchorScroll`, `setupBackToTop`, `setupDeferredIframes`, `setupAbbrPopover`, `setupMobileMenu`) to `CleanupFn`.
 
 ### 6.6 Finish the popover consolidation, or document why not (🟡)
 

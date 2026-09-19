@@ -1,13 +1,15 @@
+import type { CleanupFn } from "@/web/v2/core/disposable.client";
+
 /**
  * Interactive abbreviation popover for expandable dictionary words (.lsHover).
  */
 
-let activeCleanup: (() => void) | null = null;
+let activeCleanup: CleanupFn | null = null;
 
 export function setupAbbrPopover(
   doc: Document = document,
   win: Window = window
-): () => void {
+): CleanupFn {
   if (activeCleanup) {
     activeCleanup();
     activeCleanup = null;

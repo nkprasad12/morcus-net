@@ -8,6 +8,7 @@
 
 import {
   BaseController,
+  type CleanupFn,
   type LifetimeScope,
 } from "@/web/v2/core/base_element.client";
 import { bindDismissable } from "@/web/v2/core/dismissable.client";
@@ -55,7 +56,7 @@ const FOCUSABLE_SELECTOR =
  * Traps Tab and Shift+Tab keyboard focus within `panel` while open.
  * Returns an unbind cleanup function.
  */
-export function trapFocus(panel: HTMLElement): () => void {
+export function trapFocus(panel: HTMLElement): CleanupFn {
   const doc = panel.ownerDocument ?? document;
   const win = doc.defaultView ?? window;
   const isJsdom = Boolean(win.navigator?.userAgent?.includes("jsdom"));

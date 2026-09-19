@@ -1,13 +1,15 @@
+import type { CleanupFn } from "@/web/v2/core/disposable.client";
+
 /**
  * Floating "Jump to top" button visibility & instant scroll.
  */
 
-let activeCleanup: (() => void) | null = null;
+let activeCleanup: CleanupFn | null = null;
 
 export function setupBackToTop(
   doc: Document = document,
   win: Window = window
-): () => void {
+): CleanupFn {
   if (activeCleanup) {
     activeCleanup();
     activeCleanup = null;

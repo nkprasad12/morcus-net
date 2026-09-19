@@ -1,4 +1,8 @@
-import { DisposableBag } from "@/web/v2/core/disposable.client";
+import {
+  DisposableBag,
+  type CleanupFn,
+  type Unregister,
+} from "@/web/v2/core/disposable.client";
 import {
   syncQueryParam,
   type QueryParamSync,
@@ -6,6 +10,7 @@ import {
 } from "@/web/v2/core/router.client";
 import { LatestTask, type DebouncedFunction } from "@/web/v2/core/task.client";
 export type { DebouncedFunction } from "@/web/v2/core/task.client";
+export type { CleanupFn, Unregister };
 
 /**
  * Long-lived sub-controller attached to a BaseElement (or parent BaseController).
@@ -24,7 +29,7 @@ export interface Controller {
  * Single-use cleanup callback or disposable resource tied to a specific LifetimeScope.
  * Dies permanently when that scope is disposed (e.g. on disconnect or popover close).
  */
-export type Disposable = (() => void) | { dispose(): void };
+export type Disposable = CleanupFn | { dispose(): void };
 
 function requireFromRoot<T extends HTMLElement = HTMLElement>(
   root: ParentNode | null,
@@ -93,9 +98,9 @@ export class LifetimeScope<Lane extends string = never> {
   private readonly timeouts = new Set<number>();
   private readonly rafs = new Set<number>();
   private _disposed = false;
-  private readonly onDisposeCallback?: () => void;
+  private readonly onDisposeCallback?: Unregister;
 
-  constructor(root: ParentNode | null, onDisposeCallback?: () => void) {
+  constructor(root: ParentNode | null, onDisposeCallback?: Unregister) {
     this.root = root;
     this.onDisposeCallback = onDisposeCallback;
   }
@@ -132,14 +137,14 @@ export class LifetimeScope<Lane extends string = never> {
     this.lanes.get(lane)?.cancel();
   }
 
-  public use(resource: Disposable): () => void {
-    const cleanup: () => void =
+  public use(resource: Disposable): void {
+    const cleanup: CleanupFn =
       typeof resource === "function" ? resource : () => resource.dispose();
     if (this._disposed) {
       cleanup();
-      return () => {};
+      return;
     }
-    return this.disposables.add(cleanup);
+    this.disposables.add(cleanup);
   }
 
   /**
@@ -155,12 +160,12 @@ export class LifetimeScope<Lane extends string = never> {
       dead.dispose();
       return dead;
     }
-    let detach: (() => void) | null = null;
+    let detach: Unregister | null = null;
     const child = new LifetimeScope<ChildLane>(root, () => {
       detach?.();
       detach = null;
     });
-    detach = this.use(() => child.dispose());
+    detach = this.disposables.add(() => child.dispose());
     return child;
   }
 
