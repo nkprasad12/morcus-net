@@ -70,27 +70,27 @@ body.resizing-panels .dict-iframe,
     width: 100%;
   }
 
-  /* Mobile Drawer Top Bar & Handle (ultra-compact) */
+  /* Mobile Drawer Top Bar & Handle (balanced) */
   .reader-sheet-bar {
     display: flex;
     padding: 5px var(--space-4) var(--space-1);
   }
 
   .reader-sheet-handle {
-    width: 32px;
+    width: 36px;
     height: 3px;
     margin-bottom: var(--space-1);
   }
 
   .reader-sheet-teaser {
-    min-height: 22px;
-    font-size: 0.8125rem;
+    min-height: 24px;
+    font-size: 0.84rem;
   }
 
   a.reader-sheet-close,
   a.reader-sheet-close:visited {
     padding: 0 var(--space-2);
-    font-size: 0.95rem;
+    font-size: 1rem;
   }
 }
 

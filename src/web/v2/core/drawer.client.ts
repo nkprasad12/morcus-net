@@ -49,6 +49,8 @@ export interface DrawerControllerOptions {
   preferredDvh?: number;
   /** Optional filter callback; return false to ignore pointerdown (e.g. clicking child buttons). */
   filter?: (e: PointerEvent) => boolean;
+  /** Callback fired when pointer drag starts on the handle */
+  onDragStart?: () => void;
   /** Callback fired when drawer is minimized */
   onMinimize?: () => void;
   /** Callback fired when drawer is restored or expanded */
@@ -281,7 +283,7 @@ export class DrawerController extends BaseController {
           winHeight = window.innerHeight || 800;
           maxHeight = Math.round(winHeight * (this.expandedDvh / 100));
           wasMinimized = this.isMinimized();
-          startHeight = drawer.getBoundingClientRect().height;
+          startHeight = drawer.getBoundingClientRect().height || this.minHeight;
           if (this.details && !this.details.open) {
             this.isUpdatingDetails = true;
             this.details.open = true;
@@ -292,7 +294,13 @@ export class DrawerController extends BaseController {
           if (wasMinimized) {
             drawer.classList.remove("drawer-minimized");
           }
+          drawer.style.setProperty("--drawer-height", `${startHeight}px`);
+          this.getLayoutElement()?.style.setProperty(
+            "--drawer-height",
+            `${startHeight}px`
+          );
           wasDragged = false;
+          this.options.onDragStart?.();
         },
         onMove: ({ dy }) => {
           if (Math.abs(dy) > 6) {
@@ -312,13 +320,20 @@ export class DrawerController extends BaseController {
           this.options.onHeightChange?.(newHeight, percent);
         },
         onEnd: ({ dy, elapsedMs, velocityY }) => {
-          const currentHeight = drawer.getBoundingClientRect().height;
+          const measuredHeight = drawer.getBoundingClientRect().height;
+          const currentHeight =
+            measuredHeight > 0
+              ? measuredHeight
+              : Math.max(this.minHeight, Math.min(maxHeight, startHeight - dy));
           const currentDvh = Math.round((currentHeight / winHeight) * 100);
 
           // Handle simple tap (minimal movement)
           if (Math.abs(dy) < 6 && elapsedMs < 350) {
             wasDragged = false;
-            if (wasMinimized && !this.details) {
+            if (
+              (wasMinimized || startHeight <= this.minHeight + 4) &&
+              !this.details
+            ) {
               this.restore();
             }
             return;

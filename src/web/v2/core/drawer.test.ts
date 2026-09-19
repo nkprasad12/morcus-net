@@ -542,5 +542,49 @@ describe("DrawerController", () => {
 
       controller.dispose();
     });
+
+    test("invokes onDragStart and restores height when dragged up after reset()", () => {
+      const onDragStart = jest.fn();
+      const onRestore = jest.fn();
+      const controller = connectController({
+        drawer,
+        handle,
+        layoutElement,
+        defaultDvh: 48,
+        minHeight: 38,
+        onDragStart,
+        onRestore,
+      });
+
+      controller.reset();
+
+      pointerDown(handle);
+      expect(onDragStart).toHaveBeenCalledTimes(1);
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("38px");
+
+      // Drag up by 300px (from 300 to 0 -> height 338px)
+      handle.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 0,
+          pointerId: 1,
+        })
+      );
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("338px");
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerup", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 0,
+          pointerId: 1,
+        })
+      );
+      expect(onRestore).toHaveBeenCalled();
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("44dvh");
+
+      controller.dispose();
+    });
   });
 });

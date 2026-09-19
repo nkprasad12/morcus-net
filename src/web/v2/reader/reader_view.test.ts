@@ -57,12 +57,14 @@ function createReaderView(
         <div class="reader-sheet-bar">
           <div class="reader-sheet-teaser">
             <span class="reader-sheet-label">Tap any word</span>
+            <a href="#reader-dict-dismissed" class="reader-sheet-close" aria-label="Close dictionary panel">✕</a>
           </div>
         </div>
         <div class="dict-iframe-container">
           <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
         </div>
       </aside>
+      <a href="#reader-dict" class="reader-drawer-fab" aria-label="Open dictionary drawer"></a>
       <morcus-reader-settings>
         <div id="reader-settings-popover" hidden>
           ${
@@ -2092,6 +2094,114 @@ describe("MorcusReaderView client-side partial page navigation", () => {
         behavior: "instant",
       });
       expect(btn.classList.contains("visible")).toBe(false);
+    });
+  });
+
+  describe("Mobile drawer dismissal, FAB restoration, and drag recovery", () => {
+    test("clicking .reader-sheet-close dismisses drawer and clicking .reader-drawer-fab restores it", () => {
+      const el = createReaderView(
+        `<p><a class="lat-word" href="?q=Omnis">Omnis</a></p>`
+      );
+      const splitLayout = el.querySelector<HTMLElement>(
+        ".reader-split-layout"
+      )!;
+      const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+      const closeBtn = el.querySelector<HTMLAnchorElement>(
+        ".reader-sheet-close"
+      )!;
+      const fab = el.querySelector<HTMLAnchorElement>(".reader-drawer-fab")!;
+      const word = el.querySelector<HTMLAnchorElement>(".lat-word")!;
+
+      // 1. Open drawer via word lookup
+      word.click();
+      expect(splitLayout.classList.contains("reader-layout-active")).toBe(true);
+      expect(splitLayout.classList.contains("drawer-dismissed")).toBe(false);
+      expect(word.classList.contains("word-active")).toBe(true);
+
+      // 2. Click '✕' close button -> dismisses drawer & clears word
+      closeBtn.click();
+      expect(splitLayout.classList.contains("drawer-dismissed")).toBe(true);
+      expect(splitLayout.classList.contains("reader-layout-empty")).toBe(true);
+      expect(word.classList.contains("word-active")).toBe(false);
+
+      // 3. Click floating restore FAB -> undismisses and restores drawer
+      fab.click();
+      expect(splitLayout.classList.contains("drawer-dismissed")).toBe(false);
+      expect(splitLayout.classList.contains("reader-layout-active")).toBe(true);
+      expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe(
+        `${DRAWER_DEFAULT_DVH}dvh`
+      );
+    });
+
+    test("tapping a word in the passage while drawer is dismissed automatically undismisses and opens it", () => {
+      const el = createReaderView(
+        `<p><a class="lat-word" href="?q=Omnis">Omnis</a></p>`
+      );
+      const splitLayout = el.querySelector<HTMLElement>(
+        ".reader-split-layout"
+      )!;
+      const closeBtn = el.querySelector<HTMLAnchorElement>(
+        ".reader-sheet-close"
+      )!;
+      const word = el.querySelector<HTMLAnchorElement>(".lat-word")!;
+
+      closeBtn.click();
+      expect(splitLayout.classList.contains("drawer-dismissed")).toBe(true);
+
+      word.click();
+      expect(splitLayout.classList.contains("drawer-dismissed")).toBe(false);
+      expect(splitLayout.classList.contains("reader-layout-active")).toBe(true);
+    });
+
+    test("dragging .reader-sheet-bar after closing reactivates .reader-layout-active and resizes drawer", () => {
+      const el = createReaderView(
+        `<p><a class="lat-word" href="?q=Omnis">Omnis</a></p>`
+      );
+      const splitLayout = el.querySelector<HTMLElement>(
+        ".reader-split-layout"
+      )!;
+      const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+      const sheetBar = el.querySelector<HTMLElement>(".reader-sheet-bar")!;
+      const closeBtn = el.querySelector<HTMLAnchorElement>(
+        ".reader-sheet-close"
+      )!;
+
+      closeBtn.click();
+      expect(splitLayout.classList.contains("reader-layout-empty")).toBe(true);
+      expect(splitLayout.classList.contains("drawer-dismissed")).toBe(true);
+
+      sheetBar.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          bubbles: true,
+          clientX: 100,
+          clientY: 400,
+          pointerId: 1,
+        })
+      );
+
+      expect(splitLayout.classList.contains("drawer-dismissed")).toBe(false);
+      expect(splitLayout.classList.contains("reader-layout-active")).toBe(true);
+
+      sheetBar.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 150,
+          pointerId: 1,
+        })
+      );
+      expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe("290px");
+
+      sheetBar.dispatchEvent(
+        new PointerEvent("pointerup", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 150,
+          pointerId: 1,
+        })
+      );
+      expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe("38dvh");
     });
   });
 });

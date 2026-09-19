@@ -356,9 +356,9 @@
 
 @media (max-width: 640px) {
   .reader-sticky-bar {
-    --pill-height: 1.625rem;
+    --pill-height: 1.75rem;
     max-width: 100%;
-    margin-bottom: var(--space-2);
+    margin-bottom: var(--space-3);
     border-radius: 0;
     border-top: none;
     border-left: none;
@@ -369,8 +369,8 @@
   }
 
   .sticky-primary-row {
-    padding: var(--space-1) var(--space-2);
-    gap: var(--space-1);
+    padding: 3px var(--space-3);
+    gap: var(--space-2);
     min-width: 0;
     max-width: 100%;
     box-sizing: border-box;
@@ -383,7 +383,7 @@
   }
 
   .sticky-center-group {
-    gap: var(--space-1);
+    gap: var(--space-2);
     min-width: 0;
     max-width: 100%;
     justify-content: center;
@@ -399,11 +399,11 @@
   }
 
   .sticky-work-title {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 500;
     text-transform: capitalize;
     letter-spacing: normal;
-    max-width: 110px;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -416,18 +416,18 @@
   }
 
   .sticky-section-btn {
-    padding: 0 var(--space-2);
-    font-size: 0.75rem;
+    padding: 0 var(--space-3);
+    font-size: 0.8125rem;
     gap: var(--space-1);
   }
 
   .sticky-section-btn .jump-chevron {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
   }
 
   .sticky-jump-input {
-    width: 2.5rem;
+    width: 2.75rem;
     padding: 0 var(--space-1);
     font-size: 0.75rem;
   }
@@ -440,15 +440,15 @@
   }
 
   .pager-arrow {
-    font-size: 0.875rem;
+    font-size: 0.95rem;
   }
 
   .reader-settings-btn .settings-glyph {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
   }
 
   .jump-input {
-    width: 2.5rem;
+    width: 2.75rem;
     padding: var(--space-1) var(--space-2);
   }
 }

@@ -203,8 +203,8 @@ morcus-report-dialog:not(:defined) {
   position: fixed;
   bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   right: 20px;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background-color: var(--card-bg);
   border: 1px solid var(--border);
@@ -228,14 +228,15 @@ morcus-report-dialog:not(:defined) {
 
 .back-to-top svg,
 .reader-dict-back-to-top svg {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   fill: currentColor;
   transition: transform 0.15s ease;
 }
 
 .back-to-top:hover,
 .reader-dict-back-to-top:hover {
+  opacity: 1;
   color: var(--primary);
   border-color: var(--primary);
   transform: translateY(-2px);
@@ -254,13 +255,14 @@ morcus-report-dialog:not(:defined) {
 
 .back-to-top:focus-visible,
 .reader-dict-back-to-top:focus-visible {
+  opacity: 1;
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
 .back-to-top.visible,
 .reader-dict-back-to-top.visible {
-  opacity: 1;
+  opacity: 0.85;
   pointer-events: auto;
   transform: translateY(0);
 }
@@ -315,12 +317,17 @@ morcus-report-dialog:not(:defined) {
   body:has(.reader-dict-panel:target) .back-to-top {
     bottom: calc(55dvh + env(safe-area-inset-bottom, 0px) + 16px);
   }
+
+  body:has(.drawer-dismissed) .back-to-top,
+  body:has(.reader-drawer-dismiss-target:target) .back-to-top {
+    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* No-JS fallback: keep button visible if scripting is disabled */
 @media (scripting: none) {
   .back-to-top {
-    opacity: 0.9;
+    opacity: 0.85;
     pointer-events: auto;
     transform: translateY(0);
   }
