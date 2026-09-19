@@ -1981,4 +1981,118 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       expect(fetchSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe("MorcusReaderView dictionary back-to-top button", () => {
+    let rafCallbacks: FrameRequestCallback[] = [];
+
+    beforeEach(() => {
+      rafCallbacks = [];
+      jest.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+        rafCallbacks.push(cb);
+        return rafCallbacks.length;
+      });
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    function flushRaf() {
+      const callbacks = [...rafCallbacks];
+      rafCallbacks = [];
+      callbacks.forEach((cb) => cb(performance.now()));
+    }
+
+    test("dynamically creates back-to-top button on connect and removes it on disconnect", () => {
+      const el = createReaderView("<p>Text</p>");
+      const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+      expect(dictPanel).not.toBeNull();
+
+      const btn = dictPanel.querySelector<HTMLButtonElement>(
+        ".reader-dict-back-to-top"
+      );
+      expect(btn).not.toBeNull();
+      expect(btn?.getAttribute("aria-label")).toBe("Scroll dictionary to top");
+      expect(btn?.title).toBe("Jump to top");
+
+      // Disconnect: button should be removed from DOM
+      el.remove();
+      expect(dictPanel.querySelector(".reader-dict-back-to-top")).toBeNull();
+
+      // Reconnect: button is recreated cleanly without duplicates
+      document.body.appendChild(el);
+      const reconnectedBtn = dictPanel.querySelectorAll(
+        ".reader-dict-back-to-top"
+      );
+      expect(reconnectedBtn.length).toBe(1);
+    });
+
+    test("toggles visibility on scroll past 300px threshold via managed rAF", () => {
+      const el = createReaderView("<p>Text</p>");
+      const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+      const btn = dictPanel.querySelector<HTMLButtonElement>(
+        ".reader-dict-back-to-top"
+      )!;
+
+      expect(btn.classList.contains("visible")).toBe(false);
+
+      // Scroll below 300px
+      Object.defineProperty(dictPanel, "scrollTop", {
+        value: 150,
+        configurable: true,
+        writable: true,
+      });
+      dictPanel.dispatchEvent(new Event("scroll"));
+      flushRaf();
+      expect(btn.classList.contains("visible")).toBe(false);
+
+      // Scroll past 300px
+      Object.defineProperty(dictPanel, "scrollTop", {
+        value: 350,
+        configurable: true,
+        writable: true,
+      });
+      dictPanel.dispatchEvent(new Event("scroll"));
+      flushRaf();
+      expect(btn.classList.contains("visible")).toBe(true);
+
+      // Scroll back up
+      Object.defineProperty(dictPanel, "scrollTop", {
+        value: 50,
+        configurable: true,
+        writable: true,
+      });
+      dictPanel.dispatchEvent(new Event("scroll"));
+      flushRaf();
+      expect(btn.classList.contains("visible")).toBe(false);
+    });
+
+    test("scrolls to top instantly on click and hides button", () => {
+      const el = createReaderView("<p>Text</p>");
+      const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+      const btn = dictPanel.querySelector<HTMLButtonElement>(
+        ".reader-dict-back-to-top"
+      )!;
+
+      const scrollToMock = jest.fn();
+      dictPanel.scrollTo = scrollToMock;
+
+      // Make visible first
+      Object.defineProperty(dictPanel, "scrollTop", {
+        value: 500,
+        configurable: true,
+        writable: true,
+      });
+      dictPanel.dispatchEvent(new Event("scroll"));
+      flushRaf();
+      expect(btn.classList.contains("visible")).toBe(true);
+
+      btn.click();
+      expect(scrollToMock).toHaveBeenCalledWith({
+        top: 0,
+        behavior: "instant",
+      });
+      expect(btn.classList.contains("visible")).toBe(false);
+    });
+  });
 });
