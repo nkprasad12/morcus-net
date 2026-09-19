@@ -4,7 +4,37 @@
 
 This directory encapsulates all server-side rendering and client-side web components for the library reader: work/page loading, the citation-addressed text view, the sticky navigation bar, the table-of-contents drawer, reading preferences, the parallel translation view, and the embedded dictionary panel.
 
-Companion docs: [`FEATURE_PARITY.md`](FEATURE_PARITY.md) tracks the V1 → V2 gap, and [`UX_STRUCTURE.md`](UX_STRUCTURE.md) records the surface model for the reader chrome — read it before adding anything to the top bar.
+Companion docs: [`FEATURE_PARITY.md`](FEATURE_PARITY.md) tracks remaining V1 → V2 parity gaps, and [`TODOS.md`](TODOS.md) records forward-looking architectural and performance improvements.
+
+---
+
+## Reader Surface Model & Chrome Architecture
+
+The reader interface is organized along an explicit architectural division:
+
+> **Top bar: things that change what you are seeing (reading chrome).**  
+> **Panel: things that help you understand the text (companion surfaces).**
+
+```
+CHROME (fixed, single primary row)   PANEL (scalable, tabbed companion)
+├─ Navigate   §  TOC drawer          ├─ Dictionary       (default lookup)
+├─ Display    Aa typography popover  ├─ Notes            (critical apparatus)
+└─ Cite       colophon in page flow  ├─ Translation      (on-demand parallel text)
+                                     └─ About this text  (scholarly provenance)
+```
+
+### Core Surface Rules
+
+1. **Fixed Top Bar, Scalable Companion Panel**:
+   - The top sticky bar is deliberately compact and fixed to preserve vertical reading canvas. It contains only direct passage controls: TOC drawer trigger (`#reader-toc-btn`), pager arrows (`#pager-prev`, `#pager-next`), section jump input, and the anchored typography popover (`#reader-settings-btn`).
+   - The companion panel is the scalable extension point: auxiliary content lives in dedicated tabs (`Dictionary`, `Notes`, `Translation`, `About`) inside the desktop split-pane (`ReaderLayoutController`) or mobile draggable bottom sheet (`DrawerController`).
+2. **Single Anchored Typography Popover**:
+   - All display preferences (text size, font family, line spacing, section gutter numbers, macra, and dictionary text scale) live together in `#reader-settings-popover` (`<morcus-reader-settings>`).
+   - Preferences are never split across multiple surfaces; the reading canvas remains undimmed and unblurred during adjustments with live preview.
+3. **Decision Procedure for New Controls**:
+   - _Mutates the primary text rendering?_ $\rightarrow$ Top bar chrome.
+   - _Content you consult while reading?_ $\rightarrow$ Companion panel tab.
+   - _Static metadata about the work?_ $\rightarrow$ Colophon in article flow (`#reader-work-about`), where it prints and survives without JavaScript.
 
 ---
 
@@ -64,10 +94,11 @@ sequenceDiagram
 - `reader_toc.client.ts`: `ReaderTocController` — opens/closes the TOC drawer and applies the live filter.
 - `reader_settings.client.ts`: `MorcusReaderSettings` — the anchored typography popover, persisting to `morcus_reader_settings` in `localStorage`.
 - `reader_layout.client.ts`: `ReaderLayoutController` — the desktop resizable splitter and the mobile bottom drawer hosting the embedded dictionary.
+- `reader_panel.client.ts`: `ReaderPanelController` — manages companion panel tab arbitration (`Dictionary`, `Notes`, `Translation`, `About`), lazy translation loading, and footnote adoption.
 
 ### Styles
 
-`reader_text.css` (passage body, citation gutters, and the TEI rendition classes), `reader_notes.css` (critical apparatus markers and footnotes), `reader_nav.css` (sticky bar), `reader_toc.css`, `reader_dialogs.css`, `reader_layout.css`, `reader_splitter.css`, `reader_dict.css`.
+`reader_text.css` (passage body, citation gutters, and the TEI rendition classes), `reader_notes.css` (critical apparatus markers and footnotes), `reader_nav.css` (sticky bar), `reader_toc.css`, `reader_dialogs.css`, `reader_layout.css`, `reader_splitter.css`, `reader_dict.css`, `reader_panel.css`.
 
 ---
 
@@ -80,7 +111,7 @@ The reader does **not** parse TEI at request time. Works are preprocessed offlin
 3. Output lands in `build/library_processed/`, indexed by `morcus_v2_index.json`, and is read by `reader_loader.server.ts`.
 
 > [!IMPORTANT]
-> Rendition semantics (verse lines, indentation, blockquotes, emphasis) are decided in step 2 and expressed as CSS classes on the emitted HTML. Fixing how text _looks_ therefore usually means editing `v2_preprocessor.ts`, `reader_text.css`, or both — see [`FEATURE_PARITY.md`](FEATURE_PARITY.md) §2.7.
+> Rendition semantics (verse lines, indentation, blockquotes, emphasis) are decided in step 2 and expressed as CSS classes on the emitted HTML. Fixing how text _looks_ therefore usually means editing `v2_preprocessor.ts`, `reader_text.css`, or both.
 
 ---
 

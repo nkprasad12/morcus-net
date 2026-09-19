@@ -1,7 +1,6 @@
 # UI V2 Code Health Backlog
 
-A running, incremental backlog of code-quality work for `src/web/v2/`. Derived from a holistic
-audit on 2026-09-13 (102 files, ~22,300 lines).
+A running, incremental backlog of active code-quality and refactoring work for `src/web/v2/`.
 
 **How to use this file**
 
@@ -9,42 +8,28 @@ audit on 2026-09-13 (102 files, ~22,300 lines).
   requires a mega-refactor.
 - Sizes: 🟢 < 30 min · 🟡 an hour or two · 🔴 half a day+
 - When adding new debt, add it here rather than a TODO comment, so it stays reviewable.
-- **When an item lands, move it to the `Landed` section as one line naming the commit** rather than
-  leaving a write-up in place. Put the reasoning in the commit message. If the work turned up
-  something counter-intuitive — a decision that looks wrong until you know why, or advice in this
-  file that proved incorrect — add it to **Phase 5** so it is not rediscovered or undone. Keeping
-  full post-mortems inline is what made this file 866 lines.
+- When an item lands, check it off or remove it from the active backlog.
+- If the work turned up something counter-intuitive — a decision that looks wrong until you know why,
+  or advice that proved incorrect — add it to **Investigated & resolved** at the bottom so it is
+  not rediscovered or undone.
 
 **Audit summary**: the architecture is sound — vertical slices, the `*.server`/`*.client`/`*.common`
 suffix convention, the zero-JS baseline, and the `core/` primitives are all the right bones.
 The recurring problem is that **the good abstractions in `core/` are only half-adopted**, and
 **the conventions in [README.md](README.md) are documented but unenforced**.
 
-> [!IMPORTANT]
-> Prefer to land **Phase 2 (guardrails)** before doing the bulk of Phase 3/4 cleanup.
-> The guardrails are what stop the cleanup from being re-accumulated.
-
 ---
 
-## Phase 1 — Correctness & security
+## Phase 2 — Guardrails
 
-_(All items completed or resolved — see Landed and Phase 5 below)_
-
----
-
-## Phase 2 — Guardrails (do these before the big cleanups)
-
-- [ ] 🟡 **Fix the ~7 async-safety violations in `start_server.ts` / `web_server.ts`.** Filed off
-      the back of the item above. Those two files are outside `src/web/v2`, so the new block does
-      not cover them, but they are the process entry points: an unhandled rejection there takes
-      down the whole server, V2 included. Small enough to do as a one-off without taking on the
-      other ~86 legacy violations.
+- [ ] 🟡 **Fix the ~7 async-safety violations in `start_server.ts` / `web_server.ts`.**
+      Those two files are outside `src/web/v2`, so the V2 lint block does not cover them, but they
+      are the process entry points: an unhandled rejection there takes down the whole server, V2
+      included. Small enough to do as a one-off without taking on the other ~86 legacy violations.
 
 ---
 
 ## Phase 3 — Adopt the abstractions we already built
-
-Every item here is a feature reimplementing something `core/` already provides.
 
 > [!NOTE] > **Dictionary selection is currently represented four ways**: base36 URL bitmask, the
 > `morcus_dicts` cookie, `SEARCH_SETTINGS_KEY` as a semicolon-string in localStorage, and
@@ -58,10 +43,6 @@ Every item here is a feature reimplementing something `core/` already provides.
 
 ### Server-side render functions
 
-- [x] 🟢 **De-duplicate dictionary-name resolution.** The expression
-      `DICT_NAMES[k] ?? LatinDict.BY_KEY.get(k)?.displayName ?? k.toUpperCase()` is copied at
-      `dict_page.server.ts` L56 and L102, `dict_toc.server.ts` L117 and L240. Export one
-      `resolveDictDisplayName(key)`.
 - [ ] 🟢 **Convert trailing-boolean signatures to option objects**:
       `renderDictLandingHtml(activeDicts?, isInflected = true)` (`dict_landing.server.ts` L63).
       `renderDictPageHtml` and `renderDictResultsHtml` already do this correctly.
@@ -75,10 +56,57 @@ Every item here is a feature reimplementing something `core/` already provides.
 
 ---
 
-## Phase 5 — Investigated & resolved
+## Phase 7 — Docs & tests
+
+- [ ] 🟡 **Stop the Firefox baselines going stale again.** The baselines were all re-recorded when
+      the suite moved to viewport + coverage shots, so the matrix is green today, but nothing
+      prevents the drift recurring. `./morcus.sh e2e --visual` runs Chromium and MobileChrome only,
+      while `--update` is almost always run through that fast path; the `firefox` and
+      `FirefoxSmallScreen` baselines then sit at whatever the last `--all` run wrote. That is how
+      they reached 48 / 64 failing: the refresh at `8e04058a` covered the fast pair, and two days
+      later Firefox was still rendering the old about page (baseline 1163px tall, actual 1171px —
+      a pure size mismatch, no pixel differences). Options are to make `--update` refuse to run
+      without `--all`, or to run the full matrix in CI so the gap cannot open silently.
+
+**Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
+dialog markup. Gaps:
+
+- [ ] 🟢 **Reader keyboard shortcuts** (`reader_view.client.ts` L1028-1066)
+- [ ] 🟡 **Reader preference save/hydrate lifecycle** (L806-984)
+- [ ] 🟡 **`DrawerController` snap thresholds and flick-velocity logic** — extract the snap math to a
+      pure function and test that directly
+- [ ] 🟡 **Widen selector inventory contract test (`reader_selector_contract.test.ts`)**:
+      Guard against dead-selector classes across the client bundle: - Scan more than `reader_toc.client.ts` + `reader_settings.client.ts` — `reader_view.client.ts`
+      alone binds ~32 selectors and is unscanned, as are `reader_panel`, `drawer`, and every `dict_*` module. - Match `this.scope.require(...)` — the current extractor regex misses it. - Match delegated selectors — the 3rd argument of `delegate(root, type, selector, fn)` (e.g. `#btn-retry-translation`) is invisible today. - Stop skipping comma-containing selectors (`if (!raw.includes(","))`), which silently exempts real bindings such as `#toggle-inflected, .inflected-checkbox`.
+
+---
+
+## Phase 8 — Performance
+
+> [!NOTE]
+> The drag-related items were found together on 2026-09-13 while investigating a report that
+> **resizing the reader drawer feels laggy**. They compound. The one among them that was a **bug**
+> rather than an optimization — the dead drag-transition selector — has since landed, and it was
+> expected to account for most of the symptom on its own, so **re-measure before spending effort on
+> the rest**. None of this has been profiled; the mechanisms are confirmed by reading, the split
+> between them is not.
+
+- [ ] 🟡 **Don't tokenize the whole chapter synchronously on mount.** `reader_view.client.ts`
+      L366-374 walks every target block calling `tokenizeElement` (L401) inside `onConnect` — one
+      long task that delays first interaction. Batch via `requestIdleCallback`.
+- [ ] 🟡 **Add CSS containment to the reader text panel.** There is currently **no** `contain:` or
+      `content-visibility:` anywhere in `src/web/v2`, so a drawer or splitter resize relayouts the
+      full text panel and all of its inline word spans.
+- [ ] 🟡 **Lazy-load the two heavy verticals.** `v2_bundle.client.ts` eagerly bundles everything, so
+      reader users download the full dictionary interaction matrix and vice versa. Gate behind
+      `document.querySelector(...)` + dynamic `import()`.
+
+---
+
+## Investigated & resolved (Design Traps & Architectural Lessons)
 
 Findings that cost real time to establish and that would otherwise be rediscovered — or worse,
-"fixed" back. This is not a changelog; see **Landed** for what shipped.
+"fixed" back. Keep this section at the bottom as a permanent technical reference.
 
 **Do not add `eslint-plugin-wc` — won't do.** Investigated and resolved with self-populating conformance testing instead. `eslint-plugin-wc`'s justifying rule (`wc/no-typos`) only checks W3C standard lifecycle methods (`connectedCallback`, `disconnectedCallback`, `attributeChangedCallback`, `observedAttributes`). In UI V2, `BaseElement` has fully centralized `connectedCallback` and `disconnectedCallback`; feature components implement `onConnect()` and `onDisconnect()`, which `eslint-plugin-wc` does not recognize or validate. Furthermore, `wc/no-invalid-element-name` keys off `customElements.define` AST nodes, missing registrations routed through `registerElement()`. Rather than adding an external dependency that does not inspect `onConnect`, lifecycle and reattachment correctness is mechanically enforced by `core/reattach_conformance.test.ts` paired with `v2_elements.client.ts` and `getRegisteredElementTags()`, asserting bidirectional fixture coverage and statically verifying all `registerElement` callers are imported in the manifest.
 
@@ -152,7 +180,7 @@ allowlist of function names.
 **ESLint flat config _replaces_ a rule's options rather than merging them.** Re-declaring
 `no-restricted-imports` in a V2 block switched the repo-wide relative-import ban back **off** for
 exactly the files the block was meant to constrain. Every block that touches it now re-states
-`NO_RELATIVE_IMPORTS`. Still live for the remaining Phase 2 items.
+`NO_RELATIVE_IMPORTS`.
 
 **Prettier formats the markup inside `html` tagged templates.** It is whitespace-aware and will not
 introduce a rendered gap between inline elements, but it reflows block elements across lines — which
@@ -167,8 +195,7 @@ the directive.
 **Do not wrap Express handlers inline as `router.get("/x", asyncHandler(async (req, res) => {`.**
 The last argument becomes a call expression, so prettier stops hugging the callback and re-indents
 every handler body — ~450 lines of noise in a 577-line file. Piloted and reverted; the local
-`getAsync` / `postAsync` registrars make each handler a one-line diff instead. Worth knowing for the
-Phase 4 router split, which is the right moment to hoist `asyncHandler` into a shared home.
+`getAsync` / `postAsync` registrars make each handler a one-line diff instead.
 
 **`matchesObject` must not be used for settings stores; use `pickValid`.** `matchesObject` is
 all-or-nothing: one corrupt or unrecognized key returns `false` for the entire object, which
@@ -181,6 +208,7 @@ missing fields are omitted from the returned `Partial<T>` rather than set to `un
 180 ms) cannot coalesce human checkbox clicking (Fitts's law and pointer transit take 400–800 ms),
 so sequential toggles still fire separate requests while single clicks (the 95%+ case) suffer
 artificial latency. A long debounce (600–800 ms) makes single toggles feel sluggish and unresponsive.
+
 **Do not coalesce pointer drags to animation frames in `core/gesture.client.ts` — won't do.**
 Investigated and closed with zero code changes. Browsers (Blink, Gecko, WebKit) already coalesce
 continuous input events (`pointermove`, `mousemove`, `touchmove`, `wheel`) and align dispatch to
@@ -188,12 +216,10 @@ the `requestAnimationFrame` cadence; `event.getCoalescedEvents()` exists specifi
 the intermediate positions the browser discarded. Measured via on-page instrumentation across five
 splitter and drawer drags on the heaviest reader text in the corpus (`apuleius/metamorphoses`):
 `max 1/fr`, `burst 0` across all 48 rendered frames (no frame ever received >1 `pointermove`).
-Furthermore, with the layout-read hoist landed (`0be16378`), `onMove` contains only arithmetic and
-CSS variable writes (`--drawer-height`, `--dict-width`). Property writes do not force synchronous
-layout; the browser merges them at paint time anyway. The real cost was layout _reads_ after writes,
-which the hoist eliminated. Redundant rAF coalescing would add ~30 lines carrying a subtle
-flush-on-`pointerup` footgun (without which the synthetic `<summary>` click suppression and
-splitter width persistence silently break) for zero measurable gain.
+Furthermore, `onMove` contains only arithmetic and CSS variable writes (`--drawer-height`, `--dict-width`).
+Property writes do not force synchronous layout; the browser merges them at paint time anyway.
+The real cost was layout _reads_ after writes, which the hoist eliminated. Redundant rAF coalescing
+would add ~30 lines carrying a subtle flush-on-`pointerup` footgun for zero measurable gain.
 
 **`eslint-plugin-compat` cannot detect static Web API incompatibilities — closed as won't-do.**
 The motivating use-case for linting browser compatibility was evaluating `AbortSignal.any()`. In
@@ -230,269 +256,5 @@ was completely redundant and safely removed without auxiliary declaration files.
 **The floating return-to-top button must stay elevated above mobile drawers (`--z-fab: 110`).**
 On mobile, `.back-to-top` dynamically rests 16px above the top edge of `.drawer` via
 `bottom: calc(var(--drawer-height) + ...)`. During drawer drag transitions and docking, the drawer's
-upward box-shadow and swipe surface occlude lower-z-index elements. A prior attempt setting `z-index: 90`
-caused clicks near the handle to intercept the drawer instead of triggering smooth scroll; elevating
-to `--z-fab: 110` (strictly above `--z-drawer: 100`) is required.
-
----
-
-## Phase 6 — CSS
-
-Verified counts as of the audit.
-
-- [x] 🟢 **Add the ~5 missing semantic color tokens.** Color-token discipline is largely _good_:
-      102 of 125 hex values live correctly inside `variables.css` / `critical_variables.css`.
-      Only **23 leak**, clustered in `dialog.css` (6, status colors), `library.css` (5, language
-      badges), `reader.css` (4), `dictionary.css` (4), `search.css` (3), `dict_settings.css` (1).
-      Adding `--success`, `--danger`, `--on-accent` closes most of it.
-- [x] 🟢 **Stop branching themes inside component stylesheets.** e.g. `dialog.css` L255-264
-      (`:root[data-theme="dark"] .report-status.success { color: #5cdb95; }`). Put the flip in
-      the token instead.
-      **Extract shared component classes.** These shells are re-declared per feature — each row is one
-      independently landable change:
-
-| Extract            | Replaces                                                                           | Notes                                               |
-| ------------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `.card`            | `.work-card`, `.dict-card`, `.landing-card`, `.reader-text-card`, `.settings-card` | all are `card-bg + 1px border + radius + shadow`    |
-| `.btn` + modifiers | `.work-card-btn`, `.reader-continue-btn`, `.reader-return-btn`, `.settings-btn`    | extend the existing `.btn` in `dialog.css`          |
-| `.empty-state`     | `.library-empty-state`                                                             | the inlined router 404 already wants this           |
-| `.ghost-scrollbar` | —                                                                                  | polished in `reader.css` L169-208, absent elsewhere |
-
-- [x] 🟡 Extract `.card`
-- [x] 🟡 Extract `.btn` + modifiers
-- [x] 🟢 Extract `.empty-state`
-- [x] 🟢 Extract `.ghost-scrollbar`
-
-**Split the two large stylesheets** along their existing section comments:
-
-- [x] 🔴 `dictionary.css` (1,795) → layout / typography / embeds / landing
-- [x] 🔴 `reader.css` (1,552) → layout / text / dict-sidebar / settings. Note its settings block
-      (L1432+) substantially mirrors `dict_settings.css` — merge into a shared `core/settings.css`.
-
----
-
-## Phase 7 — Docs & tests
-
-- [ ] 🟡 **Stop the Firefox baselines going stale again.** The baselines were all re-recorded when
-      the suite moved to viewport + coverage shots, so the matrix is green today, but nothing
-      prevents the drift recurring. `./morcus.sh e2e --visual` runs Chromium and MobileChrome only,
-      while `--update` is almost always run through that fast path; the `firefox` and
-      `FirefoxSmallScreen` baselines then sit at whatever the last `--all` run wrote. That is how
-      they reached 48 / 64 failing: the refresh at `8e04058a` covered the fast pair, and two days
-      later Firefox was still rendering the old about page (baseline 1163px tall, actual 1171px —
-      a pure size mismatch, no pixel differences). Options are to make `--update` refuse to run
-      without `--all`, or to run the full matrix in CI so the gap cannot open silently.
-
-**Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
-dialog markup. Gaps:
-
-- [ ] 🟢 Reader keyboard shortcuts (`reader_view.client.ts` L1028-1066)
-- [ ] 🟡 Reader preference save/hydrate lifecycle (L806-984)
-- [ ] 🟡 `DrawerController` snap thresholds and flick-velocity logic — extract the snap math to a
-      pure function and test that directly
-
----
-
-## Phase 8 — Performance
-
-> [!NOTE]
-> The drag-related items were found together on 2026-09-13 while investigating a report that
-> **resizing the reader drawer feels laggy**. They compound. The one among them that was a **bug**
-> rather than an optimization — the dead drag-transition selector — has since landed, and it was
-> expected to account for most of the symptom on its own, so **re-measure before spending effort on
-> the rest**. None of this has been profiled; the mechanisms are confirmed by reading, the split
-> between them is not.
-
-- [ ] 🟡 **Don't tokenize the whole chapter synchronously on mount.** `reader_view.client.ts`
-      L366-374 walks every target block calling `tokenizeElement` (L401) inside `onConnect` — one
-      long task that delays first interaction. Batch via `requestIdleCallback`.
-- [ ] 🟡 **Add CSS containment to the reader text panel.** There is currently **no** `contain:` or
-      `content-visibility:` anywhere in `src/web/v2`, so a drawer or splitter resize relayouts the
-      full text panel and all of its inline word spans. This is what makes the two drag items above
-      expensive rather than merely wasteful, so it is worth measuring after they land — it may be
-- [ ] 🟡 **Lazy-load the two heavy verticals.** `v2_bundle.client.ts` L1-10 eagerly bundles everything, so
-      reader users download the full dictionary interaction matrix and vice versa. Gate behind
-      `document.querySelector(...)` + dynamic `import()`.
-
----
-
-## Landed
-
-One line per completed item, grouped by the phase it came from. The commit messages carry the full
-reasoning deliberately, so it does not have to live here; anything counter-intuitive enough to be
-worth not rediscovering is summarised in Phase 5 instead.
-
-**Phase 1 — correctness & security**
-
-- **DOM XSS in the reader dictionary sheet.** `?q=` reached `innerHTML` unescaped at five sites;
-  all five now route through one `setSheetLabel()` built from `textContent`. (`1ba4ccd2`)
-- **Escaped the query in router error responses.** Only the `format=partial` paths were affected;
-  the markup moved to a `renderDictErrorHtml` renderer in `dict_page.server.ts` rather than being
-  patched in the router. (`b9e16df9`)
-- **Deleted `/api/completions/profile`.** An unauthenticated GET running a synchronous
-  `zlib.gzipSync` over up to 50,000 results, with zero callers. (`a8ce5b91`)
-- **Abort signals for the results fetch.** Generalised into `BaseElement` rather than patched:
-  `this.signal`, `this.latest(lane)`, `this.cancel(lane)`, and `FetchAndSwapOptions.signal` is now
-  required so future call sites have to decide. (`948a5349`, `fee5c5b0`)
-- **Validated both localStorage stores via per-field partial combinators.** Extracted `pickValid` in
-  `core/settings.client.ts` and added `isLiteral` to `parsing.ts`, replacing `parseSettings`'s four
-  imperative `typeof` checks and fixing unvalidated `ReaderPreferences` deserialization in
-  `reader_view.client.ts` with graceful fallback to defaults. (`6cf9dd90`)
-
-**Phase 2 — guardrails**
-
-- **Target-suffix import boundaries enforced by ESLint**, including the `he` ban for browser-bound
-  code. There were zero pre-existing violations — the discipline was real and is now mechanical.
-  (`06da3c29`)
-- **The four unsuffixed modules given a tier**, then `v2_router.ts` and `v2_bundle.ts` as well: the
-  "root integration hubs" exemption was backwards for the browser entry point, the single most
-  valuable file to protect. (`acb202cf`, `112c66b0`)
-- **The `.common.ts` contract documented in README.** (`68ed93e2`)
-- **Stale "< 20 KB gzipped" bundle claims removed from README.** (`cd1c2d35`)
-- **`no-floating-promises` and `no-misused-promises` enabled for V2**, with an `asyncHandler` +
-  `getAsync` / `postAsync` wrapper in the router. Two of the seven async handlers were live crash
-  paths: `/reader` and `/reader/:author/:name/:page?` both awaited before entering any `try`.
-  (`4c89fa88`, `83f1f6f8`)
-- **`core/html.common.ts`** — an auto-escaping `html` tagged template with `raw`, `joinHtml` and
-  `escapeHtml`, plus the typed `setHtml` / `replaceWithHtml` sinks in `core/dom.client.ts`. Removed
-  `search_bar.common.ts`'s private escaper, one of the five escape paths. (`37a6746a`)
-- **`eslint-plugin-no-unsanitized` enforcing it.** Every raw HTML sink in V2 production code is now
-  either typed or an audited disable; two turned out to be false positives better fixed with
-  `textContent`, and one is the documented network trust boundary in `core/partial.client.ts`.
-  (`ec3aa77f`)
-- **`no-unused-vars`, `no-non-null-assertion` and `no-explicit-any` enabled for V2 production code.**
-  All three are off repo-wide for the legacy React code; tests stay exempt, which is what made this
-  15 fixes instead of 140. No fix needed a suppression: the assertions were all `has`-then-`get`
-  Map lookups or `Boolean()` guards that had thrown the narrowing away, and both `any`s in the
-  `debounce` constraint became `never[]`. The one exemption left is a single cast in `listen()`.
-- **Stop applying React plugins to V2.** `plugin:react/recommended`, `plugin:react-hooks/recommended`,
-  plugin registration, version detection, and custom rules scoped out of `src/web/v2/**` to eliminate
-  latent false positives on `use*` helper functions.
-- **`he.escape` preferred over `he.encode` across all server templates**, with an ESLint guardrail
-  banning `he.encode` on server code. Eliminates entity-encoding of Greek, macrons, and symbols on
-  the render hot path (`xml_to_html.server.ts` L65).
-- **`recommended-type-checked` rules enabled for V2 production code.** Captures full value of the
-  `parserOptions: { project: true }` program already running; 35 production violations resolved
-  with zero type assertions, and tests exempt for dynamic fixture/mock typing.
-- **`eslint-plugin-wc` evaluated and superseded by `v2_elements.client.ts` + conformance self-population.** `BaseElement` centralized native callbacks; `reattach_conformance.test.ts` now mechanically verifies manifest coverage and bidirectional fixture completeness.
-- **Decided on Baseline 2023 browserslist via `browser_targets.common.ts`; closed `eslint-plugin-compat` as won't-do.** Targets Baseline 2023 + extended mobile (`chrome/edge/and_chr >= 111`, `firefox/and_ff >= 121`, `safari/ios_saf >= 16.4`, `samsung >= 23`, `opera >= 96`, `op_mob >= 73`) via `output.overrideBrowserslist` in `src/bundler/v2.rsbuild.ts`, isolating V1 SPA. Drops client bundle by 3.8 kB raw / 0.98 kB gzip (-9) and CSS by 925 B. Resolves `AbortSignal.any()` (out) and `AbortSignal.timeout()` (in).
-- **Enforced combined (JS + CSS) bundle-size budget in Rsbuild and Playwright E2E.** Baseline is 72.0 kB raw / 20.6 kB gzip JS and 93.8 kB raw / 15.7 kB gzip CSS (combined: 165.8 kB raw / 36.3 kB gzip). Caps set at < 90/26 kB (JS), < 115/20 kB (CSS), and < 200/45 kB (combined). Built-in Rsbuild guard fails minified builds fast, and Playwright verifies network headers and payloads.
-- **Bumped `nwsapi` to `^2.2.27` via `package.json` overrides.** Unlocks jsdom evaluation of `:has()` pseudo-class selectors on `matches()` and `querySelector()` without throwing `SyntaxError`, enabling DOM testing for load-bearing `reader.css` drawer rules (`:has(.drawer-minimized)`, `:has(.is-dragging)`). Added selector and DOM sink conformance tests in `core/dom.test.ts`.
-
-**Phase 3 — adopt the abstractions we already built**
-
-- **Move `stripMacrons()` from `reader_view.client.ts` to `@/common/text_cleaning` as `removeMacrons`.**
-  Replaces private class method with shared primitive and adds unit tests, preserving non-macron diacritics
-  (breves, accents) during macra toggle and passage lookup.
-- **Suggestion selection survives a re-attach.** `BaseElement` clears disposables on disconnect, so
-  anything registered once outside `onConnect()` is gone for good the first time an element moves.
-  `dict_suggestions.client.ts` delegated from its constructor; `dict_search.client.ts` registered its
-  `suggestion-select` listener inside the guard that creates the child exactly once. Both had to move
-  — fixing only the child left it emitting to nobody.
-- **The `onConnect` idempotency contract, documented on `BaseElement` and enforced by
-  `core/reattach_conformance.test.ts`.** The test moves all nine registered elements and fails on any
-  listener torn down by `dispose()` that is not put back. It found a third instance immediately —
-  `reader_view.client.ts` guarded its passage `keydown` behind a `data-enhanced` marker, which lives
-  in the DOM and so outlives the disconnect, permanently killing keyboard word selection after a
-  move. Verified against all three bugs: reverting each one turns the corresponding case red.
-  Resolves the "does `BaseElement` need a re-connection guard" question — no, it needs a documented
-  contract and a test; a `hasConnected` flag would break the legitimate move-and-reconnect path.
-- **Use `onConnect()` and `this.listen()` in `dict_toc.client.ts`**, eliminating manual
-  `connectedCallback`/`disconnectedCallback` overrides, managing mediaQuery listeners via
-  `BaseElement` disposables, and consolidating drawer teardown.
-- **Extract `core/disposable.client.ts` with `DisposableBag`**, unifying cleanup across `BaseElement`,
-  `DrawerController`, and `setupModalDialog` while preserving FIFO teardown and re-entrant safety without latches.
-- **Extract `core/cookies.common.ts` and `dict/dict_preferences.client.ts`**, providing pure isomorphic
-  cookie primitives (`readCookie`, `hasCookie`, `formatCookie`), unifying dictionary and inflection
-  cookie formatting in `dict_selection.common.ts`, and relocating misplaced dictionary stores out
-  of `core/settings.client.ts`.
-- **Extract `core/tokenize.client.ts`**, consolidating TreeWalker text tokenization, Latin word detection, and fragment replacement between `reader_view.client.ts` and `dict_search.client.ts`, backed by 10 unit tests.
-
-**Phase 4 — decomposition**
-
-- **Split `v2_bundle.client.ts` into vertical slices**, extracting `core/anchor_scroll.client.ts`,
-  `core/back_to_top.client.ts`, `shell/mobile_menu.client.ts`, and `dict/abbr_popover.client.ts`,
-  deleting the production `console.log` and redundant `showPopover` declaration, backed by 35 new unit tests.
-- **Extract `reader_settings.client.ts` (`<morcus-reader-settings>`)**, decomposing settings dialog
-  lifecycle, steppers, and persistence out of `reader_view.client.ts` into a dedicated custom element
-  via a bubbling `reader-settings-change` event contract, backed by 15 unit tests.
-- **Extract `reader_toc.client.ts` (`ReaderTocController`)**, decomposing TOC drawer open/close
-  lifecycle, live search filtering, outside-click dismissal, and keyboard accessibility out of
-  `reader_view.client.ts`, backed by 13 new unit tests.
-- **Extract `reader_layout.client.ts` (`ReaderLayoutController`)**, decomposing desktop split layout,
-  resizable splitter drag gesture, keyboard navigation, and width persistence out of
-  `reader_view.client.ts`, backed by 13 new unit tests.
-- **Split `v2_router.server.ts` into vertical route slices**, extracting `dict/dict_routes.server.ts`,
-  `reader/reader_routes.server.ts`, `api_routes.server.ts`, and `core/async_handler.server.ts`,
-  reducing `v2_router.server.ts` from 616 to 74 lines while preserving the single mounting contract.
-- **Decouple client from SSR markup shape via `data-tokenize-target`**, emitting semantic data attributes in `v2_preprocessor.ts` and `entry_view.server.ts` with legacy selector fallback, eliminating brittle CSS selector chains in `reader_view.client.ts`.
-- **Extract `library/not_found.server.ts`**, decomposing the inlined 404 classical work-not-found page from `reader_routes.server.ts` into a dedicated SSR renderer and hoisting inline styles to `library.css`, backed by unit and router 404 tests.
-- **Hoist drawer dvh magic numbers (`18`/`48`/`88`) to named constants**, exporting `DRAWER_FLOOR_DVH`, `DRAWER_DEFAULT_DVH`, `DRAWER_EXPANDED_DVH`, and `DRAWER_MIN_HEIGHT` from `core/drawer.client.ts` and consuming them across `reader_view.client.ts`, `dict_toc.client.ts`, and `DrawerController`.
-- **Extract `core/request_params.server.ts`**, centralizing `isPartialRequest`, `isEmbeddedRequest`, `readLimit`, `toStringOrArray`, and `readDictParam`, eliminating duplicated parameter derivation across route slices and removing redundant Express `Content-Type` headers, backed by 26 unit tests.
-- **Split `dict_page.server.ts: renderDictResultsHtml`**, decomposing empty state (`renderNoResultsHtml`), zero-hit status (`renderNoEntriesHtml`), multi-lexicon jump navigation (`renderJumpNavHtml`), and entry cards (`renderDictCardHtml`), backed by 10 new unit tests.
-- **Split `dict_toc.server.ts: renderDictTocHtml` into model (`buildTocTree`) and view (`renderTocSenseListHtml`)**, naming visibility thresholds (`TOC_MIN_TOTAL_SENSES`, `TOC_MIN_SINGLE_ENTRY_SENSES`, `TOC_MIN_MULTI_ENTRIES`), centralizing `dictCardId` / `resolveDictLang` in `dict_attribution.server.ts`, wiring `dict_page.server.ts` to `buildTocTree`, and converting HTML regex tests into typed data assertions.
-- **Split `reader.server.ts: renderReaderContentHtml`**, decomposing reader context resolution (`resolveReaderContext`), sticky quick navigation (`renderReaderStickyBar`), text canvas (`renderReaderTextPanel`), dictionary sidebar (`renderReaderDictPanel`), TOC drawer in `reader_toc.server.ts` (`renderTocDrawer`), and modals in `reader_dialogs.server.ts` (`renderBiblioDialog`, `renderReaderSettingsDialog`), backed by 21 unit tests.
-
-**Phase 6 — CSS**
-
-- **Split `reader.css` (1,514 lines) into modular topic stylesheets and merged settings into `core/settings.css`.** Decomposed layout & viewport shell (`reader/reader_layout.css`), resizable splitter gutter (`reader/reader_splitter.css`), sticky navigation & toolbar (`reader/reader_nav.css`), reading text & Latin typography (`reader/reader_text.css`), embedded dictionary sidebar (`reader/reader_dict.css`), TOC drawer (`reader/reader_toc.css`), metadata dialogs (`reader/reader_dialogs.css`), and extracted shared settings system (`core/settings.css`), slimming `dict_settings.css` to dictionary selection.
-- **Standardized z-index scale in `shell/variables.css` and enforced via Stylelint.** Migrated all 17
-  declarations across 8 stylesheets to design tokens (`--z-raised`, `--z-sticky`,
-  `--z-overlay`, `--z-drawer`, `--z-fab`, `--z-dropdown`, `--z-nav`, `--z-toast`,
-  `--z-modal`), and introduced Stylelint with `stylelint-declaration-strict-value` for `src/web/v2/**/*.css`.
-- **Reduced `!important` from 78 instances to 1**, eliminating desktop overrides in `dict_toc.css`
-  via compound `.drawer.drawer-toc` (0,2,0) selector, unblocking `--drawer-min-height` inheritance,
-  fixing No-JS sticky row display, and enforcing repo-wide via Stylelint `declaration-no-important` with
-  exactly 1 documented `[hidden]` reset exception in `v2.css`.
-- **Enforced complete Stylelint 17 correctness suite and modular file-size limits.** Configured
-  `.stylelintrc.json` with CSSTree value validation (`declaration-property-value-no-unknown`), calc
-  operator spacing, unitless zeroes (`length-zero-no-unit`), named color and ID selector bans, selector
-  nesting limits ($\le 3$), duplicate selector prevention (`no-duplicate-selectors`), theme branching
-  bans outside `shell/`, and custom `src/web/v2/tools/max_file_lines.cjs` enforcing a 650-line maximum per
-  stylesheet backed by 6 unit tests.
-- **Standardized border radius and spacing scales in `shell/variables.css` and enforced via Stylelint.** Defined
-  `--radius-xs` through `--radius-full` and `--space-1` through `--space-9` (4px base grid), migrated
-  all ~110 `border-radius` declarations and ~80 `gap` declarations across all 28 stylesheets, and locked in
-  `border-radius` token usage in `.stylelintrc.json` via `scale-unlimited/declaration-strict-value`.
-
-**Phase 7 — docs & tests**
-
-- **`reader/reader_data.ts` relocated to `testing/`** — it is test fixture data, which is why it had
-  no right answer among the three target suffixes. (`acb202cf`)
-- **The six unphotographable mobile dictionary baselines.** Filed as a drawer bug; it was the
-  harness. `fullPage` captures on `isMobile` contexts walk the scroll offset, so `toHaveScreenshot`
-  never converged. The scenario now locks the offset in-page before asserting, and the six baselines
-  were re-recorded from stable frames.
-- **The visual suite now shoots the viewport, not the whole page.** Every scenario's primary
-  baseline is a viewport capture — the only one that shows `position: fixed` chrome where a user
-  sees it — over the full js/theme/browser matrix. Below-the-fold coverage moved to one
-  `-coverage.png` per scenario per browser, capped at three viewports. 176 baselines / 58MB became
-  160 / ~25MB, and the 29135px library-landing image nobody could review is gone.
-- **Purged stale "Lit" references** from `shell/page_shell.server.ts`, `TESTING.md`, `dict/README.md`, and `dict/search.css`.
-- **Replaced stale 7-file test enumeration** in `TESTING.md` §1 with a glob pattern matching colocated test files (`src/web/v2/**/*.test.ts`).
-- **Updated `.common.ts` contract and safe-DOM documentation** in `README.md` to reflect `SafeHtml`, `core/html.common.ts`, and typed sinks (`setHtml` / `replaceWithHtml`).
-
-**Phase 8 — performance**
-
-- **The drawer's drag-transition escape hatch.** `is-dragging` was applied to the handle while
-  three CSS rules were written against the panel, so the panel kept its 250 ms transition live for
-  the whole drag and rubber-banded after the pointer. Fixed in TypeScript, not by rewriting the
-  rules with `:has()` — which jsdom cannot currently evaluate, so it would have shipped untested.
-  (`8b996e21`)
-- **The two universal `user-select` overrides deleted.** `body.resizing-* *` forced a
-  whole-document style recalculation twice per drag while only ever overriding `none` with `none`.
-  (`8b996e21`)
-- **Stopped scanning every word to clear one class** on each word click in the reader. The scope
-  `.reader-text-panel` in the query is load-bearing, because `linkifyText` can emit the same
-  class into the dictionary panel. (`a4e2a276`)
-- **Stop `fs.existsSync` on the render hot path.** Deleted the per-render asset file existence
-  checks in `shell/asset_manifest.server.ts` and cache the parsed manifest on first access. (`6f5b6d75`)
-- **Hoisted the per-move layout reads out of both drags.** The splitter measured its container on
-  every `pointermove`, immediately after the previous move wrote `--dict-width`; the drawer read
-  `window.innerHeight` the same way. Both are now measured once in `onStart`, so the move handlers
-  are pure arithmetic plus writes. Pinned by read-counting tests rather than by the resulting
-  geometry, which the hoist leaves unchanged. (`0be16378`)
-- **Coalescing pointer drags to animation frames closed as won't-do.** Browser input alignment
-  already delivers at most one `pointermove` per frame (measured `max 1/fr`, `burst 0/48` on heaviest
-  reader text), and the hoist above leaves only property writes which the compositor merges anyway;
-  see Phase 5.
+upward box-shadow and swipe surface occlude lower-z-index elements. Elevating to `--z-fab: 110`
+(strictly above `--z-drawer: 100`) is required.
