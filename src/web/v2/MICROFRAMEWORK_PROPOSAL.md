@@ -375,14 +375,12 @@ Nothing depended on capturing `LifetimeScope.use()` outside of internal child-pa
 - [x] Update `LifetimeScope.createScope()` to register child scope detachment directly via `this.disposables.add(...)`.
 - [x] Standardize return types of all 9 teardown helpers (`bindDismissable`, `trapFocus`, `trackPointerDrag`, `setupModalDialog`, `setupAnchorScroll`, `setupBackToTop`, `setupDeferredIframes`, `setupAbbrPopover`, `setupMobileMenu`) to `CleanupFn`.
 
-### 6.6 Finish the popover consolidation, or document why not (🟡)
+### 6.6 Finish the popover consolidation, or document why not (🟢)
 
-Two hand-rolled popovers remain — exactly the pattern §3.A was built to delete:
+Two hand-rolled popovers were evaluated and resolved:
 
-- [ ] `MorcusDictSettings` keeps its own `isOpen` field _and_ reads `detailsEl.open` — two sources of truth synchronized by a `toggle` listener — plus a bespoke `closeSettingsPopover()`.
-- [ ] `abbr_popover.client.ts` still binds `click` + `pointerdown` + `keydown` + `resize` on `document`/`window` by hand.
-
-If the `<details>`-based one genuinely cannot fit `AnchoredPopoverController`, record that in a comment; it currently reads as an unfinished migration.
+- [x] `MorcusDictSettings`: Evaluated and documented why it intentionally retains native `<details>` / `<summary>` disclosure semantics rather than `AnchoredPopoverController` (mandatory Zero-JS baseline requirement for form submission without JS, prevents `hidden`/`<details open>` attribute desync, uses CSS relative anchoring, and avoids trapping focus without a close button). Cleaned up dual state: eliminated the redundant private `isOpen` field so `detailsEl.open` is the single canonical source of truth, synchronized `aria-expanded`, and added `onDisconnect()` reset.
+- [x] `abbr_popover.client.ts`: Evaluated and documented why it uses lightweight document delegation rather than 1-to-1 `AnchoredPopoverController` (1-to-N dynamic `.lsHover` targets across dictionary entries swapped via partial updates, tooltip content without interactive controls/focus-trapping, and top-layer native `popover="auto"` API). Modernized to manage lifecycle via `DisposableBag` and standardize outside-tap/Escape dismissal via `bindDismissable`.
 
 ### 6.7 Get the test environment out of the shipped bundle (🟢)
 

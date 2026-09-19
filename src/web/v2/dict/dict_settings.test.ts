@@ -199,4 +199,25 @@ describe("MorcusDictSettings", () => {
     );
     expect(document.cookie).toContain("morcus_inflected=0");
   });
+
+  test("synchronizes aria-expanded and closes on element disconnect", () => {
+    const el = document.createElement("morcus-dict-settings");
+    document.body.appendChild(el);
+
+    const btn = el.querySelector<HTMLElement>(".settings-btn")!;
+    const details = el.querySelector<HTMLDetailsElement>(
+      ".dict-settings-details"
+    )!;
+
+    expect(details.open).toBe(false);
+
+    btn.click();
+    expect(details.open).toBe(true);
+    expect(btn.getAttribute("aria-expanded")).toBe("true");
+
+    // Disconnecting the host closes the details popover cleanly
+    el.remove();
+    expect(details.open).toBe(false);
+    expect(btn.getAttribute("aria-expanded")).toBe("false");
+  });
 });

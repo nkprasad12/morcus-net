@@ -1,7 +1,18 @@
-import type { CleanupFn } from "@/web/v2/core/disposable.client";
+import { DisposableBag, type CleanupFn } from "@/web/v2/core/disposable.client";
+import { bindDismissable } from "@/web/v2/core/dismissable.client";
 
 /**
  * Interactive abbreviation popover for expandable dictionary words (.lsHover).
+ *
+ * Architecture Note (Item 6.6):
+ * This utility uses a single shared top-layer container (`#abbr-popover`, rendered in page_shell.server.ts)
+ * to service 1-to-N dynamic `.lsHover` abbreviation targets across dictionary entries.
+ * Because targets are dynamic (frequently swapped via partial HTML updates), content is a tooltip
+ * without interactive controls (no focus trap), and `#abbr-popover` uses top-layer Popover API
+ * (`popover="auto"`), this component intentionally uses lightweight document delegation rather than
+ * the 1-to-1 `AnchoredPopoverController`.
+ *
+ * It uses `DisposableBag` and `bindDismissable` for managed lifecycle and standardized outside-tap/Escape dismissal.
  */
 
 let activeCleanup: CleanupFn | null = null;
@@ -20,6 +31,7 @@ export function setupAbbrPopover(
     return () => {};
   }
 
+  const bag = new DisposableBag();
   let activeTarget: HTMLElement | null = null;
   const supportsNativePopover = typeof abbrPopover.showPopover === "function";
 
@@ -33,6 +45,11 @@ export function setupAbbrPopover(
     }
     activeTarget = null;
   };
+
+  const isPopoverOpen = (): boolean =>
+    supportsNativePopover
+      ? abbrPopover.matches(":popover-open")
+      : abbrPopover.style.display === "block";
 
   const positionAbbrPopover = (target: HTMLElement) => {
     const rect = target.getBoundingClientRect();
@@ -73,10 +90,7 @@ export function setupAbbrPopover(
     }
 
     // Toggle off if tapping the same active element
-    const isOpen = supportsNativePopover
-      ? abbrPopover.matches(":popover-open")
-      : abbrPopover.style.display === "block";
-    if (activeTarget === target && isOpen) {
+    if (activeTarget === target && isPopoverOpen()) {
       closeAbbrPopover();
       return;
     }
@@ -103,18 +117,6 @@ export function setupAbbrPopover(
     }
   };
 
-  // Ensure touch dismisses immediately on tap outside
-  const onPointerDown = (e: PointerEvent) => {
-    if (!(e.target instanceof Node)) return;
-    if (
-      activeTarget &&
-      !activeTarget.contains(e.target) &&
-      !abbrPopover.contains(e.target)
-    ) {
-      closeAbbrPopover();
-    }
-  };
-
   // Keyboard accessibility: Enter or Space on focused .lsHover opens popover
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -126,8 +128,6 @@ export function setupAbbrPopover(
         e.preventDefault();
         openAbbrPopover(activeEl);
       }
-    } else if (e.key === "Escape") {
-      closeAbbrPopover();
     }
   };
 
@@ -137,16 +137,32 @@ export function setupAbbrPopover(
     }
   };
 
-  doc.addEventListener("click", onClick);
-  doc.addEventListener("pointerdown", onPointerDown);
-  doc.addEventListener("keydown", onKeyDown);
-  win.addEventListener("resize", onResize, { passive: true });
+  // Standardized dismiss coordination (pointerdown outside + Escape keydown)
+  bag.add(
+    bindDismissable({
+      container: abbrPopover,
+      isOpen: isPopoverOpen,
+      onDismiss: closeAbbrPopover,
+      listenPointerDown: true,
+      ignore: (target) =>
+        Boolean(
+          activeTarget?.contains(target) ||
+            (target instanceof Element && target.closest(".lsHover"))
+        ),
+    })
+  );
 
-  const unbind = () => {
-    doc.removeEventListener("click", onClick);
-    doc.removeEventListener("pointerdown", onPointerDown);
-    doc.removeEventListener("keydown", onKeyDown);
-    win.removeEventListener("resize", onResize);
+  doc.addEventListener("click", onClick);
+  bag.add(() => doc.removeEventListener("click", onClick));
+
+  doc.addEventListener("keydown", onKeyDown);
+  bag.add(() => doc.removeEventListener("keydown", onKeyDown));
+
+  win.addEventListener("resize", onResize, { passive: true });
+  bag.add(() => win.removeEventListener("resize", onResize));
+
+  const unbind: CleanupFn = () => {
+    bag.dispose();
     if (activeCleanup === unbind) {
       activeCleanup = null;
     }
