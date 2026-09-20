@@ -57,6 +57,7 @@ The following core reading surfaces from V1 have achieved full parity or intenti
 - **V2 (`reader_view.client.ts:L213-220`)**:
   - ❌ **Missing**. Clicking `a.section-anchor` copies the URL immediately to the clipboard with no menu.
   - Restoring this requires introducing a small menu/popover on section anchors or secondary actions before triggering the inline edit flow.
+  - **Design Document**: See [`IN_FLOW_EDITING_DESIGN.md`](IN_FLOW_EDITING_DESIGN.md) for full architecture, anchored popover trigger UX, in-place textarea swap vs `contenteditable` analysis, and `/v2/api/report` pipeline integration.
 
 ### 3.3. Swipe & Side-Tap Page Navigation
 

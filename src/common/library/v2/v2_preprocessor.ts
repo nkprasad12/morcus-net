@@ -331,21 +331,39 @@ export function preprocessWorkToV2(
       "alpha"
     );
 
+    let verseLineIndex = 0;
+
     for (let j = startIdx; j < endIdx; j++) {
       const [secId, node] = work.rows[j];
       const dotId = secId.join(".");
       const localId = getSectionLocalId(secId, pageId);
       const prefix = getSectionPrefix(secId, pageId);
+      const isLeafRow = secId.length === textParts.length;
       // Rendered once and reused by both views, so a note keeps the same label
       // whether the reader is in single or parallel mode.
       const latinHtml = renderPassageContent(node, isVerseWork, textNotes);
 
-      citationIds.push(dotId);
+      const isLatentVerseLabel =
+        isVerseWork &&
+        isLeafRow &&
+        verseLineIndex !== 0 &&
+        (verseLineIndex + 1) % 5 !== 0;
+      const anchorClass = isLatentVerseLabel
+        ? "section-anchor latent"
+        : "section-anchor";
 
-      const gutterHtml = `
+      if (isLeafRow) {
+        citationIds.push(dotId);
+        if (isVerseWork) {
+          verseLineIndex++;
+        }
+      }
+
+      const gutterHtml = isLeafRow
+        ? `
         <div class="reader-gutter">
           <a href="#sec-${dotId}"
-             class="section-anchor"
+             class="${anchorClass}"
              title="Citation § ${dotId} (Click to copy anchor)"
              aria-label="Section ${dotId}">
             <span class="cite-prefix">${he.escape(
@@ -353,15 +371,17 @@ export function preprocessWorkToV2(
             )}</span><span class="cite-local">${he.escape(localId)}</span>
           </a>
         </div>
-      `.trim();
+      `.trim()
+        : '<div class="reader-gutter"></div>';
 
       const sectionClass = isVerseWork
         ? "reader-section section-verse"
         : "reader-section";
+      const idAttr = isLeafRow ? ` id="sec-${dotId}"` : "";
 
       singleSectionsHtml.push(
         `
-        <div class="${sectionClass}" id="sec-${dotId}">
+        <div class="${sectionClass}"${idAttr}>
           ${gutterHtml}
           <div class="reader-passage" data-tokenize-target="true">
             ${latinHtml}

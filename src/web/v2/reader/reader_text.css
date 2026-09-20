@@ -336,13 +336,20 @@ details.reader-work-about[open] summary.reader-about-summary {
   opacity: 1;
 }
 
-.cite-prefix {
-  opacity: 0.6;
+.reader-gutter .section-anchor.latent {
+  opacity: 0;
 }
 
-.cite-local {
-  font-weight: 500;
-  color: var(--text-muted);
+.reader-section:target .reader-gutter .section-anchor.latent,
+.reader-section.target-highlight .reader-gutter .section-anchor.latent,
+.reader-gutter:hover .section-anchor.latent {
+  opacity: 0.8;
+}
+
+.reader-gutter .section-anchor.latent:hover,
+.reader-gutter .section-anchor.latent:visited:hover,
+.reader-gutter .section-anchor.latent:focus-visible {
+  opacity: 1;
 }
 
 /* Native CSS Fragment Highlighting (:target) */
@@ -515,12 +522,6 @@ details.reader-work-about[open] summary.reader-about-summary {
 
   .cite-prefix {
     display: none; /* Hides "2.1." on mobile, showing only "2" */
-  }
-
-  .cite-local {
-    color: var(--text-muted);
-    font-size: 1em;
-    font-weight: 500;
   }
 
   .reader-continuation-actions {
