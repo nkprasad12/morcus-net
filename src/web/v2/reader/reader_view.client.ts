@@ -1056,9 +1056,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.applyDictScale(prefs.dictScale);
 
     if (prefs.lineHeight === "compact") {
-      this.style.setProperty("--reader-line-height", "1.6");
+      this.style.setProperty("--reader-line-height", "1.45");
     } else if (prefs.lineHeight === "relaxed") {
-      this.style.setProperty("--reader-line-height", "2.3");
+      this.style.setProperty("--reader-line-height", "1.85");
     } else {
       this.style.removeProperty("--reader-line-height");
     }
