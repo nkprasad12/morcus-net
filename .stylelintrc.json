@@ -1,7 +1,8 @@
 {
   "plugins": [
     "stylelint-declaration-strict-value",
-    "./src/web/v2/tools/max_file_lines.cjs"
+    "./src/web/v2/tools/max_file_lines.cjs",
+    "./src/web/v2/tools/no_duplicate_declaration_blocks.cjs"
   ],
   "rules": {},
   "overrides": [
@@ -37,6 +38,10 @@
         "media-feature-name-value-no-unknown": true,
         "media-query-no-invalid": true,
         "morcus/max-file-lines": 650,
+        "morcus/no-duplicate-declaration-blocks": [
+          true,
+          { "minDeclarations": 3 }
+        ],
         "no-duplicate-at-import-rules": true,
         "no-duplicate-selectors": true,
         "no-invalid-double-slash-comments": true,
