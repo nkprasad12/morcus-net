@@ -87,7 +87,8 @@
   border-bottom: 1.5px dashed var(--border-mid);
 }
 
-.toc-entries-groups {
+.toc-entries-groups,
+.toc-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -154,12 +155,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.toc-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
 }
 
 .toc-group + .toc-group {

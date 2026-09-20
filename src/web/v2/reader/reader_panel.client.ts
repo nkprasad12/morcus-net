@@ -265,7 +265,8 @@ export class ReaderPanelController extends BaseController {
 
     const notesView = document.createElement("div");
     notesView.id = "panel-view-notes";
-    notesView.className = "reader-panel-notes reader-panel-view";
+    notesView.className =
+      "reader-panel-notes reader-panel-view reader-panel-card";
     notesView.setAttribute("role", "tabpanel");
     notesView.setAttribute("aria-labelledby", "panel-tab-notes");
     notesView.setAttribute("aria-live", "polite");
@@ -278,7 +279,8 @@ export class ReaderPanelController extends BaseController {
 
     const translationView = document.createElement("div");
     translationView.id = "panel-view-translation";
-    translationView.className = "reader-panel-translation reader-panel-view";
+    translationView.className =
+      "reader-panel-translation reader-panel-view reader-panel-card";
     translationView.setAttribute("role", "tabpanel");
     translationView.setAttribute("aria-labelledby", "panel-tab-translation");
     translationView.setAttribute("aria-live", "polite");
@@ -287,7 +289,8 @@ export class ReaderPanelController extends BaseController {
 
     const aboutView = document.createElement("div");
     aboutView.id = "panel-view-about";
-    aboutView.className = "reader-panel-about reader-panel-view";
+    aboutView.className =
+      "reader-panel-about reader-panel-view reader-panel-card";
     aboutView.setAttribute("role", "tabpanel");
     aboutView.setAttribute("aria-labelledby", "panel-tab-about");
 

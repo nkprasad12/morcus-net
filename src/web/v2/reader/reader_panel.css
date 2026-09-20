@@ -100,7 +100,15 @@
   z-index: var(--z-raised);
 }
 
-.reader-panel-notes {
+/*
+ * Shared chrome for the tabbed companion views that render as cards. The
+ * dictionary view also carries `.reader-panel-view`, but it hosts a full-bleed
+ * iframe and must stay flush, so the card styling hangs off its own class.
+ *
+ * `scrollbar-width` is deliberately absent: `.reader-panel-view` is part of the
+ * ghost scrollbar group in `core/components.css`, which already thins these.
+ */
+.reader-panel-card {
   background-color: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -108,10 +116,9 @@
   -webkit-overflow-scrolling: touch;
   padding: var(--space-5) var(--space-6);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  scrollbar-width: thin;
 }
 
-.reader-panel-notes:not(.active) {
+.reader-panel-card:not(.active) {
   content-visibility: hidden;
 }
 
@@ -127,21 +134,6 @@
   box-shadow: inset 3px 0 0 var(--primary);
 }
 
-.reader-panel-about {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: var(--space-5) var(--space-6);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  scrollbar-width: thin;
-}
-
-.reader-panel-about:not(.active) {
-  content-visibility: hidden;
-}
-
 .reader-panel-about .reader-work-about {
   margin-top: 0;
   padding: 0;
@@ -155,21 +147,6 @@
 
 .reader-about-card {
   max-width: 600px;
-}
-
-.reader-panel-translation {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: var(--space-5) var(--space-6);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  scrollbar-width: thin;
-}
-
-.reader-panel-translation:not(.active) {
-  content-visibility: hidden;
 }
 
 .reader-translation-header {

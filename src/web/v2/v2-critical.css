@@ -55,7 +55,8 @@ body {
   gap: var(--space-6);
 }
 
-.actions-group {
+.actions-group,
+.nav {
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -64,12 +65,6 @@ body {
 .mobile-menu {
   position: relative;
   display: none;
-}
-
-.nav {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
 }
 
 .nav-link {

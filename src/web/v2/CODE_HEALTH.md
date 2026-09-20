@@ -103,6 +103,30 @@ dialog markup. Gaps:
 
 ---
 
+## Phase 9 — CSS duplication
+
+- [ ] 🟡 **Resolve the `.reader-btn:hover` conflict — this one changes pixels.**
+      `reader_nav.css` styles hover twice. The shared rule sets
+      `border-color: var(--border-strong)` plus `color: var(--primary)`; the per-control rules
+      earlier in the file set `color: var(--text)`, `border-color: var(--app-bar-toggle-border)`
+      and `background: var(--card-bg)`. Both are `(0,2,0)`, so the **later** shared rule wins and
+      the per-control `color` / `border-color` are dead — only their `background` survives. The
+      dedup pass left both in place and pinned their file order with comments precisely because
+      collapsing them would silently pick a winner. Deciding which hover is intended is a
+      **design** call and needs visual baseline approval.
+- [ ] 🟡 **Sweep for dead CSS.** `.jump-input`, `.sticky-jump-input` and `.jump-submit` were removed
+      after grep showed zero references anywhere outside their own rules — leftovers from a removed
+      section-number jump form. `.ghost-scrollbar` is still declared and applied to nothing. Three
+      confirmed instances found incidentally suggests a systematic coverage pass would beat any
+      further hand-deduplication.
+- [ ] 🟢 **Extend duplicate detection across files.** `morcus/no-duplicate-declaration-blocks` is
+      per-file, and `lint:css` runs with `--cache`, so accumulating state across files is
+      unreliable. The focus-ring block still appears ~9× across the bundle; only the 5 within
+      `reader_nav.css` were catchable. Cross-file dedup wants a standalone script over the built
+      bundle, run as its own CI step.
+
+---
+
 ## Investigated & resolved (Design Traps & Architectural Lessons)
 
 Findings that cost real time to establish and that would otherwise be rediscovered — or worse,
