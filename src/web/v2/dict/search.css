@@ -14,7 +14,7 @@
 
 .search-form:focus-within {
   border-color: var(--app-bar-toggle-border);
-  box-shadow: 0 0 0 3px rgba(153, 194, 176, 0.35);
+  box-shadow: var(--theme-ring);
 }
 
 .input-wrapper {

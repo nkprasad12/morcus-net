@@ -287,7 +287,7 @@ details.reader-work-about[open] summary.reader-about-summary {
 
 .reader-section {
   display: grid;
-  grid-template-columns: 3.25rem minmax(0, 1fr);
+  grid-template-columns: minmax(3.25rem, max-content) minmax(0, 1fr);
   gap: var(--space-5);
   align-items: baseline;
   padding: var(--space-2) var(--space-3);
@@ -295,17 +295,32 @@ details.reader-work-about[open] summary.reader-about-summary {
   transition: background-color 0.2s ease, border-left-color 0.2s ease;
 }
 
+@supports (grid-template-columns: subgrid) {
+  article.reader-passage {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: var(--space-5);
+  }
+
+  .reader-section {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    column-gap: inherit;
+  }
+}
+
 .reader-gutter {
-  text-align: right;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  text-align: center;
+  font-family: inherit;
+  font-size: 0.85em;
+  line-height: inherit;
   user-select: none;
 }
 
 .reader-gutter .section-anchor,
 .reader-gutter .section-anchor:visited {
   color: var(--text-muted);
-  opacity: 0.75;
+  opacity: 0.8;
   text-decoration: none;
   display: inline-block;
   padding: var(--space-1);
@@ -351,6 +366,7 @@ details.reader-work-about[open] summary.reader-about-summary {
   display: none;
 }
 
+.reader-view.hide-gutter article.reader-passage,
 .reader-view.hide-gutter .reader-section {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -477,9 +493,24 @@ details.reader-work-about[open] summary.reader-about-summary {
   }
 
   .reader-section {
-    grid-template-columns: 1.35rem minmax(0, 1fr);
+    grid-template-columns: minmax(1.35rem, max-content) minmax(0, 1fr);
     gap: var(--space-3);
     padding: var(--space-1) 0;
+  }
+
+  @supports (grid-template-columns: subgrid) {
+    article.reader-passage {
+      column-gap: var(--space-3);
+    }
+
+    .reader-section {
+      grid-template-columns: subgrid;
+      column-gap: inherit;
+    }
+  }
+
+  .reader-gutter {
+    white-space: nowrap;
   }
 
   .cite-prefix {
@@ -488,7 +519,7 @@ details.reader-work-about[open] summary.reader-about-summary {
 
   .cite-local {
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: 1em;
     font-weight: 500;
   }
 

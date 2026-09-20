@@ -42,6 +42,8 @@
   --radius-full: 9999px;
 
   --font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
+  --font-mono: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
+    Consolas, "Liberation Mono", "Courier New", monospace;
   --card-bg: var(--bg);
   --text-muted: #6c757d;
   --primary: #0066cc;
@@ -52,6 +54,7 @@
   --border-strong: #8c919a;
   --border-focus: #80bdff;
   --focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.2);
+  --theme-ring: 0 0 0 3px rgba(153, 194, 176, 0.4);
   --success: #198754;
   --danger: #dc3545;
   --on-accent: #ffffff;
@@ -129,6 +132,7 @@
     --border-strong: #656a76;
     --border-focus: #8ab4f8;
     --focus-ring: 0 0 0 3px rgba(77, 163, 255, 0.25);
+    --theme-ring: 0 0 0 3px rgba(109, 142, 126, 0.45);
     --success: #5cdb95;
     --danger: #ff6b6b;
     --on-accent: #ffffff;
@@ -207,6 +211,7 @@
   --border-strong: #656a76;
   --border-focus: #8ab4f8;
   --focus-ring: 0 0 0 3px rgba(77, 163, 255, 0.25);
+  --theme-ring: 0 0 0 3px rgba(109, 142, 126, 0.45);
   --success: #5cdb95;
   --danger: #ff6b6b;
   --on-accent: #ffffff;
