@@ -606,7 +606,13 @@
   }
 }
 
-:target,
+/* `:target` is ambient: it matches on the URL hash alone, with nothing opting in. Because
+   v2.css bundles every vertical slice into one global stylesheet, leaving it unscoped applied
+   this animation app-wide, and `forwards` made its terminal `transparent` frame outrank the
+   author background of whatever was targeted (reader TOC dropdown, #sec- permalinks, mobile
+   dictionary drawer). Scope it to dictionary entry content. `.target-active` is opt-in via
+   core's flashElement(), so it is self-scoping and stays global. */
+.dict-card :target,
 .target-active {
   scroll-margin-top: 20px;
   border-radius: var(--radius-sm);
@@ -615,18 +621,16 @@
   animation: target-highlight 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.dict-card:target,
 .dict-card.target-active {
   animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :target,
+  .dict-card :target,
   .target-active {
     animation: none;
     background-color: var(--target-highlight);
   }
-  .dict-card:target,
   .dict-card.target-active {
     background-color: transparent;
   }

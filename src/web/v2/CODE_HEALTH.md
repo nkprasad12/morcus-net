@@ -258,3 +258,20 @@ On mobile, `.back-to-top` dynamically rests 16px above the top edge of `.drawer`
 `bottom: calc(var(--drawer-height) + ...)`. During drawer drag transitions and docking, the drawer's
 upward box-shadow and swipe surface occlude lower-z-index elements. Elevating to `--z-fab: 110`
 (strictly above `--z-drawer: 100`) is required.
+
+**Never style `:target` unscoped from a vertical-slice stylesheet.** `v2.css` concatenates every
+slice into one bundle served on every page, so a bare `:target` in `dict_layout.css` applied
+app-wide. Paired with `animation-fill-mode: forwards` — which outranks normal author declarations —
+its terminal `transparent` keyframe permanently erased the background, box-shadow, and
+border-radius of whatever the URL hash pointed at. Three symptoms, one cause: the No-JS reader TOC
+dropdown rendered fully transparent over the passage text; `#sec-` permalink highlights were dead
+in **both** JS and No-JS (the hash matches `:target` regardless of the `.target-highlight` class the
+client adds); and the mobile No-JS dictionary drawer blanked when targeted. JS mode masked the TOC
+case because the controller `preventDefault()`s the trigger click, so `:target` never fires.
+The distinction that matters: `:target` is **ambient** (matches on hash alone, nothing opts in) and
+must be scoped to a slice-owned ancestor, whereas `.target-active` is **opt-in** via core's
+`flashElement()`, is self-scoping by construction, and is correctly left global — scoping it would
+silently break every core caller. Note the combinator: `.dict-card :target` (descendant), not
+`.dict-card:target`. Real dictionary deep-link anchors are descendants of a card, and the card
+itself must not animate. Nothing caught this because no E2E or visual scenario opens the TOC drawer
+or loads a `#sec-` deep link — see the selector-inventory item in Phase 7.
