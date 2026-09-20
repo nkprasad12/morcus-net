@@ -184,27 +184,35 @@
 
 .reader-translation-section {
   display: flex;
+  align-items: baseline;
   margin-bottom: var(--space-4);
   gap: var(--space-3);
+  font-family: var(--reader-font, var(--font-serif));
+  font-size: calc(0.95rem * var(--reader-scale, 1));
+  line-height: 1.6;
 }
 
 .reader-translation-gutter {
-  flex: 0 0 32px;
-  text-align: right;
+  flex: 0 0 auto;
+  min-width: 2rem;
+  text-align: center;
   user-select: none;
+  font-family: inherit;
+  font-size: 0.85em;
+  line-height: inherit;
 }
 
 .reader-translation-gutter .cite-local {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-family: inherit;
+  font-size: 1em;
   color: var(--text-muted);
 }
 
 .reader-translation-text {
   flex: 1 1 auto;
-  font-family: var(--font-serif);
-  font-size: calc(0.95rem * var(--reader-scale, 1));
-  line-height: 1.6;
+  font-family: inherit;
+  font-size: 1em;
+  line-height: inherit;
   color: var(--text);
 }
 
@@ -300,6 +308,15 @@ a.reader-note-ref.marker-active {
     border: none;
     box-shadow: none;
     padding: var(--space-4) var(--space-5) var(--space-8);
+  }
+
+  .reader-translation-section {
+    gap: var(--space-3);
+  }
+
+  .reader-translation-gutter {
+    flex: 0 0 auto;
+    min-width: 1.35rem;
   }
 }
 

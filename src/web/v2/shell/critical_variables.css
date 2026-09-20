@@ -39,7 +39,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #191b1d;
-    --text: #e1e3e6;
+    --text: #c4c7cb;
     --app-bar-bg: #8fae9f;
     --app-bar-border: #7c9b8c;
     --app-bar-text: #10261e;
@@ -50,7 +50,7 @@
 :root[data-theme="dark"],
 [data-theme="dark"] {
   --bg: #191b1d;
-  --text: #e1e3e6;
+  --text: #c4c7cb;
   --app-bar-bg: #8fae9f;
   --app-bar-border: #7c9b8c;
   --app-bar-text: #10261e;
