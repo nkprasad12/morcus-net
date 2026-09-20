@@ -55,7 +55,7 @@ a.reader-note-ref sup {
 a.reader-note-ref::after {
   content: "";
   position: absolute;
-  inset: -0.35em -0.3em;
+  inset: -0.25em -0.3em;
 }
 
 a.reader-note-ref:hover,

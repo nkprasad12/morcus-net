@@ -763,6 +763,33 @@ describe("Reader preferences validation & hydration", () => {
     expect(fontSelect.value).toBe("serif");
     // Valid lineHeight "compact" kept
     expect(lineSelect.value).toBe("compact");
+    expect(el.style.getPropertyValue("--reader-line-height")).toBe("1.45");
+  });
+
+  it("applies --reader-line-height styling for compact and relaxed presets and removes it for normal", () => {
+    localStorage.setItem(
+      READER_SETTINGS_KEY,
+      JSON.stringify({ lineHeight: "compact" })
+    );
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    document.body.appendChild(el);
+    expect(el.style.getPropertyValue("--reader-line-height")).toBe("1.45");
+
+    el.dispatchEvent(
+      new CustomEvent("reader-settings-change", {
+        detail: { prefs: { ...DEFAULT_READER_PREFS, lineHeight: "relaxed" } },
+        bubbles: true,
+      })
+    );
+    expect(el.style.getPropertyValue("--reader-line-height")).toBe("1.85");
+
+    el.dispatchEvent(
+      new CustomEvent("reader-settings-change", {
+        detail: { prefs: { ...DEFAULT_READER_PREFS, lineHeight: "normal" } },
+        bubbles: true,
+      })
+    );
+    expect(el.style.getPropertyValue("--reader-line-height")).toBe("");
   });
 });
 

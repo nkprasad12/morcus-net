@@ -123,7 +123,7 @@ details.reader-work-about[open] summary.reader-about-summary {
 .reader-passage {
   font-family: var(--reader-font, var(--font-serif));
   font-size: calc(1.25rem * var(--reader-scale, 1));
-  line-height: var(--reader-line-height, 1.95);
+  line-height: var(--reader-line-height, 1.65);
   color: var(--text);
 }
 
@@ -459,6 +459,7 @@ details.reader-work-about[open] summary.reader-about-summary {
 .reader-passage .superscript {
   vertical-align: super;
   font-size: smaller;
+  line-height: 0;
 }
 
 /* `<space>` marks a break between line groups in the source. */
@@ -496,7 +497,7 @@ details.reader-work-about[open] summary.reader-about-summary {
 
   .reader-passage {
     font-size: calc(1.15rem * var(--reader-scale, 1));
-    line-height: var(--reader-line-height, 1.8);
+    line-height: var(--reader-line-height, 1.65);
   }
 
   .reader-section {
