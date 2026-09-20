@@ -102,7 +102,8 @@ body.resizing-panels .dict-iframe,
   .drawer.drawer-minimized.reader-dict-panel,
   .drawer.reader-dict-panel,
   .reader-dict-panel {
-    display: block;
+    display: flex;
+    flex-direction: column;
     position: relative;
     bottom: auto;
     left: auto;
@@ -113,7 +114,7 @@ body.resizing-panels .dict-iframe,
     width: var(--dict-width, 420px);
     max-width: min(800px, 60vw);
     min-width: 300px;
-    overflow-y: auto;
+    overflow: hidden;
     padding-left: var(--space-6);
     padding-right: var(--space-3);
     padding-bottom: 0;
