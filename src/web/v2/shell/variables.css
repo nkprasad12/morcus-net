@@ -49,7 +49,7 @@
   --primary: #0066cc;
   --primary-hover: #0052a3;
   --primary-light: rgba(0, 102, 204, 0.08);
-  --border: #e2e4e8;
+  --border: #dfe3e1;
   --border-mid: #b7bac1;
   --border-strong: #8c919a;
   --border-focus: #80bdff;
@@ -58,12 +58,12 @@
   --success: #198754;
   --danger: #dc3545;
   --on-accent: #ffffff;
-  --tag-bg: #e9ecef;
+  --tag-bg: #e9edeb;
   --card-header-bg: #e4e7e4;
-  --input-bg: #fafafa;
+  --input-bg: #f5f7f6;
   --input-border: var(--border);
   --input-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --card-surface-bg: #ffffff;
+  --card-surface-bg: #f8faf9;
   --card-border: var(--border);
   --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
   --card-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.09),
