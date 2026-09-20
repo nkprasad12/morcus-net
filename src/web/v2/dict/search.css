@@ -27,7 +27,7 @@
 .input {
   width: 100%;
   padding: var(--space-4) 42px var(--space-4) var(--space-5);
-  font-size: 1.05rem;
+  font-size: 1rem;
   border: none;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   background-color: transparent;
@@ -127,7 +127,7 @@
 .search-tray {
   border-top: 1px solid var(--border);
   background-color: var(--tag-bg);
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-2) var(--space-5);
   display: flex;
   align-items: center;
   justify-content: space-between;
