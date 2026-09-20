@@ -284,3 +284,55 @@ describe("preprocessWorkToV2 metadata and attribution", () => {
     ]);
   });
 });
+
+describe("preprocessWorkToV2 poetry line labels", () => {
+  it("marks non-5th verse line anchors as latent (keeping line 1 and multiples of 5 visible) and skips stanza break rows", () => {
+    const rows: [string[], ContentNode][] = [];
+    for (let i = 1; i <= 10; i++) {
+      if (i === 5) {
+        // Insert a non-leaf stanza break row (<space lg="2"/>) before line 5
+        rows.push([
+          ["1", "1"],
+          new XmlNode<ProcessedWorkContentNodeType>("space", [["lg", "2"]]),
+        ]);
+      }
+      rows.push([["1", "1", String(i)], span([["l", "1"]], `Versus ${i}`)]);
+    }
+
+    const work = makeWork({
+      textParts: ["book", "poem", "line"],
+      rows,
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+
+    // Lines 1, 5, and 10 must be visible by default (no .latent class)
+    for (const visibleLine of [1, 5, 10]) {
+      expect(html).toContain(
+        `<a href="#sec-1.1.${visibleLine}"\n             class="section-anchor"`
+      );
+    }
+
+    // Intermediate lines (2, 3, 4, 6, 7, 8, 9) must be marked .latent
+    for (const latentLine of [2, 3, 4, 6, 7, 8, 9]) {
+      expect(html).toContain(
+        `<a href="#sec-1.1.${latentLine}"\n             class="section-anchor latent"`
+      );
+    }
+  });
+
+  it("never marks prose section labels as latent", () => {
+    const rows: [string[], ContentNode][] = [];
+    for (let i = 1; i <= 6; i++) {
+      rows.push([["1", "1", String(i)], span([], `Sectio ${i}.`)]);
+    }
+
+    const work = makeWork({
+      textParts: ["book", "chapter", "section"],
+      rows,
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+    expect(html).not.toContain("section-anchor latent");
+  });
+});
