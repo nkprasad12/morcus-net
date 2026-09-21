@@ -332,9 +332,17 @@ a.reader-note-ref.marker-active {
 
   .has-companion-tabs .reader-panel-tabs {
     display: flex;
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-2);
     border-bottom: 1px solid var(--border);
     padding-bottom: var(--space-2);
+  }
+
+  .reader-panel-card {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: var(--space-2) 0 var(--space-8);
   }
 }
 

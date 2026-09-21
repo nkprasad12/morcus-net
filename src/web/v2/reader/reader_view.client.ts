@@ -1268,6 +1268,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const pagerPrev = this.querySelector<HTMLAnchorElement>("#pager-prev");
     if (pagerPrev) {
       const prevHref = prevCard?.getAttribute("href");
+      const prevTitle =
+        prevCard
+          ?.querySelector<HTMLElement>(".continuation-title")
+          ?.textContent?.trim() || "Previous";
+      const prevLabelEl = pagerPrev.querySelector<HTMLElement>(".pager-label");
+      if (prevLabelEl) {
+        prevLabelEl.textContent = prevTitle;
+      }
       if (prevHref) {
         const href = syncUrlQuery(prevHref);
         pagerPrev.setAttribute("href", href);
@@ -1288,6 +1296,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const pagerNext = this.querySelector<HTMLAnchorElement>("#pager-next");
     if (pagerNext) {
       const nextHref = nextCard?.getAttribute("href");
+      const nextTitle =
+        nextCard
+          ?.querySelector<HTMLElement>(".continuation-title")
+          ?.textContent?.trim() || "Next";
+      const nextLabelEl = pagerNext.querySelector<HTMLElement>(".pager-label");
+      if (nextLabelEl) {
+        nextLabelEl.textContent = nextTitle;
+      }
       if (nextHref) {
         const href = syncUrlQuery(nextHref);
         pagerNext.setAttribute("href", href);
