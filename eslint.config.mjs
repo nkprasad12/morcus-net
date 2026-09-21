@@ -86,6 +86,8 @@ export default [
       "**/corpus_driver.js",
       "target/",
       "**/*.snap",
+      // Local scratch space for investigations; never checked in.
+      ".investigation/",
     ],
   },
   ...fixupConfigRules(
