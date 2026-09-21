@@ -142,14 +142,20 @@ export async function resolveReaderContext(
  * controls and the expandable secondary toolbar.
  */
 export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
-  const { work, pageDotId, prevPage, nextPage, query } = ctx;
+  const { work, activePage, pageDotId, prevPage, nextPage, query } = ctx;
   const prevPageUrl = buildReaderPageUrl(work, prevPage, { query });
   const nextPageUrl = buildReaderPageUrl(work, nextPage, { query });
+  const prevLabel = prevPage
+    ? getDifferentialCitationLabel(activePage.id, prevPage.id, work.textParts)
+    : "Previous";
+  const nextLabel = nextPage
+    ? getDifferentialCitationLabel(activePage.id, nextPage.id, work.textParts)
+    : "Next";
 
-  return `      <!-- Sticky Quick Navigation Bar (Essentials Default with Expandable Tools) -->
+  return `      <!-- Sticky Quick Navigation Bar / Desktop Paper Sheet Running Header -->
       <header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
         
-        <!-- Primary Row: Essentials Only (Left arrow, Name of work, Section Jump, Right arrow, Expand toggle) -->
+        <!-- Primary Row: Running Margin Pager Links, Work & Section Picker, and Settings Trigger -->
         <div class="sticky-primary-row">
           <a href="${prevPageUrl}"
              class="reader-btn reader-nav-arrow ${!prevPage ? "disabled" : ""}"
@@ -158,9 +164,10 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
              aria-label="Previous chapter"
              title="Previous ([)">
             <span class="pager-arrow" aria-hidden="true">&larr;</span>
+            <span class="pager-label">${he.escape(prevLabel)}</span>
           </a>
 
-          <!-- Center: Work/Chapter Title + Section Jump Dropdown Trigger -->
+          <!-- Center: Running Author + Work Title + Section Jump Dropdown Trigger -->
           <div class="reader-sticky-form" id="reader-jump-form">
             <div class="sticky-center-group">
               <div class="sticky-title-wrapper" title="${he.escape(
@@ -199,8 +206,11 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
                ${!nextPage ? 'aria-disabled="true" tabindex="-1"' : ""}
                aria-label="Next chapter"
                title="Next (])">
+              <span class="pager-label">${he.escape(nextLabel)}</span>
               <span class="pager-arrow" aria-hidden="true">&rarr;</span>
             </a>
+
+            <span class="running-right-sep" aria-hidden="true">&middot;</span>
 
             <!-- Appearance & Typography Settings Popover Trigger -->
             <button type="button"
@@ -395,8 +405,6 @@ export function renderReaderContentHtmlFromContext(
       data-has-macra="${ctx.work.hasMacra}"
       data-has-translation="${ctx.work.hasTranslation}">
 
-${renderReaderStickyBar(ctx)}
-
       <!-- Backdrop overlay for Table of Contents (TOC) dropdown dismissal -->
       <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
 
@@ -414,7 +422,10 @@ ${renderReaderStickyBar(ctx)}
 
       <!-- Main Split Layout -->
       <div class="reader-split-layout ${ctx.layoutStateClass}">
+        <div class="reader-main-column">
+${renderReaderStickyBar(ctx)}
 ${renderReaderTextPanel(ctx)}
+        </div>
 ${renderReaderDictPanel(ctx)}
       </div>
 

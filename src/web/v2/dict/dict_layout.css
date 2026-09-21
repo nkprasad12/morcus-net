@@ -2,6 +2,11 @@
   --dict-scale: 1;
 }
 
+.container.container-embedded {
+  max-width: 100%;
+  padding: var(--space-2) 0 var(--space-8);
+}
+
 .results {
   display: flex;
   flex-direction: column;
