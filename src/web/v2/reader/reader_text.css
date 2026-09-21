@@ -409,6 +409,7 @@ details.reader-work-about[open] summary.reader-about-summary {
 
 /* Inside a paragraph, an indent opens the paragraph: only the first line moves. */
 .reader-passage .indent-para {
+  display: block;
   padding-left: 0;
   text-indent: 1.5em;
 }
