@@ -65,12 +65,23 @@ them are actually built is a separate, hand-maintained question — see
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [V1_PREPROCESSING.md](V1_PREPROCESSING.md) | The study. What V1 does stage by stage, an inventory of 19 structural/markup/output invariants with enforcement sites, and a catalogue of how real unintegrated works deviate. Includes corpus-wide numbers over all 398 works. |
 | [DIRECTION.md](DIRECTION.md)               | Where this should go: a proposed model for citation structure (a hierarchical spine plus linear marker axes), how it handles milestones, and a staged path to get there. Open questions are flagged.                            |
+| [OUTPUT_MODEL.md](OUTPUT_MODEL.md)         | The data contract that model implies: the proposed successor to `ProcessedWork2`, its checked output invariants (OUT-1 … OUT-9), what it asks of the V2 pre-processor, and a projection-based migration path.                   |
 
 ## Scratch work
 
 Investigation tooling — instrumentation scripts, probes, corpus surveys — **may** be present
 locally under `.investigation/<topic>/`, e.g. `.investigation/library-preprocessing/` for the work
 behind these documents.
+
+At the time of writing that directory holds, beyond the V1 harness in
+[Appendix A](V1_PREPROCESSING.md#appendix-a--the-harness):
+
+| File              | Purpose                                                                                                                                                                                                                                                            |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `proto_axes.ts`   | End-to-end prototype of the spine/axis model in [OUTPUT_MODEL.md](OUTPUT_MODEL.md). Builds `ProcessedWork3` straight from TEI, classifies axis relations, runs the OUT-n assertions, renders pages, resolves citations. Shares no code with `src/common/library/`. |
+| `keys_diag.ts`    | Dumps colliding axis citation keys with row context. This is what produced the identity-vs-citation split.                                                                                                                                                         |
+| `bench_render.ts` | Per-page render cost, for the request-time-rendering question.                                                                                                                                                                                                     |
+| `notes_rank.ts`   | Ranks the whole built library by footnotes per page.                                                                                                                                                                                                               |
 
 That directory is gitignored and is never checked in. It is a convention, not a guarantee: on a
 fresh clone it will not exist, and nothing in these documents depends on it. It is written down so
