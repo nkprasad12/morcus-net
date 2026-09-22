@@ -558,17 +558,26 @@ ones V1 does _not_ explicitly check.
 > [!WARNING]
 > The comment at
 > [library_constants.ts:45](../../../../common/library/library_constants.ts#L45)
-> — _"Skipped 42 b/c it had a textpart without an n"_ — names the **second** blocker, not the first,
-> and misidentifies the element. `phi042` has no unnumbered `textpart`. It has five unnumbered
-> `<l>` elements, and it never reaches them: it throws on [INV-3](#inv-3) first.
+> — _"Skipped 42 b/c it had a textpart without an n"_ — names the **second** blocker, not the first.
+> `phi042` has no unnumbered `textpart` **in the body**, and it never reaches the five unnumbered
+> `<l>` elements it does have, because it throws on [INV-3](#inv-3) first.
+
+> [!NOTE] > **Correction (Sep 2026).** An earlier revision of this section stated flatly that `phi042` has no
+> unnumbered `textpart`. That is wrong about the file: there is a
+> `<div type="textpart" subtype="section">` with no `n` at line 74, holding the SIGLA (manuscript
+> sigla) list. It sits inside `<front>`, not `<body>`, so neither V1 nor any consumer reaches it —
+> which means the original source comment was closer to right than this document's correction of
+> it. The wider point is that **front matter is currently invisible to everything**; see
+> [OUTPUT_MODEL.md §6](OUTPUT_MODEL.md#6-the-checked-output-contract) on whether coverage should be
+> scoped to `<body>` or `<text>`.
 
 Also worth noting: the brief attaches this symptom to `CICERO_DE_OPTIMO_GENERE_ORATORUM`
 (`phi0474.phi041`). That work is **enabled and passing** — 24 rows, 23 pages, 59 notes. The skipped
 work is `phi042`, _Topica_, which has no constant of its own.
 
-**What the source looks like.** 101 `<div type="textpart" subtype="section">`, all at a single level
-under the edition div. Chapters exist, but as 27 `<milestone n="N" unit="chapter"/>` markers inside
-the `<p>`s:
+**What the source looks like.** 100 `<div type="textpart" subtype="section">`, all at a single level
+under the edition div (plus the unnumbered one in `<front>` noted above). Chapters exist, but as 26
+`<milestone n="N" unit="chapter"/>` markers inside the `<p>`s:
 
 ```xml
 <div type="textpart" n="1" subtype="section">
@@ -588,7 +597,7 @@ The body has one level. So:
 | --- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | [INV-1](#inv-1) | Two `refsDecl` blocks disagree; V1 picks the wrong one. Forcing CTS doesn't help either — that block has two capture groups and one `$1`, so [tei_utils.ts:259](../../../../common/xml/tei_utils.ts#L259) rejects it. |
 | 2   | [INV-3](#inv-3) | **First throw.** `Expected "chapter", but got "section".` ×267                                                                                                                                                        |
-| 3   | [INV-2](#inv-2) | 27 chapter milestones are silently dropped                                                                                                                                                                            |
+| 3   | [INV-2](#inv-2) | 26 chapter milestones are silently dropped                                                                                                                                                                            |
 | 4   | [INV-4](#inv-4) | 5 bare `<l>` (quoted Ennius verse) hit the hardcoded Lucretius exemption: `Expected "phi0550.phi001.perseus-lat1", but got "phi0474.phi042.perseus-lat1".`                                                            |
 
 **Does the UI care?** No. With `TEXTPARTS=section` forced and the `<l>` exemption relaxed:
@@ -643,10 +652,16 @@ renders as unnumbered verse.
 > citation. Any future work in this area needs to keep a check on arity even if it drops the check
 > on names.
 
-**What "correct" would cost.** The 27 chapter milestones are real citation structure — a reader
+**What "correct" would cost.** The 26 chapter milestones are real citation structure — a reader
 wanting _Topica_ 4.21 cannot get there. Promoting milestones to ranges would give `["chapter",
 "section"]` and vindicate the TEI.2 header. That is [INV-2](#inv-2), and it is the genuinely
 non-trivial one.
+
+> [!NOTE] > **Follow-up (Sep 2026).** Promotion turns out **not** to be available here. Building this work
+> under the spine/axis model classifies the chapter axis as `crossing`: chapter boundaries land
+> mid-section, so `chapter` does not nest over `section` and no nested pair of levels is faithful to
+> the text. The axis is still fully citable — `chapter:5` resolves to section 25 — but as an overlay
+> rather than a hierarchy. See [OUTPUT_MODEL.md §3](OUTPUT_MODEL.md#3-axisrelation-is-the-load-bearing-field).
 
 ---
 
