@@ -198,6 +198,53 @@ and the classification is computable from marker positions alone:
 This localises DIRECTION.md's two open questions. Promotion is legal **iff** `aligned`, so Q1 stops
 being a global choice and becomes a per-axis fact. Q2 is only ever reached by `crossing` axes.
 
+### Resolving a citation
+
+Resolution is the reason the model exists, so it is worth writing the algorithm out. Today
+[`resolvePageInWork`](../../../../web/v2/reader/reader_loader.server.ts) does an exact match on the
+spine coordinate, then truncates to `paginationDepth`, then falls back to a `startsWith` scan, then
+to page 0. That works only because the spine is the only addressable thing. With axes, the lookup
+splits in two:
+
+1. **Pick the scheme.** A citation arrives with a scheme name (`default`, `page`, `chapter`, …) or
+   without one, in which case the default scheme applies. The scheme fixes how many components the
+   citation has and what each one means.
+2. **Walk the spine part.** Leading components that name spine levels narrow the candidate set to a
+   subtree of rows, exactly as today.
+3. **Look up the axis part by key, _scoped by the spine prefix reached in step 2_.** This is why
+   scoping (§10.3) is part of the contract rather than a presentation detail: the citation `9.3`
+   only identifies HA section 3 because the surrounding `chapter=9` disambiguates it.
+4. **Follow `marker.row` to a row, then the row to a page** in whichever pagination is in force.
+5. **Return `{page, anchorId}`.** The anchor is the marker's DOM id; the page is what gets fetched.
+
+Four worked examples, all verified by the prototype:
+
+```
+HA      default:9.3   → page 8  (row id "9")   anchor #cite-section-9.3
+HA      page:p.350    → page 0  (row id "1")
+Topica  default:17    → page 16 (row id "17")  anchor #sec-17
+Topica  chapter:5     → page 24 (row id "25")  anchor #cite-chapter-5
+```
+
+Note what the first two lines show. `HA default:9.3` is a **compound** citation — spine
+`chapter=9` plus axis `section=3` — and compound citations are the _normal_ case for a `finer`
+axis, not an edge case. `Topica chapter:5` is the opposite shape: a `crossing` axis addressed on
+its own, with no spine component at all, landing on row 25 because that is where chapter 5 starts.
+
+Two consequences fall out of the relation:
+
+- **`finer`** guarantees the cited unit is contained within a single row, hence within a single
+  page. Locate-and-highlight is both correct and sufficient.
+- **`crossing`** guarantees nothing of the sort. The cited extent may begin on one page and end on
+  another. Returning the page containing the **start** marker is the honest answer and the one the
+  prototype gives; making the unit itself a first-class page requires mid-row splitting, which is
+  [Q2](DIRECTION.md#q2--mid-paragraph-splitting) / decision D2.
+
+> [!NOTE] Keys may collide (OUT-6b). When they do, resolution picks the first marker with that key
+> and the others are reachable only by `markerId`. This is a deliberate degradation: a citation is
+> a human artifact and the sources really do repeat ordinals, so the alternative — refusing to
+> resolve — would be worse than landing the reader near the right place.
+
 ---
 
 ## 4. Axis policy: recognising a marker is not exposing it
@@ -460,6 +507,50 @@ is trusted in a builder.
 | **D4** | Are schemes derived, or authored with per-work overrides?                                                                        | Derive first, add overrides on demand.                                                                 |
 | **D5** | Are paginations stored or computed?                                                                                              | Computed — a pure function of `(rows, axes, scheme, depth)`, asserted at build. No staleness possible. |
 | **D6** | Is the `paragraph` axis in Pliny a citation scheme or a print artifact (§4)?                                                     | Needs a look at the source edition; affects the unit-level policy table.                               |
+
+---
+
+## 12. Picking this up later
+
+**State of play.** Everything in this document is a proposal. Nothing in `src/` has changed — no
+type, no builder, no renderer. What exists is: this document, the conceptual grounding in
+[DIRECTION.md](DIRECTION.md), the corrected findings in
+[V1_PREPROCESSING.md](V1_PREPROCESSING.md), and a standalone prototype under
+`.investigation/library-preprocessing/` that is green (31 PASS / 0 FAIL) but **disposable**. The
+prototype deliberately shares no code with `src/common/library/`, so it proves the model is
+buildable from raw TEI without inheriting a single V1 invariant. It is evidence, not a starting
+skeleton.
+
+**The one thing blocking everything else** is D1. §7–§9 all assume an answer to "does the build
+emit page HTML, or a structured artifact that the server renders per request?" Until that is
+settled, writing builder code means writing it twice.
+
+**First task, regardless of D1**: run the relation classifier and the scope rule over **all 398
+works** and look at the distributions. Specifically:
+
+- How many axes land in each of the four relations? If `crossing` is rare, D2 gets much easier. If
+  `aligned` is common, a lot of axes disappear into the spine and the whole feature shrinks.
+- What is the scope-depth distribution? The rule is "shortest spine prefix that yields uniqueness";
+  3 works needed 0, 1, and 2 levels respectively. A long tail at depth 3+ would suggest the rule is
+  wrong rather than just deep.
+- How many works emit `AXIS_KEYS_AMBIGUOUS`, and are they all table-of-contents-shaped like Pliny
+  Book 1, or is there a second failure mode hiding?
+- How many works emit `MARKER_NOT_EXPOSED`, and for which units? This is the evidence D6 needs.
+
+The prototype is importable for exactly this — `build()` is exported and `main()` is guarded by
+`require.main === module`, so a survey script can `import { build } from "./proto_axes"` and loop.
+
+**What not to re-litigate.** Three things were settled by argument in this conversation and should
+not be reopened without new evidence:
+
+1. `<pb>` is recognised but not exposed (§4). We are not reproducing a printed book's pagination.
+2. `markerId` is structural and must be unique; `key` is a human citation and may collide (§2).
+   Do not try to make keys unique — the sources genuinely repeat ordinals inside a single row.
+3. The `~12 notes per page (Ammianus)` comment in
+   [`v2_preprocessor.ts`](../v2_preprocessor.ts) is **accurate** (median 9 over 216 pages). The
+   1,786-notes-per-page outlier is Pliny's _Naturalis Historia_, a different work, and it is an
+   outlier because it paginates at book level — 37 pages for an encyclopedia. That is §5, not a
+   note-rendering bug.
 
 ---
 
