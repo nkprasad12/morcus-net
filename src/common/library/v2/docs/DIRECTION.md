@@ -40,8 +40,59 @@ encoding. That is visible immediately in our two real cases, where the milestone
 | Historia Augusta | `chapter`    | `section`, inside the chapters | axis is **finer** than the spine   |
 | Topica           | `section`    | `chapter`, inside the sections | axis is **coarser** than the spine |
 
-Topica is the harder one: a chapter boundary can land mid-section (27 chapters over 101 sections),
+Topica is the harder one: a chapter boundary can land mid-section (26 chapters over 100 sections),
 so `chapter` genuinely does not nest over `section`. One mechanism has to serve both cases.
+
+### What the two things actually are
+
+A work is a linear stream of text. Every structure we name — books, chapters, sections, pages,
+lines — is a way of carving up that one stream, and there are exactly **two ways to express a
+carving**:
+
+- **Containment.** You wrap the text: `<div n="1">…</div>`. The extent is stated explicitly by where
+  the element opens and closes, and nesting is guaranteed by construction, because you cannot write
+  overlapping tags.
+- **Position.** You drop a pin: `<milestone unit="chapter" n="5"/>`. This says "chapter 5 starts
+  _here_" and nothing else. Its extent is nowhere in the document — it is inferred from where
+  chapter 6's pin lands. A point cannot contain anything, so there is no nesting claim to make.
+
+The spine is the first. An axis is the second.
+
+That matters because **the editor's choice is information**. TEI has both encodings, and an editor
+reaches for `<milestone>` precisely when a division does not fit the hierarchy they already built.
+A milestone is not a `div` someone was lazy about; it is a positive assertion that this division
+cuts across the grain.
+
+```
+Historia Augusta — sections are finer than the chapter spine
+
+spine (divs)   [        chapter 1        ][        chapter 2        ]
+axis  (pins)    ↑sec 1    ↑sec 2   ↑sec 3   ↑sec 1    ↑sec 2
+
+Topica — chapters are coarser than the section spine, and do not line up
+
+spine (divs)   [ section 1 ][ section 2 ][ section 3 ][ section 4 ]
+axis  (pins)    ↑chapter 1                     ↑chapter 2
+```
+
+In Topica, chapter 2's pin lands _inside_ section 3 — not at its edge. Neither hierarchy refines the
+other, so any single tree is a lie about one of them.
+
+The division of labour follows directly: **the spine is the only thing that can lay out a page**,
+because it gives a total address space where every character sits in exactly one container. **An
+axis can only say where a reference points**; asking it what contains what is the whole error.
+
+> [!IMPORTANT]
+> The spine is not the "real" structure with the axis as annotation. The spine is just **whichever
+> division the encoder happened to express as nesting**. A different edition of _Topica_ could have
+> made chapters the `div`s and sections the milestones, and the two would swap roles on the same
+> text. There is no privileged hierarchy in a text, only editorial ones, and one of them got to be
+> the tree.
+
+That asymmetry is an artifact of the file format, so it belongs in storage and nowhere else — which
+is why [OUTPUT_MODEL.md](OUTPUT_MODEL.md) keeps spine and axes structurally distinct (one is a tree,
+one is a list) but puts **citation schemes** on top, where a level is just a level. Someone citing
+_HA_ 9.3 should not need to know that `9` was a `<div>` and `3` was a `<milestone/>`.
 
 ### The model
 
@@ -53,9 +104,15 @@ so `chapter` genuinely does not nest over `section`. One mechanism has to serve 
 - An **axis** is an ordered sequence of `(position, level, ordinal)` events from point markers
   (`milestone`, `pb`, `lb`). It carries **no nesting claim at all**.
 
-This generalises past the two cases for free: print page numbers (`<pb/>`), Stephanus pages, Bekker
-numbers, and line numbers in prose editions are all the same mechanism. "Does this work have
-milestones" stops being a special case and becomes "how many axes does it have".
+This generalises past the two cases for free: Stephanus pages, Bekker numbers, and line numbers in
+prose editions are all the same mechanism. "Does this work have milestones" stops being a special
+case and becomes "how many axes does it have".
+
+> [!NOTE]
+> Recognising a point marker is not the same as _exposing_ it as a citation axis. `<pb>` records
+> where a page broke in the printed edition a file was transcribed from, which is print fidelity
+> rather than a citation scheme — we do not have the printed book. See
+> [OUTPUT_MODEL.md §4](OUTPUT_MODEL.md#4-axis-policy-recognising-a-marker-is-not-exposing-it).
 
 ```mermaid
 flowchart TD
