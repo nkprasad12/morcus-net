@@ -269,3 +269,99 @@ Scroll tracking provides live visual feedback indicating which sense, subsection
    - Automatically scroll `.toc-body` using `scrollIntoView({ block: "nearest", behavior: "smooth" })` to ensure the active sense item remains visible within the desktop rail or mobile drawer as the user reads.
 4. **Link Click Decoupling**:
    - When a user clicks a TOC link (`a.toc-link`), temporarily suppress observer updates until the programmatic smooth-scroll animation settles, avoiding visual jitter or fighting between user clicks and observer callbacks.
+
+---
+
+## 8. Shared links overwrite the recipient's dictionary preferences
+
+**Status:** not started. Design below is settled; depends on the preferences untangling.
+
+### Bug Description
+
+Opening someone else's link — `/v2/dicts?q=amo&dict=GAF` — **permanently changes the recipient's saved
+dictionary selection**. [`dict_routes.server.ts`](dict_routes.server.ts) L68 writes the `morcus_dicts`
+cookie whenever `source === "url"`, which is correct for the user's own form submission and wrong for
+a link someone else sent them. The JS path has the same problem: a full page load of `?d=3` also
+resolves to `source === "url"`.
+
+The desired semantics: **a shared link shows the sender's exact page without touching the recipient's
+settings.**
+
+### Cause
+
+The server infers intent from `source === "url"`, which cannot distinguish *"the user just ticked
+boxes in our UI"* from *"someone pasted a URL"*. Both arrive as a `dict=` param.
+
+### Proposed Solution
+
+Stop inferring; state the intent, with a signal that cannot survive being copied.
+
+1. Make the Apply button a **named submit button** — `<button type="submit" name="save" value="1">`.
+   The marker is then sent only when the user clicks the control that means "save". A hidden
+   `<input>` would be wrong: hidden fields submit on *every* submission, so an ordinary search would
+   persist whatever selection happened to be on screen.
+2. The router writes preference cookies **iff** the marker is present.
+3. It then **303s to the same URL with the marker stripped**.
+
+Step 3 is load-bearing. Without it the marker lands in the address bar after a GET submit and gets
+copied along with everything else; with it, the marker's lifetime is exactly one request, so a copied
+URL *cannot* carry persistence intent.
+
+| Request                                      | Cookie written               | Renders                     |
+| :------------------------------------------- | :--------------------------- | :-------------------------- |
+| Own form submit — `?q=amo&dict=GAF&save=1`   | ✅ then 303 → `?q=amo&dict=GAF` | GAF                      |
+| Recipient opens shared `?q=amo&dict=GAF`     | ❌                            | GAF — the sender's exact page |
+| Recipient's own `?q=amo` afterwards          | ❌                            | their own saved preferences |
+
+The rule this establishes, which is worth stating in a comment:
+
+> **URL = ephemeral view state. Cookie = durable preference. The marker = promote this view into a preference.**
+
+> [!WARNING]
+> Pressing **Enter** in the search input triggers implicit submission, which uses the **first submit
+> button in tree order** for its name/value. The search button must therefore precede the Apply
+> button in the DOM, or Enter would silently save. It does today — the search button sits in the
+> input wrapper, emitted before the tray — but that ordering becomes load-bearing and needs a comment
+> and a test.
+
+Falling out for free: applying becomes idempotent (reload no longer re-applies, and Back skips the
+marker URL since redirects replace history entries); the selection survives cookies being blocked,
+since it still lives in the URL; and you stop storing a durable preference the user never expressed.
+
+Details to get right: preserve `q` / `lang` / `embedded` in the redirect target, never redirect
+`format=partial`, and send `Cache-Control: no-store` on the redirect.
+
+### Telling the user they are in a borrowed view
+
+Worth doing at the same time, and cheap because **the state is computable entirely on the server** —
+so one server-rendered chip covers JS and No-JS identically, with no client-side detection:
+
+```
+isBorrowedView =
+     source === "url"            // selection came from the link
+  && !hasSaveMarker              // user did not just ask to save it
+  && cookieSelection !== null    // they have a preference to be overridden
+  && !setsEqual(urlSelection, cookieSelection)
+  && !isScopedView               // not the reader iframe (lang= / embedded=)
+```
+
+This is a pure function of (URL, cookie), recomputed per request — no session state, and it stays
+correct as the user searches onward. The search bar already renders a status tray whose job is showing
+what is in effect (*"In Latin • Inflection on"*); a third chip belongs there:
+
+```
+In FR • Inflection on • From this link — not saved   [Keep these] [Use mine]
+```
+
+Both actions work with zero JS: **Use mine** is a plain `<a href="/v2/dicts?q=amo">` with no dict
+params (the server falls back to the cookie), and **Keep these** is the `name="save"` submit button.
+
+### Open question: JS adoption semantics
+
+In No-JS, "change" and "save" are separate gestures (tick, then Apply). In JS they are the same
+gesture: one tick calls `dictSettingsStore.set()`, writing localStorage *and* the cookie, adopting the
+sender's whole selection along with the edit. Options: accept it and fire a toast on first adoption
+(*"Saved as your dictionaries"*, reusing `#v2-toast`), or have JS defer persistence until an explicit
+"Keep these" while borrowed — more correct, but it makes the checkbox behave differently depending on
+how the user arrived at the page.
+

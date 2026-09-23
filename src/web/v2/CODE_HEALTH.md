@@ -26,6 +26,16 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       Those two files are outside `src/web/v2`, so the V2 lint block does not cover them, but they
       are the process entry points: an unhandled rejection there takes down the whole server, V2
       included. Small enough to do as a one-off without taking on the other ~86 legacy violations.
+- [ ] 🟡 **Enforce the `critical.js` byte budget.** [`critical_theme.client.ts`](shell/critical_theme.client.ts)
+      declares a ≤1 KB limit in its header, but nothing checks it — it is a comment that happens to be
+      true (a production build is 0.46 kB / 0.30 kB gzipped). This matters more than the budget on the
+      main bundle, because [`page_shell.server.ts`](shell/page_shell.server.ts) inlines whatever
+      `build/v2/critical.js` contains **into every HTML response**, so those bytes are uncached, paid
+      per page load, and block parsing. A stale unminified artifact weighs 2.78 KB — mostly webpack
+      module runtime wrapping a CSS import whose JS output is empty — and deploying one would silently
+      add ~2.5 KB to every response with no other symptom. [`bundle_validation.test.ts`](../../integration/suites/bundle_validation.test.ts)
+      already budgets the main bundle (the *cached* asset) and is the natural home for an assertion on
+      this one. A guard here also catches an unminified deploy, which is otherwise invisible.
 
 ---
 
@@ -78,6 +88,50 @@ dialog markup. Gaps:
 - [ ] 🟡 **Widen selector inventory contract test (`reader_selector_contract.test.ts`)**:
       Guard against dead-selector classes across the client bundle: - Scan more than `reader_toc.client.ts` + `reader_settings.client.ts` — `reader_view.client.ts`
       alone binds ~32 selectors and is unscanned, as are `reader_panel`, `drawer`, and every `dict_*` module. - Match `this.scope.require(...)` — the current extractor regex misses it. - Match delegated selectors — the 3rd argument of `delegate(root, type, selector, fn)` (e.g. `#btn-retry-translation`) is invisible today. - Stop skipping comma-containing selectors (`if (!raw.includes(","))`), which silently exempts real bindings such as `#toggle-inflected, .inflected-checkbox`.
+
+**Close the No-JS testing gap.** Found while reviewing why `ca9cb47e` (No-JS dictionary selection)
+shipped broken. The gap was not a missing test: [`browser_v2_e2e.test.ts`](../../integration/suites/browser_v2_e2e.test.ts)
+*"exposes usable dictionary settings without JavaScript"* covers that exact CUJ and **passed the whole
+time the feature was broken**. Under the bug the server returned all eight dictionaries, and every
+assertion still held — it checked that Lewis & Short was *present*, using L&S (the default, and the
+first card) as the fixture, then asserted on the request URL rather than the response.
+
+- [ ] 🔴 **Add a jsdom "form contract" test layer.** Nothing today sits between "the SSR emits the
+      right HTML" (fast, unit) and "a real browser submits correctly" (slow, pre-push, rarely run),
+      yet all four root causes of that bug lived in exactly that gap. Render the SSR form into jsdom,
+      mutate controls, serialize with `new FormData(form)`, and feed the result straight to supertest.
+      Runs in milliseconds and needs no browser. It is the only layer that sees a form as a whole,
+      which is what cause 1 (a stale hidden `d` rendered beside the live `dict` checkboxes) required.
+      Note this also fixes a process problem: [`TESTING.md`](TESTING.md) puts all No-JS correctness in
+      the pre-push Playwright matrix, which `AGENTS.md` rightly tells agents not to run proactively —
+      so the zero-JS baseline is gated by the check that runs least often.
+- [ ] 🔴 **Exact-set assertions for anything that filters.** For a selection feature, "the expected
+      item is present" is vacuous: the failure mode is that nothing was filtered. Assert the count and
+      the full set of `.dict-title`s. Add a helper and treat bare `.first()` + `toContainText` in a
+      selection test as a review smell.
+- [ ] 🟡 **Never fixture an override with its default value.** L&S is the worst possible choice here:
+      it is the one value for which "your override applied" and "your override was ignored" look
+      identical. Standardize on Gaffiot / Georges — `GAF` and `GRG` are also the tokens that broke
+      naive parsing.
+- [ ] 🟡 **Test parameter precedence, not just parameters.** Every dict param was covered in
+      isolation (`?dict=`, `?d=`, `?o=`) and none in combination, so a precedence inversion was
+      invisible. Same for wire format: tests used the shapes *our client* emits, never the shapes a
+      native form emits (hidden default + checkbox → repeated key).
+- [ ] 🟡 **Convert the selection specs from single actions to journeys.** select → search again →
+      reload → toggle inflection off → and back. Each of the four root causes died at a different
+      step; the single-shot test could not see any of them past the first.
+- [ ] 🟢 **Round-trip property test over the state representations.** `LatinDict.AVAILABLE` is 8
+      entries, so all 256 subsets are cheap. Assert identity through checkbox serialization, the `d`
+      bitmask, the `dict` list, and the cookie — including the empty, single (the cause-3 boundary),
+      and full sets.
+- [ ] 🟢 **Visual scenarios for post-interaction state.** `v2VisualScenario`'s `action` hook exists
+      for this and no dictionary scenario uses it. Popover-open and results-with-one-dictionary would
+      have caught the bug as a pixel diff across all four form factors.
+- [ ] 🟢 **Guard the hydration scroll.** [`dict_search.client.ts`](dict/dict_search.client.ts) L401-403
+      calls `scrollToResults("instant")` on load, guarded against `hasHash` and `isBackForward` but
+      not against the user having already scrolled. On a slow connection a reader gets yanked back to
+      the top of the results when the bundle lands. Needs a `window.scrollY === 0` check. (Same family
+      as the pre-hydration clobber tracked in the preferences work.)
 
 ---
 
