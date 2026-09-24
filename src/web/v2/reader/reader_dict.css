@@ -70,6 +70,21 @@ body.resizing-panels .dict-iframe,
     width: 100%;
   }
 
+  /* The embedded dictionary page renders flush (no inline padding) so it can
+     align with the desktop companion tab bar. The iframe can't tell which
+     layout hosts it, so the drawer supplies the gutter here (plus a small top
+     inset so the search bar doesn't butt against the tab bar). The background
+     matches the iframe body (`--bg`) so the gutter reads as part of the
+     dictionary canvas rather than a stripe. The card chrome is dropped so the
+     dictionary tab sits flat like the other companion tabs. */
+  .dict-iframe-container {
+    padding: var(--space-1) var(--space-4) 0;
+    background-color: var(--bg);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
   /* Mobile Drawer Top Bar & Handle (balanced) */
   .reader-sheet-bar {
     display: flex;
