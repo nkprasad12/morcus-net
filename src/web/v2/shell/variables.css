@@ -85,6 +85,7 @@
   --accent-bibl: rgba(var(--rgb-bibl), calc(0.105 * var(--highlight-scale)));
   --target-highlight: rgba(0, 102, 204, 0.08);
   --bullet-bg: rgba(0, 0, 0, 0.08);
+  --tab-chip-bg: var(--tag-bg);
   --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.07);
   --app-bar-nav-active-bg: rgba(0, 0, 0, 0.12);
   --app-bar-nav-active-text: #0d2820;
@@ -164,6 +165,7 @@
     --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
     --target-highlight: rgba(138, 180, 248, 0.13);
     --bullet-bg: rgba(255, 255, 255, 0.12);
+    --tab-chip-bg: rgba(255, 255, 255, 0.08);
     --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);
     --app-bar-nav-active-bg: rgba(0, 0, 0, 0.15);
     --app-bar-nav-active-text: #061912;
@@ -241,6 +243,7 @@
   --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
   --target-highlight: rgba(138, 180, 248, 0.13);
   --bullet-bg: rgba(255, 255, 255, 0.12);
+  --tab-chip-bg: rgba(255, 255, 255, 0.08);
   --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);
   --app-bar-nav-active-bg: rgba(0, 0, 0, 0.15);
   --app-bar-nav-active-text: #061912;
