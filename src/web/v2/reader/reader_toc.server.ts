@@ -108,6 +108,7 @@ export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
            data-page-id="${he.escape(key)}"
            ${isCurrent ? 'aria-current="page"' : ""}>
           <span class="reader-toc-item-title">${he.escape(label)}</span>
+          <span class="reader-toc-item-id">&sect; ${he.escape(key)}</span>
         </a>
       `;
     }
@@ -152,6 +153,16 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
     query,
   });
 
+  const pages = work.pages ?? [];
+  const activePage = pages[activePageIndex] ?? pages[0];
+  const exampleId = activePage ? normalizeId(activePage.id) : "1.1";
+  const formAction = `/v2/reader/${he.escape(work.urlAuthor)}/${he.escape(
+    work.urlName
+  )}`;
+  const hiddenQueryInput = query
+    ? `<input type="hidden" name="q" value="${he.escape(query)}" />`
+    : "";
+
   return `      <!-- Contained Table of Contents (TOC) Drawer -->
       <div id="reader-toc-drawer"
            class="reader-toc-drawer"
@@ -159,7 +170,23 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
            aria-label="Table of Contents"
            hidden>
         <div class="reader-toc-header">
-          <span class="reader-toc-title">Contents</span>
+          <form class="reader-toc-search-form"
+                action="${formAction}"
+                method="GET">
+            ${hiddenQueryInput}
+            <span class="reader-toc-search-icon" aria-hidden="true">&sect;</span>
+            <input type="text"
+                   name="jump"
+                   id="reader-toc-search-input"
+                   class="reader-toc-search-input"
+                   placeholder="Go to section (e.g. ${he.escape(
+                     exampleId
+                   )}) or filter…"
+                   aria-label="Go to section or filter contents"
+                   autocomplete="off"
+                   spellcheck="false" />
+            <kbd class="reader-toc-search-kbd" aria-hidden="true" title="Press Enter to go">&crarr;</kbd>
+          </form>
           <a href="#"
              class="reader-toc-close-btn"
              id="reader-toc-close-btn"
@@ -169,6 +196,9 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
 
         <div class="reader-toc-list" id="reader-toc-list">
           ${tocItemsHtml}
+          <div id="reader-toc-empty" class="reader-toc-empty" hidden>
+            No matching sections &mdash; press Enter to jump
+          </div>
         </div>
       </div>`;
 }

@@ -51,6 +51,22 @@ export const READER_SELECTORS: Record<string, SelectorEntry> = {
     selector: ".reader-toc-item.active",
     requiredIn: ["work-page", "work-with-macra"],
   },
+  tocSearchInput: {
+    id: "reader-toc-search-input",
+    requiredIn: ["work-page", "work-with-macra"],
+  },
+  tocEmpty: {
+    id: "reader-toc-empty",
+    requiredIn: ["work-page", "work-with-macra"],
+  },
+  tocItem: {
+    selector: ".reader-toc-item",
+    requiredIn: ["work-page", "work-with-macra"],
+  },
+  tocGroup: {
+    selector: ".reader-toc-group",
+    optionalIn: ["work-page"],
+  },
 
   // Settings Popover (reader_settings.client.ts)
   settingsPopover: {
