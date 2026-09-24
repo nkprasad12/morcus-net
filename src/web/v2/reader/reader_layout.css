@@ -175,13 +175,18 @@
     outline-offset: 2px;
   }
 
-  /* Dismissed state (closed via 'x' button): slides drawer off-screen & shows corner FAB */
+  /* Dismissed state (closed via 'x' button): hides the drawer & shows corner FAB.
+     Uses `visibility: hidden` rather than sliding the drawer just off-screen:
+     Firefox for Android re-positions bottom-anchored fixed elements a frame or
+     more late while its dynamic URL bar collapses / expands, which briefly
+     exposed a drawer parked flush below the viewport edge. Hidden elements are
+     also not hit-tested and drop out of the a11y tree / tab order. Descendants
+     must not set `visibility: visible` (see .reader-panel-view.active). */
   .drawer-dismissed .reader-dict-panel,
   .reader-drawer-dismiss-target:target
     ~ .reader-split-layout
     .reader-dict-panel {
-    transform: translateY(100%);
-    pointer-events: none;
+    visibility: hidden;
   }
 
   .drawer-dismissed .reader-drawer-fab,

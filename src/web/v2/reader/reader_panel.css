@@ -94,7 +94,9 @@
 }
 
 .reader-panel-view.active {
-  visibility: visible;
+  /* `inherit`, not `visible`: an explicit `visible` would override a hidden
+     ancestor, e.g. the dismissed mobile drawer (reader_layout.css). */
+  visibility: inherit;
   pointer-events: auto;
   opacity: 1;
   z-index: var(--z-raised);
