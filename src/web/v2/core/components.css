@@ -180,28 +180,32 @@ body.body-embedded {
 
 .lang-chip-la,
 .toc-badge-la,
-.dict-badge-la {
+.dict-badge-la,
+.lexicon-badge-la {
   background-color: var(--chip-la-bg);
   color: var(--chip-la-text);
 }
 
 .lang-chip-en,
 .toc-badge-en,
-.dict-badge-en {
+.dict-badge-en,
+.lexicon-badge-en {
   background-color: var(--chip-en-bg);
   color: var(--chip-en-text);
 }
 
 .lang-chip-de,
 .toc-badge-de,
-.dict-badge-de {
+.dict-badge-de,
+.lexicon-badge-de {
   background-color: var(--chip-de-bg);
   color: var(--chip-de-text);
 }
 
 .lang-chip-es,
 .toc-badge-es,
-.dict-badge-es {
+.dict-badge-es,
+.lexicon-badge-es {
   background-color: var(--chip-es-bg);
   color: var(--chip-es-text);
 }

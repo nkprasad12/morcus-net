@@ -219,11 +219,15 @@
   transition: all 0.15s ease-in-out;
 }
 
-/* Enabled dictionary status: themed with --dict-title and a refined tag border */
+/* Enabled dictionary status: themed with language chip tokens and a refined tag border */
 .lexicon-badge.dict-enabled {
+  border: 1px solid var(--border);
+}
+
+/* Fallback if no language chip class is present */
+.lexicon-badge.dict-enabled:not([class*="-badge-"]):not([class*="lang-chip-"]) {
   background-color: var(--tag-bg);
   color: var(--dict-title);
-  border: 1px solid var(--border);
 }
 
 /* Disabled dictionary status: muted dashed outline and dimmed row */
