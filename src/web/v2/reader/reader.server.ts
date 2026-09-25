@@ -70,6 +70,21 @@ export interface ReaderRenderContext {
 }
 
 /**
+ * The embedded dictionary's src for a reader lookup. Lookups from Latin text
+ * force inflected search (`o=1`) and start in the Latin lexica (`lang=La`).
+ */
+export function buildReaderDictIframeSrc(query: string): string {
+  return query
+    ? `/v2/dicts?q=${encodeURIComponent(query)}&lang=La&o=1&embedded=1`
+    : `/v2/dicts?embedded=1`;
+}
+
+/** The split layout opens the dictionary only when a lookup is active. */
+export function readerLayoutStateClass(query: string): string {
+  return query ? "reader-layout-active" : "reader-layout-empty";
+}
+
+/**
  * Resolves the active work, chapter, navigation links, and layout state
  * into a typed render context for reader view components.
  */
@@ -117,15 +132,9 @@ export async function resolveReaderContext(
 
   const passageHtml = activePage.singleHtml;
 
-  // Dictionary iframe src
-  // When a word is looked up from the Latin reader, force inflected search (o=1) and restrict initial query to Latin lexica (lang=La)
-  const dictIframeSrc = query
-    ? `/v2/dicts?q=${encodeURIComponent(query)}&lang=La&o=1&embedded=1`
-    : `/v2/dicts?embedded=1`;
+  const dictIframeSrc = buildReaderDictIframeSrc(query);
 
-  const layoutStateClass = query
-    ? "reader-layout-active"
-    : "reader-layout-empty";
+  const layoutStateClass = readerLayoutStateClass(query);
 
   return {
     work,
@@ -219,7 +228,19 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
             <span class="running-right-sep" aria-hidden="true">&middot;</span>
 
             <!-- Appearance & Typography Settings Popover Trigger -->
-            <button type="button"
+${renderReaderSettingsButtonHtml()}
+          </div>
+        </div>
+
+      </header>`;
+}
+
+/**
+ * The `Aa` trigger for the typography popover. `MorcusReaderSettings` finds it
+ * by id, so every reader bar must render this exact button.
+ */
+export function renderReaderSettingsButtonHtml(): string {
+  return `            <button type="button"
                     class="reader-btn reader-settings-btn"
                     id="reader-settings-btn"
                     aria-expanded="false"
@@ -227,11 +248,7 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
                     aria-label="Appearance &amp; Typography"
                     title="Appearance &amp; Typography">
               <span class="settings-glyph" aria-hidden="true">Aa</span>
-            </button>
-          </div>
-        </div>
-
-      </header>`;
+            </button>`;
 }
 
 /**
@@ -314,9 +331,14 @@ export function renderReaderTextCard(ctx: ReaderRenderContext): string {
  * the Latin text article body, continuation buttons, and library catalog link.
  */
 export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
+  return renderReaderTextPanelHtml(renderReaderTextCard(ctx));
+}
+
+/** Wraps an already-rendered text card in the reader's left column. */
+export function renderReaderTextPanelHtml(textCardHtml: string): string {
   return `        <!-- Left Column: Reading Text Canvas -->
         <section class="reader-text-panel" aria-label="Reading Text">
-${renderReaderTextCard(ctx)}
+${textCardHtml}
         </section>`;
 }
 
@@ -330,6 +352,34 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
     query: query || undefined,
     matchText: matchText || undefined,
   });
+  return renderReaderDictPanelHtml({
+    query,
+    dictIframeSrc,
+    closeHref: activePageUrl,
+  });
+}
+
+/** Inputs for {@link renderReaderDictPanelHtml}; nothing here is work-specific. */
+export interface ReaderDictPanelOptions {
+  /** The active lookup, or "" when the drawer starts minimized. */
+  query: string;
+  dictIframeSrc: string;
+  /**
+   * The No-JS close link target: the current page. `#reader-dict-dismissed`
+   * is appended here.
+   */
+  closeHref: string;
+}
+
+/**
+ * The desktop splitter plus the dictionary panel (the bottom sheet on mobile),
+ * for any page that hosts the reader frame.
+ */
+export function renderReaderDictPanelHtml(
+  options: ReaderDictPanelOptions
+): string {
+  const { query, dictIframeSrc, closeHref } = options;
+  const activePageUrl = he.escape(closeHref);
 
   return `        <!-- Desktop Resizable Splitter Bar -->
         <div class="reader-splitter"
@@ -403,14 +453,57 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
 export function renderReaderContentHtmlFromContext(
   ctx: ReaderRenderContext
 ): string {
+  return renderReaderFrameHtml({
+    dataAttrs: {
+      work: ctx.work.id,
+      page: ctx.pageDotId,
+      author: ctx.work.urlAuthor,
+      name: ctx.work.urlName,
+      "has-macra": String(ctx.work.hasMacra),
+      "has-translation": String(ctx.work.hasTranslation),
+    },
+    tocHtml: renderTocDrawer({
+      work: ctx.work,
+      activePageIndex: ctx.activePageIndex,
+      query: ctx.query,
+    }),
+    layoutStateClass: ctx.layoutStateClass,
+    stickyBarHtml: renderReaderStickyBar(ctx),
+    textPanelHtml: renderReaderTextPanel(ctx),
+    dictPanelHtml: renderReaderDictPanel(ctx),
+    hasMacra: ctx.work.hasMacra,
+  });
+}
+
+/** The pieces a page supplies to {@link renderReaderFrameHtml}. */
+export interface ReaderFrameOptions {
+  /**
+   * `data-*` attributes for `<morcus-reader-view>`, keyed without the prefix.
+   * Library pages set `work` / `author` / `name`, which turn on saved spots and
+   * in-work page swaps. Pages without a work omit them, and those features
+   * stay off.
+   */
+  dataAttrs: Record<string, string>;
+  /** The contents drawer, or "" for pages with no table of contents. */
+  tocHtml: string;
+  layoutStateClass: string;
+  stickyBarHtml: string;
+  textPanelHtml: string;
+  dictPanelHtml: string;
+  hasMacra: boolean;
+}
+
+/**
+ * The `<morcus-reader-view>` frame shared by every reading surface: the
+ * popover backdrops, the No-JS drawer dismiss target, the split layout, and
+ * the typography popover. Callers supply the work-specific parts.
+ */
+export function renderReaderFrameHtml(options: ReaderFrameOptions): string {
+  const dataAttrs = Object.entries(options.dataAttrs)
+    .map(([key, value]) => `\n      data-${key}="${he.escape(value)}"`)
+    .join("");
   return `
-    <morcus-reader-view class="reader-view"
-      data-work="${ctx.work.id}"
-      data-page="${ctx.pageDotId}"
-      data-author="${ctx.work.urlAuthor}"
-      data-name="${ctx.work.urlName}"
-      data-has-macra="${ctx.work.hasMacra}"
-      data-has-translation="${ctx.work.hasTranslation}">
+    <morcus-reader-view class="reader-view"${dataAttrs}>
 
       <!-- Backdrop overlay for Table of Contents (TOC) dropdown dismissal -->
       <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
@@ -419,24 +512,20 @@ export function renderReaderContentHtmlFromContext(
       <div id="reader-settings-backdrop" class="reader-settings-backdrop" hidden></div>
 
       <!-- Contained Table of Contents (TOC) Dropdown -->
-      ${renderTocDrawer({
-        work: ctx.work,
-        activePageIndex: ctx.activePageIndex,
-        query: ctx.query,
-      })}
+      ${options.tocHtml}
 
       <span id="reader-dict-dismissed" class="reader-drawer-dismiss-target" aria-hidden="true"></span>
 
       <!-- Main Split Layout -->
-      <div class="reader-split-layout ${ctx.layoutStateClass}">
+      <div class="reader-split-layout ${options.layoutStateClass}">
         <div class="reader-main-column">
-${renderReaderStickyBar(ctx)}
-${renderReaderTextPanel(ctx)}
+${options.stickyBarHtml}
+${options.textPanelHtml}
         </div>
-${renderReaderDictPanel(ctx)}
+${options.dictPanelHtml}
       </div>
 
-${renderReaderSettingsPopover({ hasMacra: ctx.work.hasMacra })}
+${renderReaderSettingsPopover({ hasMacra: options.hasMacra })}
 
     </morcus-reader-view>
   `;
