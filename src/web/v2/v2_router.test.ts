@@ -512,6 +512,34 @@ describe("v2_router integration", () => {
       expect(res.status).toBe(404);
       expect(res.text).toBe("Translation not found");
     });
+
+    test("GET /v2/reader/:author/:name redirects matchText links to the matched page and section when :page is omitted", async () => {
+      const res = await request(app).get(
+        "/v2/reader/caesar/de_bello_gallico?matchText=1.2.1~0~2"
+      );
+      expect(res.status).toBe(302);
+      expect(res.header.location).toBe(
+        "/v2/reader/caesar/de_bello_gallico/1.2?matchText=1.2.1%7E0%7E2#sec-1.2.1"
+      );
+    });
+
+    test("GET /v2/reader/:author/:name/:page with matchText renders the requested page without redirecting", async () => {
+      const res = await request(app).get(
+        "/v2/reader/caesar/de_bello_gallico/1.2?matchText=1.2.1~0~2"
+      );
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('id="sec-1.2.1"');
+    });
+
+    test("GET /v2/reader/:author/:name/:page?jump=... preserves matchText across redirect", async () => {
+      const res = await request(app).get(
+        "/v2/reader/caesar/de_bello_gallico/1.1?jump=1.2.1&matchText=1.2.1~0~2&q=Orgetorix"
+      );
+      expect(res.status).toBe(302);
+      expect(res.header.location).toBe(
+        "/v2/reader/caesar/de_bello_gallico/1.2?q=Orgetorix&matchText=1.2.1%7E0%7E2#sec-1.2.1"
+      );
+    });
   });
 
   describe("GET /v2/dicts with embedded mode", () => {

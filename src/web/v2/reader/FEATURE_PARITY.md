@@ -9,11 +9,10 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ## 1. Remaining Gaps Matrix
 
-| Feature Area                                 | V1 UI (SPA)                                                                                       | V2 UI (SSR + Progressive Enhancement)                                                              | Parity Status        |
-| :------------------------------------------- | :------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------- | :------------------- |
-| **In-Flow "Edit and Report"**                | Section anchor opens a menu offering "Copy link" **and** "Edit and Report" (`contenteditable`)    | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit` reporting  | ❌ **Missing in V2** |
-| **Passage Range Highlighting (`matchText`)** | `matchText=id~start~end` query parameter highlights specific word token ranges across the passage | Anchor hash (`#sec-*`) and `?jump=` jump to section, but cannot highlight multi-word phrase ranges | ❌ **Missing in V2** |
-| **External Content Reader**                  | Paste text or scrape a URL, then read it with full dictionary word lookup support                 | No equivalent route or component exists under `src/web/v2/`                                        | ❌ **Missing in V2** |
+| Feature Area                  | V1 UI (SPA)                                                                                    | V2 UI (SSR + Progressive Enhancement)                                                             | Parity Status        |
+| :---------------------------- | :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ | :------------------- |
+| **In-Flow "Edit and Report"** | Section anchor opens a menu offering "Copy link" **and** "Edit and Report" (`contenteditable`) | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit` reporting | ❌ **Missing in V2** |
+| **External Content Reader**   | Paste text or scrape a URL, then read it with full dictionary word lookup support              | No equivalent route or component exists under `src/web/v2/`                                       | ❌ **Missing in V2** |
 
 ---
 
@@ -34,6 +33,7 @@ The following core reading surfaces from V1 have achieved full parity or intenti
 - ✅ **Outer Page Margins**: V1 dragged the outer gutters (`draggables.tsx`); V2 has Narrow / Default / Wide / Full page width presets in the Appearance popover (`GlobalSettings.readerWidth`, applied pre-paint; see `shell/page_width.css`).
 - ✅ **Screen Wake Lock**: `WakeLockController` (`core/wake_lock.client.ts`) holds a single `screen` sentinel for the reader's connected lifetime, released after 5 minutes idle. Unlike V1, scrolling (including inner split-pane scrollers), taps, keys, page turns, and dictionary-iframe navigations all count as activity; browser-initiated releases are re-acquired on return, and the lock is released on disconnect. Applies on all form factors with no setting.
 - ✅ **Swipe Page Navigation**: `ReaderPageNavController` (`reader_page_nav.client.ts`) on passive touch events (`trackHorizontalSwipe` in `core/gesture.client.ts`). Unlike V1's floating arrow badge, the passage follows the finger, fades as the swipe arms (20% of `min(vw, vh)`, as in V1), then slides out while the next page loads and the new page slides in; short swipes spring back and swipes toward a missing page rubber-band. Swipes starting within 24px of either edge (OS back gestures), while pinch-zoomed, or with text selected are ignored. The toggle lives in the Appearance popover's **Touch Navigation** group (shown only on devices with a touchscreen, `(any-pointer: coarse)`, so touchscreen laptops included) under V1's key (`RD_MB_NAV_SWIPE`, default on), so V1 choices carry over. While swipe turns are live on a touchscreen device, the browser's own history swipe (Chrome's arrow bubble) is suppressed via `overscroll-behavior-x` so one gesture can't both turn the page and navigate history; on touchscreen laptops this also disables trackpad history swipes on reader pages (accepted trade-off). iOS Safari and Android's system back gesture are edge swipes that CSS can't suppress; the 24px edge guard keeps them from overlapping. Slow turns (any path, not just swipe) show a themed spinner after 400ms, keyed off `aria-busy` from `fetchAndSwapPartial`, so fast connections never see it.
+- ✅ **Passage Range Highlighting (`matchText`)**: Isomorphic `matchText` parser (`reader_highlight.common.ts`) supporting `id~start~end__id2~start2~end2`. Server routes preserve `matchText` across `?jump=` redirects and resolve the target chapter page from the first section ID in `matchText` when `:page` is omitted, while keeping server-rendered passage HTML 100% static. Client tokenization (`tokenize.client.ts` + `reader_view.client.ts`) tracks 0-based `isWord` token indices per section (excluding `.reader-gap` and note markers to stay aligned with corpus `leaders` offsets), and marks matched words with `.reader-match`, coloured orange text as in V1's `.corpusResult` (`--match-highlight-fg`, `reader_text.css`). JS users are centred on the first match; no-JS users land on its section via a `#sec-<id>` redirect when `:page` is omitted.
 
 ### Deliberately Not Ported
 
@@ -56,17 +56,25 @@ These V1 features were reviewed and intentionally left out of V2. Revisit only w
   - Restoring this requires introducing a small menu/popover on section anchors or secondary actions before triggering the inline edit flow.
   - **Design Document**: See [`IN_FLOW_EDITING_DESIGN.md`](IN_FLOW_EDITING_DESIGN.md) for full architecture, anchored popover trigger UX, in-place textarea swap vs `contenteditable` analysis, and `/v2/api/report` pipeline integration.
 
-### 3.2. Passage Range Highlighting (`matchText`)
-
-- **V1 (`src/web/client/pages/library/reader_url.ts`, `reader.tsx:L1081-1090`)**:
-  - URL parameter `matchText=id~start~end__id2~start2~end2` parsed token start/end indices per section.
-  - Rendered word spans within `[start, end)` with a distinct highlight class.
-  - Enabled external search results and citations to deep-link directly to highlighted sentence or phrase ranges.
-- **V2**: ❌ **Missing**. Supports `#sec-<id>` and `?jump=<id>`, but has no mechanism for range highlighting via URL parameters.
-
-### 3.3. External Content Reader
+### 3.2. External Content Reader
 
 - **V1 (`external_content_reader.tsx`, `external_content_storage.tsx`)**:
   - Dedicated reader interface allowing users to paste raw Latin text or fetch from a scraped URL.
   - Persisted external texts locally in `localStorage` and provided the same interactive word lookup and dictionary drawer affordances as library texts.
 - **V2**: ❌ **Missing**. No equivalent route, storage, or component exists under `src/web/v2/`.
+
+---
+
+## 4. Open Investigations
+
+Suspected V2 bugs found incidentally. Not yet triaged.
+
+- 🔍 **Ovid _Tristia_: section content under the wrong id** (`hypotactic_Tristia_Ovid`). In the V2 artifact, `sec-1.7.x` appears to hold the text of poem 1.8 (e.g. `sec-1.7.1` reads "in caput alta suum…", which is 1.8.1; the corpus has "si quis habes nostri…" for 1.7.1). Possible causes: duplicate section ids across poems in `v2_preprocessor.ts`, or a stale artifact. Found while comparing corpus rows against V2-rendered sections for `matchText` highlighting; ~40 Tristia rows differ.
+- Corpus-side `matchText` alignment issues (words split at inline markup; heading rows without ids) are tracked in [`../corpus/TODO.md`](../corpus/TODO.md).
+- 🐞 **Dictionary pane stuck in light mode while the reader is dark** (confirmed). Repro:
+
+  1. Set the OS/browser to dark mode, and have no saved theme (fresh profile, or `localStorage.removeItem("GlobalSettings")`; never touched the theme toggle).
+  2. Open any reader page, e.g. `/v2/reader/caesar/de_bello_gallico/1.1`.
+  3. The passage renders dark (via `@media (prefers-color-scheme: dark)`), but the dictionary iframe renders light.
+
+  Cause: with no saved preference, `<html>` has no `data-theme` and the dark palette comes from the media query. `initIframeThemeSync` in `reader_view.client.ts` then falls back to `settingsStore.get().darkMode ? "dark" : "light"`, i.e. `"light"`, and `syncIframeTheme` (`core/dom.client.ts`, which also defaults to `"light"`) writes `data-theme="light"` into the iframe, overriding the iframe's own media query. Confirmed with Playwright: under `colorScheme: "dark"`, the parent has `data-theme=null` while the iframe has `data-theme="light"`. Likely fix: when neither `data-theme` nor a saved `darkMode` exists, remove the iframe's `data-theme` (or copy the parent's attribute exactly, including its absence) instead of forcing `"light"`. Once the toggle is used, the saved `darkMode` keeps both in sync, which is why the bug is intermittent.

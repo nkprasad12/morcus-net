@@ -54,6 +54,10 @@ import {
   READER_DICT_WIDTH_STORAGE_KEY,
   computeMaxSplitWidth,
 } from "@/web/v2/reader/reader_layout.client";
+import {
+  isWordIndexHighlighted,
+  parseTextHighlights,
+} from "@/web/v2/reader/reader_highlight.common";
 
 export const READER_DRAWER_MIN_HEIGHT = 40;
 
@@ -223,6 +227,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.saveCurrentSpot();
     this.enhancePassage();
     this.applyPreferences(this.currentPrefs);
+    this.scrollToFirstMatch(window.location.hash);
 
     this.scope.listen<ReaderSettingsChangeEventDetail>(
       this,
@@ -904,15 +909,30 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (passage.dataset.enhanced !== "true") {
       passage.dataset.enhanced = "true";
 
+      const matchText =
+        typeof window !== "undefined" && window.location
+          ? new URLSearchParams(window.location.search).get("matchText") ??
+            undefined
+          : undefined;
+      const highlights = parseTextHighlights(matchText);
+
       tokenizeTargets(passage, {
         targetSelector: "[data-tokenize-target='true']",
         fallbackSelector:
           ".reader-section p.reader-paragraph, " +
           ".reader-section .reader-line",
         enhancedDatasetKey: "wordsEnhanced",
-        renderWord: (token) => {
+        renderWord: (token, _cleanWord, wordIndex, targetRoot) => {
+          const secEl = targetRoot.closest<HTMLElement>(".reader-section");
+          const secId = secEl?.id.startsWith("sec-")
+            ? secEl.id.slice(4)
+            : undefined;
+          const isMatch =
+            secId !== undefined &&
+            isWordIndexHighlighted(wordIndex, highlights?.get(secId));
+
           const span = document.createElement("span");
-          span.className = "lat-word";
+          span.className = isMatch ? "lat-word reader-match" : "lat-word";
           span.setAttribute("role", "button");
           span.setAttribute("tabindex", "0");
           span.setAttribute("data-word", token);
@@ -1210,6 +1230,30 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
+  /**
+   * Centres the first `matchText` word in the viewport. A hash only wins when
+   * it points somewhere else: `#sec-<id>` of the match's own section (added by
+   * the server's matchText redirect and `?jump=`) still centres on the match.
+   */
+  private scrollToFirstMatch(hash: string = ""): boolean {
+    const firstMatch = this.querySelector<HTMLElement>(
+      "#reader-passage .reader-match"
+    );
+    if (!firstMatch) return false;
+    if (hash) {
+      const section = firstMatch.closest<HTMLElement>(".reader-section");
+      if (!section?.id || hash !== `#${section.id}`) return false;
+    }
+    if (typeof firstMatch.scrollIntoView === "function") {
+      firstMatch.scrollIntoView({
+        behavior: "instant",
+        block: "center",
+        inline: "nearest",
+      });
+    }
+    return true;
+  }
+
   public get currentPageUrl(): string {
     const author = this.getAttribute("data-author");
     const name = this.getAttribute("data-name");
@@ -1446,6 +1490,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         }
       }
       window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
+    } else if (this.scrollToFirstMatch(options.hash)) {
+      // Centred on the matchText range.
     } else if (options.hash) {
       this.scrollToHash(options.hash);
     } else {

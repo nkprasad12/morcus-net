@@ -95,6 +95,7 @@
   --toast-border: rgba(255, 255, 255, 0.15);
   --word-hover-bg: rgba(0, 0, 0, 0.05);
   --word-active-bg: rgba(0, 0, 0, 0.11);
+  --match-highlight-fg: #cb4b16;
   --scrollbar-thumb: rgba(0, 0, 0, 0.25);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
   --drawer-shadow: 0 -6px 20px rgba(0, 0, 0, 0.09),
@@ -175,6 +176,7 @@
     --toast-border: rgba(0, 0, 0, 0.15);
     --word-hover-bg: rgba(255, 255, 255, 0.07);
     --word-active-bg: rgba(255, 255, 255, 0.18);
+    --match-highlight-fg: #e8743b;
     --scrollbar-thumb: rgba(255, 255, 255, 0.28);
     --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
     --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),
@@ -253,6 +255,7 @@
   --toast-border: rgba(0, 0, 0, 0.15);
   --word-hover-bg: rgba(255, 255, 255, 0.07);
   --word-active-bg: rgba(255, 255, 255, 0.18);
+  --match-highlight-fg: #e8743b;
   --scrollbar-thumb: rgba(255, 255, 255, 0.28);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
   --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),

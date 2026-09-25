@@ -281,6 +281,12 @@ details.reader-work-about[open] summary.reader-about-summary {
   box-shadow: none;
 }
 
+/* A `matchText` word: coloured text, as in V1 (`.corpusResult`). Placed after
+   the hover/active rules (same specificity) so the colour survives both. */
+.reader-passage .lat-word.reader-match {
+  color: var(--match-highlight-fg);
+}
+
 /* ==========================================================================
    3. Section Gutter & Responsive Numbering
    ========================================================================== */

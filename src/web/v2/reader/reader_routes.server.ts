@@ -11,17 +11,20 @@ import {
 import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
 import { renderNotFoundPageHtml } from "@/web/v2/library/not_found.server";
 import { isPartialRequest } from "@/web/v2/core/request_params.server";
+import { getFirstHighlightSectionId } from "@/web/v2/reader/reader_highlight.common";
 import * as he from "he";
 
 function redirectReaderJump(
   res: Response,
   work: V2PreprocessedWork,
   jump: string,
-  query: string
+  query: string,
+  matchText: string = ""
 ): void {
   const resolved = resolvePageInWork(work, jump);
   const params = new URLSearchParams();
   if (query) params.set("q", query);
+  if (matchText) params.set("matchText", matchText);
   const qStr = params.toString() ? `?${params.toString()}` : "";
   const pageId = Array.isArray(resolved.page.id)
     ? resolved.page.id.join(".")
@@ -39,6 +42,7 @@ async function sendReaderPassage(
     work: V2PreprocessedWork;
     pageId?: string;
     query: string;
+    matchText: string;
     isPartial: boolean;
     logMessage: string;
     errorMessage: string;
@@ -51,6 +55,7 @@ async function sendReaderPassage(
           work: options.work,
           pageId: options.pageId,
           query: options.query,
+          matchText: options.matchText,
         })
       );
     } else {
@@ -59,6 +64,7 @@ async function sendReaderPassage(
           work: options.work,
           pageId: options.pageId,
           query: options.query,
+          matchText: options.matchText,
         })
       );
     }
@@ -118,6 +124,8 @@ export function createReaderRoutes(): Router {
     const name = req.params.name;
     const pageId = req.params.page;
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const matchText =
+      typeof req.query.matchText === "string" ? req.query.matchText.trim() : "";
     const jump =
       typeof req.query.jump === "string" ? req.query.jump.trim() : "";
     const isPartial = isPartialRequest(req);
@@ -135,8 +143,12 @@ export function createReaderRoutes(): Router {
       return;
     }
 
-    if (jump) {
-      redirectReaderJump(res, work, jump, query);
+    // A `matchText` link without a page redirects like a jump, so the URL is
+    // canonical and the `#sec-` hash scrolls No-JS readers to the match.
+    const jumpTarget =
+      jump || (pageId ? undefined : getFirstHighlightSectionId(matchText));
+    if (jumpTarget) {
+      redirectReaderJump(res, work, jumpTarget, query, matchText);
       return;
     }
 
@@ -144,6 +156,7 @@ export function createReaderRoutes(): Router {
       work,
       pageId,
       query,
+      matchText,
       isPartial,
       logMessage: "Error rendering reader work:",
       errorMessage: "Error rendering reader passage",
@@ -153,6 +166,8 @@ export function createReaderRoutes(): Router {
   // General reader route: handles jumps, legacy query parameters, and default work
   getAsync("/reader", async (req, res) => {
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const matchText =
+      typeof req.query.matchText === "string" ? req.query.matchText.trim() : "";
     const workId =
       typeof req.query.work === "string"
         ? req.query.work.trim()
@@ -177,8 +192,10 @@ export function createReaderRoutes(): Router {
       return;
     }
 
-    if (jump) {
-      redirectReaderJump(res, work, jump, query);
+    const jumpTarget =
+      jump || (pageId ? undefined : getFirstHighlightSectionId(matchText));
+    if (jumpTarget) {
+      redirectReaderJump(res, work, jumpTarget, query, matchText);
       return;
     }
 
@@ -186,6 +203,7 @@ export function createReaderRoutes(): Router {
       work,
       pageId,
       query,
+      matchText,
       isPartial,
       logMessage: "Error rendering reader view:",
       errorMessage: "Error rendering reader view",

@@ -152,7 +152,7 @@ function renderXmlNodeCleanHtml(
     return '<span class="line-space" aria-hidden="true"></span>';
   }
   if (tag === "gap") {
-    return '<span class="reader-gap text-muted">[gap]</span>';
+    return '<span class="reader-gap text-muted" data-no-tokenize="true">[gap]</span>';
   }
   if (tag === "note" && noteId !== undefined) {
     return renderNoteMarker(noteId, notes);

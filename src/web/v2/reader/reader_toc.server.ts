@@ -9,11 +9,12 @@ import * as he from "he";
 export interface ReaderPageUrlOptions {
   viewMode?: "single" | "parallel";
   query?: string;
+  matchText?: string;
 }
 
 /**
  * Builds the canonical URL for a reader page within a work, preserving optional
- * view mode ("single" | "parallel") and search query.
+ * view mode ("single" | "parallel"), search query, and matchText highlight ranges.
  */
 export function buildReaderPageUrl(
   work: Pick<V2PreprocessedWork, "urlAuthor" | "urlName">,
@@ -24,6 +25,7 @@ export function buildReaderPageUrl(
   const params = new URLSearchParams();
   if (options.viewMode === "parallel") params.set("view", "parallel");
   if (options.query) params.set("q", options.query);
+  if (options.matchText) params.set("matchText", options.matchText);
   const qStr = params.toString() ? `?${params.toString()}` : "";
   const pageId = Array.isArray(page.id) ? citationToString(page.id) : page.id;
   return `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}`;

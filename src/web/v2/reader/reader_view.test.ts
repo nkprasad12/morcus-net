@@ -2452,3 +2452,171 @@ describe("MorcusReaderView screen wake lock", () => {
     expect(requests[1].released).toBe(false);
   });
 });
+
+describe("MorcusReaderView passage range highlighting (matchText)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = "";
+    window.history.replaceState(
+      {},
+      "",
+      "/v2/reader/caesar/de_bello_gallico/1.1"
+    );
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+    window.history.replaceState({}, "", "/");
+  });
+
+  test("applies .reader-match class to matching word index ranges across single and multiple sections", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.1~1~3__1.1.1~4~5__1.1.2~0~2"
+    );
+
+    const passageHtml = `
+      <div class="reader-section" id="sec-1.1.1">
+        <div class="reader-passage" data-tokenize-target="true">
+          <p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p>
+        </div>
+      </div>
+      <div class="reader-section" id="sec-1.1.2">
+        <div class="reader-passage" data-tokenize-target="true">
+          <p class="reader-paragraph">Hi omnes lingua institutis legibus inter se differunt.</p>
+        </div>
+      </div>
+    `;
+
+    const el = createReaderView(passageHtml);
+    const matched = Array.from(
+      el.querySelectorAll<HTMLElement>(".lat-word.reader-match")
+    ).map((w) => w.textContent);
+
+    // 1.1.1: 0=Gallia, 1=est, 2=omnis, 3=divisa, 4=in, 5=partes, 6=tres -> [1,3) + [4,5) = est, omnis, in
+    // 1.1.2: 0=Hi, 1=omnes -> [0,2) = Hi, omnes
+    expect(matched).toEqual(["est", "omnis", "in", "Hi", "omnes"]);
+  });
+
+  test("marks no words when matchText is absent", () => {
+    const passageHtml = `
+      <div class="reader-section" id="sec-1.1.1">
+        <div class="reader-passage" data-tokenize-target="true">
+          <p class="reader-paragraph">Gallia est omnis divisa.</p>
+        </div>
+      </div>
+    `;
+
+    const el = createReaderView(passageHtml);
+    expect(el.querySelectorAll(".lat-word").length).toBe(4);
+    expect(el.querySelector(".reader-match")).toBeNull();
+  });
+
+  test("preserves .reader-match and matchText query param when looking up a word or toggling macra", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/v2/reader/vergil/aeneid/1?matchText=1.8~0~2"
+    );
+
+    const passageHtml = `
+      <div class="reader-section" id="sec-1.8">
+        <div class="reader-passage" data-tokenize-target="true">
+          <span class="reader-line">M\u016Bsa, mihi caus\u0101s memor\u0101.</span>
+        </div>
+      </div>
+    `;
+
+    const el = createReaderView(passageHtml, {
+      workId: "vergil/aeneid",
+      hasMacra: true,
+    });
+
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
+    expect(words[0].classList.contains("reader-match")).toBe(true);
+    expect(words[1].classList.contains("reader-match")).toBe(true);
+    expect(words[2].classList.contains("reader-match")).toBe(false);
+
+    // Clicking a highlighted word adds .word-active and preserves .reader-match and matchText in URL
+    words[0].click();
+    expect(words[0].classList.contains("word-active")).toBe(true);
+    expect(words[0].classList.contains("reader-match")).toBe(true);
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get("matchText")).toBe("1.8~0~2");
+    expect(params.get("q")).toBe("Mūsa");
+
+    // Toggling macra off preserves .reader-match
+    el.dispatchEvent(
+      new CustomEvent("reader-settings-change", {
+        detail: { prefs: { ...DEFAULT_READER_PREFS, showMacra: false } },
+      })
+    );
+    expect(words[0].textContent).toBe("Musa");
+    expect(words[0].classList.contains("reader-match")).toBe(true);
+  });
+
+  test("scrolls the first .reader-match word into view on connect when no hash is present", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.1~2~4"
+    );
+
+    const scrollSpy = jest.fn();
+    HTMLElement.prototype.scrollIntoView = scrollSpy;
+
+    const passageHtml = `
+      <div class="reader-section" id="sec-1.1.1">
+        <div class="reader-passage" data-tokenize-target="true">
+          <p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p>
+        </div>
+      </div>
+    `;
+
+    createReaderView(passageHtml);
+    expect(scrollSpy).toHaveBeenCalledWith({
+      behavior: "instant",
+      block: "center",
+      inline: "nearest",
+    });
+  });
+
+  test("centres on the match when the hash targets the match's own section, but not for an unrelated hash", () => {
+    const passageHtml = `
+      <div class="reader-section" id="sec-1.1.1">
+        <div class="reader-passage" data-tokenize-target="true">
+          <p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p>
+        </div>
+      </div>
+      <div class="reader-section" id="sec-1.1.2">
+        <div class="reader-passage" data-tokenize-target="true">
+          <p class="reader-paragraph">Hi omnes lingua institutis legibus.</p>
+        </div>
+      </div>
+    `;
+    const scrollSpy = jest.fn(function (this: HTMLElement) {
+      return this;
+    });
+    HTMLElement.prototype.scrollIntoView = scrollSpy;
+
+    window.history.replaceState(
+      {},
+      "",
+      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.2~1~2#sec-1.1.2"
+    );
+    createReaderView(passageHtml);
+    expect(scrollSpy).toHaveBeenCalledTimes(1);
+    expect(scrollSpy.mock.contexts[0]).toHaveProperty("textContent", "omnes");
+
+    document.body.innerHTML = "";
+    scrollSpy.mockClear();
+    window.history.replaceState(
+      {},
+      "",
+      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.2~1~2#sec-1.1.1"
+    );
+    createReaderView(passageHtml);
+    expect(scrollSpy).not.toHaveBeenCalled();
+  });
+});
