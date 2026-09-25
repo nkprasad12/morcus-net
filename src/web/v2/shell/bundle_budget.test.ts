@@ -177,9 +177,9 @@ describe("UI V2 Bundle Budget", () => {
     expect(formatted).toContain("JS:");
     expect(formatted).toContain("CSS:");
     expect(formatted).toContain("Combined:");
-    expect(formatted).toContain("< 115.0 kB raw / < 32.0 kB gzip");
+    expect(formatted).toContain("< 125.0 kB raw / < 35.0 kB gzip");
     expect(formatted).toContain("< 125.0 kB raw / < 22.0 kB gzip");
-    expect(formatted).toContain("< 235.0 kB raw / < 52.0 kB gzip");
+    expect(formatted).toContain("< 245.0 kB raw / < 55.0 kB gzip");
   });
 
   test("accepts realistic production bundle sizes corresponding to current baseline", () => {
