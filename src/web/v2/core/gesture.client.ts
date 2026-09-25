@@ -175,3 +175,99 @@ export function trackPointerDrag(
     handle.removeEventListener("pointercancel", onPointerCancel);
   };
 }
+
+/** Travel (px) before a touch is classified as horizontal or vertical. */
+export const SWIPE_SLOP_PX = 10;
+/** A touch locks horizontal only if `|dx|` exceeds `|dy|` by this factor (as in V1). */
+export const SWIPE_AXIS_RATIO = 1.25;
+
+export interface HorizontalSwipeOptions {
+  /** Return false to ignore a touch that starts here. */
+  filter?: (touch: Touch) => boolean;
+  /** Fired on each move once the touch has locked horizontal. */
+  onMove: (dx: number) => void;
+  /**
+   * Fired when a locked swipe ends. `cancelled` is true for `touchcancel` or
+   * a second finger landing (a pinch), in which case callers should not act.
+   */
+  onEnd: (dx: number, cancelled: boolean) => void;
+}
+
+/**
+ * Tracks single-finger horizontal swipes on `el`.
+ *
+ * Uses passive touch events rather than pointer events: on a natively
+ * scrolling surface the browser fires `pointercancel` as soon as it claims a
+ * pan, and opting out with `touch-action: pan-y` would also block horizontal
+ * panning while pinch-zoomed. Passive listeners never delay scrolling.
+ *
+ * A touch is locked horizontal or discarded once it travels
+ * {@link SWIPE_SLOP_PX}; a vertical touch is left to the browser for the rest
+ * of its lifetime, so a scroll never turns into a swipe midway.
+ */
+export function trackHorizontalSwipe(
+  el: HTMLElement,
+  options: HorizontalSwipeOptions
+): CleanupFn {
+  // idle: no touch we care about; pending: undecided; swiping: locked horizontal.
+  let state: "idle" | "pending" | "swiping" = "idle";
+  let startX = 0;
+  let startY = 0;
+  let dx = 0;
+
+  const end = (cancelled: boolean) => {
+    if (state === "swiping") options.onEnd(dx, cancelled);
+    state = "idle";
+  };
+
+  const onStart = (e: TouchEvent) => {
+    const touch = e.touches[0];
+    if (e.touches.length !== 1 || !touch) {
+      end(true);
+      return;
+    }
+    if (options.filter && !options.filter(touch)) return;
+    startX = touch.clientX;
+    startY = touch.clientY;
+    dx = 0;
+    state = "pending";
+  };
+
+  const onMove = (e: TouchEvent) => {
+    const touch = e.touches[0];
+    if (state === "idle" || !touch) return;
+    // A second finger that lands outside `el` fires no touchstart here.
+    if (e.touches.length !== 1) {
+      end(true);
+      return;
+    }
+    dx = touch.clientX - startX;
+    if (state === "pending") {
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(touch.clientY - startY);
+      if (Math.max(absDx, absDy) < SWIPE_SLOP_PX) return;
+      if (absDx <= absDy * SWIPE_AXIS_RATIO) {
+        state = "idle";
+        return;
+      }
+      state = "swiping";
+    }
+    options.onMove(dx);
+  };
+
+  const onEnd = () => end(false);
+  const onCancel = () => end(true);
+  const passive: AddEventListenerOptions = { passive: true };
+
+  el.addEventListener("touchstart", onStart, passive);
+  el.addEventListener("touchmove", onMove, passive);
+  el.addEventListener("touchend", onEnd, passive);
+  el.addEventListener("touchcancel", onCancel, passive);
+
+  return () => {
+    el.removeEventListener("touchstart", onStart, passive);
+    el.removeEventListener("touchmove", onMove, passive);
+    el.removeEventListener("touchend", onEnd, passive);
+    el.removeEventListener("touchcancel", onCancel, passive);
+  };
+}
