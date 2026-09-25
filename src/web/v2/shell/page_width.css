@@ -1,0 +1,91 @@
+/* Page Width Presets (Reader & Standalone Dictionary)
+ *
+ * <html data-reader-width="…"> / <html data-dict-width="…"> holds the
+ * non-default preset: narrow | wide | full. No attribute means Default.
+ * It is set before first paint by shell/critical_theme.client.ts and on
+ * change by core/page_width.client.ts.
+ *
+ * "Full" uses 100vw: it is never the binding constraint, so the calc()
+ * expressions built on these variables (see dict/dict_toc.css) work
+ * unchanged for every preset.
+ *
+ * .body-dict is only set on standalone dictionary pages (never embedded), so
+ * the reader's dictionary iframe ignores the dictionary preset.
+ */
+
+/* --- Dictionary ---------------------------------------------------------
+   --dict-page-max: container width without the contents rail.
+   --dict-search-max: search bar width, fixed per preset so the bar does not
+     move when the contents rail appears (capped at Wide for Full).
+   --dict-toc-w: contents rail width (grows less than the column). */
+
+.body-dict {
+  --dict-page-max: 900px;
+  --dict-search-max: 868px;
+  --dict-toc-w: 240px;
+}
+
+:root[data-dict-width="narrow"] .body-dict {
+  --dict-page-max: 760px;
+  --dict-search-max: 728px;
+}
+
+:root[data-dict-width="wide"] .body-dict {
+  --dict-page-max: 1140px;
+  --dict-search-max: 1108px;
+  --dict-toc-w: 280px;
+}
+
+:root[data-dict-width="full"] .body-dict {
+  --dict-page-max: 100vw;
+  --dict-search-max: 1108px;
+  --dict-toc-w: clamp(240px, 18vw, 360px);
+}
+
+.body-dict .app-bar-inner,
+.body-dict .container {
+  max-width: var(--dict-page-max);
+}
+
+.body-dict .search-form {
+  max-width: var(--dict-search-max);
+  margin-inline: auto;
+}
+
+/* --- Reader -------------------------------------------------------------- */
+
+.body-reader {
+  --reader-page-max: 1400px;
+}
+
+:root[data-reader-width="narrow"] .body-reader {
+  --reader-page-max: 1100px;
+}
+
+:root[data-reader-width="wide"] .body-reader {
+  --reader-page-max: 1680px;
+}
+
+:root[data-reader-width="full"] .body-reader {
+  --reader-page-max: 100vw;
+}
+
+/* --- Controls ------------------------------------------------------------ */
+
+/* The dictionary label reuses .settings-section-title, whose bottom margin is
+   meant for stacked content; inline with the select it would misalign. */
+.page-width-row .settings-section-title {
+  margin-bottom: 0;
+}
+
+/* The dictionary control needs JS; the reader popover already does. */
+morcus-dict-settings:not(:defined) .page-width-row {
+  display: none;
+}
+
+/* Mobile layouts are already full width, so the preset has no effect. */
+@media (max-width: 640px) {
+  .page-width-row {
+    display: none;
+  }
+}

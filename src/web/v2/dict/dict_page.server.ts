@@ -413,6 +413,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
         activeDicts: options.queriedDicts,
         isInflected: isInflected,
         extraHiddenInputs: isEmbedded ? { embedded: "1" } : undefined,
+        includePageWidth: !isEmbedded,
       })}
 
       <output id="dict-results" class="results">

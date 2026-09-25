@@ -2,8 +2,10 @@ import {
   AnchoredPopoverController,
   BaseElement,
   type FieldCheckers,
+  getPageWidth,
   pickValid,
   registerElement,
+  setPageWidth,
   storage,
 } from "@/web/v2/core/index.client";
 import {
@@ -286,12 +288,27 @@ export class MorcusReaderSettings extends BaseElement {
       });
     }
 
+    // Page width lives in GlobalSettings (read pre-paint by the critical
+    // script), not in ReaderPreferences.
+    const widthSelect = this.scope.$<HTMLSelectElement>("#reader-width-select");
+    if (widthSelect) {
+      widthSelect.value = getPageWidth("reader");
+      this.scope.listen(widthSelect, "change", () => {
+        setPageWidth("reader", widthSelect.value);
+        this.updatePosition();
+      });
+    }
+
     // Reset defaults binding
     if (resetBtn) {
       this.scope.listen(resetBtn, "click", () => {
         const workId = this.getWorkId();
         if (workId) {
           removeWorkMacra(workId);
+        }
+        if (widthSelect) {
+          widthSelect.value = "default";
+          setPageWidth("reader", "default");
         }
         this.currentPrefs = { ...DEFAULT_READER_PREFS };
         this.saveAndEmit();

@@ -1,15 +1,34 @@
-import { isBoolean, isNumber, Validator } from "@/web/utils/rpc/parsing";
+import {
+  isBoolean,
+  isLiteral,
+  isNumber,
+  isOneOf,
+  Validator,
+} from "@/web/utils/rpc/parsing";
 import { storage } from "@/web/v2/core/storage.client";
 
 /**
  * Typed LocalStorage settings store for UI V2.
  */
 
+/**
+ * Non-default page width presets. "default" is never persisted: it is the
+ * absence of a value. Pixel values live in `shell/page_width.css`.
+ */
+export type StoredPageWidth = "narrow" | "wide" | "full";
+
+export const isStoredPageWidth: Validator<StoredPageWidth> = isOneOf(
+  isLiteral("narrow"),
+  isOneOf(isLiteral("wide"), isLiteral("full"))
+);
+
 export interface GlobalSettings {
   darkMode?: boolean;
   highlightStrength?: number;
   autoOpenLogeion?: boolean;
   inflectedSearch?: boolean;
+  readerWidth?: StoredPageWidth;
+  dictWidth?: StoredPageWidth;
 }
 
 export const GLOBAL_SETTINGS_KEY = "GlobalSettings";
@@ -51,6 +70,8 @@ const GLOBAL_SETTINGS_CHECKERS: FieldCheckers<GlobalSettings> = {
   highlightStrength: isNumber,
   autoOpenLogeion: isBoolean,
   inflectedSearch: isBoolean,
+  readerWidth: isStoredPageWidth,
+  dictWidth: isStoredPageWidth,
 };
 
 export function parseSettings(raw: string | null): GlobalSettings {

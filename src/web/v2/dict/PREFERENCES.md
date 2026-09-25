@@ -12,12 +12,15 @@ referenced as `F1`–`F9` from `TODOS.md` and from commit messages.
 
 Four preferences affect how the dictionary renders, via four different mechanisms.
 
-| Preference              | URL               | Cookie             | localStorage                       | Reaches SSR?                   |
-| :---------------------- | :---------------- | :----------------- | :--------------------------------- | :----------------------------- |
-| **Dictionaries**        | `dict`, `d`, `in` | `morcus_dicts`     | `SEARCH_SETTINGS_KEY`              | ✅                             |
-| **Inflection**          | `o`               | `morcus_inflected` | `GlobalSettings.inflectedSearch`   | ✅                             |
-| **Highlight strength**  | —                 | —                  | `GlobalSettings.highlightStrength` | pre-paint, via critical script |
-| **Dict scale** (reader) | `scale`           | —                  | `morcus_reader_settings.dictScale` | ✅ via URL                     |
+| Preference              | URL               | Cookie             | localStorage                               | Reaches SSR?                   |
+| :---------------------- | :---------------- | :----------------- | :----------------------------------------- | :----------------------------- |
+| **Dictionaries**        | `dict`, `d`, `in` | `morcus_dicts`     | `SEARCH_SETTINGS_KEY`                      | ✅                             |
+| **Inflection**          | `o`               | `morcus_inflected` | `GlobalSettings.inflectedSearch`           | ✅                             |
+| **Highlight strength**  | —                 | —                  | `GlobalSettings.highlightStrength`         | pre-paint, via critical script |
+| **Dict scale** (reader) | `scale`           | —                  | `morcus_reader_settings.dictScale`         | ✅ via URL                     |
+| **Page width**          | —                 | —                  | `GlobalSettings.dictWidth` / `readerWidth` | pre-paint, via critical script |
+
+Page width is a presentation preference that changes layout, so it gets pre-paint treatment (§3). `critical_theme.client.ts` mirrors it onto `<html data-dict-width|data-reader-width>`, and `shell/page_width.css` maps presets to widths. Only standalone dictionary pages (`body-dict`) and the reader respond to it; embedded dictionaries don't.
 
 Resolution is implemented **twice, in different orders**:
 

@@ -2,8 +2,9 @@
  * UI V2 Dictionary Table of Contents (TOC) & Results Layout
  *
  * Implements the responsive results layout:
- * - Wide screens (>= 1080px): Sticky left rail sidebar (240px) alongside
- *   the primary reading content column (860px max width).
+ * - Wide screens (>= 1080px): Sticky left rail sidebar (240px by default)
+ *   alongside the primary reading content column (860px by default). Both
+ *   follow the page width preset (shell/page_width.css).
  * - Mobile / narrow screens (< 1080px): Bottom-docked sheet drawer.
  */
 
@@ -352,16 +353,22 @@
    Desktop (>= 1080px): Left Rail Sidebar Mode
    -------------------------------------------------------------------------- */
 @media (min-width: 1080px) {
-  /* Expand container width to accommodate TOC rail while preserving 860px reading column */
+  /* Expand container to fit the TOC rail beside the reading column. Widths
+     come from the page width preset (shell/page_width.css); the fallbacks are
+     the Default preset (1180px container, 240px rail, 860px column), which is
+     also what embedded dictionaries get. */
   .container:has(.results-layout.has-toc) {
-    max-width: 1180px;
-    transition: max-width 0.2s ease-in-out;
+    max-width: calc(
+      var(--dict-page-max, 900px) + var(--dict-toc-w, 240px) + 40px
+    );
   }
 
-  /* Two-column grid: 240px TOC | Content column (up to 860px) */
+  /* Two-column grid: TOC rail | Content column */
   .results-layout.has-toc {
     display: grid;
-    grid-template-columns: 240px minmax(0, 860px);
+    grid-template-columns:
+      var(--dict-toc-w, 240px)
+      minmax(0, calc(var(--dict-page-max, 900px) - 40px));
     column-gap: 36px;
     align-items: start;
     padding-bottom: 0;
@@ -374,8 +381,8 @@
     bottom: auto;
     left: auto;
     right: auto;
-    width: 240px;
-    max-width: 240px;
+    width: var(--dict-toc-w, 240px);
+    max-width: var(--dict-toc-w, 240px);
     height: auto;
     max-height: 100dvh;
     border: 1px solid var(--dict-toc-rail-border);

@@ -33,6 +33,7 @@ The following core reading surfaces from V1 have achieved full parity or intenti
 - ✅ **Outline / Table of Contents**: Anchored TOC drawer with live search filtering (`ReaderTocController`) and `:target` zero-JS fallback.
 - ✅ **Embedded Dictionary**: Resizable split panel on desktop (`ReaderLayoutController`) and draggable bottom drawer on mobile (`DrawerController`).
 - ✅ **Section Label Visibility**: `showGutter` preference in reader settings typography popover.
+- ✅ **Outer Page Margins**: V1 dragged the outer gutters (`draggables.tsx`); V2 has Narrow / Default / Wide / Full page width presets in the Appearance popover (`GlobalSettings.readerWidth`, applied pre-paint; see `shell/page_width.css`).
 
 ---
 

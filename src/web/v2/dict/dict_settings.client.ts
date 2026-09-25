@@ -1,10 +1,12 @@
 import {
   BaseElement,
   bindDismissable,
+  getPageWidth,
   html,
   joinHtml,
   registerElement,
   setHtml,
+  setPageWidth,
   settingsStore,
 } from "@/web/v2/core/index.client";
 import {
@@ -263,6 +265,15 @@ export class MorcusDictSettings extends BaseElement {
         this.emit("dict-inflected-change", { isInflected: this.isInflected });
       }
     );
+
+    // Server-rendered only on standalone pages (omitted when embedded).
+    const widthSelect = this.scope.$<HTMLSelectElement>("#dict-width-select");
+    if (widthSelect) {
+      widthSelect.value = getPageWidth("dict");
+      this.scope.listen(widthSelect, "change", () =>
+        setPageWidth("dict", widthSelect.value)
+      );
+    }
   }
 
   private syncUi() {
