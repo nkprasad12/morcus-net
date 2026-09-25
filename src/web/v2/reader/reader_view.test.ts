@@ -1770,6 +1770,97 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
   });
 
+  describe("swipe and keyboard page turns", () => {
+    // Gesture policy itself is covered in reader_page_nav.test.ts; these check
+    // the view's wiring: the controller is registered, `canTurn` reads the
+    // pager links, and turns share `turnPage` with the keyboard shortcuts.
+    function touch(el: Element, type: string, x?: number) {
+      const e = new Event(type, { bubbles: true });
+      Object.defineProperty(e, "touches", {
+        value: x === undefined ? [] : [{ clientX: x, clientY: 300 }],
+      });
+      el.dispatchEvent(e);
+    }
+
+    /** A committed swipe on the passage (jsdom commits past 153.6px). */
+    function swipe(el: MorcusReaderView, dx: number) {
+      const panel = el.querySelector(".reader-text-panel")!;
+      touch(panel, "touchstart", 600);
+      touch(panel, "touchmove", 600 + dx / 2);
+      touch(panel, "touchmove", 600 + dx);
+      touch(panel, "touchend");
+    }
+
+    function mockPage2Fetch() {
+      window.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        text: async () => page2CardHtml,
+      });
+    }
+
+    const flush = () => new Promise((r) => setTimeout(r, 20));
+
+    test("swiping left turns to the next page in place", async () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      mockPage2Fetch();
+
+      swipe(el, -200);
+      await flush();
+
+      expect(window.fetch).toHaveBeenCalledWith(
+        "http://localhost/v2/reader/caesar/de-bello-gallico/2",
+        expect.anything()
+      );
+      expect(el.dataset.page).toBe("2");
+      expect(window.location.pathname).toBe(
+        "/v2/reader/caesar/de-bello-gallico/2"
+      );
+    });
+
+    test("swiping toward a missing page does not fetch", async () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      mockPage2Fetch();
+
+      swipe(el, 200);
+      await flush();
+
+      expect(window.fetch).not.toHaveBeenCalled();
+      expect(el.dataset.page).toBe("1");
+    });
+
+    test("a swipe closes the TOC and keeps the dictionary query", async () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      mockPage2Fetch();
+      el.querySelector<HTMLElement>(".lat-word")!.click();
+      el.querySelector<HTMLElement>("#reader-toc-btn")!.click();
+      const tocDrawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
+      expect(tocDrawer.hasAttribute("hidden")).toBe(false);
+
+      swipe(el, -200);
+      await flush();
+
+      expect(tocDrawer.hasAttribute("hidden")).toBe(true);
+      expect(window.fetch).toHaveBeenCalledWith(
+        "http://localhost/v2/reader/caesar/de-bello-gallico/2?q=Gallia",
+        expect.anything()
+      );
+    });
+
+    test("] and [ turn pages through the same path, only where a page exists", async () => {
+      const el = createNavigableReaderView({ pageId: "1" });
+      mockPage2Fetch();
+
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "[" }));
+      await flush();
+      expect(window.fetch).not.toHaveBeenCalled();
+
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "]" }));
+      await flush();
+      expect(window.fetch).toHaveBeenCalledTimes(1);
+      expect(el.dataset.page).toBe("2");
+    });
+  });
+
   test("swapPage coordinates with translation companion tab when work has translation", async () => {
     const el = createNavigableReaderView({
       pageId: "1",

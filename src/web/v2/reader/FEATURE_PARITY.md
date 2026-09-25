@@ -9,12 +9,11 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ## 1. Remaining Gaps Matrix
 
-| Feature Area                                 | V1 UI (SPA)                                                                                       | V2 UI (SSR + Progressive Enhancement)                                                                           | Parity Status        |
-| :------------------------------------------- | :------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------- | :------------------- |
-| **In-Flow "Edit and Report"**                | Section anchor opens a menu offering "Copy link" **and** "Edit and Report" (`contenteditable`)    | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit` reporting               | ❌ **Missing in V2** |
-| **Swipe & Side-Tap Page Navigation**         | Touch swipe paging with gesture progress overlay, plus edge-tap navigation (`handleSideTap`)      | Arrows, `[` / `]` keyboard shortcuts, and footer continuation cards only; no touch gestures or margin tap zones | ❌ **Missing in V2** |
-| **Passage Range Highlighting (`matchText`)** | `matchText=id~start~end` query parameter highlights specific word token ranges across the passage | Anchor hash (`#sec-*`) and `?jump=` jump to section, but cannot highlight multi-word phrase ranges              | ❌ **Missing in V2** |
-| **External Content Reader**                  | Paste text or scrape a URL, then read it with full dictionary word lookup support                 | No equivalent route or component exists under `src/web/v2/`                                                     | ❌ **Missing in V2** |
+| Feature Area                                 | V1 UI (SPA)                                                                                       | V2 UI (SSR + Progressive Enhancement)                                                              | Parity Status        |
+| :------------------------------------------- | :------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------- | :------------------- |
+| **In-Flow "Edit and Report"**                | Section anchor opens a menu offering "Copy link" **and** "Edit and Report" (`contenteditable`)    | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit` reporting  | ❌ **Missing in V2** |
+| **Passage Range Highlighting (`matchText`)** | `matchText=id~start~end` query parameter highlights specific word token ranges across the passage | Anchor hash (`#sec-*`) and `?jump=` jump to section, but cannot highlight multi-word phrase ranges | ❌ **Missing in V2** |
+| **External Content Reader**                  | Paste text or scrape a URL, then read it with full dictionary word lookup support                 | No equivalent route or component exists under `src/web/v2/`                                        | ❌ **Missing in V2** |
 
 ---
 
@@ -34,6 +33,13 @@ The following core reading surfaces from V1 have achieved full parity or intenti
 - ✅ **Section Label Visibility**: `showGutter` preference in reader settings typography popover.
 - ✅ **Outer Page Margins**: V1 dragged the outer gutters (`draggables.tsx`); V2 has Narrow / Default / Wide / Full page width presets in the Appearance popover (`GlobalSettings.readerWidth`, applied pre-paint; see `shell/page_width.css`).
 - ✅ **Screen Wake Lock**: `WakeLockController` (`core/wake_lock.client.ts`) holds a single `screen` sentinel for the reader's connected lifetime, released after 5 minutes idle. Unlike V1, scrolling (including inner split-pane scrollers), taps, keys, page turns, and dictionary-iframe navigations all count as activity; browser-initiated releases are re-acquired on return, and the lock is released on disconnect. Applies on all form factors with no setting.
+- ✅ **Swipe Page Navigation**: `ReaderPageNavController` (`reader_page_nav.client.ts`) on passive touch events (`trackHorizontalSwipe` in `core/gesture.client.ts`). Unlike V1's floating arrow badge, the passage follows the finger, fades as the swipe arms (20% of `min(vw, vh)`, as in V1), then slides out while the next page loads and the new page slides in; short swipes spring back and swipes toward a missing page rubber-band. Swipes starting within 24px of either edge (OS back gestures), while pinch-zoomed, or with text selected are ignored. The toggle lives in the Appearance popover's **Touch Navigation** group (shown only on devices with a touchscreen, `(any-pointer: coarse)`, so touchscreen laptops included) under V1's key (`RD_MB_NAV_SWIPE`, default on), so V1 choices carry over. While swipe turns are live on a touchscreen device, the browser's own history swipe (Chrome's arrow bubble) is suppressed via `overscroll-behavior-x` so one gesture can't both turn the page and navigate history; on touchscreen laptops this also disables trackpad history swipes on reader pages (accepted trade-off). iOS Safari and Android's system back gesture are edge swipes that CSS can't suppress; the 24px edge guard keeps them from overlapping.
+
+### Deliberately Not Ported
+
+These V1 features were reviewed and intentionally left out of V2. Revisit only with a new justification.
+
+- 🚫 **Side-Tap Page Navigation** (V1 `handleSideTap` in `base_reader.tsx`, `RD_MB_NAV_SIDE_TAP`, off by default): tapping the outer 7.5% of the screen turned the page. Not ported because tap-to-turn is already covered by the sticky-bar pager arrows (which also serve screen readers, No-JS, and show first/last-page state) and the footer continuation cards, while swipe covers gesture turning. Cutting it saves ~0.5 kB raw / ~0.23 kB gzipped of JS against the bundle budget (`src/bundler/v2_bundle_budget.ts`), plus a setting and the tap-vs-word/anchor/note-marker precedence rules. V1's stored `RD_MB_NAV_SIDE_TAP` value is ignored.
 
 ---
 
@@ -50,15 +56,7 @@ The following core reading surfaces from V1 have achieved full parity or intenti
   - Restoring this requires introducing a small menu/popover on section anchors or secondary actions before triggering the inline edit flow.
   - **Design Document**: See [`IN_FLOW_EDITING_DESIGN.md`](IN_FLOW_EDITING_DESIGN.md) for full architecture, anchored popover trigger UX, in-place textarea swap vs `contenteditable` analysis, and `/v2/api/report` pipeline integration.
 
-### 3.2. Swipe & Side-Tap Page Navigation
-
-- **V1 (`src/web/client/mobile/gestures.tsx`, `base_reader.tsx:L209-220`)**:
-  - **Swipe**: Touch swipe paging with live direction/progress feedback and a release-to-turn threshold.
-  - **Side Tap**: Clicking the outer 7.5% margins of the screen (`edgeDistance < 0.075`) triggered an instant page turn (left edge $\rightarrow$ previous page, right edge $\rightarrow$ next page).
-  - **Settings**: Exposed checkboxes for `swipeNavigation` (`SWIPE_NAV_KEY`) and `tapNavigation` (`TAP_NAV_KEY`) in mobile settings.
-- **V2**: ❌ **Missing**. Page turns only support keyboard shortcuts (`[`, `]`), sticky bar arrow buttons, and footer continuation cards.
-
-### 3.3. Passage Range Highlighting (`matchText`)
+### 3.2. Passage Range Highlighting (`matchText`)
 
 - **V1 (`src/web/client/pages/library/reader_url.ts`, `reader.tsx:L1081-1090`)**:
   - URL parameter `matchText=id~start~end__id2~start2~end2` parsed token start/end indices per section.
@@ -66,7 +64,7 @@ The following core reading surfaces from V1 have achieved full parity or intenti
   - Enabled external search results and citations to deep-link directly to highlighted sentence or phrase ranges.
 - **V2**: ❌ **Missing**. Supports `#sec-<id>` and `?jump=<id>`, but has no mechanism for range highlighting via URL parameters.
 
-### 3.4. External Content Reader
+### 3.3. External Content Reader
 
 - **V1 (`external_content_reader.tsx`, `external_content_storage.tsx`)**:
   - Dedicated reader interface allowing users to paste raw Latin text or fetch from a scraped URL.

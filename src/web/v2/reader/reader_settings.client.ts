@@ -86,6 +86,16 @@ export function removeWorkMacra(workId: string): void {
   storage.remove(macronStorageKey(workId));
 }
 
+/**
+ * Swipe page-turn toggle, stored under V1's key so existing choices carry
+ * over (`storage.getBoolean` also accepts V1's `{"w":true}` encoding). Kept
+ * out of {@link ReaderPreferences}: the page-nav controller reads it at
+ * gesture time, so nothing needs to be re-applied when it changes.
+ */
+export const SWIPE_NAV_KEY = "RD_MB_NAV_SWIPE";
+
+export const isSwipeNavOn = () => storage.getBoolean(SWIPE_NAV_KEY, true);
+
 export function parseReaderPreferences(raw: string | null): ReaderPreferences {
   if (!raw) return { ...DEFAULT_READER_PREFS };
   try {
@@ -299,6 +309,16 @@ export class MorcusReaderSettings extends BaseElement {
       });
     }
 
+    // The swipe toggle is read by the page-nav controller at gesture time, so
+    // writing storage is all a change needs.
+    const toggleSwipe = this.scope.$<HTMLInputElement>("#toggle-swipe-nav");
+    if (toggleSwipe) {
+      toggleSwipe.checked = isSwipeNavOn();
+      this.scope.listen(toggleSwipe, "change", () => {
+        storage.setBoolean(SWIPE_NAV_KEY, toggleSwipe.checked);
+      });
+    }
+
     // Reset defaults binding
     if (resetBtn) {
       this.scope.listen(resetBtn, "click", () => {
@@ -310,6 +330,8 @@ export class MorcusReaderSettings extends BaseElement {
           widthSelect.value = "default";
           setPageWidth("reader", "default");
         }
+        storage.remove(SWIPE_NAV_KEY);
+        if (toggleSwipe) toggleSwipe.checked = isSwipeNavOn();
         this.currentPrefs = { ...DEFAULT_READER_PREFS };
         this.saveAndEmit();
       });

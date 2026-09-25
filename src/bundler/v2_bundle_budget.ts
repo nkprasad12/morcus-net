@@ -14,10 +14,10 @@ export interface V2BundleBudget {
 /**
  * Production bundle size budget for UI V2 assets (minified). Sizes are KiB.
  *
- * Current baseline (2026-09-25):
- *   v2_bundle.js: 116.1 kB raw / 31.9 kB gzip
- *   v2.css:       114.4 kB raw / 19.0 kB gzip
- *   Combined:     230.5 kB raw / 50.9 kB gzip
+ * Current baseline (2026-09-25, after reader swipe navigation):
+ *   v2_bundle.js: 118.8 kB raw / 32.9 kB gzip
+ *   v2.css:       114.9 kB raw / 19.1 kB gzip
+ *   Combined:     233.7 kB raw / 52.0 kB gzip
  *
  * Ceilings provide headroom to absorb routine fixes and features without
  * false positives, while hard-blocking major regressions or accidental imports
