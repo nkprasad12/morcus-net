@@ -1,0 +1,123 @@
+/* External Content Reader: landing page and reading-page extras.
+ * The reading page itself is the library reader's frame (reader_*.css). */
+
+.external-landing {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.external-landing-header {
+  margin-bottom: var(--space-6);
+}
+
+.external-landing-title {
+  margin: 0 0 var(--space-3);
+  font-size: 1.8rem;
+}
+
+.external-landing-lede {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.external-import-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.external-form-title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.external-field-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.external-url-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.external-mode-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.external-mode-field legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+}
+
+.external-mode-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--space-2);
+  align-items: baseline;
+  cursor: pointer;
+}
+
+.external-mode-hint {
+  grid-column: 2;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.external-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.external-form-note,
+.external-landing-back {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.external-landing-back {
+  margin-top: var(--space-5);
+}
+
+.external-error {
+  margin: 0;
+  color: var(--danger);
+}
+
+/* Reading page */
+
+.external-notice {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.external-mode-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.external-mode-link[aria-current="true"] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.external-source {
+  margin: var(--space-3) 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

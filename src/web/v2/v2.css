@@ -28,6 +28,7 @@
 @import "./dialog/dialog.css";
 @import "./about/about.css";
 @import "./library/library.css";
+@import "./external/external.css";
 @import "./shell/page_width.css";
 
 /* Base link styling */

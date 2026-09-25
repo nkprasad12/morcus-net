@@ -6,6 +6,7 @@ import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
 import { asyncHandler } from "@/web/v2/core/async_handler.server";
 import { createDictRoutes } from "@/web/v2/dict/dict.server";
 import { createReaderRoutes } from "@/web/v2/reader/reader.server";
+import { createExternalRoutes } from "@/web/v2/external/external_routes.server";
 import { createApiRoutes, ApiRoutesOptions } from "@/web/v2/api_routes.server";
 
 const V2_ASSETS_DIR = path.resolve(process.cwd(), "build/v2");
@@ -44,6 +45,7 @@ export function createV2Router(
   // Mount vertical domain route handlers
   router.use(createDictRoutes(fusedDict));
   router.use(createReaderRoutes());
+  router.use(createExternalRoutes());
   router.use(createApiRoutes(fusedDict, options));
 
   // Library Catalog route
