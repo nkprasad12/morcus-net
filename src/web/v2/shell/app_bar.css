@@ -201,7 +201,7 @@ morcus-report-dialog:not(:defined) {
 .back-to-top,
 .reader-dict-back-to-top {
   position: fixed;
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  bottom: 20px;
   right: 20px;
   width: 36px;
   height: 36px;
@@ -276,9 +276,7 @@ morcus-report-dialog:not(:defined) {
 /* Float above bottom-docked drawers on mobile & tablet */
 @media (max-width: 1079.98px) {
   body:has(.drawer:not(.reader-dict-panel)) .back-to-top {
-    bottom: calc(
-      var(--drawer-height, 48svh) + env(safe-area-inset-bottom, 0px) + 16px
-    );
+    bottom: calc(var(--drawer-height, 48svh) + 16px);
     transition: opacity 0.2s ease, transform 0.2s ease,
       background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
       box-shadow 0.15s ease;
@@ -286,21 +284,17 @@ morcus-report-dialog:not(:defined) {
 
   body:has(.drawer.drawer-minimized:not(.reader-dict-panel)) .back-to-top,
   body:has(.toc-details:not([open])) .back-to-top {
-    bottom: calc(
-      var(--drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px
-    );
+    bottom: calc(var(--drawer-min-height, 54px) + 16px);
   }
 
   body:has(.drawer:target:not(.reader-dict-panel)) .back-to-top {
-    bottom: calc(55svh + env(safe-area-inset-bottom, 0px) + 16px);
+    bottom: calc(55svh + 16px);
   }
 }
 
 @media (max-width: 640px) {
   body:has(.reader-dict-panel) .back-to-top {
-    bottom: calc(
-      var(--drawer-height, 48svh) + env(safe-area-inset-bottom, 0px) + 16px
-    );
+    bottom: calc(var(--drawer-height, 48svh) + 16px);
     transition: opacity 0.2s ease, transform 0.2s ease,
       background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
       box-shadow 0.15s ease;
@@ -309,18 +303,16 @@ morcus-report-dialog:not(:defined) {
   body:has(.reader-layout-empty .reader-dict-panel) .back-to-top,
   body:has(.reader-dict-panel.drawer-minimized) .back-to-top,
   body:has(.reader-split-layout.reader-layout-empty) .back-to-top {
-    bottom: calc(
-      var(--drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px
-    );
+    bottom: calc(var(--drawer-min-height, 54px) + 16px);
   }
 
   body:has(.reader-dict-panel:target) .back-to-top {
-    bottom: calc(55svh + env(safe-area-inset-bottom, 0px) + 16px);
+    bottom: calc(55svh + 16px);
   }
 
   body:has(.drawer-dismissed) .back-to-top,
   body:has(.reader-drawer-dismiss-target:target) .back-to-top {
-    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    bottom: 62px;
   }
 }
 

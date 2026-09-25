@@ -105,8 +105,7 @@ body {
 .container {
   max-width: 900px;
   margin: 0 auto;
-  padding: var(--space-5) var(--space-6)
-    max(var(--space-9), calc(24px + env(safe-area-inset-bottom, 0px)));
+  padding: var(--space-5) var(--space-6) max(var(--space-9), 24px);
 }
 
 morcus-theme-toggle:not(:defined),

@@ -740,7 +740,7 @@ test.describe("UI V2 dictionary", () => {
     const tip = page.locator(".legend-settings-tip");
     await expect(tip).toBeInViewport();
 
-    // Verify container padding includes safe-area inset and scales with font size
+    // Verify container keeps enough bottom padding to clear the footer tip
     const paddingBottom = await page.evaluate(() => {
       const container = document.querySelector(".container");
       return container ? window.getComputedStyle(container).paddingBottom : "";
@@ -761,27 +761,6 @@ test.describe("UI V2 dictionary", () => {
       );
       const windowHeight = await page.evaluate(() => window.innerHeight);
       expect(tipBottom).toBeLessThanOrEqual(windowHeight);
-    }
-
-    // If running in Chromium, test simulated safe-area insets override via CDP
-    if (testInfo.project.name === "MobileChrome") {
-      const client = await page.context().newCDPSession(page);
-      await client.send("Emulation.setSafeAreaInsetsOverride", {
-        insets: { top: 0, bottom: 34, left: 0, right: 0 },
-      });
-
-      // Scroll to bottom with safe-area inset
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-
-      const safeAreaPaddingBottom = await page.evaluate(() => {
-        const container = document.querySelector(".container");
-        return container
-          ? window.getComputedStyle(container).paddingBottom
-          : "";
-      });
-      // 24px base + 34px safe area inset = 58px
-      expect(parseFloat(safeAreaPaddingBottom)).toBe(58);
-      await expect(tip).toBeInViewport();
     }
   });
 
