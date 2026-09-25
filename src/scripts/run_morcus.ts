@@ -22,6 +22,7 @@ const BUNDLE = "bundle";
 const BUILD = "build";
 const E2E = "e2e";
 const CORPUS = "corpus";
+const VISUAL_DIFF = "visual-diff";
 
 const cleanupOperations: (() => unknown)[] = [];
 
@@ -41,6 +42,8 @@ if (args.command === WEB_SERVER) {
   runE2eTests(args).then(assert);
 } else if (args.command === CORPUS) {
   runCorpusCommand(args).then(assert);
+} else if (args.command === VISUAL_DIFF || args.command === "diff") {
+  runVisualDiff(args).then(assert);
 }
 
 interface CommandArgument {
@@ -299,6 +302,61 @@ function parseArguments() {
     help: "Runs Playwright tests in headed browser mode.",
     action: "store_true",
   });
+  e2e.add_argument("--diff", {
+    help:
+      "With --visual: open the Visual Diff Inspector afterwards. Without --update " +
+      "it shows Playwright's failures (expected vs actual); with --update it " +
+      "shows the rewritten baselines against HEAD.",
+    action: "store_true",
+  });
+
+  const visualDiff = subparsers.add_parser(VISUAL_DIFF, {
+    aliases: ["diff"],
+    help: "Interactive viewer for screenshot baseline changes (flip, split, diff mask).",
+  });
+  visualDiff.add_argument("-s", "--source", {
+    help:
+      "Where to find changes: 'git' (baselines vs --ref), 'results' (Playwright " +
+      "failures in test-results/), or 'auto' (git, then results). Default: auto.",
+    choices: ["auto", "git", "results"],
+    default: "auto",
+  });
+  visualDiff.add_argument("-r", "--ref", {
+    help: "Git ref to compare against for the git source (default: HEAD).",
+    default: "HEAD",
+  });
+  visualDiff.add_argument("-d", "--dir", {
+    help: "Snapshot directory for the git source (default: src/integration/screenshot/browser_v2_screenshot.test.ts-snapshots).",
+    default: "",
+  });
+  visualDiff.add_argument("--results-dir", {
+    help: "Playwright output directory for the results source (default: test-results).",
+    default: "",
+  });
+  visualDiff.add_argument("-o", "--out", {
+    help: "Output directory for diff artifacts and the viewer (default: .cache/visual-diff).",
+    default: "",
+  });
+  visualDiff.add_argument("-p", "--port", {
+    help: "Port to serve the viewer on; the next free port is used if taken (default: 8899).",
+    type: "int",
+  });
+  visualDiff.add_argument("--host", {
+    help: "Interface to bind the viewer to. Use 127.0.0.1 to restrict access to this machine (default: 0.0.0.0, all interfaces).",
+    default: "",
+  });
+  visualDiff.add_argument("--no-server", {
+    help: "Only write the viewer and report; do not start a server.",
+    action: "store_true",
+  });
+  visualDiff.add_argument("--open", {
+    help: "Open the viewer in the default browser.",
+    action: "store_true",
+  });
+  visualDiff.add_argument("--report", {
+    help: "Also write the markdown report to this path.",
+    default: "",
+  });
 
   const corpus = subparsers.add_parser(CORPUS, {
     help: "Convenience commands for the corpus.",
@@ -328,7 +386,16 @@ function parseArguments() {
     default: "10",
   });
 
-  for (const subcommand of [editor, worker, bundle, web, build, e2e, corpus]) {
+  for (const subcommand of [
+    editor,
+    worker,
+    bundle,
+    web,
+    build,
+    e2e,
+    corpus,
+    visualDiff,
+  ]) {
     subcommand.add_argument("--bun", {
       help: "Runs supported commands with bun.",
       action: "store_true",
@@ -687,7 +754,42 @@ async function runE2eTests(args: any) {
     }
 
     steps.push({
-      operation: () => shellStep(command.join(" "), childEnv),
+      operation: async () => {
+        let testError: unknown = undefined;
+        try {
+          await shellStep(command.join(" "), childEnv);
+        } catch (err) {
+          testError = err;
+        }
+        if (isVisual && args.diff) {
+          // Without --update, Playwright leaves expected/actual pairs for each
+          // failure in test-results/. With --update, the baselines themselves
+          // were rewritten, so compare them against HEAD.
+          const serving = await runVisualDiffCommand({
+            source: args.update ? "git" : "results",
+          });
+          if (testError !== undefined && serving) {
+            // Throwing here would end the process and take the viewer down
+            // with it; record the failure in the exit code instead.
+            process.exitCode = 1;
+            console.log(
+              "⚠️  Visual tests failed; review the failures in the inspector above."
+            );
+            return;
+          }
+        } else if (isVisual && args.update) {
+          console.log(
+            "\n📸 Snapshots updated. Run `./morcus.sh visual-diff` to review them against HEAD."
+          );
+        } else if (isVisual && testError !== undefined) {
+          console.log(
+            "\n🔍 Run `./morcus.sh visual-diff --source results` to inspect the failures."
+          );
+        }
+        if (testError !== undefined) {
+          throw testError;
+        }
+      },
       label: isVisual
         ? "Running V2 visual regression tests"
         : "Running V2 E2E tests",
@@ -774,4 +876,37 @@ async function runCorpusCommand(args: any) {
     label: "Building corpus",
   });
   return runPipeline(steps);
+}
+
+/**
+ * Runs the Visual Diff Inspector. Returns true iff a viewer server was
+ * started (and is keeping the process alive). Throws on failure.
+ */
+async function runVisualDiffCommand(args: any): Promise<boolean> {
+  const { runVisualDiffInspector } = await import(
+    "@/scripts/visual_diff/visual_diff"
+  );
+  const result = await runVisualDiffInspector({
+    source: args.source || "auto",
+    ref: args.ref || undefined,
+    snapshotDir: args.dir || undefined,
+    resultsDir: args.results_dir || undefined,
+    outDir: args.out || undefined,
+    port: args.port || undefined,
+    host: args.host || undefined,
+    startServer: !args.no_server,
+    openBrowser: Boolean(args.open),
+    reportPath: args.report || undefined,
+  });
+  return result.server !== undefined;
+}
+
+async function runVisualDiff(args: any): Promise<boolean> {
+  try {
+    await runVisualDiffCommand(args);
+    return true;
+  } catch (err) {
+    console.error("Visual diff inspection failed:", err);
+    return false;
+  }
 }
