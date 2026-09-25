@@ -1,4 +1,8 @@
-import { fixupConfigRules, fixupPluginRules } from "@eslint/compat";
+import {
+  fixupConfigRules,
+  fixupPluginRules,
+  includeIgnoreFile,
+} from "@eslint/compat";
 import react from "eslint-plugin-react";
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import jest from "eslint-plugin-jest";
@@ -71,6 +75,9 @@ const NO_CLIENT_IMPORTS = {
 };
 
 export default [
+  // Flat config does not read .gitignore on its own, so generated output such as
+  // playwright-report/ (which contains bundled .js) would otherwise be linted.
+  includeIgnoreFile(path.resolve(__dirname, ".gitignore")),
   {
     ignores: [
       "**/jest.config.js",
