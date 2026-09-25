@@ -289,8 +289,8 @@ settings.**
 
 ### Cause
 
-The server infers intent from `source === "url"`, which cannot distinguish *"the user just ticked
-boxes in our UI"* from *"someone pasted a URL"*. Both arrive as a `dict=` param.
+The server infers intent from `source === "url"`, which cannot distinguish _"the user just ticked
+boxes in our UI"_ from _"someone pasted a URL"_. Both arrive as a `dict=` param.
 
 ### Proposed Solution
 
@@ -298,20 +298,20 @@ Stop inferring; state the intent, with a signal that cannot survive being copied
 
 1. Make the Apply button a **named submit button** — `<button type="submit" name="save" value="1">`.
    The marker is then sent only when the user clicks the control that means "save". A hidden
-   `<input>` would be wrong: hidden fields submit on *every* submission, so an ordinary search would
+   `<input>` would be wrong: hidden fields submit on _every_ submission, so an ordinary search would
    persist whatever selection happened to be on screen.
 2. The router writes preference cookies **iff** the marker is present.
 3. It then **303s to the same URL with the marker stripped**.
 
 Step 3 is load-bearing. Without it the marker lands in the address bar after a GET submit and gets
 copied along with everything else; with it, the marker's lifetime is exactly one request, so a copied
-URL *cannot* carry persistence intent.
+URL _cannot_ carry persistence intent.
 
-| Request                                      | Cookie written               | Renders                     |
-| :------------------------------------------- | :--------------------------- | :-------------------------- |
-| Own form submit — `?q=amo&dict=GAF&save=1`   | ✅ then 303 → `?q=amo&dict=GAF` | GAF                      |
-| Recipient opens shared `?q=amo&dict=GAF`     | ❌                            | GAF — the sender's exact page |
-| Recipient's own `?q=amo` afterwards          | ❌                            | their own saved preferences |
+| Request                                    | Cookie written                  | Renders                       |
+| :----------------------------------------- | :------------------------------ | :---------------------------- |
+| Own form submit — `?q=amo&dict=GAF&save=1` | ✅ then 303 → `?q=amo&dict=GAF` | GAF                           |
+| Recipient opens shared `?q=amo&dict=GAF`   | ❌                              | GAF — the sender's exact page |
+| Recipient's own `?q=amo` afterwards        | ❌                              | their own saved preferences   |
 
 The rule this establishes, which is worth stating in a comment:
 
@@ -347,7 +347,7 @@ isBorrowedView =
 
 This is a pure function of (URL, cookie), recomputed per request — no session state, and it stays
 correct as the user searches onward. The search bar already renders a status tray whose job is showing
-what is in effect (*"In Latin • Inflection on"*); a third chip belongs there:
+what is in effect (_"In Latin • Inflection on"_); a third chip belongs there:
 
 ```
 In FR • Inflection on • From this link — not saved   [Keep these] [Use mine]
@@ -359,9 +359,8 @@ params (the server falls back to the cookie), and **Keep these** is the `name="s
 ### Open question: JS adoption semantics
 
 In No-JS, "change" and "save" are separate gestures (tick, then Apply). In JS they are the same
-gesture: one tick calls `dictSettingsStore.set()`, writing localStorage *and* the cookie, adopting the
+gesture: one tick calls `dictSettingsStore.set()`, writing localStorage _and_ the cookie, adopting the
 sender's whole selection along with the edit. Options: accept it and fire a toast on first adoption
-(*"Saved as your dictionaries"*, reusing `#v2-toast`), or have JS defer persistence until an explicit
+(_"Saved as your dictionaries"_, reusing `#v2-toast`), or have JS defer persistence until an explicit
 "Keep these" while borrowed — more correct, but it makes the checkbox behave differently depending on
 how the user arrived at the page.
-

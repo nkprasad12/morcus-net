@@ -34,7 +34,7 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       per page load, and block parsing. A stale unminified artifact weighs 2.78 KB — mostly webpack
       module runtime wrapping a CSS import whose JS output is empty — and deploying one would silently
       add ~2.5 KB to every response with no other symptom. [`bundle_validation.test.ts`](../../integration/suites/bundle_validation.test.ts)
-      already budgets the main bundle (the *cached* asset) and is the natural home for an assertion on
+      already budgets the main bundle (the _cached_ asset) and is the natural home for an assertion on
       this one. A guard here also catches an unminified deploy, which is otherwise invisible.
 
 ---
@@ -91,9 +91,9 @@ dialog markup. Gaps:
 
 **Close the No-JS testing gap.** Found while reviewing why `ca9cb47e` (No-JS dictionary selection)
 shipped broken. The gap was not a missing test: [`browser_v2_e2e.test.ts`](../../integration/suites/browser_v2_e2e.test.ts)
-*"exposes usable dictionary settings without JavaScript"* covers that exact CUJ and **passed the whole
+_"exposes usable dictionary settings without JavaScript"_ covers that exact CUJ and **passed the whole
 time the feature was broken**. Under the bug the server returned all eight dictionaries, and every
-assertion still held — it checked that Lewis & Short was *present*, using L&S (the default, and the
+assertion still held — it checked that Lewis & Short was _present_, using L&S (the default, and the
 first card) as the fixture, then asserted on the request URL rather than the response.
 
 - [ ] 🔴 **Add a jsdom "form contract" test layer.** Nothing today sits between "the SSR emits the
@@ -115,7 +115,7 @@ first card) as the fixture, then asserted on the request URL rather than the res
       naive parsing.
 - [ ] 🟡 **Test parameter precedence, not just parameters.** Every dict param was covered in
       isolation (`?dict=`, `?d=`, `?o=`) and none in combination, so a precedence inversion was
-      invisible. Same for wire format: tests used the shapes *our client* emits, never the shapes a
+      invisible. Same for wire format: tests used the shapes _our client_ emits, never the shapes a
       native form emits (hidden default + checkbox → repeated key).
 - [ ] 🟡 **Convert the selection specs from single actions to journeys.** select → search again →
       reload → toggle inflection off → and back. Each of the four root causes died at a different
