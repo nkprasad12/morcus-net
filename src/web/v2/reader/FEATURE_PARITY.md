@@ -11,7 +11,6 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 | Feature Area                                 | V1 UI (SPA)                                                                                       | V2 UI (SSR + Progressive Enhancement)                                                                           | Parity Status        |
 | :------------------------------------------- | :------------------------------------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------- | :------------------- |
-| **Screen Wake Lock**                         | `useWakeLock` requests `navigator.wakeLock` to prevent display timeout while reading on mobile    | No wake lock helper or sentinel management in V2                                                                | ❌ **Missing in V2** |
 | **In-Flow "Edit and Report"**                | Section anchor opens a menu offering "Copy link" **and** "Edit and Report" (`contenteditable`)    | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit` reporting               | ❌ **Missing in V2** |
 | **Swipe & Side-Tap Page Navigation**         | Touch swipe paging with gesture progress overlay, plus edge-tap navigation (`handleSideTap`)      | Arrows, `[` / `]` keyboard shortcuts, and footer continuation cards only; no touch gestures or margin tap zones | ❌ **Missing in V2** |
 | **Passage Range Highlighting (`matchText`)** | `matchText=id~start~end` query parameter highlights specific word token ranges across the passage | Anchor hash (`#sec-*`) and `?jump=` jump to section, but cannot highlight multi-word phrase ranges              | ❌ **Missing in V2** |
@@ -34,22 +33,13 @@ The following core reading surfaces from V1 have achieved full parity or intenti
 - ✅ **Embedded Dictionary**: Resizable split panel on desktop (`ReaderLayoutController`) and draggable bottom drawer on mobile (`DrawerController`).
 - ✅ **Section Label Visibility**: `showGutter` preference in reader settings typography popover.
 - ✅ **Outer Page Margins**: V1 dragged the outer gutters (`draggables.tsx`); V2 has Narrow / Default / Wide / Full page width presets in the Appearance popover (`GlobalSettings.readerWidth`, applied pre-paint; see `shell/page_width.css`).
+- ✅ **Screen Wake Lock**: `WakeLockController` (`core/wake_lock.client.ts`) holds a single `screen` sentinel for the reader's connected lifetime, released after 5 minutes idle. Unlike V1, scrolling (including inner split-pane scrollers), taps, keys, page turns, and dictionary-iframe navigations all count as activity; browser-initiated releases are re-acquired on return, and the lock is released on disconnect. Applies on all form factors with no setting.
 
 ---
 
 ## 3. Detailed Gap Analysis for Remaining Items
 
-### 3.1. Screen Wake Lock (`useWakeLock`)
-
-- **V1 (`src/web/client/mobile/wake_lock.tsx`, `base_reader.tsx:L138-153`)**:
-  - Uses `navigator?.wakeLock?.request("screen")` to keep the device screen illuminated while reading.
-  - Automatically requests a timed lock (10 minutes, `EXTENSION_MS = 600,000`).
-  - Extends/renews the lock on user interaction (looking up words, resizing drawer, switching tabs).
-  - Re-acquires the lock automatically on `visibilitychange` when returning to the tab (`document.visibilityState === "visible"`).
-  - Releases sentinel cleanly on teardown.
-- **V2**: ❌ **Missing**. No wake lock logic exists in `reader_view.client.ts`. Readers on mobile devices experience screen dimming/sleep while reading long Latin passages.
-
-### 3.2. In-Flow "Edit and Report"
+### 3.1. In-Flow "Edit and Report"
 
 - **V1 (`tooltips.tsx:L215-256`, `reader.tsx:L744`, `L1057`)**:
   - Section-header anchor opened a `TooltipMenu` offering "Copy link" and "Edit and Report".
@@ -60,7 +50,7 @@ The following core reading surfaces from V1 have achieved full parity or intenti
   - Restoring this requires introducing a small menu/popover on section anchors or secondary actions before triggering the inline edit flow.
   - **Design Document**: See [`IN_FLOW_EDITING_DESIGN.md`](IN_FLOW_EDITING_DESIGN.md) for full architecture, anchored popover trigger UX, in-place textarea swap vs `contenteditable` analysis, and `/v2/api/report` pipeline integration.
 
-### 3.3. Swipe & Side-Tap Page Navigation
+### 3.2. Swipe & Side-Tap Page Navigation
 
 - **V1 (`src/web/client/mobile/gestures.tsx`, `base_reader.tsx:L209-220`)**:
   - **Swipe**: Touch swipe paging with live direction/progress feedback and a release-to-turn threshold.
@@ -68,7 +58,7 @@ The following core reading surfaces from V1 have achieved full parity or intenti
   - **Settings**: Exposed checkboxes for `swipeNavigation` (`SWIPE_NAV_KEY`) and `tapNavigation` (`TAP_NAV_KEY`) in mobile settings.
 - **V2**: ❌ **Missing**. Page turns only support keyboard shortcuts (`[`, `]`), sticky bar arrow buttons, and footer continuation cards.
 
-### 3.4. Passage Range Highlighting (`matchText`)
+### 3.3. Passage Range Highlighting (`matchText`)
 
 - **V1 (`src/web/client/pages/library/reader_url.ts`, `reader.tsx:L1081-1090`)**:
   - URL parameter `matchText=id~start~end__id2~start2~end2` parsed token start/end indices per section.
@@ -76,7 +66,7 @@ The following core reading surfaces from V1 have achieved full parity or intenti
   - Enabled external search results and citations to deep-link directly to highlighted sentence or phrase ranges.
 - **V2**: ❌ **Missing**. Supports `#sec-<id>` and `?jump=<id>`, but has no mechanism for range highlighting via URL parameters.
 
-### 3.5. External Content Reader
+### 3.4. External Content Reader
 
 - **V1 (`external_content_reader.tsx`, `external_content_storage.tsx`)**:
   - Dedicated reader interface allowing users to paste raw Latin text or fetch from a scraped URL.

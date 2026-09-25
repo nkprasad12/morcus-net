@@ -18,6 +18,7 @@ import {
   showToast,
   syncIframeTheme,
   tokenizeTargets,
+  WakeLockController,
 } from "@/web/v2/core/index.client";
 import { removeMacrons } from "@/common/text_cleaning";
 import {
@@ -155,6 +156,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       },
     })
   );
+  /** Keeps the screen awake while reading; released on idle or disconnect. */
+  private readonly wakeLock = this.addController(
+    new WakeLockController({ root: this })
+  );
   private currentNoteId: string = "";
   private currentNoteLabel: string = "";
   private router: QueryParamSync | null = null;
@@ -265,6 +270,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (iframe) {
       this.scope.listen(iframe, "load", () => {
         this.applyDictScale(this.currentPrefs.dictScale);
+        // Searches inside the dictionary iframe are activity too, but its
+        // events never reach this document's listeners.
+        this.wakeLock.extend();
       });
       if (this.currentPrefs.dictScale !== 100) {
         const src = iframe.getAttribute("src");
@@ -1410,6 +1418,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     targetUrl: string,
     options: { push?: boolean; isPopState?: boolean } = {}
   ): Promise<boolean> {
+    // Back/forward gestures turn pages without any in-document input event.
+    this.wakeLock.extend();
     const textPanel = this.querySelector<HTMLElement>(".reader-text-panel");
     if (!textPanel) {
       window.location.href = targetUrl;

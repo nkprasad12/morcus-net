@@ -13,6 +13,7 @@ import {
   DRAWER_FLOOR_SVH,
 } from "@/web/v2/core/drawer.client";
 import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
+import { WAKE_LOCK_IDLE_MS } from "@/web/v2/core/wake_lock.client";
 
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
@@ -2293,5 +2294,70 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       );
       expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe("38svh");
     });
+  });
+});
+
+describe("MorcusReaderView screen wake lock", () => {
+  let requests: Array<{ released: boolean; release: jest.Mock }>;
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    localStorage.clear();
+    document.body.innerHTML = "";
+    requests = [];
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "visible",
+    });
+    Object.defineProperty(navigator, "wakeLock", {
+      configurable: true,
+      value: {
+        request: jest.fn(() => {
+          const sentinel = Object.assign(new EventTarget(), {
+            released: false,
+            type: "screen",
+            release: jest.fn(() => {
+              sentinel.released = true;
+              sentinel.dispatchEvent(new Event("release"));
+              return Promise.resolve();
+            }),
+          });
+          requests.push(sentinel);
+          return Promise.resolve(sentinel);
+        }),
+      },
+    });
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+    delete (navigator as unknown as Record<string, unknown>).wakeLock;
+    jest.useRealTimers();
+  });
+
+  async function flush() {
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+  }
+
+  test("holds a lock while mounted and releases it when the reader is removed", async () => {
+    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
+    await flush();
+    expect(requests).toHaveLength(1);
+    expect(requests[0].released).toBe(false);
+
+    el.remove();
+    expect(requests[0].released).toBe(true);
+  });
+
+  test("dictionary iframe navigation counts as activity", async () => {
+    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
+    await flush();
+    jest.advanceTimersByTime(WAKE_LOCK_IDLE_MS);
+    expect(requests[0].released).toBe(true);
+
+    el.querySelector("#dict-frame")!.dispatchEvent(new Event("load"));
+    await flush();
+    expect(requests).toHaveLength(2);
+    expect(requests[1].released).toBe(false);
   });
 });

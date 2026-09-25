@@ -36,6 +36,21 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       add ~2.5 KB to every response with no other symptom. [`bundle_validation.test.ts`](../../integration/suites/bundle_validation.test.ts)
       already budgets the main bundle (the _cached_ asset) and is the natural home for an assertion on
       this one. A guard here also catches an unminified deploy, which is otherwise invisible.
+- [ ] 🔴 **Bundle splitting strategy.** Every page downloads the whole V2 client as one
+      `v2_bundle.js`, because [`v2_bundle.client.ts`](v2_bundle.client.ts) and the
+      `v2_elements.client.ts` manifest register every custom element up front. So a dictionary
+      visitor pays for the reader, and the reverse. The JS budget in
+      [`v2_bundle_budget.ts`](../../bundler/v2_bundle_budget.ts) was raised on 2026-09-25 from
+      115 → 125 kB raw and 32 → 35 kB gzip, after the reader wake lock pushed the bundle to 116.1 / 31.9.
+      That buys room for normal feature work, but it isn't a fix. Before the next bump, decide
+      how to split: - Per-topic entry chunks (shell/core + `dict` + `reader` + `library`), with the page shell
+      emitting only the chunks a route needs. Rsbuild `splitChunks` could pull out `core/` as a
+      shared, long-cached chunk. - Or lazy `import()` of heavy topic modules, triggered by whether the page contains the
+      element (e.g. only fetch the reader when `morcus-reader-view` is present). - Constraints to keep: zero-JS baseline unaffected; `critical.js` stays inlined and
+      separate; the manifest/`registerElement` conformance test
+      (`core/reattach_conformance.test.ts`) must keep working; the budget becomes per-chunk,
+      plus a per-route total. - Measure first: run `./morcus.sh bundle -a` and attribute bytes to each topic, so the split
+      follows the real weight rather than guesses.
 
 ---
 
