@@ -42,14 +42,14 @@
 
 .search-btn {
   position: absolute;
-  right: 6px;
+  right: var(--space-3);
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   padding: var(--space-3);
   background: transparent;
   border: none;
@@ -60,7 +60,7 @@
 }
 
 .search-btn:hover {
-  color: var(--app-bar-nav-text, var(--primary));
+  color: var(--primary);
   background-color: var(--tag-bg);
 }
 
@@ -127,7 +127,7 @@
 .search-tray {
   border-top: 1px solid var(--border);
   background-color: var(--tag-bg);
-  padding: var(--space-2) var(--space-5);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -208,8 +208,8 @@
 }
 
 .search-tray-right .settings-btn {
-  height: 26px;
-  width: 26px;
+  height: 1.625rem;
+  width: 2rem;
   padding: var(--space-2);
   border: none;
   background: transparent;
@@ -219,7 +219,7 @@
 }
 
 .search-tray-right .settings-btn:hover {
-  color: var(--app-bar-text);
+  color: var(--primary);
   background-color: var(--card-header-bg, rgba(0, 0, 0, 0.06));
 }
 

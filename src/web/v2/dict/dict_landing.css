@@ -182,7 +182,7 @@
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--primary);
+  color: var(--dict-title);
   font-weight: 700;
 }
 
