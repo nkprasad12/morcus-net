@@ -130,6 +130,11 @@ export function renderPageShell(options: PageShellOptions): string {
   const bodyClasses: string[] = [];
   if (isReader) bodyClasses.push("body-reader");
   if (isEmbedded) bodyClasses.push("body-embedded");
+  // Scopes the dictionary page width preset (shell/page_width.css). Embedded
+  // dictionaries are excluded so the reader's iframe ignores the setting.
+  if (options.activePage === "dicts" && !isReader && !isEmbedded) {
+    bodyClasses.push("body-dict");
+  }
   const bodyClass =
     bodyClasses.length > 0 ? ` class="${bodyClasses.join(" ")}"` : "";
 

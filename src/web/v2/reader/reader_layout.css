@@ -208,13 +208,13 @@
   }
 
   body.body-reader .app-bar-inner {
-    max-width: 1400px;
+    max-width: var(--reader-page-max, 1400px);
     padding-left: var(--space-7);
     padding-right: var(--space-7);
   }
 
   .container.container-reader {
-    max-width: 1400px;
+    max-width: var(--reader-page-max, 1400px);
     height: calc(100vh - 65px);
     padding: var(--space-5) var(--space-7);
     display: flex;

@@ -14,13 +14,16 @@ import { trackPointerDrag } from "@/web/v2/core/gesture.client";
 import { storage } from "@/web/v2/core/storage.client";
 
 /**
- * Bounds for the desktop dictionary panel, in px. `MIN_TEXT_PANEL_WIDTH` is the
- * slice reserved for the passage, so the dictionary may grow to the container
- * width less that much, capped at `MAX_SPLIT_WIDTH`.
+ * Bounds for the desktop dictionary panel, in px. There is no fixed maximum:
+ * the dictionary may grow until the passage is down to `MIN_TEXT_PANEL_WIDTH`,
+ * so on wide screens (or the Full page width preset) it can take most of the
+ * row. `SPLIT_CHROME_WIDTH` is the splitter (16px) plus the passage column's
+ * right margin (`--space-3`, 6px); reader_dict.css mirrors the same total as
+ * `max-width: calc(100% - 342px)`.
  */
 export const MIN_SPLIT_WIDTH = 300;
-export const MAX_SPLIT_WIDTH = 800;
 export const MIN_TEXT_PANEL_WIDTH = 320;
+export const SPLIT_CHROME_WIDTH = 22;
 export const DEFAULT_SPLIT_WIDTH = 420;
 export const READER_DICT_WIDTH_STORAGE_KEY = "morcus_v2_reader_dict_width";
 
@@ -31,7 +34,7 @@ export const READER_DICT_WIDTH_STORAGE_KEY = "morcus_v2_reader_dict_width";
 export function computeMaxSplitWidth(containerWidth: number): number {
   return Math.max(
     MIN_SPLIT_WIDTH,
-    Math.min(MAX_SPLIT_WIDTH, containerWidth - MIN_TEXT_PANEL_WIDTH)
+    containerWidth - MIN_TEXT_PANEL_WIDTH - SPLIT_CHROME_WIDTH
   );
 }
 
@@ -110,7 +113,9 @@ export class ReaderLayoutController extends BaseController {
     const savedWidth = storage.get(this.storageKey);
     if (savedWidth) {
       const parsed = parseInt(savedWidth, 10);
-      if (!isNaN(parsed) && parsed >= MIN_SPLIT_WIDTH && parsed <= 900) {
+      // No upper bound: the saved width may come from a wider window, and
+      // reader_dict.css clamps the panel to the current container.
+      if (!isNaN(parsed) && parsed >= MIN_SPLIT_WIDTH) {
         splitLayout.style.setProperty("--dict-width", `${parsed}px`);
         splitter.setAttribute("aria-valuenow", String(parsed));
       }
@@ -124,7 +129,7 @@ export class ReaderLayoutController extends BaseController {
     if (!splitter || !splitLayout || !dictPanel) return;
 
     let startWidth = 0;
-    let maxWidth = MAX_SPLIT_WIDTH;
+    let maxWidth = MIN_SPLIT_WIDTH;
 
     this.scope.use(
       trackPointerDrag(splitter, {
@@ -147,6 +152,7 @@ export class ReaderLayoutController extends BaseController {
           startWidth = dictPanel.getBoundingClientRect().width;
           const containerWidth = splitLayout.getBoundingClientRect().width;
           maxWidth = computeMaxSplitWidth(containerWidth);
+          splitter.setAttribute("aria-valuemax", String(maxWidth));
         },
         onMove: ({ dx }) => {
           const newWidth = Math.round(
@@ -189,6 +195,7 @@ export class ReaderLayoutController extends BaseController {
       );
       const containerWidth = splitLayout.getBoundingClientRect().width;
       const keyMaxWidth = computeMaxSplitWidth(containerWidth);
+      splitter.setAttribute("aria-valuemax", String(keyMaxWidth));
       let nextWidth: number | null = null;
 
       if (e.key === "ArrowLeft") {

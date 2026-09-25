@@ -33,6 +33,18 @@ try {
           String(settings.highlightStrength / 50)
         );
       }
+      // Page width presets change layout, so they must land before first
+      // paint. Mirrors core/page_width.client.ts; pixel values live in
+      // shell/page_width.css.
+      for (const surface of ["reader", "dict"]) {
+        const width: unknown = Reflect.get(settings, surface + "Width");
+        if (typeof width === "string" && /^(narrow|wide|full)$/.test(width)) {
+          document.documentElement.setAttribute(
+            "data-" + surface + "-width",
+            width
+          );
+        }
+      }
     }
   }
 } catch {

@@ -5,7 +5,7 @@
 import {
   computeMaxSplitWidth,
   DEFAULT_SPLIT_WIDTH,
-  MAX_SPLIT_WIDTH,
+  SPLIT_CHROME_WIDTH,
   MIN_SPLIT_WIDTH,
   MIN_TEXT_PANEL_WIDTH,
   READER_DICT_WIDTH_STORAGE_KEY,
@@ -16,25 +16,23 @@ import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 installPointerEventShims();
 
 describe("computeMaxSplitWidth", () => {
-  test("caps at MAX_SPLIT_WIDTH when container is sufficiently wide", () => {
-    // 1400 - 320 = 1080 > 800
-    expect(computeMaxSplitWidth(1400)).toBe(MAX_SPLIT_WIDTH);
-    // 1120 - 320 = 800
-    expect(computeMaxSplitWidth(1120)).toBe(MAX_SPLIT_WIDTH);
+  const RESERVED = MIN_TEXT_PANEL_WIDTH + SPLIT_CHROME_WIDTH; // 342
+
+  test("has no fixed cap on wide containers", () => {
+    expect(computeMaxSplitWidth(1400)).toBe(1400 - RESERVED);
+    expect(computeMaxSplitWidth(2150)).toBe(2150 - RESERVED);
   });
 
-  test("reserves MIN_TEXT_PANEL_WIDTH for reading passage when container is medium", () => {
+  test("reserves the passage minimum plus splitter chrome", () => {
     expect(MIN_TEXT_PANEL_WIDTH).toBe(320);
-    // 800 - 320 = 480
-    expect(computeMaxSplitWidth(800)).toBe(800 - MIN_TEXT_PANEL_WIDTH);
-    // 900 - 320 = 580
-    expect(computeMaxSplitWidth(900)).toBe(900 - MIN_TEXT_PANEL_WIDTH);
+    expect(SPLIT_CHROME_WIDTH).toBe(22);
+    expect(computeMaxSplitWidth(800)).toBe(800 - RESERVED);
+    expect(computeMaxSplitWidth(900)).toBe(900 - RESERVED);
   });
 
   test("floors at MIN_SPLIT_WIDTH when container is narrow", () => {
-    // 500 - 320 = 180 < 300
-    expect(computeMaxSplitWidth(500)).toBe(MIN_SPLIT_WIDTH);
-    // 300 - 320 = -20 < 300
+    // 600 - 342 = 258 < 300
+    expect(computeMaxSplitWidth(600)).toBe(MIN_SPLIT_WIDTH);
     expect(computeMaxSplitWidth(300)).toBe(MIN_SPLIT_WIDTH);
   });
 });
@@ -134,7 +132,7 @@ describe("ReaderLayoutController", () => {
     controller.dispose();
   });
 
-  test("ignores invalid or out-of-bounds widths in localStorage", () => {
+  test("ignores invalid or too-small widths in localStorage", () => {
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "150"); // < 300
     let controller = connectController({ root: container });
     expect(controller.getWidth()).toBe(420);
@@ -143,14 +141,19 @@ describe("ReaderLayoutController", () => {
     );
     controller.dispose();
 
-    localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "1200"); // > 900
-    controller = connectController({ root: container });
-    expect(controller.getWidth()).toBe(420);
-    controller.dispose();
-
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "not-a-number");
     controller = connectController({ root: container });
     expect(controller.getWidth()).toBe(420);
+    controller.dispose();
+  });
+
+  test("restores large saved widths from wide windows (CSS clamps them)", () => {
+    localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "1200");
+    const controller = connectController({ root: container });
+    expect(controller.getWidth()).toBe(1200);
+    expect(controller.splitLayout?.style.getPropertyValue("--dict-width")).toBe(
+      "1200px"
+    );
     controller.dispose();
   });
 
@@ -237,7 +240,7 @@ describe("ReaderLayoutController", () => {
       })
     );
 
-    // Drag left by 200px (420 + 200 = 620, should clamp to 480)
+    // Drag left by 200px (420 + 200 = 620, should clamp to 800 - 342 = 458)
     splitter.dispatchEvent(
       new PointerEvent("pointermove", {
         clientX: 600,
@@ -246,8 +249,9 @@ describe("ReaderLayoutController", () => {
       })
     );
 
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("480px");
-    expect(splitter.getAttribute("aria-valuenow")).toBe("480");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("458px");
+    expect(splitter.getAttribute("aria-valuenow")).toBe("458");
+    expect(splitter.getAttribute("aria-valuemax")).toBe("458");
 
     // Drag right by 300px (420 - 300 = 120, should clamp to MIN_SPLIT_WIDTH = 300)
     splitter.dispatchEvent(
@@ -311,10 +315,12 @@ describe("ReaderLayoutController", () => {
     expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("300px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("300");
 
-    // End: expands to max allowable (1200 container -> max 800)
+    // End: expands to max allowable (1200 container -> 1200 - 342 = 858;
+    // no fixed cap)
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "End" }));
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("800px");
-    expect(splitter.getAttribute("aria-valuenow")).toBe("800");
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("858px");
+    expect(splitter.getAttribute("aria-valuenow")).toBe("858");
+    expect(splitter.getAttribute("aria-valuemax")).toBe("858");
 
     // Escape resets to default
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));

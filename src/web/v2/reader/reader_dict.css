@@ -127,7 +127,9 @@ body.resizing-panels .dict-iframe,
     min-height: 0;
     flex: 0 0 var(--dict-width, 420px);
     width: var(--dict-width, 420px);
-    max-width: min(800px, 60vw);
+    /* Leave the passage its 320px minimum plus the splitter chrome (22px);
+       mirrors computeMaxSplitWidth() in reader_layout.client.ts. */
+    max-width: calc(100% - 342px);
     min-width: 300px;
     overflow: hidden;
     padding-left: var(--space-4);

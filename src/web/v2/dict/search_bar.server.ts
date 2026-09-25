@@ -3,6 +3,7 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
+import { renderPageWidthSelect } from "@/web/v2/shell/page_width.server";
 
 import {
   computeActiveLanguages,
@@ -21,6 +22,11 @@ export interface SearchBarOptions {
   activeDicts?: string[];
   isInflected?: boolean;
   extraHiddenInputs?: Record<string, string>;
+  /**
+   * Renders the Page Width select in the settings popover. Off for embedded
+   * dictionaries, which always fill their iframe.
+   */
+  includePageWidth?: boolean;
 }
 
 /**
@@ -64,6 +70,17 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     `;
   }).join("\n");
 
+  const pageWidthHtml = options.includePageWidth
+    ? `<div class="page-width-row">
+            <div class="settings-divider" role="separator"></div>
+            ${renderPageWidthSelect(
+              "dict-width-select",
+              "Select dictionary page width",
+              "settings-section-title"
+            )}
+          </div>`
+    : "";
+
   const settingsHtml = includeSettings
     ? `
       <morcus-dict-settings>
@@ -102,6 +119,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
             <div class="dict-list">
               ${dictItemsHtml}
             </div>
+            ${pageWidthHtml}
             <noscript>
               <div class="settings-noscript-actions">
                 <button type="submit" class="btn btn-secondary settings-apply-btn">Apply Selection</button>
