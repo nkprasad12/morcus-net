@@ -99,7 +99,7 @@ sequenceDiagram
 
 ### Styles
 
-`reader_text.css` (passage body, citation gutters, and the TEI rendition classes), `reader_notes.css` (critical apparatus markers and footnotes), `reader_nav.css` (sticky bar), `reader_toc.css`, `reader_dialogs.css`, `reader_layout.css`, `reader_splitter.css`, `reader_dict.css`, `reader_panel.css`, `reader_page_nav.css` (swipe slide, Touch Navigation settings visibility, and suppressing the browser's history swipe while swipe turns are on).
+`reader_text.css` (passage body, citation gutters, and the TEI rendition classes), `reader_notes.css` (critical apparatus markers and footnotes), `reader_nav.css` (sticky bar), `reader_toc.css`, `reader_dialogs.css`, `reader_layout.css`, `reader_splitter.css`, `reader_dict.css`, `reader_panel.css`, `reader_page_nav.css` (swipe slide, Touch Navigation settings visibility, suppressing the browser's history swipe while swipe turns are on, and the delayed spinner for slow page turns).
 
 ---
 

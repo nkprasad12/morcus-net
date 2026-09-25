@@ -751,9 +751,11 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       // The cancelled request must not clear the dim that the live request set,
       // and the live request must not be left permanently dimmed afterwards.
       expect(results.style.opacity).toBe("0.5");
+      expect(results.getAttribute("aria-busy")).toBe("true");
       pending[1].respond('<div class="results">beta results</div>');
       await flush();
       expect(results.style.opacity).toBe("");
+      expect(results.hasAttribute("aria-busy")).toBe(false);
     });
 
     test("abandoning the query cancels the in-flight completions request", async () => {
