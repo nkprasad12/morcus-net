@@ -154,6 +154,28 @@ describe("preprocessWorkToV2 renditions", () => {
     expect(html).toContain('<span class="blockquote">');
     expect(html).not.toContain("<blockquote");
   });
+
+  it("marks <gap> placeholders with data-no-tokenize so they do not skew word indices", () => {
+    const work = makeWork({
+      textParts: ["book", "chapter", "section"],
+      rows: [
+        [
+          ["1", "1", "1"],
+          span(
+            [],
+            "Gallia ",
+            new XmlNode<ProcessedWorkContentNodeType>("gap"),
+            " divisa"
+          ),
+        ],
+      ],
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+    expect(html).toContain(
+      '<span class="reader-gap text-muted" data-no-tokenize="true">[gap]</span>'
+    );
+  });
 });
 
 describe("preprocessWorkToV2 critical apparatus", () => {

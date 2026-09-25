@@ -5,8 +5,16 @@ export interface TokenizeWordOptions {
    * Factory function that constructs the replacement DOM element for a Latin word token.
    * - Reader: creates `<span class="lat-word" role="button" tabindex="0" data-word="...">`
    * - Dictionary: creates `<a class="lat-word" href="..." data-word="...">`
+   *
+   * `wordIndex` is the 0-based word token index within `root` (incremented on every
+   * `isWord === true` token produced by `processTokens`, matching corpus and V1 indexing).
    */
-  renderWord: (token: string, cleanWord: string) => HTMLElement;
+  renderWord: (
+    token: string,
+    cleanWord: string,
+    wordIndex: number,
+    root: HTMLElement
+  ) => HTMLElement;
 
   /**
    * Optional custom exclusion predicate for domain-specific elements.
@@ -69,6 +77,7 @@ export function tokenizeSubtree(
             node.getAttribute("lang") === "el" ||
             node.hasAttribute("data-no-tokenize") ||
             node.hasAttribute("data-no-linkify") ||
+            node.classList.contains("reader-gap") ||
             (options.isExcludedElement !== undefined &&
               options.isExcludedElement(node))
           ) {
@@ -96,26 +105,34 @@ export function tokenizeSubtree(
     curr = walker.nextNode();
   }
 
+  let wordIndex = 0;
   for (const textNode of textNodes) {
     const text = textNode.nodeValue ?? "";
-    if (!LATIN_LETTER_REGEX.test(text)) {
-      continue;
-    }
+    const hasLatin = LATIN_LETTER_REGEX.test(text);
 
-    const fragment = document.createDocumentFragment();
+    const fragment = hasLatin ? document.createDocumentFragment() : null;
     let hasWords = false;
 
     for (const [token, isWord] of processTokens(text)) {
+      const currentWordIndex = wordIndex;
+      if (isWord) {
+        wordIndex++;
+      }
+      if (!fragment) {
+        continue;
+      }
       const { isLatin, cleanWord } = isLatinWord(token, isWord);
       if (isLatin) {
         hasWords = true;
-        fragment.appendChild(options.renderWord(token, cleanWord));
+        fragment.appendChild(
+          options.renderWord(token, cleanWord, currentWordIndex, root)
+        );
       } else {
         fragment.appendChild(document.createTextNode(token));
       }
     }
 
-    if (hasWords) {
+    if (fragment && hasWords) {
       textNode.parentNode?.replaceChild(fragment, textNode);
     }
   }

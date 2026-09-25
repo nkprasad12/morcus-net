@@ -149,6 +149,34 @@ describe("tokenizeSubtree", () => {
     );
     expect(words).toEqual(["validus"]);
   });
+
+  it("tracks 0-based wordIndex across isWord tokens while skipping .reader-gap and note links", () => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <p>Gallia 15 <span class="reader-gap text-muted">[gap]</span> est<a class="reader-note-ref" href="#note-n1"><sup>[1]</sup></a> omnis.</p>
+    `;
+    document.body.appendChild(div);
+
+    const seen: Array<{ token: string; index: number }> = [];
+    tokenizeSubtree(div, {
+      renderWord: (token, _clean, wordIndex) => {
+        seen.push({ token, index: wordIndex });
+        const span = document.createElement("span");
+        span.className = "lat-word";
+        span.dataset.idx = String(wordIndex);
+        span.textContent = token;
+        return span;
+      },
+    });
+
+    // "Gallia" is word 0, "15" is word 1 (not Latin, but increments wordIndex),
+    // "[gap]" and "[1]" are skipped, "est" is word 2, "omnis" is word 3.
+    expect(seen).toEqual([
+      { token: "Gallia", index: 0 },
+      { token: "est", index: 2 },
+      { token: "omnis", index: 3 },
+    ]);
+  });
 });
 
 describe("tokenizeTargets", () => {

@@ -597,6 +597,23 @@ describe("decomposed_reader_renderers", () => {
       expect(ctx.layoutStateClass).toBe("reader-layout-active");
       expect(ctx.dictIframeSrc).toBe("/v2/dicts?q=arma&lang=La&o=1&embedded=1");
     });
+
+    test("falls back to first section in matchText when pageId is omitted and preserves matchText on same-page URLs", async () => {
+      const ctx = await resolveReaderContext({
+        workId: "dbg",
+        matchText: "1.2.1~0~2",
+        query: "Orgetorix",
+      });
+      expect(ctx.activePage.id).toBe("1.2");
+      expect(ctx.pageDotId).toBe("1.2");
+      expect(ctx.matchText).toBe("1.2.1~0~2");
+      expect(ctx.singleViewUrl).toContain("matchText=1.2.1%7E0%7E2");
+      expect(renderReaderDictPanel(ctx)).toContain(
+        "matchText=1.2.1%7E0%7E2#reader-dict-dismissed"
+      );
+      // Server HTML remains static (client applies .reader-match)
+      expect(ctx.activePage.singleHtml).not.toContain("reader-match");
+    });
   });
 
   describe("getDifferentialCitationLabel (Proposal 1 Boundary-Aware Leaf Label)", () => {

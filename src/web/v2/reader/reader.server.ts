@@ -22,6 +22,7 @@ import {
   renderReaderSettingsPopover,
 } from "@/web/v2/reader/reader_dialogs.server";
 import { renderIconSvg } from "@/web/v2/core/icons.common";
+import { getFirstHighlightSectionId } from "@/web/v2/reader/reader_highlight.common";
 import * as he from "he";
 
 export {
@@ -46,6 +47,7 @@ export interface ReaderPageOptions {
   workId?: string;
   pageId?: string | CitationId;
   query?: string;
+  matchText?: string;
   results?: DictsFusedResponse;
   view?: "single" | "parallel";
   work?: V2PreprocessedWork;
@@ -60,6 +62,7 @@ export interface ReaderRenderContext {
   prevPage: V2PreprocessedPage | null;
   nextPage: V2PreprocessedPage | null;
   query: string;
+  matchText: string;
   passageHtml: string;
   singleViewUrl: string;
   dictIframeSrc: string;
@@ -74,6 +77,7 @@ export async function resolveReaderContext(
   options: ReaderPageOptions = {}
 ): Promise<ReaderRenderContext> {
   const query = options.query?.trim() ?? "";
+  const matchText = options.matchText?.trim() ?? "";
   const requestedId = options.workId || "caesar_de_bello_gallico";
 
   const work: V2PreprocessedWork | null =
@@ -86,12 +90,12 @@ export async function resolveReaderContext(
     throw new Error(`Classical work not found: ${requestedId}`);
   }
 
-  // Resolve active page
+  // Resolve active page (falling back to the first section ID in matchText when pageId is omitted)
   const pageIdStr = options.pageId
     ? Array.isArray(options.pageId)
       ? citationToString(options.pageId)
       : String(options.pageId)
-    : undefined;
+    : getFirstHighlightSectionId(matchText);
 
   const { page: activePage, index: activePageIndex } = resolvePageInWork(
     work,
@@ -108,6 +112,7 @@ export async function resolveReaderContext(
 
   const singleViewUrl = buildReaderPageUrl(work, activePage, {
     query: query || undefined,
+    matchText: matchText || undefined,
   });
 
   const passageHtml = activePage.singleHtml;
@@ -130,6 +135,7 @@ export async function resolveReaderContext(
     prevPage,
     nextPage,
     query,
+    matchText,
     passageHtml,
     singleViewUrl,
     dictIframeSrc,
@@ -319,9 +325,10 @@ ${renderReaderTextCard(ctx)}
  * containing word definition teasers and the embedded dictionary iframe.
  */
 export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
-  const { work, activePage, query, dictIframeSrc } = ctx;
+  const { work, activePage, query, matchText, dictIframeSrc } = ctx;
   const activePageUrl = buildReaderPageUrl(work, activePage, {
     query: query || undefined,
+    matchText: matchText || undefined,
   });
 
   return `        <!-- Desktop Resizable Splitter Bar -->
