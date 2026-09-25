@@ -95,10 +95,11 @@ sequenceDiagram
 - `reader_settings.client.ts`: `MorcusReaderSettings` — the anchored typography popover, persisting to `morcus_reader_settings` in `localStorage`.
 - `reader_layout.client.ts`: `ReaderLayoutController` — the desktop resizable splitter and the mobile bottom drawer hosting the embedded dictionary.
 - `reader_panel.client.ts`: `ReaderPanelController` — manages companion panel tab arbitration (`Dictionary`, `Notes`, `Translation`, `About`), lazy translation loading, and footnote adoption.
+- `reader_page_nav.client.ts`: `ReaderPageNavController` — swipe page turns on touch devices (V1's side-tap is deliberately not ported; see `FEATURE_PARITY.md`). Owns gesture policy and the passage slide only; the turn itself goes through the view's `turnPage` (shared with `[` / `]`), so history, TOC, and notes handling stay in one swap path.
 
 ### Styles
 
-`reader_text.css` (passage body, citation gutters, and the TEI rendition classes), `reader_notes.css` (critical apparatus markers and footnotes), `reader_nav.css` (sticky bar), `reader_toc.css`, `reader_dialogs.css`, `reader_layout.css`, `reader_splitter.css`, `reader_dict.css`, `reader_panel.css`.
+`reader_text.css` (passage body, citation gutters, and the TEI rendition classes), `reader_notes.css` (critical apparatus markers and footnotes), `reader_nav.css` (sticky bar), `reader_toc.css`, `reader_dialogs.css`, `reader_layout.css`, `reader_splitter.css`, `reader_dict.css`, `reader_panel.css`, `reader_page_nav.css` (swipe slide, Touch Navigation settings visibility, and suppressing the browser's history swipe while swipe turns are on).
 
 ---
 

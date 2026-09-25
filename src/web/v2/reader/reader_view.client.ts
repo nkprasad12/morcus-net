@@ -36,6 +36,10 @@ import {
 import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 import { ReaderTocController } from "@/web/v2/reader/reader_toc.client";
 import {
+  ReaderPageNavController,
+  type PageDir,
+} from "@/web/v2/reader/reader_page_nav.client";
+import {
   ReaderPanelController,
   type PanelTab,
 } from "@/web/v2/reader/reader_panel.client";
@@ -166,6 +170,19 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
   private originalScrollRestoration: ScrollRestoration = "auto";
   private readonly translationCache = new Map<string, string>();
+
+  constructor() {
+    super();
+    // Swipe page turns on touch devices. Self-contained after connect, so no
+    // reference is kept.
+    this.addController(
+      new ReaderPageNavController({
+        root: this,
+        canTurn: (dir) => this.pagerLink(dir) !== null,
+        turn: (dir) => this.turnPage(dir),
+      })
+    );
+  }
 
   public getLayoutController(): ReaderLayoutController | null {
     return this.layoutController.isConnected ? this.layoutController : null;
@@ -456,11 +473,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    if (this.currentQuery) {
-      targetUrl.searchParams.set("q", this.currentQuery);
-    } else {
-      targetUrl.searchParams.delete("q");
-    }
+    this.withCurrentQuery(targetUrl);
 
     if (targetUrl.origin !== window.location.origin) {
       return;
@@ -1089,17 +1102,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         if (tag === "input" || tag === "textarea" || tag === "select") return;
       }
 
-      if (e.key === "[") {
-        const prevBtn = this.scope.$<HTMLAnchorElement>("#pager-prev");
-        if (prevBtn && !prevBtn.classList.contains("disabled")) {
+      if (e.key === "[" || e.key === "]") {
+        const dir: PageDir = e.key === "[" ? "prev" : "next";
+        if (this.pagerLink(dir)) {
           e.preventDefault();
-          prevBtn.click();
-        }
-      } else if (e.key === "]") {
-        const nextBtn = this.scope.$<HTMLAnchorElement>("#pager-next");
-        if (nextBtn && !nextBtn.classList.contains("disabled")) {
-          e.preventDefault();
-          nextBtn.click();
+          void this.turnPage(dir);
         }
       } else if (e.key === "t" || e.key === "T") {
         if (this.tocController) {
@@ -1147,6 +1154,38 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   // --- In-Place Page Swapping & Partial Navigation ---
+
+  /** The sticky-bar pager link toward `dir`, or null at that end of the work. */
+  private pagerLink(dir: PageDir): HTMLAnchorElement | null {
+    const link = this.scope.$<HTMLAnchorElement>(
+      dir === "prev" ? "#pager-prev" : "#pager-next"
+    );
+    return link && !link.classList.contains("disabled") ? link : null;
+  }
+
+  /** Carries the active dictionary query (`?q=`) over to `url`. */
+  private withCurrentQuery(url: URL): URL {
+    if (this.currentQuery) {
+      url.searchParams.set("q", this.currentQuery);
+    } else {
+      url.searchParams.delete("q");
+    }
+    return url;
+  }
+
+  /**
+   * Turns to the adjacent page in place (keyboard shortcuts, swipe). Resolves
+   * false if there is no page that way or the swap fails.
+   */
+  private turnPage(dir: PageDir): Promise<boolean> {
+    const link = this.pagerLink(dir);
+    if (!link) return Promise.resolve(false);
+    if (this.tocController?.isOpen()) {
+      this.tocController.close();
+    }
+    const url = this.withCurrentQuery(new URL(link.href, window.location.href));
+    return this.swapPage(url.href, { push: true });
+  }
 
   private scrollToHash(hash: string): void {
     if (!hash) return;

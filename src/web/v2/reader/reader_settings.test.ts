@@ -15,6 +15,7 @@ import {
   readerSettingsStore,
   removeWorkMacra,
   setWorkMacra,
+  SWIPE_NAV_KEY,
 } from "@/web/v2/reader/reader_settings.client";
 
 describe("Reader preferences validation & schema", () => {
@@ -693,5 +694,47 @@ describe("MorcusReaderSettings custom element", () => {
       resetBtn.click();
       expect(el.getPreferences().readerScale).toBe(100);
     });
+  });
+});
+
+describe("MorcusReaderSettings swipe navigation toggle", () => {
+  function create() {
+    document.body.innerHTML = `
+      <morcus-reader-settings>
+        <div id="reader-settings-popover" hidden>
+          <input type="checkbox" id="toggle-swipe-nav" checked />
+          <button type="button" id="reader-settings-reset-btn">Reset</button>
+        </div>
+      </morcus-reader-settings>`;
+    const $ = <T extends HTMLElement>(sel: string) =>
+      document.querySelector<T>(sel)!;
+    return {
+      swipe: $<HTMLInputElement>("#toggle-swipe-nav"),
+      resetBtn: $<HTMLButtonElement>("#reader-settings-reset-btn"),
+    };
+  }
+
+  beforeEach(() => localStorage.clear());
+  afterEach(() => (document.body.innerHTML = ""));
+
+  it("hydrates from V1's stored key and format", () => {
+    localStorage.setItem(SWIPE_NAV_KEY, '{"w":false}');
+    const { swipe } = create();
+    expect(swipe.checked).toBe(false);
+  });
+
+  it("persists changes", () => {
+    const { swipe } = create();
+    swipe.click();
+    expect(localStorage.getItem(SWIPE_NAV_KEY)).toBe("false");
+  });
+
+  it("restores the default on reset", () => {
+    localStorage.setItem(SWIPE_NAV_KEY, "false");
+    const { swipe, resetBtn } = create();
+    expect(swipe.checked).toBe(false);
+    resetBtn.click();
+    expect(swipe.checked).toBe(true);
+    expect(localStorage.getItem(SWIPE_NAV_KEY)).toBeNull();
   });
 });

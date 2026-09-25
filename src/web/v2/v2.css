@@ -24,6 +24,7 @@
 @import "./reader/reader_panel.css";
 @import "./reader/reader_toc.css";
 @import "./reader/reader_dialogs.css";
+@import "./reader/reader_page_nav.css";
 @import "./dialog/dialog.css";
 @import "./about/about.css";
 @import "./library/library.css";

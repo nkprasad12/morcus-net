@@ -1,0 +1,50 @@
+/* Reader swipe page turns (reader_page_nav.client.ts).
+ *
+ * The controller writes only `--swipe-x`, `--swipe-fade`, and `data-swipe` on
+ * `.reader-text-panel`; everything visual lives here. Ancestors already clip
+ * horizontal overflow (`overflow-x: clip` on mobile, `overflow: hidden` on the
+ * desktop main column), so a panel slid off-screen never adds a scrollbar.
+ */
+
+.reader-text-panel[data-swipe] {
+  translate: var(--swipe-x, 0);
+  opacity: var(--swipe-fade, 1);
+  will-change: translate, opacity;
+}
+
+/* Tracks the finger 1:1: no easing or the page lags behind the touch. */
+.reader-text-panel[data-swipe="drag"] {
+  transition: none;
+}
+
+/* Keep in sync with SLIDE_MS. */
+.reader-text-panel[data-swipe="anim"] {
+  transition: translate 180ms ease-out, opacity 180ms ease-out;
+}
+
+/* Touch toggles only matter on devices with a touchscreen (including
+ * touchscreen laptops, whose primary pointer is still fine); hide them rather
+ * than gate in JS. */
+@media not all and (any-pointer: coarse) {
+  .settings-touch-nav {
+    display: none;
+  }
+}
+
+/* Chrome's own back/forward swipe (the blue arrow bubble) would otherwise fire
+ * on the same horizontal gesture that turns the page, navigating history on
+ * top of the turn. Suppressed only while swipe turns are live: JS has run
+ * (`:defined`), the setting is on (the group's only checkbox), and the device
+ * has a touchscreen. Trade-off: on touchscreen laptops, trackpad history
+ * swipes are also off on reader pages until swipe turns are disabled. */
+@media (any-pointer: coarse) {
+  :root:has(morcus-reader-view:defined .settings-touch-nav :checked) {
+    overscroll-behavior-x: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-text-panel[data-swipe="anim"] {
+    transition: none;
+  }
+}

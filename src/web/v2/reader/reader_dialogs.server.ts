@@ -213,6 +213,15 @@ export function renderReaderSettingsPopover(
               </label>
             </div>
 
+            <!-- Swipe page turns (hidden without a touchscreen by reader_page_nav.css) -->
+            <div class="settings-group settings-touch-nav">
+              <h3 class="settings-group-title">Touch Navigation</h3>
+              <label class="settings-toggle-row">
+                <span class="settings-label">Swipe to turn pages</span>
+                <input type="checkbox" id="toggle-swipe-nav" class="toggle-checkbox" checked>
+              </label>
+            </div>
+
           </div>
 
           <div class="settings-popover-footer">
