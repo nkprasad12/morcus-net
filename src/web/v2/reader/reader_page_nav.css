@@ -1,4 +1,5 @@
-/* Reader swipe page turns (reader_page_nav.client.ts).
+/* Reader page turns: swipe gesture (reader_page_nav.client.ts) and the
+ * slow-load indicator.
  *
  * The controller writes only `--swipe-x`, `--swipe-fade`, and `data-swipe` on
  * `.reader-text-panel`; everything visual lives here. Ancestors already clip
@@ -43,8 +44,57 @@
   }
 }
 
+/* Slow page turns. fetchAndSwapPartial marks the passage `aria-busy` while it
+ * loads; after a delay, so ordinary turns never flash it, a spinner appears
+ * over the text column. It hangs off the column rather than the passage
+ * because a swiped passage is translated off-screen while it loads. Mobile:
+ * viewport-centered (the column is `display: contents`). */
+.reader-main-column:has(> .reader-text-panel[aria-busy="true"])::after {
+  content: "";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 2rem;
+  height: 2rem;
+  margin: -1rem 0 0 -1rem;
+  box-sizing: border-box;
+  /* App-bar colors: a themed disc that stays legible over (dimmed) text in
+   * light and dark mode. The ring extends the disc past the spinning arc. */
+  border: 3px solid transparent;
+  border-top-color: var(--app-bar-nav-text);
+  border-radius: 50%;
+  background-color: var(--app-bar-bg);
+  box-shadow: 0 0 0 5px var(--app-bar-bg);
+  pointer-events: none;
+  /* stylelint-disable no-unknown-animations -- `spin` lives in core/components.css */
+  animation: page-loading-in 150ms ease-out 400ms both,
+    spin 0.7s linear infinite;
+  /* stylelint-enable no-unknown-animations */
+}
+
+@keyframes page-loading-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Desktop: centered in the column, which is the viewport-height scroll frame. */
+@media (min-width: 641px) {
+  .reader-main-column {
+    position: relative;
+  }
+
+  .reader-main-column:has(> .reader-text-panel[aria-busy="true"])::after {
+    position: absolute;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reader-text-panel[data-swipe="anim"] {
     transition: none;
+  }
+
+  .reader-main-column:has(> .reader-text-panel[aria-busy="true"])::after {
+    animation: page-loading-in 0s 400ms both;
   }
 }

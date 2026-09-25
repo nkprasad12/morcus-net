@@ -49,6 +49,8 @@ export interface FetchAndSwapOptions {
 /**
  * Fetches an HTML partial fragment from `url` and swaps it into `container`.
  * Handles loading opacity, headers, error display, and signal cancellation.
+ * The container is `aria-busy` while loading, which also lets CSS show a
+ * (delayed) loading indicator.
  */
 export async function fetchAndSwapPartial(
   container: HTMLElement,
@@ -61,9 +63,11 @@ export async function fetchAndSwapPartial(
   // aborted request leaves the container alone: whichever request is still
   // live owns it.
   container.style.opacity = String(options.loadingOpacity ?? 0.5);
+  container.setAttribute("aria-busy", "true");
   const clearLoading = () => {
     if (!options.signal.aborted) {
       container.style.opacity = "";
+      container.removeAttribute("aria-busy");
     }
   };
 
