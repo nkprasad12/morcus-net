@@ -36,7 +36,11 @@ body.resizing-drawer {
   box-shadow: var(--drawer-shadow);
   transition: none;
   z-index: var(--z-drawer);
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  /* No env(safe-area-inset-bottom) here or in any drawer-relative offset. We don't
+     set viewport-fit=cover, so Chrome and Safari report 0, but Firefox Android reports
+     the system nav-bar height (~38px) and animates it with the URL bar. On this
+     fixed-height, overflow-hidden box, that padding shrank the inner scroller and left
+     an empty band at the bottom of the drawer. */
 }
 
 /* Minimized state: Collapses to handle teaser height */

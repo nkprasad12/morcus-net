@@ -271,9 +271,7 @@
   /* Add bottom padding to results when TOC bottom drawer is present so
      the lowest content isn't obscured by the minimized drawer teaser handle */
   .results-layout.has-toc {
-    padding-bottom: calc(
-      var(--drawer-min-height, 28px) + env(safe-area-inset-bottom, 0px) + 12px
-    );
+    padding-bottom: calc(var(--drawer-min-height, 28px) + 12px);
   }
 
   .drawer-toc {

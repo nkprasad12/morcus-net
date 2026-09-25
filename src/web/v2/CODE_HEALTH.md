@@ -353,3 +353,14 @@ silently break every core caller. Note the combinator: `.dict-card :target` (des
 `.dict-card:target`. Real dictionary deep-link anchors are descendants of a card, and the card
 itself must not animate. Nothing caught this because no E2E or visual scenario opens the TOC drawer
 or loads a `#sec-` deep link — see the selector-inventory item in Phase 7.
+
+**Do not use `env(safe-area-inset-bottom)` without `viewport-fit=cover`.** We don't set
+`viewport-fit=cover`, so Chrome and Safari report the inset as 0 and those `+ env(...)` terms did
+nothing there. Firefox Android instead reports the system nav-bar height (~38px) and animates it
+with its dynamic URL bar. The `.drawer` rule had `padding-bottom: env(safe-area-inset-bottom)` on
+a fixed-height, `overflow: hidden` box, so Firefox's inset shrank the inner scroller and left a
+blank, drawer-coloured band above the nav bar, sized with the inset. That was the "dead space" at
+the bottom of the dictionary TOC and reader drawers after a slow scroll-up. The same term also
+jostled every back-to-top/FAB offset during toolbar transitions. It was isolated with a standalone
+bisection page (orphan branch `debug-repro`, `fixed_drawer.html`). If we ever adopt
+`viewport-fit=cover`, reintroduce insets deliberately and test on Firefox Android.
