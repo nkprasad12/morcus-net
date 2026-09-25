@@ -46,6 +46,8 @@ export const MAX_EXTERNAL_TEXT_CHARS = 200_000;
 export const UNTITLED_TEXT = "Untitled text";
 
 const TITLE_MAX_WORDS = 6;
+/** A line break ends a derived title once it has at least this many words. */
+const TITLE_MIN_LINE_WORDS = 3;
 const TITLE_MAX_CHARS = 60;
 
 /** One citable unit: a paragraph (`keep` / `prose`) or a line (`verse`). */
@@ -205,18 +207,25 @@ export function parseExternalText(
 /**
  * Derives a display title from the first words of the text, used when the user
  * leaves the title blank: `Gallia est omnis divisa in partes…`.
+ *
+ * Numeric tokens (section numbers, page navigation on scraped pages) are
+ * skipped. A line break ends the title once it has a few words, so a heading
+ * line like `ORATIO IN L CATILINAM PRIMA` becomes the whole title.
  */
 export function deriveExternalTitle(raw: string): string {
-  const text = normalizeExternalText(raw);
+  const lines = normalizeExternalText(raw).split("\n");
   const words: string[] = [];
   let hasMore = false;
-  for (const [token, isWord] of processTokens(text.replace(/\s+/g, " "))) {
-    if (!isWord) continue;
-    if (words.length === TITLE_MAX_WORDS) {
-      hasMore = true;
-      break;
+  outer: for (const line of lines) {
+    if (words.length >= TITLE_MIN_LINE_WORDS) break;
+    for (const [token, isWord] of processTokens(line)) {
+      if (!isWord || /\d/.test(token)) continue;
+      if (words.length === TITLE_MAX_WORDS) {
+        hasMore = true;
+        break outer;
+      }
+      words.push(token);
     }
-    words.push(token);
   }
   if (words.length === 0) {
     return UNTITLED_TEXT;

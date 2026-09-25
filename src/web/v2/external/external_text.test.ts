@@ -194,8 +194,23 @@ describe("titles", () => {
     );
   });
 
-  test("reads across line breaks", () => {
+  test("reads across line breaks while the title is short", () => {
     expect(deriveExternalTitle("Arma\nvirumque")).toBe("Arma virumque");
+  });
+
+  test("uses a heading line as the whole title", () => {
+    // The Latin Library's shape once scraped: heading, then glued section links.
+    expect(
+      deriveExternalTitle(
+        "ORATIO IN L CATILINAM PRIMA\n12345678910\n\nQuo usque tandem abutere"
+      )
+    ).toBe("ORATIO IN L CATILINAM PRIMA");
+  });
+
+  test("skips numbers", () => {
+    expect(deriveExternalTitle("1. Gallia est 2 omnis divisa")).toBe(
+      "Gallia est omnis divisa"
+    );
   });
 
   test("caps very long words", () => {
