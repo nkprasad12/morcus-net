@@ -75,6 +75,22 @@ To run the functional V2 tests without touching legacy V1 tests or unsupported W
 
 > [!WARNING] > **Do NOT run `npm run integration-tests` when working on UI V2.** > `npm run integration-tests` runs legacy V1 tests and attempts to launch WebKit/Safari, which is unsupported on this Linux setup and will fail or cause the test runner to hang.
 
+### Option F: Visual Regression Tests & the Visual Diff Inspector
+
+```bash
+# Screenshot comparison against the checked-in baselines:
+./morcus.sh e2e --visual --all
+
+# Same, then open the Visual Diff Inspector on any failures:
+./morcus.sh e2e --visual --all --diff
+
+# Inspect existing diffs without re-running tests:
+./morcus.sh visual-diff --source results   # last Playwright run
+./morcus.sh visual-diff --source git       # updated baselines vs HEAD
+```
+
+The inspector keeps a server running until stopped (agents: start it in the background), and also writes `report.md` and before/after/diff PNGs to `.cache/visual-diff/`. See §3.C–D of [`AGENTS.md`](../../../AGENTS.md) for all options, and its Visual Baseline Approval Rule before running `--update`.
+
 ---
 
 ## 3. Running Unit Tests
@@ -137,4 +153,14 @@ npx jest src/web/v2/core/dialog.test.ts
 3.  **Visual regression tests (all browsers)**:
     ```bash
     ./morcus.sh e2e --visual --all
+    ```
+4.  **If there are pixel diffs, review them before touching baselines** (see the Visual Baseline Approval Rule in `AGENTS.md`):
+
+    ```bash
+    # Opens the Visual Diff Inspector on Playwright's failures (expected vs actual):
+    ./morcus.sh e2e --visual --all --diff
+
+    # Only after explicit approval: update, then re-review the new baselines vs HEAD:
+    ./morcus.sh e2e --visual --all --update
+    ./morcus.sh visual-diff --source git
     ```
