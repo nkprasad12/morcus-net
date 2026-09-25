@@ -231,8 +231,30 @@ describe("dict_ssr", () => {
     );
     // In default configuration, L&S is enabled and EGL (Pozo) is disabled
     expect(html).toContain('data-dict-key="L&S"');
-    expect(html).toContain('class="lexicon-badge dict-enabled">L&S<');
-    expect(html).toContain('class="lexicon-badge dict-disabled">EGL<');
+    expect(html).toContain(
+      'class="lexicon-badge dict-badge-la dict-enabled">L&S<'
+    );
+    expect(html).toContain(
+      'class="lexicon-badge dict-badge-la dict-enabled">GAF<'
+    );
+    expect(html).toContain(
+      'class="lexicon-badge dict-badge-la dict-enabled">GES<'
+    );
+    expect(html).toContain(
+      'class="lexicon-badge dict-badge-la dict-enabled">FOR<'
+    );
+    expect(html).toContain(
+      'class="lexicon-badge dict-badge-en dict-enabled">S&H<'
+    );
+    expect(html).toContain(
+      'class="lexicon-badge dict-badge-en dict-enabled">R&A<'
+    );
+    expect(html).toContain(
+      'class="lexicon-badge dict-badge-de dict-enabled">GRG<'
+    );
+    expect(html).toContain(
+      'class="lexicon-badge dict-badge-es dict-disabled">EGL<'
+    );
 
     // Custom dictionaries: Latin only
     const latinOnlyHtml = renderDictResultsHtml("", undefined, {

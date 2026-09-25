@@ -1,6 +1,7 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
+import { resolveDictLang } from "@/web/v2/dict/dict_attribution.server";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
 function fullLang(code: string): string {
@@ -24,6 +25,7 @@ interface DictItem {
   key: string;
   displayName: string;
   targetLang: string;
+  lang: string;
 }
 
 /**
@@ -38,18 +40,21 @@ function getDirectionalDicts(): {
 
   for (const dict of LatinDict.AVAILABLE) {
     if (dict.key === "NUM") continue;
+    const lang = resolveDictLang(dict.key);
     if (dict.languages.from === "La") {
       const targetLang = fullLang(dict.languages.to);
       fromLatin.push({
         key: dict.key,
         displayName: dict.displayName,
         targetLang: targetLang === "Latin" ? "Latin" : targetLang,
+        lang,
       });
     } else if (dict.languages.to === "La") {
       toLatin.push({
         key: dict.key,
         displayName: dict.displayName,
         targetLang: fullLang(dict.languages.from),
+        lang,
       });
     }
   }
@@ -78,7 +83,7 @@ export function renderDictLandingHtml(
         const statusClass = isEnabled ? "dict-enabled" : "dict-disabled";
         return `
         <li class="dict-list-item ${statusClass}" data-dict-key="${d.key}">
-          <strong class="lexicon-badge ${statusClass}">${d.key}</strong>
+          <strong class="lexicon-badge dict-badge-${d.lang} ${statusClass}">${d.key}</strong>
           <span class="lexicon-name">${d.displayName}</span>
           <span class="lexicon-lang">(${d.targetLang})</span>
         </li>
