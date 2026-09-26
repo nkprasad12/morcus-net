@@ -177,9 +177,19 @@ describe("UI V2 Bundle Budget", () => {
     expect(formatted).toContain("JS:");
     expect(formatted).toContain("CSS:");
     expect(formatted).toContain("Combined:");
-    expect(formatted).toContain("< 125.0 kB raw / < 35.0 kB gzip");
-    expect(formatted).toContain("< 125.0 kB raw / < 22.0 kB gzip");
-    expect(formatted).toContain("< 245.0 kB raw / < 55.0 kB gzip");
+    const kb = (bytes: number) => (bytes / 1024).toFixed(1);
+    const b = V2_BUNDLE_BUDGET;
+    expect(formatted).toContain(
+      `< ${kb(b.maxJsRawBytes)} kB raw / < ${kb(b.maxJsGzipBytes)} kB gzip`
+    );
+    expect(formatted).toContain(
+      `< ${kb(b.maxCssRawBytes)} kB raw / < ${kb(b.maxCssGzipBytes)} kB gzip`
+    );
+    expect(formatted).toContain(
+      `< ${kb(b.maxCombinedRawBytes)} kB raw / < ${kb(
+        b.maxCombinedGzipBytes
+      )} kB gzip`
+    );
   });
 
   test("accepts realistic production bundle sizes corresponding to current baseline", () => {

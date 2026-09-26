@@ -14,28 +14,31 @@ export interface V2BundleBudget {
 /**
  * Production bundle size budget for UI V2 assets (minified). Sizes are KiB.
  *
- * Current baseline (2026-09-25, after reader swipe navigation and the
- * slow page-turn indicator):
- *   v2_bundle.js: 118.8 kB raw / 32.9 kB gzip
- *   v2.css:       115.6 kB raw / 19.3 kB gzip
- *   Combined:     234.5 kB raw / 52.2 kB gzip
+ * Current baseline (2026-09-26, after the External Reader's JS layer):
+ *   v2_bundle.js: 129.9 kB raw / 36.7 kB gzip
+ *   v2.css:       118.4 kB raw / 19.8 kB gzip
+ *   Combined:     248.3 kB raw / 56.5 kB gzip
  *
  * Ceilings provide headroom to absorb routine fixes and features without
  * false positives, while hard-blocking major regressions or accidental imports
  * (e.g. un-tree-shaken heavy modules).
  *
- * The JS ceilings were raised on 2026-09-25 (from 115 / 32) after the reader
- * wake lock pushed the single shared bundle over. Everything still ships as
- * one bundle to every page; see "Bundle splitting strategy" in
- * src/web/v2/CODE_HEALTH.md before raising these again.
+ * History of JS ceiling raises (everything still ships as one bundle to every
+ * page; see "Bundle splitting strategy" in src/web/v2/CODE_HEALTH.md before
+ * raising these again):
+ * - 2026-09-25: 115 / 32 -> 125 / 35, after the reader wake lock.
+ * - 2026-09-26: 125 / 35 -> 135 / 38 (combined 245 / 55 -> 255 / 58), after
+ *   the External Reader client (`external/`, ~10 kB raw / ~3.5 kB gzip: the
+ *   loader element, the IndexedDB store, and the text renderer shared with
+ *   the server). None of it pulls in new dependencies.
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
-  maxJsRawBytes: 125 * 1024,
-  maxJsGzipBytes: 35 * 1024,
+  maxJsRawBytes: 135 * 1024,
+  maxJsGzipBytes: 38 * 1024,
   maxCssRawBytes: 125 * 1024,
   maxCssGzipBytes: 22 * 1024,
-  maxCombinedRawBytes: 245 * 1024,
-  maxCombinedGzipBytes: 55 * 1024,
+  maxCombinedRawBytes: 255 * 1024,
+  maxCombinedGzipBytes: 58 * 1024,
 };
 
 export interface V2AssetSizeInfo {

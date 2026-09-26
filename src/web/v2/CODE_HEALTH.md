@@ -40,17 +40,50 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       `v2_bundle.js`, because [`v2_bundle.client.ts`](v2_bundle.client.ts) and the
       `v2_elements.client.ts` manifest register every custom element up front. So a dictionary
       visitor pays for the reader, and the reverse. The JS budget in
-      [`v2_bundle_budget.ts`](../../bundler/v2_bundle_budget.ts) was raised on 2026-09-25 from
-      115 → 125 kB raw and 32 → 35 kB gzip, after the reader wake lock pushed the bundle to 116.1 / 31.9.
-      That buys room for normal feature work, but it isn't a fix. Before the next bump, decide
-      how to split: - Per-topic entry chunks (shell/core + `dict` + `reader` + `library`), with the page shell
-      emitting only the chunks a route needs. Rsbuild `splitChunks` could pull out `core/` as a
-      shared, long-cached chunk. - Or lazy `import()` of heavy topic modules, triggered by whether the page contains the
-      element (e.g. only fetch the reader when `morcus-reader-view` is present). - Constraints to keep: zero-JS baseline unaffected; `critical.js` stays inlined and
-      separate; the manifest/`registerElement` conformance test
-      (`core/reattach_conformance.test.ts`) must keep working; the budget becomes per-chunk,
-      plus a per-route total. - Measure first: run `./morcus.sh bundle -a` and attribute bytes to each topic, so the split
-      follows the real weight rather than guesses.
+      [`v2_bundle_budget.ts`](../../bundler/v2_bundle_budget.ts) has been raised twice:
+
+      - 2026-09-25: 115 → 125 kB raw and 32 → 35 kB gzip, after the reader wake lock.
+      - 2026-09-26: 125 → 135 kB raw and 35 → 38 kB gzip, after the External Reader client.
+        That pushed the bundle to 129.9 / 36.7.
+
+      Each raise buys room for normal feature work, but it isn't a fix.
+
+      **Where the bytes are** (2026-09-26, minified, attributed with an esbuild metafile of
+      `v2_bundle.client.ts`; approximate but good for relative weight):
+
+      | Topic       | kB raw | Share | Heaviest files                                             |
+      | ----------- | -----: | ----: | ---------------------------------------------------------- |
+      | `reader/`   |   52.0 |  ~39% | `reader_view` 23.6, `reader_panel` 13.7, `reader_toc` 4.8  |
+      | `core/`     |   33.3 |  ~25% | `drawer` 6.2, `base_element` 5.3, `popover` 4.1            |
+      | `dict/`     |   28.7 |  ~22% | `dict_search` 9.4, `dict_settings` 5.6                     |
+      | `external/` |    9.9 |   ~7% | `external_loader` 4.3, `external_text` 2.7, storage 2.6    |
+      | other       |    8.9 |   ~7% | `dialog/`, `shell/`, `library/`, `src/common/`             |
+
+      No third-party dependency shows up, so the weight is our own code. A dictionary-only page
+      needs roughly `core` + `dict` + `shell` + `dialog` (~66 kB), about half of what it downloads
+      today.
+
+      - [ ] **TODO: investigate splitting strategies** before the next bump:
+        - Per-topic entry chunks (shell/core + `dict` + `reader` + `library`), with the page
+          shell emitting only the chunks a route needs. Rsbuild `splitChunks` could pull out
+          `core/` as a shared, long-cached chunk.
+        - Or lazy `import()` of heavy topic modules, triggered by whether the page contains the
+          element (e.g. only fetch the reader when `morcus-reader-view` is present).
+        - **First candidate: `external/`.** It is used on one route and is self-contained.
+          `<morcus-external-loader>` could stay registered as a tiny shell whose behaviour is a
+          `BaseController` loaded with `import()` on connect and attached with `addController`
+          (which connects at once if the host is already connected). This would prove the
+          pattern on a small surface before the reader.
+        - Prerequisites for any async chunk: `output.assetPrefix: "/v2/assets/"` in
+          [`v2.rsbuild.ts`](../../bundler/v2.rsbuild.ts), so chunks resolve under the static
+          route. The budget check currently measures only the manifest's `v2.js` entry, so it
+          must also count async chunks.
+      - Constraints to keep: the zero-JS baseline is unaffected; `critical.js` stays inlined and
+        separate; the manifest/`registerElement` conformance test
+        (`core/reattach_conformance.test.ts`) keeps working; the budget becomes per-chunk, plus a
+        per-route total.
+      - Re-measure with `./morcus.sh bundle -a` before choosing, so the split follows the real
+        weight rather than guesses.
 
 ---
 
