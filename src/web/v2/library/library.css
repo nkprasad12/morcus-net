@@ -25,6 +25,12 @@
   letter-spacing: -0.01em;
 }
 
+.library-own-text {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 /* Search Bar & Filter Pills (matches Dictionary design) */
 .library-search-form {
   margin-bottom: 0;
