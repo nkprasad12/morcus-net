@@ -71,10 +71,3 @@ Suspected V2 bugs found incidentally. Not yet triaged.
 
 - 🔍 **Ovid _Tristia_: section content under the wrong id** (`hypotactic_Tristia_Ovid`). In the V2 artifact, `sec-1.7.x` appears to hold the text of poem 1.8 (e.g. `sec-1.7.1` reads "in caput alta suum…", which is 1.8.1; the corpus has "si quis habes nostri…" for 1.7.1). Possible causes: duplicate section ids across poems in `v2_preprocessor.ts`, or a stale artifact. Found while comparing corpus rows against V2-rendered sections for `matchText` highlighting; ~40 Tristia rows differ.
 - Corpus-side `matchText` alignment issues (words split at inline markup; heading rows without ids) are tracked in [`../corpus/TODO.md`](../corpus/TODO.md).
-- 🐞 **Dictionary pane stuck in light mode while the reader is dark** (confirmed). Repro:
-
-  1. Set the OS/browser to dark mode, and have no saved theme (fresh profile, or `localStorage.removeItem("GlobalSettings")`; never touched the theme toggle).
-  2. Open any reader page, e.g. `/v2/reader/caesar/de_bello_gallico/1.1`.
-  3. The passage renders dark (via `@media (prefers-color-scheme: dark)`), but the dictionary iframe renders light.
-
-  Cause: with no saved preference, `<html>` has no `data-theme` and the dark palette comes from the media query. `initIframeThemeSync` in `reader_view.client.ts` then falls back to `settingsStore.get().darkMode ? "dark" : "light"`, i.e. `"light"`, and `syncIframeTheme` (`core/dom.client.ts`, which also defaults to `"light"`) writes `data-theme="light"` into the iframe, overriding the iframe's own media query. Confirmed with Playwright: under `colorScheme: "dark"`, the parent has `data-theme=null` while the iframe has `data-theme="light"`. Likely fix: when neither `data-theme` nor a saved `darkMode` exists, remove the iframe's `data-theme` (or copy the parent's attribute exactly, including its absence) instead of forcing `"light"`. Once the toggle is used, the saved `darkMode` keeps both in sync, which is why the bug is intermittent.

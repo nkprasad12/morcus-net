@@ -19,6 +19,16 @@ export class MorcusThemeToggle extends BaseElement {
   protected override onConnect() {
     this.isDark = this.computeIsDark();
     this.render();
+
+    if (typeof window.matchMedia === "function") {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      if (typeof mq?.addEventListener === "function") {
+        this.scope.listen(mq, "change", () => {
+          this.isDark = this.computeIsDark();
+          this.updateView();
+        });
+      }
+    }
   }
 
   private computeIsDark(): boolean {
@@ -43,7 +53,7 @@ export class MorcusThemeToggle extends BaseElement {
       e.preventDefault();
       e.stopPropagation();
     }
-    const nextDark = !this.isDark;
+    const nextDark = !this.computeIsDark();
     this.isDark = nextDark;
     const themeName = nextDark ? "dark" : "light";
 
