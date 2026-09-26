@@ -613,6 +613,83 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     });
   });
 
+  test("does not yank scroll position on hydration if user has already scrolled (window.scrollY > 0)", (done) => {
+    Object.defineProperty(window, "scrollY", {
+      value: 420,
+      writable: true,
+      configurable: true,
+    });
+
+    const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
+    el.innerHTML = `
+      <form class="search-form" action="/v2/dicts" method="GET">
+        <div class="input-wrapper">
+          <input type="text" name="q" class="input" value="habeo" />
+        </div>
+      </form>
+      <output id="dict-results" class="results">
+        <div>Results for habeo</div>
+      </output>
+    `;
+    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
+    const scrollMock = jest.fn();
+    resultsEl.scrollIntoView = scrollMock;
+
+    document.body.appendChild(el);
+
+    requestAnimationFrame(() => {
+      expect(scrollMock).not.toHaveBeenCalled();
+      Object.defineProperty(window, "scrollY", {
+        value: 0,
+        writable: true,
+        configurable: true,
+      });
+      done();
+    });
+  });
+
+  test("does not yank scroll position if user scrolls between connect and rAF", (done) => {
+    Object.defineProperty(window, "scrollY", {
+      value: 0,
+      writable: true,
+      configurable: true,
+    });
+
+    const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
+    el.innerHTML = `
+      <form class="search-form" action="/v2/dicts" method="GET">
+        <div class="input-wrapper">
+          <input type="text" name="q" class="input" value="habeo" />
+        </div>
+      </form>
+      <output id="dict-results" class="results">
+        <div>Results for habeo</div>
+      </output>
+    `;
+    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
+    const scrollMock = jest.fn();
+    resultsEl.scrollIntoView = scrollMock;
+
+    document.body.appendChild(el);
+
+    // User scrolls before the scheduled rAF fires
+    Object.defineProperty(window, "scrollY", {
+      value: 280,
+      writable: true,
+      configurable: true,
+    });
+
+    requestAnimationFrame(() => {
+      expect(scrollMock).not.toHaveBeenCalled();
+      Object.defineProperty(window, "scrollY", {
+        value: 0,
+        writable: true,
+        configurable: true,
+      });
+      done();
+    });
+  });
+
   test("focuses search input and does not auto-scroll on empty query landing page", (done) => {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `

@@ -175,11 +175,6 @@ first card) as the fixture, then asserted on the request URL rather than the res
 - [ ] 🟢 **Visual scenarios for post-interaction state.** `v2VisualScenario`'s `action` hook exists
       for this and no dictionary scenario uses it. Popover-open and results-with-one-dictionary would
       have caught the bug as a pixel diff across all four form factors.
-- [ ] 🟢 **Guard the hydration scroll.** [`dict_search.client.ts`](dict/dict_search.client.ts) L401-403
-      calls `scrollToResults("instant")` on load, guarded against `hasHash` and `isBackForward` but
-      not against the user having already scrolled. On a slow connection a reader gets yanked back to
-      the top of the results when the bundle lands. Needs a `window.scrollY === 0` check. (Same family
-      as the pre-hydration clobber tracked in the preferences work.)
 
 ---
 
