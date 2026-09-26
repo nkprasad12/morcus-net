@@ -12,7 +12,6 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 | Feature Area                  | V1 UI (SPA)                                                                                    | V2 UI (SSR + Progressive Enhancement)                                                             | Parity Status        |
 | :---------------------------- | :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ | :------------------- |
 | **In-Flow "Edit and Report"** | Section anchor opens a menu offering "Copy link" **and** "Edit and Report" (`contenteditable`) | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit` reporting | ❌ **Missing in V2** |
-| **External Content Reader**   | Paste text or scrape a URL, then read it with full dictionary word lookup support              | No equivalent route or component exists under `src/web/v2/`                                       | ❌ **Missing in V2** |
 
 ---
 
@@ -34,6 +33,14 @@ The following core reading surfaces from V1 have achieved full parity or intenti
 - ✅ **Screen Wake Lock**: `WakeLockController` (`core/wake_lock.client.ts`) holds a single `screen` sentinel for the reader's connected lifetime, released after 5 minutes idle. Unlike V1, scrolling (including inner split-pane scrollers), taps, keys, page turns, and dictionary-iframe navigations all count as activity; browser-initiated releases are re-acquired on return, and the lock is released on disconnect. Applies on all form factors with no setting.
 - ✅ **Swipe Page Navigation**: `ReaderPageNavController` (`reader_page_nav.client.ts`) on passive touch events (`trackHorizontalSwipe` in `core/gesture.client.ts`). Unlike V1's floating arrow badge, the passage follows the finger, fades as the swipe arms (20% of `min(vw, vh)`, as in V1), then slides out while the next page loads and the new page slides in; short swipes spring back and swipes toward a missing page rubber-band. Swipes starting within 24px of either edge (OS back gestures), while pinch-zoomed, or with text selected are ignored. The toggle lives in the Appearance popover's **Touch Navigation** group (shown only on devices with a touchscreen, `(any-pointer: coarse)`, so touchscreen laptops included) under V1's key (`RD_MB_NAV_SWIPE`, default on), so V1 choices carry over. While swipe turns are live on a touchscreen device, the browser's own history swipe (Chrome's arrow bubble) is suppressed via `overscroll-behavior-x` so one gesture can't both turn the page and navigate history; on touchscreen laptops this also disables trackpad history swipes on reader pages (accepted trade-off). iOS Safari and Android's system back gesture are edge swipes that CSS can't suppress; the 24px edge guard keeps them from overlapping. Slow turns (any path, not just swipe) show a themed spinner after 400ms, keyed off `aria-busy` from `fetchAndSwapPartial`, so fast connections never see it.
 - ✅ **Passage Range Highlighting (`matchText`)**: Isomorphic `matchText` parser (`reader_highlight.common.ts`) supporting `id~start~end__id2~start2~end2`. Server routes preserve `matchText` across `?jump=` redirects and resolve the target chapter page from the first section ID in `matchText` when `:page` is omitted, while keeping server-rendered passage HTML 100% static. Client tokenization (`tokenize.client.ts` + `reader_view.client.ts`) tracks 0-based `isWord` token indices per section (excluding `.reader-gap` and note markers to stay aligned with corpus `leaders` offsets), and marks matched words with `.reader-match`, coloured orange text as in V1's `.corpusResult` (`--match-highlight-fg`, `reader_text.css`). JS users are centred on the first match; no-JS users land on its section via a `#sec-<id>` redirect when `:page` is omitted.
+- ✅ **External Content Reader** (`src/web/v2/external/`, `/v2/externalReader`): reuses the library reader frame (`renderReaderFrameHtml` in `reader.server.ts`) and `<morcus-reader-view>`, so word lookup, the dictionary split panel / mobile drawer, and typography settings are shared rather than rebuilt.
+  - **URL imports** (`?url=`) are server-rendered, so they work without JS and the link can be shared. The scraper is hardened against SSRF and resource exhaustion (`src/web/scraping/safe_fetch.ts`); this also protects V1's `/api/scrapeUrl`.
+  - **Paste and `.txt` open/drop** are JS-only (`<morcus-external-loader>`). Text is saved to IndexedDB and opened at `?local=<key>`; it never reaches the server. No-JS users see a note pointing them to URL import.
+  - **Line modes**: Keep lines (default) / Reflow as prose / Number lines as verse, as plain links.
+  - **Titles** are optional and default to the first words.
+  - **Saved list**: "Saved on this device" shares V1's `externalContent.db` schema, so V1 imports appear in V2.
+  - Beyond-parity ideas (share links for pasted text, Web Share Target) are in [`TODOS.md`](TODOS.md) §6–7.
+  - No V1 → V2 redirect for `/externalReader` is needed: V1 and V2 never coexist for real users, only for developers.
 
 ### Deliberately Not Ported
 
@@ -55,13 +62,6 @@ These V1 features were reviewed and intentionally left out of V2. Revisit only w
   - ❌ **Missing**. Clicking `a.section-anchor` copies the URL immediately to the clipboard with no menu.
   - Restoring this requires introducing a small menu/popover on section anchors or secondary actions before triggering the inline edit flow.
   - **Design Document**: See [`IN_FLOW_EDITING_DESIGN.md`](IN_FLOW_EDITING_DESIGN.md) for full architecture, anchored popover trigger UX, in-place textarea swap vs `contenteditable` analysis, and `/v2/api/report` pipeline integration.
-
-### 3.2. External Content Reader
-
-- **V1 (`external_content_reader.tsx`, `external_content_storage.tsx`)**:
-  - Dedicated reader interface allowing users to paste raw Latin text or fetch from a scraped URL.
-  - Persisted external texts locally in `localStorage` and provided the same interactive word lookup and dictionary drawer affordances as library texts.
-- **V2**: ❌ **Missing**. No equivalent route, storage, or component exists under `src/web/v2/`.
 
 ---
 

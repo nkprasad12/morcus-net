@@ -66,3 +66,41 @@ Extend this capability to search passage text within the current work:
 
 - Search Latin lemmas or exact strings across the preprocessed work rows.
 - Display a list of matching section anchors with snippet previews for rapid in-work navigation.
+
+---
+
+## 6. External Reader: share links for pasted text
+
+**Status:** idea, not scheduled. Beyond V1 parity (V1 has no equivalent).
+
+Pasted texts live only in the browser that saved them (`?local=<key>` in `external/`), so sending that
+link to someone else opens the "isn't saved in this browser" notice. URL imports already share fine
+via `?url=`.
+
+- **Proposal**: a "Copy share link" action that compresses the text (`CompressionStream("deflate-raw")`,
+  base64url) into the fragment: `/v2/externalReader#t=<data>`. Browsers never send fragments to the
+  server, so the "never sent to Morcus" promise holds. The loader decodes it, renders with the shared
+  `external_text.common.ts` renderer, and adopts it like `?local=` (optionally offering to save it).
+- **Trade-offs**: the recipient needs JS (the server never sees the text). Links grow with the text;
+  Latin compresses ~3×, so a page of text is a few thousand characters. Browsers cope, but some chat and
+  email clients may truncate. Suited to passages, not whole works; cap the size and say so in the UI.
+
+---
+
+## 7. External Reader: Web Share Target
+
+**Status:** idea, not scheduled. Beyond V1 parity. Blocked on V2 being installable.
+
+Make Morcus a target in the OS share sheet: select Latin in a PDF, e-book, or another app, then
+Share → Morcus to open it in the External Reader. It is declared with a `share_target` entry in the
+web app manifest.
+
+- **Prerequisite**: V1 serves a manifest (`src/web/server/pwa_utils.ts`, no `share_target`), but V2
+  pages don't link one yet, so V2 can't be installed.
+- **Reach**: it only works for installed apps, mainly Chrome on Android and installed desktop Chrome.
+  iOS Safari doesn't support it.
+- **Privacy**: the simple `method: "GET"` form puts the shared text in the query string, which
+  reaches the server and its logs. That breaks the paste-path promise. Options: have the client read
+  the query and immediately `history.replaceState` it away, which still sends the text to the server
+  once; or use `POST` intercepted by a service worker, which is private but adds a service worker.
+  Shared URLs (rather than text) can map straight to `?url=`.
