@@ -111,19 +111,25 @@ export function isPlainLeftClick(e: MouseEvent): boolean {
 
 /**
  * Synchronizes the data-theme attribute on an iframe's document to match the parent document theme.
+ * When no explicit theme override exists (null), removes `data-theme` so the iframe's own
+ * `@media (prefers-color-scheme: dark)` rules apply naturally.
  */
 export function syncIframeTheme(
   iframe: HTMLIFrameElement,
-  theme?: string
+  theme?: string | null
 ): void {
   const currentTheme =
-    theme ?? document.documentElement.getAttribute("data-theme") ?? "light";
+    theme !== undefined
+      ? theme
+      : document.documentElement.getAttribute("data-theme");
   try {
-    if (iframe.contentDocument?.documentElement) {
-      iframe.contentDocument.documentElement.setAttribute(
-        "data-theme",
-        currentTheme
-      );
+    const docEl = iframe.contentDocument?.documentElement;
+    if (docEl) {
+      if (currentTheme) {
+        docEl.setAttribute("data-theme", currentTheme);
+      } else {
+        docEl.removeAttribute("data-theme");
+      }
     }
   } catch {
     // Cross-origin barrier safely ignored

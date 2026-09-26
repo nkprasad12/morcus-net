@@ -313,9 +313,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (!iframe) return;
 
     const syncTheme = () => {
+      const explicitAttr = document.documentElement.getAttribute("data-theme");
+      const savedDark = settingsStore.get().darkMode;
       const currentTheme =
-        document.documentElement.getAttribute("data-theme") ||
-        (settingsStore.get().darkMode ? "dark" : "light");
+        explicitAttr ||
+        (typeof savedDark === "boolean"
+          ? savedDark
+            ? "dark"
+            : "light"
+          : null);
       syncIframeTheme(iframe, currentTheme);
     };
 

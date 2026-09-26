@@ -2620,3 +2620,57 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     expect(scrollSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("MorcusReaderView dictionary iframe theme synchronization", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.documentElement.removeAttribute("data-theme");
+    document.body.innerHTML = "";
+  });
+
+  afterEach(() => {
+    document.documentElement.removeAttribute("data-theme");
+    document.body.innerHTML = "";
+  });
+
+  test("leaves iframe data-theme unset when neither parent data-theme nor saved darkMode exists", () => {
+    // Even if unrelated GlobalSettings exist, darkMode is undefined
+    localStorage.setItem(
+      "GlobalSettings",
+      JSON.stringify({ highlightStrength: 50 })
+    );
+
+    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    iframe.contentDocument!.write(
+      '<html data-theme="light"><head></head><body></body></html>'
+    );
+    iframe.contentDocument!.close();
+
+    iframe.dispatchEvent(new Event("load"));
+
+    expect(
+      iframe.contentDocument!.documentElement.getAttribute("data-theme")
+    ).toBeNull();
+  });
+
+  test("syncs explicit saved darkMode or parent data-theme to the dictionary iframe on load", () => {
+    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: true }));
+
+    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    iframe.contentDocument!.write("<html><head></head><body></body></html>");
+    iframe.contentDocument!.close();
+
+    iframe.dispatchEvent(new Event("load"));
+    expect(
+      iframe.contentDocument!.documentElement.getAttribute("data-theme")
+    ).toBe("dark");
+
+    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: false }));
+    iframe.dispatchEvent(new Event("load"));
+    expect(
+      iframe.contentDocument!.documentElement.getAttribute("data-theme")
+    ).toBe("light");
+  });
+});
