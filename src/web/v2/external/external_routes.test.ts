@@ -34,7 +34,7 @@ describe("GET /v2/externalReader", () => {
     expect(scrape).not.toHaveBeenCalled();
   });
 
-  test("offers paste and the saved list only to JS, with a No-JS note", async () => {
+  test("offers paste as a JS-only tab beside the web-page import", async () => {
     const res = await request(makeApp(jest.fn())).get("/v2/externalReader");
 
     expect(res.text).toContain(
@@ -42,13 +42,38 @@ describe("GET /v2/externalReader", () => {
     );
     expect(res.text).toContain('data-page="landing"');
     expect(res.text).toMatch(
-      /<form class="[^"]*external-js-only[^"]*" id="external-paste-form"/
+      /class="external-source-tabs external-js-only" role="radiogroup"/
     );
-    expect(res.text).toContain('id="external-text"');
+    // Paste is the default tab.
+    expect(res.text).toMatch(
+      /id="external-source-paste" value="paste" checked/
+    );
     expect(res.text).toContain('id="external-saved-list"');
     expect(res.text).toContain('class="external-nojs-note"');
-    // Nothing on the paste form submits to the server.
+    // One form, one set of line-break options for both sources.
+    const landing = res.text.slice(
+      res.text.indexOf("<morcus-external-loader"),
+      res.text.indexOf("</morcus-external-loader>")
+    );
+    expect(landing.match(/<form /g)).toHaveLength(1);
+    expect(landing.match(/name="lines" value="keep"/g)).toHaveLength(1);
+    // Pasted text has no `name`, so it can never be submitted to the server.
+    expect(res.text).toMatch(/<textarea id="external-text"(?![^>]*name=)/);
+    expect(res.text).not.toContain('type="file"');
     expect(res.text).not.toMatch(/method="post"/i);
+  });
+
+  test("reopens on the web-page tab after a failed import", async () => {
+    const res = await request(
+      makeApp(async () => {
+        throw new UnsafeUrlError("Local addresses are not allowed");
+      })
+    ).get(`/v2/externalReader?url=${encodeURIComponent("http://localhost/")}`);
+
+    expect(res.text).toMatch(/id="external-source-url" value="url" checked/);
+    expect(res.text).not.toMatch(
+      /id="external-source-paste" value="paste" checked/
+    );
   });
 
   test("?local= renders a reader shell for the saved text, never scraping", async () => {
