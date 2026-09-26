@@ -1,0 +1,170 @@
+/* Critical Apparatus: in-text note markers and the page's footnote list */
+
+/* ==========================================================================
+   1. In-Text Marker
+   ========================================================================== */
+
+/* A link, not a button: the jump to the footnote body works with no JS, and
+   the tokenizer skips <a> subtrees so the label is never treated as a word.
+
+   Selector note: `.reader-passage a` in reader_text.css styles the clickable
+   words, and sets `color: inherit` and `padding: 0`. It is (0,1,1), so a bare
+   `.reader-note-ref` loses to it — the marker has to name the element too.
+
+   Muted grey, not link blue. A page of Ammianus carries a marker every few
+   lines, and in blue the eye lands on the apparatus before the prose. Grey
+   groups the marker with the other editorial furniture — the citation gutter
+   uses this same token — and keeps it legible as a distinct thing rather than
+   letting it dissolve into the text. Blue is held for hover/focus, where it
+   confirms the affordance.
+
+   Not colour-only signalling: the brackets distinguish the marker on their
+   own, as in a printed critical edition.
+
+   Contrast, measured: 4.22:1 against the light background, just under the 4.5
+   AA floor for body text, and the same shortfall the citation gutter already
+   carries. Dark mode is 6.42:1. If that floor ever needs to be met, darken
+   --text-muted globally rather than giving the marker a bespoke colour. */
+a.reader-note-ref,
+a.reader-note-ref:visited {
+  position: relative;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+  /* Keeps the label out of copied text. Someone quoting a passage wants the
+     Latin, not "infudere[2] communibus". The citation gutter is excluded the
+     same way (reader_text.css). Verified against the real clipboard, not just
+     Selection.toString(), in Chromium and Firefox — note that Chromium still
+     reports the label in Selection.toString() while correctly omitting it
+     from the clipboard, so the cheap check is the misleading one. */
+  user-select: none;
+}
+
+a.reader-note-ref sup {
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+/* The marker glyphs are ~24x24 including the superscript's lift, which is the
+   bare WCAG 2.5.8 minimum and smaller than that on mobile. This overlay grows
+   the target to ~36x38 (desktop) / ~33x34 (mobile) without moving anything:
+   an absolutely positioned child does not affect the line box, and clicks on
+   it still land on the anchor. Measured not to cover any word's centre, so it
+   cannot steal a dictionary lookup from the lines above or below. */
+a.reader-note-ref::after {
+  content: "";
+  position: absolute;
+  inset: -0.25em -0.3em;
+}
+
+a.reader-note-ref:hover,
+a.reader-note-ref:focus-visible {
+  color: var(--primary);
+  text-decoration: underline;
+  background-color: transparent;
+}
+
+/* Marks where the reader was when they follow a note's back-link. */
+a.reader-note-ref:target {
+  background-color: var(--primary-light);
+  border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   2. Footnote List
+   ========================================================================== */
+
+.reader-notes {
+  margin-top: var(--space-9);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.reader-notes-heading {
+  margin: 0 0 var(--space-5);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+/* Only rendered when a page has both text and translation notes. */
+.reader-notes-subheading {
+  margin: var(--space-6) 0 var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.reader-notes-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Mirrors the passage's citation gutter: label column, then body. */
+.reader-note {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+.reader-note:target {
+  background-color: var(--primary-light);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+/* Keeps the blue the in-text marker gives up. Nothing here has to stay out of
+   the way of reading: the whole block is already de-emphasised, the note
+   bodies are themselves --text-muted, and this column is the one interactive
+   thing in it, so muting it too would erase the distinction. */
+.reader-note-backref,
+.reader-note-backref:visited {
+  color: var(--primary);
+  text-align: right;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  /* Same reasoning as the in-text marker: a lone digit is not a tap target.
+     Block display lets min-height apply, and the negative margin keeps the
+     enlarged box from pushing the note body down. */
+  display: block;
+  min-height: 1.5rem;
+  padding: var(--space-2) var(--space-1);
+  margin: calc(-1 * var(--space-2)) 0;
+  white-space: nowrap;
+}
+
+.reader-note-backref:hover {
+  text-decoration: underline;
+}
+
+.reader-note-body {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .reader-notes {
+    margin-top: var(--space-8);
+    font-size: 0.8125rem;
+  }
+
+  /* Not narrowed below the desktop width: the bracketed label has to fit, and
+     mobile is where the tap target matters most. */
+  .reader-note {
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+  }
+}

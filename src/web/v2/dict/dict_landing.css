@@ -1,0 +1,308 @@
+/* ==========================================================================
+   Dictionary Landing State (Contextual Empty View)
+   ========================================================================== */
+
+.landing-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-top: var(--space-4);
+  width: 100%;
+}
+
+.landing-welcome {
+  margin: 0;
+  padding: 0 var(--space-2);
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-9);
+  align-items: start;
+}
+
+.landing-card {
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+.landing-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.landing-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+.landing-card-desc {
+  margin: 0 0 var(--space-3) 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* Sample Entry Mock */
+.sample-entry {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.sample-entry-line {
+  margin-bottom: var(--space-2);
+}
+
+.sample-entry-sense {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Expandable Legend details */
+.legend-details {
+  margin-top: var(--space-1);
+  padding-top: var(--space-1);
+}
+
+.legend-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: color 0.15s ease-in-out;
+}
+
+.legend-summary::-webkit-details-marker {
+  display: none;
+}
+
+.legend-summary:hover {
+  color: var(--primary);
+}
+
+.legend-summary-arrow {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  transition: transform 0.2s ease-in-out;
+}
+
+.legend-details[open] .legend-summary-arrow {
+  transform: rotate(180deg);
+}
+
+.legend-body {
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-2) 0;
+}
+
+/* Legend list */
+.legend-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.legend-list li {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  align-items: center;
+  gap: var(--space-5);
+  font-size: 0.85rem;
+}
+
+.legend-sample {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+}
+
+.legend-explain {
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.legend-settings-tip,
+.card-settings-note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px dashed var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Lexica Directional Sections */
+.dict-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.dict-section-title {
+  margin: 0 0 var(--space-2) 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--dict-title);
+  font-weight: 700;
+}
+
+.lexicon-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.lexicon-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lexicon-badge {
+  display: inline-block;
+  min-width: 2.2rem;
+  padding: var(--space-1) var(--space-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  transition: all 0.15s ease-in-out;
+}
+
+/* Enabled dictionary status: themed with language chip tokens and a refined tag border */
+.lexicon-badge.dict-enabled {
+  border: 1px solid var(--border);
+}
+
+/* Fallback if no language chip class is present */
+.lexicon-badge.dict-enabled:not([class*="-badge-"]):not([class*="lang-chip-"]) {
+  background-color: var(--tag-bg);
+  color: var(--dict-title);
+}
+
+/* Disabled dictionary status: muted dashed outline and dimmed row */
+.dict-list-item.dict-disabled {
+  opacity: 0.55;
+}
+
+.lexicon-badge.dict-disabled {
+  background-color: transparent;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+}
+
+.lexicon-name {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lexicon-lang {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.landing-tune-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* Hide JS-only features when JavaScript is disabled */
+html:not(.has-js) .js-only {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .landing-container {
+    gap: var(--space-6);
+  }
+  .landing-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-7);
+  }
+  .landing-card-header {
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+  }
+  .dict-sections {
+    gap: var(--space-4);
+  }
+  .dict-section-title {
+    font-size: 0.75rem;
+    margin-bottom: var(--space-2);
+  }
+  .lexicon-list {
+    gap: var(--space-2);
+  }
+  .lexicon-list li {
+    font-size: 0.8rem;
+  }
+  .sample-entry {
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-3);
+    font-size: 0.88rem;
+  }
+  .card-settings-note,
+  .legend-settings-tip {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+  }
+  .legend-list li {
+    grid-template-columns: 80px 1fr;
+    gap: var(--space-4);
+    font-size: 0.8rem;
+  }
+}

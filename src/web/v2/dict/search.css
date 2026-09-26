@@ -1,0 +1,236 @@
+/* Search Form & Input Styles */
+
+.search-form {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-5);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border, var(--border));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.search-form:focus-within {
+  border-color: var(--app-bar-toggle-border);
+  box-shadow: var(--theme-ring);
+}
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  padding: var(--space-4) 42px var(--space-4) var(--space-5);
+  font-size: 1rem;
+  border: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background-color: transparent;
+  color: var(--text);
+  box-shadow: none;
+  outline: none;
+}
+
+.search-form:not(:has(.search-tray)) .input {
+  border-radius: var(--radius-lg);
+}
+
+.search-btn {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.search-btn:hover {
+  color: var(--primary);
+  background-color: var(--tag-bg);
+}
+
+.search-btn:focus-visible {
+  outline: 2px solid var(--app-bar-toggle-border, var(--primary));
+  outline-offset: 1px;
+}
+
+.search-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  display: block;
+}
+
+/* Autocomplete suggestion container (populated by Web Component) */
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--space-2);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border, var(--border));
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: var(--z-dropdown);
+  list-style: none;
+  padding: var(--space-2) 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-3) var(--space-5);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.1s ease-in-out;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+  background-color: var(--tag-bg);
+  color: var(--primary);
+}
+
+.suggestion-item .lang-chip {
+  flex-shrink: 0;
+  min-width: 22px;
+  text-align: center;
+}
+
+.suggestion-word {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Search Status Tray */
+.search-tray {
+  border-top: 1px solid var(--border);
+  background-color: var(--tag-bg);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.search-tray-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.tray-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.tray-dot {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.lang-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lang-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  line-height: 1;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  letter-spacing: -0.02em;
+}
+
+.lang-chip-none {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Inflection Status Badge */
+.inflect-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  line-height: 1;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.inflect-chip.is-on {
+  background-color: var(--app-bar-bg);
+  color: var(--app-bar-text);
+}
+
+.inflect-chip.is-off {
+  background-color: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+/* Settings trigger in status tray */
+.search-tray-right {
+  display: flex;
+  align-items: center;
+}
+
+.search-tray-right .settings-btn {
+  height: 1.625rem;
+  width: 2rem;
+  padding: var(--space-2);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.search-tray-right .settings-btn:hover {
+  color: var(--primary);
+  background-color: var(--card-header-bg, rgba(0, 0, 0, 0.06));
+}
+
+.search-tray-right .settings-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.search-tray-right .dict-settings-details[open] > .settings-btn,
+.search-tray-right .settings-btn[aria-expanded="true"] {
+  color: var(--app-bar-text);
+  background-color: var(--app-bar-bg);
+  border-color: transparent;
+}

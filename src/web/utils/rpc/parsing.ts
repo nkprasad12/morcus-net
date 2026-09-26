@@ -254,3 +254,9 @@ export function isBoth<T, U>(
 ): Validator<T & U> {
   return (x: unknown): x is T & U => tChecker(x) && uChecker(x);
 }
+
+export function isLiteral<T extends string | number | boolean>(
+  literal: T
+): Validator<T> {
+  return (x: unknown): x is T => x === literal;
+}

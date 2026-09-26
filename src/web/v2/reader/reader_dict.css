@@ -1,0 +1,173 @@
+/* Embedded Dictionary Sidebar & Mobile Bottom Sheet Drawer */
+
+.reader-dict-panel {
+  min-width: 0;
+}
+
+.dict-iframe-container {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.dict-iframe {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: none;
+  background: transparent;
+  display: block;
+}
+
+body.resizing-panels .dict-iframe,
+.reader-dict-panel.is-dragging .dict-iframe {
+  pointer-events: none;
+}
+
+.reader-dict-sticky {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-7);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* Mobile Sheet Bar & Teaser (Visible on Mobile, Hidden on Desktop) */
+.reader-sheet-bar {
+  display: none;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints: Mobile (<= 640px)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .reader-dict-sticky {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    max-height: none;
+    padding: var(--space-5) var(--space-6) var(--space-8);
+    box-shadow: none;
+    border: none;
+  }
+
+  .reader-dict-content {
+    display: block;
+    width: 100%;
+  }
+
+  /* The embedded dictionary page renders flush (no inline padding) so it can
+     align with the desktop companion tab bar. The iframe can't tell which
+     layout hosts it, so the drawer supplies the gutter here (plus a small top
+     inset so the search bar doesn't butt against the tab bar). The background
+     matches the iframe body (`--bg`) so the gutter reads as part of the
+     dictionary canvas rather than a stripe. The card chrome is dropped so the
+     dictionary tab sits flat like the other companion tabs. */
+  .dict-iframe-container {
+    padding: var(--space-1) var(--space-4) 0;
+    background-color: var(--bg);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* Mobile Drawer Top Bar & Handle (balanced) */
+  .reader-sheet-bar {
+    display: flex;
+    padding: 5px var(--space-4) var(--space-1);
+  }
+
+  .reader-sheet-handle {
+    width: 36px;
+    height: 3px;
+    margin-bottom: var(--space-1);
+  }
+
+  .reader-sheet-teaser {
+    min-height: 24px;
+    font-size: 0.84rem;
+  }
+
+  a.reader-sheet-close,
+  a.reader-sheet-close:visited {
+    padding: 0 var(--space-2);
+    font-size: 1rem;
+  }
+}
+
+/* ==========================================================================
+   Responsive Breakpoints: Desktop (>= 641px)
+   ========================================================================== */
+
+@media (min-width: 641px) {
+  .drawer.drawer-minimized.reader-dict-panel,
+  .drawer.reader-dict-panel,
+  .reader-dict-panel {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    height: 100%;
+    min-height: 0;
+    flex: 0 0 var(--dict-width, 420px);
+    width: var(--dict-width, 420px);
+    /* Leave the passage its 320px minimum plus the splitter chrome (22px);
+       mirrors computeMaxSplitWidth() in reader_layout.client.ts. */
+    max-width: calc(100% - 342px);
+    min-width: 300px;
+    overflow: hidden;
+    padding-left: var(--space-4);
+    padding-right: 0;
+    padding-bottom: 0;
+    background-color: transparent;
+    border-top: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    box-shadow: none;
+    transition: none;
+    z-index: auto;
+    scrollbar-width: thin;
+  }
+
+  /* Unboxed flat canvas for dictionary pane on desktop */
+  .dict-iframe-container {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .reader-dict-sticky {
+    position: static;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: var(--space-2) 0 var(--space-8);
+    box-shadow: none;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  /* Position button inside the dictionary right column */
+  .reader-dict-back-to-top {
+    position: fixed;
+    bottom: 24px;
+    right: 28px;
+  }
+}

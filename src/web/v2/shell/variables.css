@@ -1,0 +1,285 @@
+/**
+ * UI V2 COMPONENT DESIGN TOKENS & THEMES
+ *
+ * NOTE ON CRITICAL TOKENS:
+ * Core above-the-fold design tokens (body background/text, system font, and app-bar
+ * colors for light/dark themes) are defined in `./critical_variables.css` and
+ * imported below.
+ *
+ * WHY SEPARATE?
+ * `critical_variables.css` is inlined into a <style> tag in the HTML <head> on
+ * every page response via `v2-critical.css` to prevent theme FOUC. Keeping it
+ * separate ensures we do not bloat every SSR response with all 40+ component tokens.
+ *
+ * Any new design tokens that are NOT needed for initial above-the-fold paint
+ * (e.g. dictionary highlights, reader colors, cards, toasts, borders) should be
+ * added to THIS file.
+ */
+@import "./critical_variables.css";
+
+:root,
+:root[data-theme="light"],
+[data-theme="light"] {
+  /* Stacking Context & Z-Index Scale */
+  --z-raised: 10;
+  --z-sticky: 20;
+  --z-overlay: 50;
+  --z-drawer: 100;
+  --z-fab: 110;
+  --z-dropdown-backdrop: 190;
+  --z-dropdown: 200;
+  --z-nav: 300;
+  --z-toast: 400;
+  --z-modal: 1000;
+
+  /* Border Radius Scale */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  --font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
+  --font-mono: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  --card-bg: var(--bg);
+  --text-muted: #6c757d;
+  --primary: #0066cc;
+  --primary-hover: #0052a3;
+  --primary-light: rgba(0, 102, 204, 0.08);
+  --border: #dfe3e1;
+  --border-mid: #b7bac1;
+  --border-strong: #8c919a;
+  --border-focus: #80bdff;
+  --focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.2);
+  --theme-ring: 0 0 0 3px rgba(153, 194, 176, 0.4);
+  --success: #198754;
+  --danger: #dc3545;
+  --on-accent: #ffffff;
+  --tag-bg: #e9edeb;
+  --card-header-bg: #e4e7e4;
+  --input-bg: #f5f7f6;
+  --input-border: var(--border);
+  --input-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --card-surface-bg: #f8faf9;
+  --paper-bg: #f5f6f5;
+  --card-border: var(--border);
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --card-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.09),
+    0 2px 6px rgba(0, 0, 0, 0.04);
+  --dict-title: #1d3b33;
+  --pill-height: 2.125rem;
+  --highlight-scale: 1;
+  --rgb-orth: 220, 53, 69;
+  --rgb-grammar: 253, 126, 20;
+  --rgb-quote: 13, 110, 253;
+  --rgb-bibl: 111, 66, 193;
+  --accent-orth: rgba(var(--rgb-orth), calc(0.105 * var(--highlight-scale)));
+  --accent-grammar: rgba(
+    var(--rgb-grammar),
+    calc(0.105 * var(--highlight-scale))
+  );
+  --accent-quote: rgba(var(--rgb-quote), calc(0.084 * var(--highlight-scale)));
+  --accent-bibl: rgba(var(--rgb-bibl), calc(0.105 * var(--highlight-scale)));
+  --target-highlight: rgba(0, 102, 204, 0.08);
+  --bullet-bg: rgba(0, 0, 0, 0.08);
+  --tab-chip-bg: var(--tag-bg);
+  --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.07);
+  --app-bar-nav-active-bg: rgba(0, 0, 0, 0.12);
+  --app-bar-nav-active-text: #0d2820;
+  --app-bar-toggle-border: #99c2b0;
+  --toast-bg: #1c2024;
+  --toast-text: #f8f9fa;
+  --toast-border: rgba(255, 255, 255, 0.15);
+  --word-hover-bg: rgba(0, 0, 0, 0.05);
+  --word-active-bg: rgba(0, 0, 0, 0.11);
+  --match-highlight-fg: #cb4b16;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.25);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
+  --drawer-shadow: 0 -6px 20px rgba(0, 0, 0, 0.09),
+    0 -1px 4px rgba(0, 0, 0, 0.04);
+  --dict-toc-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --dict-toc-rail-border: var(--border);
+  --dict-toc-header-bg: #f1f3f5;
+  --dict-toc-header-text: var(--text);
+  --chip-la-bg: rgba(122, 171, 53, 0.16);
+  --chip-la-text: #4e731b;
+  --chip-en-bg: rgba(18, 52, 216, 0.13);
+  --chip-en-text: #1234d8;
+  --chip-de-bg: rgba(178, 68, 56, 0.14);
+  --chip-de-text: #96281e;
+  --chip-es-bg: rgba(68, 56, 178, 0.13);
+  --chip-es-text: #372a9e;
+  --badge-macra-bg: rgba(16, 185, 129, 0.1);
+  --badge-macra-text: #065f46;
+  --badge-macra-border: rgba(16, 185, 129, 0.24);
+  --badge-trans-bg: rgba(99, 102, 241, 0.1);
+  --badge-trans-text: #3730a3;
+  --badge-trans-border: rgba(99, 102, 241, 0.24);
+  --badge-resume-bg: rgba(217, 119, 6, 0.12);
+  --badge-resume-text: #92400e;
+  --badge-resume-border: rgba(217, 119, 6, 0.28);
+  --dropdown-backdrop: rgba(0, 0, 0, 0.22);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --text-muted: #9a9ea4;
+    --primary: #8ab4f8;
+    --primary-hover: #aecbfa;
+    --primary-light: rgba(138, 180, 248, 0.15);
+    --border: #363a42;
+    --border-mid: #4d525c;
+    --border-strong: #656a76;
+    --border-focus: #8ab4f8;
+    --focus-ring: 0 0 0 3px rgba(77, 163, 255, 0.25);
+    --theme-ring: 0 0 0 3px rgba(109, 142, 126, 0.45);
+    --success: #5cdb95;
+    --danger: #ff6b6b;
+    --on-accent: #ffffff;
+    --tag-bg: #26292e;
+    --card-header-bg: #26292d;
+    --input-bg: #22262a;
+    --input-border: #383d46;
+    --input-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    --card-surface-bg: #22262a;
+    --paper-bg: #1c1e21;
+    --card-border: #383d46;
+    --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.55);
+    --dict-title: #cad5cf;
+    --rgb-orth: 240, 90, 100;
+    --rgb-grammar: 255, 145, 50;
+    --rgb-quote: 70, 140, 255;
+    --rgb-bibl: 160, 110, 240;
+    --accent-orth: rgba(var(--rgb-orth), calc(0.175 * var(--highlight-scale)));
+    --accent-grammar: rgba(
+      var(--rgb-grammar),
+      calc(0.175 * var(--highlight-scale))
+    );
+    --accent-quote: rgba(
+      var(--rgb-quote),
+      calc(0.154 * var(--highlight-scale))
+    );
+    --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
+    --target-highlight: rgba(138, 180, 248, 0.13);
+    --bullet-bg: rgba(255, 255, 255, 0.12);
+    --tab-chip-bg: rgba(255, 255, 255, 0.08);
+    --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);
+    --app-bar-nav-active-bg: rgba(0, 0, 0, 0.15);
+    --app-bar-nav-active-text: #061912;
+    --app-bar-toggle-border: #6d8e7e;
+    --toast-bg: #f4f5f7;
+    --toast-text: #14171a;
+    --toast-border: rgba(0, 0, 0, 0.15);
+    --word-hover-bg: rgba(255, 255, 255, 0.07);
+    --word-active-bg: rgba(255, 255, 255, 0.18);
+    --match-highlight-fg: #e8743b;
+    --scrollbar-thumb: rgba(255, 255, 255, 0.28);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
+    --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),
+      0 -2px 8px rgba(0, 0, 0, 0.4), 0 -1px 0 rgba(255, 255, 255, 0.09);
+    --dict-toc-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    --dict-toc-rail-border: var(--border);
+    --dict-toc-header-bg: var(--card-header-bg);
+    --dict-toc-header-text: var(--text);
+    --chip-la-bg: rgba(158, 208, 76, 0.2);
+    --chip-la-text: #b2e664;
+    --chip-en-bg: rgba(138, 180, 248, 0.2);
+    --chip-en-text: #a8c7fa;
+    --chip-de-bg: rgba(239, 128, 128, 0.2);
+    --chip-de-text: #f29b9b;
+    --chip-es-bg: rgba(179, 157, 219, 0.2);
+    --chip-es-text: #cebeec;
+    --badge-macra-bg: rgba(52, 211, 153, 0.18);
+    --badge-macra-text: #6ee7b7;
+    --badge-macra-border: rgba(52, 211, 153, 0.35);
+    --badge-trans-bg: rgba(165, 180, 252, 0.18);
+    --badge-trans-text: #a5b4fc;
+    --badge-trans-border: rgba(165, 180, 252, 0.35);
+    --badge-resume-bg: rgba(251, 191, 36, 0.16);
+    --badge-resume-text: #fde68a;
+    --badge-resume-border: rgba(251, 191, 36, 0.35);
+    --dropdown-backdrop: rgba(0, 0, 0, 0.45);
+  }
+}
+
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --text-muted: #9a9ea4;
+  --primary: #8ab4f8;
+  --primary-hover: #aecbfa;
+  --primary-light: rgba(138, 180, 248, 0.15);
+  --border: #363a42;
+  --border-mid: #4d525c;
+  --border-strong: #656a76;
+  --border-focus: #8ab4f8;
+  --focus-ring: 0 0 0 3px rgba(77, 163, 255, 0.25);
+  --theme-ring: 0 0 0 3px rgba(109, 142, 126, 0.45);
+  --success: #5cdb95;
+  --danger: #ff6b6b;
+  --on-accent: #ffffff;
+  --tag-bg: #26292e;
+  --card-header-bg: #26292d;
+  --input-bg: #22262a;
+  --input-border: #383d46;
+  --input-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --card-surface-bg: #22262a;
+  --paper-bg: #1c1e21;
+  --card-border: #383d46;
+  --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.55);
+  --dict-title: #cad5cf;
+  --rgb-orth: 240, 90, 100;
+  --rgb-grammar: 255, 145, 50;
+  --rgb-quote: 70, 140, 255;
+  --rgb-bibl: 160, 110, 240;
+  --accent-orth: rgba(var(--rgb-orth), calc(0.175 * var(--highlight-scale)));
+  --accent-grammar: rgba(
+    var(--rgb-grammar),
+    calc(0.175 * var(--highlight-scale))
+  );
+  --accent-quote: rgba(var(--rgb-quote), calc(0.154 * var(--highlight-scale)));
+  --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
+  --target-highlight: rgba(138, 180, 248, 0.13);
+  --bullet-bg: rgba(255, 255, 255, 0.12);
+  --tab-chip-bg: rgba(255, 255, 255, 0.08);
+  --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);
+  --app-bar-nav-active-bg: rgba(0, 0, 0, 0.15);
+  --app-bar-nav-active-text: #061912;
+  --app-bar-toggle-border: #6d8e7e;
+  --toast-bg: #f4f5f7;
+  --toast-text: #14171a;
+  --toast-border: rgba(0, 0, 0, 0.15);
+  --word-hover-bg: rgba(255, 255, 255, 0.07);
+  --word-active-bg: rgba(255, 255, 255, 0.18);
+  --match-highlight-fg: #e8743b;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.28);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
+  --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),
+    0 -2px 8px rgba(0, 0, 0, 0.4), 0 -1px 0 rgba(255, 255, 255, 0.09);
+  --dict-toc-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --dict-toc-rail-border: var(--border);
+  --dict-toc-header-bg: var(--card-header-bg);
+  --dict-toc-header-text: var(--text);
+  --chip-la-bg: rgba(158, 208, 76, 0.2);
+  --chip-la-text: #b2e664;
+  --chip-en-bg: rgba(138, 180, 248, 0.2);
+  --chip-en-text: #a8c7fa;
+  --chip-de-bg: rgba(239, 128, 128, 0.2);
+  --chip-de-text: #f29b9b;
+  --chip-es-bg: rgba(179, 157, 219, 0.2);
+  --chip-es-text: #cebeec;
+  --badge-macra-bg: rgba(52, 211, 153, 0.18);
+  --badge-macra-text: #6ee7b7;
+  --badge-macra-border: rgba(52, 211, 153, 0.35);
+  --badge-trans-bg: rgba(165, 180, 252, 0.18);
+  --badge-trans-text: #a5b4fc;
+  --badge-trans-border: rgba(165, 180, 252, 0.35);
+  --badge-resume-bg: rgba(251, 191, 36, 0.16);
+  --badge-resume-text: #fde68a;
+  --badge-resume-border: rgba(251, 191, 36, 0.35);
+  --dropdown-backdrop: rgba(0, 0, 0, 0.45);
+}

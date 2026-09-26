@@ -7,6 +7,7 @@ import {
   isArray,
   isBoolean,
   isBoth,
+  isLiteral,
   isNumber,
   isOneOf,
   isPair,
@@ -280,5 +281,39 @@ describe("stringifyMessage and parseMessage", () => {
     );
 
     expect(result).toStrictEqual<StringWrapper[]>(input);
+  });
+});
+
+describe("isLiteral", () => {
+  it("validates string literals", () => {
+    const isSerif = isLiteral("serif");
+    expect(isSerif("serif")).toBe(true);
+    expect(isSerif("sans")).toBe(false);
+    expect(isSerif(123)).toBe(false);
+    expect(isSerif(null)).toBe(false);
+    expect(isSerif(undefined)).toBe(false);
+  });
+
+  it("validates number and boolean literals", () => {
+    expect(isLiteral(42)(42)).toBe(true);
+    expect(isLiteral(42)(43)).toBe(false);
+    expect(isLiteral(true)(true)).toBe(true);
+    expect(isLiteral(true)(false)).toBe(false);
+  });
+
+  it("composes with isOneOf for literal unions", () => {
+    const isFontFamily = isOneOf(isLiteral("serif"), isLiteral("sans"));
+    expect(isFontFamily("serif")).toBe(true);
+    expect(isFontFamily("sans")).toBe(true);
+    expect(isFontFamily("monospace")).toBe(false);
+
+    const isLineHeight = isOneOf(
+      isLiteral("compact"),
+      isOneOf(isLiteral("normal"), isLiteral("relaxed"))
+    );
+    expect(isLineHeight("compact")).toBe(true);
+    expect(isLineHeight("normal")).toBe(true);
+    expect(isLineHeight("relaxed")).toBe(true);
+    expect(isLineHeight("wide")).toBe(false);
   });
 });

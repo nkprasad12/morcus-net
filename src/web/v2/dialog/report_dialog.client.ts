@@ -1,0 +1,173 @@
+import {
+  BaseElement,
+  registerElement,
+  setupModalDialog,
+  type ModalDialogHandle,
+} from "@/web/v2/core/index.client";
+
+/**
+ * Progressively enhanced issue and feedback report dialog component (Light DOM mode).
+ *
+ * - In SSR / No-JS: The entire element is hidden using `morcus-report-dialog:not(:defined) { display: none; }`,
+ *   mirroring `morcus-theme-toggle` so no non-functional controls are presented to users without JS.
+ * - When defined: Coordinates the native <dialog> via `showModal()`, focus management,
+ *   backdrop clicking, and AJAX form submission.
+ */
+export class MorcusReportDialog extends BaseElement {
+  private triggerBtn: HTMLButtonElement | null = null;
+  private dialogEl: HTMLDialogElement | null = null;
+  private dialogController: ModalDialogHandle | null = null;
+  private formEl: HTMLFormElement | null = null;
+  private textareaEl: HTMLTextAreaElement | null = null;
+  private reporterInputEl: HTMLInputElement | null = null;
+  private statusEl: HTMLElement | null = null;
+  private submitBtn: HTMLButtonElement | null = null;
+
+  protected override onConnect() {
+    this.enhanceMarkup();
+  }
+
+  private enhanceMarkup() {
+    this.triggerBtn = this.scope.$<HTMLButtonElement>(".report-btn");
+    this.dialogEl = this.scope.$<HTMLDialogElement>("dialog.report-dialog");
+    this.formEl = this.scope.$<HTMLFormElement>("form.report-form");
+    this.textareaEl = this.scope.$<HTMLTextAreaElement>(
+      "textarea.report-textarea"
+    );
+    this.reporterInputEl = this.scope.$<HTMLInputElement>(
+      "input.report-reporter"
+    );
+    this.statusEl = this.scope.$(".report-status");
+    this.submitBtn = this.scope.$<HTMLButtonElement>(".report-submit-btn");
+
+    if (this.dialogEl) {
+      this.dialogController = setupModalDialog(this.dialogEl, {
+        trigger: this.triggerBtn,
+        onOpen: () => {
+          this.clearStatus();
+          this.scope.timeout(() => this.textareaEl?.focus(), 50);
+        },
+        onClose: () => {
+          this.clearStatus();
+          this.triggerBtn?.focus();
+        },
+      });
+      this.scope.use(this.dialogController);
+    }
+
+    this.hijackForm("form.report-form", (data) => {
+      void this.submitReport(data.reportText || "", data.reporter || "");
+    });
+
+    if (this.formEl) {
+      this.scope.listen(this.formEl, "keydown", this.handleFormKeyDown);
+    }
+  }
+
+  private readonly handleFormKeyDown = (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      this.formEl?.requestSubmit();
+    }
+  };
+
+  private readonly clearStatus = () => {
+    if (this.statusEl) {
+      this.statusEl.className = "report-status";
+      this.statusEl.textContent = "";
+    }
+  };
+
+  private resetForm() {
+    if (this.textareaEl) {
+      this.textareaEl.value = "";
+    }
+    if (this.reporterInputEl) {
+      this.reporterInputEl.value = "";
+    }
+    if (this.submitBtn) {
+      this.submitBtn.disabled = false;
+      this.submitBtn.classList.remove("loading");
+    }
+  }
+
+  public openDialog() {
+    this.dialogController?.open();
+  }
+
+  public closeDialog() {
+    this.dialogController?.close();
+  }
+
+  private readonly submitReport = async (text: string, reporter?: string) => {
+    const trimmedText = text.trim();
+    if (!trimmedText) return;
+
+    let reportText = trimmedText;
+    const trimmedReporter = reporter?.trim();
+    if (trimmedReporter) {
+      reportText = `${trimmedText}\n\nReporter: ${trimmedReporter}`;
+    } else if (!/Reporter:\s*.+/i.test(trimmedText)) {
+      reportText = `${trimmedText}\n\nReporter: Anonymous`;
+    }
+
+    if (this.submitBtn) {
+      this.submitBtn.disabled = true;
+      this.submitBtn.classList.add("loading");
+    }
+    if (this.statusEl) {
+      this.statusEl.className = "report-status";
+      this.statusEl.textContent = "Submitting report...";
+    }
+
+    try {
+      // Deliberately not cancellable. This is a mutation, not a read: once the
+      // user has hit submit we want the report to land even if the dialog is
+      // dismissed or the element goes away.
+      const response = await fetch("/v2/api/report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reportText,
+          url: window.location.href,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      if (this.statusEl) {
+        this.statusEl.className = "report-status success";
+        this.statusEl.textContent =
+          "✓ Thank you! Your report has been submitted.";
+      }
+
+      this.scope.timeout(() => {
+        this.closeDialog();
+        this.resetForm();
+      }, 1200);
+    } catch (err) {
+      console.error("Failed to submit issue report:", err);
+      if (this.statusEl) {
+        this.statusEl.className = "report-status error";
+        this.statusEl.textContent =
+          "Error submitting report. Please check your connection and try again.";
+      }
+      if (this.submitBtn) {
+        this.submitBtn.disabled = false;
+        this.submitBtn.classList.remove("loading");
+      }
+    }
+  };
+}
+
+registerElement("morcus-report-dialog", MorcusReportDialog);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "morcus-report-dialog": MorcusReportDialog;
+  }
+}

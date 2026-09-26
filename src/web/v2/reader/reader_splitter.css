@@ -1,0 +1,100 @@
+/* Desktop Split-Pane Resizer Gutter, Handle, and Drag States */
+
+/* Mobile: Splitter Bar is completely hidden */
+.reader-splitter {
+  display: none;
+}
+
+/* Resizing drag states across panels */
+body.resizing-panels {
+  user-select: none;
+  cursor: col-resize;
+}
+
+/* ==========================================================================
+   Desktop Resizable Splitter Gutter (>= 641px)
+   ========================================================================== */
+
+@media (min-width: 641px) {
+  .reader-splitter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    flex: 0 0 16px;
+    margin: 0;
+    cursor: col-resize;
+    user-select: none;
+    touch-action: none;
+    z-index: var(--z-raised);
+    position: relative;
+  }
+
+  .reader-splitter::before {
+    content: "";
+    width: 2px;
+    height: 100%;
+    background-color: var(--border);
+    transition: background-color 0.15s ease;
+  }
+
+  .reader-splitter-handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.65;
+    transition: opacity 0.15s ease, border-color 0.15s ease,
+      background-color 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .reader-splitter-handle::after {
+    content: "";
+    width: 2px;
+    height: 16px;
+    background-color: var(--border-strong);
+    border-radius: var(--radius-xs);
+  }
+
+  .reader-splitter:hover::before,
+  .reader-splitter:focus-visible::before,
+  .reader-splitter.is-resizing::before {
+    background-color: var(--primary);
+    width: 2px;
+  }
+
+  .reader-splitter:hover .reader-splitter-handle,
+  .reader-splitter:focus-visible .reader-splitter-handle,
+  .reader-splitter.is-resizing .reader-splitter-handle {
+    opacity: 1;
+    border-color: var(--primary);
+  }
+
+  .reader-splitter:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+  }
+
+  /* No-JS Mode: Splitter is an inert 1px dividing seam without drag handle */
+  :root:not(.has-js) .reader-splitter {
+    cursor: default;
+  }
+
+  :root:not(.has-js) .reader-splitter-handle {
+    display: none;
+  }
+
+  :root:not(.has-js) .reader-splitter:hover::before {
+    background-color: var(--border);
+    width: 2px;
+  }
+}

@@ -1,0 +1,100 @@
+/* Reader page turns: swipe gesture (reader_page_nav.client.ts) and the
+ * slow-load indicator.
+ *
+ * The controller writes only `--swipe-x`, `--swipe-fade`, and `data-swipe` on
+ * `.reader-text-panel`; everything visual lives here. Ancestors already clip
+ * horizontal overflow (`overflow-x: clip` on mobile, `overflow: hidden` on the
+ * desktop main column), so a panel slid off-screen never adds a scrollbar.
+ */
+
+.reader-text-panel[data-swipe] {
+  translate: var(--swipe-x, 0);
+  opacity: var(--swipe-fade, 1);
+  will-change: translate, opacity;
+}
+
+/* Tracks the finger 1:1: no easing or the page lags behind the touch. */
+.reader-text-panel[data-swipe="drag"] {
+  transition: none;
+}
+
+/* Keep in sync with SLIDE_MS. */
+.reader-text-panel[data-swipe="anim"] {
+  transition: translate 180ms ease-out, opacity 180ms ease-out;
+}
+
+/* Touch toggles only matter on devices with a touchscreen (including
+ * touchscreen laptops, whose primary pointer is still fine); hide them rather
+ * than gate in JS. */
+@media not all and (any-pointer: coarse) {
+  .settings-touch-nav {
+    display: none;
+  }
+}
+
+/* Chrome's own back/forward swipe (the blue arrow bubble) would otherwise fire
+ * on the same horizontal gesture that turns the page, navigating history on
+ * top of the turn. Suppressed only while swipe turns are live: JS has run
+ * (`:defined`), the setting is on (the group's only checkbox), and the device
+ * has a touchscreen. Trade-off: on touchscreen laptops, trackpad history
+ * swipes are also off on reader pages until swipe turns are disabled. */
+@media (any-pointer: coarse) {
+  :root:has(morcus-reader-view:defined .settings-touch-nav :checked) {
+    overscroll-behavior-x: none;
+  }
+}
+
+/* Slow page turns. fetchAndSwapPartial marks the passage `aria-busy` while it
+ * loads; after a delay, so ordinary turns never flash it, a spinner appears
+ * over the text column. It hangs off the column rather than the passage
+ * because a swiped passage is translated off-screen while it loads. Mobile:
+ * viewport-centered (the column is `display: contents`). */
+.reader-main-column:has(> .reader-text-panel[aria-busy="true"])::after {
+  content: "";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 2rem;
+  height: 2rem;
+  margin: -1rem 0 0 -1rem;
+  box-sizing: border-box;
+  /* App-bar colors: a themed disc that stays legible over (dimmed) text in
+   * light and dark mode. The ring extends the disc past the spinning arc. */
+  border: 3px solid transparent;
+  border-top-color: var(--app-bar-nav-text);
+  border-radius: 50%;
+  background-color: var(--app-bar-bg);
+  box-shadow: 0 0 0 5px var(--app-bar-bg);
+  pointer-events: none;
+  /* stylelint-disable no-unknown-animations -- `spin` lives in core/components.css */
+  animation: page-loading-in 150ms ease-out 400ms both,
+    spin 0.7s linear infinite;
+  /* stylelint-enable no-unknown-animations */
+}
+
+@keyframes page-loading-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Desktop: centered in the column, which is the viewport-height scroll frame. */
+@media (min-width: 641px) {
+  .reader-main-column {
+    position: relative;
+  }
+
+  .reader-main-column:has(> .reader-text-panel[aria-busy="true"])::after {
+    position: absolute;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-text-panel[data-swipe="anim"] {
+    transition: none;
+  }
+
+  .reader-main-column:has(> .reader-text-panel[aria-busy="true"])::after {
+    animation: page-loading-in 0s 400ms both;
+  }
+}

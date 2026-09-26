@@ -7,17 +7,23 @@
     "node": "22.x"
   },
   "scripts": {
+    "//": "General convention: use ./morcus.sh or npm run morcus -- <command> (src/scripts/run_morcus.ts) for builds, dev server, workers, and pipelines. See AGENTS.md.",
+    "morcus": "./morcus.sh",
+    "run-morcus": "npm run tsnp src/scripts/run_morcus.ts --",
+    "visual-diff": "npm run run-morcus -- visual-diff",
     "build": "npm run setup-rust && MAIN=build npm run tsnp src/scripts/prod_build_steps.ts && npm run tsnp src/bundler/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/",
     "start": "node build/server.js",
     "setup-rust": "npm run install-rust && . \"$HOME/.cargo/env\" && npm run setup-node-bindgen",
     "install-rust": "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",
     "setup-node-bindgen": "cargo install nj-cli && nj-cli build --release -o build/corpus-rust-bindings",
-    "format": "npx eslint . && npx prettier . --write && python -m black .",
-    "format-check": "npx eslint . && npx prettier . --check && python -m black . --check",
+    "format": "npx eslint --cache . && npm run lint:css && npx prettier --cache . --write && python -m black .",
+    "format-check": "npx eslint --cache . && npm run lint:css && npx prettier --cache . --check && python -m black . --check",
+    "lint:css": "stylelint --cache \"src/web/v2/**/*.css\"",
     "setup-alatius": "python src/scripts/alatius.py",
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests__comments": "Experimentally, it is faster to limit the number of workers.",
     "ts-tests": "npx jest --maxWorkers=8 --testPathIgnorePatterns src/integration/*",
+    "ts-tests:v2": "npx jest src/web/v2",
     "integration-tests": "npx playwright test src/integration/suites/",
     "rs-tests": "cargo test --package corpus",
     "py-tests": "python -m unittest discover",
@@ -83,6 +89,7 @@
     "esbuild-plugin-output-reset": "^2.0.1",
     "eslint": "^9.21.0",
     "eslint-plugin-jest": "^28.8.3",
+    "eslint-plugin-no-unsanitized": "^4.1.5",
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^5.0.0",
     "express": "^4.18.2",
@@ -95,6 +102,8 @@
     "node-cleanup": "^2.1.2",
     "preact": "^10.26.0",
     "prettier": "2.8.4",
+    "stylelint": "^17.15.0",
+    "stylelint-declaration-strict-value": "^1.12.1",
     "supertest": "^6.3.3",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.1.2",
@@ -104,5 +113,8 @@
   "dependencies": {
     "diff": "^8.0.3",
     "he": "^1.2.0"
+  },
+  "overrides": {
+    "nwsapi": "^2.2.27"
   }
 }

@@ -1,0 +1,213 @@
+/**
+ * UI V2 Shared Bottom Drawer Component Styles
+ *
+ * Provides responsive bottom-docked sheet styles, handle bar, teaser,
+ * and drag-resize states shared across Reader and Table of Contents views.
+ */
+
+:root {
+  --drawer-height: 48svh;
+  --drawer-min-height: 54px;
+}
+
+/* Resizing drag states */
+body.resizing-drawer {
+  user-select: none;
+  cursor: grabbing;
+}
+
+/* Core Docked Bottom Drawer */
+.drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--card-bg);
+  border-top: 2px solid var(--border-strong);
+  border-top-left-radius: var(--radius-2xl);
+  border-top-right-radius: var(--radius-2xl);
+  box-shadow: var(--drawer-shadow);
+  transition: none;
+  z-index: var(--z-drawer);
+  /* No env(safe-area-inset-bottom) here or in any drawer-relative offset. We don't
+     set viewport-fit=cover, so Chrome and Safari report 0, but Firefox Android reports
+     the system nav-bar height (~38px) and animates it with the URL bar. On this
+     fixed-height, overflow-hidden box, that padding shrank the inner scroller and left
+     an empty band at the bottom of the drawer. */
+}
+
+/* Minimized state: Collapses to handle teaser height */
+.drawer.drawer-minimized {
+  height: var(--drawer-min-height, 54px);
+  overflow: hidden;
+}
+
+/* Drawer Handle Bar Container */
+.drawer-bar,
+.reader-sheet-bar {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  background-color: var(--card-header-bg);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  user-select: none;
+  cursor: grab;
+  touch-action: none;
+  box-sizing: border-box;
+}
+
+.drawer-bar:focus-visible,
+.reader-sheet-bar:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.drawer-bar.is-dragging,
+.reader-sheet-bar.is-dragging {
+  cursor: grabbing;
+}
+
+/* Centered 44px × 5px rounded drag pill */
+.drawer-handle,
+.reader-sheet-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background-color: var(--border-strong);
+  opacity: 0.6;
+  margin-bottom: var(--space-3);
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.drawer-bar:hover .drawer-handle,
+.reader-sheet-bar:hover .reader-sheet-handle,
+.drawer-bar:focus-visible .drawer-handle,
+.reader-sheet-bar:focus-visible .reader-sheet-handle,
+.drawer-bar.is-dragging .drawer-handle,
+.reader-sheet-bar.is-dragging .reader-sheet-handle {
+  opacity: 1;
+  background-color: var(--text);
+}
+
+/* Teaser / Title Row */
+.drawer-teaser,
+.reader-sheet-teaser {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  min-height: 24px;
+}
+
+.drawer-label,
+.reader-sheet-label {
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--space-9);
+}
+
+.drawer-label strong,
+.reader-sheet-label strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Close / Action Button inside Teaser */
+a.drawer-close,
+a.drawer-close:visited,
+button.drawer-close,
+a.reader-sheet-close,
+a.reader-sheet-close:visited {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--border-strong);
+  text-decoration: none;
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1;
+  transition: color 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+a.drawer-close:hover,
+a.drawer-close:visited:hover,
+a.drawer-close:active,
+button.drawer-close:hover,
+button.drawer-close:active,
+a.reader-sheet-close:hover,
+a.reader-sheet-close:visited:hover,
+a.reader-sheet-close:active {
+  background: transparent;
+  color: var(--text);
+  text-decoration: none;
+  transform: translateY(-50%) scale(1.15);
+}
+
+/* No-JS Drawer Open Trigger Link and Target Controls */
+a.reader-sheet-open-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+a.reader-sheet-open-link:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.reader-sheet-close-target {
+  display: none;
+}
+
+.reader-dict-panel:target .reader-sheet-close-target {
+  display: inline-flex;
+}
+
+/* Progressive enhancement for drawer teaser text */
+.reader-teaser-nojs {
+  display: inline;
+}
+
+.reader-teaser-js {
+  display: none;
+}
+
+html.has-js .reader-teaser-nojs {
+  display: none;
+}
+
+html.has-js .reader-teaser-js {
+  display: inline;
+}

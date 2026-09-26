@@ -1,0 +1,230 @@
+/* Modal Dialog Base & Reporting Form */
+
+.dialog {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card-bg);
+  color: var(--text);
+  padding: 0;
+  max-width: 540px;
+  width: calc(100vw - 32px);
+  max-height: 85dvh;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+  overscroll-behavior: contain;
+}
+
+.dialog[open] {
+  animation: dialog-fade-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes dialog-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog[open] {
+    animation: none;
+  }
+}
+
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.dialog-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-7) var(--space-8);
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dialog-subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin: var(--space-1) 0 0;
+}
+
+.dialog-sm {
+  max-width: 440px;
+}
+
+.dialog-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.dialog-close-btn:hover {
+  color: var(--text);
+  background: var(--tag-bg);
+}
+
+.dialog-close-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.dialog-close-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+.dialog-body {
+  margin-bottom: var(--space-2);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+}
+
+/* Report Issue Dialog Specifics */
+.report-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.report-notice-icon {
+  flex-shrink: 0;
+  margin-top: var(--space-1);
+  color: var(--primary);
+}
+
+.report-notice-text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: var(--space-5);
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-3);
+}
+
+.form-label .required {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.form-label .form-optional {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-left: var(--space-2);
+}
+
+.report-reporter,
+.report-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.report-reporter:focus-visible,
+.report-textarea:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.report-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-hint {
+  display: block;
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+
+.report-status {
+  min-height: 1.25rem;
+  margin-top: var(--space-4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primary);
+}
+
+.report-status.success {
+  color: var(--success);
+}
+
+.report-status.error {
+  color: var(--danger);
+}
+
+.report-submit-btn {
+  position: relative;
+}
+
+.report-submit-spinner {
+  display: none;
+  width: 14px;
+  height: 14px;
+  margin-right: var(--space-3);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: var(--on-accent);
+  border-radius: 50%;
+}
+
+.report-submit-btn.loading .report-submit-spinner {
+  display: inline-block;
+}

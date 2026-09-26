@@ -1,0 +1,268 @@
+/* Reader Page Shell, Two-Column Grid, and Responsive Viewport Layouts */
+
+.reader-view {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-6);
+}
+
+/* Two-column split layout */
+.reader-split-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 480px);
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.reader-drawer-dismiss-target,
+.reader-drawer-fab {
+  display: none;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints: Mobile (<= 640px)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  body.body-reader {
+    height: auto;
+    min-height: 100vh;
+    max-width: 100vw;
+    overflow-x: clip;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .container.container-reader {
+    height: auto;
+    min-height: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+    padding: 0 0 70px;
+    display: block;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  .main-reader {
+    min-height: auto;
+    max-width: 100%;
+    display: block;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  .reader-view {
+    display: block;
+    max-width: 100%;
+    overflow-x: clip;
+    overflow-y: visible;
+    margin-top: 0;
+  }
+
+  .reader-split-layout {
+    display: block;
+    max-width: 100%;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  .reader-main-column {
+    display: contents;
+  }
+
+  /* Static bottom scroll cushion: sized to max drawer height so passage text is never
+     occluded and scrollHeight never jumps during scroll or drawer state changes */
+  .reader-text-panel {
+    flex: 1 1 auto;
+    padding-bottom: calc(88svh + 36px);
+  }
+
+  /* Active state: Height drawer in stable svh units */
+  .reader-layout-active .reader-dict-panel {
+    flex: none;
+    height: var(--drawer-height, 48svh);
+    min-height: 40px;
+    max-height: 88svh;
+  }
+
+  .reader-layout-active .reader-dict-sticky {
+    display: block;
+  }
+
+  /* Minimized drawer (both initial empty state and collapsed active state):
+     retains content in DOM but collapses to 40px teaser */
+  .reader-dict-panel.drawer-minimized:not(:target) {
+    flex: 0 0 40px;
+    height: 40px;
+    overflow: hidden;
+  }
+
+  .reader-dict-panel.drawer-minimized:not(:target) .reader-dict-sticky,
+  .reader-dict-panel.drawer-minimized:not(:target) .reader-panel-views,
+  .reader-dict-panel.drawer-minimized:not(:target) .dict-iframe-container {
+    display: none;
+  }
+
+  /* No-JS Drawer Expansion via :target */
+  .reader-layout-empty .reader-dict-panel:target {
+    flex: none;
+    height: 55svh;
+    min-height: 40px;
+    max-height: 88svh;
+  }
+
+  .reader-layout-empty .reader-dict-panel:target .reader-dict-sticky,
+  .reader-layout-empty .reader-dict-panel:target .dict-iframe-container {
+    display: flex;
+  }
+
+  /* Floating restore FAB (revealed when drawer is dismissed via 'x' button) */
+  .reader-drawer-fab {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-fab);
+    text-decoration: none;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity 0.2s ease, transform 0.15s ease, color 0.15s ease,
+      border-color 0.15s ease, box-shadow 0.15s ease,
+      background-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+  }
+
+  .reader-drawer-fab svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.15s ease;
+  }
+
+  .reader-drawer-fab:hover,
+  .reader-drawer-fab:focus-visible {
+    opacity: 1;
+    color: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  }
+
+  .reader-drawer-fab:hover svg {
+    transform: translateY(-1px);
+  }
+
+  .reader-drawer-fab:active {
+    transform: translateY(0);
+  }
+
+  .reader-drawer-fab:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  /* Dismissed state (closed via 'x' button): hides the drawer & shows corner FAB.
+     Uses `visibility: hidden` rather than sliding the drawer just off-screen:
+     Firefox for Android re-positions bottom-anchored fixed elements a frame or
+     more late while its dynamic URL bar collapses / expands, which briefly
+     exposed a drawer parked flush below the viewport edge. Hidden elements are
+     also not hit-tested and drop out of the a11y tree / tab order. Descendants
+     must not set `visibility: visible` (see .reader-panel-view.active). */
+  .drawer-dismissed .reader-dict-panel,
+  .reader-drawer-dismiss-target:target
+    ~ .reader-split-layout
+    .reader-dict-panel {
+    visibility: hidden;
+  }
+
+  .drawer-dismissed .reader-drawer-fab,
+  .reader-drawer-dismiss-target:target
+    ~ .reader-split-layout
+    .reader-drawer-fab {
+    display: flex;
+  }
+}
+
+/* ==========================================================================
+   Responsive Breakpoints: Desktop (>= 641px)
+   ========================================================================== */
+
+@media (min-width: 641px) {
+  body.body-reader {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  body.body-reader .app-bar-inner {
+    max-width: var(--reader-page-max, 1400px);
+    padding-left: var(--space-7);
+    padding-right: var(--space-7);
+  }
+
+  .container.container-reader {
+    max-width: var(--reader-page-max, 1400px);
+    height: calc(100vh - 65px);
+    padding: var(--space-5) var(--space-7);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .main-reader {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .reader-view {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-top: 0;
+  }
+
+  .reader-split-layout {
+    --dict-width: 420px;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .reader-main-column {
+    flex: 1 1 0%;
+    min-width: 320px;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: var(--paper-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    margin-right: var(--space-3);
+  }
+}

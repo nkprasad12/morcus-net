@@ -24,6 +24,8 @@ import { processGeorges } from "@/common/dictionaries/georges/process_georges";
 import { processPozo } from "@/common/dictionaries/pozo/process_pozo";
 import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
+import { buildV2Bundle } from "@/bundler/v2.rsbuild";
+import { buildV2Library } from "@/common/library/v2/v2_library_builder";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
@@ -152,14 +154,25 @@ const MAKE_BUNDLE: StepConfig = {
   },
   label: "Building client bundle",
 };
+const MAKE_V2_BUNDLE: StepConfig = {
+  operation: () => buildV2Bundle(/* minify= */ true),
+  label: "Building UI V2 assets",
+};
 const WRITE_COMMIT_ID: StepConfig = {
   operation: writeCommitId,
   label: "Writing commit hash",
+};
+const MAKE_V2_LIBRARY: StepConfig = {
+  operation: async () => {
+    await buildV2Library(LIB_DEFAULT_DIR);
+  },
+  label: "Building V2 library",
 };
 const ALL_STEPS = [
   SETUP_DIRS,
   WRITE_COMMIT_ID,
   MAKE_BUNDLE,
+  MAKE_V2_BUNDLE,
   SAVE_TABLES,
   MAKE_SH,
   MAKE_GAF,
@@ -170,6 +183,7 @@ const ALL_STEPS = [
   MAKE_GESNER,
   MAKE_FORCELLINI,
   PROCESS_LAT_LIB,
+  MAKE_V2_LIBRARY,
 ];
 
 export async function prodBuildSteps(): Promise<boolean> {

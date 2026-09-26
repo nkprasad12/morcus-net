@@ -50,8 +50,10 @@ typings/
 # Optional npm cache directory
 .npm
 
-# Optional eslint cache
+# Optional tool caches
 .eslintcache
+.prettiercache
+.stylelintcache
 
 # Microbundle cache
 .rpt2_cache/
@@ -152,3 +154,6 @@ gaffiot.js
 e2e_metrics/*
 corpus_driver.js
 target/*
+
+# Local scratch space for investigations (see src/common/library/v2/docs/README.md)
+.investigation/

@@ -1,0 +1,544 @@
+/* Reader Sticky Quick Navigation Bar, Jump Controls, and View Mode Switcher */
+
+/* ==========================================================================
+   1. Reader Sticky Quick Navigation Bar (Essentials Default with Expandable Tools)
+   ========================================================================== */
+
+.reader-sticky-bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.sticky-primary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  width: 100%;
+}
+
+/* Ensure all interactive buttons in the primary row share a uniform height and vertical alignment */
+.sticky-primary-row .reader-btn {
+  box-sizing: border-box;
+  height: var(--pill-height);
+  padding-top: 0;
+  padding-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sticky-primary-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.reader-sticky-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0;
+}
+
+.sticky-center-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.sticky-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.sticky-work-title {
+  font-weight: 500;
+  text-transform: capitalize;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  text-align: center;
+}
+
+.sticky-jump-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* Section Dropdown Trigger Button */
+.sticky-section-btn,
+.sticky-section-btn:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--tag-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.15s ease;
+  line-height: 1;
+}
+
+.sticky-section-btn:hover {
+  background: var(--card-bg);
+  border-color: var(--app-bar-toggle-border);
+  color: var(--text);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-0.5px);
+}
+
+.sticky-section-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/*
+ * Shared affordances for the reader nav controls. Every control in the sticky
+ * bar (both pager arrows, the section trigger and the settings trigger) is
+ * emitted with `.reader-btn`, so these hang off that rather than being
+ * restated per control. They stay above `.reader-btn:hover` for the same
+ * cascade-order reason noted there.
+ */
+.reader-btn:focus-visible {
+  outline: none;
+  border-color: var(--app-bar-toggle-border);
+  box-shadow: var(--theme-ring);
+}
+
+.reader-btn[aria-expanded="true"] {
+  border-color: var(--app-bar-toggle-border);
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: var(--theme-ring);
+}
+
+.sticky-section-btn .jump-glyph {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.sticky-section-btn .jump-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sticky-section-btn:hover .jump-chevron,
+.sticky-section-btn[aria-expanded="true"] .jump-chevron {
+  color: var(--text);
+}
+
+.sticky-section-btn[aria-expanded="true"] .jump-chevron {
+  transform: rotate(180deg);
+}
+
+.sticky-primary-row .reader-nav-arrow,
+.reader-nav-arrow,
+.reader-nav-arrow:visited {
+  width: var(--pill-height);
+  min-width: var(--pill-height);
+  padding: 0;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+/*
+ * Kept at this position in the file on purpose: `.reader-btn:hover` below has
+ * equal specificity, so moving this later would flip which declarations win.
+ */
+.reader-nav-arrow:hover,
+.reader-nav-arrow:visited:hover,
+.reader-settings-btn:hover {
+  color: var(--text);
+  border-color: var(--app-bar-toggle-border);
+  background: var(--card-bg);
+}
+
+/* Reader Settings (Aa) Trigger Button */
+.reader-settings-btn,
+.reader-settings-btn:visited {
+  width: var(--pill-height);
+  min-width: var(--pill-height);
+  padding: 0;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.reader-settings-btn .settings-glyph {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+/* No-JS Mode: reader settings button is hidden because typography preferences mutate client state */
+@media (scripting: none) {
+  .reader-settings-btn {
+    display: none;
+  }
+}
+
+:root:not(.has-js) .reader-settings-btn {
+  display: none;
+}
+
+.reader-btn,
+.reader-btn:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.reader-btn:hover,
+.reader-btn:visited:hover {
+  border-color: var(--border-strong);
+  color: var(--primary);
+}
+
+.reader-btn.disabled,
+.reader-btn:disabled,
+.reader-btn[aria-disabled="true"],
+.reader-btn.disabled:visited,
+.reader-btn:disabled:visited,
+.reader-btn[aria-disabled="true"]:visited {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+  color: var(--text-muted);
+}
+
+.pager-arrow {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+/* ==========================================================================
+   2. Quick Jump Form & View Mode Switcher
+   ========================================================================== */
+
+.reader-jump-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.jump-glyph {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.reader-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  background: var(--bg);
+}
+
+.toggle-option {
+  padding: var(--space-1) var(--space-4);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: all 0.12s ease;
+}
+
+.toggle-option:hover {
+  color: var(--text);
+}
+
+.toggle-option.active,
+.toggle-option.active:visited {
+  background: var(--primary);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   3. Responsive Breakpoint: Mobile Sticky Navigation Overrides (<= 640px)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .reader-sticky-bar {
+    --pill-height: 1.75rem;
+    max-width: 100%;
+    margin-bottom: var(--space-3);
+    border-radius: 0;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    box-sizing: border-box;
+    overflow-x: clip;
+  }
+
+  .sticky-primary-row {
+    padding: var(--space-1) var(--space-3);
+    gap: var(--space-2);
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .reader-sticky-form {
+    min-width: 0;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .sticky-center-group {
+    gap: var(--space-2);
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+  }
+
+  .sticky-title-wrapper {
+    min-width: 0;
+    flex: 0 1 auto;
+    justify-content: center;
+    overflow: hidden;
+    gap: var(--space-1);
+    text-align: center;
+  }
+
+  .sticky-work-title {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    letter-spacing: normal;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .sticky-jump-box {
+    flex-shrink: 0;
+    gap: var(--space-1);
+  }
+
+  .sticky-section-btn {
+    padding: 0 var(--space-3);
+    font-size: 0.8125rem;
+    gap: var(--space-1);
+  }
+
+  .sticky-section-btn .jump-chevron {
+    width: 13px;
+    height: 13px;
+  }
+
+  .reader-nav-arrow,
+  .reader-settings-btn {
+    width: var(--pill-height);
+    min-width: var(--pill-height);
+    padding: 0;
+  }
+
+  .pager-arrow {
+    font-size: 0.95rem;
+  }
+
+  .reader-settings-btn .settings-glyph {
+    font-size: 0.875rem;
+  }
+
+  .jump-input {
+    width: 2.75rem;
+    padding: var(--space-1) var(--space-2);
+  }
+}
+
+/* ==========================================================================
+   4. Desktop Paper Sheet Pinned Running Margin Header (>= 641px) — Option F
+   ========================================================================== */
+
+.running-right-sep,
+.pager-label {
+  display: none;
+}
+
+@media (min-width: 641px) {
+  .reader-sticky-bar {
+    position: relative;
+    top: auto;
+    flex-shrink: 0;
+    background: var(--paper-bg);
+    border: none;
+    border-bottom: 3px double var(--border-mid);
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    margin: 0 var(--space-7);
+    padding: var(--space-4) 0 var(--space-3);
+    overflow: visible;
+  }
+
+  .sticky-primary-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0;
+    gap: var(--space-4);
+  }
+
+  .sticky-center-group {
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .sticky-title-wrapper {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .sticky-work-title {
+    font-family: Georgia, "Palatino Linotype", Palatino, var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 0.925rem;
+    text-transform: none;
+    color: var(--text);
+  }
+
+  .sticky-primary-row .reader-nav-arrow,
+  .reader-nav-arrow,
+  .reader-nav-arrow:visited {
+    width: auto;
+    min-width: 0;
+    height: 26px;
+    padding: 0 var(--space-2);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-family: Georgia, var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    gap: 6px;
+  }
+
+  .sticky-primary-row > .reader-nav-arrow:first-child {
+    justify-self: start;
+    margin-left: calc(-1 * var(--space-2));
+  }
+
+  .sticky-primary-right {
+    justify-self: end;
+    margin-right: calc(-1 * var(--space-2));
+    gap: var(--space-2);
+  }
+
+  .pager-label {
+    display: inline;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pager-arrow {
+    font-family: var(--font-sans);
+    font-style: normal;
+    font-size: 0.8rem;
+  }
+
+  .running-right-sep {
+    display: inline;
+    color: var(--border-mid);
+    user-select: none;
+  }
+
+  .sticky-primary-row .reader-settings-btn,
+  .reader-settings-btn,
+  .reader-settings-btn:visited {
+    width: auto;
+    min-width: 0;
+    height: 26px;
+    padding: 0 var(--space-2);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .reader-settings-btn .settings-glyph {
+    display: inline;
+    font-family: Georgia, "Palatino Linotype", Palatino, var(--font-serif);
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: -0.04em;
+  }
+
+  .reader-nav-arrow:hover,
+  .reader-nav-arrow:visited:hover,
+  .reader-settings-btn:hover,
+  .reader-settings-btn[aria-expanded="true"] {
+    color: var(--text);
+    background: var(--word-hover-bg);
+    border-color: transparent;
+  }
+}
