@@ -39,11 +39,12 @@ export interface ExternalContentSummary {
   source?: ExternalContentSource;
   /** Epoch millis. Absent on rows written by V1. */
   savedAt?: number;
+  /** The last line mode used; V1 rows read as the default. */
+  lineMode: LineMode;
 }
 
 export interface ExternalContentRecord extends ExternalContentSummary {
   content: string;
-  lineMode: LineMode;
 }
 
 export interface NewExternalContent {
@@ -197,6 +198,7 @@ export class ExternalContentStore {
       const summary: ExternalContentSummary = {
         storageKey: record.storageKey,
         title: record.title,
+        lineMode: record.lineMode,
       };
       if (record.source) summary.source = record.source;
       if (record.savedAt !== undefined) summary.savedAt = record.savedAt;

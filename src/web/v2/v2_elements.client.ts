@@ -13,3 +13,4 @@ import "@/web/v2/dialog/report_dialog.client";
 import "@/web/v2/reader/reader_view.client";
 import "@/web/v2/reader/reader_settings.client";
 import "@/web/v2/library/library_view.client";
+import "@/web/v2/external/external_loader.client";

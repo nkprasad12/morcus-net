@@ -2,6 +2,7 @@
  * The reading page itself is the library reader's frame (reader_*.css). */
 
 .external-landing {
+  display: block;
   max-width: 640px;
   margin: 0 auto;
 }
@@ -91,6 +92,65 @@
 .external-error {
   margin: 0;
   color: var(--danger);
+}
+
+/* Paste and the saved list need the loader; without it, show the note. */
+morcus-external-loader:not(:defined) .external-js-only,
+morcus-external-loader:defined .external-nojs-note {
+  display: none;
+}
+
+.external-landing > .card + .card,
+.external-nojs-note + .card {
+  margin-top: var(--space-5);
+}
+
+.external-nojs-note {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.external-optional {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.external-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 40svh;
+  resize: vertical;
+  font-family: var(--font-serif);
+  line-height: 1.5;
+}
+
+.external-file-label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.external-saved {
+  margin-top: var(--space-6);
+}
+
+.external-saved-list {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.external-saved-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.external-saved-link {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Reading page */
