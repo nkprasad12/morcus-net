@@ -1,6 +1,7 @@
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { getV2LibrarySummaries } from "@/web/v2/reader/reader_loader.server";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
+import { EXTERNAL_READER_PATH } from "@/web/v2/external/external_url.common";
 import * as he from "he";
 
 const SEARCH_PATH = ICON_PATHS.search;
@@ -82,6 +83,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
       <header class="library-header">
         <div class="library-title-group">
           <h1 class="library-title">Welcome to the library!</h1>
+          <p class="library-own-text">Or <a href="${EXTERNAL_READER_PATH}">read your own text</a> from any web page.</p>
         </div>
 
         <!-- Interactive Search & Feature Filters -->
