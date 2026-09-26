@@ -7,11 +7,11 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ---
 
-## 1. Remaining Gaps Matrix
+## 1. Parity Matrix
 
-| Feature Area                  | V1 UI (SPA)                                                                                    | V2 UI (SSR + Progressive Enhancement)                                                             | Parity Status        |
-| :---------------------------- | :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ | :------------------- |
-| **In-Flow "Edit and Report"** | Section anchor opens a menu offering "Copy link" **and** "Edit and Report" (`contenteditable`) | Section anchor copies the URL immediately; no menu, no `contenteditable`, no `userEdit` reporting | ❌ **Missing in V2** |
+| Feature Area                  | V1 UI (SPA)                                                                                    | V2 UI (SSR + Progressive Enhancement)                                                                                                                         | Parity Status          |
+| :---------------------------- | :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------- |
+| **In-Flow "Edit and Report"** | Section anchor opens a menu offering "Copy link" **and** "Edit and Report" (`contenteditable`) | Section anchor opens anchored popover menu with "Copy permalink" and "Suggest correction" (in-place `<textarea>` swap + `/v2/api/report` diff; Library works) | ✅ **Completed in V2** |
 
 ---
 
@@ -19,6 +19,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 The following core reading surfaces from V1 have achieved full parity or intentional streamlining in V2:
 
+- ✅ **In-Flow "Edit and Report"** ([`IN_FLOW_EDITING_DESIGN.md`](IN_FLOW_EDITING_DESIGN.md), [`core/section_edit.client.ts`](../core/section_edit.client.ts)): Clicking `a.section-anchor` on Library Reader works opens the shared 2-item `.section-action-menu` (`Copy permalink` and `Suggest correction`). Choosing "Suggest correction" swaps `.reader-passage` in-place with an auto-resizing `<textarea>` (stripping `.reader-note-ref` and preserving verse line breaks), preserving `.lat-word` tokenization and submitting `editedText` with `tags: ["userEdit"]` to `/v2/api/report`. On External Reader (`data-work` absent), `a.section-anchor` copies the permalink directly.
 - ✅ **Critical Apparatus Notes**: Numbered, page-scoped footnote links in No-JS flow; eager relocation into the synchronized companion panel **Notes** tab with non-destructive in-place scroll and bidirectional marker highlighting.
 - ✅ **Translation Presentation**: Retired legacy dual-column parallel layout; translations load on-demand in the companion panel **Translation** tab with native independent scrolling and parallel fetch coordination on page turns.
 - ✅ **Client-Side Page Navigation**: In-place partial page swaps (`X-Requested-With: fetch`), patching sticky bar controls, updating TOC active indicators, dynamic footnote adoption, and scroll restoration without full-page reloads.
@@ -50,22 +51,7 @@ These V1 features were reviewed and intentionally left out of V2. Revisit only w
 
 ---
 
-## 3. Detailed Gap Analysis for Remaining Items
-
-### 3.1. In-Flow "Edit and Report"
-
-- **V1 (`tooltips.tsx:L215-256`, `reader.tsx:L744`, `L1057`)**:
-  - Section-header anchor opened a `TooltipMenu` offering "Copy link" and "Edit and Report".
-  - "Edit and Report" set `contenteditable="true"` on the target section element and focused it.
-  - On `blur`, if modified, diffed original against edited text and submitted `reportIssue({ original, edited, sectionId }, ["userEdit"])`.
-- **V2 (`reader_view.client.ts:L213-220`)**:
-  - ❌ **Missing**. Clicking `a.section-anchor` copies the URL immediately to the clipboard with no menu.
-  - Restoring this requires introducing a small menu/popover on section anchors or secondary actions before triggering the inline edit flow.
-  - **Design Document**: See [`IN_FLOW_EDITING_DESIGN.md`](IN_FLOW_EDITING_DESIGN.md) for full architecture, anchored popover trigger UX, in-place textarea swap vs `contenteditable` analysis, and `/v2/api/report` pipeline integration.
-
----
-
-## 4. Open Investigations
+## 3. Open Investigations
 
 Suspected V2 bugs found incidentally. Not yet triaged.
 

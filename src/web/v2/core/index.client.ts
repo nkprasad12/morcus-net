@@ -20,3 +20,4 @@ export * from "@/web/v2/core/popover.client";
 export * from "@/web/v2/core/disposable.client";
 export * from "@/web/v2/core/page_width.client";
 export * from "@/web/v2/core/wake_lock.client";
+export * from "@/web/v2/core/section_edit.client";

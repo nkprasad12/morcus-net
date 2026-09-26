@@ -1050,7 +1050,7 @@ describe("MorcusReaderView desktop splitter drag", () => {
     window.location.hash = "";
   });
 
-  test("updates saved spot when section anchor is clicked", () => {
+  test("opens section action menu when section anchor is clicked and updates saved spot on Copy permalink", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.5">
         <a href="#sec-1.5" class="section-anchor">§ 1.5</a>
@@ -1064,10 +1064,34 @@ describe("MorcusReaderView desktop splitter drag", () => {
     const anchor = el.querySelector<HTMLAnchorElement>("a.section-anchor")!;
     anchor.click();
 
+    const copyBtn = document.querySelector<HTMLButtonElement>(
+      '.section-action-menu [data-action="copy"]'
+    )!;
+    expect(copyBtn).not.toBeNull();
+    copyBtn.click();
+
     expect(savedSpotsStore.get("phi0448.phi001.perseus-lat2")).toBe("1.5");
   });
 
-  test("handles rapid consecutive section anchor clicks without premature toast dismissal", () => {
+  test("copies permalink directly without opening menu on External Reader (when data-work is absent)", () => {
+    const passageHtml = `
+      <div class="reader-section" id="sec-1">
+        <a href="#sec-1" class="section-anchor">1</a>
+        <div class="reader-passage">Private pasted text</div>
+      </div>
+    `;
+    const el = createReaderView(passageHtml);
+    delete el.dataset.work;
+
+    const anchor = el.querySelector<HTMLAnchorElement>("a.section-anchor")!;
+    anchor.click();
+
+    expect(document.querySelector(".section-action-menu")).toBeNull();
+    const toast = document.getElementById("toast")!;
+    expect(toast.textContent).toBe("Copied permalink: § 1");
+  });
+
+  test("handles rapid consecutive section anchor copy actions without premature toast dismissal", () => {
     jest.useFakeTimers();
     try {
       const passageHtml = `
@@ -1082,13 +1106,23 @@ describe("MorcusReaderView desktop splitter drag", () => {
 
       const anchor = el.querySelector<HTMLAnchorElement>("a.section-anchor")!;
       anchor.click();
+      document
+        .querySelector<HTMLButtonElement>(
+          '.section-action-menu [data-action="copy"]'
+        )!
+        .click();
       const toast = document.getElementById("toast")!;
       expect(toast).not.toBeNull();
       expect(toast.classList.contains("visible")).toBe(true);
 
-      // Advance 1500ms (less than 2200ms timeout), then click again
+      // Advance 1500ms (less than 2200ms timeout), then copy again
       jest.advanceTimersByTime(1500);
       anchor.click();
+      document
+        .querySelector<HTMLButtonElement>(
+          '.section-action-menu [data-action="copy"]'
+        )!
+        .click();
       expect(toast.classList.contains("visible")).toBe(true);
 
       // Advance another 1000ms (total 2500ms from 1st click, 1000ms from 2nd click)
@@ -1101,6 +1135,73 @@ describe("MorcusReaderView desktop splitter drag", () => {
       expect(toast.classList.contains("visible")).toBe(false);
     } finally {
       jest.useRealTimers();
+    }
+  });
+
+  test("supports in-flow section editing, strips apparatus note refs, preserves verse newlines, and submits editedText", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true }),
+    });
+    const origFetch = global.fetch;
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      const passageHtml = `
+        <div class="reader-section section-verse" id="sec-1.1">
+          <div class="reader-gutter">
+            <a href="#sec-1.1" class="section-anchor">1.1</a>
+          </div>
+          <div class="reader-passage" data-tokenize-target="true">
+            <span class="reader-line">Arma virumque cano<a href="#note-1" class="reader-note-ref"><sup>[1]</sup></a>,</span>
+            <span class="reader-line">Troiae qui primus ab oris</span>
+          </div>
+        </div>
+      `;
+      const el = createReaderView(passageHtml);
+      el.dataset.work = "hypotactic_Aeneid_Vergil";
+      el.dataset.page = "1";
+
+      const anchor = el.querySelector<HTMLAnchorElement>("a.section-anchor")!;
+      anchor.click();
+
+      const editBtn = document.querySelector<HTMLButtonElement>(
+        '.section-action-menu [data-action="edit"]'
+      )!;
+      expect(editBtn).not.toBeNull();
+      editBtn.click();
+
+      const secEl = document.getElementById("sec-1.1")!;
+      const editBox = secEl.querySelector<HTMLElement>(".section-edit-box")!;
+      expect(editBox).not.toBeNull();
+
+      const textarea = editBox.querySelector<HTMLTextAreaElement>(
+        ".section-edit-input"
+      )!;
+      // Strips [1] note ref and joins .reader-line with newline
+      expect(textarea.value).toBe(
+        "Arma virumque cano,\nTroiae qui primus ab oris"
+      );
+
+      textarea.value = "Arma virumque cano,\nTroiae qui primus ab ora";
+      editBox.querySelector<HTMLButtonElement>(".section-edit-submit")!.click();
+
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/v2/api/report",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"sectionId":"1.1"'),
+        })
+      );
+      expect(secEl.querySelector(".section-edit-box")).toBeNull();
+      expect(
+        secEl.querySelectorAll(".reader-passage .lat-word").length
+      ).toBeGreaterThan(0);
+    } finally {
+      global.fetch = origFetch;
     }
   });
 });

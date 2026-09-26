@@ -240,8 +240,8 @@ export class AnchoredPopoverController extends BaseController {
 
         const caretLeft = btnCenter - (clampedCenter - halfWidth);
         const clampedCaret = Math.max(
-          16,
-          Math.min(caretLeft, drawerWidth - 16)
+          12,
+          Math.min(caretLeft, drawerWidth - 12)
         );
         panel.style.setProperty(
           "--caret-left",

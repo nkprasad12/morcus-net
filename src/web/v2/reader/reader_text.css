@@ -337,9 +337,14 @@ details.reader-work-about[open] summary.reader-about-summary {
 .reader-gutter .section-anchor:hover,
 .reader-gutter .section-anchor:visited:hover,
 .reader-gutter .section-anchor:focus-visible {
-  color: var(--primary);
+  color: var(--text);
   background-color: transparent;
   opacity: 1;
+}
+
+.reader-gutter .section-anchor:focus-visible {
+  outline: none;
+  box-shadow: var(--theme-ring);
 }
 
 .reader-gutter .section-anchor.latent {

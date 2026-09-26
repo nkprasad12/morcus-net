@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import { closeActiveSectionUI, showToast } from "@/web/v2/core/index.client";
 import { handleDictPermalinkClick } from "@/web/v2/dict/dict_permalink.client";
 
 const ORIGIN = "http://localhost";
@@ -8,12 +9,15 @@ const ORIGIN = "http://localhost";
 let copied: string[] = [];
 let copySucceeds = true;
 
-jest.mock("@/web/v2/core/index.client", () => ({
+jest.mock("@/web/v2/core/clipboard.client", () => ({
   copyText: jest.fn(async (text: string) => {
     if (!copySucceeds) return false;
     copied.push(text);
     return true;
   }),
+}));
+
+jest.mock("@/web/v2/core/toast.client", () => ({
   showToast: jest.fn(),
 }));
 
@@ -32,18 +36,28 @@ function clickOn(selector: string): { handled: boolean; event: MouseEvent } {
   return { handled, event };
 }
 
-/** Lets the handler's async copy settle. */
+/** Lets async handlers settle. */
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 beforeEach(() => {
   copied = [];
   copySucceeds = true;
+  (showToast as jest.Mock).mockClear();
+  closeActiveSectionUI();
   document.body.innerHTML = `
     <div id="dict-results">
       <article class="entry" id="n20077">
         <a href="/v2/dicts/id/n20077" class="tab-pill copy-pill">Copy link</a>
         <li id="n20077.1">
           <a href="#n20077.1" class="section-anchor">I.</a>
+          Lit., <span class="lsTrans">to have</span>, <span class="lsQuote"><a class="lat-word">aliquid</a></span>
+          <div class="mateo-embed-pane">Facsimile</div>
+          <ol class="sense-list">
+            <li id="n20077.2">
+              <a href="#n20077.2" class="section-anchor">A.</a>
+              Sub-sense text
+            </li>
+          </ol>
         </li>
         <a href="#missing.9" class="section-anchor">II.</a>
       </article>
@@ -55,34 +69,52 @@ beforeEach(() => {
   `;
 });
 
+afterEach(() => {
+  closeActiveSectionUI();
+  jest.restoreAllMocks();
+});
+
 describe("handleDictPermalinkClick", () => {
-  test("copies the article permalink and does not navigate", async () => {
+  test("copies the article permalink directly on copy-pill click and does not open menu", async () => {
     const { handled, event } = clickOn("a.copy-pill");
     await flush();
 
     expect(handled).toBe(true);
-    // Suppressing the default is what keeps us on the page instead of spending
-    // a server render to show content already on screen.
     expect(event.defaultPrevented).toBe(true);
+    expect(document.querySelector(".section-action-menu")).toBeNull();
     expect(copied).toEqual([`${ORIGIN}/v2/dicts/id/n20077`]);
   });
 
-  test("qualifies a section permalink with its containing article", async () => {
+  test("opens section action menu on section-anchor click and copies article-qualified permalink", async () => {
     const { handled, event } = clickOn('a[href="#n20077.1"]');
-    await flush();
 
     expect(handled).toBe(true);
     expect(event.defaultPrevented).toBe(true);
+
+    const menu = document.querySelector<HTMLElement>(".section-action-menu");
+    expect(menu).not.toBeNull();
+
+    const copyBtn = menu!.querySelector<HTMLButtonElement>(
+      '[data-action="copy"]'
+    )!;
+    copyBtn.click();
+    await flush();
+
+    expect(document.querySelector(".section-action-menu")).toBeNull();
     expect(copied).toEqual([`${ORIGIN}/v2/dicts/id/n20077#n20077.1`]);
   });
 
   test("still copies a section link whose target does not resolve", async () => {
-    // The article id comes from the DOM, not from splitting the sense id, so a
-    // missing in-page target does not stop the permalink from being correct.
     const { handled } = clickOn('a[href="#missing.9"]');
+    expect(handled).toBe(true);
+
+    document
+      .querySelector<HTMLButtonElement>(
+        '.section-action-menu [data-action="copy"]'
+      )!
+      .click();
     await flush();
 
-    expect(handled).toBe(true);
     expect(copied).toEqual([`${ORIGIN}/v2/dicts/id/n20077#missing.9`]);
   });
 
@@ -90,9 +122,9 @@ describe("handleDictPermalinkClick", () => {
     const { handled, event } = clickOn('a[href="#orphan.1"]');
     await flush();
 
-    // Falls through to the plain in-page jump rather than copying a broken URL.
     expect(handled).toBe(false);
     expect(event.defaultPrevented).toBe(false);
+    expect(document.querySelector(".section-action-menu")).toBeNull();
     expect(copied).toEqual([]);
   });
 
@@ -116,8 +148,219 @@ describe("handleDictPermalinkClick", () => {
     clickOn("a.copy-pill");
     await flush();
 
-    // A blocked clipboard should still leave the user with a shareable URL
-    // rather than a click that silently did nothing.
     expect(assign).toHaveBeenCalledWith(`${ORIGIN}/v2/dicts/id/n20077`);
+  });
+
+  describe("in-flow sense editing (Suggest correction)", () => {
+    test("swaps sense content in-place, strips non-editorial widgets, and preserves nested <ol> and .lat-word tokens on cancel", () => {
+      clickOn('a[href="#n20077.1"]');
+      document
+        .querySelector<HTMLButtonElement>(
+          '.section-action-menu [data-action="edit"]'
+        )!
+        .click();
+
+      const senseLi = document.getElementById("n20077.1")!;
+      const editBox = senseLi.querySelector<HTMLElement>(".section-edit-box")!;
+      expect(editBox).not.toBeNull();
+
+      const textarea = editBox.querySelector<HTMLTextAreaElement>(
+        ".section-edit-input"
+      )!;
+      // Excludes bullet "I.", excludes .mateo-embed-pane "Facsimile", and excludes child <ol> "Sub-sense text"
+      expect(textarea.value).toBe("Lit., to have, aliquid");
+
+      // Child <ol> remains outside the hidden stash
+      const subSenseOl = senseLi.querySelector("ol.sense-list")!;
+      expect(subSenseOl.closest("[hidden]")).toBeNull();
+
+      // Cancel restores exact DOM including .lat-word token
+      editBox.querySelector<HTMLButtonElement>(".section-edit-cancel")!.click();
+      expect(senseLi.querySelector(".section-edit-box")).toBeNull();
+      expect(senseLi.querySelector(".lat-word")?.textContent).toBe("aliquid");
+      expect(document.activeElement).toBe(
+        senseLi.querySelector('a[href="#n20077.1"]')
+      );
+    });
+
+    test("resolves sense scope via anchor.parentElement for Smith & Hall blurb, Riddle & Arnold self-anchor, and Georges nested divs", () => {
+      document.body.innerHTML = `
+        <div id="dict-results">
+          <article class="entry" id="sh57">
+            <header class="entry-header">Header</header>
+            <div id="sh57">
+              <a href="#sh57" class="lsSenseBullet section-anchor"> • </a>
+              <span class="lsOrth">Greetings</span>, welcome.
+            </div>
+            <ol><li id="sh57.0"><a href="#sh57.0" class="section-anchor">I.</a> First sense</li></ol>
+          </article>
+          <article class="entry" id="ra_dog">
+            <div>
+              <a id="ra_dog.1" href="#ra_dog.1" class="lsSenseBullet section-anchor"> 1. </a>
+              <span class="lsQuote">canis</span>, a dog.
+            </div>
+          </article>
+          <article class="entry" id="grg123">
+            <div id="grg123.I">
+              <a href="#grg123.I" class="lsSenseBullet section-anchor">I)</a>
+              eig.: parent text
+              <div id="grg123.I.1">
+                <a href="#grg123.I.1" class="lsSenseBullet section-anchor">1)</a>
+                child sense text
+              </div>
+            </div>
+          </article>
+        </div>
+      `;
+
+      // 1. Smith & Hall blurb (#sh57 inside article#sh57)
+      clickOn('a[href="#sh57"]');
+      document
+        .querySelector<HTMLButtonElement>(
+          '.section-action-menu [data-action="edit"]'
+        )!
+        .click();
+      let textarea = document.querySelector<HTMLTextAreaElement>(
+        ".section-edit-input"
+      )!;
+      expect(textarea.value).toBe("Greetings, welcome.");
+      // Entry header and <ol> were not swallowed into the stash
+      expect(
+        document.querySelector(".entry-header")?.closest("[hidden]")
+      ).toBeNull();
+      document
+        .querySelector<HTMLButtonElement>(".section-edit-cancel")!
+        .click();
+
+      // 2. Riddle & Arnold self-targeted anchor (id="ra_dog.1" on the <a> itself)
+      clickOn('a[href="#ra_dog.1"]');
+      document
+        .querySelector<HTMLButtonElement>(
+          '.section-action-menu [data-action="edit"]'
+        )!
+        .click();
+      textarea = document.querySelector<HTMLTextAreaElement>(
+        ".section-edit-input"
+      )!;
+      expect(textarea.value).toBe("canis, a dog.");
+      document
+        .querySelector<HTMLButtonElement>(".section-edit-cancel")!
+        .click();
+
+      // 3. Georges nested sub-sense div (#grg123.I containing #grg123.I.1)
+      clickOn('a[href="#grg123.I"]');
+      document
+        .querySelector<HTMLButtonElement>(
+          '.section-action-menu [data-action="edit"]'
+        )!
+        .click();
+      textarea = document.querySelector<HTMLTextAreaElement>(
+        ".section-edit-input"
+      )!;
+      expect(textarea.value).toBe("eig.: parent text");
+      expect(
+        document.getElementById("grg123.I.1")?.closest("[hidden]")
+      ).toBeNull();
+      document
+        .querySelector<HTMLButtonElement>(".section-edit-cancel")!
+        .click();
+    });
+
+    test("auto-closes unmodified editor on outside click, but retains dirty editor with toast", () => {
+      clickOn('a[href="#n20077.1"]');
+      document
+        .querySelector<HTMLButtonElement>(
+          '.section-action-menu [data-action="edit"]'
+        )!
+        .click();
+
+      expect(document.querySelector(".section-edit-box")).not.toBeNull();
+
+      // Unmodified outside click auto-closes
+      document.body.click();
+      expect(document.querySelector(".section-edit-box")).toBeNull();
+
+      // Re-open and modify
+      clickOn('a[href="#n20077.1"]');
+      document
+        .querySelector<HTMLButtonElement>(
+          '.section-action-menu [data-action="edit"]'
+        )!
+        .click();
+      const textarea = document.querySelector<HTMLTextAreaElement>(
+        ".section-edit-input"
+      )!;
+      textarea.value = "Lit., to hold, aliquid";
+
+      // Outside click while dirty keeps editor open and shows toast
+      document.body.click();
+      expect(document.querySelector(".section-edit-box")).not.toBeNull();
+      expect(showToast).toHaveBeenCalledWith(
+        "Submit or cancel your current edit first"
+      );
+
+      // Clicking another section's anchor while dirty also keeps current editor open
+      (showToast as jest.Mock).mockClear();
+      clickOn('a[href="#n20077.2"]');
+      expect(document.querySelectorAll(".section-edit-box")).toHaveLength(1);
+      expect(document.querySelector(".section-action-menu")).toBeNull();
+      expect(showToast).toHaveBeenCalledWith(
+        "Submit or cancel your current edit first"
+      );
+
+      // Pressing Escape cancels even when dirty
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+      expect(document.querySelector(".section-edit-box")).toBeNull();
+    });
+
+    test("submits editedText with userEdit tag to /v2/api/report and restores DOM", async () => {
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true }),
+      });
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      clickOn('a[href="#n20077.1"]');
+      document
+        .querySelector<HTMLButtonElement>(
+          '.section-action-menu [data-action="edit"]'
+        )!
+        .click();
+
+      const textarea = document.querySelector<HTMLTextAreaElement>(
+        ".section-edit-input"
+      )!;
+      textarea.value = "Lit., to hold, aliquid";
+
+      textarea.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          ctrlKey: true,
+          bubbles: true,
+        })
+      );
+      await flush();
+
+      expect(fetchMock).toHaveBeenCalledWith("/v2/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          editedText: {
+            original: "Lit., to have, aliquid",
+            edited: "Lit., to hold, aliquid",
+            sectionId: "n20077.1",
+          },
+          tags: ["userEdit"],
+          url: `${ORIGIN}/v2/dicts/id/n20077#n20077.1`,
+        }),
+      });
+      expect(document.querySelector(".section-edit-box")).toBeNull();
+      expect(showToast).toHaveBeenCalledWith(
+        "✓ Correction submitted! Thank you."
+      );
+    });
   });
 });

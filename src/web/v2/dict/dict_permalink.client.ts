@@ -1,4 +1,8 @@
-import { copyText, showToast } from "@/web/v2/core/index.client";
+import {
+  copyText,
+  openSectionActionMenu,
+  showToast,
+} from "@/web/v2/core/index.client";
 import { flashElement } from "@/web/v2/core/dom.client";
 
 const COPIED_CLASS = "is-copied";
@@ -6,13 +10,13 @@ const COPIED_DURATION_MS = 1400;
 const HIGHLIGHT_CLASS = "target-active";
 
 /**
- * Click-to-copy behaviour for dictionary permalinks.
+ * Click-to-copy and in-flow correction menu behaviour for dictionary permalinks.
  *
  * Both controls are real anchors in the SSR markup, so the permalink exists and
- * is shareable with JS disabled. When JS is present we intercept the click and
- * copy instead of navigating: the article is already rendered on the page, so
- * navigating to `/v2/dicts/id/:id` would spend a server render to show the user
- * what they are already looking at.
+ * is shareable with JS disabled. When JS is present we intercept the click:
+ * - Article-level `a.copy-pill` copies the permalink in one click.
+ * - Sense-level `a.section-anchor` opens an anchored menu with "Copy permalink"
+ *   and "Suggest correction".
  *
  * Returns true if the click was consumed.
  */
@@ -35,15 +39,51 @@ export function handleDictPermalinkClick(
       return false;
     }
     // Suppressing the default also suppresses the global smooth-scroll handler
-    // in v2_bundle, which is deliberate. Copying a link should not move the
-    // viewport out from under the user.
+    // in v2_bundle, which is deliberate. Copying a link or opening the action
+    // menu should not move the viewport out from under the user.
     event.preventDefault();
-    flashSection(sectionAnchor);
-    void copyOrNavigate(url, "Copied link to this section", sectionAnchor);
+    const senseId = (sectionAnchor.getAttribute("href") ?? "").slice(1);
+    const bulletText = (sectionAnchor.textContent ?? "").trim();
+    const label = bulletText ? `sense ${bulletText}` : `#${senseId}`;
+
+    openSectionActionMenu({
+      anchor: sectionAnchor,
+      sectionId: senseId,
+      label,
+      reportUrl: url,
+      onCopy: () => {
+        flashSection(sectionAnchor);
+        void copyOrNavigate(url, "Copied link to this section", sectionAnchor);
+      },
+      getContentNodes: () => getDictSenseContentNodes(sectionAnchor),
+    });
     return true;
   }
 
   return false;
+}
+
+/**
+ * Collects the child nodes of `anchor.parentElement` following `anchor` that
+ * belong to this sense, stopping before any child `<ol>` list or nested
+ * sub-sense container (such as Georges `<div id="grg123.I.1">`).
+ */
+export function getDictSenseContentNodes(anchor: HTMLElement): ChildNode[] {
+  const nodes: ChildNode[] = [];
+  let curr = anchor.nextSibling;
+  while (curr) {
+    if (
+      curr instanceof HTMLElement &&
+      (curr.tagName === "OL" ||
+        curr.matches("a.section-anchor") ||
+        curr.querySelector("a.section-anchor") !== null)
+    ) {
+      break;
+    }
+    nodes.push(curr);
+    curr = curr.nextSibling;
+  }
+  return nodes;
 }
 
 function sectionPermalink(anchor: HTMLAnchorElement): string | undefined {

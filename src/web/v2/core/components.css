@@ -258,28 +258,6 @@ body.body-embedded {
    7. Anchored Popover Shell (.anchored-popover)
    ========================================================================== */
 
-@keyframes anchoredPopoverSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes anchoredPopoverSlideCentered {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
 .anchored-popover,
 .reader-settings-popover,
 .reader-toc-drawer {
@@ -294,21 +272,11 @@ body.body-embedded {
   box-sizing: border-box;
 }
 
-.anchored-popover,
-.reader-settings-popover {
-  animation: anchoredPopoverSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.anchored-popover-centered,
-.reader-toc-drawer {
-  animation: anchoredPopoverSlideCentered 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+.anchored-popover-centered {
+  transform: translateX(-50%);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .anchored-popover,
-  .anchored-popover-centered,
-  .reader-settings-popover,
-  .reader-toc-drawer,
   .report-submit-spinner,
   .loading-spinner {
     animation: none;
@@ -364,4 +332,100 @@ body.body-embedded {
 .reader-toc-close-btn:hover {
   color: var(--text);
   background: var(--tag-bg);
+}
+
+/* ==========================================================================
+   8. Section Action Menu & In-Place Editor (.section-action-menu, .section-edit-box)
+   ========================================================================== */
+
+.section-action-menu {
+  padding: var(--space-1);
+  min-width: 11.5rem;
+  box-shadow: var(--card-shadow-hover);
+}
+
+.section-action-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+.section-action-item svg {
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.section-action-item:hover {
+  background: var(--tag-bg);
+}
+
+.section-action-item:focus-visible {
+  background: var(--tag-bg);
+  box-shadow: inset 0 0 0 2px var(--app-bar-toggle-border);
+}
+
+.section-edit-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin: var(--space-1) 0;
+}
+
+.section-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-edit-label {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.section-edit-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  line-height: inherit;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--app-bar-toggle-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  overflow-y: hidden;
+  outline: none;
+}
+
+.section-edit-input:focus,
+.section-edit-input:focus-visible {
+  border-color: var(--app-bar-toggle-border);
+  box-shadow: var(--theme-ring);
+}
+
+.section-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+}
+
+.section-edit-actions .btn:focus-visible {
+  outline: none;
+  box-shadow: var(--theme-ring);
 }
