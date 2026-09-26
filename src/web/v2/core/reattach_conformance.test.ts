@@ -105,6 +105,17 @@ const FIXTURES: Record<string, string> = {
       </details>
     </morcus-greek-embed>`,
 
+  "morcus-external-loader": `
+    <morcus-external-loader data-page="landing">
+      <form id="external-paste-form">
+        <input id="external-title" name="title" />
+        <textarea id="external-text" name="text"></textarea>
+        <input type="file" id="external-file" />
+      </form>
+      <ul id="external-saved-list"></ul>
+      <p id="external-saved-empty"></p>
+    </morcus-external-loader>`,
+
   "morcus-library-view": `
     <morcus-library-view class="library-view">
       <input id="library-search-input" />

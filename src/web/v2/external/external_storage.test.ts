@@ -125,11 +125,12 @@ describe("ExternalContentStore", () => {
       const list = await store.list();
       expect(list).toEqual(
         expect.arrayContaining([
-          { storageKey: "Aeneid_5", title: "Aeneid" },
+          { storageKey: "Aeneid_5", title: "Aeneid", lineMode: "keep" },
           {
             storageKey: "https://a.com",
             title: "https://a.com",
             source: "fromUrl",
+            lineMode: "keep",
           },
         ])
       );

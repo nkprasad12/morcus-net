@@ -34,6 +34,43 @@ describe("GET /v2/externalReader", () => {
     expect(scrape).not.toHaveBeenCalled();
   });
 
+  test("offers paste and the saved list only to JS, with a No-JS note", async () => {
+    const res = await request(makeApp(jest.fn())).get("/v2/externalReader");
+
+    expect(res.text).toContain(
+      '<morcus-external-loader class="external-landing"'
+    );
+    expect(res.text).toContain('data-page="landing"');
+    expect(res.text).toMatch(
+      /<form class="[^"]*external-js-only[^"]*" id="external-paste-form"/
+    );
+    expect(res.text).toContain('id="external-text"');
+    expect(res.text).toContain('id="external-saved-list"');
+    expect(res.text).toContain('class="external-nojs-note"');
+    // Nothing on the paste form submits to the server.
+    expect(res.text).not.toMatch(/method="post"/i);
+  });
+
+  test("?local= renders a reader shell for the saved text, never scraping", async () => {
+    const scrape = jest.fn();
+    const res = await request(makeApp(scrape)).get(
+      "/v2/externalReader?local=abc123&lines=verse"
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.header["x-robots-tag"]).toBe("noindex, nofollow");
+    expect(scrape).not.toHaveBeenCalled();
+    expect(res.text).toContain("<morcus-reader-view");
+    expect(res.text).toContain('data-page="local"');
+    expect(res.text).toContain('data-local-key="abc123"');
+    expect(res.text).toContain('data-lines="verse"');
+    expect(res.text).toContain("<noscript>");
+    // Line modes stay on the saved text.
+    expect(res.text).toContain(
+      'href="/v2/externalReader?local=abc123&amp;lines=prose"'
+    );
+  });
+
   test("renders the imported text in the shared reader frame", async () => {
     const scrape = jest.fn(async () => TEXT);
     const res = await request(makeApp(scrape)).get(
@@ -57,8 +94,10 @@ describe("GET /v2/externalReader", () => {
     // Shared dictionary panel and typography popover.
     expect(res.text).toContain('id="dict-frame"');
     expect(res.text).toContain('id="reader-settings-btn"');
-    // Title from the first words; source attributed.
-    expect(res.text).toContain("<title>Quo usque tandem abutere");
+    // Title from the first words, tagged with the source; source attributed.
+    expect(res.text).toContain(
+      "<title>example.com: Quo usque tandem abutere Catilina - Latin Reader"
+    );
     expect(res.text).toContain("example.com");
     expect(res.text).toContain("Not part of the Morcus library");
   });

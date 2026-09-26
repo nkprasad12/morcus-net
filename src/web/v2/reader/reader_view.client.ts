@@ -20,6 +20,7 @@ import {
   tokenizeTargets,
   WakeLockController,
 } from "@/web/v2/core/index.client";
+import type { SafeHtml } from "@/web/v2/core/html.common";
 import { removeMacrons } from "@/common/text_cleaning";
 import {
   DEFAULT_READER_PREFS,
@@ -896,6 +897,28 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           });
         }
       });
+    }
+  }
+
+  /**
+   * Replaces the passage with markup rendered on the client (e.g. a text
+   * stored on this device) and enhances it exactly like a server-rendered
+   * passage. The markup must use the library's section shape.
+   */
+  public adoptPassage(passageHtml: SafeHtml): void {
+    const passage = this.querySelector<HTMLElement>("#reader-passage");
+    if (!passage) return;
+    setHtml(passage, passageHtml);
+    delete passage.dataset.enhanced;
+    this.enhancePassage();
+    this.applyPreferences(this.currentPrefs);
+    if (this.currentQuery) {
+      this.findWordElement(this.currentQuery)?.classList.add("word-active");
+    }
+    this.refreshTitle();
+    const hash = window.location.hash;
+    if (!this.scrollToFirstMatch(hash) && hash) {
+      this.scrollToHash(hash);
     }
   }
 
