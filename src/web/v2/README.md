@@ -35,6 +35,9 @@ src/web/v2/
 > - Known code-quality debt is tracked as an incremental, checklist-driven backlog in
 >   [CODE_HEALTH.md](CODE_HEALTH.md). Each item is scoped to be one small, independently landable
 >   change. Add new debt there rather than leaving `TODO` comments, and check items off as they land.
+> - Bugs and race conditions in the **pre-hydration window** (where a JS-enabled user views or
+>   interacts with SSR markup before `v2.js` executes) are documented and tracked in
+>   [PRE_HYDRATION.md](PRE_HYDRATION.md).
 > - The longer-term strategy and checklist for graduating V2 to production (`dev` merge audit,
 >   routing cutover, telemetry parity, V1 removal, and re-tuning pre-built artifacts) lives in
 >   [GRADUATION.md](GRADUATION.md).
