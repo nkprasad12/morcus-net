@@ -92,7 +92,7 @@ describe("<morcus-external-loader>", () => {
       text.value = `  ${VERSE}`;
       loader.querySelector<HTMLInputElement>('input[value="verse"]')!.checked =
         true;
-      submit(loader.querySelector<HTMLFormElement>("#external-paste-form")!);
+      submit(loader.querySelector<HTMLFormElement>("#external-form")!);
 
       await until(() => navigate.mock.calls.length > 0);
       const target = new URL(navigate.mock.calls[0][0], "https://x");
@@ -117,7 +117,7 @@ describe("<morcus-external-loader>", () => {
         "Aeneid I";
       loader.querySelector<HTMLTextAreaElement>("#external-text")!.value =
         VERSE;
-      submit(loader.querySelector<HTMLFormElement>("#external-paste-form")!);
+      submit(loader.querySelector<HTMLFormElement>("#external-form")!);
 
       await until(() => navigate.mock.calls.length > 0);
       const list = await withStore((store) => store.list());
@@ -132,12 +132,50 @@ describe("<morcus-external-loader>", () => {
 
       loader.querySelector<HTMLTextAreaElement>("#external-text")!.value =
         "   \n ";
-      submit(loader.querySelector<HTMLFormElement>("#external-paste-form")!);
+      submit(loader.querySelector<HTMLFormElement>("#external-form")!);
 
       const error = loader.querySelector<HTMLElement>("#external-paste-error")!;
       await until(() => !error.hidden);
       expect(error.textContent).toContain("Paste some text");
       expect(navigate).not.toHaveBeenCalled();
+    });
+
+    test("disables the hidden tab's fields so they can't block Read", async () => {
+      const loader = mount(renderExternalLandingContentHtml());
+      await loader.ready;
+      const text = loader.querySelector<HTMLTextAreaElement>("#external-text")!;
+      const url = loader.querySelector<HTMLInputElement>("#external-url")!;
+
+      expect(text.disabled).toBe(false);
+      expect(url.disabled).toBe(true);
+
+      const urlTab = loader.querySelector<HTMLInputElement>(
+        "#external-source-url"
+      )!;
+      urlTab.checked = true;
+      urlTab.dispatchEvent(new Event("change", { bubbles: true }));
+
+      expect(text.disabled).toBe(true);
+      expect(url.disabled).toBe(false);
+    });
+
+    test("lets the web-page tab submit to the server, saving nothing", async () => {
+      const loader = mount(renderExternalLandingContentHtml({ url: "" }));
+      await loader.ready;
+      const navigate = jest.fn();
+      loader.navigate = navigate;
+      loader.querySelector<HTMLInputElement>("#external-url")!.value =
+        "example.com/a.html";
+
+      const event = new Event("submit", { bubbles: true, cancelable: true });
+      loader
+        .querySelector<HTMLFormElement>("#external-form")!
+        .dispatchEvent(event);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(navigate).not.toHaveBeenCalled();
+      expect(await withStore((store) => store.list())).toEqual([]);
     });
 
     test("lists saved texts, newest first, and deletes them", async () => {

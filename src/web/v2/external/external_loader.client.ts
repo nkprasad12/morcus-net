@@ -2,8 +2,9 @@
  * `<morcus-external-loader>`: the JS layer of the External Content Reader.
  *
  * The server renders every page, so this only adds what needs the browser:
- * - `landing`: the paste form (saved to IndexedDB, then opened at `?local=`),
- *   `.txt` open / drop, and the "Saved on this device" list.
+ * - `landing`: the "Paste Text" / "Import from Web Page" tabs. Pasted text is
+ *   saved to IndexedDB and opened at `?local=`; web pages submit the form
+ *   natively. Also the "Saved on this device" list.
  * - `local`: reads a saved text from IndexedDB and hands the rendered passage
  *   to `<morcus-reader-view>` via `adoptPassage`. The markup comes from the
  *   same `external_text.common.ts` renderer the server uses.
@@ -35,9 +36,6 @@ import {
   EXTERNAL_READER_PATH,
   buildExternalReaderUrl,
 } from "@/web/v2/external/external_url.common";
-
-/** Larger files are refused before reading; the renderer caps text anyway. */
-export const EXTERNAL_TEXT_FILE_MAX_BYTES = 2 * 1024 * 1024;
 
 const STORAGE_UNAVAILABLE =
   "This browser can't save texts right now (storage may be off or full).";
@@ -135,35 +133,19 @@ export class MorcusExternalLoader extends BaseElement {
   // ----- Landing ------------------------------------------------------------
 
   private initLanding(): Promise<void> {
-    const text = this.scope.$<HTMLTextAreaElement>("#external-text");
-    const file = this.scope.$<HTMLInputElement>("#external-file");
-
-    this.hijackForm("#external-paste-form", (data, formData) => {
-      // Read the raw value: `data` is trimmed, which would eat the first
-      // line's indent in verse.
-      const raw = formData.get("text");
-      void this.savePaste(
-        typeof raw === "string" ? raw : "",
-        data.title ?? "",
-        data.lines
-      );
-    });
-
-    if (file) {
-      this.scope.listen(file, "change", () => {
-        const picked = file.files?.[0];
-        if (picked) void this.readFile(picked);
-      });
-    }
-    if (text) {
-      this.scope.listen(text, "dragover", (e) => {
-        if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
-      });
-      this.scope.listen(text, "drop", (e) => {
-        const dropped = e.dataTransfer?.files[0];
-        if (!dropped) return;
+    const form = this.scope.$<HTMLFormElement>("#external-form");
+    if (form) {
+      this.syncSource();
+      for (const radio of this.querySelectorAll<HTMLInputElement>(
+        'input[name="external-source"]'
+      )) {
+        this.scope.listen(radio, "change", () => this.syncSource());
+      }
+      this.scope.listen(form, "submit", (e) => {
+        // Web pages submit natively (GET); pasted text stays on the device.
+        if (!this.pasteSelected()) return;
         e.preventDefault();
-        void this.readFile(dropped);
+        void this.savePaste(form);
       });
     }
 
@@ -179,6 +161,25 @@ export class MorcusExternalLoader extends BaseElement {
     return this.renderSavedList();
   }
 
+  private pasteSelected(): boolean {
+    return (
+      this.scope.$<HTMLInputElement>("#external-source-paste")?.checked === true
+    );
+  }
+
+  /** Disables the hidden tab's fields, so its `required` can't block "Read". */
+  private syncSource(): void {
+    const paste = this.pasteSelected();
+    for (const field of this.querySelectorAll<
+      HTMLInputElement | HTMLTextAreaElement
+    >(".external-for-paste .external-input")) {
+      field.disabled = !paste;
+    }
+    const url = this.scope.$<HTMLInputElement>("#external-url");
+    if (url) url.disabled = paste;
+    this.showPasteError("");
+  }
+
   private showPasteError(message: string): void {
     const error = this.scope.$("#external-paste-error");
     if (!error) return;
@@ -186,20 +187,22 @@ export class MorcusExternalLoader extends BaseElement {
     error.hidden = message === "";
   }
 
-  private async savePaste(
-    text: string,
-    title: string,
-    lines: string | undefined
-  ): Promise<void> {
-    if (text.trim() === "") {
+  private async savePaste(form: HTMLFormElement): Promise<void> {
+    // Read the raw value: trimming would eat the first line's indent in verse.
+    const text = this.scope.$<HTMLTextAreaElement>("#external-text")?.value;
+    const title = this.scope.$<HTMLInputElement>("#external-title")?.value;
+    if (text === undefined || text.trim() === "") {
       this.showPasteError("Paste some text to read.");
       return;
     }
-    const lineMode = parseLineMode(lines);
+    const lines = new FormData(form).get("lines");
+    const lineMode = parseLineMode(
+      typeof lines === "string" ? lines : undefined
+    );
     let key: string;
     try {
       key = await this.store.save({
-        title: resolveExternalTitle(title, text),
+        title: resolveExternalTitle(title?.trim() ?? "", text),
         content: text,
         lineMode,
       });
@@ -208,26 +211,6 @@ export class MorcusExternalLoader extends BaseElement {
       return;
     }
     this.navigate(buildExternalReaderUrl({ local: key, lines: lineMode }));
-  }
-
-  private async readFile(file: File): Promise<void> {
-    if (file.size > EXTERNAL_TEXT_FILE_MAX_BYTES) {
-      this.showPasteError("That file is too large to read here.");
-      return;
-    }
-    const text = this.scope.$<HTMLTextAreaElement>("#external-text");
-    const title = this.scope.$<HTMLInputElement>("#external-title");
-    if (!text) return;
-    try {
-      text.value = await file.text();
-    } catch {
-      this.showPasteError("Couldn't read that file.");
-      return;
-    }
-    if (title && title.value.trim() === "") {
-      title.value = file.name.replace(/\.[^.]*$/, "");
-    }
-    this.showPasteError("");
   }
 
   private async renderSavedList(): Promise<void> {

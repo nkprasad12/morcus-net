@@ -24,7 +24,7 @@
 .external-import-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: var(--space-5);
 }
 
@@ -33,14 +33,44 @@
   font-size: 1.15rem;
 }
 
+.external-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .external-field-label {
   font-weight: 600;
   font-size: 0.9rem;
 }
 
-.external-url-input {
+/* Same field treatment as the dictionary search box (search.css). */
+.external-input {
   width: 100%;
   box-sizing: border-box;
+  padding: var(--space-3) var(--space-4);
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-md);
+  box-shadow: var(--input-shadow);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.external-input::placeholder {
+  color: var(--text-muted);
+}
+
+.external-input:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.external-input[aria-invalid="true"] {
+  border-color: var(--danger);
 }
 
 .external-mode-field {
@@ -94,15 +124,69 @@
   color: var(--danger);
 }
 
-/* Paste and the saved list need the loader; without it, show the note. */
-morcus-external-loader:not(:defined) .external-js-only,
-morcus-external-loader:defined .external-nojs-note {
-  display: none;
+/* Source tabs: a radio pair styled like the reader's companion-panel tabs.
+   Radios (not role="tab") because the choice decides what "Read" does, and
+   they give arrow-key switching and back/forward state restore for free. */
+.external-source-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-5) 0;
+  border-bottom: 1px solid var(--border);
 }
 
-.external-landing > .card + .card,
-.external-nojs-note + .card {
-  margin-top: var(--space-5);
+.external-source-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.external-source-tab:hover {
+  color: var(--text);
+}
+
+.external-source-tab:has(input:checked) {
+  color: var(--text);
+  border-bottom-color: var(--primary);
+}
+
+.external-source-tab:has(input:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Visually hidden but still focusable and announced. */
+.external-source-tab input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Paste, the tabs, and the saved list need the loader. Without it (or until
+   it is defined) only the web-page form shows, with a note. With it, the
+   checked tab picks the panel. */
+morcus-external-loader:not(:defined) .external-js-only,
+morcus-external-loader:not(:defined) .external-for-paste,
+morcus-external-loader:defined .external-nojs-note,
+morcus-external-loader:defined:has(.external-source-tab [value="paste"]:checked)
+  .external-for-url,
+morcus-external-loader:has(.external-source-tab [value="url"]:checked)
+  .external-for-paste {
+  display: none;
 }
 
 .external-nojs-note {
@@ -116,17 +200,10 @@ morcus-external-loader:defined .external-nojs-note {
 }
 
 .external-textarea {
-  width: 100%;
-  box-sizing: border-box;
   min-height: 40svh;
   resize: vertical;
   font-family: var(--font-serif);
   line-height: 1.5;
-}
-
-.external-file-label {
-  color: var(--text-muted);
-  font-size: 0.85rem;
 }
 
 .external-saved {

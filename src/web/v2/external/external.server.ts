@@ -91,9 +91,14 @@ export function renderExternalLandingContentHtml(
   const describedBy = options.error
     ? ' aria-describedby="external-url-error" aria-invalid="true"'
     : "";
+  // Paste is the default; reopen on the web tab after a failed import.
+  const startOnUrl = options.url !== undefined || options.error !== undefined;
 
-  // `<morcus-external-loader>` turns on the paste form and the saved list;
-  // until it is defined (or without JS), CSS hides them and shows the note.
+  // One form, two sources. The tabs are radios outside the form, so they
+  // never submit; CSS shows the chosen panel. Paste fields have no `name`:
+  // the loader reads them and the text never reaches the server. Without JS
+  // (or until `<morcus-external-loader>` is defined), CSS hides the tabs and
+  // the paste panel, leaving the plain GET form for web pages.
   return `
     <morcus-external-loader class="external-landing" data-page="landing">
       <header class="external-landing-header">
@@ -101,75 +106,76 @@ export function renderExternalLandingContentHtml(
         <p class="external-landing-lede">Paste a Latin text, or import one from a web page, and read it with the dictionary alongside, just like a work in the library.</p>
       </header>
 
-      <form class="card external-import-form external-js-only" id="external-paste-form">
-        <h2 class="external-form-title">Paste text</h2>
-        <p class="external-error" id="external-paste-error" role="alert" hidden></p>
-        <label class="external-field-label" for="external-title">Title <span class="external-optional">(optional)</span></label>
-        <input type="text"
-               id="external-title"
-               class="input"
-               name="title"
-               maxlength="200"
-               autocomplete="off"
-               placeholder="From the first words of the text">
-        <label class="external-field-label" for="external-text">Text</label>
-        <textarea id="external-text"
-                  class="input external-textarea"
-                  name="text"
-                  required
-                  rows="10"
-                  lang="la"
-                  autocapitalize="off"
-                  autocorrect="off"
-                  spellcheck="false"
-                  placeholder="Paste or drop text here"></textarea>
-        <label class="external-file-label">
-          Or open a text file:
-          <input type="file" id="external-file" accept=".txt,text/plain">
-        </label>
+      <p class="external-nojs-note">Pasting your own text needs JavaScript. You can still import from a web page.</p>
 
-        <fieldset class="external-mode-field">
-          <legend class="external-field-label">Line breaks</legend>${renderLineModeOptions(
-            lines
-          )}
-        </fieldset>
-
-        <div class="external-form-actions">
-          <button type="submit" class="btn btn-primary">Read</button>
-          <span class="external-form-note">Saved in this browser only. Never sent to Morcus.</span>
+      <div class="card external-import-card">
+        <div class="external-source-tabs external-js-only" role="radiogroup" aria-label="Text source">
+          <label class="external-source-tab">
+            <input type="radio" name="external-source" id="external-source-paste" value="paste"${
+              startOnUrl ? "" : " checked"
+            }>
+            Paste Text
+          </label>
+          <label class="external-source-tab">
+            <input type="radio" name="external-source" id="external-source-url" value="url"${
+              startOnUrl ? " checked" : ""
+            }>
+            Import from Web Page
+          </label>
         </div>
-      </form>
 
-      <p class="external-nojs-note">Pasting your own text needs JavaScript. You can still import from a web page below.</p>
+        <form class="external-import-form" id="external-form" method="get" action="${EXTERNAL_READER_PATH}">
+          <div class="external-panel external-for-paste">
+            <p class="external-error" id="external-paste-error" role="alert" hidden></p>
+            <label class="external-field-label" for="external-title">Title <span class="external-optional">(optional)</span></label>
+            <input type="text"
+                   id="external-title"
+                   class="external-input"
+                   maxlength="200"
+                   autocomplete="off"
+                   placeholder="From the first words of the text">
+            <label class="external-field-label" for="external-text">Text</label>
+            <textarea id="external-text"
+                      class="external-input external-textarea"
+                      required
+                      rows="10"
+                      lang="la"
+                      autocapitalize="off"
+                      autocorrect="off"
+                      spellcheck="false"
+                      placeholder="Paste Latin text here"></textarea>
+          </div>
 
-      <form class="card external-import-form" method="get" action="${EXTERNAL_READER_PATH}">
-        <h2 class="external-form-title">From a web page</h2>
-        ${errorHtml}
-        <label class="external-field-label" for="external-url">Page address</label>
-        <input type="text"
-               inputmode="url"
-               id="external-url"
-               class="input external-url-input"
-               name="url"
-               required
-               autocomplete="url"
-               autocapitalize="off"
-               autocorrect="off"
-               spellcheck="false"
-               placeholder="thelatinlibrary.com/cicero/cat1.shtml"
-               value="${he.escape(options.url ?? "")}"${describedBy}>
+          <div class="external-panel external-for-url">
+            ${errorHtml}
+            <label class="external-field-label" for="external-url">Page address</label>
+            <input type="text"
+                   inputmode="url"
+                   id="external-url"
+                   class="external-input"
+                   name="url"
+                   required
+                   autocomplete="url"
+                   autocapitalize="off"
+                   autocorrect="off"
+                   spellcheck="false"
+                   placeholder="thelatinlibrary.com/cicero/cat1.shtml"
+                   value="${he.escape(options.url ?? "")}"${describedBy}>
+          </div>
 
-        <fieldset class="external-mode-field">
-          <legend class="external-field-label">Line breaks</legend>${renderLineModeOptions(
-            lines
-          )}
-        </fieldset>
+          <fieldset class="external-mode-field">
+            <legend class="external-field-label">Line breaks</legend>${renderLineModeOptions(
+              lines
+            )}
+          </fieldset>
 
-        <div class="external-form-actions">
-          <button type="submit" class="btn btn-primary">Read</button>
-          <span class="external-form-note">The page link can be shared.</span>
-        </div>
-      </form>
+          <div class="external-form-actions">
+            <button type="submit" class="btn btn-primary">Read</button>
+            <span class="external-form-note external-for-paste">Saved in this browser only. Never sent to Morcus.</span>
+            <span class="external-form-note external-for-url">The page link can be shared.</span>
+          </div>
+        </form>
+      </div>
 
       <section class="external-saved external-js-only" aria-labelledby="external-saved-title">
         <h2 class="external-form-title" id="external-saved-title">Saved on this device</h2>

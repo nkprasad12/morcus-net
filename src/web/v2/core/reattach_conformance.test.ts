@@ -107,10 +107,14 @@ const FIXTURES: Record<string, string> = {
 
   "morcus-external-loader": `
     <morcus-external-loader data-page="landing">
-      <form id="external-paste-form">
-        <input id="external-title" name="title" />
-        <textarea id="external-text" name="text"></textarea>
-        <input type="file" id="external-file" />
+      <input type="radio" name="external-source" id="external-source-paste" value="paste" checked />
+      <input type="radio" name="external-source" id="external-source-url" value="url" />
+      <form id="external-form">
+        <div class="external-for-paste">
+          <input id="external-title" class="external-input" />
+          <textarea id="external-text" class="external-input"></textarea>
+        </div>
+        <input id="external-url" name="url" class="external-input" />
       </form>
       <ul id="external-saved-list"></ul>
       <p id="external-saved-empty"></p>
