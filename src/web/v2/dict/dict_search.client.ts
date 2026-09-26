@@ -398,9 +398,17 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     const currentParams = new URLSearchParams(window.location.search);
     const isEmbedded = currentParams.get("embedded") === "1";
 
-    if (currentQuery && !hasHash && !isBackForward && this.resultsElement) {
+    if (
+      currentQuery &&
+      !hasHash &&
+      !isBackForward &&
+      window.scrollY === 0 &&
+      this.resultsElement
+    ) {
       this.scope.rAF(() => {
-        this.scrollToResults("instant");
+        if (window.scrollY === 0) {
+          this.scrollToResults("instant");
+        }
       });
     } else if (
       !isEmbedded &&
