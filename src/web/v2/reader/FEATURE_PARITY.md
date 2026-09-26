@@ -39,7 +39,7 @@ The following core reading surfaces from V1 have achieved full parity or intenti
   - **Line modes**: Keep lines (default) / Reflow as prose / Number lines as verse, as plain links.
   - **Titles** are optional and default to the first words.
   - **Saved list**: "Saved on this device" shares V1's `externalContent.db` schema, so V1 imports appear in V2.
-  - Beyond-parity ideas (share links for pasted text, Web Share Target) are in [`TODOS.md`](TODOS.md) §6–7.
+  - Beyond-parity ideas and follow-up items are in [`TODOS.md`](TODOS.md) §6–8.
   - No V1 → V2 redirect for `/externalReader` is needed: V1 and V2 never coexist for real users, only for developers.
 
 ### Deliberately Not Ported

@@ -104,3 +104,18 @@ web app manifest.
   the query and immediately `history.replaceState` it away, which still sends the text to the server
   once; or use `POST` intercepted by a service worker, which is private but adds a service worker.
   Shared URLs (rather than text) can map straight to `?url=`.
+
+---
+
+## 8. External Reader: keep pasted text out of URL and server logs
+
+**Status:** not started. Bug / privacy leak.
+
+The paste page states: _"Saved in this browser only. Never sent to Morcus."_
+However, the first words of a pasted text currently reach the server in the query string and appear in server access logs.
+
+- **Root Cause**: The saved text's key goes into the address (`?local=Gallia+est+omnis+divisa…_1790393944328`), so those words appear in the HTTP request and in server logs. The key includes the title because V2 copied V1's key format (`${title}_${Date.now()}`), and the title defaults to the text's first words.
+- **Compatibility**: V1 treats the storage key as an opaque ID, so a different key format is safe.
+- **Suggested Fix**:
+  - Give new pastes a random key (opaque ID, e.g. random token or UUID).
+  - For texts V1 already saved, put a short hash of the key in the address rather than the key itself, and look the text up by that hash in the browser.
