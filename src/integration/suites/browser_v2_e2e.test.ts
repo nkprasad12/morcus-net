@@ -264,10 +264,15 @@ test.describe("UI V2 dictionary", () => {
     const urlBefore = page.url();
     const scrollBefore = await page.evaluate(() => window.scrollY);
     await anchor.click();
+    const copyMenuBtn = page.locator(
+      '.section-action-menu [data-action="copy"]'
+    );
+    await expect(copyMenuBtn).toBeVisible();
+    await copyMenuBtn.click();
 
-    // Clicking copies an article-qualified permalink rather than jumping. The
-    // fragment alone would be useless to a recipient: it names a sense but not
-    // the article it lives in.
+    // Clicking "Copy permalink" copies an article-qualified permalink rather
+    // than jumping. The fragment alone would be useless to a recipient: it
+    // names a sense but not the article it lives in.
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(copied).toMatch(/\/v2\/dicts\/id\/n20077#n20077/);
 

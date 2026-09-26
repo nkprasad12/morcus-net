@@ -249,11 +249,15 @@ html.has-js .lsHover:focus::after {
 }
 
 .lsSenseBullet.section-anchor:hover,
-.lsSenseBullet.section-anchor:focus-visible,
 .dict-layout .section-anchor:hover,
-.dict-layout .section-anchor:focus-visible,
-.reader-dict-panel .section-anchor:hover,
-.reader-dict-panel .section-anchor:focus-visible {
+.reader-dict-panel .section-anchor:hover {
   background-color: var(--primary);
   color: var(--on-accent);
+}
+
+.lsSenseBullet.section-anchor:focus-visible,
+.dict-layout .section-anchor:focus-visible,
+.reader-dict-panel .section-anchor:focus-visible {
+  outline: none;
+  box-shadow: var(--theme-ring);
 }

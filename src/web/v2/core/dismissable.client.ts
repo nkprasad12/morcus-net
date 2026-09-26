@@ -10,7 +10,7 @@ export interface DismissableOptions {
   /** Predicate reporting whether the overlay is currently open. */
   isOpen: () => boolean;
   /** Action to invoke on dismissal. */
-  onDismiss: () => void;
+  onDismiss: (e: Event) => void;
   /** Optional trigger element to return focus to on Escape key. */
   triggerEl?: HTMLElement | (() => HTMLElement | null) | null;
   /** Listen on pointerdown/mousedown (preferred for instant touch/mouse dismiss) or click. */
@@ -46,14 +46,14 @@ export function bindDismissable(options: DismissableOptions): CleanupFn {
 
     const container = getContainer();
     if (container && !container.contains(target)) {
-      options.onDismiss();
+      options.onDismiss(e);
     }
   };
 
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "Escape" && options.isOpen()) {
       e.preventDefault();
-      options.onDismiss();
+      options.onDismiss(e);
       const trigger = getTrigger();
       trigger?.focus();
     }

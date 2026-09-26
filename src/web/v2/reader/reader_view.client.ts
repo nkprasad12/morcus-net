@@ -6,12 +6,14 @@ import {
   DRAWER_EXPANDED_SVH,
   DRAWER_FLOOR_SVH,
   ICON_PATHS,
+  closeActiveSectionUI,
   copyText,
   escapeId,
   fetchAndSwapPartial,
   html,
   isPlainLeftClick,
   measureSvh100,
+  openSectionActionMenu,
   registerElement,
   setHtml,
   settingsStore,
@@ -229,6 +231,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.enhancePassage();
     this.applyPreferences(this.currentPrefs);
     this.scrollToFirstMatch(window.location.hash);
+    this.scope.use(closeActiveSectionUI);
 
     this.scope.listen<ReaderSettingsChangeEventDetail>(
       this,
@@ -362,31 +365,55 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    // Handle section anchor click (copies canonical permalink with toast confirmation)
+    // Handle section anchor click (opens section action menu in library reader,
+    // or copies canonical permalink directly on External Reader where data-work is absent)
     const secAnchor = e.target.closest<HTMLAnchorElement>("a.section-anchor");
     if (secAnchor) {
       e.preventDefault();
       const href = secAnchor.getAttribute("href") || "";
       const secId = href.replace(/^#sec-/, "");
       const fullUrl = `${window.location.origin}${window.location.pathname}${window.location.search}#sec-${secId}`;
-      void copyText(fullUrl);
-      const secEl = document.getElementById(`sec-${secId}`);
-      if (secEl) {
-        if (typeof secEl.scrollIntoView === "function") {
-          secEl.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-            inline: "nearest",
-          });
+      const secEl =
+        document.getElementById(`sec-${secId}`) ??
+        secAnchor.closest<HTMLElement>(".reader-section");
+      const copyPermalink = () => {
+        void copyText(fullUrl);
+        if (secEl) {
+          if (typeof secEl.scrollIntoView === "function") {
+            secEl.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+              inline: "nearest",
+            });
+          }
+          secEl.classList.add("target-highlight");
+          this.scope.timeout(
+            () => secEl.classList.remove("target-highlight"),
+            3000
+          );
         }
-        secEl.classList.add("target-highlight");
-        this.scope.timeout(
-          () => secEl.classList.remove("target-highlight"),
-          3000
-        );
+        this.saveCurrentSpot(secId);
+        showToast(`Copied permalink: § ${secId}`);
+      };
+
+      if (!this.dataset.work) {
+        copyPermalink();
+        return;
       }
-      this.saveCurrentSpot(secId);
-      showToast(`Copied permalink: § ${secId}`);
+
+      openSectionActionMenu({
+        anchor: secAnchor,
+        sectionId: secId,
+        label: `§ ${secId}`,
+        reportUrl: fullUrl,
+        onCopy: copyPermalink,
+        getContentNodes: () => {
+          const target =
+            secEl?.querySelector<HTMLElement>(".reader-passage") ??
+            secAnchor.nextElementSibling;
+          return target ? [target] : [];
+        },
+      });
       return;
     }
 

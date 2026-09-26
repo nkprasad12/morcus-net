@@ -14,10 +14,10 @@ export interface V2BundleBudget {
 /**
  * Production bundle size budget for UI V2 assets (minified). Sizes are KiB.
  *
- * Current baseline (2026-09-26, after the External Reader's JS layer):
- *   v2_bundle.js: 129.9 kB raw / 36.7 kB gzip
- *   v2.css:       118.4 kB raw / 19.8 kB gzip
- *   Combined:     248.3 kB raw / 56.5 kB gzip
+ * Current baseline (2026-09-26, after In-Flow "Edit and Report" in Reader & Dictionary):
+ *   v2_bundle.js: 135.5 kB raw / 38.7 kB gzip
+ *   v2.css:       121.1 kB raw / 20.1 kB gzip
+ *   Combined:     256.6 kB raw / 58.9 kB gzip
  *
  * Ceilings provide headroom to absorb routine fixes and features without
  * false positives, while hard-blocking major regressions or accidental imports
@@ -31,14 +31,18 @@ export interface V2BundleBudget {
  *   the External Reader client (`external/`, ~10 kB raw / ~3.5 kB gzip: the
  *   loader element, the IndexedDB store, and the text renderer shared with
  *   the server). None of it pulls in new dependencies.
+ * - 2026-09-26: 135 / 38 -> 142 / 41 (combined 255 / 58 -> 265 / 62), after
+ *   unified In-Flow "Edit and Report" (`core/section_edit.client.ts` + Reader
+ *   and Dictionary adapters, ~5.3 kB raw / ~2.0 kB gzip JS and ~1.2 kB raw /
+ *   ~0.2 kB gzip CSS).
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
-  maxJsRawBytes: 135 * 1024,
-  maxJsGzipBytes: 38 * 1024,
+  maxJsRawBytes: 142 * 1024,
+  maxJsGzipBytes: 41 * 1024,
   maxCssRawBytes: 125 * 1024,
   maxCssGzipBytes: 22 * 1024,
-  maxCombinedRawBytes: 255 * 1024,
-  maxCombinedGzipBytes: 58 * 1024,
+  maxCombinedRawBytes: 265 * 1024,
+  maxCombinedGzipBytes: 62 * 1024,
 };
 
 export interface V2AssetSizeInfo {

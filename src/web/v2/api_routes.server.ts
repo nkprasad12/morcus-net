@@ -94,13 +94,49 @@ export function createApiRoutes(
       isObj && "reportText" in body && typeof body.reportText === "string"
         ? body.reportText.trim()
         : "";
-    if (!reportText) {
-      res.status(400).json({ error: "reportText is required" });
+
+    const editedRaw =
+      isObj &&
+      "editedText" in body &&
+      typeof body.editedText === "object" &&
+      body.editedText !== null
+        ? body.editedText
+        : undefined;
+
+    const editedText =
+      editedRaw &&
+      "original" in editedRaw &&
+      "edited" in editedRaw &&
+      "sectionId" in editedRaw &&
+      typeof editedRaw.original === "string" &&
+      typeof editedRaw.edited === "string" &&
+      typeof editedRaw.sectionId === "string" &&
+      editedRaw.original.trim() !== "" &&
+      editedRaw.edited.trim() !== "" &&
+      editedRaw.sectionId.trim() !== ""
+        ? {
+            original: editedRaw.original,
+            edited: editedRaw.edited,
+            sectionId: editedRaw.sectionId.trim(),
+          }
+        : undefined;
+
+    if (!reportText && !editedText) {
+      res
+        .status(400)
+        .json({ error: "Either reportText or editedText is required" });
       return;
     }
 
+    const tags =
+      isObj && "tags" in body && Array.isArray(body.tags)
+        ? body.tags.filter((t): t is string => typeof t === "string")
+        : undefined;
+
     const reportRequest: ReportApiRequest = {
-      reportText,
+      reportText: reportText || undefined,
+      editedText,
+      tags,
       commit: process.env.COMMIT_ID ?? "undefined",
       url:
         isObj && "url" in body && typeof body.url === "string"

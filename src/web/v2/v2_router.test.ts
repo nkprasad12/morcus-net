@@ -650,13 +650,52 @@ describe("v2_router integration", () => {
       );
     });
 
-    test("returns 400 when reportText is missing or empty", async () => {
+    test("submits in-flow editedText correction with tags and returns 200", async () => {
+      const mockReportHandler = jest.fn().mockResolvedValue(undefined);
+      const testApp = express();
+      testApp.use(
+        "/v2",
+        createV2Router(mockFusedDict as FusedDictionary, {
+          reportHandler: mockReportHandler,
+        })
+      );
+
+      const res = await request(testApp)
+        .post("/v2/api/report")
+        .send({
+          editedText: {
+            original: "Gallia est omnes divisa",
+            edited: "Gallia est omnis divisa",
+            sectionId: "1.1.1",
+          },
+          tags: ["userEdit"],
+          url: "http://localhost:1337/v2/reader/caesar/bg/1.1#sec-1.1.1",
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ success: true });
+      expect(mockReportHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          editedText: {
+            original: "Gallia est omnes divisa",
+            edited: "Gallia est omnis divisa",
+            sectionId: "1.1.1",
+          },
+          tags: ["userEdit"],
+          url: "http://localhost:1337/v2/reader/caesar/bg/1.1#sec-1.1.1",
+        })
+      );
+    });
+
+    test("returns 400 when both reportText and editedText are missing or empty", async () => {
       const res = await request(app)
         .post("/v2/api/report")
         .send({ reportText: "   " });
 
       expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: "reportText is required" });
+      expect(res.body).toEqual({
+        error: "Either reportText or editedText is required",
+      });
     });
 
     test("returns 500 when issue reporting handler throws an error", async () => {

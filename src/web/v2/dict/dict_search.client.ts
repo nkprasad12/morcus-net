@@ -1,6 +1,7 @@
 import {
   BaseElement,
   bindDismissable,
+  closeActiveSectionUI,
   fetchAndSwapPartial,
   isPlainLeftClick,
   registerElement,
@@ -152,6 +153,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     });
 
     this.enhanceExistingMarkup();
+    this.scope.use(closeActiveSectionUI);
   }
 
   private initActiveSettings() {
@@ -563,6 +565,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
    */
   private async fetchResults(query: string) {
     if (!this.resultsElement) return;
+    closeActiveSectionUI();
     const currentParams = new URLSearchParams(window.location.search);
     const isEmbedded = currentParams.get("embedded") === "1";
     const langParam = currentParams.get("lang");
