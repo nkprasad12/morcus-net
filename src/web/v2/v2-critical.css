@@ -113,22 +113,63 @@ body {
  * THE JS GATE. This is the only way V2 shows or hides UI based on whether
  * JavaScript is running; see "JS-only and No-JS-only UI" in README.md.
  *
- * - `data-js-only`: needs JS. Hidden until the element or an ancestor carries
- *   `data-upgraded`, which its owner sets once its behaviour is attached
- *   (`BaseElement` does this for every custom element after `onConnect()`).
- *   Also hidden under any custom element that isn't registered yet, so
- *   lazily-loaded components stay gated until their chunk arrives.
- * - `data-nojs-only`: a No-JS fallback. Hidden once its owner is upgraded.
+ * Before upgrade, a page LOOKS like the JS page but BEHAVES like the No-JS
+ * page; the upgrade then adopts whatever the user did in the meantime. Two
+ * separate facts decide two separate things:
  *
- * Before the bundle runs (the pre-hydration window), both behave exactly as
- * they do with scripting disabled, and so does a component whose
- * `onConnect()` threw.
+ * - PAINT, from `@media (scripting)`, known before first paint. With
+ *   scripting on, `data-nojs-only` fallbacks are never painted (so they
+ *   can't flash); with it off, `data-js-only` controls are never painted.
+ * - BEHAVIOUR, from `data-upgraded`, which the owner sets once its
+ *   behaviour is attached (`BaseElement` does this for every custom element
+ *   after `onConnect()`). Until then `data-js-only` controls keep their box
+ *   but are invisible, unfocusable and hidden from assistive tech, so nothing
+ *   shifts when they appear. UI under a not-yet-registered custom element
+ *   stays gated too, so lazily-loaded components wait for their chunk.
+ *
+ * `data-js-failed` (set by `BaseElement` when `onConnect()` throws, or on
+ * <html> when the bundle fails) drops the JS-only controls in its subtree and
+ * brings the No-JS fallbacks back.
  */
+
+/* PAINT: known before first paint. */
+@media (scripting: enabled) {
+  [data-nojs-only]:not([data-js-failed], [data-js-failed] *) {
+    /* Must beat any component `display` rule on the gated element. */
+    /* stylelint-disable-next-line declaration-no-important */
+    display: none !important;
+  }
+}
+
+@media (scripting: none) {
+  [data-js-only] {
+    /* stylelint-disable-next-line declaration-no-important */
+    display: none !important;
+  }
+}
+
+/* BEHAVIOUR: known at upgrade. */
 [data-js-only]:not([data-upgraded], [data-upgraded] *),
-:not(:defined) [data-js-only],
-[data-upgraded] [data-nojs-only]:not(:not(:defined) *),
+:not(:defined) [data-js-only] {
+  /* stylelint-disable-next-line declaration-no-important */
+  visibility: hidden !important;
+}
+
+/* A component whose onConnect() threw, or a bundle that failed to load. */
+[data-js-failed] [data-js-only],
+[data-js-only][data-js-failed] {
+  /* stylelint-disable-next-line declaration-no-important */
+  display: none !important;
+}
+
+/* Browsers without (scripting) (Chrome 111-119, Safari 16.4-16.x, still in
+   V2_BROWSERSLIST) fall back to hiding fallbacks at upgrade. Harmless where
+   (scripting) is supported. The `[data-js-failed] *` exclusion keeps a failed
+   child's fallbacks under an upgraded parent. */
+/* The exclusions inside :not() are what push this over the limit. */
+/* stylelint-disable-next-line selector-max-compound-selectors */
+[data-upgraded] [data-nojs-only]:not(:not(:defined) *, [data-js-failed] *),
 [data-nojs-only][data-upgraded] {
-  /* Must beat any component `display` rule on the gated element. */
   /* stylelint-disable-next-line declaration-no-important */
   display: none !important;
 }

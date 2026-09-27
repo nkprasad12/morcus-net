@@ -9,6 +9,16 @@ import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
 export type V2ActivePage = "dicts" | "about" | "library";
 
+/**
+ * `onerror` for the `v2.js` script tag. If the bundle fails to load (network
+ * error, 404), `data-js-failed` on <html> brings back every No-JS fallback
+ * (see the JS gate in `v2-critical.css`). There is no CSP today; if one is
+ * added, move this into the critical script as a capture-phase `error`
+ * listener.
+ */
+const BUNDLE_ONERROR =
+  "document.documentElement.setAttribute('data-js-failed','')";
+
 export interface PageShellOptions {
   title: string;
   activePage: V2ActivePage;
@@ -184,7 +194,9 @@ export function renderPageShell(options: PageShellOptions): string {
   <div id="abbr-popover" popover="auto" class="abbr-popover"></div>
 
   <!-- UI V2 client-side Web Components bundle -->
-  <script type="module" src="${getV2AssetHref("v2.js")}"></script>
+  <script type="module" src="${getV2AssetHref(
+    "v2.js"
+  )}" onerror="${BUNDLE_ONERROR}"></script>
 </body>
 </html>`;
 }

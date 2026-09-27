@@ -176,8 +176,23 @@
   white-space: nowrap;
 }
 
-/* The tabs, the paste panel and the saved list are `data-js-only`. Once the
-   loader is upgraded, the checked tab picks the panel. */
+/* The tabs, the paste panel and the saved list are `data-js-only`. With
+   scripting on, the checked tab picks the panel from first paint, so the
+   layout matches the upgraded page and nothing swaps at upgrade (the JS-only
+   parts stay invisible until then). If the loader's JS failed, its JS-only
+   parts are dropped and the web page form comes back. */
+@media (scripting: enabled) {
+  /* The failure exclusion is what pushes this over the limit. */
+  /* stylelint-disable-next-line selector-max-compound-selectors */
+  morcus-external-loader:not([data-js-failed], [data-js-failed] *):has(
+      .external-source-tab [value="paste"]:checked
+    )
+    .external-for-url {
+    display: none;
+  }
+}
+
+/* Browsers without (scripting): pick the panel at upgrade instead. */
 morcus-external-loader[data-upgraded]:has(
     .external-source-tab [value="paste"]:checked
   )

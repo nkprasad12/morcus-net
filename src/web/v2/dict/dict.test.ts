@@ -339,7 +339,7 @@ describe("dict_ssr", () => {
       '<link rel="stylesheet" href="/v2/assets/v2.css">'
     );
     expect(pageHtml).toContain(
-      '<script type="module" src="/v2/assets/v2.js"></script>'
+      `<script type="module" src="/v2/assets/v2.js" onerror="document.documentElement.setAttribute('data-js-failed','')"></script>`
     );
     expect(pageHtml).toContain(
       '<form class="search-form" action="/v2/dicts" method="GET">'

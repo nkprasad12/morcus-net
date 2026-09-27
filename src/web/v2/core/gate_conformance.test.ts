@@ -3,14 +3,16 @@
  * No-JS-only UI" in README.md).
  *
  * UI V2 has exactly one way to show or hide UI depending on whether JS is
- * running: `data-js-only` / `data-nojs-only`, revealed by the owner's
- * `data-upgraded` marker. The mechanisms it replaced disagree with each other
- * during the pre-hydration window (PRE_HYDRATION.md §2), so this test fails
- * if any of them come back.
+ * running: `data-js-only` / `data-nojs-only`. What is painted comes from
+ * `@media (scripting)`; what works comes from the owner's `data-upgraded`
+ * marker. The mechanisms it replaced disagree with each other during the
+ * pre-hydration window (PRE_HYDRATION.md §2), so this test fails if any of
+ * them come back.
  *
- * ALLOWLIST ENTRIES REQUIRE HUMAN REVIEW. Do not add one to make this test
- * pass; use the gate attributes instead. If a genuine exception is needed,
- * ask a human, and leave a comment at the call site explaining why.
+ * ALLOWLIST AND RATCHET ENTRIES REQUIRE HUMAN REVIEW. Do not add or raise one
+ * to make this test pass; use the gate attributes instead. If a genuine
+ * exception is needed, ask a human, and leave a comment at the call site
+ * explaining why.
  */
 
 import fs from "fs";
@@ -29,12 +31,7 @@ const BANNED: readonly BannedGate[] = [
   {
     name: "<noscript>",
     pattern: /<noscript/g,
-    fix: "Use `data-nojs-only` so the fallback also works before upgrade.",
-  },
-  {
-    name: "@media (scripting)",
-    pattern: /@media\s*\(\s*scripting/g,
-    fix: "Use `data-js-only` / `data-nojs-only`, or `:not([data-upgraded] *)`.",
+    fix: "Use `data-nojs-only`, which is never painted when scripting is on.",
   },
   {
     name: ".has-js",
@@ -61,9 +58,38 @@ const ALLOWLIST: Readonly<Record<string, Readonly<Record<string, number>>>> = {
   // The gate itself: `:not(:defined)` keeps UI under a not-yet-registered
   // (lazily loaded) custom element gated.
   "v2-critical.css": { ":defined": 2 },
-  // Local-text notice: as `data-nojs-only` it would flash "needs JavaScript"
-  // on every load. Approved by nkprasad, 2026-09-27.
-  "external/external.server.ts": { "<noscript>": 1 },
+};
+
+/**
+ * RATCHET: `[data-upgraded]` occurrences per CSS file. Counts may go down
+ * (lower the entry when they do) but not up. `[data-upgraded]` means "this
+ * component's behaviour is attached", so it's only for behaviour and
+ * hand-over (a `:target` rule the component takes over, a native fallback it
+ * replaces). Appearance that only depends on whether scripts can run belongs
+ * in `@media (scripting)`, which is known before first paint.
+ *
+ * HUMAN REVIEW REQUIRED to add or raise an entry, with a comment at the rule
+ * saying which behaviour depends on upgrade.
+ */
+const UPGRADED_RATCHET: Readonly<Record<string, number>> = {
+  // The gate's behaviour half, plus the fallback for browsers without
+  // (scripting).
+  "v2-critical.css": 4,
+  // `:target` opens the dictionary drawer until the reader adopts the hash.
+  "reader/reader_layout.css": 7,
+  // `:target` opens the TOC drawer until the TOC controller adopts the hash.
+  "reader/reader_toc.css": 2,
+  "v2.css": 1,
+  // The back-to-top link stays visible (a plain link) until its script runs.
+  "shell/app_bar.css": 1,
+  // The CSS focus tooltip hands over to the abbreviation popover.
+  "dict/dict_typography.css": 1,
+  // Browsers without (scripting) pick the External Reader panel at upgrade.
+  "external/external.css": 1,
+  // Overscroll suppression only while swipe page turns are live.
+  "reader/reader_page_nav.css": 1,
+  // Pre-upgrade gutter mirror (see critical_theme.client.ts).
+  "reader/reader_text.css": 3,
 };
 
 function listSources(dir: string): string[] {
@@ -140,5 +166,63 @@ describe("JS gate conformance", () => {
       }
     }
     expect(stale).toEqual([]);
+  });
+});
+
+/** `[data-upgraded]` occurrences per CSS file, ignoring comments. */
+function countUpgradedInCss(): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const file of listSources(V2_ROOT)) {
+    if (!file.endsWith(".css")) continue;
+    const rel = path.relative(V2_ROOT, file).split(path.sep).join("/");
+    const text = stripComments(fs.readFileSync(file, "utf8"), true);
+    const count = text.match(/\[data-upgraded\]/g)?.length ?? 0;
+    if (count > 0) counts.set(rel, count);
+  }
+  return counts;
+}
+
+describe("[data-upgraded] ratchet in CSS", () => {
+  const counts = countUpgradedInCss();
+
+  test("no file gains [data-upgraded] rules", () => {
+    const grown: string[] = [];
+    for (const [file, count] of counts) {
+      const allowed = UPGRADED_RATCHET[file] ?? 0;
+      if (count > allowed) {
+        grown.push(
+          `${file}: ${count}× [data-upgraded] (ratchet ${allowed}). ` +
+            "Appearance-only rules belong in @media (scripting); behaviour " +
+            "rules need human review."
+        );
+      }
+    }
+    expect(grown).toEqual([]);
+  });
+
+  test("the ratchet is lowered when counts go down", () => {
+    const loose: string[] = [];
+    for (const [file, allowed] of Object.entries(UPGRADED_RATCHET)) {
+      const count = counts.get(file) ?? 0;
+      if (count < allowed) {
+        loose.push(`${file}: ratchet ${allowed}, found ${count}`);
+      }
+    }
+    expect(loose).toEqual([]);
+  });
+});
+
+describe("(scripting) is allowed for paint", () => {
+  test("the gate paints from @media (scripting)", () => {
+    const gate = stripComments(
+      fs.readFileSync(path.join(V2_ROOT, "v2-critical.css"), "utf8"),
+      true
+    );
+    expect(gate).toMatch(/@media\s*\(\s*scripting:\s*enabled\s*\)/);
+    expect(gate).toMatch(/@media\s*\(\s*scripting:\s*none\s*\)/);
+  });
+
+  test("(scripting) is not a banned gate", () => {
+    expect(BANNED.map((g) => g.name)).not.toContain("@media (scripting)");
   });
 });

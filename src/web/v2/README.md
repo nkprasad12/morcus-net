@@ -80,30 +80,42 @@ Follow these rules whenever adding or modifying UI V2 features:
 
 ### Quick Reference (`core/` Primitives)
 
-| For                                               | Use                                                                                                     | Not                                                                                      |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Listeners, timers, animation frames, cancellation | `this.scope`: `listen`, `delegate`, `timeout`, `rAF`, `debounce`, `latest(lane)`                        | Raw `addEventListener` / `setTimeout` in components                                      |
-| Updating regions from the server                  | `fetchAndSwapPartial` (`core/partial.client.ts`)                                                        | Scraping swapped markup to patch other regions                                           |
-| UI that needs JS, or only makes sense without it  | `data-js-only` / `data-nojs-only` (see [JS-only and No-JS-only UI](#js-only-and-no-js-only-ui))         | `<noscript>`, `@media (scripting)`, `.has-js`, `:defined`, per-slice `*-js-only` classes |
-| A different layout when JS runs                   | Render it in place on the server; hide it without JS                                                    | Moving server-rendered nodes on the client                                               |
-| Opening hidden UI for a `#hash` / link target     | `registerRevealer` (`core/reveal.client.ts`, see [Hash targets](#hash-targets-and-the-reveal-protocol)) | Reading `location.hash` in `onConnect`; `:target` rules that still match after upgrade   |
-| Back-to-top                                       | `core/back_to_top.client.ts`                                                                            | A slice-local copy                                                                       |
-| Focus ring, buttons, pills, card headers          | `core/components.css`                                                                                   | Redeclaring `outline: 2px solid var(--primary)` per slice                                |
-| Building HTML (server, common, client)            | `html`, composed with `raw` / `joinHtml` (`core/html.common.ts`)                                        | `${safeHtml}` inside `html` (re-escaped); `he.escape` in new code                        |
-| Form-driven UI                                    | A working `<form>` first, then `this.hijackForm` / `this.syncQueryParam`                                | Controls that only work with JS                                                          |
+| For                                               | Use                                                                                                     | Not                                                                                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Listeners, timers, animation frames, cancellation | `this.scope`: `listen`, `delegate`, `timeout`, `rAF`, `debounce`, `latest(lane)`                        | Raw `addEventListener` / `setTimeout` in components                                    |
+| Updating regions from the server                  | `fetchAndSwapPartial` (`core/partial.client.ts`)                                                        | Scraping swapped markup to patch other regions                                         |
+| UI that needs JS, or only makes sense without it  | `data-js-only` / `data-nojs-only` (see [JS-only and No-JS-only UI](#js-only-and-no-js-only-ui))         | `<noscript>`, `.has-js`, `:defined`, per-slice `*-js-only` classes                     |
+| A different layout when JS runs                   | Render it in place on the server; hide it without JS                                                    | Moving server-rendered nodes on the client                                             |
+| Opening hidden UI for a `#hash` / link target     | `registerRevealer` (`core/reveal.client.ts`, see [Hash targets](#hash-targets-and-the-reveal-protocol)) | Reading `location.hash` in `onConnect`; `:target` rules that still match after upgrade |
+| Back-to-top                                       | `core/back_to_top.client.ts`                                                                            | A slice-local copy                                                                     |
+| Focus ring, buttons, pills, card headers          | `core/components.css`                                                                                   | Redeclaring `outline: 2px solid var(--primary)` per slice                              |
+| Building HTML (server, common, client)            | `html`, composed with `raw` / `joinHtml` (`core/html.common.ts`)                                        | `${safeHtml}` inside `html` (re-escaped); `he.escape` in new code                      |
+| Form-driven UI                                    | A working `<form>` first, then `this.hijackForm` / `this.syncQueryParam`                                | Controls that only work with JS                                                        |
 
 ### JS-only and No-JS-only UI
 
-There is exactly one way to show or hide UI depending on whether JavaScript is running:
+**Before upgrade, a page looks like the JS page but behaves like the No-JS page.** The upgrade then adopts whatever the user did in the meantime (adopt-before-write, PRE_HYDRATION.md). There is exactly one way to show or hide UI depending on whether JavaScript is running:
 
-- **`data-js-only`** on anything that only works with JS (a `type="button"` control, a client-populated list). Hidden until its owner is upgraded.
-- **`data-nojs-only`** on a No-JS fallback (an Apply submit button, "needs JavaScript" notes). Hidden once its owner is upgraded.
+- **`data-js-only`** on anything that only works with JS (a `type="button"` control, a client-populated list).
+- **`data-nojs-only`** on a No-JS fallback (an Apply submit button, "needs JavaScript" notes).
 - **The owner** is the nearest element carrying `data-upgraded`. `BaseElement` sets it on every custom element after `onConnect()` returns (and removes it on disconnect), so inside a component there is nothing to do. A global script that wires up one specific element outside any component calls `markUpgraded(el)` from `core/js_gate.client.ts`.
-- **Styling that differs by mode** (not visibility) keys on the same marker: `[data-upgraded] .x` for enhanced, `.x:not([data-upgraded] *)` for No-JS / pre-upgrade.
 
-The rule block lives in [`v2-critical.css`](v2-critical.css), so it's correct from first paint. Before `v2.js` runs (the pre-hydration window), if it fails to load, or if a component's `onConnect()` throws, the page behaves exactly as it does with scripting disabled. Content under a not-yet-registered custom element also stays gated, so lazily loaded chunks work without changes.
+Two separate facts decide two separate things:
 
-There is no global "JS is on" flag. [`core/gate_conformance.test.ts`](core/gate_conformance.test.ts) fails on `<noscript>`, `@media (scripting)`, `.has-js`, `:defined` and `.js-only` classes. **Exceptions require human review** and an allowlist entry with a justification; do not add one to make the test pass.
+| Question                  | Decided by                                    | Known              | Effect                                                                                                                                                         |
+| :------------------------ | :-------------------------------------------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **What is painted?**      | `@media (scripting: enabled / none)`          | Before first paint | With scripting on, `data-nojs-only` is never painted, so fallbacks can't flash. With it off, `data-js-only` is never painted.                                  |
+| **What works, and when?** | `data-upgraded` on the owner                  | At upgrade         | Until then, `data-js-only` keeps its box but is `visibility: hidden` (invisible, unfocusable, hidden from assistive tech), so nothing shifts when it appears.  |
+| **What if JS broke?**     | `data-js-failed` on the owner, or on `<html>` | On failure         | JS-only UI in that subtree is dropped and its fallbacks are painted again. Set by `BaseElement` when `onConnect()` throws, and on `<html>` when `v2.js` fails. |
+
+**Styling that differs by mode** follows the same split. Ask whether a rule changes what the element **does** or only how it **looks**:
+
+- Looks only: `@media (scripting: none)` / `@media (scripting: enabled)` (plus `[data-js-failed] .x` if the failed state should match No-JS).
+- Behaviour or hand-over (a `:target` rule the component takes over, a native fallback it replaces): `[data-upgraded] .x` for enhanced, `.x:not([data-upgraded] *)` for No-JS / pre-upgrade.
+
+The rule block lives in [`v2-critical.css`](v2-critical.css), so it's correct from first paint. Content under a not-yet-registered custom element also stays gated, so lazily loaded chunks work without changes. Browsers in `V2_BROWSERSLIST` without `(scripting)` (Chrome 111–119, Safari 16.4–16.x) fall back to hiding fallbacks at upgrade.
+
+There is no global "JS is on" flag. [`core/gate_conformance.test.ts`](core/gate_conformance.test.ts) fails on `<noscript>`, `.has-js`, `:defined` and `.js-only` classes, and ratchets the number of `[data-upgraded]` rules per CSS file. **Exceptions and ratchet increases require human review**; do not add one to make the test pass.
 
 ### Hash targets and the reveal protocol
 

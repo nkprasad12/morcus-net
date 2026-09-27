@@ -3,7 +3,12 @@ import {
   type CleanupFn,
   type Unregister,
 } from "@/web/v2/core/disposable.client";
-import { clearUpgraded, markUpgraded } from "@/web/v2/core/js_gate.client";
+import {
+  clearFailed,
+  clearUpgraded,
+  markFailed,
+  markUpgraded,
+} from "@/web/v2/core/js_gate.client";
 import {
   syncQueryParam,
   type QueryParamSync,
@@ -353,6 +358,8 @@ export abstract class BaseController<Lane extends string = never>
   public readonly root: ParentNode;
   private _scope: LifetimeScope<Lane> | null = null;
   private readonly controllers: Controller[] = [];
+  /** Whether this controller set `data-js-failed` on its root. */
+  private markedFailed = false;
 
   constructor(root: ParentNode = document) {
     this.root = root;
@@ -414,16 +421,35 @@ export abstract class BaseController<Lane extends string = never>
     }
     set.add(this);
     const existingControllers = [...this.controllers];
-    this.onConnect();
-    if (!this._scope || this._scope.disposed) return;
-    for (const controller of existingControllers) {
-      controller.connect?.();
+    try {
+      this.onConnect();
+      if (!this._scope || this._scope.disposed) return;
+      for (const controller of existingControllers) {
+        controller.connect?.();
+      }
+    } catch (err) {
+      // Bring back the No-JS fallbacks in this controller's subtree (see
+      // `core/js_gate.client.ts`). A document-level controller doesn't mark
+      // <html>: that would revert every component on the page.
+      const root = this.root;
+      if (
+        root instanceof Element &&
+        root !== root.ownerDocument.documentElement
+      ) {
+        markFailed(root);
+        this.markedFailed = true;
+      }
+      throw err;
     }
   }
 
   public dispose(): void {
     const wasConnected = this._scope !== null && !this._scope.disposed;
     ACTIVE_CONTROLLERS_BY_ROOT.get(this.root)?.delete(this);
+    if (this.markedFailed && this.root instanceof Element) {
+      clearFailed(this.root);
+      this.markedFailed = false;
+    }
     try {
       for (const controller of this.controllers) {
         try {
@@ -541,21 +567,29 @@ export abstract class BaseElement<
     if (this._scope && !this._scope.disposed) {
       this._scope.dispose();
     }
+    clearFailed(this);
     this._scope = new LifetimeScope<Lane>(this);
     const existingControllers = [...this.controllers];
-    this.onConnect();
-    if (!this._scope || this._scope.disposed) return;
-    for (const controller of existingControllers) {
-      controller.connect?.();
+    try {
+      this.onConnect();
+      if (!this._scope || this._scope.disposed) return;
+      for (const controller of existingControllers) {
+        controller.connect?.();
+      }
+    } catch (err) {
+      // A broken component drops its `data-js-only` controls and paints its
+      // No-JS fallbacks again (see `core/js_gate.client.ts`).
+      markFailed(this);
+      throw err;
     }
-    // Reveal this element's `data-js-only` UI (see `core/js_gate.client.ts`).
-    // Only reached if `onConnect()` didn't throw, so a broken component keeps
-    // showing its No-JS fallbacks rather than dead controls.
+    // Reveal this element's `data-js-only` UI. Only reached if nothing above
+    // threw, so a broken component never shows dead controls.
     markUpgraded(this);
   }
 
   disconnectedCallback() {
     clearUpgraded(this);
+    clearFailed(this);
     try {
       for (const controller of this.controllers) {
         try {
