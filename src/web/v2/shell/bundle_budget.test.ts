@@ -2,7 +2,9 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import * as zlib from "zlib";
+import * as crypto from "crypto";
 import {
+  CRITICAL_JS_FILE,
   checkV2BundleBudget,
   formatV2BundleSizeReport,
   V2_BUNDLE_BUDGET,
@@ -12,8 +14,11 @@ import {
 describe("UI V2 Bundle Budget", () => {
   let tmpDir: string;
 
+  const criticalContent = "(()=>{try{}catch{}})();";
+
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "budget-test-"));
+    fs.writeFileSync(path.join(tmpDir, CRITICAL_JS_FILE), criticalContent);
   });
 
   afterEach(() => {
@@ -143,6 +148,7 @@ describe("UI V2 Bundle Budget", () => {
       )
     ).toBe(true);
 
+    fs.rmSync(path.join(tmpDir, CRITICAL_JS_FILE));
     const reportMissingFiles = checkV2BundleBudget(tmpDir, {
       "v2.js": "nonexistent.js",
       "v2.css": "nonexistent.css",
@@ -158,6 +164,79 @@ describe("UI V2 Bundle Budget", () => {
         e.includes("CSS asset not found on disk")
       )
     ).toBe(true);
+    expect(
+      reportMissingFiles.errors.some((e) =>
+        e.includes("Critical JS asset not found on disk")
+      )
+    ).toBe(true);
+  });
+
+  describe("critical.js", () => {
+    const manifest = { "v2.js": "v2_bundle.js", "v2.css": "v2.css" };
+
+    beforeEach(() => {
+      fs.writeFileSync(path.join(tmpDir, "v2_bundle.js"), "console.log(1);");
+      fs.writeFileSync(path.join(tmpDir, "v2.css"), "body{margin:0}");
+    });
+
+    test("is measured but not counted in the combined totals", () => {
+      const report = checkV2BundleBudget(tmpDir, manifest);
+      expect(report.errors).toEqual([]);
+      expect(report.criticalJs?.rawBytes).toBe(
+        Buffer.byteLength(criticalContent)
+      );
+      expect(report.combinedRawBytes).toBe(
+        Buffer.byteLength("console.log(1);") +
+          Buffer.byteLength("body{margin:0}")
+      );
+    });
+
+    test("fails when its raw size exceeds the ceiling, reported in bytes", () => {
+      fs.writeFileSync(
+        path.join(tmpDir, CRITICAL_JS_FILE),
+        "x".repeat(V2_BUNDLE_BUDGET.maxCriticalJsRawBytes + 1)
+      );
+      const report = checkV2BundleBudget(tmpDir, manifest);
+      expect(report.exceeded).toBe(true);
+      expect(report.errors).toContain(
+        `Critical JS raw size ${
+          V2_BUNDLE_BUDGET.maxCriticalJsRawBytes + 1
+        } B exceeds budget ${V2_BUNDLE_BUDGET.maxCriticalJsRawBytes} B`
+      );
+    });
+
+    test("fails when its gzip size exceeds the ceiling", () => {
+      // Random bytes barely compress.
+      const random = crypto.randomBytes(300).toString("base64");
+      fs.writeFileSync(path.join(tmpDir, CRITICAL_JS_FILE), random);
+      const report = checkV2BundleBudget(tmpDir, manifest, {
+        ...V2_BUNDLE_BUDGET,
+        maxCriticalJsRawBytes: 10_000,
+        maxCriticalJsGzipBytes: 100,
+      });
+      expect(
+        report.errors.some((e) => e.startsWith("Critical JS gzip size"))
+      ).toBe(true);
+    });
+
+    test("ceilings stay at a fixed-size applier, not per-preference logic", () => {
+      // The applier measured 424 B raw / 300 B gzip. Raising these means
+      // logic crept back into the critical script (see v2_bundle_budget.ts).
+      expect(V2_BUNDLE_BUDGET.maxCriticalJsRawBytes).toBeLessThanOrEqual(450);
+      expect(V2_BUNDLE_BUDGET.maxCriticalJsGzipBytes).toBeLessThanOrEqual(350);
+    });
+
+    test("appears in the formatted report", () => {
+      const formatted = formatV2BundleSizeReport(
+        checkV2BundleBudget(tmpDir, manifest)
+      );
+      expect(formatted).toContain(
+        `Critical: ${Buffer.byteLength(criticalContent)} B raw`
+      );
+      expect(formatted).toContain(
+        `<= ${V2_BUNDLE_BUDGET.maxCriticalJsRawBytes} B raw`
+      );
+    });
   });
 
   test("formats human-readable budget report", () => {

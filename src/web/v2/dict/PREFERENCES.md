@@ -106,7 +106,9 @@ This tiering is already correct in the codebase. The defects come from dictionar
 
 ### Pre-paint is a scarce budget
 
-The critical script is inlined into every HTML response: uncached, paid per page load, and it blocks parsing. "Does it flash?" is the wrong admission test.
+The critical script is inlined into every HTML response: uncached, paid per page load, and it blocks parsing. It is now a **fixed-size applier**: owners in the bundle call `setPrepaint(name, value)` ([`core/prepaint.client.ts`](../core/prepaint.client.ts)) with the final `--custom-property` or `data-*` value, and [`critical_theme.client.ts`](../shell/critical_theme.client.ts) only copies the stored snapshot onto `<html>`. It never validates or maps values, so a new pre-paint preference costs it **0 bytes**, and its size is enforced by the budget in [`v2_bundle_budget.ts`](../../../bundler/v2_bundle_budget.ts).
+
+Bytes are no longer the constraint, but work before first paint and CSS on `:root` still are, so "Does it flash?" remains the wrong admission test:
 
 | Flash severity                    | Pre-paint?             | Examples                              |
 | :-------------------------------- | :--------------------- | :------------------------------------ |
@@ -114,7 +116,9 @@ The critical script is inlined into every HTML response: uncached, paid per page
 | **High-contrast inversion**       | ✅                     | light ↔ dark theme                    |
 | Subtle colour / opacity shift     | ❌ leave to the bundle | highlight strength                    |
 
-Highlight strength sits below that bar — `--highlight-scale` only multiplies alpha ([`variables.css:L79-85`](../shell/variables.css#L79-L85)), so 50% → 80% moves a highlight from 0.105α to 0.168α — but it is already implemented, costs ~50 gzipped bytes, and removing it would require confirming no page outside the dictionary consumes the variable. Leave it; apply the rule to future additions instead.
+Highlight strength sits below that bar — `--highlight-scale` only multiplies alpha ([`variables.css:L79-85`](../shell/variables.css#L79-L85)), so 50% → 80% moves a highlight from 0.105α to 0.168α. It predates the rule and now costs no critical bytes, so it stays; apply the rule to future additions instead.
+
+Owners call `setPrepaint` on every connect with their current value, not only on change, so a stale snapshot (for example after V1 changed `GlobalSettings`) heals after one load. Theme is the one direct read left in the critical script, because V1 still writes `GlobalSettings`; drop it at graduation.
 
 ### "The server resolves, the client adopts"
 
