@@ -3,9 +3,11 @@ import {
   type CleanupFn,
 } from "@/web/v2/core/disposable.client";
 import { flashElement } from "@/web/v2/core/dom.client";
+import { revealHashTarget, revealTarget } from "@/web/v2/core/reveal.client";
 
 /**
- * In-page anchor navigation, smooth scroll, disclosure auto-expansion, and target highlight.
+ * In-page anchor navigation, smooth scroll, target reveal (see
+ * `core/reveal.client.ts`), and target highlight.
  */
 
 export function triggerAnchorHighlight(targetEl: HTMLElement): void {
@@ -15,35 +17,25 @@ export function triggerAnchorHighlight(targetEl: HTMLElement): void {
   flashElement(targetEl, "target-active");
 }
 
-export function expandAncestorDisclosures(targetEl: HTMLElement): void {
-  let parent: HTMLElement | null = targetEl;
-  while (parent) {
-    if (parent instanceof HTMLDetailsElement && !parent.open) {
-      parent.open = true;
-    }
-    if (parent.classList?.contains("dict-card")) {
-      const toggle = parent.querySelector<HTMLDetailsElement>(".dict-toggle");
-      if (toggle && !toggle.open) {
-        toggle.open = true;
-      }
-    }
-    parent = parent.parentElement;
-  }
-}
-
 /**
- * Initializes anchor scroll and deep-link expansion. Returns a cleanup function.
+ * Initializes anchor scroll and deep-link reveal. Returns a cleanup function.
+ *
+ * Runs after `v2_elements.client.ts` has upgraded every component, so their
+ * revealers are registered by the time the initial hash is handled. That is
+ * the hash handover: a panel opened by a hash link before upgrade is adopted
+ * by its component here.
  */
 export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
   createSingletonSetup(
     (doc: Document = document, win: Window = window): CleanupFn => {
-      // Expand any ancestor <details> if initial page load has a hash
-      if (win.location.hash) {
-        const initialTarget = doc.getElementById(win.location.hash.slice(1));
-        if (initialTarget) {
-          expandAncestorDisclosures(initialTarget);
-        }
-      }
+      revealHashTarget(doc, win);
+
+      // Back/forward and manual hash edits.
+      const onHashChange = () => revealHashTarget(doc, win);
+      // Find-in-page on `hidden="until-found"` content, where supported.
+      const onBeforeMatch = (e: Event) => {
+        if (e.target instanceof HTMLElement) revealTarget(e.target);
+      };
 
       // Smooth scroll, auto-expand parent cards, and animate highlight on in-page anchor links
       const onClick = (e: MouseEvent) => {
@@ -68,7 +60,7 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
         const targetEl = doc.getElementById(targetId);
         if (targetEl) {
           e.preventDefault();
-          expandAncestorDisclosures(targetEl);
+          revealTarget(targetEl);
 
           const isJumpPill =
             anchor.classList.contains("jump-pill") ||
@@ -84,8 +76,12 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
       };
 
       doc.addEventListener("click", onClick);
+      win.addEventListener?.("hashchange", onHashChange);
+      doc.addEventListener("beforematch", onBeforeMatch, true);
       return () => {
         doc.removeEventListener("click", onClick);
+        win.removeEventListener?.("hashchange", onHashChange);
+        doc.removeEventListener("beforematch", onBeforeMatch, true);
       };
     }
   );

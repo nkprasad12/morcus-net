@@ -3,6 +3,7 @@
  */
 
 import { ReaderTocController } from "@/web/v2/reader/reader_toc.client";
+import { revealTarget } from "@/web/v2/core/reveal.client";
 
 describe("ReaderTocController", () => {
   let container: HTMLDivElement;
@@ -59,6 +60,23 @@ describe("ReaderTocController", () => {
     controller.connect();
     return controller;
   }
+
+  test("revealing the drawer (pre-upgrade :target, later hashes) opens it via the controller", () => {
+    const controller = connectController({ root: container });
+    const drawer = container.querySelector<HTMLElement>("#reader-toc-drawer")!;
+
+    revealTarget(drawer);
+    expect(controller.isOpen()).toBe(true);
+
+    // Already open: revealing again is a no-op rather than a toggle.
+    revealTarget(drawer);
+    expect(controller.isOpen()).toBe(true);
+
+    controller.close();
+    controller.dispose();
+    revealTarget(drawer);
+    expect(controller.isOpen()).toBe(false);
+  });
 
   test("gracefully handles missing drawer without throwing", () => {
     const emptyDiv = document.createElement("div");

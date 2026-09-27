@@ -78,7 +78,7 @@ Sizes: 🟢 < 30 min · 🟡 an hour or two · 🔴 half a day+
 
 ### B. No-JS `:target` & `<details>` Fallbacks Desynchronizing JS Controllers
 
-- [ ] 🟡 **PH5 — Reader TOC drawer (`#reader-toc-drawer:target`) gets stuck open if clicked before hydration** ([`reader.server.ts`](reader/reader.server.ts#L197-L209), [`reader_toc.css`](reader/reader_toc.css#L48-L51), [`v2.css`](v2.css#L50-L53), [`popover.client.ts`](core/popover.client.ts#L100-L197))
+- [x] 🟡 **PH5 — Reader TOC drawer (`#reader-toc-drawer:target`) gets stuck open if clicked before hydration** ([`reader.server.ts`](reader/reader.server.ts#L197-L209), [`reader_toc.css`](reader/reader_toc.css#L48-L51), [`v2.css`](v2.css#L50-L53), [`popover.client.ts`](core/popover.client.ts#L100-L197))
 
   - `#reader-toc-btn` is `<a href="#reader-toc-drawer">`. Both `[hidden]:not(.reader-toc-drawer:target) { display: none !important; }` ([`v2.css`](v2.css#L50)) and `.reader-toc-drawer:target { display: flex; }` ([`reader_toc.css`](reader/reader_toc.css#L48)) apply unconditionally even after `.has-js` is added.
   - If a user clicks `#reader-toc-btn` before `v2.js` loads, `location.hash` becomes `#reader-toc-drawer` and CSS `:target` displays the drawer.
@@ -87,6 +87,7 @@ Sizes: 🟢 < 30 min · 🟡 an hour or two · 🔴 half a day+
     - Clicking `#reader-toc-btn` calls `toggle()` → `open()` instead of closing it.
     - Calling `close()` sets `panel.hidden = true`, which **still cannot hide the drawer** because `location.hash` is `#reader-toc-drawer` and `[hidden]:not(.reader-toc-drawer:target)` exempts `:target`.
   - **Fix**: Scope the CSS `:target` override to `:root:not(.has-js)` (i.e. `[hidden]:not(:root:not(.has-js) .reader-toc-drawer:target)` and `:root:not(.has-js) .reader-toc-drawer:target`), and in `ReaderTocController.onConnect()` (or `AnchoredPopoverController`), if `window.location.hash === "#reader-toc-drawer"`, clear the hash with `history.replaceState` and call `this.open()`.
+  - **Resolved**: The `:target` rules in `v2.css` and `reader_toc.css` only apply outside an upgraded owner (`:not([data-upgraded] *)`). `ReaderTocController` registers a revealer for the drawer via [`core/reveal.client.ts`](core/reveal.client.ts); `setupAnchorScroll()` runs it for the initial hash (and on `hashchange`), which opens the popover and, because the drawer owns the hash, clears it with `history.replaceState`.
 
 - [ ] 🟡 **PH6 — Reader footnotes (`a.reader-note-ref`) & About link (`a.reader-about-link`) jump to bottom before panel relocation** ([`reader_panel.client.ts`](reader/reader_panel.client.ts#L274-L305), [`reader_view.client.ts`](reader/reader_view.client.ts#L218-L240))
 
@@ -94,13 +95,15 @@ Sizes: 🟢 < 30 min · 🟡 an hour or two · 🔴 half a day+
   - If a user clicks a footnote superscript (`href="#note-1"`) or the `ⓘ` link (`href="#reader-work-about"`) before `v2.js` arrives, the browser scrolls the main window to the bottom of the passage and sets `location.hash`.
   - Moments later, `ReaderPanelController.onConnect()` detaches `.reader-notes` and `#reader-work-about` from the passage footer and moves them into inactive background tabs (`#panel-view-notes`, `#panel-view-about`) in the companion panel — leaving the user stranded at the bottom of the page with the Dictionary tab active instead of showing the note or About tab they clicked.
   - **Fix**: During `MorcusReaderView.onConnect()`, if `window.location.hash` matches a relocated note (`#note-...`) or `#reader-work-about`, activate the corresponding companion panel tab (`notes` or `about`) and highlight/scroll to the target note.
+  - **Deferred** to the reader-panel pilot (PE RFC review, Phase 2), which moves the panel to the reveal protocol wholesale.
 
-- [ ] 🟢 **PH7 — Reader mobile dictionary sheet (`#reader-dict:target`) slams shut on hydration** ([`reader.server.ts`](reader/reader.server.ts#L417-L421), [`reader_layout.css`](reader/reader_layout.css#L79-L95))
+- [x] 🟢 **PH7 — Reader mobile dictionary sheet (`#reader-dict:target`) slams shut on hydration** ([`reader.server.ts`](reader/reader.server.ts#L417-L421), [`reader_layout.css`](reader/reader_layout.css#L79-L95))
 
   - Before `v2.js` loads, `:root:not(.has-js)` is active, so mobile shows `"Open Dictionary Search ↑"` (`<a href="#reader-dict">`).
   - If the user taps it before `v2.js` arrives, `:root:not(.has-js) .reader-dict-panel:target` expands the sheet to `60svh`.
   - As soon as `v2.js` adds `.has-js` to `:root`, that CSS rule stops matching, and because `.reader-dict-panel` still has `.drawer-minimized` from SSR, the drawer immediately collapses back to `40px`.
   - **Fix**: In `MorcusReaderView.onConnect()`, if `window.location.hash === "#reader-dict"`, clear the hash and restore/open the dictionary drawer (`this.restoreDrawer()`).
+  - **Resolved**: The `:target` expansion rules in `reader_layout.css` only apply outside an upgraded owner, and `MorcusReaderView` registers a `#reader-dict` revealer that calls `restoreDrawer()` and owns the hash (same mechanism as PH5).
 
 - [x] 🟢 **PH8 — Dictionary mobile TOC drawer (`<morcus-dict-toc>`) max-height jump & pre-hydration close desync** ([`dict_toc.server.ts`](dict/dict_toc.server.ts#L482-L484), [`dict_toc.css`](dict/dict_toc.css#L78-L90), [`drawer.client.ts`](core/drawer.client.ts#L178-L192))
   - On mobile (`<= 1079px`), `:root:not(.has-js) .drawer-toc:has(.toc-details[open])` caps the TOC drawer at `max-height: 55svh`. When `v2.js` adds `.has-js`, that rule stops matching and `.drawer` jumps to `max-height: 75svh` ([`drawer.css`](core/drawer.css#L11-L12)).
@@ -130,10 +133,11 @@ Sizes: 🟢 < 30 min · 🟡 an hour or two · 🔴 half a day+
 
 ### D. Post-Paint Typography / Layout Shifts & Dead Controls
 
-- [ ] 🟡 **PH11 — Reader typography, gutter, and splitter preferences missing from `critical_theme.client.ts`** ([`critical_theme.client.ts`](shell/critical_theme.client.ts#L1-L53) vs [`reader_view.client.ts`](reader/reader_view.client.ts#L223-L230), [`reader_layout.client.ts`](reader/reader_layout.client.ts#L124-L133))
+- [x] 🟡 **PH11 — Reader typography, gutter, and splitter preferences missing from `critical_theme.client.ts`** ([`critical_theme.client.ts`](shell/critical_theme.client.ts#L1-L53) vs [`reader_view.client.ts`](reader/reader_view.client.ts#L223-L230), [`reader_layout.client.ts`](reader/reader_layout.client.ts#L124-L133))
 
   - `critical_theme.client.ts` (synchronous in `<head>`) applies `darkMode`, `highlightStrength`, `readerWidth`, and `dictWidth` before first paint.
   - However, `morcus_reader_settings` (`readerScale`, `fontFamily`, `lineHeight`, `showGutter`) and `morcus_reader_dict_width` (`--dict-width` desktop splitter width) are only applied when `MorcusReaderView.onConnect()` runs in `v2.js`. Users with customized reader font size, font family, line height, or hidden gutters experience a full-passage text reflow when `v2.js` arrives (within the 1 KB `critical.js` budget, setting `--reader-scale`, `--reader-font`, `--reader-line-height`, and `--dict-width` on `:root` in `critical_theme.client.ts` would eliminate the layout shift).
+  - **Resolved**: `critical_theme.client.ts` mirrors `readerScale`, sans `fontFamily`, compact/relaxed `lineHeight` and the splitter width onto `:root` (`--reader-scale`, `--reader-font`, `--reader-line-height`, `--dict-width`), and a hidden gutter onto `<html data-reader-hide-gutter>`, which `reader_text.css` honours until the reader view upgrades. The element-level `--dict-width: 420px` default was dropped so the `:root` value inherits, and `applyPreferences()` now sets the default line height instead of removing it so the pre-paint value cannot leak through.
 
 - [x] 🟢 **PH12 — Reader `Aa` button (`#reader-settings-btn`) is visible and dead before hydration** ([`reader_nav.css`](reader/reader_nav.css#L207-L211))
   - Unlike `<morcus-theme-toggle>` and `<morcus-report-dialog>` (which hide via `:not(:defined)` in [`v2-critical.css`](v2-critical.css#L106-L114)), `.reader-settings-btn` only hides under `@media (scripting: none)`. For a JS-enabled user, `Aa` is visible from first paint, and clicking it before `v2.js` arrives does nothing.

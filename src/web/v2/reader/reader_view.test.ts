@@ -14,6 +14,7 @@ import {
 } from "@/web/v2/core/drawer.client";
 import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 import { WAKE_LOCK_IDLE_MS } from "@/web/v2/core/wake_lock.client";
+import { revealTarget } from "@/web/v2/core/reveal.client";
 
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
@@ -54,7 +55,7 @@ function createReaderView(
           ${options.aboutHtml ?? ""}
         </div>
       </section>
-      <aside class="reader-dict-panel drawer drawer-minimized">
+      <aside id="reader-dict" class="reader-dict-panel drawer drawer-minimized">
         <div class="reader-sheet-bar">
           <div class="reader-sheet-teaser">
             <span class="reader-sheet-label">Tap any word</span>
@@ -432,6 +433,19 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       expect(sheetLabelOf(el).textContent).toBe("Definitions for Arma");
     });
 
+    test("revealing #reader-dict (pre-upgrade :target, later hashes) restores the drawer", () => {
+      const el = createReaderView(passageHtml);
+      el.minimizeDrawer();
+      const restore = jest.spyOn(el, "restoreDrawer");
+
+      revealTarget(el.querySelector<HTMLElement>("#reader-dict")!);
+
+      expect(restore).toHaveBeenCalledTimes(1);
+      expect(
+        el.querySelector("#reader-dict")!.classList.contains("drawer-minimized")
+      ).toBe(false);
+    });
+
     test("restoreDrawer clamps target svh within [DRAWER_FLOOR_SVH, DRAWER_EXPANDED_SVH] and falls back to DRAWER_DEFAULT_SVH", () => {
       const el = createReaderView(passageHtml);
       const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
@@ -767,7 +781,7 @@ describe("Reader preferences validation & hydration", () => {
     expect(el.style.getPropertyValue("--reader-line-height")).toBe("1.45");
   });
 
-  it("applies --reader-line-height styling for compact and relaxed presets and removes it for normal", () => {
+  it("applies --reader-line-height styling for compact and relaxed presets and pins the default for normal", () => {
     localStorage.setItem(
       READER_SETTINGS_KEY,
       JSON.stringify({ lineHeight: "compact" })
@@ -790,7 +804,7 @@ describe("Reader preferences validation & hydration", () => {
         bubbles: true,
       })
     );
-    expect(el.style.getPropertyValue("--reader-line-height")).toBe("");
+    expect(el.style.getPropertyValue("--reader-line-height")).toBe("1.65");
   });
 });
 
