@@ -1,4 +1,7 @@
 import express from "express";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import request from "supertest";
 import { createV2Router } from "@/web/v2/v2_router.server";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
@@ -27,9 +30,22 @@ describe("v2_router integration", () => {
   let app: express.Express;
   let mockFusedDict: Partial<FusedDictionary>;
 
+  // Build into a temporary directory: writing `build/v2` would replace the
+  // assets a running dev server is serving with a Jest-mode bundle.
+  let buildDir: string;
+  const savedBuildDir = process.env.MORCUS_V2_BUILD_DIR;
+
   beforeAll(async () => {
+    buildDir = fs.mkdtempSync(path.join(os.tmpdir(), "morcus-v2-build-"));
+    process.env.MORCUS_V2_BUILD_DIR = buildDir;
     await buildV2Bundle(false);
   }, 30000);
+
+  afterAll(() => {
+    if (savedBuildDir === undefined) delete process.env.MORCUS_V2_BUILD_DIR;
+    else process.env.MORCUS_V2_BUILD_DIR = savedBuildDir;
+    fs.rmSync(buildDir, { recursive: true, force: true });
+  });
 
   beforeEach(() => {
     mockFusedDict = {

@@ -1,5 +1,4 @@
 import express, { Router, Request, Response } from "express";
-import * as path from "path";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { renderAboutPageHtml } from "@/web/v2/about/about.server";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
@@ -8,8 +7,8 @@ import { createDictRoutes } from "@/web/v2/dict/dict.server";
 import { createReaderRoutes } from "@/web/v2/reader/reader.server";
 import { createExternalRoutes } from "@/web/v2/external/external_routes.server";
 import { createApiRoutes, ApiRoutesOptions } from "@/web/v2/api_routes.server";
+import { getV2BuildDir } from "@/web/v2/shell/asset_manifest.server";
 
-const V2_ASSETS_DIR = path.resolve(process.cwd(), "build/v2");
 // Filenames are content-hashed by esbuild, so they're safe to cache forever.
 const V2_ASSETS_CACHE_CONTROL = "public, max-age=311040000, immutable";
 
@@ -35,7 +34,7 @@ export function createV2Router(
   // Serve the hashed, minified v2.css / v2.js built by `src/bundler/v2.rsbuild.ts`
   router.use(
     "/assets",
-    express.static(V2_ASSETS_DIR, {
+    express.static(getV2BuildDir(), {
       setHeaders: (res) => {
         res.setHeader("Cache-Control", V2_ASSETS_CACHE_CONTROL);
       },
