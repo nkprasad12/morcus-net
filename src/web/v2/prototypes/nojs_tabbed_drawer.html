@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>No-JS tabbed drawer prototype</title>
+    <!-- ZERO JavaScript on this page. Everything is :target + :has(). -->
+    <style>
+      :root {
+        --panel-w: 380px;
+        --bar-h: 48px;
+        --accent: #7a3e9d;
+        --bg: #fbfaf7;
+        --card: #fff;
+        --line: #ddd6cc;
+        font-family: Georgia, serif;
+        color: #222;
+        background: var(--bg);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+
+      /* ---------- Main text column ---------- */
+      main {
+        margin-right: var(--panel-w);
+        padding: 24px 40px 120px;
+        max-width: calc(760px + var(--panel-w));
+        line-height: 1.7;
+      }
+      .explainer {
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+        background: #eef6ff;
+        border: 1px solid #b9d6f2;
+        border-radius: 8px;
+        padding: 12px 16px;
+        line-height: 1.5;
+      }
+      .explainer code {
+        background: #dcebfa;
+        padding: 0 4px;
+        border-radius: 3px;
+      }
+      .section {
+        position: relative;
+        margin: 1.4em 0;
+      }
+      .section-anchor {
+        font-family: system-ui, sans-serif;
+        font-size: 12px;
+        color: #888;
+        text-decoration: none;
+        margin-right: 6px;
+      }
+      .section:target {
+        background: #fff8d6;
+        outline: 6px solid #fff8d6;
+      }
+      sup a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: bold;
+      }
+      sup a:target {
+        background: #fde68a;
+        outline: 3px solid #fde68a;
+        border-radius: 2px;
+      }
+
+      /* ---------- Companion panel (desktop: fixed sidebar) ---------- */
+      .panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: var(--panel-w);
+        background: var(--card);
+        border-left: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+      }
+      .bar {
+        display: none; /* only on mobile */
+        height: var(--bar-h);
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--line);
+        flex: none;
+      }
+      .bar a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 2px;
+        padding: 8px 8px 0;
+        border-bottom: 1px solid var(--line);
+        flex: none;
+      }
+      .tab {
+        padding: 8px 12px;
+        border-radius: 8px 8px 0 0;
+        text-decoration: none;
+        color: #555;
+        border: 1px solid transparent;
+        border-bottom: none;
+        margin-bottom: -1px;
+      }
+      .tab:hover {
+        background: #f4f0f7;
+      }
+      /* JS-only tab: hidden without JS (in the real app: :root:not(.has-js)) */
+      .tab[data-js-only] {
+        display: none;
+      }
+
+      .views {
+        flex: 1;
+        overflow: auto;
+        padding: 16px;
+      }
+      .view {
+        display: none;
+      }
+      .view h2 {
+        margin-top: 0;
+        font-size: 16px;
+      }
+
+      /* ===== The whole trick ===== */
+      /* 1. A view shows if it, or anything inside it, is the :target. */
+      .view:is(:target, :has(:target)) {
+        display: block;
+      }
+      /* 2. Default: Dictionary shows when nothing in the panel is targeted. */
+      .panel:not(:has(.view:target, .view :target)) #p-dict {
+        display: block;
+      }
+
+      /* 3. Active tab styling, derived the same way. */
+      .panel:not(:has(.view:target, .view :target)) .tab[href="#p-dict"],
+      .panel:has(#p-notes:target, #p-notes :target) .tab[href="#p-notes"],
+      .panel:has(#p-about:target, #p-about :target) .tab[href="#p-about"] {
+        background: var(--card);
+        color: var(--accent);
+        border-color: var(--line);
+        font-weight: 600;
+      }
+
+      .note {
+        padding: 8px 10px;
+        border-radius: 6px;
+        margin: 6px 0;
+      }
+      .note:target {
+        background: #fde68a;
+      }
+      .note a.back {
+        text-decoration: none;
+        margin-left: 6px;
+      }
+      .entry {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin: 10px 0;
+      }
+      .entry b {
+        color: var(--accent);
+      }
+      .search {
+        display: flex;
+        gap: 6px;
+      }
+      .search input {
+        flex: 1;
+        padding: 6px 8px;
+      }
+
+      /* ---------- Mobile: bottom drawer ---------- */
+      @media (max-width: 800px) {
+        main {
+          margin-right: 0;
+          padding: 16px 18px 120px;
+        }
+        .panel {
+          top: auto;
+          left: 0;
+          width: auto;
+          height: var(--bar-h);
+          border-left: none;
+          border-top: 1px solid var(--line);
+          border-radius: 14px 14px 0 0;
+          box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+          transition: height 0.2s ease;
+          overflow: hidden;
+        }
+        .bar {
+          display: flex;
+        }
+        .bar .close {
+          display: none;
+        }
+        /* 4. Drawer opens when the panel, or anything in it, is targeted. */
+        .panel:is(:target, :has(:target)) {
+          height: 65svh;
+        }
+        .panel:is(:target, :has(:target)) .bar .open {
+          display: none;
+        }
+        .panel:is(:target, :has(:target)) .bar .close {
+          display: inline;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="explainer">
+        <strong>No-JS tabbed drawer prototype.</strong> This page has
+        <strong>zero JavaScript</strong>. Tab switching, footnote routing and
+        the mobile drawer all come from <code>:target</code> +
+        <code>:has()</code>.
+        <ul>
+          <li>
+            Click the panel tabs. Dictionary is the default when nothing inside
+            the panel is targeted.
+          </li>
+          <li>
+            Click a footnote (<sup><a href="#n1">1</a></sup
+            >). The Notes tab activates and the note is highlighted. Use ↩ in
+            the note to jump back.
+          </li>
+          <li>
+            Click a <span style="color: #888">§</span> section anchor. The hash
+            leaves the panel, so it falls back to Dictionary (the "hash
+            conflict" caveat).
+          </li>
+          <li>Click the ⓘ link, which goes to About.</li>
+          <li>
+            Narrow the window (&lt; 800px), or open it on a phone: the panel
+            becomes a bottom drawer that opens for any target inside it.
+          </li>
+          <li>
+            Watch the Back button. Every tab click is a history entry here; JS
+            mode would use <code>replaceState</code>.
+          </li>
+        </ul>
+      </div>
+
+      <h1>
+        Commentarii de Bello Gallico, I
+        <a href="#p-about" title="About this text" style="text-decoration: none"
+          >ⓘ</a
+        >
+      </h1>
+
+      <p class="section" id="s1">
+        <a class="section-anchor" href="#s1">§1</a> Gallia est omnis divisa in
+        partes tres, quarum unam incolunt Belgae, aliam Aquitani, tertiam qui
+        ipsorum lingua Celtae, nostra Galli appellantur.<sup
+          ><a id="r1" href="#n1">1</a></sup
+        >
+        Hi omnes lingua, institutis, legibus inter se differunt. Gallos ab
+        Aquitanis Garumna flumen, a Belgis Matrona et Sequana dividit.
+      </p>
+      <p class="section" id="s2">
+        <a class="section-anchor" href="#s2">§2</a> Horum omnium fortissimi sunt
+        Belgae, propterea quod a cultu atque humanitate provinciae longissime
+        absunt, minimeque ad eos mercatores saepe commeant atque ea quae ad
+        effeminandos animos pertinent important,<sup
+          ><a id="r2" href="#n2">2</a></sup
+        >
+        proximique sunt Germanis, qui trans Rhenum incolunt, quibuscum
+        continenter bellum gerunt.
+      </p>
+      <p class="section" id="s3">
+        <a class="section-anchor" href="#s3">§3</a>
+        Qua de causa Helvetii quoque reliquos Gallos virtute praecedunt, quod
+        fere cotidianis proeliis cum Germanis contendunt, cum aut suis finibus
+        eos prohibent aut ipsi in eorum finibus bellum gerunt.
+      </p>
+      <p class="section" id="s4">
+        <a class="section-anchor" href="#s4">§4</a> Eorum una pars, quam Gallos
+        obtinere dictum est, initium capit a flumine Rhodano, continetur Garumna
+        flumine, Oceano, finibus Belgarum, attingit etiam ab Sequanis et
+        Helvetiis flumen Rhenum, vergit ad septentriones.<sup
+          ><a id="r3" href="#n3">3</a></sup
+        >
+      </p>
+      <p class="section" id="s5">
+        <a class="section-anchor" href="#s5">§5</a>
+        Belgae ab extremis Galliae finibus oriuntur, pertinent ad inferiorem
+        partem fluminis Rheni, spectant in septentrionem et orientem solem.
+      </p>
+      <p class="section" id="s6">
+        <a class="section-anchor" href="#s6">§6</a> Aquitania a Garumna flumine
+        ad Pyrenaeos montes et eam partem Oceani quae est ad Hispaniam pertinet;
+        spectat inter occasum solis et septentriones.<sup
+          ><a id="r4" href="#n4">4</a></sup
+        >
+      </p>
+      <p class="section" id="s7">
+        <a class="section-anchor" href="#s7">§7</a>
+        Apud Helvetios longe nobilissimus fuit et ditissimus Orgetorix. Is M.
+        Messala, M. Pisone consulibus regni cupiditate inductus coniurationem
+        nobilitatis fecit et civitati persuasit ut de finibus suis cum omnibus
+        copiis exirent: perfacile esse, cum virtute omnibus praestarent, totius
+        Galliae imperio potiri.
+      </p>
+      <p class="section" id="s8">
+        <a class="section-anchor" href="#s8">§8</a> Id hoc facilius iis
+        persuasit, quod undique loci natura Helvetii continentur: una ex parte
+        flumine Rheno latissimo atque altissimo, qui agrum Helvetium a Germanis
+        dividit; altera ex parte monte Iura altissimo, qui est inter Sequanos et
+        Helvetios; tertia lacu Lemanno et flumine Rhodano, qui provinciam
+        nostram ab Helvetiis dividit.<sup><a id="r5" href="#n5">5</a></sup>
+      </p>
+    </main>
+
+    <aside class="panel" id="reader-dict" aria-label="Companion panel">
+      <div class="bar">
+        <a class="open" href="#reader-dict">Open Dictionary ↑</a>
+        <span class="close-wrap"
+          ><a class="close" href="#_closed" aria-label="Close panel"
+            >✕ Close</a
+          ></span
+        >
+      </div>
+
+      <nav class="tabs" aria-label="Companion panel">
+        <a class="tab" href="#p-dict">Dictionary</a>
+        <a class="tab" href="#p-notes">Notes</a>
+        <a class="tab" href="#p-translation" data-js-only>Translation</a>
+        <a class="tab" href="#p-about">About</a>
+      </nav>
+
+      <div class="views">
+        <section class="view" id="p-dict">
+          <h2>Dictionary</h2>
+          <form class="search" method="get" action="#p-dict">
+            <input name="q" placeholder="Search a word…" aria-label="Search" />
+            <button>Go</button>
+          </form>
+          <div class="entry">
+            <b>dīvīdō</b>, -ere, -vīsī, -vīsum: to divide, separate.
+          </div>
+          <div class="entry">
+            <b>incolō</b>, -ere, -uī: to inhabit, dwell in.
+          </div>
+          <div class="entry"><b>appellō</b>, -āre: to call, name.</div>
+          <p style="color: #777">
+            (In the real app this is the dictionary iframe.)
+          </p>
+        </section>
+
+        <section class="view" id="p-notes">
+          <h2>Notes</h2>
+          <div class="note" id="n1">
+            <b>1.</b> <i>Celtae … Galli</i>: the same people, named in their own
+            language and in ours.<a
+              class="back"
+              href="#r1"
+              aria-label="Back to text"
+              >↩</a
+            >
+          </div>
+          <div class="note" id="n2">
+            <b>2.</b> <i>ad effeminandos animos</i>: gerundive of purpose;
+            luxuries that soften the spirit.<a
+              class="back"
+              href="#r2"
+              aria-label="Back to text"
+              >↩</a
+            >
+          </div>
+          <div class="note" id="n3">
+            <b>3.</b> <i>vergit ad septentriones</i>: "faces north", literally
+            toward the seven plough-oxen (the Big Dipper).<a
+              class="back"
+              href="#r3"
+              aria-label="Back to text"
+              >↩</a
+            >
+          </div>
+          <div class="note" id="n4">
+            <b>4.</b> <i>inter occasum solis et septentriones</i>: north-west.<a
+              class="back"
+              href="#r4"
+              aria-label="Back to text"
+              >↩</a
+            >
+          </div>
+          <div class="note" id="n5">
+            <b>5.</b> <i>lacu Lemanno</i>: Lake Geneva.<a
+              class="back"
+              href="#r5"
+              aria-label="Back to text"
+              >↩</a
+            >
+          </div>
+          <p style="color: #999; margin-top: 40px">
+            Padding so the scroll-to-note behaviour is visible.
+          </p>
+          <div style="height: 600px"></div>
+        </section>
+
+        <section class="view" id="p-translation">
+          <h2>Translation</h2>
+          <p>(JS-only: loaded on demand. The tab is hidden without JS.)</p>
+        </section>
+
+        <section class="view" id="p-about">
+          <h2>About this text</h2>
+          <p>
+            Caesar, <i>Commentarii de Bello Gallico</i>, Book I. Public-domain
+            Latin text, with demo notes written for this prototype.
+          </p>
+          <p>
+            In the real app this is the
+            <code>&lt;details id="reader-work-about"&gt;</code> content,
+            rendered here directly by the server instead of being relocated by
+            JS.
+          </p>
+        </section>
+      </div>
+    </aside>
+  </body>
+</html>
