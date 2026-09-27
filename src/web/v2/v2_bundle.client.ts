@@ -1,7 +1,3 @@
-// Must stay the first import: it detects a bundle that throws before the
-// end of this file (see core/bundle_guard.client.ts).
-import { markBundleEvaluated } from "@/web/v2/core/bundle_guard.client";
-
 // Component manifest for UI V2 Custom Elements
 import "@/web/v2/v2_elements.client";
 
@@ -15,5 +11,3 @@ import "@/web/v2/core/deferred_iframe.client";
 // There is deliberately no global "JS is on" flag (the old `.has-js`): each
 // component reveals its own `data-js-only` UI once upgraded. See the JS gate
 // in v2-critical.css.
-
-markBundleEvaluated();
