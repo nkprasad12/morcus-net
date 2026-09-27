@@ -37,6 +37,8 @@ For all tasks involving UI V2 (`src/web/v2/`), consult the dedicated guides befo
 - **Testing & Verification Guide**: [`src/web/v2/TESTING.md`](src/web/v2/TESTING.md)
   - Full details on running unit tests, end-to-end (E2E) tests, visual regression tests, and debugging options.
 
+> [!IMPORTANT] > **No backwards compatibility in UI V2.** V2 has no users yet. Don't keep legacy storage reads, migrations, fallback paths or shims, and don't accept trade-offs (such as a one-load flash) to keep old data working. Change formats and APIs outright and update every caller. Browser support (README "Browser Support & Compatibility Target") is a separate question. See convention 8 in [`src/web/v2/README.md`](src/web/v2/README.md).
+
 ---
 
 ## 3. Testing UI V2: Critical Rules & Commands

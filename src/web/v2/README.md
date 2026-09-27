@@ -77,6 +77,7 @@ Follow these rules whenever adding or modifying UI V2 features:
    - Require concrete evidence (file, line, and exact mechanism) and verify each claim against the code before changing anything.
    - Check consequences across slices—especially keyboard focus preservation across swaps, custom element disconnect/reconnect lifecycles, and the zero-JS baseline.
    - Fix one-off issues locally; introduce a new shared primitive or conformance check only when a bug class recurs, weighting real shipped bugs over theoretical audit items.
+8. **Don't preserve backwards compatibility within V2.** V2 has no users yet. Change storage keys and formats, cookies, URLs, attributes, CSS hooks, and internal APIs freely: no migration code, legacy reads, fallback paths, deprecation shims, or "one-load flash" trade-offs. Rename or delete outright and update every caller in the same change. This does not cover the browser support target below, or the V1 → V2 cutover, which is decided separately ([dict/PREFERENCES.md](dict/PREFERENCES.md)).
 
 ### Quick Reference (`core/` Primitives)
 
