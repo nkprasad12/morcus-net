@@ -13,9 +13,16 @@ Every UI V2 page load follows a three-stage lifecycle in [`page_shell.server.ts`
 
 1. **Synchronous `<head>`**: Inlined [`v2-critical.css`](v2-critical.css) and synchronous inlined [`critical_theme.client.ts`](shell/critical_theme.client.ts) execute, followed by `<link rel="stylesheet" href="/v2/assets/v2.css">`.
 2. **First Paint (SSR HTML)**: `<body>` renders the server-generated HTML immediately.
-3. **Deferred Module Upgrade (`v2.js`)**: `<script type="module" src="/v2/assets/v2.js"></script>` downloads and executes asynchronously ([`v2_bundle.client.ts`](v2_bundle.client.ts)), registering all custom elements ([`v2_elements.client.ts`](v2_elements.client.ts)) and adding `.has-js` to `document.documentElement`.
+3. **Deferred Module Upgrade (`v2.js`)**: `<script type="module" src="/v2/assets/v2.js"></script>` downloads and executes asynchronously ([`v2_bundle.client.ts`](v2_bundle.client.ts)), registering all custom elements ([`v2_elements.client.ts`](v2_elements.client.ts)); each element marks itself `data-upgraded` once connected.
 
 Our architecture and test suites explicitly planned for **No-JS** (scripting disabled) and **Post-Hydration JS** (`v2.js` loaded), but did not systematically account for a **JS-enabled user interacting with the page between Stage 2 and Stage 3** (e.g., on slow mobile networks, cold caches, or if `v2.js` is later split into lazy route chunks).
+
+> [!WARNING] > **Not yet tested in a browser.** The fixes below are covered by unit tests only. No E2E suite holds back `v2.js` yet, and the existing V2 E2E suite needs bringing up to date first. A late-hydration suite should hold back `/v2/assets/*.js` with `page.route`, interact, release, and check that:
+>
+> - The upgrade adopts pre-hydration state (PH1, 2, 3, 5, 7, 9, 11).
+> - No `[data-nojs-only]` is painted before or after upgrade, `[data-js-only]` is `visibility: hidden` until its owner upgrades, and layout shift stays below 0.01 on the dictionary, reader and External Reader pages.
+> - An aborted `v2.js` sets `<html data-js-failed>` and restores the fallbacks; with JavaScript disabled, `[data-js-only]` is `display: none`.
+> - A seeded `morcus_prepaint` snapshot (not just the owners' settings, which the critical script doesn't read) gives the reader its scale, line height, gutter and width at first paint.
 
 ---
 
