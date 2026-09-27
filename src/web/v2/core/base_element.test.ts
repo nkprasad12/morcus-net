@@ -915,3 +915,49 @@ describe("JS gate marker (data-upgraded)", () => {
     expect(el.hasAttribute("data-upgraded")).toBe(false);
   });
 });
+
+class TestThrowingController extends BaseController {
+  protected override onConnect(): void {
+    throw new Error("broken controller");
+  }
+}
+
+describe("JS gate failure marker (data-js-failed)", () => {
+  test("a throwing onConnect sets data-js-failed, and disconnect clears both", () => {
+    const el = new TestThrowingConnectElement();
+    expect(() => el.connectedCallback()).toThrow("broken onConnect");
+    expect(el.hasAttribute("data-js-failed")).toBe(true);
+    expect(el.hasAttribute("data-upgraded")).toBe(false);
+
+    el.disconnectedCallback();
+    expect(el.hasAttribute("data-js-failed")).toBe(false);
+    expect(el.hasAttribute("data-upgraded")).toBe(false);
+  });
+
+  test("a healthy element is never marked failed", () => {
+    const el = document.createElement("morcus-test-base-element");
+    document.body.appendChild(el);
+    expect(el.hasAttribute("data-js-failed")).toBe(false);
+    el.remove();
+  });
+
+  test("a throwing controller marks its element root, and dispose clears it", () => {
+    const root = document.createElement("div");
+    document.body.appendChild(root);
+    const controller = new TestThrowingController(root);
+
+    expect(() => controller.connect()).toThrow("broken controller");
+    expect(root.hasAttribute("data-js-failed")).toBe(true);
+
+    controller.dispose();
+    expect(root.hasAttribute("data-js-failed")).toBe(false);
+    root.remove();
+  });
+
+  test("a throwing document-level controller never marks <html>", () => {
+    const controller = new TestThrowingController(document);
+    expect(() => controller.connect()).toThrow("broken controller");
+    expect(document.documentElement.hasAttribute("data-js-failed")).toBe(false);
+    controller.dispose();
+  });
+});

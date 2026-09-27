@@ -89,7 +89,7 @@ describe("GET /v2/externalReader", () => {
     expect(res.text).toContain('data-page="local"');
     expect(res.text).toContain('data-local-key="abc123"');
     expect(res.text).toContain('data-lines="verse"');
-    expect(res.text).toContain("<noscript>");
+    expect(res.text).toContain('class="external-notice" data-nojs-only');
     // Line modes stay on the saved text.
     expect(res.text).toContain(
       'href="/v2/externalReader?local=abc123&amp;lines=prose"'

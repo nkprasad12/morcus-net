@@ -436,13 +436,7 @@ function buildLocalModel(
     query: options.query.trim(),
     // Unknown until the text loads; the Macra toggle is omitted.
     hasMacra: false,
-    // JS-GATE EXCEPTION (human-approved; do not copy this pattern). V2 gates
-    // JS-dependent UI with `data-js-only` / `data-nojs-only` only (see
-    // README.md). This notice stays in `<noscript>` because as `data-nojs-only`
-    // it would flash "needs JavaScript" on every load while the bundle
-    // arrives. New exceptions need human review and an entry in the allowlist
-    // in `core/gate_conformance.test.ts`.
-    passageHtml: `<noscript><p class="external-notice">This text is saved in your browser, so reading it needs JavaScript.</p></noscript>`,
+    passageHtml: `<p class="external-notice" data-nojs-only>This text is saved in your browser, so reading it needs JavaScript.</p>`,
     noticesHtml: "",
     sourceHtml: "",
     loaderAttrs: {

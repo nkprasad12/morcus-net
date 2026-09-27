@@ -84,13 +84,26 @@ body.resizing-panels {
     outline-offset: 1px;
   }
 
-  /* No-JS (and pre-upgrade): the splitter is an inert dividing seam. Its drag
-     handle is `data-js-only`. */
-  .reader-splitter:not([data-upgraded] *) {
+  /* No-JS, or a reader whose JS failed: the splitter is an inert dividing
+     seam (its drag handle is `data-js-only`). Appearance only, so this keys
+     on `(scripting)` rather than on upgrade: with JS on, the splitter looks
+     draggable from first paint. */
+  @media (scripting: none) {
+    .reader-splitter {
+      cursor: default;
+    }
+
+    .reader-splitter:hover::before {
+      background-color: var(--border);
+      width: 2px;
+    }
+  }
+
+  [data-js-failed] .reader-splitter {
     cursor: default;
   }
 
-  .reader-splitter:not([data-upgraded] *):hover::before {
+  [data-js-failed] .reader-splitter:hover::before {
     background-color: var(--border);
     width: 2px;
   }
