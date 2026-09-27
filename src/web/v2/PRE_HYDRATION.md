@@ -21,7 +21,9 @@ Our architecture and test suites explicitly planned for **No-JS** (scripting dis
 
 ## 2. Root Cause: Four Disjoint Definitions of "Is JS Active?"
 
-> [!NOTE] > **Resolved.** All four mechanisms below were replaced by a single owner-driven gate: `data-js-only` / `data-nojs-only`, revealed by the owner's `data-upgraded` marker (see "JS-only and No-JS-only UI" in [README.md](README.md) and the rule block in [`v2-critical.css`](v2-critical.css)). The global `.has-js` class was removed, and [`core/gate_conformance.test.ts`](core/gate_conformance.test.ts) fails if any of the old mechanisms come back. The table is kept for history.
+> [!NOTE] > **Resolved.** All four mechanisms below were replaced by a single gate: `data-js-only` / `data-nojs-only` (see "JS-only and No-JS-only UI" in [README.md](README.md) and the rule block in [`v2-critical.css`](v2-critical.css)). The global `.has-js` class was removed, and [`core/gate_conformance.test.ts`](core/gate_conformance.test.ts) fails if any of the old mechanisms come back. The table is kept for history.
+>
+> **Correction.** The first version keyed No-JS fallbacks on the owner's `data-upgraded` marker, which flashed them on every load. `(scripting)` is back, for paint only: `@media (scripting: enabled)` hides `[data-nojs-only]` from first paint and `@media (scripting: none)` hides `[data-js-only]`. Behaviour still keys on upgrade: `[data-js-only]` stays `visibility: hidden` until its owner is `data-upgraded`, and `data-js-failed` (bundle `onerror`, or a throwing `onConnect`) brings the fallbacks back.
 
 UI V2 currently uses four different mechanisms to distinguish "No-JS" from "JS-enhanced". During the pre-hydration window on a JS-enabled browser, **two of them report JS = ON while the other two report JS = OFF**:
 
@@ -34,9 +36,10 @@ UI V2 currently uses four different mechanisms to distinguish "No-JS" from "JS-e
 
 ### Design Principles for Pre-Hydration Safety
 
-1. **Gate on Upgrade (`.has-js` / `:defined`), Not Parser Scripting (`<noscript>` / `@media (scripting)`):**
-   - Controls that only work once a custom element is upgraded (e.g., `#reader-settings-btn`) should be hidden via `:not(:defined)` or `:root:not(.has-js)`, never `@media (scripting: none)`.
-   - Conversely, No-JS form submit fallbacks (like the dictionary settings `"Apply"` button) should be hidden by CSS once upgraded (`morcus-dict-settings:defined .settings-noscript-actions { display: none; }` or `:root.has-js ...`) rather than wrapped in `<noscript>`. That way, the form remains submittable both before `v2.js` arrives and if `v2.js` fails to load on a flaky connection.
+1. **Paint from `(scripting)`, Behaviour from Upgrade:**
+   - _Superseded:_ this principle originally said to gate on upgrade, never `@media (scripting)`. That flashed every No-JS fallback on every load; see the correction above.
+   - Controls that only work once a custom element is upgraded (e.g., `#reader-settings-btn`) are `data-js-only`: they take their space from first paint but stay `visibility: hidden` until the owner is upgraded, so nothing shifts and nothing dead is clickable.
+   - No-JS fallbacks (like the dictionary settings `"Apply"` button) are `data-nojs-only` rather than `<noscript>`, so if `v2.js` fails to load, `data-js-failed` can show them again.
 2. **Non-Destructive `onConnect()` Hydration:**
    - When `onConnect()` runs, the user may have already scrolled (`window.scrollY > 0`), typed into an `<input>`, toggled a `<details>` element or checkbox, or triggered a `:target` hash navigation. `onConnect()` must reconcile with live DOM state rather than blindly overwriting it.
 
