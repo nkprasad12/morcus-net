@@ -7,6 +7,8 @@ import {
   registerElement,
   setHtml,
   setPageWidth,
+  setPrepaint,
+  syncPageWidth,
   settingsStore,
 } from "@/web/v2/core/index.client";
 import {
@@ -304,6 +306,7 @@ export class MorcusDictSettings extends BaseElement {
     // Server-rendered only on standalone pages (omitted when embedded).
     const widthSelect = this.scope.$<HTMLSelectElement>("#dict-width-select");
     if (widthSelect) {
+      syncPageWidth("dict");
       widthSelect.value = getPageWidth("dict");
       this.scope.listen(widthSelect, "change", () =>
         setPageWidth("dict", widthSelect.value)
@@ -311,7 +314,8 @@ export class MorcusDictSettings extends BaseElement {
     }
   }
 
-  private syncUi() {
+  /** `record`: also record the highlight scale for pre-paint (see applyScale). */
+  private syncUi(record = true) {
     for (const cb of this.scope.$$<HTMLInputElement>(".dict-checkbox")) {
       const key = cb.dataset.key || cb.value;
       if (key) {
@@ -336,7 +340,7 @@ export class MorcusDictSettings extends BaseElement {
       valueDisplayEl.textContent = `${this.strength}%`;
     }
 
-    this.applyScale(this.strength);
+    this.applyScale(this.strength, record);
   }
 
   private saveDictSelection() {
@@ -362,19 +366,25 @@ export class MorcusDictSettings extends BaseElement {
 
   private updateStrength(newStrength: number, persist: boolean) {
     this.strength = newStrength;
-    this.syncUi();
+    this.syncUi(persist);
 
     if (persist) {
       settingsStore.update({ highlightStrength: newStrength });
     }
   }
 
-  private applyScale(strength: number) {
-    const scale = strength / 50;
-    document.documentElement.style.setProperty(
-      "--highlight-scale",
-      String(scale)
-    );
+  /**
+   * Applies the highlight scale to <html>. With `record`, it's also recorded
+   * for the critical script (on connect and when a change is committed, not
+   * on every slider tick).
+   */
+  private applyScale(strength: number, record: boolean) {
+    const scale = String(strength / 50);
+    if (record) {
+      setPrepaint("--highlight-scale", scale);
+    } else {
+      document.documentElement.style.setProperty("--highlight-scale", scale);
+    }
   }
 }
 

@@ -6,6 +6,7 @@ import {
   pickValid,
   registerElement,
   setPageWidth,
+  syncPageWidth,
   storage,
 } from "@/web/v2/core/index.client";
 import {
@@ -298,10 +299,11 @@ export class MorcusReaderSettings extends BaseElement {
       });
     }
 
-    // Page width lives in GlobalSettings (read pre-paint by the critical
-    // script), not in ReaderPreferences.
+    // Page width lives in GlobalSettings, not in ReaderPreferences, and is
+    // applied pre-paint from the `setPrepaint` snapshot.
     const widthSelect = this.scope.$<HTMLSelectElement>("#reader-width-select");
     if (widthSelect) {
+      syncPageWidth("reader");
       widthSelect.value = getPageWidth("reader");
       this.scope.listen(widthSelect, "change", () => {
         setPageWidth("reader", widthSelect.value);

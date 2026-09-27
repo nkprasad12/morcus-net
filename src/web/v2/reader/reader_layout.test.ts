@@ -333,6 +333,33 @@ describe("ReaderLayoutController", () => {
     controller.dispose();
   });
 
+  test("records committed widths for pre-paint, and reset clears them", () => {
+    const root = document.documentElement;
+    const rootWidth = () => root.style.getPropertyValue("--dict-width");
+    localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "512");
+    const controller = connectController({ root: container });
+    const splitter = controller.splitter!;
+    jest
+      .spyOn(controller.splitLayout!, "getBoundingClientRect")
+      .mockReturnValue({ width: 1200 } as DOMRect);
+
+    // Connect re-records the saved width (heals a stale snapshot).
+    expect(rootWidth()).toBe("512px");
+    expect(localStorage.getItem("morcus_prepaint")).toContain("512px");
+
+    splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
+    expect(rootWidth()).toBe("536px");
+
+    splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(rootWidth()).toBe("");
+    expect(localStorage.getItem("morcus_prepaint")).not.toContain(
+      "--dict-width"
+    );
+
+    controller.dispose();
+    root.removeAttribute("style");
+  });
+
   test("setActive toggles active and empty CSS classes on splitLayout", () => {
     const controller = connectController({ root: container });
     const splitLayout = controller.splitLayout!;

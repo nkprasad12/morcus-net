@@ -2,8 +2,8 @@
  *
  * <html data-reader-width="…"> / <html data-dict-width="…"> holds the
  * non-default preset: narrow | wide | full. No attribute means Default.
- * It is set before first paint by shell/critical_theme.client.ts and on
- * change by core/page_width.client.ts.
+ * core/page_width.client.ts sets it and records it with `setPrepaint`, so
+ * shell/critical_theme.client.ts applies it before first paint.
  *
  * "Full" uses 100vw: it is never the binding constraint, so the calc()
  * expressions built on these variables (see dict/dict_toc.css) work

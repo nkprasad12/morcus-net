@@ -88,12 +88,17 @@ describe("MorcusDictSettings", () => {
 
     // Verify localStorage has not updated before change event
     expect(localStorage.getItem("GlobalSettings")).toBeNull();
+    // Connect recorded the initial scale for pre-paint; the input tick didn't.
+    const prepaint = () =>
+      JSON.parse(localStorage.getItem("morcus_prepaint") ?? "{}");
+    expect(prepaint()["--highlight-scale"]).toBe("1");
 
     // Trigger change
     slider.dispatchEvent(new Event("change"));
 
     const stored = JSON.parse(localStorage.getItem("GlobalSettings")!);
     expect(stored.highlightStrength).toBe(80);
+    expect(prepaint()["--highlight-scale"]).toBe("1.6");
   });
 
   test("closes popover on Escape key", () => {
