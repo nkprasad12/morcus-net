@@ -6,6 +6,7 @@ import {
 import * as path from "path";
 import * as fs from "fs";
 import { V2_BROWSERSLIST } from "@/web/v2/browser_targets.common";
+import { getV2BuildDir } from "@/web/v2/shell/asset_manifest.server";
 import {
   checkV2BundleBudget,
   formatV2BundleSizeReport,
@@ -77,7 +78,7 @@ function v2ManifestPlugin(
 }
 
 export function getV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
-  const outDir = path.resolve(process.cwd(), "build/v2");
+  const outDir = getV2BuildDir();
 
   return {
     source: {
