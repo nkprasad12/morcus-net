@@ -128,7 +128,7 @@ body {
  *   stays gated too, so lazily-loaded components wait for their chunk.
  *
  * `data-js-failed` (set by `BaseElement` when `onConnect()` throws, or on
- * <html> when the bundle fails) drops the JS-only controls in its subtree and
+ * <html> when `v2.js` fails to load) drops the JS-only controls in its subtree and
  * brings the No-JS fallbacks back.
  */
 

@@ -103,11 +103,11 @@ Follow these rules whenever adding or modifying UI V2 features:
 
 Two separate facts decide two separate things:
 
-| Question                  | Decided by                                    | Known              | Effect                                                                                                                                                         |
-| :------------------------ | :-------------------------------------------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **What is painted?**      | `@media (scripting: enabled / none)`          | Before first paint | With scripting on, `data-nojs-only` is never painted, so fallbacks can't flash. With it off, `data-js-only` is never painted.                                  |
-| **What works, and when?** | `data-upgraded` on the owner                  | At upgrade         | Until then, `data-js-only` keeps its box but is `visibility: hidden` (invisible, unfocusable, hidden from assistive tech), so nothing shifts when it appears.  |
-| **What if JS broke?**     | `data-js-failed` on the owner, or on `<html>` | On failure         | JS-only UI in that subtree is dropped and its fallbacks are painted again. Set by `BaseElement` when `onConnect()` throws, and on `<html>` when `v2.js` fails. |
+| Question                  | Decided by                                    | Known              | Effect                                                                                                                                                                 |
+| :------------------------ | :-------------------------------------------- | :----------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **What is painted?**      | `@media (scripting: enabled / none)`          | Before first paint | With scripting on, `data-nojs-only` is never painted, so fallbacks can't flash. With it off, `data-js-only` is never painted.                                          |
+| **What works, and when?** | `data-upgraded` on the owner                  | At upgrade         | Until then, `data-js-only` keeps its box but is `visibility: hidden` (invisible, unfocusable, hidden from assistive tech), so nothing shifts when it appears.          |
+| **What if JS broke?**     | `data-js-failed` on the owner, or on `<html>` | On failure         | JS-only UI in that subtree is dropped and its fallbacks are painted again. Set by `BaseElement` when `onConnect()` throws, and on `<html>` when `v2.js` fails to load. |
 
 **Styling that differs by mode** follows the same split. Ask whether a rule changes what the element **does** or only how it **looks**:
 
