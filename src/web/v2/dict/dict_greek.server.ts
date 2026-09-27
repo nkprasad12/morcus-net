@@ -36,7 +36,7 @@ export function renderGreekFallbackHtml(query: string): string {
             </div>
           </details>
 
-          <label class="greek-auto-open-label">
+          <label class="greek-auto-open-label" data-js-only>
             <input type="checkbox" class="greek-auto-open-checkbox" />
             <span class="greek-auto-open-text">Automatically open embedded Logeion searches</span>
           </label>

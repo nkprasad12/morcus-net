@@ -176,13 +176,11 @@
   white-space: nowrap;
 }
 
-/* Paste, the tabs, and the saved list need the loader. Without it (or until
-   it is defined) only the web-page form shows, with a note. With it, the
-   checked tab picks the panel. */
-morcus-external-loader:not(:defined) .external-js-only,
-morcus-external-loader:not(:defined) .external-for-paste,
-morcus-external-loader:defined .external-nojs-note,
-morcus-external-loader:defined:has(.external-source-tab [value="paste"]:checked)
+/* The tabs, the paste panel and the saved list are `data-js-only`. Once the
+   loader is upgraded, the checked tab picks the panel. */
+morcus-external-loader[data-upgraded]:has(
+    .external-source-tab [value="paste"]:checked
+  )
   .external-for-url,
 morcus-external-loader:has(.external-source-tab [value="url"]:checked)
   .external-for-paste {

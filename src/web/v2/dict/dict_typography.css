@@ -139,8 +139,9 @@ a.lsSenseBullet:visited {
   pointer-events: none;
 }
 
-/* Once JS is active, disable static CSS fallback so anchored popover takes over */
-html.has-js .lsHover:focus::after {
+/* Once the owning component is upgraded, the anchored popover takes over from
+   the static CSS fallback. */
+[data-upgraded] .lsHover:focus::after {
   display: none;
 }
 

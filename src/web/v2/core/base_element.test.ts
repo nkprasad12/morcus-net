@@ -883,3 +883,35 @@ describe("BaseElement async cancellation", () => {
     });
   });
 });
+
+class TestThrowingConnectElement extends BaseElement {
+  protected override onConnect(): void {
+    throw new Error("broken onConnect");
+  }
+}
+
+registerElement("test-throwing-connect-element", TestThrowingConnectElement);
+
+describe("JS gate marker (data-upgraded)", () => {
+  test("is set after connect and cleared on disconnect", () => {
+    const el = document.createElement("morcus-test-base-element");
+    expect(el.hasAttribute("data-upgraded")).toBe(false);
+
+    document.body.appendChild(el);
+    expect(el.hasAttribute("data-upgraded")).toBe(true);
+
+    el.remove();
+    expect(el.hasAttribute("data-upgraded")).toBe(false);
+
+    // Moving (disconnect + reconnect) re-marks the element.
+    document.body.appendChild(el);
+    expect(el.hasAttribute("data-upgraded")).toBe(true);
+    el.remove();
+  });
+
+  test("is not set when onConnect throws, so No-JS fallbacks stay visible", () => {
+    const el = new TestThrowingConnectElement();
+    expect(() => el.connectedCallback()).toThrow("broken onConnect");
+    expect(el.hasAttribute("data-upgraded")).toBe(false);
+  });
+});

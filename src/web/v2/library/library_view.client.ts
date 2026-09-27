@@ -23,6 +23,11 @@ export class MorcusLibraryView extends BaseElement {
         this.currentQuery = input.value.trim().toLowerCase();
         this.applyFilter();
       });
+      // PH2: the input is usable before upgrade; apply anything already typed.
+      this.currentQuery = input.value.trim().toLowerCase();
+      if (this.currentQuery) {
+        this.applyFilter();
+      }
     }
 
     this.scope.delegate<HTMLButtonElement>(

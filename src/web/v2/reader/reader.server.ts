@@ -243,6 +243,7 @@ export function renderReaderSettingsButtonHtml(): string {
   return `            <button type="button"
                     class="reader-btn reader-settings-btn"
                     id="reader-settings-btn"
+                    data-js-only
                     aria-expanded="false"
                     aria-controls="reader-settings-popover"
                     aria-label="Appearance &amp; Typography"
@@ -390,7 +391,7 @@ export function renderReaderDictPanelHtml(
              aria-valuemin="300"
              aria-valuemax="750"
              aria-valuenow="420">
-          <div class="reader-splitter-handle" aria-hidden="true"></div>
+          <div class="reader-splitter-handle" aria-hidden="true" data-js-only></div>
         </div>
 
         <!-- Right / Bottom Column: Dictionary Panel (Adaptive Sheet on Mobile) -->
@@ -415,8 +416,8 @@ export function renderReaderDictPanelHtml(
                     )}</strong></span>
                      <a href="${activePageUrl}#reader-dict-dismissed" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
                   : `<a href="#reader-dict" class="reader-sheet-label reader-sheet-open-link" title="Open Dictionary Search">
-                       <span class="reader-teaser-nojs">Open Dictionary Search &uarr;</span>
-                       <span class="reader-teaser-js">Tap any word to view definitions</span>
+                       <span class="reader-teaser-nojs" data-nojs-only>Open Dictionary Search &uarr;</span>
+                       <span class="reader-teaser-js" data-js-only>Tap any word to view definitions</span>
                      </a>
                      <a href="#reader-dict-dismissed" class="reader-sheet-close reader-sheet-close-target" aria-label="Close dictionary panel" title="Close">✕</a>`
               }

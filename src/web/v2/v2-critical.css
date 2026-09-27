@@ -11,7 +11,8 @@
  *    - Core box-sizing and body background/text/font resets.
  *    - Header/App Bar persistent navigation bar layout (desktop + mobile).
  *    - Content container max-width alignment to prevent horizontal layout snap.
- *    - Custom elements (:not(:defined)) hide rules before hydration.
+ *    - The JS gate (`data-js-only` / `data-nojs-only`), so JS-dependent UI is
+ *      correct from first paint.
  *
  * All other component styles must go in individual stylesheets imported via v2.css.
  */
@@ -108,7 +109,26 @@ body {
   padding: var(--space-5) var(--space-6) max(var(--space-9), 24px);
 }
 
-morcus-theme-toggle:not(:defined),
-morcus-report-dialog:not(:defined) {
-  display: none;
+/*
+ * THE JS GATE. This is the only way V2 shows or hides UI based on whether
+ * JavaScript is running; see "JS-only and No-JS-only UI" in README.md.
+ *
+ * - `data-js-only`: needs JS. Hidden until the element or an ancestor carries
+ *   `data-upgraded`, which its owner sets once its behaviour is attached
+ *   (`BaseElement` does this for every custom element after `onConnect()`).
+ *   Also hidden under any custom element that isn't registered yet, so
+ *   lazily-loaded components stay gated until their chunk arrives.
+ * - `data-nojs-only`: a No-JS fallback. Hidden once its owner is upgraded.
+ *
+ * Before the bundle runs (the pre-hydration window), both behave exactly as
+ * they do with scripting disabled, and so does a component whose
+ * `onConnect()` threw.
+ */
+[data-js-only]:not([data-upgraded], [data-upgraded] *),
+:not(:defined) [data-js-only],
+[data-upgraded] [data-nojs-only]:not(:not(:defined) *),
+[data-nojs-only][data-upgraded] {
+  /* Must beat any component `display` rule on the gated element. */
+  /* stylelint-disable-next-line declaration-no-important */
+  display: none !important;
 }

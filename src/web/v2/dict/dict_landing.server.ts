@@ -190,7 +190,7 @@ export function renderDictLandingHtml(
             </details>
 
             <!-- Only displayed when JS is active since the slider is client-injected -->
-            <div class="legend-settings-tip js-only">
+            <div class="legend-settings-tip" data-js-only>
               <svg class="landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="${ICON_PATHS.tune}"></path>
               </svg>

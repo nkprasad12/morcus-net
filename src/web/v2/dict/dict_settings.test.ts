@@ -220,4 +220,68 @@ describe("MorcusDictSettings", () => {
     expect(details.open).toBe(false);
     expect(btn.getAttribute("aria-expanded")).toBe("false");
   });
+
+  describe("pre-hydration edits (PH1)", () => {
+    function renderSsr(): HTMLElement {
+      // Built detached so the element doesn't connect until appended,
+      // mirroring server HTML that is interactive before v2.js arrives.
+      const container = document.createElement("div");
+      container.innerHTML = `
+        <morcus-dict-settings>
+          <details class="dict-settings-details" open>
+            <summary class="settings-btn"></summary>
+            <div class="settings-popover">
+              <input type="checkbox" id="toggle-inflected" class="inflected-checkbox" checked />
+              <input type="checkbox" class="dict-checkbox" data-key="L&S" checked />
+              <input type="checkbox" class="dict-checkbox" data-key="EGL" />
+            </div>
+          </details>
+        </morcus-dict-settings>
+      `;
+      return container;
+    }
+
+    test("keeps checkbox changes made before upgrade and applies them", () => {
+      const container = renderSsr();
+      const el = container.querySelector<HTMLElement>("morcus-dict-settings")!;
+      const ls = el.querySelector<HTMLInputElement>('[data-key="L&S"]')!;
+      const egl = el.querySelector<HTMLInputElement>('[data-key="EGL"]')!;
+      const inflected =
+        el.querySelector<HTMLInputElement>("#toggle-inflected")!;
+
+      // The user clicks before the component upgrades.
+      ls.checked = false;
+      egl.checked = true;
+      inflected.checked = false;
+
+      let selection: any = null;
+      let inflection: any = null;
+      el.addEventListener("dict-selection-change", (e: any) => {
+        selection = e.detail;
+      });
+      el.addEventListener("dict-inflected-change", (e: any) => {
+        inflection = e.detail;
+      });
+      document.body.appendChild(container);
+
+      expect(ls.checked).toBe(false);
+      expect(egl.checked).toBe(true);
+      expect(inflected.checked).toBe(false);
+      expect(selection.dictKeys).toContain("EGL");
+      expect(selection.dictKeys).not.toContain("L&S");
+      expect(inflection).toEqual({ isInflected: false });
+    });
+
+    test("emits nothing when the user changed nothing", () => {
+      const container = renderSsr();
+      const el = container.querySelector<HTMLElement>("morcus-dict-settings")!;
+      const events: string[] = [];
+      el.addEventListener("dict-selection-change", () => events.push("dict"));
+      el.addEventListener("dict-inflected-change", () => events.push("infl"));
+
+      document.body.appendChild(container);
+
+      expect(events).toEqual([]);
+    });
+  });
 });

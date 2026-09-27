@@ -41,6 +41,10 @@ export class MorcusGreekEmbed extends BaseElement {
     }
 
     if (this.detailsEl) {
+      // PH4: the server never renders `open`, so an open disclosure here was
+      // opened by the user before upgrade; auto-open only ever adds to that.
+      // The auto-open checkbox itself is `data-js-only`, so it can't have
+      // been toggled before upgrade.
       if (isAutoOpen && !this.detailsEl.open) {
         this.detailsEl.open = true;
       }

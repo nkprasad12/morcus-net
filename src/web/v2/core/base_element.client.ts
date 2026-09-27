@@ -3,6 +3,7 @@ import {
   type CleanupFn,
   type Unregister,
 } from "@/web/v2/core/disposable.client";
+import { clearUpgraded, markUpgraded } from "@/web/v2/core/js_gate.client";
 import {
   syncQueryParam,
   type QueryParamSync,
@@ -547,9 +548,14 @@ export abstract class BaseElement<
     for (const controller of existingControllers) {
       controller.connect?.();
     }
+    // Reveal this element's `data-js-only` UI (see `core/js_gate.client.ts`).
+    // Only reached if `onConnect()` didn't throw, so a broken component keeps
+    // showing its No-JS fallbacks rather than dead controls.
+    markUpgraded(this);
   }
 
   disconnectedCallback() {
+    clearUpgraded(this);
     try {
       for (const controller of this.controllers) {
         try {

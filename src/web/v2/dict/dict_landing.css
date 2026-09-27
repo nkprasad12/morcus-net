@@ -260,11 +260,6 @@
   flex-shrink: 0;
 }
 
-/* Hide JS-only features when JavaScript is disabled */
-html:not(.has-js) .js-only {
-  display: none;
-}
-
 @media (max-width: 600px) {
   .landing-container {
     gap: var(--space-6);

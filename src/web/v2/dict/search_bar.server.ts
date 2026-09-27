@@ -71,7 +71,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   }).join("\n");
 
   const pageWidthHtml = options.includePageWidth
-    ? `<div class="page-width-row">
+    ? `<div class="page-width-row" data-js-only>
             <div class="settings-divider" role="separator"></div>
             ${renderPageWidthSelect(
               "dict-width-select",
@@ -120,11 +120,9 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
               ${dictItemsHtml}
             </div>
             ${pageWidthHtml}
-            <noscript>
-              <div class="settings-noscript-actions">
-                <button type="submit" class="btn btn-secondary settings-apply-btn">Apply Selection</button>
-              </div>
-            </noscript>
+            <div class="settings-noscript-actions" data-nojs-only>
+              <button type="submit" class="btn btn-secondary settings-apply-btn">Apply Selection</button>
+            </div>
           </div>
         </details>
       </morcus-dict-settings>

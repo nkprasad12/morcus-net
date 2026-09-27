@@ -194,20 +194,3 @@ a.reader-sheet-open-link:hover {
 .reader-dict-panel:target .reader-sheet-close-target {
   display: inline-flex;
 }
-
-/* Progressive enhancement for drawer teaser text */
-.reader-teaser-nojs {
-  display: inline;
-}
-
-.reader-teaser-js {
-  display: none;
-}
-
-html.has-js .reader-teaser-nojs {
-  display: none;
-}
-
-html.has-js .reader-teaser-js {
-  display: inline;
-}

@@ -714,6 +714,64 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     });
   });
 
+  test("does not autofocus the landing input if the user has scrolled (PH9)", () => {
+    Object.defineProperty(window, "scrollY", {
+      value: 350,
+      writable: true,
+      configurable: true,
+    });
+    const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
+    el.innerHTML = `
+      <form class="search-form" action="/v2/dicts" method="GET">
+        <div class="input-wrapper">
+          <input type="text" name="q" class="input" value="" />
+        </div>
+      </form>
+      <output id="dict-results" class="results"></output>
+    `;
+    try {
+      document.body.appendChild(el);
+      expect(document.activeElement).not.toBe(el.querySelector("input.input"));
+    } finally {
+      Object.defineProperty(window, "scrollY", {
+        value: 0,
+        writable: true,
+        configurable: true,
+      });
+    }
+  });
+
+  test("treats text typed before upgrade as a search in progress (PH3)", (done) => {
+    const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
+    el.innerHTML = `
+      <form class="search-form" action="/v2/dicts" method="GET">
+        <div class="input-wrapper">
+          <input type="text" name="q" class="input" value="" />
+        </div>
+      </form>
+      <output id="dict-results" class="results"></output>
+    `;
+    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
+    const scrollMock = jest.fn();
+    resultsEl.scrollIntoView = scrollMock;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+
+    // Landing page (no ?q=); the user types before v2.js arrives.
+    const container = document.createElement("div");
+    container.appendChild(el);
+    input.value = "hab";
+
+    document.body.appendChild(container);
+
+    requestAnimationFrame(() => {
+      // Not mistaken for a server-rendered results page.
+      expect(scrollMock).not.toHaveBeenCalled();
+      // The typed text is kept.
+      expect(input.value).toBe("hab");
+      done();
+    });
+  });
+
   test("still reacts to suggestion-select after the element is re-attached", () => {
     const el = createDictSearch();
     const suggestions = el.querySelector("morcus-dict-suggestions");

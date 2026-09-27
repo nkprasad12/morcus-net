@@ -33,7 +33,7 @@ const TUNE_PATH = ICON_PATHS.tune;
  * This component intentionally uses native `<details>` / `<summary>` disclosure semantics
  * rather than `AnchoredPopoverController`. The `<details>` structure is a mandatory requirement
  * of UI V2's Zero-JS baseline (Core Principle 1), enabling dictionary selection and form
- * submission via `<noscript>` without JavaScript.
+ * submission via a `data-nojs-only` Apply button without JavaScript (and before upgrade).
  *
  * In client enhancement, `detailsEl.open` acts as the single canonical source of truth for
  * open/closed state (preventing `hidden`/`<details open>` attribute desync), dismissal is
@@ -53,8 +53,12 @@ export class MorcusDictSettings extends BaseElement {
     this.strength = this.computeInitialStrength();
     this.initActiveDicts();
     this.initInflectedState();
+    const edits = this.adoptPreHydrationEdits();
     this.enhanceMarkup();
     this.syncUi();
+    // Apply what the user did before upgrade, as if they'd done it just now.
+    if (edits.dicts) this.saveDictSelection();
+    if (edits.inflected) this.saveInflected();
 
     this.scope.use(
       bindDismissable({
@@ -115,6 +119,38 @@ export class MorcusDictSettings extends BaseElement {
       parseInflectionParam(searchParams.getAll("o")) ??
       inflectedSettingsStore.get() ??
       true;
+  }
+
+  /**
+   * PH1: the popover opens natively before upgrade, so the user may already
+   * have ticked checkboxes. A box whose `checked` differs from its
+   * server-rendered `defaultChecked` was changed by the user; fold that into
+   * the resolved state so `syncUi()` doesn't revert it.
+   */
+  private adoptPreHydrationEdits(): { dicts: boolean; inflected: boolean } {
+    let dicts = false;
+    for (const cb of this.scope.$$<HTMLInputElement>(".dict-checkbox")) {
+      const key = cb.dataset.key || cb.value;
+      if (!key || cb.checked === cb.defaultChecked) continue;
+      dicts = true;
+      if (cb.checked) {
+        this.activeDictKeys.add(key);
+      } else {
+        this.activeDictKeys.delete(key);
+      }
+    }
+    let inflected = false;
+    const inflectedCheckbox = this.scope.$<HTMLInputElement>(
+      "#toggle-inflected, .inflected-checkbox"
+    );
+    if (
+      inflectedCheckbox &&
+      inflectedCheckbox.checked !== inflectedCheckbox.defaultChecked
+    ) {
+      inflected = true;
+      this.isInflected = inflectedCheckbox.checked;
+    }
+    return { dicts, inflected };
   }
 
   private enhanceMarkup() {
@@ -261,8 +297,7 @@ export class MorcusDictSettings extends BaseElement {
       "#toggle-inflected, .inflected-checkbox",
       (_e, target) => {
         this.isInflected = target.checked;
-        inflectedSettingsStore.set(this.isInflected);
-        this.emit("dict-inflected-change", { isInflected: this.isInflected });
+        this.saveInflected();
       }
     );
 
@@ -309,6 +344,11 @@ export class MorcusDictSettings extends BaseElement {
     dictSettingsStore.set(keys);
     const bitmask = encodeDictBitmask(keys);
     this.emit("dict-selection-change", { dictKeys: keys, bitmask });
+  }
+
+  private saveInflected() {
+    inflectedSettingsStore.set(this.isInflected);
+    this.emit("dict-inflected-change", { isInflected: this.isInflected });
   }
 
   private closeSettingsPopover() {

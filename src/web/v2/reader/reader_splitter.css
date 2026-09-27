@@ -84,16 +84,13 @@ body.resizing-panels {
     outline-offset: 1px;
   }
 
-  /* No-JS Mode: Splitter is an inert 1px dividing seam without drag handle */
-  :root:not(.has-js) .reader-splitter {
+  /* No-JS (and pre-upgrade): the splitter is an inert dividing seam. Its drag
+     handle is `data-js-only`. */
+  .reader-splitter:not([data-upgraded] *) {
     cursor: default;
   }
 
-  :root:not(.has-js) .reader-splitter-handle {
-    display: none;
-  }
-
-  :root:not(.has-js) .reader-splitter:hover::before {
+  .reader-splitter:not([data-upgraded] *):hover::before {
     background-color: var(--border);
     width: 2px;
   }

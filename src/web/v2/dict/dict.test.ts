@@ -880,7 +880,7 @@ describe("dict_ssr", () => {
     expect(html).toContain('target="_blank"');
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain('title="View plate on mateo.uni-mannheim.de"');
-    expect(html).toContain('class="mateo-embed-pane js-only"');
+    expect(html).toContain('class="mateo-embed-pane" data-js-only');
     expect(html).toContain('class="action-btn mateo-toggle-btn"');
     expect(html).toContain("Plate Embed");
     expect(html).toContain(

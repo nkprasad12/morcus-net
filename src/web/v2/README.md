@@ -69,7 +69,7 @@ Follow these rules whenever adding or modifying UI V2 features:
    - **Macronizer**: a `POST` form with a server-rendered result.
    - **Corpus**: a `GET` form with its query and settings (`pageSize`, `contextLen`, `strictMode`) in the URL.
 2. **Don't move server-rendered nodes.** The server owns DOM structure; the client owns state (attributes, classes, listeners). If the JS-enhanced layout needs a different structure, render it in its final place on the server and hide it when JS is inactive. Reparenting SSR nodes in `onConnect()` reloads iframes, drops listeners, and requires fragile `onDisconnect()` restoration.
-3. **Read before writing in `onConnect()` ([PRE_HYDRATION.md §2](PRE_HYDRATION.md#2-root-cause-four-disjoint-definitions-of-is-js-active)).** On a slow connection, the user may have already scrolled (`window.scrollY > 0`), typed into an `<input>`, toggled a `<details>` or checkbox, or triggered a `:target` hash navigation before `v2.js` runs. Reconcile with and adopt live DOM/URL state before writing defaults, and guard initial `focus()` / scroll calls when `window.scrollY > 0`. Never gate pre-hydration controls on `<noscript>` or `@media (scripting: none)`.
+3. **Read before writing in `onConnect()` ([PRE_HYDRATION.md §2](PRE_HYDRATION.md#2-root-cause-four-disjoint-definitions-of-is-js-active)).** On a slow connection, the user may have already scrolled (`window.scrollY > 0`), typed into an `<input>`, toggled a `<details>` or checkbox, or triggered a `:target` hash navigation before `v2.js` runs. Reconcile with and adopt live DOM/URL state before writing defaults, and guard initial `focus()` / scroll calls when `window.scrollY > 0`. Compare against the server-rendered defaults (`defaultChecked`, `defaultValue`, the SSR `open` attribute) to tell user edits from server state. Gate JS-dependent UI only with the JS gate below.
 4. **Extend `core/`; don't fork it.** Shared behaviours (`BaseElement`, `BaseController`, `this.scope`, `fetchAndSwapPartial`, `AnchoredPopoverController`, `DrawerController`, `back_to_top.client.ts`) and shared styles (`core/components.css` for focus rings, buttons, pills, and card headers) live in `core/`. If a slice needs a variation (e.g., a custom scroll container), parameterize the primitive in `core/` instead of copying it into the slice.
 5. **New server templates use `html`, composed with `raw` / `joinHtml`.** Use `html` from `core/html.common.ts` in new `.server.ts` templates as well as `.common.ts` and `.client.ts` (do not add new `he.escape` calls). **Never interpolate a `SafeHtml` directly into another `html` template (`${childSafeHtml}`):** the brand is erased at runtime, so `html` escapes it a second time into literal text. Always compose sub-templates with `joinHtml(parts)` or `raw(childSafeHtml)`.
 6. **Keep new feature code inside its slice.** Keep slice-specific controllers, helpers, and state self-contained inside their topic folder (`dict/`, `reader/`, `external/`, `corpus/`, etc.) without cross-slice entanglement so heavy slices can be split into lazy `import()` chunks ([CODE_HEALTH.md](CODE_HEALTH.md)).
@@ -80,16 +80,29 @@ Follow these rules whenever adding or modifying UI V2 features:
 
 ### Quick Reference (`core/` Primitives)
 
-| For                                               | Use                                                                              | Not                                                                     |
-| ------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Listeners, timers, animation frames, cancellation | `this.scope`: `listen`, `delegate`, `timeout`, `rAF`, `debounce`, `latest(lane)` | Raw `addEventListener` / `setTimeout` in components                     |
-| Updating regions from the server                  | `fetchAndSwapPartial` (`core/partial.client.ts`)                                 | Scraping swapped markup to patch other regions                          |
-| UI that needs JS, or only makes sense without it  | Upgrade-gated visibility (`data-js-only` / `data-nojs-only` as Phase 1 lands)    | `<noscript>`, `@media (scripting: none)`, per-slice `*-js-only` classes |
-| A different layout when JS runs                   | Render it in place on the server; hide it without JS                             | Moving server-rendered nodes on the client                              |
-| Back-to-top                                       | `core/back_to_top.client.ts`                                                     | A slice-local copy                                                      |
-| Focus ring, buttons, pills, card headers          | `core/components.css`                                                            | Redeclaring `outline: 2px solid var(--primary)` per slice               |
-| Building HTML (server, common, client)            | `html`, composed with `raw` / `joinHtml` (`core/html.common.ts`)                 | `${safeHtml}` inside `html` (re-escaped); `he.escape` in new code       |
-| Form-driven UI                                    | A working `<form>` first, then `this.hijackForm` / `this.syncQueryParam`         | Controls that only work with JS                                         |
+| For                                               | Use                                                                                             | Not                                                                                      |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Listeners, timers, animation frames, cancellation | `this.scope`: `listen`, `delegate`, `timeout`, `rAF`, `debounce`, `latest(lane)`                | Raw `addEventListener` / `setTimeout` in components                                      |
+| Updating regions from the server                  | `fetchAndSwapPartial` (`core/partial.client.ts`)                                                | Scraping swapped markup to patch other regions                                           |
+| UI that needs JS, or only makes sense without it  | `data-js-only` / `data-nojs-only` (see [JS-only and No-JS-only UI](#js-only-and-no-js-only-ui)) | `<noscript>`, `@media (scripting)`, `.has-js`, `:defined`, per-slice `*-js-only` classes |
+| A different layout when JS runs                   | Render it in place on the server; hide it without JS                                            | Moving server-rendered nodes on the client                                               |
+| Back-to-top                                       | `core/back_to_top.client.ts`                                                                    | A slice-local copy                                                                       |
+| Focus ring, buttons, pills, card headers          | `core/components.css`                                                                           | Redeclaring `outline: 2px solid var(--primary)` per slice                                |
+| Building HTML (server, common, client)            | `html`, composed with `raw` / `joinHtml` (`core/html.common.ts`)                                | `${safeHtml}` inside `html` (re-escaped); `he.escape` in new code                        |
+| Form-driven UI                                    | A working `<form>` first, then `this.hijackForm` / `this.syncQueryParam`                        | Controls that only work with JS                                                          |
+
+### JS-only and No-JS-only UI
+
+There is exactly one way to show or hide UI depending on whether JavaScript is running:
+
+- **`data-js-only`** on anything that only works with JS (a `type="button"` control, a client-populated list). Hidden until its owner is upgraded.
+- **`data-nojs-only`** on a No-JS fallback (an Apply submit button, "needs JavaScript" notes). Hidden once its owner is upgraded.
+- **The owner** is the nearest element carrying `data-upgraded`. `BaseElement` sets it on every custom element after `onConnect()` returns (and removes it on disconnect), so inside a component there is nothing to do. A global script that wires up one specific element outside any component calls `markUpgraded(el)` from `core/js_gate.client.ts`.
+- **Styling that differs by mode** (not visibility) keys on the same marker: `[data-upgraded] .x` for enhanced, `.x:not([data-upgraded] *)` for No-JS / pre-upgrade.
+
+The rule block lives in [`v2-critical.css`](v2-critical.css), so it's correct from first paint. Before `v2.js` runs (the pre-hydration window), if it fails to load, or if a component's `onConnect()` throws, the page behaves exactly as it does with scripting disabled. Content under a not-yet-registered custom element also stays gated, so lazily loaded chunks work without changes.
+
+There is no global "JS is on" flag. [`core/gate_conformance.test.ts`](core/gate_conformance.test.ts) fails on `<noscript>`, `@media (scripting)`, `.has-js`, `:defined` and `.js-only` classes. **Exceptions require human review** and an allowlist entry with a justification; do not add one to make the test pass.
 
 ---
 
@@ -148,7 +161,7 @@ UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
 ## Theme Switching Model
 
-- **No-JS**: Media query `@media (prefers-color-scheme: dark)` adapts colors automatically based on the user's OS preference. Interactive custom elements (`morcus-theme-toggle` and `morcus-report-dialog`) are hidden using `:not(:defined) { display: none; }` so no dead controls are shown to users without JavaScript.
+- **No-JS**: Media query `@media (prefers-color-scheme: dark)` adapts colors automatically based on the user's OS preference. Interactive custom elements (`morcus-theme-toggle` and `morcus-report-dialog`) carry `data-js-only`, so no dead controls are shown to users without JavaScript (or before upgrade).
 - **With JS**: `<morcus-theme-toggle>` and `<morcus-report-dialog>` initialize and display buttons in the app bar. Theme selection toggles `[data-theme="dark"]` / `[data-theme="light"]` on `document.documentElement` and persists to `localStorage.getItem("GlobalSettings")`. Feedback reporting opens via native `<dialog>` modal and submits via AJAX.
 - **Zero Flicker**: An inline script in `<head>` executes before the first paint to apply the saved theme attribute immediately.
 
