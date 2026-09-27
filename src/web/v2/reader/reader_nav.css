@@ -216,17 +216,6 @@
   letter-spacing: -0.05em;
 }
 
-/* No-JS Mode: reader settings button is hidden because typography preferences mutate client state */
-@media (scripting: none) {
-  .reader-settings-btn {
-    display: none;
-  }
-}
-
-:root:not(.has-js) .reader-settings-btn {
-  display: none;
-}
-
 .reader-btn,
 .reader-btn:visited {
   display: inline-flex;

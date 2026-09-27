@@ -67,7 +67,9 @@ describe("library SSR & client hydration", () => {
   });
 
   describe("MorcusLibraryView", () => {
-    function setupLibraryDOM(): MorcusLibraryView {
+    function setupLibraryDOM(
+      beforeConnect?: (el: MorcusLibraryView) => void
+    ): MorcusLibraryView {
       const el = new MorcusLibraryView();
       el.className = "library-view";
       el.innerHTML = `
@@ -113,6 +115,7 @@ describe("library SSR & client hydration", () => {
           </div>
         </main>
       `;
+      beforeConnect?.(el);
       document.body.appendChild(el);
       return el;
     }
@@ -186,6 +189,24 @@ describe("library SSR & client hydration", () => {
 
       expect(caesarCard.hidden).toBe(false);
       expect(catullusCard.hidden).toBe(false);
+    });
+
+    it("applies a query typed before upgrade (PH2)", () => {
+      const el = setupLibraryDOM((host) => {
+        host.querySelector<HTMLInputElement>("#library-search-input")!.value =
+          "Catullus";
+      });
+
+      expect(
+        el.querySelector<HTMLElement>(
+          '[data-work-id="phi0448.phi001.perseus-lat2"]'
+        )!.hidden
+      ).toBe(true);
+      expect(
+        el.querySelector<HTMLElement>(
+          '[data-work-id="phi0472.phi001.perseus-lat2"]'
+        )!.hidden
+      ).toBe(false);
     });
   });
 });

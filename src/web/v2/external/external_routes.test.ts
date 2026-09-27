@@ -42,7 +42,7 @@ describe("GET /v2/externalReader", () => {
     );
     expect(res.text).toContain('data-page="landing"');
     expect(res.text).toMatch(
-      /class="external-source-tabs external-js-only" role="radiogroup"/
+      /class="external-source-tabs" data-js-only role="radiogroup"/
     );
     // Paste is the default tab.
     expect(res.text).toMatch(

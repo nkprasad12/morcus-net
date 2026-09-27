@@ -230,7 +230,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.saveCurrentSpot();
     this.enhancePassage();
     this.applyPreferences(this.currentPrefs);
-    this.scrollToFirstMatch(window.location.hash);
+    // PH10: without a hash, the page loads at the top, so a non-zero scroll
+    // means the reader scrolled before upgrade; leave them there. With a hash,
+    // the browser's own anchor jump moved the page, so centring still applies.
+    if (window.location.hash || window.scrollY === 0) {
+      this.scrollToFirstMatch(window.location.hash);
+    }
     this.scope.use(closeActiveSectionUI);
 
     this.scope.listen<ReaderSettingsChangeEventDetail>(

@@ -78,11 +78,6 @@
   margin-bottom: 0;
 }
 
-/* The dictionary control needs JS; the reader popover already does. */
-morcus-dict-settings:not(:defined) .page-width-row {
-  display: none;
-}
-
 /* Mobile layouts are already full width, so the preset has no effect. */
 @media (max-width: 640px) {
   .page-width-row {

@@ -8,5 +8,6 @@ import "@/web/v2/shell/mobile_menu.client";
 import "@/web/v2/dict/abbr_popover.client";
 import "@/web/v2/core/deferred_iframe.client";
 
-// Mark document as JS-enhanced to disable static No-JS CSS fallbacks
-document.documentElement.classList.add("has-js");
+// There is deliberately no global "JS is on" flag (the old `.has-js`): each
+// component reveals its own `data-js-only` UI once upgraded. See the JS gate
+// in v2-critical.css.

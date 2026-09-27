@@ -389,7 +389,13 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       }
     );
 
-    const currentQuery = this.inputElement?.value.trim() ?? "";
+    // The input is usable before upgrade, so its live value may be text the
+    // user typed rather than the query the server rendered results for. The
+    // server's value is `defaultValue` (the `value` attribute).
+    const renderedQuery = this.inputElement?.defaultValue.trim() ?? "";
+    const typedBeforeUpgrade =
+      this.inputElement !== null &&
+      this.inputElement.value.trim() !== renderedQuery;
     const hasHash = Boolean(window.location.hash);
     const navEntry = performance.getEntriesByType?.("navigation")?.[0];
     const isBackForward =
@@ -400,8 +406,14 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     const currentParams = new URLSearchParams(window.location.search);
     const isEmbedded = currentParams.get("embedded") === "1";
 
-    if (
-      currentQuery &&
+    if (typedBeforeUpgrade) {
+      // PH3: the user is mid-search; start autocomplete for what's already
+      // typed (if they're still in the box), and don't scroll or refocus.
+      if (document.activeElement === this.inputElement) {
+        this.handleInput();
+      }
+    } else if (
+      renderedQuery &&
       !hasHash &&
       !isBackForward &&
       window.scrollY === 0 &&
@@ -414,11 +426,14 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       });
     } else if (
       !isEmbedded &&
-      !currentQuery &&
+      !renderedQuery &&
       this.inputElement &&
-      document.activeElement === document.body
+      document.activeElement === document.body &&
+      // PH9: a reader who has scrolled down the landing page shouldn't be
+      // yanked back up (or get a keyboard popped up on mobile).
+      window.scrollY === 0
     ) {
-      this.inputElement.focus();
+      this.inputElement.focus({ preventScroll: true });
     }
   }
 

@@ -2720,6 +2720,38 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     createReaderView(passageHtml);
     expect(scrollSpy).not.toHaveBeenCalled();
   });
+
+  test("does not scroll to the match if the reader scrolled before upgrade (PH10)", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.1~2~4"
+    );
+    const scrollSpy = jest.fn();
+    HTMLElement.prototype.scrollIntoView = scrollSpy;
+    Object.defineProperty(window, "scrollY", {
+      value: 500,
+      writable: true,
+      configurable: true,
+    });
+
+    try {
+      createReaderView(`
+        <div class="reader-section" id="sec-1.1.1">
+          <div class="reader-passage" data-tokenize-target="true">
+            <p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p>
+          </div>
+        </div>
+      `);
+      expect(scrollSpy).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, "scrollY", {
+        value: 0,
+        writable: true,
+        configurable: true,
+      });
+    }
+  });
 });
 
 describe("MorcusReaderView dictionary iframe theme synchronization", () => {

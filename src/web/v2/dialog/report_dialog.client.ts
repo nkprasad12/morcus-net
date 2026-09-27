@@ -8,8 +8,8 @@ import {
 /**
  * Progressively enhanced issue and feedback report dialog component (Light DOM mode).
  *
- * - In SSR / No-JS: The entire element is hidden using `morcus-report-dialog:not(:defined) { display: none; }`,
- *   mirroring `morcus-theme-toggle` so no non-functional controls are presented to users without JS.
+ * - In SSR / No-JS: The host carries `data-js-only`, mirroring `morcus-theme-toggle`, so no
+ *   non-functional controls are presented to users without JS (or before upgrade).
  * - When defined: Coordinates the native <dialog> via `showModal()`, focus management,
  *   backdrop clicking, and AJAX form submission.
  */

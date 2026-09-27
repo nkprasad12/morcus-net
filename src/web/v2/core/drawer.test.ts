@@ -186,6 +186,29 @@ describe("DrawerController", () => {
     controller.dispose();
   });
 
+  test("adopts a <details> the user closed before upgrade (PH8)", () => {
+    document.body.innerHTML = `
+      <morcus-dict-toc id="drawer" class="drawer">
+        <details>
+          <summary id="handle" class="drawer-bar">Contents</summary>
+          <div id="content">TOC items</div>
+        </details>
+      </morcus-dict-toc>
+    `;
+    const detailsDrawer = document.getElementById("drawer")!;
+    const controller = connectController({
+      drawer: detailsDrawer,
+      handle: document.getElementById("handle")!,
+      minHeight: 54,
+    });
+
+    expect(detailsDrawer.classList.contains("drawer-minimized")).toBe(true);
+    expect(detailsDrawer.style.getPropertyValue("--drawer-height")).toBe(
+      "54px"
+    );
+    controller.dispose();
+  });
+
   test("handles keyboard navigation (ArrowUp, ArrowDown, Escape)", () => {
     const onEscape = jest.fn();
     const controller = connectController({

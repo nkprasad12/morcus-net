@@ -34,12 +34,12 @@
 
 /* Chrome's own back/forward swipe (the blue arrow bubble) would otherwise fire
  * on the same horizontal gesture that turns the page, navigating history on
- * top of the turn. Suppressed only while swipe turns are live: JS has run
- * (`:defined`), the setting is on (the group's only checkbox), and the device
+ * top of the turn. Suppressed only while swipe turns are live: the reader is
+ * upgraded (`[data-upgraded]`), the setting is on (the group's only checkbox), and the device
  * has a touchscreen. Trade-off: on touchscreen laptops, trackpad history
  * swipes are also off on reader pages until swipe turns are disabled. */
 @media (any-pointer: coarse) {
-  :root:has(morcus-reader-view:defined .settings-touch-nav :checked) {
+  :root:has(morcus-reader-view[data-upgraded] .settings-touch-nav :checked) {
     overscroll-behavior-x: none;
   }
 }

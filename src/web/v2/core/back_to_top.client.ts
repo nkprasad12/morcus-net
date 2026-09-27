@@ -2,6 +2,7 @@ import {
   createSingletonSetup,
   type CleanupFn,
 } from "@/web/v2/core/disposable.client";
+import { clearUpgraded, markUpgraded } from "@/web/v2/core/js_gate.client";
 
 /**
  * Floating "Jump to top" button visibility & instant scroll.
@@ -46,8 +47,10 @@ export const setupBackToTop: (doc?: Document, win?: Window) => CleanupFn =
       };
 
       backToTopBtn.addEventListener("click", onClick);
+      markUpgraded(backToTopBtn);
 
       return () => {
+        clearUpgraded(backToTopBtn);
         win.removeEventListener("scroll", onScroll);
         backToTopBtn.removeEventListener("click", onClick);
       };

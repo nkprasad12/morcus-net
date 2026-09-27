@@ -96,9 +96,10 @@ export function renderExternalLandingContentHtml(
 
   // One form, two sources. The tabs are radios outside the form, so they
   // never submit; CSS shows the chosen panel. Paste fields have no `name`:
-  // the loader reads them and the text never reaches the server. Without JS
-  // (or until `<morcus-external-loader>` is defined), CSS hides the tabs and
-  // the paste panel, leaving the plain GET form for web pages.
+  // the loader reads them and the text never reaches the server. The tabs,
+  // the paste panel and the saved list are `data-js-only`, so without JS (or
+  // until `<morcus-external-loader>` is upgraded) only the plain GET form for
+  // web pages shows.
   return `
     <morcus-external-loader class="external-landing" data-page="landing">
       <header class="external-landing-header">
@@ -106,10 +107,10 @@ export function renderExternalLandingContentHtml(
         <p class="external-landing-lede">Paste a Latin text, or import one from a web page, and read it with the dictionary alongside, just like a work in the library.</p>
       </header>
 
-      <p class="external-nojs-note">Pasting your own text needs JavaScript. You can still import from a web page.</p>
+      <p class="external-nojs-note" data-nojs-only>Pasting your own text needs JavaScript. You can still import from a web page.</p>
 
       <div class="card external-import-card">
-        <div class="external-source-tabs external-js-only" role="radiogroup" aria-label="Text source">
+        <div class="external-source-tabs" data-js-only role="radiogroup" aria-label="Text source">
           <label class="external-source-tab">
             <input type="radio" name="external-source" id="external-source-paste" value="paste"${
               startOnUrl ? "" : " checked"
@@ -125,7 +126,7 @@ export function renderExternalLandingContentHtml(
         </div>
 
         <form class="external-import-form" id="external-form" method="get" action="${EXTERNAL_READER_PATH}">
-          <div class="external-panel external-for-paste">
+          <div class="external-panel external-for-paste" data-js-only>
             <p class="external-error" id="external-paste-error" role="alert" hidden></p>
             <label class="external-field-label" for="external-title">Title <span class="external-optional">(optional)</span></label>
             <input type="text"
@@ -171,13 +172,13 @@ export function renderExternalLandingContentHtml(
 
           <div class="external-form-actions">
             <button type="submit" class="btn btn-primary">Read</button>
-            <span class="external-form-note external-for-paste">Saved in this browser only. Never sent to Morcus.</span>
+            <span class="external-form-note external-for-paste" data-js-only>Saved in this browser only. Never sent to Morcus.</span>
             <span class="external-form-note external-for-url">The page link can be shared.</span>
           </div>
         </form>
       </div>
 
-      <section class="external-saved external-js-only" aria-labelledby="external-saved-title">
+      <section class="external-saved" data-js-only aria-labelledby="external-saved-title">
         <h2 class="external-form-title" id="external-saved-title">Saved on this device</h2>
         <ul class="external-saved-list" id="external-saved-list"></ul>
         <p class="external-form-note" id="external-saved-empty">Texts you read here are saved in this browser.</p>
@@ -435,6 +436,12 @@ function buildLocalModel(
     query: options.query.trim(),
     // Unknown until the text loads; the Macra toggle is omitted.
     hasMacra: false,
+    // JS-GATE EXCEPTION (human-approved; do not copy this pattern). V2 gates
+    // JS-dependent UI with `data-js-only` / `data-nojs-only` only (see
+    // README.md). This notice stays in `<noscript>` because as `data-nojs-only`
+    // it would flash "needs JavaScript" on every load while the bundle
+    // arrives. New exceptions need human review and an entry in the allowlist
+    // in `core/gate_conformance.test.ts`.
     passageHtml: `<noscript><p class="external-notice">This text is saved in your browser, so reading it needs JavaScript.</p></noscript>`,
     noticesHtml: "",
     sourceHtml: "",

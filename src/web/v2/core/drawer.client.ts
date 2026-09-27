@@ -189,6 +189,15 @@ export class DrawerController extends BaseController {
     this.initDrag();
     this.initKeyboard();
     this.initDetailsSync();
+    // PH8: the `<details>` toggles natively before upgrade. If the user
+    // closed it, adopt that rather than leaving the drawer at full height.
+    if (this.details && !this.details.open && !this.isMinimizedClass()) {
+      this.minimize();
+    }
+  }
+
+  private isMinimizedClass(): boolean {
+    return this.drawer?.classList.contains("drawer-minimized") ?? false;
   }
 
   protected override onDisconnect(): void {
