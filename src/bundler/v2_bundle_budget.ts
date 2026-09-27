@@ -9,6 +9,9 @@ export interface V2BundleBudget {
   readonly maxCssGzipBytes: number;
   readonly maxCombinedRawBytes: number;
   readonly maxCombinedGzipBytes: number;
+  /** `critical.js`, inlined into every HTML response. Bytes, not KiB. */
+  readonly maxCriticalJsRawBytes: number;
+  readonly maxCriticalJsGzipBytes: number;
 }
 
 /**
@@ -43,7 +46,18 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   maxCssGzipBytes: 22 * 1024,
   maxCombinedRawBytes: 265 * 1024,
   maxCombinedGzipBytes: 62 * 1024,
+  // critical.js is a fixed-size pre-paint applier (core/prepaint.client.ts):
+  // owners in the bundle compute values and it only copies them, so adding a
+  // pre-paint preference must not grow it. Baseline 2026-09-27: 424 B raw /
+  // 300 B gzip. Do not raise these to fit per-preference logic; move that
+  // logic into the owner instead (see "Pre-paint is a scarce budget" in
+  // src/web/v2/dict/PREFERENCES.md).
+  maxCriticalJsRawBytes: 450,
+  maxCriticalJsGzipBytes: 350,
 };
+
+/** Fixed (unhashed) filename of the inlined critical script. */
+export const CRITICAL_JS_FILE = "critical.js";
 
 export interface V2AssetSizeInfo {
   readonly file: string;
@@ -54,6 +68,8 @@ export interface V2AssetSizeInfo {
 export interface V2BundleSizeReport {
   readonly js?: V2AssetSizeInfo;
   readonly css?: V2AssetSizeInfo;
+  /** Not part of the combined totals: it's inlined, not fetched. */
+  readonly criticalJs?: V2AssetSizeInfo;
   readonly combinedRawBytes: number;
   readonly combinedGzipBytes: number;
   readonly exceeded: boolean;
@@ -65,10 +81,15 @@ export interface V2AssetManifestInput {
   readonly "v2.css"?: string;
 }
 
+/** Bytes below 1 KiB (the critical script), KiB with one decimal above. */
+function formatSize(bytes: number): string {
+  return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} kB`;
+}
+
 function checkAssetBudget(
   outDir: string,
-  label: "JS" | "CSS",
-  manifestKey: "v2.js" | "v2.css",
+  label: "JS" | "CSS" | "Critical JS",
+  manifestKey: "v2.js" | "v2.css" | "critical.js",
   filename: string | undefined,
   maxRawBytes: number,
   maxGzipBytes: number,
@@ -91,16 +112,16 @@ function checkAssetBudget(
 
   if (rawBytes > maxRawBytes) {
     errors.push(
-      `${label} raw size ${(rawBytes / 1024).toFixed(1)} kB exceeds budget ${(
-        maxRawBytes / 1024
-      ).toFixed(1)} kB`
+      `${label} raw size ${formatSize(rawBytes)} exceeds budget ${formatSize(
+        maxRawBytes
+      )}`
     );
   }
   if (gzipBytes > maxGzipBytes) {
     errors.push(
-      `${label} gzip size ${(gzipBytes / 1024).toFixed(1)} kB exceeds budget ${(
-        maxGzipBytes / 1024
-      ).toFixed(1)} kB`
+      `${label} gzip size ${formatSize(gzipBytes)} exceeds budget ${formatSize(
+        maxGzipBytes
+      )}`
     );
   }
 
@@ -137,6 +158,16 @@ export function checkV2BundleBudget(
     errors
   );
 
+  const criticalJs = checkAssetBudget(
+    outDir,
+    "Critical JS",
+    "critical.js",
+    CRITICAL_JS_FILE,
+    budget.maxCriticalJsRawBytes,
+    budget.maxCriticalJsGzipBytes,
+    errors
+  );
+
   const combinedRawBytes = (js?.rawBytes ?? 0) + (css?.rawBytes ?? 0);
   const combinedGzipBytes = (js?.gzipBytes ?? 0) + (css?.gzipBytes ?? 0);
 
@@ -160,6 +191,7 @@ export function checkV2BundleBudget(
   return {
     js,
     css,
+    criticalJs,
     combinedRawBytes,
     combinedGzipBytes,
     exceeded: errors.length > 0,
@@ -185,6 +217,12 @@ export function formatV2BundleSizeReport(
     report.combinedGzipBytes / 1024
   ).toFixed(1)} kB gzip`;
 
+  const criticalStr = report.criticalJs
+    ? `${formatSize(report.criticalJs.rawBytes)} raw / ${formatSize(
+        report.criticalJs.gzipBytes
+      )} gzip`
+    : "missing";
+
   const lines = [
     "UI V2 Bundle Budget (Minified):",
     `  JS:       ${jsStr.padEnd(28)} (budget: < ${(
@@ -202,6 +240,9 @@ export function formatV2BundleSizeReport(
     ).toFixed(1)} kB raw / < ${(budget.maxCombinedGzipBytes / 1024).toFixed(
       1
     )} kB gzip)`,
+    `  Critical: ${criticalStr.padEnd(28)} (budget: <= ${formatSize(
+      budget.maxCriticalJsRawBytes
+    )} raw / <= ${formatSize(budget.maxCriticalJsGzipBytes)} gzip, inlined)`,
   ];
   return lines.join("\n");
 }
