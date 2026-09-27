@@ -21,6 +21,7 @@ import {
   syncIframeTheme,
   tokenizeTargets,
   WakeLockController,
+  registerRevealer,
 } from "@/web/v2/core/index.client";
 import type { SafeHtml } from "@/web/v2/core/html.common";
 import { removeMacrons } from "@/common/text_cleaning";
@@ -291,6 +292,18 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     this.scope.listen(this, "click", this.handleClick);
     this.scope.listen(this, "keydown", this.handlePassageKeydown);
+
+    // PH7: the mobile sheet's open link is `<a href="#reader-dict">`, so
+    // before upgrade the sheet expands via `:target`. Adopt that on connect
+    // (and on later hash navigation) so the drawer's state agrees.
+    const dictPanel = this.querySelector<HTMLElement>("#reader-dict");
+    if (dictPanel) {
+      this.scope.use(
+        registerRevealer(dictPanel, () => this.restoreDrawer(), {
+          ownsHash: true,
+        })
+      );
+    }
 
     this.initBackToTop();
     this.resetDictScroll();
@@ -1162,7 +1175,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     } else if (prefs.lineHeight === "relaxed") {
       this.style.setProperty("--reader-line-height", "1.85");
     } else {
-      this.style.removeProperty("--reader-line-height");
+      // Set, not removed: critical_theme.client.ts may have put a pre-paint
+      // value on :root, which a removed property would inherit. Matches the
+      // `var(--reader-line-height, 1.65)` fallbacks in the reader CSS.
+      this.style.setProperty("--reader-line-height", "1.65");
     }
 
     const fontVal =

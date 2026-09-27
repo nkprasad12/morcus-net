@@ -9,6 +9,7 @@
 
 import { BaseController } from "@/web/v2/core/base_element.client";
 import { AnchoredPopoverController } from "@/web/v2/core/popover.client";
+import { registerRevealer } from "@/web/v2/core/reveal.client";
 
 export interface ReaderTocElements {
   /** The slide-in drawer element (#reader-toc-drawer) */
@@ -91,6 +92,20 @@ export class ReaderTocController extends BaseController {
   protected override onConnect(): void {
     this.resolveElements();
     this.bindFilterEvents();
+    // PH5: `#reader-toc-btn` is `<a href="#reader-toc-drawer">`, so before
+    // upgrade the drawer opens via `:target`. Adopt that on connect (and on
+    // later hash navigation) so the popover's own state agrees.
+    if (this.drawer) {
+      this.scope.use(
+        registerRevealer(
+          this.drawer,
+          () => {
+            if (!this.isOpen()) this.open();
+          },
+          { ownsHash: true }
+        )
+      );
+    }
   }
 
   private resolveElements(): void {

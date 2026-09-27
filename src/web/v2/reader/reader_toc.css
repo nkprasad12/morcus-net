@@ -44,13 +44,14 @@
   background: var(--card-header-bg, var(--bg));
 }
 
-/* Progressive enhancement: Reveal via CSS :target when JavaScript is disabled */
-.reader-toc-drawer:target {
+/* No-JS (and pre-upgrade): open via :target. Once upgraded, the TOC
+   controller adopts the hash (see core/reveal.client.ts) and owns the state. */
+.reader-toc-drawer:target:not([data-upgraded] *) {
   /* stylelint-disable-next-line declaration-no-important */
   display: flex !important;
 }
 
-.reader-toc-drawer[hidden]:not(:target) {
+.reader-toc-drawer[hidden]:not(:target:not([data-upgraded] *)) {
   display: none;
 }
 

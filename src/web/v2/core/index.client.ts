@@ -21,3 +21,5 @@ export * from "@/web/v2/core/disposable.client";
 export * from "@/web/v2/core/page_width.client";
 export * from "@/web/v2/core/wake_lock.client";
 export * from "@/web/v2/core/section_edit.client";
+export * from "@/web/v2/core/reveal.client";
+export * from "@/web/v2/core/js_gate.client";

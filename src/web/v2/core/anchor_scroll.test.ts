@@ -3,12 +3,12 @@
  */
 
 import {
-  expandAncestorDisclosures,
   triggerAnchorHighlight,
   setupAnchorScroll,
 } from "@/web/v2/core/anchor_scroll.client";
+import { registerRevealer, revealTarget } from "@/web/v2/core/reveal.client";
 
-describe("expandAncestorDisclosures", () => {
+describe("revealTarget", () => {
   test("expands all closed ancestor <details> elements", () => {
     document.body.innerHTML = `
       <details id="outer">
@@ -24,7 +24,7 @@ describe("expandAncestorDisclosures", () => {
     expect(outer.open).toBe(false);
     expect(inner.open).toBe(false);
 
-    expandAncestorDisclosures(target);
+    revealTarget(target);
 
     expect(outer.open).toBe(true);
     expect(inner.open).toBe(true);
@@ -44,7 +44,7 @@ describe("expandAncestorDisclosures", () => {
 
     expect(toggle.open).toBe(false);
 
-    expandAncestorDisclosures(target);
+    revealTarget(target);
 
     expect(toggle.open).toBe(true);
   });
@@ -62,10 +62,35 @@ describe("expandAncestorDisclosures", () => {
     const target = document.getElementById("target") as HTMLElement;
     const standalone = document.getElementById("standalone") as HTMLElement;
 
-    expandAncestorDisclosures(target);
+    revealTarget(target);
     expect(details.open).toBe(true);
 
-    expect(() => expandAncestorDisclosures(standalone)).not.toThrow();
+    expect(() => revealTarget(standalone)).not.toThrow();
+  });
+
+  test("calls registered revealers on the way up, innermost first", () => {
+    document.body.innerHTML = `
+      <div id="outer"><div id="inner"><span id="target"></span></div></div>
+    `;
+    const calls: string[] = [];
+    const target = document.getElementById("target")!;
+    const cleanupOuter = registerRevealer(
+      document.getElementById("outer")!,
+      (t) => calls.push(`outer:${t.id}`)
+    );
+    const cleanupInner = registerRevealer(
+      document.getElementById("inner")!,
+      (t) => calls.push(`inner:${t.id}`)
+    );
+
+    revealTarget(target);
+    expect(calls).toEqual(["inner:target", "outer:target"]);
+
+    cleanupInner();
+    cleanupOuter();
+    calls.length = 0;
+    revealTarget(target);
+    expect(calls).toEqual([]);
   });
 });
 
@@ -135,6 +160,42 @@ describe("setupAnchorScroll", () => {
     cleanup = setupAnchorScroll(document, mockWin);
 
     expect(details.open).toBe(true);
+  });
+
+  test("hands over a hash-opened container: reveals it and clears the hash", () => {
+    document.body.innerHTML = `<div id="drawer"></div><div id="other"></div>`;
+    const drawer = document.getElementById("drawer")!;
+    const reveal = jest.fn();
+    const unregister = registerRevealer(drawer, reveal, { ownsHash: true });
+    const replaceState = jest.fn();
+    const mockWin = {
+      location: { hash: "#drawer", pathname: "/p", search: "?q=1" },
+      history: { replaceState, state: null },
+    } as unknown as Window;
+
+    cleanup = setupAnchorScroll(document, mockWin);
+
+    expect(reveal).toHaveBeenCalledWith(drawer);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/p?q=1");
+    unregister();
+  });
+
+  test("keeps the hash when it names a descendant of a revealer", () => {
+    document.body.innerHTML = `<div id="drawer"><p id="note-1"></p></div>`;
+    const drawer = document.getElementById("drawer")!;
+    const reveal = jest.fn();
+    const unregister = registerRevealer(drawer, reveal, { ownsHash: true });
+    const replaceState = jest.fn();
+    const mockWin = {
+      location: { hash: "#note-1", pathname: "/p", search: "" },
+      history: { replaceState, state: null },
+    } as unknown as Window;
+
+    cleanup = setupAnchorScroll(document, mockWin);
+
+    expect(reveal).toHaveBeenCalledWith(document.getElementById("note-1"));
+    expect(replaceState).not.toHaveBeenCalled();
+    unregister();
   });
 
   test("ignores clicks when defaultPrevented is true (preserving permalink copy ordering)", () => {

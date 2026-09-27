@@ -379,13 +379,24 @@ details.reader-work-about[open] summary.reader-about-summary {
   }
 }
 
-/* Hide Gutter Toggle Rule */
-.reader-view.hide-gutter .reader-gutter {
+/* Hide Gutter Toggle Rule. Before upgrade, critical_theme.client.ts mirrors
+   the saved preference onto <html data-reader-hide-gutter>; after, the
+   reader view's own class is authoritative. */
+.reader-view.hide-gutter .reader-gutter,
+:root[data-reader-hide-gutter]
+  .reader-view:not([data-upgraded])
+  .reader-gutter {
   display: none;
 }
 
 .reader-view.hide-gutter article.reader-passage,
-.reader-view.hide-gutter .reader-section {
+.reader-view.hide-gutter .reader-section,
+:root[data-reader-hide-gutter]
+  .reader-view:not([data-upgraded])
+  article.reader-passage,
+:root[data-reader-hide-gutter]
+  .reader-view:not([data-upgraded])
+  .reader-section {
   grid-template-columns: minmax(0, 1fr);
 }
 

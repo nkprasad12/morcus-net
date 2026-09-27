@@ -80,16 +80,17 @@ Follow these rules whenever adding or modifying UI V2 features:
 
 ### Quick Reference (`core/` Primitives)
 
-| For                                               | Use                                                                                             | Not                                                                                      |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Listeners, timers, animation frames, cancellation | `this.scope`: `listen`, `delegate`, `timeout`, `rAF`, `debounce`, `latest(lane)`                | Raw `addEventListener` / `setTimeout` in components                                      |
-| Updating regions from the server                  | `fetchAndSwapPartial` (`core/partial.client.ts`)                                                | Scraping swapped markup to patch other regions                                           |
-| UI that needs JS, or only makes sense without it  | `data-js-only` / `data-nojs-only` (see [JS-only and No-JS-only UI](#js-only-and-no-js-only-ui)) | `<noscript>`, `@media (scripting)`, `.has-js`, `:defined`, per-slice `*-js-only` classes |
-| A different layout when JS runs                   | Render it in place on the server; hide it without JS                                            | Moving server-rendered nodes on the client                                               |
-| Back-to-top                                       | `core/back_to_top.client.ts`                                                                    | A slice-local copy                                                                       |
-| Focus ring, buttons, pills, card headers          | `core/components.css`                                                                           | Redeclaring `outline: 2px solid var(--primary)` per slice                                |
-| Building HTML (server, common, client)            | `html`, composed with `raw` / `joinHtml` (`core/html.common.ts`)                                | `${safeHtml}` inside `html` (re-escaped); `he.escape` in new code                        |
-| Form-driven UI                                    | A working `<form>` first, then `this.hijackForm` / `this.syncQueryParam`                        | Controls that only work with JS                                                          |
+| For                                               | Use                                                                                                     | Not                                                                                      |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Listeners, timers, animation frames, cancellation | `this.scope`: `listen`, `delegate`, `timeout`, `rAF`, `debounce`, `latest(lane)`                        | Raw `addEventListener` / `setTimeout` in components                                      |
+| Updating regions from the server                  | `fetchAndSwapPartial` (`core/partial.client.ts`)                                                        | Scraping swapped markup to patch other regions                                           |
+| UI that needs JS, or only makes sense without it  | `data-js-only` / `data-nojs-only` (see [JS-only and No-JS-only UI](#js-only-and-no-js-only-ui))         | `<noscript>`, `@media (scripting)`, `.has-js`, `:defined`, per-slice `*-js-only` classes |
+| A different layout when JS runs                   | Render it in place on the server; hide it without JS                                                    | Moving server-rendered nodes on the client                                               |
+| Opening hidden UI for a `#hash` / link target     | `registerRevealer` (`core/reveal.client.ts`, see [Hash targets](#hash-targets-and-the-reveal-protocol)) | Reading `location.hash` in `onConnect`; `:target` rules that still match after upgrade   |
+| Back-to-top                                       | `core/back_to_top.client.ts`                                                                            | A slice-local copy                                                                       |
+| Focus ring, buttons, pills, card headers          | `core/components.css`                                                                                   | Redeclaring `outline: 2px solid var(--primary)` per slice                                |
+| Building HTML (server, common, client)            | `html`, composed with `raw` / `joinHtml` (`core/html.common.ts`)                                        | `${safeHtml}` inside `html` (re-escaped); `he.escape` in new code                        |
+| Form-driven UI                                    | A working `<form>` first, then `this.hijackForm` / `this.syncQueryParam`                                | Controls that only work with JS                                                          |
 
 ### JS-only and No-JS-only UI
 
@@ -103,6 +104,14 @@ There is exactly one way to show or hide UI depending on whether JavaScript is r
 The rule block lives in [`v2-critical.css`](v2-critical.css), so it's correct from first paint. Before `v2.js` runs (the pre-hydration window), if it fails to load, or if a component's `onConnect()` throws, the page behaves exactly as it does with scripting disabled. Content under a not-yet-registered custom element also stays gated, so lazily loaded chunks work without changes.
 
 There is no global "JS is on" flag. [`core/gate_conformance.test.ts`](core/gate_conformance.test.ts) fails on `<noscript>`, `@media (scripting)`, `.has-js`, `:defined` and `.js-only` classes. **Exceptions require human review** and an allowlist entry with a justification; do not add one to make the test pass.
+
+### Hash targets and the reveal protocol
+
+No-JS UI often opens via a link to a fragment (`<a href="#reader-dict">` plus a `:target` rule). Scope such `:target` rules with `:not([data-upgraded] *)` so the component takes over after upgrade, and have the component adopt the state instead of reading `location.hash` itself:
+
+- In `onConnect()`, `this.scope.use(registerRevealer(el, reveal, { ownsHash }))` from [`core/reveal.client.ts`](core/reveal.client.ts). `reveal(target)` must be idempotent (open, don't toggle).
+- [`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts) calls `revealTarget()` for the initial hash (so a link clicked before `v2.js` arrived is adopted), on `hashchange`, on in-page anchor clicks and on `beforematch`. It opens ancestor `<details>` and calls every registered revealer from the innermost outwards, then scrolls.
+- `ownsHash: true` means the hash was only a No-JS state carrier (a drawer, a sheet). When the hash points exactly at such an element, it's cleared with `history.replaceState` once revealed, so closing the UI later isn't fought by a stale `:target`.
 
 ---
 
