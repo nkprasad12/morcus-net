@@ -88,8 +88,6 @@ const UPGRADED_RATCHET: Readonly<Record<string, number>> = {
   "external/external.css": 1,
   // Overscroll suppression only while swipe page turns are live.
   "reader/reader_page_nav.css": 1,
-  // Pre-upgrade gutter mirror (see critical_theme.client.ts).
-  "reader/reader_text.css": 3,
 };
 
 function listSources(dir: string): string[] {

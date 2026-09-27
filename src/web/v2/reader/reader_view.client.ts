@@ -16,6 +16,7 @@ import {
   openSectionActionMenu,
   registerElement,
   setHtml,
+  setPrepaint,
   settingsStore,
   showToast,
   syncIframeTheme,
@@ -1161,31 +1162,31 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
+  /**
+   * Layout-affecting preferences live on <html>, recorded with `setPrepaint`
+   * so the critical script applies them before first paint on the next load.
+   * Called on every connect, which also heals a stale snapshot. Defaults are
+   * removed, leaving the `var(--reader-*, default)` fallbacks in the CSS.
+   */
   private applyPreferences(prefs: ReaderPreferences) {
     this.currentPrefs = prefs;
-    const scale = (prefs.readerScale / 100).toFixed(2);
-    this.style.setProperty("--reader-scale", scale);
-    const readerRem = `${((1.25 * prefs.readerScale) / 100).toFixed(3)}rem`;
-    this.style.setProperty("--reader-font-size", readerRem);
+    setPrepaint("--reader-scale", (prefs.readerScale / 100).toFixed(2));
 
     this.applyDictScale(prefs.dictScale);
 
-    if (prefs.lineHeight === "compact") {
-      this.style.setProperty("--reader-line-height", "1.45");
-    } else if (prefs.lineHeight === "relaxed") {
-      this.style.setProperty("--reader-line-height", "1.85");
-    } else {
-      // Set, not removed: critical_theme.client.ts may have put a pre-paint
-      // value on :root, which a removed property would inherit. Matches the
-      // `var(--reader-line-height, 1.65)` fallbacks in the reader CSS.
-      this.style.setProperty("--reader-line-height", "1.65");
-    }
-
-    const fontVal =
-      prefs.fontFamily === "sans" ? "var(--font-sans)" : "var(--font-serif)";
-    this.style.setProperty("--reader-font", fontVal);
-
-    this.classList.toggle("hide-gutter", !prefs.showGutter);
+    setPrepaint(
+      "--reader-line-height",
+      prefs.lineHeight === "compact"
+        ? "1.45"
+        : prefs.lineHeight === "relaxed"
+        ? "1.85"
+        : null
+    );
+    setPrepaint(
+      "--reader-font",
+      prefs.fontFamily === "sans" ? "var(--font-sans)" : null
+    );
+    setPrepaint("data-reader-hide-gutter", prefs.showGutter ? null : "");
     this.applyMacra(prefs.showMacra);
   }
 

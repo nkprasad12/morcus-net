@@ -11,6 +11,7 @@
 
 import { BaseController } from "@/web/v2/core/base_element.client";
 import { trackPointerDrag } from "@/web/v2/core/gesture.client";
+import { setPrepaint } from "@/web/v2/core/prepaint.client";
 import { storage } from "@/web/v2/core/storage.client";
 
 /**
@@ -111,15 +112,29 @@ export class ReaderLayoutController extends BaseController {
     if (!splitLayout || !splitter) return;
 
     const savedWidth = storage.get(this.storageKey);
+    let restored: number | null = null;
     if (savedWidth) {
       const parsed = parseInt(savedWidth, 10);
       // No upper bound: the saved width may come from a wider window, and
       // reader_dict.css clamps the panel to the current container.
       if (!isNaN(parsed) && parsed >= MIN_SPLIT_WIDTH) {
+        restored = parsed;
         splitLayout.style.setProperty("--dict-width", `${parsed}px`);
         splitter.setAttribute("aria-valuenow", String(parsed));
       }
     }
+    // Re-record on every connect so a stale pre-paint snapshot heals.
+    this.recordPrepaintWidth(restored);
+  }
+
+  /**
+   * Records the persisted width for the critical script to apply to <html>
+   * before first paint. Only called for committed widths (release, keyboard,
+   * reset), never per pointer move: a root custom property restyles the
+   * whole page.
+   */
+  private recordPrepaintWidth(width: number | null): void {
+    setPrepaint("--dict-width", width === null ? null : `${width}px`);
   }
 
   private initDrag() {
@@ -169,6 +184,7 @@ export class ReaderLayoutController extends BaseController {
             10
           );
           storage.set(this.storageKey, String(finalWidth));
+          this.recordPrepaintWidth(finalWidth);
         },
       })
     );
@@ -249,6 +265,7 @@ export class ReaderLayoutController extends BaseController {
     this.onWidthChange?.(width);
     if (persist) {
       storage.set(this.storageKey, String(width));
+      this.recordPrepaintWidth(width);
     }
   }
 
@@ -265,6 +282,7 @@ export class ReaderLayoutController extends BaseController {
       this.splitter.setAttribute("aria-valuenow", String(DEFAULT_SPLIT_WIDTH));
     }
     storage.remove(this.storageKey);
+    this.recordPrepaintWidth(null);
     this.onWidthChange?.(DEFAULT_SPLIT_WIDTH);
   }
 

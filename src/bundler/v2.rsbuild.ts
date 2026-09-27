@@ -14,6 +14,18 @@ import {
 // Logical asset name -> its emitted (content-hashed) filename under `build/v2`.
 export type V2AssetManifest = Partial<Record<"v2.js" | "v2.css", string>>;
 
+/**
+ * `critical.js` is inlined into every HTML response, where a
+ * `//# sourceMappingURL=` comment only costs bytes (it resolves against the
+ * page URL, not the asset). The `.map` file stays for debugging builds.
+ */
+function stripInlinedSourceMapComment(file: string): void {
+  if (!fs.existsSync(file)) return;
+  const source = fs.readFileSync(file, "utf8");
+  const stripped = source.replace(/\n?\/\/# sourceMappingURL=\S*\s*$/, "");
+  if (stripped !== source) fs.writeFileSync(file, stripped);
+}
+
 function v2ManifestPlugin(
   outDir: string,
   enforceBudget: boolean = false
@@ -46,6 +58,8 @@ function v2ManifestPlugin(
           path.join(outDir, "manifest.json"),
           JSON.stringify(manifest, null, 2)
         );
+
+        stripInlinedSourceMapComment(path.join(outDir, "critical.js"));
 
         if (enforceBudget) {
           const report = checkV2BundleBudget(outDir, manifest);

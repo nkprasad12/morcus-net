@@ -15,6 +15,7 @@ import {
 import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 import { WAKE_LOCK_IDLE_MS } from "@/web/v2/core/wake_lock.client";
 import { revealTarget } from "@/web/v2/core/reveal.client";
+import { PREPAINT_KEY } from "@/web/v2/core/prepaint.client";
 
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
@@ -649,10 +650,14 @@ describe("Reader preferences validation & hydration", () => {
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = "";
+    document.documentElement.removeAttribute("style");
+    document.documentElement.removeAttribute("data-reader-hide-gutter");
   });
 
   afterEach(() => {
     document.body.innerHTML = "";
+    document.documentElement.removeAttribute("style");
+    document.documentElement.removeAttribute("data-reader-hide-gutter");
   });
 
   it("returns default preferences on null, empty string, or invalid JSON", () => {
@@ -778,17 +783,42 @@ describe("Reader preferences validation & hydration", () => {
     expect(fontSelect.value).toBe("serif");
     // Valid lineHeight "compact" kept
     expect(lineSelect.value).toBe("compact");
-    expect(el.style.getPropertyValue("--reader-line-height")).toBe("1.45");
+    expect(
+      document.documentElement.style.getPropertyValue("--reader-line-height")
+    ).toBe("1.45");
   });
 
-  it("applies --reader-line-height styling for compact and relaxed presets and pins the default for normal", () => {
+  it("records reader typography and the gutter on <html> for pre-paint, removing defaults", () => {
+    const root = document.documentElement;
+    const lineHeight = () =>
+      root.style.getPropertyValue("--reader-line-height");
     localStorage.setItem(
       READER_SETTINGS_KEY,
-      JSON.stringify({ lineHeight: "compact" })
+      JSON.stringify({
+        lineHeight: "compact",
+        readerScale: 125,
+        fontFamily: "sans",
+        showGutter: false,
+      })
     );
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     document.body.appendChild(el);
-    expect(el.style.getPropertyValue("--reader-line-height")).toBe("1.45");
+    expect(lineHeight()).toBe("1.45");
+    expect(root.style.getPropertyValue("--reader-scale")).toBe("1.25");
+    expect(root.style.getPropertyValue("--reader-font")).toBe(
+      "var(--font-sans)"
+    );
+    expect(root.hasAttribute("data-reader-hide-gutter")).toBe(true);
+    // One source: nothing is copied onto the element itself.
+    expect(el.style.getPropertyValue("--reader-line-height")).toBe("");
+    expect(JSON.parse(localStorage.getItem(PREPAINT_KEY) ?? "{}")).toEqual(
+      expect.objectContaining({
+        "--reader-line-height": "1.45",
+        "--reader-scale": "1.25",
+        "--reader-font": "var(--font-sans)",
+        "data-reader-hide-gutter": "",
+      })
+    );
 
     el.dispatchEvent(
       new CustomEvent("reader-settings-change", {
@@ -796,7 +826,7 @@ describe("Reader preferences validation & hydration", () => {
         bubbles: true,
       })
     );
-    expect(el.style.getPropertyValue("--reader-line-height")).toBe("1.85");
+    expect(lineHeight()).toBe("1.85");
 
     el.dispatchEvent(
       new CustomEvent("reader-settings-change", {
@@ -804,7 +834,13 @@ describe("Reader preferences validation & hydration", () => {
         bubbles: true,
       })
     );
-    expect(el.style.getPropertyValue("--reader-line-height")).toBe("1.65");
+    // Defaults fall back to the `var(--reader-*, default)` CSS fallbacks.
+    expect(lineHeight()).toBe("");
+    expect(root.style.getPropertyValue("--reader-font")).toBe("");
+    expect(root.hasAttribute("data-reader-hide-gutter")).toBe(false);
+    expect(localStorage.getItem(PREPAINT_KEY)).not.toContain(
+      "--reader-line-height"
+    );
   });
 });
 

@@ -1,7 +1,11 @@
 /**
  * @jest-environment jsdom
  */
-import { getPageWidth, setPageWidth } from "@/web/v2/core/page_width.client";
+import {
+  getPageWidth,
+  setPageWidth,
+  syncPageWidth,
+} from "@/web/v2/core/page_width.client";
 import {
   GLOBAL_SETTINGS_KEY,
   parseSettings,
@@ -94,23 +98,34 @@ describe("page width settings", () => {
   });
 });
 
-describe("critical script", () => {
-  test("applies saved presets before paint", async () => {
-    saveSettings({ readerWidth: "narrow", dictWidth: "full" });
+describe("pre-paint", () => {
+  test("a saved preset is applied by the critical script on the next load", async () => {
+    setPageWidth("reader", "narrow");
+    setPageWidth("dict", "full");
+    // Next load: <html> starts bare.
+    root.removeAttribute("data-reader-width");
+    root.removeAttribute("data-dict-width");
     await runCriticalScript();
     expect(root.getAttribute("data-reader-width")).toBe("narrow");
     expect(root.getAttribute("data-dict-width")).toBe("full");
   });
 
-  test("ignores invalid, default, and missing values", async () => {
-    saveSettings({ readerWidth: "default", dictWidth: "wide; x" });
+  test("clearing a preset clears it from pre-paint", async () => {
+    setPageWidth("reader", "wide");
+    setPageWidth("reader", "default");
+    root.removeAttribute("data-reader-width");
     await runCriticalScript();
     expect(root.hasAttribute("data-reader-width")).toBe(false);
-    expect(root.hasAttribute("data-dict-width")).toBe(false);
+  });
 
-    localStorage.clear();
+  test("syncPageWidth heals a stale snapshot from GlobalSettings", async () => {
+    setPageWidth("dict", "wide");
+    // E.g. V1 changed the setting without touching the snapshot.
+    saveSettings({ dictWidth: "narrow" });
+    syncPageWidth("dict");
+    root.removeAttribute("data-dict-width");
     await runCriticalScript();
-    expect(root.hasAttribute("data-reader-width")).toBe(false);
+    expect(root.getAttribute("data-dict-width")).toBe("narrow");
   });
 });
 
