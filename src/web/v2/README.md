@@ -19,13 +19,18 @@ UI V2 is structured by **topic (domain vertical slices)** rather than technical 
 
 ```
 src/web/v2/
+├── core/               # Shared primitives: BaseElement, LifetimeScope, html, partial swap, drawer, popover, components.css
 ├── shell/              # Document skeleton, app bar, theme & global design tokens
 ├── dict/               # Dictionary search, entry rendering, inflections & settings
 ├── reader/             # Parallel two-column reader
+├── library/            # Work catalog & filtering
+├── external/           # External Latin text loader & reader
+├── corpus/             # Corpus search & concordances
 ├── dialog/             # Accessible modal dialogs & issue reporting
 ├── about/              # Project information & metadata
 ├── v2_router.server.ts # Express router orchestrator mounted at /v2 (public integration)
-├── v2_bundle.client.ts # Client bundle manifest (imports *.client.ts)
+├── v2_bundle.client.ts # Client bundle entrypoint
+├── v2_elements.client.ts # Custom element registration manifest
 ├── v2.css              # Global stylesheet manifest (imports topic *.css)
 └── v2-critical.css     # Inlined above-the-fold critical CSS
 ```
@@ -54,6 +59,40 @@ src/web/v2/
 3. **Flat Topic Directories**: Topics remain flat by default (avoiding micro-directories for 1–2 files). Filename prefixes (e.g. `dict_search.*`, `dict_settings.*`) keep related files automatically clustered alphabetically. Subdirectories are introduced only when a subcomponent exceeds 4+ dedicated files.
 4. **Root Integration Hubs**: Top-level entry points (`v2_router.server.ts`, `v2_bundle.client.ts`, `v2.css`) aggregate exports across topics so external consumers have a single, stable contract. They carry target suffixes like any other module — being an entry point is not an exemption, and `v2_bundle.client.ts` in particular is the root of everything shipped to the browser, so it is the last file that should be outside the import rules.
 
+---
+
+## Conventions for All New Code
+
+Follow these rules whenever adding or modifying UI V2 features:
+
+1. **Forms first.** Every feature must work end-to-end as a plain HTTP `GET` or `POST` round-trip before any client JavaScript is added, then progressively enhance via `this.hijackForm()` and `this.syncQueryParam()`.
+   - **Macronizer**: a `POST` form with a server-rendered result.
+   - **Corpus**: a `GET` form with its query and settings (`pageSize`, `contextLen`, `strictMode`) in the URL.
+2. **Don't move server-rendered nodes.** The server owns DOM structure; the client owns state (attributes, classes, listeners). If the JS-enhanced layout needs a different structure, render it in its final place on the server and hide it when JS is inactive. Reparenting SSR nodes in `onConnect()` reloads iframes, drops listeners, and requires fragile `onDisconnect()` restoration.
+3. **Read before writing in `onConnect()` ([PRE_HYDRATION.md §2](PRE_HYDRATION.md#2-root-cause-four-disjoint-definitions-of-is-js-active)).** On a slow connection, the user may have already scrolled (`window.scrollY > 0`), typed into an `<input>`, toggled a `<details>` or checkbox, or triggered a `:target` hash navigation before `v2.js` runs. Reconcile with and adopt live DOM/URL state before writing defaults, and guard initial `focus()` / scroll calls when `window.scrollY > 0`. Never gate pre-hydration controls on `<noscript>` or `@media (scripting: none)`.
+4. **Extend `core/`; don't fork it.** Shared behaviours (`BaseElement`, `BaseController`, `this.scope`, `fetchAndSwapPartial`, `AnchoredPopoverController`, `DrawerController`, `back_to_top.client.ts`) and shared styles (`core/components.css` for focus rings, buttons, pills, and card headers) live in `core/`. If a slice needs a variation (e.g., a custom scroll container), parameterize the primitive in `core/` instead of copying it into the slice.
+5. **New server templates use `html`, composed with `raw` / `joinHtml`.** Use `html` from `core/html.common.ts` in new `.server.ts` templates as well as `.common.ts` and `.client.ts` (do not add new `he.escape` calls). **Never interpolate a `SafeHtml` directly into another `html` template (`${childSafeHtml}`):** the brand is erased at runtime, so `html` escapes it a second time into literal text. Always compose sub-templates with `joinHtml(parts)` or `raw(childSafeHtml)`.
+6. **Keep new feature code inside its slice.** Keep slice-specific controllers, helpers, and state self-contained inside their topic folder (`dict/`, `reader/`, `external/`, `corpus/`, etc.) without cross-slice entanglement so heavy slices can be split into lazy `import()` chunks ([CODE_HEALTH.md](CODE_HEALTH.md)).
+7. **Verify audit findings before acting on them.**
+   - Require concrete evidence (file, line, and exact mechanism) and verify each claim against the code before changing anything.
+   - Check consequences across slices—especially keyboard focus preservation across swaps, custom element disconnect/reconnect lifecycles, and the zero-JS baseline.
+   - Fix one-off issues locally; introduce a new shared primitive or conformance check only when a bug class recurs, weighting real shipped bugs over theoretical audit items.
+
+### Quick Reference (`core/` Primitives)
+
+| For                                               | Use                                                                              | Not                                                                     |
+| ------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Listeners, timers, animation frames, cancellation | `this.scope`: `listen`, `delegate`, `timeout`, `rAF`, `debounce`, `latest(lane)` | Raw `addEventListener` / `setTimeout` in components                     |
+| Updating regions from the server                  | `fetchAndSwapPartial` (`core/partial.client.ts`)                                 | Scraping swapped markup to patch other regions                          |
+| UI that needs JS, or only makes sense without it  | Upgrade-gated visibility (`data-js-only` / `data-nojs-only` as Phase 1 lands)    | `<noscript>`, `@media (scripting: none)`, per-slice `*-js-only` classes |
+| A different layout when JS runs                   | Render it in place on the server; hide it without JS                             | Moving server-rendered nodes on the client                              |
+| Back-to-top                                       | `core/back_to_top.client.ts`                                                     | A slice-local copy                                                      |
+| Focus ring, buttons, pills, card headers          | `core/components.css`                                                            | Redeclaring `outline: 2px solid var(--primary)` per slice               |
+| Building HTML (server, common, client)            | `html`, composed with `raw` / `joinHtml` (`core/html.common.ts`)                 | `${safeHtml}` inside `html` (re-escaped); `he.escape` in new code       |
+| Form-driven UI                                    | A working `<form>` first, then `this.hijackForm` / `this.syncQueryParam`         | Controls that only work with JS                                         |
+
+---
+
 ### The `.common.ts` contract
 
 `.common.ts` means **isomorphic logic _and_ isomorphic rendering**. The second half is the
@@ -75,11 +114,11 @@ Two consequences worth knowing before you "clean up" such a module:
 - **They return `SafeHtml`, not DOM nodes.** The client updates the DOM via typed sinks
   (`setHtml` / `replaceWithHtml` in `core/dom.client.ts`), so returning DOM nodes is not an option.
 - **Attach-before-write convention.** When dynamically creating new elements in client code, attach the element to its live parent before calling `setHtml` (e.g. `parent.appendChild(el); setHtml(el, content);`). Calling `setHtml`, `replaceWithHtml`, or `swapElementContent` on a detached node trips the `assertConnected` invariant. For offline markup parsing without attaching, use `createHtmlFragment(html)` from `core/partial.client.ts`.
-- **Escaping is provided by `core/html.common.ts`.** Escaping in a `.common.ts` cannot use `he`,
-  which is ~100 KB of poorly tree-shakeable CommonJS and must not enter the client bundle
-  (enforced mechanically by ESLint). Instead, isomorphic renderers use the `html` tagged template
-  from `core/html.common.ts`, which auto-escapes dynamic values and brands output as `SafeHtml`
-  without third-party bundle bloat.
+- **Escaping is provided by `core/html.common.ts`.** Escaping in `.common.ts` (and new `.server.ts`
+  templates) uses the `html` tagged template from `core/html.common.ts` rather than `he` (~100 KB of
+  poorly tree-shakeable CommonJS, banned from `.common.ts` and `.client.ts` by ESLint). `html`
+  auto-escapes dynamic values and brands output as `SafeHtml`; compose nested `SafeHtml` fragments
+  with `joinHtml` or `raw` so they are not double-escaped.
 
 ### Build Pipeline
 
