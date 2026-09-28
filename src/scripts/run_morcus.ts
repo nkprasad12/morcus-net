@@ -279,7 +279,7 @@ function parseArguments() {
     default: "",
   });
   e2e.add_argument("-b_v2", "--v2", {
-    help: "Runs UI V2 E2E tests (src/integration/suites/browser_v2_e2e.test.ts).",
+    help: "Runs UI V2 E2E tests (browser_v2_e2e and browser_v2_late_hydration in src/integration/suites/).",
     action: "store_true",
   });
   e2e.add_argument("-vs", "--visual", {
@@ -725,7 +725,7 @@ async function runE2eTests(args: any) {
 
     const testPath = isVisual
       ? "src/integration/screenshot/browser_v2_screenshot.test.ts"
-      : "src/integration/suites/browser_v2_e2e.test.ts";
+      : "src/integration/suites/browser_v2_e2e.test.ts src/integration/suites/browser_v2_late_hydration.test.ts";
 
     const command = ["npx playwright test", testPath];
 
