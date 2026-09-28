@@ -2,10 +2,7 @@ import {
   BaseElement,
   bindDismissable,
   getPageWidth,
-  html,
-  joinHtml,
   registerElement,
-  setHtml,
   setPageWidth,
   setPrepaint,
   syncPageWidth,
@@ -15,18 +12,14 @@ import {
   dictSettingsStore,
   inflectedSettingsStore,
 } from "@/web/v2/dict/dict_preferences.client";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import {
   DEFAULT_DICT_KEYS,
   parseInflectionParam,
   resolveDictParams,
 } from "@/web/v2/dict/dict_selection.common";
-import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
 const DEFAULT_STRENGTH = 50;
-
-const TUNE_PATH = ICON_PATHS.tune;
 
 /**
  * Dictionary & typography preferences dropdown (<morcus-dict-settings>).
@@ -159,90 +152,6 @@ export class MorcusDictSettings extends BaseElement {
     this.detailsEl = this.scope.$<HTMLDetailsElement>(".dict-settings-details");
     this.summaryEl = this.scope.$<HTMLElement>(".settings-btn");
     this.popoverEl = this.scope.$<HTMLElement>(".settings-popover");
-
-    // If SSR details element doesn't exist (e.g. standalone test), build full structure
-    if (!this.detailsEl || !this.popoverEl) {
-      const dictItems = LatinDict.AVAILABLE.map((d) => {
-        const isChecked = this.activeDictKeys.has(d.key);
-        const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
-        return html`
-          <label class="dict-item" title="${d.displayName} (${langText})">
-            <input
-              type="checkbox"
-              name="dict"
-              value="${d.key}"
-              class="dict-checkbox"
-              data-key="${d.key}"
-              ${isChecked ? "checked" : ""} />
-            <span class="dict-name">${d.displayName}</span>
-            <span class="dict-lang">${langText}</span>
-          </label>
-        `;
-      });
-
-      setHtml(
-        this,
-        html`
-          <details class="dict-settings-details">
-            <summary
-              class="settings-btn"
-              aria-label="Dictionary and highlight settings"
-              title="Dictionary and highlight settings">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="${TUNE_PATH}"></path>
-              </svg>
-            </summary>
-
-            <div class="settings-popover">
-              <div class="settings-section-title">Enabled Dictionaries</div>
-              <div class="dict-list">${joinHtml(dictItems)}</div>
-            </div>
-          </details>
-        `
-      );
-
-      this.detailsEl = this.scope.$<HTMLDetailsElement>(
-        ".dict-settings-details"
-      );
-      this.summaryEl = this.scope.$<HTMLElement>(".settings-btn");
-      this.popoverEl = this.scope.$<HTMLElement>(".settings-popover");
-    }
-
-    // Progressively inject highlight slider if not present
-    if (this.popoverEl && !this.scope.$(".settings-slider")) {
-      const sliderControls = document.createElement("div");
-      sliderControls.className = "settings-slider-section";
-      this.popoverEl.prepend(sliderControls);
-      setHtml(
-        sliderControls,
-        html`
-          <div class="settings-header">
-            <span class="settings-title">Highlight Strength</span>
-            <span class="settings-value">${this.strength}%</span>
-          </div>
-
-          <div class="settings-control-row">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="10"
-              value="${this.strength}"
-              class="settings-slider"
-              aria-label="Highlight strength" />
-          </div>
-
-          <div class="settings-preview" aria-hidden="true">
-            <span class="lsOrth">Caesar</span>
-            <span class="lsGrammar">noun</span>
-            <span class="lsBibl">Gall. 1.1</span>
-            <span class="lsQuote">omnia</span>
-          </div>
-
-          <div class="settings-divider" role="separator"></div>
-        `
-      );
-    }
 
     this.scope.listen(this.summaryEl, "click", (e: MouseEvent) => {
       if (this.detailsEl) {

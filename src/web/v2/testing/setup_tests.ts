@@ -1,8 +1,13 @@
+import { TextDecoder, TextEncoder } from "util";
 import {
   detachedDomWrites,
   clearDetachedDomWrites,
 } from "@/web/v2/core/dom_invariants.client";
 import { installLayoutShims } from "@/web/v2/testing/layout_shims";
+
+if (typeof globalThis.TextEncoder === "undefined") {
+  Object.assign(globalThis, { TextEncoder, TextDecoder });
+}
 
 installLayoutShims();
 

@@ -87,7 +87,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
         </div>
 
         <!-- Interactive Search & Feature Filters -->
-        <div class="library-search-form search-form">
+        <div class="library-search-form search-form" data-js-only>
           <div class="input-wrapper">
             <input type="search"
                    id="library-search-input"

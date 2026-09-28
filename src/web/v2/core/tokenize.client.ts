@@ -105,6 +105,9 @@ export function tokenizeSubtree(
     curr = walker.nextNode();
   }
 
+  if (textNodes.length === 0) return;
+
+  const replacements: Array<[Text, DocumentFragment]> = [];
   let wordIndex = 0;
   for (const textNode of textNodes) {
     const text = textNode.nodeValue ?? "";
@@ -133,7 +136,28 @@ export function tokenizeSubtree(
     }
 
     if (fragment && hasWords) {
+      replacements.push([textNode, fragment]);
+    }
+  }
+
+  if (replacements.length === 0) return;
+
+  // Detach `root` while replacing text nodes in bulk so browsers (notably
+  // Firefox/Servo with document-level `:has(...)` rules) do not re-run live-DOM
+  // style invalidation on every individual `replaceChild` call.
+  const parent = root.parentNode;
+  const nextSibling = root.nextSibling;
+  if (parent) {
+    parent.removeChild(root);
+  }
+
+  try {
+    for (const [textNode, fragment] of replacements) {
       textNode.parentNode?.replaceChild(fragment, textNode);
+    }
+  } finally {
+    if (parent) {
+      parent.insertBefore(root, nextSibling);
     }
   }
 }
