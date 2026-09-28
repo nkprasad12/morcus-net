@@ -4,7 +4,7 @@ The V2 UI does not have a corpus search surface yet. This file tracks corpus iss
 
 ## Word tokens split at inline markup
 
-**Status:** Open. Found while building reader `matchText` highlighting.
+**Status:** Open. **Blocks the V2 corpus ship** ([DESIGN.md §12](DESIGN.md#12-phases)); UI work proceeds in parallel. Found while building reader `matchText` highlighting.
 
 **Symptom.** The corpus indexer breaks a word into separate tokens wherever inline markup falls inside it. In those rows:
 
@@ -36,3 +36,28 @@ The V2 UI does not have a corpus search surface yet. This file tracks corpus iss
 ## Heading rows cannot be highlighted
 
 Non-leaf rows (e.g. a chapter heading row `1.2` above sections `1.2.1…`) are indexed by the corpus but rendered by V2 without an `id` (1,359 rows library-wide). A `matchText` range that falls in such a row resolves the right page but highlights nothing. Low priority; fixing it needs a stable per-row identifier (e.g. `data-row-id`) on every rendered section.
+
+## Beyond V1 parity
+
+The V2 corpus is built to match V1 first ([DESIGN.md](DESIGN.md) §1, goal 6). These go past V1 and are deferred until it ships.
+
+### Previous page
+
+V1 showed a Back button that was always disabled ("Back doesn't work yet"); V2 has only a Next link and relies on browser Back. The engine pages forward only: a cursor (`resultId-resultIndex-candidateIndex`) says where the _next_ page starts, and nothing computes the one before it. Options:
+
+| Option                                             | Pros                                                                                                         | Cons                                                                                                               |
+| :------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- |
+| Cursor trail in the URL (`prev=c1.c2.c3`)          | A real Previous link, even on shared links. Stateless. Adds to the current URL contract without changing it. | URL grows ~15 chars per page. A cap (e.g. last 10) limits how far back it goes. The same page gets different URLs. |
+| Server-side cursor cache (`page=N`, LRU per query) | Clean URLs, numbered pages.                                                                                  | Server state. A miss re-runs N forward queries, and `runQuery` blocks the event loop.                              |
+| Engine support (reverse cursors or offsets)        | Best UX: Previous, page numbers, jump to page.                                                               | Rust work.                                                                                                         |
+
+A "First page" link is a cheap first step if the others wait.
+
+### Author filter beyond V1
+
+V1 (and V2) accept one `#Author` at the start of the query. Gaps:
+
+- **Names with spaces can't be expressed.** `Seneca Major` and `Seneca Minor` are in the author list, but the tokenizer splits on spaces. Options: space-free aliases (`#SenecaMajor`) mapped to engine names, or rename the authors at corpus build time.
+- **One author per query.** The engine already accepts `[A, B] query`; the grammar allows only one `#`. Extend it to `#A #B`.
+- **Discovery without JS.** Only autocomplete lists the authors. The help section could list them as example links.
+- **Considered alternative:** a native `author=` checkbox list in the form. It works without JS and handles spaces, but it gives the same filter two sources of truth next to `#Author`, unless `#` is dropped from the grammar.

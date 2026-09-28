@@ -1,0 +1,178 @@
+/* Corpus Search (/v2/corpus)
+ *
+ * The form reuses the dictionary search bar (dict/search.css) and the shared
+ * settings popover (core/settings.css); only corpus-specific pieces live here.
+ */
+
+morcus-corpus-view {
+  display: block;
+}
+
+.corpus-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) 4rem;
+  box-sizing: border-box;
+}
+
+/* --- Settings popover ---------------------------------------------------- */
+
+.corpus-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.corpus-number {
+  width: 5rem;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  color: var(--text);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border, var(--border));
+  border-radius: var(--radius-sm);
+}
+
+/* --- Help and disclaimers ------------------------------------------------ */
+
+.corpus-help,
+.corpus-disclaimer {
+  margin-bottom: var(--space-5);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.corpus-help > summary,
+.corpus-disclaimer > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.corpus-help-body {
+  padding: var(--space-3) 0 0 var(--space-5);
+}
+
+.corpus-help-body summary {
+  cursor: pointer;
+  margin: var(--space-3) 0;
+}
+
+.corpus-help-body li {
+  margin-bottom: var(--space-2);
+}
+
+.corpus-help-examples {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.corpus-help-examples th,
+.corpus-help-examples td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+/* --- Summary ------------------------------------------------------------- */
+
+.corpus-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-5);
+}
+
+.corpus-summary:empty {
+  display: none;
+}
+
+.corpus-summary-headline {
+  font-weight: 600;
+}
+
+.corpus-summary-detail {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.corpus-query-echo {
+  font-family: var(--font-mono, monospace);
+  color: var(--primary);
+}
+
+/* --- Results ------------------------------------------------------------- */
+
+.corpus-results {
+  outline: none;
+}
+
+.corpus-results[aria-busy="true"],
+.corpus-pager[aria-busy="true"] {
+  opacity: 0.55;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.corpus-message {
+  padding: var(--space-6) 0;
+  text-align: center;
+}
+
+.corpus-welcome {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  margin: 0 0 var(--space-3);
+}
+
+.corpus-welcome-detail {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.corpus-error {
+  color: var(--danger);
+}
+
+.corpus-result-list {
+  margin: 0;
+  padding-left: var(--space-7);
+}
+
+.corpus-result {
+  margin-bottom: var(--space-6);
+}
+
+.corpus-result-heading {
+  font-weight: 600;
+}
+
+.corpus-snippet {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-serif);
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.corpus-match {
+  background-color: var(--target-highlight);
+  color: inherit;
+  font-weight: 700;
+}
+
+/* --- Pager --------------------------------------------------------------- */
+
+.corpus-pager {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-6);
+}
+
+.corpus-pager:not(:has(a)) {
+  display: none;
+}

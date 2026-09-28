@@ -28,6 +28,10 @@ import {
 } from "@/web/v2/dict/dict_bitmask.common";
 import { resolveDictParams } from "@/web/v2/dict/dict_selection.common";
 import { createV2Router } from "@/web/v2/v2_router.server";
+import {
+  fakeCorpusEngine,
+  fakeResult,
+} from "@/web/v2/testing/fake_corpus_engine";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2BuildDir: () => "build/v2",
@@ -139,7 +143,17 @@ describe("JSDOM Form Round-Trip & Parameter Precedence Conformance", () => {
     };
 
     app = express();
-    app.use("/v2", createV2Router(mockFusedDict as FusedDictionary));
+    app.use(
+      "/v2",
+      createV2Router(mockFusedDict as FusedDictionary, {
+        corpus: fakeCorpusEngine(() =>
+          fakeResult({
+            resultStats: { estimatedResults: 200 },
+            nextPage: { resultId: 1, resultIndex: 50, candidateIndex: 0 },
+          })
+        ),
+      })
+    );
   });
 
   test("multi-step No-JS dictionary journey: select GAF+GRG -> search again -> reload from cookie -> toggle inflection off and back on", async () => {
@@ -351,5 +365,36 @@ describe("JSDOM Form Round-Trip & Parameter Precedence Conformance", () => {
     expect(serialized).toBe(
       "/v2/externalReader?url=thelatinlibrary.com%2Fcicero%2Fcat1.shtml&lines=verse"
     );
+  });
+  test("Corpus No-JS form round-trips its settings, and the pager link keeps them", async () => {
+    const landing = await request(app).get("/v2/corpus");
+    expect(landing.status).toBe(200);
+    document.body.innerHTML = landing.text;
+
+    const form =
+      document.body.querySelector<HTMLFormElement>("form.corpus-form")!;
+    form.querySelector<HTMLInputElement>('[name="q"]')!.value =
+      "#Caesar bellum";
+    form.querySelector<HTMLInputElement>('[name="contextLen"]')!.value = "7";
+    form.querySelector<HTMLInputElement>('[name="strictMode"]')!.checked = true;
+    expect(form.checkValidity()).toBe(true);
+
+    const url = serializeGetForm(form);
+    expect(url).toBe(
+      "/v2/corpus?q=%23Caesar+bellum&contextLen=7&pageSize=50&strictMode=1"
+    );
+
+    const results = await request(app).get(url);
+    expect(results.status).toBe(200);
+    document.body.innerHTML = results.text;
+
+    // The re-rendered form keeps every setting, so submitting again is stable.
+    const form2 =
+      document.body.querySelector<HTMLFormElement>("form.corpus-form")!;
+    expect(serializeGetForm(form2)).toBe(url);
+
+    // The Next link is the same URL plus the cursor.
+    const next = document.body.querySelector<HTMLAnchorElement>(".corpus-next");
+    expect(next?.getAttribute("href")).toBe(`${url}&cursor=1-50-0`);
   });
 });

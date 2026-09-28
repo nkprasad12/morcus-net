@@ -126,6 +126,21 @@ const FIXTURES: Record<string, string> = {
       <p id="external-saved-empty"></p>
     </morcus-external-loader>`,
 
+  "morcus-corpus-view": `
+    <morcus-corpus-view class="corpus-page">
+      <form class="search-form corpus-form" action="/v2/corpus" method="GET">
+        <input type="text" name="q" class="input" value="amoris" />
+        <details class="settings-details corpus-settings">
+          <summary class="settings-btn">Settings</summary>
+          <input type="number" name="contextLen" value="20" />
+        </details>
+      </form>
+      <section class="corpus-results" data-slot="results"></section>
+      <nav class="corpus-pager" data-slot="pager">
+        <a href="/v2/corpus?q=amoris&amp;cursor=1-2-3" data-corpus-nav>Next</a>
+      </nav>
+    </morcus-corpus-view>`,
+
   "morcus-library-view": `
     <morcus-library-view class="library-view">
       <input id="library-search-input" />

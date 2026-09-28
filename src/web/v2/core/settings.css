@@ -35,6 +35,22 @@ details[open] > .settings-btn {
   background-color: var(--tag-bg);
 }
 
+/* A native <details> settings popover (dict search bar, corpus form). */
+morcus-dict-settings,
+.settings-details {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.settings-details > summary.settings-btn {
+  list-style: none;
+}
+
+.settings-details > summary.settings-btn::-webkit-details-marker {
+  display: none;
+}
+
 .settings-glyph {
   font-family: var(--font-serif);
   font-size: 0.95rem;

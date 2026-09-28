@@ -271,7 +271,7 @@ export function startMorcusServer(): Promise<http.Server> {
     ],
     telemetry: telemetry,
     buildDir,
-    v2Router: createV2Router(fusedDict),
+    v2Router: createV2Router(fusedDict, { corpus: corpusHandler }),
   };
 
   setupServer(params);

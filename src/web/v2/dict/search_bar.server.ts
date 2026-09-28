@@ -84,7 +84,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   const settingsHtml = includeSettings
     ? `
       <morcus-dict-settings>
-        <details class="dict-settings-details">
+        <details class="settings-details dict-settings-details">
           <summary
             class="settings-btn"
             aria-label="Dictionary and highlight settings"

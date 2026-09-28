@@ -7,7 +7,7 @@ import {
 import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
-export type V2ActivePage = "dicts" | "about" | "library";
+export type V2ActivePage = "dicts" | "about" | "library" | "corpus";
 
 /**
  * `onerror` for the `v2.js` script tag. If the bundle fails to load (network
