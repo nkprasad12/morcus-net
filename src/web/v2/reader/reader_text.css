@@ -291,11 +291,6 @@
   opacity: 1;
 }
 
-.reader-gutter .section-anchor:focus-visible {
-  outline: none;
-  box-shadow: var(--theme-ring);
-}
-
 .reader-gutter .section-anchor.latent {
   opacity: 0;
 }
@@ -317,15 +312,6 @@
 .reader-section.target-highlight {
   background-color: var(--primary-light);
   box-shadow: inset 3px 0 0 var(--primary);
-}
-
-@keyframes highlightFade {
-  0% {
-    background-color: var(--primary-light);
-  }
-  100% {
-    background-color: transparent;
-  }
 }
 
 /* Hide Gutter Toggle Rule. The reader view records the preference on

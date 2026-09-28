@@ -180,6 +180,7 @@ const FIXTURES: Record<string, string> = {
           <div class="dict-iframe-container">
             <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
           </div>
+          <button type="button" class="reader-dict-back-to-top" data-js-only></button>
         </aside>
         <div id="reader-settings-popover" hidden>
           <input type="checkbox" id="toggle-macra" checked />

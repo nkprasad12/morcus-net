@@ -33,14 +33,6 @@ body.resizing-panels .dict-iframe,
   pointer-events: none;
 }
 
-.reader-dict-sticky {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-7);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-}
-
 /* Mobile Sheet Bar & Teaser (Visible on Mobile, Hidden on Desktop) */
 .reader-sheet-bar {
   display: none;
@@ -51,25 +43,6 @@ body.resizing-panels .dict-iframe,
    ========================================================================== */
 
 @media (max-width: 640px) {
-  .reader-dict-sticky {
-    position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-    touch-action: pan-y;
-    max-height: none;
-    padding: var(--space-5) var(--space-6) var(--space-8);
-    box-shadow: none;
-    border: none;
-  }
-
-  .reader-dict-content {
-    display: block;
-    width: 100%;
-  }
-
   /* The embedded dictionary page renders flush (no inline padding) so it can
      align with the desktop companion tab bar. The iframe can't tell which
      layout hosts it, so the drawer supplies the gutter here (plus a small top
@@ -151,17 +124,6 @@ body.resizing-panels .dict-iframe,
     border: none;
     border-radius: 0;
     box-shadow: none;
-  }
-
-  .reader-dict-sticky {
-    position: static;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: var(--space-2) 0 var(--space-8);
-    box-shadow: none;
-    max-height: none;
-    overflow-y: visible;
   }
 
   /* Position button inside the dictionary right column */

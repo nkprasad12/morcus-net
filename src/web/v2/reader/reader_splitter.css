@@ -79,11 +79,6 @@ body.resizing-panels {
     border-color: var(--primary);
   }
 
-  .reader-splitter:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 1px;
-  }
-
   /* No-JS, or a reader whose JS failed: the splitter is an inert dividing
      seam (its drag handle is `data-js-only`). Appearance only, so this keys
      on `(scripting)` rather than on upgrade: with JS on, the splitter looks

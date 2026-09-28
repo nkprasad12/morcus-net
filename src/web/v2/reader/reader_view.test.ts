@@ -2460,7 +2460,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       callbacks.forEach((cb) => cb(performance.now()));
     }
 
-    test("dynamically creates back-to-top button on connect and removes it on disconnect", () => {
+    test("adopts SSR-rendered back-to-top button and re-binds across disconnect/reconnect", () => {
       const el = createReaderView("<p>Text</p>");
       const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
       expect(dictPanel).not.toBeNull();
@@ -2469,19 +2469,29 @@ describe("MorcusReaderView client-side partial page navigation", () => {
         ".reader-dict-back-to-top"
       );
       expect(btn).not.toBeNull();
+      expect(btn?.hasAttribute("data-js-only")).toBe(true);
       expect(btn?.getAttribute("aria-label")).toBe("Scroll dictionary to top");
       expect(btn?.title).toBe("Jump to top");
 
-      // Disconnect: button should be removed from DOM
+      // Disconnect: SSR button remains in DOM, listeners are torn down
       el.remove();
-      expect(dictPanel.querySelector(".reader-dict-back-to-top")).toBeNull();
+      expect(dictPanel.querySelector(".reader-dict-back-to-top")).toBe(btn);
+      Object.defineProperty(dictPanel, "scrollTop", {
+        value: 400,
+        configurable: true,
+        writable: true,
+      });
+      dictPanel.dispatchEvent(new Event("scroll"));
+      flushRaf();
+      expect(btn?.classList.contains("visible")).toBe(false);
 
-      // Reconnect: button is recreated cleanly without duplicates
+      // Reconnect: same SSR button is re-bound cleanly without duplicates
       document.body.appendChild(el);
-      const reconnectedBtn = dictPanel.querySelectorAll(
+      const reconnectedBtns = dictPanel.querySelectorAll(
         ".reader-dict-back-to-top"
       );
-      expect(reconnectedBtn.length).toBe(1);
+      expect(reconnectedBtns.length).toBe(1);
+      expect(btn?.classList.contains("visible")).toBe(true);
     });
 
     test("toggles visibility on scroll past 300px threshold via managed rAF", () => {

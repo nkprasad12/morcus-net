@@ -2,7 +2,10 @@
  * @jest-environment jsdom
  */
 
-import { setupBackToTop } from "@/web/v2/core/back_to_top.client";
+import {
+  bindBackToTop,
+  setupBackToTop,
+} from "@/web/v2/core/back_to_top.client";
 
 describe("setupBackToTop", () => {
   let cleanup: () => void;
@@ -173,5 +176,76 @@ describe("setupBackToTop", () => {
     btn.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(false);
     expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  describe("bindBackToTop with custom scroll container", () => {
+    test("toggles visibility from container.scrollTop and scrolls container on click without clearing URL hash", () => {
+      document.body.innerHTML = `
+        <div id="panel">
+          <button type="button" id="panel-top">Top</button>
+        </div>
+      `;
+      const panel = document.getElementById("panel")!;
+      const btn = document.getElementById("panel-top")!;
+      const scrollToMock = jest.fn();
+      panel.scrollTo = scrollToMock;
+      const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+      window.location.hash = "#keep-me";
+
+      Object.defineProperty(panel, "scrollTop", {
+        value: 0,
+        configurable: true,
+        writable: true,
+      });
+
+      cleanup = bindBackToTop(btn, { container: panel });
+      expect(btn.classList.contains("visible")).toBe(false);
+
+      // Scroll container past 300px
+      panel.scrollTop = 380;
+      panel.dispatchEvent(new Event("scroll"));
+      flushRaf();
+      expect(btn.classList.contains("visible")).toBe(true);
+
+      // Click scrolls container to top, hides button, preserves URL hash
+      btn.click();
+      expect(scrollToMock).toHaveBeenCalledWith({
+        top: 0,
+        behavior: "instant",
+      });
+      expect(btn.classList.contains("visible")).toBe(false);
+      expect(replaceStateSpy).not.toHaveBeenCalled();
+    });
+
+    test("supports custom threshold, getTargetTop, and scrollTop fallback when scrollTo is absent", () => {
+      document.body.innerHTML = `
+        <div id="panel">
+          <button type="button" id="panel-top">Top</button>
+        </div>
+      `;
+      const panel = document.getElementById("panel")!;
+      const btn = document.getElementById("panel-top")!;
+      // Remove scrollTo to exercise scrollTop assignment fallback
+      // @ts-expect-error testing fallback when scrollTo is undefined
+      panel.scrollTo = undefined;
+
+      Object.defineProperty(panel, "scrollTop", {
+        value: 150,
+        configurable: true,
+        writable: true,
+      });
+
+      cleanup = bindBackToTop(btn, {
+        container: () => panel,
+        scrollTargets: [panel],
+        threshold: 100,
+        getTargetTop: () => 24,
+      });
+      expect(btn.classList.contains("visible")).toBe(true);
+
+      btn.click();
+      expect(panel.scrollTop).toBe(24);
+      expect(btn.classList.contains("visible")).toBe(false);
+    });
   });
 });

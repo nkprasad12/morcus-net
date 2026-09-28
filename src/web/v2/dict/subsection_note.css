@@ -70,12 +70,6 @@
   color: var(--primary);
 }
 
-.subsection-chip:focus-visible,
-.subsection-namelink:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
 /* Retained for anchors we could not resolve, so the match is still reported. */
 .subsection-chip-dead {
   color: var(--text-muted);

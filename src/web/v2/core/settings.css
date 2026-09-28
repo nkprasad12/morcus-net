@@ -28,11 +28,6 @@
   border-color: var(--border-strong);
 }
 
-.settings-btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 1px;
-}
-
 .settings-btn[aria-expanded="true"] {
   color: var(--primary);
   border-color: var(--primary);
@@ -145,10 +140,6 @@ morcus-reader-settings {
   padding: var(--space-5);
   z-index: var(--z-dropdown);
   box-sizing: border-box;
-}
-
-.settings-card {
-  padding: var(--space-7) var(--space-7) var(--space-6);
 }
 
 .settings-body {
@@ -328,14 +319,6 @@ morcus-reader-settings {
 /* ==========================================================================
    4. Settings Actions & Footers
    ========================================================================== */
-
-.settings-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-5);
-  margin-top: var(--space-4);
-}
 
 .settings-noscript-actions {
   margin-top: var(--space-5);

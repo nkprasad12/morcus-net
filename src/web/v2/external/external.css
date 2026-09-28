@@ -63,12 +63,6 @@
   color: var(--text-muted);
 }
 
-.external-input:focus-visible {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: var(--focus-ring);
-}
-
 .external-input[aria-invalid="true"] {
   border-color: var(--danger);
 }
@@ -160,8 +154,6 @@
 }
 
 .external-source-tab:has(input:focus-visible) {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
   border-radius: var(--radius-sm);
 }
 

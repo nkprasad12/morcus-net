@@ -68,12 +68,6 @@ body.resizing-drawer {
   box-sizing: border-box;
 }
 
-.drawer-bar:focus-visible,
-.reader-sheet-bar:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
-}
-
 .drawer-bar.is-dragging,
 .reader-sheet-bar.is-dragging {
   cursor: grabbing;
