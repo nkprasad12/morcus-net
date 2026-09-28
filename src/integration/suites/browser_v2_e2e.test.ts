@@ -244,11 +244,23 @@ test.describe("UI V2 dictionary", () => {
     const outlineSummary = page
       .locator('.tool-pane summary:has-text("Outline")')
       .first();
-    await expect(outlineSummary).toBeVisible();
-
-    // Click to open outline drawer
-    await outlineSummary.click();
-    await expect(page.locator(".toc-list").first()).toBeVisible();
+    if (await outlineSummary.isVisible()) {
+      // On narrow viewports (< 1080px), the per-entry Outline pill toggles the
+      // inline outline drawer. Collapse it again before measuring scrollBefore
+      // so the expanded outline does not push the first section anchor behind
+      // the fixed bottom TOC sheet.
+      const inlineToc = page.locator(".tool-outline .toc-list").first();
+      await outlineSummary.click();
+      await expect(inlineToc).toBeVisible();
+      await outlineSummary.click();
+      await expect(inlineToc).not.toBeVisible();
+    } else {
+      // On desktop (>= 1080px), .has-toc hides the inline .tool-outline pill
+      // because the sticky left TOC rail is permanently open.
+      await expect(
+        page.locator("morcus-dict-toc .toc-list").first()
+      ).toBeVisible();
+    }
 
     // Verify section anchor bullet has #hash href
     const anchor = page.locator(".section-anchor").first();
@@ -478,10 +490,15 @@ test.describe("UI V2 dictionary", () => {
     page,
   }) => {
     await page.goto("/v2/dicts?q=cum");
-    // Verify multi-entry dictionary has quick-jump bar
+    // Verify multi-entry dictionary has quick-jump links (inline .entry-nav on
+    // narrow viewports, or .toc-entries-summary in the desktop left TOC rail).
     const nav = page.locator(".entry-nav").first();
-    await expect(nav).toBeVisible();
-    await expect(nav.getByText("Jump to")).toBeVisible();
+    const useInlineEntryNav = await nav.isVisible();
+    if (useInlineEntryNav) {
+      await expect(nav.getByText("Jump to")).toBeVisible();
+    } else {
+      await expect(page.locator(".toc-entries-summary")).toBeVisible();
+    }
 
     // The headword is inert text; the permalink lives in its own pill.
     const headword = page.locator(".entry-headword").first();
@@ -493,7 +510,9 @@ test.describe("UI V2 dictionary", () => {
     await expect(copyPill).toHaveAttribute("href", /^\/v2\/dicts\/id\/.+/);
 
     // Verify jump link navigates to anchor
-    const jumpLink = nav.locator(".entry-nav-link").nth(1);
+    const jumpLink = useInlineEntryNav
+      ? nav.locator(".entry-nav-link").nth(1)
+      : page.locator(".toc-entries-summary .toc-entry-chip").nth(1);
     await jumpLink.click();
     expect(page.url()).toMatch(/#[a-zA-Z0-9_-]+/);
   });
@@ -697,7 +716,17 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator(".reader-dict-title")).toHaveCount(0);
 
     // The sidebar dictionary is hosted in an iframe pointing at /v2/dicts?embedded=1.
-    await expect(page.locator("aside.reader-dict-panel")).toBeAttached();
+    const dictPanel = page.locator("aside.reader-dict-panel");
+    await expect(dictPanel).toBeAttached();
+
+    // On mobile viewports (<= 640px) without an initial ?q=, the bottom-sheet
+    // drawer starts minimized with its iframe container hidden; tap the
+    // Dictionary tab in the bottom bar to expand the drawer first.
+    if ((page.viewportSize()?.width ?? 1280) <= 640) {
+      await page.locator("#panel-tab-dict").click();
+      await expect(dictPanel).not.toHaveClass(/\bdrawer-minimized\b/);
+    }
+
     const frame = page.frameLocator("#dict-frame");
 
     // Verify search form and settings button exist inside the embedded dictionary
@@ -788,7 +817,7 @@ test.describe("UI V2 dictionary", () => {
         /<link\s+rel="stylesheet"\s+href="(\/v2\/assets\/v2\.[a-f0-9]+\.css)">/
       );
       const jsMatch = html.match(
-        /<script\s+type="module"\s+src="(\/v2\/assets\/v2_bundle\.[a-f0-9]+\.js)">/
+        /<script\s+type="module"\s+src="(\/v2\/assets\/v2_bundle\.[a-f0-9]+\.js)"[^>]*>/
       );
 
       expect(cssMatch).toBeTruthy();
