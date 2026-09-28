@@ -44,12 +44,19 @@
   }
 }
 
-/* Slow page turns. fetchAndSwapPartial marks the passage `aria-busy` while it
- * loads; after a delay, so ordinary turns never flash it, a spinner appears
- * over the text column. It hangs off the column rather than the passage
- * because a swiped passage is translated off-screen while it loads. Mobile:
- * viewport-centered (the column is `display: contents`). */
-.reader-main-column:has(> .reader-text-panel[aria-busy="true"])::after {
+/* Page turns. swapSlots marks the text card (and the other page slots)
+ * `aria-busy` while the next page loads. The card dims at once. */
+@media (prefers-reduced-motion: no-preference) {
+  .reader-text-card[aria-busy="true"] {
+    opacity: 0.5;
+  }
+}
+
+/* Slow page turns: after a delay, so ordinary turns never flash it, a spinner
+ * appears over the text column. It hangs off the column rather than the
+ * passage because a swiped passage is translated off-screen while it loads.
+ * Mobile: viewport-centered (the column is `display: contents`). */
+.reader-main-column:has(> .reader-text-panel > [aria-busy="true"])::after {
   content: "";
   position: fixed;
   top: 50%;
@@ -84,7 +91,7 @@
     position: relative;
   }
 
-  .reader-main-column:has(> .reader-text-panel[aria-busy="true"])::after {
+  .reader-main-column:has(> .reader-text-panel > [aria-busy="true"])::after {
     position: absolute;
   }
 }
@@ -94,7 +101,7 @@
     transition: none;
   }
 
-  .reader-main-column:has(> .reader-text-panel[aria-busy="true"])::after {
+  .reader-main-column:has(> .reader-text-panel > [aria-busy="true"])::after {
     animation: page-loading-in 0s 400ms both;
   }
 }

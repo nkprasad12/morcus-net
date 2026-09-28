@@ -1627,6 +1627,43 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     document.body.innerHTML = "";
   });
 
+  /** Mirrors `renderReaderPagerLink`: the sticky bar's pager slot. */
+  function pagerLinkHtml(dir: "prev" | "next", url: string | undefined) {
+    return `<a href="${url ?? "#"}"
+               class="reader-btn reader-nav-arrow ${!url ? "disabled" : ""}"
+               id="pager-${dir}"
+               data-slot="pager-${dir}"
+               ${!url ? 'aria-disabled="true" tabindex="-1"' : ""}>${
+      dir === "prev" ? "&larr;" : "&rarr;"
+    }</a>`;
+  }
+
+  /** Mirrors `renderReaderPageLabel`. */
+  function pageLabelHtml(pageId: string) {
+    return `<span class="jump-val" data-slot="page-label">${pageId}</span>`;
+  }
+
+  /** A page-turn partial response, as `renderReaderPartialHtml` builds it. */
+  function pageResponse(
+    cardHtml: string,
+    options: { pageId: string; prevUrl?: string; nextUrl?: string }
+  ): string {
+    return [
+      `<template data-slot="text">${cardHtml.trim()}</template>`,
+      `<template data-slot="pager-prev">${pagerLinkHtml(
+        "prev",
+        options.prevUrl
+      )}</template>`,
+      `<template data-slot="pager-next">${pagerLinkHtml(
+        "next",
+        options.nextUrl
+      )}</template>`,
+      `<template data-slot="page-label">${pageLabelHtml(
+        options.pageId
+      )}</template>`,
+    ].join("\n");
+  }
+
   function createNavigableReaderView(
     options: {
       pageId?: string;
@@ -1667,25 +1704,15 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       <div class="reader-sticky-bar" id="reader-sticky-bar">
         <div class="sticky-primary-row">
           <div class="sticky-primary-left">
-            <a href="${prevUrl ?? "#"}"
-               class="reader-btn reader-nav-arrow ${!prevUrl ? "disabled" : ""}"
-               id="pager-prev"
-               ${
-                 !prevUrl ? 'aria-disabled="true" tabindex="-1"' : ""
-               }>&larr;</a>
+            ${pagerLinkHtml("prev", prevUrl)}
           </div>
           <div class="sticky-jump-box">
             <a href="#reader-toc-drawer" class="reader-btn" id="reader-toc-btn" role="button" aria-expanded="false">
-              <span class="jump-val">${pageId}</span>
+              ${pageLabelHtml(pageId)}
             </a>
           </div>
           <div class="sticky-primary-right">
-            <a href="${nextUrl ?? "#"}"
-               class="reader-btn reader-nav-arrow ${!nextUrl ? "disabled" : ""}"
-               id="pager-next"
-               ${
-                 !nextUrl ? 'aria-disabled="true" tabindex="-1"' : ""
-               }>&rarr;</a>
+            ${pagerLinkHtml("next", nextUrl)}
           </div>
         </div>
         </div>
@@ -1710,7 +1737,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
       <div class="reader-split-layout reader-layout-empty">
         <section class="reader-text-panel">
-          <div class="reader-text-card">
+          <div class="reader-text-card" data-slot="text">
             <header class="reader-text-card-header">
               <span class="reader-work-tag">De Bello Gallico</span>
               <h1 class="reader-passage-heading">Liber I: Caput ${pageId}</h1>
@@ -1759,7 +1786,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
   }
 
   const page2CardHtml = `
-    <div class="reader-text-card">
+    <div class="reader-text-card" data-slot="text">
       <header class="reader-text-card-header">
         <span class="reader-work-tag">De Bello Gallico</span>
         <h1 class="reader-passage-heading">Liber I: Caput 2</h1>
@@ -1778,13 +1805,19 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     </div>
   `;
 
-  test("swapPage fetches partial HTML and swaps .reader-text-panel children without touching dictionary iframe", async () => {
+  const page2Response = pageResponse(page2CardHtml, {
+    pageId: "2",
+    prevUrl: "/v2/reader/caesar/de-bello-gallico/1",
+    nextUrl: "/v2/reader/caesar/de-bello-gallico/3",
+  });
+
+  test("swapPage replaces the page slots in one request without touching dictionary iframe", async () => {
     const el = createNavigableReaderView({ pageId: "1" });
     const iframeBefore = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
 
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      text: async () => page2CardHtml,
+      text: async () => page2Response,
     });
 
     const success = await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
@@ -1847,7 +1880,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      text: async () => page2CardHtml,
+      text: async () => page2Response,
     });
 
     const pagerNext = el.querySelector<HTMLAnchorElement>("#pager-next")!;
@@ -1864,7 +1897,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      text: async () => page2CardHtml,
+      text: async () => page2Response,
     });
 
     const nextCard = el.querySelector<HTMLAnchorElement>(
@@ -1885,7 +1918,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      text: async () => page2CardHtml,
+      text: async () => page2Response,
     });
 
     tocBtn.click();
@@ -1913,7 +1946,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     // 2. Perform page turn to page 2
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      text: async () => page2CardHtml,
+      text: async () => page2Response,
     });
 
     await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
@@ -1945,7 +1978,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     function mockPage2Fetch() {
       window.fetch = jest.fn().mockResolvedValue({
         ok: true,
-        text: async () => page2CardHtml,
+        text: async () => page2Response,
       });
     }
 
@@ -2035,7 +2068,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       }
       return Promise.resolve({
         ok: true,
-        text: async () => page2CardHtml,
+        text: async () => page2Response,
       });
     });
     window.fetch = fetchMock;
@@ -2130,7 +2163,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     expect(panelController.hasNotes).toBe(false);
 
     const pageWithNotesHtml = `
-      <div class="reader-text-card">
+      <div class="reader-text-card" data-slot="text">
         <header class="reader-text-card-header">
           <h1 class="reader-passage-heading">Liber I: Caput 2</h1>
         </header>
@@ -2153,7 +2186,11 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      text: async () => pageWithNotesHtml,
+      text: async () =>
+        pageResponse(pageWithNotesHtml, {
+          pageId: "2",
+          prevUrl: "/v2/reader/caesar/de-bello-gallico/1",
+        }),
     });
 
     await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
@@ -2169,14 +2206,14 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     // Swap to page 2
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      text: async () => page2CardHtml,
+      text: async () => page2Response,
     });
     await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
     expect(el.dataset.page).toBe("2");
 
     // Mock page 1 HTML for popstate return
     const page1CardHtml = `
-      <div class="reader-text-card">
+      <div class="reader-text-card" data-slot="text">
         <header class="reader-text-card-header">
           <h1 class="reader-passage-heading">Liber I: Caput 1</h1>
         </header>
@@ -2187,7 +2224,11 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     `;
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      text: async () => page1CardHtml,
+      text: async () =>
+        pageResponse(page1CardHtml, {
+          pageId: "1",
+          nextUrl: "/v2/reader/caesar/de-bello-gallico/2",
+        }),
     });
 
     // Simulate browser back button to page 1 with saved scrollY: 180
@@ -2214,8 +2255,10 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     });
   });
 
-  test("network failure during swap renders error placeholder and does not push history", async () => {
+  test("a failed page turn falls back to a full navigation without pushing history", async () => {
     const el = createNavigableReaderView({ pageId: "1" });
+    const navigate = jest.fn();
+    el.navigate = navigate;
     const pushStateSpy = jest.spyOn(window.history, "pushState");
     const consoleSpy = jest
       .spyOn(console, "error")
@@ -2229,12 +2272,95 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     const success = await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
     expect(success).toBe(false);
 
+    expect(navigate).toHaveBeenCalledWith(
+      "http://localhost/v2/reader/caesar/de-bello-gallico/2",
+      { replace: false }
+    );
     expect(pushStateSpy).not.toHaveBeenCalled();
     expect(el.dataset.page).toBe("1");
-    expect(el.querySelector(".no-results")).not.toBeNull();
+    expect(el.querySelector(".reader-passage-heading")?.textContent).toBe(
+      "Liber I: Caput 1"
+    );
+    expect(el.querySelector("[aria-busy]")).toBeNull();
 
     pushStateSpy.mockRestore();
     consoleSpy.mockRestore();
+  });
+
+  test("a failed popstate turn replaces the history entry instead of adding one", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    const navigate = jest.fn();
+    el.navigate = navigate;
+    const consoleSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    window.fetch = jest.fn().mockRejectedValue(new TypeError("offline"));
+
+    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2", {
+      push: false,
+      isPopState: true,
+    });
+
+    expect(navigate).toHaveBeenCalledWith(
+      "http://localhost/v2/reader/caesar/de-bello-gallico/2",
+      { replace: true }
+    );
+    consoleSpy.mockRestore();
+  });
+
+  test("marks the page slots busy while the next page loads", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    let respond: (value: unknown) => void = () => {};
+    window.fetch = jest.fn().mockReturnValue(
+      new Promise((resolve) => {
+        respond = resolve;
+      })
+    );
+
+    const turn = el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    const busy = Array.from(el.querySelectorAll("[aria-busy='true']")).map(
+      (e) => e.getAttribute("data-slot")
+    );
+    expect(busy.sort()).toEqual(
+      ["page-label", "pager-next", "pager-prev", "text"].sort()
+    );
+
+    respond({ ok: true, text: async () => page2Response });
+    await turn;
+    expect(el.querySelector("[aria-busy]")).toBeNull();
+  });
+
+  test("keeps keyboard focus on the pager link across a page turn (F3)", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2Response,
+    });
+    const oldNext = el.querySelector<HTMLAnchorElement>("#pager-next")!;
+    oldNext.focus();
+
+    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+
+    const newNext = el.querySelector<HTMLAnchorElement>("#pager-next")!;
+    expect(newNext).not.toBe(oldNext);
+    expect(document.activeElement).toBe(newNext);
+  });
+
+  test("moves focus from the old passage to the new text card, not <body>", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2Response,
+    });
+    el.querySelector<HTMLAnchorElement>(".next-card")!.focus();
+
+    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+
+    const card = el.querySelector<HTMLElement>(".reader-text-card")!;
+    expect(card.querySelector(".reader-passage-heading")?.textContent).toBe(
+      "Liber I: Caput 2"
+    );
+    expect(document.activeElement).toBe(card);
   });
 
   describe("fetchTranslation abort signal and cache behavior", () => {

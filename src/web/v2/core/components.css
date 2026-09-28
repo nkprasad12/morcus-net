@@ -429,3 +429,15 @@ body.body-embedded {
   outline: none;
   box-shadow: var(--theme-ring);
 }
+
+/* ==========================================================================
+   Slot swaps (core/partial.client.ts swapSlots)
+   ========================================================================== */
+
+/* When the focused element has no counterpart in the new markup, swapSlots
+ * focuses the replaced slot (tabindex="-1") so focus never drops to <body>.
+ * The slot is a starting point for the next Tab, not a control, so it gets
+ * no ring. */
+[data-slot][tabindex="-1"]:focus {
+  outline: none;
+}
