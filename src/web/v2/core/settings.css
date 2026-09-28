@@ -28,17 +28,11 @@
   border-color: var(--border-strong);
 }
 
-.settings-btn[aria-expanded="true"] {
+.settings-btn[aria-expanded="true"],
+details[open] > .settings-btn {
   color: var(--primary);
   border-color: var(--primary);
   background-color: var(--tag-bg);
-}
-
-.settings-btn svg {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
-  display: block;
 }
 
 .settings-glyph {

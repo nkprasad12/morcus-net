@@ -98,6 +98,15 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 > "my settings didn't stick" bugs. Worth a deliberate consolidation pass eventually; at minimum,
 > document the precedence ladder in one place next to one parser.
 
+- [ ] 🔴 **Ratchet down string-selector queries outside `core/`** (metric C of
+      `./morcus.sh inventory`; 202 calls across 18 files when first measured). Work hotspot-first
+      from §4 of `.cache/inventory/report.md`: `reader_view.client.ts` (54),
+      `reader_settings.client.ts` (24), `reader_toc.client.ts` (22), `external_loader.client.ts`
+      (20), `reader_panel.client.ts` (16), `dict_settings.client.ts` (13), `dict_search.client.ts`
+      (12). Resolve each element once on connect (`this.scope.require`) into a field, or hand the
+      lookup to a `core/` controller, instead of re-querying by string at each use. Land one file
+      per change and lower the ratchet with `npm run inventory:update`.
+
 ---
 
 ## Phase 4 — Decomposition
@@ -114,6 +123,27 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       that clears `.word-active` unscoped would then reach into the dictionary panel. The
       reader's clear is scoped and has a test pinning the scope, so the trap is contained — but the
       parameter should still be either wired up deliberately or removed.
+
+### Client DOM construction outside `core/`
+
+Tracked by metric B of `./morcus.sh inventory` (`domMutationOutsideCore` in
+[`inventory_ratchet.json`](inventory_ratchet.json)); was 32 calls across 6 files. Server-render the
+markup and adopt it on connect, or move the construction into a `core/` helper. Lower the ratchet
+with `npm run inventory:update` in the same change.
+
+- [x] 🟢 **`dict_search.client.ts`: stop creating `<morcus-dict-suggestions>` and the word links.**
+      The suggestions host is server-rendered inside `.input-wrapper` by `renderDictSearchBar`
+      (`data-js-only`) and adopted on connect; the `<a class="lat-word">` factory is
+      `createWordLink` in `core/tokenize.client.ts`. The two remaining calls re-render the language
+      and inflection chips from `search_bar.common.ts`.
+- [ ] 🟡 **`dict_suggestions.client.ts` (11)**: build the suggestion list from a
+      `*.common.ts` HTML renderer (as the chips do) instead of `createElement`/`appendChild`, and
+      server-render the empty `ul.suggestions` so the SSR conformance allowlist can drop it.
+- [ ] 🟡 **`reader_view.client.ts` (9)**: the bottom-sheet label `<strong>` runs and the
+      `lat-word` span factory (a sibling of `createWordLink` in `core/tokenize.client.ts`).
+- [ ] 🟢 **`library_view.client.ts` (3)**, **`reader_panel.client.ts` (3)**,
+      **`external_loader.client.ts` (1)**: resume badge, translation loading/error states,
+      saved-items list.
 
 ---
 
@@ -224,6 +254,15 @@ first card) as the fixture, then asserted on the request URL rather than the res
       unreliable. The focus-ring block still appears ~9× across the bundle; only the 5 within
       `reader_nav.css` were catchable. Cross-file dedup wants a standalone script over the built
       bundle, run as its own CI step.
+- [x] 🟡 **Eliminate the 10 cross-file duplicate declaration blocks** reported by
+      `./morcus.sh inventory` (§2 of `.cache/inventory/report.md`): - App bar vs critical CSS (`0937c20e`, `023f94c4`, `1209c6d3`, `1a3fa00c`, `950ab4e7`):
+      `.brand-group`, `.actions-group`, `.mobile-menu` and the ≤640px `.app-bar-inner` grid now
+      live only in [`v2-critical.css`](v2-critical.css), which is inlined into every page ahead
+      of `v2.css`. `shell/app_bar.css` keeps only what first paint does not need. - 20px icon-button glyph (`690729f2`) → one rule in [`core/components.css`](core/components.css). - Open settings button (`789b1926`) → `details[open] > .settings-btn` joins the
+      `[aria-expanded="true"]` rule in [`core/settings.css`](core/settings.css) (it must stay after
+      `.settings-btn:hover`, which `components.css` would not be). - `.dict-source-popover-body a` (`a97493b7`) repeated the base `a` rule in `v2.css`; deleted. - Vertical stacks (`02e1f1f3`, `e2207a61`) → shared selector lists in `core/components.css`. - `0937c20e` also matched `.about-header` against critical `.brand-group`. Critical CSS has
+      to be self-contained, so that pair is allowlisted in `inventory_ratchet.json` rather than
+      merged.
 
 ---
 

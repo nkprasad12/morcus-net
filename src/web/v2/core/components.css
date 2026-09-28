@@ -75,6 +75,32 @@
   font-size: 0.85rem;
 }
 
+/* Shared 20px glyph inside icon-only buttons */
+.settings-btn svg,
+.theme-toggle-btn svg,
+.mobile-menu-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  display: block;
+}
+
+/* Shared vertical stacks (flex column with a fixed gap) */
+.toc-entries-groups,
+.toc-group,
+.external-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.toc-nav,
+.dict-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
 /* Shared 2px primary focus ring (2px offset) */
 .btn:focus-visible,
 .brand-logo-link:focus-visible,

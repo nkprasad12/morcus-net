@@ -352,16 +352,6 @@
   margin: 0;
 }
 
-.dict-source-popover-body a {
-  color: var(--primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.dict-source-popover-body a:hover {
-  color: var(--primary-hover);
-}
-
 .dict-summary {
   padding: var(--space-1) var(--space-2);
   font-weight: bold;

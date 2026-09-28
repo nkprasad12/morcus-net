@@ -221,6 +221,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
             <path d="${SEARCH_PATH}"></path>
           </svg>
         </button>
+        <morcus-dict-suggestions data-js-only></morcus-dict-suggestions>
       </div>
       ${trayHtml}
     </form>
