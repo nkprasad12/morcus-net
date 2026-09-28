@@ -46,9 +46,6 @@ const CREATED_ON_UPGRADE_ALLOWLIST: readonly string[] = [
   // Autocomplete popup shell attached once by `MorcusDictSearch`.
   "morcus-dict-suggestions",
   "morcus-dict-suggestions > ul.suggestions",
-  // Reader companion panel back-to-top button (tracked for Phase 2.4 core unification).
-  "button.reader-dict-back-to-top",
-  "button.reader-dict-back-to-top *",
 ];
 
 function describeElement(el: Element): string {

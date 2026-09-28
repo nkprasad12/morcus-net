@@ -202,7 +202,7 @@ first card) as the fixture, then asserted on the request URL rather than the res
 
 ## Phase 9 — CSS duplication
 
-- [ ] 🟡 **Resolve the `.reader-btn:hover` conflict — this one changes pixels.**
+- [x] 🟡 **Resolve the `.reader-btn:hover` conflict — this one changes pixels.**
       `reader_nav.css` styles hover twice. The shared rule sets
       `border-color: var(--border-strong)` plus `color: var(--primary)`; the per-control rules
       earlier in the file set `color: var(--text)`, `border-color: var(--app-bar-toggle-border)`
@@ -211,7 +211,7 @@ first card) as the fixture, then asserted on the request URL rather than the res
       dedup pass left both in place and pinned their file order with comments precisely because
       collapsing them would silently pick a winner. Deciding which hover is intended is a
       **design** call and needs visual baseline approval.
-- [ ] 🟡 **Sweep for dead CSS.** `.jump-input`, `.sticky-jump-input` and `.jump-submit` were removed
+- [x] 🟡 **Sweep for dead CSS.** `.jump-input`, `.sticky-jump-input` and `.jump-submit` were removed
       after grep showed zero references anywhere outside their own rules — leftovers from a removed
       section-number jump form. `.ghost-scrollbar` is still declared and applied to nothing. Three
       confirmed instances found incidentally suggests a systematic coverage pass would beat any

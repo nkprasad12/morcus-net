@@ -5,11 +5,10 @@ import {
   DRAWER_DEFAULT_SVH,
   DRAWER_EXPANDED_SVH,
   DRAWER_FLOOR_SVH,
-  ICON_PATHS,
+  bindBackToTop,
   closeActiveSectionUI,
   copyText,
   escapeId,
-  html,
   isPlainLeftClick,
   measureSvh100,
   openSectionActionMenu,
@@ -1066,76 +1065,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   // --- Embedded Dictionary "Jump to top" Button ---
   private initBackToTop() {
-    // 1. Guard against duplicate elements
-    if (this.querySelector(".reader-dict-back-to-top")) return;
-
-    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
-    if (!dictPanel) return;
-
-    // 2. Create button dynamically (ensures 0 elements in No-JS)
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "reader-dict-back-to-top";
-    btn.setAttribute("aria-label", "Scroll dictionary to top");
-    btn.title = "Jump to top";
-    dictPanel.appendChild(btn);
-    setHtml(
-      btn,
-      html`<svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="${ICON_PATHS.chevronUp}"></path>
-      </svg>`
+    const btn = this.querySelector<HTMLButtonElement>(
+      ".reader-dict-back-to-top"
     );
+    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+    if (!btn || !dictPanel) return;
 
-    const getScroller = () => {
-      if (window.innerWidth > 640) {
-        return dictPanel;
-      }
-      return this.querySelector<HTMLElement>(".reader-dict-sticky");
-    };
-
-    let ticking = false;
-    const updateVisibility = () => {
-      const scroller = getScroller();
-      const shouldShow = (scroller?.scrollTop ?? 0) > 300;
-      btn.classList.toggle("visible", shouldShow);
-      ticking = false;
-    };
-
-    const onScroll = () => {
-      if (!ticking) {
-        this.scope.rAF(updateVisibility);
-        ticking = true;
-      }
-    };
-
-    // Listen on both possible scroll containers
-    const mobileSticky = this.querySelector<HTMLElement>(".reader-dict-sticky");
-    this.scope.listen(dictPanel, "scroll", onScroll, { passive: true });
-    this.scope.listen(mobileSticky, "scroll", onScroll, { passive: true });
-
-    // Click handler: Instant scroll straight to top (no smooth animation)
-    const onClick = (e: MouseEvent) => {
-      e.preventDefault();
-      const scroller = getScroller();
-      if (!scroller) return;
-
-      if (window.innerWidth > 640) {
-        scroller.scrollTo({ top: 0, behavior: "instant" });
-      } else {
-        const contentEl = this.querySelector<HTMLElement>(
-          ".reader-dict-content"
-        );
-        const targetTop = contentEl ? contentEl.offsetTop : 0;
-        scroller.scrollTo({ top: targetTop, behavior: "instant" });
-      }
-      btn.classList.remove("visible");
-    };
-
-    this.scope.listen(btn, "click", onClick);
-
-    this.scope.use(() => {
-      btn.remove();
-    });
+    this.scope.use(bindBackToTop(btn, { container: dictPanel }));
   }
 
   // --- Reader Preferences & Canvas Styling ---

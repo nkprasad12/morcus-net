@@ -4,27 +4,30 @@
    1. Base Card Shell (.card)
    ========================================================================== */
 
-.card {
+.card,
+.work-card {
   background-color: var(--card-surface-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--card-shadow);
 }
 
-.card-interactive {
+.card-interactive,
+.work-card {
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease,
     border-color 0.15s ease;
 }
 
-.card-interactive:hover {
+.card-interactive:hover,
+.work-card:hover {
   transform: translateY(-2px);
   border-color: var(--primary);
   box-shadow: var(--card-shadow-hover);
 }
 
 /* ==========================================================================
-   2. Button Utility Classes (.btn)
+   2. Button Utility Classes (.btn) & Shared Focus Rings
    ========================================================================== */
 
 .btn {
@@ -72,13 +75,50 @@
   font-size: 0.85rem;
 }
 
-.btn-pill {
-  border-radius: var(--radius-full);
-}
-
-.btn:focus-visible {
+/* Shared 2px primary focus ring (2px offset) */
+.btn:focus-visible,
+.brand-logo-link:focus-visible,
+.theme-toggle-btn:focus-visible,
+.mobile-menu-btn:focus-visible,
+.back-to-top:focus-visible,
+.reader-dict-back-to-top:focus-visible,
+.reader-drawer-fab:focus-visible,
+.dialog-close-btn:focus-visible,
+.tab-pill:focus-visible,
+.jump-pill:focus-visible,
+.dict-summary:focus-visible,
+.subsection-chip:focus-visible,
+.subsection-namelink:focus-visible,
+.reader-panel-tab:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+/* Shared 2px primary focus ring (1px offset for compact pills & inline links) */
+.settings-btn:focus-visible,
+.action-btn:focus-visible,
+.dict-source-btn:focus-visible,
+.lat-word:focus-visible,
+.reader-splitter:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+/* Shared 2px primary inset focus ring (-2px offset) */
+.drawer-bar:focus-visible,
+.reader-sheet-bar:focus-visible,
+.external-source-tab:has(input:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Shared text input focus ring */
+.report-reporter:focus-visible,
+.report-textarea:focus-visible,
+.external-input:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
 }
 
 /* ==========================================================================
@@ -111,17 +151,15 @@
 }
 
 .empty-state-standalone,
-.library-empty-state-standalone,
 .not-found-state {
   margin: 4rem auto;
   max-width: 600px;
 }
 
 /* ==========================================================================
-   4. Ghost Scrollbars (.ghost-scrollbar)
+   4. Ghost Scrollbars
    ========================================================================== */
 
-.ghost-scrollbar,
 .reader-text-panel,
 .reader-dict-panel,
 .reader-panel-view,
@@ -180,32 +218,28 @@ body.body-embedded {
 
 .lang-chip-la,
 .toc-badge-la,
-.dict-badge-la,
-.lexicon-badge-la {
+.dict-badge-la {
   background-color: var(--chip-la-bg);
   color: var(--chip-la-text);
 }
 
 .lang-chip-en,
 .toc-badge-en,
-.dict-badge-en,
-.lexicon-badge-en {
+.dict-badge-en {
   background-color: var(--chip-en-bg);
   color: var(--chip-en-text);
 }
 
 .lang-chip-de,
 .toc-badge-de,
-.dict-badge-de,
-.lexicon-badge-de {
+.dict-badge-de {
   background-color: var(--chip-de-bg);
   color: var(--chip-de-text);
 }
 
 .lang-chip-es,
 .toc-badge-es,
-.dict-badge-es,
-.lexicon-badge-es {
+.dict-badge-es {
   background-color: var(--chip-es-bg);
   color: var(--chip-es-text);
 }
@@ -222,10 +256,6 @@ body.body-embedded {
   align-items: center;
   background: var(--border);
   color: var(--text-muted);
-}
-
-.badge-pill {
-  border-radius: var(--radius-xl);
 }
 
 .badge-macra {
@@ -301,7 +331,6 @@ body.body-embedded {
 }
 
 /* Popover Header & Close Controls */
-.popover-header,
 .settings-popover-header,
 .reader-toc-header {
   display: flex;
@@ -311,7 +340,6 @@ body.body-embedded {
   flex-shrink: 0;
 }
 
-.popover-close-btn,
 .settings-popover-close,
 .reader-toc-close-btn {
   background: none;
@@ -327,9 +355,9 @@ body.body-embedded {
   transition: color 0.15s ease, background 0.15s ease;
 }
 
-.popover-close-btn:hover,
 .settings-popover-close:hover,
-.reader-toc-close-btn:hover {
+.reader-toc-close-btn:hover,
+.dialog-close-btn:hover {
   color: var(--text);
   background: var(--tag-bg);
 }
@@ -425,7 +453,9 @@ body.body-embedded {
   font-family: var(--font-sans);
 }
 
-.section-edit-actions .btn:focus-visible {
+.section-edit-actions .btn:focus-visible,
+.lsSenseBullet.section-anchor:focus-visible,
+.reader-gutter .section-anchor:focus-visible {
   outline: none;
   box-shadow: var(--theme-ring);
 }

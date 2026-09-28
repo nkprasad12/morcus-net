@@ -556,6 +556,13 @@ export function renderReaderDictPanelHtml(
               ${aboutHtml}
             </div>
           </div>
+          <button type="button"
+                  class="reader-dict-back-to-top"
+                  aria-label="Scroll dictionary to top"
+                  title="Jump to top"
+                  data-js-only>
+            ${renderIconSvg("chevronUp")}
+          </button>
         </aside>
         <a href="#reader-dict"
            class="reader-drawer-fab"

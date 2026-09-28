@@ -231,34 +231,16 @@ a.lsSenseBullet:visited {
   background-color: var(--tag-bg);
 }
 
-.lat-word:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 1px;
-}
-
 /* Section anchor bullets */
 .lsSenseBullet.section-anchor,
-.lsSenseBullet.section-anchor:visited,
-.dict-layout .section-anchor,
-.dict-layout .section-anchor:visited,
-.reader-dict-panel .section-anchor,
-.reader-dict-panel .section-anchor:visited {
+.lsSenseBullet.section-anchor:visited {
   text-decoration: none;
   color: var(--text);
   cursor: pointer;
   transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
 }
 
-.lsSenseBullet.section-anchor:hover,
-.dict-layout .section-anchor:hover,
-.reader-dict-panel .section-anchor:hover {
+.lsSenseBullet.section-anchor:hover {
   background-color: var(--primary);
   color: var(--on-accent);
-}
-
-.lsSenseBullet.section-anchor:focus-visible,
-.dict-layout .section-anchor:focus-visible,
-.reader-dict-panel .section-anchor:focus-visible {
-  outline: none;
-  box-shadow: var(--theme-ring);
 }

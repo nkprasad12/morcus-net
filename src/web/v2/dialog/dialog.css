@@ -60,16 +60,6 @@
   color: var(--text);
 }
 
-.dialog-subtitle {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-  margin: var(--space-1) 0 0;
-}
-
-.dialog-sm {
-  max-width: 440px;
-}
-
 .dialog-close-btn {
   display: inline-flex;
   align-items: center;
@@ -81,16 +71,6 @@
   padding: var(--space-3);
   border-radius: var(--radius-md);
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
-}
-
-.dialog-close-btn:hover {
-  color: var(--text);
-  background: var(--tag-bg);
-}
-
-.dialog-close-btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
 }
 
 .dialog-close-icon {
@@ -174,13 +154,6 @@
   background: var(--bg);
   color: var(--text);
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.report-reporter:focus-visible,
-.report-textarea:focus-visible {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: var(--focus-ring);
 }
 
 .report-textarea {

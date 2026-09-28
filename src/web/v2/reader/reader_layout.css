@@ -86,10 +86,6 @@
     max-height: 88svh;
   }
 
-  .reader-layout-active .reader-dict-sticky {
-    display: block;
-  }
-
   /* Minimized drawer (both initial empty state and collapsed active state):
      retains content in DOM but collapses to 40px teaser. Before upgrade, a
      `:target` on the drawer or inside it (a companion tab, a note) overrides
@@ -170,11 +166,6 @@
 
   .reader-drawer-fab:active {
     transform: translateY(0);
-  }
-
-  .reader-drawer-fab:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
   }
 
   /* Dismissed state (closed via 'x' button): hides the drawer & shows corner FAB.

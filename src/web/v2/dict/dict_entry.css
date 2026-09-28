@@ -111,23 +111,14 @@
   font-weight: 600;
 }
 
-.tab-pill:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
+.tab-pill:hover,
 .tool-pane[open] > .tab-pill:hover {
-  color: var(--primary);
   border-color: var(--primary);
+  color: var(--primary);
 }
 
 .tab-pill:focus:not(:focus-visible) {
   outline: none;
-}
-
-.tab-pill:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
 }
 
 /* ---- Copy-link pill --------------------------------------------------- */
@@ -291,11 +282,6 @@
 
 .action-btn:focus:not(:focus-visible) {
   outline: none;
-}
-
-.action-btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 1px;
 }
 
 .action-btn-icon {

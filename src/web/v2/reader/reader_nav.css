@@ -119,9 +119,6 @@
 }
 
 .sticky-section-btn:hover {
-  background: var(--card-bg);
-  border-color: var(--app-bar-toggle-border);
-  color: var(--text);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transform: translateY(-0.5px);
 }
@@ -135,8 +132,7 @@
  * Shared affordances for the reader nav controls. Every control in the sticky
  * bar (both pager arrows, the section trigger and the settings trigger) is
  * emitted with `.reader-btn`, so these hang off that rather than being
- * restated per control. They stay above `.reader-btn:hover` for the same
- * cascade-order reason noted there.
+ * restated per control.
  */
 .reader-btn:focus-visible {
   outline: none;
@@ -183,18 +179,6 @@
   color: var(--text);
 }
 
-/*
- * Kept at this position in the file on purpose: `.reader-btn:hover` below has
- * equal specificity, so moving this later would flip which declarations win.
- */
-.reader-nav-arrow:hover,
-.reader-nav-arrow:visited:hover,
-.reader-settings-btn:hover {
-  color: var(--text);
-  border-color: var(--app-bar-toggle-border);
-  background: var(--card-bg);
-}
-
 /* Reader Settings (Aa) Trigger Button */
 .reader-settings-btn,
 .reader-settings-btn:visited {
@@ -235,8 +219,9 @@
 
 .reader-btn:hover,
 .reader-btn:visited:hover {
-  border-color: var(--border-strong);
-  color: var(--primary);
+  color: var(--text);
+  border-color: var(--app-bar-toggle-border);
+  background: var(--card-bg);
 }
 
 .reader-btn.disabled,
@@ -257,48 +242,13 @@
 }
 
 /* ==========================================================================
-   2. Quick Jump Form & View Mode Switcher
+   2. Quick Jump Glyph
    ========================================================================== */
-
-.reader-jump-form {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
 
 .jump-glyph {
   font-family: var(--font-serif);
   font-size: 0.95rem;
   color: var(--text-muted);
-}
-
-.reader-view-toggle {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: var(--space-1);
-  background: var(--bg);
-}
-
-.toggle-option {
-  padding: var(--space-1) var(--space-4);
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  text-decoration: none;
-  border-radius: var(--radius-sm);
-  transition: all 0.12s ease;
-}
-
-.toggle-option:hover {
-  color: var(--text);
-}
-
-.toggle-option.active,
-.toggle-option.active:visited {
-  background: var(--primary);
-  color: var(--on-accent);
-  font-weight: 600;
 }
 
 /* ==========================================================================
@@ -390,11 +340,6 @@
 
   .reader-settings-btn .settings-glyph {
     font-size: 0.875rem;
-  }
-
-  .jump-input {
-    width: 2.75rem;
-    padding: var(--space-1) var(--space-2);
   }
 }
 

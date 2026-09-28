@@ -16,11 +16,6 @@
   border-radius: var(--radius-xs);
 }
 
-.brand-logo-link:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
 .brand-logo {
   width: 48px;
   height: 48px;
@@ -79,12 +74,6 @@
 .theme-toggle-btn:hover,
 .mobile-menu-btn:hover {
   background-color: var(--app-bar-nav-hover-bg);
-}
-
-.theme-toggle-btn:focus-visible,
-.mobile-menu-btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
 }
 
 .theme-toggle-btn svg,
@@ -250,8 +239,6 @@
 .back-to-top:focus-visible,
 .reader-dict-back-to-top:focus-visible {
   opacity: 1;
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
 }
 
 /* `:not([data-upgraded])`: without JS (and before upgrade) the link works
