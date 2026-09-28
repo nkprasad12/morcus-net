@@ -23,6 +23,7 @@ const BUILD = "build";
 const E2E = "e2e";
 const CORPUS = "corpus";
 const VISUAL_DIFF = "visual-diff";
+const INVENTORY = "inventory";
 
 const cleanupOperations: (() => unknown)[] = [];
 
@@ -44,6 +45,10 @@ if (args.command === WEB_SERVER) {
   runCorpusCommand(args).then(assert);
 } else if (args.command === VISUAL_DIFF || args.command === "diff") {
   runVisualDiff(args).then(assert);
+} else if (args.command === INVENTORY) {
+  runInventory(args).then((ok) => {
+    if (!ok) process.exit(1);
+  });
 }
 
 interface CommandArgument {
@@ -386,6 +391,18 @@ function parseArguments() {
     default: "10",
   });
 
+  const inventory = subparsers.add_parser(INVENTORY, {
+    help: "Runs the UI V2 cross-slice inventory and exact ratchet check.",
+  });
+  inventory.add_argument("-u", "--update", {
+    help: "Rewrites src/web/v2/inventory_ratchet.json from the current metrics.",
+    action: "store_true",
+  });
+  inventory.add_argument("-r", "--report", {
+    help: "Overrides the markdown report location (default: .cache/inventory/report.md).",
+    default: "",
+  });
+
   for (const subcommand of [
     editor,
     worker,
@@ -395,6 +412,7 @@ function parseArguments() {
     e2e,
     corpus,
     visualDiff,
+    inventory,
   ]) {
     subcommand.add_argument("--bun", {
       help: "Runs supported commands with bun.",
@@ -909,4 +927,12 @@ async function runVisualDiff(args: any): Promise<boolean> {
     console.error("Visual diff inspection failed:", err);
     return false;
   }
+}
+
+async function runInventory(args: any): Promise<boolean> {
+  const { runInventoryCli } = await import("@/web/v2/tools/inventory");
+  return runInventoryCli({
+    update: Boolean(args.update),
+    reportPath: args.report || undefined,
+  });
 }

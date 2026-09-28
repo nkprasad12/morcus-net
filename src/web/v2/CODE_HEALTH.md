@@ -219,7 +219,7 @@ first card) as the fixture, then asserted on the request URL rather than the res
       section-number jump form. `.ghost-scrollbar` is still declared and applied to nothing. Three
       confirmed instances found incidentally suggests a systematic coverage pass would beat any
       further hand-deduplication.
-- [ ] 🟢 **Extend duplicate detection across files.** `morcus/no-duplicate-declaration-blocks` is
+- [x] 🟢 **Extend duplicate detection across files.** `morcus/no-duplicate-declaration-blocks` is
       per-file, and `lint:css` runs with `--cache`, so accumulating state across files is
       unreliable. The focus-ring block still appears ~9× across the bundle; only the 5 within
       `reader_nav.css` were catchable. Cross-file dedup wants a standalone script over the built
