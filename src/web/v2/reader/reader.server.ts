@@ -23,6 +23,11 @@ import {
 } from "@/web/v2/reader/reader_dialogs.server";
 import { renderIconSvg } from "@/web/v2/core/icons.common";
 import { getFirstHighlightSectionId } from "@/web/v2/reader/reader_highlight.common";
+import { renderSlotTemplates, slotAttr } from "@/web/v2/core/slots.common";
+import {
+  READER_PAGE_SLOTS,
+  type ReaderPageSlot,
+} from "@/web/v2/reader/reader_slots.common";
 import * as he from "he";
 
 export {
@@ -153,34 +158,67 @@ export async function resolveReaderContext(
 }
 
 /**
+ * The sticky bar's link to the previous or next page (`#pager-prev` /
+ * `#pager-next`), disabled at either end of the work. A page-turn slot.
+ */
+export function renderReaderPagerLink(
+  ctx: ReaderRenderContext,
+  dir: "prev" | "next"
+): string {
+  const { work, activePage, query } = ctx;
+  const page = dir === "prev" ? ctx.prevPage : ctx.nextPage;
+  const pageUrl = buildReaderPageUrl(work, page, { query });
+  const label = page
+    ? getDifferentialCitationLabel(activePage.id, page.id, work.textParts)
+    : dir === "prev"
+    ? "Previous"
+    : "Next";
+  const disabledAttrs = !page ? 'aria-disabled="true" tabindex="-1"' : "";
+
+  if (dir === "prev") {
+    return `          <a href="${pageUrl}"
+             class="reader-btn reader-nav-arrow ${!page ? "disabled" : ""}"
+             id="pager-prev"
+             ${disabledAttrs}
+             aria-label="Previous chapter"
+             title="Previous ([)"
+             ${slotAttr("pager-prev")}>
+            <span class="pager-arrow" aria-hidden="true">&larr;</span>
+            <span class="pager-label">${he.escape(label)}</span>
+          </a>`;
+  }
+  return `            <a href="${pageUrl}"
+               class="reader-btn reader-nav-arrow ${!page ? "disabled" : ""}"
+               id="pager-next"
+               ${disabledAttrs}
+               aria-label="Next chapter"
+               title="Next (])"
+               ${slotAttr("pager-next")}>
+              <span class="pager-label">${he.escape(label)}</span>
+              <span class="pager-arrow" aria-hidden="true">&rarr;</span>
+            </a>`;
+}
+
+/** The current page id inside the TOC trigger. A page-turn slot. */
+export function renderReaderPageLabel(ctx: ReaderRenderContext): string {
+  return `<span class="jump-val" ${slotAttr("page-label")}>${he.escape(
+    ctx.pageDotId
+  )}</span>`;
+}
+
+/**
  * Renders the reader sticky quick-navigation bar containing essential chapter jump
  * controls and the expandable secondary toolbar.
  */
 export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
-  const { work, activePage, pageDotId, prevPage, nextPage, query } = ctx;
-  const prevPageUrl = buildReaderPageUrl(work, prevPage, { query });
-  const nextPageUrl = buildReaderPageUrl(work, nextPage, { query });
-  const prevLabel = prevPage
-    ? getDifferentialCitationLabel(activePage.id, prevPage.id, work.textParts)
-    : "Previous";
-  const nextLabel = nextPage
-    ? getDifferentialCitationLabel(activePage.id, nextPage.id, work.textParts)
-    : "Next";
+  const { work } = ctx;
 
   return `      <!-- Sticky Quick Navigation Bar / Desktop Paper Sheet Running Header -->
       <header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
         
         <!-- Primary Row: Running Margin Pager Links, Work & Section Picker, and Settings Trigger -->
         <div class="sticky-primary-row">
-          <a href="${prevPageUrl}"
-             class="reader-btn reader-nav-arrow ${!prevPage ? "disabled" : ""}"
-             id="pager-prev"
-             ${!prevPage ? 'aria-disabled="true" tabindex="-1"' : ""}
-             aria-label="Previous chapter"
-             title="Previous ([)">
-            <span class="pager-arrow" aria-hidden="true">&larr;</span>
-            <span class="pager-label">${he.escape(prevLabel)}</span>
-          </a>
+${renderReaderPagerLink(ctx, "prev")}
 
           <!-- Center: Running Author + Work Title + Section Jump Dropdown Trigger -->
           <div class="reader-sticky-form" id="reader-jump-form">
@@ -202,7 +240,7 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
                    aria-controls="reader-toc-drawer"
                    title="Contents & Sections (T)">
                   <span class="jump-glyph" aria-hidden="true">&sect;</span>
-                  <span class="jump-val">${pageDotId}</span>
+                  ${renderReaderPageLabel(ctx)}
                   <svg class="jump-chevron" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M6 9l6 6 6-6"/>
                   </svg>
@@ -213,17 +251,7 @@ export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
 
           <!-- Right Controls: Next Arrow + Appearance & Typography Settings Popover Trigger -->
           <div class="sticky-primary-right">
-            <a href="${nextPageUrl}"
-               class="reader-btn reader-nav-arrow ${
-                 !nextPage ? "disabled" : ""
-               }"
-               id="pager-next"
-               ${!nextPage ? 'aria-disabled="true" tabindex="-1"' : ""}
-               aria-label="Next chapter"
-               title="Next (])">
-              <span class="pager-label">${he.escape(nextLabel)}</span>
-              <span class="pager-arrow" aria-hidden="true">&rarr;</span>
-            </a>
+${renderReaderPagerLink(ctx, "next")}
 
             <span class="running-right-sep" aria-hidden="true">&middot;</span>
 
@@ -268,7 +296,7 @@ export function renderReaderTextCard(ctx: ReaderRenderContext): string {
     : "";
   const notesHtml = activePage.notesHtml ?? "";
 
-  return `          <div class="reader-text-card">
+  return `          <div class="reader-text-card" ${slotAttr("text")}>
             
             <header class="reader-text-card-header">
               <div class="reader-text-meta">
@@ -532,11 +560,34 @@ ${renderReaderSettingsPopover({ hasMacra: options.hasMacra })}
   `;
 }
 
+/** Renders one page-turn slot exactly as the full page renders it. */
+function renderReaderPageSlot(
+  ctx: ReaderRenderContext,
+  slot: ReaderPageSlot
+): string {
+  switch (slot) {
+    case "text":
+      return renderReaderTextCard(ctx);
+    case "pager-prev":
+      return renderReaderPagerLink(ctx, "prev");
+    case "pager-next":
+      return renderReaderPagerLink(ctx, "next");
+    case "page-label":
+      return renderReaderPageLabel(ctx);
+  }
+}
+
+/**
+ * The page-turn partial: every region in {@link READER_PAGE_SLOTS}, for
+ * `swapSlots` in `MorcusReaderView.swapPage`.
+ */
 export async function renderReaderPartialHtml(
   options: ReaderPageOptions = {}
 ): Promise<string> {
   const ctx = await resolveReaderContext(options);
-  return renderReaderTextCard(ctx);
+  return renderSlotTemplates(
+    READER_PAGE_SLOTS.map((slot) => [slot, renderReaderPageSlot(ctx, slot)])
+  );
 }
 
 export async function renderReaderContentHtml(

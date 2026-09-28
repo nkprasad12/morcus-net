@@ -9,7 +9,6 @@ import {
   closeActiveSectionUI,
   copyText,
   escapeId,
-  fetchAndSwapPartial,
   html,
   isPlainLeftClick,
   measureSvh100,
@@ -19,6 +18,7 @@ import {
   setPrepaint,
   settingsStore,
   showToast,
+  swapSlots,
   syncIframeTheme,
   tokenizeTargets,
   WakeLockController,
@@ -26,6 +26,7 @@ import {
 } from "@/web/v2/core/index.client";
 import type { SafeHtml } from "@/web/v2/core/html.common";
 import { removeMacrons } from "@/common/text_cleaning";
+import { READER_PAGE_SLOTS } from "@/web/v2/reader/reader_slots.common";
 import {
   DEFAULT_READER_PREFS,
   MorcusReaderSettings,
@@ -103,6 +104,20 @@ export {
  * - Performs seamless in-place partial page swaps without full reload or losing iframe state.
  * */
 export class MorcusReaderView extends BaseElement<"page" | "translation"> {
+  /**
+   * Full navigation, used when an in-place page turn can't be done. Replaceable
+   * in tests, where jsdom can't navigate.
+   */
+  public navigate: (url: string, opts: { replace: boolean }) => void = (
+    url,
+    { replace }
+  ) => {
+    if (replace) {
+      window.location.replace(url);
+    } else {
+      window.location.assign(url);
+    }
+  };
   private currentQuery: string = "";
   private preferredDrawerSvh: number = DRAWER_DEFAULT_SVH;
   private readonly tocController = this.addController(
@@ -1404,90 +1419,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  private patchStickyBar(textPanel: HTMLElement, newPageId: string): void {
-    if (newPageId) {
-      this.dataset.page = newPageId;
-    }
-
-    const jumpVal = this.querySelector<HTMLElement>(
-      "#reader-toc-btn .jump-val"
-    );
-    if (jumpVal && newPageId) {
-      jumpVal.textContent = newPageId;
-    }
-
-    const syncUrlQuery = (rawHref: string): string => {
-      if (!rawHref || rawHref === "#") return rawHref;
-      try {
-        const u = new URL(rawHref, window.location.href);
-        if (this.currentQuery) {
-          u.searchParams.set("q", this.currentQuery);
-        } else {
-          u.searchParams.delete("q");
-        }
-        return u.pathname + u.search + u.hash;
-      } catch {
-        return rawHref;
-      }
-    };
-
-    const prevCard = textPanel.querySelector<HTMLAnchorElement>(
-      ".reader-continuation-card.prev-card"
-    );
-    const pagerPrev = this.querySelector<HTMLAnchorElement>("#pager-prev");
-    if (pagerPrev) {
-      const prevHref = prevCard?.getAttribute("href");
-      const prevTitle =
-        prevCard
-          ?.querySelector<HTMLElement>(".continuation-title")
-          ?.textContent?.trim() || "Previous";
-      const prevLabelEl = pagerPrev.querySelector<HTMLElement>(".pager-label");
-      if (prevLabelEl) {
-        prevLabelEl.textContent = prevTitle;
-      }
-      if (prevHref) {
-        const href = syncUrlQuery(prevHref);
-        pagerPrev.setAttribute("href", href);
-        pagerPrev.classList.remove("disabled");
-        pagerPrev.removeAttribute("aria-disabled");
-        pagerPrev.removeAttribute("tabindex");
-      } else {
-        pagerPrev.setAttribute("href", "#");
-        pagerPrev.classList.add("disabled");
-        pagerPrev.setAttribute("aria-disabled", "true");
-        pagerPrev.setAttribute("tabindex", "-1");
-      }
-    }
-
-    const nextCard = textPanel.querySelector<HTMLAnchorElement>(
-      ".reader-continuation-card.next-card"
-    );
-    const pagerNext = this.querySelector<HTMLAnchorElement>("#pager-next");
-    if (pagerNext) {
-      const nextHref = nextCard?.getAttribute("href");
-      const nextTitle =
-        nextCard
-          ?.querySelector<HTMLElement>(".continuation-title")
-          ?.textContent?.trim() || "Next";
-      const nextLabelEl = pagerNext.querySelector<HTMLElement>(".pager-label");
-      if (nextLabelEl) {
-        nextLabelEl.textContent = nextTitle;
-      }
-      if (nextHref) {
-        const href = syncUrlQuery(nextHref);
-        pagerNext.setAttribute("href", href);
-        pagerNext.classList.remove("disabled");
-        pagerNext.removeAttribute("aria-disabled");
-        pagerNext.removeAttribute("tabindex");
-      } else {
-        pagerNext.setAttribute("href", "#");
-        pagerNext.classList.add("disabled");
-        pagerNext.setAttribute("aria-disabled", "true");
-        pagerNext.setAttribute("tabindex", "-1");
-      }
-    }
-  }
-
   private patchToc(newPageId: string): void {
     if (!newPageId) return;
 
@@ -1583,12 +1514,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   ): Promise<boolean> {
     // Back/forward gestures turn pages without any in-document input event.
     this.wakeLock.extend();
-    const textPanel = this.querySelector<HTMLElement>(".reader-text-panel");
-    if (!textPanel) {
-      window.location.href = targetUrl;
-      return false;
-    }
-
     const url = new URL(targetUrl, window.location.href);
     const push = options.push ?? true;
     const isPopState = options.isPopState ?? false;
@@ -1617,10 +1542,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     const signal = this.scope.latest("page");
-    const prefersReducedMotion =
-      typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // The URL is already current on popstate, so a fallback must not push it
+    // again.
+    const swapOptions = {
+      signal,
+      slots: READER_PAGE_SLOTS,
+      fallback: (u: string) => this.navigate(u, { replace: isPopState }),
+    };
 
     const isTransActive = this.panelController?.activeTab === "translation";
     let success = false;
@@ -1629,11 +1557,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     if (isTransActive) {
       const [passageSuccess, translationResult] = await Promise.all([
-        fetchAndSwapPartial(textPanel, url.href, {
-          signal,
-          loadingOpacity: prefersReducedMotion ? 1 : 0.5,
-          errorMessage: "Unable to load passage. Please try refreshing.",
-        }),
+        swapSlots(this, url.href, swapOptions),
         this.fetchTranslation(url.pathname, signal).catch((err) => {
           console.error("fetchTranslation failed:", err);
           transError = true;
@@ -1643,11 +1567,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       success = passageSuccess;
       transHtml = translationResult;
     } else {
-      success = await fetchAndSwapPartial(textPanel, url.href, {
-        signal,
-        loadingOpacity: prefersReducedMotion ? 1 : 0.5,
-        errorMessage: "Unable to load passage. Please try refreshing.",
-      });
+      success = await swapSlots(this, url.href, swapOptions);
     }
 
     if (!success) {
@@ -1670,7 +1590,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       this.router?.updatePath();
     }
 
-    this.patchStickyBar(textPanel, newPageId);
+    if (newPageId) {
+      this.dataset.page = newPageId;
+    }
     this.patchToc(newPageId);
     this.hydratePage({ isPopState, hash: url.hash });
 

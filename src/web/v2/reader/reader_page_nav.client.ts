@@ -133,8 +133,7 @@ export class ReaderPageNavController extends BaseController {
 
   /**
    * Writes only CSS variables; reader_page_nav.css maps them to `translate`
-   * and `opacity`. Inline `opacity` is off limits: `fetchAndSwapPartial` owns
-   * it for its loading dim.
+   * and `opacity`, next to the page-turn loading dim.
    */
   private place(
     panel: HTMLElement,

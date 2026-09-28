@@ -3,7 +3,8 @@
  */
 
 import { notifyContentSwap } from "@/web/v2/core/base_element.client";
-import { assertConnected } from "@/web/v2/core/dom.client";
+import { assertConnected, escapeId } from "@/web/v2/core/dom.client";
+import { SLOT_ATTR } from "@/web/v2/core/slots.common";
 
 /**
  * Parses an HTML string into a contextual DocumentFragment using the browser's
@@ -12,9 +13,9 @@ import { assertConnected } from "@/web/v2/core/dom.client";
  * This is the trust boundary for partial swapping, and the one place in V2 that
  * parses markup it did not build itself. The `html` helper cannot protect this:
  * the string arrives from the network, already assembled. What it rests on
- * instead is that the only caller, {@link fetchAndSwapPartial}, fetches
- * same-origin V2 routes, so the markup is our own SSR output and is escaped
- * server-side. Anything that starts passing third-party markup here needs a
+ * instead is that the only callers, {@link fetchAndSwapPartial} and
+ * {@link swapSlots}, fetch same-origin V2 routes, so the markup is our own SSR
+ * output and is escaped server-side. Anything that starts passing third-party markup here needs a
  * sanitizer, not this function.
  */
 export function createHtmlFragment(html: string): DocumentFragment {
@@ -99,4 +100,172 @@ export async function fetchAndSwapPartial(
   } finally {
     clearLoading();
   }
+}
+
+export interface SwapSlotsOptions {
+  /** What cancels this request; see {@link FetchAndSwapOptions.signal}. */
+  signal: AbortSignal;
+  /**
+   * The slots to replace. The response must contain exactly these, and each
+   * must match exactly one `[data-slot]` inside the host.
+   */
+  slots: readonly string[];
+  /**
+   * The full navigation used when the swap can't be done (HTTP or network
+   * error, or a slot mismatch). Defaults to `location.assign(url)`. Pass a
+   * `location.replace` variant when the URL is already the current entry
+   * (popstate), so the fallback doesn't add a duplicate history entry.
+   */
+  fallback?: (url: string) => void;
+}
+
+/** Thrown for a response that doesn't match the requested or live slots. */
+class SlotMismatchError extends Error {
+  override name = "SlotMismatchError";
+}
+
+/**
+ * Pairs each requested slot's live element with its replacement, validating
+ * everything before anything is touched so a bad response changes nothing.
+ */
+function matchSlots(
+  host: HTMLElement,
+  response: DocumentFragment,
+  slots: readonly string[]
+): Array<{ live: HTMLElement; next: Element }> {
+  const templates = new Map<string, HTMLTemplateElement>();
+  for (const child of Array.from(response.children)) {
+    const name = child.getAttribute(SLOT_ATTR);
+    if (!(child instanceof HTMLTemplateElement) || name === null) {
+      throw new SlotMismatchError(
+        `unexpected <${child.tagName.toLowerCase()}> in slot response`
+      );
+    }
+    if (templates.has(name)) {
+      throw new SlotMismatchError(`slot "${name}" appears twice in response`);
+    }
+    templates.set(name, child);
+  }
+  const extra = [...templates.keys()].filter((n) => !slots.includes(n));
+  if (extra.length > 0) {
+    throw new SlotMismatchError(`unrequested slots: ${extra.join(", ")}`);
+  }
+
+  return slots.map((name) => {
+    const template = templates.get(name);
+    if (!template) {
+      throw new SlotMismatchError(`slot "${name}" missing from response`);
+    }
+    const roots = template.content.children;
+    const next = roots[0];
+    if (roots.length !== 1 || next.getAttribute(SLOT_ATTR) !== name) {
+      throw new SlotMismatchError(
+        `template "${name}" must hold one element with data-slot="${name}"`
+      );
+    }
+    const matches = host.querySelectorAll<HTMLElement>(
+      `[${SLOT_ATTR}="${escapeId(name)}"]`
+    );
+    if (matches.length !== 1) {
+      throw new SlotMismatchError(
+        `slot "${name}" matches ${matches.length} live elements`
+      );
+    }
+    return { live: matches[0], next };
+  });
+}
+
+/** How to find the focused element again after its slot is replaced. */
+function focusKey(el: Element): { attr: string; value: string } | null {
+  const key = el.getAttribute("data-focus-key");
+  if (key) return { attr: "data-focus-key", value: key };
+  if (el.id) return { attr: "id", value: el.id };
+  return null;
+}
+
+function findByKey(
+  root: Element,
+  key: { attr: string; value: string }
+): HTMLElement | null {
+  const selector = `[${key.attr}="${escapeId(key.value)}"]`;
+  const hit = root.matches(selector) ? root : root.querySelector(selector);
+  return hit instanceof HTMLElement ? hit : null;
+}
+
+/**
+ * Fetches `url` as a slot response and replaces several regions of `host`
+ * with one request (see `core/slots.common.ts` for the server side).
+ *
+ * Use this instead of swapping one container and patching the others by
+ * scraping the new markup. Each slot element is replaced whole, so a slot
+ * should wrap only markup that changes with the page: stateful controls and
+ * iframes stay outside every slot and are never touched.
+ *
+ * - While loading, every live slot is `aria-busy` (style it in CSS).
+ * - The response is validated before anything changes. A mismatch is a bug:
+ *   it is logged and handled like a failed request.
+ * - If focus was inside a slot, it moves to the element with the same
+ *   `data-focus-key` (or `id`) in the new markup, else to the new slot
+ *   itself, so it never drops to `<body>`.
+ * - On an HTTP or network error, or a mismatch, falls back to a full
+ *   navigation to `url` and resolves false. Aborting resolves false and
+ *   leaves the DOM to whichever request replaced this one.
+ */
+export async function swapSlots(
+  host: HTMLElement,
+  url: string,
+  options: SwapSlotsOptions
+): Promise<boolean> {
+  assertConnected(host);
+  const busy = options.slots.flatMap((name) =>
+    Array.from(
+      host.querySelectorAll<HTMLElement>(`[${SLOT_ATTR}="${escapeId(name)}"]`)
+    )
+  );
+  busy.forEach((el) => el.setAttribute("aria-busy", "true"));
+
+  let pairs: Array<{ live: HTMLElement; next: Element }>;
+  try {
+    const res = await fetch(url, {
+      headers: { "X-Requested-With": "fetch" },
+      signal: options.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const text = await res.text();
+    if (options.signal.aborted) return false;
+    pairs = matchSlots(host, createHtmlFragment(text), options.slots);
+  } catch (err: unknown) {
+    if (options.signal.aborted) return false;
+    busy.forEach((el) => el.removeAttribute("aria-busy"));
+    console.error("swapSlots failed; falling back to navigation:", err);
+    (options.fallback ?? ((u: string) => window.location.assign(u)))(url);
+    return false;
+  }
+
+  const active = document.activeElement;
+  const focusedPair =
+    active instanceof Element
+      ? pairs.find(({ live }) => live.contains(active))
+      : undefined;
+  const key = active && focusedPair ? focusKey(active) : null;
+
+  for (const { live, next } of pairs) {
+    live.replaceWith(next);
+  }
+  for (const { next } of pairs) {
+    notifyContentSwap(next);
+  }
+
+  if (focusedPair && focusedPair.next instanceof HTMLElement) {
+    const slot = focusedPair.next;
+    let target = key ? findByKey(slot, key) : null;
+    if (!target) {
+      if (!slot.hasAttribute("tabindex")) slot.setAttribute("tabindex", "-1");
+      target = slot;
+    }
+    target.focus({ preventScroll: true });
+  }
+  return true;
 }
