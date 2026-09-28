@@ -76,9 +76,6 @@ a.reader-note-ref:target {
    ========================================================================== */
 
 .reader-notes {
-  margin-top: var(--space-9);
-  padding-top: var(--space-6);
-  border-top: 1px solid var(--border);
   color: var(--text-muted);
   font-family: var(--font-serif);
   font-size: 0.875rem;
@@ -157,7 +154,6 @@ a.reader-note-ref:target {
 
 @media (max-width: 640px) {
   .reader-notes {
-    margin-top: var(--space-8);
     font-size: 0.8125rem;
   }
 

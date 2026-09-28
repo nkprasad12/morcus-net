@@ -20,8 +20,8 @@ function getAttributionNoticeHtml(attribution?: string): string {
 /**
  * Renders the scholarly attribution and work metadata colophon detailing authors,
  * critical editors, funding, sponsors, CTS URN / work ID, source links, and license.
- * Rendered as a collapsed <details> in document flow for No-JS, and adopted into
- * the companion panel by JS.
+ * Rendered into the companion panel's About view, which hides the summary, so
+ * the <details> is always open.
  */
 export function renderReaderAboutSection(work: V2PreprocessedWork): string {
   const sources =
@@ -54,7 +54,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
   const attributionHtml = getAttributionNoticeHtml(work.attribution);
 
   return `      <!-- Scholarly Attribution & Work Metadata -->
-      <details class="reader-work-about" id="reader-work-about">
+      <details class="reader-work-about" id="reader-work-about" open>
         <summary class="reader-about-summary">About this text</summary>
         <div class="reader-about-card">
           <dl class="reader-meta-list">

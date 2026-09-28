@@ -18,8 +18,36 @@ import { revealTarget } from "@/web/v2/core/reveal.client";
 import { PREPAINT_KEY } from "@/web/v2/core/prepaint.client";
 
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
+import {
+  renderReaderDictPanelHtml,
+  renderReaderNotesSlot,
+} from "@/web/v2/reader/reader.server";
+
+jest.mock("@/web/v2/reader/reader_loader.server", () =>
+  jest.requireActual("@/web/v2/testing/mock_reader_loader")
+);
 
 installPointerEventShims();
+
+/** The server-rendered dictionary panel, with its companion tabs and views. */
+function dictPanelHtml(
+  options: {
+    notesHtml?: string;
+    aboutHtml?: string;
+    hasTranslation?: boolean;
+  } = {}
+): string {
+  return renderReaderDictPanelHtml({
+    query: "",
+    dictIframeSrc: "/v2/dicts?embedded=1",
+    closeHref: "/v2/reader",
+    companion: {
+      notesHtml: options.notesHtml ?? "",
+      aboutHtml: options.aboutHtml ?? "",
+      hasTranslation: options.hasTranslation ?? false,
+    },
+  });
+}
 
 function createReaderView(
   innerPassageHtml: string,
@@ -45,29 +73,14 @@ function createReaderView(
       <section class="reader-text-panel">
         <div class="reader-text-card">
           <header class="reader-text-card-header">
-            <div class="reader-text-meta">
-              <a href="#reader-work-about" class="reader-about-link">About ⓘ</a>
-            </div>
+            <div class="reader-text-meta"></div>
           </header>
           <article class="reader-passage" id="reader-passage">
             ${innerPassageHtml}
           </article>
-          ${options.notesHtml ?? ""}
-          ${options.aboutHtml ?? ""}
         </div>
       </section>
-      <aside id="reader-dict" class="reader-dict-panel drawer drawer-minimized">
-        <div class="reader-sheet-bar">
-          <div class="reader-sheet-teaser">
-            <span class="reader-sheet-label">Tap any word</span>
-            <a href="#reader-dict-dismissed" class="reader-sheet-close" aria-label="Close dictionary panel">✕</a>
-          </div>
-        </div>
-        <div class="dict-iframe-container">
-          <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
-        </div>
-      </aside>
-      <a href="#reader-dict" class="reader-drawer-fab" aria-label="Open dictionary drawer"></a>
+      ${dictPanelHtml(options)}
       <morcus-reader-settings>
         <div id="reader-settings-popover" hidden>
           ${
@@ -1451,7 +1464,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     </section>
   `;
 
-  test("clicking .reader-about-link switches companion panel to about tab and opens drawer/panel", () => {
+  test("clicking About tab switches companion panel to about", () => {
     const el = createReaderView("<p>Gallia est omnis divisa</p>", {
       aboutHtml: sampleAboutHtml,
     });
@@ -1459,34 +1472,14 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     const panelController = el.getPanelController();
     expect(panelController?.hasAbout).toBe(true);
     expect(panelController?.activeTab).toBe("dict");
-
-    const aboutLink = el.querySelector<HTMLAnchorElement>(
-      "a.reader-about-link"
-    );
-    expect(aboutLink).not.toBeNull();
-
-    aboutLink?.click();
-
-    expect(panelController?.activeTab).toBe("about");
-    const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout");
-    expect(splitLayout?.classList.contains("reader-layout-active")).toBe(true);
-
-    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
-    expect(sheetLabel?.textContent).toContain("About this text");
-  });
-
-  test("clicking About tab switches companion panel to about", () => {
-    const el = createReaderView("<p>Gallia est omnis divisa</p>", {
-      aboutHtml: sampleAboutHtml,
-    });
-
-    const panelController = el.getPanelController();
     const aboutTab = el.querySelector<HTMLButtonElement>("#panel-tab-about");
     expect(aboutTab).not.toBeNull();
 
     aboutTab?.click();
 
     expect(panelController?.activeTab).toBe("about");
+    const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout");
+    expect(splitLayout?.classList.contains("reader-layout-active")).toBe(true);
     const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
     expect(sheetLabel?.textContent).toContain("About this text");
   });
@@ -1646,7 +1639,12 @@ describe("MorcusReaderView client-side partial page navigation", () => {
   /** A page-turn partial response, as `renderReaderPartialHtml` builds it. */
   function pageResponse(
     cardHtml: string,
-    options: { pageId: string; prevUrl?: string; nextUrl?: string }
+    options: {
+      pageId: string;
+      prevUrl?: string;
+      nextUrl?: string;
+      notesHtml?: string;
+    }
   ): string {
     return [
       `<template data-slot="text">${cardHtml.trim()}</template>`,
@@ -1660,6 +1658,9 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       )}</template>`,
       `<template data-slot="page-label">${pageLabelHtml(
         options.pageId
+      )}</template>`,
+      `<template data-slot="notes">${renderReaderNotesSlot(
+        options.notesHtml ?? ""
       )}</template>`,
     ].join("\n");
   }
@@ -1748,7 +1749,6 @@ describe("MorcusReaderView client-side partial page navigation", () => {
                 `<div class="reader-section" id="sec-1.1"><p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p></div>`
               }
             </article>
-            ${options.notesHtml ?? ""}
             <footer class="reader-passage-footer">
               <nav class="reader-continuation-actions">
                 ${
@@ -1768,16 +1768,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
             </footer>
           </div>
         </section>
-        <aside class="reader-dict-panel">
-          <div class="reader-sheet-bar">
-            <div class="reader-sheet-teaser">
-              <span class="reader-sheet-label">Tap any word</span>
-            </div>
-          </div>
-          <div class="dict-iframe-container">
-            <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
-          </div>
-        </aside>
+        ${dictPanelHtml({ notesHtml: options.notesHtml, hasTranslation })}
       </div>
     `;
 
@@ -2170,12 +2161,6 @@ describe("MorcusReaderView client-side partial page navigation", () => {
         <article class="reader-passage" id="reader-passage">
           <p>Text with note <a href="#note-n1" class="reader-note-ref" id="noteref-n1">[1]</a></p>
         </article>
-        <section class="reader-notes" id="reader-notes">
-          <div class="reader-note" id="note-n1">
-            <span class="reader-note-num">[1]</span>
-            <span class="reader-note-text">Critical note content</span>
-          </div>
-        </section>
         <footer class="reader-passage-footer">
           <nav class="reader-continuation-actions">
             <a href="/v2/reader/caesar/de-bello-gallico/1" class="reader-continuation-card prev-card">Previous</a>
@@ -2183,6 +2168,12 @@ describe("MorcusReaderView client-side partial page navigation", () => {
         </footer>
       </div>
     `;
+    const notesHtml = `
+      <aside class="reader-notes">
+        <ol class="reader-notes-list">
+          <li class="reader-note" id="note-n1">Critical note content</li>
+        </ol>
+      </aside>`;
 
     window.fetch = jest.fn().mockResolvedValue({
       ok: true,
@@ -2190,14 +2181,20 @@ describe("MorcusReaderView client-side partial page navigation", () => {
         pageResponse(pageWithNotesHtml, {
           pageId: "2",
           prevUrl: "/v2/reader/caesar/de-bello-gallico/1",
+          notesHtml,
         }),
     });
+    const notesView = el.querySelector("#panel-view-notes");
 
     await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
 
     expect(panelController.hasNotes).toBe(true);
     expect(panelController.noteCount).toBe(1);
     expect(panelController.notesTab?.hidden).toBe(false);
+    // The notes land in the persistent view, not the text card.
+    expect(el.querySelector("#note-n1")?.closest("#panel-view-notes")).toBe(
+      notesView
+    );
   });
 
   test("popstate navigation triggers page swap without pushing history and restores scroll position", async () => {
@@ -2322,7 +2319,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       (e) => e.getAttribute("data-slot")
     );
     expect(busy.sort()).toEqual(
-      ["page-label", "pager-next", "pager-prev", "text"].sort()
+      ["notes", "page-label", "pager-next", "pager-prev", "text"].sort()
     );
 
     respond({ ok: true, text: async () => page2Response });

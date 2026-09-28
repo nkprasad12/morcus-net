@@ -30,6 +30,9 @@
   align-items: center;
   gap: var(--space-1);
   transition: color 0.15s ease, border-color 0.15s ease;
+  text-decoration: none;
+  /* Links inherit the line height; buttons reset it to `normal`. */
+  line-height: normal;
 }
 
 .reader-tab-icon {
@@ -60,7 +63,17 @@
   color: var(--text);
 }
 
-.reader-panel-tab[aria-selected="true"] {
+/* The selected tab. Before upgrade (no `aria-selected` yet) it's the tab of
+   the shown view; see the view rules below. */
+.reader-panel-tab[aria-selected="true"],
+.reader-dict-panel:has(.reader-panel-notes:target, .reader-panel-notes :target)
+  .reader-panel-tab[href="#panel-view-notes"]:not([aria-selected]),
+.reader-dict-panel:has(.reader-panel-about:target, .reader-panel-about :target)
+  .reader-panel-tab[href="#panel-view-about"]:not([aria-selected]),
+.reader-dict-panel:not(
+    :has(.reader-panel-card:target, .reader-panel-card :target)
+  )
+  .reader-panel-tab[href="#panel-view-dict"]:not([aria-selected]) {
   color: var(--text);
   border-bottom-color: var(--primary);
 }
@@ -84,22 +97,31 @@
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-.reader-panel-view:not(.active) {
   visibility: hidden;
   pointer-events: none;
   opacity: 0;
   z-index: 0;
 }
 
-.reader-panel-view.active {
+/*
+ * The shown view. After upgrade, ReaderPanelController marks exactly one view
+ * `.active`. Before that, and without JS, no view is `.active`: the tabs are
+ * `<a href="#panel-view-*">` links, so the view that is (or contains) the
+ * `:target` shows, else the dictionary. The controller always marks a view,
+ * so `:has(> .active)` is the hand-over and no `[data-upgraded]` gate is
+ * needed.
+ */
+.reader-panel-view.active,
+.reader-panel-views:not(:has(> .active))
+  > .reader-panel-view:is(:target, :has(:target)),
+.reader-panel-views:not(:has(> .active, :target)) > .dict-iframe-container {
   /* `inherit`, not `visible`: an explicit `visible` would override a hidden
      ancestor, e.g. the dismissed mobile drawer (reader_layout.css). */
   visibility: inherit;
   pointer-events: auto;
   opacity: 1;
   z-index: var(--z-raised);
+  content-visibility: visible;
 }
 
 /*
@@ -118,29 +140,14 @@
   -webkit-overflow-scrolling: touch;
   padding: var(--space-5) var(--space-6);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-}
-
-.reader-panel-card:not(.active) {
+  /* Undone for the shown view (above). */
   content-visibility: hidden;
-}
-
-.reader-panel-notes .reader-notes {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
 }
 
 .reader-panel-notes .reader-note.note-active,
 .reader-panel-translation .reader-note.note-active {
   background-color: var(--primary-light);
   box-shadow: inset 3px 0 0 var(--primary);
-}
-
-.reader-panel-about .reader-work-about {
-  margin-top: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
 }
 
 .reader-panel-about .reader-about-summary {
@@ -266,27 +273,42 @@ a.reader-note-ref.marker-active {
       box-shadow 0.15s ease, border-color 0.15s ease;
   }
 
-  .reader-sheet-bar .reader-panel-tab[aria-selected="true"] {
+  /* The selected tab, as in the desktop rule above (before upgrade too). */
+  .reader-sheet-bar .reader-panel-tab[aria-selected="true"],
+  .reader-dict-panel:has(
+      .reader-panel-notes:target,
+      .reader-panel-notes :target
+    )
+    .reader-panel-tab[href="#panel-view-notes"]:not([aria-selected]),
+  .reader-dict-panel:has(
+      .reader-panel-about:target,
+      .reader-panel-about :target
+    )
+    .reader-panel-tab[href="#panel-view-about"]:not([aria-selected]),
+  .reader-dict-panel:not(
+      :has(.reader-panel-card:target, .reader-panel-card :target)
+    )
+    .reader-panel-tab[href="#panel-view-dict"]:not([aria-selected]) {
     background-color: var(--card-bg);
     border-color: var(--border);
     color: var(--text);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
-  .reader-sheet-bar .reader-panel-tab:not([aria-selected="true"]) {
+  /* Collapsing needs JS: without it (no `aria-selected`) every tab keeps its
+     label, since the tabs are then the only way to open the drawer. */
+  .reader-sheet-bar .reader-panel-tab[aria-selected="false"] {
     width: 28px;
     padding: 0;
     color: var(--text-muted);
   }
 
-  .reader-sheet-bar .reader-panel-tab:not([aria-selected="true"]):hover {
+  .reader-sheet-bar .reader-panel-tab[aria-selected="false"]:hover {
     color: var(--text);
   }
 
   /* Active Expands Pill: Inactive tab collapses label, active tab displays icon + label */
-  .reader-sheet-bar
-    .reader-panel-tab:not([aria-selected="true"])
-    .reader-tab-label {
+  .reader-sheet-bar .reader-panel-tab[aria-selected="false"] .reader-tab-label {
     display: none;
   }
 

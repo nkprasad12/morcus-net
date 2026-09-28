@@ -65,7 +65,7 @@ sequenceDiagram
         Router->>Loader: resolvePageInWork(work, target)
         Router->>Render: renderReaderPartialHtml(work, page, view)
         Render-->>View: 200 OK (Partial HTML: .reader-text-card)
-        View->>View: Swap .reader-text-card, patch sticky bar & TOC, adopt notes, enhance & save spot
+        View->>View: swapSlots (text card, pager links, page label, notes), update TOC, enhance & save spot
     else No-JS Page Turn (SSR Fallback)
         User->>Router: GET <page url>
         Router-->>User: 200 OK (Full SSR document)
@@ -73,7 +73,7 @@ sequenceDiagram
 ```
 
 > [!NOTE]
-> When JavaScript is active, page turns (pager arrows, continuation cards, TOC links) and browser history (popstate) perform fast in-place partial swaps (`X-Requested-With: fetch`), swapping only the `.reader-text-card` while dynamically patching sticky bar controls, updating the TOC, adopting footnotes into the dictionary panel, and saving reading progress without full-page reloads. Native `<a>` links ensure a robust zero-JS fallback.
+> When JavaScript is active, page turns (pager arrows, continuation cards, TOC links) and browser history (popstate) perform fast in-place partial swaps (`X-Requested-With: fetch`), replacing only the regions in `READER_PAGE_SLOTS` (the text card, the sticky bar's pager links and page label, and the notes inside the companion panel) with one `swapSlots` call, then updating the TOC and saving reading progress without full-page reloads. The dictionary iframe sits outside every slot and never reloads. Native `<a>` links ensure a robust zero-JS fallback.
 
 ---
 
@@ -94,7 +94,7 @@ sequenceDiagram
 - `reader_toc.client.ts`: `ReaderTocController` — opens/closes the TOC drawer and applies the live filter.
 - `reader_settings.client.ts`: `MorcusReaderSettings` — the anchored typography popover, persisting to `morcus_reader_settings` in `localStorage`.
 - `reader_layout.client.ts`: `ReaderLayoutController` — the desktop resizable splitter and the mobile bottom drawer hosting the embedded dictionary.
-- `reader_panel.client.ts`: `ReaderPanelController` — manages companion panel tab arbitration (`Dictionary`, `Notes`, `Translation`, `About`), lazy translation loading, and footnote adoption.
+- `reader_panel.client.ts`: `ReaderPanelController` — adds behaviour to the server-rendered companion panel (`Dictionary`, `Notes`, `Translation`, `About`): tab roles and arbitration, hash reveals, the `notes` page-turn slot, and lazy translation loading.
 - `reader_page_nav.client.ts`: `ReaderPageNavController` — swipe page turns on touch devices (V1's side-tap is deliberately not ported; see `FEATURE_PARITY.md`). Owns gesture policy and the passage slide only; the turn itself goes through the view's `turnPage` (shared with `[` / `]`), so history, TOC, and notes handling stay in one swap path.
 
 ### Styles

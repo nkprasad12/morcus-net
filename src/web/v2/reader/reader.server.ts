@@ -294,7 +294,6 @@ export function renderReaderTextCard(ctx: ReaderRenderContext): string {
   const nextLabel = nextPage
     ? getDifferentialCitationLabel(activePage.id, nextPage.id, work.textParts)
     : "";
-  const notesHtml = activePage.notesHtml ?? "";
 
   return `          <div class="reader-text-card" ${slotAttr("text")}>
             
@@ -303,7 +302,6 @@ export function renderReaderTextCard(ctx: ReaderRenderContext): string {
                 <span class="reader-author-tag">${he.escape(work.author)}</span>
                 <span class="reader-meta-sep">&middot;</span>
                 <span class="reader-work-tag">${he.escape(work.title)}</span>
-                <a href="#reader-work-about" class="reader-about-link" title="About this text" aria-label="About this text"><span aria-hidden="true">ⓘ</span></a>
               </div>
               <h1 class="reader-passage-heading" aria-live="polite">${he.escape(
                 activePage.title
@@ -314,12 +312,6 @@ export function renderReaderTextCard(ctx: ReaderRenderContext): string {
             <article class="reader-passage" id="reader-passage">
               ${passageHtml}
             </article>
-
-            <!-- Critical Apparatus Footnotes (empty for works without notes) -->
-            ${notesHtml}
-
-            <!-- Scholarly Attribution & Work Metadata (Adopted into companion panel by JS) -->
-            ${renderReaderAboutSection(work)}
 
             <!-- Bottom Paging Continuation Actions & Prototype Switcher -->
             <footer class="reader-passage-footer">
@@ -385,7 +377,22 @@ export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
     query,
     dictIframeSrc,
     closeHref: activePageUrl,
+    companion: {
+      notesHtml: activePage.notesHtml ?? "",
+      aboutHtml: renderReaderAboutSection(work),
+      hasTranslation: work.hasTranslation,
+    },
   });
+}
+
+/** The tabs that sit beside the dictionary in the companion panel. */
+export interface ReaderCompanionOptions {
+  /** The page's notes (`V2PreprocessedPage.notesHtml`), or "" for none. */
+  notesHtml: string;
+  /** The work's About section, or "" for none. */
+  aboutHtml: string;
+  /** Adds the Translation tab. It is JS-only: the view is fetched on demand. */
+  hasTranslation: boolean;
 }
 
 /** Inputs for {@link renderReaderDictPanelHtml}; nothing here is work-specific. */
@@ -398,6 +405,63 @@ export interface ReaderDictPanelOptions {
    * is appended here.
    */
   closeHref: string;
+  /** Omitted for surfaces with only the dictionary (the tab bar is hidden). */
+  companion?: ReaderCompanionOptions;
+}
+
+type CompanionTab = "dict" | "notes" | "translation" | "about";
+
+const COMPANION_TABS: readonly {
+  id: CompanionTab;
+  label: string;
+  icon: "book" | "notes" | "translation" | "info";
+}[] = [
+  { id: "dict", label: "Dictionary", icon: "book" },
+  { id: "notes", label: "Notes", icon: "notes" },
+  { id: "translation", label: "Translation", icon: "translation" },
+  { id: "about", label: "About", icon: "info" },
+];
+
+/**
+ * One companion tab. It is a plain link to its view, so without JS the view
+ * opens via `:target` (reader_panel.css). `ReaderPanelController` adds the
+ * tab roles and takes over on upgrade.
+ */
+function renderCompanionTab(
+  tab: (typeof COMPANION_TABS)[number],
+  shown: boolean
+): string {
+  const translation = tab.id === "translation";
+  return `<a href="#panel-view-${tab.id}"
+                 class="reader-panel-tab${
+                   translation ? " tab-translation" : ""
+                 }"
+                 id="panel-tab-${tab.id}"
+                 aria-label="${tab.label}"${shown ? "" : " hidden"}${
+    translation ? " data-js-only" : ""
+  }>
+                <span class="reader-tab-icon" aria-hidden="true">${renderIconSvg(
+                  tab.icon,
+                  {
+                    width: 14,
+                    height: 14,
+                    extraAttrs:
+                      'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"',
+                  }
+                )}</span>
+                <span class="reader-tab-label">${tab.label}</span>
+              </a>`;
+}
+
+/**
+ * The page's notes, as the `notes` page-turn slot. The slot is a wrapper
+ * inside `#panel-view-notes` so the view itself (active state, scroll
+ * position) survives page turns.
+ */
+export function renderReaderNotesSlot(notesHtml: string): string {
+  return `<div class="reader-notes-slot" ${slotAttr(
+    "notes"
+  )}>${notesHtml}</div>`;
 }
 
 /**
@@ -408,6 +472,15 @@ export function renderReaderDictPanelHtml(
   options: ReaderDictPanelOptions
 ): string {
   const { query, dictIframeSrc, closeHref } = options;
+  const notesHtml = options.companion?.notesHtml ?? "";
+  const aboutHtml = options.companion?.aboutHtml ?? "";
+  const shown: Record<CompanionTab, boolean> = {
+    dict: true,
+    notes: notesHtml !== "",
+    translation: options.companion?.hasTranslation ?? false,
+    about: aboutHtml !== "",
+  };
+  const hasCompanionTabs = shown.notes || shown.translation || shown.about;
   const activePageUrl = he.escape(closeHref);
 
   return `        <!-- Desktop Resizable Splitter Bar -->
@@ -425,7 +498,9 @@ export function renderReaderDictPanelHtml(
         <!-- Right / Bottom Column: Dictionary Panel (Adaptive Sheet on Mobile) -->
         <aside class="reader-dict-panel drawer${
           query ? "" : " drawer-minimized"
-        }" id="reader-dict" aria-label="Dictionary">
+        }${
+    hasCompanionTabs ? " has-companion-tabs" : ""
+  }" id="reader-dict" aria-label="Dictionary">
           <!-- Mobile sheet handle & teaser bar (visible on mobile) -->
           <div class="reader-sheet-bar"
                role="separator"
@@ -441,25 +516,45 @@ export function renderReaderDictPanelHtml(
                 query
                   ? `<span class="reader-sheet-label">Definitions for <strong>${he.escape(
                       query
-                    )}</strong></span>
-                     <a href="${activePageUrl}#reader-dict-dismissed" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
+                    )}</strong></span>`
                   : `<a href="#reader-dict" class="reader-sheet-label reader-sheet-open-link" title="Open Dictionary Search">
                        <span class="reader-teaser-nojs" data-nojs-only>Open Dictionary Search &uarr;</span>
                        <span class="reader-teaser-js" data-js-only>Tap any word to view definitions</span>
-                     </a>
-                     <a href="#reader-dict-dismissed" class="reader-sheet-close reader-sheet-close-target" aria-label="Close dictionary panel" title="Close">✕</a>`
+                     </a>`
+              }
+              <nav class="reader-panel-tabs" aria-label="Companion panel"${
+                hasCompanionTabs ? "" : " hidden"
+              }>
+              ${COMPANION_TABS.map((tab) =>
+                renderCompanionTab(tab, shown[tab.id])
+              ).join("\n              ")}
+              </nav>
+              ${
+                query
+                  ? `<a href="${activePageUrl}#reader-dict-dismissed" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
+                  : `<a href="#reader-dict-dismissed" class="reader-sheet-close reader-sheet-close-target" aria-label="Close dictionary panel" title="Close">✕</a>`
               }
             </div>
           </div>
 
-          <!-- Dictionary Iframe Container -->
-          <div class="dict-iframe-container">
-            <iframe id="dict-frame"
-                    name="dict-frame"
-                    src="${he.escape(dictIframeSrc)}"
-                    class="dict-iframe"
-                    title="Dictionary Search and Definitions"
-                    loading="lazy"></iframe>
+          <!-- Companion views. Without JS the targeted view shows (else the
+               dictionary); ReaderPanelController takes over on upgrade. -->
+          <div class="reader-panel-views">
+            <div class="dict-iframe-container reader-panel-view" id="panel-view-dict">
+              <iframe id="dict-frame"
+                      name="dict-frame"
+                      src="${he.escape(dictIframeSrc)}"
+                      class="dict-iframe"
+                      title="Dictionary Search and Definitions"
+                      loading="lazy"></iframe>
+            </div>
+            <div class="reader-panel-notes reader-panel-view reader-panel-card" id="panel-view-notes" aria-live="polite">
+              ${renderReaderNotesSlot(notesHtml)}
+            </div>
+            <div class="reader-panel-translation reader-panel-view reader-panel-card" id="panel-view-translation" aria-live="polite"></div>
+            <div class="reader-panel-about reader-panel-view reader-panel-card" id="panel-view-about">
+              ${aboutHtml}
+            </div>
           </div>
         </aside>
         <a href="#reader-dict"
@@ -574,6 +669,8 @@ function renderReaderPageSlot(
       return renderReaderPagerLink(ctx, "next");
     case "page-label":
       return renderReaderPageLabel(ctx);
+    case "notes":
+      return renderReaderNotesSlot(ctx.activePage.notesHtml ?? "");
   }
 }
 

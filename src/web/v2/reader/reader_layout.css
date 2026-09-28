@@ -91,43 +91,33 @@
   }
 
   /* Minimized drawer (both initial empty state and collapsed active state):
-     retains content in DOM but collapses to 40px teaser. Before upgrade,
-     `:target` overrides it; once upgraded, the reader adopts the hash (see
-     core/reveal.client.ts) and the drawer state decides. */
-  .reader-dict-panel.drawer-minimized:not(:target:not([data-upgraded] *)) {
+     retains content in DOM but collapses to 40px teaser. Before upgrade, a
+     `:target` on the drawer or inside it (a companion tab, a note) overrides
+     it; once upgraded, the reader adopts the hash (see core/reveal.client.ts)
+     and the drawer state decides. */
+  .reader-dict-panel.drawer-minimized:not(
+      :is(:target, :has(:target)):not([data-upgraded] *)
+    ) {
     flex: 0 0 40px;
     height: 40px;
     overflow: hidden;
   }
 
-  .reader-dict-panel.drawer-minimized:not(:target:not([data-upgraded] *))
-    .reader-dict-sticky,
-  .reader-dict-panel.drawer-minimized:not(:target:not([data-upgraded] *))
-    .reader-panel-views,
-  .reader-dict-panel.drawer-minimized:not(:target:not([data-upgraded] *))
-    .dict-iframe-container {
+  .reader-dict-panel.drawer-minimized:not(
+      :is(:target, :has(:target)):not([data-upgraded] *)
+    )
+    .reader-panel-views {
     display: none;
   }
 
   /* No-JS (and pre-upgrade) drawer expansion via :target */
-  .reader-layout-empty .reader-dict-panel:target:not([data-upgraded] *) {
+  .reader-layout-empty
+    .reader-dict-panel:is(:target, :has(:target)):not([data-upgraded] *) {
     flex: none;
     height: 55svh;
     min-height: 40px;
     max-height: 88svh;
   }
-
-  /* The `:not([data-upgraded] *)` gate is what pushes this over the limit. */
-  /* stylelint-disable selector-max-compound-selectors */
-  .reader-layout-empty
-    .reader-dict-panel:target:not([data-upgraded] *)
-    .reader-dict-sticky,
-  .reader-layout-empty
-    .reader-dict-panel:target:not([data-upgraded] *)
-    .dict-iframe-container {
-    display: flex;
-  }
-  /* stylelint-enable selector-max-compound-selectors */
 
   /* Floating restore FAB (revealed when drawer is dismissed via 'x' button) */
   .reader-drawer-fab {
