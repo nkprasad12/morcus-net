@@ -228,7 +228,7 @@
   height: 16px;
 }
 
-.search-tray-right .dict-settings-details[open] > .settings-btn,
+.search-tray-right .settings-details[open] > .settings-btn,
 .search-tray-right .settings-btn[aria-expanded="true"] {
   color: var(--app-bar-text);
   background-color: var(--app-bar-bg);

@@ -21,10 +21,18 @@ import "@/web/v2/v2_elements.client";
 import { XmlNode } from "@/common/xml/xml_node";
 import { getRegisteredElementTags } from "@/web/v2/core/base_element.client";
 import { revealTarget } from "@/web/v2/core/reveal.client";
+import { CONTEXT_LEN, PAGE_SIZE } from "@/web/v2/corpus/corpus_params.common";
+import { runCorpusSearch } from "@/web/v2/corpus/corpus_query.server";
+import { renderCorpusContentHtml } from "@/web/v2/corpus/corpus_view.server";
 import { renderDictPageHtml } from "@/web/v2/dict/dict_page.server";
 import { renderExternalLandingContentHtml } from "@/web/v2/external/external.server";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
 import { renderReaderContentHtml } from "@/web/v2/reader/reader.server";
+import {
+  CORPUS_TEST_AUTHORS,
+  fakeCorpusEngine,
+  fakeResult,
+} from "@/web/v2/testing/fake_corpus_engine";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
@@ -162,6 +170,26 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
         renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1" }),
         renderReaderContentHtml({ workId: "catullus", pageId: "5" }),
       ]);
+    const corpusParams = {
+      q: "",
+      pageSize: PAGE_SIZE.default,
+      contextLen: CONTEXT_LEN.default,
+      strictMode: false,
+    };
+    const corpusEngine = fakeCorpusEngine(() =>
+      fakeResult({
+        resultStats: { estimatedResults: 200 },
+        nextPage: { resultId: 1, resultIndex: 50, candidateIndex: 0 },
+      })
+    );
+    const [corpusLanding, corpusResults] = await Promise.all([
+      runCorpusSearch(corpusParams, corpusEngine, CORPUS_TEST_AUTHORS),
+      runCorpusSearch(
+        { ...corpusParams, q: "@case:dat" },
+        corpusEngine,
+        CORPUS_TEST_AUTHORS
+      ),
+    ]);
 
     fixtures.push(
       {
@@ -191,6 +219,14 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
       {
         name: "external-landing",
         html: renderExternalLandingContentHtml(),
+      },
+      {
+        name: "corpus-landing",
+        html: renderCorpusContentHtml(corpusLanding),
+      },
+      {
+        name: "corpus-results",
+        html: renderCorpusContentHtml(corpusResults),
       }
     );
   });
