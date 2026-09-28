@@ -50,6 +50,23 @@ export function isLatinWord(
 }
 
 /**
+ * Builds the `<a class="lat-word" href="..." data-word="...">` element a
+ * linkified Latin word is replaced with, for use as a `renderWord` factory.
+ */
+export function createWordLink(
+  token: string,
+  cleanWord: string,
+  href: string
+): HTMLAnchorElement {
+  const a = document.createElement("a");
+  a.className = "lat-word";
+  a.href = href;
+  a.dataset.word = cleanWord;
+  a.textContent = token;
+  return a;
+}
+
+/**
  * Traverses `root` with a TreeWalker, pruning non-tokenizable subtrees (links, buttons,
  * script, style, Greek text, and opted-out elements) and replacing Latin words
  * in text nodes with elements created by `options.renderWord`.

@@ -2,6 +2,7 @@ import {
   BaseElement,
   bindDismissable,
   closeActiveSectionUI,
+  createWordLink,
   fetchAndSwapPartial,
   isPlainLeftClick,
   registerElement,
@@ -241,17 +242,12 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       });
     }
 
-    // Create and attach child component for suggestions. Creating it is
-    // one-time; listening to it is not.
-    const inputWrapper = this.scope.$(".input-wrapper");
-    if (inputWrapper && !this.suggestionsEl) {
-      this.suggestionsEl = document.createElement("morcus-dict-suggestions");
-      inputWrapper.appendChild(this.suggestionsEl);
-    }
-
-    // Deliberately outside the guard above. `BaseElement` disposes listeners on
-    // disconnect, so registering this alongside the one-time creation would
-    // leave a re-attached element holding a child it can no longer hear.
+    // Adopt the server-rendered suggestions host (see `renderDictSearchBar`).
+    // Re-queried on every connect, so a re-attached element listens to the
+    // child that is actually in its subtree.
+    this.suggestionsEl = this.scope.$<MorcusDictSuggestions>(
+      "morcus-dict-suggestions"
+    );
     if (this.suggestionsEl) {
       this.scope.listen(this.suggestionsEl, "suggestion-select", (e: Event) => {
         if (e instanceof CustomEvent) {
@@ -623,14 +619,8 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
             cls.includes("dLink"))
         );
       },
-      renderWord: (token, cleanWord) => {
-        const a = document.createElement("a");
-        a.className = "lat-word";
-        a.href = this.buildWordHref(cleanWord);
-        a.dataset.word = cleanWord;
-        a.textContent = token;
-        return a;
-      },
+      renderWord: (token, cleanWord) =>
+        createWordLink(token, cleanWord, this.buildWordHref(cleanWord)),
     });
   }
 

@@ -15,12 +15,6 @@ morcus-dict-settings,
   display: none;
 }
 
-.dict-settings-details[open] > .settings-btn {
-  color: var(--primary);
-  border-color: var(--primary);
-  background-color: var(--tag-bg);
-}
-
 /* Dictionary Selection Section */
 .settings-inflected-section {
   display: flex;

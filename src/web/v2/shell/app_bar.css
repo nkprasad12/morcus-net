@@ -3,11 +3,9 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.brand-group {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-}
+/* `.brand-group`, `.actions-group`, `.mobile-menu` and the narrow-screen
+   (max-width: 640px) grid layout of `.app-bar-inner` are defined only in
+   v2-critical.css, which is inlined into every page before this sheet. */
 
 .brand-logo-link {
   display: flex;
@@ -23,12 +21,6 @@
   display: block;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-}
-
-.actions-group {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
 }
 
 .nav-link,
@@ -76,20 +68,7 @@
   background-color: var(--app-bar-nav-hover-bg);
 }
 
-.theme-toggle-btn svg,
-.mobile-menu-btn svg {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
-  display: block;
-}
-
-/* Mobile Menu (<details>) & Responsive Navigation */
-.mobile-menu {
-  position: relative;
-  display: none;
-}
-
+/* Mobile Menu (<details>) */
 .mobile-menu summary {
   list-style: none;
 }
@@ -142,36 +121,6 @@
   background-color: var(--accent-quote);
   color: var(--primary);
   font-weight: 600;
-}
-
-@media (max-width: 640px) {
-  .app-bar-inner {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-  }
-
-  .actions-group {
-    order: 1;
-    justify-self: start;
-    gap: var(--space-4);
-  }
-
-  .brand-group {
-    order: 2;
-    justify-self: center;
-    gap: 0;
-  }
-
-  .nav-desktop {
-    display: none;
-  }
-
-  .mobile-menu {
-    order: 3;
-    justify-self: end;
-    display: block;
-  }
 }
 
 @media (prefers-reduced-motion: no-preference) {

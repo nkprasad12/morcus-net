@@ -33,12 +33,6 @@
   font-size: 1.15rem;
 }
 
-.external-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 .external-field-label {
   font-weight: 600;
   font-size: 0.9rem;

@@ -43,8 +43,8 @@ jest.mock("@/web/v2/reader/reader_loader.server", () =>
 const CREATED_ON_UPGRADE_ALLOWLIST: readonly string[] = [
   // Inline word tokens wrapped by `tokenizeElement` in passages and entries.
   ".lat-word",
-  // Autocomplete popup shell attached once by `MorcusDictSearch`.
-  "morcus-dict-suggestions",
+  // Autocomplete list built by `MorcusDictSuggestions` inside its
+  // server-rendered host.
   "morcus-dict-suggestions > ul.suggestions",
 ];
 

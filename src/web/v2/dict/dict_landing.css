@@ -171,12 +171,6 @@
 }
 
 /* Lexica Directional Sections */
-.dict-sections {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
-
 .dict-section-title {
   margin: 0 0 var(--space-2) 0;
   font-size: 0.8rem;
