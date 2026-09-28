@@ -63,7 +63,7 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       needs roughly `core` + `dict` + `shell` + `dialog` (~66 kB), about half of what it downloads
       today.
 
-      - [ ] **TODO: investigate splitting strategies** before the next bump:
+      - [ ] **TODO: investigate splitting strategies** before the next bump (deferred from the PE RFC Phase 2 seams milestone so feature work is unblocked):
         - Per-topic entry chunks (shell/core + `dict` + `reader` + `library`), with the page
           shell emitting only the chunks a route needs. Rsbuild `splitChunks` could pull out
           `core/` as a shared, long-cached chunk.
@@ -72,8 +72,11 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
         - **First candidate: `external/`.** It is used on one route and is self-contained.
           `<morcus-external-loader>` could stay registered as a tiny shell whose behaviour is a
           `BaseController` loaded with `import()` on connect and attached with `addController`
-          (which connects at once if the host is already connected). This would prove the
-          pattern on a small surface before the reader.
+          (which connects at once if the host is already connected). This proves the pattern
+          on a small surface before heavier slices.
+        - **Corpus autocomplete:** V1's autocomplete alone is ~661 lines. When the Corpus slice is built,
+          keep it self-contained in `src/web/v2/corpus/` so it can be split into an async chunk once this
+          infrastructure lands.
         - Prerequisites for any async chunk: `output.assetPrefix: "/v2/assets/"` in
           [`v2.rsbuild.ts`](../../bundler/v2.rsbuild.ts), so chunks resolve under the static
           route. The budget check currently measures only the manifest's `v2.js` entry, so it
