@@ -92,6 +92,7 @@ Follow these rules whenever adding or modifying UI V2 features:
 | Focus ring, buttons, pills, card headers          | `core/components.css`                                                                                                                                    | Redeclaring `outline: 2px solid var(--primary)` per slice                              |
 | Building HTML (server, common, client)            | `html`, composed with `raw` / `joinHtml` (`core/html.common.ts`)                                                                                         | `${safeHtml}` inside `html` (re-escaped); `he.escape` in new code                      |
 | Form-driven UI                                    | A working `<form>` first, then `this.hijackForm` / `this.syncQueryParam`                                                                                 | Controls that only work with JS                                                        |
+| Cross-slice inventory ratchet                     | Extend `core/` or reuse a primitive on a regression; run `npm run inventory:update` in the same change for a stale entry                                 | Raising `inventory_ratchet.json` for a regression                                      |
 
 ### JS-only and No-JS-only UI
 
@@ -206,5 +207,6 @@ Comprehensive instructions for running unit tests and Playwright E2E tests are d
 - **Linting & Import Rules**: `npx eslint --cache src/web/v2`
 - **Code Style**: `npx prettier --cache src/web/v2 --check`
 - **Type Checking**: `npx tsc --noEmit` (incremental via `.cache/.tsbuildinfo`)
+- **Cross-Slice Inventory & Ratchet**: `npm run inventory` (or `./morcus.sh inventory`) verifies cross-file CSS duplicate blocks, client DOM construction/mutation outside `core/`, and string-selector calls per file against [`inventory_ratchet.json`](inventory_ratchet.json) and writes `.cache/inventory/report.md` (also checked in-memory by `tools/inventory_ratchet.test.ts` during `npm run ts-tests:v2`). When a cleanup lowers a metric, update the ratchet in the same change with `npm run inventory:update` (or `./morcus.sh inventory --update`).
 - **Unit Tests**: `npx jest src/web/v2`
 - **E2E Tests**: `REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e`

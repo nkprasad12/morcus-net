@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "cssDuplicates": {
+    "patterns": {
+      "023f94c4": [
+        "src/web/v2/shell/app_bar.css",
+        "src/web/v2/v2-critical.css"
+      ],
+      "02e1f1f3": [
+        "src/web/v2/dict/dict_toc.css",
+        "src/web/v2/external/external.css"
+      ],
+      "0937c20e": [
+        "src/web/v2/about/about.css",
+        "src/web/v2/shell/app_bar.css",
+        "src/web/v2/v2-critical.css"
+      ],
+      "1209c6d3": [
+        "src/web/v2/shell/app_bar.css",
+        "src/web/v2/v2-critical.css"
+      ],
+      "1a3fa00c": [
+        "src/web/v2/shell/app_bar.css",
+        "src/web/v2/v2-critical.css"
+      ],
+      "690729f2": [
+        "src/web/v2/core/settings.css",
+        "src/web/v2/shell/app_bar.css"
+      ],
+      "789b1926": [
+        "src/web/v2/core/settings.css",
+        "src/web/v2/dict/dict_settings.css"
+      ],
+      "950ab4e7": [
+        "src/web/v2/shell/app_bar.css",
+        "src/web/v2/v2-critical.css"
+      ],
+      "a97493b7": ["src/web/v2/dict/dict_layout.css", "src/web/v2/v2.css"],
+      "e2207a61": [
+        "src/web/v2/dict/dict_landing.css",
+        "src/web/v2/dict/dict_toc.css"
+      ]
+    },
+    "allowlist": {}
+  },
+  "domMutationOutsideCore": {
+    "callsPerFile": {
+      "src/web/v2/dict/dict_search.client.ts": 5,
+      "src/web/v2/dict/dict_suggestions.client.ts": 11,
+      "src/web/v2/external/external_loader.client.ts": 1,
+      "src/web/v2/library/library_view.client.ts": 3,
+      "src/web/v2/reader/reader_panel.client.ts": 3,
+      "src/web/v2/reader/reader_view.client.ts": 9
+    }
+  },
+  "selectorCalls": {
+    "callsPerFile": {
+      "src/web/v2/dialog/report_dialog.client.ts": 7,
+      "src/web/v2/dict/abbr_popover.client.ts": 5,
+      "src/web/v2/dict/dict_greek.client.ts": 4,
+      "src/web/v2/dict/dict_permalink.client.ts": 6,
+      "src/web/v2/dict/dict_search.client.ts": 12,
+      "src/web/v2/dict/dict_settings.client.ts": 13,
+      "src/web/v2/dict/dict_suggestions.client.ts": 1,
+      "src/web/v2/dict/dict_toc.client.ts": 1,
+      "src/web/v2/external/external_loader.client.ts": 20,
+      "src/web/v2/library/library_view.client.ts": 8,
+      "src/web/v2/reader/reader_layout.client.ts": 3,
+      "src/web/v2/reader/reader_page_nav.client.ts": 1,
+      "src/web/v2/reader/reader_panel.client.ts": 16,
+      "src/web/v2/reader/reader_settings.client.ts": 24,
+      "src/web/v2/reader/reader_toc.client.ts": 22,
+      "src/web/v2/reader/reader_view.client.ts": 54,
+      "src/web/v2/shell/mobile_menu.client.ts": 2,
+      "src/web/v2/shell/theme_toggle.client.ts": 3
+    }
+  }
+}

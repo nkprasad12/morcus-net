@@ -11,6 +11,8 @@
     "morcus": "./morcus.sh",
     "run-morcus": "npm run tsnp src/scripts/run_morcus.ts --",
     "visual-diff": "npm run run-morcus -- visual-diff",
+    "inventory": "npm run tsnp src/web/v2/tools/inventory.ts --",
+    "inventory:update": "npm run tsnp src/web/v2/tools/inventory.ts -- --update",
     "build": "npm run setup-rust && MAIN=build npm run tsnp src/scripts/prod_build_steps.ts && npm run tsnp src/bundler/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/",
     "start": "node build/server.js",
     "setup-rust": "npm run install-rust && . \"$HOME/.cargo/env\" && npm run setup-node-bindgen",
