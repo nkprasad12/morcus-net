@@ -57,8 +57,10 @@ describe("GET /v2/externalReader", () => {
     );
     expect(landing.match(/<form /g)).toHaveLength(1);
     expect(landing.match(/name="lines" value="keep"/g)).toHaveLength(1);
-    // Pasted text has no `name`, so it can never be submitted to the server.
+    // Pasted text has no `name` (never submitted to the server) and starts
+    // `disabled` so its `required` cannot block the No-JS URL form.
     expect(res.text).toMatch(/<textarea id="external-text"(?![^>]*name=)/);
+    expect(res.text).toMatch(/<textarea id="external-text"[^>]*\bdisabled\b/);
     expect(res.text).not.toContain('type="file"');
     expect(res.text).not.toMatch(/method="post"/i);
   });

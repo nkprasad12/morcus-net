@@ -141,6 +141,26 @@ describe("<morcus-external-loader>", () => {
     });
 
     test("disables the hidden tab's fields so they can't block Read", async () => {
+      // Before upgrade (or with JS off), paste fields start disabled in SSR so
+      // the required textarea cannot block the URL form.
+      const unupgraded = new DOMParser().parseFromString(
+        renderExternalLandingContentHtml(),
+        "text/html"
+      );
+      expect(
+        unupgraded.querySelector<HTMLTextAreaElement>("#external-text")!
+          .disabled
+      ).toBe(true);
+      const unupgradedUrl =
+        unupgraded.querySelector<HTMLInputElement>("#external-url")!;
+      expect(unupgradedUrl.disabled).toBe(false);
+      unupgradedUrl.value = "example.com/a.html";
+      expect(
+        unupgraded
+          .querySelector<HTMLFormElement>("#external-form")!
+          .checkValidity()
+      ).toBe(true);
+
       const loader = mount(renderExternalLandingContentHtml());
       await loader.ready;
       const text = loader.querySelector<HTMLTextAreaElement>("#external-text")!;

@@ -95,11 +95,12 @@ export function renderExternalLandingContentHtml(
   const startOnUrl = options.url !== undefined || options.error !== undefined;
 
   // One form, two sources. The tabs are radios outside the form, so they
-  // never submit; CSS shows the chosen panel. Paste fields have no `name`:
-  // the loader reads them and the text never reaches the server. The tabs,
-  // the paste panel and the saved list are `data-js-only`, so without JS (or
-  // until `<morcus-external-loader>` is upgraded) only the plain GET form for
-  // web pages shows.
+  // never submit; CSS shows the chosen panel. Paste fields have no `name`
+  // (the loader reads them and the text never reaches the server) and start
+  // `disabled` so the textarea's `required` cannot block the No-JS form. The
+  // tabs, the paste panel and the saved list are `data-js-only`, so without
+  // JS (or until `<morcus-external-loader>` is upgraded) only the plain GET
+  // form for web pages shows.
   return `
     <morcus-external-loader class="external-landing" data-page="landing">
       <header class="external-landing-header">
@@ -132,6 +133,7 @@ export function renderExternalLandingContentHtml(
             <input type="text"
                    id="external-title"
                    class="external-input"
+                   disabled
                    maxlength="200"
                    autocomplete="off"
                    placeholder="From the first words of the text">
@@ -139,6 +141,7 @@ export function renderExternalLandingContentHtml(
             <textarea id="external-text"
                       class="external-input external-textarea"
                       required
+                      disabled
                       rows="10"
                       lang="la"
                       autocapitalize="off"

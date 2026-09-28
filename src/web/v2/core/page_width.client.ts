@@ -33,8 +33,7 @@ function applyPageWidth(
 
 /**
  * Re-records the saved preset for the critical script. Owners call this on
- * connect, so a snapshot that went stale (e.g. V1 changed the setting) heals
- * after one load.
+ * connect, so a stale snapshot heals after one load.
  */
 export function syncPageWidth(surface: PageWidthSurface): void {
   const saved = getPageWidth(surface);

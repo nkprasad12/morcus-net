@@ -10,8 +10,7 @@
  * scarce budget" in `dict/PREFERENCES.md` for which preferences qualify.
  *
  * Call it on every connect with the current value, not only on change, so a
- * stale snapshot (e.g. after V1 changed `GlobalSettings`) heals after one
- * load.
+ * stale snapshot heals after one load.
  */
 
 import { storage } from "@/web/v2/core/storage.client";

@@ -120,7 +120,6 @@ describe("pre-paint", () => {
 
   test("syncPageWidth heals a stale snapshot from GlobalSettings", async () => {
     setPageWidth("dict", "wide");
-    // E.g. V1 changed the setting without touching the snapshot.
     saveSettings({ dictWidth: "narrow" });
     syncPageWidth("dict");
     root.removeAttribute("data-dict-width");
