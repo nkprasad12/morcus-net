@@ -1,8 +1,6 @@
 import {
   BaseElement,
-  html,
   registerElement,
-  setHtml,
   settingsStore,
   syncIframeTheme,
 } from "@/web/v2/core/index.client";
@@ -18,7 +16,13 @@ export class MorcusThemeToggle extends BaseElement {
 
   protected override onConnect() {
     this.isDark = this.computeIsDark();
-    this.render();
+    this.buttonEl = this.scope.$<HTMLButtonElement>("button");
+    this.pathEl = this.querySelector<SVGPathElement>("path");
+    this.updateView();
+
+    if (this.buttonEl) {
+      this.scope.listen(this.buttonEl, "click", this.toggleTheme);
+    }
 
     if (typeof window.matchMedia === "function") {
       const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -80,32 +84,6 @@ export class MorcusThemeToggle extends BaseElement {
     }
     if (this.pathEl) {
       this.pathEl.setAttribute("d", pathD);
-    }
-  }
-
-  private render() {
-    const label = this.isDark ? "Switch to light mode" : "Switch to dark mode";
-    const pathD = this.isDark ? SUN_PATH : MOON_PATH;
-
-    setHtml(
-      this,
-      html`
-        <button
-          type="button"
-          class="theme-toggle-btn"
-          aria-label="${label}"
-          title="${label}">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="${pathD}"></path>
-          </svg>
-        </button>
-      `
-    );
-
-    this.buttonEl = this.scope.$<HTMLButtonElement>("button");
-    this.pathEl = this.querySelector<SVGPathElement>("path");
-    if (this.buttonEl) {
-      this.scope.listen(this.buttonEl, "click", this.toggleTheme);
     }
   }
 }

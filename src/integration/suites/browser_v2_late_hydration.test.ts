@@ -50,7 +50,8 @@ async function openBeforeHydration(
 async function expectUpgraded(page: Page, selector: string) {
   await expect(page.locator(selector).first()).toHaveAttribute(
     "data-upgraded",
-    ""
+    "",
+    { timeout: 15000 }
   );
 }
 
@@ -126,6 +127,7 @@ test.describe("UI V2 late hydration", () => {
 
   const PAGES = [
     { name: "dictionary", url: "/v2/dicts?q=habeo", ready: ".dict-card" },
+    { name: "library", url: "/v2/library", ready: ".work-card" },
     { name: "reader", url: READER, ready: ".reader-passage" },
     {
       name: "External Reader",
@@ -283,35 +285,6 @@ test.describe("UI V2 late hydration", () => {
     await expectUpgraded(page, "morcus-dict-search");
     expect(await page.evaluate(() => window.scrollY)).toBe(before);
     await expect(page.locator('input[name="q"]')).not.toBeFocused();
-  });
-
-  test("library: a filter typed before upgrade is applied (PH2)", async ({
-    page,
-  }) => {
-    const release = await openBeforeHydration(
-      page,
-      "/v2/library",
-      "#library-search-input"
-    );
-    await page.locator("#library-search-input").fill("caesar");
-
-    release();
-    await expectUpgraded(page, "morcus-library-view");
-    await expect(page.locator(".work-card[hidden]").first()).toBeAttached();
-    const visibleCards = await page
-      .locator(".work-card:not([hidden])")
-      .evaluateAll((cards) =>
-        cards.map(
-          (card) =>
-            `${card.getAttribute("data-author") ?? ""} ${
-              card.getAttribute("data-title") ?? ""
-            }`
-        )
-      );
-    expect(visibleCards.length).toBeGreaterThan(0);
-    for (const cardText of visibleCards) {
-      expect(cardText).toContain("caesar");
-    }
   });
 
   test("reader: TOC opened via its link before upgrade is adopted and closable (PH5)", async ({

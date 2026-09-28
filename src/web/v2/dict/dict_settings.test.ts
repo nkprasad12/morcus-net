@@ -2,6 +2,15 @@
  * @jest-environment jsdom
  */
 import "@/web/v2/dict/dict_settings.client";
+import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
+
+function mountDictSettings(): HTMLElement {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = renderDictSearchBar({ action: "/v2/dicts" });
+  const el = wrapper.querySelector<HTMLElement>("morcus-dict-settings")!;
+  document.body.appendChild(el);
+  return el;
+}
 
 describe("MorcusDictSettings", () => {
   beforeEach(() => {
@@ -15,8 +24,7 @@ describe("MorcusDictSettings", () => {
   });
 
   test("renders default state with 50% highlight strength", () => {
-    const el = document.createElement("morcus-dict-settings");
-    document.body.appendChild(el);
+    const el = mountDictSettings();
 
     const btn = el.querySelector<HTMLElement>(".settings-btn");
     const details = el.querySelector<HTMLDetailsElement>(
@@ -40,8 +48,7 @@ describe("MorcusDictSettings", () => {
       JSON.stringify({ highlightStrength: 20, darkMode: false })
     );
 
-    const el = document.createElement("morcus-dict-settings");
-    document.body.appendChild(el);
+    const el = mountDictSettings();
 
     const slider = el.querySelector<HTMLInputElement>(".settings-slider");
     const valueDisplay = el.querySelector<HTMLElement>(".settings-value");
@@ -54,8 +61,7 @@ describe("MorcusDictSettings", () => {
   });
 
   test("toggles popover open and closed on button click", () => {
-    const el = document.createElement("morcus-dict-settings");
-    document.body.appendChild(el);
+    const el = mountDictSettings();
 
     const btn = el.querySelector<HTMLElement>(".settings-btn")!;
     const details = el.querySelector<HTMLDetailsElement>(
@@ -72,8 +78,7 @@ describe("MorcusDictSettings", () => {
   });
 
   test("updates highlight scale on slider input and persists on change", () => {
-    const el = document.createElement("morcus-dict-settings");
-    document.body.appendChild(el);
+    const el = mountDictSettings();
 
     const slider = el.querySelector<HTMLInputElement>(".settings-slider")!;
     const valueDisplay = el.querySelector<HTMLElement>(".settings-value")!;
@@ -102,8 +107,7 @@ describe("MorcusDictSettings", () => {
   });
 
   test("closes popover on Escape key", () => {
-    const el = document.createElement("morcus-dict-settings");
-    document.body.appendChild(el);
+    const el = mountDictSettings();
 
     const btn = el.querySelector<HTMLElement>(".settings-btn")!;
     const details = el.querySelector<HTMLDetailsElement>(
@@ -118,8 +122,7 @@ describe("MorcusDictSettings", () => {
   });
 
   test("closes popover on outside pointerdown", () => {
-    const el = document.createElement("morcus-dict-settings");
-    document.body.appendChild(el);
+    const el = mountDictSettings();
 
     const outside = document.createElement("div");
     document.body.appendChild(outside);
@@ -137,8 +140,7 @@ describe("MorcusDictSettings", () => {
   });
 
   test("renders dictionary checkboxes with defaults and handles toggle", () => {
-    const el = document.createElement("morcus-dict-settings");
-    document.body.appendChild(el);
+    const el = mountDictSettings();
 
     const checkboxes = el.querySelectorAll<HTMLInputElement>(".dict-checkbox");
     expect(checkboxes.length).toBeGreaterThan(0);
@@ -172,20 +174,7 @@ describe("MorcusDictSettings", () => {
   });
 
   test("handles inflection toggle and dispatches dict-inflected-change", () => {
-    // Setup with SSR-like markup including inflection checkbox
-    document.body.innerHTML = `
-      <morcus-dict-settings>
-        <details class="dict-settings-details">
-          <summary class="settings-btn"></summary>
-          <div class="settings-popover">
-            <input type="checkbox" id="toggle-inflected" class="inflected-checkbox" checked />
-            <input type="checkbox" class="dict-checkbox" data-key="L&S" checked />
-          </div>
-        </details>
-      </morcus-dict-settings>
-    `;
-
-    const el = document.querySelector<HTMLElement>("morcus-dict-settings")!;
+    const el = mountDictSettings();
     const inflectedCheckbox =
       el.querySelector<HTMLInputElement>("#toggle-inflected")!;
     expect(inflectedCheckbox.checked).toBe(true);
@@ -206,8 +195,7 @@ describe("MorcusDictSettings", () => {
   });
 
   test("synchronizes aria-expanded and closes on element disconnect", () => {
-    const el = document.createElement("morcus-dict-settings");
-    document.body.appendChild(el);
+    const el = mountDictSettings();
 
     const btn = el.querySelector<HTMLElement>(".settings-btn")!;
     const details = el.querySelector<HTMLDetailsElement>(

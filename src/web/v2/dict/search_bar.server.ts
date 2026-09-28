@@ -96,6 +96,34 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           </summary>
 
           <div class="settings-popover">
+            <div class="settings-slider-section" data-js-only>
+              <div class="settings-header">
+                <span class="settings-title">Highlight Strength</span>
+                <span class="settings-value">50%</span>
+              </div>
+
+              <div class="settings-control-row">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="10"
+                  value="50"
+                  class="settings-slider"
+                  aria-label="Highlight strength"
+                />
+              </div>
+
+              <div class="settings-preview" aria-hidden="true">
+                <span class="lsOrth">Caesar</span>
+                <span class="lsGrammar">noun</span>
+                <span class="lsBibl">Gall. 1.1</span>
+                <span class="lsQuote">omnia</span>
+              </div>
+
+              <div class="settings-divider" role="separator"></div>
+            </div>
+
             <div class="settings-inflected-section">
               <div class="settings-section-title">Search Scope</div>
               <input type="hidden" name="o" value="0" />

@@ -73,7 +73,18 @@ export function renderAppBar(activePage: V2ActivePage): string {
 
         <!-- Right on desktop / Left on mobile: Dark/Light Mode & Report Dialog -->
         <div class="actions-group">
-          <morcus-theme-toggle data-js-only></morcus-theme-toggle>
+          <morcus-theme-toggle data-js-only>
+            <button
+              type="button"
+              class="theme-toggle-btn"
+              aria-label="Switch to dark mode"
+              title="Switch to dark mode"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="${ICON_PATHS.moon}"></path>
+              </svg>
+            </button>
+          </morcus-theme-toggle>
           <morcus-report-dialog data-js-only>
             <button
               type="button"

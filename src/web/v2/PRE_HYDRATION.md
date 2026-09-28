@@ -65,7 +65,7 @@ Sizes: 🟢 < 30 min · 🟡 an hour or two · 🔴 half a day+
 
   - `#library-search-input` is visible and focusable at first paint. If a user types into it before `v2.js` loads, `MorcusLibraryView.onConnect()` only registers the `input` listener and initializes `this.currentQuery = ""` without reading `input.value`. The catalog remains unfiltered until the user types another character.
   - **Fix**: In `MorcusLibraryView.onConnect()`, if `input.value.trim()` is non-empty on mount, set `this.currentQuery = input.value.trim()` and call `this.applyFilters()`.
-  - **Resolved**: `onConnect()` reads `input.value` and applies the filter.
+  - **Resolved**: `onConnect()` reads `input.value` and applies the filter, and `.library-search-form` is gated with `data-js-only` (`library.server.ts`) so client-only filter controls are hidden without JS and gated until `<morcus-library-view>` upgrades (`gate (library)` in `browser_v2_late_hydration.test.ts`).
 
 - [x] 🟡 **PH3 — `<morcus-dict-search>`: Pre-hydration typing on landing page misfires initial results check** ([`dict_search.client.ts`](dict/dict_search.client.ts#L390-L421))
 

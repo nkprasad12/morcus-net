@@ -18,6 +18,8 @@
  */
 import "@/web/v2/v2_elements.client";
 import { getRegisteredElementTags } from "@/web/v2/core/base_element.client";
+import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
+import { renderAppBar } from "@/web/v2/shell/page_shell.server";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -70,11 +72,14 @@ function describeTarget(target: EventTarget): string {
  * it that the element finds what it queries for and registers its listeners.
  */
 const FIXTURES: Record<string, string> = {
-  "morcus-theme-toggle": `<morcus-theme-toggle></morcus-theme-toggle>`,
+  "morcus-theme-toggle": renderAppBar("dicts"),
 
   "morcus-dict-suggestions": `<morcus-dict-suggestions></morcus-dict-suggestions>`,
 
-  "morcus-dict-settings": `<morcus-dict-settings></morcus-dict-settings>`,
+  "morcus-dict-settings": renderDictSearchBar({
+    action: "/v2/dicts",
+    includePageWidth: true,
+  }),
 
   "morcus-dict-toc": `
     <morcus-dict-toc class="drawer drawer-toc">

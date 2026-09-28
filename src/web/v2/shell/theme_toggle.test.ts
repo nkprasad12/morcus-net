@@ -3,6 +3,15 @@
  */
 import "@/web/v2/shell/theme_toggle.client";
 import { settingsStore, syncIframeTheme } from "@/web/v2/core/index.client";
+import { renderAppBar } from "@/web/v2/shell/page_shell.server";
+
+function mountThemeToggle(): HTMLElement {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = renderAppBar("dicts");
+  const el = wrapper.querySelector<HTMLElement>("morcus-theme-toggle")!;
+  document.body.appendChild(el);
+  return el;
+}
 
 describe("MorcusThemeToggle", () => {
   const originalMatchMedia = window.matchMedia;
@@ -19,8 +28,7 @@ describe("MorcusThemeToggle", () => {
   });
 
   test("toggles theme and persists to settingsStore", () => {
-    const el = document.createElement("morcus-theme-toggle");
-    document.body.appendChild(el);
+    const el = mountThemeToggle();
 
     const button = el.querySelector<HTMLButtonElement>("button")!;
     expect(button).not.toBeNull();
@@ -42,8 +50,7 @@ describe("MorcusThemeToggle", () => {
       removeEventListener: jest.fn(),
     });
 
-    const el = document.createElement("morcus-theme-toggle");
-    document.body.appendChild(el);
+    const el = mountThemeToggle();
 
     const button = el.querySelector<HTMLButtonElement>("button")!;
     expect(button.getAttribute("aria-label")).toBe("Switch to light mode");
@@ -62,8 +69,7 @@ describe("MorcusThemeToggle", () => {
     iframe.contentDocument!.write("<html><head></head><body></body></html>");
     iframe.contentDocument!.close();
 
-    const el = document.createElement("morcus-theme-toggle");
-    document.body.appendChild(el);
+    const el = mountThemeToggle();
 
     const button = el.querySelector<HTMLButtonElement>("button")!;
 

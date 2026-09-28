@@ -145,7 +145,7 @@ export function renderDictLandingHtml(
                 <span class="lsGrammar"><span class="lsHover" title="feminine">f.</span></span>,
                 <em>a wave, billow, surge</em>.
               </div>
-              <div class="sample-entry-sense">
+              <div class="sample-entry-sense" id="sample-sense">
                 <a href="#sample-sense" class="lsSenseBullet section-anchor" title="Direct link to this section">I.</a>
                 <span class="lsHover" title="literal">Lit.</span>:
                 <span class="lsQuote">mare plenum undarum</span>,
