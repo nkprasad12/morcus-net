@@ -126,6 +126,46 @@ export const READER_SELECTORS: Record<string, SelectorEntry> = {
     requiredIn: ["work-page", "work-with-macra"],
   },
   toggleMacra: { id: "toggle-macra", optionalIn: ["work-with-macra"] },
+
+  // Companion panel (reader_panel.client.ts): the server renders it whole.
+  panelTabs: {
+    selector: ".reader-dict-panel .reader-panel-tabs",
+    requiredIn: ["work-page", "work-with-macra"],
+  },
+  panelViews: {
+    selector: ".reader-dict-panel .reader-panel-views",
+    requiredIn: ["work-page", "work-with-macra"],
+  },
+  ...Object.fromEntries(
+    ["dict", "notes", "translation", "about"].flatMap((tab) => [
+      [
+        `panelTab-${tab}`,
+        {
+          selector: `a#panel-tab-${tab}[href="#panel-view-${tab}"]`,
+          requiredIn: ["work-page", "work-with-macra"],
+        },
+      ],
+      [
+        `panelView-${tab}`,
+        {
+          id: `panel-view-${tab}`,
+          requiredIn: ["work-page", "work-with-macra"],
+        },
+      ],
+    ])
+  ),
+  dictFrameInView: {
+    selector: "#panel-view-dict > #dict-frame",
+    requiredIn: ["work-page", "work-with-macra"],
+  },
+  notesSlot: {
+    selector: '#panel-view-notes > [data-slot="notes"]',
+    requiredIn: ["work-page", "work-with-macra"],
+  },
+  workAbout: {
+    selector: "#panel-view-about #reader-work-about",
+    requiredIn: ["work-page", "work-with-macra"],
+  },
 };
 
 function toCssSelector(entry: SelectorEntry): string {

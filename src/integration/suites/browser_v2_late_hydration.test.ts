@@ -339,12 +339,11 @@ test.describe("UI V2 late hydration", () => {
       (page.viewportSize()?.width ?? 1280) > 640,
       "The dictionary sheet is the mobile layout"
     );
-    const release = await openBeforeHydration(
-      page,
-      READER,
-      ".reader-sheet-open-link"
-    );
-    await page.locator(".reader-sheet-open-link").click();
+    // Works always carry About, so the server renders the companion tabs and
+    // the Dictionary tab (not the dict-only open link) opens the sheet.
+    const opener = ".reader-panel-tab[href='#panel-view-dict']";
+    const release = await openBeforeHydration(page, READER, opener);
+    await page.locator(opener).click();
     const panel = page.locator("#reader-dict");
     const openHeight = (await panel.boundingBox())?.height ?? 0;
     expect(openHeight).toBeGreaterThan(100);

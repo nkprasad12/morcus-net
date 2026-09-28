@@ -76,12 +76,13 @@ const UPGRADED_RATCHET: Readonly<Record<string, number>> = {
   // (scripting).
   "v2-critical.css": 4,
   // `:target` opens the dictionary drawer until the reader adopts the hash.
-  "reader/reader_layout.css": 7,
+  "reader/reader_layout.css": 3,
   // `:target` opens the TOC drawer until the TOC controller adopts the hash.
   "reader/reader_toc.css": 2,
   "v2.css": 1,
-  // The back-to-top link stays visible (a plain link) until its script runs.
-  "shell/app_bar.css": 1,
+  // The back-to-top link stays visible (a plain link) until its script runs,
+  // and clears the drawer that a pre-upgrade `:target` inside it opens.
+  "shell/app_bar.css": 2,
   // The CSS focus tooltip hands over to the abbreviation popover.
   "dict/dict_typography.css": 1,
   // Browsers without (scripting) pick the External Reader panel at upgrade.

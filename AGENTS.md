@@ -104,7 +104,7 @@ Functional browser tests verifying both No-JS baseline and JS-enhanced behavior 
 
 #### C. Visual Regression Tests (Multi-Dimensional Screen-Diff via `run_morcus`)
 
-Verifies pixel-perfect UI fidelity across 18 view/mode scenarios and 4 form-factors/browsers, covering light/dark and JS/No-JS modes (72 tests total):
+Verifies pixel-perfect UI fidelity across 19 view/mode scenarios and 4 form-factors/browsers, covering light/dark and JS/No-JS modes (80 tests total):
 
 ```bash
 # Fast check (Chromium + Mobile Chrome):
@@ -123,7 +123,7 @@ Verifies pixel-perfect UI fidelity across 18 view/mode scenarios and 4 form-fact
 ```
 
 > [!NOTE]
-> The suite currently holds 72 baselines (18 views × 4 projects). Reader coverage is thin: `v2-reader-passage` points at `/v2/reader`, which is the landing view and contains no passage text, so the only scenario exercising real passage rendering is `v2-reader-parallel`.
+> The suite currently holds 80 baselines (19 views × 4 projects). Note that `v2-reader-passage` points at `/v2/reader`, which is the landing view and contains no passage text; real passage rendering is exercised by `v2-reader-parallel` and `v2-reader-notes`.
 
 #### D. Visual Diff Inspector
 
@@ -187,4 +187,4 @@ Before pushing to the remote repository, ensure full browser matrix parity and 0
 
 1. Start dev server: `PORT=5757 ./morcus.sh web -w` (if not already running)
 2. Run functional E2E tests: `./morcus.sh e2e --v2 --all`
-3. Run visual regression tests: `./morcus.sh e2e --visual --all` (ensure 0 pixel diffs across all 72 baseline snapshots). If any differ, follow the Visual Baseline Approval Rule and review them with `./morcus.sh visual-diff --source results`.
+3. Run visual regression tests: `./morcus.sh e2e --visual --all` (ensure 0 pixel diffs across all 80 baseline snapshots). If any differ, follow the Visual Baseline Approval Rule and review them with `./morcus.sh visual-diff --source results`.

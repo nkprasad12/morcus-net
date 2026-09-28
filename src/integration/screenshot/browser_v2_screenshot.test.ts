@@ -41,6 +41,18 @@ test.describe("UI V2 Visual Regression Suite", () => {
     },
   });
 
+  // 5b. Reader Companion Panel Notes View: a real passage with its notes open.
+  // The note marker is a plain `#note-*` link, so this opens the Notes view
+  // via `:target` without JS and via the panel controller with it.
+  v2VisualScenario("v2-reader-notes", {
+    path: "/v2/reader/cicero/cum_populo_gratias_egi",
+    waitFor: ".reader-passage",
+    action: async (page) => {
+      await page.locator("a.reader-note-ref").first().click();
+      await page.waitForSelector("#note-n1", { state: "visible" });
+    },
+  });
+
   // 6. Library Browse Catalog
   v2VisualScenario("v2-library-landing", {
     path: "/v2/library",

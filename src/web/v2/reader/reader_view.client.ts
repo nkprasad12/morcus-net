@@ -463,17 +463,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    // Handle edition/about link click (reveals scholarly attribution in companion panel)
-    const aboutLink = e.target.closest<HTMLAnchorElement>(
-      "a.reader-about-link"
-    );
-    if (aboutLink) {
-      e.preventDefault();
-      this.activatePanelTab("about");
-      this.panelController?.aboutTab?.focus();
-      return;
-    }
-
     // Handle note backlink click (jumps passage to the marker and flashes it)
     const backref = e.target.closest<HTMLAnchorElement>(
       "a.reader-note-backref"

@@ -37,6 +37,11 @@ describe("reader page-turn slots", () => {
       "reader-settings-btn",
       "reader-toc-drawer",
       "dict-frame",
+      // The companion panel: only the notes inside it are a slot.
+      "panel-tab-notes",
+      "panel-view-dict",
+      "panel-view-notes",
+      "reader-work-about",
     ]) {
       expect(doc.getElementById(id)?.closest("[data-slot]")).toBeNull();
     }

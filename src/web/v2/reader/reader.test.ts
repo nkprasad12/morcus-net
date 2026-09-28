@@ -1,3 +1,7 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import {
   renderReaderContentHtml,
   renderReaderPageHtml,
@@ -139,7 +143,6 @@ describe("reader_ssr", () => {
     expect(html).toContain('id="reader-work-about"');
     expect(html).toContain('class="reader-work-about"');
     expect(html).toContain("Holmes");
-    expect(html).toContain('class="reader-about-link"');
     expect(html).not.toContain('id="reader-biblio-dialog"');
   });
 
@@ -159,10 +162,10 @@ describe("reader_ssr", () => {
     expect(html).toContain('id="reader-settings-btn"');
     expect(html).toContain('aria-controls="reader-settings-popover"');
 
-    // Main text panel header: Author, Work Name, and About Link
+    // Main text panel header: Author and Work Name (About lives in the panel tab)
     expect(html).toContain('class="reader-author-tag"');
     expect(html).toContain('class="reader-work-tag"');
-    expect(html).toContain('class="reader-about-link"');
+    expect(html).not.toContain('class="reader-about-link"');
 
     // Primary sticky bar: unified single row with Contents trigger, arrows, and Aa trigger
     expect(html).not.toContain('id="sticky-expand-btn"');
@@ -525,7 +528,7 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('href="/v2/library"');
     });
 
-    test("renders notesHtml directly inside reader-text-card for No-JS baseline", async () => {
+    test("leaves notes and About to the companion panel", async () => {
       const ctx = await resolveReaderContext({ workId: "dbg", pageId: "1.1" });
       const ctxWithNotes = {
         ...ctx,
@@ -537,10 +540,10 @@ describe("decomposed_reader_renderers", () => {
       };
       const html = renderReaderTextPanel(ctxWithNotes);
 
-      expect(html).toContain('class="reader-notes"');
-      expect(html).toContain('id="note-1"');
-      expect(html).not.toContain("reader-notes-stub");
-      expect(html).not.toContain("reader-panel-tabs");
+      expect(html).not.toContain('id="note-1"');
+      expect(html).not.toContain('id="reader-work-about"');
+      // The About tab replaces the old in-card link to the section.
+      expect(html).not.toContain('href="#reader-work-about"');
     });
   });
 
@@ -558,8 +561,60 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('href="#reader-dict"');
       expect(html).toContain("reader-sheet-open-link");
       expect(html).toContain('src="/v2/dicts?embedded=1"');
-      expect(html).not.toContain("reader-panel-tabs");
-      expect(html).not.toContain("panel-view-notes");
+    });
+
+    test("renders the companion tabs and views in their final position", async () => {
+      const ctx = await resolveReaderContext({ workId: "dbg", pageId: "1.1" });
+      const html = renderReaderDictPanel({
+        ...ctx,
+        activePage: {
+          ...ctx.activePage,
+          notesHtml:
+            '<aside class="reader-notes"><ol class="reader-notes-list"><li class="reader-note" id="note-1">Note 1</li></ol></aside>',
+        },
+      });
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const panel = doc.getElementById("reader-dict");
+
+      expect(panel?.classList.contains("has-companion-tabs")).toBe(true);
+      const tabs = Array.from(doc.querySelectorAll(".reader-panel-tab"));
+      expect(tabs.map((t) => [t.id, t.getAttribute("href")])).toEqual([
+        ["panel-tab-dict", "#panel-view-dict"],
+        ["panel-tab-notes", "#panel-view-notes"],
+        ["panel-tab-translation", "#panel-view-translation"],
+        ["panel-tab-about", "#panel-view-about"],
+      ]);
+      // Tab roles and the selected tab come from JS; the server never marks
+      // a view active, so `:target` decides without JS.
+      expect(
+        doc.querySelector("[role='tab'], [aria-selected], .active")
+      ).toBeNull();
+      // dbg has no translation.
+      expect(doc.getElementById("panel-tab-translation")?.hidden).toBe(true);
+      expect(doc.getElementById("panel-tab-notes")?.hidden).toBe(false);
+
+      expect(doc.getElementById("dict-frame")?.parentElement?.id).toBe(
+        "panel-view-dict"
+      );
+      expect(
+        doc.getElementById("note-1")?.closest("[data-slot='notes']")
+          ?.parentElement?.id
+      ).toBe("panel-view-notes");
+      const about = doc.getElementById("reader-work-about");
+      expect(about?.closest("#panel-view-about")).not.toBeNull();
+      expect(about?.hasAttribute("open")).toBe(true);
+    });
+
+    test("hides the Notes tab on a page without notes", async () => {
+      const ctx = await resolveReaderContext({ workId: "dbg", pageId: "1.1" });
+      const doc = new DOMParser().parseFromString(
+        renderReaderDictPanel(ctx),
+        "text/html"
+      );
+      expect(doc.getElementById("panel-tab-notes")?.hidden).toBe(true);
+      expect(
+        doc.querySelector(".reader-panel-tabs")?.hasAttribute("hidden")
+      ).toBe(false);
     });
 
     test("renders query definition label and close link when query is present", async () => {

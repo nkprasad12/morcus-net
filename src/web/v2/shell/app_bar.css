@@ -304,7 +304,15 @@
     bottom: calc(var(--drawer-min-height, 54px) + 16px);
   }
 
-  body:has(.reader-dict-panel:target) .back-to-top {
+  /* A target inside the drawer (a note, a companion tab) opens it only until
+     the reader upgrades; a note's hash stays in the URL after that. The gate
+     is what pushes this over the compound limit. */
+  /* stylelint-disable-next-line selector-max-compound-selectors */
+  body:has(
+      .reader-dict-panel:target,
+      .reader-dict-panel :target:not([data-upgraded] *)
+    )
+    .back-to-top {
     bottom: calc(55svh + 16px);
   }
 
