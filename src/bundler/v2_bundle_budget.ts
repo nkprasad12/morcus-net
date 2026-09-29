@@ -46,14 +46,19 @@ export interface V2BundleBudget {
  *   ahead of the splitting TODO. Its §7.3 guardrails (lint-enforced) keep a
  *   later move to an async chunk cheap. Headroom is ~1 kB gzip, and the
  *   combined ceiling moved by the same margin so it doesn't undercut it.
+ * - 2026-09-29: CSS 125 / 22 -> 130 / 23 (combined 267 / 64 -> 275 / 66), after
+ *   corpus results blurb & flat-panel query guide redesign (`corpus.css`):
+ *   CSS 119.1 / 19.9 -> 126.8 / 21.1. Adds responsive 3-column desktop guide,
+ *   mobile nested subaccordions, query examples table, beta chip, welcome card,
+ *   and inflection notice. Gzip growth is ~1.2 kB; headroom is ~1.9 kB gzip.
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   maxJsRawBytes: 147 * 1024,
   maxJsGzipBytes: 44 * 1024,
-  maxCssRawBytes: 125 * 1024,
-  maxCssGzipBytes: 22 * 1024,
-  maxCombinedRawBytes: 267 * 1024,
-  maxCombinedGzipBytes: 64 * 1024,
+  maxCssRawBytes: 130 * 1024,
+  maxCssGzipBytes: 23 * 1024,
+  maxCombinedRawBytes: 275 * 1024,
+  maxCombinedGzipBytes: 66 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
   // pre-paint preference must not grow it. Baseline 2026-09-27: 424 B raw /

@@ -78,7 +78,8 @@
 /* Shared 20px glyph inside icon-only buttons */
 .settings-btn svg,
 .theme-toggle-btn svg,
-.mobile-menu-btn svg {
+.mobile-menu-btn svg,
+.corpus-next svg {
   width: 20px;
   height: 20px;
   fill: currentColor;

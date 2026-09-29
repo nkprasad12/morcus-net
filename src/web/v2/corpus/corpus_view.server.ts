@@ -13,7 +13,10 @@ import {
 } from "@/web/v2/core/html.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 import { renderSlotTemplates, slotAttr } from "@/web/v2/core/slots.common";
-import { renderCorpusHelp } from "@/web/v2/corpus/corpus_help.server";
+import {
+  renderCorpusHelp,
+  renderInlineHelpDisclosure,
+} from "@/web/v2/corpus/corpus_help.server";
 import {
   CONTEXT_LEN,
   CORPUS_PATH,
@@ -60,28 +63,57 @@ function renderSettingsSummary(view: CorpusSearchView): SafeHtml {
 function renderSummary(view: CorpusSearchView): SafeHtml {
   const outcome = view.outcome;
   if (outcome.kind !== "results") {
-    return html`<p class="corpus-summary" ${raw(slotAttr("summary"))}></p>`;
+    return html`<div class="corpus-summary" ${raw(slotAttr("summary"))}></div>`;
   }
   const { estimatedTotal, isExact, pageStart, results, timingMs } = outcome;
   const headline =
     estimatedTotal === 0
       ? html`No results found for`
-      : html`Found ${isExact ? "" : "about "}${estimatedTotal} results matching`;
-  const range =
-    estimatedTotal > 0 && !isExact
-      ? html`Showing results ${pageStart + 1} to ${pageStart + results.length}`
-      : html``;
-  const timing =
-    timingMs === undefined
-      ? html``
-      : html`<span data-volatile>[${timingMs.toFixed(3)} ms]</span>`;
-  return html`<p class="corpus-summary" ${raw(slotAttr("summary"))}>
-    <span class="corpus-summary-headline"
-      >${raw(headline)}
-      <span class="corpus-query-echo">${view.params.q}</span></span
-    >
-    <span class="corpus-summary-detail">${raw(range)} ${raw(timing)}</span>
-  </p>`;
+      : html`Found
+        ${isExact ? "" : "about "}${estimatedTotal.toLocaleString("en-US")}
+        results matching`;
+
+  const items: SafeHtml[] = [];
+  if (estimatedTotal === 0) {
+    items.push(html`<span>Showing 0 results</span>`);
+  } else {
+    items.push(
+      html`<span
+        >Showing results ${pageStart + 1} to ${pageStart + results.length}</span
+      >`
+    );
+  }
+  items.push(
+    html`<span class="corpus-scope-text"
+      >~3M words / ½ classical corpus indexed (<a href="/v2/library"
+        >view works</a
+      >)</span
+    >`
+  );
+  if (timingMs !== undefined) {
+    items.push(
+      html`<span class="corpus-timing" data-volatile
+        >[${timingMs.toFixed(3)} ms]</span
+      >`
+    );
+  }
+  if (results.length > 0) {
+    items.push(renderInlineHelpDisclosure());
+  }
+
+  const detailHtml = joinHtml(
+    items,
+    ' <span class="corpus-summary-dot" aria-hidden="true">•</span> '
+  );
+
+  return html`<div class="corpus-summary" ${raw(slotAttr("summary"))}>
+    <div class="corpus-summary-headline">
+      ${headline}
+      <span class="corpus-query-echo">${view.params.q}</span>
+      <span class="corpus-beta-chip">Beta</span>
+    </div>
+    <div class="corpus-summary-detail">${detailHtml}</div>
+  </div>`;
 }
 
 function renderSnippet(snippet: CorpusResultView["snippet"]): RawHtml {
@@ -106,49 +138,46 @@ function renderResult(result: CorpusResultView): SafeHtml {
 }
 
 function renderDisclaimers(view: CorpusSearchView): SafeHtml {
-  const inflection = view.showInflectionDisclaimer
-    ? html`<details class="corpus-disclaimer">
-        <summary>Your query includes inflection filters</summary>
-        <p>
-          <i
-            >Inflections and lemmas are not hand-tagged and may frequently
-            include false positives.</i
-          >
-        </p>
-        <p>
-          For example, <code>puellae</code> would always match the
-          <code>dative</code>, <code>genitive</code>, and
-          <code>plural</code> filters, regardless of whether it was dative
-          singular, genitive singular, or nominative plural in a given instance.
-        </p>
-      </details>`
-    : html``;
-  return html`${raw(inflection)}
-    <details class="corpus-disclaimer">
-      <summary>This tool is a work in progress</summary>
-      <ul>
-        <li>The query engine is still in beta and may have errors.</li>
-        <li>
-          The database currently contains about 3 million words (roughly ½ of
-          the classical corpus). See the <a href="/v2/library">library</a> for a
-          full list of indexed works.
-        </li>
-      </ul>
-    </details>`;
+  if (!view.showInflectionDisclaimer) {
+    return html``;
+  }
+  return html`<details class="corpus-disclaimer corpus-inflection-notice">
+    <summary class="corpus-inflection-summary">
+      Inflected match may include false positives
+    </summary>
+    <div class="corpus-inflection-body">
+      <p class="corpus-inflection-lead">
+        <i
+          >Inflections and lemmas are not hand-tagged and may frequently include
+          false positives.</i
+        >
+      </p>
+      <p>
+        For example, <code>puellae</code> matches <code>dative</code>,
+        <code>genitive</code>, and <code>plural</code> filters simultaneously.
+      </p>
+    </div>
+  </details>`;
 }
 
 function renderResultsBody(view: CorpusSearchView): SafeHtml {
   const outcome = view.outcome;
   switch (outcome.kind) {
     case "landing":
-      return html`<div class="corpus-message">
-        <p class="corpus-welcome">Welcome to the corpus query tool!</p>
-        <p class="corpus-welcome-detail">
-          This tool allows you to search any text currently available in the
-          library. See below for examples of the query syntax, or start typing
-          in the search bar.
-        </p>
-      </div>`;
+      return html`<div class="corpus-welcome-card">
+          <div class="corpus-welcome-title">
+            About the classical corpus search engine
+          </div>
+          <p class="corpus-welcome-detail">
+            This tool allows you to search over 3 million words indexed across
+            classical Latin literature. You can search for exact words (e.g.
+            <code>amoris</code>), inflected grammatical forms
+            (<code>@case:genitive</code>), proximity constraints
+            (<code>~3</code>), or author scopes (<code>#Caesar</code>). Explore
+            the interactive syntax guide below or tap any sample query to start.
+          </p>
+        </div>
+        ${raw(renderCorpusHelp(true))}`;
     case "error":
       return html`<div class="corpus-message corpus-error" role="alert">
         <p>
@@ -159,7 +188,8 @@ function renderResultsBody(view: CorpusSearchView): SafeHtml {
       </div>`;
     case "results":
       if (outcome.results.length === 0) {
-        return renderDisclaimers(view);
+        return html`${raw(renderDisclaimers(view))}
+        ${raw(renderCorpusHelp(true))}`;
       }
       return html`${raw(renderDisclaimers(view))}
         <ol class="corpus-result-list" start="${outcome.pageStart + 1}">
@@ -190,8 +220,12 @@ function renderPager(view: CorpusSearchView): SafeHtml {
           rel="next"
           data-corpus-nav
           data-focus-key="corpus-next"
-          >Next page</a
-        >`
+          aria-label="Next page"
+          title="Next page">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="${ICON_PATHS.arrowForward}"></path>
+          </svg>
+        </a>`
       : html``;
   return html`<nav
     class="corpus-pager"
@@ -358,7 +392,6 @@ export function renderCorpusContentHtml(
 ): SafeHtml {
   return html`<morcus-corpus-view class="corpus-page">
     ${raw(renderForm(view, lemmataVersion))}
-    ${raw(renderCorpusHelp(view.outcome.kind === "landing"))}
     <div class="corpus-summary-live" aria-live="polite">
       ${raw(renderCorpusSlot(view, "summary"))}
     </div>
