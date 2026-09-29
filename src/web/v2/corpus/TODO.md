@@ -4,7 +4,7 @@ The V2 UI does not have a corpus search surface yet. This file tracks corpus iss
 
 ## Word tokens split at inline markup
 
-**Status:** ✅ Resolved (no longer blocks the V2 corpus ship, [DESIGN.md §12](DESIGN.md#12-phases)). A reader-side residual is tracked [below](#reader-word-boundaries-at-inline-markup). Found while building reader `matchText` highlighting.
+**Status:** ✅ Resolved (no longer blocks the V2 corpus ship, [DESIGN.md §12](DESIGN.md#12-phases)), together with the reader-side follow-up [below](#reader-word-boundaries-at-inline-markup). Found while building reader `matchText` highlighting.
 
 **Symptom (before the fix).** The corpus indexer broke a word into separate tokens wherever inline markup fell inside it. In those rows:
 
@@ -15,14 +15,7 @@ The V2 UI does not have a corpus search surface yet. This file tracks corpus iss
 
 **Fix.** `extractRowText` now follows the [word-boundary rule](#word-boundary-rule) below: it concatenates siblings directly and relies on the source text's own whitespace, adding breaks only at structure and between adjacent tags. Whitespace is then normalized once per row. Unit tests, and a regression test that renders fixtures through the real V2 preprocessor and client tokenizer, are in `corpus_library_utils.test.ts`.
 
-**Result** (library-wide comparison of per-row corpus word offsets against V2-rendered, client-tokenized words, ignoring case): rows that disagree went from **1,243 to 161** of 146,951 (≈0.85% → ≈0.11%). Before the fix, Pliny _Nat. Hist._ alone accounted for 858. The rest:
-
-| Work                                                | Rows still differing |
-| :-------------------------------------------------- | :------------------- |
-| `phi0978.phi001.perseus-lat2` (Pliny, _Nat. Hist._) | 74                   |
-| `phi0914.phi001.perseus-lat2` (Livy)                | 59                   |
-| `phi0474.phi043.perseus-lat1` (Cicero)              | 25                   |
-| others (`phi0474.*`)                                | 3                    |
+**Result** (library-wide comparison of per-row corpus word offsets against V2-rendered, client-tokenized words, ignoring case): rows that disagree went from **1,243 to 161** of 146,951 with the indexer fix (before it, Pliny _Nat. Hist._ alone accounted for 858), then to **92** with reader fix 2 and **0** with reader fix 1 ([below](#reader-word-boundaries-at-inline-markup)).
 
 - V1's reader splits words at markup the same way the old corpus did, so its highlights drift in these rows now. That is accepted: V1 is frozen and will be replaced by V2.
 
@@ -67,12 +60,12 @@ Editorial tags (`<add>`, `<corr>`, `<hi>`, …) wrap whatever stretch of text th
 
 ## Reader word boundaries at inline markup
 
-**Status:** Open, low priority. The 161 rows left over by the indexer fix are places where the **V2 reader** breaks the [word-boundary rule](#word-boundary-rule), so `matchText` highlights in them can still land a word or two off. The two fixes below should ship together: #1 on its own would merge `<hi>se</hi><hi>habere</hi>` into one word.
+**Status:** ✅ Resolved. The 161 rows left over by the indexer fix were places where the **V2 reader** broke the [word-boundary rule](#word-boundary-rule) in two opposite ways, so `matchText` highlights in them could land a word or two off. With both fixes below, no row in the library disagrees (0 of 146,951). The rows in [Source typos](#source-typos-missing-space-after-a-tag) no longer show up as mismatches because the corpus and reader now join them the same (wrong) way.
 
-1. **The reader splits at tag-meets-text seams (breaks rule 1).** Cicero `phi0474.phi043` `<hi>im</hi>petu`, Pliny `i<hi>am</hi>`, enclitics `<hi>vallem</hi>que`, and Pliny's partly overlined numerals (`‾DC‾VII`, `CC‾XLVIII‾`, `|‾XIII‾|`, each one number). `tokenizeSubtree` tokenizes each text node separately, so the styled `<span>` splits the word; there are 290 such styled seams. Fix: in `tokenize.client.ts`, tokenize runs of text across inline styling spans (`italic`, `bold`, `overline`, `smallcaps`, `uppercase`, `superscript`, `strong`), breaking at any other element. A word that crosses an element becomes several `lat-word` parts that share the full word, the word index and a group id. Make it opt-in, used by the reader only (the dictionary also calls `tokenizeSubtree`).
-2. **The reader joins at tag-meets-tag seams (breaks rules 2–3).** `renderXmlNodeCleanHtml` drops unstyled wrappers and pastes their contents together, so Livy `</choice><choice>` renders `tumCocles` and Pliny `<add>endi</add><add>fingendi</add>` renders `pingendifingendique`. Italic pairs also display run together (_sehabere_). That's a visible rendering bug in about 130 places. Fix: have the preprocessor emit a space between two adjacent inline sibling tags that both carry text, unless the first ends in `-`. Leave note, gap, `br` and line/block elements alone, so `word[1]` markers don't gain a space. Needs a visual-diff review.
+1. **The reader split at tag-meets-text seams (broke rule 1).** Cicero `phi0474.phi043` `<hi>im</hi>petu`, Pliny `i<hi>am</hi>`, enclitics `<hi>vallem</hi>que`, and Pliny's partly overlined numerals (`‾DC‾VII`, `CC‾XLVIII‾`, `|‾XIII‾|`, each one number): `tokenizeSubtree` tokenized each text node separately. **Fix:** an opt-in `joinAcrossInline` option in `core/tokenize.client.ts`, enabled only by the reader (`enhancePassage`; the dictionary keeps per-text-node tokenizing). It tokenizes runs of text across inline styling elements (`italic`, `bold`, `overline`, `smallcaps`, `uppercase`, `superscript` spans, `<strong>`) and breaks at any other element or rejected subtree (note links, `.reader-gap`). A word that crosses an element becomes several `lat-word` parts with the whole word in `data-word`, the same word index (so `.reader-match` marks every part), and a shared `data-word-group`. Only the first part is a `role="button"` with `tabindex` and an `aria-label` of the whole word; later parts are `aria-hidden`. Clicking any part looks up the whole word, and `word-active` and hover (`syncWordGroupHover`, `.word-hover`) style the whole group. Keyboard focus rings still outline only the first part.
+2. **The reader joined at tag-meets-tag seams (broke rules 2–3).** `renderXmlNodeCleanHtml` dropped unstyled wrappers and pasted their contents together, so Livy `</choice><choice>` rendered `tumCocles` and Pliny `<add>endi</add><add>fingendi</add>` rendered `pingendifingendique`; italic pairs displayed run together (_sehabere_). **Fix:** the preprocessor emits a space between two adjacent inline sibling elements that both carry text, unless the first ends in `-` or the source already has whitespace there. Note, gap, `br`, `space` and line/block/heading/list elements get no space, so `word[1]` markers stay flush. Visual suite: no pixel diffs.
 
-**Verification script.** A throwaway script (all library works rendered through `preprocessWorkToV2`, tokenized with `tokenizeSubtree` under JSDOM, compared with `processTokens(extractRowText(row))`) produced the numbers above. The regression test in `corpus_library_utils.test.ts` checks the same property on fixtures.
+**Verification script.** A throwaway script (all library works rendered through `preprocessWorkToV2`, tokenized with `tokenizeSubtree` and `joinAcrossInline` under JSDOM, compared with `processTokens(extractRowText(row))`) produced the numbers above. The regression tests in `corpus_library_utils.test.ts` check the same property on fixtures for every rule.
 
 ## Heading rows cannot be highlighted
 

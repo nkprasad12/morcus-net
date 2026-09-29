@@ -212,6 +212,7 @@
 
 .reader-passage a:hover,
 .reader-passage .lat-word:hover,
+.reader-passage .lat-word.word-hover,
 .reader-passage .lat-word:focus-visible {
   background-color: var(--word-hover-bg);
   color: inherit;
