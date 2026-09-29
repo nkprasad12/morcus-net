@@ -130,6 +130,65 @@ function renderNoteMarker(
   return `<a class="reader-note-ref" id="${refId}" href="#${bodyId}" role="doc-noteref" aria-label="Note ${label}"><sup>[${label}]</sup></a>`;
 }
 
+/** Elements rendered as markers with no text of their own (rule 4). */
+const MARKER_TAGS = new Set(["br", "space", "gap", "note"]);
+
+/**
+ * Whether `node` renders as inline text, as opposed to a marker or a line,
+ * block, heading or list element, which break words on their own.
+ */
+function isInlineTextElement(node: XmlNode): boolean {
+  const rend = node.getAttr("rend");
+  return !(
+    MARKER_TAGS.has(node.name) ||
+    node.name === "head" ||
+    node.name === "ul" ||
+    node.name === "li" ||
+    node.getAttr("l") !== undefined ||
+    node.getAttr("block") !== undefined ||
+    node.getAttr("sectionHead") !== undefined ||
+    rend === "blockquote" ||
+    rend === "indent"
+  );
+}
+
+/** The text `node` renders, excluding marker elements. */
+function inlineText(node: XmlNode | string): string {
+  if (typeof node === "string") {
+    return node;
+  }
+  if (MARKER_TAGS.has(node.name)) {
+    return "";
+  }
+  return node.children.map(inlineText).join("");
+}
+
+/**
+ * Whether a space must separate two adjacent sibling elements, following the
+ * word-boundary rule on `extractRowText` (`corpus_library_utils.ts`): two
+ * sibling tags that meet with nothing between them are a word break (rule 2),
+ * unless the first ends in `-` (rule 3).
+ *
+ * Unstyled wrappers render no element of their own, so without this their
+ * contents would run together (Livy `</choice><choice>` as `tumCocles`).
+ * Markers and structural elements already break words, and get no space, so
+ * a note marker stays flush against its word.
+ */
+function needsWordBreak(previous: XmlNode, next: XmlNode): boolean {
+  if (!isInlineTextElement(previous) || !isInlineTextElement(next)) {
+    return false;
+  }
+  const before = inlineText(previous);
+  const after = inlineText(next);
+  return (
+    before.trim().length > 0 &&
+    after.trim().length > 0 &&
+    !/\s$/.test(before) &&
+    !/^\s/.test(after) &&
+    !before.endsWith("-")
+  );
+}
+
 function renderXmlNodeCleanHtml(
   node: XmlNode | string,
   notes?: NoteCollector
@@ -159,7 +218,15 @@ function renderXmlNodeCleanHtml(
   }
 
   const childrenHtml = node.children
-    .map((child) => renderXmlNodeCleanHtml(child, notes))
+    .map((child, i) => {
+      const previous = node.children[i - 1];
+      const html = renderXmlNodeCleanHtml(child, notes);
+      return child instanceof XmlNode &&
+        previous instanceof XmlNode &&
+        needsWordBreak(previous, child)
+        ? ` ${html}`
+        : html;
+    })
     .join("");
 
   if (tag === "head" || isSectionHead) {

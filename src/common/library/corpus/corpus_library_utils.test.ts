@@ -264,4 +264,26 @@ describe("corpus row text matches V2 reader tokens", () => {
     expect(linked).toContainEqual([1, "epistula"]);
     expect(corpusWords(row)).toContainEqual([1, "epistula"]);
   });
+
+  it("agrees on word breaks where two sibling tags meet", () => {
+    const rows = [
+      // Livy 2.10.11, `</choice><choice>`.
+      span([], "dixit ", span([], "tum"), span([], "Cocles"), " ait."),
+      // Pliny 1.praef, `ping<add>endi</add><add>fingendi</add>que`.
+      span(
+        [],
+        "rationem ping",
+        span([["origName", "add"]], "endi"),
+        span([["origName", "add"]], "fingendique"),
+        " artis."
+      ),
+      span([], "compertum ", span(ITALIC, "se"), span(ITALIC, "habere"), "."),
+    ];
+    const linked = readerWords(makeWork(rows));
+
+    expect(linked).toEqual(rows.map(corpusWords));
+    expect(linked[0]).toContainEqual([1, "tum"]);
+    expect(linked[1]).toContainEqual([2, "fingendique"]);
+    expect(linked[2]).toContainEqual([2, "habere"]);
+  });
 });

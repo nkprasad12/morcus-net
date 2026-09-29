@@ -178,6 +178,108 @@ describe("preprocessWorkToV2 renditions", () => {
   });
 });
 
+describe("preprocessWorkToV2 word boundaries between sibling tags", () => {
+  const ITALIC: [string, string][] = [
+    ["rend", "italic"],
+    ["rendParent", "hi"],
+  ];
+
+  /** Renders one prose row and returns the passage's inner HTML. */
+  function renderRow(row: ContentNode, notes?: XmlNode[]): string {
+    const work = makeWork({
+      textParts: ["book", "chapter", "section"],
+      rows: [[["1", "1", "1"], row]],
+      notes,
+    });
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+    const match = html.match(/<p class="reader-paragraph">(.*)<\/p>/s);
+    return match?.[1] ?? html;
+  }
+
+  it("separates two adjacent unstyled wrappers", () => {
+    // Livy 2.10.11: `<choice>…tum…</choice><choice>…Cocles…</choice>`.
+    const row = span([], "dixit ", span([], "tum"), span([], "Cocles"), " ait");
+    expect(renderRow(row)).toBe("dixit tum Cocles ait");
+  });
+
+  it("separates adjacent wrappers inside a word, keeping text seams joined", () => {
+    // Pliny 1.praef: `ping<add>endi</add><add>fingendi</add>que`.
+    const row = span(
+      [],
+      "ping",
+      span([["origName", "add"]], "endi"),
+      span([["origName", "add"]], "fingendi"),
+      "que"
+    );
+    expect(renderRow(row)).toBe("pingendi fingendique");
+  });
+
+  it("separates two adjacent italic spans", () => {
+    const row = span(
+      [],
+      "compertum ",
+      span(ITALIC, "se"),
+      span(ITALIC, "habere")
+    );
+    expect(renderRow(row)).toBe(
+      'compertum <span class="italic">se</span> <span class="italic">habere</span>'
+    );
+  });
+
+  it("joins a word hyphenated across adjacent spans", () => {
+    const row = span([], span(ITALIC, "lon-"), span(ITALIC, "gitudo"));
+    expect(renderRow(row)).toBe(
+      '<span class="italic">lon-</span><span class="italic">gitudo</span>'
+    );
+  });
+
+  it("does not separate a tag from adjacent text", () => {
+    const row = span([], span(ITALIC, "im"), "petu");
+    expect(renderRow(row)).toBe('<span class="italic">im</span>petu');
+  });
+
+  it("adds no space where the source already has whitespace", () => {
+    const row = span([], span(ITALIC, "se "), span(ITALIC, "habere"));
+    expect(renderRow(row)).toBe(
+      '<span class="italic">se </span><span class="italic">habere</span>'
+    );
+  });
+
+  it("adds no space next to an element without text", () => {
+    const row = span([], span(ITALIC, "se"), span([], ""), span(ITALIC, " "));
+    expect(renderRow(row)).not.toContain("</span> ");
+  });
+
+  it("adds no space around note markers, gaps, breaks, and spacers", () => {
+    const row = span(
+      [],
+      span(ITALIC, "word"),
+      noteMarker("0"),
+      span(ITALIC, "gap"),
+      new XmlNode<ProcessedWorkContentNodeType>("gap"),
+      span(ITALIC, "br"),
+      new XmlNode<ProcessedWorkContentNodeType>("br"),
+      span(ITALIC, "space"),
+      new XmlNode<ProcessedWorkContentNodeType>("space"),
+      span(ITALIC, "end")
+    );
+    const html = renderRow(row, [new XmlNode("span", [], ["A note."])]);
+    expect(html).not.toMatch(/> </);
+    expect(html).toContain('word</span><a class="reader-note-ref"');
+  });
+
+  it("adds no space between line or block elements", () => {
+    const row = span(
+      [],
+      span([["block", "1"]], "unum"),
+      span([["block", "1"]], "duo")
+    );
+    expect(renderRow(row)).toContain(
+      '<p class="reader-block">unum</p><p class="reader-block">duo</p>'
+    );
+  });
+});
+
 describe("preprocessWorkToV2 critical apparatus", () => {
   const notes = [
     new XmlNode("span", [], ["Note zero body."]),
