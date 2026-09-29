@@ -50,6 +50,15 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       them so tests could import it safely; since it now aggregates the route entries, every
       conformance test that imports it installs them too. Export the `setupX` functions only and
       call them from the entry files, so imports stay pure and only an entry has side effects.
+      Overlaps with the chunk-ordering item below; do them together.
+- [ ] 🔴 **Startup code in `common.js` runs before the route's components exist.** Since the
+      split, a page can be in a state where `common.js` has run but the route chunk has not.
+      Global setups written for the old single bundle can read an empty world (confirmed: the
+      initial hash reveal, now patched with a `customElements.whenDefined` stopgap in
+      `reveal.client.ts`) or block native No-JS behaviour (suspected: the anchor `click` handler
+      vs `:target` UI). The late-hydration suite releases all scripts together, so it cannot
+      see this state. Findings, audit, options and test gaps:
+      [CHUNK_ORDERING.md](CHUNK_ORDERING.md).
 - [ ] 🟢 **Extend the import-boundary lint beyond `src/web/v2` and `src/bundler`.** The tier rules in
       `eslint.config.mjs` only match files inside those two trees. `src/bundler` importing
       `asset_manifest.server.ts` went unnoticed until review for exactly that reason (it has its own
