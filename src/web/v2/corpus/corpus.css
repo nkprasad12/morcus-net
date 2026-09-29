@@ -164,7 +164,7 @@
 
 .guide-summary {
   padding: var(--space-3) var(--space-6);
-  font-weight: 500;
+  font-weight: normal;
 }
 
 .guide-summary:hover {
@@ -183,7 +183,7 @@
 .guide-col-title,
 .guide-examples-title,
 .corpus-welcome-title {
-  font-weight: 600;
+  font-weight: normal;
   color: var(--text);
 }
 
@@ -367,7 +367,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: normal;
 }
 
 .guide-examples-table td {
@@ -414,7 +414,7 @@
 .guide-subaccordion-summary {
   padding: var(--space-2) 0;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: normal;
 }
 
 .guide-subaccordion-summary:hover {
@@ -444,7 +444,7 @@
 }
 .guide-mobile-example-query {
   font-family: var(--font-mono, monospace);
-  font-weight: 600;
+  font-weight: normal;
   color: var(--primary);
 }
 

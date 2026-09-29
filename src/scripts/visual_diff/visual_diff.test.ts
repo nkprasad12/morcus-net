@@ -59,6 +59,15 @@ describe("parseSnapshotName", () => {
     ).toMatchObject({ browser: "firefox", size: "large", category: "Reader" });
   });
 
+  it("parses corpus snapshots into the Corpus category", () => {
+    expect(
+      parseSnapshotName("v2-corpus-landing-js-light-chromium-linux.png")
+    ).toMatchObject({
+      scenario: "v2-corpus-landing",
+      category: "Corpus",
+    });
+  });
+
   it("uses the browser hint for Playwright result names", () => {
     expect(
       parseSnapshotName("v2-library-landing-js-light.png", "MobileChrome")

@@ -35,6 +35,7 @@ const FACETS: FacetDef[] = [
       { value: "Reader", label: "Reader" },
       { value: "Library", label: "Library" },
       { value: "About", label: "About" },
+      { value: "Corpus", label: "Corpus" },
       { value: "Other", label: "Other" },
     ],
   },
@@ -395,7 +396,8 @@ function select(index: number) {
     if (selected) button.scrollIntoView({ block: "nearest" });
   });
   renderInfo();
-  state.showAfter = false;
+  const item = current();
+  state.showAfter = item?.status === "added";
   renderStage();
 }
 

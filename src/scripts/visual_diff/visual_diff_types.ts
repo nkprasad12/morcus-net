@@ -9,6 +9,7 @@ export type SnapshotCategory =
   | "Reader"
   | "Library"
   | "About"
+  | "Corpus"
   | "Other";
 
 /** `small` = mobile / narrow viewport projects, `large` = desktop projects. */

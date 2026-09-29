@@ -73,11 +73,31 @@ test.describe("UI V2 Visual Regression Suite", () => {
     waitFor: ".subsection-note",
   });
 
+  // 9. Corpus Landing View
+  v2VisualScenario("v2-corpus-landing", {
+    path: "/v2/corpus",
+    waitFor: ".corpus-welcome-card",
+  });
+
+  // 10. Corpus Search Results View (Roma: multi-work results with marks and pager)
+  v2VisualScenario("v2-corpus-results", {
+    path: "/v2/corpus?q=Roma",
+    waitFor: ".corpus-result-list",
+    mask: ["[data-volatile]"],
+  });
+
+  // 11. Corpus Zero-Results View
+  v2VisualScenario("v2-corpus-zero-results", {
+    path: "/v2/corpus?q=xyznonexistentword",
+    waitFor: ".corpus-results",
+    mask: ["[data-volatile]"],
+  });
+
   // ==========================================================================
   // Dark Mode Curated Token Samples (High-Density Views)
   // ==========================================================================
 
-  // 9. Dark Mode Sample - Dictionary Results View (cards, chips, tags, tables)
+  // 12. Dark Mode Sample - Dictionary Results View (cards, chips, tags, tables)
   v2VisualScenario("v2-dicts-results-gladius", {
     path: "/v2/dicts?q=gladius",
     waitFor: ".dict-card",
@@ -85,11 +105,21 @@ test.describe("UI V2 Visual Regression Suite", () => {
     themes: ["dark"],
   });
 
-  // 10. Dark Mode Sample - Reader Passage View (reading canvas, active words, sticky bar)
+  // 13. Dark Mode Sample - Reader Passage View (reading canvas, active words, sticky bar)
   v2VisualScenario("v2-reader-passage", {
     path: "/v2/reader",
     waitFor: ".reader-passage",
     jsModes: ["js"],
     themes: ["dark"],
   });
+
+  // 14. Dark Mode Sample - Corpus Results View (cards, chips, mark highlights, pager)
+  v2VisualScenario("v2-corpus-results", {
+    path: "/v2/corpus?q=Roma",
+    waitFor: ".corpus-result-list",
+    mask: ["[data-volatile]"],
+    jsModes: ["js"],
+    themes: ["dark"],
+  });
 });
+
