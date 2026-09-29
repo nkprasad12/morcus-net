@@ -4,34 +4,75 @@ The V2 UI does not have a corpus search surface yet. This file tracks corpus iss
 
 ## Word tokens split at inline markup
 
-**Status:** Open. **Blocks the V2 corpus ship** ([DESIGN.md §12](DESIGN.md#12-phases)); UI work proceeds in parallel. Found while building reader `matchText` highlighting.
+**Status:** ✅ Resolved (no longer blocks the V2 corpus ship, [DESIGN.md §12](DESIGN.md#12-phases)). A reader-side residual is tracked [below](#reader-word-boundaries-at-inline-markup). Found while building reader `matchText` highlighting.
 
-**Symptom.** The corpus indexer breaks a word into separate tokens wherever inline markup falls inside it. In those rows:
+**Symptom (before the fix).** The corpus indexer broke a word into separate tokens wherever inline markup fell inside it. In those rows:
 
-- Searching for the whole word (e.g. `epistula`) does not find it, because the corpus only has the pieces.
-- The word offsets in corpus results (which become `matchText=id~start~end`) disagree with what the V2 reader counts. Every highlight after the split word lands on the wrong words.
+- Searching for the whole word (e.g. `epistula`) did not find it, because the corpus only had the pieces.
+- The word offsets in corpus results (which become `matchText=id~start~end`) disagreed with what the V2 reader counts. Every highlight after the split word landed on the wrong words.
 
-**Cause.** [`extractRowText`](../../../common/library/corpus/corpus_library_utils.ts) joins a node's children with `" "`. For `epist<…>u</…>la` it produces `epist u la`, which `processTokens` indexes as three words. The V2 preprocessor (`v2_preprocessor.ts`) drops styling-free wrapper elements and renders `epistula`, which the reader tokenizes as one word.
+**Cause.** [`extractRowText`](../../../common/library/corpus/corpus_library_utils.ts) joined a node's children with `" "`. For `epist<…>u</…>la` it produced `epist u la`, which `processTokens` indexed as three words. The V2 preprocessor (`v2_preprocessor.ts`) drops styling-free wrapper elements and renders `epistula`, which the reader tokenizes as one word.
 
-**Scale** (library-wide comparison of per-row corpus tokens against V2-rendered tokens): 1,329 of 125,763 rows (≈1.1%) differ, all for this reason. They are concentrated in a few works:
+**Fix.** `extractRowText` now follows the [word-boundary rule](#word-boundary-rule) below: it concatenates siblings directly and relies on the source text's own whitespace, adding breaks only at structure and between adjacent tags. Whitespace is then normalized once per row. Unit tests, and a regression test that renders fixtures through the real V2 preprocessor and client tokenizer, are in `corpus_library_utils.test.ts`.
 
-| Work                                                | Rows affected |
-| :-------------------------------------------------- | :------------ |
-| `phi0978.phi001.perseus-lat2` (Pliny, _Nat. Hist._) | 858 / 1,248   |
-| `phi1038.phi001.perseus-lat1`                       | 158 / 1,034   |
-| `phi0474.phi011.perseus-lat2` (Cicero, `x viri`)    | 64 / 154      |
-| `phi0914.phi001.perseus-lat2` (Livy)                | 41 / 20,378   |
-| `hypotactic_Tristia_Ovid`                           | 40 / 3,532 ¹  |
-| others (mostly `phi0474.*`)                         | < 40 each     |
+**Result** (library-wide comparison of per-row corpus word offsets against V2-rendered, client-tokenized words, ignoring case): rows that disagree went from **1,243 to 161** of 146,951 (≈0.85% → ≈0.11%). Before the fix, Pliny _Nat. Hist._ alone accounted for 858. The rest:
 
-¹ Probably the unrelated Tristia section-id issue tracked in [`reader/FEATURE_PARITY.md`](../reader/FEATURE_PARITY.md), not this bug.
+| Work                                                | Rows still differing |
+| :-------------------------------------------------- | :------------------- |
+| `phi0978.phi001.perseus-lat2` (Pliny, _Nat. Hist._) | 74                   |
+| `phi0914.phi001.perseus-lat2` (Livy)                | 59                   |
+| `phi0474.phi043.perseus-lat1` (Cicero)              | 25                   |
+| others (`phi0474.*`)                                | 3                    |
 
-**Proposed fix.** In `extractRowText`, insert whitespace only at the structural boundaries it already marks (`block`, `l`, `rend="indent"`, `rend="blockquote"`) and join other siblings with `""`, then rebuild the corpus. Check that the raw source strings already carry the whitespace between ordinary words, so no words get fused.
+- V1's reader splits words at markup the same way the old corpus did, so its highlights drift in these rows now. That is accepted: V1 is frozen and will be replaced by V2.
 
-- V1's reader splits words at markup the same way the corpus does today, so its highlights would drift in these rows after the fix. That is accepted: V1 is frozen and will be replaced by V2.
-- After the fix, re-run the alignment check below and expect ~0 mismatches.
+## Word-boundary rule
 
-**Verification script.** A throwaway comparison script (corpus input from `build-tmp/library_corpus_input` vs. V2 artifacts in `build/library_processed`, tokenized with the reader's rules) was used to produce the numbers above. If this is fixed, consider checking it in as a test over a small fixture work.
+The corpus and the V2 reader must agree on where words start and end, because corpus word offsets become reader `matchText` highlight ranges. The rule is implemented in [`extractRowText`](../../../common/library/corpus/corpus_library_utils.ts) and documented on it.
+
+Editorial tags (`<add>`, `<corr>`, `<hi>`, …) wrap whatever stretch of text they annotate: part of a word, a word, or several. Their edges therefore say nothing about word boundaries by themselves.
+
+1. **Whitespace decides.** Where a tag meets text with no whitespace between, it is the same word: Pliny `ping<add>endi</add>…`, Cicero `<hi>im</hi>petu`.
+2. **Two sibling tags that meet with nothing between them are a word break.** If the content were one continuous stretch, one tag would have covered it. In the source TEI the space falls between the tags: Pliny `ping<add>endi</add><add>fingendi</add>que` (the edition's own note reads _"pingendi fingendique"_), Livy `<choice>…tum…</choice><choice>…Cocles…</choice>`, Livy `<hi>se</hi><hi>habere</hi>`.
+3. **Exception to 2:** if the first tag ends in `-`, it's a word hyphenated across a line break, so join: Pliny `<hi>lon-</hi><hi>gitudo</hi>`.
+4. **Structure always breaks:** lines, blocks, headings, `br`, and note, gap and space markers.
+
+**Review.** Every seam in the library where the rule changes the tokens (a tag meeting text or another tag, with word characters on both sides; 9,661 seams in 125 works) was checked against Morceus: is the joined form a word, the split pieces, or both? Everything ambiguous or contradicting the rule was then read by hand (checking the raw TEI where needed), and a sample of the rest.
+
+| Seam                          | Count | Result                                                                                                                                                                                                         |
+| :---------------------------- | :---- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tag meets tag (rule 2: split) | 143   | 125 correct, 17 are manuscript sigla (`R²E²v`) in Pliny's main text where it doesn't matter, 1 hyphenation miss (now rule 3)                                                                                   |
+| Tag meets text (rule 1: join) | 9,518 | All correct except ≈10, which are missing spaces in the source TEI ([below](#source-typos-missing-space-after-a-tag)). Includes 90 numeral + `vir` forms (`<num>x</num>viros`, _decemviros_), correctly joined |
+
+## Source typos: missing space after a tag
+
+**Status:** Open, low priority. In these rows the source TEI has no space after a tag, so rule 1 joins two words. No markup-based rule can tell; they need a text fix, probably through the per-work `patches` hook in `process_library.ts` (not yet checked). One fix corrects both the corpus and the reader.
+
+| Work                                                      | Section           | Raw TEI                                                               | Should be                                        |
+| :-------------------------------------------------------- | :---------------- | :-------------------------------------------------------------------- | :----------------------------------------------- |
+| `phi1014.phi001.perseus-lat1` (Seneca Elder)              | 2.1.14            | `<add>O</add>me abdicandum`                                           | _O me_                                           |
+| `phi1014.phi001.perseus-lat1`                             | 2.5.10            | `…in hac</add>controuersia`                                           | _hac controuersia_                               |
+| `phi1014.phi001.perseus-lat1`                             | 2.2.10            | `tu‖uis facturi` ¹                                                    | _tu uis_                                         |
+| `phi1014.phi001.perseus-lat1`                             | 2.5.16            | `quid‖si tyrannus` ¹                                                  | _quid si_                                        |
+| `phi1014.phi001.perseus-lat1`                             | 10.pr.9           | `Nunc‖autem` ¹                                                        | _Nunc autem_                                     |
+| `phi0474.phi011.perseus-lat2` (Cicero, _De Lege Agraria_) | 2.4               | `<reg>est</reg>illud amplissimum`                                     | _est illud_                                      |
+| `phi0474.phi039.perseus-lat1` (Cicero)                    | 168               | `<hi rend="italics">is</hi>qui` (the edition's note reads _"is qui"_) | _is qui_                                         |
+| `phi0978.phi001.perseus-lat2` (Pliny)                     | 2.108             | `‾LXXXIX‾‾XLV‾efficit` (`‾` = overline tag)                           | _XLV efficit_                                    |
+| `phi0978.phi001.perseus-lat2`                             | 19.3              | `per ‾IIII‾stadium`                                                   | _IIII stadium_                                   |
+| `phi0978.phi001.perseus-lat2`                             | 9.21, 27.13, 30.1 | `an‖t`, `a‖dVI`, `ill‖ut`                                             | Unclear: apparatus fragments or gaps in the text |
+
+¹ Seam taken from the processed work; the raw TEI wasn't checked.
+
+**How to find more.** List every seam where a tag meets text and the characters on both sides are word characters (not `isTextBreakChar`, not whitespace). Keep the ones where Morceus (`MorceusCruncher`) recognizes both split pieces but not the joined form. Drop numeral + `vir` forms and Pliny's Greek names and plant names (the analyzer doesn't know them). This gave 189 candidates, and the rows above are what survived reading them.
+
+## Reader word boundaries at inline markup
+
+**Status:** Open, low priority. The 161 rows left over by the indexer fix are places where the **V2 reader** breaks the [word-boundary rule](#word-boundary-rule), so `matchText` highlights in them can still land a word or two off. The two fixes below should ship together: #1 on its own would merge `<hi>se</hi><hi>habere</hi>` into one word.
+
+1. **The reader splits at tag-meets-text seams (breaks rule 1).** Cicero `phi0474.phi043` `<hi>im</hi>petu`, Pliny `i<hi>am</hi>`, enclitics `<hi>vallem</hi>que`, and Pliny's partly overlined numerals (`‾DC‾VII`, `CC‾XLVIII‾`, `|‾XIII‾|`, each one number). `tokenizeSubtree` tokenizes each text node separately, so the styled `<span>` splits the word; there are 290 such styled seams. Fix: in `tokenize.client.ts`, tokenize runs of text across inline styling spans (`italic`, `bold`, `overline`, `smallcaps`, `uppercase`, `superscript`, `strong`), breaking at any other element. A word that crosses an element becomes several `lat-word` parts that share the full word, the word index and a group id. Make it opt-in, used by the reader only (the dictionary also calls `tokenizeSubtree`).
+2. **The reader joins at tag-meets-tag seams (breaks rules 2–3).** `renderXmlNodeCleanHtml` drops unstyled wrappers and pastes their contents together, so Livy `</choice><choice>` renders `tumCocles` and Pliny `<add>endi</add><add>fingendi</add>` renders `pingendifingendique`. Italic pairs also display run together (_sehabere_). That's a visible rendering bug in about 130 places. Fix: have the preprocessor emit a space between two adjacent inline sibling tags that both carry text, unless the first ends in `-`. Leave note, gap, `br` and line/block elements alone, so `word[1]` markers don't gain a space. Needs a visual-diff review.
+
+**Verification script.** A throwaway script (all library works rendered through `preprocessWorkToV2`, tokenized with `tokenizeSubtree` under JSDOM, compared with `processTokens(extractRowText(row))`) produced the numbers above. The regression test in `corpus_library_utils.test.ts` checks the same property on fixtures.
 
 ## Heading rows cannot be highlighted
 
