@@ -657,6 +657,122 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       querySelectorAll.mockRestore();
     });
   });
+
+  describe("words split across inline markup", () => {
+    // Cicero phi0474.phi043 1.1: `<hi>im</hi>petu`, with a macron in the
+    // styled part to exercise `applyMacra` per part.
+    const PASSAGE = `
+      <div class="reader-section" id="sec-1.1">
+        <div class="reader-passage" data-tokenize-target="true">
+          <p class="reader-paragraph"><span class="italic">i\u0304m</span>petu liberavissent.</p>
+        </div>
+      </div>
+    `;
+
+    const wordsOf = (el: MorcusReaderView) =>
+      Array.from(
+        el.querySelectorAll<HTMLElement>(".reader-text-panel .lat-word")
+      );
+
+    afterEach(() => {
+      history.replaceState(null, "", "/");
+    });
+
+    test("renders one control whose parts share the whole word", () => {
+      const el = createReaderView(PASSAGE);
+      const [first, second, next] = wordsOf(el);
+
+      expect([first.textContent, second.textContent]).toEqual([
+        "i\u0304m",
+        "petu",
+      ]);
+      expect(first.dataset.word).toBe("i\u0304mpetu");
+      expect(second.dataset.word).toBe("i\u0304mpetu");
+      expect(first.dataset.wordGroup).toBeDefined();
+      expect(second.dataset.wordGroup).toBe(first.dataset.wordGroup);
+      // Only the first part is a focusable button, labelled with the word.
+      expect(first.getAttribute("role")).toBe("button");
+      expect(first.getAttribute("tabindex")).toBe("0");
+      expect(first.getAttribute("aria-label")).toBe("i\u0304mpetu");
+      expect(second.hasAttribute("role")).toBe(false);
+      expect(second.hasAttribute("tabindex")).toBe(false);
+      expect(second.getAttribute("aria-hidden")).toBe("true");
+      // A whole word is unchanged.
+      expect(next.textContent).toBe("liberavissent");
+      expect(next.getAttribute("role")).toBe("button");
+      expect(next.hasAttribute("aria-label")).toBe(false);
+      expect(next.dataset.wordGroup).toBeUndefined();
+    });
+
+    test("clicking any part looks up the whole word and highlights every part", () => {
+      const el = createReaderView(PASSAGE);
+      const [first, second, next] = wordsOf(el);
+
+      second.click();
+
+      const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+      expect(iframe.src).toContain(
+        `/v2/dicts?q=${encodeURIComponent("i\u0304mpetu")}&`
+      );
+      expect(first.classList.contains("word-active")).toBe(true);
+      expect(second.classList.contains("word-active")).toBe(true);
+
+      next.click();
+      expect(first.classList.contains("word-active")).toBe(false);
+      expect(second.classList.contains("word-active")).toBe(false);
+      expect(next.classList.contains("word-active")).toBe(true);
+    });
+
+    test("restores the highlight on every part from ?q=", () => {
+      history.replaceState(null, "", "/v2/reader?q=impetu");
+      const el = createReaderView(PASSAGE);
+      const [first, second] = wordsOf(el);
+
+      expect(first.classList.contains("word-active")).toBe(true);
+      expect(second.classList.contains("word-active")).toBe(true);
+    });
+
+    test("hovering one part hovers the whole word", () => {
+      const el = createReaderView(PASSAGE);
+      const [first, second, next] = wordsOf(el);
+
+      second.dispatchEvent(new MouseEvent("pointerover", { bubbles: true }));
+      expect(first.classList.contains("word-hover")).toBe(true);
+      expect(second.classList.contains("word-hover")).toBe(true);
+
+      second.dispatchEvent(
+        new MouseEvent("pointerout", { bubbles: true, relatedTarget: next })
+      );
+      expect(first.classList.contains("word-hover")).toBe(false);
+      expect(second.classList.contains("word-hover")).toBe(false);
+    });
+
+    test("marks every part of a matchText word", () => {
+      // Words [0, 1): `impetu` only.
+      history.replaceState(null, "", "/v2/reader?matchText=1.1~0~1");
+      const el = createReaderView(PASSAGE);
+      const [first, second, next] = wordsOf(el);
+
+      expect(first.classList.contains("reader-match")).toBe(true);
+      expect(second.classList.contains("reader-match")).toBe(true);
+      expect(next.classList.contains("reader-match")).toBe(false);
+    });
+
+    test("strips and restores macra in each part", () => {
+      const el = createReaderView(PASSAGE);
+      const [first, second] = wordsOf(el);
+      const toggleMacra = el.querySelector<HTMLInputElement>("#toggle-macra")!;
+
+      toggleMacra.checked = false;
+      toggleMacra.dispatchEvent(new Event("change"));
+      expect([first.textContent, second.textContent]).toEqual(["im", "petu"]);
+      expect(first.parentElement!.classList.contains("italic")).toBe(true);
+
+      toggleMacra.checked = true;
+      toggleMacra.dispatchEvent(new Event("change"));
+      expect(first.textContent).toBe("i\u0304m");
+    });
+  });
 });
 
 describe("Reader preferences validation & hydration", () => {

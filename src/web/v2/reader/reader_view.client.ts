@@ -19,9 +19,11 @@ import {
   showToast,
   swapSlots,
   syncIframeTheme,
+  syncWordGroupHover,
   tokenizeTargets,
   WakeLockController,
   registerRevealer,
+  wordGroupParts,
 } from "@/web/v2/core/index.client";
 import type { SafeHtml } from "@/web/v2/core/html.common";
 import { removeMacrons } from "@/common/text_cleaning";
@@ -302,11 +304,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.currentQuery = this.router.get();
     if (this.currentQuery) {
       const el = this.findWordElement(this.currentQuery);
-      if (el) el.classList.add("word-active");
+      if (el) this.setActiveWord(el);
     }
 
     this.scope.listen(this, "click", this.handleClick);
     this.scope.listen(this, "keydown", this.handlePassageKeydown);
+    // A word split across inline markup is several `.lat-word` parts; hover
+    // styles all of them, not just the one under the pointer.
+    this.scope.listen(this, "pointerover", syncWordGroupHover);
+    this.scope.listen(this, "pointerout", syncWordGroupHover);
 
     // PH7: the mobile sheet's open link is `<a href="#reader-dict">`, so
     // before upgrade the sheet expands via `:target`. Adopt that on connect
@@ -832,13 +838,20 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    *
    * The `.reader-text-panel` scope is load-bearing. `linkifyText` also emits
    * `word-active` on dictionary-entry markup, which must not be cleared from here.
+   *
+   * A word split across inline markup is several parts (`wordGroupParts`),
+   * all of which are highlighted.
    */
   private setActiveWord(el?: HTMLElement | null) {
     const active = this.querySelectorAll<HTMLElement>(
       ".reader-text-panel .word-active"
     );
     active.forEach((word) => word.classList.remove("word-active"));
-    el?.classList.add("word-active");
+    if (el) {
+      for (const part of wordGroupParts(el)) {
+        part.classList.add("word-active");
+      }
+    }
   }
 
   private dismissDictionary(updateHistory: boolean = true) {
@@ -968,7 +981,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.enhancePassage();
     this.applyPreferences(this.currentPrefs);
     if (this.currentQuery) {
-      this.findWordElement(this.currentQuery)?.classList.add("word-active");
+      this.setActiveWord(this.findWordElement(this.currentQuery));
     }
     this.refreshTitle();
     const hash = window.location.hash;
@@ -1000,7 +1013,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           ".reader-section p.reader-paragraph, " +
           ".reader-section .reader-line",
         enhancedDatasetKey: "wordsEnhanced",
-        renderWord: (token, _cleanWord, wordIndex, targetRoot) => {
+        // Word boundaries must match the corpus's, which `matchText` offsets
+        // come from (`extractRowText`, rule 1).
+        joinAcrossInline: true,
+        renderWord: (token, _cleanWord, wordIndex, targetRoot, part) => {
           const secEl = targetRoot.closest<HTMLElement>(".reader-section");
           const secId = secEl?.id.startsWith("sec-")
             ? secEl.id.slice(4)
@@ -1011,9 +1027,22 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
           const span = document.createElement("span");
           span.className = isMatch ? "lat-word reader-match" : "lat-word";
-          span.setAttribute("role", "button");
-          span.setAttribute("tabindex", "0");
-          span.setAttribute("data-word", token);
+          // A word split across inline markup (`<i>im</i>petu`) is one
+          // control: its first part is the button, labelled with the whole
+          // word, and the rest are hidden from assistive tech so the word is
+          // not read twice. Every part looks up the whole word on click.
+          if (part === undefined || part.index === 0) {
+            span.setAttribute("role", "button");
+            span.setAttribute("tabindex", "0");
+          }
+          if (part !== undefined) {
+            if (part.index === 0) {
+              span.setAttribute("aria-label", part.word);
+            } else {
+              span.setAttribute("aria-hidden", "true");
+            }
+          }
+          span.setAttribute("data-word", part?.word ?? token);
           span.textContent = token;
           return span;
         },
@@ -1400,7 +1429,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     if (this.currentQuery) {
       const el = this.findWordElement(this.currentQuery);
-      if (el) el.classList.add("word-active");
+      if (el) this.setActiveWord(el);
     } else {
       this.setActiveWord(null);
       const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");

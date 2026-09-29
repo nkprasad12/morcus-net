@@ -203,8 +203,13 @@ function readerWords(work: ProcessedWork2): [number, string][][] {
     (passage) => {
       const linked: [number, string][] = [];
       tokenizeSubtree(passage, {
-        renderWord: (token, _cleanWord, wordIndex) => {
-          linked.push([wordIndex, token]);
+        // As the reader does (`reader_view.client.ts`, `enhancePassage`).
+        joinAcrossInline: true,
+        renderWord: (token, _cleanWord, wordIndex, _root, part) => {
+          // A word split across elements is rendered in parts; record it once.
+          if (part === undefined || part.index === 0) {
+            linked.push([wordIndex, part?.word ?? token]);
+          }
           const out = document.createElement("span");
           out.textContent = token;
           return out;
@@ -285,5 +290,42 @@ describe("corpus row text matches V2 reader tokens", () => {
     expect(linked[0]).toContainEqual([1, "tum"]);
     expect(linked[1]).toContainEqual([2, "fingendique"]);
     expect(linked[2]).toContainEqual([2, "habere"]);
+  });
+
+  it("agrees on words that continue across inline styling", () => {
+    const OVERLINE: [string, string][] = [["rend", "overline"]];
+    const rows = [
+      // Cicero phi0474.phi043 1.1, `<hi>im</hi>petu`.
+      span([], span(ITALIC, "im"), "petu liberavissent."),
+      // Livy 5.34.9, an enclitic after marked-up text.
+      span([], "per ", span(ITALIC, "vallem"), "que Duriae."),
+      // Pliny, a hyphenated word across adjacent tags (rule 3).
+      span([], "Europae ", span(ITALIC, "lon-"), span(ITALIC, "gitudo"), "."),
+      // Pliny 3.3, a partly overlined numeral.
+      span([], "p. ", span(OVERLINE, "DC"), "VII et ora."),
+      // A styled seam inside a word, then a note marker that still breaks.
+      span(
+        [],
+        "ut ",
+        span(ITALIC, "i"),
+        "am",
+        el("note", [["noteId", "0"]]),
+        "que e",
+        span([["rend", "bold"]], "st")
+      ),
+    ];
+    const linked = readerWords(makeWork(rows));
+
+    expect(linked).toEqual(rows.map(corpusWords));
+    expect(linked[0]).toContainEqual([0, "impetu"]);
+    expect(linked[1]).toContainEqual([1, "vallemque"]);
+    expect(linked[2]).toContainEqual([1, "lon-gitudo"]);
+    expect(linked[3]).toContainEqual([1, "DCVII"]);
+    expect(linked[4]).toEqual([
+      [0, "ut"],
+      [1, "iam"],
+      [2, "que"],
+      [3, "est"],
+    ]);
   });
 });

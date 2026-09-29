@@ -1,5 +1,18 @@
 import { processTokens, removeDiacritics } from "@/common/text_cleaning";
 
+/**
+ * Where a word is split across elements (see `joinAcrossInline`), describes
+ * which part of the word an element renders.
+ */
+export interface WordPart {
+  /** 0-based position of this part within the word. */
+  index: number;
+  /** How many parts the word is split into (at least 2). */
+  count: number;
+  /** The whole word token, across all its parts. */
+  word: string;
+}
+
 export interface TokenizeWordOptions {
   /**
    * Factory function that constructs the replacement DOM element for a Latin word token.
@@ -8,12 +21,18 @@ export interface TokenizeWordOptions {
    *
    * `wordIndex` is the 0-based word token index within `root` (incremented on every
    * `isWord === true` token produced by `processTokens`, matching corpus and V1 indexing).
+   *
+   * `part` is set only when `joinAcrossInline` splits a word across elements.
+   * The factory is then called once per part: `token` is that part's text, while
+   * `cleanWord`, `wordIndex` and `part.word` describe the whole word. Every part
+   * also gets a shared `data-word-group` (see `wordGroupParts`).
    */
   renderWord: (
     token: string,
     cleanWord: string,
     wordIndex: number,
-    root: HTMLElement
+    root: HTMLElement,
+    part?: WordPart
   ) => HTMLElement;
 
   /**
@@ -27,6 +46,18 @@ export interface TokenizeWordOptions {
    * Defaults to "wordsEnhanced".
    */
   enhancedDatasetKey?: string;
+
+  /**
+   * Tokenize runs of text across inline styling elements (`INLINE_STYLE_CLASSES`,
+   * `<strong>`), so `<span class="italic">im</span>petu` is one word, following
+   * rule 1 of the corpus word-boundary rule (`extractRowText` in
+   * `corpus_library_utils.ts`). Any other element, and any rejected one (a note
+   * link, a `[gap]` marker), still ends the word.
+   *
+   * Off by default: text nodes are tokenized one at a time. The reader enables it,
+   * because corpus word offsets become its `matchText` highlight ranges.
+   */
+  joinAcrossInline?: boolean;
 }
 
 export interface TokenizeTargetsOptions extends TokenizeWordOptions {
@@ -35,6 +66,19 @@ export interface TokenizeTargetsOptions extends TokenizeWordOptions {
 }
 
 const LATIN_LETTER_REGEX = /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/;
+
+/**
+ * Classes of the purely presentational `<span>`s the V2 preprocessor emits for
+ * inline renditions (`v2_preprocessor.ts`). Text continues across them.
+ */
+const INLINE_STYLE_CLASSES = new Set([
+  "italic",
+  "bold",
+  "overline",
+  "smallcaps",
+  "uppercase",
+  "superscript",
+]);
 
 /**
  * Checks whether a processed token constitutes a Latin word eligible for lookup.
@@ -66,8 +110,143 @@ export function createWordLink(
   return a;
 }
 
+/** Group ids for split words; unique for the lifetime of the page. */
+let nextWordGroup = 0;
+
 /**
- * Traverses `root` with a TreeWalker, pruning non-tokenizable subtrees (links, buttons,
+ * Returns every part of the word `el` belongs to, in document order: the
+ * elements sharing its `data-word-group`, or just `el` for a whole word.
+ */
+export function wordGroupParts(el: HTMLElement): HTMLElement[] {
+  const group = el.dataset.wordGroup;
+  if (group === undefined) {
+    return [el];
+  }
+  const root = el.getRootNode();
+  const scope =
+    root instanceof Document ||
+    root instanceof DocumentFragment ||
+    root instanceof Element
+      ? root
+      : el.ownerDocument;
+  return Array.from(
+    scope.querySelectorAll<HTMLElement>(`[data-word-group="${group}"]`)
+  );
+}
+
+/** The class `syncWordGroupHover` puts on every part of a hovered split word. */
+export const WORD_GROUP_HOVER_CLASS = "word-hover";
+
+/**
+ * `pointerover` / `pointerout` listener that styles every part of a split word
+ * while any of its parts is hovered, since `:hover` matches only the one part.
+ */
+export function syncWordGroupHover(e: Event): void {
+  if (!(e.target instanceof Element)) return;
+  const part = e.target.closest<HTMLElement>("[data-word-group]");
+  if (!part) return;
+  const entering = e.type === "pointerover" || e.type === "mouseover";
+  if (!entering && e instanceof MouseEvent) {
+    const next =
+      e.relatedTarget instanceof Element
+        ? e.relatedTarget.closest<HTMLElement>("[data-word-group]")
+        : null;
+    // Moving between two parts of the same word: it stays hovered.
+    if (next?.dataset.wordGroup === part.dataset.wordGroup) return;
+  }
+  for (const p of wordGroupParts(part)) {
+    p.classList.toggle(WORD_GROUP_HOVER_CLASS, entering);
+  }
+}
+
+function isRejectedElement(
+  node: HTMLElement,
+  options: TokenizeWordOptions
+): boolean {
+  const tag = node.tagName.toLowerCase();
+  return (
+    tag === "a" ||
+    tag === "button" ||
+    tag === "script" ||
+    tag === "style" ||
+    node.getAttribute("lang") === "el" ||
+    node.hasAttribute("data-no-tokenize") ||
+    node.hasAttribute("data-no-linkify") ||
+    node.classList.contains("reader-gap") ||
+    (options.isExcludedElement !== undefined && options.isExcludedElement(node))
+  );
+}
+
+/** Whether text continues across `el` under `joinAcrossInline`. */
+function isInlineStyling(el: HTMLElement): boolean {
+  const tag = el.tagName.toLowerCase();
+  if (tag === "strong") {
+    return true;
+  }
+  // Every class must be presentational: a `reader-line italic` is still a line.
+  return (
+    tag === "span" &&
+    el.classList.length > 0 &&
+    Array.from(el.classList).every((c) => INLINE_STYLE_CLASSES.has(c))
+  );
+}
+
+/**
+ * Collects the non-empty text nodes under `root` in document order, grouped
+ * into runs that are tokenized as one continuous string. Without
+ * `joinAcrossInline`, every text node is its own run.
+ */
+function collectTextRuns(
+  root: HTMLElement,
+  options: TokenizeWordOptions
+): Text[][] {
+  const join = options.joinAcrossInline === true;
+  const runs: Text[][] = [];
+  let run: Text[] = [];
+  const endRun = () => {
+    if (run.length > 0) {
+      runs.push(run);
+      run = [];
+    }
+  };
+  const visit = (parent: Node) => {
+    for (let child = parent.firstChild; child; child = child.nextSibling) {
+      if (child instanceof Text) {
+        if (!child.nodeValue) continue;
+        run.push(child);
+        if (!join) endRun();
+      } else if (child instanceof SVGElement) {
+        endRun();
+      } else if (child instanceof HTMLElement) {
+        if (isRejectedElement(child, options)) {
+          endRun();
+          continue;
+        }
+        const continues = join && isInlineStyling(child);
+        if (!continues) endRun();
+        visit(child);
+        if (!continues) endRun();
+      } else if (child instanceof Element) {
+        endRun();
+        visit(child);
+        endRun();
+      }
+    }
+  };
+  visit(root);
+  endRun();
+  return runs;
+}
+
+/** A slice of a run's text that falls within one of its text nodes. */
+interface Segment {
+  /** Index of the text node within the run. */
+  node: number;
+  text: string;
+}
+
+/**
+ * Recursively walks `root`, pruning non-tokenizable subtrees (links, buttons,
  * script, style, Greek text, and opted-out elements) and replacing Latin words
  * in text nodes with elements created by `options.renderWord`.
  */
@@ -79,82 +258,86 @@ export function tokenizeSubtree(
   if (root.dataset[key] === "true") return;
   root.dataset[key] = "true";
 
-  const walker = document.createTreeWalker(
-    root,
-    NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
-    {
-      acceptNode(node: Node) {
-        if (node instanceof HTMLElement) {
-          const tag = node.tagName.toLowerCase();
-          if (
-            tag === "a" ||
-            tag === "button" ||
-            tag === "script" ||
-            tag === "style" ||
-            node.getAttribute("lang") === "el" ||
-            node.hasAttribute("data-no-tokenize") ||
-            node.hasAttribute("data-no-linkify") ||
-            node.classList.contains("reader-gap") ||
-            (options.isExcludedElement !== undefined &&
-              options.isExcludedElement(node))
-          ) {
-            return NodeFilter.FILTER_REJECT;
-          }
-          return NodeFilter.FILTER_SKIP;
-        }
-        if (node instanceof SVGElement) {
-          return NodeFilter.FILTER_REJECT;
-        }
-        if (node instanceof Text) {
-          return NodeFilter.FILTER_ACCEPT;
-        }
-        return NodeFilter.FILTER_SKIP;
-      },
-    }
-  );
-
-  const textNodes: Text[] = [];
-  let curr: Node | null = walker.nextNode();
-  while (curr) {
-    if (curr instanceof Text && curr.nodeValue) {
-      textNodes.push(curr);
-    }
-    curr = walker.nextNode();
-  }
-
-  if (textNodes.length === 0) return;
+  const runs = collectTextRuns(root, options);
+  if (runs.length === 0) return;
 
   const replacements: Array<[Text, DocumentFragment]> = [];
   let wordIndex = 0;
-  for (const textNode of textNodes) {
-    const text = textNode.nodeValue ?? "";
+  for (const run of runs) {
+    const values = run.map((node) => node.nodeValue ?? "");
+    const text = values.join("");
     const hasLatin = LATIN_LETTER_REGEX.test(text);
 
-    const fragment = hasLatin ? document.createDocumentFragment() : null;
-    let hasWords = false;
+    // Output nodes for each text node of the run, and whether it gained a word.
+    const outputs: Node[][] = run.map(() => []);
+    const hasWords: boolean[] = run.map(() => false);
 
+    // Splits `[start, end)` of `text` at text node boundaries.
+    let nodeIndex = 0;
+    let nodeStart = 0;
+    const segmentsOf = (start: number, end: number): Segment[] => {
+      const segments: Segment[] = [];
+      let pos = start;
+      while (pos < end) {
+        const nodeEnd = nodeStart + values[nodeIndex].length;
+        const take = Math.min(end, nodeEnd);
+        segments.push({ node: nodeIndex, text: text.slice(pos, take) });
+        pos = take;
+        if (pos === nodeEnd && nodeIndex < values.length - 1) {
+          nodeIndex++;
+          nodeStart = nodeEnd;
+        }
+      }
+      return segments;
+    };
+
+    let offset = 0;
     for (const [token, isWord] of processTokens(text)) {
       const currentWordIndex = wordIndex;
       if (isWord) {
         wordIndex++;
       }
-      if (!fragment) {
+      const start = offset;
+      offset += token.length;
+      if (!hasLatin) {
         continue;
       }
+      const segments = segmentsOf(start, offset);
       const { isLatin, cleanWord } = isLatinWord(token, isWord);
-      if (isLatin) {
-        hasWords = true;
-        fragment.appendChild(
-          options.renderWord(token, cleanWord, currentWordIndex, root)
-        );
-      } else {
-        fragment.appendChild(document.createTextNode(token));
+      if (!isLatin) {
+        for (const segment of segments) {
+          outputs[segment.node].push(document.createTextNode(segment.text));
+        }
+        continue;
       }
+      const group =
+        segments.length > 1 ? `w${(nextWordGroup++).toString(36)}` : undefined;
+      segments.forEach((segment, i) => {
+        const part: WordPart | undefined =
+          group === undefined
+            ? undefined
+            : { index: i, count: segments.length, word: token };
+        const el = options.renderWord(
+          segment.text,
+          cleanWord,
+          currentWordIndex,
+          root,
+          part
+        );
+        if (group !== undefined) {
+          el.dataset.wordGroup = group;
+        }
+        outputs[segment.node].push(el);
+        hasWords[segment.node] = true;
+      });
     }
 
-    if (fragment && hasWords) {
-      replacements.push([textNode, fragment]);
-    }
+    run.forEach((node, i) => {
+      if (!hasWords[i]) return;
+      const fragment = document.createDocumentFragment();
+      fragment.append(...outputs[i]);
+      replacements.push([node, fragment]);
+    });
   }
 
   if (replacements.length === 0) return;
