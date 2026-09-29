@@ -35,6 +35,7 @@ export interface PageShellOptions {
 export function renderAppBar(activePage: V2ActivePage): string {
   const isDictsActive = activePage === "dicts";
   const isLibraryActive = activePage === "library";
+  const isCorpusActive = activePage === "corpus";
   const isAboutActive = activePage === "about";
 
   return `
@@ -60,6 +61,13 @@ export function renderAppBar(activePage: V2ActivePage): string {
               ${isLibraryActive ? 'aria-current="page"' : ""}
             >
               Library
+            </a>
+            <a
+              href="/v2/corpus"
+              class="nav-link ${isCorpusActive ? "active" : ""}"
+              ${isCorpusActive ? 'aria-current="page"' : ""}
+            >
+              Corpus
             </a>
             <a
               href="/v2/about"
@@ -124,6 +132,13 @@ export function renderAppBar(activePage: V2ActivePage): string {
                 ${isLibraryActive ? 'aria-current="page"' : ""}
               >
                 Library
+              </a>
+              <a
+                href="/v2/corpus"
+                class="nav-link ${isCorpusActive ? "active" : ""}"
+                ${isCorpusActive ? 'aria-current="page"' : ""}
+              >
+                Corpus
               </a>
               <a
                 href="/v2/about"

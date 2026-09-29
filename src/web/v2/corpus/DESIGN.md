@@ -321,4 +321,4 @@ Outside the slice:
 - [x] **Phase 3: `<morcus-corpus-view>`.** (Needs the reviewed ratchet entry: `corpus_view.client.ts` has 3 selector calls, 0 DOM mutations.) Add `swapSlots` for submits, the pager and popstate, plus the client tests.
 - [x] **Phase 4: Autocomplete** (main bundle, D6). Ratchet entries approved (1 selector call, 1 DOM mutation for `corpus_autocomplete.client.ts`), SSR allowlist entry applied and tested (§9 item 8). Built lemma shard endpoint, `<morcus-corpus-suggestions>`, §7.3 lint rule, budget raise (JS 142 / 41 → 147 / 44 kB) and unit/conformance tests.
 - [x] **Indexer fix.** `extractRowText` rewrite plus `corpus_library_utils.test.ts` (unit tests and a V2 reader alignment test); corpus rebuilt.
-- [ ] **Phase 5: Ship.** Add the app bar link (D5), the E2E journeys and the visual scenarios. Review the diffs with you, then update baselines once you approve.
+- [x] **Phase 5: Ship.** Add the app bar link (D5), the E2E journeys and the visual scenarios. Review the diffs with you, then update baselines once you approve.

@@ -876,3 +876,294 @@ test.describe("UI V2 dictionary", () => {
     });
   });
 });
+
+test.describe("UI V2 corpus", () => {
+  test("loads corpus landing page and executes search without JavaScript (No-JS fallback)", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/v2/corpus");
+    await expect(page.locator(".corpus-welcome-card")).toBeVisible();
+    await expect(page.locator("details.corpus-help")).toHaveAttribute("open", "");
+
+    // Fill query and submit form natively
+    await page.locator('input[name="q"]').fill("Roma");
+    await page.locator("form.corpus-form button.search-btn").click();
+
+    // Verify native HTTP GET navigation and SSR response
+    await expect(page).toHaveURL(/\/v2\/corpus\?.*q=Roma/);
+    await expect(page.locator(".corpus-result-list")).toBeVisible();
+    await expect(page.locator(".corpus-result").first()).toBeVisible();
+
+    // Verify heading links point to Reader with highlight parameters
+    const firstHeading = page.locator(".corpus-result-heading").first();
+    await expect(firstHeading).toBeVisible();
+    await expect(firstHeading).toHaveAttribute("href", /\/v2\/reader\//);
+
+    // Verify match highlighting within the snippet
+    await expect(
+      page.locator(".corpus-result mark.corpus-match").first()
+    ).toBeVisible();
+
+    // Verify summary headline
+    await expect(page.locator(".corpus-summary-headline")).toContainText(
+      "results matching"
+    );
+
+    await context.close();
+  });
+
+  test("loads corpus results and updates title via Enter key (JS enhanced)", async ({
+    page,
+  }) => {
+    await page.goto("/v2/corpus");
+
+    const input = page.locator('input[name="q"]');
+    await input.click();
+    await input.fill("Roma");
+    await page.keyboard.press("Enter");
+
+    await expect(page).toHaveURL(/\/v2\/corpus\?q=Roma/);
+    await expect(page).toHaveTitle(/Corpus: Roma/);
+    await expect(page.locator(".corpus-result-list")).toBeVisible();
+    await expect(page.locator(".corpus-beta-chip")).toBeVisible();
+  });
+
+  test("supports direct SSR deep-link and query parameter syncing", async ({
+    page,
+  }) => {
+    await page.goto("/v2/corpus?q=Roma&contextLen=25&pageSize=20&strictMode=1");
+
+    await expect(page.locator('input[name="q"]')).toHaveValue("Roma");
+    const summary = page.locator('[data-slot="settings-summary"]');
+    await expect(summary).toContainText("25");
+    await expect(summary).toContainText("20");
+    await expect(summary).toContainText("Strict");
+
+    await expect(page.locator(".corpus-result-list")).toBeVisible();
+  });
+
+  test("preserves form and focus during slot-swapped searches (slot swapping invariant)", async ({
+    page,
+  }) => {
+    await page.goto("/v2/corpus");
+
+    // Mark the form in DOM to verify it is never recreated during slot replacement
+    await page.evaluate(() => {
+      document
+        .querySelector("form.corpus-form")
+        ?.setAttribute("data-test-preserved", "true");
+    });
+
+    const input = page.locator('input[name="q"]');
+    await input.click();
+    await input.fill("gladius");
+    await page.keyboard.press("Enter");
+
+    await expect(page.locator(".corpus-result").first()).toBeVisible();
+
+    // Verify form instance was preserved
+    const formPreserved = await page
+      .locator("form.corpus-form")
+      .getAttribute("data-test-preserved");
+    expect(formPreserved).toBe("true");
+
+    // Verify focus remains in the search input
+    await expect(input).toBeFocused();
+  });
+
+  test("modifies settings in the query settings tray without JavaScript", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/v2/corpus?q=Roma");
+
+    // Open settings tray
+    await page.locator("details.corpus-settings summary").click();
+    await expect(page.locator(".settings-popover")).toBeVisible();
+
+    // Adjust settings inputs
+    await page.locator('input[name="contextLen"]').fill("30");
+    await page.locator('input[name="pageSize"]').fill("25");
+    await page.locator('input[name="strictMode"]').check();
+
+    // Apply settings via submit button
+    await page.locator(".settings-apply-btn").click();
+
+    // Verify URL parameters updated
+    await expect(page).toHaveURL(/contextLen=30/);
+    await expect(page).toHaveURL(/pageSize=25/);
+    await expect(page).toHaveURL(/strictMode=1/);
+
+    // Verify applied settings summary slot updated
+    const summary = page.locator('[data-slot="settings-summary"]');
+    await expect(summary).toContainText("30");
+    await expect(summary).toContainText("25");
+    await expect(summary).toContainText("Strict");
+
+    await context.close();
+  });
+
+  test("modifies settings via slot swap with JavaScript enabled", async ({
+    page,
+  }) => {
+    await page.goto("/v2/corpus?q=Roma");
+
+    // Open settings tray
+    await page.locator("details.corpus-settings summary").click();
+    await expect(page.locator(".settings-popover")).toBeVisible();
+
+    // Adjust context length
+    await page.locator('input[name="contextLen"]').fill("15");
+
+    // Click Apply
+    await page.locator(".settings-apply-btn").click();
+
+    // Verify URL updated and settings popover closed
+    await expect(page).toHaveURL(/contextLen=15/);
+    await expect(page.locator("details.corpus-settings")).not.toHaveAttribute(
+      "open",
+      ""
+    );
+
+    // Verify settings summary slot reflects the change
+    const summary = page.locator('[data-slot="settings-summary"]');
+    await expect(summary).toContainText("15");
+  });
+
+  test("navigates result pages via Next pager and maintains focus (No-JS and JS)", async ({
+    browser,
+  }) => {
+    // 1. No-JS pager navigation
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const noJsPage = await context.newPage();
+
+    await noJsPage.goto("/v2/corpus?q=Roma&pageSize=10");
+    const nextBtnNoJs = noJsPage.locator('[data-slot="pager"] a.corpus-next');
+    await expect(nextBtnNoJs).toBeVisible();
+    await expect(nextBtnNoJs).toHaveAttribute("rel", "next");
+
+    await nextBtnNoJs.click();
+    await expect(noJsPage).toHaveURL(/cursor=/);
+    await expect(noJsPage.locator(".corpus-summary-detail")).toContainText(
+      "Showing results 11 to 20"
+    );
+    await context.close();
+
+    // 2. JS pager navigation with slot swap & focus preservation
+    const jsPage = await browser.newPage();
+    await jsPage.goto("/v2/corpus?q=Roma&pageSize=10");
+    const nextBtnJs = jsPage.locator('[data-slot="pager"] a.corpus-next');
+    await expect(nextBtnJs).toBeVisible();
+
+    await nextBtnJs.click();
+    await expect(jsPage).toHaveURL(/cursor=/);
+    await expect(jsPage.locator(".corpus-summary-detail")).toContainText(
+      "Showing results 11 to 20"
+    );
+    await expect(nextBtnJs).toBeFocused();
+    await jsPage.close();
+  });
+
+  test("restores query state via browser Back / popstate", async ({ page }) => {
+    await page.goto("/v2/corpus?q=Roma");
+    await expect(page.locator('input[name="q"]')).toHaveValue("Roma");
+    await expect(page.locator(".corpus-query-echo")).toHaveText("Roma");
+
+    // Perform a second query
+    const input = page.locator('input[name="q"]');
+    await input.fill("Caesar");
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".corpus-query-echo")).toHaveText("Caesar");
+
+    // Navigate back
+    await page.goBack();
+    await expect(page.locator('input[name="q"]')).toHaveValue("Roma");
+    await expect(page.locator(".corpus-query-echo")).toHaveText("Roma");
+  });
+
+  test("suggests authors and accepts with keyboard (autocomplete)", async ({
+    page,
+  }) => {
+    await page.goto("/v2/corpus");
+
+    const input = page.locator('input[name="q"]');
+    await input.click();
+    await page.keyboard.type("#C", { delay: 50 });
+
+    const suggestions = page.locator(
+      "morcus-corpus-suggestions ul.corpus-suggestions"
+    );
+    await expect(suggestions).toBeVisible();
+    await expect(suggestions.locator('li:has-text("#Caesar")')).toBeVisible();
+
+    // Navigate down and choose with Enter
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+
+    await expect(input).toHaveValue(/#Caesar\s+/);
+  });
+
+  test("suggests grammatical categories and lemma completions (autocomplete)", async ({
+    page,
+  }) => {
+    await page.goto("/v2/corpus");
+
+    const input = page.locator('input[name="q"]');
+    await input.click();
+    await page.keyboard.type("@case:", { delay: 50 });
+
+    const suggestions = page.locator(
+      "morcus-corpus-suggestions ul.corpus-suggestions"
+    );
+    await expect(suggestions).toBeVisible();
+    await expect(
+      suggestions.locator('li:has-text("nominative")')
+    ).toBeVisible();
+
+    // Dismiss with Escape
+    await page.keyboard.press("Escape");
+    await expect(suggestions).toBeHidden();
+
+    // Test on-demand lemma shard fetching
+    await input.fill("");
+    await page.keyboard.type("@lemma:a", { delay: 50 });
+    await expect(suggestions).toBeVisible();
+    await expect(suggestions.locator("li").first()).toBeVisible();
+  });
+
+  test("renders empty state with open syntax guide for zero-result query", async ({
+    page,
+  }) => {
+    await page.goto("/v2/corpus?q=xyznonexistentword");
+    await expect(page.locator(".corpus-summary-headline")).toContainText(
+      "No results found for"
+    );
+    await expect(page.locator("details.corpus-help")).toHaveAttribute(
+      "open",
+      ""
+    );
+    await expect(page.locator(".corpus-result-list")).toHaveCount(0);
+  });
+
+  test("renders inflection notice disclaimer only for inflected queries", async ({
+    page,
+  }) => {
+    // 1. Inflected query has disclaimer
+    await page.goto("/v2/corpus?q=@case:genitive");
+    await expect(
+      page.locator("details.corpus-inflection-notice")
+    ).toBeVisible();
+
+    // 2. Uninflected word query does not show disclaimer
+    await page.goto("/v2/corpus?q=Roma");
+    await expect(
+      page.locator("details.corpus-inflection-notice")
+    ).toHaveCount(0);
+  });
+});
+

@@ -135,6 +135,7 @@ function categoryFor(scenario: string): SnapshotCategory {
   if (parts.has("dicts") || parts.has("dict")) return "Dictionary";
   if (parts.has("library")) return "Library";
   if (parts.has("reader")) return "Reader";
+  if (parts.has("corpus")) return "Corpus";
   return "Other";
 }
 
