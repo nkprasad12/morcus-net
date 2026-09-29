@@ -103,7 +103,6 @@
   --beta-chip-bg: rgba(191, 222, 207, 0.5);
   --beta-chip-border: #99c2b0;
   --beta-chip-text: #1d3b33;
-  --terracotta: #cb4b16;
   --scrollbar-thumb: rgba(0, 0, 0, 0.25);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
   --drawer-shadow: 0 -6px 20px rgba(0, 0, 0, 0.09),
@@ -192,7 +191,6 @@
     --beta-chip-bg: rgba(143, 174, 159, 0.25);
     --beta-chip-border: #7c9b8c;
     --beta-chip-text: #a3c9b8;
-    --terracotta: #e8743b;
     --scrollbar-thumb: rgba(255, 255, 255, 0.28);
     --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
     --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),
@@ -279,7 +277,6 @@
   --beta-chip-bg: rgba(143, 174, 159, 0.25);
   --beta-chip-border: #7c9b8c;
   --beta-chip-text: #a3c9b8;
-  --terracotta: #e8743b;
   --scrollbar-thumb: rgba(255, 255, 255, 0.28);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
   --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),

@@ -17,10 +17,10 @@ export interface V2BundleBudget {
 /**
  * Production bundle size budget for UI V2 assets (minified). Sizes are KiB.
  *
- * Current baseline (2026-09-28, after corpus autocomplete):
- *   v2_bundle.js: 143.8 kB raw / 43.0 kB gzip
- *   v2.css:       119.1 kB raw / 19.9 kB gzip
- *   Combined:     262.8 kB raw / 62.9 kB gzip
+ * Current baseline (2026-09-29, after corpus query guide redesign & cleanup):
+ *   v2_bundle.js: 143.7 kB raw / 43.0 kB gzip
+ *   v2.css:       127.0 kB raw / 21.1 kB gzip
+ *   Combined:     270.7 kB raw / 64.1 kB gzip
  *
  * Ceilings provide headroom to absorb routine fixes and features without
  * false positives, while hard-blocking major regressions or accidental imports

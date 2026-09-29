@@ -108,7 +108,7 @@ function renderSummary(view: CorpusSearchView): SafeHtml {
 
   return html`<div class="corpus-summary" ${raw(slotAttr("summary"))}>
     <div class="corpus-summary-headline">
-      ${headline}
+      ${raw(headline)}
       <span class="corpus-query-echo">${view.params.q}</span>
       <span class="corpus-beta-chip">Beta</span>
     </div>
@@ -141,7 +141,7 @@ function renderDisclaimers(view: CorpusSearchView): SafeHtml {
   if (!view.showInflectionDisclaimer) {
     return html``;
   }
-  return html`<details class="corpus-disclaimer corpus-inflection-notice">
+  return html`<details class="corpus-inflection-notice">
     <summary class="corpus-inflection-summary">
       Inflected match may include false positives
     </summary>
@@ -177,9 +177,9 @@ function renderResultsBody(view: CorpusSearchView): SafeHtml {
             the interactive syntax guide below or tap any sample query to start.
           </p>
         </div>
-        ${raw(renderCorpusHelp(true))}`;
+        ${raw(renderCorpusHelp())}`;
     case "error":
-      return html`<div class="corpus-message corpus-error" role="alert">
+      return html`<div class="corpus-error" role="alert">
         <p>
           Couldn't run
           <span class="corpus-query-echo">${view.params.q}</span>:
@@ -188,8 +188,7 @@ function renderResultsBody(view: CorpusSearchView): SafeHtml {
       </div>`;
     case "results":
       if (outcome.results.length === 0) {
-        return html`${raw(renderDisclaimers(view))}
-        ${raw(renderCorpusHelp(true))}`;
+        return html`${raw(renderDisclaimers(view))} ${raw(renderCorpusHelp())}`;
       }
       return html`${raw(renderDisclaimers(view))}
         <ol class="corpus-result-list" start="${outcome.pageStart + 1}">

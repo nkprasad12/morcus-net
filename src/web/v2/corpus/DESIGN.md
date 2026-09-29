@@ -114,39 +114,46 @@ These two imports cross into `reader/` on the server side only: `reader_loader.s
 ## 5. Page structure (SSR)
 
 ```html
-<morcus-corpus-view>
-  <form class="corpus-form" role="search" action="/v2/corpus" method="get">
+<morcus-corpus-view class="corpus-page">
+  <form class="search-form corpus-form" role="search" action="/v2/corpus" method="GET">
     <div class="input-wrapper">
-      <input name="q" id="corpus-q" autocomplete="off" aria-label="Corpus query" …>
+      <input name="q" id="corpus-q" autocomplete="off" aria-label="Enter corpus query" …>
       <morcus-corpus-suggestions data-js-only><ul role="listbox" …></ul></morcus-corpus-suggestions>  <!-- autocomplete phase -->
       <button type="submit">Search</button>
     </div>
-    <details class="corpus-settings">
-      <summary><span data-slot="settings-summary">Context 20 · Page 50 · Relaxed</span></summary>
-      contextLen / pageSize / strictMode inputs
-      <button type="submit">Apply</button>          <!-- native in both modes -->
-    </details>
+    <div class="search-tray">
+      <div data-slot="settings-summary">Context 20 • Page size 50 • Inflections Relaxed</div>
+      <div class="search-tray-right">
+        <details class="settings-details corpus-settings">
+          <summary>…</summary>
+          contextLen / pageSize / strictMode inputs
+          <button type="submit">Apply</button>          <!-- native in both modes -->
+        </details>
+      </div>
+    </div>
   </form>
 
-  <details class="corpus-help" [open on landing]>…static syntax help (V1 QueryHelpSection)…</details>
-
   <div aria-live="polite" class="corpus-summary-live">
-    <p data-slot="summary">…</p>
+    <div data-slot="summary">
+      <!-- headline + Beta chip; "Showing X to Y • scope • [timing] • inline <details class="corpus-help corpus-syntax-details">" -->
+    </div>
   </div>
   <section data-slot="results" tabindex="-1">
-    [inflection disclaimer <details>] [beta disclaimer <details>]
-    <ol class="corpus-results"><li class="corpus-result">heading link + snippet</li>…</ol>
-    | landing welcome | error message | "No results"
+    [inflection notice <details class="corpus-inflection-notice">]
+    <ol class="corpus-result-list"><li class="corpus-result">heading link + snippet</li>…</ol>
+    | landing welcome card + <details class="corpus-help" open>
+    | "No results": [inflection notice] + <details class="corpus-help" open>
+    | error message
   </section>
   <nav data-slot="pager" aria-label="Result pages">
-    <a href="…&cursor=…" data-focus-key="pager-next" rel="next">Next</a>   <!-- omitted on the last page -->
+    <a href="…&cursor=…" class="btn btn-secondary corpus-next" data-focus-key="corpus-next" rel="next" aria-label="Next page"><svg>…</svg></a>   <!-- omitted on the last page -->
   </nav>
 </morcus-corpus-view>
 ```
 
 - **Slots** (`corpus_slots.common.ts`: `CORPUS_SLOTS = ["summary", "results", "pager", "settings-summary"] as const`).
   - Each slot wraps only markup that changes with the URL.
-  - The form, help, settings controls and suggestions host sit outside every slot.
+  - The form, settings controls and suggestions host sit outside every slot. The syntax guide lives inside `results` (expanded on landing and zero-results views) or `summary` (collapsed inline disclosure when results are present).
   - `settings-summary` shows the _applied_ settings. It is a slot so that it can't show values the user typed but didn't apply.
 - **Live region.** `aria-live` sits on a stable wrapper. `swapSlots` replaces the slot element itself, and a live region that is replaced isn't announced reliably.
 - **No-JS.** Everything above is native: links, a submit button, `<details>`. Nothing needs `data-nojs-only`. The only `data-js-only` element is the suggestions host.

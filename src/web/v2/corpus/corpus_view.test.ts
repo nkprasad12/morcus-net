@@ -12,6 +12,7 @@ import {
   type CorpusSearchView,
 } from "@/web/v2/corpus/corpus_query.server";
 import { CORPUS_SLOTS } from "@/web/v2/corpus/corpus_slots.common";
+import { INFLECTION_CATEGORIES } from "@/web/v2/corpus/corpus_syntax.common";
 import {
   renderCorpusPageHtml,
   renderCorpusPartialHtml,
@@ -197,15 +198,35 @@ describe("corpus page", () => {
     expect(alert?.textContent).toContain("#Nobody x");
   });
 
+  test("the syntax guide lists every inflection category and its values from the grammar", async () => {
+    const doc = parse(renderCorpusPageHtml(await search({ q: "" })));
+    const desktopCategories = text(
+      doc,
+      ".desktop-guide-view details.guide-categories"
+    );
+    const mobileCategories = text(
+      doc,
+      ".mobile-guide-container details.guide-categories"
+    );
+    for (const [category, values] of INFLECTION_CATEGORIES) {
+      expect(desktopCategories).toContain(`@${category}`);
+      expect(mobileCategories).toContain(`@${category}`);
+      for (const value of values.keys()) {
+        expect(desktopCategories).toContain(value);
+        expect(mobileCategories).toContain(value);
+      }
+    }
+  });
+
   test("the inflection disclaimer only shows for inflection filters", async () => {
     const plain = parse(renderCorpusPageHtml(await search()));
     const inflected = parse(
       renderCorpusPageHtml(await search({ q: "@case:dat" }))
     );
     const summaries = (doc: Document) =>
-      Array.from(doc.querySelectorAll(".corpus-disclaimer > summary")).map(
-        (s) => s.textContent?.trim()
-      );
+      Array.from(
+        doc.querySelectorAll(".corpus-inflection-notice > summary")
+      ).map((s) => s.textContent?.trim());
     expect(summaries(plain)).toHaveLength(0);
     expect(summaries(inflected)).toContain(
       "Inflected match may include false positives"
