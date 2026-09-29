@@ -101,7 +101,7 @@ Several components create structure imperatively or move server-rendered content
 
 ## 4. Alternatives considered
 
-*(Unchanged from Draft 1; see [`PE_FRAMEWORK_RFC.md §4`](PE_FRAMEWORK_RFC.md#4-alternatives-considered) for the evaluation of htmx, Turbo, Stimulus, Lit, SvelteKit/Remix, Marko, and Qwik.)*
+_(Unchanged from Draft 1; see [`PE_FRAMEWORK_RFC.md §4`](PE_FRAMEWORK_RFC.md#4-alternatives-considered) for the evaluation of htmx, Turbo, Stimulus, Lit, SvelteKit/Remix, Marko, and Qwik.)_
 
 **Update on borrowings:** We borrow Stimulus/Catalyst's declarative `data-on` action delegation idea and jsaction's analysis of the pre-hydration window. We **do not** adopt idiomorph: `fetchAndSwapPartial` has only 3 call sites, none lose input focus, and reusing DOM nodes across swaps would preserve `dataset.enhanced` / `dataset.wordsEnhanced` attributes and silently break word tokenization.
 
@@ -119,25 +119,25 @@ The No-JS HTML is the only thing every user receives. In Revision 1, we make tha
 
 ## 6. Principles
 
-| #      | Principle                                                                                                                                                                                                                                   | What it rules out                                                           |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **P1** | **One DOM tree.** The server renders persistent structure in its final DOM location. Client code never moves server-rendered content subtrees or builds persistent containers with `createElement`.                                         | `reader_panel` node relocation; `section_edit` node stashing                |
+| #      | Principle                                                                                                                                                                                                                                  | What it rules out                                                           |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| **P1** | **One DOM tree.** The server renders persistent structure in its final DOM location. Client code never moves server-rendered content subtrees or builds persistent containers with `createElement`.                                        | `reader_panel` node relocation; `section_edit` node stashing                |
 | **P2** | **Upgrade-gated visibility.** Pre-hydration looks and behaves identically to No-JS. JS-only controls use `data-js-only` (and No-JS fallbacks use `data-nojs-only`), gated on `:root.has-js` (or `<tag>:defined` for lazy-loaded elements). | `<noscript>`, `@media (scripting)`, unmarked `<button type="button">`       |
-| **P3** | **Server markup is a compile-time typed API.** Server renderers return `SafeHtml`, and client components reach the DOM only through contract-typed refs (`this.ref`, `this.optionalRef`, `this.refAll`) and delegated actions.              | Raw string selectors in component `*.client.ts`; unescaped server templates |
-| **P4** | **Server resolves; hydration adopts, never clobbers.** The server is the single resolver for content-affecting preferences. `onConnect()` reads live DOM state (inputs, `<details>`, `:target` hash, scroll) before writing anything.       | PH1–PH4, PH9, PH10, and [`dict/PREFERENCES.md`](dict/PREFERENCES.md) F1–F5  |
-| **P5** | **Every feature starts as a form, link, `<details>`, or anchor target.** Features that are JS-only by nature must be marked `mode: "js-only"` (hidden by construction before upgrade) or launched from a working No-JS control.             | Dead controls when JS is off or still loading                               |
+| **P3** | **Server markup is a compile-time typed API.** Server renderers return `SafeHtml`, and client components reach the DOM only through contract-typed refs (`this.ref`, `this.optionalRef`, `this.refAll`) and delegated actions.             | Raw string selectors in component `*.client.ts`; unescaped server templates |
+| **P4** | **Server resolves; hydration adopts, never clobbers.** The server is the single resolver for content-affecting preferences. `onConnect()` reads live DOM state (inputs, `<details>`, `:target` hash, scroll) before writing anything.      | PH1–PH4, PH9, PH10, and [`dict/PREFERENCES.md`](dict/PREFERENCES.md) F1–F5  |
+| **P5** | **Every feature starts as a form, link, `<details>`, or anchor target.** Features that are JS-only by nature must be marked `mode: "js-only"` (hidden by construction before upgrade) or launched from a working No-JS control.            | Dead controls when JS is off or still loading                               |
 
 ---
 
 ## 7. Kinds of enhancement
 
-| Level                   | What JS does                                                                                          | Status under this RFC                    |
-| ----------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| 1. Behavior             | Delegated listeners, intercepting forms, fetching partials into an existing slot                      | ✅ Freely allowed                        |
-| 2. Presentation state   | Classes, `hidden`, `data-active`, `open`, ARIA attributes, CSS variables                              | ✅ Freely allowed                        |
-| 3. Temporary UI         | Menus, in-place editors, toasts: created on demand, hides page content in place, removed when closed  | ⚠️ Only through §8.3 (`TemporarySession`) |
-| 4. Subtree relocation   | Moving server-rendered content nodes between containers in JS                                         | ❌ **Banned** (use CSS + SSR placement)  |
-| 5. Imperative structure | Building persistent chrome or containers with `createElement`                                         | ❌ **Banned** (small allowlist below)    |
+| Level                   | What JS does                                                                                         | Status under this RFC                     |
+| ----------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| 1. Behavior             | Delegated listeners, intercepting forms, fetching partials into an existing slot                     | ✅ Freely allowed                         |
+| 2. Presentation state   | Classes, `hidden`, `data-active`, `open`, ARIA attributes, CSS variables                             | ✅ Freely allowed                         |
+| 3. Temporary UI         | Menus, in-place editors, toasts: created on demand, hides page content in place, removed when closed | ⚠️ Only through §8.3 (`TemporarySession`) |
+| 4. Subtree relocation   | Moving server-rendered content nodes between containers in JS                                        | ❌ **Banned** (use CSS + SSR placement)   |
+| 5. Imperative structure | Building persistent chrome or containers with `createElement`                                        | ❌ **Banned** (small allowlist below)     |
 
 **Allowlist for `createElement`:** the autocomplete suggestion list, toasts, `.lat-word` spans in `tokenize.client.ts`, the `100svh` measurement probe in `drawer.client.ts`, and `createHtmlFragment` in `partial.client.ts`.
 
@@ -181,7 +181,7 @@ declare const POSSIBLE_REFS: unique symbol;
 
 export type SafeHtml<
   Guaranteed extends string = never,
-  Possible extends string = Guaranteed,
+  Possible extends string = Guaranteed
 > = string & {
   readonly [SAFE_HTML]: true;
   // Contravariant position: a union of branches (A | B) automatically intersects Guaranteed!
@@ -198,11 +198,11 @@ The server helper `const C = serverContract(DictSettingsContract)` provides attr
 - `C.noJsRef("applyActions")` → emits `data-ref="applyActions" data-nojs-only` (only accepts `mode: "nojs-only"` refs).
 - `C.on("toggleDict")` → emits `data-on="change:toggleDict"`.
 
-Because `html` unions `Guaranteed` across sequential interpolations (`${a}...${b}`) and **intersects** `Guaranteed` across conditional unions (`cond ? a : html`` `), declaring the server renderer's return type as `RenderedContract<typeof DictSettingsContract>` gives **four compile-time checks in `tsc --noEmit`**:
+Because `html` unions `Guaranteed` across sequential interpolations (`${a}...${b}`) and **intersects** `Guaranteed` across conditional unions (` cond ? a : html``  `), declaring the server renderer's return type as `RenderedContract<typeof DictSettingsContract>` gives **four compile-time checks in `tsc --noEmit`**:
 
 1. **Missing required ref:** Forgetting `C.ref("inflected")` in the server renderer fails `tsc` (`Property '"inflected"' is missing in Guaranteed`).
-2. **Accidental conditional ref:** Putting `C.ref("widthSelect")` inside `options.includePageWidth ? ... : html`` ` makes its type `SafeHtml<"widthSelect"> | SafeHtml<never>`, whose contravariant `Guaranteed` intersection is `never`. If `widthSelect` was declared `one("select")`, `tsc` rejects it immediately—forcing you to declare `widthSelect: optional("select")` in the contract, which in turn forces the client to handle `HTMLSelectElement | null`!
-3. **Dead contract ref:** Declaring `widthSelect: optional("select")` in the contract without emitting it in *any* branch on the server fails `tsc` because `"widthSelect"` is missing from `Possible`.
+2. **Accidental conditional ref:** Putting `C.ref("widthSelect")` inside ` options.includePageWidth ? ... : html``  ` makes its type `SafeHtml<"widthSelect"> | SafeHtml<never>`, whose contravariant `Guaranteed` intersection is `never`. If `widthSelect` was declared `one("select")`, `tsc` rejects it immediately—forcing you to declare `widthSelect: optional("select")` in the contract, which in turn forces the client to handle `HTMLSelectElement | null`!
+3. **Dead contract ref:** Declaring `widthSelect: optional("select")` in the contract without emitting it in _any_ branch on the server fails `tsc` because `"widthSelect"` is missing from `Possible`.
 4. **Mode-safe visibility by construction:** You cannot pass a `mode: "js-only"` ref to `C.ref()`; `tsc` requires `C.jsOnlyRef()`, which always emits `data-js-only`. Paired with one rule in [`v2-critical.css`](v2-critical.css):
    ```css
    :root:not(.has-js) [data-js-only],
@@ -222,15 +222,21 @@ export class MorcusDictSettings extends BaseElement<
   typeof DictSettingsContract
 > {
   protected readonly actions: ActionsFor<typeof DictSettingsContract> = {
-    toggleDict: (_e, target) => { /* target is HTMLInputElement */ },
-    toggleInflected: (_e, target) => { /* ... */ },
-    changeWidth: (_e, target) => { /* ... */ },
+    toggleDict: (_e, target) => {
+      /* target is HTMLInputElement */
+    },
+    toggleInflected: (_e, target) => {
+      /* ... */
+    },
+    changeWidth: (_e, target) => {
+      /* ... */
+    },
   };
 
   protected override onConnect() {
-    const details = this.ref("details");          // HTMLDetailsElement (non-null)
+    const details = this.ref("details"); // HTMLDetailsElement (non-null)
     const width = this.optionalRef("widthSelect"); // HTMLSelectElement | null
-    const boxes = this.refAll("dictBoxes");       // HTMLInputElement[]
+    const boxes = this.refAll("dictBoxes"); // HTMLInputElement[]
     // ...
   }
 }
@@ -282,7 +288,8 @@ To keep `fetchAndSwapPartial` fast and safe for tokenized text (`replaceChildren
 
 ```css
 /* Pre-hydration and No-JS: the hash decides */
-.reader-dict-panel:not([data-active]) .reader-panel-view:is(:target, :has(:target)) {
+.reader-dict-panel:not([data-active])
+  .reader-panel-view:is(:target, :has(:target)) {
   display: block;
 }
 /* Once JS sets data-active, it decides */
@@ -297,27 +304,27 @@ To keep `fetchAndSwapPartial` fast and safe for tokenized text (`replaceChildren
 
 ### 9.1 Compile & Lint Rules (`tsc` + `eslint`)
 
- Every structural invariant is checked statically before any test runs:
+Every structural invariant is checked statically before any test runs:
 
-| Invariant | Enforced by | Runtime Cost |
-| :--- | :--- | :---: |
-| Ref & action names match between server & client | `tsc` (`Contract` type parameter) | 0 B |
-| Server renders all required (`one`) refs in **all** branches | `tsc` (contravariant `GuaranteedRefs` on `SafeHtml`) | 0 B |
-| Conditional (`if` / `? :`) server refs must be `optional` (`\| null` on client) | `tsc` (`GuaranteedRefs` vs `PossibleRefs`) | 0 B |
-| Dead ref in contract never emitted by server | `tsc` (covariant `PossibleRefs` on `SafeHtml`) | 0 B |
-| Client DOM types (`HTMLInputElement`, etc.) match contract | `tsc` (`HTMLElementTagNameMap`) | 0 B |
-| `mode: "js-only"` / `"nojs-only"` hidden in the right mode | `tsc` (`C.jsOnlyRef` / `C.noJsRef`) + 1 rule in `v2-critical.css` | ~60 B CSS |
-| Enclosing HTML `<tag>` in `html` template matches contract tag | `eslint` AST rule on `TaggedTemplateExpression` | 0 B |
-| No unmarked `<button type="button">` (dead No-JS control) in SSR | `eslint` AST rule on `TaggedTemplateExpression` | 0 B |
-| Ban `<noscript>` and `@media (scripting)` in V2 | `eslint` / `stylelint` | 0 B |
-| Ban raw selector queries & un-allowlisted `createElement` in component `*.client.ts` | `eslint` | 0 B |
+| Invariant                                                                            | Enforced by                                                       | Runtime Cost |
+| :----------------------------------------------------------------------------------- | :---------------------------------------------------------------- | :----------: |
+| Ref & action names match between server & client                                     | `tsc` (`Contract` type parameter)                                 |     0 B      |
+| Server renders all required (`one`) refs in **all** branches                         | `tsc` (contravariant `GuaranteedRefs` on `SafeHtml`)              |     0 B      |
+| Conditional (`if` / `? :`) server refs must be `optional` (`\| null` on client)      | `tsc` (`GuaranteedRefs` vs `PossibleRefs`)                        |     0 B      |
+| Dead ref in contract never emitted by server                                         | `tsc` (covariant `PossibleRefs` on `SafeHtml`)                    |     0 B      |
+| Client DOM types (`HTMLInputElement`, etc.) match contract                           | `tsc` (`HTMLElementTagNameMap`)                                   |     0 B      |
+| `mode: "js-only"` / `"nojs-only"` hidden in the right mode                           | `tsc` (`C.jsOnlyRef` / `C.noJsRef`) + 1 rule in `v2-critical.css` |  ~60 B CSS   |
+| Enclosing HTML `<tag>` in `html` template matches contract tag                       | `eslint` AST rule on `TaggedTemplateExpression`                   |     0 B      |
+| No unmarked `<button type="button">` (dead No-JS control) in SSR                     | `eslint` AST rule on `TaggedTemplateExpression`                   |     0 B      |
+| Ban `<noscript>` and `@media (scripting)` in V2                                      | `eslint` / `stylelint`                                            |     0 B      |
+| Ban raw selector queries & un-allowlisted `createElement` in component `*.client.ts` | `eslint`                                                          |     0 B      |
 
 ### 9.2 JSDOM Behavioral Conformance Harness
 
 Extends [`reattach_conformance.test.ts`](core/reattach_conformance.test.ts), replacing hand-written fake HTML strings with **real `.server.ts` renderer output** across each component's mode matrix:
 
 1. **Real SSR Fixtures + Form Round-Trip:** Renders the component via its `.server.ts` function; for form components, mutates controls, serializes with `new FormData(form)`, and verifies the Express route handler response.
-2. **Pre-hydration adoption:** Mutates inputs, checkboxes, `<details>`, `location.hash`, and `scrollY` *before* custom element upgrade; asserts that upgrading preserves every user change.
+2. **Pre-hydration adoption:** Mutates inputs, checkboxes, `<details>`, `location.hash`, and `scrollY` _before_ custom element upgrade; asserts that upgrading preserves every user change.
 3. **Lifecycle & Reattachment:** Disconnects and reconnects the element, verifying all listeners are torn down and re-registered with zero leaks.
 4. **Temporary UI:** Opens and closes any temporary session, asserting the DOM tree is restored, focus returns to the trigger, and the scope is disposed.
 
@@ -343,7 +350,8 @@ A Playwright test that **holds back `v2.js`** via route interception:
 .reader-panel-view {
   display: none;
 }
-.reader-dict-panel:not([data-active]) .reader-panel-view:is(:target, :has(:target)) {
+.reader-dict-panel:not([data-active])
+  .reader-panel-view:is(:target, :has(:target)) {
   display: block;
 }
 .reader-dict-panel:not([data-active]):not(

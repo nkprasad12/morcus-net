@@ -20,6 +20,9 @@ Our architecture and test suites explicitly planned for **No-JS** (scripting dis
 > [!NOTE]
 > This window is now tested directly: [`browser_v2_late_hydration.test.ts`](../../integration/suites/browser_v2_late_hydration.test.ts) holds back `/v2/assets/*.js`, interacts, releases the scripts, and checks that the upgrade adopts pre-hydration state (PH1, 2, 3, 5, 7, 9, 11), the JS gate and `morcus_prepaint` snapshot prevent fallback flashes and layout shifts, and `data-js-failed` restores fallbacks when `v2.js` fails to load. Run it with `./morcus.sh e2e --v2`. When fixing a new PH item, add a case there.
 
+> [!WARNING]
+> Route splitting added an **intermediate state** inside this window: `common.js` has run but the route chunk has not. The test above releases all scripts at once, so it never produces that state. See [CHUNK_ORDERING.md](CHUNK_ORDERING.md).
+
 ---
 
 ## 2. Root Cause: Four Disjoint Definitions of "Is JS Active?"
