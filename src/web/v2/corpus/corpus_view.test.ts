@@ -72,8 +72,8 @@ describe("corpus page", () => {
     expect(doc.querySelector("details.corpus-help")?.hasAttribute("open")).toBe(
       true
     );
-    expect(text(doc, ".corpus-results")).toContain(
-      "Welcome to the corpus query tool!"
+    expect(text(doc, ".corpus-welcome-card")).toContain(
+      "About the classical corpus search engine"
     );
     expect(doc.querySelector(".corpus-result")).toBeNull();
     expect(doc.querySelector(".corpus-next")).toBeNull();
@@ -102,11 +102,18 @@ describe("corpus page", () => {
     const doc = parse(renderCorpusPageHtml(await search()));
 
     expect(doc.title).toBe("Corpus: omnis - Morcus Latin Tools");
-    expect(doc.querySelector("details.corpus-help")?.hasAttribute("open")).toBe(
-      false
-    );
-    expect(text(doc, ".corpus-summary-headline")).toBe(
+    expect(
+      doc.querySelector("details.corpus-syntax-details")?.hasAttribute("open")
+    ).toBe(false);
+    expect(text(doc, ".corpus-summary-headline")).toContain(
       "Found 1 results matching omnis"
+    );
+    expect(text(doc, ".corpus-beta-chip")).toBe("Beta");
+    expect(text(doc, ".corpus-summary-detail")).toContain(
+      "~3M words / ½ classical corpus indexed"
+    );
+    expect(doc.querySelector(".corpus-syntax-link")?.textContent).toContain(
+      "Syntax guide"
     );
     const heading = doc.querySelector<HTMLAnchorElement>(
       "a.corpus-result-heading"
@@ -150,7 +157,11 @@ describe("corpus page", () => {
     expect(doc.querySelector(".corpus-next")?.getAttribute("href")).toBe(
       "/v2/corpus?q=omnis&contextLen=20&pageSize=50&cursor=2-50-1"
     );
-    expect(text(doc, ".corpus-summary-headline")).toBe(
+    expect(doc.querySelector(".corpus-next svg")).not.toBeNull();
+    expect(doc.querySelector(".corpus-next")?.getAttribute("aria-label")).toBe(
+      "Next page"
+    );
+    expect(text(doc, ".corpus-summary-headline")).toContain(
       "Found about 200 results matching omnis"
     );
     expect(text(doc, ".corpus-summary-detail")).toContain(
@@ -158,7 +169,7 @@ describe("corpus page", () => {
     );
   });
 
-  test("no results: message, no pager", async () => {
+  test("no results: message, expanded query guide, no pager", async () => {
     const doc = parse(
       renderCorpusPageHtml(
         await search(
@@ -169,9 +180,13 @@ describe("corpus page", () => {
         )
       )
     );
-    expect(text(doc, ".corpus-summary-headline")).toBe(
+    expect(text(doc, ".corpus-summary-headline")).toContain(
       "No results found for omnis"
     );
+    expect(doc.querySelector("details.corpus-help")?.hasAttribute("open")).toBe(
+      true
+    );
+    expect(text(doc, ".guide-title")).toBe("How to write queries");
     expect(doc.querySelector(".corpus-result")).toBeNull();
     expect(doc.querySelector(".corpus-next")).toBeNull();
   });
@@ -189,14 +204,15 @@ describe("corpus page", () => {
     );
     const summaries = (doc: Document) =>
       Array.from(doc.querySelectorAll(".corpus-disclaimer > summary")).map(
-        (s) => s.textContent
+        (s) => s.textContent?.trim()
       );
-    expect(summaries(plain)).not.toContain(
-      "Your query includes inflection filters"
-    );
+    expect(summaries(plain)).toHaveLength(0);
     expect(summaries(inflected)).toContain(
-      "Your query includes inflection filters"
+      "Inflected match may include false positives"
     );
+    expect(
+      inflected.querySelector(".corpus-inflection-notice")?.hasAttribute("open")
+    ).toBe(false);
   });
 
   test("strict mode is reflected in the checkbox and tray", async () => {

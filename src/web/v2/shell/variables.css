@@ -96,6 +96,14 @@
   --word-hover-bg: rgba(0, 0, 0, 0.05);
   --word-active-bg: rgba(0, 0, 0, 0.11);
   --match-highlight-fg: #cb4b16;
+  --corpus-citation-link: #065ba2;
+  --corpus-citation-link-hover: #268bd2;
+  --disclaimer-bg: rgba(220, 50, 47, 0.05);
+  --disclaimer-border: rgba(220, 50, 47, 0.2);
+  --beta-chip-bg: rgba(191, 222, 207, 0.5);
+  --beta-chip-border: #99c2b0;
+  --beta-chip-text: #1d3b33;
+  --terracotta: #cb4b16;
   --scrollbar-thumb: rgba(0, 0, 0, 0.25);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
   --drawer-shadow: 0 -6px 20px rgba(0, 0, 0, 0.09),
@@ -177,6 +185,14 @@
     --word-hover-bg: rgba(255, 255, 255, 0.07);
     --word-active-bg: rgba(255, 255, 255, 0.18);
     --match-highlight-fg: #e8743b;
+    --corpus-citation-link: #71abd4;
+    --corpus-citation-link-hover: #aecbfa;
+    --disclaimer-bg: rgba(255, 107, 107, 0.08);
+    --disclaimer-border: rgba(255, 107, 107, 0.25);
+    --beta-chip-bg: rgba(143, 174, 159, 0.25);
+    --beta-chip-border: #7c9b8c;
+    --beta-chip-text: #a3c9b8;
+    --terracotta: #e8743b;
     --scrollbar-thumb: rgba(255, 255, 255, 0.28);
     --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
     --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),
@@ -256,6 +272,14 @@
   --word-hover-bg: rgba(255, 255, 255, 0.07);
   --word-active-bg: rgba(255, 255, 255, 0.18);
   --match-highlight-fg: #e8743b;
+  --corpus-citation-link: #71abd4;
+  --corpus-citation-link-hover: #aecbfa;
+  --disclaimer-bg: rgba(255, 107, 107, 0.08);
+  --disclaimer-border: rgba(255, 107, 107, 0.25);
+  --beta-chip-bg: rgba(143, 174, 159, 0.25);
+  --beta-chip-border: #7c9b8c;
+  --beta-chip-text: #a3c9b8;
+  --terracotta: #e8743b;
   --scrollbar-thumb: rgba(255, 255, 255, 0.28);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
   --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),

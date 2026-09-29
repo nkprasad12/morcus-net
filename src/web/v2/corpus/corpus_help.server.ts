@@ -1,7 +1,6 @@
 /**
- * The static "How to write queries" help, ported from V1's
- * `QueryHelpSection`. The category values come from the grammar's tables so
- * the help can't drift from what the grammar accepts.
+ * The static "How to write queries" syntax guide ("Flat Panel").
+ * Renders a 3-column split on desktop and native subaccordions on mobile.
  */
 
 import {
@@ -11,37 +10,6 @@ import {
   type RawHtml,
   type SafeHtml,
 } from "@/web/v2/core/html.common";
-import { INFLECTION_CATEGORIES } from "@/web/v2/corpus/corpus_syntax.common";
-
-const CATEGORY_ORDER = [
-  "mood",
-  "tense",
-  "voice",
-  "person",
-  "number",
-  "gender",
-  "case",
-] as const;
-
-function codeList(values: readonly string[]): RawHtml {
-  return joinHtml(
-    values.map((v) => html`<code>${v}</code>`),
-    ", "
-  );
-}
-
-function categoryItems(): RawHtml {
-  return joinHtml(
-    CATEGORY_ORDER.map((category) => {
-      const values = [...(INFLECTION_CATEGORIES.get(category)?.keys() ?? [])];
-      const note =
-        category === "case" ? " (all usual cases except locative)" : "";
-      return html`<li>
-        <code>@${category}</code> - ${codeList(values)}${note}.
-      </li>`;
-    })
-  );
-}
 
 interface Example {
   readonly query: string;
@@ -51,165 +19,369 @@ interface Example {
 
 const EXAMPLES: readonly Example[] = [
   {
-    query: "amoris",
-    description: html`Exact occurrences of <code>amoris</code>.`,
-    sample: html`<code>amoris</code> or <code>Amoris</code>`,
+    query: "#Caesar @lemma:bellum",
+    description: html`Any inflection of <i>bellum</i> in works by Caesar`,
+    sample: html`bellum, belli, bella...`,
   },
   {
     query: "@lemma:do @case:dat",
-    description: html`Any inflection of <code>do</code> followed by a dative
-      word.`,
-    sample: html`<code>dedit nato</code> or <code>dant patri</code>`,
+    description: html`Any form of <i>do</i> followed by a dative word`,
+    sample: html`dedit nato, dant patri`,
   },
   {
     query: "(@lemma:do or @lemma:habeo) ~ @case:acc",
-    description: html`Any inflection of <code>do</code> or
-      <code>habeo</code> near an accusative word.`,
-    sample: html`<code>dedi saepe panem</code> or
-      <code>habet in manu ensem</code>`,
+    description: html`<i>do</i> or <i>habeo</i> near an accusative word`,
+    sample: html`dedi panem, habet ensem`,
   },
   {
-    query: "#Caesar @lemma:bellum",
-    description: html`Any inflection of <code>bellum</code> in works by Caesar.`,
-    sample: html`<code>bellum</code>, <code>belli</code>, etc.`,
+    query: "amoris",
+    description: html`Exact occurrences of <i>amoris</i>`,
+    sample: html`amoris, Amoris`,
   },
 ];
 
-function exampleRows(): RawHtml {
+function desktopExampleRows(): RawHtml {
   return joinHtml(
     EXAMPLES.map((ex) => {
       const href = `/v2/corpus?${new URLSearchParams({
         q: ex.query,
       }).toString()}`;
-      return html`<tr>
-        <td>
-          <a href="${href}" data-corpus-nav><code>${ex.query}</code></a>
+      return html`<tr class="guide-example-row">
+        <td class="guide-example-cell-query">
+          <a href="${href}" class="guide-example-link" data-corpus-nav
+            ><code>${ex.query}</code></a
+          >
         </td>
-        <td>${raw(ex.description)}</td>
-        <td>${raw(ex.sample)}</td>
+        <td class="guide-example-cell-desc">${raw(ex.description)}</td>
+        <td class="guide-example-cell-sample">${raw(ex.sample)}</td>
       </tr>`;
     })
   );
 }
 
+function mobileExampleItems(): RawHtml {
+  return joinHtml(
+    EXAMPLES.map((ex) => {
+      const href = `/v2/corpus?${new URLSearchParams({
+        q: ex.query,
+      }).toString()}`;
+      return html`<a
+        href="${href}"
+        class="guide-mobile-example"
+        data-corpus-nav>
+        <div class="guide-mobile-example-query">
+          <code>${ex.query}</code>
+        </div>
+        <div class="guide-mobile-example-desc">
+          ${raw(ex.description)} (e.g. <i>${raw(ex.sample)}</i>)
+        </div>
+      </a>`;
+    })
+  );
+}
+
 /**
- * The help disclosure. Open on the landing view, where it's the main
- * content, and closed once there are results to look at.
+ * The inner body of the query guide (3-column desktop grid, interactive examples
+ * table, and mobile subaccordions).
  */
-export function renderCorpusHelp(open: boolean): SafeHtml {
-  return html`<details class="corpus-help" ${open ? "open" : ""}>
-    <summary>How to write queries</summary>
-    <div class="corpus-help-body">
-      <details>
-        <summary>Narrowing words</summary>
-        <ul>
-          <li>
-            <code>&lt;word&gt;</code> - A specific word to match; for example,
-            <code>amoris</code>. This is not case sensitive.
-          </li>
-          <li>
-            <code>@lemma:&lt;lemma&gt;</code> - The lemma form of a word, which
-            will match any inflection of the lemma. For example,
-            <code>@lemma:corpus</code> would match both <code>corpus</code> and
-            <code>corporis</code>.
-            <ul>
-              <li>
-                For verbs, this is usually the first-person singular present
-                indicative; for example, <code>@lemma:amo</code> (not
-                <code>amare</code>).
-              </li>
-              <li>
-                You can also use <code>@l</code> as a shorthand for
-                <code>@lemma</code>; for example, <code>@l:corpus</code>.
-              </li>
-            </ul>
-          </li>
-          <li>
-            <code>@&lt;category&gt;:&lt;value&gt;</code> - A specific
-            grammatical category to match. For example,
-            <code>@case:genitive</code> would match any word in the genitive
-            case.
-            <ul>
-              <li>
-                All of the usual morphological categories are supported, with
-                the exception of <code>@degree</code>. Special verbal forms are
-                grouped into <code>@mood</code>. The options for each category
-                are:
-                <ul>
-                  ${categoryItems()}
-                </ul>
-              </li>
-              <li>
-                You can use the first letter of a category as a shorthand; for
-                example, <code>@c:genitive</code> for
-                <code>@case:genitive</code>.
-              </li>
-            </ul>
-          </li>
-          <li>
-            Combine any of the above with the keywords <code>and</code> and
-            <code>or</code>. For example,
-            <code>@lemma:amo and @case:genitive</code> will match any word that
-            is both an inflection of <code>amo</code> and in the genitive case.
-          </li>
-        </ul>
-      </details>
-      <details>
-        <summary>Combining words</summary>
-        <ul>
-          <li>
-            <code>(space)</code> - Implies that the previous and next items are
-            adjacent. For example, <code>amor @case:genitive</code> would match
-            <code>amor</code> followed by any genitive word.
-          </li>
-          <li>
-            <code>~</code> - Implies that the previous and next items are within
-            a few words of each other. For example,
-            <code>@lemma:amo ~ @case:genitive</code> would match any inflection
-            of <code>amo</code> within a few words of any genitive word.
-            <ul>
-              <li>
-                You can specify the exact proximity by adding a number; for
-                example, <code>@lemma:amo ~3 @case:genitive</code> would match
-                <code>amo</code> within 3 words of any genitive word. The number
-                must be 15 or lower.
-              </li>
-              <li>
-                You can specify a direction by adding <code>&gt;</code>; for
-                example, <code>@lemma:amo ~3&gt; @case:genitive</code> would
-                match <code>amo</code> 3 or fewer words before any genitive
-                word. The number must be 15 or lower.
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </details>
-      <details>
-        <summary>Filtering by author</summary>
-        <ul>
-          <li>
-            <code>#author</code> - Restricts the search to the specified author.
-            For example, <code>#Caesar amoris</code> will find instances of
-            <code>amoris</code> but only in works by Caesar. Currently you may
-            only specify one author.
-          </li>
-        </ul>
-      </details>
-      <details>
-        <summary>Examples</summary>
-        <table class="corpus-help-examples">
-          <thead>
-            <tr>
-              <th>Query</th>
-              <th>Description</th>
-              <th>Sample</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${exampleRows()}
-          </tbody>
-        </table>
-      </details>
+export function renderGuideInner(): SafeHtml {
+  return html`<div class="guide-inner">
+    <!-- Desktop View: 3-Column Split with Hairline Dividers -->
+    <div class="desktop-guide-view">
+      <div class="desktop-guide-grid">
+        <!-- Col 1: Narrowing Words -->
+        <div class="guide-col">
+          <div class="guide-col-title">Narrowing words &amp; grammar</div>
+          <p class="guide-col-desc">
+            Target words, lemmas, or inflection tags:
+          </p>
+          <ul class="guide-col-list">
+            <li>
+              <code>amoris</code>
+              <span>Exact word (case-insensitive)</span>
+            </li>
+            <li>
+              <code>@lemma:amo</code>
+              <span>Any verb/noun form (<code>@l:amo</code>)</span>
+            </li>
+            <li>
+              <code>@case:genitive</code>
+              <span>Case filter (<code>@c:gen</code>)</span>
+            </li>
+            <li class="guide-col-combine">
+              Combine with <strong>and</strong> / <strong>or</strong>:
+              <code>(@c:gen and @l:amo)</code>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Col 2: Proximity & Distance -->
+        <div class="guide-col">
+          <div class="guide-col-title">Proximity &amp; distance</div>
+          <p class="guide-col-desc">Control word order and proximity:</p>
+          <ul class="guide-col-list">
+            <li>
+              <code>(space)</code>
+              <span>Adjacent words in exact order</span>
+            </li>
+            <li>
+              <code>~</code>
+              <span>Within a few words either direction</span>
+            </li>
+            <li>
+              <code>~3</code>
+              <span>Within 3 words (max 15)</span>
+            </li>
+            <li>
+              <code>~3&gt;</code>
+              <span>Within 3 words strictly before</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Author Scope -->
+        <div class="guide-col">
+          <div class="guide-col-title">Author scope</div>
+          <p class="guide-col-desc">
+            Restrict queries to a specific classical author:
+          </p>
+          <ul class="guide-col-list">
+            <li>
+              <code>#Caesar amoris</code>
+              <span>Caesar's works only</span>
+            </li>
+            <li>
+              <code>#Cicero @case:vocative</code>
+              <span>Cicero vocatives</span>
+            </li>
+            <li class="guide-col-note">
+              One author filter permitted per query.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Desktop Examples Table -->
+      <div class="guide-examples-section">
+        <div class="guide-examples-title">
+          Query Examples
+          <span class="guide-examples-subtitle"
+            >(click to test in search bar)</span
+          >
+        </div>
+        <div class="guide-table-scroll">
+          <table class="guide-examples-table">
+            <thead>
+              <tr>
+                <th>Query</th>
+                <th>Description</th>
+                <th>Sample Matches</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${desktopExampleRows()}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile View: Flat Sub-Accordions -->
+    <div class="mobile-guide-container">
+      <div class="mobile-guide-accordions">
+        <!-- Subaccordion 1: Narrowing Words -->
+        <details class="guide-subaccordion" open>
+          <summary class="guide-subaccordion-summary">
+            <div class="guide-subaccordion-title">
+              <svg
+                class="guide-subaccordion-chevron"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                aria-hidden="true">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+              <span>Narrowing words</span>
+            </div>
+            <span class="guide-subaccordion-badge">@lemma, @case</span>
+          </summary>
+          <div class="guide-subaccordion-content">
+            <div class="guide-item">
+              <code>amoris</code>
+              <span>Exact word (case-insensitive)</span>
+            </div>
+            <div class="guide-item">
+              <code>@lemma:amo</code>
+              <span>Any verb/noun form (<code>@l:amo</code>)</span>
+            </div>
+            <div class="guide-item">
+              <code>@case:genitive</code>
+              <span>Case filter (<code>@c:gen</code>)</span>
+            </div>
+            <div class="guide-item-combine">
+              Combine with <strong>and</strong> / <strong>or</strong>:
+              <code>(@c:gen and @l:amo)</code>
+            </div>
+          </div>
+        </details>
+
+        <!-- Subaccordion 2: Proximity & Distance -->
+        <details class="guide-subaccordion">
+          <summary class="guide-subaccordion-summary">
+            <div class="guide-subaccordion-title">
+              <svg
+                class="guide-subaccordion-chevron"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                aria-hidden="true">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+              <span>Proximity &amp; distance</span>
+            </div>
+            <span class="guide-subaccordion-badge">~, ~3, ~3&gt;</span>
+          </summary>
+          <div class="guide-subaccordion-content">
+            <div class="guide-item">
+              <code>(space)</code>
+              <span>Adjacent words in order</span>
+            </div>
+            <div class="guide-item">
+              <code>~</code>
+              <span>Within a few words either direction</span>
+            </div>
+            <div class="guide-item">
+              <code>~3</code>
+              <span>Within 3 words (max 15)</span>
+            </div>
+            <div class="guide-item">
+              <code>~3&gt;</code>
+              <span>Within 3 words strictly before</span>
+            </div>
+          </div>
+        </details>
+
+        <!-- Subaccordion 3: Author Scope -->
+        <details class="guide-subaccordion">
+          <summary class="guide-subaccordion-summary">
+            <div class="guide-subaccordion-title">
+              <svg
+                class="guide-subaccordion-chevron"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                aria-hidden="true">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+              <span>Author scope</span>
+            </div>
+            <span class="guide-subaccordion-badge">#Author</span>
+          </summary>
+          <div class="guide-subaccordion-content">
+            <div class="guide-item">
+              <code>#Caesar amoris</code>
+              <span>Caesar's works only</span>
+            </div>
+            <div class="guide-item">
+              <code>#Cicero @case:vocative</code>
+              <span>Cicero vocatives</span>
+            </div>
+            <div class="guide-item-note">
+              One author filter permitted per query
+            </div>
+          </div>
+        </details>
+
+        <!-- Subaccordion 4: Interactive Examples -->
+        <details class="guide-subaccordion">
+          <summary class="guide-subaccordion-summary">
+            <div class="guide-subaccordion-title">
+              <svg
+                class="guide-subaccordion-chevron"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                aria-hidden="true">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+              <span>Query examples</span>
+            </div>
+            <span class="guide-subaccordion-badge">Tap to test</span>
+          </summary>
+          <div class="guide-subaccordion-content guide-mobile-examples">
+            ${mobileExampleItems()}
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>`;
+}
+
+/**
+ * The flat panel query guide card. Rendered open on landing and zero-results views.
+ */
+export function renderCorpusHelp(open: boolean = true): SafeHtml {
+  return html`<details
+    id="corpusHelpCard"
+    class="corpus-help corpus-help-card"
+    ${open ? "open" : ""}>
+    <summary class="guide-summary">
+      <div class="guide-summary-left">
+        <span class="guide-title">How to write queries</span>
+        <span class="guide-syntax-badge">Syntax Guide</span>
+      </div>
+      <span class="guide-summary-right">
+        <span class="helpSummaryAction">
+          <span class="help-action-closed"
+            >Show syntax guide &amp; examples</span
+          >
+          <span class="help-action-open">Hide syntax guide</span>
+        </span>
+        <span class="helpSummaryActionMobile">
+          <span class="help-action-closed">Show guide</span>
+          <span class="help-action-open">Hide guide</span>
+        </span>
+        <svg
+          class="guide-chevron"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </span>
+    </summary>
+    ${raw(renderGuideInner())}
+  </details>`;
+}
+
+/**
+ * Native Zero-JS inline disclosure for populated results views. Sits inline
+ * in the subtitle and unfolds the guide panel on demand without vertical push.
+ */
+export function renderInlineHelpDisclosure(): SafeHtml {
+  return html`<details
+    id="corpusHelpCard"
+    class="corpus-help corpus-syntax-details">
+    <summary class="corpus-syntax-link">
+      <span>Syntax guide</span>
+      <svg
+        class="corpus-syntax-chevron"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </summary>
+    <div class="corpus-help-panel corpus-help-card">
+      ${raw(renderGuideInner())}
     </div>
   </details>`;
 }
