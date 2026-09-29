@@ -63,24 +63,37 @@ let cachedAuthors: Promise<readonly string[] | undefined> | null = null;
 
 /**
  * The corpus author list (`#Author` values), or `undefined` if the corpus
- * isn't built. The file is a gzipped V1 RPC envelope: `{"w":{"data":[...]}}`.
+ * isn't built.
  */
 export function loadCorpusAuthors(): Promise<readonly string[] | undefined> {
   if (cachedAuthors === null) {
-    cachedAuthors = fs.promises
-      .readFile(`${CORPUS_DIR}/${CORPUS_AUTHORS_LIST}`)
-      .then((buffer) => {
-        const parsed: unknown = JSON.parse(
-          zlib.gunzipSync(buffer).toString("utf8")
-        );
-        return extractEnvelopeList(parsed);
-      })
-      .catch((err: unknown) => {
-        console.warn("Corpus author list unavailable:", err);
-        return undefined;
-      });
+    cachedAuthors = readCorpusSuggestionList(CORPUS_AUTHORS_LIST);
   }
   return cachedAuthors;
+}
+
+/**
+ * Reads one of the corpus suggestion lists in `CORPUS_DIR` (the authors or
+ * the lemmata). Each is a gzipped V1 RPC envelope: `{"w":{"data":[...]}}`.
+ * Resolves `undefined`, with a warning, if the file is missing or malformed.
+ */
+export async function readCorpusSuggestionList(
+  fileName: string
+): Promise<string[] | undefined> {
+  try {
+    const buffer = await fs.promises.readFile(`${CORPUS_DIR}/${fileName}`);
+    const parsed: unknown = JSON.parse(
+      zlib.gunzipSync(buffer).toString("utf8")
+    );
+    const list = extractEnvelopeList(parsed);
+    if (list === undefined) {
+      console.warn(`Corpus list ${fileName} has an unexpected shape.`);
+    }
+    return list;
+  } catch (err: unknown) {
+    console.warn(`Corpus list ${fileName} unavailable:`, err);
+    return undefined;
+  }
 }
 
 function extractEnvelopeList(parsed: unknown): string[] | undefined {
@@ -129,6 +142,11 @@ export interface CorpusSearchView {
   readonly outcome: CorpusOutcome;
   /** Show the inflection-tagging disclaimer (DESIGN D4). */
   readonly showInflectionDisclaimer: boolean;
+  /**
+   * The authors `q` was validated against, rendered once for the
+   * autocomplete (`data-authors`). `undefined` if the corpus isn't built.
+   */
+  readonly authors?: readonly string[];
 }
 
 async function readerHrefs(): Promise<Map<string, string>> {
@@ -184,10 +202,11 @@ export async function runCorpusSearch(
     params,
     outcome,
     showInflectionDisclaimer,
+    authors,
   });
 
   if (params.q.length === 0) {
-    return { params, outcome: { kind: "landing" }, showInflectionDisclaimer };
+    return view({ kind: "landing" });
   }
   const syntaxError = validateQuery(params.q, authors);
   if (syntaxError !== null) {

@@ -11,6 +11,7 @@
   },
   "domMutationOutsideCore": {
     "callsPerFile": {
+      "src/web/v2/corpus/corpus_autocomplete.client.ts": 1,
       "src/web/v2/dict/dict_search.client.ts": 2,
       "src/web/v2/dict/dict_suggestions.client.ts": 11,
       "src/web/v2/external/external_loader.client.ts": 1,
@@ -21,6 +22,7 @@
   },
   "selectorCalls": {
     "callsPerFile": {
+      "src/web/v2/corpus/corpus_autocomplete.client.ts": 1,
       "src/web/v2/corpus/corpus_view.client.ts": 3,
       "src/web/v2/dialog/report_dialog.client.ts": 7,
       "src/web/v2/dict/abbr_popover.client.ts": 5,

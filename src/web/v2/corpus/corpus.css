@@ -38,6 +38,55 @@ morcus-corpus-view {
   border-radius: var(--radius-sm);
 }
 
+/* --- Autocomplete -------------------------------------------------------- */
+
+/* The listbox is `.suggestions` (dict/search.css); these are its rows, built
+ * by corpus_autocomplete.client.ts. The highlighted row is the one the input's
+ * `aria-activedescendant` points at. */
+.corpus-suggestion {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-5);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.corpus-suggestion:not(.is-status):hover,
+.corpus-suggestion[aria-selected="true"] {
+  background-color: var(--tag-bg);
+}
+
+.corpus-suggestion.is-status {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.corpus-suggestion.is-error {
+  color: var(--danger);
+}
+
+.corpus-suggestion-text {
+  /* Completions carry meaningful spaces, e.g. ` and `. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.corpus-suggestion-prefix {
+  color: var(--text-muted);
+}
+
+.corpus-suggestion-option {
+  color: var(--primary);
+}
+
+.corpus-suggestion-help {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 /* --- Help and disclaimers ------------------------------------------------ */
 
 .corpus-help,

@@ -17,10 +17,10 @@ export interface V2BundleBudget {
 /**
  * Production bundle size budget for UI V2 assets (minified). Sizes are KiB.
  *
- * Current baseline (2026-09-26, after In-Flow "Edit and Report" in Reader & Dictionary):
- *   v2_bundle.js: 135.5 kB raw / 38.7 kB gzip
- *   v2.css:       121.1 kB raw / 20.1 kB gzip
- *   Combined:     256.6 kB raw / 58.9 kB gzip
+ * Current baseline (2026-09-28, after corpus autocomplete):
+ *   v2_bundle.js: 143.8 kB raw / 43.0 kB gzip
+ *   v2.css:       119.1 kB raw / 19.9 kB gzip
+ *   Combined:     262.8 kB raw / 62.9 kB gzip
  *
  * Ceilings provide headroom to absorb routine fixes and features without
  * false positives, while hard-blocking major regressions or accidental imports
@@ -38,14 +38,22 @@ export interface V2BundleBudget {
  *   unified In-Flow "Edit and Report" (`core/section_edit.client.ts` + Reader
  *   and Dictionary adapters, ~5.3 kB raw / ~2.0 kB gzip JS and ~1.2 kB raw /
  *   ~0.2 kB gzip CSS).
+ * - 2026-09-28: 142 / 41 -> 147 / 44 (combined 265 / 62 -> 267 / 64), after
+ *   corpus autocomplete: JS 129.9 / 38.4 -> 143.8 / 43.0. That's
+ *   `<morcus-corpus-suggestions>` (~10.0 kB raw) plus the query grammar it
+ *   shares with the server (`corpus_syntax.common.ts`, ~4.1 kB raw), with no
+ *   new dependencies. Corpus DESIGN D6 chose to ship it in the main bundle
+ *   ahead of the splitting TODO. Its §7.3 guardrails (lint-enforced) keep a
+ *   later move to an async chunk cheap. Headroom is ~1 kB gzip, and the
+ *   combined ceiling moved by the same margin so it doesn't undercut it.
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
-  maxJsRawBytes: 142 * 1024,
-  maxJsGzipBytes: 41 * 1024,
+  maxJsRawBytes: 147 * 1024,
+  maxJsGzipBytes: 44 * 1024,
   maxCssRawBytes: 125 * 1024,
   maxCssGzipBytes: 22 * 1024,
-  maxCombinedRawBytes: 265 * 1024,
-  maxCombinedGzipBytes: 62 * 1024,
+  maxCombinedRawBytes: 267 * 1024,
+  maxCombinedGzipBytes: 64 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
   // pre-paint preference must not grow it. Baseline 2026-09-27: 424 B raw /
