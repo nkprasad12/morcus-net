@@ -242,7 +242,7 @@ Benchmarking across the entire corpus reveals:
 
 Make individual entry headers/headwords collapsible via the decoupled `<details class="entry-toggle">` pattern, mirroring dictionary card collapse.
 
-- Add a `.entry` case to `expandAncestorDisclosures` in `v2_bundle.client.ts` so anchor deep-links automatically expand collapsed entries.
+- Register a revealer for collapsed entries (`registerRevealer`, [`core/reveal.client.ts`](../core/reveal.client.ts)) so anchor deep-links automatically expand them.
 - Improves scanability on results with multiple long entries inside the same lexicon.
 
 ---

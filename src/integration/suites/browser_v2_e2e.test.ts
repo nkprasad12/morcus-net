@@ -1,6 +1,17 @@
 import { test, expect } from "@playwright/test";
 import { gzipSync } from "zlib";
-import { V2_BUNDLE_BUDGET } from "@/bundler/v2_bundle_budget";
+import {
+  V2_BUNDLE_BUDGET,
+  sumRouteSizes,
+  type V2SizeTotal,
+} from "@/bundler/v2_bundle_budget";
+import {
+  V2_JS_CHUNKS,
+  V2_ROUTES,
+  v2RouteScripts,
+  type V2JsChunkName,
+  type V2Route,
+} from "@/bundler/v2_build_contract";
 
 test.describe("UI V2 dictionary", () => {
   test("loads results without JavaScript (No-JS fallback)", async ({
@@ -804,75 +815,85 @@ test.describe("UI V2 dictionary", () => {
       "Bundle validation does not use browser rendering, so only needs to run once."
     );
 
-    test("combined bundle size (JS + CSS) is within budget", async ({
+    test("every route loads its chunks, and served JS and CSS are within budget", async ({
       request,
     }) => {
-      // 1. Fetch the Dictionary page to extract the emitted asset filenames
-      const pageRes = await request.get("/v2/dicts");
-      expect(pageRes.status()).toBe(200);
-      const html = await pageRes.text();
+      // 1. One URL per route. Together they must load every chunk, so a chunk
+      //    that is built but never loaded by any route fails here.
+      const routeUrls: Record<V2Route, string> = {
+        about: "/v2/about",
+        dicts: "/v2/dicts",
+        library: "/v2/library",
+        corpus: "/v2/corpus",
+        external: "/v2/externalReader",
+      };
+      const chunkPaths = new Map<V2JsChunkName, string>();
+      let cssPath: string | undefined;
+      for (const route of V2_ROUTES) {
+        const res = await request.get(routeUrls[route]);
+        expect(res.status()).toBe(200);
+        const html = await res.text();
 
-      // Extract JS and CSS links from HTML
-      const cssMatch = html.match(
-        /<link\s+rel="stylesheet"\s+href="(\/v2\/assets\/v2\.[a-f0-9]+\.css)">/
-      );
-      const jsMatch = html.match(
-        /<script\s+type="module"\s+src="(\/v2\/assets\/v2_bundle\.[a-f0-9]+\.js)"[^>]*>/
-      );
+        const served = [
+          ...html.matchAll(
+            /<script\s+type="module"\s+src="(\/v2\/assets\/([a-z]+)\.[a-f0-9]+\.js)"[^>]*>/g
+          ),
+        ];
+        // The server emits exactly the route's dependency chain, in order.
+        expect(served.map((m) => `${m[2]}.js`)).toEqual(v2RouteScripts(route));
+        for (const m of served) {
+          chunkPaths.set(`${m[2]}.js` as V2JsChunkName, m[1]);
+        }
 
-      expect(cssMatch).toBeTruthy();
-      expect(jsMatch).toBeTruthy();
+        cssPath ??= html.match(
+          /<link\s+rel="stylesheet"\s+href="(\/v2\/assets\/v2\.[a-f0-9]+\.css)">/
+        )?.[1];
+      }
+      expect(new Set(chunkPaths.keys())).toEqual(new Set(V2_JS_CHUNKS));
+      expect(cssPath).toBeDefined();
 
-      const cssPath = cssMatch![1];
-      const jsPath = jsMatch![1];
-
-      // 2. Fetch the CSS asset
-      const cssRes = await request.get(cssPath);
+      // 2. Fetch and validate the CSS asset
+      const cssRes = await request.get(cssPath!);
       expect(cssRes.status()).toBe(200);
       expect(cssRes.headers()["content-type"]).toContain("text/css");
       expect(cssRes.headers()["cache-control"]).toContain("immutable");
       const cssBuffer = await cssRes.body();
-      const cssRaw = cssBuffer.byteLength;
-      const cssGzip = gzipSync(cssBuffer).byteLength;
-
-      // 3. Fetch the JS asset
-      const jsRes = await request.get(jsPath);
-      expect(jsRes.status()).toBe(200);
-      expect(jsRes.headers()["content-type"]).toContain("javascript");
-      expect(jsRes.headers()["cache-control"]).toContain("immutable");
-      const jsBuffer = await jsRes.body();
-      const jsRaw = jsBuffer.byteLength;
-      const jsGzip = gzipSync(jsBuffer).byteLength;
-
-      // 4. Combined calculations
-      const combinedRaw = cssRaw + jsRaw;
-      const combinedGzip = cssGzip + jsGzip;
-
-      console.log(
-        `UI V2 Network Bundle Sizes: JS=${(jsRaw / 1024).toFixed(
-          1
-        )} kB raw / ${(jsGzip / 1024).toFixed(1)} kB gzip, CSS=${(
-          cssRaw / 1024
-        ).toFixed(1)} kB raw / ${(cssGzip / 1024).toFixed(
-          1
-        )} kB gzip, Combined=${(combinedRaw / 1024).toFixed(1)} kB raw / ${(
-          combinedGzip / 1024
-        ).toFixed(1)} kB gzip`
+      expect(cssBuffer.byteLength).toBeLessThan(
+        V2_BUNDLE_BUDGET.maxCssRawBytes
+      );
+      expect(gzipSync(cssBuffer).byteLength).toBeLessThan(
+        V2_BUNDLE_BUDGET.maxCssGzipBytes
       );
 
-      // Assert individual and combined budgets
-      expect(jsRaw).toBeLessThan(V2_BUNDLE_BUDGET.maxJsRawBytes);
-      expect(jsGzip).toBeLessThan(V2_BUNDLE_BUDGET.maxJsGzipBytes);
+      // 3. Fetch and validate each JS chunk asset
+      const chunkSizes: Partial<Record<V2JsChunkName, V2SizeTotal>> = {};
+      for (const [chunk, jsPath] of chunkPaths) {
+        const jsRes = await request.get(jsPath);
+        expect(jsRes.status()).toBe(200);
+        expect(jsRes.headers()["content-type"]).toContain("javascript");
+        expect(jsRes.headers()["cache-control"]).toContain("immutable");
+        const jsBuffer = await jsRes.body();
+        const size = {
+          rawBytes: jsBuffer.byteLength,
+          gzipBytes: gzipSync(jsBuffer).byteLength,
+        };
+        chunkSizes[chunk] = size;
 
-      expect(cssRaw).toBeLessThan(V2_BUNDLE_BUDGET.maxCssRawBytes);
-      expect(cssGzip).toBeLessThan(V2_BUNDLE_BUDGET.maxCssGzipBytes);
+        const budget = V2_BUNDLE_BUDGET.chunks[chunk];
+        expect(size.rawBytes).toBeLessThan(budget.maxRawBytes);
+        expect(size.gzipBytes).toBeLessThan(budget.maxGzipBytes);
 
-      expect(combinedRaw).toBeLessThan(V2_BUNDLE_BUDGET.maxCombinedRawBytes);
-      expect(combinedGzip).toBeLessThan(V2_BUNDLE_BUDGET.maxCombinedGzipBytes);
+        // Ensure no banned development-only strings leaked into any client chunk
+        expect(jsBuffer.toString("utf8")).not.toContain("/devOnlyHelper");
+      }
 
-      // 5. Ensure no banned development-only strings leaked into the client bundle
-      const jsText = jsBuffer.toString("utf8");
-      expect(jsText).not.toContain("/devOnlyHelper");
+      // 4. Per-route JS totals
+      for (const route of V2_ROUTES) {
+        const total = sumRouteSizes(route, chunkSizes)!;
+        const budget = V2_BUNDLE_BUDGET.routes[route];
+        expect(total.rawBytes).toBeLessThan(budget.maxRawBytes);
+        expect(total.gzipBytes).toBeLessThan(budget.maxGzipBytes);
+      }
     });
   });
 });
@@ -886,7 +907,10 @@ test.describe("UI V2 corpus", () => {
 
     await page.goto("/v2/corpus");
     await expect(page.locator(".corpus-welcome-card")).toBeVisible();
-    await expect(page.locator("details.corpus-help")).toHaveAttribute("open", "");
+    await expect(page.locator("details.corpus-help")).toHaveAttribute(
+      "open",
+      ""
+    );
 
     // Fill query and submit form natively
     await page.locator('input[name="q"]').fill("Roma");
@@ -1161,9 +1185,8 @@ test.describe("UI V2 corpus", () => {
 
     // 2. Uninflected word query does not show disclaimer
     await page.goto("/v2/corpus?q=Roma");
-    await expect(
-      page.locator("details.corpus-inflection-notice")
-    ).toHaveCount(0);
+    await expect(page.locator("details.corpus-inflection-notice")).toHaveCount(
+      0
+    );
   });
 });
-

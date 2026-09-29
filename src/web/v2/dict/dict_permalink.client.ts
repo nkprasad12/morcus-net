@@ -39,7 +39,7 @@ export function handleDictPermalinkClick(
       return false;
     }
     // Suppressing the default also suppresses the global smooth-scroll handler
-    // in v2_bundle, which is deliberate. Copying a link or opening the action
+    // (core/anchor_scroll.client.ts), which is deliberate. Copying a link or opening the action
     // menu should not move the viewport out from under the user.
     event.preventDefault();
     const senseId = (sectionAnchor.getAttribute("href") ?? "").slice(1);

@@ -1,74 +1,90 @@
+/* istanbul ignore file */
+
 import {
   createRsbuild,
   type RsbuildConfig,
   type RsbuildPlugin,
 } from "@rsbuild/core";
-import * as path from "path";
 import * as fs from "fs";
+import * as path from "path";
 import { V2_BROWSERSLIST } from "@/web/v2/browser_targets.common";
-import { getV2BuildDir } from "@/web/v2/shell/asset_manifest.server";
 import {
   checkV2BundleBudget,
+  checkV2ChunkDuplication,
   formatV2BundleSizeReport,
 } from "@/bundler/v2_bundle_budget";
-
-// Logical asset name -> its emitted (content-hashed) filename under `build/v2`.
-export type V2AssetManifest = Partial<Record<"v2.js" | "v2.css", string>>;
+import {
+  V2_CHUNK_ENTRIES,
+  V2_JS_ENTRY_NAMES,
+  getV2BuildDir,
+  type V2AssetManifest,
+} from "@/bundler/v2_build_contract";
 
 /**
- * `critical.js` is inlined into every HTML response, where a
- * `//# sourceMappingURL=` comment only costs bytes (it resolves against the
- * page URL, not the asset). The `.map` file stays for debugging builds.
+ * Rsbuild plugin that writes `build/v2/manifest.json` mapping logical asset
+ * names (`common.js`, `dict.js`, `reader.js`, `external.js`, `corpus.js`,
+ * `v2.css`) to their content-hashed output filenames, removes the dummy JS
+ * stub emitted for the standalone `v2.css` entry, enforces zero module
+ * duplication across `dependOn` chunks, and (when `minify` is enabled)
+ * enforces the V2 bundle size budget (`v2_bundle_budget.ts`).
  */
-function stripInlinedSourceMapComment(file: string): void {
-  if (!fs.existsSync(file)) return;
-  const source = fs.readFileSync(file, "utf8");
-  const stripped = source.replace(/\n?\/\/# sourceMappingURL=\S*\s*$/, "");
-  if (stripped !== source) fs.writeFileSync(file, stripped);
-}
-
 function v2ManifestPlugin(
-  outDir: string,
-  enforceBudget: boolean = false
+  outputDir: string,
+  enforceBudget: boolean
 ): RsbuildPlugin {
   return {
-    name: "v2-manifest-plugin",
+    name: "morcus:v2-manifest",
     setup(api) {
-      api.onAfterBuild(() => {
+      api.onAfterBuild(({ stats }) => {
+        if (!fs.existsSync(outputDir)) {
+          return;
+        }
+        const files = fs.readdirSync(outputDir);
         const manifest: V2AssetManifest = {};
-        if (!fs.existsSync(outDir)) return;
 
-        const files = fs.readdirSync(outDir);
         for (const file of files) {
-          if (file.startsWith("v2_bundle.") && file.endsWith(".js")) {
-            manifest["v2.js"] = file;
-          } else if (file.startsWith("v2.") && file.endsWith(".css")) {
-            manifest["v2.css"] = file;
+          for (const entryName of V2_JS_ENTRY_NAMES) {
+            if (file.startsWith(`${entryName}.`) && file.endsWith(".js")) {
+              manifest[`${entryName}.js`] = file;
+            }
           }
-
-          // Clean up 0-byte dummy js files produced by webpack/rspack for pure-CSS entries
-          if (
-            file.startsWith("v2.") &&
-            (file.endsWith(".js") || file.endsWith(".js.map"))
-          ) {
-            fs.unlinkSync(path.join(outDir, file));
+          if (file.startsWith("v2.") && file.endsWith(".css")) {
+            manifest["v2.css"] = file;
+          } else if (file.startsWith("v2.") && file.endsWith(".js")) {
+            // Remove the dummy JS file Rsbuild emits for the standalone v2.css entry
+            fs.unlinkSync(path.join(outputDir, file));
           }
         }
 
         fs.writeFileSync(
-          path.join(outDir, "manifest.json"),
-          JSON.stringify(manifest, null, 2)
+          path.join(outputDir, "manifest.json"),
+          JSON.stringify(manifest, null, 2) + "\n"
         );
 
-        stripInlinedSourceMapComment(path.join(outDir, "critical.js"));
+        if (stats) {
+          const statsJson = stats.toJson({
+            chunks: true,
+            chunkModules: true,
+            nestedModules: true,
+          });
+          const dupCheck = checkV2ChunkDuplication(statsJson);
+          if (dupCheck.errors.length > 0) {
+            throw new Error(
+              `UI V2 chunk duplication check failed:\n  - ${dupCheck.errors.join(
+                "\n  - "
+              )}`
+            );
+          }
+        }
 
         if (enforceBudget) {
-          const report = checkV2BundleBudget(outDir, manifest);
+          const report = checkV2BundleBudget(outputDir, manifest);
           console.log(formatV2BundleSizeReport(report));
           if (report.exceeded) {
             throw new Error(
-              `UI V2 bundle size exceeded budget:\n` +
-                report.errors.map((e) => `  - ${e}`).join("\n")
+              `UI V2 bundle budget check failed:\n  - ${report.errors.join(
+                "\n  - "
+              )}`
             );
           }
         }
@@ -77,62 +93,72 @@ function v2ManifestPlugin(
   };
 }
 
-export function getV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
-  const outDir = getV2BuildDir();
-
+export function createV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
+  const outputDir = getV2BuildDir();
   return {
     source: {
       entry: {
-        v2_bundle: "./src/web/v2/v2_bundle.client.ts",
+        ...V2_CHUNK_ENTRIES,
         v2: "./src/web/v2/v2.css",
         critical: "./src/web/v2/shell/critical_theme.client.ts",
       },
     },
     output: {
+      // Explicit browser support baseline (Baseline 2023+); shared with
+      // stylelint-plugin-use-baseline via src/web/v2/browser_targets.common.ts.
       overrideBrowserslist: [...V2_BROWSERSLIST],
       distPath: {
-        root: outDir,
+        root: outputDir,
         js: "",
         css: "",
       },
       filename: {
-        js: (pathData) => {
-          return pathData.chunk && pathData.chunk.name === "critical"
-            ? "critical.js"
-            : "[name].[contenthash].js";
-        },
-        css: (pathData) => {
-          return pathData.chunk && pathData.chunk.name === "critical"
-            ? "critical.css"
-            : "[name].[contenthash].css";
-        },
+        // `critical.js` and `critical.css` are read from disk by fixed name
+        // and inlined into `<head>` (`asset_manifest.server.ts`); the other
+        // assets are served over HTTP with `Cache-Control: immutable` and need
+        // a content hash in the URL so deployments bust caches cleanly.
+        js: (pathData) =>
+          pathData.chunk?.name === "critical"
+            ? "[name].js"
+            : "[name].[contenthash:8].js",
+        css: (pathData) =>
+          pathData.chunk?.name === "critical"
+            ? "[name].css"
+            : "[name].[contenthash:8].css",
       },
       cleanDistPath: true,
       minify,
-      sourceMap: true,
+      sourceMap: {
+        js: minify ? false : "cheap-module-source-map",
+        css: !minify,
+      },
     },
-    server: {
-      publicDir: false,
-    },
+    plugins: [v2ManifestPlugin(outputDir, minify)],
     tools: {
       htmlPlugin: false,
+      rspack: {
+        optimization: {
+          splitChunks: false,
+        },
+      },
     },
-    plugins: [v2ManifestPlugin(outDir, minify)],
   };
 }
 
 export async function buildV2Bundle(minify: boolean = false): Promise<void> {
   const rsbuild = await createRsbuild({
-    rsbuildConfig: getV2RsbuildConfig(minify),
+    rsbuildConfig: createV2RsbuildConfig(minify),
   });
   await rsbuild.build();
 }
 
 if (require.main === module) {
   buildV2Bundle(process.argv.includes("--minify"))
-    .then(() => console.log("Built UI V2 assets successfully via Rsbuild."))
+    .then(() => {
+      console.log("Successfully built UI V2 assets into build/v2/");
+    })
     .catch((err) => {
-      console.error(err);
+      console.error("Failed to build UI V2 assets:", err);
       process.exit(1);
     });
 }

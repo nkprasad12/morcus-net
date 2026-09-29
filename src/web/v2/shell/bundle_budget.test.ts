@@ -5,16 +5,37 @@ import * as zlib from "zlib";
 import * as crypto from "crypto";
 import {
   CRITICAL_JS_FILE,
-  checkV2BundleBudget,
-  formatV2BundleSizeReport,
   V2_BUNDLE_BUDGET,
+  checkV2BundleBudget,
+  checkV2ChunkDuplication,
+  formatV2BundleSizeReport,
+  sumRouteSizes,
   type V2BundleBudget,
 } from "@/bundler/v2_bundle_budget";
+import {
+  V2_JS_CHUNKS,
+  V2_ROUTES,
+  type V2AssetManifest,
+} from "@/bundler/v2_build_contract";
 
 describe("UI V2 Bundle Budget", () => {
   let tmpDir: string;
 
   const criticalContent = "(()=>{try{}catch{}})();";
+
+  function writeAllChunks(
+    content: string = "console.log('test');"
+  ): V2AssetManifest {
+    const manifest: Record<string, string> = {
+      "v2.css": "v2.css",
+    };
+    for (const chunkName of V2_JS_CHUNKS) {
+      fs.writeFileSync(path.join(tmpDir, chunkName), content);
+      manifest[chunkName] = chunkName;
+    }
+    fs.writeFileSync(path.join(tmpDir, "v2.css"), "body { margin: 0; }");
+    return manifest;
+  }
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "budget-test-"));
@@ -27,64 +48,150 @@ describe("UI V2 Bundle Budget", () => {
     }
   });
 
-  test("passes when assets are within budget", () => {
+  test("passes when all chunks and CSS are within budget", () => {
     const jsContent = "console.log('test');";
     const cssContent = "body { margin: 0; }";
 
-    fs.writeFileSync(path.join(tmpDir, "v2_bundle.12345.js"), jsContent);
-    fs.writeFileSync(path.join(tmpDir, "v2.67890.css"), cssContent);
-
-    const manifest = {
-      "v2.js": "v2_bundle.12345.js",
+    const manifest: V2AssetManifest = {
       "v2.css": "v2.67890.css",
     };
+    for (const chunkName of V2_JS_CHUNKS) {
+      const hashed = chunkName.replace(".js", ".12345.js");
+      fs.writeFileSync(path.join(tmpDir, hashed), jsContent);
+      manifest[chunkName] = hashed;
+    }
+    fs.writeFileSync(path.join(tmpDir, "v2.67890.css"), cssContent);
 
     const report = checkV2BundleBudget(tmpDir, manifest, V2_BUNDLE_BUDGET);
 
     expect(report.exceeded).toBe(false);
     expect(report.errors).toHaveLength(0);
-    expect(report.js).toBeDefined();
+    for (const chunkName of V2_JS_CHUNKS) {
+      expect(report.chunks[chunkName]).toBeDefined();
+    }
     expect(report.css).toBeDefined();
-    expect(report.combinedRawBytes).toBe(
-      Buffer.byteLength(jsContent) + Buffer.byteLength(cssContent)
+    expect(report.totalJsRawBytes).toBe(
+      Buffer.byteLength(jsContent) * V2_JS_CHUNKS.length
     );
-    expect(report.combinedGzipBytes).toBe(
-      zlib.gzipSync(jsContent).byteLength + zlib.gzipSync(cssContent).byteLength
+    expect(report.totalJsGzipBytes).toBe(
+      zlib.gzipSync(jsContent).byteLength * V2_JS_CHUNKS.length
     );
   });
 
-  test("fails when JS raw size exceeds budget", () => {
-    const jsContent = "x".repeat(100);
-    const cssContent = "y".repeat(10);
+  test("sums each route's chunks in its per-route total", () => {
+    const manifest = writeAllChunks("x".repeat(100));
+    fs.writeFileSync(path.join(tmpDir, "reader.js"), "x".repeat(300));
+    fs.writeFileSync(path.join(tmpDir, "external.js"), "x".repeat(50));
 
-    fs.writeFileSync(path.join(tmpDir, "v2_bundle.js"), jsContent);
-    fs.writeFileSync(path.join(tmpDir, "v2.css"), cssContent);
+    const report = checkV2BundleBudget(tmpDir, manifest);
+
+    expect(report.routes.about?.rawBytes).toBe(100);
+    expect(report.routes.dicts?.rawBytes).toBe(200);
+    expect(report.routes.library?.rawBytes).toBe(400);
+    // external = common + reader + external.
+    expect(report.routes.external?.rawBytes).toBe(450);
+    expect(sumRouteSizes("external", report.chunks)).toEqual(
+      report.routes.external
+    );
+  });
+
+  test("fails a route whose total exceeds its budget though every chunk passes", () => {
+    const manifest = writeAllChunks("x".repeat(100));
 
     const tightBudget: V2BundleBudget = {
       ...V2_BUNDLE_BUDGET,
-      maxJsRawBytes: 50,
+      routes: {
+        ...V2_BUNDLE_BUDGET.routes,
+        // common (100) + dict (100) = 200 > 150, while each chunk is < 55 kB.
+        dicts: { maxRawBytes: 150, maxGzipBytes: 10 * 1024 },
+      },
     };
 
-    const report = checkV2BundleBudget(
-      tmpDir,
-      { "v2.js": "v2_bundle.js", "v2.css": "v2.css" },
-      tightBudget
-    );
+    const report = checkV2BundleBudget(tmpDir, manifest, tightBudget);
+
+    expect(report.errors).toEqual([
+      "Route 'dicts' (common.js + dict.js) raw total 200 B exceeds budget 150 B",
+    ]);
+  });
+
+  test("route budgets are no looser than the sum of their chunk ceilings", () => {
+    for (const route of V2_ROUTES) {
+      const summedCeilings = sumRouteSizes(
+        route,
+        Object.fromEntries(
+          V2_JS_CHUNKS.map((c) => [
+            c,
+            {
+              rawBytes: V2_BUNDLE_BUDGET.chunks[c].maxRawBytes,
+              gzipBytes: V2_BUNDLE_BUDGET.chunks[c].maxGzipBytes,
+            },
+          ])
+        )
+      )!;
+      const routeBudget = V2_BUNDLE_BUDGET.routes[route];
+      expect(routeBudget.maxRawBytes).toBeLessThanOrEqual(
+        summedCeilings.rawBytes
+      );
+      expect(routeBudget.maxGzipBytes).toBeLessThanOrEqual(
+        summedCeilings.gzipBytes
+      );
+    }
+  });
+
+  test("fails when a JS chunk raw size exceeds its per-chunk budget", () => {
+    const manifest = writeAllChunks("x".repeat(20));
+    fs.writeFileSync(path.join(tmpDir, "dict.js"), "x".repeat(100));
+
+    const tightBudget: V2BundleBudget = {
+      ...V2_BUNDLE_BUDGET,
+      chunks: {
+        ...V2_BUNDLE_BUDGET.chunks,
+        "dict.js": {
+          maxRawBytes: 50,
+          maxGzipBytes: 10 * 1024,
+        },
+      },
+    };
+
+    const report = checkV2BundleBudget(tmpDir, manifest, tightBudget);
 
     expect(report.exceeded).toBe(true);
     expect(
       report.errors.some(
-        (e) => e.includes("JS raw size") && e.includes("exceeds budget")
+        (e) => e.includes("dict.js raw size") && e.includes("exceeds budget")
+      )
+    ).toBe(true);
+  });
+
+  test("fails when a JS chunk gzip size exceeds its per-chunk budget", () => {
+    const manifest = writeAllChunks("x".repeat(20));
+    const random = crypto.randomBytes(300).toString("base64");
+    fs.writeFileSync(path.join(tmpDir, "corpus.js"), random);
+
+    const tightBudget: V2BundleBudget = {
+      ...V2_BUNDLE_BUDGET,
+      chunks: {
+        ...V2_BUNDLE_BUDGET.chunks,
+        "corpus.js": {
+          maxRawBytes: 20 * 1024,
+          maxGzipBytes: 100,
+        },
+      },
+    };
+
+    const report = checkV2BundleBudget(tmpDir, manifest, tightBudget);
+
+    expect(report.exceeded).toBe(true);
+    expect(
+      report.errors.some(
+        (e) => e.includes("corpus.js gzip size") && e.includes("exceeds budget")
       )
     ).toBe(true);
   });
 
   test("fails when CSS gzip size exceeds budget", () => {
-    // Generate compressible but large content
-    const jsContent = "console.log(1);";
+    const manifest = writeAllChunks("console.log(1);");
     const cssContent = ".cls { color: red; }\n".repeat(500);
-
-    fs.writeFileSync(path.join(tmpDir, "v2_bundle.js"), jsContent);
     fs.writeFileSync(path.join(tmpDir, "v2.css"), cssContent);
 
     const tightBudget: V2BundleBudget = {
@@ -92,11 +199,7 @@ describe("UI V2 Bundle Budget", () => {
       maxCssGzipBytes: 10,
     };
 
-    const report = checkV2BundleBudget(
-      tmpDir,
-      { "v2.js": "v2_bundle.js", "v2.css": "v2.css" },
-      tightBudget
-    );
+    const report = checkV2BundleBudget(tmpDir, manifest, tightBudget);
 
     expect(report.exceeded).toBe(true);
     expect(
@@ -106,42 +209,16 @@ describe("UI V2 Bundle Budget", () => {
     ).toBe(true);
   });
 
-  test("fails when combined size exceeds budget", () => {
-    const jsContent = "a".repeat(100);
-    const cssContent = "b".repeat(100);
-
-    fs.writeFileSync(path.join(tmpDir, "v2_bundle.js"), jsContent);
-    fs.writeFileSync(path.join(tmpDir, "v2.css"), cssContent);
-
-    const tightBudget: V2BundleBudget = {
-      ...V2_BUNDLE_BUDGET,
-      maxJsRawBytes: 500,
-      maxCssRawBytes: 500,
-      maxCombinedRawBytes: 150, // 200 > 150
-    };
-
-    const report = checkV2BundleBudget(
-      tmpDir,
-      { "v2.js": "v2_bundle.js", "v2.css": "v2.css" },
-      tightBudget
-    );
-
-    expect(report.exceeded).toBe(true);
-    expect(
-      report.errors.some(
-        (e) => e.includes("Combined raw size") && e.includes("exceeds budget")
-      )
-    ).toBe(true);
-  });
-
   test("flags missing files and manifest entries", () => {
     const reportMissingManifest = checkV2BundleBudget(tmpDir, {});
     expect(reportMissingManifest.exceeded).toBe(true);
-    expect(
-      reportMissingManifest.errors.some((e) =>
-        e.includes("Manifest missing 'v2.js'")
-      )
-    ).toBe(true);
+    for (const chunkName of V2_JS_CHUNKS) {
+      expect(
+        reportMissingManifest.errors.some((e) =>
+          e.includes(`Manifest missing '${chunkName}'`)
+        )
+      ).toBe(true);
+    }
     expect(
       reportMissingManifest.errors.some((e) =>
         e.includes("Manifest missing 'v2.css'")
@@ -150,13 +227,17 @@ describe("UI V2 Bundle Budget", () => {
 
     fs.rmSync(path.join(tmpDir, CRITICAL_JS_FILE));
     const reportMissingFiles = checkV2BundleBudget(tmpDir, {
-      "v2.js": "nonexistent.js",
+      "common.js": "nonexistent-common.js",
+      "reader.js": "nonexistent-reader.js",
+      "dict.js": "nonexistent-dict.js",
+      "corpus.js": "nonexistent-corpus.js",
+      "external.js": "nonexistent-external.js",
       "v2.css": "nonexistent.css",
     });
     expect(reportMissingFiles.exceeded).toBe(true);
     expect(
       reportMissingFiles.errors.some((e) =>
-        e.includes("JS asset not found on disk")
+        e.includes("common.js asset not found on disk")
       )
     ).toBe(true);
     expect(
@@ -172,22 +253,20 @@ describe("UI V2 Bundle Budget", () => {
   });
 
   describe("critical.js", () => {
-    const manifest = { "v2.js": "v2_bundle.js", "v2.css": "v2.css" };
+    let manifest: V2AssetManifest;
 
     beforeEach(() => {
-      fs.writeFileSync(path.join(tmpDir, "v2_bundle.js"), "console.log(1);");
-      fs.writeFileSync(path.join(tmpDir, "v2.css"), "body{margin:0}");
+      manifest = writeAllChunks("console.log(1);");
     });
 
-    test("is measured but not counted in the combined totals", () => {
+    test("is measured but not counted in the fetched JS chunk totals", () => {
       const report = checkV2BundleBudget(tmpDir, manifest);
       expect(report.errors).toEqual([]);
       expect(report.criticalJs?.rawBytes).toBe(
         Buffer.byteLength(criticalContent)
       );
-      expect(report.combinedRawBytes).toBe(
-        Buffer.byteLength("console.log(1);") +
-          Buffer.byteLength("body{margin:0}")
+      expect(report.totalJsRawBytes).toBe(
+        Buffer.byteLength("console.log(1);") * V2_JS_CHUNKS.length
       );
     });
 
@@ -206,7 +285,6 @@ describe("UI V2 Bundle Budget", () => {
     });
 
     test("fails when its gzip size exceeds the ceiling", () => {
-      // Random bytes barely compress.
       const random = crypto.randomBytes(300).toString("base64");
       fs.writeFileSync(path.join(tmpDir, CRITICAL_JS_FILE), random);
       const report = checkV2BundleBudget(tmpDir, manifest, {
@@ -220,8 +298,6 @@ describe("UI V2 Bundle Budget", () => {
     });
 
     test("ceilings stay at a fixed-size applier, not per-preference logic", () => {
-      // The applier measured 424 B raw / 300 B gzip. Raising these means
-      // logic crept back into the critical script (see v2_bundle_budget.ts).
       expect(V2_BUNDLE_BUDGET.maxCriticalJsRawBytes).toBeLessThanOrEqual(450);
       expect(V2_BUNDLE_BUDGET.maxCriticalJsGzipBytes).toBeLessThanOrEqual(350);
     });
@@ -231,7 +307,7 @@ describe("UI V2 Bundle Budget", () => {
         checkV2BundleBudget(tmpDir, manifest)
       );
       expect(formatted).toContain(
-        `Critical: ${Buffer.byteLength(criticalContent)} B raw`
+        `${Buffer.byteLength(criticalContent)} B raw`
       );
       expect(formatted).toContain(
         `<= ${V2_BUNDLE_BUDGET.maxCriticalJsRawBytes} B raw`
@@ -239,58 +315,171 @@ describe("UI V2 Bundle Budget", () => {
     });
   });
 
-  test("formats human-readable budget report", () => {
-    const jsContent = "console.log('test');";
-    const cssContent = "body { margin: 0; }";
-
-    fs.writeFileSync(path.join(tmpDir, "v2_bundle.js"), jsContent);
-    fs.writeFileSync(path.join(tmpDir, "v2.css"), cssContent);
-
-    const report = checkV2BundleBudget(tmpDir, {
-      "v2.js": "v2_bundle.js",
-      "v2.css": "v2.css",
-    });
+  test("formats human-readable budget report with all 5 chunks", () => {
+    const manifest = writeAllChunks("console.log('test');");
+    const report = checkV2BundleBudget(tmpDir, manifest);
 
     const formatted = formatV2BundleSizeReport(report);
     expect(formatted).toContain("UI V2 Bundle Budget (Minified):");
-    expect(formatted).toContain("JS:");
+    for (const chunkName of V2_JS_CHUNKS) {
+      expect(formatted).toContain(`${chunkName}:`);
+      const cb = V2_BUNDLE_BUDGET.chunks[chunkName];
+      const kb = (bytes: number) => (bytes / 1024).toFixed(1);
+      expect(formatted).toContain(
+        `< ${kb(cb.maxRawBytes)} kB raw / < ${kb(cb.maxGzipBytes)} kB gzip`
+      );
+    }
+    expect(formatted).toContain("Per-route JS:");
+    for (const route of V2_ROUTES) {
+      expect(formatted).toContain(`${route}:`);
+    }
     expect(formatted).toContain("CSS:");
-    expect(formatted).toContain("Combined:");
-    const kb = (bytes: number) => (bytes / 1024).toFixed(1);
-    const b = V2_BUNDLE_BUDGET;
-    expect(formatted).toContain(
-      `< ${kb(b.maxJsRawBytes)} kB raw / < ${kb(b.maxJsGzipBytes)} kB gzip`
-    );
-    expect(formatted).toContain(
-      `< ${kb(b.maxCssRawBytes)} kB raw / < ${kb(b.maxCssGzipBytes)} kB gzip`
-    );
-    expect(formatted).toContain(
-      `< ${kb(b.maxCombinedRawBytes)} kB raw / < ${kb(
-        b.maxCombinedGzipBytes
-      )} kB gzip`
-    );
   });
 
-  test("accepts realistic production bundle sizes corresponding to current baseline", () => {
-    // Current baseline is ~97 kB raw / ~27 kB gzip JS and ~105 kB raw / ~17 kB gzip CSS
-    const jsContent = "const x = 1;\n".repeat(6000); // ~96 kB
-    const cssContent = ".card { border: 1px solid #ccc; }\n".repeat(2800); // ~103 kB
+  describe("checkV2ChunkDuplication", () => {
+    test("passes when all 5 chunks are present and modules are disjoint", () => {
+      const result = checkV2ChunkDuplication({
+        chunks: [
+          {
+            names: ["common"],
+            modules: [
+              { nameForCondition: "/repo/src/web/v2/core/dom.client.ts" },
+              { name: "webpack/runtime/chunk loaded", moduleType: "runtime" },
+            ],
+          },
+          {
+            names: ["dict"],
+            modules: [
+              {
+                name: "./src/web/v2/dict/dict_entry.client.ts + 2 modules",
+                modules: [
+                  {
+                    nameForCondition:
+                      "/repo/src/web/v2/dict/dict_search.client.ts",
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            names: ["reader"],
+            modules: [
+              {
+                nameForCondition:
+                  "/repo/src/web/v2/reader/reader_view.client.ts",
+              },
+            ],
+          },
+          {
+            names: ["corpus"],
+            modules: [
+              {
+                nameForCondition:
+                  "/repo/src/web/v2/corpus/corpus_view.client.ts",
+              },
+            ],
+          },
+          {
+            names: ["external"],
+            modules: [
+              {
+                nameForCondition:
+                  "/repo/src/web/v2/external/external_loader.client.ts",
+              },
+            ],
+          },
+        ],
+      });
 
-    fs.writeFileSync(path.join(tmpDir, "v2_bundle.js"), jsContent);
-    fs.writeFileSync(path.join(tmpDir, "v2.css"), cssContent);
-
-    const report = checkV2BundleBudget(tmpDir, {
-      "v2.js": "v2_bundle.js",
-      "v2.css": "v2.css",
+      expect(result.errors).toEqual([]);
+      expect(result.chunkModules.dict).toEqual([
+        "/repo/src/web/v2/dict/dict_search.client.ts",
+      ]);
     });
 
-    expect(report.errors).toEqual([]);
-    expect(report.exceeded).toBe(false);
-    expect(report.combinedRawBytes).toBeLessThan(
-      V2_BUNDLE_BUDGET.maxCombinedRawBytes
-    );
-    expect(report.combinedGzipBytes).toBeLessThan(
-      V2_BUNDLE_BUDGET.maxCombinedGzipBytes
-    );
+    test("fails when a source module appears in more than one chunk", () => {
+      const result = checkV2ChunkDuplication({
+        chunks: [
+          {
+            names: ["common"],
+            modules: [
+              { nameForCondition: "/repo/src/web/v2/core/dom.client.ts" },
+            ],
+          },
+          {
+            names: ["dict"],
+            modules: [
+              { nameForCondition: "/repo/src/common/shared_helper.ts" },
+            ],
+          },
+          {
+            names: ["reader"],
+            modules: [
+              { nameForCondition: "/repo/src/common/shared_helper.ts" },
+            ],
+          },
+          {
+            names: ["corpus"],
+            modules: [
+              {
+                nameForCondition:
+                  "/repo/src/web/v2/corpus/corpus_view.client.ts",
+              },
+            ],
+          },
+          {
+            names: ["external"],
+            modules: [
+              {
+                nameForCondition:
+                  "/repo/src/web/v2/external/external_loader.client.ts",
+              },
+            ],
+          },
+        ],
+      });
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toContain(
+        "Module '/repo/src/common/shared_helper.ts' is duplicated across chunks [dict, reader]"
+      );
+      // dict and reader both depend only on common, so that's where it goes.
+      expect(result.errors[0]).toContain(
+        "import it from './src/web/v2/shell/common_entry.client.ts'"
+      );
+      expect(result.errors[0]).toContain("ships once, in common.js");
+    });
+
+    test("points a reader/external duplicate at reader_entry", () => {
+      const result = checkV2ChunkDuplication({
+        chunks: [
+          {
+            names: ["common"],
+            modules: [{ nameForCondition: "/repo/src/a.ts" }],
+          },
+          {
+            names: ["dict"],
+            modules: [{ nameForCondition: "/repo/src/b.ts" }],
+          },
+          {
+            names: ["reader"],
+            modules: [{ nameForCondition: "/repo/src/x.ts" }],
+          },
+          {
+            names: ["corpus"],
+            modules: [{ nameForCondition: "/repo/src/c.ts" }],
+          },
+          {
+            names: ["external"],
+            modules: [{ nameForCondition: "/repo/src/x.ts" }],
+          },
+        ],
+      });
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toContain(
+        "import it from './src/web/v2/reader/reader_entry.client.ts'"
+      );
+    });
   });
 });

@@ -856,7 +856,7 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe("split guardrails (DESIGN §7.3)", () => {
-  test("only v2_elements.client.ts imports the autocomplete", () => {
+  test("only corpus_entry.client.ts imports the autocomplete", () => {
     const v2Dir = path.resolve(__dirname, "..");
     const importers = sourceFiles(v2Dir)
       .filter((file) =>
@@ -865,6 +865,6 @@ describe("split guardrails (DESIGN §7.3)", () => {
           .includes('"@/web/v2/corpus/corpus_autocomplete.client"')
       )
       .map((file) => path.relative(v2Dir, file));
-    expect(importers).toEqual(["v2_elements.client.ts"]);
+    expect(importers).toEqual([path.join("corpus", "corpus_entry.client.ts")]);
   });
 });
