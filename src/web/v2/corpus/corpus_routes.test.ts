@@ -1,7 +1,10 @@
 import express from "express";
 import request from "supertest";
 
-import { createCorpusRoutes } from "@/web/v2/corpus/corpus_routes.server";
+import {
+  createCorpusRoutes,
+  type CorpusRoutesOptions,
+} from "@/web/v2/corpus/corpus_routes.server";
 import type { CorpusEngine } from "@/web/v2/corpus/corpus_query.server";
 import {
   CORPUS_TEST_AUTHORS,
@@ -19,13 +22,14 @@ jest.mock("@/web/v2/reader/reader_loader.server", () =>
   jest.requireActual("@/web/v2/testing/mock_reader_loader")
 );
 
-function makeApp(engine?: CorpusEngine) {
+function makeApp(engine?: CorpusEngine, options: CorpusRoutesOptions = {}) {
   const app = express();
   app.use(
     "/v2",
     createCorpusRoutes({
       engine,
       loadAuthors: () => Promise.resolve(CORPUS_TEST_AUTHORS),
+      ...options,
     })
   );
   return app;
@@ -101,5 +105,110 @@ describe("GET /v2/corpus", () => {
     );
     expect(res.status).toBe(500);
     error.mockRestore();
+  });
+});
+
+describe("GET /v2/corpus: autocomplete host", () => {
+  const savedCommit = process.env.COMMIT_ID;
+
+  afterEach(() => {
+    if (savedCommit === undefined) {
+      delete process.env.COMMIT_ID;
+    } else {
+      process.env.COMMIT_ID = savedCommit;
+    }
+  });
+
+  test("carries the author list and the lemma shard version", async () => {
+    const res = await request(
+      makeApp(fakeCorpusEngine(), { commitId: "abc123" })
+    ).get("/v2/corpus");
+
+    expect(res.text).toContain("<morcus-corpus-suggestions");
+    expect(res.text).toContain('data-lemmata-version="abc123"');
+    expect(res.text).toContain("data-authors=");
+  });
+
+  test("the version defaults to COMMIT_ID, and is omitted when unknown", async () => {
+    process.env.COMMIT_ID = " fromenv\n";
+    const withEnv = await request(makeApp(fakeCorpusEngine())).get(
+      "/v2/corpus"
+    );
+    expect(withEnv.text).toContain('data-lemmata-version="fromenv"');
+
+    delete process.env.COMMIT_ID;
+    const without = await request(makeApp(fakeCorpusEngine())).get(
+      "/v2/corpus"
+    );
+    expect(without.text).toContain("<morcus-corpus-suggestions");
+    expect(without.text).not.toContain("data-lemmata-version");
+  });
+
+  test("a partial response has no host: it sits outside every slot", async () => {
+    const res = await request(makeApp(fakeCorpusEngine()))
+      .get("/v2/corpus?q=omnis")
+      .set("X-Requested-With", "fetch");
+    expect(res.text).not.toContain("morcus-corpus-suggestions");
+  });
+});
+
+describe("GET /v2/api/corpus/lemmata/:letter", () => {
+  const LEMMATA = ["caedo", "amo", "Caesar", "cado", "Areus2"];
+
+  /** `null` stands for a corpus that isn't built. */
+  function lemmaApp(lemmata: readonly string[] | null = LEMMATA) {
+    const loadLemmata = jest.fn(() => Promise.resolve(lemmata ?? undefined));
+    return { app: makeApp(undefined, { loadLemmata }), loadLemmata };
+  }
+
+  test("a versioned shard is JSON, cacheable for good", async () => {
+    const res = await request(lemmaApp().app).get(
+      "/v2/api/corpus/lemmata/c?v=abc123"
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/^application\/json/);
+    expect(res.headers["cache-control"]).toBe(
+      "public, max-age=31536000, immutable"
+    );
+    expect(res.body).toEqual(["Caesar", "cado", "caedo"]);
+  });
+
+  test("without a version, the browser must revalidate", async () => {
+    const res = await request(lemmaApp().app).get("/v2/api/corpus/lemmata/c");
+    expect(res.status).toBe(200);
+    expect(res.headers["cache-control"]).toBe("no-cache");
+  });
+
+  test("the letter is case-insensitive, and an unused one is empty", async () => {
+    const { app } = lemmaApp();
+    const upper = await request(app).get("/v2/api/corpus/lemmata/A?v=1");
+    expect(upper.body).toEqual(["Areus2", "amo"]);
+    const unused = await request(app).get("/v2/api/corpus/lemmata/q?v=1");
+    expect(unused.status).toBe(200);
+    expect(unused.body).toEqual([]);
+  });
+
+  test("more than one letter is a 400", async () => {
+    const res = await request(lemmaApp().app).get(
+      "/v2/api/corpus/lemmata/ca?v=1"
+    );
+    expect(res.status).toBe(400);
+    expect(res.headers["cache-control"]).toBe("no-store");
+  });
+
+  test("without the lemma list, answers 503", async () => {
+    const res = await request(lemmaApp(null).app).get(
+      "/v2/api/corpus/lemmata/c?v=1"
+    );
+    expect(res.status).toBe(503);
+    expect(res.headers["cache-control"]).toBe("no-store");
+  });
+
+  test("builds the shards once per router", async () => {
+    const { app, loadLemmata } = lemmaApp();
+    await request(app).get("/v2/api/corpus/lemmata/a?v=1");
+    await request(app).get("/v2/api/corpus/lemmata/c?v=1");
+    expect(loadLemmata).toHaveBeenCalledTimes(1);
   });
 });

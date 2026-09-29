@@ -15,3 +15,6 @@ import "@/web/v2/reader/reader_settings.client";
 import "@/web/v2/library/library_view.client";
 import "@/web/v2/external/external_loader.client";
 import "@/web/v2/corpus/corpus_view.client";
+// The only import of the autocomplete (corpus/DESIGN.md §7.3), so it can
+// become an async chunk by changing this line alone.
+import "@/web/v2/corpus/corpus_autocomplete.client";

@@ -74,6 +74,18 @@ const NO_CLIENT_IMPORTS = {
     "modules, which expect browser globals and pull DOM code into the server build.",
 };
 
+// Keeps the corpus autocomplete splittable into an async chunk (see
+// src/web/v2/corpus/DESIGN.md §7.3). `<morcus-corpus-view>` reaches it only
+// through the DOM they share, and leaves the grammar tables to it, so that
+// moving the autocomplete out of the main bundle takes them along.
+const NO_CORPUS_AUTOCOMPLETE_IMPORTS = {
+  group: ["**/corpus_autocomplete.client", "**/corpus_syntax.common"],
+  message:
+    "corpus_view.client.ts must not import the corpus autocomplete or the " +
+    "grammar (corpus/DESIGN.md §7.3). Talk to <morcus-corpus-suggestions> " +
+    "through the shared form instead.",
+};
+
 export default [
   // Flat config does not read .gitignore on its own, so generated output such as
   // playwright-report/ (which contains bundled .js) would otherwise be linted.
@@ -235,6 +247,23 @@ export default [
       "no-restricted-imports": [
         "error",
         { patterns: [NO_RELATIVE_IMPORTS, NO_SERVER_ONLY_IMPORTS] },
+      ],
+    },
+  },
+  // Narrows the client block above for one file, so it re-states that block's
+  // patterns (configuring the rule again replaces them). Must stay after it.
+  {
+    files: ["src/web/v2/corpus/corpus_view.client.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            NO_RELATIVE_IMPORTS,
+            NO_SERVER_ONLY_IMPORTS,
+            NO_CORPUS_AUTOCOMPLETE_IMPORTS,
+          ],
+        },
       ],
     },
   },

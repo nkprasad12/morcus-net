@@ -54,6 +54,10 @@ const CREATED_ON_UPGRADE_ALLOWLIST: readonly string[] = [
   // Autocomplete list built by `MorcusDictSuggestions` inside its
   // server-rendered host.
   "morcus-dict-suggestions > ul.suggestions",
+  // Options (and their contents) built by `MorcusCorpusSuggestions` in its
+  // server-rendered listbox. On upgrade only if the input already has focus:
+  // see the `corpus-focused-before-upgrade` fixture.
+  "morcus-corpus-suggestions > ul > li, morcus-corpus-suggestions > ul > li *",
 ];
 
 function describeElement(el: Element): string {
@@ -68,6 +72,15 @@ function describeElement(el: Element): string {
 interface SsrFixture {
   readonly name: string;
   readonly html: string;
+  /**
+   * A user who focused `input` (an id) before the bundle ran. Every `host`
+   * is held out of the document until the input has focus, so it upgrades
+   * the way it would on a real page: adopting the focused input.
+   */
+  readonly focusBeforeUpgrade?: {
+    readonly input: string;
+    readonly host: string;
+  };
 }
 
 function buildDictResultsFixtureHtml(): string {
@@ -226,7 +239,19 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
       },
       {
         name: "corpus-results",
-        html: renderCorpusContentHtml(corpusResults),
+        // With a commit id, as in production, so the autocomplete host has
+        // every attribute it can carry.
+        html: renderCorpusContentHtml(corpusResults, "test-commit"),
+      },
+      {
+        // Clicked into the search box before the bundle ran (DESIGN §7.3
+        // rule 2), so the suggestions open during `onConnect()`.
+        name: "corpus-focused-before-upgrade",
+        html: renderCorpusContentHtml(corpusLanding, "test-commit"),
+        focusBeforeUpgrade: {
+          input: "corpus-q",
+          host: "morcus-corpus-suggestions",
+        },
       }
     );
   });
@@ -286,8 +311,26 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
           ssrParentByElement.set(el, el.parentNode!);
         }
 
+        const focus = fixture.focusBeforeUpgrade;
+        const held = focus
+          ? Array.from(rootWrapper.querySelectorAll(focus.host), (el) => ({
+              el,
+              parent: el.parentNode!,
+              next: el.nextSibling,
+            }))
+          : [];
+        for (const { el } of held) el.remove();
+
         // Attach to document.body -> triggers custom element upgrade & onConnect().
         document.body.appendChild(rootWrapper);
+
+        if (focus) {
+          document.getElementById(focus.input)!.focus();
+          // In reverse, so each `next` is back in place before it's used.
+          for (const { el, parent, next } of held.reverse()) {
+            parent.insertBefore(el, next);
+          }
+        }
 
         const removedSsrNodes: string[] = [];
         const reparentedSsrNodes: string[] = [];

@@ -141,6 +141,18 @@ const FIXTURES: Record<string, string> = {
       </nav>
     </morcus-corpus-view>`,
 
+  // The host finds its input by id, so after the move to <body> it must bind
+  // the input and form listeners again, not just the listbox's.
+  "morcus-corpus-suggestions": `
+    <form class="search-form corpus-form" action="/v2/corpus" method="GET">
+      <div class="input-wrapper">
+        <input type="text" name="q" id="corpus-q" class="input" value="@case:" />
+        <morcus-corpus-suggestions data-js-only data-input="corpus-q" data-authors='["Caesar"]'>
+          <ul id="corpus-suggestions" class="suggestions corpus-suggestions" role="listbox" hidden></ul>
+        </morcus-corpus-suggestions>
+      </div>
+    </form>`,
+
   "morcus-library-view": `
     <morcus-library-view class="library-view">
       <input id="library-search-input" />

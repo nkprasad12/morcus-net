@@ -32,6 +32,8 @@ import {
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 
 const SEARCH_PLACEHOLDER = "Enter corpus query";
+/** The query input; `<morcus-corpus-suggestions data-input>` points at it. */
+const QUERY_INPUT_ID = "corpus-q";
 
 // // // // // // //
 // Slots          //
@@ -273,7 +275,43 @@ function renderSettings(view: CorpusSearchView): SafeHtml {
   </details>`;
 }
 
-function renderForm(view: CorpusSearchView): SafeHtml {
+/**
+ * The autocomplete host (DESIGN §7.2). The listbox is server-rendered and
+ * empty; `<morcus-corpus-suggestions>` fills in only its options. The host
+ * finds the input through `data-input`, so it doesn't depend on where it
+ * sits in the form.
+ */
+function renderSuggestions(
+  view: CorpusSearchView,
+  lemmataVersion: string | undefined
+): SafeHtml {
+  // Omitted rather than empty: the element reads absence as "unknown".
+  const authors =
+    view.authors === undefined
+      ? html``
+      : html`data-authors="${JSON.stringify(view.authors)}"`;
+  const version =
+    lemmataVersion === undefined
+      ? html``
+      : html`data-lemmata-version="${lemmataVersion}"`;
+  return html`<morcus-corpus-suggestions
+    data-js-only
+    data-input="${QUERY_INPUT_ID}"
+    ${raw(authors)}
+    ${raw(version)}
+    ><ul
+      id="corpus-suggestions"
+      class="suggestions corpus-suggestions"
+      role="listbox"
+      aria-label="Query suggestions"
+      hidden></ul
+  ></morcus-corpus-suggestions>`;
+}
+
+function renderForm(
+  view: CorpusSearchView,
+  lemmataVersion: string | undefined
+): SafeHtml {
   return html`<form
     class="search-form corpus-form"
     role="search"
@@ -283,7 +321,7 @@ function renderForm(view: CorpusSearchView): SafeHtml {
       <input
         type="text"
         name="q"
-        id="corpus-q"
+        id="${QUERY_INPUT_ID}"
         class="input"
         value="${view.params.q}"
         placeholder="${SEARCH_PLACEHOLDER}"
@@ -292,6 +330,7 @@ function renderForm(view: CorpusSearchView): SafeHtml {
         autocapitalize="off"
         spellcheck="false"
         enterkeyhint="search" />
+      ${raw(renderSuggestions(view, lemmataVersion))}
       <button
         type="submit"
         class="search-btn"
@@ -309,10 +348,16 @@ function renderForm(view: CorpusSearchView): SafeHtml {
   </form>`;
 }
 
-/** The page content inside the shell (exported for conformance fixtures). */
-export function renderCorpusContentHtml(view: CorpusSearchView): SafeHtml {
+/**
+ * The page content inside the shell (exported for conformance fixtures).
+ * `lemmataVersion` versions the autocomplete's lemma shard URLs.
+ */
+export function renderCorpusContentHtml(
+  view: CorpusSearchView,
+  lemmataVersion?: string
+): SafeHtml {
   return html`<morcus-corpus-view class="corpus-page">
-    ${raw(renderForm(view))}
+    ${raw(renderForm(view, lemmataVersion))}
     ${raw(renderCorpusHelp(view.outcome.kind === "landing"))}
     <div class="corpus-summary-live" aria-live="polite">
       ${raw(renderCorpusSlot(view, "summary"))}
@@ -322,11 +367,14 @@ export function renderCorpusContentHtml(view: CorpusSearchView): SafeHtml {
   </morcus-corpus-view>`;
 }
 
-export function renderCorpusPageHtml(view: CorpusSearchView): string {
+export function renderCorpusPageHtml(
+  view: CorpusSearchView,
+  lemmataVersion?: string
+): string {
   return renderPageShell({
     title: corpusPageTitle(view.params.q),
     activePage: "corpus",
-    contentHtml: renderCorpusContentHtml(view),
+    contentHtml: renderCorpusContentHtml(view, lemmataVersion),
   });
 }
 

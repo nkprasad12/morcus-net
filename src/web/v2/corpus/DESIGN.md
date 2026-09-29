@@ -190,7 +190,7 @@ The server uses it for validation and the transform, so it is needed from Phase 
 
 ### 7.2 `<morcus-corpus-suggestions>` (`corpus_autocomplete.client.ts`)
 
-- **Host and listbox.** The server renders both (`data-js-only`). The element creates only the `<li>` options, so the SSR-conformance allowlist entry is `morcus-corpus-suggestions li` (this needs human review, same as dict).
+- **Host and listbox.** The server renders both (`data-js-only`). The element creates only the `<li>` options, covered in SSR conformance by `morcus-corpus-suggestions > ul > li, morcus-corpus-suggestions > ul > li *` (exercised by the `corpus-focused-before-upgrade` fixture).
 - **Behaviour.** Matches V1:
   - Options are computed at the caret. Choosing one splices the token in and keeps focus.
   - `ArrowUp/Down`, `Enter` (select if an option is active, else submit), `Tab`, `Escape`.
@@ -199,6 +199,21 @@ The server uses it for validation and the transform, so it is needed from Phase 
 - **Authors.** `data-authors` on the server-rendered host (36 names, ~400 B), the only copy in the markup. The server validates `#Author` against the same list it loads from `latin_corpus_suggestions_authors.json`.
 - **Lemmata.** `LemmaShardCache` fetches `/v2/api/corpus/lemmata/<letter>?v=<commit>` on the first letter after `@lemma:` / `@l:`. It dedupes in-flight requests, keeps shards in memory, and finds completions by binary-searching for the prefix. Shards are ~3–12 kB gzip (rev 1 measurements), and there's no network request after the first letter.
 - **Self-contained.** It imports only `core/` and `corpus_syntax.common.ts`, so it can become an async chunk later without changes.
+- **Deviations from V1** (found while building Phase 4). Everything else matches V1's `optionsForInput` and its `SearchBox`.
+  - _Caret._ V1 was passed the caret position but ignored it. It suggested for the whole input and appended the choice at the end. V2 suggests for the text before the caret and splices the choice in there, reusing a space already after it, and a `replacement` rewrites only the text before the caret. With the caret at the end, the two behave the same.
+  - _Rows._
+    - `#author` completes in the corpus's case (V1 kept the typed case, e.g. `#cicero`), skips `Seneca Major` and `Seneca Minor` (D3), and says when nothing matches (V1 showed no rows).
+    - A complete `@case` gets one `:` row, not two.
+    - Short inflection values such as `@tense:impf` count as complete, which is what the grammar already says. V1 called them invalid.
+    - Errors are status rows with an "Error:" accessible name, not an ordinary row with `❌` in its text.
+  - _Keys and pointer._
+    - Tab accepts the highlighted completion and Escape closes the list. V1 had neither.
+    - ArrowUp with nothing highlighted goes to the last row. V1 went to the second-to-last.
+    - Enter acts on keydown. With nothing highlighted, it lets the form submit natively.
+    - Hovering doesn't move the keyboard highlight.
+    - Home and End re-suggest, like ArrowLeft/Right.
+  - _ARIA._ Adds what V1 lacked: `aria-controls`, `aria-activedescendant`, listbox and option roles with `aria-selected`, and `aria-disabled` on status rows.
+  - _Loading._ Lemmata arrive per letter, on demand, instead of as one list, and there's no generic "Loading options" row. Until a shard arrives, the row reads "the lemma `x`", as V1's did while its list loaded.
 
 ---
 
@@ -235,8 +250,12 @@ Things that were missing or awkward in `core/` while designing this. Each is not
 1. **Router: multi-param navigation.** `syncQueryParam` models one param. Corpus (and the reader's page turns) push whole URLs with `pushState` + `updatePath()`. A `pushUrl`/`replaceUrl` on the sync object would remove the duplication. _Class: missing primitive._
 2. **`Vary: X-Requested-With`.** Every route that branches on `isPartialRequest` should send it; none do. Candidate: set it inside a shared partial-response helper. _Class: correctness gap in a shared seam._
 3. **Combobox.** Dict and corpus would each own a suggestions element with the same keyboard and ARIA handling. Two users is the threshold for a `core/` combobox controller. _Class: duplication._
+   - _Phase 4 confirmed it._ About 170 of the ~230 lines in `<morcus-corpus-suggestions>` are generic combobox code: the input's ARIA (added on connect, removed on disconnect), `aria-activedescendant` with wrap-around arrows, Enter/Tab/Escape, a `mousedown` handler that keeps focus in the input, and closing on blur and submit. Only the rows and the caret splice are corpus-specific. Dict splits the same job across `dict_search.client.ts` (keys) and `dict_suggestions.client.ts` (list) and has no combobox ARIA at all, so moving it onto a shared controller would also fix that accessibility gap.
 4. **Live region around a slot.** `swapSlots` replaces the slot element, so announcements need a stable wrapper. That's worth one sentence in `swapSlots`'s doc, or an option. _Class: sharp edge._
 5. **`dialog/dialog.server.ts` still uses `he` and string templates**, not `html`. It's unused here if D4 is accepted. _Class: server `html` migration._
+6. **Keyed fetch cache.** `LemmaShardCache` (corpus) and `DictChunkCache` (dict) are both an in-memory map plus in-flight promise dedupe, and both leave the shared request uncancellable on purpose. Only the policy differs: dict evicts LRU, while corpus remembers a failure and doesn't retry. A `core/` cache with those two options would cover both. _Class: duplication._
+7. **Build version and cache policy for versioned API URLs.** Three server modules read `process.env.COMMIT_ID` themselves, each differently: `about.server.ts`, `api_routes.server.ts` (falls back to `"undefined"`), and now `corpus_routes.server.ts` (trims it, and treats empty as absent). Immutable `Cache-Control` values are also per-route literals with different lifetimes: V2 assets 311040000 s, lemma shards 31536000 s (§4.4), and V1's commit-hashed APIs 3153600 s (a tenth of a year, on purpose, per `start_server.ts`). One `core/` helper for "the build version" and one for "cache this versioned response" would keep these consistent. _Class: missing primitive._
+8. **SSR harness can't see focus-dependent upgrades.** `ssr_conformance.test.ts` never focuses anything. `<morcus-corpus-suggestions>` builds its options during `onConnect()` only if the input already has focus (§7.3 rule 2), so the §7.2 allowlist entry is never exercised and the harness passes without it. Also, the allowlist matches each created element on its own, so `morcus-corpus-suggestions li` still fails on the `<span>`s inside each option. Phase 4 proposes (pending review) a `focusBeforeUpgrade` fixture option that holds the host back until the input has focus, plus an entry that also covers the options' children. _Class: sharp edge (test harness)._
 
 ---
 
@@ -293,6 +312,6 @@ Outside the slice:
   - Add unit, parity and conformance tests.
   - Check it by hand with JS disabled.
 - [x] **Phase 3: `<morcus-corpus-view>`.** (Needs the reviewed ratchet entry: `corpus_view.client.ts` has 3 selector calls, 0 DOM mutations.) Add `swapSlots` for submits, the pager and popstate, plus the client tests.
-- [ ] **Phase 4: Autocomplete** (main bundle, D6). Build the lemma shard endpoint, `<morcus-corpus-suggestions>`, the §7.3 lint rule, the budget raise and its tests.
+- [x] **Phase 4: Autocomplete** (main bundle, D6). Ratchet entries approved (1 selector call, 1 DOM mutation for `corpus_autocomplete.client.ts`), SSR allowlist entry applied and tested (§9 item 8). Built lemma shard endpoint, `<morcus-corpus-suggestions>`, §7.3 lint rule, budget raise (JS 142 / 41 → 147 / 44 kB) and unit/conformance tests.
 - [ ] **Indexer fix** (blocker above). Can run in parallel with Phases 1–4.
 - [ ] **Phase 5: Ship** (blocked on the indexer fix). Add the app bar link (D5), the E2E journeys and the visual scenarios. Review the diffs with you, then update baselines once you approve.
