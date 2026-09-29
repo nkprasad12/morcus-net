@@ -364,6 +364,23 @@ export function resolveKeyword(keyword: string): string | undefined {
   return undefined;
 }
 
+/** Whether `value` is a long or short form for the inflection `keyword`. */
+export function isInflectionValue(keyword: string, value: string): boolean {
+  const values = INFLECTION_CATEGORIES.get(keyword);
+  return (
+    values !== undefined &&
+    (values.has(value) || [...values.values()].includes(value))
+  );
+}
+
+/** Error message for an unrecognized `@<keyword>:<value>` option. */
+export function invalidInflectionOption(
+  keyword: string,
+  value: string
+): string {
+  return `@${keyword}:${value} - invalid option \`${value}\``;
+}
+
 // // // // // // // // //
 // Per-token validation //
 // // // // // // // // //
@@ -431,12 +448,8 @@ export function errorsForToken(
       // Anything can be the value for a lemma.
       return [];
     }
-    const values = INFLECTION_CATEGORIES.get(keyword);
-    if (
-      values === undefined ||
-      !(values.has(value) || [...values.values()].includes(value))
-    ) {
-      return [`@${keyword}:${value} - invalid option \`${value}\``];
+    if (!isInflectionValue(keyword, value)) {
+      return [invalidInflectionOption(keyword, value)];
     }
     return [];
   }

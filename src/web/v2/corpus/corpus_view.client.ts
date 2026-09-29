@@ -31,9 +31,9 @@ interface NavOptions {
  * Without JS, the page is a GET form plus plain pager links. With JS, form
  * submits, the pager and the help's example links (all marked
  * `data-corpus-nav`) swap the result slots in place instead of loading a new
- * page; back/forward re-swaps. Every persistent control (the form, its
- * settings, the help) is server-rendered and outside every slot, so this
- * element never builds or moves markup.
+ * page; back/forward re-swaps. Every persistent control (the form and its
+ * settings) is server-rendered and outside every slot, so this element never
+ * builds or moves markup.
  */
 export class MorcusCorpusView extends BaseElement<"nav"> {
   private form: HTMLFormElement | null = null;

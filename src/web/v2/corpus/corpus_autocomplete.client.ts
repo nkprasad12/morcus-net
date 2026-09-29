@@ -28,6 +28,8 @@ import {
   SPECIAL_KEYWORDS,
   errorsForToken,
   findNextOptions,
+  invalidInflectionOption,
+  isInflectionValue,
   parseProximity,
   resolveKeyword,
   tokenizeInput,
@@ -383,13 +385,13 @@ function filterValueSuggestions(
     return rows;
   }
   // Short forms (`impf`) are as valid as long ones (`errorsForToken`).
-  if (values.has(value) || [...values.values()].includes(value)) {
+  if (isInflectionValue(keyword, value)) {
     return [
       infoRow(`a word with ${value} ${keyword}`),
       ...logicOps(previous, current),
     ];
   }
-  return [errorRow(`@${keyword}:${value} - invalid option \`${value}\``)];
+  return [errorRow(invalidInflectionOption(keyword, value))];
 }
 
 function lemmaSuggestions(
@@ -598,7 +600,7 @@ function renderRow(row: CorpusSuggestion, id: string): SafeHtml {
     ? html`<span aria-hidden="true">❌</span> ${row.message}`
     : row.placeholder === undefined
     ? html`${row.message}`
-    : html`<i class="corpus-suggestion-placeholder">${row.placeholder}</i>`;
+    : html`<i>${row.placeholder}</i>`;
   const help =
     !isError && row.placeholder !== undefined
       ? html`<span class="corpus-suggestion-help">${row.message}</span>`
