@@ -4,16 +4,21 @@ import {
   getV2CriticalCss,
   getV2CriticalJs,
 } from "@/web/v2/shell/asset_manifest.server";
+import {
+  v2RouteScripts,
+  type V2JsChunkName,
+  type V2Route,
+} from "@/bundler/v2_build_contract";
 import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
 export type V2ActivePage = "dicts" | "about" | "library" | "corpus";
 
 /**
- * `onerror` for the `v2.js` script tag. If the bundle fails to load (network
- * error, 404), `data-js-failed` on <html> brings back every No-JS fallback
- * (see the JS gate in `v2-critical.css`). There is no CSP today; if one is
- * added, move this into the critical script as a capture-phase `error`
+ * `onerror` for UI V2 module script tags. If any required chunk fails to load
+ * (network error, 404), `data-js-failed` on <html> brings back every No-JS
+ * fallback (see the JS gate in `v2-critical.css`). There is no CSP today; if
+ * one is added, move this into the critical script as a capture-phase `error`
  * listener.
  */
 const BUNDLE_ONERROR =
@@ -25,7 +30,30 @@ export interface PageShellOptions {
   contentHtml: string;
   hideAppBar?: boolean;
   isReader?: boolean;
+  isExternal?: boolean;
   extraHeadHtml?: string;
+}
+
+/** Which client route a page is, for choosing its script chunks. */
+export function pageRoute(
+  options: Pick<PageShellOptions, "activePage" | "isExternal">
+): V2Route {
+  return options.isExternal ? "external" : options.activePage;
+}
+
+/**
+ * Resolves the ordered list of UI V2 client script chunks required for a page.
+ *
+ * Chunks must be emitted as `<script type="module">` tags in dependency order
+ * without `async`, so the browser fetches them in parallel and evaluates them
+ * in document order. The order and the dependencies come from the `dependOn`
+ * graph in `v2_build_contract.ts`, so a page can't load a chunk without its
+ * ancestors (it would silently never run).
+ */
+export function resolvePageScripts(
+  options: Pick<PageShellOptions, "activePage" | "isExternal">
+): readonly V2JsChunkName[] {
+  return v2RouteScripts(pageRoute(options));
 }
 
 /**
@@ -185,6 +213,22 @@ export function renderPageShell(options: PageShellOptions): string {
   const mainClass =
     mainClasses.length > 0 ? ` class="${mainClasses.join(" ")}"` : "";
 
+  const dictPrefetchHtml = isReader
+    ? `\n  <link rel="prefetch" href="${getV2AssetHref("dict.js")}">`
+    : "";
+  const extraHeadHtml = options.extraHeadHtml
+    ? `\n  ${options.extraHeadHtml}`
+    : "";
+
+  const scriptTagsHtml = resolvePageScripts(options)
+    .map(
+      (scriptName) =>
+        `<script type="module" src="${getV2AssetHref(
+          scriptName
+        )}" onerror="${BUNDLE_ONERROR}"></script>`
+    )
+    .join("\n  ");
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -193,8 +237,9 @@ export function renderPageShell(options: PageShellOptions): string {
   <title>${titleEncoded}</title>
   <style>${getV2CriticalCss()}</style>
   <script>${getV2CriticalJs()}</script>
-  <link rel="stylesheet" href="${getV2AssetHref("v2.css")}">
-  ${options.extraHeadHtml ? options.extraHeadHtml : ""}
+  <link rel="stylesheet" href="${getV2AssetHref(
+    "v2.css"
+  )}">${dictPrefetchHtml}${extraHeadHtml}
 </head>
 <body${bodyClass}>
   <div id="top"></div>
@@ -219,10 +264,8 @@ export function renderPageShell(options: PageShellOptions): string {
   <!-- Single global popover for abbreviation expansions -->
   <div id="abbr-popover" popover="auto" class="abbr-popover"></div>
 
-  <!-- UI V2 client-side Web Components bundle -->
-  <script type="module" src="${getV2AssetHref(
-    "v2.js"
-  )}" onerror="${BUNDLE_ONERROR}"></script>
+  <!-- UI V2 client-side Web Components bundles -->
+  ${scriptTagsHtml}
 </body>
 </html>`;
 }

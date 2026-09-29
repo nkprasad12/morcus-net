@@ -200,6 +200,7 @@ export function renderExternalLandingPageHtml(
   return renderPageShell({
     title: `Read your own text - ${PAGE_TITLE_SUFFIX}`,
     activePage: "library",
+    isExternal: true,
     contentHtml: renderExternalLandingContentHtml(options),
   });
 }
@@ -354,6 +355,7 @@ function renderExternalPage(model: ExternalFrameModel): string {
     title: pageTitle(model),
     activePage: "library",
     isReader: true,
+    isExternal: true,
     contentHtml: renderExternalFrameHtml(model),
   });
 }

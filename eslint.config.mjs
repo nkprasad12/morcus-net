@@ -74,16 +74,29 @@ const NO_CLIENT_IMPORTS = {
     "modules, which expect browser globals and pull DOM code into the server build.",
 };
 
-// Keeps the corpus autocomplete splittable into an async chunk (see
-// src/web/v2/corpus/DESIGN.md §7.3). `<morcus-corpus-view>` reaches it only
-// through the DOM they share, and leaves the grammar tables to it, so that
-// moving the autocomplete out of the main bundle takes them along.
+// Keeps `<morcus-corpus-view>` and the corpus autocomplete decoupled (see
+// src/web/v2/corpus/DESIGN.md §7.3). Both now ship in the `corpus.js` route
+// chunk, but the view reaches the autocomplete only through the DOM they
+// share and leaves the grammar tables to it, so the autocomplete could still
+// move into a lazy sub-chunk without touching the view.
 const NO_CORPUS_AUTOCOMPLETE_IMPORTS = {
   group: ["**/corpus_autocomplete.client", "**/corpus_syntax.common"],
   message:
     "corpus_view.client.ts must not import the corpus autocomplete or the " +
     "grammar (corpus/DESIGN.md §7.3). Talk to <morcus-corpus-suggestions> " +
     "through the shared form instead.",
+};
+
+// The bundler builds the client and hands the server a manifest; it must not
+// depend on either tier's code. Facts both sides need (chunk names, the
+// `dependOn` graph, the build directory) live in
+// src/bundler/v2_build_contract.ts, which the server imports instead.
+const NO_TIERED_IMPORTS_FROM_BUNDLER = {
+  group: ["**/*.server", "**/*.client"],
+  message:
+    "src/bundler must not import *.server.ts or *.client.ts modules. Put " +
+    "shared build facts in src/bundler/v2_build_contract.ts and import that " +
+    "from the server instead.",
 };
 
 export default [
@@ -288,6 +301,16 @@ export default [
             NO_CLIENT_IMPORTS,
           ],
         },
+      ],
+    },
+  },
+  {
+    files: ["src/bundler/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [NO_RELATIVE_IMPORTS, NO_TIERED_IMPORTS_FROM_BUNDLER] },
       ],
     },
   },

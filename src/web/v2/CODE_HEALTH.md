@@ -26,67 +26,37 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       Those two files are outside `src/web/v2`, so the V2 lint block does not cover them, but they
       are the process entry points: an unhandled rejection there takes down the whole server, V2
       included. Small enough to do as a one-off without taking on the other ~86 legacy violations.
-- [ ] 🟡 **Enforce the `critical.js` byte budget.** [`critical_theme.client.ts`](shell/critical_theme.client.ts)
-      declares a ≤1 KB limit in its header, but nothing checks it — it is a comment that happens to be
-      true (a production build is 0.46 kB / 0.30 kB gzipped). This matters more than the budget on the
-      main bundle, because [`page_shell.server.ts`](shell/page_shell.server.ts) inlines whatever
-      `build/v2/critical.js` contains **into every HTML response**, so those bytes are uncached, paid
-      per page load, and block parsing. A stale unminified artifact weighs 2.78 KB — mostly webpack
-      module runtime wrapping a CSS import whose JS output is empty — and deploying one would silently
-      add ~2.5 KB to every response with no other symptom. [`bundle_validation.test.ts`](../../integration/suites/bundle_validation.test.ts)
-      already budgets the main bundle (the _cached_ asset) and is the natural home for an assertion on
-      this one. A guard here also catches an unminified deploy, which is otherwise invisible.
-- [ ] 🔴 **Bundle splitting strategy.** Every page downloads the whole V2 client as one
-      `v2_bundle.js`, because [`v2_bundle.client.ts`](v2_bundle.client.ts) and the
-      `v2_elements.client.ts` manifest register every custom element up front. So a dictionary
-      visitor pays for the reader, and the reverse. The JS budget in
-      [`v2_bundle_budget.ts`](../../bundler/v2_bundle_budget.ts) has been raised twice:
-
-      - 2026-09-25: 115 → 125 kB raw and 32 → 35 kB gzip, after the reader wake lock.
-      - 2026-09-26: 125 → 135 kB raw and 35 → 38 kB gzip, after the External Reader client.
-        That pushed the bundle to 129.9 / 36.7.
-
-      Each raise buys room for normal feature work, but it isn't a fix.
-
-      **Where the bytes are** (2026-09-26, minified, attributed with an esbuild metafile of
-      `v2_bundle.client.ts`; approximate but good for relative weight):
-
-      | Topic       | kB raw | Share | Heaviest files                                             |
-      | ----------- | -----: | ----: | ---------------------------------------------------------- |
-      | `reader/`   |   52.0 |  ~39% | `reader_view` 23.6, `reader_panel` 13.7, `reader_toc` 4.8  |
-      | `core/`     |   33.3 |  ~25% | `drawer` 6.2, `base_element` 5.3, `popover` 4.1            |
-      | `dict/`     |   28.7 |  ~22% | `dict_search` 9.4, `dict_settings` 5.6                     |
-      | `external/` |    9.9 |   ~7% | `external_loader` 4.3, `external_text` 2.7, storage 2.6    |
-      | other       |    8.9 |   ~7% | `dialog/`, `shell/`, `library/`, `src/common/`             |
-
-      No third-party dependency shows up, so the weight is our own code. A dictionary-only page
-      needs roughly `core` + `dict` + `shell` + `dialog` (~66 kB), about half of what it downloads
-      today.
-
-      - [ ] **TODO: investigate splitting strategies** before the next bump (deferred from the PE RFC Phase 2 seams milestone so feature work is unblocked):
-        - Per-topic entry chunks (shell/core + `dict` + `reader` + `library`), with the page
-          shell emitting only the chunks a route needs. Rsbuild `splitChunks` could pull out
-          `core/` as a shared, long-cached chunk.
-        - Or lazy `import()` of heavy topic modules, triggered by whether the page contains the
-          element (e.g. only fetch the reader when `morcus-reader-view` is present).
-        - **First candidate: `external/`.** It is used on one route and is self-contained.
-          `<morcus-external-loader>` could stay registered as a tiny shell whose behaviour is a
-          `BaseController` loaded with `import()` on connect and attached with `addController`
-          (which connects at once if the host is already connected). This proves the pattern
-          on a small surface before heavier slices.
-        - **Corpus autocomplete:** V1's autocomplete alone is ~661 lines. When the Corpus slice is built,
-          keep it self-contained in `src/web/v2/corpus/` so it can be split into an async chunk once this
-          infrastructure lands.
-        - Prerequisites for any async chunk: `output.assetPrefix: "/v2/assets/"` in
-          [`v2.rsbuild.ts`](../../bundler/v2.rsbuild.ts), so chunks resolve under the static
-          route. The budget check currently measures only the manifest's `v2.js` entry, so it
-          must also count async chunks.
-      - Constraints to keep: the zero-JS baseline is unaffected; `critical.js` stays inlined and
-        separate; the manifest/`registerElement` conformance test
-        (`core/reattach_conformance.test.ts`) keeps working; the budget becomes per-chunk, plus a
-        per-route total.
-      - Re-measure with `./morcus.sh bundle -a` before choosing, so the split follows the real
-        weight rather than guesses.
+- [x] 🟡 **Enforce the `critical.js` byte budget.** `maxCriticalJsRawBytes` / `maxCriticalJsGzipBytes`
+      in [`v2_bundle_budget.ts`](../../bundler/v2_bundle_budget.ts) (450 B / 350 B) fail every
+      minified build that exceeds them. That matters because
+      [`page_shell.server.ts`](shell/page_shell.server.ts) inlines `build/v2/critical.js` **into
+      every HTML response** (uncached, paid per page load, parser-blocking); a stale unminified
+      artifact weighs 2.78 KB and would otherwise ship silently.
+- [x] 🔴 **Bundle splitting strategy.** Partitioned into 5 route-aligned entry chunks via Rspack
+      `dependOn` (`splitChunks: false`), defined in
+      [`v2_build_contract.ts`](../../bundler/v2_build_contract.ts): `common.js` (core, shell,
+      dialog), `dict.js`, `reader.js` (reader + library), and `corpus.js` each `dependOn: "common"`,
+      and `external.js` `dependOn: "reader"`. [`page_shell.server.ts`](shell/page_shell.server.ts)
+      emits only the chunks a route needs, in dependency order (plus `<link rel="prefetch">` for
+      `dict.js` on reader pages, whose dictionary iframe loads it). Guarded by per-chunk raw/gzip
+      ceilings and `checkV2ChunkDuplication` (0 duplicate modules across chunks) in
+      [`v2_bundle_budget.ts`](../../bundler/v2_bundle_budget.ts), and by
+      [`route_bundle_conformance.test.ts`](core/route_bundle_conformance.test.ts) across all full
+      pages and partial swap templates.
+- [ ] 🟡 **Stop client modules installing global listeners at import time.**
+      `anchor_scroll`, `back_to_top`, `mobile_menu`, `deferred_iframe` and `abbr_popover` each end in
+      `if (typeof document !== "undefined") setupX()`, so importing them is enough to attach
+      `document`/`window` listeners. [`v2_elements.client.ts`](v2_elements.client.ts) used to avoid
+      them so tests could import it safely; since it now aggregates the route entries, every
+      conformance test that imports it installs them too. Export the `setupX` functions only and
+      call them from the entry files, so imports stay pure and only an entry has side effects.
+- [ ] 🟢 **Extend the import-boundary lint beyond `src/web/v2` and `src/bundler`.** The tier rules in
+      `eslint.config.mjs` only match files inside those two trees. `src/bundler` importing
+      `asset_manifest.server.ts` went unnoticed until review for exactly that reason (it has its own
+      rule now). Elsewhere, e.g. `src/start_server.ts`, `src/scripts/**` and
+      `src/integration/**`, nothing stops Node code importing a `*.client.ts` module (DOM globals
+      at load time) or browser-bound code picking up a `*.server.ts`. Low priority: no such import
+      exists today.
 
 ---
 
@@ -227,9 +197,8 @@ first card) as the fixture, then asserted on the request URL rather than the res
 - [ ] 🟡 **Add CSS containment to the reader text panel.** There is currently **no** `contain:` or
       `content-visibility:` anywhere in `src/web/v2`, so a drawer or splitter resize relayouts the
       full text panel and all of its inline word spans.
-- [ ] 🟡 **Lazy-load the two heavy verticals.** `v2_bundle.client.ts` eagerly bundles everything, so
-      reader users download the full dictionary interaction matrix and vice versa. Gate behind
-      `document.querySelector(...)` + dynamic `import()`.
+- [x] 🟡 **Split the heavy verticals by route.** Replaced `v2_bundle.client.ts` with 5 route-aligned
+      `dependOn` entry chunks (`common.js`, `dict.js`, `reader.js`, `external.js`, `corpus.js`).
 
 ---
 

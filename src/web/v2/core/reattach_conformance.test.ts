@@ -315,9 +315,9 @@ function findCustomElementFiles(dir: string): string[] {
       entry.isFile() &&
       entry.name.endsWith(".client.ts") &&
       !entry.name.endsWith(".test.ts") &&
+      !entry.name.endsWith("_entry.client.ts") &&
       entry.name !== "base_element.client.ts" &&
-      entry.name !== "v2_elements.client.ts" &&
-      entry.name !== "v2_bundle.client.ts"
+      entry.name !== "v2_elements.client.ts"
     ) {
       const content = fs.readFileSync(fullPath, "utf-8");
       if (content.includes("registerElement(")) {
@@ -332,6 +332,14 @@ function findCustomElementFiles(dir: string): string[] {
   return results;
 }
 
+const ENTRY_MANIFEST_FILES = [
+  "shell/common_entry.client.ts",
+  "dict/dict_entry.client.ts",
+  "reader/reader_entry.client.ts",
+  "external/external_entry.client.ts",
+  "corpus/corpus_entry.client.ts",
+] as const;
+
 describe("V2 custom elements survive being moved in the DOM", () => {
   test("every registered element has a conformance fixture", () => {
     const registered = Array.from(getRegisteredElementTags()).sort();
@@ -339,23 +347,27 @@ describe("V2 custom elements survive being moved in the DOM", () => {
     expect(configured).toEqual(registered);
   });
 
-  test("all custom element files are imported in v2_elements.client.ts", () => {
+  test("all custom element files are imported in an entry manifest (*_entry.client.ts)", () => {
     const v2Dir = path.resolve(__dirname, "..");
     const elementFiles = findCustomElementFiles(v2Dir).sort();
-    const manifestPath = path.resolve(v2Dir, "v2_elements.client.ts");
-    const manifestContent = fs.readFileSync(manifestPath, "utf-8");
+    const combinedEntriesContent = ENTRY_MANIFEST_FILES.map((relPath) =>
+      fs.readFileSync(path.resolve(v2Dir, relPath), "utf-8")
+    ).join("\n");
 
     expect(elementFiles.length).toBeGreaterThan(0);
     for (const file of elementFiles) {
-      expect(manifestContent).toContain(`import "${file}";`);
+      expect(combinedEntriesContent).toContain(`import "${file}";`);
     }
   });
 
-  test("v2_bundle.client.ts imports v2_elements.client.ts", () => {
+  test("v2_elements.client.ts imports all entry manifests", () => {
     const v2Dir = path.resolve(__dirname, "..");
-    const bundlePath = path.resolve(v2Dir, "v2_bundle.client.ts");
-    const bundleContent = fs.readFileSync(bundlePath, "utf-8");
-    expect(bundleContent).toContain('import "@/web/v2/v2_elements.client";');
+    const barrelPath = path.resolve(v2Dir, "v2_elements.client.ts");
+    const barrelContent = fs.readFileSync(barrelPath, "utf-8");
+    for (const relPath of ENTRY_MANIFEST_FILES) {
+      const importSpec = `@/web/v2/${relPath.replace(/\.ts$/, "")}`;
+      expect(barrelContent).toContain(`import "${importSpec}";`);
+    }
   });
 
   beforeEach(() => {

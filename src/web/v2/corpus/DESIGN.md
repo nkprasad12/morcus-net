@@ -224,11 +224,11 @@ The server uses it for validation and the transform, so it is needed from Phase 
 
 ---
 
-### 7.3 Guardrails that keep a later split cheap (D6)
+### 7.3 Guardrails that keep a later split cheap (D6 — superseded by `corpus.js` route chunk)
 
-Autocomplete ships in the main bundle for now. These rules keep a later move to an async chunk small: registration becomes a tiny shell plus `import()`, and nothing else changes.
+> [!NOTE] > **Superseded by route-level code splitting**: `<morcus-corpus-view>` and `<morcus-corpus-suggestions>` (along with `corpus_syntax.common.ts`) now ship in a dedicated route-scoped entry chunk (`corpus.js` via `corpus_entry.client.ts`), which is emitted only on `/v2/corpus`. The decoupled boundary between `corpus_view.client.ts` and `corpus_autocomplete.client.ts` remains enforced by ESLint so sub-route lazy loading stays possible if needed in the future.
 
-1. **One way in.** Only `v2_elements.client.ts` imports `corpus_autocomplete.client.ts`. `corpus_view.client.ts` never imports it. The two talk only through the DOM they share (the `q` input and the form's submit event).
+1. **One way in.** Only `corpus_entry.client.ts` (and the test-only aggregator `v2_elements.client.ts`) imports `corpus_autocomplete.client.ts`. `corpus_view.client.ts` never imports it. The two talk only through the DOM they share (the `q` input and the form's submit event).
 2. **Late upgrade is normal.** The input and form work fully without the element, and the host is `data-js-only`. The element adopts whatever is already in the input (adopt-before-write). A lazy chunk just makes that window longer.
 3. **No module side effects** other than `registerElement`. `LemmaShardCache` is module-local.
 4. **The grammar tables stay out of the view element.** In the client, only the autocomplete (and the server) import `corpus_syntax.common.ts`, so the tables move with the chunk.
@@ -245,7 +245,7 @@ Splitting later needs the same shared infrastructure either way: `assetPrefix`, 
 | **D3** ✅ | Author filter                      | **Decided: V1 parity.** One `#Author` at the start of `q`, validated against the author list. No separate form control or URL param. Multi-author and names with spaces (`Seneca Major`, which V1 can't express either) go to [`TODO.md`](TODO.md#author-filter-beyond-v1).                                                                                                           | —            |
 | **D4** ✅ | Disclaimer                         | **Decided: inline `<details>` in the `results` slot**, shown only for `@` queries. Drop V1's auto-opening modal and its "don't show again" storage.                                                                                                                                                                                                                                   | —            |
 | **D5** ✅ | App bar "Corpus" link              | **Decided: last step.** Implement the corpus and its tests first, then add the link. It changes the app bar on every V2 page, so the visual baseline diffs need your approval.                                                                                                                                                                                                        | —            |
-| **D6** ✅ | Bundle budget                      | **Decided: autocomplete ships in the main bundle now; split later.** This means raising the JS gzip ceiling (41 → ~44 kB) in the autocomplete change, recorded in `v2_bundle_budget.ts` history. Splitting later stays cheap as long as the guardrails in §7.3 hold.                                                                                                                  | —            |
+| **D6** ✅ | Bundle budget                      | **Decided: originally shipped in the main bundle; now split into the dedicated `corpus.js` route chunk (`dependOn: ["common"]`).** Only `/v2/corpus` loads `corpus.js` (~6.1 kB gzip against a 7 kB gzip ceiling in `v2_bundle_budget.ts`).                                                                                                                                           | —            |
 | **D7**    | Bad `cursor`                       | Treat as the first page.                                                                                                                                                                                                                                                                                                                                                              | 400 page.    |
 
 ---

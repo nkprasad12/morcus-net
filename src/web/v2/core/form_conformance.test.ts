@@ -34,7 +34,6 @@ import {
 } from "@/web/v2/testing/fake_corpus_engine";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2BuildDir: () => "build/v2",
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",

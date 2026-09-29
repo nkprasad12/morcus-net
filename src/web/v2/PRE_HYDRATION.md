@@ -1,6 +1,6 @@
 # UI V2 Pre-Hydration & Progressive Upgrade Audit
 
-Analysis and backlog for bugs that occur during the **Pre-Hydration Window** — the interval after first paint when a JavaScript-enabled user views and interacts with server-rendered HTML before `/v2/assets/v2.js` finishes downloading, parsing, and upgrading custom elements.
+Analysis and backlog for bugs that occur during the **Pre-Hydration Window** — the interval after first paint when a JavaScript-enabled user views and interacts with server-rendered HTML before the route's JS chunks (`/v2/assets/common.js` and the route chunk) finish downloading, parsing, and upgrading custom elements.
 
 > [!NOTE]
 > General code-quality debt is tracked in [CODE_HEALTH.md](CODE_HEALTH.md), and dictionary preference storage/resolution defects are tracked in [dict/PREFERENCES.md](dict/PREFERENCES.md). Items here are referenced as `PH0`–`PH12`.
@@ -13,9 +13,9 @@ Every UI V2 page load follows a three-stage lifecycle in [`page_shell.server.ts`
 
 1. **Synchronous `<head>`**: Inlined [`v2-critical.css`](v2-critical.css) and synchronous inlined [`critical_theme.client.ts`](shell/critical_theme.client.ts) execute, followed by `<link rel="stylesheet" href="/v2/assets/v2.css">`.
 2. **First Paint (SSR HTML)**: `<body>` renders the server-generated HTML immediately.
-3. **Deferred Module Upgrade (`v2.js`)**: `<script type="module" src="/v2/assets/v2.js"></script>` downloads and executes asynchronously ([`v2_bundle.client.ts`](v2_bundle.client.ts)), registering all custom elements ([`v2_elements.client.ts`](v2_elements.client.ts)); each element marks itself `data-upgraded` once connected.
+3. **Deferred Module Upgrade (route chunks)**: the route's `<script type="module">` chunks (`common.js` first, then e.g. `dict.js`; see `resolvePageScripts` in [`page_shell.server.ts`](shell/page_shell.server.ts)) download in parallel and execute in document order, registering that route's custom elements (entries listed in [`v2_build_contract.ts`](../../bundler/v2_build_contract.ts)); each element marks itself `data-upgraded` once connected.
 
-Our architecture and test suites explicitly planned for **No-JS** (scripting disabled) and **Post-Hydration JS** (`v2.js` loaded), but did not systematically account for a **JS-enabled user interacting with the page between Stage 2 and Stage 3** (e.g., on slow mobile networks, cold caches, or if `v2.js` is later split into lazy route chunks).
+Our architecture and test suites explicitly planned for **No-JS** (scripting disabled) and **Post-Hydration JS** (`v2.js` loaded), but did not systematically account for a **JS-enabled user interacting with the page between Stage 2 and Stage 3** (e.g., on slow mobile networks, cold caches, or now that the client is split into route chunks).
 
 > [!NOTE]
 > This window is now tested directly: [`browser_v2_late_hydration.test.ts`](../../integration/suites/browser_v2_late_hydration.test.ts) holds back `/v2/assets/*.js`, interacts, releases the scripts, and checks that the upgrade adopts pre-hydration state (PH1, 2, 3, 5, 7, 9, 11), the JS gate and `morcus_prepaint` snapshot prevent fallback flashes and layout shifts, and `data-js-failed` restores fallbacks when `v2.js` fails to load. Run it with `./morcus.sh e2e --v2`. When fixing a new PH item, add a case there.
@@ -30,12 +30,12 @@ Our architecture and test suites explicitly planned for **No-JS** (scripting dis
 
 UI V2 currently uses four different mechanisms to distinguish "No-JS" from "JS-enhanced". During the pre-hydration window on a JS-enabled browser, **two of them report JS = ON while the other two report JS = OFF**:
 
-| Gate Mechanism             | State During Pre-Hydration (JS Enabled, Pre-`v2.js`)                                      | State After `v2.js` Executes | Current Usage in UI V2                                                                                                                                                     |
-| :------------------------- | :---------------------------------------------------------------------------------------- | :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<noscript>`               | **JS = ON** (omitted by HTML parser)                                                      | **JS = ON**                  | Dictionary settings `"Apply"` button ([`search_bar.server.ts`](dict/search_bar.server.ts#L117-L121))                                                                       |
-| `@media (scripting: none)` | **JS = ON** (query is false at first paint)                                               | **JS = ON**                  | Reader `Aa` settings button ([`reader_nav.css`](reader/reader_nav.css#L207-L211))                                                                                          |
-| `:not(:defined)`           | **JS = OFF** (custom element not yet registered)                                          | **JS = ON**                  | `morcus-theme-toggle`, `morcus-report-dialog` ([`v2-critical.css`](v2-critical.css#L106-L114)), `morcus-external-loader` ([`external.css`](external/external.css#L34-L53)) |
-| `:root:not(.has-js)`       | **JS = OFF** (`.has-js` added at end of [`v2_bundle.client.ts`](v2_bundle.client.ts#L12)) | **JS = ON**                  | `.dict-width-group`, `.reader-teaser-nojs`, `.reader-dict-panel:target`, `.drawer-toc`                                                                                     |
+| Gate Mechanism             | State During Pre-Hydration (JS Enabled, Pre-`v2.js`)                          | State After `v2.js` Executes | Current Usage in UI V2                                                                                                                                                     |
+| :------------------------- | :---------------------------------------------------------------------------- | :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<noscript>`               | **JS = ON** (omitted by HTML parser)                                          | **JS = ON**                  | Dictionary settings `"Apply"` button ([`search_bar.server.ts`](dict/search_bar.server.ts#L117-L121))                                                                       |
+| `@media (scripting: none)` | **JS = ON** (query is false at first paint)                                   | **JS = ON**                  | Reader `Aa` settings button ([`reader_nav.css`](reader/reader_nav.css#L207-L211))                                                                                          |
+| `:not(:defined)`           | **JS = OFF** (custom element not yet registered)                              | **JS = ON**                  | `morcus-theme-toggle`, `morcus-report-dialog` ([`v2-critical.css`](v2-critical.css#L106-L114)), `morcus-external-loader` ([`external.css`](external/external.css#L34-L53)) |
+| `:root:not(.has-js)`       | **JS = OFF** (`.has-js` added at end of `v2_bundle.client.ts`, since removed) | **JS = ON**                  | `.dict-width-group`, `.reader-teaser-nojs`, `.reader-dict-panel:target`, `.drawer-toc`                                                                                     |
 
 ### Design Principles for Pre-Hydration Safety
 

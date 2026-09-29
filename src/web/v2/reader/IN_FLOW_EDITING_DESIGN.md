@@ -25,7 +25,7 @@ Typo reports that require a reader to navigate away, open a generic feedback mod
 2. **DOM & Tokenization Invariants**:
    - **Reader**: Passages are tokenized into `<span class="lat-word">` elements for dictionary lookups, `<span class="reader-line">` for verse, and `<a class="reader-note-ref"><sup>[1]</sup></a>` for apparatus footnotes.
    - **Dictionary**: Entry bodies (`.entry-content`) are tokenized into `<a class="lat-word">` links, `.dLink` cross-references, and `.lsHover[tabindex="0"]` abbreviation spans. Clicking inside a dictionary entry delegates to `chooseSuggestion(word)` ([`dict_search.client.ts:L213-239`](../dict/dict_search.client.ts#L213-L239)).
-3. **Bundle Size Budget**: `v2_bundle.js` bundles both `reader/` and `dict/` (`129.9 kB` raw / `36.7 kB` gzip against a `135 / 38 kB` budget in [`v2_bundle_budget.ts`](../../../bundler/v2_bundle_budget.ts)). Duplicating popover + editor logic across both slices would waste budget; sharing one primitive in `src/web/v2/core/` serves both at half the byte cost.
+3. **Bundle Size Budget** (as of writing; the client has since been split into route chunks, where `core/` code ships once in `common.js`): `v2_bundle.js` bundles both `reader/` and `dict/` (`129.9 kB` raw / `36.7 kB` gzip against a `135 / 38 kB` budget in [`v2_bundle_budget.ts`](../../../bundler/v2_bundle_budget.ts)). Duplicating popover + editor logic across both slices would waste budget; sharing one primitive in `src/web/v2/core/` serves both at half the byte cost.
 4. **API Endpoint Omission**: [`src/web/v2/api_routes.server.ts:L90-100`](../api_routes.server.ts#L90-L100) currently requires `reportText` and drops `editedText` and `tags` support, returning HTTP 400 if `reportText` is omitted.
 
 ---

@@ -444,12 +444,25 @@ describe("v2_router integration", () => {
     expect(res.header.location).toBe("/v2/dicts");
   });
 
-  test("GET /v2/assets/v2.js serves the built client bundle", async () => {
-    const res = await request(app).get(getV2AssetHref("v2.js"));
-    expect(res.status).toBe(200);
-    expect(res.header["content-type"]).toContain("javascript");
-    expect(res.header["cache-control"]).toContain("immutable");
-    expect(res.text).toContain("morcus-dict-search");
+  test("GET /v2/assets/<chunk>.js serves all 5 built client chunks", async () => {
+    const chunks = [
+      { asset: "common.js" as const, expectedSymbol: "morcus-theme-toggle" },
+      { asset: "dict.js" as const, expectedSymbol: "morcus-dict-search" },
+      { asset: "reader.js" as const, expectedSymbol: "morcus-reader-view" },
+      {
+        asset: "external.js" as const,
+        expectedSymbol: "morcus-external-loader",
+      },
+      { asset: "corpus.js" as const, expectedSymbol: "morcus-corpus-view" },
+    ];
+
+    for (const { asset, expectedSymbol } of chunks) {
+      const res = await request(app).get(getV2AssetHref(asset));
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("javascript");
+      expect(res.header["cache-control"]).toContain("immutable");
+      expect(res.text).toContain(expectedSymbol);
+    }
   });
 
   describe("GET /v2/reader", () => {

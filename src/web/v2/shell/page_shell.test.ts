@@ -5,6 +5,7 @@
 import {
   renderAppBar,
   renderPageShell,
+  resolvePageScripts,
   type V2ActivePage,
 } from "@/web/v2/shell/page_shell.server";
 
@@ -67,6 +68,8 @@ describe("renderPageShell", () => {
     expect(html).toContain("<div id='content'>Content</div>");
     expect(html).toContain('href="/v2/corpus"');
     expect(html).toContain('class="nav-link active"');
+    expect(html).toContain('src="/v2/assets/common.js"');
+    expect(html).toContain('src="/v2/assets/corpus.js"');
   });
 
   test("hides app bar when hideAppBar is true", () => {
@@ -79,5 +82,36 @@ describe("renderPageShell", () => {
 
     expect(html).not.toContain('<header class="app-bar">');
     expect(html).toContain("body-embedded");
+    expect(html).toContain('src="/v2/assets/common.js"');
+    expect(html).toContain('src="/v2/assets/dict.js"');
+  });
+
+  test("emits route-specific scripts in dependency order and dict.js prefetch on reader pages", () => {
+    expect(resolvePageScripts({ activePage: "about" })).toEqual(["common.js"]);
+    expect(resolvePageScripts({ activePage: "dicts" })).toEqual([
+      "common.js",
+      "dict.js",
+    ]);
+    expect(resolvePageScripts({ activePage: "library" })).toEqual([
+      "common.js",
+      "reader.js",
+    ]);
+    expect(resolvePageScripts({ activePage: "corpus" })).toEqual([
+      "common.js",
+      "corpus.js",
+    ]);
+    expect(
+      resolvePageScripts({ activePage: "library", isExternal: true })
+    ).toEqual(["common.js", "reader.js", "external.js"]);
+
+    const readerHtml = renderPageShell({
+      title: "Reader",
+      activePage: "library",
+      isReader: true,
+      contentHtml: "<div>Reader</div>",
+    });
+    expect(readerHtml).toContain(
+      '<link rel="prefetch" href="/v2/assets/dict.js">'
+    );
   });
 });

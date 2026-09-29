@@ -1,20 +1,21 @@
 // Component manifest for UI V2 Custom Elements.
 //
-// Importing this module executes registerElement() for all V2 custom elements.
-// It is intentionally side-effect-free with respect to global window/document
-// event listeners, making it safe to import in unit and conformance tests.
-import "@/web/v2/dict/dict_suggestions.client";
-import "@/web/v2/dict/dict_search.client";
-import "@/web/v2/dict/dict_settings.client";
-import "@/web/v2/dict/dict_greek.client";
-import "@/web/v2/dict/dict_toc.client";
-import "@/web/v2/shell/theme_toggle.client";
-import "@/web/v2/dialog/report_dialog.client";
-import "@/web/v2/reader/reader_view.client";
-import "@/web/v2/reader/reader_settings.client";
-import "@/web/v2/library/library_view.client";
-import "@/web/v2/external/external_loader.client";
-import "@/web/v2/corpus/corpus_view.client";
-// The only import of the autocomplete (corpus/DESIGN.md §7.3), so it can
-// become an async chunk by changing this line alone.
-import "@/web/v2/corpus/corpus_autocomplete.client";
+// Importing this module executes registerElement() for all V2 custom elements,
+// across every route chunk. Production pages never load it: they load only
+// their route's entry chunks (`common.js`, `dict.js`, `reader.js`,
+// `external.js`, `corpus.js`). Conformance harnesses
+// (`reattach_conformance.test.ts`, `ssr_conformance.test.ts`,
+// `route_bundle_conformance.test.ts`) import it to register every element in
+// jsdom.
+//
+// It used to be side-effect-free with respect to global window/document event
+// listeners, which is what made it safe to import in tests. Because it now
+// imports the entries, it also pulls in the modules that install global
+// listeners at import time (anchor scroll, back-to-top, mobile menu, deferred
+// iframes, the abbreviation popover). Restoring that property is tracked in
+// CODE_HEALTH.md.
+import "@/web/v2/shell/common_entry.client";
+import "@/web/v2/dict/dict_entry.client";
+import "@/web/v2/reader/reader_entry.client";
+import "@/web/v2/external/external_entry.client";
+import "@/web/v2/corpus/corpus_entry.client";

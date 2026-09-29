@@ -198,6 +198,33 @@ describe("setupAnchorScroll", () => {
     unregister();
   });
 
+  test("defers hash reveal until enclosing custom element upgrades", async () => {
+    const tagName = "test-deferred-element";
+    document.body.innerHTML = `<${tagName}><div id="deferred-drawer"></div></${tagName}>`;
+    const drawer = document.getElementById("deferred-drawer")!;
+    const reveal = jest.fn();
+    const replaceState = jest.fn();
+    const mockWin = {
+      location: { hash: "#deferred-drawer", pathname: "/p", search: "" },
+      history: { replaceState, state: null },
+      customElements: window.customElements,
+    } as unknown as Window;
+
+    cleanup = setupAnchorScroll(document, mockWin);
+    expect(reveal).not.toHaveBeenCalled();
+
+    class TestDeferredElement extends HTMLElement {
+      connectedCallback() {
+        registerRevealer(drawer, reveal, { ownsHash: true });
+      }
+    }
+    customElements.define(tagName, TestDeferredElement);
+    await customElements.whenDefined(tagName);
+
+    expect(reveal).toHaveBeenCalledWith(drawer);
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/p");
+  });
+
   test("ignores clicks when defaultPrevented is true (preserving permalink copy ordering)", () => {
     document.body.innerHTML = `
       <a id="link" href="#target">Jump</a>

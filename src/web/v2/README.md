@@ -29,8 +29,7 @@ src/web/v2/
 ├── dialog/             # Accessible modal dialogs & issue reporting
 ├── about/              # Project information & metadata
 ├── v2_router.server.ts # Express router orchestrator mounted at /v2 (public integration)
-├── v2_bundle.client.ts # Client bundle entrypoint
-├── v2_elements.client.ts # Custom element registration manifest
+├── v2_elements.client.ts # Test-only aggregator of all 5 route entry manifests (*_entry.client.ts)
 ├── v2.css              # Global stylesheet manifest (imports topic *.css)
 └── v2-critical.css     # Inlined above-the-fold critical CSS
 ```
@@ -41,7 +40,7 @@ src/web/v2/
 >   [CODE_HEALTH.md](CODE_HEALTH.md). Each item is scoped to be one small, independently landable
 >   change. Add new debt there rather than leaving `TODO` comments, and check items off as they land.
 > - Bugs and race conditions in the **pre-hydration window** (where a JS-enabled user views or
->   interacts with SSR markup before `v2.js` executes) are documented and tracked in
+>   interacts with SSR markup before the route's JS chunks execute) are documented and tracked in
 >   [PRE_HYDRATION.md](PRE_HYDRATION.md).
 > - The longer-term strategy and checklist for graduating V2 to production (`dev` merge audit,
 >   routing cutover, telemetry parity, V1 removal, and re-tuning pre-built artifacts) lives in
@@ -52,12 +51,12 @@ src/web/v2/
 1. **Colocated Vertical Slices**: Each topic folder contains everything required for that domain: SSR HTML templates, Light DOM Web Components, stylesheets, and unit tests. Deleting or refactoring a feature is isolated to its topic folder.
 2. **Target Suffix Convention**: every module carries a tier, and the boundaries between them are enforced by `no-restricted-imports` rules in [eslint.config.mjs](../../../eslint.config.mjs) rather than by review.
    - `*.server.ts`: Executes in Node.js (Express SSR renderers, XML parsers, server-side utilities). **Never** bundled to browser assets; **no** browser DOM globals (`window`, `document`, `HTMLElement`). May not import `*.client.ts`.
-   - `*.client.ts`: Executes in the Browser (Light DOM Web Components, client event delegation). Bundled via Rsbuild into `build/v2/v2.js`. May not import `*.server.ts`, Node builtins, `express`, or `he`.
+   - `*.client.ts`: Executes in the Browser (Light DOM Web Components, client event delegation). Bundled via Rsbuild into 5 route-aligned chunks in `build/v2/` (`common.js`, `dict.js`, `reader.js`, `external.js`, `corpus.js`). May not import `*.server.ts`, Node builtins, `express`, or `he`.
    - `*.common.ts`: Isomorphic **logic and rendering**. Safe in both tiers, and subject to both restrictions above. See [The `.common.ts` contract](#the-commonts-contract) below.
    - `*.test.ts`: Colocated unit tests targeting adjacent modules. Deliberately exempt, since a test legitimately exercises both sides of a boundary.
    - `*.css`: Feature-scoped styles imported by the root `v2.css`.
 3. **Flat Topic Directories**: Topics remain flat by default (avoiding micro-directories for 1–2 files). Filename prefixes (e.g. `dict_search.*`, `dict_settings.*`) keep related files automatically clustered alphabetically. Subdirectories are introduced only when a subcomponent exceeds 4+ dedicated files.
-4. **Root Integration Hubs**: Top-level entry points (`v2_router.server.ts`, `v2_bundle.client.ts`, `v2.css`) aggregate exports across topics so external consumers have a single, stable contract. They carry target suffixes like any other module — being an entry point is not an exemption, and `v2_bundle.client.ts` in particular is the root of everything shipped to the browser, so it is the last file that should be outside the import rules.
+4. **Root Integration Hubs & Entry Chunks**: Top-level entry points (`v2_router.server.ts`, `v2.css`) and slice entry manifests (`shell/common_entry.client.ts`, `dict/dict_entry.client.ts`, `reader/reader_entry.client.ts`, `external/external_entry.client.ts`, `corpus/corpus_entry.client.ts`) aggregate exports across topics. They carry target suffixes like any other module — being an entry point is not an exemption.
 
 ---
 
@@ -159,7 +158,8 @@ Two consequences worth knowing before you "clean up" such a module:
 ### Build Pipeline
 
 - **Bundler script**: [src/bundler/v2.rsbuild.ts](src/bundler/v2.rsbuild.ts)
-- **Output bundle**: `build/v2/v2.js` (ESM module loaded via `<script type="module" src="/v2/assets/v2.js">`)
+- **Build contract**: [src/bundler/v2_build_contract.ts](../../bundler/v2_build_contract.ts) (chunk names, `dependOn` graph, manifest asset names, build directory; shared by the bundler and the server)
+- **Output chunks**: `build/v2/{common,dict,reader,external,corpus}.js` (ESM chunks built via Rspack `dependOn` and loaded via `<script type="module">` tags emitted per route by `page_shell.server.ts`)
 - **Stylesheet**: `src/web/v2/v2.css` served statically at `/v2/assets/v2.css`
 
 ### Browser Support & Compatibility Target
@@ -175,7 +175,7 @@ On browsers meeting this standard, all client modules and modern CSS features ar
 UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
 1. **Zero-JS Initial Paint**: The user issues a standard HTTP `GET` (e.g. `/v2/dicts?q=habeo` or `/v2/reader`). Express renders a complete semantic HTML document with native `<form>`, `<details>`, and `<a>` elements.
-2. **Non-Blocking Enhancement**: The browser downloads the lightweight client bundle (`v2.js`) and defines native custom elements (`customElements.define`).
+2. **Non-Blocking Enhancement**: The browser downloads the route's client chunks (`common.js` plus any route-specific slice chunks) and defines native custom elements (`customElements.define`).
 3. **Client Form Hijack & Partial Swapping**: When JavaScript is active, Web Components intercept user actions, fetch partial HTML fragments (`format=partial`) or autocomplete JSON from the router, and swap DOM nodes instantaneously via `replaceChildren()` while syncing URL state with `history.pushState()`.
 
 > **Topic-Specific Data Flows**: Detailed request lifecycle sequence diagrams and component breakdowns live in each topic's documentation (e.g., see [dict/README.md](dict/README.md)).
