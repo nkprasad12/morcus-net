@@ -622,9 +622,8 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     });
 
     /**
-     * `linkifyText` also emits `word-active`, on dictionary entry markup. Clearing
-     * the passage highlight must not reach into the dictionary panel, which is why the
-     * query stays scoped to `.reader-text-panel`.
+     * Clearing the passage highlight must not reach into other panels (such as the
+     * dictionary panel), which is why the query stays scoped to `.reader-text-panel`.
      */
     test("leaves an active word outside the text panel alone", () => {
       const el = createReaderView(PASSAGE);

@@ -108,7 +108,7 @@ describe("dict_ssr", () => {
       ]
     );
 
-    const html = xmlNodeToHtml(node, { allowLinkify: false });
+    const html = xmlNodeToHtml(node);
     expect(html).not.toContain("<div>");
     expect(html).toContain("<i>sc.</i>");
     expect(html).toContain("<i>the palace of the sun</i>");
@@ -136,7 +136,7 @@ describe("dict_ssr", () => {
       [],
       ["first line", new XmlNode("br"), "second line"]
     );
-    const html = xmlNodeToHtml(node, { allowLinkify: false });
+    const html = xmlNodeToHtml(node);
     expect(html).toBe("<div>first line<br>second line</div>");
   });
 
@@ -153,7 +153,7 @@ describe("dict_ssr", () => {
       ]
     );
 
-    const html = xmlNodeToHtml(node, { allowLinkify: false });
+    const html = xmlNodeToHtml(node);
     expect(html).toContain('<table class="numeralTable">');
     expect(html).toContain("<tr><td>Arabic</td><td>57</td></tr>");
   });
@@ -366,19 +366,6 @@ describe("dict_ssr", () => {
     expect(html).toContain("Gallia est omnis");
   });
 
-  test("xmlNodeToHtml supports explicit allowLinkify option", () => {
-    const node = new XmlNode(
-      "span",
-      [["class", "lsQuote"]],
-      ["Gallia est omnis"]
-    );
-    const html = xmlNodeToHtml(node, { allowLinkify: true });
-    expect(html).toContain('href="/v2/dicts?q=Gallia"');
-    expect(html).toContain('href="/v2/dicts?q=est"');
-    expect(html).toContain('href="/v2/dicts?q=omnis"');
-    expect(html).toContain('class="lat-word"');
-  });
-
   test("xmlNodeToHtml transforms sense bullet with senseid into an anchor link", () => {
     const node = new XmlNode(
       "span",
@@ -570,7 +557,7 @@ describe("dict_ssr", () => {
       ]
     );
 
-    const html = xmlNodeToHtml(node, { allowLinkify: false });
+    const html = xmlNodeToHtml(node);
 
     // corr, unclear, pb, ref become <span> inline elements
     expect(html).toContain("<span>sollemnibus</span>");

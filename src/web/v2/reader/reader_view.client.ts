@@ -866,8 +866,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * element, but a chapter holds thousands, and this runs synchronously in the click
    * handler before the new highlight is painted.
    *
-   * The `.reader-text-panel` scope is load-bearing. `linkifyText` also emits
-   * `word-active` on dictionary-entry markup, which must not be cleared from here.
+   * The `.reader-text-panel` scope is load-bearing: clearing passage highlights
+   * must not reach outside into other panels (such as dictionary entries).
    *
    * A word split across inline markup is several parts (`wordGroupParts`),
    * all of which are highlighted.

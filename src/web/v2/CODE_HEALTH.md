@@ -117,13 +117,11 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 - [ ] 🟢 **Convert trailing-boolean signatures to option objects**:
       `renderDictLandingHtml(activeDicts?, isInflected = true)` (`dict_landing.server.ts` L63).
       `renderDictPageHtml` and `renderDictResultsHtml` already do this correctly.
-- [ ] 🟢 **Use or delete `linkifyText`'s `activeWord` parameter** (`dict/linkify.server.ts` L26).
-      Its only caller, `xml_to_html.server.ts` L63, never passes it, so nothing emits
-      `word-active` server-side today. That makes it a latent trap rather than dead weight:
-      reviving it would start emitting the class into dictionary-entry markup, and any reader code
-      that clears `.word-active` unscoped would then reach into the dictionary panel. The
-      reader's clear is scoped and has a test pinning the scope, so the trap is contained — but the
-      parameter should still be either wired up deliberately or removed.
+- [x] 🟢 **Use or delete `linkifyText`'s `activeWord` parameter** (`dict/linkify.server.ts` L26).
+      Deleted `linkify.server.ts` and the `allowLinkify` option in `xml_to_html.server.ts` entirely.
+      All Latin word linkification in UI V2 is performed client-side via progressive enhancement
+      (`dict_search.client.ts` / `core/tokenize.client.ts`), making the entire server-side linkification
+      tree dead code.
 
 ### Client DOM construction outside `core/`
 
