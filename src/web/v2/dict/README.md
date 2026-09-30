@@ -48,7 +48,6 @@ sequenceDiagram
 - `entry_view.server.ts`: Renders entry headers, definition blocks, and inflection tables.
 - `search_bar.server.ts`: Renders the accessible search `<form>`, input field, action buttons, and dictionary settings triggers.
 - `xml_to_html.server.ts`: Safe transformer converting TEI XML AST nodes into sanitized HTML.
-- `linkify.server.ts`: Tokenizes text and wraps Latin words in clickable search links.
 - `dict_search.client.ts`: Custom element managing form hijacking, history pushes, keyboard navigation, and client-side Latin word progressive enhancement.
 - `dict_suggestions.client.ts`: Accessible dropdown list rendering live autocomplete suggestions.
 - `dict_settings.client.ts`: Popover controlling highlight strength, individual dictionary selection checkboxes, and `localStorage` / cookie synchronization.

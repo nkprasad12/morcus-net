@@ -1,9 +1,7 @@
 import { XmlChild } from "@/common/xml/xml_node";
-import { linkifyText } from "@/web/v2/dict/linkify.server";
 import * as he from "he";
 
 export interface XmlNodeToHtmlOptions {
-  allowLinkify?: boolean;
   omitRootId?: boolean;
   /**
    * Ids of elements that a subsection query matched. These are marked so the
@@ -59,9 +57,6 @@ export function xmlNodeToHtml(
   options?: XmlNodeToHtmlOptions
 ): string {
   if (typeof node === "string") {
-    if (options?.allowLinkify) {
-      return linkifyText(node);
-    }
     return he.escape(node);
   }
 
@@ -199,29 +194,9 @@ export function xmlNodeToHtml(
     return `<${tagName}>`;
   }
 
-  const isAlreadyLink = tagName === "a";
-  const currentClass = attrsMap.get("class") ?? "";
-  const isDisallowedClass =
-    currentClass.includes("lsOrth") ||
-    currentClass.includes("lsEmph") ||
-    currentClass.includes("lsHover") ||
-    currentClass.includes("lsSenseBullet") ||
-    currentClass.includes("dLink") ||
-    currentClass.includes("forcNewTab") ||
-    currentClass.includes("action-btn") ||
-    currentClass.includes("section-anchor") ||
-    currentClass.includes("toc");
-  const isForeign = sourceTagName === "foreign";
-  const nextAllowLinkify =
-    Boolean(options?.allowLinkify) &&
-    !isAlreadyLink &&
-    !isDisallowedClass &&
-    !isForeign;
-
   let childrenHtml = node.children
     .map((c) =>
       xmlNodeToHtml(c, {
-        allowLinkify: nextAllowLinkify,
         matchedSubsectionIds: options?.matchedSubsectionIds,
         existingIds: options?.existingIds,
       })

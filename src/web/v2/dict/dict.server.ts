@@ -3,8 +3,6 @@
  * Re-exports modularized components for backwards compatibility and clean public API.
  */
 
-export { linkifyText } from "@/web/v2/dict/linkify.server";
-
 export {
   XmlNodeToHtmlOptions,
   xmlNodeToHtml,

@@ -41,10 +41,7 @@ Popular long entries cost several milliseconds of pure CPU per request, every re
 > going to be fragment-level rather than whole-entry-level. The body has exactly one
 > query-dependent input — `matchedSubsectionIds` — and its entire effect is adding
 > `class="subsection-hit"` and `aria-current="location"` to a handful of elements.
->
-> `allowLinkify`, the other option on `XmlNodeToHtmlOptions`, is never passed by any
-> caller; it is only set internally during recursion. So `result.entry` really is the
-> sole content input.
+> `result.entry` is the sole content input.
 
 ### Shape
 
