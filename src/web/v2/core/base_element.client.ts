@@ -314,6 +314,17 @@ export const DEAD_SCOPE: LifetimeScope<never> = (() => {
 
 const ACTIVE_CONTROLLERS_BY_ROOT = new WeakMap<ParentNode, Set<Controller>>();
 
+/** Disposes each controller, logging (not rethrowing) individual failures. */
+function disposeControllers(controllers: readonly Controller[]): void {
+  for (const controller of controllers) {
+    try {
+      controller.dispose();
+    } catch (err) {
+      console.error("Error during controller disposal:", err);
+    }
+  }
+}
+
 /**
  * Propagates a content-swap notification from an HTML sink (`setHtml`,
  * `replaceWithHtml`, `swapElementContent`, `fetchAndSwapPartial`) up the
@@ -413,6 +424,10 @@ export abstract class BaseController<Lane extends string = never>
     if (this._scope && !this._scope.disposed) {
       this.dispose();
     }
+    if (this.markedFailed && this.root instanceof Element) {
+      clearFailed(this.root);
+      this.markedFailed = false;
+    }
     this._scope = new LifetimeScope<Lane>(this.root);
     let set = ACTIVE_CONTROLLERS_BY_ROOT.get(this.root);
     if (!set) {
@@ -428,9 +443,17 @@ export abstract class BaseController<Lane extends string = never>
         controller.connect?.();
       }
     } catch (err) {
+      // Tear down anything registered before the throw. This skips
+      // `dispose()`, which would also run `onDisconnect` and clear our mark.
+      ACTIVE_CONTROLLERS_BY_ROOT.get(this.root)?.delete(this);
+      disposeControllers(this.controllers);
+      this._scope?.dispose();
+      this._scope = null;
       // Bring back the No-JS fallbacks in this controller's subtree (see
       // `core/js_gate.client.ts`). A document-level controller doesn't mark
-      // <html>: that would revert every component on the page.
+      // <html>: that would revert every component on the page. Marked after
+      // the teardown above, since disposing a failed child controller that
+      // shares this root clears the mark.
       const root = this.root;
       if (
         root instanceof Element &&
@@ -577,8 +600,15 @@ export abstract class BaseElement<
         controller.connect?.();
       }
     } catch (err) {
+      // Tear down anything registered before the throw, so no handler stays
+      // live on a component that has reverted to its No-JS fallback.
+      disposeControllers(this.controllers);
+      this._scope?.dispose();
+      this._scope = null;
       // A broken component drops its `data-js-only` controls and paints its
-      // No-JS fallbacks again (see `core/js_gate.client.ts`).
+      // No-JS fallbacks again (see `core/js_gate.client.ts`). Marked after
+      // the teardown, since disposing a failed child controller rooted at
+      // this element clears the mark.
       markFailed(this);
       throw err;
     }
