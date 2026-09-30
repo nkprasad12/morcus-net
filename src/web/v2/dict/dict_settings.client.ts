@@ -300,8 +300,8 @@ export class MorcusDictSettings extends BaseElement {
 
 registerElement("morcus-dict-settings", MorcusDictSettings);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-dict-settings": MorcusDictSettings;
   }
 }

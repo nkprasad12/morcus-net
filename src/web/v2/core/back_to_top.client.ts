@@ -1,3 +1,4 @@
+import { LifetimeScope } from "@/web/v2/core/base_element.client";
 import {
   createSingletonSetup,
   type CleanupFn,
@@ -91,8 +92,9 @@ export function bindBackToTop(
     (t): t is EventTarget => t !== null && t !== undefined
   );
 
+  const scope = new LifetimeScope(btn.ownerDocument);
   for (const target of targets) {
-    target.addEventListener("scroll", onScroll, { passive: true });
+    scope.listen(target, "scroll", onScroll, { passive: true });
   }
   updateBackToTop();
 
@@ -125,7 +127,7 @@ export function bindBackToTop(
     btn.classList.remove("visible");
   };
 
-  btn.addEventListener("click", onClick);
+  scope.listen(btn, "click", onClick);
   if (options?.markUpgraded) {
     markUpgraded(btn);
   }
@@ -135,10 +137,7 @@ export function bindBackToTop(
     if (options?.markUpgraded) {
       clearUpgraded(btn);
     }
-    for (const target of targets) {
-      target.removeEventListener("scroll", onScroll);
-    }
-    btn.removeEventListener("click", onClick);
+    scope.dispose();
   };
 }
 

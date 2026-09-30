@@ -24,13 +24,14 @@ import {
   WakeLockController,
   registerRevealer,
   wordGroupParts,
+  queryUpgraded,
 } from "@/web/v2/core/index.client";
 import type { SafeHtml } from "@/web/v2/core/html.common";
 import { removeMacrons } from "@/common/text_cleaning";
 import { READER_PAGE_SLOTS } from "@/web/v2/reader/reader_slots.common";
 import {
   DEFAULT_READER_PREFS,
-  MorcusReaderSettings,
+  type MorcusReaderSettings,
   getWorkMacra,
   parseReaderPreferences,
   type ReaderFontFamily,
@@ -218,7 +219,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   public getSettingsElement(): MorcusReaderSettings | null {
-    return this.querySelector<MorcusReaderSettings>("morcus-reader-settings");
+    return queryUpgraded(this, "morcus-reader-settings");
   }
 
   public getActiveNoteId(): string {
@@ -1615,8 +1616,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
 registerElement("morcus-reader-view", MorcusReaderView);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-reader-view": MorcusReaderView;
   }
 }

@@ -90,6 +90,57 @@ export function ownersUpgraded(el: Element, owner?: Element | null): boolean {
   return true;
 }
 
+/**
+ * Tag name → element class for `morcus-*` components. Each component module
+ * augments this (never the global `HTMLElementTagNameMap`), so raw
+ * `querySelector("morcus-x")` / `closest("morcus-x")` return a plain
+ * `Element`, and the only typed way to reach a peer's methods is
+ * {@link queryUpgraded} / {@link closestUpgraded}, which check that the peer
+ * is running.
+ *
+ * ```ts
+ * declare module "@/web/v2/core/js_gate.client" {
+ *   interface MorcusElementTagNameMap {
+ *     "morcus-x": MorcusX;
+ *   }
+ * }
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface MorcusElementTagNameMap {}
+
+function asRunning<K extends keyof MorcusElementTagNameMap>(
+  el: Element | null
+): MorcusElementTagNameMap[K] | null {
+  if (!el?.hasAttribute(UPGRADED_ATTR) || el.hasAttribute(JS_FAILED_ATTR)) {
+    return null;
+  }
+  // Safe: an upgraded element with tag K is an instance of the class that
+  // registered K (`BaseElement` marks it after its own `onConnect`).
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  return el as unknown as MorcusElementTagNameMap[K];
+}
+
+/**
+ * The first `tag` element under `root`, or `null` if there is none or it
+ * hasn't upgraded (its chunk failed, its `onConnect` threw, or it isn't
+ * defined yet). Use this, not `querySelector`, to call a peer's methods.
+ */
+export function queryUpgraded<K extends keyof MorcusElementTagNameMap>(
+  root: ParentNode,
+  tag: K
+): MorcusElementTagNameMap[K] | null {
+  return asRunning<K>(root.querySelector(tag));
+}
+
+/** Like {@link queryUpgraded}, for the nearest `tag` ancestor of `el`. */
+export function closestUpgraded<K extends keyof MorcusElementTagNameMap>(
+  el: Element,
+  tag: K
+): MorcusElementTagNameMap[K] | null {
+  return asRunning<K>(el.closest(tag));
+}
+
 /** Attributes whose value is a space-separated list of element ids. */
 const TARGET_ID_ATTRS = [
   "aria-controls",

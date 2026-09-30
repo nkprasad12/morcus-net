@@ -338,12 +338,12 @@ export function startSectionEdit(options: SectionActionOptions): void {
       container: box,
       isOpen: () => box.isConnected,
       ignore: (target) => anchor.contains(target),
-      onDismiss: (e) => {
+      onDismiss: (reason) => {
         if (!box.isConnected) {
           closeEditor(false);
           return;
         }
-        if (e.type === "keydown") {
+        if (reason === "escape") {
           if (!editorState.busy) closeEditor(true);
           return;
         }

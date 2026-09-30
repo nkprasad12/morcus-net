@@ -1,5 +1,5 @@
+import { LifetimeScope } from "@/web/v2/core/base_element.client";
 import {
-  DisposableBag,
   createSingletonSetup,
   type CleanupFn,
 } from "@/web/v2/core/disposable.client";
@@ -16,7 +16,8 @@ import { bindDismissable } from "@/web/v2/core/dismissable.client";
  * (`popover="auto"`), this component intentionally uses lightweight document delegation rather than
  * the 1-to-1 `AnchoredPopoverController`.
  *
- * It uses `DisposableBag` and `bindDismissable` for managed lifecycle and standardized outside-tap/Escape dismissal.
+ * It uses a standalone `LifetimeScope` (so its click / Enter handlers pass the
+ * activation gate) and `bindDismissable` for standardized outside-tap/Escape dismissal.
  */
 
 export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
@@ -27,7 +28,7 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
         return () => {};
       }
 
-      const bag = new DisposableBag();
+      const scope = new LifetimeScope(doc);
       let activeTarget: HTMLElement | null = null;
       const supportsNativePopover =
         typeof abbrPopover.showPopover === "function";
@@ -110,9 +111,10 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
           // native-takeover(self): opens the abbreviation popover itself
           e.preventDefault();
           openAbbrPopover(abbr);
-        } else if (!abbrPopover.contains(e.target)) {
-          closeAbbrPopover();
         }
+        // Outside clicks are closed by `bindDismissable` below, which (unlike
+        // this gated listener) still runs when the click lands in a failed
+        // component.
       };
 
       // Keyboard accessibility: Enter or Space on focused .lsHover opens popover
@@ -137,7 +139,7 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
       };
 
       // Standardized dismiss coordination (pointerdown outside + Escape keydown)
-      bag.add(
+      scope.use(
         bindDismissable({
           container: abbrPopover,
           isOpen: isPopoverOpen,
@@ -151,17 +153,12 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
         })
       );
 
-      doc.addEventListener("click", onClick);
-      bag.add(() => doc.removeEventListener("click", onClick));
-
-      doc.addEventListener("keydown", onKeyDown);
-      bag.add(() => doc.removeEventListener("keydown", onKeyDown));
-
-      win.addEventListener("resize", onResize, { passive: true });
-      bag.add(() => win.removeEventListener("resize", onResize));
+      scope.listen(doc, "click", onClick);
+      scope.listen(doc, "keydown", onKeyDown);
+      scope.listen(win, "resize", onResize, { passive: true });
 
       return () => {
-        bag.dispose();
+        scope.dispose();
       };
     }
   );

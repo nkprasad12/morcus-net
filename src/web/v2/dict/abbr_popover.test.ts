@@ -139,7 +139,10 @@ describe("setupAbbrPopover", () => {
     );
     expect(popover.style.display).toBe("block");
 
-    // Clicking outside closes it
+    // Clicking outside closes it (dismissal runs on the click's mousedown)
+    outside.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, cancelable: true })
+    );
     outside.dispatchEvent(
       new MouseEvent("click", { bubbles: true, cancelable: true })
     );

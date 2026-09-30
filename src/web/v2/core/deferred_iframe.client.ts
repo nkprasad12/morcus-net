@@ -1,3 +1,4 @@
+import { LifetimeScope } from "@/web/v2/core/base_element.client";
 import {
   createSingletonSetup,
   type CleanupFn,
@@ -63,10 +64,9 @@ export const setupDeferredIframes: (doc?: Document) => CleanupFn =
 
     // `toggle` does not bubble, but capture intercepts it at the document level
     // for any <details> element, including dynamically swapped partials.
-    doc.addEventListener("toggle", onToggle, true);
+    const scope = new LifetimeScope(doc);
+    scope.listen(doc, "toggle", onToggle, true);
     hydrateDeferredIframes(doc);
 
-    return () => {
-      doc.removeEventListener("toggle", onToggle, true);
-    };
+    return () => scope.dispose();
   });

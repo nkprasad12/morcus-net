@@ -170,3 +170,73 @@ describe("activation gate in LifetimeScope.listen", () => {
     expect(handleEvent).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("queryUpgraded / closestUpgraded", () => {
+  // Imported via require so the module augmentation below stays local.
+  const { queryUpgraded, closestUpgraded } =
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("@/web/v2/core/js_gate.client") as typeof import("@/web/v2/core/js_gate.client");
+  const query = queryUpgraded as (
+    root: ParentNode,
+    tag: string
+  ) => Element | null;
+  const closest = closestUpgraded as (
+    el: Element,
+    tag: string
+  ) => Element | null;
+
+  test.each([
+    ["not upgraded", ""],
+    ["failed", "data-js-failed"],
+    ["upgraded then failed", "data-upgraded data-js-failed"],
+  ])("return null for a peer that is %s", (_, attrs) => {
+    document.body.innerHTML = `<morcus-peer ${attrs}><p id="t"></p></morcus-peer>`;
+    expect(query(document, "morcus-peer")).toBeNull();
+    expect(closest(el("#t"), "morcus-peer")).toBeNull();
+  });
+
+  test("return the peer once it has upgraded", () => {
+    document.body.innerHTML = `<morcus-peer data-upgraded><p id="t"></p></morcus-peer>`;
+    expect(query(document, "morcus-peer")).toBe(el("morcus-peer"));
+    expect(closest(el("#t"), "morcus-peer")).toBe(el("morcus-peer"));
+  });
+
+  test("return null when there is no such element", () => {
+    document.body.innerHTML = `<p id="t"></p>`;
+    expect(query(document, "morcus-peer")).toBeNull();
+    expect(closest(el("#t"), "morcus-peer")).toBeNull();
+  });
+});
+
+describe("bindDismissable", () => {
+  const { bindDismissable } =
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("@/web/v2/core/dismissable.client") as typeof import("@/web/v2/core/dismissable.client");
+
+  test("reports the dismiss reason", () => {
+    document.body.innerHTML = `<div id="pop"></div><button id="out"></button>`;
+    const reasons: string[] = [];
+    const unbind = bindDismissable({
+      container: el("#pop"),
+      isOpen: () => true,
+      onDismiss: (reason) => reasons.push(reason),
+    });
+    el("#out").click();
+    keydown(el("#out"), "Escape");
+    unbind();
+    expect(reasons).toEqual(["pointer", "escape"]);
+  });
+
+  test("still dismisses on a click that points into a failed component", () => {
+    document.body.innerHTML = `<div id="pop"></div><a id="a" href="#x">x</a><morcus-x data-js-failed><p id="x"></p></morcus-x>`;
+    const onDismiss = jest.fn();
+    const unbind = bindDismissable({
+      container: el("#pop"),
+      isOpen: () => true,
+      onDismiss,
+    });
+    el("#a").click();
+    unbind();
+    expect(onDismiss).toHaveBeenCalledWith("pointer");
+  });
+});

@@ -168,8 +168,8 @@ export class MorcusReportDialog extends BaseElement {
 
 registerElement("morcus-report-dialog", MorcusReportDialog);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-report-dialog": MorcusReportDialog;
   }
 }
