@@ -99,6 +99,10 @@ describe("<morcus-external-loader>", () => {
       expect(target.pathname).toBe("/v2/externalReader");
       expect(target.searchParams.get("lines")).toBe("verse");
       const key = target.searchParams.get("local")!;
+      expect(key).not.toContain("Arma");
+      expect(key).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      );
 
       const saved = await withStore((store) => store.get(key));
       // Untrimmed (verse indents survive); titled from the first words.

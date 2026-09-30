@@ -7,9 +7,11 @@
  * reader imported in V1 appear in V2 and vice versa. This follows the
  * precedent of V2 reusing V1 storage keys such as `macronButton-${workId}`.
  *
- * Compatibility rules:
- * - Keys are generated exactly as V1 does: a URL import is keyed by its URL
- *   (so re-importing refreshes it), a pasted text by `${title}_${Date.now()}`.
+ * Storage key rules:
+ * - URL imports are keyed by their URL (so re-importing refreshes them).
+ * - Pasted texts are keyed by an opaque random UUID (`crypto.randomUUID()`), so
+ *   the key in `?local=<key>` never leaks words of the text or title in server
+ *   request logs.
  * - V2 adds optional fields (`lineMode`, `savedAt`). V1's store has no
  *   validator, so it ignores them; V2 treats them as optional on read.
  * - Rows are validated on read, and malformed ones are skipped rather than
@@ -82,14 +84,47 @@ export function parseStoredRow(row: unknown): ExternalContentRecord | null {
   return record;
 }
 
-/** The storage key V1 would assign, so both UIs agree on identity. */
+/**
+ * Generates an opaque random UUID. Uses `crypto.randomUUID()` when available,
+ * falling back to `crypto.getRandomValues()` (e.g. in jsdom test environments).
+ */
+export function generateOpaqueKey(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.getRandomValues === "function"
+  ) {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
+      ""
+    );
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(
+      12,
+      16
+    )}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+  return `${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+}
+
+/**
+ * Returns the storage key: URL for web page imports, opaque UUID for pasted text.
+ * Pasted text keys must be opaque to keep text and titles out of URLs and server logs.
+ */
 export function storageKeyFor(
-  content: Pick<NewExternalContent, "title" | "source">,
-  now: number
+  content: Pick<NewExternalContent, "source" | "title">,
+  generateId: () => string = generateOpaqueKey
 ): string {
-  return content.source === "fromUrl"
-    ? content.title
-    : `${content.title}_${now}`;
+  return content.source === "fromUrl" ? content.title : generateId();
 }
 
 function promisify<T>(request: IDBRequest<T>): Promise<T> {
@@ -140,6 +175,8 @@ export interface ExternalContentStoreOptions {
   factory?: IDBFactory | null;
   /** Defaults to `Date.now`. Injectable for deterministic keys in tests. */
   now?: () => number;
+  /** Defaults to `generateOpaqueKey`. Injectable for deterministic keys in tests. */
+  generateId?: () => string;
 }
 
 /**
@@ -151,6 +188,7 @@ export class ExternalContentStore {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private readonly factory: IDBFactory | null;
   private readonly now: () => number;
+  private readonly generateId: () => string;
 
   constructor(options: ExternalContentStoreOptions = {}) {
     this.factory =
@@ -160,6 +198,7 @@ export class ExternalContentStore {
         ? null
         : indexedDB;
     this.now = options.now ?? Date.now;
+    this.generateId = options.generateId ?? generateOpaqueKey;
   }
 
   private db(): Promise<IDBDatabase> {
@@ -220,7 +259,7 @@ export class ExternalContentStore {
    */
   async save(content: NewExternalContent): Promise<string> {
     const now = this.now();
-    const storageKey = storageKeyFor(content, now);
+    const storageKey = storageKeyFor(content, this.generateId);
     const row: ExternalContentRecord = {
       storageKey,
       title: content.title,

@@ -52,15 +52,18 @@ describe("ExternalContentStore", () => {
     expect(await store.list()).toEqual([]);
   });
 
-  test("saves and loads a pasted text with a V1-style key", async () => {
+  test("saves and loads a pasted text with an opaque key", async () => {
     const key = await store.save({
       title: "Catilinam",
       content: "Quo usque tandem",
       lineMode: "prose",
     });
-    expect(key).toBe("Catilinam_1000");
+    expect(key).not.toContain("Catilinam");
+    expect(key).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
     expect(await store.get(key)).toEqual({
-      storageKey: "Catilinam_1000",
+      storageKey: key,
       title: "Catilinam",
       content: "Quo usque tandem",
       lineMode: "prose",
@@ -190,10 +193,20 @@ describe("parseStoredRow", () => {
 });
 
 describe("storageKeyFor", () => {
-  test("matches V1's key scheme", () => {
-    expect(storageKeyFor({ title: "Aeneid" }, 5)).toBe("Aeneid_5");
-    expect(
-      storageKeyFor({ title: "https://a.com", source: "fromUrl" }, 5)
-    ).toBe("https://a.com");
+  test("generates an opaque key for pasted text", () => {
+    expect(storageKeyFor({ title: "Aeneid" }, () => "custom-opaque-id")).toBe(
+      "custom-opaque-id"
+    );
+    const uuid = storageKeyFor({ title: "Aeneid" });
+    expect(uuid).not.toContain("Aeneid");
+    expect(uuid).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
+  });
+
+  test("uses URL as key for web imports", () => {
+    expect(storageKeyFor({ title: "https://a.com", source: "fromUrl" })).toBe(
+      "https://a.com"
+    );
   });
 });
