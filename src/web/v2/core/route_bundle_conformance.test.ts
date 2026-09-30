@@ -279,8 +279,70 @@ function hasSelectorMatch(root: ParentNode, selector: string): boolean {
   return false;
 }
 
+/** The nearest `morcus-*` ancestor of `el` (itself included), or `null`. */
+function nearestOwner(el: Element): Element | null {
+  for (let cur: Element | null = el; cur; cur = cur.parentElement) {
+    if (cur.localName.startsWith("morcus-")) return cur;
+  }
+  return null;
+}
+
+/**
+ * `label[for]` and `[form]` references whose target has a different nearest
+ * `morcus-*` owner. The activation gate doesn't follow these (a label click
+ * activates its control; `SubmitEvent.submitter` can sit outside the form),
+ * so they must stay within one component.
+ */
+function crossOwnerIdRefs(root: ParentNode): string[] {
+  const out: string[] = [];
+  const byId = (id: string) =>
+    root.querySelector(`[id="${id.replace(/"/g, '\\"')}"]`);
+  for (const [selector, attr] of [
+    ["label[for]", "for"],
+    ["[form]", "form"],
+  ] as const) {
+    for (const el of Array.from(root.querySelectorAll(selector))) {
+      const id = el.getAttribute(attr) ?? "";
+      const target = byId(id);
+      if (target && nearestOwner(target) !== nearestOwner(el)) {
+        out.push(
+          `<${el.localName} ${attr}="${id}"> in <${
+            nearestOwner(el)?.localName ?? "page"
+          }> points into <${nearestOwner(target)?.localName ?? "page"}>`
+        );
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Links with a fragment that resolve to the page at `url` but aren't written
+ * as a bare `#id`. The browser treats them as in-page navigation, but the
+ * activation gate only recognises `href^="#"`, so write them that way.
+ */
+function samePageUrlHashLinks(root: ParentNode, url: string): string[] {
+  const base = new URL(url, "https://morcus.test");
+  const out: string[] = [];
+  for (const a of Array.from(root.querySelectorAll("a[href*='#']"))) {
+    const href = a.getAttribute("href") ?? "";
+    if (href.startsWith("#")) continue;
+    const resolved = new URL(href, base);
+    if (
+      resolved.origin === base.origin &&
+      resolved.pathname === base.pathname &&
+      resolved.search === base.search
+    ) {
+      out.push(href);
+    }
+  }
+  return out;
+}
+
 interface RouteFixture {
   readonly name: string;
+  /** The URL the page is served at (path + query), for same-page checks. */
+  readonly url: string;
   readonly fullHtml: string;
   readonly partialHtmls?: readonly {
     readonly label: string;
@@ -327,6 +389,21 @@ function buildDictSampleResults() {
 }
 
 describe("Route-to-Bundle Conformance Harness", () => {
+  test("the reference checkers flag violations", () => {
+    const doc = parseDocument(`
+      <label for="q">ok</label><input id="q">
+      <morcus-a><label for="b-in">bad</label><button form="f">bad</button></morcus-a>
+      <morcus-b><input id="b-in"><form id="f"></form></morcus-b>
+      <a href="#x">ok</a>
+      <a href="/v2/dicts?q=amo#x">bad</a>
+      <a href="/v2/dicts?q=other#x">ok</a>
+      <a href="https://example.com/v2/dicts?q=amo#x">ok</a>
+    `);
+    expect(crossOwnerIdRefs(doc)).toHaveLength(2);
+    expect(samePageUrlHashLinks(doc, "/v2/dicts?q=amo")).toEqual([
+      "/v2/dicts?q=amo#x",
+    ]);
+  });
   const entryGraph = extractEntryGraph();
   const chunkElementMap = deriveChunkElementMap(entryGraph);
   const selectorChunkMap = deriveSelectorChunkMap(entryGraph);
@@ -397,6 +474,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
     const fixtures: RouteFixture[] = [
       {
         name: "/v2/dicts (landing + results partial)",
+        url: "/v2/dicts",
         fullHtml: renderDictPageHtml({ query: "" }),
         partialHtmls: [
           {
@@ -413,6 +491,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
       },
       {
         name: "/v2/dicts?q=amo (SSR results with .lsHover, Greek Logeion deferred iframe, and TOC)",
+        url: "/v2/dicts?q=amo",
         fullHtml: renderDictPageHtml({
           query: "amo",
           queriedDicts: ["L&S", "SH"],
@@ -421,6 +500,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
       },
       {
         name: "/v2/dicts?embedded=1 (reader dictionary iframe)",
+        url: "/v2/dicts?q=amo&embedded=1",
         fullHtml: renderDictPageHtml({
           query: "amo",
           embedded: true,
@@ -430,10 +510,12 @@ describe("Route-to-Bundle Conformance Harness", () => {
       },
       {
         name: "/v2/library (catalog)",
+        url: "/v2/library",
         fullHtml: await renderLibraryPageHtml(),
       },
       {
         name: "/v2/reader/caesar/de_bello_gallico (single + parallel + page-turn slot partials)",
+        url: "/v2/reader/caesar/de_bello_gallico?view=parallel&q=Gallia",
         fullHtml: await renderReaderPageHtml({
           workId: "caesar_de_bello_gallico",
           view: "parallel",
@@ -449,14 +531,17 @@ describe("Route-to-Bundle Conformance Harness", () => {
       },
       {
         name: "/v2/reader/unknown (404 work not found)",
+        url: "/v2/reader/unknown_work",
         fullHtml: renderNotFoundPageHtml({ workSlug: "unknown_work" }),
       },
       {
         name: "/v2/externalReader (landing form — must include reader.js for ?local= and MorcusReaderView)",
+        url: "/v2/externalReader",
         fullHtml: renderExternalLandingPageHtml(),
       },
       {
         name: "/v2/externalReader?url=... (imported URL reading view)",
+        url: "/v2/externalReader?url=https%3A%2F%2Fthelatinlibrary.com%2Fcicero%2Fcat1.shtml",
         fullHtml: renderExternalReaderPageHtml({
           sourceUrl: "https://thelatinlibrary.com/cicero/cat1.shtml",
           text: "Quo usque tandem abutere, Catilina, patientia nostra?",
@@ -467,6 +552,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
       },
       {
         name: "/v2/externalReader?local=... (saved local text reading view)",
+        url: "/v2/externalReader?local=local-123",
         fullHtml: renderExternalLocalPageHtml({
           localKey: "local-123",
           lines: "prose",
@@ -476,6 +562,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
       },
       {
         name: "/v2/corpus (landing + search results + slot partials)",
+        url: "/v2/corpus",
         fullHtml: renderCorpusPageHtml(corpusLandingView),
         partialHtmls: [
           {
@@ -490,10 +577,12 @@ describe("Route-to-Bundle Conformance Harness", () => {
       },
       {
         name: "/v2/corpus (503 unavailable)",
+        url: "/v2/corpus?q=amo",
         fullHtml: renderCorpusUnavailableHtml("amo"),
       },
       {
         name: "/v2/about",
+        url: "/v2/about",
         fullHtml: renderAboutPageHtml(),
       },
     ];
@@ -584,6 +673,19 @@ describe("Route-to-Bundle Conformance Harness", () => {
             }
           }
         }
+
+        // 6 & 7: HTML references the activation gate doesn't check at runtime.
+        expect({
+          route: fixture.name,
+          label,
+          crossOwnerRefs: crossOwnerIdRefs(root),
+          samePageUrlHashLinks: samePageUrlHashLinks(root, fixture.url),
+        }).toEqual({
+          route: fixture.name,
+          label,
+          crossOwnerRefs: [],
+          samePageUrlHashLinks: [],
+        });
       }
     }
   });

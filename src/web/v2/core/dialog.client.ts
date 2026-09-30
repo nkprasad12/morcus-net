@@ -9,7 +9,8 @@
  * - ARIA expanded state tracking on opening trigger buttons
  */
 
-import { type CleanupFn, DisposableBag } from "@/web/v2/core/disposable.client";
+import { LifetimeScope } from "@/web/v2/core/base_element.client";
+import type { CleanupFn } from "@/web/v2/core/disposable.client";
 
 export interface ModalDialogOptions {
   /** Optional trigger element(s) that open this dialog. */
@@ -93,40 +94,31 @@ export function setupModalDialog(
     options.onClose?.();
   };
 
-  const disposables = new DisposableBag();
+  // A standalone scope, so the trigger and close-button clicks pass the
+  // activation gate in `LifetimeScope.listen`.
+  const scope = new LifetimeScope(dialog.ownerDocument);
 
   // Wire trigger button(s)
   for (const trigger of triggers) {
     trigger.removeAttribute("disabled");
-    trigger.addEventListener("click", openDialog);
-    disposables.add(() => trigger.removeEventListener("click", openDialog));
+    scope.listen(trigger, "click", openDialog);
   }
 
   // Backdrop click & cancel/close events
-  dialog.addEventListener("click", handleBackdropClick);
-  disposables.add(() =>
-    dialog.removeEventListener("click", handleBackdropClick)
-  );
-
-  dialog.addEventListener("close", handleNativeClose);
-  disposables.add(() => dialog.removeEventListener("close", handleNativeClose));
-
-  dialog.addEventListener("cancel", handleNativeClose);
-  disposables.add(() =>
-    dialog.removeEventListener("cancel", handleNativeClose)
-  );
+  scope.listen(dialog, "click", handleBackdropClick);
+  scope.listen(dialog, "close", handleNativeClose);
+  scope.listen(dialog, "cancel", handleNativeClose);
 
   // Wire all close buttons marked with [data-dialog-close]
   const closeBtns = Array.from(
     dialog.querySelectorAll<HTMLElement>("[data-dialog-close]")
   );
   for (const btn of closeBtns) {
-    btn.addEventListener("click", closeDialog);
-    disposables.add(() => btn.removeEventListener("click", closeDialog));
+    scope.listen(btn, "click", closeDialog);
   }
 
   const unbind: CleanupFn = () => {
-    disposables.dispose();
+    scope.dispose();
   };
 
   return Object.assign(unbind, {

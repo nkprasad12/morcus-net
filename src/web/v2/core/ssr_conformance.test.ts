@@ -13,6 +13,9 @@
  * 3. Addresses & revealability: Every `id` is unique, every in-page `href="#..."`
  *    resolves to an element in the document, and `revealTarget()` makes every
  *    targeted element visible after upgrade.
+ * 4. Failed-owner sweep: with any one `morcus-*` instance failed in
+ *    `onConnect()` and everything else upgraded, no listener cancels a native
+ *    activation on a control in that instance or pointing into it.
  *
  * @jest-environment jsdom
  */
@@ -20,7 +23,10 @@
 import "@/web/v2/v2_elements.client";
 import { XmlNode } from "@/common/xml/xml_node";
 import { getRegisteredElementTags } from "@/web/v2/core/base_element.client";
+import { setupAnchorScroll } from "@/web/v2/core/anchor_scroll.client";
+import { setupBackToTop } from "@/web/v2/core/back_to_top.client";
 import { revealTarget } from "@/web/v2/core/reveal.client";
+import { setupAbbrPopover } from "@/web/v2/dict/abbr_popover.client";
 import { CONTEXT_LEN, PAGE_SIZE } from "@/web/v2/corpus/corpus_params.common";
 import { runCorpusSearch } from "@/web/v2/corpus/corpus_query.server";
 import { renderCorpusContentHtml } from "@/web/v2/corpus/corpus_view.server";
@@ -580,4 +586,182 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
       });
     });
   });
+
+  describe("4. Failed-owner sweep: a component that failed keeps its No-JS behaviour", () => {
+    test("no listener cancels a native activation in, or pointing into, a failed component", () => {
+      const violations: string[] = [];
+      const listenerErrors: string[] = [];
+      let instancesSwept = 0;
+      let activations = 0;
+
+      jest.spyOn(console, "warn").mockImplementation(() => {});
+      jest.spyOn(console, "error").mockImplementation(() => {});
+
+      for (const fixture of fixtures) {
+        if (fixture.focusBeforeUpgrade) continue;
+        const count = morcusElements(parseInert(fixture.html)).length;
+
+        for (let i = 0; i < count; i++) {
+          document.body.innerHTML = "";
+          window.history.replaceState(null, "", "/");
+          const wrapper = parseInert(fixture.html);
+          const failed = morcusElements(wrapper)[i];
+          const label = `${fixture.name}: failed ${describeElement(
+            failed
+          )} (#${i})`;
+          instancesSwept++;
+
+          const restore = forceConnectFailure(failed);
+          const onError = (e: ErrorEvent) => {
+            if (e.error !== FORCED_FAILURE) {
+              listenerErrors.push(`${label}: ${String(e.error ?? e.message)}`);
+            }
+            e.preventDefault();
+          };
+          window.addEventListener("error", onError);
+          const cleanups: (() => void)[] = [];
+          try {
+            document.body.appendChild(wrapper);
+            expect(failed.hasAttribute("data-js-failed")).toBe(true);
+            cleanups.push(
+              setupAnchorScroll(document, window),
+              setupAbbrPopover(document, window),
+              setupBackToTop(document, window)
+            );
+
+            for (const control of controlsAffectedBy(failed, wrapper)) {
+              for (const event of activationEvents(control)) {
+                if (!control.isConnected) break;
+                activations++;
+                control.dispatchEvent(event);
+                if (event.defaultPrevented) {
+                  violations.push(
+                    `${label}: ${eventName(event)} on ${describeElement(
+                      control
+                    )} was cancelled`
+                  );
+                }
+              }
+            }
+          } finally {
+            for (const cleanup of cleanups) cleanup();
+            window.removeEventListener("error", onError);
+            restore();
+          }
+        }
+      }
+
+      expect(instancesSwept).toBeGreaterThan(10);
+      expect(activations).toBeGreaterThan(100);
+      expect({ violations, listenerErrors }).toEqual({
+        violations: [],
+        listenerErrors: [],
+      });
+    });
+  });
 });
+
+const FORCED_FAILURE = new Error(
+  "failed-owner sweep: forced onConnect failure"
+);
+const NATIVE_CONTROLS =
+  "a[href], button, summary, input, select, textarea, form";
+const ID_REF_ATTRS = [
+  "aria-controls",
+  "popovertarget",
+  "commandfor",
+  "form",
+  "for",
+] as const;
+
+/** Parses `html` into a detached wrapper whose custom elements haven't upgraded. */
+function parseInert(html: string): HTMLDivElement {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html;
+  const wrapper = document.createElement("div");
+  wrapper.append(tpl.content);
+  return wrapper;
+}
+
+/** Every `morcus-*` element under `root`, in document order. */
+function morcusElements(root: Element): Element[] {
+  return Array.from(root.querySelectorAll("*")).filter((el) =>
+    el.localName.startsWith("morcus-")
+  );
+}
+
+/** Makes `el` (and only `el`) throw from `onConnect` when it upgrades. */
+function forceConnectFailure(el: Element): () => void {
+  const ctor = customElements.get(el.localName);
+  if (!ctor) throw new Error(`<${el.localName}> is not registered`);
+  const proto = ctor.prototype as { onConnect: (this: Element) => void };
+  const original = proto.onConnect;
+  const hadOwn = Object.prototype.hasOwnProperty.call(proto, "onConnect");
+  proto.onConnect = function (this: Element) {
+    if (this === el) throw FORCED_FAILURE;
+    original.call(this);
+  };
+  return () => {
+    if (hadOwn) proto.onConnect = original;
+    else delete (proto as Partial<typeof proto>).onConnect;
+  };
+}
+
+/** The nearest `morcus-*` element enclosing `el` (itself included). */
+function nearestMorcus(el: Element): Element | null {
+  for (let cur: Element | null = el; cur; cur = cur.parentElement) {
+    if (cur.localName.startsWith("morcus-")) return cur;
+  }
+  return null;
+}
+
+/**
+ * Native controls whose No-JS behaviour belongs to `failed`: those it owns
+ * directly (not ones inside a nested component, which keeps working), and
+ * any control on the page that points at an element inside it.
+ */
+function controlsAffectedBy(failed: Element, root: Element): Element[] {
+  const out = new Set<Element>();
+  for (const el of Array.from(failed.querySelectorAll(NATIVE_CONTROLS))) {
+    if (nearestMorcus(el) === failed) out.add(el);
+  }
+  const inFailed = (id: string) => {
+    const target = root.ownerDocument.getElementById(id);
+    return target !== null && failed.contains(target);
+  };
+  for (const a of Array.from(root.querySelectorAll('a[href^="#"]'))) {
+    const raw = (a.getAttribute("href") ?? "").slice(1);
+    let id = raw;
+    try {
+      id = decodeURIComponent(raw);
+    } catch {
+      // Keep the raw id.
+    }
+    if (id && inFailed(id)) out.add(a);
+  }
+  for (const attr of ID_REF_ATTRS) {
+    for (const el of Array.from(root.querySelectorAll(`[${attr}]`))) {
+      const ids = (el.getAttribute(attr) ?? "").trim().split(/\s+/);
+      if (ids.some((id) => id && inFailed(id))) out.add(el);
+    }
+  }
+  return Array.from(out);
+}
+
+function activationEvents(control: Element): Event[] {
+  if (control instanceof HTMLFormElement) {
+    return [new Event("submit", { bubbles: true, cancelable: true })];
+  }
+  return [
+    new MouseEvent("click", { bubbles: true, cancelable: true }),
+    new KeyboardEvent("keydown", {
+      key: "Enter",
+      bubbles: true,
+      cancelable: true,
+    }),
+  ];
+}
+
+function eventName(e: Event): string {
+  return e instanceof KeyboardEvent ? `keydown(${e.key})` : e.type;
+}
