@@ -83,6 +83,9 @@ export async function fetchAndSwapPartial(
     }
 
     const html = await res.text();
+    // Not every fetch stack rejects `text()` on abort, and the owner may have
+    // disconnected in between; either way the container is no longer ours.
+    if (options.signal.aborted) return false;
     swapElementContent(container, html);
     return true;
   } catch (err: unknown) {

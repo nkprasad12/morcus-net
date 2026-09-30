@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { swapSlots } from "@/web/v2/core/partial.client";
+import { fetchAndSwapPartial, swapSlots } from "@/web/v2/core/partial.client";
 
 function mountHost(innerHtml: string): HTMLElement {
   const host = document.createElement("div");
@@ -259,5 +259,36 @@ describe("swapSlots", () => {
         host.querySelector("[data-slot='body']")?.hasAttribute("tabindex")
       ).toBe(false);
     });
+  });
+});
+
+describe("fetchAndSwapPartial", () => {
+  const originalFetch = window.fetch;
+
+  afterEach(() => {
+    window.fetch = originalFetch;
+    document.body.innerHTML = "";
+  });
+
+  test("doesn't swap once aborted, even if the body still arrives", async () => {
+    const container = mountHost("<p>old</p>");
+    const controller = new AbortController();
+    // A fetch stack that ignores the signal: the owner disconnects (and
+    // aborts) while the body is being read, then the body arrives anyway.
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => {
+        container.remove();
+        controller.abort();
+        return "<p>new</p>";
+      },
+    });
+
+    const ok = await fetchAndSwapPartial(container, "/x", {
+      signal: controller.signal,
+    });
+
+    expect(ok).toBe(false);
+    expect(container.innerHTML).toBe("<p>old</p>");
   });
 });
