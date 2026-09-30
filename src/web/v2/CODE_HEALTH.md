@@ -22,10 +22,6 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 ## Phase 2 — Guardrails
 
-- [ ] 🟡 **Fix the ~7 async-safety violations in `start_server.ts` / `web_server.ts`.**
-      Those two files are outside `src/web/v2`, so the V2 lint block does not cover them, but they
-      are the process entry points: an unhandled rejection there takes down the whole server, V2
-      included. Small enough to do as a one-off without taking on the other ~86 legacy violations.
 - [x] 🟡 **Enforce the `critical.js` byte budget.** `maxCriticalJsRawBytes` / `maxCriticalJsGzipBytes`
       in [`v2_bundle_budget.ts`](../../bundler/v2_bundle_budget.ts) (450 B / 350 B) fail every
       minified build that exceeds them. That matters because
@@ -114,9 +110,6 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 ### Server-side render functions
 
-- [ ] 🟢 **Convert trailing-boolean signatures to option objects**:
-      `renderDictLandingHtml(activeDicts?, isInflected = true)` (`dict_landing.server.ts` L63).
-      `renderDictPageHtml` and `renderDictResultsHtml` already do this correctly.
 - [x] 🟢 **Use or delete `linkifyText`'s `activeWord` parameter** (`dict/linkify.server.ts` L26).
       Deleted `linkify.server.ts` and the `allowLinkify` option in `xml_to_html.server.ts` entirely.
       All Latin word linkification in UI V2 is performed client-side via progressive enhancement
