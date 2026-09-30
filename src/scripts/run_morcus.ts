@@ -296,7 +296,7 @@ function parseArguments() {
     action: "store_true",
   });
   e2e.add_argument("-u", "--update", {
-    help: "Updates screenshot baselines when running visual tests.",
+    help: "Updates screenshot baselines when running visual tests (requires --all with --visual).",
     action: "store_true",
   });
   e2e.add_argument("-pt", "--port", {
@@ -434,8 +434,20 @@ function registerCleanup() {
     }
   };
   process.on("exit", cleanup);
-  process.on("SIGINT", cleanup);
-  process.on("uncaughtException", cleanup);
+  process.on("SIGINT", () => {
+    cleanup();
+    process.exit(130);
+  });
+  process.on("uncaughtException", (err) => {
+    cleanup();
+    console.error(err);
+    process.exit(1);
+  });
+  process.on("unhandledRejection", (err) => {
+    cleanup();
+    console.error(err);
+    process.exit(1);
+  });
 }
 
 function startWorker(args: any, workerType: string): Promise<void> {
@@ -740,6 +752,15 @@ async function runE2eTests(args: any) {
     childEnv.REUSE_DEV_SERVER = "1";
     childEnv.PORT = args.port || process.env.PORT || "5757";
     childEnv.CI = "1";
+
+    if (isVisual && args.update && !args.all) {
+      throw new Error(
+        "Refusing to update visual snapshots without `--all`.\n" +
+          "Updating snapshots through the fast Chromium/MobileChrome path leaves Firefox\n" +
+          "and FirefoxSmallScreen baselines stale, causing matrix drift.\n\n" +
+          "Please run: ./morcus.sh e2e --visual --all --update"
+      );
+    }
 
     const testPath = isVisual
       ? "src/integration/screenshot/browser_v2_screenshot.test.ts"
