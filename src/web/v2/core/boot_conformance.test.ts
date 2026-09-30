@@ -214,3 +214,129 @@ describe("page startup conformance", () => {
     expect(importTimeEffects(sf, true)).toHaveLength(2);
   });
 });
+
+/** Dynamic `import(...)` calls in `sf`, as `file:line` strings. */
+function dynamicImports(sf: ts.SourceFile): string[] {
+  const out: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword
+    ) {
+      out.push(where(sf, node));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return out;
+}
+
+/** `async onConnect()` method declarations in `sf`. */
+function asyncOnConnects(sf: ts.SourceFile): string[] {
+  const out: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isMethodDeclaration(node) &&
+      node.name.getText(sf) === "onConnect" &&
+      node.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword)
+    ) {
+      out.push(where(sf, node));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return out;
+}
+
+/** Augmentations of the global `HTMLElementTagNameMap` in `sf`. */
+function globalTagMapAugmentations(sf: ts.SourceFile): string[] {
+  const out: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isInterfaceDeclaration(node) &&
+      node.name.text === "HTMLElementTagNameMap"
+    ) {
+      out.push(where(sf, node));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return out;
+}
+
+/** Non-type imports of a `Morcus*` identifier from another module. */
+function morcusClassImports(sf: ts.SourceFile): string[] {
+  const out: string[] = [];
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue;
+    const clause = stmt.importClause;
+    if (!clause || clause.isTypeOnly) continue;
+    const names: string[] = [];
+    if (clause.name) names.push(clause.name.text);
+    const bindings = clause.namedBindings;
+    if (bindings && ts.isNamedImports(bindings)) {
+      for (const el of bindings.elements) {
+        if (!el.isTypeOnly) names.push((el.propertyName ?? el.name).text);
+      }
+    }
+    for (const name of names) {
+      if (/^Morcus[A-Z]/.test(name)) {
+        out.push(`${where(sf, stmt)} ${name}`);
+      }
+    }
+  }
+  return out;
+}
+
+function where(sf: ts.SourceFile, node: ts.Node): string {
+  const { line } = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+  return `${rel(sf.fileName)}:${line + 1}`;
+}
+
+/**
+ * Rules the activation gate in `LifetimeScope.listen` relies on (see
+ * `canHandleActivation` in `core/js_gate.client.ts`).
+ */
+describe("activation gate conformance", () => {
+  const files = clientFiles();
+  const sources = files.map(parse);
+
+  test("no lazy import(): activation into a not-yet-defined element is blocked", () => {
+    // Lazy loading needs a gate design: the gate treats an element whose
+    // definition hasn't arrived as not running, so a control that lazily
+    // imports its target on first click would be skipped.
+    expect(sources.flatMap(dynamicImports)).toEqual([]);
+  });
+
+  test("onConnect is synchronous, so data-upgraded means behaviour is attached", () => {
+    expect(sources.flatMap(asyncOnConnects)).toEqual([]);
+  });
+
+  test("component tags augment MorcusElementTagNameMap, not HTMLElementTagNameMap", () => {
+    // Otherwise raw querySelector("morcus-x") returns the class type even
+    // when the element hasn't upgraded; use queryUpgraded / closestUpgraded.
+    expect(sources.flatMap(globalTagMapAugmentations)).toEqual([]);
+  });
+
+  test("no client module imports another module's Morcus* class as a value", () => {
+    // Reach peers through queryUpgraded / closestUpgraded (use `import type`
+    // for annotations), so their methods are only called once they run.
+    expect(sources.flatMap(morcusClassImports)).toEqual([]);
+  });
+
+  test("the checkers flag violations", () => {
+    const sf = ts.createSourceFile(
+      path.join(V2_ROOT, "fake.client.ts"),
+      `import { MorcusA, type MorcusB } from "./a";\n` +
+        `import type { MorcusC } from "./c";\n` +
+        `declare global { interface HTMLElementTagNameMap { "x-y": X } }\n` +
+        `class X { async onConnect() { await import("./z"); } }\n`,
+      ts.ScriptTarget.Latest,
+      true
+    );
+    expect(morcusClassImports(sf)).toEqual(["fake.client.ts:1 MorcusA"]);
+    expect(globalTagMapAugmentations(sf)).toEqual(["fake.client.ts:3"]);
+    expect(asyncOnConnects(sf)).toEqual(["fake.client.ts:4"]);
+    expect(dynamicImports(sf)).toEqual(["fake.client.ts:4"]);
+  });
+});

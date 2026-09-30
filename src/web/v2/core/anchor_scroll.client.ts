@@ -1,3 +1,4 @@
+import { LifetimeScope } from "@/web/v2/core/base_element.client";
 import {
   createSingletonSetup,
   type CleanupFn,
@@ -90,13 +91,15 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
         }
       };
 
-      doc.addEventListener("click", onClick);
-      win.addEventListener?.("hashchange", onHashChange);
-      doc.addEventListener("beforematch", onBeforeMatch, true);
-      return () => {
-        doc.removeEventListener("click", onClick);
-        win.removeEventListener?.("hashchange", onHashChange);
-        doc.removeEventListener("beforematch", onBeforeMatch, true);
-      };
+      const scope = new LifetimeScope(doc);
+      scope.listen(doc, "click", onClick);
+      // `win` may be a partial mock without `addEventListener` in tests.
+      scope.listen(
+        typeof win.addEventListener === "function" ? win : null,
+        "hashchange",
+        onHashChange
+      );
+      scope.listen(doc, "beforematch", onBeforeMatch, true);
+      return () => scope.dispose();
     }
   );

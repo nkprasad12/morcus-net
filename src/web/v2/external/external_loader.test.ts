@@ -8,6 +8,8 @@
 import "fake-indexeddb/auto";
 import { IDBFactory } from "fake-indexeddb";
 
+// On the page, `reader.js` (which external.js depends on) defines the view.
+import "@/web/v2/reader/reader_view.client";
 import {
   MorcusExternalLoader,
   passageText,

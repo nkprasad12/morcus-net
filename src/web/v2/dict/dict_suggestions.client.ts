@@ -105,8 +105,8 @@ export class MorcusDictSuggestions extends BaseElement {
 
 registerElement("morcus-dict-suggestions", MorcusDictSuggestions);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-dict-suggestions": MorcusDictSuggestions;
   }
 }

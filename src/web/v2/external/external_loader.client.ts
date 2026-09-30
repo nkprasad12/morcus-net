@@ -15,13 +15,13 @@
 
 import {
   BaseElement,
+  closestUpgraded,
   html,
   joinHtml,
   registerElement,
   setHtml,
   type SafeHtml,
 } from "@/web/v2/core/index.client";
-import { MorcusReaderView } from "@/web/v2/reader/reader_view.client";
 import {
   ExternalContentStore,
   type ExternalContentSummary,
@@ -249,8 +249,8 @@ export class MorcusExternalLoader extends BaseElement {
   // ----- `?local=` ----------------------------------------------------------
 
   private async loadLocal(): Promise<void> {
-    const view = this.closest("morcus-reader-view");
-    if (!(view instanceof MorcusReaderView)) return;
+    const view = closestUpgraded(this, "morcus-reader-view");
+    if (!view) return;
     const key = this.dataset.localKey ?? "";
     const lines = parseLineMode(this.dataset.lines);
 
@@ -315,8 +315,8 @@ export class MorcusExternalLoader extends BaseElement {
 
 registerElement("morcus-external-loader", MorcusExternalLoader);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-external-loader": MorcusExternalLoader;
   }
 }

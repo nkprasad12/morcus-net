@@ -862,8 +862,8 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
 
 registerElement("morcus-corpus-suggestions", MorcusCorpusSuggestions);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-corpus-suggestions": MorcusCorpusSuggestions;
   }
 }

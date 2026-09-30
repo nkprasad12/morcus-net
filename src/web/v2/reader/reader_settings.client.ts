@@ -173,7 +173,7 @@ export class MorcusReaderSettings extends BaseElement {
   public getWorkId(): string | null {
     return (
       this.dataset.work ||
-      this.closest("morcus-reader-view")?.dataset.work ||
+      this.closest<HTMLElement>("morcus-reader-view")?.dataset.work ||
       null
     );
   }
@@ -381,8 +381,8 @@ export class MorcusReaderSettings extends BaseElement {
 
 registerElement("morcus-reader-settings", MorcusReaderSettings);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-reader-settings": MorcusReaderSettings;
   }
 }

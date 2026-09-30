@@ -4,13 +4,21 @@ import type { CleanupFn } from "@/web/v2/core/disposable.client";
  * Dismissable overlay coordination (click/pointerdown outside + Escape key).
  */
 
+/** Why a dismissable overlay closed: an outside pointer, or Escape. */
+export type DismissReason = "pointer" | "escape";
+
 export interface DismissableOptions {
   /** The container element whose outside clicks trigger dismissal. */
   container: HTMLElement | (() => HTMLElement | null);
   /** Predicate reporting whether the overlay is currently open. */
   isOpen: () => boolean;
-  /** Action to invoke on dismissal. */
-  onDismiss: (e: Event) => void;
+  /**
+   * Action to invoke on dismissal. Gets why it was dismissed, not the event:
+   * these listeners bypass the activation gate in `LifetimeScope.listen` (an
+   * outside click must still close the overlay when it lands in a failed
+   * component), so callers must not be able to cancel the native action.
+   */
+  onDismiss: (reason: DismissReason) => void;
   /** Optional trigger element to return focus to on Escape key. */
   triggerEl?: HTMLElement | (() => HTMLElement | null) | null;
   /** Listen on pointerdown/mousedown (preferred for instant touch/mouse dismiss) or click. */
@@ -46,7 +54,7 @@ export function bindDismissable(options: DismissableOptions): CleanupFn {
 
     const container = getContainer();
     if (container && !container.contains(target)) {
-      options.onDismiss(e);
+      options.onDismiss("pointer");
     }
   };
 
@@ -55,7 +63,7 @@ export function bindDismissable(options: DismissableOptions): CleanupFn {
       // native-takeover(self): Escape dismisses this overlay (onDismiss) and
       // returns focus to its trigger; only while the overlay is open
       e.preventDefault();
-      options.onDismiss(e);
+      options.onDismiss("escape");
       const trigger = getTrigger();
       trigger?.focus();
     }

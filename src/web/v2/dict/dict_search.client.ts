@@ -5,6 +5,7 @@ import {
   createWordLink,
   fetchAndSwapPartial,
   isPlainLeftClick,
+  queryUpgraded,
   registerElement,
   replaceWithHtml,
   setHtml,
@@ -21,7 +22,6 @@ import {
 } from "@/web/v2/dict/dict_completions.common";
 import { filterAndClusterDictionaryChunks } from "@/web/v2/dict/dict_clustering.common";
 import { DictChunkCache } from "@/web/v2/dict/dict_chunk_cache.client";
-import type { MorcusDictSuggestions } from "@/web/v2/dict/dict_suggestions.client";
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import {
   encodeDictBitmask,
@@ -62,7 +62,8 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
   private inputElement: HTMLInputElement | null = null;
   private resultsElement: HTMLElement | null = null;
-  private suggestionsEl: MorcusDictSuggestions | null = null;
+  /** The suggestions host, for events and dismissal (works before it upgrades). */
+  private suggestionsEl: HTMLElement | null = null;
 
   private activeDictBitmask: string = DEFAULT_DICT_BITMASK;
   private activeDictKeys: string[] = [...DEFAULT_DICT_KEYS];
@@ -249,9 +250,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     // Adopt the server-rendered suggestions host (see `renderDictSearchBar`).
     // Re-queried on every connect, so a re-attached element listens to the
     // child that is actually in its subtree.
-    this.suggestionsEl = this.scope.$<MorcusDictSuggestions>(
-      "morcus-dict-suggestions"
-    );
+    this.suggestionsEl = this.scope.$("morcus-dict-suggestions");
     if (this.suggestionsEl) {
       this.scope.listen(this.suggestionsEl, "suggestion-select", (e: Event) => {
         if (e instanceof CustomEvent) {
@@ -472,9 +471,10 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   }
 
   private updateSuggestionsView() {
-    if (this.suggestionsEl) {
-      this.suggestionsEl.items = this.suggestions;
-      this.suggestionsEl.activeIndex = this.selectedSuggestionIndex;
+    const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
+    if (suggestions) {
+      suggestions.items = this.suggestions;
+      suggestions.activeIndex = this.selectedSuggestionIndex;
     }
   }
 
@@ -655,8 +655,8 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
 registerElement("morcus-dict-search", MorcusDictSearch);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-dict-search": MorcusDictSearch;
   }
 }

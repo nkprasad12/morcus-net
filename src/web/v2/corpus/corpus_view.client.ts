@@ -135,8 +135,8 @@ export class MorcusCorpusView extends BaseElement<"nav"> {
 
 registerElement("morcus-corpus-view", MorcusCorpusView);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-corpus-view": MorcusCorpusView;
   }
 }

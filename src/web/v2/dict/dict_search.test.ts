@@ -1,6 +1,8 @@
 /**
  * @jest-environment jsdom
  */
+// Suggestions register first, as in `dict_entry.client.ts`.
+import "@/web/v2/dict/dict_suggestions.client";
 import "@/web/v2/dict/dict_search.client";
 import { MorcusDictSearch } from "@/web/v2/dict/dict_search.client";
 

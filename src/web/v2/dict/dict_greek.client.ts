@@ -86,8 +86,8 @@ export class MorcusGreekEmbed extends BaseElement {
 
 registerElement("morcus-greek-embed", MorcusGreekEmbed);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-greek-embed": MorcusGreekEmbed;
   }
 }

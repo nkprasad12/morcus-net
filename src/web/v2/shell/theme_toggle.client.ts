@@ -92,8 +92,8 @@ export class MorcusThemeToggle extends BaseElement {
 
 registerElement("morcus-theme-toggle", MorcusThemeToggle);
 
-declare global {
-  interface HTMLElementTagNameMap {
+declare module "@/web/v2/core/js_gate.client" {
+  interface MorcusElementTagNameMap {
     "morcus-theme-toggle": MorcusThemeToggle;
   }
 }
