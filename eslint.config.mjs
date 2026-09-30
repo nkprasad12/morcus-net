@@ -22,6 +22,16 @@ const compat = new FlatCompat({
   allConfig: js.configs.all,
 });
 
+// Shared `no-restricted-syntax` entries. Restated wherever the rule is
+// configured again for a narrower set of files (see the NOTE below).
+const HE_ENCODE_SYNTAX = [
+  {
+    selector:
+      "ImportDeclaration[source.value='he'] > ImportSpecifier[imported.name='encode']",
+    message: "Prefer importing he.escape over he.encode.",
+  },
+];
+
 // Shared `no-restricted-imports` patterns.
 //
 // NOTE: ESLint flat config *replaces* a rule's options when the same rule is
@@ -411,14 +421,7 @@ export default [
             "Prefer he.escape over he.encode in server templates. he.encode entity-encodes all non-ASCII (including Greek and accented Latin), wasting CPU and payload on every render.",
         },
       ],
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector:
-            "ImportDeclaration[source.value='he'] > ImportSpecifier[imported.name='encode']",
-          message: "Prefer importing he.escape over he.encode.",
-        },
-      ],
+      "no-restricted-syntax": ["error", ...HE_ENCODE_SYNTAX],
     },
   },
   // Enables type-checked rules for UI V2 production code. The expensive
@@ -438,6 +441,46 @@ export default [
     ignores: ["src/web/v2/**/*.test.ts"],
     rules: {
       ...typescriptEslint.configs["recommended-type-checked-only"].rules,
+    },
+  },
+  // The activation gate (src/web/v2/README.md, "The activation gate") lives in
+  // LifetimeScope.listen(), so client code must listen through a scope. Raw
+  // addEventListener and on* handler properties would bypass it.
+  //
+  // Exempt: the scope itself (base_element), and low-level modules that
+  // base_element imports or that can't depend on it (router: popstate; dom:
+  // animationend) or that deliberately listen at the document level
+  // (dismissable, page_ready).
+  //
+  // NOTE: this block replaces the he.encode block's no-restricted-syntax
+  // options for these files, so it repeats HE_ENCODE_SYNTAX.
+  {
+    files: ["src/web/v2/**/*.client.ts"],
+    ignores: [
+      "src/web/v2/**/*.test.ts",
+      "src/web/v2/core/base_element.client.ts",
+      "src/web/v2/core/dismissable.client.ts",
+      "src/web/v2/core/dom.client.ts",
+      "src/web/v2/core/page_ready.client.ts",
+      "src/web/v2/core/router.client.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        ...HE_ENCODE_SYNTAX,
+        {
+          selector: "CallExpression[callee.property.name='addEventListener']",
+          message:
+            'Listen through a LifetimeScope (this.scope.listen, or a standalone scope in a global setup) so the activation gate applies. See README "The activation gate".',
+        },
+        {
+          // IndexedDB request/transaction callbacks are not DOM events.
+          selector:
+            "AssignmentExpression[left.type='MemberExpression'][left.property.name=/^on(?!success$|error$|upgradeneeded$|blocked$|complete$|abort$)[a-z]+$/]",
+          message:
+            'Don\'t assign on* handlers; listen through a LifetimeScope so the activation gate applies. See README "The activation gate".',
+        },
+      ],
     },
   },
 ];

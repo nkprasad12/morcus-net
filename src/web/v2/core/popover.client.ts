@@ -9,7 +9,7 @@
 import {
   BaseController,
   type CleanupFn,
-  type LifetimeScope,
+  LifetimeScope,
 } from "@/web/v2/core/base_element.client";
 import { bindDismissable } from "@/web/v2/core/dismissable.client";
 import { assertConnected } from "@/web/v2/core/dom.client";
@@ -94,11 +94,10 @@ export function trapFocus(panel: HTMLElement): CleanupFn {
     }
   };
 
-  doc.addEventListener("keydown", onKeyDown);
-
-  return () => {
-    doc.removeEventListener("keydown", onKeyDown);
-  };
+  // Tab isn't an activation key, so the gate never skips this listener.
+  const scope = new LifetimeScope(doc);
+  scope.listen(doc, "keydown", onKeyDown);
+  return () => scope.dispose();
 }
 
 export class AnchoredPopoverController extends BaseController {

@@ -138,7 +138,8 @@ export class WakeLockController extends BaseController {
       return;
     }
     this.sentinel = sentinel;
-    sentinel.addEventListener(
+    this.scope.listen(
+      sentinel,
       "release",
       () => {
         if (this.sentinel === sentinel) this.sentinel = null;

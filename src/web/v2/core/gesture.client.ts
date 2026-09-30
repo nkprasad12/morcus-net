@@ -1,3 +1,4 @@
+import { LifetimeScope } from "@/web/v2/core/base_element.client";
 import type { CleanupFn } from "@/web/v2/core/disposable.client";
 
 /**
@@ -160,19 +161,17 @@ export function trackPointerDrag(
   const onPointerUp = (e: PointerEvent) => finishDrag(e, false);
   const onPointerCancel = (e: PointerEvent) => finishDrag(e, true);
 
-  handle.addEventListener("pointerdown", onPointerDown);
-  handle.addEventListener("pointermove", onPointerMove);
-  handle.addEventListener("pointerup", onPointerUp);
-  handle.addEventListener("pointercancel", onPointerCancel);
+  const scope = new LifetimeScope(null);
+  scope.listen(handle, "pointerdown", onPointerDown);
+  scope.listen(handle, "pointermove", onPointerMove);
+  scope.listen(handle, "pointerup", onPointerUp);
+  scope.listen(handle, "pointercancel", onPointerCancel);
 
   return () => {
     if (isDragging) {
       setDragClasses(false);
     }
-    handle.removeEventListener("pointerdown", onPointerDown);
-    handle.removeEventListener("pointermove", onPointerMove);
-    handle.removeEventListener("pointerup", onPointerUp);
-    handle.removeEventListener("pointercancel", onPointerCancel);
+    scope.dispose();
   };
 }
 
@@ -259,15 +258,11 @@ export function trackHorizontalSwipe(
   const onCancel = () => end(true);
   const passive: AddEventListenerOptions = { passive: true };
 
-  el.addEventListener("touchstart", onStart, passive);
-  el.addEventListener("touchmove", onMove, passive);
-  el.addEventListener("touchend", onEnd, passive);
-  el.addEventListener("touchcancel", onCancel, passive);
+  const scope = new LifetimeScope(null);
+  scope.listen(el, "touchstart", onStart, passive);
+  scope.listen(el, "touchmove", onMove, passive);
+  scope.listen(el, "touchend", onEnd, passive);
+  scope.listen(el, "touchcancel", onCancel, passive);
 
-  return () => {
-    el.removeEventListener("touchstart", onStart, passive);
-    el.removeEventListener("touchmove", onMove, passive);
-    el.removeEventListener("touchend", onEnd, passive);
-    el.removeEventListener("touchcancel", onCancel, passive);
-  };
+  return () => scope.dispose();
 }

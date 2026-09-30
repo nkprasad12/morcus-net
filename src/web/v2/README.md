@@ -140,7 +140,7 @@ A handler that cancels a native action (`preventDefault()`, or `pushState` in pl
 
 So a native action whose No-JS replacement has no running owner is never cancelled. Other events always pass. What that means for new code:
 
-- **Listen through a scope.** Use `this.scope.listen(...)` in components and a standalone `new LifetimeScope(doc)` in global setups. Raw `addEventListener` bypasses the gate.
+- **Listen through a scope.** Use `this.scope.listen(...)` in components and a standalone `new LifetimeScope(doc)` in global setups. Raw `addEventListener` and `on*` handler properties would bypass the gate, so ESLint bans them in `*.client.ts` (`no-restricted-syntax` in `eslint.config.mjs`), except in the few low-level modules listed there.
 - **Reach peers with `queryUpgraded` / `closestUpgraded`.** Component classes are registered in `MorcusElementTagNameMap`, not `HTMLElementTagNameMap`, so a raw `querySelector("morcus-x")` is an untyped `Element`. [`core/boot_conformance.test.ts`](core/boot_conformance.test.ts) also bans value imports of `Morcus*` classes, dynamic `import()` and `async onConnect`.
 - **Keep references within an owner or visible to the gate.** A `label[for]` or `[form]` must share its nearest `morcus-*` owner with its target. A same-page hash link must be written as a bare `#id`. [`core/route_bundle_conformance.test.ts`](core/route_bundle_conformance.test.ts) checks both.
 - [`core/ssr_conformance.test.ts`](core/ssr_conformance.test.ts) section 4 fails each `morcus-*` instance in the SSR fixtures in turn and asserts that no activation in it, or pointing into it, is cancelled.
