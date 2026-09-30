@@ -413,12 +413,11 @@ export class DrawerController extends BaseController {
         "click",
         (e: MouseEvent) => {
           if (wasDragged) {
-            // native-takeover(own-subtree): a drag on this drawer's summary
-            // must not also toggle the <details> open state
+            // A drag on this drawer's summary must not also toggle the
+            // <details> open state
             e.preventDefault();
-            // native-takeover(own-subtree): swallow the post-drag click so
-            // other listeners on this drawer's summary don't treat it as a
-            // tap
+            // Swallow the post-drag click so other listeners on this drawer's
+            // summary don't treat it as a tap
             e.stopImmediatePropagation();
             wasDragged = false;
           }
@@ -435,8 +434,8 @@ export class DrawerController extends BaseController {
 
     this.scope.listen(handle, "keydown", (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") {
-        // native-takeover(own-subtree): ArrowUp on this drawer's handle expands
-        // the drawer instead of scrolling
+        // ArrowUp on this drawer's handle expands the drawer instead of
+        // scrolling
         e.preventDefault();
         if (this.isMinimized()) {
           this.restore(this.defaultSvh);
@@ -444,8 +443,8 @@ export class DrawerController extends BaseController {
           this.restore(this.expandedSvh);
         }
       } else if (e.key === "ArrowDown") {
-        // native-takeover(own-subtree): ArrowDown on this drawer's handle
-        // shrinks the drawer instead of scrolling
+        // ArrowDown on this drawer's handle shrinks the drawer instead of
+        // scrolling
         e.preventDefault();
         const currentHeight = drawer.getBoundingClientRect().height;
         const winHeight = measureSvh100();
@@ -455,8 +454,8 @@ export class DrawerController extends BaseController {
           this.minimize();
         }
       } else if (e.key === "Escape") {
-        // native-takeover(own-subtree): Escape on this drawer's handle
-        // minimizes the drawer (or runs onEscape)
+        // Escape on this drawer's handle minimizes the drawer (or runs
+        // onEscape)
         e.preventDefault();
         if (this.options.onEscape) {
           this.options.onEscape();

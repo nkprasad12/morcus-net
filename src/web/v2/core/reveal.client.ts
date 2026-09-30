@@ -101,9 +101,9 @@ export function revealHashTarget(
 
   revealTarget(target);
   if (REGISTRY.get(target)?.ownsHash) {
-    // native-takeover(self): hash handover. The registered (so upgraded)
-    // owner just revealed the target and now holds the state; its `:target`
-    // CSS is scoped to un-upgraded owners, so the stale `:target` is inert.
+    // Hash handover. The registered (so upgraded) owner just revealed the
+    // target and now holds the state; its `:target` CSS is scoped to
+    // un-upgraded owners, so the stale `:target` is inert.
     win.history.replaceState(
       win.history.state,
       "",

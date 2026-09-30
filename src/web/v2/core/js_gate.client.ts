@@ -65,10 +65,10 @@ function isUnupgradedOwner(el: Element): boolean {
  * working inside a failed ancestor, as the CSS gate does. A failed `owner`
  * is always `false`.
  *
- * Code that suppresses a native action and hands the replacement to another
- * owner checks this first, so an owner that is not running keeps its No-JS
- * behaviour, such as `:target` UI. Global setups run at page ready, after
- * every chunk has executed, so this is false only when:
+ * {@link canHandleActivation} applies this to every activation event a
+ * `LifetimeScope` listens for, so an owner that is not running keeps its
+ * No-JS behaviour, such as `:target` UI. Global setups run at page ready,
+ * after every chunk has executed, so this is false only when:
  *
  * - the owner's route chunk failed to load (flaky network, deploy skew): its
  *   tag is never defined;
@@ -76,9 +76,7 @@ function isUnupgradedOwner(el: Element): boolean {
  * - its definition arrives later (a lazily imported chunk).
  *
  * This is the README rule "before upgrade, a page behaves like the No-JS
- * page", applied to code outside the owner. The `morcus/native-takeover`
- * lint rule requires this guard on every `native-takeover(owner-checked)`
- * call.
+ * page", applied to code outside the owner.
  */
 export function ownersUpgraded(el: Element, owner?: Element | null): boolean {
   if (owner?.hasAttribute(JS_FAILED_ATTR)) return false;

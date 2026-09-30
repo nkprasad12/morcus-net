@@ -108,7 +108,7 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
         if (!(e.target instanceof Element)) return;
         const abbr = e.target.closest<HTMLElement>(".lsHover");
         if (abbr) {
-          // native-takeover(self): opens the abbreviation popover itself
+          // Opens the abbreviation popover itself
           e.preventDefault();
           openAbbrPopover(abbr);
         }
@@ -125,7 +125,7 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
             activeEl instanceof HTMLElement &&
             activeEl.classList.contains("lsHover")
           ) {
-            // native-takeover(self): opens the abbreviation popover itself
+            // Opens the abbreviation popover itself
             e.preventDefault();
             openAbbrPopover(activeEl);
           }

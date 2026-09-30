@@ -234,7 +234,7 @@ export class ReaderPanelController extends BaseController {
       "click",
       ".reader-panel-tab",
       (e, tab) => {
-        // native-takeover(own-subtree): its own tab links switch tabs in place
+        // Its own tab links switch tabs in place
         e.preventDefault();
         const id = this.tabIdOf(tab);
         if (id) this.setTab(id);
@@ -260,8 +260,7 @@ export class ReaderPanelController extends BaseController {
       } else {
         return;
       }
-      // native-takeover(own-subtree): roving arrow/Home/End/Space in its own
-      // tablist
+      // Roving arrow/Home/End/Space in its own tablist
       e.preventDefault();
       this.setTab(available[next].id);
       available[next].tab.focus();

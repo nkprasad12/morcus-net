@@ -17,7 +17,7 @@
  * The wait covers deferred and non-`async` module scripts only. V2 chunk tags
  * must never be `async` (checked in `page_shell.test.ts`), and lazily
  * `import()`ed chunks are not waited for: components they define are handled
- * by the owner check in `core/js_gate.client.ts` ({@link ownersUpgraded}).
+ * by the activation gate in `core/js_gate.client.ts` (`canHandleActivation`).
  */
 
 /**

@@ -44,8 +44,8 @@ export function setupModalDialog(
     : [];
 
   const openDialog = (e?: Event) => {
-    // native-takeover(self): opens this dialog via showModal() in place of
-    // the trigger's default action
+    // Opens this dialog via showModal() in place of the trigger's default
+    // action
     e?.preventDefault();
     if (typeof dialog.showModal === "function") {
       dialog.showModal();
@@ -59,8 +59,8 @@ export function setupModalDialog(
   };
 
   const closeDialog = (e?: Event) => {
-    // native-takeover(self): closes this dialog via close() in place of the
-    // close button's / backdrop click's default action
+    // Closes this dialog via close() in place of the close button's / backdrop
+    // click's default action
     e?.preventDefault();
     if (typeof dialog.close === "function") {
       dialog.close();

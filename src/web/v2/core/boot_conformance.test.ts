@@ -16,8 +16,8 @@
  *    setup can't be exported and forgotten.
  *
  * Related guards: `page_shell.test.ts` (chunk tags are non-`async` modules,
- * which DOMContentLoaded waits for) and the owner check in
- * `core/js_gate.client.ts` (`ownersUpgraded`) for handlers.
+ * which DOMContentLoaded waits for) and the activation gate in
+ * `core/js_gate.client.ts` (`canHandleActivation`) for handlers.
  */
 
 import fs from "fs";

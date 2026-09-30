@@ -79,15 +79,15 @@ export function trapFocus(panel: HTMLElement): CleanupFn {
 
     if (e.shiftKey) {
       if (active === first || !panel.contains(active)) {
-        // native-takeover(self): wraps Shift+Tab focus to the panel's last
-        // focusable while the trap is active
+        // Wraps Shift+Tab focus to the panel's last focusable while the trap is
+        // active
         e.preventDefault();
         last.focus();
       }
     } else {
       if (active === last || !panel.contains(active)) {
-        // native-takeover(self): wraps Tab focus to the panel's first
-        // focusable while the trap is active
+        // Wraps Tab focus to the panel's first focusable while the trap is
+        // active
         e.preventDefault();
         first.focus();
       }
@@ -147,29 +147,28 @@ export class AnchoredPopoverController extends BaseController {
     const backdrop = this.getBackdrop();
 
     this.scope.listen(trigger, "click", (e: MouseEvent) => {
-      // native-takeover(own-subtree): this popover's trigger toggles the
-      // popover in place of its native action
+      // This popover's trigger toggles the popover in place of its native
+      // action
       e.preventDefault();
-      // native-takeover(own-subtree): keep the toggling click from reaching
-      // outside-click dismissal on ancestors
+      // Keep the toggling click from reaching outside-click dismissal on
+      // ancestors
       e.stopPropagation();
       this.toggle();
     });
 
     this.scope.listen(closeBtn, "click", (e: MouseEvent) => {
-      // native-takeover(own-subtree): this popover's close button closes it
-      // in place of its native action
+      // This popover's close button closes it in place of its native action
       e.preventDefault();
       this.close();
       this.getTrigger()?.focus();
     });
 
     this.scope.listen(backdrop, "click", (e: MouseEvent) => {
-      // native-takeover(own-subtree): a click on this popover's backdrop
-      // closes it in place of its native action
+      // A click on this popover's backdrop closes it in place of its native
+      // action
       e.preventDefault();
-      // native-takeover(own-subtree): keep the backdrop click from reaching
-      // outside-click dismissal on ancestors
+      // Keep the backdrop click from reaching outside-click dismissal on
+      // ancestors
       e.stopPropagation();
       this.close();
     });

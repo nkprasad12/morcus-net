@@ -282,11 +282,11 @@ runs (§7.2). A + D has fewer moving parts than B (no shell attribute, no per-en
 - `browser_v2_late_hydration.test.ts`, "UI V2 chunk ordering: intermediate state": the PH5 and PH7
   clicks, deep link, `hashchange`, and dictionary (page and reader iframe) links, staged; and a
   route chunk that fails to load (the TOC link still opens the drawer natively).
-- The `morcus/native-takeover` ESLint rule ([`tools/native_takeover.cjs`](tools/native_takeover.cjs),
-  "Native takeovers" in [README.md](README.md)): every `preventDefault`, `stopPropagation`,
-  `stopImmediatePropagation`, `history.pushState`/`replaceState` and `history.scrollRestoration`
-  write in client code carries a `native-takeover(self | own-subtree | owner-checked): reason`
-  marker, and `owner-checked` ones are verified to sit behind `ownersUpgraded(...)`.
+- The activation gate ("The activation gate" in [README.md](README.md)): `LifetimeScope.listen()`
+  applies D to every `click`, `submit` and activating `keydown` listener, not just
+  `anchor_scroll`'s. `activation_gate.test.ts` covers the gate itself;
+  `ssr_conformance.test.ts` section 4 fails each component in the SSR fixtures in turn and checks
+  that nothing cancels an activation in it or pointing into it.
 
 ### When is D's check actually false?
 
@@ -319,15 +319,15 @@ rule:
   native actions, which conflicts with a No-JS baseline, so it is not a fit.
 
 We have no central dispatcher (`bindDismissable`, `popover` and window-level shortcuts each
-listen on their own), so the lint rule stands in for that structure.
+listen on their own), so the gate lives in the one API they all listen through,
+`LifetimeScope.listen()`.
 
 ### Rules for new code
 
 - A global setup is a pure `export const setupX = createSingletonSetup(...)`, started from
   `onPageReady` in its chunk's entry. Never at import time.
-- A handler that suppresses native behaviour and hands the replacement to another owner checks
-  `ownersUpgraded(target)` first, leaves the event alone if it is false, and is marked
-  `native-takeover(owner-checked)`.
+- Listen through a `LifetimeScope` (`this.scope.listen`, or a standalone scope in a global
+  setup), never raw `addEventListener`, so the activation gate applies D for you.
 - Don't mark V2 chunk tags `async`. Load heavy optional features with `import()`.
 - Jump pills scroll instantly, not smoothly: they are for quick navigation, and across many long
   dictionary entries a smooth scroll takes (or feels like it takes) seconds. Keep it that way if

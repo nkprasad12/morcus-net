@@ -4,7 +4,6 @@ import {
   type CleanupFn,
 } from "@/web/v2/core/disposable.client";
 import { flashElement } from "@/web/v2/core/dom.client";
-import { ownersUpgraded } from "@/web/v2/core/js_gate.client";
 import { revealHashTarget, revealTarget } from "@/web/v2/core/reveal.client";
 
 /**
@@ -62,14 +61,10 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
 
         const targetId = href.slice(1);
         const targetEl = doc.getElementById(targetId);
-        // A component that could own the target is not running (its chunk
-        // failed to load, its `onConnect` threw, or it is lazily loaded):
-        // leave the fragment navigation to the browser so its No-JS
-        // `:target` UI still works. `replaceState` below would change the URL
-        // without updating `:target`.
-        if (targetEl && ownersUpgraded(targetEl)) {
-          // native-takeover(owner-checked): the target's owners are upgraded,
-          // so revealTarget() below replaces the native `:target` UI.
+        // If a component that could own the target isn't running, the
+        // activation gate never calls this handler, so the browser's fragment
+        // navigation and No-JS `:target` UI stay in charge.
+        if (targetEl) {
           e.preventDefault();
           revealTarget(targetEl);
 
@@ -84,8 +79,8 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
               behavior: isJumpPill ? "instant" : "smooth",
             });
           }
-          // native-takeover(owner-checked): records the fragment without a
-          // history entry; the owner (not `:target`) now holds the state.
+          // Records the fragment without a history entry; the owner (not
+          // `:target`) now holds the state.
           win.history.replaceState(null, "", href);
           triggerAnchorHighlight(targetEl);
         }

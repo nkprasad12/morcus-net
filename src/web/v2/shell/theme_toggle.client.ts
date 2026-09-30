@@ -54,9 +54,9 @@ export class MorcusThemeToggle extends BaseElement {
 
   private readonly toggleTheme = (e?: Event) => {
     if (e) {
-      // native-takeover(own-subtree): our button; toggles the theme itself
+      // Our button; toggles the theme itself
       e.preventDefault();
-      // native-takeover(own-subtree): click on our button is fully handled here
+      // Click on our button is fully handled here
       e.stopPropagation();
     }
     const nextDark = !this.computeIsDark();

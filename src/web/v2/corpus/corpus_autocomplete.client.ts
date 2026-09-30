@@ -795,8 +795,7 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     switch (e.key) {
       case "ArrowDown":
       case "ArrowUp": {
-        // native-takeover(own-subtree): arrow keys move the highlight in our
-        // own listbox
+        // Arrow keys move the highlight in our own listbox
         e.preventDefault();
         if (parts.listbox.hidden) this.refresh();
         const count = this.rows.length;
@@ -817,8 +816,7 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
           this.close();
           return;
         }
-        // native-takeover(own-subtree): Enter picks the highlighted row instead
-        // of submitting
+        // Enter picks the highlighted row instead of submitting
         e.preventDefault();
         this.choose(this.active);
         return;
@@ -827,14 +825,13 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
           this.close();
           return;
         }
-        // native-takeover(own-subtree): Tab accepts the completion instead of
-        // moving focus
+        // Tab accepts the completion instead of moving focus
         e.preventDefault();
         this.choose(this.active);
         return;
       case "Escape":
         if (!parts.listbox.hidden) {
-          // native-takeover(own-subtree): Escape closes our open listbox
+          // Escape closes our open listbox
           e.preventDefault();
           this.close();
         }
@@ -846,8 +843,7 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     const parts = this.parts;
     if (parts === null) return;
     // Keep focus, and with it the caret, in the input.
-    // native-takeover(own-subtree): mousedown in our listbox keeps focus in our
-    // input
+    // Mousedown in our listbox keeps focus in our input
     e.preventDefault();
     if (e.button !== 0) return;
     const { listbox } = parts;
