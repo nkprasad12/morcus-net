@@ -60,8 +60,8 @@ export function bindDismissable(options: DismissableOptions): CleanupFn {
 
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "Escape" && options.isOpen()) {
-      // native-takeover(self): Escape dismisses this overlay (onDismiss) and
-      // returns focus to its trigger; only while the overlay is open
+      // Escape dismisses this overlay (onDismiss) and returns focus to its
+      // trigger; only while the overlay is open
       e.preventDefault();
       options.onDismiss("escape");
       const trigger = getTrigger();

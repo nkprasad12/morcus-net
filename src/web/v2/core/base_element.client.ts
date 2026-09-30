@@ -714,8 +714,8 @@ export abstract class BaseElement<
     if (!form) return null;
 
     this.scope.listen(form, "submit", (e: Event) => {
-      // native-takeover(self): hijackForm replaces this form's native submit
-      // with the caller's onSubmit handler
+      // hijackForm replaces this form's native submit with the caller's
+      // onSubmit handler
       e.preventDefault();
       const formData = new FormData(form);
       const data: Record<string, string> = {};

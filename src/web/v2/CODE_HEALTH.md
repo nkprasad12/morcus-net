@@ -53,7 +53,7 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       are not upgraded (`ownersUpgraded` in [`core/js_gate.client.ts`](core/js_gate.client.ts)).
       The `whenDefined` stopgap is gone. The late-hydration suite now stages `common.js` before
       the route chunk. Decision record: [CHUNK_ORDERING.md §8](CHUNK_ORDERING.md). Recurrence is
-      guarded by the `morcus/native-takeover` lint rule ("Native takeovers" in
+      prevented by the activation gate in `LifetimeScope.listen()` ("The activation gate" in
       [README.md](README.md)).
 - [ ] 🟡 **Make revealers idempotent by contract, and test it.** README says `reveal(target)` must
       be idempotent, but the [`Revealer`](core/reveal.client.ts) type doesn't, and no test calls a
@@ -74,9 +74,8 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       `defaultPrevented` check, so a nested widget that handles Escape still closes the outer
       overlay. `popover`'s focus trap takes Tab even when focus is outside the panel (it does
       check `defaultPrevented`). `abbr_popover` suppresses clicks on any `.lsHover`, which would
-      also swallow navigation if one ever sat inside a link. All three are marked
-      `native-takeover(self)`; none are chunk-ordering bugs, but each acts on events it doesn't
-      own.
+      also swallow navigation if one ever sat inside a link. None are chunk-ordering bugs, but
+      each acts on events it doesn't own.
 - [ ] 🟢 **Extend the import-boundary lint beyond `src/web/v2` and `src/bundler`.** The tier rules in
       `eslint.config.mjs` only match files inside those two trees. `src/bundler` importing
       `asset_manifest.server.ts` went unnoticed until review for exactly that reason (it has its own
@@ -150,7 +149,7 @@ with `npm run inventory:update` in the same change.
 - [ ] 🟡 **Fix the Firefox click-to-lookup flake.** `browser_v2_e2e.test.ts` _"click-to-lookup
       progressively enhances Latin words and navigates on click (JS enabled)"_ fails ~20–40% of runs
       on `firefox` / `FirefoxSmallScreen` (21/50 on `8f630e3b`, run with `--repeat-each=25
-      --retries=0`); `--retries` hides it in normal runs. The URL stays at `?q=habeo` instead of
+    --retries=0`); `--retries` hides it in normal runs. The URL stays at `?q=habeo` instead of
       `?q=habere`. The `.lat-word` is an `<a href>`, so a skipped handler would have navigated
       natively and passed: the handler in `dict_search.client.ts` (results `click` listener) most
       likely calls `preventDefault()` and then `chooseSuggestion` never updates the URL. Suspects:

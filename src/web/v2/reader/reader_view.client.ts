@@ -234,8 +234,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (typeof window !== "undefined" && window.history) {
       this.originalScrollRestoration = window.history.scrollRestoration;
       try {
-        // native-takeover(self): the reader restores scroll itself on page
-        // swaps and popstate (hydratePage)
+        // The reader restores scroll itself on page swaps and popstate
+        // (hydratePage)
         window.history.scrollRestoration = "manual";
       } catch {
         // Ignored in test environments
@@ -377,7 +377,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   protected override onDisconnect() {
     if (typeof window !== "undefined" && window.history) {
       try {
-        // native-takeover(self): restores the value it saved in onConnect
+        // Restores the value it saved in onConnect
         window.history.scrollRestoration = this.originalScrollRestoration;
       } catch {
         // Ignored
@@ -393,8 +393,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       "a.reader-sheet-close, a.drawer-close"
     );
     if (closeBtn) {
-      // native-takeover(own-subtree): its drawer close link closes the drawer
-      // in place
+      // Its drawer close link closes the drawer in place
       e.preventDefault();
       this.closeDictionary(true);
       return;
@@ -405,8 +404,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       "a.reader-sheet-open-link, a.reader-drawer-fab"
     );
     if (openLink) {
-      // native-takeover(own-subtree): its drawer open link / FAB restores the
-      // drawer in place
+      // Its drawer open link / FAB restores the drawer in place
       e.preventDefault();
       this.restoreDrawer();
       return;
@@ -416,8 +414,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // or copies canonical permalink directly on External Reader where data-work is absent)
     const secAnchor = e.target.closest<HTMLAnchorElement>("a.section-anchor");
     if (secAnchor) {
-      // native-takeover(own-subtree): its section anchors open the action menu
-      // / copy the permalink instead of jumping
+      // Its section anchors open the action menu / copy the permalink instead
+      // of jumping
       e.preventDefault();
       const href = secAnchor.getAttribute("href") || "";
       const secId = href.replace(/^#sec-/, "");
@@ -469,8 +467,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // Handle in-text note marker click (reveals critical apparatus in notes panel)
     const noteRef = e.target.closest<HTMLAnchorElement>("a.reader-note-ref");
     if (noteRef) {
-      // native-takeover(own-subtree): its note markers open the note in its
-      // panel
+      // Its note markers open the note in its panel
       e.preventDefault();
       const href = noteRef.getAttribute("href") || "";
       const bodyId = href.replace(/^#/, "");
@@ -489,8 +486,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       const refId = href.replace(/^#/, "");
       const markerEl = document.getElementById(refId);
       if (markerEl) {
-        // native-takeover(own-subtree): its note backlinks scroll to and flash
-        // the marker
+        // Its note backlinks scroll to and flash the marker
         e.preventDefault();
         if (typeof markerEl.scrollIntoView === "function") {
           markerEl.scrollIntoView({
@@ -506,8 +502,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     const wordEl = e.target.closest<HTMLElement>(".lat-word");
     if (wordEl) {
-      // native-takeover(own-subtree): its words look up the word instead of
-      // following links
+      // Its words look up the word instead of following links
       e.preventDefault();
       const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
       if (word) {
@@ -532,7 +527,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       link.classList.contains("disabled") ||
       link.getAttribute("aria-disabled") === "true"
     ) {
-      // native-takeover(own-subtree): disabled links in its subtree stay inert
+      // Disabled links in its subtree stay inert
       e.preventDefault();
       return;
     }
@@ -544,8 +539,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     if (rawHref.startsWith("#")) {
       if (rawHref.startsWith("#sec-")) {
-        // native-takeover(self): scrollToHash scrolls to and highlights its own
-        // sections
+        // scrollToHash scrolls to and highlights its own sections
         e.preventDefault();
         this.scrollToHash(rawHref);
       }
@@ -587,8 +581,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     if (isSamePath && isSameView) {
       if (targetUrl.hash) {
-        // native-takeover(self): scrollToHash replaces the same-page jump;
-        // closes its TOC
+        // scrollToHash replaces the same-page jump; closes its TOC
         e.preventDefault();
         this.scrollToHash(targetUrl.hash);
         if (this.tocController?.isOpen()) {
@@ -597,8 +590,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         return;
       }
       if (this.tocController?.isOpen()) {
-        // native-takeover(own-subtree): a same-page link only closes its open
-        // TOC
+        // A same-page link only closes its open TOC
         e.preventDefault();
         this.tocController.close();
         return;
@@ -606,7 +598,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    // native-takeover(self): swapPage replaces navigation within this work
+    // swapPage replaces navigation within this work
     e.preventDefault();
     if (this.tocController?.isOpen()) {
       this.tocController.close();
@@ -626,8 +618,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     if (e.target.classList.contains("lat-word")) {
-      // native-takeover(own-subtree): Enter/Space on its words looks the word
-      // up
+      // Enter/Space on its words looks the word up
       e.preventDefault();
       const word = e.target.dataset.word || e.target.textContent?.trim() || "";
       if (word) {
@@ -636,8 +627,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     } else {
       const noteRef = e.target.closest<HTMLAnchorElement>("a.reader-note-ref");
       if (noteRef) {
-        // native-takeover(own-subtree): Enter/Space on its note markers opens
-        // the note
+        // Enter/Space on its note markers opens the note
         e.preventDefault();
         const href = noteRef.getAttribute("href") || "";
         const bodyId = href.replace(/^#/, "");
@@ -655,8 +645,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         const refId = href.replace(/^#/, "");
         const markerEl = document.getElementById(refId);
         if (markerEl) {
-          // native-takeover(own-subtree): Enter/Space on its note backlinks
-          // jumps to the marker
+          // Enter/Space on its note backlinks jumps to the marker
           e.preventDefault();
           if (typeof markerEl.scrollIntoView === "function") {
             markerEl.scrollIntoView({
@@ -793,7 +782,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       this.querySelector<HTMLElement>(".reader-split-layout");
     splitLayout?.classList.remove("drawer-dismissed");
     if (window.location.hash === "#reader-dict-dismissed") {
-      // native-takeover(self): clears its own #reader-dict-dismissed hash
+      // Clears its own #reader-dict-dismissed hash
       window.history.replaceState(
         window.history.state,
         "",
@@ -1203,23 +1192,20 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (e.key === "[" || e.key === "]") {
         const dir: PageDir = e.key === "[" ? "prev" : "next";
         if (this.pagerLink(dir)) {
-          // native-takeover(self): global shortcut; turnPage swaps the page
-          // itself. Skips modifiers and input/textarea/select/contenteditable
-          // targets
+          // Global shortcut; turnPage swaps the page itself. Skips modifiers
+          // and input/textarea/select/contenteditable targets
           e.preventDefault();
           void this.turnPage(dir);
         }
       } else if (e.key === "t" || e.key === "T") {
         if (this.tocController) {
-          // native-takeover(self): global shortcut toggles its own TOC
-          // controller
+          // Global shortcut toggles its own TOC controller
           e.preventDefault();
           this.tocController.toggle();
         } else {
           const tocDrawer = this.scope.$<HTMLElement>("#reader-toc-drawer");
           if (tocDrawer) {
-            // native-takeover(self): global shortcut clicks its own TOC button
-            // (controller absent)
+            // Global shortcut clicks its own TOC button (controller absent)
             e.preventDefault();
             if (tocDrawer.hasAttribute("hidden")) {
               this.scope.$<HTMLButtonElement>("#reader-toc-btn")?.click();
@@ -1230,8 +1216,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         }
       } else if (e.key === "n" || e.key === "N") {
         if (this.panelController?.hasNotes) {
-          // native-takeover(self): global shortcut switches its own panel to
-          // notes
+          // Global shortcut switches its own panel to notes
           e.preventDefault();
           const current = this.panelController.activeTab;
           const nextTab = current === "notes" ? "dict" : "notes";
@@ -1239,8 +1224,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         }
       } else if (e.key === "i" || e.key === "I") {
         if (this.panelController?.hasAbout) {
-          // native-takeover(self): global shortcut switches its own panel to
-          // about
+          // Global shortcut switches its own panel to about
           e.preventDefault();
           const current = this.panelController.activeTab;
           const nextTab = current === "about" ? "dict" : "about";
@@ -1249,15 +1233,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       } else if (e.key === "a" || e.key === "A") {
         const settings = this.getSettingsElement();
         if (settings) {
-          // native-takeover(self): global shortcut toggles its settings popover
-          // (same chunk)
+          // Global shortcut toggles its settings popover (same chunk)
           e.preventDefault();
           settings.toggle();
         } else {
           const btn = this.scope.$<HTMLButtonElement>("#reader-settings-btn");
           if (btn) {
-            // native-takeover(self): global shortcut clicks its own settings
-            // button
+            // Global shortcut clicks its own settings button
             e.preventDefault();
             btn.click();
           }
@@ -1530,8 +1512,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           Object.assign(scrollState, window.history.state);
           scrollState.scrollY = window.scrollY;
         }
-        // native-takeover(self): saves scrollY into its own history entry for
-        // popstate
+        // Saves scrollY into its own history entry for popstate
         window.history.replaceState(scrollState, "", window.location.href);
       } catch {
         // Ignored
@@ -1582,8 +1563,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.currentQuery = url.searchParams.get("q") ?? "";
 
     if (push) {
-      // native-takeover(self): swapPage pushes the URL of the page it just
-      // swapped in
+      // swapPage pushes the URL of the page it just swapped in
       window.history.pushState(
         { q: this.currentQuery, scrollY: 0 },
         "",

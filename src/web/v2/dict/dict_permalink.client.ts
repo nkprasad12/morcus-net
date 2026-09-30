@@ -26,8 +26,7 @@ export function handleDictPermalinkClick(
 ): boolean {
   const pill = target.closest<HTMLAnchorElement>("a.copy-pill");
   if (pill) {
-    // native-takeover(own-subtree): pill in dict-search's results; copies the
-    // link
+    // Pill in dict-search's results; copies the link
     event.preventDefault();
     void copyOrNavigate(pill.href, "Copied link to this article", pill);
     return true;
@@ -43,8 +42,7 @@ export function handleDictPermalinkClick(
     // Suppressing the default also suppresses the global smooth-scroll handler
     // (core/anchor_scroll.client.ts), which is deliberate. Copying a link or opening the action
     // menu should not move the viewport out from under the user.
-    // native-takeover(own-subtree): anchor in dict-search's results; opens the
-    // menu
+    // Anchor in dict-search's results; opens the menu
     event.preventDefault();
     const senseId = (sectionAnchor.getAttribute("href") ?? "").slice(1);
     const bulletText = (sectionAnchor.textContent ?? "").trim();

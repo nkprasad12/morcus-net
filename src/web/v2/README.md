@@ -124,30 +124,26 @@ No-JS UI often opens via a link to a fragment (`<a href="#reader-dict">` plus a 
 
 - In `onConnect()`, `this.scope.use(registerRevealer(el, reveal, { ownsHash }))` from [`core/reveal.client.ts`](core/reveal.client.ts). `reveal(target)` must be idempotent (open, don't toggle).
 - [`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts) calls `revealTarget()` for the initial hash (at page ready, via `onPageReady`, so every route chunk has registered its elements and a link clicked before the scripts arrived is adopted), on `hashchange`, on in-page anchor clicks and on `beforematch`. It opens ancestor `<details>` and calls every registered revealer from the innermost outwards, then scrolls.
-- The click handler only intercepts when the target's owners are upgraded (`ownersUpgraded` in [`core/js_gate.client.ts`](core/js_gate.client.ts)). Otherwise it lets the browser navigate natively so the No-JS `:target` UI keeps working; the component adopts the hash when it upgrades.
+- The click handler is a `LifetimeScope` listener, so the activation gate (below) skips it when the target's owner isn't running. The browser then navigates natively and the No-JS `:target` UI keeps working; the component adopts the hash when it upgrades.
 - Global setups (`setupX` singletons) never run at import time. Entries call them from `onPageReady` ([`core/page_ready.client.ts`](core/page_ready.client.ts)); [`core/boot_conformance.test.ts`](core/boot_conformance.test.ts) enforces this. See [CHUNK_ORDERING.md](CHUNK_ORDERING.md) §8.
 - `ownsHash: true` means the hash was only a No-JS state carrier (a drawer, a sheet). When the hash points exactly at such an element, it's cleared with `history.replaceState` once revealed, so closing the UI later isn't fought by a stale `:target`.
 
-### Native takeovers
+### The activation gate
 
-A _native takeover_ is any call that suppresses or replaces what the browser would do: `preventDefault()`, `stopPropagation()`, `stopImmediatePropagation()`, `history.pushState()` / `replaceState()` (the URL changes without a navigation, so `:target` and `hashchange` don't follow), and `history.scrollRestoration`. Taking over on behalf of an owner that isn't running breaks that owner's No-JS fallback too. That was the chunk-ordering bug ([CHUNK_ORDERING.md](CHUNK_ORDERING.md) §8).
+A handler that cancels a native action (`preventDefault()`, or `pushState` in place of a navigation) on behalf of an owner that isn't running breaks that owner's No-JS fallback too. That was the chunk-ordering bug ([CHUNK_ORDERING.md](CHUNK_ORDERING.md) §8). An owner isn't running when its route chunk failed to load, its `onConnect` threw (`data-js-failed`), or it's defined later.
 
-The `morcus/native-takeover` ESLint rule ([`tools/native_takeover.cjs`](tools/native_takeover.cjs)) requires a marker on the line(s) directly above every such call in `*.client.ts`:
+`LifetimeScope.listen()` prevents this structurally. For `click`, `submit` and activating `keydown` (Enter / Space), it skips the listener (`canHandleActivation` in [`core/js_gate.client.ts`](core/js_gate.client.ts)) when:
 
-```ts
-// native-takeover(own-subtree): Escape closes this popover
-e.preventDefault();
-```
+- the scope's own component has failed;
+- the event target is inside a component that isn't running (checked up to the scope's component; to the document for standalone scopes); or
+- a native control on the event path points at an element inside a component that isn't running: an in-page `href="#id"`, `aria-controls`, `popovertarget`, `commandfor` or `form`.
 
-| Kind            | Use when                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------- |
-| `self`          | This code performs the replacement itself, or owns the state it writes (its own query parameter).       |
-| `own-subtree`   | A component acting on events or DOM it owns.                                                            |
-| `owner-checked` | The replacement is handed to another owner. The rule checks for an `ownersUpgraded(...)` guard (below). |
+So a native action whose No-JS replacement has no running owner is never cancelled. Other events always pass. What that means for new code:
 
-`owner-checked` calls must sit inside `if (ownersUpgraded(x)) { ... }` (or `ownersUpgraded(x) && ...`), or after `if (!ownersUpgraded(x)) return;` in the same function. The reason text is required and is what reviewers check. Adding a marker is a review decision, like a gate ratchet increase. Markers not directly above a takeover are reported as stale.
-
-> [!IMPORTANT] > **Get the kind right.** Only `owner-checked` is verified mechanically. A `self` or `own-subtree` marker on code that actually acts for another owner passes lint and every test, then breaks that owner's No-JS fallback in production, exactly when its chunk fails to load. Never pick a kind just to make lint pass. If you aren't sure the code owns the event or DOM, ask a reviewer.
+- **Listen through a scope.** Use `this.scope.listen(...)` in components and a standalone `new LifetimeScope(doc)` in global setups. Raw `addEventListener` bypasses the gate.
+- **Reach peers with `queryUpgraded` / `closestUpgraded`.** Component classes are registered in `MorcusElementTagNameMap`, not `HTMLElementTagNameMap`, so a raw `querySelector("morcus-x")` is an untyped `Element`. [`core/boot_conformance.test.ts`](core/boot_conformance.test.ts) also bans value imports of `Morcus*` classes, dynamic `import()` and `async onConnect`.
+- **Keep references within an owner or visible to the gate.** A `label[for]` or `[form]` must share its nearest `morcus-*` owner with its target. A same-page hash link must be written as a bare `#id`. [`core/route_bundle_conformance.test.ts`](core/route_bundle_conformance.test.ts) checks both.
+- [`core/ssr_conformance.test.ts`](core/ssr_conformance.test.ts) section 4 fails each `morcus-*` instance in the SSR fixtures in turn and asserts that no activation in it, or pointing into it, is cancelled.
 
 ---
 

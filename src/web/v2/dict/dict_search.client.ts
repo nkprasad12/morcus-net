@@ -216,8 +216,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
         const wordEl = e.target.closest<HTMLElement>(".lat-word");
         if (wordEl) {
-          // native-takeover(own-subtree): word in our results; runs the lookup
-          // in place
+          // Word in our results; runs the lookup in place
           e.preventDefault();
           const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
           if (word) {
@@ -228,8 +227,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
         const dLinkEl = e.target.closest<HTMLElement>(".dLink");
         if (dLinkEl) {
-          // native-takeover(own-subtree): link in our results; runs the lookup
-          // in place
+          // Link in our results; runs the lookup in place
           e.preventDefault();
           const toWord =
             dLinkEl.getAttribute("to") ||
@@ -457,7 +455,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     if (updates.o !== undefined) {
       url.searchParams.set("o", updates.o);
     }
-    // native-takeover(self): writes our own d/o query params
+    // Writes our own d/o query params
     window.history.replaceState(null, "", url.pathname + url.search);
   }
 
@@ -506,20 +504,20 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     if (this.suggestions.length === 0) return;
 
     if (e.key === "ArrowDown") {
-      // native-takeover(own-subtree): moves the highlight in our suggestions
+      // Moves the highlight in our suggestions
       e.preventDefault();
       this.selectedSuggestionIndex =
         (this.selectedSuggestionIndex + 1) % this.suggestions.length;
       this.updateSuggestionsView();
     } else if (e.key === "ArrowUp") {
-      // native-takeover(own-subtree): moves the highlight in our suggestions
+      // Moves the highlight in our suggestions
       e.preventDefault();
       this.selectedSuggestionIndex =
         (this.selectedSuggestionIndex - 1 + this.suggestions.length) %
         this.suggestions.length;
       this.updateSuggestionsView();
     } else if (e.key === "Enter" && this.selectedSuggestionIndex >= 0) {
-      // native-takeover(own-subtree): Enter picks our highlighted suggestion
+      // Enter picks our highlighted suggestion
       e.preventDefault();
       this.chooseSuggestion(
         this.suggestions[this.selectedSuggestionIndex].word
@@ -567,8 +565,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     url.searchParams.delete("in");
 
     const newSearchPath = url.pathname + url.search;
-    // native-takeover(self): pushes our own search URL, then fetches the
-    // results
+    // Pushes our own search URL, then fetches the results
     window.history.pushState({ q: cleanQuery }, "", newSearchPath);
     document.title = `${cleanQuery} - Morcus Dictionary`;
     await this.fetchResults(cleanQuery);

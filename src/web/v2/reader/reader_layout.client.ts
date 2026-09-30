@@ -228,8 +228,8 @@ export class ReaderLayoutController extends BaseController {
       }
 
       if (nextWidth !== null) {
-        // native-takeover(own-subtree): arrow/Home/End on the splitter it owns
-        // resize the panel instead of scrolling
+        // Arrow/Home/End on the splitter it owns resize the panel instead of
+        // scrolling
         e.preventDefault();
         this.setWidth(nextWidth, true);
       }

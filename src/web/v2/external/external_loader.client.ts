@@ -144,8 +144,7 @@ export class MorcusExternalLoader extends BaseElement {
       this.scope.listen(form, "submit", (e) => {
         // Web pages submit natively (GET); pasted text stays on the device.
         if (!this.pasteSelected()) return;
-        // native-takeover(own-subtree): our form; savePaste() stores the text
-        // locally
+        // Our form; savePaste() stores the text locally
         e.preventDefault();
         void this.savePaste(form);
       });
