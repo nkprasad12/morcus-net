@@ -127,9 +127,10 @@ with `npm run inventory:update` in the same change.
       (`data-js-only`) and adopted on connect; the `<a class="lat-word">` factory is
       `createWordLink` in `core/tokenize.client.ts`. The two remaining calls re-render the language
       and inflection chips from `search_bar.common.ts`.
-- [ ] 🟡 **`dict_suggestions.client.ts` (11)**: build the suggestion list from a
-      `*.common.ts` HTML renderer (as the chips do) instead of `createElement`/`appendChild`, and
-      server-render the empty `ul.suggestions` so the SSR conformance allowlist can drop it.
+- [x] 🟢 **`dict_suggestions.client.ts` & `search_bar.server.ts`**: server-rendered the empty
+      `ul#dict-suggestions-list.suggestions` (`role="listbox"`, `hidden`) inside `<morcus-dict-suggestions>`
+      and adopted it cleanly via `firstElementChild` in `ComboboxController` and `MorcusDictSuggestions`,
+      eliminating runtime listbox creation and unifying combobox keyboard and ARIA handling via `ComboboxController`.
 - [ ] 🟡 **`reader_view.client.ts` (9)**: the bottom-sheet label `<strong>` runs and the
       `lat-word` span factory (a sibling of `createWordLink` in `core/tokenize.client.ts`).
 - [ ] 🟢 **`library_view.client.ts` (3)**, **`reader_panel.client.ts` (3)**,
@@ -149,7 +150,7 @@ with `npm run inventory:update` in the same change.
 - [ ] 🟡 **Fix the Firefox click-to-lookup flake.** `browser_v2_e2e.test.ts` _"click-to-lookup
       progressively enhances Latin words and navigates on click (JS enabled)"_ fails ~20–40% of runs
       on `firefox` / `FirefoxSmallScreen` (21/50 on `8f630e3b`, run with `--repeat-each=25
-    --retries=0`); `--retries` hides it in normal runs. The URL stays at `?q=habeo` instead of
+--retries=0`); `--retries` hides it in normal runs. The URL stays at `?q=habeo` instead of
       `?q=habere`. The `.lat-word` is an `<a href>`, so a skipped handler would have navigated
       natively and passed: the handler in `dict_search.client.ts` (results `click` listener) most
       likely calls `preventDefault()` and then `chooseSuggestion` never updates the URL. Suspects:
