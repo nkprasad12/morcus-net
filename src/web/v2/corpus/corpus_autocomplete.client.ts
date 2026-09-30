@@ -16,6 +16,7 @@
 
 import {
   BaseElement,
+  ComboboxController,
   html,
   joinHtml,
   raw,
@@ -546,23 +547,6 @@ const LEMMA_SHARDS = new LemmaShardCache();
 // Element           //
 // // // // // // // //
 
-/** Keys that move the caret without an `input` event. */
-const CARET_KEYS: ReadonlySet<string> = new Set([
-  "ArrowLeft",
-  "ArrowRight",
-  "Home",
-  "End",
-]);
-
-/** Combobox ARIA added to the input on connect and removed on disconnect. */
-const COMBOBOX_ATTRIBUTES = [
-  "role",
-  "aria-autocomplete",
-  "aria-controls",
-  "aria-expanded",
-  "aria-activedescendant",
-] as const;
-
 function parseAuthors(json: string | undefined): readonly string[] | undefined {
   if (json === undefined) return undefined;
   try {
@@ -627,18 +611,14 @@ interface Parts {
  * Autocomplete for the corpus query (DESIGN §7.2). Makes its input a
  * combobox over the server-rendered listbox, and creates only the options.
  *
- * Keys: ArrowDown / ArrowUp move through the rows (status rows included, so
- * screen readers reach the errors), Enter and Tab choose the highlighted
- * completion (Enter submits the form if none is highlighted), and Escape
- * closes the list.
+ * Combobox ARIA, keyboard navigation, and focus retention are managed
+ * by the core `ComboboxController`.
  */
 export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
   private parts: Parts | null = null;
   private authors: readonly string[] | undefined;
   private lemmataVersion: string | undefined;
-  private rows: readonly CorpusSuggestion[] = [];
-  /** The highlighted row, or -1. */
-  private active = -1;
+  private combobox: ComboboxController<CorpusSuggestion> | null = null;
 
   private readonly lemmata = (prefix: string) => {
     const found = LEMMA_SHARDS.complete(prefix, MAX_LEMMA_ROWS);
@@ -662,39 +642,37 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     this.authors = parseAuthors(this.dataset.authors);
     this.lemmataVersion = this.dataset.lemmataVersion || undefined;
 
-    input.setAttribute("role", "combobox");
-    input.setAttribute("aria-autocomplete", "list");
-    input.setAttribute("aria-controls", listbox.id);
-    input.setAttribute("aria-expanded", "false");
-
-    const scope = this.scope;
-    scope.listen(input, "focus", () => this.refresh());
-    scope.listen(input, "input", () => this.refresh());
-    scope.listen(input, "click", () => this.refresh());
-    scope.listen(input, "keydown", (e) => this.onKeyDown(e));
-    scope.listen(input, "keyup", (e) => {
-      // Follow the caret, unless the user closed the list.
-      if (CARET_KEYS.has(e.key) && !listbox.hidden) this.refresh();
+    this.combobox = new ComboboxController<CorpusSuggestion>({
+      root: this,
+      getInput: () => this.parts?.input ?? null,
+      getListbox: () => this.parts?.listbox ?? null,
+      isSelectable: (row) => isCompletion(row),
+      renderItems: (rows, box) => {
+        setHtml(
+          box,
+          html`${joinHtml(
+            rows.map((row, i) => renderRow(row, `${box.id}-${i}`))
+          )}`
+        );
+      },
+      onSelect: (_item, index) => {
+        this.choose(index);
+      },
+      onRefresh: () => {
+        this.refresh();
+      },
+      onVisibilityChange: (open) => {
+        if (!open) {
+          this.scope.cancel("lemmata");
+        }
+      },
     });
-    scope.listen(input, "blur", () => this.close());
-    scope.listen(input.form, "submit", () => this.close());
-    scope.listen(listbox, "mousedown", (e) => this.onMouseDown(e));
-
-    // Adopt-before-write: the input may have been focused before upgrade.
-    if (input === this.ownerDocument.activeElement) this.refresh();
+    this.addController(this.combobox);
   }
 
   protected override onDisconnect(): void {
-    const parts = this.parts;
-    if (parts === null) return;
-    // Attribute writes only: `setHtml` would target a detached listbox.
-    for (const name of COMBOBOX_ATTRIBUTES) {
-      parts.input.removeAttribute(name);
-    }
-    parts.listbox.hidden = true;
-    this.rows = [];
-    this.active = -1;
     this.parts = null;
+    this.combobox = null;
   }
 
   /** Shows the rows for the text before the caret, while the input has focus. */
@@ -703,17 +681,16 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     if (parts === null) return;
     const { input } = parts;
     if (input !== this.ownerDocument.activeElement) {
-      this.close();
+      this.combobox?.close();
       return;
     }
     this.scope.cancel("lemmata");
     const caret = input.selectionStart ?? input.value.length;
-    this.show(
-      corpusSuggestions(input.value.slice(0, caret), {
-        authors: this.authors,
-        lemmata: this.lemmata,
-      })
-    );
+    const suggestions = corpusSuggestions(input.value.slice(0, caret), {
+      authors: this.authors,
+      lemmata: this.lemmata,
+    });
+    this.combobox?.setItems(suggestions);
   }
 
   /** Fetches the shard for `prefix`, then re-suggests unless superseded. */
@@ -724,55 +701,12 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     });
   }
 
-  private show(rows: readonly CorpusSuggestion[]): void {
-    const parts = this.parts;
-    if (parts === null) return;
-    const { input, listbox } = parts;
-    this.rows = rows;
-    this.active = -1;
-    setHtml(
-      listbox,
-      html`${joinHtml(
-        rows.map((row, i) => renderRow(row, `${listbox.id}-${i}`))
-      )}`
-    );
-    listbox.hidden = rows.length === 0;
-    input.setAttribute("aria-expanded", String(rows.length > 0));
-    input.removeAttribute("aria-activedescendant");
-  }
-
-  private close(): void {
-    this.scope.cancel("lemmata");
-    if (this.rows.length > 0) this.show([]);
-  }
-
-  private setActive(index: number): void {
-    const parts = this.parts;
-    if (parts === null) return;
-    const { input, listbox } = parts;
-    listbox.children.item(this.active)?.setAttribute("aria-selected", "false");
-    this.active = index;
-    const item = listbox.children.item(index);
-    if (item === null) {
-      input.removeAttribute("aria-activedescendant");
-      return;
-    }
-    item.setAttribute("aria-selected", "true");
-    input.setAttribute("aria-activedescendant", item.id);
-    if (typeof item.scrollIntoView === "function") {
-      item.scrollIntoView({ block: "nearest" });
-    }
-  }
-
-  /** Splices a completion in at the caret. Status rows are only un-highlighted. */
+  /** Splices a completion in at the caret. */
   private choose(index: number): void {
     const parts = this.parts;
-    const row = this.rows[index];
-    if (parts === null) return;
-    if (!isCompletion(row)) {
-      this.setActive(-1);
-      return;
-    }
+    const items = this.combobox?.items;
+    const row = items?.[index];
+    if (parts === null || !row || !isCompletion(row)) return;
     const { input } = parts;
     const start = input.selectionStart ?? input.value.length;
     const end = input.selectionEnd ?? start;
@@ -785,74 +719,6 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     // Explicit rather than `setRangeText`'s "end" mode, which jsdom gets wrong.
     input.setSelectionRange(from + text.length, from + text.length);
     this.refresh();
-  }
-
-  private onKeyDown(e: KeyboardEvent): void {
-    const parts = this.parts;
-    if (parts === null || e.isComposing || e.altKey || e.ctrlKey || e.metaKey) {
-      return;
-    }
-    switch (e.key) {
-      case "ArrowDown":
-      case "ArrowUp": {
-        // Arrow keys move the highlight in our own listbox
-        e.preventDefault();
-        if (parts.listbox.hidden) this.refresh();
-        const count = this.rows.length;
-        if (count === 0) return;
-        const step = e.key === "ArrowDown" ? 1 : -1;
-        this.setActive(
-          this.active < 0
-            ? step > 0
-              ? 0
-              : count - 1
-            : (this.active + step + count) % count
-        );
-        return;
-      }
-      case "Enter":
-        if (this.active < 0) {
-          // Nothing highlighted: the form submits as usual.
-          this.close();
-          return;
-        }
-        // Enter picks the highlighted row instead of submitting
-        e.preventDefault();
-        this.choose(this.active);
-        return;
-      case "Tab":
-        if (e.shiftKey || !isCompletion(this.rows[this.active])) {
-          this.close();
-          return;
-        }
-        // Tab accepts the completion instead of moving focus
-        e.preventDefault();
-        this.choose(this.active);
-        return;
-      case "Escape":
-        if (!parts.listbox.hidden) {
-          // Escape closes our open listbox
-          e.preventDefault();
-          this.close();
-        }
-        return;
-    }
-  }
-
-  private onMouseDown(e: MouseEvent): void {
-    const parts = this.parts;
-    if (parts === null) return;
-    // Keep focus, and with it the caret, in the input.
-    // Mousedown in our listbox keeps focus in our input
-    e.preventDefault();
-    if (e.button !== 0) return;
-    const { listbox } = parts;
-    const item = e
-      .composedPath()
-      .find((t) => t instanceof HTMLLIElement && t.parentElement === listbox);
-    if (item instanceof HTMLLIElement) {
-      this.choose(Array.from(listbox.children).indexOf(item));
-    }
   }
 }
 
