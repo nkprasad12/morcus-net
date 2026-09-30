@@ -3,6 +3,7 @@ import {
   type CleanupFn,
 } from "@/web/v2/core/disposable.client";
 import { flashElement } from "@/web/v2/core/dom.client";
+import { ownersUpgraded } from "@/web/v2/core/js_gate.client";
 import { revealHashTarget, revealTarget } from "@/web/v2/core/reveal.client";
 
 /**
@@ -20,10 +21,12 @@ export function triggerAnchorHighlight(targetEl: HTMLElement): void {
 /**
  * Initializes anchor scroll and deep-link reveal. Returns a cleanup function.
  *
- * Runs after `v2_elements.client.ts` has upgraded every component, so their
- * revealers are registered by the time the initial hash is handled. That is
- * the hash handover: a panel opened by a hash link before upgrade is adopted
- * by its component here.
+ * Called from `onPageReady` (`core/page_ready.client.ts`), i.e. after every
+ * chunk on the page has upgraded its components, so their revealers are
+ * registered by the time the initial hash is handled. That is the hash
+ * handover: a panel opened by a hash link before upgrade is adopted by its
+ * component here. Until then no handler is installed and in-page links behave
+ * natively (`:target`).
  */
 export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
   createSingletonSetup(
@@ -58,10 +61,20 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
 
         const targetId = href.slice(1);
         const targetEl = doc.getElementById(targetId);
-        if (targetEl) {
+        // A component that could own the target is not running (its chunk
+        // failed to load, its `onConnect` threw, or it is lazily loaded):
+        // leave the fragment navigation to the browser so its No-JS
+        // `:target` UI still works. `replaceState` below would change the URL
+        // without updating `:target`.
+        if (targetEl && ownersUpgraded(targetEl)) {
+          // native-takeover(owner-checked): the target's owners are upgraded,
+          // so revealTarget() below replaces the native `:target` UI.
           e.preventDefault();
           revealTarget(targetEl);
 
+          // Jump pills are for quick navigation across a results page. With
+          // many long entries a smooth scroll takes (or feels like) seconds
+          // to arrive, so they jump instantly. Keep it that way.
           const isJumpPill =
             anchor.classList.contains("jump-pill") ||
             targetEl.classList.contains("dict-card");
@@ -70,6 +83,8 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
               behavior: isJumpPill ? "instant" : "smooth",
             });
           }
+          // native-takeover(owner-checked): records the fragment without a
+          // history entry; the owner (not `:target`) now holds the state.
           win.history.replaceState(null, "", href);
           triggerAnchorHighlight(targetEl);
         }
@@ -85,7 +100,3 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
       };
     }
   );
-
-if (typeof document !== "undefined") {
-  setupAnchorScroll();
-}

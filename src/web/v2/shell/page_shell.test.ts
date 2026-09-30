@@ -114,4 +114,30 @@ describe("renderPageShell", () => {
       '<link rel="prefetch" href="/v2/assets/dict.js">'
     );
   });
+
+  // `onPageReady` (core/page_ready.client.ts) relies on DOMContentLoaded
+  // firing only after every chunk has run. That holds for non-`async` module
+  // scripts; DOMContentLoaded does not wait for an `async` one, so global
+  // setups could run before the route's components exist (CHUNK_ORDERING.md).
+  test.each([
+    { activePage: "about" as const },
+    { activePage: "dicts" as const },
+    { activePage: "library" as const, isReader: true },
+    { activePage: "corpus" as const },
+    { activePage: "library" as const, isReader: true, isExternal: true },
+  ])("every external script is a non-async module script (%o)", (options) => {
+    const html = renderPageShell({
+      title: "T",
+      contentHtml: "<div></div>",
+      ...options,
+    });
+    const external = [...html.matchAll(/<script\b[^>]*>/g)]
+      .map((m) => m[0])
+      .filter((tag) => /\ssrc=/.test(tag));
+    expect(external).toHaveLength(resolvePageScripts(options).length);
+    for (const tag of external) {
+      expect(tag).toMatch(/\stype="module"/);
+      expect(tag).not.toMatch(/\s(async|defer)[\s=>]/);
+    }
+  });
 });

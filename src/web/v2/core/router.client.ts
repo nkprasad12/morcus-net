@@ -84,8 +84,12 @@ export function syncQueryParam(
     currentSearchPath = newSearchPath;
 
     if (push) {
+      // native-takeover(self): the router owns its query param and writes it
+      // without a navigation
       window.history.pushState({ [paramName]: value }, "", newSearchPath);
     } else {
+      // native-takeover(self): the router owns its query param and writes it
+      // without a navigation
       window.history.replaceState({ [paramName]: value }, "", newSearchPath);
     }
 

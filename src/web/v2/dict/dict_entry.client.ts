@@ -6,4 +6,10 @@ import "@/web/v2/dict/dict_search.client";
 import "@/web/v2/dict/dict_settings.client";
 import "@/web/v2/dict/dict_greek.client";
 import "@/web/v2/dict/dict_toc.client";
-import "@/web/v2/dict/abbr_popover.client";
+
+import { onPageReady } from "@/web/v2/core/page_ready.client";
+import { setupAbbrPopover } from "@/web/v2/dict/abbr_popover.client";
+
+onPageReady(() => {
+  setupAbbrPopover();
+});

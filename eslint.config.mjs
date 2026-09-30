@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import js from "@eslint/js";
 import { FlatCompat } from "@eslint/eslintrc";
 import nounsanitized from "eslint-plugin-no-unsanitized";
+import nativeTakeover from "./src/web/v2/tools/native_takeover.cjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -438,6 +439,19 @@ export default [
     ignores: ["src/web/v2/**/*.test.ts"],
     rules: {
       ...typescriptEslint.configs["recommended-type-checked-only"].rules,
+    },
+  },
+  // Native takeovers (src/web/v2/README.md, "Native takeovers"). Every call
+  // that suppresses a native action or rewrites the URL without navigating
+  // must say why it is safe, and calls that hand the replacement to another
+  // owner must be guarded by `ownersUpgraded`. Covers all client code, not
+  // just global setups, so shared helpers and components reaching outside
+  // their subtree are caught too. See src/web/v2/CHUNK_ORDERING.md §8.
+  {
+    files: ["src/web/v2/**/*.client.ts"],
+    plugins: { morcus: { rules: { "native-takeover": nativeTakeover } } },
+    rules: {
+      "morcus/native-takeover": "error",
     },
   },
 ];

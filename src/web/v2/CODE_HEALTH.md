@@ -43,22 +43,44 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       [`v2_bundle_budget.ts`](../../bundler/v2_bundle_budget.ts), and by
       [`route_bundle_conformance.test.ts`](core/route_bundle_conformance.test.ts) across all full
       pages and partial swap templates.
-- [ ] 🟡 **Stop client modules installing global listeners at import time.**
-      `anchor_scroll`, `back_to_top`, `mobile_menu`, `deferred_iframe` and `abbr_popover` each end in
-      `if (typeof document !== "undefined") setupX()`, so importing them is enough to attach
-      `document`/`window` listeners. [`v2_elements.client.ts`](v2_elements.client.ts) used to avoid
-      them so tests could import it safely; since it now aggregates the route entries, every
-      conformance test that imports it installs them too. Export the `setupX` functions only and
-      call them from the entry files, so imports stay pure and only an entry has side effects.
-      Overlaps with the chunk-ordering item below; do them together.
-- [ ] 🔴 **Startup code in `common.js` runs before the route's components exist.** Since the
-      split, a page can be in a state where `common.js` has run but the route chunk has not.
-      Global setups written for the old single bundle can read an empty world (confirmed: the
-      initial hash reveal, now patched with a `customElements.whenDefined` stopgap in
-      `reveal.client.ts`) or block native No-JS behaviour (suspected: the anchor `click` handler
-      vs `:target` UI). The late-hydration suite releases all scripts together, so it cannot
-      see this state. Findings, audit, options and test gaps:
-      [CHUNK_ORDERING.md](CHUNK_ORDERING.md).
+- [x] 🟡 **Stop client modules installing global listeners at import time.**
+      `anchor_scroll`, `back_to_top`, `mobile_menu`, `deferred_iframe` and `abbr_popover` now only
+      export their `setupX` functions; `common_entry` and `dict_entry` call them from
+      `onPageReady` ([`core/page_ready.client.ts`](core/page_ready.client.ts)). Enforced by
+      [`core/boot_conformance.test.ts`](core/boot_conformance.test.ts): no top-level side effects
+      outside `registerElement` (and `onPageReady` in entries), and every singleton setup is called
+      from an entry. Note that [`v2_elements.client.ts`](v2_elements.client.ts) still imports the
+      entries, and jsdom's `readyState` is `"complete"`, so tests importing it still run the setups.
+- [x] 🔴 **Startup code in `common.js` runs before the route's components exist.** Fixed with
+      A + D: global setups run at page ready (after every deferred module chunk has executed), and
+      the anchor click handler leaves the native `:target` path alone while the target's owners
+      are not upgraded (`ownersUpgraded` in [`core/js_gate.client.ts`](core/js_gate.client.ts)).
+      The `whenDefined` stopgap is gone. The late-hydration suite now stages `common.js` before
+      the route chunk. Decision record: [CHUNK_ORDERING.md §8](CHUNK_ORDERING.md). Recurrence is
+      guarded by the `morcus/native-takeover` lint rule ("Native takeovers" in
+      [README.md](README.md)).
+- [ ] 🟡 **Make revealers idempotent by contract, and test it.** README says `reveal(target)` must
+      be idempotent, but the [`Revealer`](core/reveal.client.ts) type doesn't, and no test calls a
+      revealer twice. Back/forward and `beforematch` can repeat a reveal. `reader_panel`'s
+      revealer calls `setTab("translation")`, which re-shows the spinner and starts a second fetch
+      while the first is in flight, and fires `onTabChange` again. `reader_view`'s
+      `restoreDrawer()` is unverified. Fix: document it on `Revealer`, guard the in-flight
+      translation load, and add a call-twice test per revealer (same state, one fetch).
+- [ ] 🟢 **Tighten the reader's window-level keyboard shortcuts.** `reader_view.client.ts` listens
+      for `keydown` on `window` and calls `preventDefault` for page turns, TOC, panel tabs and
+      settings. It skips modifier keys, `contenteditable`, `input`, `textarea` and `select`, but
+      not `e.defaultPrevented`, `e.isComposing`, `role="textbox"`/`combobox`/`listbox` targets, or
+      focus inside a dialog, popover or menu elsewhere on the page (the report dialog, the section
+      menu). It also calls `settings.toggle()` on `morcus-reader-settings` without checking it
+      upgraded. Found while annotating native takeovers.
+- [ ] 🟢 **Review document-level takeovers in shared helpers.** `bindDismissable` calls
+      `preventDefault` on Escape for any target while its overlay is open, with no
+      `defaultPrevented` check, so a nested widget that handles Escape still closes the outer
+      overlay. `popover`'s focus trap takes Tab even when focus is outside the panel (it does
+      check `defaultPrevented`). `abbr_popover` suppresses clicks on any `.lsHover`, which would
+      also swallow navigation if one ever sat inside a link. All three are marked
+      `native-takeover(self)`; none are chunk-ordering bugs, but each acts on events it doesn't
+      own.
 - [ ] 🟢 **Extend the import-boundary lint beyond `src/web/v2` and `src/bundler`.** The tier rules in
       `eslint.config.mjs` only match files inside those two trees. `src/bundler` importing
       `asset_manifest.server.ts` went unnoticed until review for exactly that reason (it has its own

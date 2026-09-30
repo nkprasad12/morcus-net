@@ -97,6 +97,8 @@ export function bindBackToTop(
   updateBackToTop();
 
   const onClick = (e: MouseEvent) => {
+    // native-takeover(self): the `#top` jump is replaced by the scroll below,
+    // on the button this binding owns.
     e.preventDefault();
     const top = options?.getTargetTop ? options.getTargetTop() : 0;
     if (!options?.container) {
@@ -112,6 +114,8 @@ export function bindBackToTop(
     }
 
     if (clearHash && win.location.hash) {
+      // native-takeover(self): drops a stale fragment from the URL. `:target`
+      // is left as is, so an un-upgraded owner's No-JS UI is unaffected.
       win.history.replaceState(
         null,
         "",
@@ -155,7 +159,3 @@ export const setupBackToTop: (doc?: Document, win?: Window) => CleanupFn =
       });
     }
   );
-
-if (typeof document !== "undefined") {
-  setupBackToTop();
-}
