@@ -230,7 +230,11 @@ describe("AnchoredPopoverController & trapFocus", () => {
 
     const unbind = trapFocus(fix.panel);
 
-    expect(docSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+    expect(docSpy).toHaveBeenCalledWith(
+      "keydown",
+      expect.any(Function),
+      undefined
+    );
     expect(winSpy).not.toHaveBeenCalledWith("keydown", expect.anything());
 
     unbind();
