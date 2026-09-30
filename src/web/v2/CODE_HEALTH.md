@@ -147,6 +147,16 @@ with `npm run inventory:update` in the same change.
       preventing fast-path Chromium-only updates from leaving Firefox and FirefoxSmallScreen
       baselines stale.
 
+- [ ] 🟡 **Fix the Firefox click-to-lookup flake.** `browser_v2_e2e.test.ts` _"click-to-lookup
+      progressively enhances Latin words and navigates on click (JS enabled)"_ fails ~20–40% of runs
+      on `firefox` / `FirefoxSmallScreen` (21/50 on `8f630e3b`, run with `--repeat-each=25
+      --retries=0`); `--retries` hides it in normal runs. The URL stays at `?q=habeo` instead of
+      `?q=habere`. The `.lat-word` is an `<a href>`, so a skipped handler would have navigated
+      natively and passed: the handler in `dict_search.client.ts` (results `click` listener) most
+      likely calls `preventDefault()` and then `chooseSuggestion` never updates the URL. Suspects:
+      a supersession lane cancelling the lookup, or the click landing before `enhanceWords`
+      finishes. Not caused by the activation gate (same rate with and without it).
+
 **Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
 dialog markup. Gaps:
 
