@@ -391,6 +391,12 @@ function mount(withAuthors: boolean = true): Mounted {
     landingView(withAuthors ? CORPUS_TEST_AUTHORS : undefined),
     "v1"
   );
+  // The input lives in <morcus-corpus-view>, which this test doesn't define.
+  // Mark it running, as on a live page, so the activation gate in
+  // `LifetimeScope.listen` lets Enter / submit through.
+  document
+    .querySelector("morcus-corpus-view")
+    ?.setAttribute("data-upgraded", "");
   const input = document.getElementById("corpus-q");
   const listbox = document.getElementById("corpus-suggestions");
   if (

@@ -217,7 +217,7 @@ describe("setupAnchorScroll", () => {
     test("leaves the link native while the target's owner is not upgraded", () => {
       document.body.innerHTML = `
         <a id="link" href="#drawer">Open</a>
-        <test-owner><div id="drawer"></div></test-owner>
+        <morcus-owner><div id="drawer"></div></morcus-owner>
       `;
       const drawer = document.getElementById("drawer")!;
       const reveal = jest.fn();
@@ -236,7 +236,7 @@ describe("setupAnchorScroll", () => {
     test("leaves the link native when any enclosing owner is not upgraded", () => {
       document.body.innerHTML = `
         <a id="link" href="#drawer">Open</a>
-        <test-outer><test-inner data-upgraded><div id="drawer"></div></test-inner></test-outer>
+        <morcus-outer><morcus-inner data-upgraded><div id="drawer"></div></morcus-inner></morcus-outer>
       `;
       cleanup = setupAnchorScroll(document, mockWin());
 
@@ -246,7 +246,7 @@ describe("setupAnchorScroll", () => {
     test("leaves the link native when the owner failed", () => {
       document.body.innerHTML = `
         <a id="link" href="#drawer">Open</a>
-        <test-owner data-js-failed><div id="drawer"></div></test-owner>
+        <morcus-owner data-js-failed><div id="drawer"></div></morcus-owner>
       `;
       cleanup = setupAnchorScroll(document, mockWin());
 
@@ -256,7 +256,7 @@ describe("setupAnchorScroll", () => {
     test("takes over once every owner is upgraded", () => {
       document.body.innerHTML = `
         <a id="link" href="#drawer">Open</a>
-        <test-owner data-upgraded><div id="drawer"></div></test-owner>
+        <morcus-owner data-upgraded><div id="drawer"></div></morcus-owner>
       `;
       const drawer = document.getElementById("drawer")!;
       const reveal = jest.fn();
