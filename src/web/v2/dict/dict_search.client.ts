@@ -1,6 +1,6 @@
 import {
   BaseElement,
-  bindDismissable,
+  ComboboxController,
   closeActiveSectionUI,
   createWordLink,
   fetchAndSwapPartial,
@@ -58,7 +58,7 @@ import {
 export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   public readonly chunkCache: DictChunkCache = new DictChunkCache();
   private suggestions: CompletionItem[] = [];
-  private selectedSuggestionIndex: number = -1;
+  private combobox: ComboboxController<CompletionItem> | null = null;
 
   private inputElement: HTMLInputElement | null = null;
   private resultsElement: HTMLElement | null = null;
@@ -82,7 +82,6 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       25
     );
     this.suggestions = items;
-    this.selectedSuggestionIndex = -1;
     this.updateSuggestionsView();
   }
 
@@ -128,7 +127,6 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
           if (signal.aborted) return;
           if (document.activeElement !== this.inputElement) return;
           this.suggestions = Array.isArray(data) ? data : [];
-          this.selectedSuggestionIndex = -1;
           this.updateSuggestionsView();
         })
         .catch((e: unknown) => {
@@ -186,6 +184,26 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     this.inputElement = this.scope.$<HTMLInputElement>("input.input");
     this.resultsElement = this.scope.$<HTMLElement>("#dict-results");
 
+    // Adopt the server-rendered suggestions host (see `renderDictSearchBar`).
+    // Re-queried on every connect, so a re-attached element listens to the
+    // child that is actually in its subtree.
+    this.suggestionsEl = this.scope.$("morcus-dict-suggestions");
+    if (this.suggestionsEl) {
+      this.scope.listen(this.suggestionsEl, "suggestion-select", (e: Event) => {
+        if (e instanceof CustomEvent) {
+          const detail: unknown = e.detail;
+          if (
+            typeof detail === "object" &&
+            detail !== null &&
+            "word" in detail &&
+            typeof detail.word === "string"
+          ) {
+            this.chooseSuggestion(detail.word);
+          }
+        }
+      });
+    }
+
     this.hijackForm("form.search-form", ({ q }) => {
       this.clearSuggestions();
       const cleaned = trimRawQuery(q || "");
@@ -196,8 +214,32 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
     if (this.inputElement) {
       this.scope.listen(this.inputElement, "input", this.handleInput);
-      this.scope.listen(this.inputElement, "keydown", this.handleKeyDown);
-      this.scope.listen(this.inputElement, "blur", this.handleBlur);
+    }
+
+    if (!this.combobox) {
+      this.combobox = new ComboboxController<CompletionItem>({
+        root: this,
+        getInput: () => this.inputElement,
+        getListbox: () => this.getSuggestionsListbox(),
+        acceptOnTab: false,
+        followCaret: false,
+        onSelect: (item) => {
+          this.chooseSuggestion(item.word);
+        },
+        onVisibilityChange: (open) => {
+          const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
+          if (suggestions) {
+            suggestions.style.display = open ? "" : "none";
+          }
+          if (!open) {
+            this.suggestions = [];
+            if (suggestions) {
+              suggestions.items = [];
+            }
+          }
+        },
+      });
+      this.addController(this.combobox);
     }
 
     if (this.resultsElement) {
@@ -244,37 +286,6 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         }
       });
     }
-
-    // Adopt the server-rendered suggestions host (see `renderDictSearchBar`).
-    // Re-queried on every connect, so a re-attached element listens to the
-    // child that is actually in its subtree.
-    this.suggestionsEl = this.scope.$("morcus-dict-suggestions");
-    if (this.suggestionsEl) {
-      this.scope.listen(this.suggestionsEl, "suggestion-select", (e: Event) => {
-        if (e instanceof CustomEvent) {
-          const detail: unknown = e.detail;
-          if (
-            typeof detail === "object" &&
-            detail !== null &&
-            "word" in detail &&
-            typeof detail.word === "string"
-          ) {
-            this.chooseSuggestion(detail.word);
-          }
-        }
-      });
-    }
-
-    // Dismiss suggestions on outside clicks
-    this.scope.use(
-      bindDismissable({
-        container: () => this.suggestionsEl,
-        isOpen: () => this.suggestions.length > 0,
-        onDismiss: () => this.clearSuggestions(),
-        listenPointerDown: true,
-        ignore: (target) => Boolean(this.inputElement?.contains(target)),
-      })
-    );
 
     // Listen for dictionary selection changes to re-fetch or update active search
     this.scope.listen<{ dictKeys: string[]; bitmask?: string }>(
@@ -459,21 +470,31 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     window.history.replaceState(null, "", url.pathname + url.search);
   }
 
+  private getSuggestionsListbox(): HTMLElement | null {
+    const list = this.suggestionsEl?.firstElementChild;
+    if (list instanceof HTMLElement) return list;
+    const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
+    return suggestions ? suggestions.listEl : null;
+  }
+
   private clearSuggestions() {
     this.debouncedFetchPrefixChunk.cancel();
     this.debouncedFetchSuffixCompletions.cancel();
     this.scope.cancel("completions");
     this.suggestions = [];
-    this.selectedSuggestionIndex = -1;
-    this.updateSuggestionsView();
+    this.combobox?.close();
+    const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
+    if (suggestions) {
+      suggestions.items = [];
+    }
   }
 
   private updateSuggestionsView() {
     const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
     if (suggestions) {
       suggestions.items = this.suggestions;
-      suggestions.activeIndex = this.selectedSuggestionIndex;
     }
+    this.combobox?.setItems(this.suggestions);
   }
 
   private readonly handleInput = () => {
@@ -498,40 +519,6 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     } else {
       this.debouncedFetchPrefixChunk(prefix);
     }
-  };
-
-  private readonly handleKeyDown = (e: KeyboardEvent) => {
-    if (this.suggestions.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      // Moves the highlight in our suggestions
-      e.preventDefault();
-      this.selectedSuggestionIndex =
-        (this.selectedSuggestionIndex + 1) % this.suggestions.length;
-      this.updateSuggestionsView();
-    } else if (e.key === "ArrowUp") {
-      // Moves the highlight in our suggestions
-      e.preventDefault();
-      this.selectedSuggestionIndex =
-        (this.selectedSuggestionIndex - 1 + this.suggestions.length) %
-        this.suggestions.length;
-      this.updateSuggestionsView();
-    } else if (e.key === "Enter" && this.selectedSuggestionIndex >= 0) {
-      // Enter picks our highlighted suggestion
-      e.preventDefault();
-      this.chooseSuggestion(
-        this.suggestions[this.selectedSuggestionIndex].word
-      );
-    } else if (e.key === "Escape") {
-      this.clearSuggestions();
-    }
-  };
-
-  private readonly handleBlur = () => {
-    // Delay closing suggestions so click events on suggestions can register
-    this.scope.timeout(() => {
-      this.clearSuggestions();
-    }, 200);
   };
 
   private chooseSuggestion(suggestion: string) {

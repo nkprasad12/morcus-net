@@ -94,7 +94,9 @@ const FIXTURES: Record<string, string> = {
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only></morcus-dict-suggestions>
+          <morcus-dict-suggestions data-js-only>
+            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
+          </morcus-dict-suggestions>
         </div>
       </form>
       <output id="dict-results" class="results"></output>

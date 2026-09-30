@@ -32,7 +32,7 @@ export const CARET_KEYS: ReadonlySet<string> = new Set([
   "End",
 ]);
 
-export interface ComboboxControllerOptions<T extends ComboboxItem> {
+export interface ComboboxControllerOptions<T = unknown> {
   /** Root node owning this controller (defaults to document). */
   root?: ParentNode;
   /** Returns the text input element. */
@@ -62,14 +62,17 @@ export interface ComboboxControllerOptions<T extends ComboboxItem> {
    */
   onRefresh?: () => void;
   /**
+   * Optional predicate determining if an item can be selected.
+   * Defaults to checking `item.selectable !== false`.
+   */
+  isSelectable?: (item: T) => boolean;
+  /**
    * Optional callback to render or update items into listbox element before attributes are synced.
    */
   renderItems?: (items: readonly T[], listbox: HTMLElement) => void;
 }
 
-export class ComboboxController<
-  T extends ComboboxItem = ComboboxItem
-> extends BaseController {
+export class ComboboxController<T = unknown> extends BaseController {
   private readonly options: ComboboxControllerOptions<T>;
   private _items: readonly T[] = [];
   private _activeIndex = -1;
@@ -98,11 +101,19 @@ export class ComboboxController<
   }
 
   protected override onConnect(): void {
+    this.ensureBound();
+  }
+
+  private ensureBound(): boolean {
+    if (this.input && this.listbox) {
+      return true;
+    }
+
     const input = this.options.getInput();
     const listbox = this.options.getListbox();
 
     if (!input || !listbox) {
-      return;
+      return false;
     }
 
     this.input = input;
@@ -146,6 +157,8 @@ export class ComboboxController<
     if (input === this.ownerDocument.activeElement) {
       this.handleFocus();
     }
+
+    return true;
   }
 
   protected override onDisconnect(): void {
@@ -185,6 +198,7 @@ export class ComboboxController<
     this._items = items;
     this._activeIndex = -1;
 
+    this.ensureBound();
     const input = this.input;
     const listbox = this.listbox;
     if (!input || !listbox) return;
@@ -229,10 +243,12 @@ export class ComboboxController<
         child.setAttribute("role", "option");
       }
       const item = this._items[i];
-      if (item && item.selectable === false) {
+      if (item && !this.isSelectable(i)) {
         child.setAttribute("aria-disabled", "true");
       }
-      child.setAttribute("aria-selected", String(i === this._activeIndex));
+      const isActive = i === this._activeIndex;
+      child.setAttribute("aria-selected", String(isActive));
+      child.classList.toggle("active", isActive);
     }
   }
 
@@ -250,9 +266,9 @@ export class ComboboxController<
     if (!input || !listbox) return;
 
     if (this._activeIndex >= 0 && this._activeIndex < listbox.children.length) {
-      listbox.children
-        .item(this._activeIndex)
-        ?.setAttribute("aria-selected", "false");
+      const prevEl = listbox.children.item(this._activeIndex);
+      prevEl?.setAttribute("aria-selected", "false");
+      prevEl?.classList.remove("active");
     }
 
     this._activeIndex = index;
@@ -260,6 +276,7 @@ export class ComboboxController<
     const activeEl = index >= 0 ? listbox.children.item(index) : null;
     if (activeEl instanceof HTMLElement) {
       activeEl.setAttribute("aria-selected", "true");
+      activeEl.classList.add("active");
       input.setAttribute("aria-activedescendant", activeEl.id);
       if (typeof activeEl.scrollIntoView === "function") {
         activeEl.scrollIntoView({ block: "nearest" });
@@ -271,13 +288,20 @@ export class ComboboxController<
 
   private isSelectable(index: number): boolean {
     const item = this._items[index];
-    return Boolean(item && item.selectable !== false);
+    if (!item) return false;
+    if (this.options.isSelectable) {
+      return this.options.isSelectable(item);
+    }
+    if (typeof item === "object" && item !== null && "selectable" in item) {
+      return Reflect.get(item, "selectable") !== false;
+    }
+    return true;
   }
 
   private choose(index: number): void {
     if (index < 0 || index >= this._items.length) return;
     const item = this._items[index];
-    if (item.selectable === false) {
+    if (!this.isSelectable(index)) {
       this.setActiveIndex(-1);
       return;
     }

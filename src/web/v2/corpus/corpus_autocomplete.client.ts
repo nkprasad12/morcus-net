@@ -642,37 +642,38 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     this.authors = parseAuthors(this.dataset.authors);
     this.lemmataVersion = this.dataset.lemmataVersion || undefined;
 
-    this.combobox = new ComboboxController<CorpusSuggestion>({
-      root: this,
-      getInput: () => this.parts?.input ?? null,
-      getListbox: () => this.parts?.listbox ?? null,
-      isSelectable: (row) => isCompletion(row),
-      renderItems: (rows, box) => {
-        setHtml(
-          box,
-          html`${joinHtml(
-            rows.map((row, i) => renderRow(row, `${box.id}-${i}`))
-          )}`
-        );
-      },
-      onSelect: (_item, index) => {
-        this.choose(index);
-      },
-      onRefresh: () => {
-        this.refresh();
-      },
-      onVisibilityChange: (open) => {
-        if (!open) {
-          this.scope.cancel("lemmata");
-        }
-      },
-    });
-    this.addController(this.combobox);
+    if (!this.combobox) {
+      this.combobox = new ComboboxController<CorpusSuggestion>({
+        root: this,
+        getInput: () => this.parts?.input ?? null,
+        getListbox: () => this.parts?.listbox ?? null,
+        isSelectable: (row) => isCompletion(row),
+        renderItems: (rows, box) => {
+          setHtml(
+            box,
+            html`${joinHtml(
+              rows.map((row, i) => renderRow(row, `${box.id}-${i}`))
+            )}`
+          );
+        },
+        onSelect: (_item, index) => {
+          this.choose(index);
+        },
+        onRefresh: () => {
+          this.refresh();
+        },
+        onVisibilityChange: (open) => {
+          if (!open) {
+            this.scope.cancel("lemmata");
+          }
+        },
+      });
+      this.addController(this.combobox);
+    }
   }
 
   protected override onDisconnect(): void {
     this.parts = null;
-    this.combobox = null;
   }
 
   /** Shows the rows for the text before the caret, while the input has focus. */
