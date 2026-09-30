@@ -193,16 +193,16 @@ describe("ownersUpgraded", () => {
   });
 
   test("is false under a component that has not upgraded", () => {
-    expect(ownersUpgraded(target(`<x-owner><p id="t"></p></x-owner>`))).toBe(
-      false
-    );
+    expect(
+      ownersUpgraded(target(`<morcus-owner><p id="t"></p></morcus-owner>`))
+    ).toBe(false);
   });
 
   test("is false if any enclosing component has not upgraded", () => {
     expect(
       ownersUpgraded(
         target(
-          `<x-outer><x-inner data-upgraded><p id="t"></p></x-inner></x-outer>`
+          `<morcus-outer><morcus-inner data-upgraded><p id="t"></p></morcus-inner></morcus-outer>`
         )
       )
     ).toBe(false);
@@ -210,21 +210,63 @@ describe("ownersUpgraded", () => {
 
   test("is false under a failed component", () => {
     expect(
-      ownersUpgraded(target(`<x-owner data-js-failed><p id="t"></p></x-owner>`))
+      ownersUpgraded(
+        target(`<morcus-owner data-js-failed><p id="t"></p></morcus-owner>`)
+      )
     ).toBe(false);
   });
 
   test("checks the target itself", () => {
-    expect(ownersUpgraded(target(`<x-owner id="t"></x-owner>`))).toBe(false);
+    expect(ownersUpgraded(target(`<morcus-owner id="t"></morcus-owner>`))).toBe(
+      false
+    );
   });
 
   test("is true once every enclosing component has upgraded", () => {
     expect(
       ownersUpgraded(
         target(
-          `<x-outer data-upgraded><x-inner data-upgraded><p id="t"></p></x-inner></x-outer>`
+          `<morcus-outer data-upgraded><morcus-inner data-upgraded><p id="t"></p></morcus-inner></morcus-outer>`
         )
       )
     ).toBe(true);
+  });
+
+  test("ignores hyphenated tags that aren't morcus-* components", () => {
+    expect(
+      ownersUpgraded(target(`<font-face><p id="t"></p></font-face>`))
+    ).toBe(true);
+  });
+
+  test("is false under any element marked failed (e.g. a controller root)", () => {
+    expect(
+      ownersUpgraded(target(`<div data-js-failed><p id="t"></p></div>`))
+    ).toBe(false);
+  });
+
+  test("stops at an owner that contains the element", () => {
+    document.body.innerHTML = `<morcus-outer><morcus-mine data-upgraded><p id="t"></p></morcus-mine></morcus-outer>`;
+    const owner = document.querySelector("morcus-mine")!;
+    const el = document.getElementById("t")!;
+    expect(ownersUpgraded(el)).toBe(false);
+    expect(ownersUpgraded(el, owner)).toBe(true);
+  });
+
+  test("still checks components nested below the owner", () => {
+    document.body.innerHTML = `<morcus-mine data-upgraded><morcus-inner><p id="t"></p></morcus-inner></morcus-mine>`;
+    const owner = document.querySelector("morcus-mine")!;
+    expect(ownersUpgraded(document.getElementById("t")!, owner)).toBe(false);
+  });
+
+  test("is false when the owner itself failed", () => {
+    document.body.innerHTML = `<morcus-mine data-js-failed><p id="t"></p></morcus-mine>`;
+    const owner = document.querySelector("morcus-mine")!;
+    expect(ownersUpgraded(document.getElementById("t")!, owner)).toBe(false);
+  });
+
+  test("walks to the document when the owner doesn't contain the element", () => {
+    document.body.innerHTML = `<morcus-mine data-upgraded></morcus-mine><morcus-other><p id="t"></p></morcus-other>`;
+    const owner = document.querySelector("morcus-mine")!;
+    expect(ownersUpgraded(document.getElementById("t")!, owner)).toBe(false);
   });
 });
