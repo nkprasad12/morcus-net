@@ -6,6 +6,32 @@
 - **Scope:** `src/web/v2/` (UI V2). V1 is unaffected.
 - **Prototype:** [`prototypes/nojs_tabbed_drawer.html`](prototypes/nojs_tabbed_drawer.html), a standalone page with zero JavaScript.
 
+> [!IMPORTANT] > **Status (2026-09-30): not the current plan as written.** A review on 2026-09-27 kept part of
+> this RFC, changed part and deferred the rest. Read this table before building anything from it.
+>
+> | Decision   | Proposals                                                                                                                                                                                                                                                                                                                                 |
+> | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | **Keep**   | `data-js-only` / `data-nojs-only` emitters with one global rule; the reveal protocol; hide-in-place temporary UI; the form round-trip harness; the preferences model (the server resolves, the client adopts); the late-hydration E2E test; the relocation ban (now that `swapSlots` exists); the server `html` migration, on XSS grounds |
+> | **Change** | Two gates → one, keyed on the owner's upgrade. Root delegation → scoped to the host and optional, keeping `scope.listen` for non-bubbling events. Proxy lint rules (the `createElement` ban, the `<button type>` AST rule) → runtime checks of the real invariants, run against SSR output (`core/*_conformance.test.ts`)                 |
+> | **Defer**  | The whole §8.1 contract layer: the Guaranteed/Possible phantom types on `SafeHtml`, type-erased `BaseElement` refs, the ESLint tag-matching rule (§9.1), and `data-on` actions until host scoping is designed                                                                                                                             |
+>
+> The deferred items wait for a **Phase 4** that comes after the macronizer and the corpus. Those
+> features define its requirements, and the evidence log in
+> [`corpus/DESIGN.md`](corpus/DESIGN.md) §9 records them. Phase 4 starts with typed ref names
+> scoped to the host. It adds the Guaranteed/Possible algebra only if the SSR harness shows gaps
+> in branch coverage.
+>
+> Why the phantom types were deferred: a prototype showed they compile a dead ref, give false
+> positives with `joinHtml` / `raw` and `: SafeHtml`, and miss the re-escape trap. They also have
+> no escape hatch, since `as` is banned. Separately, server-markup ↔ client-selector drift caused
+> 0 of 40 fix commits between June and September; the bugs that did ship came from the
+> progressive-enhancement layer. The cross-slice inventory ratchet
+> ([`inventory_ratchet.json`](inventory_ratchet.json)) is a growth guard against
+> drift, not a target to push down or a substitute for §8.1.
+>
+> Since then, cross-owner native actions have been handled by the runtime activation gate
+> ("The activation gate" in [README.md](README.md)), not by a declared contract.
+
 ---
 
 ## 0. Summary of Revisions from Draft 1
