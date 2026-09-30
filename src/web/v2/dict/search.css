@@ -105,7 +105,8 @@
 }
 
 .suggestion-item:hover,
-.suggestion-item.active {
+.suggestion-item.active,
+.suggestion-item[aria-selected="true"] {
   background-color: var(--tag-bg);
   color: var(--primary);
 }

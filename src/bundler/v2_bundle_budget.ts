@@ -89,12 +89,16 @@ export interface V2BundleBudget {
  *   route's chunk ceilings, so several chunks drifting up together still trip
  *   a check (`about` 55 / 18, `dicts` 86 / 28, `corpus` 72 / 24.5, `library`
  *   102 / 31.5, `external` 112 / 35.5 kB).
+ * - 2026-09-30: `common.js` 55 / 18 -> 60 / 20 kB (per-route: `about` 60 / 20,
+ *   `dicts` 90 / 30, `corpus` 76 / 26, `library` 106 / 33, `external` 117 / 37 kB),
+ *   after adding shared `core/combobox.client.ts` (WAI-ARIA 1.2 `ComboboxController`,
+ *   ~2.3 kB raw / ~1.0 kB gzip) to `common.js` for dict and corpus autocomplete.
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
     "common.js": {
-      maxRawBytes: 55 * 1024,
-      maxGzipBytes: 18 * 1024,
+      maxRawBytes: 60 * 1024,
+      maxGzipBytes: 20 * 1024,
     },
     "reader.js": {
       maxRawBytes: 50 * 1024,
@@ -114,11 +118,11 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     },
   },
   routes: {
-    about: { maxRawBytes: 55 * 1024, maxGzipBytes: 18 * 1024 },
-    dicts: { maxRawBytes: 86 * 1024, maxGzipBytes: 28 * 1024 },
-    corpus: { maxRawBytes: 72 * 1024, maxGzipBytes: 24.5 * 1024 },
-    library: { maxRawBytes: 102 * 1024, maxGzipBytes: 31.5 * 1024 },
-    external: { maxRawBytes: 112 * 1024, maxGzipBytes: 35.5 * 1024 },
+    about: { maxRawBytes: 60 * 1024, maxGzipBytes: 20 * 1024 },
+    dicts: { maxRawBytes: 90 * 1024, maxGzipBytes: 30 * 1024 },
+    corpus: { maxRawBytes: 76 * 1024, maxGzipBytes: 26 * 1024 },
+    library: { maxRawBytes: 106 * 1024, maxGzipBytes: 33 * 1024 },
+    external: { maxRawBytes: 117 * 1024, maxGzipBytes: 37 * 1024 },
   },
   maxCssRawBytes: 130 * 1024,
   maxCssGzipBytes: 23 * 1024,

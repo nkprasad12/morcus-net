@@ -7,17 +7,27 @@ import type { CompletionItem } from "@/web/v2/dict/dict_completions.common";
 export class MorcusDictSuggestions extends BaseElement {
   private _items: CompletionItem[] = [];
   private _activeIndex: number = -1;
-  private readonly listEl: HTMLUListElement;
+  private _listEl: HTMLUListElement | null = null;
 
-  constructor() {
-    super();
-    this.listEl = document.createElement("ul");
-    this.listEl.className = "suggestions";
+  public get listEl(): HTMLUListElement {
+    if (!this._listEl) {
+      const first = this.firstElementChild;
+      if (first instanceof HTMLUListElement) {
+        this._listEl = first;
+      } else {
+        this._listEl = document.createElement("ul");
+        this._listEl.className = "suggestions";
+        this._listEl.id = "dict-suggestions-list";
+        this._listEl.setAttribute("role", "listbox");
+      }
+    }
+    return this._listEl;
   }
 
   protected override onConnect() {
-    if (!this.contains(this.listEl)) {
-      this.appendChild(this.listEl);
+    const list = this.listEl;
+    if (!this.contains(list)) {
+      this.appendChild(list);
     }
 
     // Event delegation on container: avoids creating closure listeners for each item
@@ -62,6 +72,7 @@ export class MorcusDictSuggestions extends BaseElement {
       if (item instanceof HTMLElement) {
         const isActive = i === this._activeIndex;
         item.classList.toggle("active", isActive);
+        item.setAttribute("aria-selected", String(isActive));
         if (isActive) {
           item.scrollIntoView({ block: "nearest" });
         }
@@ -83,6 +94,9 @@ export class MorcusDictSuggestions extends BaseElement {
       li.className = `suggestion-item${
         idx === this._activeIndex ? " active" : ""
       }`;
+      li.id = `dict-suggestion-${idx}`;
+      li.setAttribute("role", "option");
+      li.setAttribute("aria-selected", String(idx === this._activeIndex));
       li.dataset.word = item.word;
 
       const chip = document.createElement("span");

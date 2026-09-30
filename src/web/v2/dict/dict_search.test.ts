@@ -31,7 +31,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only></morcus-dict-suggestions>
+          <morcus-dict-suggestions data-js-only>
+            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
+          </morcus-dict-suggestions>
         </div>
       </form>
       <output id="dict-results" class="results">
@@ -595,7 +597,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only></morcus-dict-suggestions>
+          <morcus-dict-suggestions data-js-only>
+            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
+          </morcus-dict-suggestions>
         </div>
       </form>
       <output id="dict-results" class="results">
@@ -629,7 +633,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only></morcus-dict-suggestions>
+          <morcus-dict-suggestions data-js-only>
+            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
+          </morcus-dict-suggestions>
         </div>
       </form>
       <output id="dict-results" class="results">
@@ -665,7 +671,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only></morcus-dict-suggestions>
+          <morcus-dict-suggestions data-js-only>
+            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
+          </morcus-dict-suggestions>
         </div>
       </form>
       <output id="dict-results" class="results">
@@ -967,6 +975,132 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       document.body.appendChild(el);
 
       expect(focusSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe("combobox ARIA and keyboard navigation", () => {
+    test("initializes combobox ARIA and controls listbox on input", () => {
+      const el = createDictSearch();
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const suggestions = el.querySelector("morcus-dict-suggestions") as any;
+      const listbox = suggestions.querySelector(
+        'ul[role="listbox"]'
+      ) as HTMLElement;
+
+      expect(input.getAttribute("role")).toBe("combobox");
+      expect(input.getAttribute("aria-autocomplete")).toBe("list");
+      expect(input.getAttribute("aria-expanded")).toBe("false");
+      expect(input.getAttribute("aria-controls")).toBe(listbox.id);
+      expect(listbox.hidden).toBe(true);
+
+      el.chunkCache.setChunks("am", {
+        "L&S": ["amo", "amor"],
+      });
+      input.value = "amo";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+
+      expect(input.getAttribute("aria-expanded")).toBe("true");
+      expect(listbox.hidden).toBe(false);
+
+      const items = listbox.querySelectorAll<HTMLLIElement>(".suggestion-item");
+      expect(items.length).toBe(2);
+      expect(items[0].getAttribute("role")).toBe("option");
+      expect(items[0].getAttribute("aria-selected")).toBe("false");
+      expect(items[0].id).toBeTruthy();
+    });
+
+    test("navigates suggestions with ArrowDown / ArrowUp and selects with Enter", () => {
+      const el = createDictSearch();
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const suggestions = el.querySelector("morcus-dict-suggestions") as any;
+      const listbox = suggestions.querySelector(
+        'ul[role="listbox"]'
+      ) as HTMLElement;
+
+      el.chunkCache.setChunks("am", {
+        "L&S": ["amo", "amor"],
+      });
+      input.value = "amo";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+
+      const items = listbox.querySelectorAll<HTMLLIElement>(".suggestion-item");
+
+      // ArrowDown selects first item
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      expect(input.getAttribute("aria-activedescendant")).toBe(items[0].id);
+      expect(items[0].getAttribute("aria-selected")).toBe("true");
+      expect(items[0].classList.contains("active")).toBe(true);
+
+      // ArrowDown wraps to second item
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      expect(input.getAttribute("aria-activedescendant")).toBe(items[1].id);
+      expect(items[1].getAttribute("aria-selected")).toBe("true");
+      expect(items[0].getAttribute("aria-selected")).toBe("false");
+
+      // Enter picks the second item ("amor")
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      expect(input.value).toBe("amor");
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("q=amor"),
+        expect.anything()
+      );
+      expect(input.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    test("Escape closes suggestions and resets aria-expanded", () => {
+      const el = createDictSearch();
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+
+      el.chunkCache.setChunks("am", {
+        "L&S": ["amo"],
+      });
+      input.value = "amo";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+
+      expect(input.getAttribute("aria-expanded")).toBe("true");
+
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+
+      expect(input.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    test("removing dict search element tears down combobox attributes from input", () => {
+      const el = createDictSearch();
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+
+      expect(input.hasAttribute("role")).toBe(true);
+      expect(input.hasAttribute("aria-controls")).toBe(true);
+
+      el.remove();
+
+      expect(input.hasAttribute("role")).toBe(false);
+      expect(input.hasAttribute("aria-controls")).toBe(false);
+      expect(input.hasAttribute("aria-expanded")).toBe(false);
+      expect(input.hasAttribute("aria-autocomplete")).toBe(false);
     });
   });
 });
