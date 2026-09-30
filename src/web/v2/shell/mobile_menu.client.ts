@@ -28,7 +28,3 @@ export const setupMobileMenu: (doc?: Document) => CleanupFn =
       doc,
     });
   });
-
-if (typeof document !== "undefined") {
-  setupMobileMenu();
-}

@@ -70,11 +70,3 @@ export const setupDeferredIframes: (doc?: Document) => CleanupFn =
       doc.removeEventListener("toggle", onToggle, true);
     };
   });
-
-if (typeof document !== "undefined") {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => setupDeferredIframes());
-  } else {
-    setupDeferredIframes();
-  }
-}

@@ -145,7 +145,11 @@ export function openSectionActionMenu(options: SectionActionOptions): void {
         ? e.target.closest<HTMLButtonElement>("button[data-action]")
         : null;
     if (!btn) return;
+    // native-takeover(own-subtree): this section menu's action buttons run
+    // copy/edit in place of their native action
     e.preventDefault();
+    // native-takeover(own-subtree): keep the menu's action click from
+    // reaching outside-click handlers on ancestors
     e.stopPropagation();
     const action = btn.dataset.action;
     closeMenu();
@@ -155,6 +159,8 @@ export function openSectionActionMenu(options: SectionActionOptions): void {
 
   menuScope.listen(menuEl, "keydown", (e: KeyboardEvent) => {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      // native-takeover(own-subtree): arrow keys move focus between this
+      // menu's items instead of scrolling
       e.preventDefault();
       (doc.activeElement === items[0] ? items[1] : items[0])?.focus();
     }
@@ -309,15 +315,21 @@ export function startSectionEdit(options: SectionActionOptions): void {
   scope.listen(textarea, "input", autoResize);
   scope.listen(box, "keydown", (e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      // native-takeover(own-subtree): Ctrl/Cmd+Enter in this editor box
+      // submits the correction
       e.preventDefault();
       void submitEdit();
     }
   });
   scope.listen(cancelBtn, "click", (e: MouseEvent) => {
+    // native-takeover(own-subtree): this editor's cancel button closes the
+    // editor in place of its native action
     e.preventDefault();
     if (!editorState.busy) closeEditor(true);
   });
   scope.listen(submitBtn, "click", (e: MouseEvent) => {
+    // native-takeover(own-subtree): this editor's submit button submits the
+    // correction via fetch in place of its native action
     e.preventDefault();
     void submitEdit();
   });

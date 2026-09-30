@@ -54,6 +54,8 @@ export class MorcusCorpusView extends BaseElement<"nav"> {
       "a[data-corpus-nav]",
       (e, link) => {
         if (!(e instanceof MouseEvent) || !isPlainLeftClick(e)) return;
+        // native-takeover(own-subtree): our nav links; navigate() swaps the
+        // result slots
         e.preventDefault();
         void this.navigate(link.href, { push: true, scrollToResults: true });
       }
@@ -93,8 +95,12 @@ export class MorcusCorpusView extends BaseElement<"nav"> {
     if (options.push) {
       const current = window.location.pathname + window.location.search;
       if (path === current) {
+        // native-takeover(self): navigate() already swapped the slots; records
+        // the URL
         window.history.replaceState(null, "", path);
       } else {
+        // native-takeover(self): navigate() already swapped the slots; records
+        // the URL
         window.history.pushState(null, "", path);
       }
       this.router?.updatePath(path);

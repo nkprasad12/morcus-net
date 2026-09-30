@@ -198,31 +198,83 @@ describe("setupAnchorScroll", () => {
     unregister();
   });
 
-  test("defers hash reveal until enclosing custom element upgrades", async () => {
-    const tagName = "test-deferred-element";
-    document.body.innerHTML = `<${tagName}><div id="deferred-drawer"></div></${tagName}>`;
-    const drawer = document.getElementById("deferred-drawer")!;
-    const reveal = jest.fn();
-    const replaceState = jest.fn();
-    const mockWin = {
-      location: { hash: "#deferred-drawer", pathname: "/p", search: "" },
-      history: { replaceState, state: null },
-      customElements: window.customElements,
-    } as unknown as Window;
+  describe("owner check (CHUNK_ORDERING.md)", () => {
+    const mockWin = () =>
+      ({
+        location: { hash: "", pathname: "/", search: "" },
+        history: { replaceState: jest.fn() },
+      } as unknown as Window);
 
-    cleanup = setupAnchorScroll(document, mockWin);
-    expect(reveal).not.toHaveBeenCalled();
-
-    class TestDeferredElement extends HTMLElement {
-      connectedCallback() {
-        registerRevealer(drawer, reveal, { ownsHash: true });
-      }
+    function clickLink(): MouseEvent {
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      });
+      document.getElementById("link")!.dispatchEvent(event);
+      return event;
     }
-    customElements.define(tagName, TestDeferredElement);
-    await customElements.whenDefined(tagName);
 
-    expect(reveal).toHaveBeenCalledWith(drawer);
-    expect(replaceState).toHaveBeenCalledWith(null, "", "/p");
+    test("leaves the link native while the target's owner is not upgraded", () => {
+      document.body.innerHTML = `
+        <a id="link" href="#drawer">Open</a>
+        <test-owner><div id="drawer"></div></test-owner>
+      `;
+      const drawer = document.getElementById("drawer")!;
+      const reveal = jest.fn();
+      const unregister = registerRevealer(drawer, reveal);
+      const win = mockWin();
+      cleanup = setupAnchorScroll(document, win);
+
+      const event = clickLink();
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(reveal).not.toHaveBeenCalled();
+      expect(win.history.replaceState).not.toHaveBeenCalled();
+      unregister();
+    });
+
+    test("leaves the link native when any enclosing owner is not upgraded", () => {
+      document.body.innerHTML = `
+        <a id="link" href="#drawer">Open</a>
+        <test-outer><test-inner data-upgraded><div id="drawer"></div></test-inner></test-outer>
+      `;
+      cleanup = setupAnchorScroll(document, mockWin());
+
+      expect(clickLink().defaultPrevented).toBe(false);
+    });
+
+    test("leaves the link native when the owner failed", () => {
+      document.body.innerHTML = `
+        <a id="link" href="#drawer">Open</a>
+        <test-owner data-js-failed><div id="drawer"></div></test-owner>
+      `;
+      cleanup = setupAnchorScroll(document, mockWin());
+
+      expect(clickLink().defaultPrevented).toBe(false);
+    });
+
+    test("takes over once every owner is upgraded", () => {
+      document.body.innerHTML = `
+        <a id="link" href="#drawer">Open</a>
+        <test-owner data-upgraded><div id="drawer"></div></test-owner>
+      `;
+      const drawer = document.getElementById("drawer")!;
+      const reveal = jest.fn();
+      const unregister = registerRevealer(drawer, reveal);
+      const win = mockWin();
+      cleanup = setupAnchorScroll(document, win);
+
+      const event = clickLink();
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(reveal).toHaveBeenCalledWith(drawer);
+      expect(win.history.replaceState).toHaveBeenCalledWith(
+        null,
+        "",
+        "#drawer"
+      );
+      unregister();
+    });
   });
 
   test("ignores clicks when defaultPrevented is true (preserving permalink copy ordering)", () => {

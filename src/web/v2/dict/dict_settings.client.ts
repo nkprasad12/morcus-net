@@ -161,6 +161,7 @@ export class MorcusDictSettings extends BaseElement {
           "aria-expanded",
           String(this.detailsEl.open)
         );
+        // native-takeover(own-subtree): toggles our own details element
         e.preventDefault();
       }
     });

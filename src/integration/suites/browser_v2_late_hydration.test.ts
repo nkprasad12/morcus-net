@@ -47,6 +47,69 @@ async function openBeforeHydration(
   return release;
 }
 
+const COMMON_SCRIPT = /\/v2\/assets\/common(\.[^/?]*)?\.js(\?|$)/;
+
+interface StagedPage {
+  /**
+   * Lets `common.js` run while the route chunks stay held, and waits until
+   * the page is in the intermediate state: `common.js`'s own elements are
+   * upgraded, `routeTag` is not yet defined.
+   */
+  enterIntermediate(): Promise<void>;
+  /** Lets the route chunks (`reader.js`, `dict.js`, ...) through. */
+  releaseRoute(): void;
+}
+
+/**
+ * Like {@link openBeforeHydration}, but with separate gates for `common.js`
+ * and every later chunk (CHUNK_ORDERING.md §1). Module scripts execute in
+ * document order, so holding the route chunk after releasing `common.js`
+ * reproduces the intermediate state exactly. The gates apply to every frame,
+ * so the reader's dictionary iframe (`common.js` then `dict.js`) is staged
+ * the same way.
+ */
+async function openStaged(
+  page: Page,
+  url: string,
+  ready: string,
+  routeTag: string,
+  frameUrl?: RegExp
+): Promise<StagedPage> {
+  let releaseCommon!: () => void;
+  const commonGate = new Promise<void>((resolve) => (releaseCommon = resolve));
+  let releaseRoute!: () => void;
+  const routeGate = new Promise<void>((resolve) => (releaseRoute = resolve));
+  await page.route(V2_SCRIPTS, async (route) => {
+    const isCommon = COMMON_SCRIPT.test(route.request().url());
+    await (isCommon ? commonGate : routeGate);
+    await route.continue();
+  });
+  await page.goto(url, { waitUntil: "commit" });
+  await page.waitForSelector(ready);
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll('link[rel="stylesheet"]')).every((l) =>
+      Boolean((l as HTMLLinkElement).sheet)
+    )
+  );
+  return {
+    async enterIntermediate() {
+      releaseCommon();
+      const frame = () =>
+        frameUrl === undefined
+          ? page.mainFrame()
+          : page.frames().find((f) => frameUrl.test(f.url()));
+      await expect.poll(() => frame() !== undefined).toBe(true);
+      await frame()!.waitForFunction(
+        (tag) =>
+          customElements.get("morcus-report-dialog") !== undefined &&
+          customElements.get(tag) === undefined,
+        routeTag
+      );
+    },
+    releaseRoute,
+  };
+}
+
 async function expectUpgraded(page: Page, selector: string) {
   await expect(page.locator(selector).first()).toHaveAttribute(
     "data-upgraded",
@@ -391,5 +454,197 @@ test.describe("UI V2 late hydration", () => {
     release();
     await expectUpgraded(page, "morcus-reader-view");
     expect(await measure()).toEqual(before);
+  });
+});
+
+/**
+ * The intermediate state (CHUNK_ORDERING.md): `common.js` has run, the route
+ * chunk has not. Nothing in `common.js` may suppress native No-JS behaviour
+ * for a component that has not upgraded, and the route's upgrade must still
+ * adopt whatever the user did.
+ */
+test.describe("UI V2 chunk ordering: intermediate state", () => {
+  const targetId = (page: Page) =>
+    page.evaluate(() => document.querySelector(":target")?.id ?? null);
+
+  test("reader: TOC link works while reader.js is still loading (PH5)", async ({
+    page,
+  }) => {
+    const staged = await openStaged(
+      page,
+      READER,
+      "#reader-toc-btn",
+      "morcus-reader-view"
+    );
+    await staged.enterIntermediate();
+    await page.locator("#reader-toc-btn").click();
+    const drawer = page.locator("#reader-toc-drawer");
+    // The No-JS mechanism: the fragment navigation happened, so `:target`
+    // opens the drawer.
+    await expect.poll(() => targetId(page)).toBe("reader-toc-drawer");
+    await expect(drawer).toBeVisible();
+
+    staged.releaseRoute();
+    await expectUpgraded(page, "morcus-reader-view");
+    await expect(drawer).toBeVisible();
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe("");
+    await page.keyboard.press("Escape");
+    await expect(drawer).toBeHidden();
+  });
+
+  test("reader: dictionary tab works while reader.js is still loading (PH7)", async ({
+    page,
+  }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 1280) > 640,
+      "The dictionary sheet is the mobile layout"
+    );
+    const opener = ".reader-panel-tab[href='#panel-view-dict']";
+    const staged = await openStaged(page, READER, opener, "morcus-reader-view");
+    await staged.enterIntermediate();
+    await page.locator(opener).click();
+    const panel = page.locator("#reader-dict");
+    await expect.poll(() => targetId(page)).toBe("panel-view-dict");
+    await expect
+      .poll(async () => (await panel.boundingBox())?.height ?? 0)
+      .toBeGreaterThan(100);
+
+    staged.releaseRoute();
+    await expectUpgraded(page, "morcus-reader-view");
+    await expect(panel).not.toHaveClass(/\bdrawer-minimized\b/);
+    expect((await panel.boundingBox())?.height ?? 0).toBeGreaterThan(100);
+  });
+
+  test("reader: a #hash deep link stays open across both chunks", async ({
+    page,
+  }) => {
+    const staged = await openStaged(
+      page,
+      `${READER}#reader-toc-drawer`,
+      "#reader-toc-btn",
+      "morcus-reader-view"
+    );
+    const drawer = page.locator("#reader-toc-drawer");
+    // Where the browser has applied `:target` (Firefox does at once; Chromium
+    // only at `load`, after every chunk), the No-JS drawer shows.
+    const expectNativeDrawer = async () => {
+      if ((await targetId(page)) === "reader-toc-drawer") {
+        await expect(drawer).toBeVisible();
+      }
+    };
+    await expectNativeDrawer();
+
+    await staged.enterIntermediate();
+    await expectNativeDrawer();
+    // `common.js` must not consume the hash before its owner can adopt it.
+    expect(await page.evaluate(() => location.hash)).toBe("#reader-toc-drawer");
+
+    staged.releaseRoute();
+    await expectUpgraded(page, "morcus-reader-view");
+    await expect(drawer).toBeVisible();
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe("");
+    await page.keyboard.press("Escape");
+    await expect(drawer).toBeHidden();
+  });
+
+  test("reader: a hashchange while reader.js is loading is adopted", async ({
+    page,
+  }) => {
+    const staged = await openStaged(
+      page,
+      READER,
+      "#reader-toc-btn",
+      "morcus-reader-view"
+    );
+    await staged.enterIntermediate();
+    await page.evaluate(() => {
+      location.hash = "#reader-toc-drawer";
+    });
+    const drawer = page.locator("#reader-toc-drawer");
+    await expect(drawer).toBeVisible();
+
+    staged.releaseRoute();
+    await expectUpgraded(page, "morcus-reader-view");
+    await expect(drawer).toBeVisible();
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe("");
+  });
+
+  test("dictionary: in-page links work while dict.js is still loading", async ({
+    page,
+  }) => {
+    const staged = await openStaged(
+      page,
+      "/v2/dicts?q=habeo",
+      ".dict-card",
+      "morcus-dict-search"
+    );
+    await staged.enterIntermediate();
+    const link = page.locator("a.jump-pill[href^='#']").last();
+    const href = (await link.getAttribute("href"))!;
+    await link.click();
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe(href);
+    await expect(page.locator(href)).toBeInViewport();
+
+    staged.releaseRoute();
+    await expectUpgraded(page, "morcus-dict-search");
+    await expect(page.locator(href)).toBeInViewport();
+  });
+
+  test("reader dictionary iframe: in-page links work while its dict.js is loading", async ({
+    page,
+  }) => {
+    test.skip(
+      (page.viewportSize()?.width ?? 1280) <= 640,
+      "The dictionary iframe is collapsed on mobile"
+    );
+    const frameUrl = /\/v2\/dicts\?.*embedded=1/;
+    const staged = await openStaged(
+      page,
+      `${READER}?q=habeo`,
+      "#dict-frame",
+      "morcus-dict-search",
+      frameUrl
+    );
+    await staged.enterIntermediate();
+    const frame = page.frameLocator("#dict-frame");
+    const link = frame.locator("a.jump-pill[href^='#']").last();
+    const href = (await link.getAttribute("href"))!;
+    await link.click();
+    await expect(frame.locator(href)).toBeInViewport();
+
+    staged.releaseRoute();
+    await expect(frame.locator("morcus-dict-search")).toHaveAttribute(
+      "data-upgraded",
+      "",
+      { timeout: 15000 }
+    );
+    await expect(frame.locator(href)).toBeInViewport();
+  });
+
+  test("reader: TOC link works natively when reader.js fails to load", async ({
+    page,
+  }) => {
+    // The realistic case for the owner check (CHUNK_ORDERING.md §8): common.js
+    // arrives, so the anchor handler installs at page ready, but the route
+    // chunk never does (flaky network, deploy skew).
+    await page.route(V2_SCRIPTS, (route) =>
+      COMMON_SCRIPT.test(route.request().url())
+        ? route.continue()
+        : route.abort()
+    );
+    await page.goto(READER);
+    await page.waitForLoadState("load");
+    await expect(page.locator("html")).toHaveAttribute("data-js-failed", "");
+    expect(
+      await page.evaluate(() => ({
+        common: customElements.get("morcus-report-dialog") !== undefined,
+        reader: customElements.get("morcus-reader-view") !== undefined,
+      }))
+    ).toEqual({ common: true, reader: false });
+
+    await page.locator("#reader-toc-btn").click();
+    await expect.poll(() => targetId(page)).toBe("reader-toc-drawer");
+    await expect(page.locator("#reader-toc-drawer")).toBeVisible();
+    expect(await page.evaluate(() => location.hash)).toBe("#reader-toc-drawer");
   });
 });

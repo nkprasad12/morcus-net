@@ -176,3 +176,55 @@ describe("JS gate selectors", () => {
     }
   });
 });
+
+describe("ownersUpgraded", () => {
+  // Imported lazily so the CSS-only tests above stay independent of it.
+  const { ownersUpgraded } =
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("@/web/v2/core/js_gate.client") as typeof import("@/web/v2/core/js_gate.client");
+
+  function target(html: string): Element {
+    document.body.innerHTML = html;
+    return document.getElementById("t")!;
+  }
+
+  test("is true outside any component", () => {
+    expect(ownersUpgraded(target(`<div><p id="t"></p></div>`))).toBe(true);
+  });
+
+  test("is false under a component that has not upgraded", () => {
+    expect(ownersUpgraded(target(`<x-owner><p id="t"></p></x-owner>`))).toBe(
+      false
+    );
+  });
+
+  test("is false if any enclosing component has not upgraded", () => {
+    expect(
+      ownersUpgraded(
+        target(
+          `<x-outer><x-inner data-upgraded><p id="t"></p></x-inner></x-outer>`
+        )
+      )
+    ).toBe(false);
+  });
+
+  test("is false under a failed component", () => {
+    expect(
+      ownersUpgraded(target(`<x-owner data-js-failed><p id="t"></p></x-owner>`))
+    ).toBe(false);
+  });
+
+  test("checks the target itself", () => {
+    expect(ownersUpgraded(target(`<x-owner id="t"></x-owner>`))).toBe(false);
+  });
+
+  test("is true once every enclosing component has upgraded", () => {
+    expect(
+      ownersUpgraded(
+        target(
+          `<x-outer data-upgraded><x-inner data-upgraded><p id="t"></p></x-inner></x-outer>`
+        )
+      )
+    ).toBe(true);
+  });
+});

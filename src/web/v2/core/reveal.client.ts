@@ -77,29 +77,12 @@ export function revealTarget(target: HTMLElement): void {
   }
 }
 
-function findUndefinedCustomHost(
-  target: HTMLElement,
-  win: Window
-): HTMLElement | null {
-  const ce = win.customElements;
-  if (!ce || typeof ce.whenDefined !== "function") return null;
-  let cur: HTMLElement | null = target;
-  while (cur) {
-    if (
-      cur.localName &&
-      cur.localName.includes("-") &&
-      !ce.get(cur.localName)
-    ) {
-      return cur;
-    }
-    cur = cur.parentElement;
-  }
-  return null;
-}
-
 /**
  * Reveals the element named by the current URL hash, if any, and performs the
  * hash handover for containers registered with `ownsHash`. Returns the target.
+ *
+ * Callers run after every chunk on the page has upgraded its components
+ * (`onPageReady`), so the target's revealers are registered.
  */
 export function revealHashTarget(
   doc: Document = document,
@@ -116,21 +99,11 @@ export function revealHashTarget(
   const target = doc.getElementById(id);
   if (!target) return null;
 
-  // When route code splitting is active, custom element controllers that own
-  // or contain the target may still be downloading their chunk. Wait for the
-  // enclosing custom element to upgrade before attempting to reveal.
-  const undefinedHost = findUndefinedCustomHost(target, win);
-  if (undefinedHost) {
-    void win.customElements.whenDefined(undefinedHost.localName).then(() => {
-      if (win.location.hash === hash) {
-        revealHashTarget(doc, win);
-      }
-    });
-    return target;
-  }
-
   revealTarget(target);
   if (REGISTRY.get(target)?.ownsHash) {
+    // native-takeover(self): hash handover. The registered (so upgraded)
+    // owner just revealed the target and now holds the state; its `:target`
+    // CSS is scoped to un-upgraded owners, so the stale `:target` is inert.
     win.history.replaceState(
       win.history.state,
       "",

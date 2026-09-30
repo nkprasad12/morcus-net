@@ -39,3 +39,33 @@ export function markFailed(el: Element): void {
 export function clearFailed(el: Element): void {
   el.removeAttribute(JS_FAILED_ATTR);
 }
+
+/**
+ * Whether every component that could own `el` has upgraded: `el` and each
+ * ancestor that is a custom element (a hyphenated tag) carry
+ * {@link UPGRADED_ATTR}. `true` when `el` is outside any component.
+ *
+ * Code that suppresses a native action and hands the replacement to another
+ * owner (e.g. the in-page anchor `click` handler's `preventDefault()`, which
+ * relies on the target's revealer) checks this first, so an owner that is not
+ * running keeps its No-JS behaviour, such as `:target` UI. Global setups run
+ * at page ready, after every chunk has executed, so this is false only when:
+ *
+ * - the owner's route chunk failed to load (flaky network, deploy skew): its
+ *   tag is never defined;
+ * - its `onConnect` threw (`data-js-failed`);
+ * - its definition arrives later (a lazily imported chunk).
+ *
+ * This is the README rule "before upgrade, a page behaves like the No-JS
+ * page", applied to code outside the owner. The `morcus/native-takeover`
+ * lint rule requires this guard on every `native-takeover(owner-checked)`
+ * call.
+ */
+export function ownersUpgraded(el: Element): boolean {
+  for (let cur: Element | null = el; cur; cur = cur.parentElement) {
+    if (cur.localName.includes("-") && !cur.hasAttribute(UPGRADED_ATTR)) {
+      return false;
+    }
+  }
+  return true;
+}

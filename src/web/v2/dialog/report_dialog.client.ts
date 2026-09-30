@@ -66,6 +66,8 @@ export class MorcusReportDialog extends BaseElement {
 
   private readonly handleFormKeyDown = (e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      // native-takeover(own-subtree): Ctrl/Cmd+Enter in our form calls
+      // requestSubmit()
       e.preventDefault();
       this.formEl?.requestSubmit();
     }

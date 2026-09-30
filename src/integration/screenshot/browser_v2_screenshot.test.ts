@@ -122,4 +122,3 @@ test.describe("UI V2 Visual Regression Suite", () => {
     themes: ["dark"],
   });
 });
-

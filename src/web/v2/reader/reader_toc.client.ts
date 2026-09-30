@@ -155,9 +155,13 @@ export class ReaderTocController extends BaseController {
 
     this.scope.listen(this.searchInput, "keydown", (event: KeyboardEvent) => {
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        // native-takeover(own-subtree): arrows in its own search input move the
+        // list selection
         event.preventDefault();
         this.moveSelection(event.key === "ArrowDown" ? 1 : -1);
       } else if (event.key === "Enter") {
+        // native-takeover(own-subtree): Enter in its own search input opens the
+        // selection
         event.preventDefault();
         this.executeSelectedOrJump();
       }

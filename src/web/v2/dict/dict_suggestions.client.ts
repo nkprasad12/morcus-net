@@ -27,6 +27,8 @@ export class MorcusDictSuggestions extends BaseElement {
       ".suggestion-item",
       (e, target) => {
         if (target.dataset.word) {
+          // native-takeover(own-subtree): keeps input focus; emits
+          // suggestion-select
           e.preventDefault();
           this.emit("suggestion-select", { word: target.dataset.word });
         }

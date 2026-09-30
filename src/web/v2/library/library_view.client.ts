@@ -35,6 +35,8 @@ export class MorcusLibraryView extends BaseElement {
       "click",
       ".filter-pill",
       (e, pill) => {
+        // native-takeover(own-subtree): our filter pills; setFilter() filters
+        // in place
         e.preventDefault();
         const filter = pill.dataset.filter || "all";
         this.setFilter(filter);
