@@ -141,15 +141,11 @@ with `npm run inventory:update` in the same change.
 
 ## Phase 7 — Docs & tests
 
-- [ ] 🟡 **Stop the Firefox baselines going stale again.** The baselines were all re-recorded when
-      the suite moved to viewport + coverage shots, so the matrix is green today, but nothing
-      prevents the drift recurring. `./morcus.sh e2e --visual` runs Chromium and MobileChrome only,
-      while `--update` is almost always run through that fast path; the `firefox` and
-      `FirefoxSmallScreen` baselines then sit at whatever the last `--all` run wrote. That is how
-      they reached 48 / 64 failing: the refresh at `8e04058a` covered the fast pair, and two days
-      later Firefox was still rendering the old about page (baseline 1163px tall, actual 1171px —
-      a pure size mismatch, no pixel differences). Options are to make `--update` refuse to run
-      without `--all`, or to run the full matrix in CI so the gap cannot open silently.
+- [x] 🟢 **Stop the Firefox baselines going stale again.** Made `--update` refuse to run on visual
+      regression tests (`--visual`) without `--all` in `src/scripts/run_morcus.ts`. Updating snapshots
+      now strictly requires the full browser matrix (`./morcus.sh e2e --visual --all --update`),
+      preventing fast-path Chromium-only updates from leaving Firefox and FirefoxSmallScreen
+      baselines stale.
 
 **Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
 dialog markup. Gaps:
