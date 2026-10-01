@@ -15,7 +15,7 @@ import { setupMobileMenu } from "@/web/v2/shell/mobile_menu.client";
 // Global shell and interactive behaviours. They run once every chunk on the
 // page has executed, not when `common.js` does: until the route chunk has
 // upgraded its components, the page must behave like the No-JS page
-// (CHUNK_ORDERING.md). Entries are the only modules allowed side effects
+// (docs/archive/CHUNK_ORDERING_ADR.md). Entries are the only modules allowed side effects
 // beyond `registerElement` (boot_conformance.test.ts).
 onPageReady(() => {
   setupAnchorScroll();

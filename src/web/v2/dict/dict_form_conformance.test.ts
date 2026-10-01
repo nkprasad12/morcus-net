@@ -1,9 +1,9 @@
 /**
  * Dictionary form round-trip & parameter precedence conformance
- * (PE RFC Review §2.3 / Phase 2.3; CODE_HEALTH.md Phase 7 "Close the No-JS testing gap").
+ * (see docs/DESIGN_TRAPS.md, "Testing").
  * Helpers and approach: `testing/form_roundtrip.ts`.
  *
- * Key rules enforced here (see CODE_HEALTH.md):
+ * Key rules enforced here (see docs/DESIGN_TRAPS.md):
  * - Never fixture an override with `L&S` (the default); use `GAF` / `GRG`.
  * - Assert exact sets (`getRenderedDictTitles`, `getCheckedDictKeys`), never
  *   vacuous `.toContain()` checks.

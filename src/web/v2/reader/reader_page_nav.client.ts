@@ -11,7 +11,7 @@
  * handling stay in the host's single swap path.
  *
  * V1's side-tap zones are deliberately not ported: the sticky-bar pager
- * arrows already cover tap-to-turn (see FEATURE_PARITY.md).
+ * arrows already cover tap-to-turn (see README.md, "Deliberately Not Ported from V1").
  *
  * Zero-JS: pure enhancement; without JS the pager links and continuation
  * cards remain the only way to turn pages.

@@ -1,7 +1,7 @@
 /**
  * The `/v2/corpus` URL contract, shared by the server (parsing requests,
  * building pager links) and `<morcus-corpus-view>` (syncing the form after a
- * client-side navigation). See `DESIGN.md` §3.
+ * client-side navigation). See `README.md`, "URL contract".
  */
 
 import type { PageData } from "@/common/library/corpus/corpus_common";

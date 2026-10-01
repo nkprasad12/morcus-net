@@ -1,8 +1,7 @@
 # Reader TODOs (`src/web/v2/reader/`)
 
 Known follow-up architectural, performance, and ergonomic work for the library reader topic.
-See [`README.md`](README.md) for how the directory is organized and [`FEATURE_PARITY.md`](FEATURE_PARITY.md)
-for V1 → V2 parity gaps.
+This includes remaining V1 → V2 gaps. See [`README.md`](README.md) for how the directory is organized.
 
 ---
 

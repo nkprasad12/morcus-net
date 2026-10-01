@@ -85,7 +85,7 @@ const NO_CLIENT_IMPORTS = {
 };
 
 // Keeps `<morcus-corpus-view>` and the corpus autocomplete decoupled (see
-// src/web/v2/corpus/DESIGN.md §7.3). Both now ship in the `corpus.js` route
+// src/web/v2/corpus/README.md, "Autocomplete boundary"). Both now ship in the `corpus.js` route
 // chunk, but the view reaches the autocomplete only through the DOM they
 // share and leaves the grammar tables to it, so the autocomplete could still
 // move into a lazy sub-chunk without touching the view.
@@ -93,7 +93,7 @@ const NO_CORPUS_AUTOCOMPLETE_IMPORTS = {
   group: ["**/corpus_autocomplete.client", "**/corpus_syntax.common"],
   message:
     "corpus_view.client.ts must not import the corpus autocomplete or the " +
-    "grammar (corpus/DESIGN.md §7.3). Talk to <morcus-corpus-suggestions> " +
+    "grammar (corpus/README.md, Autocomplete boundary). Talk to <morcus-corpus-suggestions> " +
     "through the shared form instead.",
 };
 

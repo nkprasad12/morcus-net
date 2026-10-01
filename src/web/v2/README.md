@@ -34,17 +34,20 @@ src/web/v2/
 └── v2-critical.css     # Inlined above-the-fold critical CSS
 ```
 
-> [!NOTE]
->
-> - Known code-quality debt is tracked as an incremental, checklist-driven backlog in
->   [CODE_HEALTH.md](CODE_HEALTH.md). Each item is scoped to be one small, independently landable
->   change. Add new debt there rather than leaving `TODO` comments, and check items off as they land.
-> - Bugs and race conditions in the **pre-hydration window** (where a JS-enabled user views or
->   interacts with SSR markup before the route's JS chunks execute) are documented and tracked in
->   [PRE_HYDRATION.md](PRE_HYDRATION.md).
-> - The longer-term strategy and checklist for graduating V2 to production (`dev` merge audit,
->   routing cutover, telemetry parity, V1 removal, and re-tuning pre-built artifacts) lives in
->   [GRADUATION.md](GRADUATION.md).
+### Docs
+
+Each slice has its own `README.md` and `TODOS.md`. Cross-cutting docs live in [`docs/`](docs/):
+
+| Doc                                               | Read it when                                                                       |
+| :------------------------------------------------ | :--------------------------------------------------------------------------------- |
+| [TESTING.md](docs/TESTING.md)                     | Running or writing tests; includes the pre-hydration (PH) bug index                |
+| [NEW_FEATURE_GUIDE.md](docs/NEW_FEATURE_GUIDE.md) | Adding a page, slice, or interactive component                                     |
+| [DESIGN_TRAPS.md](docs/DESIGN_TRAPS.md)           | Before writing code: recurring mistakes that lint and tests don't catch            |
+| [CODE_HEALTH.md](docs/CODE_HEALTH.md)             | Looking for, or adding, small code-quality debt items (instead of `TODO` comments) |
+| [FRAMEWORK_GAPS.md](docs/FRAMEWORK_GAPS.md)       | Hitting a missing framework primitive; also the deferred compile-time contracts    |
+| [PREFERENCES.md](docs/PREFERENCES.md)             | Adding or changing a user preference                                               |
+| [GRADUATION.md](docs/GRADUATION.md)               | Planning the `dev` merge, routing cutover, and V1 removal                          |
+| [archive/](docs/archive/)                         | Historical design records only; not current guidance                               |
 
 ### Core Design Rules
 
@@ -68,15 +71,15 @@ Follow these rules whenever adding or modifying UI V2 features:
    - **Macronizer**: a `POST` form with a server-rendered result.
    - **Corpus**: a `GET` form with its query and settings (`pageSize`, `contextLen`, `strictMode`) in the URL.
 2. **Don't move server-rendered nodes.** The server owns DOM structure; the client owns state (attributes, classes, listeners). If the JS-enhanced layout needs a different structure, render it in its final place on the server and hide it when JS is inactive. Reparenting SSR nodes in `onConnect()` reloads iframes, drops listeners, and requires fragile `onDisconnect()` restoration.
-3. **Read before writing in `onConnect()` ([PRE_HYDRATION.md §2](PRE_HYDRATION.md#2-root-cause-four-disjoint-definitions-of-is-js-active)).** On a slow connection, the user may have already scrolled (`window.scrollY > 0`), typed into an `<input>`, toggled a `<details>` or checkbox, or triggered a `:target` hash navigation before `v2.js` runs. Reconcile with and adopt live DOM/URL state before writing defaults, and guard initial `focus()` / scroll calls when `window.scrollY > 0`. Compare against the server-rendered defaults (`defaultChecked`, `defaultValue`, the SSR `open` attribute) to tell user edits from server state. Gate JS-dependent UI only with the JS gate below.
+3. **Read before writing in `onConnect()` ([PH bug index](docs/TESTING.md#pre-hydration-ph-bug-index)).** On a slow connection, the user may have already scrolled (`window.scrollY > 0`), typed into an `<input>`, toggled a `<details>` or checkbox, or triggered a `:target` hash navigation before `v2.js` runs. Reconcile with and adopt live DOM/URL state before writing defaults, and guard initial `focus()` / scroll calls when `window.scrollY > 0`. Compare against the server-rendered defaults (`defaultChecked`, `defaultValue`, the SSR `open` attribute) to tell user edits from server state. Gate JS-dependent UI only with the JS gate below.
 4. **Extend `core/`; don't fork it.** Shared behaviours (`BaseElement`, `BaseController`, `this.scope`, `fetchAndSwapPartial`, `AnchoredPopoverController`, `DrawerController`, `ComboboxController`, `back_to_top.client.ts`) and shared styles (`core/components.css` for focus rings, buttons, pills, and card headers) live in `core/`. If a slice needs a variation (e.g., a custom scroll container), parameterize the primitive in `core/` instead of copying it into the slice.
 5. **New server templates use `html`, composed with `raw` / `joinHtml`.** Use `html` from `core/html.common.ts` in new `.server.ts` templates as well as `.common.ts` and `.client.ts` (do not add new `he.escape` calls). **Never interpolate a `SafeHtml` directly into another `html` template (`${childSafeHtml}`):** the brand is erased at runtime, so `html` escapes it a second time into literal text. Always compose sub-templates with `joinHtml(parts)` or `raw(childSafeHtml)`.
-6. **Keep new feature code inside its slice.** Keep slice-specific controllers, helpers, and state self-contained inside their topic folder (`dict/`, `reader/`, `external/`, `corpus/`, etc.) without cross-slice entanglement so heavy slices can be split into lazy `import()` chunks ([CODE_HEALTH.md](CODE_HEALTH.md)).
+6. **Keep new feature code inside its slice.** Keep slice-specific controllers, helpers, and state self-contained inside their topic folder (`dict/`, `reader/`, `external/`, `corpus/`, etc.) without cross-slice entanglement so heavy slices can be split into lazy `import()` chunks ([CODE_HEALTH.md](docs/CODE_HEALTH.md)).
 7. **Verify audit findings before acting on them.**
    - Require concrete evidence (file, line, and exact mechanism) and verify each claim against the code before changing anything.
    - Check consequences across slices—especially keyboard focus preservation across swaps, custom element disconnect/reconnect lifecycles, and the zero-JS baseline.
    - Fix one-off issues locally; introduce a new shared primitive or conformance check only when a bug class recurs, weighting real shipped bugs over theoretical audit items.
-8. **Don't preserve backwards compatibility within V2.** V2 has no users yet. Change storage keys and formats, cookies, URLs, attributes, CSS hooks, and internal APIs freely: no migration code, legacy reads, fallback paths, deprecation shims, or "one-load flash" trade-offs. Rename or delete outright and update every caller in the same change. This does not cover the browser support target below, or the V1 → V2 cutover, which is decided separately ([dict/PREFERENCES.md](dict/PREFERENCES.md)).
+8. **Don't preserve backwards compatibility within V2.** V2 has no users yet. Change storage keys and formats, cookies, URLs, attributes, CSS hooks, and internal APIs freely: no migration code, legacy reads, fallback paths, deprecation shims, or "one-load flash" trade-offs. Rename or delete outright and update every caller in the same change. This does not cover the browser support target below, or the V1 → V2 cutover, which is decided separately ([GRADUATION.md](docs/GRADUATION.md)).
 
 ### Quick Reference (`core/` Primitives)
 
@@ -96,7 +99,7 @@ Follow these rules whenever adding or modifying UI V2 features:
 
 ### JS-only and No-JS-only UI
 
-**Before upgrade, a page looks like the JS page but behaves like the No-JS page.** The upgrade then adopts whatever the user did in the meantime (adopt-before-write, PRE_HYDRATION.md). There is exactly one way to show or hide UI depending on whether JavaScript is running:
+**Before upgrade, a page looks like the JS page but behaves like the No-JS page.** The upgrade then adopts whatever the user did in the meantime (adopt-before-write; see the [PH bug index](docs/TESTING.md#pre-hydration-ph-bug-index)). There is exactly one way to show or hide UI depending on whether JavaScript is running:
 
 - **`data-js-only`** on anything that only works with JS (a `type="button"` control, a client-populated list).
 - **`data-nojs-only`** on a No-JS fallback (an Apply submit button, "needs JavaScript" notes).
@@ -126,12 +129,12 @@ No-JS UI often opens via a link to a fragment (`<a href="#reader-dict">` plus a 
 - In `onConnect()`, `this.scope.use(registerRevealer(el, reveal, { ownsHash }))` from [`core/reveal.client.ts`](core/reveal.client.ts). `reveal(target)` must be idempotent (open, don't toggle).
 - [`core/anchor_scroll.client.ts`](core/anchor_scroll.client.ts) calls `revealTarget()` for the initial hash (at page ready, via `onPageReady`, so every route chunk has registered its elements and a link clicked before the scripts arrived is adopted), on `hashchange`, on in-page anchor clicks and on `beforematch`. It opens ancestor `<details>` and calls every registered revealer from the innermost outwards, then scrolls.
 - The click handler is a `LifetimeScope` listener, so the activation gate (below) skips it when the target's owner isn't running. The browser then navigates natively and the No-JS `:target` UI keeps working; the component adopts the hash when it upgrades.
-- Global setups (`setupX` singletons) never run at import time. Entries call them from `onPageReady` ([`core/page_ready.client.ts`](core/page_ready.client.ts)); [`core/boot_conformance.test.ts`](core/boot_conformance.test.ts) enforces this. See [CHUNK_ORDERING.md](CHUNK_ORDERING.md) §8.
+- Global setups (`setupX` singletons) never run at import time. Entries call them from `onPageReady` ([`core/page_ready.client.ts`](core/page_ready.client.ts)); [`core/boot_conformance.test.ts`](core/boot_conformance.test.ts) enforces this. See [CHUNK_ORDERING_ADR.md](docs/archive/CHUNK_ORDERING_ADR.md) §8.
 - `ownsHash: true` means the hash was only a No-JS state carrier (a drawer, a sheet). When the hash points exactly at such an element, it's cleared with `history.replaceState` once revealed, so closing the UI later isn't fought by a stale `:target`.
 
 ### The activation gate
 
-A handler that cancels a native action (`preventDefault()`, or `pushState` in place of a navigation) on behalf of an owner that isn't running breaks that owner's No-JS fallback too. That was the chunk-ordering bug ([CHUNK_ORDERING.md](CHUNK_ORDERING.md) §8). An owner isn't running when its route chunk failed to load, its `onConnect` threw (`data-js-failed`), or it's defined later.
+A handler that cancels a native action (`preventDefault()`, or `pushState` in place of a navigation) on behalf of an owner that isn't running breaks that owner's No-JS fallback too. That was the chunk-ordering bug ([CHUNK_ORDERING_ADR.md](docs/archive/CHUNK_ORDERING_ADR.md) §8). An owner isn't running when its route chunk failed to load, its `onConnect` threw (`data-js-failed`), or it's defined later.
 
 `LifetimeScope.listen()` prevents this structurally. For `click`, `submit` and activating `keydown` (Enter / Space), it doesn't call the listener at all (`canHandleActivation` in [`core/js_gate.client.ts`](core/js_gate.client.ts)) when any of the conditions below hold. A skipped listener can neither cancel the action nor run side effects such as `pushState`, so the browser's native handling goes ahead untouched. The conditions:
 
@@ -145,7 +148,7 @@ So a native action whose No-JS replacement has no running owner is never cancell
 - **Reach peers with `queryUpgraded` / `closestUpgraded`.** Component classes are registered in `MorcusElementTagNameMap`, not `HTMLElementTagNameMap`, so a raw `querySelector("morcus-x")` is an untyped `Element`. [`core/boot_conformance.test.ts`](core/boot_conformance.test.ts) also bans importing `Morcus*` classes, even as types (let the type be inferred from `queryUpgraded`, or name `MorcusElementTagNameMap["morcus-x"]`), dynamic `import()` and `async onConnect`.
 - **Keep references within an owner or visible to the gate.** A `label[for]` or `[form]` must share its nearest `morcus-*` owner with its target. A same-page hash link must be written as a bare `#id`. [`core/route_bundle_conformance.test.ts`](core/route_bundle_conformance.test.ts) checks both.
 - The SSR conformance harness ([`testing/ssr_conformance_harness.ts`](testing/ssr_conformance_harness.ts), run by each feature's `*_ssr_conformance.test.ts`) section 4 fails each `morcus-*` instance in the SSR fixtures in turn (its `onConnect` throws, or its tag is never defined) and asserts that no activation in it, or pointing into it, is cancelled. It also marks `<html data-js-failed>` and asserts that no activation on the page is cancelled. It runs every global setup the entry files start, and a check in [`core/ssr_conformance.test.ts`](core/ssr_conformance.test.ts) fails if a new one is missing.
-- Each feature's `*_interaction_conformance.test.ts` (e.g. [`dict/dict_interaction_conformance.test.ts`](dict/dict_interaction_conformance.test.ts)), built on [`testing/interaction_harness.ts`](testing/interaction_harness.ts), re-checks the SSR invariants after user interaction: every control in the feature's fixtures, plus the fetches that follow, including teardown mid-request. DOM a component builds or replaces after interaction must be in [`testing/created_dom_allowlist.ts`](testing/created_dom_allowlist.ts) or [`testing/isomorphic_rerenders.ts`](testing/isomorphic_rerenders.ts); both need human review to extend. See [TESTING.md](TESTING.md), "SSR conformance harnesses", and its table "When to add or change a conformance test" for what a new page, flow, endpoint or form needs.
+- Each feature's `*_interaction_conformance.test.ts` (e.g. [`dict/dict_interaction_conformance.test.ts`](dict/dict_interaction_conformance.test.ts)), built on [`testing/interaction_harness.ts`](testing/interaction_harness.ts), re-checks the SSR invariants after user interaction: every control in the feature's fixtures, plus the fetches that follow, including teardown mid-request. DOM a component builds or replaces after interaction must be in [`testing/created_dom_allowlist.ts`](testing/created_dom_allowlist.ts) or [`testing/isomorphic_rerenders.ts`](testing/isomorphic_rerenders.ts); both need human review to extend. See [TESTING.md](docs/TESTING.md), "SSR conformance harnesses", and its table "When to add or change a conformance test" for what a new page, flow, endpoint or form needs.
 
 ---
 
@@ -178,7 +181,7 @@ Two consequences worth knowing before you "clean up" such a module:
 
 ### Build Pipeline
 
-- **Bundler script**: [src/bundler/v2.rsbuild.ts](src/bundler/v2.rsbuild.ts)
+- **Bundler script**: [src/bundler/v2.rsbuild.ts](../../bundler/v2.rsbuild.ts)
 - **Build contract**: [src/bundler/v2_build_contract.ts](../../bundler/v2_build_contract.ts) (chunk names, `dependOn` graph, manifest asset names, build directory; shared by the bundler and the server)
 - **Output chunks**: `build/v2/{common,dict,reader,external,corpus}.js` (ESM chunks built via Rspack `dependOn` and loaded via `<script type="module">` tags emitted per route by `page_shell.server.ts`)
 - **Stylesheet**: `src/web/v2/v2.css` served statically at `/v2/assets/v2.css`
@@ -215,7 +218,9 @@ UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
 ## Rapid Iteration Workflow (Instruction for AI Agents)
 
-> [!IMPORTANT] > **Fast Visual Feedback**: When iterating on small changes (especially styling/CSS adjustments, visual polish, or minor UI tweaks):
+> [!IMPORTANT]
+>
+> **Fast Visual Feedback**: When iterating on small changes (especially styling/CSS adjustments, visual polish, or minor UI tweaks):
 >
 > - **Make the fix and restart the server immediately** so the user can see it visually right away.
 > - **Do NOT** wait for or run linting (`eslint`), formatting (`prettier`), type checking (`tsc`), or test suites during rapid iteration.
@@ -225,7 +230,7 @@ UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
 ## Testing & Quality Verification (Pre-Commit / Finalization)
 
-Comprehensive instructions for running unit tests and Playwright E2E tests are detailed in [TESTING.md](TESTING.md). Run these when finalizing features or before committing:
+Comprehensive instructions for running unit tests and Playwright E2E tests are detailed in [TESTING.md](docs/TESTING.md). Run these when finalizing features or before committing:
 
 - **Linting & Import Rules**: `npx eslint --cache src/web/v2`
 - **Code Style**: `npx prettier --cache src/web/v2 --check`

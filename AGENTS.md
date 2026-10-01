@@ -34,10 +34,12 @@ For all tasks involving UI V2 (`src/web/v2/`), consult the dedicated guides befo
 
 - **Architecture & Progressive Enhancement Guide**: [`src/web/v2/README.md`](src/web/v2/README.md)
   - Covers vertical slices, `*.server.ts` vs `*.client.ts` target suffixes, Light DOM custom element conventions, zero-JS baseline philosophy, and Rsbuild bundling.
-- **Testing & Verification Guide**: [`src/web/v2/TESTING.md`](src/web/v2/TESTING.md)
+- **Testing & Verification Guide**: [`src/web/v2/docs/TESTING.md`](src/web/v2/docs/TESTING.md)
   - Full details on running unit tests, end-to-end (E2E) tests, visual regression tests, and debugging options.
 
-> [!IMPORTANT] > **No backwards compatibility in UI V2.** V2 has no users yet. Don't keep legacy storage reads, migrations, fallback paths or shims, and don't accept trade-offs (such as a one-load flash) to keep old data working. Change formats and APIs outright and update every caller. Browser support (README "Browser Support & Compatibility Target") is a separate question. See convention 8 in [`src/web/v2/README.md`](src/web/v2/README.md).
+> [!IMPORTANT]
+>
+> **No backwards compatibility in UI V2.** V2 has no users yet. Don't keep legacy storage reads, migrations, fallback paths or shims, and don't accept trade-offs (such as a one-load flash) to keep old data working. Change formats and APIs outright and update every caller. Browser support (README "Browser Support & Compatibility Target") is a separate question. See convention 8 in [`src/web/v2/README.md`](src/web/v2/README.md).
 
 ---
 
@@ -147,7 +149,9 @@ An interactive viewer for screenshot changes (`src/scripts/visual_diff/`). It re
 ./morcus.sh visual-diff --host 127.0.0.1
 ```
 
-> [!IMPORTANT] > **For agents:** `visual-diff` and `e2e --visual --diff` keep a server running until stopped (Ctrl+C), so start them as a background/daemon process, not a blocking command. Everything is also written to `.cache/visual-diff/` (`report.md`, `index.html`, `images/<id>.{before,after,diff}.png`); use `--no-server` when you only need those files. If nothing changed, the command prints `No changed snapshots found.` and exits without starting a server.
+> [!IMPORTANT]
+>
+> **For agents:** `visual-diff` and `e2e --visual --diff` keep a server running until stopped (Ctrl+C), so start them as a background/daemon process, not a blocking command. Everything is also written to `.cache/visual-diff/` (`report.md`, `index.html`, `images/<id>.{before,after,diff}.png`); use `--no-server` when you only need those files. If nothing changed, the command prints `No changed snapshots found.` and exits without starting a server.
 
 The viewer offers before/after flip (<kbd>Space</kbd>, hold-to-peek, auto-blink with <kbd>B</kbd>), a split slider (<kbd>S</kbd>), a diff mask overlay (<kbd>D</kbd>), side-by-side view (<kbd>4</kbd>), zoom, and filtering by page, color (light/dark), size (mobile/desktop), scripting (JS/No-JS), browser, and name. Option counts reflect the other active filters, and filters are kept in the URL hash. Press <kbd>?</kbd> for all shortcuts. Pixel counts and diff masks need ImageMagick (6 or 7); without it, the `results` source falls back to Playwright's own diff images.
 

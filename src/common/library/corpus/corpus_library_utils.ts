@@ -142,7 +142,7 @@ function assembleRowText(node: XmlNode | string): string {
  *
  * A review of every seam in the library where this rule changes the tokens
  * (9,661) found about 10 errors, all missing spaces in the source TEI. See
- * `src/web/v2/corpus/TODO.md`, "Word-boundary rule".
+ * `src/web/v2/corpus/TODOS.md`, "Word-boundary rule".
  */
 export function extractRowText(node: XmlNode | string): string {
   return (

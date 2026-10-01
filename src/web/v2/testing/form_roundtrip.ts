@@ -3,7 +3,7 @@
  * response into jsdom, change form controls as a user would, serialize the
  * whole `<form>` with `new FormData(form)`, and send the result to the V2
  * router through supertest. Covers the gap between SSR string assertions and
- * browser E2E tests (CODE_HEALTH.md Phase 7, "Close the No-JS testing gap").
+ * browser E2E tests (see docs/DESIGN_TRAPS.md, "Testing").
  */
 
 /**

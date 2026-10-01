@@ -4,7 +4,7 @@
 
 This directory encapsulates all server-side rendering and client-side web components for the library reader: work/page loading, the citation-addressed text view, the sticky navigation bar, the table-of-contents drawer, reading preferences, the parallel translation view, and the embedded dictionary panel.
 
-Companion docs: [`FEATURE_PARITY.md`](FEATURE_PARITY.md) tracks remaining V1 → V2 parity gaps, and [`TODOS.md`](TODOS.md) records forward-looking architectural and performance improvements.
+Companion doc: [`TODOS.md`](TODOS.md) records open work, including remaining V1 → V2 gaps and architectural and performance improvements.
 
 ---
 
@@ -95,7 +95,7 @@ sequenceDiagram
 - `reader_settings.client.ts`: `MorcusReaderSettings` — the anchored typography popover, persisting to `morcus_reader_settings` in `localStorage`.
 - `reader_layout.client.ts`: `ReaderLayoutController` — the desktop resizable splitter and the mobile bottom drawer hosting the embedded dictionary.
 - `reader_panel.client.ts`: `ReaderPanelController` — adds behaviour to the server-rendered companion panel (`Dictionary`, `Notes`, `Translation`, `About`): tab roles and arbitration, hash reveals, the `notes` page-turn slot, and lazy translation loading.
-- `reader_page_nav.client.ts`: `ReaderPageNavController` — swipe page turns on touch devices (V1's side-tap is deliberately not ported; see `FEATURE_PARITY.md`). Owns gesture policy and the passage slide only; the turn itself goes through the view's `turnPage` (shared with `[` / `]`), so history, TOC, and notes handling stay in one swap path.
+- `reader_page_nav.client.ts`: `ReaderPageNavController` — swipe page turns on touch devices (V1's side-tap is deliberately not ported; see [below](#deliberately-not-ported-from-v1)). Owns gesture policy and the passage slide only; the turn itself goes through the view's `turnPage` (shared with `[` / `]`), so history, TOC, and notes handling stay in one swap path.
 
 ### Styles
 
@@ -126,4 +126,4 @@ These V1 features were reviewed and intentionally left out of V2. Revisit only w
 
 ## Testing
 
-Unit tests live alongside the sources (`reader.test.ts`, `reader_view.test.ts`, `reader_toc.test.ts`, `reader_settings.test.ts`, `reader_layout.test.ts`) and run with `npm run ts-tests:v2`. Functional and visual browser coverage is described in [`../TESTING.md`](../TESTING.md).
+Unit tests live alongside the sources (`reader.test.ts`, `reader_view.test.ts`, `reader_toc.test.ts`, `reader_settings.test.ts`, `reader_layout.test.ts`) and run with `npm run ts-tests:v2`. Functional and visual browser coverage is described in [`../docs/TESTING.md`](../docs/TESTING.md).

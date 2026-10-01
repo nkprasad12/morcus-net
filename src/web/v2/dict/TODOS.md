@@ -1,8 +1,7 @@
 # Dictionary TODOs (`src/web/v2/dict/`)
 
-Known follow-up work for this topic. See [`README.md`](README.md) for how the
-directory is organised and [`FEATURE_PARITY.md`](FEATURE_PARITY.md) for the V1 → V2
-gap analysis.
+Known follow-up work for this topic, including remaining V1 → V2 gaps. See
+[`README.md`](README.md) for how the directory is organised.
 
 ---
 
