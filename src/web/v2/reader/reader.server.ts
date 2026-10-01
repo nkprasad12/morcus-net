@@ -694,6 +694,42 @@ export async function renderReaderPartialHtml(
   );
 }
 
+/** The work at `/v2/reader/:author/:name`, or null if there is none. */
+export async function findReaderWork(
+  author: string,
+  name: string
+): Promise<V2PreprocessedWork | null> {
+  return (
+    (await getV2Work(`${author}/${name}`)) ||
+    (await getV2Work(`${author}_${name}`))
+  );
+}
+
+/**
+ * The translation partial for `pageParam` of `work`, fetched by the
+ * companion panel's Translation view, or null if the page has none.
+ */
+export function renderReaderTranslationHtml(
+  work: V2PreprocessedWork,
+  pageParam: string
+): string | null {
+  if (!work.hasTranslation) return null;
+  const page = resolvePageInWork(work, pageParam).page;
+  if (!page || !page.translationHtml) return null;
+  return `
+<div class="reader-translation-content">
+  <header class="reader-translation-header">
+    <span class="reader-translation-credit">Translated by ${he.escape(
+      work.translator ?? "Unknown"
+    )}</span>
+  </header>
+  <div class="reader-translation-body">
+    ${page.translationHtml}
+  </div>
+</div>
+        `.trim();
+}
+
 export async function renderReaderContentHtml(
   options: ReaderPageOptions = {}
 ): Promise<string> {
