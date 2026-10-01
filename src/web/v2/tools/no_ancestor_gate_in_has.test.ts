@@ -68,9 +68,7 @@ describe("morcus/no-ancestor-gate-in-has stylelint rule", () => {
 
     expect(warnings).toHaveLength(1);
     expect(warnings[0].rule).toBe("morcus/no-ancestor-gate-in-has");
-    expect(warnings[0].message).toContain(
-      "must not use combinators inside `:not()`"
-    );
+    expect(warnings[0].message).toContain("Combinator inside `:not(");
   });
 
   it("flags bare gate attribute inside :has()", () => {
@@ -101,9 +99,7 @@ describe("morcus/no-ancestor-gate-in-has stylelint rule", () => {
     `);
 
     expect(warnings).toHaveLength(1);
-    expect(warnings[0].message).toContain(
-      "must not use combinators inside `:not()`"
-    );
+    expect(warnings[0].message).toContain("Combinator inside `:not(");
   });
 
   it("flags universal descendant following a qualified gate", () => {
@@ -178,5 +174,28 @@ describe("morcus/no-ancestor-gate-in-has stylelint rule", () => {
     expect(invalidOptions).toHaveLength(1);
     expect(invalidOptions[0]).toContain('Invalid option value "invalid"');
     expect(warnings).toHaveLength(0);
+  });
+
+  // Measured in Firefox: a combinator inside :not() within :has() is ~20x
+  // slower whatever the attribute or class, so these are flagged too.
+  it.each([
+    "body:has(.panel .zz:not(.hot *)) .x",
+    "body:has(.panel .zz:not([data-open] *)) .x",
+    "body:has(.panel .zz:not([data-open] .y)) .x",
+    "body:has(.zz:not(morcus-s[data-open] *)) .x",
+  ])("flags a combinator inside :not() inside :has(): %s", (selector) => {
+    const { warnings } = runPlugin(`${selector} { opacity: 1; }`);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].message).toContain("Combinator inside `:not(");
+  });
+
+  // Measured in Firefox: these cost the same as a class-qualified selector.
+  it.each([
+    "body:has([data-open] .zz) .x",
+    "body:has([data-open] * .zz) .x",
+    "body:has(.drawer:target:not(.reader-dict-panel)) .x",
+    ".a:not(.b *):has(.c) .x",
+  ])("allows %s", (selector) => {
+    expect(runPlugin(`${selector} { opacity: 1; }`).warnings).toEqual([]);
   });
 });
