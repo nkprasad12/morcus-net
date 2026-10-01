@@ -24,7 +24,11 @@ import {
   type V2JsEntryName,
 } from "@/bundler/v2_build_contract";
 import { renderAboutPageHtml } from "@/web/v2/about/about.server";
-import { CONTEXT_LEN, PAGE_SIZE } from "@/web/v2/corpus/corpus_params.common";
+import {
+  CONTEXT_LEN,
+  PAGE_SIZE,
+  corpusUrl,
+} from "@/web/v2/corpus/corpus_params.common";
 import { runCorpusSearch } from "@/web/v2/corpus/corpus_query.server";
 import {
   renderCorpusPageHtml,
@@ -32,17 +36,24 @@ import {
   renderCorpusUnavailableHtml,
 } from "@/web/v2/corpus/corpus_view.server";
 import {
+  DEFAULT_DICT_BITMASK,
+  encodeDictBitmask,
+} from "@/web/v2/dict/dict_bitmask.common";
+import {
   renderDictPageHtml,
   renderDictResultsHtml,
 } from "@/web/v2/dict/dict_page.server";
+import { buildDictUrl } from "@/web/v2/dict/dict_params.common";
 import {
   renderExternalLandingPageHtml,
   renderExternalLocalPageHtml,
   renderExternalReaderPageHtml,
 } from "@/web/v2/external/external.server";
+import { buildExternalReaderUrl } from "@/web/v2/external/external_url.common";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
 import { renderNotFoundPageHtml } from "@/web/v2/library/not_found.server";
 import {
+  buildReaderPageUrl,
   renderReaderPageHtml,
   renderReaderPartialHtml,
 } from "@/web/v2/reader/reader.server";
@@ -51,6 +62,7 @@ import {
   fakeCorpusEngine,
   fakeResult,
 } from "@/web/v2/testing/fake_corpus_engine";
+import { MOCK_CAESAR_WORK } from "@/web/v2/testing/mock_reader_loader";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => {
   const actual = jest.requireActual("@/web/v2/shell/asset_manifest.server");
@@ -346,6 +358,12 @@ interface RouteFixture {
   readonly fullHtml: string;
   readonly partialHtmls?: readonly {
     readonly label: string;
+    /**
+     * The URL the page shows once this partial is swapped in (what the
+     * client pushes), for same-page checks. Build it with the feature's URL
+     * builder so it can't drift from the client.
+     */
+    readonly url: string;
     readonly html: string;
   }[];
   readonly expectDictPrefetch?: boolean;
@@ -403,6 +421,13 @@ describe("Route-to-Bundle Conformance Harness", () => {
     expect(samePageUrlHashLinks(doc, "/v2/dicts?q=amo")).toEqual([
       "/v2/dicts?q=amo#x",
     ]);
+    // A partial is shown at the URL the client pushes, so a link that is
+    // in-page only there is flagged against that URL, not the parent page's.
+    const partial = parseDocument(`<a href="/v2/dicts?q=amo&d=an&o=1#x">x</a>`);
+    expect(samePageUrlHashLinks(partial, "/v2/dicts")).toEqual([]);
+    expect(samePageUrlHashLinks(partial, "/v2/dicts?q=amo&d=an&o=1")).toEqual([
+      "/v2/dicts?q=amo&d=an&o=1#x",
+    ]);
   });
   const entryGraph = extractEntryGraph();
   const chunkElementMap = deriveChunkElementMap(entryGraph);
@@ -448,6 +473,8 @@ describe("Route-to-Bundle Conformance Harness", () => {
       view: "parallel",
       query: "Gallia",
     });
+    const caesarPage12 =
+      MOCK_CAESAR_WORK.pages.find((p) => p.id === "1.2") ?? null;
 
     const corpusParams = {
       q: "",
@@ -479,12 +506,22 @@ describe("Route-to-Bundle Conformance Harness", () => {
         partialHtmls: [
           {
             label: "renderDictResultsHtml(?partial=1)",
+            url: buildDictUrl({
+              q: "amo",
+              d: encodeDictBitmask(["L&S", "SH"]),
+              inflected: true,
+            }),
             html: renderDictResultsHtml("amo", dictResults, {
               queriedDicts: ["L&S", "SH"],
             }),
           },
           {
             label: "renderDictResultsHtml(?partial=1, Greek Logeion iframe)",
+            url: buildDictUrl({
+              q: "λόγος",
+              d: DEFAULT_DICT_BITMASK,
+              inflected: true,
+            }),
             html: renderDictResultsHtml("λόγος", undefined),
           },
         ],
@@ -524,6 +561,10 @@ describe("Route-to-Bundle Conformance Harness", () => {
         partialHtmls: [
           {
             label: "renderReaderPartialHtml(?partial=1)",
+            url: buildReaderPageUrl(MOCK_CAESAR_WORK, caesarPage12, {
+              viewMode: "parallel",
+              query: "Gallia",
+            }),
             html: readerPartialHtml,
           },
         ],
@@ -541,7 +582,9 @@ describe("Route-to-Bundle Conformance Harness", () => {
       },
       {
         name: "/v2/externalReader?url=... (imported URL reading view)",
-        url: "/v2/externalReader?url=https%3A%2F%2Fthelatinlibrary.com%2Fcicero%2Fcat1.shtml",
+        url: buildExternalReaderUrl({
+          url: "https://thelatinlibrary.com/cicero/cat1.shtml",
+        }),
         fullHtml: renderExternalReaderPageHtml({
           sourceUrl: "https://thelatinlibrary.com/cicero/cat1.shtml",
           text: "Quo usque tandem abutere, Catilina, patientia nostra?",
@@ -552,7 +595,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
       },
       {
         name: "/v2/externalReader?local=... (saved local text reading view)",
-        url: "/v2/externalReader?local=local-123",
+        url: buildExternalReaderUrl({ local: "local-123" }),
         fullHtml: renderExternalLocalPageHtml({
           localKey: "local-123",
           lines: "prose",
@@ -567,10 +610,12 @@ describe("Route-to-Bundle Conformance Harness", () => {
         partialHtmls: [
           {
             label: "corpus results full content",
+            url: corpusUrl(corpusResultsView.params),
             html: renderCorpusPageHtml(corpusResultsView),
           },
           {
             label: "renderCorpusPartialHtml(?partial=1)",
+            url: corpusUrl(corpusResultsView.params),
             html: corpusPartialHtml,
           },
         ],
@@ -639,15 +684,16 @@ describe("Route-to-Bundle Conformance Harness", () => {
       const emittedChunkSet = new Set<V2JsChunkName>(chunks);
 
       // 5. Check full page + all partial/fragment templates for this route
-      const rootsToScan: { label: string; root: ParentNode }[] = [
-        { label: "full page", root: doc },
+      const rootsToScan: { label: string; url: string; root: ParentNode }[] = [
+        { label: "full page", url: fixture.url, root: doc },
         ...(fixture.partialHtmls ?? []).map((p) => ({
           label: p.label,
+          url: p.url,
           root: parseDocument(p.html),
         })),
       ];
 
-      for (const { label, root } of rootsToScan) {
+      for (const { label, url, root } of rootsToScan) {
         for (const tag of collectMorcusTags(root)) {
           if (!providedTags.has(tag)) {
             throw new Error(
@@ -679,7 +725,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
           route: fixture.name,
           label,
           crossOwnerRefs: crossOwnerIdRefs(root),
-          samePageUrlHashLinks: samePageUrlHashLinks(root, fixture.url),
+          samePageUrlHashLinks: samePageUrlHashLinks(root, url),
         }).toEqual({
           route: fixture.name,
           label,

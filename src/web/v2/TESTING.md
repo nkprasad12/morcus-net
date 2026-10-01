@@ -144,7 +144,7 @@ Checks that span the whole app rather than one page stay in `core/`:
 
 - `core/boot_conformance` and `core/gate_conformance` scan every module and stylesheet, so they cover new code automatically.
 - `core/reattach_conformance` needs a fixture for every registered element in its `FIXTURES` map, and fails until a new element has one.
-- `core/route_bundle_conformance` lists its routes and partial responses by hand. Add a new route or partial there.
+- `core/route_bundle_conformance` lists its routes and partial responses by hand. Add a new route or partial there. Give each partial the URL the client pushes once it's swapped in, built with the feature's URL builder (`buildDictUrl`, `corpusUrl`, `buildReaderPageUrl`, `buildExternalReaderUrl`), since its same-page hash-link check runs against that URL.
 
 ---
 
