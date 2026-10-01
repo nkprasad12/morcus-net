@@ -341,10 +341,11 @@ function tier1Script(el: Element): Step[] {
 
 /**
  * Regions whose server-rendered contents a partial swap may replace: slots
- * (`swapSlots` replaces the slot element itself) and the dict results output
- * (`fetchAndSwapPartial` replaces its children).
+ * (`swapSlots` replaces the slot element itself), the dict results output
+ * (`fetchAndSwapPartial` replaces its children) and the reader's Translation
+ * view (`swapElementContent` puts the served translation in it).
  */
-const SWAP_REGIONS = `[${SLOT_ATTR}], #dict-results`;
+const SWAP_REGIONS = `[${SLOT_ATTR}], #dict-results, #panel-view-translation`;
 
 function inSwapRegion(
   el: Element,

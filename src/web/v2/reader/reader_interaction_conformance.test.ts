@@ -55,5 +55,21 @@ describeInteractionConformance("reader", {
       ],
       expectSwap: true,
     },
+    {
+      fixture: "reader-sallust-translation",
+      name: "turn the page with the Translation tab open",
+      steps: [clickOn("#panel-tab-translation"), clickOn("#pager-next")],
+      expectSwap: true,
+    },
+    {
+      fixture: "reader-sallust-translation",
+      name: "jump from the TOC with the Translation tab open",
+      steps: [
+        clickOn("#panel-tab-translation"),
+        clickOn("#reader-toc-btn"),
+        clickOn('.reader-toc-item[data-page-id="2"]'),
+      ],
+      expectSwap: true,
+    },
   ],
 });
