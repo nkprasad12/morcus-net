@@ -17,7 +17,7 @@
       "src/web/v2/external/external_loader.client.ts": 1,
       "src/web/v2/library/library_view.client.ts": 3,
       "src/web/v2/reader/reader_panel.client.ts": 3,
-      "src/web/v2/reader/reader_view.client.ts": 9
+      "src/web/v2/reader/reader_view.client.ts": 5
     }
   }
 }

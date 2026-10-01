@@ -137,9 +137,12 @@ growth; it is not a target.
       `ul#dict-suggestions-list.suggestions` (`role="listbox"`, `hidden`) inside `<morcus-dict-suggestions>`
       and adopted it cleanly via `firstElementChild` in `ComboboxController` and `MorcusDictSuggestions`,
       eliminating runtime listbox creation and unifying combobox keyboard and ARIA handling via `ComboboxController`.
-- [ ] 🟡 **`reader_view.client.ts`**: the bottom-sheet label `<strong>` runs are built on the
-      client, and its `lat-word` span factory duplicates `createWordLink` in
-      `core/tokenize.client.ts`.
+- [ ] 🟡 **`reader_view.client.ts`**: the bottom-sheet label ("Definitions for **word**", the
+      " · tap to expand" hint, and the `textContent` reset in `dismissDictionary`) is rebuilt on the
+      client, replacing the server-rendered teaser spans. It is only visible in the External Reader:
+      every library work has an About tab, and `.has-companion-tabs` hides the label at every width.
+      Server-render a `data-js-only` `<strong>` and hint span and toggle them instead. Its `lat-word`
+      span factory also duplicates `createWordLink` in `core/tokenize.client.ts`.
 - [ ] 🟢 **`library_view.client.ts`**, **`reader_panel.client.ts`**,
       **`external_loader.client.ts`**: the resume badge, translation loading/error states and
       saved-items list are built on the client.

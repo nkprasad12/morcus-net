@@ -1447,12 +1447,8 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(marker1.classList.contains("marker-active")).toBe(true);
     expect(note1.classList.contains("note-active")).toBe(true);
     expect(el.getActiveNoteId()).toBe("note-n1");
-    expect(el.getActiveNoteLabel()).toBe("1");
     expect(scrollMock).toHaveBeenCalled();
     expect(window.location.hash).toBe("");
-
-    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
-    expect(sheetLabel?.textContent).toBe("Note 1");
   });
 
   test("clicking Latin word while in notes tab force-switches panel back to dictionary (Arbitration Rule A1)", () => {
@@ -1497,9 +1493,6 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(panelController?.activeTab).toBe("notes");
     const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout");
     expect(splitLayout?.classList.contains("reader-layout-active")).toBe(true);
-
-    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
-    expect(sheetLabel?.textContent).toContain("Notes (2)");
   });
 
   test("clicking note backlink marks the corresponding marker in the passage", () => {
@@ -1595,8 +1588,6 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(panelController?.activeTab).toBe("about");
     const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout");
     expect(splitLayout?.classList.contains("reader-layout-active")).toBe(true);
-    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
-    expect(sheetLabel?.textContent).toContain("About this text");
   });
 
   test("pressing 'i' or 'I' toggles between dictionary and about tabs when about is present", () => {
