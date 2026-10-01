@@ -309,6 +309,28 @@ describe("ReaderPanelController", () => {
     });
   });
 
+  it("hands back to the No-JS rules when connect throws partway", () => {
+    container = createFixture({ notesHtml: NOTES_HTML });
+    // Fail after the ARIA roles and the active view have been applied.
+    const spy = jest
+      .spyOn(ReaderPanelController.prototype as any, "initRevealers")
+      .mockImplementation(() => {
+        throw new Error("broken");
+      });
+    try {
+      const failed = new ReaderPanelController({ root: container });
+      expect(() => failed.connect()).toThrow("broken");
+    } finally {
+      spy.mockRestore();
+    }
+    expect(container.querySelector(".reader-panel-view.active")).toBeNull();
+    expect(
+      container.querySelector(
+        ".reader-panel-tabs[role], .reader-panel-tab[role], .reader-panel-view[role]"
+      )
+    ).toBeNull();
+  });
+
   describe("notes slot swaps", () => {
     beforeEach(() => {
       container = createFixture({

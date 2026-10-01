@@ -439,6 +439,10 @@ export abstract class BaseController<Lane extends string = never>
 
   protected onConnect(): void {}
 
+  /**
+   * Runs on `dispose()`, only if `onConnect` completed. Undo side effects
+   * that must also be undone on a failed connect with `this.scope.use()`.
+   */
   protected onDisconnect(): void {}
 
   protected debounce<T extends (...args: never[]) => void>(
@@ -594,7 +598,13 @@ export abstract class BaseElement<
    */
   protected onConnect(): void {}
 
-  /** Lifecycle hook invoked when the element is removed from the document. */
+  /**
+   * Lifecycle hook invoked when the element is removed from the document,
+   * only if `onConnect` completed. To undo a side effect even when
+   * `onConnect` throws partway (global state, attributes on elements outside
+   * this one), register the undo with `this.scope.use()` right after making
+   * the change: the scope is disposed as soon as `onConnect` fails.
+   */
   protected onDisconnect(): void {}
 
   protected debounce<T extends (...args: never[]) => void>(
@@ -677,6 +687,11 @@ export abstract class BaseElement<
   }
 
   disconnectedCallback() {
+    // After a failed connect the `catch` above has already disposed and
+    // nulled the scope, so `onDisconnect` (which may assume `onConnect` ran
+    // to completion) is skipped, as `BaseController.dispose` does. Undo
+    // anything that must also be undone on failure with `this.scope.use()`.
+    const wasConnected = this._scope !== null && !this._scope.disposed;
     clearUpgraded(this);
     clearFailed(this);
     try {
@@ -687,7 +702,9 @@ export abstract class BaseElement<
           console.error("Error during controller disposal:", err);
         }
       }
-      this.onDisconnect();
+      if (wasConnected) {
+        this.onDisconnect();
+      }
     } finally {
       this._scope?.dispose();
       this._scope = null;

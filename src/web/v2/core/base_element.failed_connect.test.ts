@@ -109,3 +109,50 @@ describe("failed connect tears down listeners", () => {
     controller.dispose();
   });
 });
+
+const lifecycle: string[] = [];
+
+/** Registers a scope cleanup, throws, and records onDisconnect calls. */
+class CleanupThenThrowElement extends BaseElement {
+  shouldThrow = true;
+
+  protected override onConnect(): void {
+    this.scope.use(() => lifecycle.push("scope cleanup"));
+    if (this.shouldThrow) throw new Error("broken after use");
+  }
+
+  protected override onDisconnect(): void {
+    lifecycle.push("onDisconnect");
+  }
+}
+registerElement("test-cleanup-then-throw-element", CleanupThenThrowElement);
+
+describe("failed connect and onDisconnect", () => {
+  beforeEach(() => {
+    lifecycle.length = 0;
+  });
+
+  test("scope cleanups run at the moment onConnect throws", () => {
+    const el = new CleanupThenThrowElement();
+    expect(() => el.connectedCallback()).toThrow("broken after use");
+    expect(lifecycle).toEqual(["scope cleanup"]);
+  });
+
+  test("onDisconnect doesn't run on removal after a failed connect", () => {
+    const el = new CleanupThenThrowElement();
+    expect(() => el.connectedCallback()).toThrow("broken after use");
+    lifecycle.length = 0;
+    el.disconnectedCallback();
+    expect(lifecycle).toEqual([]);
+    // Removal still clears the failed mark, so a re-attach starts clean.
+    expect(el.hasAttribute("data-js-failed")).toBe(false);
+  });
+
+  test("onDisconnect still runs after a successful connect", () => {
+    const el = new CleanupThenThrowElement();
+    el.shouldThrow = false;
+    el.connectedCallback();
+    el.disconnectedCallback();
+    expect(lifecycle).toEqual(["onDisconnect", "scope cleanup"]);
+  });
+});
