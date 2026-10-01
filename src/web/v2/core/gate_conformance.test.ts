@@ -6,7 +6,7 @@
  * running: `data-js-only` / `data-nojs-only`. What is painted comes from
  * `@media (scripting)`; what works comes from the owner's `data-upgraded`
  * marker. The mechanisms it replaced disagree with each other during the
- * pre-hydration window (PRE_HYDRATION.md §2), so this test fails if any of
+ * pre-hydration window (README.md, "JS-only and No-JS-only UI"), so this test fails if any of
  * them come back.
  *
  * ALLOWLIST AND RATCHET ENTRIES REQUIRE HUMAN REVIEW. Do not add or raise one

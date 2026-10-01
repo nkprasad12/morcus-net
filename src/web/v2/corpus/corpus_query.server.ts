@@ -2,7 +2,7 @@
  * Server side of a corpus search: URL parameters, the page cursor, the call
  * into the Rust engine, and the view model the renderers consume.
  *
- * See `DESIGN.md` §3 (URL contract) and §4 (server).
+ * See `README.md`, "URL contract" and "Server".
  */
 
 import fs from "fs";

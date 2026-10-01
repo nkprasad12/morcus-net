@@ -37,7 +37,7 @@ The `lit-prototype` branch has accumulated 260+ commits across multiple architec
     8. **UI V2 Library & Reader Slices**: `src/web/v2/library/`, `src/web/v2/reader/`.
     9. **UI V2 Secondary Slices**: `src/web/v2/corpus/`, `src/web/v2/tools/`, `src/web/v2/external/`, `src/web/v2/about/`.
     10. **V2 Entrypoints & Server Integration**: `src/web/v2/v2_*.ts`, `src/web/web_server.ts`, `src/start_server.ts`.
-    11. **E2E Suites, Visual Baselines & Docs**: `src/integration/`, `src/web/v2/README.md`, `src/web/v2/TESTING.md`, `src/web/v2/CODE_HEALTH.md`, `src/web/v2/GRADUATION.md`, `AGENTS.md`.
+    11. **E2E Suites, Visual Baselines & Docs**: `src/integration/`, `src/web/v2/README.md`, `src/web/v2/docs/`, the slice `README.md` / `TODOS.md` files, `AGENTS.md`.
   - **Per-Slice Audit Check**: While staging each slice, review the files with fresh eyes to strip dead code, leftover transitional shims, or stale comments.
   - **Zero-Drift Verification**: Before merging to `dev`, verify `git diff archive/lit-prototype-raw..HEAD` contains _only_ intentional audit cleanups.
 
@@ -48,7 +48,7 @@ The `lit-prototype` branch has accumulated 260+ commits across multiple architec
 `/v2/*` is only a development-time mount point for side-by-side coexistence and will never be deployed publicly. Cutover consists of dropping the `/v2` prefix so V2 serves directly from `/`:
 
 - [ ] **Mount V2 Router at Root (`/`)**:
-  - Mount the V2 router at `/` in [`src/web/web_server.ts`](../web_server.ts) (replacing the V1 SPA catch-all), and strip the `/v2` prefix from internal V2 route helpers, links, and static asset paths (`/v2/assets/*` → `/assets/*` or equivalent).
+  - Mount the V2 router at `/` in [`src/web/web_server.ts`](../../web_server.ts) (replacing the V1 SPA catch-all), and strip the `/v2` prefix from internal V2 route helpers, links, and static asset paths (`/v2/assets/*` → `/assets/*` or equivalent).
 - [ ] **Legacy V1 URL Compatibility**:
   - Where V2 route paths or query parameters differ from deployed V1 URLs (e.g. `/dicts`, `/lat_lib`), add redirects or route aliases so existing external links and user bookmarks continue to work.
 - [ ] **Update Test Routes**:

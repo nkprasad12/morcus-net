@@ -7,7 +7,7 @@
  * localStorage object, which the critical script copies onto <html> before
  * first paint on the next load. The critical script never validates or maps
  * values, so adding a preference costs it no bytes; see "Pre-paint is a
- * scarce budget" in `dict/PREFERENCES.md` for which preferences qualify.
+ * scarce budget" in `docs/PREFERENCES.md` for which preferences qualify.
  *
  * Call it on every connect with the current value, not only on change, so a
  * stale snapshot heals after one load.

@@ -75,7 +75,7 @@ export interface V2BundleBudget {
  *   `<morcus-corpus-suggestions>` (~10.0 kB raw) plus the query grammar it
  *   shares with the server (`corpus_syntax.common.ts`, ~4.1 kB raw), with no
  *   new dependencies. (Subsequently moved into the dedicated `corpus.js` route
- *   chunk below, superseding the `corpus/DESIGN.md` §7.3 async-chunk plan.)
+ *   chunk below, superseding the async-chunk plan in the archived corpus design.)
  * - 2026-09-29: CSS 125 / 22 -> 130 / 23 (combined 267 / 64 -> 275 / 66), after
  *   corpus results blurb & flat-panel query guide redesign (`corpus.css`):
  *   CSS 119.1 / 19.9 -> 126.8 / 21.1. Adds responsive 3-column desktop guide,
@@ -131,7 +131,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   // pre-paint preference must not grow it. Baseline 2026-09-27: 424 B raw /
   // 300 B gzip. Do not raise these to fit per-preference logic; move that
   // logic into the owner instead (see "Pre-paint is a scarce budget" in
-  // src/web/v2/dict/PREFERENCES.md).
+  // src/web/v2/docs/PREFERENCES.md).
   maxCriticalJsRawBytes: 450,
   maxCriticalJsGzipBytes: 350,
 };

@@ -96,7 +96,11 @@ To run the functional V2 tests without touching legacy V1 tests or unsupported W
 ./morcus.sh e2e --v2 --all
 ```
 
-> [!WARNING] > **Do NOT run `npm run integration-tests` when working on UI V2.** > `npm run integration-tests` runs legacy V1 tests and attempts to launch WebKit/Safari, which is unsupported on this Linux setup and will fail or cause the test runner to hang.
+> [!WARNING]
+>
+> **Do NOT run `npm run integration-tests` when working on UI V2.**
+>
+> `npm run integration-tests` runs legacy V1 tests and attempts to launch WebKit/Safari, which is unsupported on this Linux setup and will fail or cause the test runner to hang.
 
 ### Option F: Visual Regression Tests & the Visual Diff Inspector
 
@@ -112,7 +116,7 @@ To run the functional V2 tests without touching legacy V1 tests or unsupported W
 ./morcus.sh visual-diff --source git       # updated baselines vs HEAD
 ```
 
-The inspector keeps a server running until stopped (agents: start it in the background), and also writes `report.md` and before/after/diff PNGs to `.cache/visual-diff/`. See §3.C–D of [`AGENTS.md`](../../../AGENTS.md) for all options, and its Visual Baseline Approval Rule before running `--update`.
+The inspector keeps a server running until stopped (agents: start it in the background), and also writes `report.md` and before/after/diff PNGs to `.cache/visual-diff/`. See §3.C–D of [`AGENTS.md`](../../../../AGENTS.md) for all options, and its Visual Baseline Approval Rule before running `--update`.
 
 ---
 
@@ -134,15 +138,15 @@ npx jest src/web/v2/core/dialog.test.ts
 
 Two jsdom harnesses check real SSR output (`testing/ssr_fixtures.ts`) against the PE invariants. Each feature (`dict/`, `corpus/`, `reader/`, `library/`, `external/`) runs both from its own test files, next to its components. Neither ships code to the client.
 
-- `*_ssr_conformance.test.ts`, using [`testing/ssr_conformance_harness.ts`](testing/ssr_conformance_harness.ts), checks the page **right after upgrade**: tree fingerprint, No-JS controls, ids and hash links, and the failed-owner sweep. Each file sets floors for the sweep, so it can't pass vacuously. Checks that need every page at once (every registered element appears in some fixture, and the page setups match the entry files) stay in [`core/ssr_conformance.test.ts`](core/ssr_conformance.test.ts).
-- `*_interaction_conformance.test.ts`, one next to each feature (`dict/`, `corpus/`, `reader/`, `library/`, `external/`), checks it again **after interaction**, using [`testing/interaction_harness.ts`](testing/interaction_harness.ts). Each file lists its fixtures, caps and scenarios. The Tier 1 sweep exercises every deduplicated control in the feature's fixtures with a fixed script (focus/type/arrow/Escape/blur, clicks, option and step changes) against a fake network backed by the real server renderers (`testing/fake_v2_network.ts`), and checks the invariants after each step. Each target also runs torn down mid-script, to catch late writes to detached nodes. Tier 2 (the file's `scenarios`) declares multi-step flows a single control can't reach, such as picking a suggestion, submitting, or paging. They run in the same three modes, and each must end in a partial swap. After a settled run that swapped content in, the harness also runs section 3 of the SSR harness (`checkAddresses` in `testing/ssr_invariants.ts`: hash links resolve and their targets can be revealed) on the swapped-in page. When a feature adds a new flow, add a scenario to its file. A new page type gets a fixture builder in `testing/ssr_fixtures.ts` and its own suite.
+- `*_ssr_conformance.test.ts`, using [`testing/ssr_conformance_harness.ts`](../testing/ssr_conformance_harness.ts), checks the page **right after upgrade**: tree fingerprint, No-JS controls, ids and hash links, and the failed-owner sweep. Each file sets floors for the sweep, so it can't pass vacuously. Checks that need every page at once (every registered element appears in some fixture, and the page setups match the entry files) stay in [`core/ssr_conformance.test.ts`](../core/ssr_conformance.test.ts).
+- `*_interaction_conformance.test.ts`, one next to each feature (`dict/`, `corpus/`, `reader/`, `library/`, `external/`), checks it again **after interaction**, using [`testing/interaction_harness.ts`](../testing/interaction_harness.ts). Each file lists its fixtures, caps and scenarios. The Tier 1 sweep exercises every deduplicated control in the feature's fixtures with a fixed script (focus/type/arrow/Escape/blur, clicks, option and step changes) against a fake network backed by the real server renderers (`testing/fake_v2_network.ts`), and checks the invariants after each step. Each target also runs torn down mid-script, to catch late writes to detached nodes. Tier 2 (the file's `scenarios`) declares multi-step flows a single control can't reach, such as picking a suggestion, submitting, or paging. They run in the same three modes, and each must end in a partial swap. After a settled run that swapped content in, the harness also runs section 3 of the SSR harness (`checkAddresses` in `testing/ssr_invariants.ts`: hash links resolve and their targets can be revealed) on the swapped-in page. When a feature adds a new flow, add a scenario to its file. A new page type gets a fixture builder in `testing/ssr_fixtures.ts` and its own suite.
 
-`*_form_conformance.test.ts` (`dict/`, `corpus/`, `external/`) cover the No-JS forms end to end: render the SSR form into jsdom, change its controls, serialize it with `new FormData(form)`, and send it to the router through supertest (helpers in [`testing/form_roundtrip.ts`](testing/form_roundtrip.ts)).
+`*_form_conformance.test.ts` (`dict/`, `corpus/`, `external/`) cover the No-JS forms end to end: render the SSR form into jsdom, change its controls, serialize it with `new FormData(form)`, and send it to the router through supertest (helpers in [`testing/form_roundtrip.ts`](../testing/form_roundtrip.ts)).
 
 Shared lists, each in its own file and all of which **need human review to extend**:
 
-- [`testing/created_dom_allowlist.ts`](testing/created_dom_allowlist.ts), `CREATED_DOM_ALLOWLIST`: the only elements client code may create, each with a phase (`upgrade` or `interaction` only), an optional `subtree`, and a `reason`. Prefer server-rendering the element and adopting it.
-- [`testing/isomorphic_rerenders.ts`](testing/isomorphic_rerenders.ts), `ISOMORPHIC_RERENDERS`: SSR UI the client re-renders after an interaction with the same `.common.ts` renderer the server used.
+- [`testing/created_dom_allowlist.ts`](../testing/created_dom_allowlist.ts), `CREATED_DOM_ALLOWLIST`: the only elements client code may create, each with a phase (`upgrade` or `interaction` only), an optional `subtree`, and a `reason`. Prefer server-rendering the element and adopting it.
+- [`testing/isomorphic_rerenders.ts`](../testing/isomorphic_rerenders.ts), `ISOMORPHIC_RERENDERS`: SSR UI the client re-renders after an interaction with the same `.common.ts` renderer the server used.
 
 Each fixture's Tier 1 sweep is capped by count (`TIER1_MAX_RUNS_PER_FIXTURE`), and each suite has a floor (`caps.minRuns`), both checked before any run starts. If a fixture goes over, the failure lists its controls grouped by dedup key. Tighten the key (`targetKey`) before raising a cap; a raise or a `caps.overrides` entry needs human review.
 
@@ -172,7 +176,9 @@ Checks that span the whole app rather than one page stay in `core/`:
 
 ## 4. Verification Checklists for Agents
 
-> [!IMPORTANT] > **Rapid Iteration vs. Commit vs. Push**:
+> [!IMPORTANT]
+>
+> **Rapid Iteration vs. Commit vs. Push**:
 >
 > - **During rapid iteration**: Make the fix and restart the dev server immediately. Do NOT run tests or linter after every minor tweak.
 > - **Pre-Commit**: Run fast checks (TypeScript, unit tests, code formatting).

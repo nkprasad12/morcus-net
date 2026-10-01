@@ -1,5 +1,5 @@
 /**
- * Conformance check for page-level startup (CHUNK_ORDERING.md, decision A+D).
+ * Conformance check for page-level startup (docs/archive/CHUNK_ORDERING_ADR.md, decision A+D).
  *
  * Invariant: global setups run only once every chunk on the page has
  * executed, never at import time. A page loads `common.js` and then its route

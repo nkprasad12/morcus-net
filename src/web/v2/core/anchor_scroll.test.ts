@@ -198,7 +198,7 @@ describe("setupAnchorScroll", () => {
     unregister();
   });
 
-  describe("owner check (CHUNK_ORDERING.md)", () => {
+  describe("owner check (docs/archive/CHUNK_ORDERING_ADR.md)", () => {
     const mockWin = () =>
       ({
         location: { hash: "", pathname: "/", search: "" },

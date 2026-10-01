@@ -1,7 +1,7 @@
 /**
  * UI V2 late hydration: what a user does before `v2.js` arrives must survive
  * the upgrade, and the JS gate / pre-paint snapshot must keep first paint and
- * upgraded layout identical (PRE_HYDRATION.md; PE_FRAMEWORK_RFC_REVISIONS_1.md §9.3).
+ * upgraded layout identical (src/web/v2/docs/TESTING.md, "Pre-hydration (PH) bug index").
  *
  * Each test holds back every script under /v2/assets/ with `page.route`, so
  * the page sits in the pre-hydration window (SSR markup plus the inline
@@ -62,7 +62,7 @@ interface StagedPage {
 
 /**
  * Like {@link openBeforeHydration}, but with separate gates for `common.js`
- * and every later chunk (CHUNK_ORDERING.md §1). Module scripts execute in
+ * and every later chunk (docs/archive/CHUNK_ORDERING_ADR.md §1). Module scripts execute in
  * document order, so holding the route chunk after releasing `common.js`
  * reproduces the intermediate state exactly. The gates apply to every frame,
  * so the reader's dictionary iframe (`common.js` then `dict.js`) is staged
@@ -458,7 +458,7 @@ test.describe("UI V2 late hydration", () => {
 });
 
 /**
- * The intermediate state (CHUNK_ORDERING.md): `common.js` has run, the route
+ * The intermediate state (docs/archive/CHUNK_ORDERING_ADR.md): `common.js` has run, the route
  * chunk has not. Nothing in `common.js` may suppress native No-JS behaviour
  * for a component that has not upgraded, and the route's upgrade must still
  * adopt whatever the user did.
@@ -624,7 +624,7 @@ test.describe("UI V2 chunk ordering: intermediate state", () => {
   test("reader: TOC link works natively when reader.js fails to load", async ({
     page,
   }) => {
-    // The realistic case for the owner check (CHUNK_ORDERING.md §8): common.js
+    // The realistic case for the owner check (docs/archive/CHUNK_ORDERING_ADR.md §8): common.js
     // arrives, so the anchor handler installs at page ready, but the route
     // chunk never does (flaky network, deploy skew).
     await page.route(V2_SCRIPTS, (route) =>

@@ -8,7 +8,7 @@
  * custom element on the page is defined and connected. Global setups that read
  * component state (registered revealers) or take over native behaviour (the
  * in-page anchor `click` handler) must therefore run from here, never at
- * import time (CHUNK_ORDERING.md).
+ * import time (docs/archive/CHUNK_ORDERING_ADR.md).
  *
  * Only `*_entry.client.ts` files call {@link onPageReady}; feature modules
  * export their `setupX` functions and have no import-time side effects. Both

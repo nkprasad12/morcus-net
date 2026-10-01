@@ -302,7 +302,7 @@ function authorSuggestions(
   const rows = authors
     .filter(
       (author) =>
-        // A name with a space can't be one token (TODO.md: "Author filter
+        // A name with a space can't be one token (TODOS.md: "Author filter
         // beyond V1"), so it would only produce an invalid query.
         !author.includes(" ") &&
         author.toLowerCase().startsWith(typed.toLowerCase())
