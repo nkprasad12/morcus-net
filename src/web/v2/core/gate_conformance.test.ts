@@ -61,8 +61,9 @@ const ALLOWLIST: Readonly<Record<string, Readonly<Record<string, number>>>> = {
 };
 
 /**
- * RATCHET: `[data-upgraded]` occurrences per CSS file. Counts may go down
- * (lower the entry when they do) but not up. `[data-upgraded]` means "this
+ * RATCHET: `[data-upgraded]` occurrences per CSS file. A growth guard: counts
+ * must not go up, and if a change removes rules, the entry follows them down so
+ * the ceiling stays tight. `[data-upgraded]` means "this
  * component's behaviour is attached", so it's only for behaviour and
  * hand-over (a `:target` rule the component takes over, a native fallback it
  * replaces). Appearance that only depends on whether scripts can run belongs
@@ -199,7 +200,7 @@ describe("[data-upgraded] ratchet in CSS", () => {
     expect(grown).toEqual([]);
   });
 
-  test("the ratchet is lowered when counts go down", () => {
+  test("[data-upgraded] ratchet has no stale entries", () => {
     const loose: string[] = [];
     for (const [file, allowed] of Object.entries(UPGRADED_RATCHET)) {
       const count = counts.get(file) ?? 0;

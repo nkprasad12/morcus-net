@@ -30,7 +30,7 @@ describe("inventory_analyzer", () => {
       ]);
     });
 
-    it("excludes core/ for Metrics B and C while including core/ for Metric A", () => {
+    it("excludes core/ for Metric B while including core/ for Metric A", () => {
       const result = analyzeVirtualInventory({
         "src/web/v2/core/components.css": `
           .pill {
@@ -50,14 +50,12 @@ describe("inventory_analyzer", () => {
           export function makeDiv(): HTMLElement {
             const el = document.createElement("div");
             document.body.appendChild(el);
-            document.querySelector(".foo");
             return el;
           }
         `,
         "src/web/v2/dict/dict_search.client.ts": `
           const el = document.createElement("span");
           document.body.appendChild(el);
-          document.querySelector(".bar");
         `,
       });
 
@@ -69,9 +67,6 @@ describe("inventory_analyzer", () => {
 
       expect(result.domMutationOutsideCore.callsPerFile).toEqual({
         "src/web/v2/dict/dict_search.client.ts": 2,
-      });
-      expect(result.selectorCalls.callsPerFile).toEqual({
-        "src/web/v2/dict/dict_search.client.ts": 1,
       });
     });
   });
@@ -206,7 +201,7 @@ describe("inventory_analyzer", () => {
     });
   });
 
-  describe("Metrics B and C: client DOM mutation and selector calls", () => {
+  describe("Metric B: client DOM construction and mutation", () => {
     it("ignores URLSearchParams.append, FormData.append, and Headers.append while counting DOM Node mutations, innerHTML, and setHtml", () => {
       const result = analyzeVirtualInventory({
         "src/web/v2/dict/sample.client.ts": `
@@ -248,62 +243,6 @@ describe("inventory_analyzer", () => {
       ]);
       expect(result.domMutationOutsideCore.callsPerFile).toEqual({
         "src/web/v2/dict/sample.client.ts": 8,
-      });
-    });
-
-    it("counts aliased scope $, $$, require, delegate selector argument, and native DOM selectors while ignoring non-selector require()", () => {
-      const result = analyzeVirtualInventory({
-        "src/web/v2/reader/sample.client.ts": `
-          import { BaseElement } from "@/web/v2/core/base_element.client";
-
-          declare function require(id: string): unknown;
-
-          export class SampleEl extends BaseElement {
-            protected override onConnect(): void {
-              // Non-selector bare require(...) call must not be counted:
-              const mod = require("some-module");
-              void mod;
-
-              // Non-selector .require(number) with non-string arg must not be counted:
-              const customRegistry = { require: (code: number) => code };
-              customRegistry.require(404);
-
-              // Aliased scope calls must be counted:
-              const s = this.scope;
-              const btn = s.$<HTMLButtonElement>(".btn");
-              const items = s.$$(".item");
-              const form = s.require<HTMLFormElement>("form.main");
-
-              // Delegation counts the selector argument as one call site:
-              s.delegate(this, "click", ".action-pill", () => {});
-
-              // Native DOM selectors (including iterating NodeListOf via lib.dom.iterable):
-              btn?.closest(".card");
-              form.querySelector("input[name='q']");
-              for (const row of form.querySelectorAll(".row")) {
-                row.querySelector(".cell");
-              }
-              document.getElementById("top");
-              void items;
-            }
-          }
-        `,
-      });
-
-      const citations = result.selectorCalls.citations;
-      expect(citations.map((c) => c.method)).toEqual([
-        "$",
-        "$$",
-        "require",
-        "delegate",
-        "closest",
-        "querySelector",
-        "querySelectorAll",
-        "querySelector",
-        "getElementById",
-      ]);
-      expect(result.selectorCalls.callsPerFile).toEqual({
-        "src/web/v2/reader/sample.client.ts": 9,
       });
     });
   });

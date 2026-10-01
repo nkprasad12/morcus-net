@@ -85,17 +85,6 @@ export function renderInventoryReportMarkdown(
     analysis.domMutationOutsideCore.callsPerFile
   ).length;
 
-  const ratchetSelectorTotal = sumRecordValues(
-    ratchet.selectorCalls.callsPerFile
-  );
-  const actualSelectorTotal = analysis.selectorCalls.totalCalls;
-  const ratchetSelectorFiles = Object.keys(
-    ratchet.selectorCalls.callsPerFile
-  ).length;
-  const actualSelectorFiles = Object.keys(
-    analysis.selectorCalls.callsPerFile
-  ).length;
-
   const lines: string[] = [];
   lines.push("# UI V2 Cross-Slice Inventory Report");
   lines.push("");
@@ -119,12 +108,6 @@ export function renderInventoryReportMarkdown(
     `| **B. DOM construction/mutation outside \`core/\`** | ${ratchetDomTotal} (${ratchetDomFiles} files) | ${actualDomTotal} (${actualDomFiles} files) | \`${formatDiff(
       ratchetDomTotal,
       actualDomTotal
-    )}\` |`
-  );
-  lines.push(
-    `| **C. String-selector calls outside \`core/\`** | ${ratchetSelectorTotal} (${ratchetSelectorFiles} files) | ${actualSelectorTotal} (${actualSelectorFiles} files) | \`${formatDiff(
-      ratchetSelectorTotal,
-      actualSelectorTotal
     )}\` |`
   );
   lines.push("");
@@ -209,49 +192,6 @@ export function renderInventoryReportMarkdown(
     }
   }
 
-  // 4. Selector hotspots
-  lines.push("## 4. String-Selector Hotspots Outside `core/`");
-  lines.push("");
-  const selectorEntries = Object.entries(
-    analysis.selectorCalls.callsPerFile
-  ).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-
-  if (selectorEntries.length === 0) {
-    lines.push("_No string-selector calls outside `core/`._");
-    lines.push("");
-  } else {
-    const byFile = new Map<string, CallSiteCitation[]>();
-    for (const c of analysis.selectorCalls.citations) {
-      let list = byFile.get(c.file);
-      if (!list) {
-        list = [];
-        byFile.set(c.file, list);
-      }
-      list.push(c);
-    }
-
-    for (const [file, count] of selectorEntries) {
-      const fileCalls = byFile.get(file) ?? [];
-      const byMethod = new Map<string, number>();
-      for (const c of fileCalls) {
-        byMethod.set(c.method, (byMethod.get(c.method) ?? 0) + 1);
-      }
-      const breakdown = [...byMethod.entries()]
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .map(([method, n]) => `\`${method}\`: ${n}`)
-        .join(", ");
-
-      lines.push(`### \`${file}\` (${count} total — ${breakdown})`);
-      lines.push("");
-      for (const c of fileCalls) {
-        lines.push(
-          `- \`${c.file}:${c.line}\` — **\`${c.method}\`**: \`${c.snippet}\``
-        );
-      }
-      lines.push("");
-    }
-  }
-
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
@@ -277,9 +217,6 @@ export function formatInventoryTerminalSummary(
   );
   const actualDom = analysis.domMutationOutsideCore.totalCalls;
 
-  const ratchetSel = sumRecordValues(ratchet.selectorCalls.callsPerFile);
-  const actualSel = analysis.selectorCalls.totalCalls;
-
   const lines: string[] = [
     "UI V2 Cross-Slice Inventory:",
     `  A. CSS duplicate patterns:     ${ratchetCss} → ${actualCss} (${formatDiff(
@@ -289,10 +226,6 @@ export function formatInventoryTerminalSummary(
     `  B. DOM mutations outside core: ${ratchetDom} → ${actualDom} (${formatDiff(
       ratchetDom,
       actualDom
-    )})`,
-    `  C. Selector calls outside core:${ratchetSel} → ${actualSel} (${formatDiff(
-      ratchetSel,
-      actualSel
     )})`,
     `  Report written to: ${reportPath}`,
   ];

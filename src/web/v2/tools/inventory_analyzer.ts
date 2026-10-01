@@ -1,7 +1,8 @@
 /**
  * Cross-slice inventory analyzer for UI V2.
  *
- * Computes three metrics across `src/web/v2/`:
+ * Computes two metrics across `src/web/v2/`, each enforced only as a growth
+ * guard by `inventory_ratchet.json`:
  * - **A. Cross-file duplicate CSS declaration blocks:** rules with >= 3
  *   declarations sharing identical `(contextKey, declarationKey)` across 2+
  *   distinct CSS files (including `core/`). Keying is shared with the per-file
@@ -12,11 +13,6 @@
  *   `after`, `replaceWith`, `replaceChildren`, `insertAdjacent*`), HTML sink
  *   helpers (`setHtml`, `replaceWithHtml`), and `.innerHTML` / `.outerHTML`
  *   assignments.
- * - **C. String-selector calls per file outside `core/`:** native DOM selector
- *   queries (`querySelector`, `querySelectorAll`, `closest`, `matches`,
- *   `getElementById`, `getElementsByClassName`, `getElementsByTagName`),
- *   LifetimeScope queries (`.$(...)`, `.$$(...)`, `.require(...)` on any
- *   receiver), and `.delegate(...)` selector arguments.
  *
  * Receiver disambiguation approach (§3.B):
  * Uses a real `ts.Program` type checker over the target `.client.ts` files
@@ -74,20 +70,6 @@ const HTML_SINK_HELPERS = new Set<string>(["setHtml", "replaceWithHtml"]);
 
 const HTML_SINK_PROPERTIES = new Set<string>(["innerHTML", "outerHTML"]);
 
-const NATIVE_SELECTOR_METHODS = new Set<string>([
-  "querySelector",
-  "querySelectorAll",
-  "closest",
-  "matches",
-  "getElementById",
-  "getElementsByClassName",
-  "getElementsByTagName",
-]);
-
-const SCOPE_SELECTOR_METHODS = new Set<string>(["$", "$$", "require"]);
-
-const DELEGATE_METHOD = "delegate";
-
 export interface CssOccurrence {
   readonly file: string;
   readonly line: number;
@@ -121,7 +103,6 @@ export interface FileMetricAnalysis {
 export interface InventoryAnalysis {
   readonly cssDuplicates: readonly CssDuplicatePattern[];
   readonly domMutationOutsideCore: FileMetricAnalysis;
-  readonly selectorCalls: FileMetricAnalysis;
 }
 
 export interface SelectedInventoryFiles {
@@ -134,7 +115,7 @@ export function normalizeRelPath(filePath: string): string {
 }
 
 /**
- * Shared exclusion check applied across all three metrics (§2).
+ * Shared exclusion check applied across both metrics (§2).
  */
 export function isExcludedInventoryPath(relPath: string): boolean {
   const norm = normalizeRelPath(relPath);
@@ -450,38 +431,6 @@ function isDomNodeReceiver(
   return result;
 }
 
-function isStringSelectorArgument(
-  checker: ts.TypeChecker,
-  arg: ts.Expression | undefined
-): boolean {
-  if (!arg) return false;
-  if (
-    ts.isStringLiteral(arg) ||
-    ts.isNoSubstitutionTemplateLiteral(arg) ||
-    ts.isTemplateExpression(arg)
-  ) {
-    return true;
-  }
-  const rawType = checker.getTypeAtLocation(arg);
-  const nonNull = checker.getNonNullableType(rawType);
-  if (
-    (nonNull.flags &
-      (ts.TypeFlags.Any | ts.TypeFlags.Never | ts.TypeFlags.Unknown)) !==
-    0
-  ) {
-    return false;
-  }
-  if ((nonNull.flags & ts.TypeFlags.StringLike) !== 0) {
-    return true;
-  }
-  if (nonNull.isUnion() && nonNull.types.length > 0) {
-    return nonNull.types.every(
-      (part) => (part.flags & ts.TypeFlags.StringLike) !== 0
-    );
-  }
-  return false;
-}
-
 function formatOneLineSnippet(
   node: ts.Node,
   sourceFile: ts.SourceFile
@@ -515,7 +464,7 @@ function buildFileMetricAnalysis(
 }
 
 /**
- * Analyzes Metrics B and C across the selected `.client.ts` files.
+ * Analyzes Metric B across the selected `.client.ts` files.
  */
 export function analyzeClientTsFiles(
   repoRoot: string,
@@ -523,12 +472,10 @@ export function analyzeClientTsFiles(
   virtualFiles?: ReadonlyMap<string, string>
 ): {
   domMutationOutsideCore: FileMetricAnalysis;
-  selectorCalls: FileMetricAnalysis;
 } {
   const selectedPaths = selectInventoryFiles(targetRelPaths).clientTsFiles;
   if (selectedPaths.length === 0) {
-    const empty = buildFileMetricAnalysis([]);
-    return { domMutationOutsideCore: empty, selectorCalls: empty };
+    return { domMutationOutsideCore: buildFileMetricAnalysis([]) };
   }
 
   const program = createTypeCheckerProgram(
@@ -539,7 +486,6 @@ export function analyzeClientTsFiles(
   const checker = program.getTypeChecker();
 
   const domCitations: CallSiteCitation[] = [];
-  const selectorCitations: CallSiteCitation[] = [];
   const domTypeCache = new Map<ts.Type, boolean>();
   let domTargetTypes: ts.Type[] | undefined;
 
@@ -586,61 +532,6 @@ export function analyzeClientTsFiles(
               method: methodName,
               snippet: formatOneLineSnippet(node, sourceFile),
             });
-          }
-
-          // Metric C: String-selector calls.
-          if (
-            NATIVE_SELECTOR_METHODS.has(methodName) &&
-            isDomNodeReceiver(checker, receiver, targetTypes, domTypeCache) &&
-            isStringSelectorArgument(checker, node.arguments[0])
-          ) {
-            const line =
-              sourceFile.getLineAndCharacterOfPosition(
-                node.getStart(sourceFile)
-              ).line + 1;
-            selectorCitations.push({
-              file: relPath,
-              line,
-              method: methodName,
-              snippet: formatOneLineSnippet(node, sourceFile),
-            });
-          } else if (
-            SCOPE_SELECTOR_METHODS.has(methodName) &&
-            node.arguments.length === 1 &&
-            isStringSelectorArgument(checker, node.arguments[0])
-          ) {
-            const line =
-              sourceFile.getLineAndCharacterOfPosition(
-                node.getStart(sourceFile)
-              ).line + 1;
-            selectorCitations.push({
-              file: relPath,
-              line,
-              method: methodName,
-              snippet: formatOneLineSnippet(node, sourceFile),
-            });
-          } else if (methodName === DELEGATE_METHOD) {
-            // `LifetimeScope.delegate(root, type, selector, handler, options?)`
-            const selectorArg =
-              node.arguments.length >= 3 &&
-              isStringSelectorArgument(checker, node.arguments[2])
-                ? node.arguments[2]
-                : node.arguments.length === 3 &&
-                  isStringSelectorArgument(checker, node.arguments[1])
-                ? node.arguments[1]
-                : undefined;
-            if (selectorArg) {
-              const line =
-                sourceFile.getLineAndCharacterOfPosition(
-                  node.getStart(sourceFile)
-                ).line + 1;
-              selectorCitations.push({
-                file: relPath,
-                line,
-                method: methodName,
-                snippet: formatOneLineSnippet(node, sourceFile),
-              });
-            }
           }
         } else if (ts.isIdentifier(node.expression)) {
           const fnName = node.expression.text;
@@ -693,7 +584,6 @@ export function analyzeClientTsFiles(
 
   return {
     domMutationOutsideCore: buildFileMetricAnalysis(domCitations),
-    selectorCalls: buildFileMetricAnalysis(selectorCitations),
   };
 }
 
@@ -719,7 +609,7 @@ export function analyzeVirtualInventory(
   }
 
   const cssDuplicates = analyzeCssDuplicates(cssInputs);
-  const { domMutationOutsideCore, selectorCalls } = analyzeClientTsFiles(
+  const { domMutationOutsideCore } = analyzeClientTsFiles(
     repoRoot,
     clientTsFiles,
     virtualMap
@@ -728,7 +618,6 @@ export function analyzeVirtualInventory(
   return {
     cssDuplicates,
     domMutationOutsideCore,
-    selectorCalls,
   };
 }
 
@@ -747,7 +636,7 @@ export function analyzeRepoInventory(
   }));
 
   const cssDuplicates = analyzeCssDuplicates(cssInputs);
-  const { domMutationOutsideCore, selectorCalls } = analyzeClientTsFiles(
+  const { domMutationOutsideCore } = analyzeClientTsFiles(
     repoRoot,
     clientTsFiles
   );
@@ -755,6 +644,5 @@ export function analyzeRepoInventory(
   return {
     cssDuplicates,
     domMutationOutsideCore,
-    selectorCalls,
   };
 }

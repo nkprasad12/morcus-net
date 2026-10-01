@@ -22,13 +22,10 @@ export interface InventoryRatchet {
   readonly domMutationOutsideCore: {
     readonly callsPerFile: Readonly<Record<string, number>>;
   };
-  readonly selectorCalls: {
-    readonly callsPerFile: Readonly<Record<string, number>>;
-  };
 }
 
 export interface RatchetViolation {
-  readonly metric: "cssDuplicates" | "domMutationOutsideCore" | "selectorCalls";
+  readonly metric: "cssDuplicates" | "domMutationOutsideCore";
   readonly kind: "regression" | "stale";
   readonly target: string;
   readonly message: string;
@@ -101,9 +98,6 @@ export function buildRatchetFromAnalysis(
         analysis.domMutationOutsideCore.callsPerFile
       ),
     },
-    selectorCalls: {
-      callsPerFile: sortCallsPerFile(analysis.selectorCalls.callsPerFile),
-    },
   };
 }
 
@@ -137,9 +131,6 @@ export function serializeInventoryRatchet(ratchet: InventoryRatchet): string {
       callsPerFile: sortCallsPerFile(
         ratchet.domMutationOutsideCore.callsPerFile
       ),
-    },
-    selectorCalls: {
-      callsPerFile: sortCallsPerFile(ratchet.selectorCalls.callsPerFile),
     },
   };
 
@@ -240,9 +231,6 @@ export function parseInventoryRatchet(jsonText: string): InventoryRatchet {
         "domMutationOutsideCore"
       ),
     },
-    selectorCalls: {
-      callsPerFile: parseCallsPerFile(raw.selectorCalls, "selectorCalls"),
-    },
   };
 }
 
@@ -265,7 +253,7 @@ export function writeInventoryRatchet(
 }
 
 function compareFileMetric(
-  metric: "domMutationOutsideCore" | "selectorCalls",
+  metric: "domMutationOutsideCore",
   expectedMap: Readonly<Record<string, number>>,
   actualMap: Readonly<Record<string, number>>,
   citations: readonly CallSiteCitation[],
@@ -316,10 +304,13 @@ function compareFileMetric(
 /**
  * Compares the actual `InventoryAnalysis` against a committed `InventoryRatchet`.
  *
- * The ratchet is exact in both directions (§1.3, §4):
+ * The ratchet is a growth guard. It is exact in both directions (§1.3, §4):
  * - `actual > ratchet` (or a new CSS pattern / added file) → regression;
  * - `actual < ratchet` (or a missing CSS pattern / dropped file) → stale;
  * - allowlisted CSS patterns are excluded from comparison.
+ *
+ * Stale entries fail only so the ceiling follows the code down and can't be
+ * silently re-spent later. Lower counts are not a goal in themselves.
  */
 export function compareInventoryRatchet(
   ratchet: InventoryRatchet,
@@ -418,15 +409,6 @@ export function compareInventoryRatchet(
     ratchet.domMutationOutsideCore.callsPerFile,
     analysis.domMutationOutsideCore.callsPerFile,
     analysis.domMutationOutsideCore.citations,
-    regressions,
-    stale
-  );
-
-  compareFileMetric(
-    "selectorCalls",
-    ratchet.selectorCalls.callsPerFile,
-    analysis.selectorCalls.callsPerFile,
-    analysis.selectorCalls.citations,
     regressions,
     stale
   );
