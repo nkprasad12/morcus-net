@@ -4,6 +4,7 @@ import {
   type CleanupFn,
 } from "@/web/v2/core/disposable.client";
 import { flashElement } from "@/web/v2/core/dom.client";
+import { decodeHashId } from "@/web/v2/core/js_gate.client";
 import { revealHashTarget, revealTarget } from "@/web/v2/core/reveal.client";
 
 /**
@@ -59,8 +60,9 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
           return;
         }
 
-        const targetId = href.slice(1);
-        const targetEl = doc.getElementById(targetId);
+        // Decoded the same way as the activation gate and the initial hash,
+        // so `#caf%C3%A9` finds `id="café"`.
+        const targetEl = doc.getElementById(decodeHashId(href));
         // If a component that could own the target isn't running, the
         // activation gate never calls this handler, so the browser's fragment
         // navigation and No-JS `:target` UI stay in charge.

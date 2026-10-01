@@ -1,4 +1,5 @@
 import type { CleanupFn } from "@/web/v2/core/disposable.client";
+import { decodeHashId } from "@/web/v2/core/js_gate.client";
 
 /**
  * The reveal protocol: one way to make a targeted element visible, however it
@@ -90,13 +91,7 @@ export function revealHashTarget(
 ): HTMLElement | null {
   const hash = win.location.hash;
   if (!hash || hash === "#") return null;
-  let id: string;
-  try {
-    id = decodeURIComponent(hash.slice(1));
-  } catch {
-    id = hash.slice(1);
-  }
-  const target = doc.getElementById(id);
+  const target = doc.getElementById(decodeHashId(hash));
   if (!target) return null;
 
   revealTarget(target);
