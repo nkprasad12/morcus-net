@@ -143,8 +143,14 @@ growth; it is not a target.
       every library work has an About tab, and `.has-companion-tabs` hides the label at every width.
       Server-render a `data-js-only` `<strong>` and hint span and toggle them instead. Its `lat-word`
       span factory also duplicates `createWordLink` in `core/tokenize.client.ts`.
-- [ ] 🟢 **`library_view.client.ts`**, **`reader_panel.client.ts`**,
-      **`external_loader.client.ts`**: the resume badge, translation loading/error states and
+- [ ] 🟢 **`reader_panel.client.ts`**: `setTab` builds the Translation tab's loading spinner and
+      error block on the client. The spinner is excused by a reviewed `CREATED_DOM_ALLOWLIST` entry
+      (`#panel-view-translation > .reader-translation-loading`). Server-render both states hidden
+      inside `#panel-view-translation` and toggle them instead; that retires the allowlist entry.
+      Separately, the error block's `#btn-retry-translation` (`type="button"`, outside any form) has
+      no `data-js-only`, so the created-control check would flag it. The harness doesn't reach it
+      today because the fake network never fails.
+- [ ] 🟢 **`library_view.client.ts`**, **`external_loader.client.ts`**: the resume badge and
       saved-items list are built on the client.
 
 ---
