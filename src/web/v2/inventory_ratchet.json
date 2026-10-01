@@ -19,29 +19,5 @@
       "src/web/v2/reader/reader_panel.client.ts": 3,
       "src/web/v2/reader/reader_view.client.ts": 9
     }
-  },
-  "selectorCalls": {
-    "callsPerFile": {
-      "src/web/v2/corpus/corpus_autocomplete.client.ts": 1,
-      "src/web/v2/corpus/corpus_view.client.ts": 3,
-      "src/web/v2/dialog/report_dialog.client.ts": 7,
-      "src/web/v2/dict/abbr_popover.client.ts": 5,
-      "src/web/v2/dict/dict_greek.client.ts": 4,
-      "src/web/v2/dict/dict_permalink.client.ts": 6,
-      "src/web/v2/dict/dict_search.client.ts": 12,
-      "src/web/v2/dict/dict_settings.client.ts": 13,
-      "src/web/v2/dict/dict_suggestions.client.ts": 1,
-      "src/web/v2/dict/dict_toc.client.ts": 1,
-      "src/web/v2/external/external_loader.client.ts": 19,
-      "src/web/v2/library/library_view.client.ts": 8,
-      "src/web/v2/reader/reader_layout.client.ts": 3,
-      "src/web/v2/reader/reader_page_nav.client.ts": 1,
-      "src/web/v2/reader/reader_panel.client.ts": 16,
-      "src/web/v2/reader/reader_settings.client.ts": 24,
-      "src/web/v2/reader/reader_toc.client.ts": 22,
-      "src/web/v2/reader/reader_view.client.ts": 53,
-      "src/web/v2/shell/mobile_menu.client.ts": 2,
-      "src/web/v2/shell/theme_toggle.client.ts": 3
-    }
   }
 }

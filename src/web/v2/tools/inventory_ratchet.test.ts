@@ -53,32 +53,6 @@ describe("inventory_ratchet unit tests", () => {
       ],
       totalCalls: 2,
     },
-    selectorCalls: {
-      callsPerFile: {
-        "src/web/v2/reader/reader_view.client.ts": 3,
-      },
-      citations: [
-        {
-          file: "src/web/v2/reader/reader_view.client.ts",
-          line: 30,
-          method: "$",
-          snippet: 'this.scope.$(".btn")',
-        },
-        {
-          file: "src/web/v2/reader/reader_view.client.ts",
-          line: 31,
-          method: "querySelector",
-          snippet: 'this.querySelector(".panel")',
-        },
-        {
-          file: "src/web/v2/reader/reader_view.client.ts",
-          line: 32,
-          method: "delegate",
-          snippet: 'this.scope.delegate(this, "click", ".item", fn)',
-        },
-      ],
-      totalCalls: 3,
-    },
   };
 
   it("passes when actual metrics match the ratchet exactly", () => {
@@ -211,23 +185,41 @@ describe("inventory_ratchet unit tests", () => {
       'src/web/v2/shell/new_widget.client.ts:42 [createElement] document.createElement("span")'
     );
 
+    const decreasedAnalysis: InventoryAnalysis = {
+      ...baseAnalysis,
+      domMutationOutsideCore: {
+        callsPerFile: {
+          "src/web/v2/dict/dict_search.client.ts": 1,
+        },
+        citations: baseAnalysis.domMutationOutsideCore.citations.slice(0, 1),
+        totalCalls: 1,
+      },
+    };
+
+    const staleResult = compareInventoryRatchet(ratchet, decreasedAnalysis);
+    expect(staleResult.passed).toBe(false);
+    expect(staleResult.stale).toHaveLength(1);
+    const staleMsg = formatRatchetFailures(staleResult);
+    expect(staleMsg).toContain(
+      "[domMutationOutsideCore] src/web/v2/dict/dict_search.client.ts: 2 → 1"
+    );
+    expect(staleMsg).toMatch(/Run: npm run inventory:update$/);
+
     const removedFileAnalysis: InventoryAnalysis = {
       ...baseAnalysis,
-      selectorCalls: {
+      domMutationOutsideCore: {
         callsPerFile: {},
         citations: [],
         totalCalls: 0,
       },
     };
 
-    const staleResult = compareInventoryRatchet(ratchet, removedFileAnalysis);
-    expect(staleResult.passed).toBe(false);
-    expect(staleResult.stale).toHaveLength(1);
-    const staleMsg = formatRatchetFailures(staleResult);
-    expect(staleMsg).toContain(
-      "[selectorCalls] src/web/v2/reader/reader_view.client.ts: 3 → 0"
+    const removedResult = compareInventoryRatchet(ratchet, removedFileAnalysis);
+    expect(removedResult.passed).toBe(false);
+    expect(removedResult.stale).toHaveLength(1);
+    expect(formatRatchetFailures(removedResult)).toContain(
+      "[domMutationOutsideCore] src/web/v2/dict/dict_search.client.ts: 2 → 0"
     );
-    expect(staleMsg).toMatch(/Run: npm run inventory:update$/);
   });
 
   it("excludes allowlisted CSS patterns from comparison and preserves them on build/serialize", () => {

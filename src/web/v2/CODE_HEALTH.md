@@ -94,14 +94,12 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 > "my settings didn't stick" bugs. Worth a deliberate consolidation pass eventually; at minimum,
 > document the precedence ladder in one place next to one parser.
 
-- [ ] 🔴 **Ratchet down string-selector queries outside `core/`** (metric C of
-      `./morcus.sh inventory`; 202 calls across 18 files when first measured). Work hotspot-first
-      from §4 of `.cache/inventory/report.md`: `reader_view.client.ts` (54),
-      `reader_settings.client.ts` (24), `reader_toc.client.ts` (22), `external_loader.client.ts`
-      (20), `reader_panel.client.ts` (16), `dict_settings.client.ts` (13), `dict_search.client.ts`
-      (12). Resolve each element once on connect (`this.scope.require`) into a field, or hand the
-      lookup to a `core/` controller, instead of re-querying by string at each use. Land one file
-      per change and lower the ratchet with `npm run inventory:update`.
+- [ ] 🟢 **Resolve repeatedly queried elements once, on connect.** Some controllers, mostly in the
+      reader (`reader_view`, `reader_settings`, `reader_toc`, `reader_panel`), look up the same
+      element by selector string at each use. Each lookup is a place where a markup change can
+      silently break behaviour. Where an element is looked up more than once, resolve it on connect
+      (`this.scope.require`) into a field, or hand the behaviour to a `core/` controller. A single
+      lookup on connect is fine as it is.
 
 ---
 
@@ -117,10 +115,11 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 ### Client DOM construction outside `core/`
 
-Tracked by metric B of `./morcus.sh inventory` (`domMutationOutsideCore` in
-[`inventory_ratchet.json`](inventory_ratchet.json)); was 32 calls across 6 files. Server-render the
-markup and adopt it on connect, or move the construction into a `core/` helper. Lower the ratchet
-with `npm run inventory:update` in the same change.
+Client code outside `core/` that builds or rewrites DOM duplicates markup the server already knows
+how to render, and the two copies drift. Prefer server-rendering the markup and adopting it on
+connect, or moving the construction into a `core/` helper. `./morcus.sh inventory`
+(`domMutationOutsideCore` in [`inventory_ratchet.json`](inventory_ratchet.json)) only guards against
+growth; it is not a target.
 
 - [x] 🟢 **`dict_search.client.ts`: stop creating `<morcus-dict-suggestions>` and the word links.**
       The suggestions host is server-rendered inside `.input-wrapper` by `renderDictSearchBar`
@@ -131,11 +130,12 @@ with `npm run inventory:update` in the same change.
       `ul#dict-suggestions-list.suggestions` (`role="listbox"`, `hidden`) inside `<morcus-dict-suggestions>`
       and adopted it cleanly via `firstElementChild` in `ComboboxController` and `MorcusDictSuggestions`,
       eliminating runtime listbox creation and unifying combobox keyboard and ARIA handling via `ComboboxController`.
-- [ ] 🟡 **`reader_view.client.ts` (9)**: the bottom-sheet label `<strong>` runs and the
-      `lat-word` span factory (a sibling of `createWordLink` in `core/tokenize.client.ts`).
-- [ ] 🟢 **`library_view.client.ts` (3)**, **`reader_panel.client.ts` (3)**,
-      **`external_loader.client.ts` (1)**: resume badge, translation loading/error states,
-      saved-items list.
+- [ ] 🟡 **`reader_view.client.ts`**: the bottom-sheet label `<strong>` runs are built on the
+      client, and its `lat-word` span factory duplicates `createWordLink` in
+      `core/tokenize.client.ts`.
+- [ ] 🟢 **`library_view.client.ts`**, **`reader_panel.client.ts`**,
+      **`external_loader.client.ts`**: the resume badge, translation loading/error states and
+      saved-items list are built on the client.
 
 ---
 
