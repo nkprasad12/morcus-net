@@ -398,7 +398,12 @@ body.body-embedded {
   color: var(--text);
   padding: var(--space-1);
   min-width: 11.5rem;
+  border-color: var(--app-bar-toggle-border);
   box-shadow: var(--card-shadow-hover);
+}
+
+.section-action-menu::before {
+  border-color: var(--app-bar-toggle-border);
 }
 
 .section-action-item {
