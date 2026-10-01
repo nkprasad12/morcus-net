@@ -1,8 +1,7 @@
 /**
  * DOM helpers and invariants shared by the SSR conformance harnesses:
- * `core/ssr_conformance.test.ts` (right after upgrade) and the
- * `*_interaction_conformance.test.ts` files (after user interaction, via
- * `testing/interaction_harness.ts`). The reviewed exception lists live in
+ * `testing/ssr_conformance_harness.ts` (right after upgrade) and
+ * `testing/interaction_harness.ts` (after user interaction). The reviewed exception lists live in
  * `created_dom_allowlist.ts` and `isomorphic_rerenders.ts`.
  */
 

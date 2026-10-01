@@ -4,8 +4,8 @@
 // across every route chunk. Production pages never load it: they load only
 // their route's entry chunks (`common.js`, `dict.js`, `reader.js`,
 // `external.js`, `corpus.js`). Conformance harnesses
-// (`reattach_conformance.test.ts`, `ssr_conformance.test.ts`,
-// `route_bundle_conformance.test.ts`) import it to register every element in
+// (`reattach_conformance.test.ts`, `testing/ssr_conformance_harness.ts`,
+// `testing/interaction_harness.ts`, `route_bundle_conformance.test.ts`) import it to register every element in
 // jsdom.
 //
 // Feature modules have no import-time side effects beyond `registerElement`

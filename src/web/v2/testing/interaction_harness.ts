@@ -2,7 +2,7 @@
  * The interaction conformance harness (corpus/DESIGN.md §9 item 8), shared
  * by the `*_interaction_conformance.test.ts` file next to each feature.
  *
- * `core/ssr_conformance.test.ts` checks the DOM right after upgrade. This
+ * `testing/ssr_conformance_harness.ts` checks the DOM right after upgrade. This
  * harness checks it again after the user does something: focusing, typing,
  * clicking, and the mocked fetches that follow. Everything runs in jsdom;
  * nothing here ships to the client.
