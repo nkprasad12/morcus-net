@@ -18,7 +18,12 @@
  * - created controls keep the No-JS control rule, and ids stay unique;
  * - no listener threw and no request went unrouted.
  * Each target also runs twice more, torn down with work still pending
- * (`Tier1Mode`), to catch late writes to detached nodes.
+ * (`RunMode`), to catch late writes to detached nodes.
+ *
+ * Tier 2 (`TIER2_SCENARIOS`) declares multi-step flows a single control's
+ * script can't reach: picking a suggestion, submitting, paging. They run in
+ * the same modes against the same checks, and each must end in a partial
+ * swap.
  *
  * The sweep's size is capped, and the cap is checked before any run starts,
  * so a fixture that grows a long list of controls fails fast instead of
@@ -363,11 +368,15 @@ function inSwapRegion(
  */
 function servedTagCounts(log: FakeNetworkLog): Map<string, number> {
   const counts = new Map<string, number>();
-  for (const body of log.html) {
-    for (const el of Array.from(parseInert(body).querySelectorAll("*"))) {
+  // Slot partials wrap each slot in `<template data-slot>`, whose content
+  // `querySelectorAll` doesn't reach, so descend into templates explicitly.
+  const count = (root: ParentNode) => {
+    for (const el of Array.from(root.querySelectorAll("*"))) {
       counts.set(el.localName, (counts.get(el.localName) ?? 0) + 1);
+      if (el instanceof HTMLTemplateElement) count(el.content);
     }
-  }
+  };
+  for (const body of log.html) count(parseInert(body));
   return counts;
 }
 
@@ -428,7 +437,7 @@ function checkInvariants(
 }
 
 /**
- * How a Tier 1 run paces its script:
+ * How a run paces its script:
  * - `settled`: settle and check the invariants after every step.
  * - `abandoned`: run the steps back to back and tear the page down at once,
  *   with debounces and requests still pending.
@@ -438,8 +447,8 @@ function checkInvariants(
  * The last two run late callbacks against disconnected components (the bug
  * class of 871f99b7).
  */
-type Tier1Mode = "settled" | "abandoned" | "mid-body";
-const TIER1_MODES: readonly Tier1Mode[] = ["settled", "abandoned", "mid-body"];
+type RunMode = "settled" | "abandoned" | "mid-body";
+const RUN_MODES: readonly RunMode[] = ["settled", "abandoned", "mid-body"];
 
 /** Advances the clock in small ticks until `done()`, for at most `maxMs`. */
 async function advanceUntil(done: () => boolean, maxMs: number) {
@@ -451,16 +460,22 @@ async function advanceUntil(done: () => boolean, maxMs: number) {
   }
 }
 
+/** What a run executes, or why it couldn't be set up. */
+type Prepared =
+  | { readonly label: string; readonly steps: readonly Step[] }
+  | { readonly error: string };
+
 /**
- * Runs `tier1Script` on target `index` of a freshly mounted `fixture`, then
- * disconnects everything and lets pending work finish, so a late write to a
- * detached node is attributed to this run.
+ * Mounts `fixture` fresh, runs the steps `prepare` returns, paced by
+ * `mode`, then disconnects everything and lets pending work finish, so a
+ * late write to a detached node is attributed to this run. `onSettled` adds
+ * checks at the end of a `settled` run.
  */
-async function runTier1(
+async function runScript(
   fixture: SsrFixture,
-  index: number,
-  key: string,
-  mode: Tier1Mode
+  mode: RunMode,
+  prepare: (wrapper: HTMLDivElement) => Prepared,
+  onSettled: (log: FakeNetworkLog) => string[] = () => []
 ): Promise<string[]> {
   const log = installFakeNetwork();
   const errors: string[] = [];
@@ -472,17 +487,17 @@ async function runTier1(
   clearDetachedDomWrites();
   // First step that hit each problem, so a lasting one is reported once.
   const found = new Map<string, string>();
-  let label = `${fixture.name}: target #${index} (${mode})`;
+  let label = `${fixture.name} (${mode})`;
   try {
     const { wrapper, cleanup } = await mountFresh(fixture);
     try {
-      const target = tier1Targets(wrapper)[index];
-      if (target?.key !== key) {
-        errors.push(`target differs between mounts: ${target?.key ?? "none"}`);
+      const prepared = prepare(wrapper);
+      if ("error" in prepared) {
+        errors.push(prepared.error);
       } else {
-        label = `${fixture.name}: ${describeElement(target.el)} (${mode})`;
+        label = `${fixture.name}: ${prepared.label} (${mode})`;
         const baseline = snapshotTree(document.body);
-        for (const step of tier1Script(target.el)) {
+        for (const step of prepared.steps) {
           try {
             step.act();
           } catch (err) {
@@ -498,6 +513,7 @@ async function runTier1(
             if (!found.has(problem)) found.set(problem, step.name);
           }
         }
+        if (mode === "settled") errors.push(...onSettled(log));
         if (mode === "mid-body") {
           // Stops early once nothing is scheduled: the script fetched nothing.
           await advanceUntil(
@@ -517,7 +533,7 @@ async function runTier1(
   const out = [...found].map(
     ([problem, step]) => `${label}: after ${step}: ${problem}`
   );
-  out.push(...errors.map((e) => `${label}: uncaught ${e}`));
+  out.push(...errors.map((e) => `${label}: ${e}`));
   out.push(...log.unrouted.map((u) => `${label}: unrouted fetch ${u}`));
   out.push(
     ...detachedDomWrites.map(
@@ -526,6 +542,140 @@ async function runTier1(
   );
   clearDetachedDomWrites();
   return out;
+}
+
+/** Runs `tier1Script` on target `index` of `fixture`. */
+function runTier1(
+  fixture: SsrFixture,
+  index: number,
+  key: string,
+  mode: RunMode
+): Promise<string[]> {
+  return runScript(fixture, mode, (wrapper) => {
+    const target = tier1Targets(wrapper)[index];
+    if (target?.key !== key) {
+      return {
+        error: `target #${index} differs between mounts: ${
+          target?.key ?? "none"
+        }`,
+      };
+    }
+    return {
+      label: describeElement(target.el),
+      steps: tier1Script(target.el),
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Tier 2: declared multi-step scenarios, for flows a single control's script
+// can't reach (picking an option, submitting, paging). Steps look elements
+// up when they run, and a missing one fails the scenario.
+// ---------------------------------------------------------------------------
+
+interface Scenario {
+  readonly fixture: string;
+  readonly name: string;
+  readonly steps: readonly Step[];
+  /** The flow must end in a partial swap, so the scenario isn't vacuous. */
+  readonly expectSwap?: true;
+}
+
+function find(selector: string): HTMLElement {
+  const el = document.querySelector(selector);
+  if (!(el instanceof HTMLElement)) throw new Error(`no ${selector}`);
+  return el;
+}
+
+function textField(selector: string): HTMLInputElement {
+  const el = find(selector);
+  if (!(el instanceof HTMLInputElement)) {
+    throw new Error(`${selector} is not an <input>`);
+  }
+  return el;
+}
+
+const focusOn = (selector: string): Step => ({
+  name: `focus ${selector}`,
+  act: () => find(selector).focus(),
+});
+const typeIn = (selector: string, value: string): Step => ({
+  name: `type "${value}" into ${selector}`,
+  act: () => typeInto(textField(selector), value),
+});
+const pressKey = (key: string): Step => ({
+  name: key,
+  act: () => press(key),
+});
+const submitFormOf = (selector: string): Step => ({
+  name: `submit the form of ${selector}`,
+  act: () => {
+    const form = textField(selector).form;
+    if (!form) throw new Error(`${selector} has no form`);
+    form.requestSubmit();
+  },
+});
+const clickOn = (selector: string): Step => ({
+  name: `click ${selector}`,
+  act: () => find(selector).click(),
+});
+
+const TIER2_SCENARIOS: readonly Scenario[] = [
+  {
+    fixture: "dict-landing",
+    name: "pick a suggestion",
+    steps: [
+      focusOn("#dict-q"),
+      typeIn("#dict-q", "am"),
+      pressKey("ArrowDown"),
+      pressKey("Enter"),
+    ],
+    expectSwap: true,
+  },
+  {
+    fixture: "dict-results",
+    name: "search again",
+    steps: [
+      focusOn("#dict-q"),
+      typeIn("#dict-q", "amor"),
+      submitFormOf("#dict-q"),
+    ],
+    expectSwap: true,
+  },
+  {
+    fixture: "corpus-landing",
+    name: "complete a lemma, then search",
+    steps: [
+      focusOn("#corpus-q"),
+      typeIn("#corpus-q", "@l:am"),
+      pressKey("ArrowDown"),
+      pressKey("Enter"),
+      submitFormOf("#corpus-q"),
+    ],
+    expectSwap: true,
+  },
+  {
+    fixture: "corpus-results",
+    name: "next page",
+    steps: [clickOn('.corpus-pager a[rel="next"]')],
+    expectSwap: true,
+  },
+];
+
+function runTier2(
+  fixture: SsrFixture,
+  scenario: Scenario,
+  mode: RunMode
+): Promise<string[]> {
+  return runScript(
+    fixture,
+    mode,
+    () => ({ label: scenario.name, steps: scenario.steps }),
+    (log) =>
+      scenario.expectSwap && log.html.length === 0
+        ? ["ended without a partial swap"]
+        : []
+  );
 }
 
 describe("Interaction-time SSR conformance", () => {
@@ -567,7 +717,7 @@ describe("Interaction-time SSR conformance", () => {
       const targets = plan.perFixture.get(fixture.name) ?? [];
       for (let i = 0; i < targets.length; i++) {
         runs++;
-        for (const mode of TIER1_MODES) {
+        for (const mode of RUN_MODES) {
           violations.push(
             ...(await runTier1(fixture, i, targets[i].key, mode))
           );
@@ -577,4 +727,21 @@ describe("Interaction-time SSR conformance", () => {
     expect(runs).toBeGreaterThanOrEqual(TIER1_MIN_RUNS_TOTAL);
     expect(violations).toEqual([]);
   }, 120_000); // Last-resort backstop only; the caps above are what bound the sweep.
+  test("Tier 2: declared scenarios keep the SSR invariants", async () => {
+    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    const byName = new Map(fixtures.map((f) => [f.name, f]));
+    const violations: string[] = [];
+    for (const scenario of TIER2_SCENARIOS) {
+      const fixture = byName.get(scenario.fixture);
+      if (!fixture) {
+        violations.push(`${scenario.name}: no fixture ${scenario.fixture}`);
+        continue;
+      }
+      for (const mode of RUN_MODES) {
+        violations.push(...(await runTier2(fixture, scenario, mode)));
+      }
+    }
+    expect(violations).toEqual([]);
+  });
 });

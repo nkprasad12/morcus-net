@@ -113,7 +113,7 @@ npx jest src/web/v2/core/dialog.test.ts
 Two jsdom suites check real SSR output (`testing/ssr_fixtures.ts`) against the PE invariants. Neither ships code to the client.
 
 - [`core/ssr_conformance.test.ts`](core/ssr_conformance.test.ts) checks the page **right after upgrade**: tree fingerprint, No-JS controls, ids and hash links, and the failed-owner sweep.
-- [`core/interaction_conformance.test.ts`](core/interaction_conformance.test.ts) checks it again **after interaction**. Its Tier 1 sweep exercises every deduplicated control in every fixture with a fixed script (focus/type/arrow/Escape/blur, clicks, option and step changes) against a fake network backed by the real server renderers (`testing/fake_v2_network.ts`), and checks the invariants after each step. Each target also runs torn down mid-script, to catch late writes to detached nodes.
+- [`core/interaction_conformance.test.ts`](core/interaction_conformance.test.ts) checks it again **after interaction**. Its Tier 1 sweep exercises every deduplicated control in every fixture with a fixed script (focus/type/arrow/Escape/blur, clicks, option and step changes) against a fake network backed by the real server renderers (`testing/fake_v2_network.ts`), and checks the invariants after each step. Each target also runs torn down mid-script, to catch late writes to detached nodes. Tier 2 (`TIER2_SCENARIOS`) declares multi-step flows a single control can't reach, such as picking a suggestion, submitting, or paging. They run in the same three modes, and each must end in a partial swap. When a feature adds a new flow, add a scenario for it.
 
 Shared lists in [`testing/ssr_invariants.ts`](testing/ssr_invariants.ts), all of which **need human review to extend**:
 
