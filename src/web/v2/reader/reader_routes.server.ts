@@ -1,8 +1,10 @@
 import { Router, Response } from "express";
 import type { V2PreprocessedWork } from "@/common/library/v2/v2_types";
 import {
+  findReaderWork,
   renderReaderPageHtml,
   renderReaderPartialHtml,
+  renderReaderTranslationHtml,
 } from "@/web/v2/reader/reader.server";
 import {
   getV2Work,
@@ -12,7 +14,6 @@ import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
 import { renderNotFoundPageHtml } from "@/web/v2/library/not_found.server";
 import { isPartialRequest } from "@/web/v2/core/request_params.server";
 import { getFirstHighlightSectionId } from "@/web/v2/reader/reader_highlight.common";
-import * as he from "he";
 
 function redirectReaderJump(
   res: Response,
@@ -81,41 +82,16 @@ export function createReaderRoutes(): Router {
   // TODO(reader-nojs): Zero-JS translation baseline support.
   // Lazy-loading translation partial endpoint: /v2/reader/:author/:name/:page/translation
   getAsync("/reader/:author/:name/:page/translation", async (req, res) => {
-    const author = req.params.author;
-    const name = req.params.name;
-    const pageParam = req.params.page;
-
-    const work =
-      (await getV2Work(`${author}/${name}`)) ||
-      (await getV2Work(`${author}_${name}`));
-
-    if (!work || !work.hasTranslation) {
+    const work = await findReaderWork(req.params.author, req.params.name);
+    const body = work
+      ? renderReaderTranslationHtml(work, req.params.page)
+      : null;
+    if (body === null) {
       res.status(404).send("Translation not found");
       return;
     }
-
-    const resolved = resolvePageInWork(work, pageParam);
-    const page = resolved.page;
-    if (!page || !page.translationHtml) {
-      res.status(404).send("Translation not found");
-      return;
-    }
-
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.send(
-      `
-<div class="reader-translation-content">
-  <header class="reader-translation-header">
-    <span class="reader-translation-credit">Translated by ${he.escape(
-      work.translator ?? "Unknown"
-    )}</span>
-  </header>
-  <div class="reader-translation-body">
-    ${page.translationHtml}
-  </div>
-</div>
-        `.trim()
-    );
+    res.send(body);
   });
 
   // Human-readable reader route: /v2/reader/:author/:name/:page?
@@ -130,9 +106,7 @@ export function createReaderRoutes(): Router {
       typeof req.query.jump === "string" ? req.query.jump.trim() : "";
     const isPartial = isPartialRequest(req);
 
-    const work =
-      (await getV2Work(`${author}/${name}`)) ||
-      (await getV2Work(`${author}_${name}`));
+    const work = await findReaderWork(author, name);
 
     if (!work) {
       res.status(404).send(
