@@ -329,10 +329,6 @@ body.body-embedded {
   box-sizing: border-box;
 }
 
-.anchored-popover-centered {
-  transform: translateX(-50%);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .report-submit-spinner,
   .loading-spinner {
@@ -394,6 +390,12 @@ body.body-embedded {
    ========================================================================== */
 
 .section-action-menu {
+  /* Undo the UA `[popover]` defaults: centring (inset/margin), clipping the
+     caret (overflow) and the system text colour. JS sets top/left. */
+  inset: auto;
+  margin: 0;
+  overflow: visible;
+  color: var(--text);
   padding: var(--space-1);
   min-width: 11.5rem;
   box-shadow: var(--card-shadow-hover);

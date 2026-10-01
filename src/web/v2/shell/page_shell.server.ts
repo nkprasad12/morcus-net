@@ -261,8 +261,10 @@ export function renderPageShell(options: PageShellOptions): string {
     </svg>
   </a>
 
-  <!-- Single global popover for abbreviation expansions -->
-  <div id="abbr-popover" popover="auto" class="abbr-popover"></div>
+  <!-- Single global popover for abbreviation expansions. "manual", not "auto":
+       abbr_popover.client.ts owns dismissal; native light-dismiss would close
+       it on pointerdown so a second tap on the same word reopened it. -->
+  <div id="abbr-popover" popover="manual" class="abbr-popover"></div>
 
   <!-- UI V2 client-side Web Components bundles -->
   ${scriptTagsHtml}

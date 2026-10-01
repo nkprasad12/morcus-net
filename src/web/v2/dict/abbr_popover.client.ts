@@ -1,3 +1,4 @@
+import { computeAnchoredPlacement } from "@/web/v2/core/anchored_position.client";
 import { LifetimeScope } from "@/web/v2/core/base_element.client";
 import {
   createSingletonSetup,
@@ -12,8 +13,8 @@ import { bindDismissable } from "@/web/v2/core/dismissable.client";
  * This utility uses a single shared top-layer container (`#abbr-popover`, rendered in page_shell.server.ts)
  * to service 1-to-N dynamic `.lsHover` abbreviation targets across dictionary entries.
  * Because targets are dynamic (frequently swapped via partial HTML updates), content is a tooltip
- * without interactive controls (no focus trap), and `#abbr-popover` uses top-layer Popover API
- * (`popover="auto"`), this component intentionally uses lightweight document delegation rather than
+ * without interactive controls (no focus trap), and `#abbr-popover` uses the top-layer Popover API
+ * (`popover="manual"`), this component intentionally uses lightweight document delegation rather than
  * the 1-to-1 `AnchoredPopoverController`.
  *
  * It uses a standalone `LifetimeScope` (so its click / Enter handlers pass the
@@ -50,30 +51,20 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
           : abbrPopover.style.display === "block";
 
       const positionAbbrPopover = (target: HTMLElement) => {
-        const rect = target.getBoundingClientRect();
-        const popWidth = abbrPopover.offsetWidth || 200;
-        const popHeight = abbrPopover.offsetHeight || 38;
-
-        // Horizontally center over target word, strictly clamped to viewport padding
-        const idealLeft = rect.left + rect.width / 2 - popWidth / 2;
-        const clampedLeft = Math.max(
-          8,
-          Math.min(win.innerWidth - popWidth - 8, idealLeft)
+        // Page coordinates (`absolute` + scrollY), so window scrolling carries
+        // the popover along with its word without a scroll listener.
+        const { left, top } = computeAnchoredPlacement(
+          target.getBoundingClientRect(),
+          {
+            width: abbrPopover.offsetWidth || 200,
+            height: abbrPopover.offsetHeight || 38,
+          },
+          { width: win.innerWidth, height: win.innerHeight },
+          { align: "center", side: "auto", gap: 6, margin: 8, caretInset: 0 }
         );
-
-        // Place above if room, else place below
-        const spaceAbove = rect.top;
-        const spaceBelow = win.innerHeight - rect.bottom;
-        let top = 0;
-        if (spaceAbove >= popHeight + 8 || spaceAbove > spaceBelow) {
-          top = rect.top + win.scrollY - popHeight - 6;
-        } else {
-          top = rect.bottom + win.scrollY + 6;
-        }
-
         abbrPopover.style.position = "absolute";
-        abbrPopover.style.left = `${Math.round(clampedLeft)}px`;
-        abbrPopover.style.top = `${Math.round(top)}px`;
+        abbrPopover.style.left = `${Math.round(left)}px`;
+        abbrPopover.style.top = `${Math.round(top + win.scrollY)}px`;
       };
 
       const openAbbrPopover = (target: HTMLElement) => {

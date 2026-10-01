@@ -6,6 +6,7 @@
  * grouped mutual exclusion via `morcus:popover-will-open`.
  */
 
+import { computeAnchoredPlacement } from "@/web/v2/core/anchored_position.client";
 import {
   BaseController,
   type CleanupFn,
@@ -180,6 +181,14 @@ export class AnchoredPopoverController extends BaseController {
   public open(): void {
     const panel = this.getPanel();
     if (this._isOpen || !panel) return;
+    if (process.env.NODE_ENV !== "production" && !this.isConnected) {
+      // Unconnected, the while-open scope below derives from DEAD_SCOPE, so
+      // dismissal, the focus trap and repositioning are silently dropped.
+      throw new Error(
+        "[UI V2] AnchoredPopoverController.open() called before connect(). " +
+          "Register it with addController() or call connect() first."
+      );
+    }
 
     const doc = this.ownerDocument;
     if (this.group) {
@@ -226,79 +235,54 @@ export class AnchoredPopoverController extends BaseController {
       assertConnected(trigger, this.root);
     }
 
-    if (this.align === "center") {
-      if (trigger && typeof trigger.getBoundingClientRect === "function") {
-        const rect = trigger.getBoundingClientRect();
-        if (rect.bottom > 0) {
-          panel.style.top = `${Math.round(rect.bottom + 8)}px`;
-        }
-
-        const btnCenter = rect.left + rect.width / 2;
-        const win = panel.ownerDocument?.defaultView ?? window;
-        const viewportWidth =
-          win.innerWidth ||
-          panel.ownerDocument?.documentElement?.clientWidth ||
-          this.defaultWidth;
-        const drawerWidth = panel.offsetWidth || this.defaultWidth;
-        const halfWidth = drawerWidth / 2;
-        const minCenter = halfWidth + 12;
-        const maxCenter = Math.max(minCenter, viewportWidth - halfWidth - 12);
-        const clampedCenter = Math.max(
-          minCenter,
-          Math.min(btnCenter, maxCenter)
-        );
-
-        panel.style.left = `${Math.round(clampedCenter)}px`;
-
-        const caretLeft = btnCenter - (clampedCenter - halfWidth);
-        const clampedCaret = Math.max(
-          12,
-          Math.min(caretLeft, drawerWidth - 12)
-        );
-        panel.style.setProperty(
-          "--caret-left",
-          `${Math.round(clampedCaret)}px`
-        );
-      }
-      return;
-    }
-
-    const docEl = this.ownerDocument.documentElement;
     const win = this.ownerDocument.defaultView ?? window;
-    const viewportWidth = win.innerWidth || docEl?.clientWidth || 1024;
-    const margin = 12;
-    const popoverWidth = panel.offsetWidth || this.defaultWidth;
+    const viewport = {
+      width:
+        win.innerWidth ||
+        this.ownerDocument.documentElement?.clientWidth ||
+        this.defaultWidth,
+      height: win.innerHeight,
+    };
+    const width = panel.offsetWidth || this.defaultWidth;
+    const centered = this.align === "center";
+    const rect = trigger?.getBoundingClientRect();
+    // A zero rect means layout isn't available (jsdom/headless) or the trigger
+    // is hidden. Centred panels then keep their CSS fallback position; end
+    // panels fall back to the top-right corner.
+    const measured = rect !== undefined && (rect.width > 0 || rect.height > 0);
+    if (!measured && centered) return;
+    const anchor = measured
+      ? rect
+      : {
+          top: 40,
+          bottom: 40,
+          left: viewport.width - 44,
+          right: viewport.width - 12,
+          width: 32,
+        };
 
-    let top = 48;
-    let btnCenterX = viewportWidth - 28;
-    let targetLeft = viewportWidth - popoverWidth - margin;
-
-    if (trigger && typeof trigger.getBoundingClientRect === "function") {
-      const btnRect = trigger.getBoundingClientRect();
-      if (btnRect.bottom || btnRect.top) {
-        top = btnRect.bottom + 8;
+    const placement = computeAnchoredPlacement(
+      anchor,
+      { width, height: panel.offsetHeight },
+      viewport,
+      {
+        align: this.align,
+        side: "below",
+        gap: 8,
+        margin: 12,
+        caretInset: centered ? 12 : 16,
       }
-      if (btnRect.width || btnRect.height) {
-        btnCenterX = btnRect.left + btnRect.width / 2;
-        targetLeft = btnRect.right - popoverWidth;
-      }
-    }
-
-    const maxLeft = Math.max(margin, viewportWidth - popoverWidth - margin);
-    const left = Math.max(margin, Math.min(targetLeft, maxLeft));
-
-    const caretLeft = btnCenterX - left;
-    const clampedCaretLeft = Math.max(
-      16,
-      Math.min(caretLeft, popoverWidth - 16)
     );
 
-    panel.style.position = "fixed";
-    panel.style.top = `${Math.round(top)}px`;
-    panel.style.left = `${Math.round(left)}px`;
+    if (!centered) panel.style.position = "fixed";
+    panel.style.top = `${Math.round(placement.top)}px`;
+    // Centred panels are positioned by their centre (`translateX(-50%)` in CSS).
+    panel.style.left = `${Math.round(
+      centered ? placement.left + width / 2 : placement.left
+    )}px`;
     panel.style.setProperty(
       "--caret-left",
-      `${Math.round(clampedCaretLeft)}px`
+      `${Math.round(placement.caretLeft)}px`
     );
   }
 

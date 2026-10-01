@@ -1,5 +1,4 @@
 import {
-  AnchoredPopoverController,
   BaseElement,
   type FieldCheckers,
   getPageWidth,
@@ -9,6 +8,8 @@ import {
   syncPageWidth,
   storage,
 } from "@/web/v2/core/index.client";
+// Not in the core barrel: only the reader uses it, so it ships in reader.js.
+import { AnchoredPopoverController } from "@/web/v2/core/popover.client";
 import {
   isBoolean,
   isLiteral,

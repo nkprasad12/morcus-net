@@ -747,8 +747,9 @@ describe("dict_ssr", () => {
 
   test("renderDictPageHtml includes the single global #abbr-popover element", () => {
     const pageHtml = renderDictPageHtml({ query: "habeo" });
+    // "manual": abbr_popover.client.ts owns dismissal (see page_shell.server.ts).
     expect(pageHtml).toContain(
-      '<div id="abbr-popover" popover="auto" class="abbr-popover"></div>'
+      '<div id="abbr-popover" popover="manual" class="abbr-popover"></div>'
     );
   });
 
