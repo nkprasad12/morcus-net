@@ -135,7 +135,7 @@ A handler that cancels a native action (`preventDefault()`, or `pushState` in pl
 
 `LifetimeScope.listen()` prevents this structurally. For `click`, `submit` and activating `keydown` (Enter / Space), it skips the listener (`canHandleActivation` in [`core/js_gate.client.ts`](core/js_gate.client.ts)) when:
 
-- the scope's own component has failed;
+- the scope's own component, or any element above it, has failed (including `<html>` after a chunk failed to load; the CSS gate hides all `data-js-only` UI under a failure, running children included);
 - the event target is inside a component that isn't running (checked up to the scope's component; to the document for standalone scopes); or
 - a native control on the event path points at an element inside a component that isn't running: an in-page `href="#id"`, `aria-controls`, `popovertarget`, `commandfor` or `form`.
 
