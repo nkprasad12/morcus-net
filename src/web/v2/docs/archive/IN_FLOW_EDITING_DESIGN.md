@@ -1,5 +1,9 @@
 # Reader & Dictionary In-Flow "Edit and Report" Design
 
+> **Archived.** Kept for context only; do not treat it as current guidance or a to-do list.
+> Open work: [reader/TODOS.md](../../reader/TODOS.md) and [dict/TODOS.md](../../dict/TODOS.md).
+> Commit SHAs, phase numbers, and relative links in this file refer to `lit-prototype` history and may not resolve.
+
 Technical design document for restoring in-flow errata and typo reporting across both the **UI V2 Reader** (`src/web/v2/reader/`) and the **UI V2 Dictionary** (`src/web/v2/dict/`), addressing the remaining feature parity gaps in [`reader/FEATURE_PARITY.md`](FEATURE_PARITY.md#31-in-flow-edit-and-report) and [`dict/FEATURE_PARITY.md`](../dict/FEATURE_PARITY.md#21-in-flow-edit-and-report-on-senses).
 
 ---

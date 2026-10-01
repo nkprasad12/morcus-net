@@ -189,6 +189,8 @@ UI V2 targets **Baseline 2023 + Extended Mobile** (`chrome >= 111`, `firefox >= 
 
 On browsers meeting this standard, all client modules and modern CSS features are active. Browsers below this floor are not supported: `:has()`-dependent layout rules and client modules will not work on them, though server-rendered HTML and text remain readable.
 
+Check new Web APIs against this floor, not just "works in my browser". For example, `AbortSignal.timeout()` is in, but `AbortSignal.any()` (Safari 17.4, Firefox 124) is out.
+
 ---
 
 ## Data Flow & Progressive Enhancement

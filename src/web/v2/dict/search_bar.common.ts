@@ -24,6 +24,10 @@ export function computeActiveLanguages(
 
 /**
  * Generates HTML for active language chips.
+ *
+ * This and `renderInflectChipHtml` are deliberately the only HTML renderers in
+ * the `.common.ts` tier: the server paints the chips on load and the client
+ * repaints them on toggle, and the markup must be byte-identical on both sides.
  */
 export function renderLangChipsHtml(languages: string[]): SafeHtml {
   if (languages.length === 0) {

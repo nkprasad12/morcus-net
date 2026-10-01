@@ -87,3 +87,7 @@ $$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus
 - Dictionaries with matches display active anchor jump links with their count: `<a href="#dict-L-S" class="jump-pill">...</a>`.
 - Dictionaries that returned 0 matches are transparently displayed as dashed pills: `<span class="jump-pill jump-pill-zero">...<span class="jump-pill-count">0</span></span>`.
 - If no dictionaries had matches, a summary line shows exactly which lexica were queried (e.g. `Searched: Lewis & Short, Gaffiot`).
+
+## Deliberately Not Ported from V1
+
+- **Mobile layout preference** (V1's "Drawer" vs "Classic" single-column setting): V2 has one responsive layout, a drawer on mobile and a rail on desktop, with no setting.

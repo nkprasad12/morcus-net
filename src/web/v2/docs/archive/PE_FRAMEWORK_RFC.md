@@ -1,5 +1,9 @@
 # RFC: A Progressive-Enhancement Framework for UI V2
 
+> **Archived.** Kept for context only; do not treat it as current guidance or a to-do list.
+> Living docs: [README](../../README.md), [FRAMEWORK_GAPS.md](../FRAMEWORK_GAPS.md), [CODE_HEALTH.md](../CODE_HEALTH.md).
+> Commit SHAs, phase numbers, and relative links in this file refer to `lit-prototype` history and may not resolve.
+
 - **Status:** Draft for review
 - **Author:** nkprasad
 - **Scope:** `src/web/v2/` (UI V2). V1 is unaffected.
