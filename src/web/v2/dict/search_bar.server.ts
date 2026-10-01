@@ -204,6 +204,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
       <div class="input-wrapper">
         <input
           type="text"
+          id="dict-q"
           name="q"
           class="input"
           value="${queryEscaped}"
@@ -221,7 +222,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
             <path d="${SEARCH_PATH}"></path>
           </svg>
         </button>
-        <morcus-dict-suggestions data-js-only
+        <morcus-dict-suggestions data-js-only data-input="dict-q"
           ><ul
             id="dict-suggestions-list"
             class="suggestions"
