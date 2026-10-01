@@ -8,6 +8,11 @@
 
 import type { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { XmlNode } from "@/common/xml/xml_node";
+import { setupAnchorScroll } from "@/web/v2/core/anchor_scroll.client";
+import { setupBackToTop } from "@/web/v2/core/back_to_top.client";
+import { setupDeferredIframes } from "@/web/v2/core/deferred_iframe.client";
+import { setupAbbrPopover } from "@/web/v2/dict/abbr_popover.client";
+import { setupMobileMenu } from "@/web/v2/shell/mobile_menu.client";
 import { CONTEXT_LEN, PAGE_SIZE } from "@/web/v2/corpus/corpus_params.common";
 import {
   runCorpusSearch,
@@ -247,4 +252,23 @@ export function mountFixture(
       parent?.insertBefore(el, next);
     }
   }
+}
+
+/**
+ * Every global setup an entry file starts, so the harnesses run with the same
+ * document-level listeners as a real page. Keyed by name so
+ * `ssr_conformance.test.ts` can compare it against the entries.
+ */
+export const PAGE_SETUPS: Readonly<
+  Record<string, (doc: Document, win: Window) => () => void>
+> = {
+  setupAbbrPopover,
+  setupAnchorScroll,
+  setupBackToTop,
+  setupDeferredIframes,
+  setupMobileMenu,
+};
+
+export function runPageSetups(): (() => void)[] {
+  return Object.values(PAGE_SETUPS).map((setup) => setup(document, window));
 }
