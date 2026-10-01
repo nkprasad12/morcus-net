@@ -25,26 +25,31 @@
 import "@/web/v2/v2_elements.client";
 import fs from "fs";
 import path from "path";
-import { XmlNode } from "@/common/xml/xml_node";
 import { getRegisteredElementTags } from "@/web/v2/core/base_element.client";
 import { setupAnchorScroll } from "@/web/v2/core/anchor_scroll.client";
 import { setupBackToTop } from "@/web/v2/core/back_to_top.client";
 import { setupDeferredIframes } from "@/web/v2/core/deferred_iframe.client";
 import { revealTarget } from "@/web/v2/core/reveal.client";
 import { setupAbbrPopover } from "@/web/v2/dict/abbr_popover.client";
-import { CONTEXT_LEN, PAGE_SIZE } from "@/web/v2/corpus/corpus_params.common";
-import { runCorpusSearch } from "@/web/v2/corpus/corpus_query.server";
-import { renderCorpusContentHtml } from "@/web/v2/corpus/corpus_view.server";
-import { renderDictPageHtml } from "@/web/v2/dict/dict_page.server";
-import { renderExternalLandingContentHtml } from "@/web/v2/external/external.server";
-import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
-import { renderReaderContentHtml } from "@/web/v2/reader/reader.server";
 import { setupMobileMenu } from "@/web/v2/shell/mobile_menu.client";
 import {
-  CORPUS_TEST_AUTHORS,
-  fakeCorpusEngine,
-  fakeResult,
-} from "@/web/v2/testing/fake_corpus_engine";
+  buildSsrFixtures,
+  installMatchMediaStub,
+  mountFixture,
+  type SsrFixture,
+} from "@/web/v2/testing/ssr_fixtures";
+import {
+  NO_JS_CONTROLS,
+  describeElement,
+  describeParent,
+  diffTree,
+  isAllowlistedCreation,
+  morcusElements,
+  nearestMorcus,
+  noJsControlViolation,
+  parseInert,
+  snapshotTree,
+} from "@/web/v2/testing/ssr_invariants";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
@@ -56,213 +61,12 @@ jest.mock("@/web/v2/reader/reader_loader.server", () =>
   jest.requireActual("@/web/v2/testing/mock_reader_loader")
 );
 
-/**
- * Elements allowed to be created dynamically during `onConnect()` (PE RFC §7).
- * Everything else in the upgraded tree must already exist in the SSR HTML.
- */
-const CREATED_ON_UPGRADE_ALLOWLIST: readonly string[] = [
-  // Inline word tokens wrapped by `tokenizeElement` in passages and entries.
-  ".lat-word",
-  // Options (and their contents) built by `MorcusCorpusSuggestions` in its
-  // server-rendered listbox. On upgrade only if the input already has focus:
-  // see the `corpus-focused-before-upgrade` fixture.
-  "morcus-corpus-suggestions > ul > li, morcus-corpus-suggestions > ul > li *",
-];
-
-function describeElement(el: Element): string {
-  const id = el.id ? `#${el.id}` : "";
-  const classes =
-    typeof el.className === "string" && el.className.trim()
-      ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".")
-      : "";
-  return `<${el.tagName.toLowerCase()}${id}${classes}>`;
-}
-
-interface SsrFixture {
-  readonly name: string;
-  readonly html: string;
-  /**
-   * A user who focused `input` (an id) before the bundle ran. Every `host`
-   * is held out of the document until the input has focus, so it upgrades
-   * the way it would on a real page: adopting the focused input.
-   */
-  readonly focusBeforeUpgrade?: {
-    readonly input: string;
-    readonly host: string;
-  };
-}
-
-function buildDictResultsFixtureHtml(): string {
-  return renderDictPageHtml({
-    query: "amo",
-    queriedDicts: ["L&S", "SH"],
-    results: {
-      "L&S": [
-        {
-          entry: new XmlNode(
-            "div",
-            [["id", "ls-amo-root"]],
-            [
-              new XmlNode("b", [["class", "lsOrth"]], ["amo"]),
-              " ",
-              new XmlNode("span", [["class", "lsQuote"]], ["Gallia est omnis"]),
-              new XmlNode(
-                "div",
-                [["id", "ls-amo-s1"]],
-                [
-                  new XmlNode(
-                    "span",
-                    [
-                      ["class", "lsSenseBullet"],
-                      ["senseid", "ls-amo-s1"],
-                    ],
-                    ["I."]
-                  ),
-                  " To love",
-                ]
-              ),
-            ]
-          ),
-          outline: {
-            mainKey: "amo",
-            mainSection: {
-              text: "amo",
-              level: 0,
-              ordinal: "",
-              sectionId: "ls-amo-root",
-            },
-            senses: [
-              {
-                text: "To love",
-                level: 1,
-                ordinal: "I.",
-                sectionId: "ls-amo-s1",
-              },
-            ],
-          },
-          inflections: [
-            { form: "amas", lemma: "amo", data: "2nd sg. pres. ind. act." },
-          ],
-        },
-      ],
-      SH: [
-        {
-          entry: new XmlNode(
-            "div",
-            [["id", "sh-love-root"]],
-            [new XmlNode("b", [["class", "lsOrth"]], ["love"]), " amo"]
-          ),
-          outline: {
-            mainKey: "love",
-            mainSection: {
-              text: "love",
-              level: 0,
-              ordinal: "",
-              sectionId: "sh-love-root",
-            },
-            senses: [],
-          },
-        },
-      ],
-    },
-  });
-}
-
 describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
   const fixtures: SsrFixture[] = [];
 
   beforeAll(async () => {
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: (query: string) => ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        addListener: () => {},
-        removeListener: () => {},
-        dispatchEvent: () => false,
-      }),
-    });
-
-    const [libraryHtml, readerSallustHtml, readerCatullusHtml] =
-      await Promise.all([
-        renderLibraryPageHtml(),
-        renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1" }),
-        renderReaderContentHtml({ workId: "catullus", pageId: "5" }),
-      ]);
-    const corpusParams = {
-      q: "",
-      pageSize: PAGE_SIZE.default,
-      contextLen: CONTEXT_LEN.default,
-      strictMode: false,
-    };
-    const corpusEngine = fakeCorpusEngine(() =>
-      fakeResult({
-        resultStats: { estimatedResults: 200 },
-        nextPage: { resultId: 1, resultIndex: 50, candidateIndex: 0 },
-      })
-    );
-    const [corpusLanding, corpusResults] = await Promise.all([
-      runCorpusSearch(corpusParams, corpusEngine, CORPUS_TEST_AUTHORS),
-      runCorpusSearch(
-        { ...corpusParams, q: "@case:dat" },
-        corpusEngine,
-        CORPUS_TEST_AUTHORS
-      ),
-    ]);
-
-    fixtures.push(
-      {
-        name: "dict-landing",
-        html: renderDictPageHtml({ query: "" }),
-      },
-      {
-        name: "dict-results",
-        html: buildDictResultsFixtureHtml(),
-      },
-      {
-        name: "dict-greek",
-        html: renderDictPageHtml({ query: "λόγος" }),
-      },
-      {
-        name: "library",
-        html: libraryHtml,
-      },
-      {
-        name: "reader-sallust-translation",
-        html: readerSallustHtml,
-      },
-      {
-        name: "reader-catullus-macra",
-        html: readerCatullusHtml,
-      },
-      {
-        name: "external-landing",
-        html: renderExternalLandingContentHtml(),
-      },
-      {
-        name: "corpus-landing",
-        html: renderCorpusContentHtml(corpusLanding),
-      },
-      {
-        name: "corpus-results",
-        // With a commit id, as in production, so the autocomplete host has
-        // every attribute it can carry.
-        html: renderCorpusContentHtml(corpusResults, "test-commit"),
-      },
-      {
-        // Clicked into the search box before the bundle ran (DESIGN §7.3
-        // rule 2), so the suggestions open during `onConnect()`.
-        name: "corpus-focused-before-upgrade",
-        html: renderCorpusContentHtml(corpusLanding, "test-commit"),
-        focusBeforeUpgrade: {
-          input: "corpus-q",
-          host: "morcus-corpus-suggestions",
-        },
-      }
-    );
+    installMatchMediaStub();
+    fixtures.push(...(await buildSsrFixtures()));
   });
 
   beforeEach(() => {
@@ -307,85 +111,35 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
         // Parse inside an inert <template> so custom elements do not upgrade
         // until moved into `document.body`. Because we move the exact nodes,
         // object identity is preserved across upgrade.
-        const tpl = document.createElement("template");
-        tpl.innerHTML = fixture.html;
-
-        const rootWrapper = document.createElement("div");
-        while (tpl.content.firstChild) {
-          rootWrapper.appendChild(tpl.content.firstChild);
-        }
-
-        const ssrParentByElement = new Map<Element, Node>();
-        for (const el of Array.from(rootWrapper.querySelectorAll("*"))) {
-          ssrParentByElement.set(el, el.parentNode!);
-        }
-
-        const focus = fixture.focusBeforeUpgrade;
-        const held = focus
-          ? Array.from(rootWrapper.querySelectorAll(focus.host), (el) => ({
-              el,
-              parent: el.parentNode!,
-              next: el.nextSibling,
-            }))
-          : [];
-        for (const { el } of held) el.remove();
+        const rootWrapper = parseInert(fixture.html);
+        const ssrTree = snapshotTree(rootWrapper);
 
         // Attach to document.body -> triggers custom element upgrade & onConnect().
-        document.body.appendChild(rootWrapper);
+        mountFixture(fixture, rootWrapper);
 
-        if (focus) {
-          document.getElementById(focus.input)!.focus();
-          // In reverse, so each `next` is back in place before it's used.
-          for (const { el, parent, next } of held.reverse()) {
-            parent.insertBefore(el, next);
-          }
-        }
-
-        const removedSsrNodes: string[] = [];
-        const reparentedSsrNodes: string[] = [];
-
-        for (const [el, ssrParent] of ssrParentByElement) {
-          if (!rootWrapper.contains(el)) {
-            removedSsrNodes.push(`${fixture.name}: ${describeElement(el)}`);
-          } else if (el.parentNode !== ssrParent) {
-            const fromDesc =
-              ssrParent instanceof Element
-                ? describeElement(ssrParent)
-                : "#root";
-            const toDesc =
-              el.parentNode instanceof Element
-                ? describeElement(el.parentNode)
-                : "#root";
-            reparentedSsrNodes.push(
-              `${fixture.name}: ${describeElement(
-                el
-              )} moved from ${fromDesc} to ${toDesc}`
-            );
-          }
-        }
-
-        const unexpectedCreatedNodes: string[] = [];
-        for (const el of Array.from(rootWrapper.querySelectorAll("*"))) {
-          if (ssrParentByElement.has(el)) continue;
-          const isAllowlisted = CREATED_ON_UPGRADE_ALLOWLIST.some((sel) =>
-            el.matches(sel)
-          );
-          if (!isAllowlisted) {
-            const parentDesc =
-              el.parentElement && el.parentElement !== rootWrapper
-                ? describeElement(el.parentElement)
-                : "#root";
-            unexpectedCreatedNodes.push(
-              `${fixture.name}: ${describeElement(el)} inside ${parentDesc}`
-            );
-          }
-        }
-
+        const { removed, reparented, created } = diffTree(ssrTree, rootWrapper);
         expect({
           fixture: fixture.name,
-          removedSsrNodes,
-          reparentedSsrNodes,
-          unexpectedCreatedNodes,
+          removedSsrNodes: removed.map(
+            (el) => `${fixture.name}: ${describeElement(el)}`
+          ),
+          reparentedSsrNodes: reparented.map(
+            ({ el, from }) =>
+              `${fixture.name}: ${describeElement(
+                el
+              )} moved from ${describeParent(
+                from,
+                rootWrapper
+              )} to ${describeParent(el.parentNode, rootWrapper)}`
+          ),
+          unexpectedCreatedNodes: created
+            .filter((el) => !isAllowlistedCreation(el, "upgrade"))
+            .map(
+              (el) =>
+                `${fixture.name}: ${describeElement(
+                  el
+                )} inside ${describeParent(el.parentElement, rootWrapper)}`
+            ),
         }).toEqual({
           fixture: fixture.name,
           removedSsrNodes: [],
@@ -404,68 +158,11 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
         const tpl = document.createElement("template");
         tpl.innerHTML = fixture.html;
         const root = tpl.content;
-
-        const controls = Array.from(
-          root.querySelectorAll("button, input, select, textarea, a")
-        );
-
-        for (const ctrl of controls) {
-          // Controls hidden unconditionally, gated by `data-js-only`, or inside
-          // a closed <dialog> are not exposed to No-JS users.
-          if (
-            ctrl.closest("[data-js-only]") ||
-            ctrl.closest("[hidden]") ||
-            ctrl.closest("dialog")
-          ) {
-            continue;
-          }
-
-          const tag = ctrl.tagName.toLowerCase();
-          if (tag === "a") {
-            const href = ctrl.getAttribute("href")?.trim();
-            if (!href) {
-              violations.push(
-                `${fixture.name}: ${describeElement(
-                  ctrl
-                )} is an <a> without href outside [data-js-only]`
-              );
-            }
-            continue;
-          }
-
-          if (tag === "button") {
-            const type = (ctrl.getAttribute("type") ?? "submit").toLowerCase();
-            const form =
-              ctrl.closest("form") ??
-              (ctrl.getAttribute("form")
-                ? root.getElementById(ctrl.getAttribute("form")!)
-                : null);
-            if (type !== "submit" || !form) {
-              violations.push(
-                `${fixture.name}: ${describeElement(
-                  ctrl
-                )} (type="${type}") is visible without JS but does not submit a <form>`
-              );
-            }
-            continue;
-          }
-
-          // input, select, textarea
-          if (ctrl.hasAttribute("disabled")) continue;
-          const inputType = (ctrl.getAttribute("type") ?? "text").toLowerCase();
-          if (inputType === "hidden") continue;
-
-          const form =
-            ctrl.closest("form") ??
-            (ctrl.getAttribute("form")
-              ? root.getElementById(ctrl.getAttribute("form")!)
-              : null);
-          const name = ctrl.getAttribute("name")?.trim();
-          if (!form || !name) {
+        for (const ctrl of Array.from(root.querySelectorAll(NO_JS_CONTROLS))) {
+          const violation = noJsControlViolation(ctrl, root);
+          if (violation) {
             violations.push(
-              `${fixture.name}: ${describeElement(
-                ctrl
-              )} is a live form control outside a <form> or missing a name attribute in No-JS mode`
+              `${fixture.name}: ${describeElement(ctrl)} ${violation}`
             );
           }
         }
@@ -820,22 +517,6 @@ const ID_REF_ATTRS = [
   "for",
 ] as const;
 
-/** Parses `html` into a detached wrapper whose custom elements haven't upgraded. */
-function parseInert(html: string): HTMLDivElement {
-  const tpl = document.createElement("template");
-  tpl.innerHTML = html;
-  const wrapper = document.createElement("div");
-  wrapper.append(tpl.content);
-  return wrapper;
-}
-
-/** Every `morcus-*` element under `root`, in document order. */
-function morcusElements(root: Element): Element[] {
-  return Array.from(root.querySelectorAll("*")).filter((el) =>
-    el.localName.startsWith("morcus-")
-  );
-}
-
 /** Makes `el` (and only `el`) throw from `onConnect` when it upgrades. */
 function forceConnectFailure(el: Element): () => void {
   const ctor = customElements.get(el.localName);
@@ -851,14 +532,6 @@ function forceConnectFailure(el: Element): () => void {
     if (hadOwn) proto.onConnect = original;
     else delete (proto as Partial<typeof proto>).onConnect;
   };
-}
-
-/** The nearest `morcus-*` element enclosing `el` (itself included). */
-function nearestMorcus(el: Element): Element | null {
-  for (let cur: Element | null = el; cur; cur = cur.parentElement) {
-    if (cur.localName.startsWith("morcus-")) return cur;
-  }
-  return null;
 }
 
 /**
