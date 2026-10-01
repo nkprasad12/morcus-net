@@ -20,6 +20,11 @@ import {
   runCorpusSearch,
 } from "@/web/v2/corpus/corpus_query.server";
 import { renderCorpusPartialHtml } from "@/web/v2/corpus/corpus_view.server";
+import {
+  findReaderWork,
+  renderReaderPartialHtml,
+  renderReaderTranslationHtml,
+} from "@/web/v2/reader/reader.server";
 import { CORPUS_TEST_AUTHORS } from "@/web/v2/testing/fake_corpus_engine";
 import {
   DICT_AMO_QUERIED,
@@ -140,6 +145,34 @@ async function route(
       body: renderCorpusPartialHtml(view).toString(),
       isHtml: true,
     };
+  }
+  // As `reader_routes.server.ts` serves them.
+  const translation =
+    /^\/v2\/reader\/([^/]+)\/([^/]+)\/([^/]+)\/translation$/.exec(url.pathname);
+  if (translation) {
+    const [, author, name, page] = translation.map(decodeURIComponent);
+    const work = await findReaderWork(author, name);
+    const body = work ? renderReaderTranslationHtml(work, page) : null;
+    return body === null
+      ? { status: 404, body: "Translation not found" }
+      : { status: 200, body, isHtml: true };
+  }
+  const reader = /^\/v2\/reader\/([^/]+)\/([^/]+)(?:\/([^/]+))?$/.exec(
+    url.pathname
+  );
+  if (reader && isPartial(url, init)) {
+    const [, author, name, pageId] = reader.map((s) =>
+      s === undefined ? s : decodeURIComponent(s)
+    );
+    const work = await findReaderWork(author, name);
+    if (!work) return { status: 404, body: "" };
+    const body = await renderReaderPartialHtml({
+      work,
+      pageId,
+      query: q.get("q")?.trim() ?? "",
+      matchText: q.get("matchText")?.trim() ?? "",
+    });
+    return { status: 200, body, isHtml: true };
   }
   return undefined;
 }

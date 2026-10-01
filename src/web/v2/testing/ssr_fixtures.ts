@@ -170,13 +170,20 @@ export async function buildLibraryFixtures(): Promise<SsrFixture[]> {
 }
 
 export async function buildReaderFixtures(): Promise<SsrFixture[]> {
-  const [sallust, catullus] = await Promise.all([
+  const [sallust, catullus, caesar] = await Promise.all([
     renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1" }),
     renderReaderContentHtml({ workId: "catullus", pageId: "5" }),
+    // The last page of a multi-level work, so its previous-page link and
+    // nested TOC are live.
+    renderReaderContentHtml({
+      workId: "caesar_de_bello_gallico",
+      pageId: "1.2",
+    }),
   ]);
   return [
     { name: "reader-sallust-translation", html: sallust },
     { name: "reader-catullus-macra", html: catullus },
+    { name: "reader-caesar-last-page", html: caesar },
   ];
 }
 

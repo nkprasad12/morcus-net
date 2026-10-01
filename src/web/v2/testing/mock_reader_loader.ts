@@ -113,7 +113,10 @@ export const MOCK_SALLUST_WORK: V2PreprocessedWork = {
   paginationDepth: 1,
   navTree: {
     id: [],
-    children: [{ id: ["1"], children: [] }],
+    children: [
+      { id: ["1"], children: [] },
+      { id: ["2"], children: [] },
+    ],
   },
   pages: [
     {
@@ -135,6 +138,28 @@ export const MOCK_SALLUST_WORK: V2PreprocessedWork = {
         <div class="reader-translation-section" id="trans-sec-1.1">
           <div class="reader-translation-gutter"><span class="cite-local">1</span></div>
           <div class="reader-translation-text"><p class="reader-paragraph">It becomes all men, who desire to excel other animals...</p></div>
+        </div>
+      `,
+    },
+    {
+      id: "2",
+      title: "Caput II",
+      sectionCount: 1,
+      citationRange: ["2.1", "2.1"],
+      singleHtml: `
+        <div class="reader-section" id="sec-2.1">
+          <div class="reader-gutter">
+            <a href="#sec-2.1" class="section-anchor" title="Citation § 2.1">
+              <span class="cite-prefix">2.</span><span class="cite-local">1</span>
+            </a>
+          </div>
+          <div class="reader-passage" data-tokenize-target="true">Igitur initio reges, nam in terris nomen imperi id primum fuit...</div>
+        </div>
+      `,
+      translationHtml: `
+        <div class="reader-translation-section" id="trans-sec-2.1">
+          <div class="reader-translation-gutter"><span class="cite-local">1</span></div>
+          <div class="reader-translation-text"><p class="reader-paragraph">At first, kings, for that was the first title of sovereignty...</p></div>
         </div>
       `,
     },
