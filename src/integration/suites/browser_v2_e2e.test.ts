@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { gzipSync } from "zlib";
+import { disableSmoothScroll } from "@/integration/utils/playwright_utils";
 import {
   V2_BUNDLE_BUDGET,
   sumRouteSizes,
@@ -398,6 +399,9 @@ test.describe("UI V2 dictionary", () => {
     page,
   }) => {
     await page.goto("/v2/dicts?q=habeo");
+    // On small screens the TOC drawer covers the link, so Playwright re-scrolls
+    // before clicking; see `disableSmoothScroll` for why that flakes in Firefox.
+    await disableSmoothScroll(page);
     const wordLink = page.locator('.lat-word:has-text("habere")').first();
     await expect(wordLink).toBeVisible();
 

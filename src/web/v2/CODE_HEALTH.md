@@ -147,15 +147,16 @@ with `npm run inventory:update` in the same change.
       preventing fast-path Chromium-only updates from leaving Firefox and FirefoxSmallScreen
       baselines stale.
 
-- [ ] 🟡 **Fix the Firefox click-to-lookup flake.** `browser_v2_e2e.test.ts` _"click-to-lookup
-      progressively enhances Latin words and navigates on click (JS enabled)"_ fails ~20–40% of runs
-      on `firefox` / `FirefoxSmallScreen` (21/50 on `8f630e3b`, run with `--repeat-each=25
---retries=0`); `--retries` hides it in normal runs. The URL stays at `?q=habeo` instead of
-      `?q=habere`. The `.lat-word` is an `<a href>`, so a skipped handler would have navigated
-      natively and passed: the handler in `dict_search.client.ts` (results `click` listener) most
-      likely calls `preventDefault()` and then `chooseSuggestion` never updates the URL. Suspects:
-      a supersession lane cancelling the lookup, or the click landing before `enhanceWords`
-      finishes. Not caused by the activation gate (same rate with and without it).
+- [x] 🟡 **Fix the Firefox click-to-lookup flake.** `browser_v2_e2e.test.ts` _"click-to-lookup
+      progressively enhances Latin words and navigates on click (JS enabled)"_ failed 11/15 on
+      `FirefoxSmallScreen` (0/15 on desktop `firefox`) with `--retries=0`; the URL stayed at
+      `?q=habeo`. Not a handler bug: the handler never ran. On the small viewport the TOC drawer
+      covers the first `habere` link, so Playwright's hit-target check fails and it re-scrolls, and
+      Firefox animates those scrolls under `html { scroll-behavior: smooth }` (`app_bar.css`). The
+      page moved ~18px between `mousedown` (on `habere`) and `mouseup` (on `ipsum`), so the `click`
+      went to their common ancestor `span.lsQuote`. Fixed in the test with `disableSmoothScroll`
+      (`src/integration/utils/playwright_utils.ts`); `reducedMotion: "reduce"` was rejected as too
+      broad, since it also flips every other `prefers-reduced-motion` path.
 
 **Cover the untested logic.** Well-tested today: SSR renderers, router routes, bitmask/clustering,
 dialog markup. Gaps:
