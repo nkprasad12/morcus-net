@@ -285,7 +285,7 @@ runs (§7.2). A + D has fewer moving parts than B (no shell attribute, no per-en
 - The activation gate ("The activation gate" in [README.md](README.md)): `LifetimeScope.listen()`
   applies D to every `click`, `submit` and activating `keydown` listener, not just
   `anchor_scroll`'s. `activation_gate.test.ts` covers the gate itself;
-  `ssr_conformance.test.ts` section 4 fails each component in the SSR fixtures in turn and checks
+  the SSR conformance harness (`testing/ssr_conformance_harness.ts`) section 4 fails each component in the SSR fixtures in turn and checks
   that nothing cancels an activation in it or pointing into it.
 
 ### When is D's check actually false?

@@ -110,10 +110,12 @@ npx jest src/web/v2/core/dialog.test.ts
 
 ### SSR conformance harnesses
 
-Two jsdom suites check real SSR output (`testing/ssr_fixtures.ts`) against the PE invariants. Neither ships code to the client.
+Two jsdom harnesses check real SSR output (`testing/ssr_fixtures.ts`) against the PE invariants. Each feature (`dict/`, `corpus/`, `reader/`, `library/`, `external/`) runs both from its own test files, next to its components. Neither ships code to the client.
 
-- [`core/ssr_conformance.test.ts`](core/ssr_conformance.test.ts) checks the page **right after upgrade**: tree fingerprint, No-JS controls, ids and hash links, and the failed-owner sweep.
+- `*_ssr_conformance.test.ts`, using [`testing/ssr_conformance_harness.ts`](testing/ssr_conformance_harness.ts), checks the page **right after upgrade**: tree fingerprint, No-JS controls, ids and hash links, and the failed-owner sweep. Each file sets floors for the sweep, so it can't pass vacuously. Checks that need every page at once (every registered element appears in some fixture, and the page setups match the entry files) stay in [`core/ssr_conformance.test.ts`](core/ssr_conformance.test.ts).
 - `*_interaction_conformance.test.ts`, one next to each feature (`dict/`, `corpus/`, `reader/`, `library/`, `external/`), checks it again **after interaction**, using [`testing/interaction_harness.ts`](testing/interaction_harness.ts). Each file lists its fixtures, caps and scenarios. The Tier 1 sweep exercises every deduplicated control in the feature's fixtures with a fixed script (focus/type/arrow/Escape/blur, clicks, option and step changes) against a fake network backed by the real server renderers (`testing/fake_v2_network.ts`), and checks the invariants after each step. Each target also runs torn down mid-script, to catch late writes to detached nodes. Tier 2 (the file's `scenarios`) declares multi-step flows a single control can't reach, such as picking a suggestion, submitting, or paging. They run in the same three modes, and each must end in a partial swap. When a feature adds a new flow, add a scenario to its file. A new page type gets a fixture builder in `testing/ssr_fixtures.ts` and its own suite.
+
+`*_form_conformance.test.ts` (`dict/`, `corpus/`, `external/`) cover the No-JS forms end to end: render the SSR form into jsdom, change its controls, serialize it with `new FormData(form)`, and send it to the router through supertest (helpers in [`testing/form_roundtrip.ts`](testing/form_roundtrip.ts)).
 
 Shared lists, each in its own file and all of which **need human review to extend**:
 

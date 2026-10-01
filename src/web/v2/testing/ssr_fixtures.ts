@@ -3,7 +3,7 @@
  * production `.server.ts` renderers.
  *
  * Test files that import this must also mock `shell/asset_manifest.server`
- * and `reader/reader_loader.server`, as `core/ssr_conformance.test.ts` does.
+ * and `reader/reader_loader.server`, as the `*_ssr_conformance.test.ts` files do.
  * Each feature has its own builder, so a feature's suite builds only its
  * own pages; `buildSsrFixtures()` builds them all, in a fixed order.
  */
