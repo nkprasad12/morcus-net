@@ -8,45 +8,37 @@ import type { CompletionItem } from "@/web/v2/dict/dict_completions.common";
 /**
  * Lightweight native Web Component for rendering dictionary autocomplete suggestions.
  * Owns `ComboboxController` for input ARIA, keyboard navigation, and selection.
+ *
+ * Adopts the server-rendered listbox (its first child) and the input named by
+ * `data-input` (see `renderDictSearchBar`). Without `data-input` it still
+ * renders and handles clicks, with no input to make a combobox.
  */
 export class MorcusDictSuggestions extends BaseElement {
-  private _listEl: HTMLUListElement | null = null;
+  private listbox: HTMLUListElement | null = null;
   private combobox: ComboboxController<CompletionItem> | null = null;
 
-  public get listEl(): HTMLUListElement {
-    if (!this._listEl) {
-      const first = this.firstElementChild;
-      if (first instanceof HTMLUListElement) {
-        this._listEl = first;
-      } else {
-        this._listEl = document.createElement("ul");
-        this._listEl.className = "suggestions";
-        this._listEl.id = "dict-suggestions-list";
-        this._listEl.setAttribute("role", "listbox");
-      }
-    }
-    return this._listEl;
-  }
-
   protected override onConnect() {
-    const list = this.listEl;
-    if (!this.contains(list)) {
-      this.appendChild(list);
+    const listbox = this.firstElementChild;
+    if (!(listbox instanceof HTMLUListElement)) {
+      throw new Error("<morcus-dict-suggestions> needs its listbox");
     }
+    this.listbox = listbox;
 
     if (!this.combobox) {
       this.combobox = new ComboboxController<CompletionItem>({
         root: this,
-        getInput: () =>
-          this.parentElement?.querySelector<HTMLInputElement>("input") ?? null,
-        getListbox: () => this.listEl,
+        getInput: () => {
+          const input = this.ownerDocument.getElementById(
+            this.dataset.input ?? ""
+          );
+          return input instanceof HTMLInputElement ? input : null;
+        },
+        getListbox: () => this.listbox,
         acceptOnTab: false,
+        onVisibilityChange: (open) => {
+          this.style.display = open ? "" : "none";
+        },
         renderItems: (items, box) => {
-          this.style.display = items.length > 0 ? "" : "none";
-          if (items.length === 0) {
-            box.replaceChildren();
-            return;
-          }
           const fragment = document.createDocumentFragment();
           for (const item of items) {
             const li = document.createElement("li");
@@ -75,12 +67,16 @@ export class MorcusDictSuggestions extends BaseElement {
     }
   }
 
+  protected override onDisconnect() {
+    this.listbox = null;
+  }
+
   get items(): readonly CompletionItem[] {
     return this.combobox?.items ?? [];
   }
 
   set items(val: readonly CompletionItem[]) {
-    this.combobox?.setItems(Array.isArray(val) ? val : []);
+    this.combobox?.setItems(val);
   }
 }
 

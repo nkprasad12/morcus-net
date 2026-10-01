@@ -74,7 +74,7 @@ function describeTarget(target: EventTarget): string {
 const FIXTURES: Record<string, string> = {
   "morcus-theme-toggle": renderAppBar("dicts"),
 
-  "morcus-dict-suggestions": `<morcus-dict-suggestions></morcus-dict-suggestions>`,
+  "morcus-dict-suggestions": `<morcus-dict-suggestions><ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul></morcus-dict-suggestions>`,
 
   "morcus-dict-settings": renderDictSearchBar({
     action: "/v2/dicts",
@@ -93,8 +93,8 @@ const FIXTURES: Record<string, string> = {
     <morcus-dict-search>
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
-          <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only>
+          <input type="text" name="q" id="dict-q" class="input" value="habeo" />
+          <morcus-dict-suggestions data-js-only data-input="dict-q">
             <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
           </morcus-dict-suggestions>
         </div>

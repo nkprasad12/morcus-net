@@ -30,8 +30,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     el.innerHTML = `
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
-          <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only>
+          <input type="text" name="q" id="dict-q" class="input" value="habeo" />
+          <morcus-dict-suggestions data-js-only data-input="dict-q">
             <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
           </morcus-dict-suggestions>
         </div>
@@ -626,8 +626,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     el.innerHTML = `
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
-          <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only>
+          <input type="text" name="q" id="dict-q" class="input" value="habeo" />
+          <morcus-dict-suggestions data-js-only data-input="dict-q">
             <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
           </morcus-dict-suggestions>
         </div>
@@ -662,8 +662,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     el.innerHTML = `
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
-          <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only>
+          <input type="text" name="q" id="dict-q" class="input" value="habeo" />
+          <morcus-dict-suggestions data-js-only data-input="dict-q">
             <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
           </morcus-dict-suggestions>
         </div>
@@ -700,8 +700,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     el.innerHTML = `
       <form class="search-form" action="/v2/dicts" method="GET">
         <div class="input-wrapper">
-          <input type="text" name="q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only>
+          <input type="text" name="q" id="dict-q" class="input" value="habeo" />
+          <morcus-dict-suggestions data-js-only data-input="dict-q">
             <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
           </morcus-dict-suggestions>
         </div>

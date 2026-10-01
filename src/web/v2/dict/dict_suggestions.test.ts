@@ -12,6 +12,11 @@ describe("MorcusDictSuggestions Web Component", () => {
     el = document.createElement(
       "morcus-dict-suggestions"
     ) as MorcusDictSuggestions;
+    // The server-rendered listbox (see `renderDictSearchBar`).
+    const list = document.createElement("ul");
+    list.id = "dict-suggestions-list";
+    list.setAttribute("role", "listbox");
+    el.appendChild(list);
     document.body.appendChild(el);
   });
 
@@ -53,7 +58,7 @@ describe("MorcusDictSuggestions Web Component", () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  test("preserves event delegation across DOM disconnect and reconnect", () => {
+  test("a DOM move closes the list, and selection works once repopulated", () => {
     el.items = [{ word: "habeo", lang: "La" }];
     const onSelect = jest.fn();
     el.addEventListener("suggestion-select", onSelect);
@@ -61,6 +66,9 @@ describe("MorcusDictSuggestions Web Component", () => {
     // Disconnect and reconnect element (e.g. DOM move or re-parenting)
     el.remove();
     document.body.appendChild(el);
+    expect(el.items).toEqual([]);
+    expect(el.querySelector("ul")?.hidden).toBe(true);
+
     el.items = [{ word: "habeo", lang: "La" }];
 
     const item = el.querySelector<HTMLLIElement>(".suggestion-item");

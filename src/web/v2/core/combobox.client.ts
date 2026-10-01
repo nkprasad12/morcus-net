@@ -221,7 +221,9 @@ export class ComboboxController<T = unknown> extends BaseController {
       if (!child.getAttribute("role")) {
         child.setAttribute("role", "option");
       }
-      if (this._items[i] && !this.isSelectable(i)) {
+      if (this.isSelectable(i)) {
+        child.removeAttribute("aria-disabled");
+      } else {
         child.setAttribute("aria-disabled", "true");
       }
       const isActive = i === this._activeIndex;
