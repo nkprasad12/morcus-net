@@ -190,7 +190,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     new WakeLockController({ root: this })
   );
   private currentNoteId: string = "";
-  private currentNoteLabel: string = "";
   private router: QueryParamSync | null = null;
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
   private readonly translationCache = new Map<string, string>();
@@ -222,10 +221,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   public getActiveNoteId(): string {
     return this.currentNoteId;
-  }
-
-  public getActiveNoteLabel(): string {
-    return this.currentNoteLabel;
   }
 
   protected override onConnect() {
@@ -721,46 +716,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.renderSheetTeaser(["Definitions for ", strong], showExpandHint);
   }
 
-  private setSheetNoteLabel(
-    label: string,
-    showExpandHint: boolean = false
-  ): void {
-    const strong = document.createElement("strong");
-    strong.textContent = `Note ${label}`;
-    this.renderSheetTeaser([strong], showExpandHint);
-  }
-
-  private setSheetNotesListLabel(showExpandHint: boolean = false): void {
-    const count = this.panelController?.noteCount ?? 0;
-    const strong = document.createElement("strong");
-    strong.textContent = `Notes (${count})`;
-    this.renderSheetTeaser([strong], showExpandHint);
-  }
-
-  private setSheetTranslationLabel(showExpandHint: boolean = false): void {
-    const strong = document.createElement("strong");
-    strong.textContent = "Translation";
-    this.renderSheetTeaser([strong], showExpandHint);
-  }
-
-  private setSheetAboutLabel(showExpandHint: boolean = false): void {
-    const strong = document.createElement("strong");
-    strong.textContent = "About this text";
-    this.renderSheetTeaser([strong], showExpandHint);
-  }
-
+  /**
+   * Only the dictionary needs a label: with any companion tab (Notes,
+   * Translation, About) the panel has `.has-companion-tabs`, which hides the
+   * label at every width (reader_panel.css), and the tab chips stand in for
+   * it. Every library work has an About tab, so in practice this label shows
+   * only in the External Reader.
+   */
   private updateSheetLabel(showExpandHint: boolean = false): void {
-    if (this.panelController?.activeTab === "notes") {
-      if (this.currentNoteLabel) {
-        this.setSheetNoteLabel(this.currentNoteLabel, showExpandHint);
-      } else {
-        this.setSheetNotesListLabel(showExpandHint);
-      }
-    } else if (this.panelController?.activeTab === "translation") {
-      this.setSheetTranslationLabel(showExpandHint);
-    } else if (this.panelController?.activeTab === "about") {
-      this.setSheetAboutLabel(showExpandHint);
-    } else if (this.currentQuery) {
+    if (this.panelController?.activeTab === "dict" && this.currentQuery) {
       this.setSheetLabel(this.currentQuery, showExpandHint);
     }
   }
@@ -812,8 +776,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     opts: { focus?: boolean } = {}
   ): void {
     this.currentNoteId = bodyId;
-    const label = markerEl.textContent?.replace(/[[\]]/g, "").trim() || "";
-    this.currentNoteLabel = label;
 
     // Clear active word highlight if any
     this.setActiveWord(null);
@@ -826,11 +788,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     // Ensure layout is active
     this.activatePanelLayout();
-
-    // Update mobile teaser label if on notes tab
-    if (this.panelController?.activeTab === "notes") {
-      this.setSheetNoteLabel(label);
-    }
 
     // Mobile scroll guard: Ensure tapped marker in passage is not occluded by the newly opened/restored drawer
     this.scrollTargetAboveDrawer(markerEl);
@@ -873,7 +830,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private dismissDictionary(updateHistory: boolean = true) {
     this.currentQuery = "";
     this.currentNoteId = "";
-    this.currentNoteLabel = "";
 
     // Remove active highlights
     this.setActiveWord(null);
@@ -926,7 +882,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // Arbitration Rule A1: Force switch to Dictionary tab if Notes tab was open
     this.setActiveMarker(null);
     this.currentNoteId = "";
-    this.currentNoteLabel = "";
     this.panelController?.setTab("dict");
 
     // Update active highlight in the text
