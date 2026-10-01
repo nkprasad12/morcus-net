@@ -108,6 +108,20 @@ npx jest src/web/v2/dict/dict.test.ts
 npx jest src/web/v2/core/dialog.test.ts
 ```
 
+### SSR conformance harnesses
+
+Two jsdom suites check real SSR output (`testing/ssr_fixtures.ts`) against the PE invariants. Neither ships code to the client.
+
+- [`core/ssr_conformance.test.ts`](core/ssr_conformance.test.ts) checks the page **right after upgrade**: tree fingerprint, No-JS controls, ids and hash links, and the failed-owner sweep.
+- [`core/interaction_conformance.test.ts`](core/interaction_conformance.test.ts) checks it again **after interaction**. Its Tier 1 sweep exercises every deduplicated control in every fixture with a fixed script (focus/type/arrow/Escape/blur, clicks, option and step changes) against a fake network backed by the real server renderers (`testing/fake_v2_network.ts`), and checks the invariants after each step. Each target also runs torn down mid-script, to catch late writes to detached nodes.
+
+Shared lists in [`testing/ssr_invariants.ts`](testing/ssr_invariants.ts), all of which **need human review to extend**:
+
+- `CREATED_DOM_ALLOWLIST`: the only elements client code may create, each with a phase (`upgrade` or `interaction` only), an optional `subtree`, and a `reason`. Prefer server-rendering the element and adopting it.
+- `ISOMORPHIC_RERENDERS`: SSR UI the client re-renders after an interaction with the same `.common.ts` renderer the server used.
+
+The Tier 1 sweep is capped by count (`TIER1_MAX_RUNS_PER_FIXTURE`, `TIER1_MAX_RUNS_TOTAL`, with a floor `TIER1_MIN_RUNS_TOTAL`), checked before any run starts. If a fixture goes over, the failure lists its controls grouped by dedup key. Tighten the key (`targetKey`) before raising a cap; a raise or a `TIER1_CAP_OVERRIDES` entry needs human review.
+
 ---
 
 ## 4. Verification Checklists for Agents
