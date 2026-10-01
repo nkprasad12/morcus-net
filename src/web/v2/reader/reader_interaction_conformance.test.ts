@@ -5,7 +5,10 @@
  * @jest-environment jsdom
  */
 
-import { describeInteractionConformance } from "@/web/v2/testing/interaction_harness";
+import {
+  clickOn,
+  describeInteractionConformance,
+} from "@/web/v2/testing/interaction_harness";
 import { buildReaderFixtures } from "@/web/v2/testing/ssr_fixtures";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
@@ -22,4 +25,35 @@ describeInteractionConformance("reader", {
   fixtures: buildReaderFixtures,
   // 6 targets when this landed.
   caps: { minRuns: 4 },
+  // Page turns: `swapSlots` on `/v2/reader/...`, plus the translation fetch
+  // when the Translation tab is open.
+  scenarios: [
+    {
+      fixture: "reader-sallust-translation",
+      name: "next page from the sticky bar",
+      steps: [clickOn("#pager-next")],
+      expectSwap: true,
+    },
+    {
+      fixture: "reader-sallust-translation",
+      name: "next page from the continuation card",
+      steps: [clickOn(".reader-continuation-actions a.next-card")],
+      expectSwap: true,
+    },
+    {
+      fixture: "reader-caesar-last-page",
+      name: "previous page from the sticky bar",
+      steps: [clickOn("#pager-prev")],
+      expectSwap: true,
+    },
+    {
+      fixture: "reader-caesar-last-page",
+      name: "jump to a page from the TOC",
+      steps: [
+        clickOn("#reader-toc-btn"),
+        clickOn('.reader-toc-item[data-page-id="1.1"]'),
+      ],
+      expectSwap: true,
+    },
+  ],
 });
