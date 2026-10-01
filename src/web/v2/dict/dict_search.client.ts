@@ -28,6 +28,10 @@ import {
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/dict_bitmask.common";
 import {
+  applyDictSearch,
+  buildDictUrl,
+} from "@/web/v2/dict/dict_params.common";
+import {
   parseInflectionParam,
   resolveDictParams,
 } from "@/web/v2/dict/dict_selection.common";
@@ -510,11 +514,11 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     if (url.pathname.startsWith("/v2/dicts/id/")) {
       url.pathname = "/v2/dicts";
     }
-    url.searchParams.set("q", cleanQuery);
-    url.searchParams.set("d", this.activeDictBitmask);
-    url.searchParams.set("o", this.isInflected ? "1" : "0");
-    url.searchParams.delete("dict");
-    url.searchParams.delete("in");
+    applyDictSearch(url.searchParams, {
+      q: cleanQuery,
+      d: this.activeDictBitmask,
+      inflected: this.isInflected,
+    });
 
     const newSearchPath = url.pathname + url.search;
     // Pushes our own search URL, then fetches the results
@@ -585,20 +589,13 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
   private buildWordHref(cleanWord: string): string {
     const searchParams = new URLSearchParams(window.location.search);
-    const params = new URLSearchParams();
-    params.set("q", cleanWord);
-    params.set("d", this.activeDictBitmask);
-    params.set("o", this.isInflected ? "1" : "0");
-
-    const langParam = searchParams.get("lang");
-    if (langParam) {
-      params.set("lang", langParam);
-    }
-    const embeddedParam = searchParams.get("embedded");
-    if (embeddedParam) {
-      params.set("embedded", embeddedParam);
-    }
-    return `/v2/dicts?${params.toString()}`;
+    return buildDictUrl({
+      q: cleanWord,
+      d: this.activeDictBitmask,
+      inflected: this.isInflected,
+      lang: searchParams.get("lang"),
+      embedded: searchParams.get("embedded"),
+    });
   }
 }
 
