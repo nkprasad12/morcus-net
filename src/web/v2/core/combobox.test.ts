@@ -439,25 +439,42 @@ describe("ComboboxController", () => {
   });
 
   test("failed-owner: when host marks failed, native submit is never cancelled", () => {
-    mount();
-    // Simulate host failure
-    host.setAttribute("data-js-failed", "");
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      mount();
+      // Simulate host failure
+      host.setAttribute("data-js-failed", "");
 
-    const submitEvent = new Event("submit", {
-      bubbles: true,
-      cancelable: true,
-    });
-    input.form!.dispatchEvent(submitEvent);
+      const submitEvent = new Event("submit", {
+        bubbles: true,
+        cancelable: true,
+      });
+      input.form!.dispatchEvent(submitEvent);
 
-    expect(submitEvent.defaultPrevented).toBe(false);
+      expect(submitEvent.defaultPrevented).toBe(false);
 
-    const enterEvent = new KeyboardEvent("keydown", {
-      key: "Enter",
-      bubbles: true,
-      cancelable: true,
-    });
-    input.dispatchEvent(enterEvent);
+      const enterEvent = new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      });
+      input.dispatchEvent(enterEvent);
 
-    expect(enterEvent.defaultPrevented).toBe(false);
+      expect(enterEvent.defaultPrevented).toBe(false);
+
+      expect(warnSpy).toHaveBeenCalledTimes(2);
+      expect(warnSpy).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining("[UI V2] Listener skipped"),
+        expect.anything()
+      );
+      expect(warnSpy).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining("[UI V2] Listener skipped"),
+        expect.anything()
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });

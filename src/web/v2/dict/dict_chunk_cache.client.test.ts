@@ -103,26 +103,46 @@ describe("DictChunkCache", () => {
   });
 
   test("handles fetch failure gracefully without leaving in-flight state", async () => {
-    const fetchMock = jest.fn().mockRejectedValue(new Error("Network failure"));
-    global.fetch = fetchMock;
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const fetchMock = jest
+        .fn()
+        .mockRejectedValue(new Error("Network failure"));
+      global.fetch = fetchMock;
 
-    const res = await cache.loadPrefix("err");
-    expect(res).toEqual({});
-    expect(cache.inFlightCount).toBe(0);
-    expect(cache.hasPrefix("err")).toBe(false);
+      const res = await cache.loadPrefix("err");
+      expect(res).toEqual({});
+      expect(cache.inFlightCount).toBe(0);
+      expect(cache.hasPrefix("err")).toBe(false);
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Error fetching completions chunk for "err":',
+        expect.any(Error)
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   test("handles non-ok HTTP responses gracefully", async () => {
-    const fetchMock = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-    } as Response);
-    global.fetch = fetchMock;
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+      } as Response);
+      global.fetch = fetchMock;
 
-    const res = await cache.loadPrefix("bad");
-    expect(res).toEqual({});
-    expect(cache.inFlightCount).toBe(0);
-    expect(cache.hasPrefix("bad")).toBe(false);
+      const res = await cache.loadPrefix("bad");
+      expect(res).toEqual({});
+      expect(cache.inFlightCount).toBe(0);
+      expect(cache.hasPrefix("bad")).toBe(false);
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Error fetching completions chunk for "bad":',
+        expect.any(Error)
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   test("clear resets memory cache and in-flight tracking", () => {

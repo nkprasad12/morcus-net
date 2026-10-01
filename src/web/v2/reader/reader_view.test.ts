@@ -2232,9 +2232,15 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       bubbles: true,
       cancelable: true,
     });
+    let unprevented = false;
+    const onWindowClick = (e: MouseEvent) => {
+      unprevented = !e.defaultPrevented;
+      e.preventDefault();
+    };
+    window.addEventListener("click", onWindowClick, { once: true });
     libraryLink.dispatchEvent(evt);
 
-    expect(evt.defaultPrevented).toBe(false);
+    expect(unprevented).toBe(true);
     expect(window.fetch).not.toHaveBeenCalled();
   });
 
@@ -2248,9 +2254,15 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       cancelable: true,
       ctrlKey: true,
     });
+    let unprevented = false;
+    const onWindowClick = (e: MouseEvent) => {
+      unprevented = !e.defaultPrevented;
+      e.preventDefault();
+    };
+    window.addEventListener("click", onWindowClick, { once: true });
     pagerNext.dispatchEvent(evt);
 
-    expect(evt.defaultPrevented).toBe(false);
+    expect(unprevented).toBe(true);
     expect(window.fetch).not.toHaveBeenCalled();
   });
 
