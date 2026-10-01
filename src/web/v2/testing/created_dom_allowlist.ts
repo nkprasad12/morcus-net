@@ -52,6 +52,14 @@ export const CREATED_DOM_ALLOWLIST: readonly CreatedDomRule[] = [
       "Options of the server-rendered dict listbox, built from the typed prefix " +
       "(`ComboboxController.renderItems`), as for the corpus listbox above.",
   },
+  {
+    selector: "#panel-view-translation > .reader-translation-loading",
+    subtree: true,
+    from: "interaction",
+    reason:
+      "Transient loading state while the JS-only Translation tab fetches its " +
+      "text (`ReaderPanelController.setTab`); replaced by the served translation.",
+  },
 ];
 
 export function isAllowlistedCreation(
