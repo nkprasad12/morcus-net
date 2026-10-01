@@ -1,5 +1,9 @@
 # Dictionary Preferences
 
+> **Archived.** Kept for context only; do not treat it as current guidance or a to-do list.
+> Living doc: [PREFERENCES.md](../PREFERENCES.md). Open work: [dict/TODOS.md §9](../../dict/TODOS.md#9-finish-the-preferences-model).
+> Commit SHAs, phase numbers, and relative links in this file refer to `lit-prototype` history and may not resolve.
+
 How dictionary-affecting preferences are stored and resolved today, the defects
 that follow from it, and the model we are migrating towards.
 

@@ -1,23 +1,6 @@
 # Corpus (UI V2) TODOs
 
-The V2 UI does not have a corpus search surface yet. This file tracks corpus issues found while building V2 features that consume corpus output (e.g. reader `matchText` highlighting).
-
-## Word tokens split at inline markup
-
-**Status:** ✅ Resolved (no longer blocks the V2 corpus ship, [DESIGN.md §12](DESIGN.md#12-phases)), together with the reader-side follow-up [below](#reader-word-boundaries-at-inline-markup). Found while building reader `matchText` highlighting.
-
-**Symptom (before the fix).** The corpus indexer broke a word into separate tokens wherever inline markup fell inside it. In those rows:
-
-- Searching for the whole word (e.g. `epistula`) did not find it, because the corpus only had the pieces.
-- The word offsets in corpus results (which become `matchText=id~start~end`) disagreed with what the V2 reader counts. Every highlight after the split word landed on the wrong words.
-
-**Cause.** [`extractRowText`](../../../common/library/corpus/corpus_library_utils.ts) joined a node's children with `" "`. For `epist<…>u</…>la` it produced `epist u la`, which `processTokens` indexed as three words. The V2 preprocessor (`v2_preprocessor.ts`) drops styling-free wrapper elements and renders `epistula`, which the reader tokenizes as one word.
-
-**Fix.** `extractRowText` now follows the [word-boundary rule](#word-boundary-rule) below: it concatenates siblings directly and relies on the source text's own whitespace, adding breaks only at structure and between adjacent tags. Whitespace is then normalized once per row. Unit tests, and a regression test that renders fixtures through the real V2 preprocessor and client tokenizer, are in `corpus_library_utils.test.ts`.
-
-**Result** (library-wide comparison of per-row corpus word offsets against V2-rendered, client-tokenized words, ignoring case): rows that disagree went from **1,243 to 161** of 146,951 with the indexer fix (before it, Pliny _Nat. Hist._ alone accounted for 858), then to **92** with reader fix 2 and **0** with reader fix 1 ([below](#reader-word-boundaries-at-inline-markup)).
-
-- V1's reader splits words at markup the same way the old corpus did, so its highlights drift in these rows now. That is accepted: V1 is frozen and will be replaced by V2.
+Open corpus work. See [`README.md`](README.md) for how the slice is built.
 
 ## Word-boundary rule
 
@@ -36,6 +19,27 @@ Editorial tags (`<add>`, `<corr>`, `<hi>`, …) wrap whatever stretch of text th
 | :---------------------------- | :---- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Tag meets tag (rule 2: split) | 143   | 125 correct, 17 are manuscript sigla (`R²E²v`) in Pliny's main text where it doesn't matter, 1 hyphenation miss (now rule 3)                                                                                   |
 | Tag meets text (rule 1: join) | 9,518 | All correct except ≈10, which are missing spaces in the source TEI ([below](#source-typos-missing-space-after-a-tag)). Includes 90 numeral + `vir` forms (`<num>x</num>viros`, _decemviros_), correctly joined |
+
+**Where the rule is implemented.** Library-wide, no row's corpus word offsets disagree with the
+V2 reader's word count (0 of 146,951 rows). Keep these three in step:
+
+- **Indexer:** [`extractRowText`](../../../common/library/corpus/corpus_library_utils.ts)
+  concatenates siblings directly, relying on the source's own whitespace, and adds breaks only at
+  structure and between adjacent tags (rules 2–4). Regression tests in
+  `corpus_library_utils.test.ts` render fixtures through the real V2 preprocessor and client
+  tokenizer.
+- **Preprocessor** (`v2_preprocessor.ts`): emits a space between two adjacent inline sibling
+  elements that both carry text, unless the first ends in `-` or the source already has whitespace
+  there (rules 2–3). Note, gap, `br`, `space` and line/block/heading/list elements get no space, so
+  note markers stay flush.
+- **Reader tokenizer:** the opt-in `joinAcrossInline` option in `core/tokenize.client.ts`, enabled
+  only by the reader, tokenizes across inline styling elements (rule 1). A word that crosses an
+  element becomes several `lat-word` parts sharing `data-word`, one word index and a
+  `data-word-group`; only the first part is focusable (`role="button"`, `aria-label` of the whole
+  word) and later parts are `aria-hidden`. The dictionary keeps per-text-node tokenizing.
+
+V1's reader still splits words at markup, so its highlights drift in these rows. That is accepted:
+V1 is frozen.
 
 ## Source typos: missing space after a tag
 
@@ -58,22 +62,13 @@ Editorial tags (`<add>`, `<corr>`, `<hi>`, …) wrap whatever stretch of text th
 
 **How to find more.** List every seam where a tag meets text and the characters on both sides are word characters (not `isTextBreakChar`, not whitespace). Keep the ones where Morceus (`MorceusCruncher`) recognizes both split pieces but not the joined form. Drop numeral + `vir` forms and Pliny's Greek names and plant names (the analyzer doesn't know them). This gave 189 candidates, and the rows above are what survived reading them.
 
-## Reader word boundaries at inline markup
-
-**Status:** ✅ Resolved. The 161 rows left over by the indexer fix were places where the **V2 reader** broke the [word-boundary rule](#word-boundary-rule) in two opposite ways, so `matchText` highlights in them could land a word or two off. With both fixes below, no row in the library disagrees (0 of 146,951). The rows in [Source typos](#source-typos-missing-space-after-a-tag) no longer show up as mismatches because the corpus and reader now join them the same (wrong) way.
-
-1. **The reader split at tag-meets-text seams (broke rule 1).** Cicero `phi0474.phi043` `<hi>im</hi>petu`, Pliny `i<hi>am</hi>`, enclitics `<hi>vallem</hi>que`, and Pliny's partly overlined numerals (`‾DC‾VII`, `CC‾XLVIII‾`, `|‾XIII‾|`, each one number): `tokenizeSubtree` tokenized each text node separately. **Fix:** an opt-in `joinAcrossInline` option in `core/tokenize.client.ts`, enabled only by the reader (`enhancePassage`; the dictionary keeps per-text-node tokenizing). It tokenizes runs of text across inline styling elements (`italic`, `bold`, `overline`, `smallcaps`, `uppercase`, `superscript` spans, `<strong>`) and breaks at any other element or rejected subtree (note links, `.reader-gap`). A word that crosses an element becomes several `lat-word` parts with the whole word in `data-word`, the same word index (so `.reader-match` marks every part), and a shared `data-word-group`. Only the first part is a `role="button"` with `tabindex` and an `aria-label` of the whole word; later parts are `aria-hidden`. Clicking any part looks up the whole word, and `word-active` and hover (`syncWordGroupHover`, `.word-hover`) style the whole group. Keyboard focus rings still outline only the first part.
-2. **The reader joined at tag-meets-tag seams (broke rules 2–3).** `renderXmlNodeCleanHtml` dropped unstyled wrappers and pasted their contents together, so Livy `</choice><choice>` rendered `tumCocles` and Pliny `<add>endi</add><add>fingendi</add>` rendered `pingendifingendique`; italic pairs displayed run together (_sehabere_). **Fix:** the preprocessor emits a space between two adjacent inline sibling elements that both carry text, unless the first ends in `-` or the source already has whitespace there. Note, gap, `br`, `space` and line/block/heading/list elements get no space, so `word[1]` markers stay flush. Visual suite: no pixel diffs.
-
-**Verification script.** A throwaway script (all library works rendered through `preprocessWorkToV2`, tokenized with `tokenizeSubtree` and `joinAcrossInline` under JSDOM, compared with `processTokens(extractRowText(row))`) produced the numbers above. The regression tests in `corpus_library_utils.test.ts` check the same property on fixtures for every rule.
-
 ## Heading rows cannot be highlighted
 
 Non-leaf rows (e.g. a chapter heading row `1.2` above sections `1.2.1…`) are indexed by the corpus but rendered by V2 without an `id` (1,359 rows library-wide). A `matchText` range that falls in such a row resolves the right page but highlights nothing. Low priority; fixing it needs a stable per-row identifier (e.g. `data-row-id`) on every rendered section.
 
 ## Beyond V1 parity
 
-The V2 corpus is built to match V1 first ([DESIGN.md](DESIGN.md) §1, goal 6). These go past V1 and are deferred until it ships.
+The V2 corpus matched V1 first. These go past V1.
 
 ### Previous page
 

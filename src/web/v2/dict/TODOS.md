@@ -120,43 +120,19 @@ every measured case (`.0` bucket: 8 direct + 32 via blurb + 0 unresolved).
 
 ---
 
-## 3. Sanitize or render markup in Smith & Hall `mainLabel`
+## 3. Strip Smith & Hall label markup at build time
 
-**Status:** resolved (runtime sanitization complete; build-time extraction pending).
+**Status:** not started. The user-visible bug is fixed at runtime; this removes the workaround.
 
-### Bug Description
+S&H labels such as `sh7671` (_dog_) were extracted with inline HTML (`dog (<i>subs.</i>)`), which
+the entry header then escaped and showed as literal tags. Today `reviveRaw` in
+`src/common/smith_and_hall/sh_dict.ts` strips tags from `outline.mainLabel`, `mainSection.text` and
+`senses[].text` on load, and `entry_view.server.ts` / `dict_page.server.ts` strip `headword`
+defensively before escaping.
 
-In Smith & Hall entries such as `sh7671` (_dog_, reachable at `/v2/dicts/id/sh7671`), the entry header title renders with escaped, literal HTML tags:
-
-```
-dog (<i>subs.</i>)
-```
-
-The browser displays raw text `dog (<i>subs.</i>)` rather than italicized text `dog (`_subs._`)` or plain text `dog (subs.)`.
-
-### Cause
-
-1. `findShLabelText` in [`src/common/smith_and_hall/sh_outline.ts`](../../../common/smith_and_hall/sh_outline.ts) extracts text from `entry.blurb` starting after `<b>${key}</b>` up to `)`:
-   ```ts
-   return `${key} ${blurb.substring(i, j + 1)}`;
-   ```
-   The source blurb contains raw HTML fragments like `(<i>subs.</i>)`.
-2. `renderEntryResult` in [`entry_view.server.ts`](entry_view.server.ts) selects `result.outline.mainLabel` as `headword`, and runs `he.escape(headword)`:
-   ```html
-   <span class="entry-headword-text">${he.escape(headword)}</span>
-   ```
-   This converts `<` and `>` into `&lt;` and `&gt;`, causing the browser to render the raw HTML tag text on screen.
-
-### Fix Implemented (Runtime Tier)
-
-- **Runtime Revival Sanitization (`src/common/smith_and_hall/sh_dict.ts`)**:
-  Sanitizes `outline.mainLabel`, `outline.mainSection.text`, and `outline.senses[].text` upon JSON deserialization in `reviveRaw`, stripping inline HTML tags before handing entries to callers. This guarantees backwards compatibility with existing `sh.db` databases without forcing an immediate artifact rebuild.
-- **Defensive Rendering Sanitization (`src/web/v2/dict/entry_view.server.ts` & `dict_page.server.ts`)**:
-  Strips HTML tags from `headword` before `he.escape()` defensively across entry headers and multi-entry quick-jump bars.
-
-### Pending TODO (Build-Time / Extraction Tier)
-
-- [ ] **Build-time / Extraction tier**: Fix `src/common/smith_and_hall/sh_outline.ts` (`getOutline`, `findShLabelText`, and `chooseOutlineText`) so future database builds (`./morcus.sh build -b_sh`) generate pure plaintext `mainLabel` and outline text directly at the source (stripping inline HTML tags like `<i>...</i>`) without relying on runtime sanitization in `sh_dict.ts`.
+- [ ] Fix `src/common/smith_and_hall/sh_outline.ts` (`getOutline`, `findShLabelText`,
+      `chooseOutlineText`) so `./morcus.sh build -b_sh` emits plaintext labels at the source, then
+      drop the runtime stripping in `sh_dict.ts`.
 
 ---
 
@@ -271,7 +247,7 @@ Scroll tracking provides live visual feedback indicating which sense, subsection
 
 ## 8. Shared links overwrite the recipient's dictionary preferences
 
-**Status:** not started. Design below is settled; depends on the preferences untangling.
+**Status:** not started. Design below is settled; depends on item 9 (finish the preferences model).
 
 ### Bug Description
 
@@ -361,3 +337,38 @@ sender's whole selection along with the edit. Options: accept it and fire a toas
 (_"Saved as your dictionaries"_, reusing `#v2-toast`), or have JS defer persistence until an explicit
 "Keep these" while borrowed — more correct, but it makes the checkbox behave differently depending on
 how the user arrived at the page.
+
+---
+
+## 9. Finish the preferences model
+
+**Status:** not started. The target model is in [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md);
+the defect analysis behind it (findings F1–F9) is archived in
+[`../docs/archive/DICT_PREFERENCES_ANALYSIS.md`](../docs/archive/DICT_PREFERENCES_ANALYSIS.md).
+
+Dictionaries and inflection are still resolved twice, in different orders: the server reads URL →
+cookie → default (`dict_routes.server.ts`), the client reads URL → localStorage → default
+(`dict_settings.client.ts`), and `syncWithCookie()` only writes the cookie when it is absent, so
+once the two stores disagree nothing reconciles them. A dictionary selection is also stored in four
+encodings (`?d=` bitmask, `?dict=` list, the `;`-joined `morcus_dicts` cookie, `SEARCH_SETTINGS_KEY`
+in localStorage), each with its own parser.
+
+V2 keeps no backwards compatibility (`AGENTS.md`), so there is **no migration step**: delete the
+localStorage copies outright. Each step is independently shippable:
+
+- [ ] **Key the persistence guard on an explicit scoped-view flag (F7).** `dict_routes.server.ts`
+      skips cookie writes when `langParam` is present, as a proxy for "this is the reader iframe".
+      If the reader stops sending `lang`, every passage read overwrites the user's inflection
+      preference. Use `isEmbeddedRequest()` or a new `isScopedView`. Small; worth doing first.
+- [ ] **Make the client adopt SSR state (F1–F5).** Set controls from the server-rendered DOM
+      instead of re-deriving them, so hydration can't overwrite pre-upgrade input or show controls
+      that disagree with the rendered results.
+- [ ] **Make the cookie the only durable store (F6, F8).** Delete `syncWithCookie`,
+      `SEARCH_SETTINGS_KEY` and `GlobalSettings.inflectedSearch`, with one shared defaulting helper
+      for inflection (today the server says `cookie !== "0"` and the client `?? stored ?? true`).
+      Update the "Hydration Sync" bullet in [`README.md`](README.md).
+- [ ] **One encoding (F9).** Delete `formatDictsParam` and its re-export from `dict.server.ts`
+      (no production callers), and store the cookie as the bitmask. `?dict=` stays as the input
+      adapter for the No-JS checkbox group, and `parseDictKeys` stays tolerant of old links.
+
+Item 8 (shared links overwriting preferences) builds on this.

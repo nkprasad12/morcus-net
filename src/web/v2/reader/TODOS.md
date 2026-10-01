@@ -107,15 +107,11 @@ web app manifest.
 
 ---
 
-## 8. External Reader: keep pasted text out of URL and server logs
+## 8. Ovid _Tristia_: section content under the wrong id
 
-**Status:** done.
+**Status:** not triaged. Suspected V2 bug, found incidentally.
 
-The paste page states: _"Saved in this browser only. Never sent to Morcus."_
-Previously, the first words of a pasted text reached the server in the query string and appeared in server access logs.
-
-- **Root Cause**: The saved text's key went into the address (`?local=Gallia+est+omnis+divisa…_1790393944328`), so those words appeared in the HTTP request and in server logs. The key included the title because V2 copied V1's key format (`${title}_${Date.now()}`), and the title defaulted to the text's first words.
-- **Resolution**:
-  - Decoupled `storageKey` from text and title in `src/web/v2/external/external_storage.client.ts`.
-  - Pasted texts are assigned an opaque random UUID (`crypto.randomUUID()`) as their storage key.
-  - The derived or user-specified title remains in `record.title` for UI display, while the address (`?local=<uuid>`) is completely opaque and leaks zero text to server logs.
+In the V2 artifact for `hypotactic_Tristia_Ovid`, `sec-1.7.x` appears to hold the text of poem 1.8
+(e.g. `sec-1.7.1` reads "in caput alta suum…", which is 1.8.1; the corpus has "si quis habes
+nostri…" for 1.7.1). About 40 _Tristia_ rows differ between the corpus and V2-rendered sections.
+Possible causes: duplicate section ids across poems in `v2_preprocessor.ts`, or a stale artifact.

@@ -1,5 +1,9 @@
 # Corpus V2: Design
 
+> **Archived.** Kept for context only; do not treat it as current guidance or a to-do list.
+> Living doc: [corpus/README.md](../../corpus/README.md). Open work: [corpus/TODOS.md](../../corpus/TODOS.md).
+> Commit SHAs, phase numbers, and relative links in this file refer to `lit-prototype` history and may not resolve.
+
 **Status:** Signed off (rev 2, 2026-09-28): all decisions settled; implementation in progress. Supersedes rev 1 (the "Proposed / Under Review" draft).
 **Surface:** `/v2/corpus`, all code in `src/web/v2/corpus/`
 **Inputs merged:** rev 1 of this doc; PE RFC review §7 Phase 3 and Appendix A (`swapSlots`); [`TODO.md`](TODO.md); V1 `src/web/client/pages/corpus/`; the V2 conventions in [`../README.md`](../README.md).

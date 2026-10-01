@@ -116,6 +116,14 @@ The reader does **not** parse TEI at request time. Works are preprocessed offlin
 
 ---
 
+## Deliberately Not Ported from V1
+
+These V1 features were reviewed and intentionally left out of V2. Revisit only with a new justification.
+
+- **Side-tap page navigation** (V1 `handleSideTap` in `base_reader.tsx`, `RD_MB_NAV_SIDE_TAP`, off by default): tapping the outer 7.5% of the screen turned the page. Tap-to-turn is already covered by the sticky-bar pager arrows (which also serve screen readers and No-JS, and show first/last-page state) and the footer continuation cards, while swipe covers gesture turning. Cutting it saves ~0.5 kB raw / ~0.23 kB gzipped of JS against the bundle budget, plus a setting and the tap-vs-word/anchor/note-marker precedence rules. V1's stored `RD_MB_NAV_SIDE_TAP` value is ignored.
+
+---
+
 ## Testing
 
 Unit tests live alongside the sources (`reader.test.ts`, `reader_view.test.ts`, `reader_toc.test.ts`, `reader_settings.test.ts`, `reader_layout.test.ts`) and run with `npm run ts-tests:v2`. Functional and visual browser coverage is described in [`../TESTING.md`](../TESTING.md).

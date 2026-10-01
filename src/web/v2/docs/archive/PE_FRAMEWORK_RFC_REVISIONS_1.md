@@ -1,5 +1,9 @@
 # RFC (Revision 1): A Progressive-Enhancement Framework for UI V2
 
+> **Archived.** Kept for context only; do not treat it as current guidance or a to-do list.
+> Living docs: [README](../../README.md), [FRAMEWORK_GAPS.md](../FRAMEWORK_GAPS.md) (including the deferred compile-time contracts decision).
+> Commit SHAs, phase numbers, and relative links in this file refer to `lit-prototype` history and may not resolve.
+
 - **Status:** Revision 1 (incorporating architectural review & compile-time contract design)
 - **Author:** nkprasad
 - **Supersedes / Revises:** [`PE_FRAMEWORK_RFC.md`](PE_FRAMEWORK_RFC.md)

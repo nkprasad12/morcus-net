@@ -1,5 +1,9 @@
 # UI V2 Chunk Ordering: startup code that runs before the route's components
 
+> **Archived.** Kept for context only; do not treat it as current guidance or a to-do list.
+> Living rules: [README: The activation gate](../../README.md#the-activation-gate) and the [PH bug index](../TESTING.md#pre-hydration-ph-bug-index).
+> Commit SHAs, phase numbers, and relative links in this file refer to `lit-prototype` history and may not resolve.
+
 Findings from landing route code splitting (commit `feat(v2): split the client bundle into
 per-route chunks`). The split added an intermediate page state that nothing in `common.js` was
 written for. This file records what we know, what is still a hypothesis, and the options, so the

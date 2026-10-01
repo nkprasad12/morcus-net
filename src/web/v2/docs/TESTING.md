@@ -2,6 +2,8 @@
 
 This document provides instructions for developers and AI agents on running unit and end-to-end (E2E) tests for the UI V2 (Multi-Page / Progressive Enhancement architecture).
 
+Before writing a new test, read the [testing traps](DESIGN_TRAPS.md#testing): vacuous filter assertions, Firefox click flakes, and other mistakes that have cost real time.
+
 ---
 
 ## 1. Test Locations
@@ -9,6 +11,26 @@ This document provides instructions for developers and AI agents on running unit
 - **E2E Tests (Playwright)**: `src/integration/suites/browser_v2_e2e.test.ts`
 - **Late-hydration E2E (Playwright)**: `src/integration/suites/browser_v2_late_hydration.test.ts` — holds back the `/v2/assets/*.js` chunks, interacts in the pre-hydration window, then checks the upgrade adopts the state and the JS gate / pre-paint snapshot prevent flashes and layout shifts. A "chunk ordering: intermediate state" block uses `openStaged` to release `common.js` before the route chunk and interacts in between. Also run by `./morcus.sh e2e --v2`.
 - **Unit Tests (Jest)**: Colocated alongside source modules matching `src/web/v2/**/*.test.ts` (run via `npm run ts-tests:v2`). Tests cover SSR renderers, routing, bitmask/clustering logic, custom elements, and core utilities across each vertical slice (`about/`, `core/`, `dialog/`, `dict/`, `reader/`, `shell/`, and `v2_router.test.ts`).
+
+### Pre-hydration (PH) bug index
+
+Code comments and test names cite these IDs. Each is a bug in the window where a JS-enabled user can see and use the page before its component upgrades. All are fixed; the rules that prevent them are README convention 3 ("Read before writing in `onConnect()`") and "JS-only and No-JS-only UI". When you fix a new one, give it the next ID, add a row here, and add a case to the late-hydration suite.
+
+| ID   | Bug                                                                                   | Guarded by                                         |
+| :--- | :------------------------------------------------------------------------------------ | :------------------------------------------------- |
+| PH0  | Dictionary results scroll yanked back to the top on upgrade                           | `dict/dict_search.test.ts`                         |
+| PH1  | Dictionary settings: checkboxes changed before upgrade reset, popover couldn't submit | `dict/dict_settings.test.ts`, late-hydration suite |
+| PH2  | Library filter typed before upgrade ignored                                           | `library/library.test.ts`                          |
+| PH3  | Dictionary query typed before upgrade misread by the landing-page results check       | `dict/dict_search.test.ts`, late-hydration suite   |
+| PH4  | Greek embed `<details>` / checkbox toggled before upgrade clobbered                   | `dict/dict_greek.client.ts` (no dedicated test)    |
+| PH5  | Reader TOC drawer opened via `:target` before upgrade stuck open                      | late-hydration suite                               |
+| PH6  | Reader footnote and About links jumped to the bottom before panel relocation          | `reader/reader_panel.test.ts`                      |
+| PH7  | Reader mobile dictionary sheet opened via `:target` slammed shut on upgrade           | late-hydration suite                               |
+| PH8  | Dictionary mobile TOC drawer height jump; close before upgrade desynced               | `core/drawer.test.ts`                              |
+| PH9  | Dictionary landing autofocus yanked the scroll position                               | `dict/dict_search.test.ts`, late-hydration suite   |
+| PH10 | Reader scrolled to the first match after the user had already scrolled                | `reader/reader_view.test.ts`                       |
+| PH11 | Reader typography, gutter and width reflowed on upgrade (missing from pre-paint)      | late-hydration suite                               |
+| PH12 | Reader `Aa` button visible and dead before upgrade                                    | `core/gate_conformance.test.ts`                    |
 
 ---
 
