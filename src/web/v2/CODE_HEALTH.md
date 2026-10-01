@@ -112,6 +112,13 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       All Latin word linkification in UI V2 is performed client-side via progressive enhancement
       (`dict_search.client.ts` / `core/tokenize.client.ts`), making the entire server-side linkification
       tree dead code.
+- [ ] 🟢 **Use or delete `ReaderPageOptions.view`** (`reader/reader.server.ts`). Nothing reads it:
+      `resolveReaderContext` renders the passage from `singleHtml` either way, `renderTocDrawer` and
+      `buildReaderPageUrl` are never passed a `viewMode`, and the partial route
+      (`sendReaderPassage` in `reader_routes.server.ts`) doesn't forward `?view=`. Callers that pass
+      `view: "parallel"` (`core/route_bundle_conformance.test.ts`) get the single view. The client
+      still compares `?view=` in `MorcusReaderView.handleClick`, so a `view=parallel` link counts as a
+      different page.
 
 ### Client DOM construction outside `core/`
 
