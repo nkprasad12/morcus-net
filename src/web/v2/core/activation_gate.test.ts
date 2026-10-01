@@ -163,6 +163,14 @@ describe("activation gate in LifetimeScope.listen", () => {
     expect(seen).toEqual([]);
   });
 
+  test("an owned scope skips clicks inside a failed controller root below it", () => {
+    // A BaseController whose connect threw marks its root data-js-failed.
+    document.body.innerHTML = `<morcus-mine data-upgraded><div data-js-failed><button id="b"></button></div></morcus-mine>`;
+    const seen = track("click", el("morcus-mine"));
+    el("#b").click();
+    expect(seen).toEqual([]);
+  });
+
   test("an owned scope skips everything inside a failed ancestor", () => {
     document.body.innerHTML = `<morcus-outer data-js-failed><morcus-mine data-upgraded><button id="b"></button></morcus-mine></morcus-outer>`;
     const seen = track("click", el("morcus-mine"));
