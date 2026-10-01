@@ -186,6 +186,11 @@ export class DrawerController extends BaseController {
       return;
     }
 
+    // Through the scope, not onDisconnect: also clears it if a step below
+    // throws (BaseController skips onDisconnect after a failed connect).
+    this.scope.use(() =>
+      this.getLayoutElement()?.style.removeProperty("--drawer-height")
+    );
     this.initDrag();
     this.initKeyboard();
     this.initDetailsSync();
@@ -198,10 +203,6 @@ export class DrawerController extends BaseController {
 
   private isMinimizedClass(): boolean {
     return this.drawer?.classList.contains("drawer-minimized") ?? false;
-  }
-
-  protected override onDisconnect(): void {
-    this.getLayoutElement()?.style.removeProperty("--drawer-height");
   }
 
   /**

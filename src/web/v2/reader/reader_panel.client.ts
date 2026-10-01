@@ -98,6 +98,10 @@ export class ReaderPanelController extends BaseController {
   }
 
   protected override onConnect(): void {
+    // Through the scope, not onDisconnect: BaseController skips onDisconnect
+    // after a failed connect, which is exactly when the panel most needs to
+    // go back to its No-JS fallback.
+    this.scope.use(() => this.restoreNoJsState());
     this.hasTranslation = this.resolveHasTranslation();
     this.dictPanel = this.scope.$<HTMLElement>(".reader-dict-panel");
     this.tabsContainer =
@@ -148,9 +152,10 @@ export class ReaderPanelController extends BaseController {
 
   /**
    * Hands the panel back to the No-JS `:target` rules: they apply while no
-   * view is `.active` and no tab has `aria-selected`.
+   * view is `.active` and no tab has `aria-selected`. Runs on disconnect
+   * and on a failed connect.
    */
-  protected override onDisconnect(): void {
+  private restoreNoJsState(): void {
     this.tabsContainer?.removeAttribute("role");
     for (const tab of this.tabs.values()) {
       for (const attr of [

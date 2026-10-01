@@ -193,7 +193,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   private currentNoteLabel: string = "";
   private router: QueryParamSync | null = null;
   private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
-  private originalScrollRestoration: ScrollRestoration = "auto";
   private readonly translationCache = new Map<string, string>();
 
   constructor() {
@@ -231,7 +230,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   protected override onConnect() {
     if (typeof window !== "undefined" && window.history) {
-      this.originalScrollRestoration = window.history.scrollRestoration;
+      const original = window.history.scrollRestoration;
       try {
         // The reader restores scroll itself on page swaps and popstate
         // (hydratePage)
@@ -239,6 +238,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       } catch {
         // Ignored in test environments
       }
+      // Through the scope, not onDisconnect: this also restores it as soon
+      // as onConnect throws below, while the page falls back to No-JS.
+      this.scope.use(() => {
+        try {
+          window.history.scrollRestoration = original;
+        } catch {
+          // Ignored
+        }
+      });
     }
 
     this.preferredDrawerSvh = this.drawerController.getPreferredSvh();
@@ -371,17 +379,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     this.scope.listen(iframe, "load", syncTheme);
     syncTheme();
-  }
-
-  protected override onDisconnect() {
-    if (typeof window !== "undefined" && window.history) {
-      try {
-        // Restores the value it saved in onConnect
-        window.history.scrollRestoration = this.originalScrollRestoration;
-      } catch {
-        // Ignored
-      }
-    }
   }
 
   private readonly handleClick = (e: MouseEvent) => {

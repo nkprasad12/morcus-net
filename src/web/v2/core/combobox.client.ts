@@ -86,6 +86,11 @@ export class ComboboxController<T = unknown> extends BaseController {
   }
 
   protected override onConnect(): void {
+    // Through the scope, not onDisconnect: BaseController skips onDisconnect
+    // after a failed connect, and this undoes attributes on elements it
+    // doesn't own. Reads the fields at teardown, so it also covers a later
+    // bind from setItems.
+    this.scope.use(() => this.unbind());
     this.ensureBound();
   }
 
@@ -144,7 +149,7 @@ export class ComboboxController<T = unknown> extends BaseController {
     }
   }
 
-  protected override onDisconnect(): void {
+  private unbind(): void {
     const input = this.input;
     const listbox = this.listbox;
 
