@@ -1,7 +1,9 @@
 /**
  * DOM helpers and invariants shared by the SSR conformance harnesses:
- * `core/ssr_conformance.test.ts` (right after upgrade) and
- * `core/interaction_conformance.test.ts` (after user interaction).
+ * `core/ssr_conformance.test.ts` (right after upgrade) and the
+ * `*_interaction_conformance.test.ts` files (after user interaction, via
+ * `testing/interaction_harness.ts`). The reviewed exception lists live in
+ * `created_dom_allowlist.ts` and `isomorphic_rerenders.ts`.
  */
 
 export function describeElement(el: Element): string {
@@ -38,128 +40,6 @@ export function nearestMorcus(el: Element): Element | null {
     if (cur.localName.startsWith("morcus-")) return cur;
   }
   return null;
-}
-
-/**
- * When client code may first create an element: during `onConnect()`
- * (`upgrade`, which also covers everything later), or only in response to
- * the user (`interaction`).
- */
-export type CreationPhase = "upgrade" | "interaction";
-
-export interface CreatedDomRule {
-  /** Matches the created element itself. */
-  readonly selector: string;
-  /**
-   * Also covers everything created inside an element matching `selector`,
-   * whether that element is server-rendered or created.
-   */
-  readonly subtree?: true;
-  readonly from: CreationPhase;
-  /** Why this element can't be server-rendered. Required for review. */
-  readonly reason: string;
-}
-
-/**
- * The only elements client code may create (PE RFC §7). Everything else must
- * already exist in the SSR HTML. Adding an entry needs human review: prefer
- * rendering the element on the server and adopting it on upgrade.
- */
-export const CREATED_DOM_ALLOWLIST: readonly CreatedDomRule[] = [
-  {
-    selector: ".lat-word",
-    from: "upgrade",
-    reason:
-      "Inline word links wrapped by `tokenizeElement` in passages and entries.",
-  },
-  {
-    selector: "morcus-corpus-suggestions > ul",
-    subtree: true,
-    from: "upgrade",
-    reason:
-      "Options of the server-rendered corpus listbox, built from the text at the caret. " +
-      "On upgrade only if the input already has focus (`corpus-focused-before-upgrade`).",
-  },
-  {
-    selector: "morcus-dict-suggestions > ul",
-    subtree: true,
-    from: "interaction",
-    reason:
-      "Options of the server-rendered dict listbox, built from the typed prefix " +
-      "(`ComboboxController.renderItems`), as for the corpus listbox above.",
-  },
-];
-
-export function isAllowlistedCreation(
-  el: Element,
-  phase: CreationPhase
-): boolean {
-  return CREATED_DOM_ALLOWLIST.some((rule) => {
-    if (rule.from === "interaction" && phase === "upgrade") return false;
-    if (el.matches(rule.selector)) return true;
-    return rule.subtree === true && el.parentElement?.closest(rule.selector);
-  });
-}
-
-export interface IsomorphicRerender {
-  /** The component that re-renders it. */
-  readonly owner: string;
-  /** Matched against the element alone, without ancestors (it may be detached). */
-  readonly selector: string;
-  /**
-   * `self`: the matched element is replaced (`replaceWithHtml`).
-   * `contents`: its children are replaced (`setHtml`).
-   */
-  readonly replaces: "self" | "contents";
-  /** The `.common.ts` renderer both the server and the client use. */
-  readonly renderer: string;
-}
-
-/**
- * Server-rendered UI that the client re-renders after an interaction with
- * the same `.common.ts` renderer the server used (README, "The `.common.ts`
- * contract"), so the replacement markup can't drift from the SSR markup.
- * Inside these, the interaction harness allows SSR nodes to be replaced.
- * Adding an entry needs human review.
- */
-export const ISOMORPHIC_RERENDERS: readonly IsomorphicRerender[] = [
-  {
-    owner: "morcus-dict-search",
-    selector: ".lang-chips",
-    replaces: "contents",
-    renderer: "renderLangChipsHtml (dict/search_bar.common.ts)",
-  },
-  {
-    owner: "morcus-dict-search",
-    selector: ".inflect-chip",
-    replaces: "self",
-    renderer: "renderInflectChipHtml (dict/search_bar.common.ts)",
-  },
-];
-
-/**
- * Whether `el` lies in an isomorphic re-render region. `parentOf` gives the
- * ancestry to use: the pre-interaction one for a removed element.
- */
-export function inIsomorphicRerender(
-  el: Element,
-  parentOf: (el: Element) => Node | null | undefined = (e) => e.parentNode
-): boolean {
-  const ancestry: Element[] = [];
-  for (let cur: Node | null | undefined = el; cur instanceof Element; ) {
-    ancestry.push(cur);
-    cur = parentOf(cur);
-  }
-  return ISOMORPHIC_RERENDERS.some((region) => {
-    const at = ancestry.findIndex(
-      (a, i) =>
-        a.matches(region.selector) && (region.replaces === "self" || i > 0)
-    );
-    return (
-      at >= 0 &&
-      ancestry.slice(at + 1).some((a) => a.localName === region.owner)
-    );
-  });
 }
 
 /** Every element under `root`, mapped to its parent. */

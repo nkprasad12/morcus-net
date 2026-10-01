@@ -4,6 +4,8 @@
  *
  * Test files that import this must also mock `shell/asset_manifest.server`
  * and `reader/reader_loader.server`, as `core/ssr_conformance.test.ts` does.
+ * Each feature has its own builder, so a feature's suite builds only its
+ * own pages; `buildSsrFixtures()` builds them all, in a fixed order.
  */
 
 import type { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
@@ -142,29 +144,7 @@ export function installMatchMediaStub(): void {
   });
 }
 
-export async function buildSsrFixtures(): Promise<SsrFixture[]> {
-  const [libraryHtml, readerSallustHtml, readerCatullusHtml] =
-    await Promise.all([
-      renderLibraryPageHtml(),
-      renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1" }),
-      renderReaderContentHtml({ workId: "catullus", pageId: "5" }),
-    ]);
-  const corpusParams = {
-    q: "",
-    pageSize: PAGE_SIZE.default,
-    contextLen: CONTEXT_LEN.default,
-    strictMode: false,
-  };
-  const corpusEngine = ssrFixtureCorpusEngine();
-  const [corpusLanding, corpusResults] = await Promise.all([
-    runCorpusSearch(corpusParams, corpusEngine, CORPUS_TEST_AUTHORS),
-    runCorpusSearch(
-      { ...corpusParams, q: "@case:dat" },
-      corpusEngine,
-      CORPUS_TEST_AUTHORS
-    ),
-  ]);
-
+export function buildDictFixtures(): SsrFixture[] {
   return [
     {
       name: "dict-landing",
@@ -182,22 +162,47 @@ export async function buildSsrFixtures(): Promise<SsrFixture[]> {
       name: "dict-greek",
       html: renderDictPageHtml({ query: "λόγος" }),
     },
-    {
-      name: "library",
-      html: libraryHtml,
-    },
-    {
-      name: "reader-sallust-translation",
-      html: readerSallustHtml,
-    },
-    {
-      name: "reader-catullus-macra",
-      html: readerCatullusHtml,
-    },
-    {
-      name: "external-landing",
-      html: renderExternalLandingContentHtml(),
-    },
+  ];
+}
+
+export async function buildLibraryFixtures(): Promise<SsrFixture[]> {
+  return [{ name: "library", html: await renderLibraryPageHtml() }];
+}
+
+export async function buildReaderFixtures(): Promise<SsrFixture[]> {
+  const [sallust, catullus] = await Promise.all([
+    renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1" }),
+    renderReaderContentHtml({ workId: "catullus", pageId: "5" }),
+  ]);
+  return [
+    { name: "reader-sallust-translation", html: sallust },
+    { name: "reader-catullus-macra", html: catullus },
+  ];
+}
+
+export function buildExternalFixtures(): SsrFixture[] {
+  return [
+    { name: "external-landing", html: renderExternalLandingContentHtml() },
+  ];
+}
+
+export async function buildCorpusFixtures(): Promise<SsrFixture[]> {
+  const corpusParams = {
+    q: "",
+    pageSize: PAGE_SIZE.default,
+    contextLen: CONTEXT_LEN.default,
+    strictMode: false,
+  };
+  const corpusEngine = ssrFixtureCorpusEngine();
+  const [corpusLanding, corpusResults] = await Promise.all([
+    runCorpusSearch(corpusParams, corpusEngine, CORPUS_TEST_AUTHORS),
+    runCorpusSearch(
+      { ...corpusParams, q: "@case:dat" },
+      corpusEngine,
+      CORPUS_TEST_AUTHORS
+    ),
+  ]);
+  return [
     {
       name: "corpus-landing",
       html: renderCorpusContentHtml(corpusLanding),
@@ -219,6 +224,18 @@ export async function buildSsrFixtures(): Promise<SsrFixture[]> {
       },
     },
   ];
+}
+
+/** Every fixture, for the suites that check all pages at once. */
+export async function buildSsrFixtures(): Promise<SsrFixture[]> {
+  const groups = await Promise.all([
+    buildDictFixtures(),
+    buildLibraryFixtures(),
+    buildReaderFixtures(),
+    buildExternalFixtures(),
+    buildCorpusFixtures(),
+  ]);
+  return groups.flat();
 }
 
 /**
