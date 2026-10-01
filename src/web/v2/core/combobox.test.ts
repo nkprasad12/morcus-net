@@ -7,16 +7,16 @@
 import {
   ComboboxController,
   COMBOBOX_ATTRIBUTES,
-  type ComboboxItem,
 } from "@/web/v2/core/combobox.client";
 import {
   BaseElement,
   registerElement,
 } from "@/web/v2/core/base_element.client";
 
-interface TestItem extends ComboboxItem {
+interface TestItem {
   id: string;
   label: string;
+  selectable?: boolean;
 }
 
 class TestComboboxHost extends BaseElement {
@@ -35,6 +35,7 @@ class TestComboboxHost extends BaseElement {
         this.closest("form")?.querySelector<HTMLInputElement>("input") ??
         null,
       getListbox: () => this.querySelector<HTMLElement>("ul"),
+      isSelectable: (item) => item.selectable !== false,
       onSelect: (item, index) => {
         this.selectedItem = item;
         this.selectedIndex = index;

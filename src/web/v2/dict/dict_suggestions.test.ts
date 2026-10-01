@@ -61,6 +61,7 @@ describe("MorcusDictSuggestions Web Component", () => {
     // Disconnect and reconnect element (e.g. DOM move or re-parenting)
     el.remove();
     document.body.appendChild(el);
+    el.items = [{ word: "habeo", lang: "La" }];
 
     const item = el.querySelector<HTMLLIElement>(".suggestion-item");
     expect(item).not.toBeNull();

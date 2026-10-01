@@ -557,7 +557,7 @@ function parseAuthors(json: string | undefined): readonly string[] | undefined {
   }
 }
 
-function renderRow(row: CorpusSuggestion, id: string): SafeHtml {
+function renderRow(row: CorpusSuggestion): SafeHtml {
   if (isCompletion(row)) {
     const prefix =
       row.prefix === undefined
@@ -567,11 +567,7 @@ function renderRow(row: CorpusSuggestion, id: string): SafeHtml {
       row.help === undefined
         ? html``
         : html`<span class="corpus-suggestion-help">${row.help}</span>`;
-    return html`<li
-      id="${id}"
-      class="corpus-suggestion"
-      role="option"
-      aria-selected="false">
+    return html`<li class="corpus-suggestion">
       <span class="corpus-suggestion-text"
         >${raw(prefix)}<b class="corpus-suggestion-option"
           >${row.option}</b
@@ -592,11 +588,7 @@ function renderRow(row: CorpusSuggestion, id: string): SafeHtml {
   // The ❌ is hidden from screen readers, so say it in the name instead.
   const label = isError ? html`aria-label="Error: ${row.message}"` : html``;
   return html`<li
-    id="${id}"
     class="corpus-suggestion is-status${isError ? " is-error" : ""}"
-    role="option"
-    aria-selected="false"
-    aria-disabled="true"
     ${raw(label)}>
     <span class="corpus-suggestion-text">${raw(text)}</span>${raw(help)}
   </li>`;
@@ -649,12 +641,7 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
         getListbox: () => this.parts?.listbox ?? null,
         isSelectable: (row) => isCompletion(row),
         renderItems: (rows, box) => {
-          setHtml(
-            box,
-            html`${joinHtml(
-              rows.map((row, i) => renderRow(row, `${box.id}-${i}`))
-            )}`
-          );
+          setHtml(box, html`${joinHtml(rows.map(renderRow))}`);
         },
         onSelect: (_item, index) => {
           this.choose(index);

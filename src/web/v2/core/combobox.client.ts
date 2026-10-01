@@ -17,14 +17,6 @@ export const COMBOBOX_ATTRIBUTES: readonly string[] = [
   "aria-activedescendant",
 ] as const;
 
-export interface ComboboxItem {
-  /**
-   * Whether this item can be chosen/picked by Enter/Tab/click.
-   * Defaults to true if omitted or not "false". Status/help rows set this to false.
-   */
-  readonly selectable?: boolean;
-}
-
 export const CARET_KEYS: ReadonlySet<string> = new Set([
   "ArrowLeft",
   "ArrowRight",
@@ -41,29 +33,22 @@ export interface ComboboxControllerOptions<T = unknown> {
   getListbox: () => HTMLElement | null;
   /** Called when a selectable option is chosen by Enter, Tab, or click. */
   onSelect: (item: T, index: number) => void;
-  /** Optional custom item ID generator. Defaults to `${listbox.id}-${index}`. */
-  getItemId?: (index: number, listbox: HTMLElement) => string;
   /**
    * Whether pressing Tab with a selectable item active accepts it instead
    * of advancing keyboard focus. Defaults to true.
    */
   acceptOnTab?: boolean;
   /**
-   * Whether caret keys (ArrowLeft, ArrowRight, Home, End) trigger onRefresh
-   * while open. Defaults to true.
-   */
-  followCaret?: boolean;
-  /**
    * Optional callback when listbox opens or closes.
    */
   onVisibilityChange?: (open: boolean) => void;
   /**
-   * Optional callback to request refresh of items (e.g. on input or caret move).
+   * Optional callback to request refresh of items (e.g. on focus, input, click, or caret move).
    */
   onRefresh?: () => void;
   /**
    * Optional predicate determining if an item can be selected.
-   * Defaults to checking `item.selectable !== false`.
+   * Defaults to true.
    */
   isSelectable?: (item: T) => boolean;
   /**
@@ -104,61 +89,59 @@ export class ComboboxController<T = unknown> extends BaseController {
     this.ensureBound();
   }
 
-  private ensureBound(): boolean {
-    if (this.input && this.listbox) {
-      return true;
-    }
-
-    const input = this.options.getInput();
-    const listbox = this.options.getListbox();
-
-    if (!input || !listbox) {
-      return false;
-    }
-
-    this.input = input;
-    this.listbox = listbox;
-
-    if (!listbox.id) {
-      listbox.id = `combobox-listbox-${Math.random().toString(36).slice(2, 9)}`;
-      this.addedListboxId = true;
-    }
-
-    if (!listbox.getAttribute("role")) {
-      listbox.setAttribute("role", "listbox");
-      this.addedListboxRole = true;
-    }
-    listbox.hidden = true;
-
-    input.setAttribute("role", "combobox");
-    input.setAttribute("aria-autocomplete", "list");
-    input.setAttribute("aria-controls", listbox.id);
-    input.setAttribute("aria-expanded", "false");
-
-    const scope = this.scope;
-    scope.listen(input, "focus", () => this.handleFocus());
-    scope.listen(input, "input", () => this.handleInput());
-    scope.listen(input, "click", () => this.handleClick());
-    scope.listen(input, "keydown", (e) => this.handleKeyDown(e));
-    if (this.options.followCaret !== false) {
-      scope.listen(input, "keyup", (e) => {
-        if (CARET_KEYS.has(e.key) && this.isOpen) {
-          this.options.onRefresh?.();
+  private ensureBound(): void {
+    if (!this.listbox) {
+      const listbox = this.options.getListbox();
+      if (listbox) {
+        this.listbox = listbox;
+        if (!listbox.id) {
+          listbox.id = `combobox-listbox-${Math.random()
+            .toString(36)
+            .slice(2, 9)}`;
+          this.addedListboxId = true;
         }
-      });
-    }
-    scope.listen(input, "blur", () => this.close());
-    if (input.form) {
-      scope.listen(input.form, "submit", () => this.close());
-    }
-    scope.listen(listbox, "mousedown", (e) => this.handleMouseDown(e));
-
-    // Adopt-before-write: if input is already focused at upgrade, trigger refresh
-    if (input === this.ownerDocument.activeElement) {
-      this.handleFocus();
+        if (!listbox.getAttribute("role")) {
+          listbox.setAttribute("role", "listbox");
+          this.addedListboxRole = true;
+        }
+        listbox.hidden = true;
+        this.scope.listen(listbox, "mousedown", (e) => this.handleMouseDown(e));
+      }
     }
 
-    return true;
+    if (!this.input && this.listbox) {
+      const input = this.options.getInput();
+      if (input) {
+        this.input = input;
+        input.setAttribute("role", "combobox");
+        input.setAttribute("aria-autocomplete", "list");
+        input.setAttribute("aria-controls", this.listbox.id);
+        input.setAttribute("aria-expanded", "false");
+
+        const scope = this.scope;
+        const onRefresh = this.options.onRefresh;
+        if (onRefresh) {
+          scope.listen(input, "focus", onRefresh);
+          scope.listen(input, "input", onRefresh);
+          scope.listen(input, "click", onRefresh);
+          scope.listen(input, "keyup", (e) => {
+            if (CARET_KEYS.has(e.key) && this.isOpen) {
+              onRefresh();
+            }
+          });
+        }
+        scope.listen(input, "keydown", (e) => this.handleKeyDown(e));
+        scope.listen(input, "blur", () => this.close());
+        if (input.form) {
+          scope.listen(input.form, "submit", () => this.close());
+        }
+
+        // Adopt-before-write: if input is already focused at upgrade, trigger refresh
+        if (onRefresh && input === this.ownerDocument.activeElement) {
+          onRefresh();
+        }
+      }
+    }
   }
 
   protected override onDisconnect(): void {
@@ -199,27 +182,25 @@ export class ComboboxController<T = unknown> extends BaseController {
     this._activeIndex = -1;
 
     this.ensureBound();
-    const input = this.input;
     const listbox = this.listbox;
-    if (!input || !listbox) return;
+    if (!listbox) return;
 
-    input.removeAttribute("aria-activedescendant");
+    this.input?.removeAttribute("aria-activedescendant");
 
-    const count = items.length;
-    const open = count > 0;
+    const open = items.length > 0;
 
     if (this.options.renderItems) {
       this.options.renderItems(items, listbox);
     }
 
     listbox.hidden = !open;
-    input.setAttribute("aria-expanded", String(open));
+    this.input?.setAttribute("aria-expanded", String(open));
 
     this.options.onVisibilityChange?.(open);
 
-    if (!open) return;
-
-    this.syncItemAttributes();
+    if (open) {
+      this.syncItemAttributes();
+    }
   }
 
   /**
@@ -235,15 +216,12 @@ export class ComboboxController<T = unknown> extends BaseController {
       if (!(child instanceof HTMLElement)) continue;
 
       if (!child.id) {
-        child.id = this.options.getItemId
-          ? this.options.getItemId(i, listbox)
-          : `${listbox.id}-${i}`;
+        child.id = `${listbox.id}-${i}`;
       }
       if (!child.getAttribute("role")) {
         child.setAttribute("role", "option");
       }
-      const item = this._items[i];
-      if (item && !this.isSelectable(i)) {
+      if (this._items[i] && !this.isSelectable(i)) {
         child.setAttribute("aria-disabled", "true");
       }
       const isActive = i === this._activeIndex;
@@ -261,9 +239,8 @@ export class ComboboxController<T = unknown> extends BaseController {
 
   /** Sets the active highlighted item index (-1 to clear highlight). */
   public setActiveIndex(index: number): void {
-    const input = this.input;
     const listbox = this.listbox;
-    if (!input || !listbox) return;
+    if (!listbox) return;
 
     if (this._activeIndex >= 0 && this._activeIndex < listbox.children.length) {
       const prevEl = listbox.children.item(this._activeIndex);
@@ -277,25 +254,19 @@ export class ComboboxController<T = unknown> extends BaseController {
     if (activeEl instanceof HTMLElement) {
       activeEl.setAttribute("aria-selected", "true");
       activeEl.classList.add("active");
-      input.setAttribute("aria-activedescendant", activeEl.id);
+      this.input?.setAttribute("aria-activedescendant", activeEl.id);
       if (typeof activeEl.scrollIntoView === "function") {
         activeEl.scrollIntoView({ block: "nearest" });
       }
     } else {
-      input.removeAttribute("aria-activedescendant");
+      this.input?.removeAttribute("aria-activedescendant");
     }
   }
 
   private isSelectable(index: number): boolean {
     const item = this._items[index];
     if (!item) return false;
-    if (this.options.isSelectable) {
-      return this.options.isSelectable(item);
-    }
-    if (typeof item === "object" && item !== null && "selectable" in item) {
-      return Reflect.get(item, "selectable") !== false;
-    }
-    return true;
+    return this.options.isSelectable ? this.options.isSelectable(item) : true;
   }
 
   private choose(index: number): void {
@@ -306,18 +277,6 @@ export class ComboboxController<T = unknown> extends BaseController {
       return;
     }
     this.options.onSelect(item, index);
-  }
-
-  private handleFocus(): void {
-    this.options.onRefresh?.();
-  }
-
-  private handleInput(): void {
-    this.options.onRefresh?.();
-  }
-
-  private handleClick(): void {
-    this.options.onRefresh?.();
   }
 
   private handleKeyDown(e: KeyboardEvent): void {

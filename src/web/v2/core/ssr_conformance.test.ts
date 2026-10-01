@@ -57,9 +57,6 @@ jest.mock("@/web/v2/reader/reader_loader.server", () =>
 const CREATED_ON_UPGRADE_ALLOWLIST: readonly string[] = [
   // Inline word tokens wrapped by `tokenizeElement` in passages and entries.
   ".lat-word",
-  // Autocomplete list built by `MorcusDictSuggestions` inside its
-  // server-rendered host.
-  "morcus-dict-suggestions > ul.suggestions",
   // Options (and their contents) built by `MorcusCorpusSuggestions` in its
   // server-rendered listbox. On upgrade only if the input already has focus:
   // see the `corpus-focused-before-upgrade` fixture.
