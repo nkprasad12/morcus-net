@@ -372,6 +372,27 @@ describe("setupAnchorScroll", () => {
     expect(target.classList.contains("target-active")).toBe(true);
   });
 
+  test("decodes percent-encoded hash links, like the gate does", () => {
+    document.body.innerHTML = `
+      <details><a id="link" href="#caf%C3%A9">Jump</a><p id="café">T</p></details>
+    `;
+    const link = document.getElementById("link") as HTMLAnchorElement;
+    const target = document.getElementById("café") as HTMLElement;
+    target.scrollIntoView = jest.fn();
+    const mockWin = {
+      location: { hash: "", pathname: "/", search: "" },
+      history: { replaceState: jest.fn() },
+    } as unknown as Window;
+
+    cleanup = setupAnchorScroll(document, mockWin);
+
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+    link.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect((target.parentElement as HTMLDetailsElement).open).toBe(true);
+  });
+
   test("uses instant scroll for .jump-pill and .dict-card targets", () => {
     document.body.innerHTML = `
       <a id="pill-link" class="jump-pill" href="#card-target">Jump Pill</a>

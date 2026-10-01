@@ -133,7 +133,7 @@ No-JS UI often opens via a link to a fragment (`<a href="#reader-dict">` plus a 
 
 A handler that cancels a native action (`preventDefault()`, or `pushState` in place of a navigation) on behalf of an owner that isn't running breaks that owner's No-JS fallback too. That was the chunk-ordering bug ([CHUNK_ORDERING.md](CHUNK_ORDERING.md) §8). An owner isn't running when its route chunk failed to load, its `onConnect` threw (`data-js-failed`), or it's defined later.
 
-`LifetimeScope.listen()` prevents this structurally. For `click`, `submit` and activating `keydown` (Enter / Space), it skips the listener (`canHandleActivation` in [`core/js_gate.client.ts`](core/js_gate.client.ts)) when:
+`LifetimeScope.listen()` prevents this structurally. For `click`, `submit` and activating `keydown` (Enter / Space), it doesn't call the listener at all (`canHandleActivation` in [`core/js_gate.client.ts`](core/js_gate.client.ts)) when any of the conditions below hold. A skipped listener can neither cancel the action nor run side effects such as `pushState`, so the browser's native handling goes ahead untouched. The conditions:
 
 - the scope's own component, or any element above it, has failed (including `<html>` after a chunk failed to load; the CSS gate hides all `data-js-only` UI under a failure, running children included);
 - the event target is inside a component that isn't running (checked up to the scope's component; to the document for standalone scopes); or
