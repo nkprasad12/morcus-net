@@ -26,16 +26,13 @@ import "@/web/v2/v2_elements.client";
 import fs from "fs";
 import path from "path";
 import { getRegisteredElementTags } from "@/web/v2/core/base_element.client";
-import { setupAnchorScroll } from "@/web/v2/core/anchor_scroll.client";
-import { setupBackToTop } from "@/web/v2/core/back_to_top.client";
-import { setupDeferredIframes } from "@/web/v2/core/deferred_iframe.client";
 import { revealTarget } from "@/web/v2/core/reveal.client";
-import { setupAbbrPopover } from "@/web/v2/dict/abbr_popover.client";
-import { setupMobileMenu } from "@/web/v2/shell/mobile_menu.client";
 import {
+  PAGE_SETUPS,
   buildSsrFixtures,
   installMatchMediaStub,
   mountFixture,
+  runPageSetups,
   type SsrFixture,
 } from "@/web/v2/testing/ssr_fixtures";
 import {
@@ -356,24 +353,6 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
     });
   });
 });
-
-/**
- * Every global setup an entry file starts, so section 4 runs with the same
- * document-level listeners as a real page. Keyed by name so the drift test
- * can compare against the entries.
- */
-const PAGE_SETUPS: Record<string, (doc: Document, win: Window) => () => void> =
-  {
-    setupAbbrPopover,
-    setupAnchorScroll,
-    setupBackToTop,
-    setupDeferredIframes,
-    setupMobileMenu,
-  };
-
-function runPageSetups(): (() => void)[] {
-  return Object.values(PAGE_SETUPS).map((setup) => setup(document, window));
-}
 
 /**
  * `setupX()` calls in `*_entry.client.ts` files. boot_conformance.test.ts
