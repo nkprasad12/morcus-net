@@ -1,6 +1,5 @@
 import {
   BaseElement,
-  ComboboxController,
   closeActiveSectionUI,
   createWordLink,
   fetchAndSwapPartial,
@@ -58,7 +57,6 @@ import {
 export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   public readonly chunkCache: DictChunkCache = new DictChunkCache();
   private suggestions: CompletionItem[] = [];
-  private combobox: ComboboxController<CompletionItem> | null = null;
 
   private inputElement: HTMLInputElement | null = null;
   private resultsElement: HTMLElement | null = null;
@@ -214,32 +212,6 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
     if (this.inputElement) {
       this.scope.listen(this.inputElement, "input", this.handleInput);
-    }
-
-    if (!this.combobox) {
-      this.combobox = new ComboboxController<CompletionItem>({
-        root: this,
-        getInput: () => this.inputElement,
-        getListbox: () => this.getSuggestionsListbox(),
-        acceptOnTab: false,
-        followCaret: false,
-        onSelect: (item) => {
-          this.chooseSuggestion(item.word);
-        },
-        onVisibilityChange: (open) => {
-          const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
-          if (suggestions) {
-            suggestions.style.display = open ? "" : "none";
-          }
-          if (!open) {
-            this.suggestions = [];
-            if (suggestions) {
-              suggestions.items = [];
-            }
-          }
-        },
-      });
-      this.addController(this.combobox);
     }
 
     if (this.resultsElement) {
@@ -470,19 +442,11 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     window.history.replaceState(null, "", url.pathname + url.search);
   }
 
-  private getSuggestionsListbox(): HTMLElement | null {
-    const list = this.suggestionsEl?.firstElementChild;
-    if (list instanceof HTMLElement) return list;
-    const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
-    return suggestions ? suggestions.listEl : null;
-  }
-
   private clearSuggestions() {
     this.debouncedFetchPrefixChunk.cancel();
     this.debouncedFetchSuffixCompletions.cancel();
     this.scope.cancel("completions");
     this.suggestions = [];
-    this.combobox?.close();
     const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
     if (suggestions) {
       suggestions.items = [];
@@ -494,7 +458,6 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     if (suggestions) {
       suggestions.items = this.suggestions;
     }
-    this.combobox?.setItems(this.suggestions);
   }
 
   private readonly handleInput = () => {
