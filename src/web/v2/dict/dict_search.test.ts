@@ -393,6 +393,36 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
   });
 
+  test("dict-selection-change does not reopen suggestions closed by blur", () => {
+    const el = createDictSearch();
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+    el.chunkCache.setChunks("am", {
+      "L&S": ["amabilis"],
+      GAF: ["ămīcĭtĭa"],
+    });
+    input.value = "am";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
+    const listbox = suggestionsEl.querySelector("ul") as HTMLUListElement;
+    expect(listbox.hidden).toBe(false);
+
+    // e.g. focus moves to the settings popover.
+    input.dispatchEvent(new Event("blur"));
+    expect(listbox.hidden).toBe(true);
+
+    el.dispatchEvent(
+      new CustomEvent("dict-selection-change", {
+        bubbles: true,
+        detail: { dictKeys: ["GAF"], bitmask: "2" },
+      })
+    );
+
+    expect(suggestionsEl.items).toEqual([]);
+    expect(listbox.hidden).toBe(true);
+    expect(input.getAttribute("aria-expanded")).toBe("false");
+  });
+
   test("updates landing welcome message and badges on dict-selection-change when query is empty", () => {
     const landingHtml = `
       <div id="landing-welcome">Initial Welcome</div>

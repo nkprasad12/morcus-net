@@ -56,7 +56,6 @@ import {
  */
 export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   public readonly chunkCache: DictChunkCache = new DictChunkCache();
-  private suggestions: CompletionItem[] = [];
 
   private inputElement: HTMLInputElement | null = null;
   private resultsElement: HTMLElement | null = null;
@@ -79,8 +78,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       query,
       25
     );
-    this.suggestions = items;
-    this.updateSuggestionsView();
+    this.showSuggestions(items);
   }
 
   // Deliberately takes no query: by the time the debounce fires the one the
@@ -124,8 +122,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         .then((data: CompletionItem[]) => {
           if (signal.aborted) return;
           if (document.activeElement !== this.inputElement) return;
-          this.suggestions = Array.isArray(data) ? data : [];
-          this.updateSuggestionsView();
+          this.showSuggestions(Array.isArray(data) ? data : []);
         })
         .catch((e: unknown) => {
           if (e instanceof Error && e.name !== "AbortError") {
@@ -290,7 +287,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         }
 
         // Re-cluster suggestions immediately if active prefix is in chunk cache
-        if (this.suggestions.length > 0 && currentQuery) {
+        if (this.shownSuggestions.length > 0 && currentQuery) {
           const { query: activeQ, isSuffix: activeSuffix } =
             cleanCompletionQuery(currentQuery);
           if (!activeSuffix && activeQ.length >= 2) {
@@ -446,17 +443,22 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     this.debouncedFetchPrefixChunk.cancel();
     this.debouncedFetchSuffixCompletions.cancel();
     this.scope.cancel("completions");
-    this.suggestions = [];
-    const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
-    if (suggestions) {
-      suggestions.items = [];
-    }
+    this.showSuggestions([]);
   }
 
-  private updateSuggestionsView() {
+  /**
+   * The list's items live only in `<morcus-dict-suggestions>`: it closes
+   * itself on blur and Escape, so a copy here would go stale and could
+   * reopen it later (e.g. on a dictionary settings change).
+   */
+  private get shownSuggestions(): readonly CompletionItem[] {
+    return queryUpgraded(this, "morcus-dict-suggestions")?.items ?? [];
+  }
+
+  private showSuggestions(items: readonly CompletionItem[]) {
     const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
     if (suggestions) {
-      suggestions.items = this.suggestions;
+      suggestions.items = items;
     }
   }
 
