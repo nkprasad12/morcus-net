@@ -4,41 +4,9 @@
 
 import {
   diffTree,
-  inIsomorphicRerender,
-  isAllowlistedCreation,
   parseInert,
   snapshotTree,
 } from "@/web/v2/testing/ssr_invariants";
-
-describe("isAllowlistedCreation", () => {
-  test("a subtree entry covers everything created inside the matched element", () => {
-    const root = parseInert(
-      `<morcus-corpus-suggestions><ul><li><span><b>x</b></span></li></ul></morcus-corpus-suggestions>`
-    );
-    for (const el of Array.from(root.querySelectorAll("li, span, b"))) {
-      expect(isAllowlistedCreation(el, "upgrade")).toBe(true);
-    }
-  });
-
-  test("an entry without `subtree` covers only the element itself", () => {
-    const root = parseInert(`<a class="lat-word"><span>x</span></a>`);
-    expect(isAllowlistedCreation(root.querySelector("a")!, "upgrade")).toBe(
-      true
-    );
-    expect(isAllowlistedCreation(root.querySelector("span")!, "upgrade")).toBe(
-      false
-    );
-  });
-
-  test("an element outside every entry is not covered", () => {
-    const root = parseInert(
-      `<morcus-corpus-view><div></div></morcus-corpus-view>`
-    );
-    expect(
-      isAllowlistedCreation(root.querySelector("div")!, "interaction")
-    ).toBe(false);
-  });
-});
 
 describe("diffTree", () => {
   test("reports removed, reparented and created elements", () => {
@@ -56,35 +24,5 @@ describe("diffTree", () => {
     expect(diff.removed.map((el) => el.id)).toEqual(["a"]);
     expect(diff.reparented.map(({ el }) => el.id)).toEqual(["b"]);
     expect(diff.created).toEqual([created]);
-  });
-});
-
-describe("inIsomorphicRerender", () => {
-  test("covers the contents of a `contents` region, not the region itself", () => {
-    const root = parseInert(
-      `<morcus-dict-search><div class="lang-chips"><span></span></div></morcus-dict-search>`
-    );
-    expect(inIsomorphicRerender(root.querySelector("span")!)).toBe(true);
-    expect(inIsomorphicRerender(root.querySelector(".lang-chips")!)).toBe(
-      false
-    );
-  });
-
-  test("covers a `self` region, including when detached via a saved ancestry", () => {
-    const root = parseInert(
-      `<morcus-dict-search><span class="inflect-chip"></span></morcus-dict-search>`
-    );
-    const chip = root.querySelector(".inflect-chip")!;
-    const parents = new Map<Element, Node>([[chip, chip.parentNode!]]);
-    chip.remove();
-    expect(inIsomorphicRerender(chip)).toBe(false);
-    expect(
-      inIsomorphicRerender(chip, (el) => parents.get(el) ?? el.parentNode)
-    ).toBe(true);
-  });
-
-  test("needs the owning component", () => {
-    const root = parseInert(`<div><span class="inflect-chip"></span></div>`);
-    expect(inIsomorphicRerender(root.querySelector("span")!)).toBe(false);
   });
 });

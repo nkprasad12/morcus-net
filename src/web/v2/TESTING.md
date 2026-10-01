@@ -113,14 +113,14 @@ npx jest src/web/v2/core/dialog.test.ts
 Two jsdom suites check real SSR output (`testing/ssr_fixtures.ts`) against the PE invariants. Neither ships code to the client.
 
 - [`core/ssr_conformance.test.ts`](core/ssr_conformance.test.ts) checks the page **right after upgrade**: tree fingerprint, No-JS controls, ids and hash links, and the failed-owner sweep.
-- [`core/interaction_conformance.test.ts`](core/interaction_conformance.test.ts) checks it again **after interaction**. Its Tier 1 sweep exercises every deduplicated control in every fixture with a fixed script (focus/type/arrow/Escape/blur, clicks, option and step changes) against a fake network backed by the real server renderers (`testing/fake_v2_network.ts`), and checks the invariants after each step. Each target also runs torn down mid-script, to catch late writes to detached nodes. Tier 2 (`TIER2_SCENARIOS`) declares multi-step flows a single control can't reach, such as picking a suggestion, submitting, or paging. They run in the same three modes, and each must end in a partial swap. When a feature adds a new flow, add a scenario for it.
+- `*_interaction_conformance.test.ts`, one next to each feature (`dict/`, `corpus/`, `reader/`, `library/`, `external/`), checks it again **after interaction**, using [`testing/interaction_harness.ts`](testing/interaction_harness.ts). Each file lists its fixtures, caps and scenarios. The Tier 1 sweep exercises every deduplicated control in the feature's fixtures with a fixed script (focus/type/arrow/Escape/blur, clicks, option and step changes) against a fake network backed by the real server renderers (`testing/fake_v2_network.ts`), and checks the invariants after each step. Each target also runs torn down mid-script, to catch late writes to detached nodes. Tier 2 (the file's `scenarios`) declares multi-step flows a single control can't reach, such as picking a suggestion, submitting, or paging. They run in the same three modes, and each must end in a partial swap. When a feature adds a new flow, add a scenario to its file. A new page type gets a fixture builder in `testing/ssr_fixtures.ts` and its own suite.
 
-Shared lists in [`testing/ssr_invariants.ts`](testing/ssr_invariants.ts), all of which **need human review to extend**:
+Shared lists, each in its own file and all of which **need human review to extend**:
 
-- `CREATED_DOM_ALLOWLIST`: the only elements client code may create, each with a phase (`upgrade` or `interaction` only), an optional `subtree`, and a `reason`. Prefer server-rendering the element and adopting it.
-- `ISOMORPHIC_RERENDERS`: SSR UI the client re-renders after an interaction with the same `.common.ts` renderer the server used.
+- [`testing/created_dom_allowlist.ts`](testing/created_dom_allowlist.ts), `CREATED_DOM_ALLOWLIST`: the only elements client code may create, each with a phase (`upgrade` or `interaction` only), an optional `subtree`, and a `reason`. Prefer server-rendering the element and adopting it.
+- [`testing/isomorphic_rerenders.ts`](testing/isomorphic_rerenders.ts), `ISOMORPHIC_RERENDERS`: SSR UI the client re-renders after an interaction with the same `.common.ts` renderer the server used.
 
-The Tier 1 sweep is capped by count (`TIER1_MAX_RUNS_PER_FIXTURE`, `TIER1_MAX_RUNS_TOTAL`, with a floor `TIER1_MIN_RUNS_TOTAL`), checked before any run starts. If a fixture goes over, the failure lists its controls grouped by dedup key. Tighten the key (`targetKey`) before raising a cap; a raise or a `TIER1_CAP_OVERRIDES` entry needs human review.
+Each fixture's Tier 1 sweep is capped by count (`TIER1_MAX_RUNS_PER_FIXTURE`), and each suite has a floor (`caps.minRuns`), both checked before any run starts. If a fixture goes over, the failure lists its controls grouped by dedup key. Tighten the key (`targetKey`) before raising a cap; a raise or a `caps.overrides` entry needs human review.
 
 ---
 

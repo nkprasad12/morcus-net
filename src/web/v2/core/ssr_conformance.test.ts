@@ -35,12 +35,12 @@ import {
   runPageSetups,
   type SsrFixture,
 } from "@/web/v2/testing/ssr_fixtures";
+import { isAllowlistedCreation } from "@/web/v2/testing/created_dom_allowlist";
 import {
   NO_JS_CONTROLS,
   describeElement,
   describeParent,
   diffTree,
-  isAllowlistedCreation,
   morcusElements,
   nearestMorcus,
   noJsControlViolation,

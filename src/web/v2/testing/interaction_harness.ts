@@ -1,10 +1,11 @@
 /**
- * Interaction-time SSR conformance (corpus/DESIGN.md §9 item 8).
+ * The interaction conformance harness (corpus/DESIGN.md §9 item 8), shared
+ * by the `*_interaction_conformance.test.ts` file next to each feature.
  *
- * `ssr_conformance.test.ts` checks the DOM right after upgrade. This harness
- * checks it again after the user does something: focusing, typing, clicking,
- * and the mocked fetches that follow. Everything runs in jsdom; nothing here
- * ships to the client.
+ * `core/ssr_conformance.test.ts` checks the DOM right after upgrade. This
+ * harness checks it again after the user does something: focusing, typing,
+ * clicking, and the mocked fetches that follow. Everything runs in jsdom;
+ * nothing here ships to the client.
  *
  * Tier 1 is an automated sweep: every interactive control in every fixture,
  * deduplicated so repeated rows count once, each exercised by a fixed script
@@ -20,16 +21,15 @@
  * Each target also runs twice more, torn down with work still pending
  * (`RunMode`), to catch late writes to detached nodes.
  *
- * Tier 2 (`TIER2_SCENARIOS`) declares multi-step flows a single control's
- * script can't reach: picking a suggestion, submitting, paging. They run in
- * the same modes against the same checks, and each must end in a partial
- * swap.
+ * Tier 2 declares multi-step flows a single control's script can't reach:
+ * picking a suggestion, submitting, paging. They run in the same modes
+ * against the same checks, and each must end in a partial swap.
  *
- * The sweep's size is capped, and the cap is checked before any run starts,
- * so a fixture that grows a long list of controls fails fast instead of
- * making the sweep slow.
+ * Each suite caps its sweep (`Tier1Caps`), and the caps are checked before
+ * any run starts, so a fixture that grows a long list of controls fails fast
+ * instead of making the sweep slow.
  *
- * @jest-environment jsdom
+ * Suites must mock the modules `testing/ssr_fixtures.ts` asks for.
  */
 
 import "@/web/v2/v2_elements.client";
@@ -38,8 +38,9 @@ import {
   detachedDomWrites,
 } from "@/web/v2/core/dom_invariants.client";
 import { SLOT_ATTR } from "@/web/v2/core/slots.common";
+import { isAllowlistedCreation } from "@/web/v2/testing/created_dom_allowlist";
+import { inIsomorphicRerender } from "@/web/v2/testing/isomorphic_rerenders";
 import {
-  buildSsrFixtures,
   installMatchMediaStub,
   mountFixture,
   runPageSetups,
@@ -50,8 +51,6 @@ import {
   describeElement,
   describeParent,
   diffTree,
-  inIsomorphicRerender,
-  isAllowlistedCreation,
   nearestMorcus,
   noJsControlViolation,
   parseInert,
@@ -62,16 +61,6 @@ import {
   type FakeNetworkLog,
 } from "@/web/v2/testing/fake_v2_network";
 
-jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
-  getV2CriticalCss: () => "body{background-color:var(--bg)}",
-  getV2CriticalJs: () => "/* critical js */",
-}));
-
-jest.mock("@/web/v2/reader/reader_loader.server", () =>
-  jest.requireActual("@/web/v2/testing/mock_reader_loader")
-);
-
 // ---------------------------------------------------------------------------
 // Tier 1 budget. Counts, not wall time: a "run" is one fresh parse + upgrade,
 // one control's script, and an invariant check after each step.
@@ -80,15 +69,20 @@ jest.mock("@/web/v2/reader/reader_loader.server", () =>
 // fix for a fixture over its cap is a better dedup key (`targetKey`).
 // ---------------------------------------------------------------------------
 
-// Calibrated when this landed: 71 targets in total, at most 14 per fixture
-// (`dict-results`).
-const TIER1_MAX_RUNS_PER_FIXTURE = 25;
-const TIER1_MAX_RUNS_TOTAL = 120;
-/** Below this the sweep is probably vacuous (e.g. a dedup bug). */
-const TIER1_MIN_RUNS_TOTAL = 50;
-const TIER1_CAP_OVERRIDES: Readonly<
-  Record<string, { readonly max: number; readonly reason: string }>
-> = {};
+/**
+ * Calibrated when the harness landed: at most 14 targets in one fixture
+ * (`dict-results`).
+ */
+export const TIER1_MAX_RUNS_PER_FIXTURE = 25;
+
+export interface Tier1Caps {
+  /** Below this the suite's sweep is probably vacuous (e.g. a dedup bug). */
+  readonly minRuns: number;
+  /** Per-fixture exceptions to `TIER1_MAX_RUNS_PER_FIXTURE`. */
+  readonly overrides?: Readonly<
+    Record<string, { readonly max: number; readonly reason: string }>
+  >;
+}
 
 /** Candidates for Tier 1. Links and submit buttons navigate: Tier 2. */
 const TIER1_CANDIDATES = "input, textarea, select, button, summary";
@@ -155,16 +149,21 @@ function tier1Fixtures(fixtures: readonly SsrFixture[]): SsrFixture[] {
 }
 
 /**
- * Lets debounces, fake network latency and rAF callbacks run out. Jest 29.5+
- * has `advanceTimersByTimeAsync` (it flushes promises between timers), but
- * the installed `@types/jest` predates it.
+ * `jest.advanceTimersByTimeAsync` (Jest 29.5+), which flushes promises
+ * between timers. The installed `@types/jest` predates it.
  */
+async function advanceTimersAsync(ms: number): Promise<void> {
+  const advance: unknown = Reflect.get(jest, "advanceTimersByTimeAsync");
+  if (typeof advance !== "function") {
+    throw new Error("jest.advanceTimersByTimeAsync needs Jest 29.5+");
+  }
+  await advance.call(jest, ms);
+}
+
+/** Lets debounces, fake network latency and rAF callbacks run out. */
 async function settle(): Promise<void> {
-  const timers = jest as unknown as {
-    advanceTimersByTimeAsync(ms: number): Promise<void>;
-  };
   for (let i = 0; i < 4; i++) {
-    await timers.advanceTimersByTimeAsync(250);
+    await advanceTimersAsync(250);
   }
 }
 
@@ -199,7 +198,10 @@ interface Tier1Plan {
 }
 
 /** Discovers every fixture's targets and checks them against the caps. */
-async function planTier1(fixtures: readonly SsrFixture[]): Promise<Tier1Plan> {
+async function planTier1(
+  fixtures: readonly SsrFixture[],
+  caps: Tier1Caps
+): Promise<Tier1Plan> {
   const perFixture = new Map<string, readonly Tier1Target[]>();
   const overCap: string[] = [];
   let total = 0;
@@ -217,18 +219,13 @@ async function planTier1(fixtures: readonly SsrFixture[]): Promise<Tier1Plan> {
     perFixture.set(fixture.name, targets);
     total += targets.length;
     const cap =
-      TIER1_CAP_OVERRIDES[fixture.name]?.max ?? TIER1_MAX_RUNS_PER_FIXTURE;
+      caps.overrides?.[fixture.name]?.max ?? TIER1_MAX_RUNS_PER_FIXTURE;
     if (targets.length > cap) {
       const listing = [...raw].map(([key, n]) => `    ${n}× ${key}`).join("\n");
       overCap.push(
         `${fixture.name}: ${targets.length} Tier 1 targets, cap ${cap}:\n${listing}`
       );
     }
-  }
-  if (total > TIER1_MAX_RUNS_TOTAL) {
-    overCap.push(
-      `all fixtures: ${total} Tier 1 targets, cap ${TIER1_MAX_RUNS_TOTAL}`
-    );
   }
   resetPage();
   return { perFixture, total, overCap };
@@ -238,7 +235,7 @@ async function planTier1(fixtures: readonly SsrFixture[]): Promise<Tier1Plan> {
 // Tier 1 scripts. Each step is followed by `settle()` and an invariant check.
 // ---------------------------------------------------------------------------
 
-interface Step {
+export interface Step {
   readonly name: string;
   readonly act: () => void;
 }
@@ -452,11 +449,8 @@ const RUN_MODES: readonly RunMode[] = ["settled", "abandoned", "mid-body"];
 
 /** Advances the clock in small ticks until `done()`, for at most `maxMs`. */
 async function advanceUntil(done: () => boolean, maxMs: number) {
-  const timers = jest as unknown as {
-    advanceTimersByTimeAsync(ms: number): Promise<void>;
-  };
   for (let t = 0; t < maxMs && !done(); t += 5) {
-    await timers.advanceTimersByTimeAsync(5);
+    await advanceTimersAsync(5);
   }
 }
 
@@ -573,7 +567,7 @@ function runTier1(
 // up when they run, and a missing one fails the scenario.
 // ---------------------------------------------------------------------------
 
-interface Scenario {
+export interface Scenario {
   readonly fixture: string;
   readonly name: string;
   readonly steps: readonly Step[];
@@ -595,19 +589,19 @@ function textField(selector: string): HTMLInputElement {
   return el;
 }
 
-const focusOn = (selector: string): Step => ({
+export const focusOn = (selector: string): Step => ({
   name: `focus ${selector}`,
   act: () => find(selector).focus(),
 });
-const typeIn = (selector: string, value: string): Step => ({
+export const typeIn = (selector: string, value: string): Step => ({
   name: `type "${value}" into ${selector}`,
   act: () => typeInto(textField(selector), value),
 });
-const pressKey = (key: string): Step => ({
+export const pressKey = (key: string): Step => ({
   name: key,
   act: () => press(key),
 });
-const submitFormOf = (selector: string): Step => ({
+export const submitFormOf = (selector: string): Step => ({
   name: `submit the form of ${selector}`,
   act: () => {
     const form = textField(selector).form;
@@ -615,52 +609,10 @@ const submitFormOf = (selector: string): Step => ({
     form.requestSubmit();
   },
 });
-const clickOn = (selector: string): Step => ({
+export const clickOn = (selector: string): Step => ({
   name: `click ${selector}`,
   act: () => find(selector).click(),
 });
-
-const TIER2_SCENARIOS: readonly Scenario[] = [
-  {
-    fixture: "dict-landing",
-    name: "pick a suggestion",
-    steps: [
-      focusOn("#dict-q"),
-      typeIn("#dict-q", "am"),
-      pressKey("ArrowDown"),
-      pressKey("Enter"),
-    ],
-    expectSwap: true,
-  },
-  {
-    fixture: "dict-results",
-    name: "search again",
-    steps: [
-      focusOn("#dict-q"),
-      typeIn("#dict-q", "amor"),
-      submitFormOf("#dict-q"),
-    ],
-    expectSwap: true,
-  },
-  {
-    fixture: "corpus-landing",
-    name: "complete a lemma, then search",
-    steps: [
-      focusOn("#corpus-q"),
-      typeIn("#corpus-q", "@l:am"),
-      pressKey("ArrowDown"),
-      pressKey("Enter"),
-      submitFormOf("#corpus-q"),
-    ],
-    expectSwap: true,
-  },
-  {
-    fixture: "corpus-results",
-    name: "next page",
-    steps: [clickOn('.corpus-pager a[rel="next"]')],
-    expectSwap: true,
-  },
-];
 
 function runTier2(
   fixture: SsrFixture,
@@ -678,70 +630,91 @@ function runTier2(
   );
 }
 
-describe("Interaction-time SSR conformance", () => {
-  const fixtures: SsrFixture[] = [];
+// ---------------------------------------------------------------------------
+// The suite.
+// ---------------------------------------------------------------------------
 
-  beforeAll(async () => {
-    installMatchMediaStub();
-    fixtures.push(...(await buildSsrFixtures()));
-  });
+export interface InteractionSuite {
+  /** Builds the feature's fixtures (`testing/ssr_fixtures.ts`). */
+  readonly fixtures: () => SsrFixture[] | Promise<SsrFixture[]>;
+  readonly caps: Tier1Caps;
+  /** Tier 2 flows on this suite's fixtures. */
+  readonly scenarios?: readonly Scenario[];
+}
 
-  beforeEach(() => {
-    jest.useFakeTimers({ doNotFake: ["performance", "queueMicrotask"] });
-    installFakeNetwork();
-  });
+/** Registers a feature's Tier 1 and Tier 2 tests in the calling test file. */
+export function describeInteractionConformance(
+  name: string,
+  suite: InteractionSuite
+): void {
+  describe(`Interaction-time SSR conformance: ${name}`, () => {
+    const fixtures: SsrFixture[] = [];
 
-  afterEach(() => {
-    resetPage();
-    jest.useRealTimers();
-    jest.restoreAllMocks();
-  });
+    beforeAll(async () => {
+      installMatchMediaStub();
+      fixtures.push(...(await suite.fixtures()));
+    });
 
-  test("Tier 1: every fixture's targets fit the caps", async () => {
-    const plan = await planTier1(fixtures);
-    expect(plan.overCap).toEqual([]);
-    expect(plan.total).toBeGreaterThanOrEqual(TIER1_MIN_RUNS_TOTAL);
-  });
+    beforeEach(() => {
+      jest.useFakeTimers({ doNotFake: ["performance", "queueMicrotask"] });
+      installFakeNetwork();
+    });
 
-  test("Tier 1: interacting with any control keeps the SSR invariants", async () => {
-    const plan = await planTier1(fixtures);
-    // Fail before any run, not after a slow sweep.
-    expect(plan.overCap).toEqual([]);
-    jest.spyOn(console, "warn").mockImplementation(() => {});
-    // jsdom logs uncaught listener errors here; they're collected below.
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    afterEach(() => {
+      resetPage();
+      jest.useRealTimers();
+      jest.restoreAllMocks();
+    });
 
-    const violations: string[] = [];
-    let runs = 0;
-    for (const fixture of tier1Fixtures(fixtures)) {
-      const targets = plan.perFixture.get(fixture.name) ?? [];
-      for (let i = 0; i < targets.length; i++) {
-        runs++;
-        for (const mode of RUN_MODES) {
-          violations.push(
-            ...(await runTier1(fixture, i, targets[i].key, mode))
-          );
+    test("Tier 1: every fixture's targets fit the caps", async () => {
+      const plan = await planTier1(fixtures, suite.caps);
+      expect(plan.overCap).toEqual([]);
+      expect(plan.total).toBeGreaterThanOrEqual(suite.caps.minRuns);
+    });
+
+    test("Tier 1: interacting with any control keeps the SSR invariants", async () => {
+      const plan = await planTier1(fixtures, suite.caps);
+      // Fail before any run, not after a slow sweep.
+      expect(plan.overCap).toEqual([]);
+      jest.spyOn(console, "warn").mockImplementation(() => {});
+      // jsdom logs uncaught listener errors here; they're collected below.
+      jest.spyOn(console, "error").mockImplementation(() => {});
+
+      const violations: string[] = [];
+      let runs = 0;
+      for (const fixture of tier1Fixtures(fixtures)) {
+        const targets = plan.perFixture.get(fixture.name) ?? [];
+        for (let i = 0; i < targets.length; i++) {
+          runs++;
+          for (const mode of RUN_MODES) {
+            violations.push(
+              ...(await runTier1(fixture, i, targets[i].key, mode))
+            );
+          }
         }
       }
-    }
-    expect(runs).toBeGreaterThanOrEqual(TIER1_MIN_RUNS_TOTAL);
-    expect(violations).toEqual([]);
-  }, 120_000); // Last-resort backstop only; the caps above are what bound the sweep.
-  test("Tier 2: declared scenarios keep the SSR invariants", async () => {
-    jest.spyOn(console, "warn").mockImplementation(() => {});
-    jest.spyOn(console, "error").mockImplementation(() => {});
-    const byName = new Map(fixtures.map((f) => [f.name, f]));
-    const violations: string[] = [];
-    for (const scenario of TIER2_SCENARIOS) {
-      const fixture = byName.get(scenario.fixture);
-      if (!fixture) {
-        violations.push(`${scenario.name}: no fixture ${scenario.fixture}`);
-        continue;
+      expect(runs).toBeGreaterThanOrEqual(suite.caps.minRuns);
+      expect(violations).toEqual([]);
+    }, 60_000); // Last-resort backstop only; the caps above are what bound the sweep.
+
+    const scenarios = suite.scenarios ?? [];
+    if (scenarios.length === 0) return;
+    test("Tier 2: declared scenarios keep the SSR invariants", async () => {
+      jest.spyOn(console, "warn").mockImplementation(() => {});
+      jest.spyOn(console, "error").mockImplementation(() => {});
+      const byName = new Map(fixtures.map((f) => [f.name, f]));
+      const violations: string[] = [];
+      for (const scenario of scenarios) {
+        const fixture = byName.get(scenario.fixture);
+        if (!fixture) {
+          violations.push(`${scenario.name}: no fixture ${scenario.fixture}`);
+          continue;
+        }
+        for (const mode of RUN_MODES) {
+          violations.push(...(await runTier2(fixture, scenario, mode)));
+        }
       }
-      for (const mode of RUN_MODES) {
-        violations.push(...(await runTier2(fixture, scenario, mode)));
-      }
-    }
-    expect(violations).toEqual([]);
+      expect(violations).toEqual([]);
+    });
   });
-});
+}
