@@ -14,17 +14,22 @@
  *    resolves to an element in the document, and `revealTarget()` makes every
  *    targeted element visible after upgrade.
  * 4. Failed-owner sweep: with any one `morcus-*` instance failed in
- *    `onConnect()` and everything else upgraded, no listener cancels a native
- *    activation on a control in that instance or pointing into it.
+ *    `onConnect()` (or never defined) and everything else upgraded, no
+ *    listener cancels a native activation on a control in that instance or
+ *    pointing into it; and after a bundle failure (`<html data-js-failed>`)
+ *    no listener cancels any activation on the page.
  *
  * @jest-environment jsdom
  */
 
 import "@/web/v2/v2_elements.client";
+import fs from "fs";
+import path from "path";
 import { XmlNode } from "@/common/xml/xml_node";
 import { getRegisteredElementTags } from "@/web/v2/core/base_element.client";
 import { setupAnchorScroll } from "@/web/v2/core/anchor_scroll.client";
 import { setupBackToTop } from "@/web/v2/core/back_to_top.client";
+import { setupDeferredIframes } from "@/web/v2/core/deferred_iframe.client";
 import { revealTarget } from "@/web/v2/core/reveal.client";
 import { setupAbbrPopover } from "@/web/v2/dict/abbr_popover.client";
 import { CONTEXT_LEN, PAGE_SIZE } from "@/web/v2/corpus/corpus_params.common";
@@ -34,6 +39,7 @@ import { renderDictPageHtml } from "@/web/v2/dict/dict_page.server";
 import { renderExternalLandingContentHtml } from "@/web/v2/external/external.server";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
 import { renderReaderContentHtml } from "@/web/v2/reader/reader.server";
+import { setupMobileMenu } from "@/web/v2/shell/mobile_menu.client";
 import {
   CORPUS_TEST_AUTHORS,
   fakeCorpusEngine,
@@ -585,55 +591,56 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
   });
 
   describe("4. Failed-owner sweep: a component that failed keeps its No-JS behaviour", () => {
-    test("no listener cancels a native activation in, or pointing into, a failed component", () => {
-      const violations: string[] = [];
-      const listenerErrors: string[] = [];
-      let instancesSwept = 0;
-      let activations = 0;
+    test("runs every global setup the entry files start", () => {
+      // Section 4 must see the same document-level listeners as a real page.
+      expect(Object.keys(PAGE_SETUPS).sort()).toEqual(setupsStartedByEntries());
+    });
 
+    test.each([
+      ["onConnect throws", "throws"],
+      ["tag is never defined", "undefined"],
+    ] as const)(
+      "no listener cancels a native activation in, or pointing into, a component whose %s",
+      (_label, mode) => {
+        const { instancesSwept, activations, violations, listenerErrors } =
+          sweepFailedOwners(fixtures, mode);
+        expect(instancesSwept).toBeGreaterThan(10);
+        expect(activations).toBeGreaterThan(100);
+        expect({ violations, listenerErrors }).toEqual({
+          violations: [],
+          listenerErrors: [],
+        });
+      }
+    );
+
+    test("after a bundle failure on <html>, no listener cancels any activation", () => {
       jest.spyOn(console, "warn").mockImplementation(() => {});
+      // jsdom logs "not implemented" for native submits it can't perform.
       jest.spyOn(console, "error").mockImplementation(() => {});
-
-      for (const fixture of fixtures) {
-        if (fixture.focusBeforeUpgrade) continue;
-        const count = morcusElements(parseInert(fixture.html)).length;
-
-        for (let i = 0; i < count; i++) {
+      const violations: string[] = [];
+      let activations = 0;
+      document.documentElement.setAttribute("data-js-failed", "");
+      try {
+        for (const fixture of fixtures) {
+          if (fixture.focusBeforeUpgrade) continue;
           document.body.innerHTML = "";
           window.history.replaceState(null, "", "/");
           const wrapper = parseInert(fixture.html);
-          const failed = morcusElements(wrapper)[i];
-          const label = `${fixture.name}: failed ${describeElement(
-            failed
-          )} (#${i})`;
-          instancesSwept++;
-
-          const restore = forceConnectFailure(failed);
-          const onError = (e: ErrorEvent) => {
-            if (e.error !== FORCED_FAILURE) {
-              listenerErrors.push(`${label}: ${String(e.error ?? e.message)}`);
-            }
-            e.preventDefault();
-          };
-          window.addEventListener("error", onError);
           const cleanups: (() => void)[] = [];
           try {
             document.body.appendChild(wrapper);
-            expect(failed.hasAttribute("data-js-failed")).toBe(true);
-            cleanups.push(
-              setupAnchorScroll(document, window),
-              setupAbbrPopover(document, window),
-              setupBackToTop(document, window)
+            cleanups.push(...runPageSetups());
+            const controls = Array.from(
+              wrapper.querySelectorAll(NATIVE_CONTROLS)
             );
-
-            for (const control of controlsAffectedBy(failed, wrapper)) {
+            for (const control of controls) {
               for (const event of activationEvents(control)) {
                 if (!control.isConnected) break;
                 activations++;
                 control.dispatchEvent(event);
                 if (event.defaultPrevented) {
                   violations.push(
-                    `${label}: ${eventName(event)} on ${describeElement(
+                    `${fixture.name}: ${eventName(event)} on ${describeElement(
                       control
                     )} was cancelled`
                   );
@@ -642,21 +649,163 @@ describe("SSR & Progressive-Enhancement Runtime Conformance", () => {
             }
           } finally {
             for (const cleanup of cleanups) cleanup();
-            window.removeEventListener("error", onError);
-            restore();
           }
         }
+      } finally {
+        document.documentElement.removeAttribute("data-js-failed");
       }
-
-      expect(instancesSwept).toBeGreaterThan(10);
       expect(activations).toBeGreaterThan(100);
-      expect({ violations, listenerErrors }).toEqual({
-        violations: [],
-        listenerErrors: [],
-      });
+      expect(violations).toEqual([]);
     });
   });
 });
+
+/**
+ * Every global setup an entry file starts, so section 4 runs with the same
+ * document-level listeners as a real page. Keyed by name so the drift test
+ * can compare against the entries.
+ */
+const PAGE_SETUPS: Record<string, (doc: Document, win: Window) => () => void> =
+  {
+    setupAbbrPopover,
+    setupAnchorScroll,
+    setupBackToTop,
+    setupDeferredIframes,
+    setupMobileMenu,
+  };
+
+function runPageSetups(): (() => void)[] {
+  return Object.values(PAGE_SETUPS).map((setup) => setup(document, window));
+}
+
+/**
+ * `setupX()` calls in `*_entry.client.ts` files. boot_conformance.test.ts
+ * guarantees entries only start setups from `onPageReady`, so a plain scan
+ * is enough.
+ */
+function setupsStartedByEntries(): string[] {
+  const names = new Set<string>();
+  const walk = (dir: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith("_entry.client.ts")) {
+        const src = fs.readFileSync(full, "utf8");
+        for (const m of src.matchAll(/\b(setup[A-Z]\w*)\s*\(/g)) {
+          names.add(m[1]);
+        }
+      }
+    }
+  };
+  walk(path.resolve(__dirname, ".."));
+  return [...names].sort();
+}
+
+interface SweepResult {
+  instancesSwept: number;
+  activations: number;
+  violations: string[];
+  listenerErrors: string[];
+}
+
+/**
+ * Fails each `morcus-*` instance in every fixture in turn, upgrades the rest,
+ * and dispatches activations on every control the failure affects.
+ *
+ * - `throws`: its `onConnect` throws, so it carries `data-js-failed`.
+ * - `undefined`: its tag is never defined (its chunk failed to load), so it
+ *   never gets `data-upgraded`.
+ */
+function sweepFailedOwners(
+  fixtures: readonly SsrFixture[],
+  mode: "throws" | "undefined"
+): SweepResult {
+  const violations: string[] = [];
+  const listenerErrors: string[] = [];
+  let instancesSwept = 0;
+  let activations = 0;
+
+  jest.spyOn(console, "warn").mockImplementation(() => {});
+  jest.spyOn(console, "error").mockImplementation(() => {});
+
+  for (const fixture of fixtures) {
+    if (fixture.focusBeforeUpgrade) continue;
+    const count = morcusElements(parseInert(fixture.html)).length;
+
+    for (let i = 0; i < count; i++) {
+      document.body.innerHTML = "";
+      window.history.replaceState(null, "", "/");
+      const wrapper = parseInert(fixture.html);
+      let failed = morcusElements(wrapper)[i];
+      const label = `${fixture.name}: ${mode} ${describeElement(
+        failed
+      )} (#${i})`;
+      instancesSwept++;
+
+      let restore = () => {};
+      if (mode === "throws") restore = forceConnectFailure(failed);
+      else failed = renameToUndefinedTag(failed, i);
+      const onError = (e: ErrorEvent) => {
+        if (e.error !== FORCED_FAILURE) {
+          listenerErrors.push(`${label}: ${String(e.error ?? e.message)}`);
+        }
+        e.preventDefault();
+      };
+      window.addEventListener("error", onError);
+      const cleanups: (() => void)[] = [];
+      try {
+        document.body.appendChild(wrapper);
+        if (mode === "throws") {
+          expect(failed.hasAttribute("data-js-failed")).toBe(true);
+        } else {
+          expect(failed.hasAttribute("data-upgraded")).toBe(false);
+        }
+        cleanups.push(...runPageSetups());
+
+        for (const control of controlsAffectedBy(
+          failed,
+          wrapper,
+          mode === "throws"
+        )) {
+          for (const event of activationEvents(control)) {
+            if (!control.isConnected) break;
+            activations++;
+            control.dispatchEvent(event);
+            if (event.defaultPrevented) {
+              violations.push(
+                `${label}: ${eventName(event)} on ${describeElement(
+                  control
+                )} was cancelled`
+              );
+            }
+          }
+        }
+      } finally {
+        for (const cleanup of cleanups) cleanup();
+        window.removeEventListener("error", onError);
+        restore();
+      }
+    }
+  }
+  return { instancesSwept, activations, violations, listenerErrors };
+}
+
+/**
+ * Replaces `el` (still inert, in its wrapper) with an element of a tag that
+ * is never defined, keeping its attributes and children. Returns the
+ * replacement.
+ */
+function renameToUndefinedTag(el: Element, i: number): Element {
+  const replacement = el.ownerDocument.createElement(
+    `morcus-never-defined-${i}`
+  );
+  for (const attr of Array.from(el.attributes)) {
+    replacement.setAttribute(attr.name, attr.value);
+  }
+  replacement.append(...Array.from(el.childNodes));
+  el.replaceWith(replacement);
+  return replacement;
+}
 
 const FORCED_FAILURE = new Error(
   "failed-owner sweep: forced onConnect failure"
@@ -713,14 +862,21 @@ function nearestMorcus(el: Element): Element | null {
 }
 
 /**
- * Native controls whose No-JS behaviour belongs to `failed`: those it owns
- * directly (not ones inside a nested component, which keeps working), and
- * any control on the page that points at an element inside it.
+ * Native controls whose No-JS behaviour belongs to `failed`, and any control
+ * on the page that points at an element inside it. With `includeNested`
+ * (a `data-js-failed` owner) that is every control inside it, since the CSS
+ * gate drops JS-only UI throughout a failed subtree and the activation gate
+ * blocks running children there too. Otherwise (an owner that merely never
+ * upgraded) a nested component that is running keeps its own controls.
  */
-function controlsAffectedBy(failed: Element, root: Element): Element[] {
+function controlsAffectedBy(
+  failed: Element,
+  root: Element,
+  includeNested: boolean
+): Element[] {
   const out = new Set<Element>();
   for (const el of Array.from(failed.querySelectorAll(NATIVE_CONTROLS))) {
-    if (nearestMorcus(el) === failed) out.add(el);
+    if (includeNested || nearestMorcus(el) === failed) out.add(el);
   }
   const inFailed = (id: string) => {
     const target = root.ownerDocument.getElementById(id);
