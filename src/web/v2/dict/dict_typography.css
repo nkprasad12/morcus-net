@@ -156,7 +156,7 @@ a.lsSenseBullet:visited {
   line-height: 1.4;
   color: var(--text);
   background-color: var(--card-bg);
-  border: 1px solid var(--border-focus);
+  border: 1px solid var(--app-bar-toggle-border);
   border-radius: var(--radius-lg);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
   width: max-content;
