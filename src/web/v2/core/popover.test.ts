@@ -2,12 +2,11 @@
  * @jest-environment jsdom
  */
 
+import { assertConnected, bindDismissable } from "@/web/v2/core/index.client";
 import {
   AnchoredPopoverController,
-  assertConnected,
-  bindDismissable,
   trapFocus,
-} from "@/web/v2/core/index.client";
+} from "@/web/v2/core/popover.client";
 import { allowDetachedDomWritesForTest } from "@/web/v2/testing/setup_tests";
 
 describe("AnchoredPopoverController & trapFocus", () => {
@@ -52,6 +51,25 @@ describe("AnchoredPopoverController & trapFocus", () => {
       )!,
     };
   }
+
+  test("open() throws when the controller was never connected", () => {
+    const fix = createPopoverFixture("unconnected");
+    const popover = new AnchoredPopoverController({
+      root: fix.wrapper,
+      getPanel: () => fix.panel,
+      getTrigger: () => fix.trigger,
+    });
+
+    // Without connect(), the while-open scope is dead and every dismissal /
+    // reposition listener would be dropped silently. Fail loudly instead.
+    expect(() => popover.open()).toThrow(/called before connect/);
+    expect(popover.isOpen).toBe(false);
+    expect(fix.panel.hidden).toBe(true);
+
+    popover.connect();
+    popover.open();
+    expect(popover.isOpen).toBe(true);
+  });
 
   test("preserves bindDismissable focus semantics: focuses trigger on Escape, does NOT steal focus on outside click", () => {
     const fix = createPopoverFixture("p1");

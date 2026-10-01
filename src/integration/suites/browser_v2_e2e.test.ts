@@ -305,6 +305,63 @@ test.describe("UI V2 dictionary", () => {
     expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
   });
 
+  test("section action menu sits under its anchor and dismisses on click-away, Escape, and scroll", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts?q=habeo");
+    const anchor = page.locator(".section-anchor").first();
+    const menu = page.locator(".section-action-menu");
+    await expect(anchor).toBeVisible();
+
+    const openMenu = async () => {
+      await anchor.scrollIntoViewIfNeeded();
+      await anchor.click();
+      await expect(menu).toBeVisible();
+      await expect(anchor).toHaveAttribute("aria-expanded", "true");
+    };
+
+    // Opens directly below its anchor (8px gap).
+    await openMenu();
+    const anchorBox = await anchor.boundingBox();
+    const menuBox = await menu.boundingBox();
+    expect(anchorBox).not.toBeNull();
+    expect(menuBox).not.toBeNull();
+    expect(
+      Math.abs(menuBox!.y - (anchorBox!.y + anchorBox!.height + 8))
+    ).toBeLessThanOrEqual(2);
+
+    // Click-away dismisses it (the original tester report).
+    await page.locator('input[name="q"]').click();
+    await expect(menu).not.toBeVisible();
+    await expect(anchor).toHaveAttribute("aria-expanded", "false");
+
+    // Escape dismisses it and returns focus to the anchor.
+    await openMenu();
+    await page.keyboard.press("Escape");
+    await expect(menu).not.toBeVisible();
+    await expect(anchor).toBeFocused();
+
+    // Scrolling the anchor's scroller dismisses it, rather than leaving it
+    // floating away from its anchor.
+    await openMenu();
+    await anchor.evaluate((el) => {
+      let node: HTMLElement | null = el.parentElement;
+      while (node) {
+        const { overflowY } = getComputedStyle(node);
+        if (
+          /(auto|scroll)/.test(overflowY) &&
+          node.scrollHeight > node.clientHeight
+        ) {
+          node.scrollBy(0, 150);
+          return;
+        }
+        node = node.parentElement;
+      }
+      window.scrollBy(0, 150);
+    });
+    await expect(menu).not.toBeVisible();
+  });
+
   test("renders subsection match banner with working jump chips (No-JS baseline)", async ({
     browser,
   }) => {
@@ -637,6 +694,14 @@ test.describe("UI V2 dictionary", () => {
     await abbr.click();
     await expect(popover).toBeVisible();
     await page.locator(".container").click({ position: { x: 5, y: 5 } });
+    await expect(popover).not.toBeVisible();
+
+    // A second click on the same abbreviation toggles it closed. (Native
+    // `popover="auto"` light-dismiss used to close it on pointerdown, and the
+    // click then reopened it.)
+    await abbr.click();
+    await expect(popover).toBeVisible();
+    await abbr.click();
     await expect(popover).not.toBeVisible();
   });
 

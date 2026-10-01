@@ -1,9 +1,10 @@
+import { computeAnchoredPlacement } from "@/web/v2/core/anchored_position.client";
 import { LifetimeScope } from "@/web/v2/core/base_element.client";
 import { bindDismissable } from "@/web/v2/core/dismissable.client";
 import { setHtml } from "@/web/v2/core/dom.client";
 import { html, joinHtml } from "@/web/v2/core/html.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
-import { AnchoredPopoverController } from "@/web/v2/core/popover.client";
+import type { PopoverWillOpenDetail } from "@/web/v2/core/popover.client";
 import { showToast } from "@/web/v2/core/toast.client";
 
 export interface SectionActionOptions {
@@ -31,11 +32,12 @@ interface ActiveEditorState {
 
 let menuEl: HTMLElement | null = null;
 let menuTrigger: HTMLAnchorElement | null = null;
-let menuCtrl: AnchoredPopoverController | null = null;
 let menuScope: LifetimeScope | null = null;
 let activeEditor: ActiveEditorState | null = null;
 
 const DIRTY_EDIT_TOAST = "Submit or cancel your current edit first";
+/** Mutual-exclusion group shared with the reader's Settings and TOC popovers. */
+const READER_CHROME_GROUP = "reader-chrome";
 
 const normText = (s: string | null | undefined) =>
   (s ?? "").replace(/\s+/g, " ").trim();
@@ -62,9 +64,8 @@ export function extractSectionCleanText(contentNodes: ChildNode[]): string {
 function closeMenu(): void {
   menuScope?.dispose();
   menuScope = null;
-  if (menuCtrl?.isOpen) {
-    menuCtrl.close();
-  }
+  menuTrigger?.setAttribute("aria-expanded", "false");
+  // Removing a showing popover also takes it out of the top layer.
   menuEl?.remove();
   menuEl = null;
   menuTrigger = null;
@@ -92,6 +93,11 @@ const renderMenuItem = (action: string, icon: string, label: string) =>
 /**
  * Opens the 2-item anchored popover menu ("Copy permalink" / "Suggest correction")
  * for a reader section or dictionary sense anchor.
+ *
+ * One menu serves every anchor on the page and lives only while open, so it
+ * manages its own while-open scope instead of using the one-to-one
+ * `AnchoredPopoverController`. It closes on an outside tap, Escape, Tab, any
+ * scroll that moves its anchor, or another `reader-chrome` popover opening.
  */
 export function openSectionActionMenu(options: SectionActionOptions): void {
   if (activeEditor) {
@@ -115,17 +121,23 @@ export function openSectionActionMenu(options: SectionActionOptions): void {
 
   const { anchor } = options;
   const doc = anchor.ownerDocument ?? document;
+  const win = doc.defaultView ?? window;
 
+  const menu = doc.createElement("div");
+  menuEl = menu;
   menuTrigger = anchor;
-  menuEl = doc.createElement("div");
-  menuEl.className =
-    "anchored-popover anchored-popover-centered section-action-menu";
-  menuEl.setAttribute("role", "menu");
-  menuEl.setAttribute("aria-label", `Actions for ${options.label}`);
-  doc.body.appendChild(menuEl);
+  menu.className = "anchored-popover section-action-menu";
+  menu.setAttribute("role", "menu");
+  menu.setAttribute("aria-label", `Actions for ${options.label}`);
+  // Top layer where supported, so no ancestor's overflow or stacking context
+  // can clip it; a plain `position: fixed` panel elsewhere. "manual" because
+  // dismissal is ours: native light-dismiss would close it on the pointerdown
+  // of a re-click on the anchor, which the click would then reopen.
+  menu.setAttribute("popover", "manual");
+  doc.body.appendChild(menu);
 
   setHtml(
-    menuEl,
+    menu,
     html`${joinHtml([
       renderMenuItem("copy", ICON_PATHS.link, "Copy permalink"),
       renderMenuItem("edit", ICON_PATHS.edit, "Suggest correction"),
@@ -133,13 +145,13 @@ export function openSectionActionMenu(options: SectionActionOptions): void {
   );
 
   anchor.setAttribute("aria-haspopup", "menu");
+  anchor.setAttribute("aria-expanded", "true");
 
-  const items = menuEl.querySelectorAll<HTMLButtonElement>(
-    "button[data-action]"
-  );
-  menuScope = new LifetimeScope(menuEl);
+  const items = menu.querySelectorAll<HTMLButtonElement>("button[data-action]");
+  const scope = new LifetimeScope(menu);
+  menuScope = scope;
 
-  menuScope.listen(menuEl, "click", (e: MouseEvent) => {
+  scope.listen(menu, "click", (e: MouseEvent) => {
     const btn =
       e.target instanceof Element
         ? e.target.closest<HTMLButtonElement>("button[data-action]")
@@ -157,31 +169,80 @@ export function openSectionActionMenu(options: SectionActionOptions): void {
     else if (action === "edit") startSectionEdit(options);
   });
 
-  menuScope.listen(menuEl, "keydown", (e: KeyboardEvent) => {
+  scope.listen(menu, "keydown", (e: KeyboardEvent) => {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       // Arrow keys move focus between this menu's items instead of scrolling
       e.preventDefault();
       (doc.activeElement === items[0] ? items[1] : items[0])?.focus();
+    } else if (e.key === "Tab") {
+      // Tab leaves the menu (ARIA menu pattern). Focusing the anchor first lets
+      // the default Tab action continue from it in the page's tab order.
+      closeMenu();
+      anchor.focus({ preventScroll: true });
     }
   });
 
-  menuCtrl = new AnchoredPopoverController({
-    root: doc,
-    group: "reader-chrome",
-    align: "center",
-    defaultWidth: 188,
-    getPanel: () => (menuEl?.isConnected ? menuEl : null),
-    getTrigger: () => (menuTrigger?.isConnected ? menuTrigger : null),
-    getInitialFocus: () => items[0] ?? null,
-    onClose: () => {
-      menuScope?.dispose();
-      menuScope = null;
-      menuEl?.remove();
-      menuEl = null;
-      menuTrigger = null;
-    },
+  const position = () => {
+    const { left, top, caretLeft } = computeAnchoredPlacement(
+      anchor.getBoundingClientRect(),
+      { width: menu.offsetWidth, height: menu.offsetHeight },
+      {
+        width: win.innerWidth || doc.documentElement.clientWidth,
+        height: win.innerHeight,
+      },
+      { align: "center", side: "below", gap: 8, margin: 12, caretInset: 12 }
+    );
+    menu.style.left = `${Math.round(left)}px`;
+    menu.style.top = `${Math.round(top)}px`;
+    menu.style.setProperty("--caret-left", `${Math.round(caretLeft)}px`);
+  };
+
+  // Settings / TOC popovers and this menu close each other.
+  doc.dispatchEvent(
+    new CustomEvent<PopoverWillOpenDetail>("morcus:popover-will-open", {
+      detail: { source: menu, group: READER_CHROME_GROUP },
+    })
+  );
+  scope.listen<PopoverWillOpenDetail>(doc, "morcus:popover-will-open", (e) => {
+    if (e.detail?.group === READER_CHROME_GROUP && e.detail.source !== menu) {
+      closeMenu();
+    }
   });
-  menuCtrl.open();
+
+  if (typeof menu.showPopover === "function") menu.showPopover();
+  position();
+  // Opening must not scroll the page: that would close the menu immediately.
+  items[0]?.focus({ preventScroll: true });
+
+  // Close on any scroll that moves the anchor. Capture phase, because scroll
+  // events don't bubble: the desktop reader scrolls `.reader-text-panel`, not
+  // the window. Comparing the anchor's position ignores unrelated scrollers
+  // (e.g. the dictionary outline rail following along).
+  const openTop = anchor.getBoundingClientRect().top;
+  scope.listen(
+    doc,
+    "scroll",
+    () => {
+      if (Math.abs(anchor.getBoundingClientRect().top - openTop) >= 1) {
+        closeMenu();
+      }
+    },
+    { capture: true, passive: true }
+  );
+  // Resizes (rotation, mobile address bar) keep the menu attached instead.
+  scope.listen(win, "resize", position);
+  scope.use(
+    bindDismissable({
+      container: menu,
+      triggerEl: anchor,
+      isOpen: () => menuEl === menu,
+      // A tap on the anchor itself toggles via the anchor's click handler.
+      ignore: (target) => anchor.contains(target),
+      onDismiss: closeMenu,
+      listenPointerDown: true,
+      doc,
+    })
+  );
 }
 
 /**

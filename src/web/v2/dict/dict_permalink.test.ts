@@ -151,6 +151,142 @@ describe("handleDictPermalinkClick", () => {
     expect(assign).toHaveBeenCalledWith(`${ORIGIN}/v2/dicts/id/n20077`);
   });
 
+  describe("section action menu dismissal", () => {
+    const SENSE = 'a[href="#n20077.1"]';
+    const menu = () => document.querySelector(".section-action-menu");
+    const anchor = () => document.querySelector<HTMLElement>(SENSE)!;
+    const pointerDownOn = (el: Element) =>
+      el.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    /** Makes the anchor report `top` from getBoundingClientRect. */
+    const placeAnchorAt = (top: number) => {
+      anchor().getBoundingClientRect = () =>
+        ({
+          top,
+          bottom: top + 20,
+          left: 100,
+          right: 120,
+          width: 20,
+        } as DOMRect);
+    };
+
+    test("closes on an outside tap and marks the anchor collapsed", () => {
+      clickOn(SENSE);
+      expect(menu()).not.toBeNull();
+      expect(anchor().getAttribute("aria-expanded")).toBe("true");
+
+      pointerDownOn(document.querySelector(".lsTrans")!);
+
+      expect(menu()).toBeNull();
+      expect(anchor().getAttribute("aria-expanded")).toBe("false");
+    });
+
+    test("stays open for taps inside the menu and on its own anchor", () => {
+      clickOn(SENSE);
+      pointerDownOn(menu()!.querySelector("button")!);
+      pointerDownOn(anchor());
+      expect(menu()).not.toBeNull();
+    });
+
+    test("toggles closed when its anchor is clicked again", () => {
+      clickOn(SENSE);
+      clickOn(SENSE);
+      expect(menu()).toBeNull();
+      clickOn(SENSE);
+      expect(menu()).not.toBeNull();
+    });
+
+    test("closes on Escape and returns focus to the anchor", () => {
+      clickOn(SENSE);
+      expect(document.activeElement).toBe(
+        menu()!.querySelector('[data-action="copy"]')
+      );
+
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+
+      expect(menu()).toBeNull();
+      expect(document.activeElement).toBe(anchor());
+    });
+
+    test("closes on Tab, handing focus back to the anchor", () => {
+      clickOn(SENSE);
+      menu()!
+        .querySelector("button")!
+        .dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Tab", bubbles: true })
+        );
+      expect(menu()).toBeNull();
+      expect(document.activeElement).toBe(anchor());
+    });
+
+    test("closes on a window scroll that moves the anchor", () => {
+      placeAnchorAt(300);
+      clickOn(SENSE);
+
+      placeAnchorAt(250);
+      document.dispatchEvent(new Event("scroll"));
+
+      expect(menu()).toBeNull();
+    });
+
+    test("closes on an inner scroller's scroll (scroll events don't bubble)", () => {
+      placeAnchorAt(300);
+      clickOn(SENSE);
+
+      placeAnchorAt(250);
+      // Non-bubbling, like a real element scroll: only a capture listener sees it.
+      document
+        .getElementById("dict-results")!
+        .dispatchEvent(new Event("scroll", { bubbles: false }));
+
+      expect(menu()).toBeNull();
+    });
+
+    test("ignores scrolls that don't move the anchor", () => {
+      placeAnchorAt(300);
+      clickOn(SENSE);
+
+      document
+        .getElementById("dict-results")!
+        .dispatchEvent(new Event("scroll", { bubbles: false }));
+
+      expect(menu()).not.toBeNull();
+    });
+
+    test("repositions on resize instead of closing", () => {
+      placeAnchorAt(300);
+      clickOn(SENSE);
+      expect((menu() as HTMLElement).style.top).toBe("328px");
+
+      placeAnchorAt(200);
+      window.dispatchEvent(new Event("resize"));
+
+      expect((menu() as HTMLElement).style.top).toBe("228px");
+    });
+
+    test("closes when another reader-chrome popover opens, and announces itself", () => {
+      const announced = jest.fn();
+      document.addEventListener("morcus:popover-will-open", announced);
+      clickOn(SENSE);
+      document.removeEventListener("morcus:popover-will-open", announced);
+      expect(announced).toHaveBeenCalledTimes(1);
+
+      document.dispatchEvent(
+        new CustomEvent("morcus:popover-will-open", {
+          detail: { source: {}, group: "reader-chrome" },
+        })
+      );
+
+      expect(menu()).toBeNull();
+    });
+
+    test("is a manual popover, so native light-dismiss can't fight the toggle", () => {
+      clickOn(SENSE);
+      expect(menu()!.getAttribute("popover")).toBe("manual");
+    });
+  });
+
   describe("in-flow sense editing (Suggest correction)", () => {
     test("swaps sense content in-place, strips non-editorial widgets, and preserves nested <ol> and .lat-word tokens on cancel", () => {
       clickOn('a[href="#n20077.1"]');
