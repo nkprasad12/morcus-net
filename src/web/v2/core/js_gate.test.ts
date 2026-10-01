@@ -162,6 +162,18 @@ describe("JS gate selectors", () => {
     expect(isHidden(host.querySelector("#js")!)).toBe(true);
   });
 
+  test("an upgraded child under a failed parent drops its JS-only UI", () => {
+    // The reverse of the case above: a failure hides JS-only UI throughout
+    // its subtree, running children included (so the activation gate blocks
+    // their handlers too; see ownersUpgraded below).
+    const host = build(
+      `<section data-js-failed>
+         <section data-upgraded><button id="js" data-js-only></button></section>
+       </section>`
+    );
+    expect(isHidden(host.querySelector("#js")!)).toBe(true);
+  });
+
   test("a bundle failure on <html> drops all JS-only UI", () => {
     const host = build(
       `<section data-upgraded><button id="js" data-js-only></button></section>
@@ -268,5 +280,30 @@ describe("ownersUpgraded", () => {
     document.body.innerHTML = `<morcus-mine data-upgraded></morcus-mine><morcus-other><p id="t"></p></morcus-other>`;
     const owner = document.querySelector("morcus-mine")!;
     expect(ownersUpgraded(document.getElementById("t")!, owner)).toBe(false);
+  });
+
+  test("is false when an ancestor of the owner failed", () => {
+    // The CSS gate hides the owner's JS-only UI here (see "an upgraded
+    // child under a failed parent" above), so its code must not act either.
+    document.body.innerHTML = `<morcus-outer data-js-failed><morcus-mine data-upgraded><p id="t"></p></morcus-mine></morcus-outer>`;
+    const owner = document.querySelector("morcus-mine")!;
+    expect(ownersUpgraded(document.getElementById("t")!, owner)).toBe(false);
+  });
+
+  test("is false for any owner after a bundle failure on <html>", () => {
+    document.body.innerHTML = `<morcus-mine data-upgraded><p id="t"></p></morcus-mine>`;
+    const owner = document.querySelector("morcus-mine")!;
+    document.documentElement.setAttribute("data-js-failed", "");
+    try {
+      expect(ownersUpgraded(document.getElementById("t")!, owner)).toBe(false);
+    } finally {
+      document.documentElement.removeAttribute("data-js-failed");
+    }
+  });
+
+  test("an un-upgraded (not failed) ancestor of the owner doesn't block it", () => {
+    document.body.innerHTML = `<morcus-outer><morcus-mine data-upgraded><p id="t"></p></morcus-mine></morcus-outer>`;
+    const owner = document.querySelector("morcus-mine")!;
+    expect(ownersUpgraded(document.getElementById("t")!, owner)).toBe(true);
   });
 });

@@ -61,6 +61,27 @@ describe("activation gate in LifetimeScope.listen", () => {
     el("#b").dispatchEvent(e);
     expect(seen).toEqual([]);
     expect(e.defaultPrevented).toBe(false);
+    // Standalone scopes skip silently: native fallback is the designed path.
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  test("warns once per event when a component scope is skipped", () => {
+    document.body.innerHTML = `<morcus-mine data-upgraded><morcus-x><button id="b"></button></morcus-x></morcus-mine>`;
+    const seen = track("click", el("morcus-mine"));
+    scope.listen(document, "click", () => seen.push("second"));
+    el("#b").click();
+    expect(seen).toEqual([]);
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  test("a standalone scope's skip doesn't suppress a later component warning", () => {
+    // The referenced-target verdict is cached per event; the warning isn't.
+    document.body.innerHTML = `<morcus-mine data-upgraded><a id="a" href="#n">n</a></morcus-mine><morcus-panel><p id="n"></p></morcus-panel>`;
+    const standalone = new LifetimeScope(document);
+    standalone.listen(document, "click", () => {});
+    track("click", el("morcus-mine"));
+    el("#a").click();
+    standalone.dispose();
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
@@ -139,6 +160,37 @@ describe("activation gate in LifetimeScope.listen", () => {
     document.body.innerHTML = `<morcus-mine data-js-failed><button id="b"></button></morcus-mine>`;
     const seen = track("click", el("morcus-mine"));
     el("#b").click();
+    expect(seen).toEqual([]);
+  });
+
+  test("an owned scope skips everything inside a failed ancestor", () => {
+    document.body.innerHTML = `<morcus-outer data-js-failed><morcus-mine data-upgraded><button id="b"></button></morcus-mine></morcus-outer>`;
+    const seen = track("click", el("morcus-mine"));
+    el("#b").click();
+    expect(seen).toEqual([]);
+  });
+
+  test("an owned scope skips everything after a bundle failure on <html>", () => {
+    document.body.innerHTML = `<morcus-mine data-upgraded><button id="b"></button></morcus-mine>`;
+    const seen = track("click", el("morcus-mine"));
+    document.documentElement.setAttribute("data-js-failed", "");
+    try {
+      el("#b").click();
+    } finally {
+      document.documentElement.removeAttribute("data-js-failed");
+    }
+    expect(seen).toEqual([]);
+  });
+
+  test("a standalone scope skips everything after a bundle failure on <html>", () => {
+    document.body.innerHTML = `<button id="b"></button>`;
+    const seen = track("click");
+    document.documentElement.setAttribute("data-js-failed", "");
+    try {
+      el("#b").click();
+    } finally {
+      document.documentElement.removeAttribute("data-js-failed");
+    }
     expect(seen).toEqual([]);
   });
 
