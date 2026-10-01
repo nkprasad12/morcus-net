@@ -50,5 +50,7 @@ export function onPageReady(
     setup();
     return;
   }
+  // Bootstrap, before any component scope exists; not an activation event.
+  // eslint-disable-next-line no-restricted-syntax
   doc.addEventListener("DOMContentLoaded", () => setup(), { once: true });
 }

@@ -71,6 +71,9 @@ export function syncQueryParam(
     }
   };
 
+  // `popstate` isn't an activation event, and the returned teardown goes to
+  // the caller's scope (`BaseElement.syncQueryParam`).
+  // eslint-disable-next-line no-restricted-syntax
   window.addEventListener("popstate", onPopState);
 
   const navigate = (value: string, push: boolean) => {

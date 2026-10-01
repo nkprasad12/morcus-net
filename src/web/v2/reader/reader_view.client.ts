@@ -31,7 +31,6 @@ import { removeMacrons } from "@/common/text_cleaning";
 import { READER_PAGE_SLOTS } from "@/web/v2/reader/reader_slots.common";
 import {
   DEFAULT_READER_PREFS,
-  type MorcusReaderSettings,
   getWorkMacra,
   parseReaderPreferences,
   type ReaderFontFamily,
@@ -218,7 +217,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     return this.panelController.isConnected ? this.panelController : null;
   }
 
-  public getSettingsElement(): MorcusReaderSettings | null {
+  public getSettingsElement() {
     return queryUpgraded(this, "morcus-reader-settings");
   }
 

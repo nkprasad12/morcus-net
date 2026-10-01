@@ -447,10 +447,10 @@ export default [
   // LifetimeScope.listen(), so client code must listen through a scope. Raw
   // addEventListener and on* handler properties would bypass it.
   //
-  // Exempt: the scope itself (base_element), and low-level modules that
-  // base_element imports or that can't depend on it (router: popstate; dom:
-  // animationend) or that deliberately listen at the document level
-  // (dismissable, page_ready).
+  // Exempt: the scope itself (base_element). The few other raw listeners
+  // (router, dom, dismissable, page_ready) carry a per-line
+  // eslint-disable-next-line with the reason above it, so a new raw listener
+  // in those files is still flagged.
   //
   // NOTE: this block replaces the he.encode block's no-restricted-syntax
   // options for these files, so it repeats HE_ENCODE_SYNTAX.
@@ -459,10 +459,6 @@ export default [
     ignores: [
       "src/web/v2/**/*.test.ts",
       "src/web/v2/core/base_element.client.ts",
-      "src/web/v2/core/dismissable.client.ts",
-      "src/web/v2/core/dom.client.ts",
-      "src/web/v2/core/page_ready.client.ts",
-      "src/web/v2/core/router.client.ts",
     ],
     rules: {
       "no-restricted-syntax": [

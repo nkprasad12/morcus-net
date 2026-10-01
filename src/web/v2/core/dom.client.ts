@@ -93,6 +93,9 @@ export function flashElement(
   // Force a reflow so the browser cleanly restarts the keyframe animation
   void el.offsetWidth;
   el.classList.add(className);
+  // A one-shot cleanup; `animationend` isn't an activation event, and this
+  // module sits below `base_element` (which imports it).
+  // eslint-disable-next-line no-restricted-syntax
   el.addEventListener(
     "animationend",
     () => {

@@ -73,7 +73,15 @@ export function bindDismissable(options: DismissableOptions): CleanupFn {
     ? ["pointerdown", "mousedown"]
     : ["click"];
 
-  pointerEvents.forEach((evt) => doc.addEventListener(evt, onPointer));
+  // Raw listeners, not a LifetimeScope: outside clicks must dismiss even when
+  // they land in an owner that isn't running (the activation gate would skip
+  // those). Neither cancels an activation: pointer events aren't gated, a
+  // click is never cancelled here, and Escape isn't an activating key.
+  pointerEvents.forEach((evt) =>
+    // eslint-disable-next-line no-restricted-syntax
+    doc.addEventListener(evt, onPointer)
+  );
+  // eslint-disable-next-line no-restricted-syntax
   doc.addEventListener("keydown", onKey);
 
   return () => {

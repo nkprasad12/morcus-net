@@ -264,19 +264,24 @@ function globalTagMapAugmentations(sf: ts.SourceFile): string[] {
   return out;
 }
 
-/** Non-type imports of a `Morcus*` identifier from another module. */
+/**
+ * Imports (value or type) of a `Morcus*` identifier from another module.
+ * Type imports count too: a peer's class type is how its methods get called,
+ * so the only typed path to it is `MorcusElementTagNameMap` via
+ * `queryUpgraded` / `closestUpgraded`, which check that the peer is running.
+ */
 function morcusClassImports(sf: ts.SourceFile): string[] {
   const out: string[] = [];
   for (const stmt of sf.statements) {
     if (!ts.isImportDeclaration(stmt)) continue;
     const clause = stmt.importClause;
-    if (!clause || clause.isTypeOnly) continue;
+    if (!clause) continue;
     const names: string[] = [];
     if (clause.name) names.push(clause.name.text);
     const bindings = clause.namedBindings;
     if (bindings && ts.isNamedImports(bindings)) {
       for (const el of bindings.elements) {
-        if (!el.isTypeOnly) names.push((el.propertyName ?? el.name).text);
+        names.push((el.propertyName ?? el.name).text);
       }
     }
     for (const name of names) {
@@ -318,9 +323,10 @@ describe("activation gate conformance", () => {
     expect(sources.flatMap(globalTagMapAugmentations)).toEqual([]);
   });
 
-  test("no client module imports another module's Morcus* class as a value", () => {
-    // Reach peers through queryUpgraded / closestUpgraded (use `import type`
-    // for annotations), so their methods are only called once they run.
+  test("no client module imports another module's Morcus* class", () => {
+    // Reach peers through queryUpgraded / closestUpgraded, so their methods
+    // are only called once they run. For annotations, let the type be
+    // inferred from those, or name `MorcusElementTagNameMap["morcus-x"]`.
     expect(sources.flatMap(morcusClassImports)).toEqual([]);
   });
 
@@ -334,7 +340,11 @@ describe("activation gate conformance", () => {
       ts.ScriptTarget.Latest,
       true
     );
-    expect(morcusClassImports(sf)).toEqual(["fake.client.ts:1 MorcusA"]);
+    expect(morcusClassImports(sf)).toEqual([
+      "fake.client.ts:1 MorcusA",
+      "fake.client.ts:1 MorcusB",
+      "fake.client.ts:2 MorcusC",
+    ]);
     expect(globalTagMapAugmentations(sf)).toEqual(["fake.client.ts:3"]);
     expect(asyncOnConnects(sf)).toEqual(["fake.client.ts:4"]);
     expect(dynamicImports(sf)).toEqual(["fake.client.ts:4"]);
