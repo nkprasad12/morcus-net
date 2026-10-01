@@ -169,6 +169,27 @@ dialog markup. Gaps:
       Guard against dead-selector classes across the client bundle: - Scan more than `reader_toc.client.ts` + `reader_settings.client.ts` — `reader_view.client.ts`
       alone binds ~32 selectors and is unscanned, as are `reader_panel`, `drawer`, and every `dict_*` module. - Match `this.scope.require(...)` — the current extractor regex misses it. - Match delegated selectors — the 3rd argument of `delegate(root, type, selector, fn)` (e.g. `#btn-retry-translation`) is invisible today. - Stop skipping comma-containing selectors (`if (!raw.includes(","))`), which silently exempts real bindings such as `#toggle-inflected, .inflected-checkbox`.
 
+**Make unexpected console output stand out.** `npm run ts-tests:v2` passes but prints ~660 lines of
+expected errors and warnings, so a real one would go unnoticed. Expected output should be asserted,
+not printed:
+
+- [ ] 🟡 **Assert expected errors instead of printing them.** Spy on `console.error`/`console.warn`
+      and check the message in `v2_router.test.ts` (5 errors from deliberately failing backends),
+      `dict/dict_chunk_cache.client.test.ts` (2 network failures), and `core/combobox.test.ts`
+      (2 `[UI V2] Listener skipped` warnings, each dumping an ~85-line element).
+- [ ] 🟡 **Find the jsdom `Not implemented: navigation` errors.** 4 from `dict/dict_search.test.ts`,
+      2 from `reader/reader_view.test.ts`: a test clicks a real link that nothing intercepts, and
+      jsdom tries to navigate on a timer after the test ends. Where navigating is the expected
+      outcome (e.g. reader's "a failed page turn falls back to a full navigation"), block it in the
+      test and assert it was attempted. Where a component should have intercepted the click, fix the
+      component.
+- [ ] 🟢 **Bundle-size table in `v2_router.test.ts`** (3 `console.log`s from the code under test):
+      stub the logger.
+- [ ] 🟢 **`[DEP0040] punycode` deprecation**, once per jest worker, from a dependency. Consider
+      `--no-deprecation` in the `ts-tests:v2` script.
+- [ ] 🟢 **Then keep it quiet:** consider failing any V2 test that logs to `console.error` or
+      `console.warn` without spying on it (in `testing/setup_tests.ts`).
+
 **Close the No-JS testing gap.** Found while reviewing why `ca9cb47e` (No-JS dictionary selection)
 shipped broken. The gap was not a missing test: [`browser_v2_e2e.test.ts`](../../integration/suites/browser_v2_e2e.test.ts)
 _"exposes usable dictionary settings without JavaScript"_ covers that exact CUJ and **passed the whole
