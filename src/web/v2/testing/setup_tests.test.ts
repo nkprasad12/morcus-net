@@ -10,6 +10,8 @@ import {
 import {
   allowDetachedDomWritesForTest,
   verifyNoDetachedDomWrites,
+  allowConsoleForTest,
+  verifyNoUnhandledConsole,
 } from "@/web/v2/testing/setup_tests";
 import { assertConnected } from "@/web/v2/core/dom.client";
 
@@ -98,5 +100,31 @@ describe("setup_tests layout visibility shims", () => {
     const el = document.createElement("button");
     expect(el.getClientRects().length).toBe(0);
     expect(el.offsetParent).toBeNull();
+  });
+});
+
+describe("setup_tests unhandled console output enforcement", () => {
+  it("throws in verifyNoUnhandledConsole() when console.error is called without spy", () => {
+    console.error("test unhandled error", { detail: 123 });
+
+    expect(() => verifyNoUnhandledConsole()).toThrow(
+      /\[UI V2\] Test logged to console without an active spy:.*\[console\.error\]: test unhandled error/s
+    );
+  });
+
+  it("throws in verifyNoUnhandledConsole() when console.warn is called without spy", () => {
+    console.warn("test unhandled warning");
+
+    expect(() => verifyNoUnhandledConsole()).toThrow(
+      /\[UI V2\] Test logged to console without an active spy:.*\[console\.warn\]: test unhandled warning/s
+    );
+  });
+
+  it("does not throw when allowConsoleForTest() is called", () => {
+    allowConsoleForTest();
+    console.error("allowed error message");
+    console.warn("allowed warning message");
+
+    expect(() => verifyNoUnhandledConsole()).not.toThrow();
   });
 });

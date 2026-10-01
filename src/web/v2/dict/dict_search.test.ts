@@ -226,44 +226,58 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     galliaLink.dispatchEvent(normalClick);
     expect(normalClick.defaultPrevented).toBe(true);
 
-    // Middle click (button 1) should NOT be prevented
-    const middleClick = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      button: 1,
-    });
-    galliaLink.dispatchEvent(middleClick);
-    expect(middleClick.defaultPrevented).toBe(false);
+    let unpreventedClicks = 0;
+    const onWindowClick = (e: MouseEvent) => {
+      if (!e.defaultPrevented) {
+        unpreventedClicks++;
+      }
+      // Prevent jsdom's async navigation timer
+      e.preventDefault();
+    };
+    window.addEventListener("click", onWindowClick);
 
-    // Ctrl+click should NOT be prevented
-    const ctrlClick = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      button: 0,
-      ctrlKey: true,
-    });
-    galliaLink.dispatchEvent(ctrlClick);
-    expect(ctrlClick.defaultPrevented).toBe(false);
+    try {
+      // Middle click (button 1) should NOT be prevented by component
+      const middleClick = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 1,
+      });
+      galliaLink.dispatchEvent(middleClick);
+      expect(unpreventedClicks).toBe(1);
 
-    // Cmd/Meta+click should NOT be prevented
-    const metaClick = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      button: 0,
-      metaKey: true,
-    });
-    galliaLink.dispatchEvent(metaClick);
-    expect(metaClick.defaultPrevented).toBe(false);
+      // Ctrl+click should NOT be prevented by component
+      const ctrlClick = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        ctrlKey: true,
+      });
+      galliaLink.dispatchEvent(ctrlClick);
+      expect(unpreventedClicks).toBe(2);
 
-    // Modifier click on dLink should also NOT be prevented
-    const dLinkCtrlClick = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      button: 0,
-      ctrlKey: true,
-    });
-    dLink.dispatchEvent(dLinkCtrlClick);
-    expect(dLinkCtrlClick.defaultPrevented).toBe(false);
+      // Cmd/Meta+click should NOT be prevented by component
+      const metaClick = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        metaKey: true,
+      });
+      galliaLink.dispatchEvent(metaClick);
+      expect(unpreventedClicks).toBe(3);
+
+      // Modifier click on dLink should also NOT be prevented by component
+      const dLinkCtrlClick = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        ctrlKey: true,
+      });
+      dLink.dispatchEvent(dLinkCtrlClick);
+      expect(unpreventedClicks).toBe(4);
+    } finally {
+      window.removeEventListener("click", onWindowClick);
+    }
   });
 
   test("sanitizes query by trimming quotes, punctuation, and whitespace on form submission", () => {

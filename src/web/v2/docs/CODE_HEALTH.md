@@ -104,28 +104,6 @@ growth; it is not a target.
       `action` hook is used only by reader scenarios. Popover-open and results-with-one-dictionary
       would catch selection bugs as a pixel diff across all four form factors.
 
-## Test console noise
-
-`npm run ts-tests:v2` passes but prints ~660 lines of expected errors and warnings, so a real one
-would go unnoticed. Expected output should be asserted, not printed:
-
-- [ ] 🟡 **Assert expected errors instead of printing them.** Spy on `console.error`/`console.warn`
-      and check the message in `v2_router.test.ts` (5 errors from deliberately failing backends),
-      `dict/dict_chunk_cache.client.test.ts` (2 network failures), and `core/combobox.test.ts`
-      (2 `[UI V2] Listener skipped` warnings, each dumping an ~85-line element).
-- [ ] 🟡 **Find the jsdom `Not implemented: navigation` errors.** 4 from `dict/dict_search.test.ts`,
-      2 from `reader/reader_view.test.ts`: a test clicks a real link that nothing intercepts, and
-      jsdom tries to navigate on a timer after the test ends. Where navigating is the expected
-      outcome (e.g. reader's "a failed page turn falls back to a full navigation"), block it in the
-      test and assert it was attempted. Where a component should have intercepted the click, fix the
-      component.
-- [ ] 🟢 **Bundle-size table in `v2_router.test.ts`** (3 `console.log`s from the code under test):
-      stub the logger.
-- [ ] 🟢 **`[DEP0040] punycode` deprecation**, once per jest worker, from a dependency. Consider
-      `--no-deprecation` in the `ts-tests:v2` script.
-- [ ] 🟢 **Then keep it quiet:** consider failing any V2 test that logs to `console.error` or
-      `console.warn` without spying on it (in `testing/setup_tests.ts`).
-
 ## Lint
 
 - [ ] 🟢 **Extend the import-boundary lint beyond `src/web/v2` and `src/bundler`.** The tier rules in

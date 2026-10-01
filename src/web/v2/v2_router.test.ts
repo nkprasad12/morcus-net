@@ -38,7 +38,12 @@ describe("v2_router integration", () => {
   beforeAll(async () => {
     buildDir = fs.mkdtempSync(path.join(os.tmpdir(), "morcus-v2-build-"));
     process.env.MORCUS_V2_BUILD_DIR = buildDir;
-    await buildV2Bundle(false);
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      await buildV2Bundle(false);
+    } finally {
+      logSpy.mockRestore();
+    }
   }, 30000);
 
   afterAll(() => {
@@ -728,28 +733,40 @@ describe("v2_router integration", () => {
     });
 
     test("returns 500 when issue reporting handler throws an error", async () => {
-      const mockReportHandler = jest
-        .fn()
-        .mockRejectedValue(new Error("GitHub API Error"));
-      const testApp = express();
-      testApp.use(
-        "/v2",
-        createV2Router(mockFusedDict as FusedDictionary, {
-          reportHandler: mockReportHandler,
-        })
-      );
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      try {
+        const mockReportHandler = jest
+          .fn()
+          .mockRejectedValue(new Error("GitHub API Error"));
+        const testApp = express();
+        testApp.use(
+          "/v2",
+          createV2Router(mockFusedDict as FusedDictionary, {
+            reportHandler: mockReportHandler,
+          })
+        );
 
-      const res = await request(testApp)
-        .post("/v2/api/report")
-        .send({ reportText: "Broken page" });
+        const res = await request(testApp)
+          .post("/v2/api/report")
+          .send({ reportText: "Broken page" });
 
-      expect(res.status).toBe(500);
-      expect(res.body).toEqual({ error: "Failed to submit report" });
+        expect(res.status).toBe(500);
+        expect(res.body).toEqual({ error: "Failed to submit report" });
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          "Error submitting report:",
+          expect.any(Error)
+        );
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
     });
   });
 
   describe("dictionary lookup failures", () => {
     const PAYLOAD = '<img src=x onerror="alert(1)">';
+    let consoleErrorSpy: jest.SpyInstance;
 
     /**
      * Asserts the payload was reflected as inert text rather than live markup.
@@ -764,9 +781,16 @@ describe("v2_router integration", () => {
     }
 
     beforeEach(() => {
+      consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
       mockFusedDict.getEntry = jest
         .fn()
         .mockRejectedValue(new Error("dictionary backend exploded"));
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
     });
 
     test("escapes the query in the partial error response", async () => {
@@ -777,6 +801,10 @@ describe("v2_router integration", () => {
       expect(res.status).toBe(500);
       expect(res.text).toContain("An error occurred searching for");
       expectPayloadNeutralized(res.text);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error retrieving dictionary entry:",
+        expect.any(Error)
+      );
     });
 
     test("escapes the query in the full page error response", async () => {
@@ -786,6 +814,10 @@ describe("v2_router integration", () => {
 
       expect(res.status).toBe(500);
       expectPayloadNeutralized(res.text);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error retrieving dictionary entry:",
+        expect.any(Error)
+      );
     });
 
     test("escapes the id in the partial error response", async () => {
@@ -796,6 +828,10 @@ describe("v2_router integration", () => {
       expect(res.status).toBe(500);
       expect(res.text).toContain("An error occurred retrieving ID");
       expectPayloadNeutralized(res.text);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error retrieving dictionary entry by ID:",
+        expect.any(Error)
+      );
     });
 
     test("escapes the id in the full page error response", async () => {
@@ -805,6 +841,10 @@ describe("v2_router integration", () => {
 
       expect(res.status).toBe(500);
       expectPayloadNeutralized(res.text);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Error retrieving dictionary entry by ID:",
+        expect.any(Error)
+      );
     });
   });
 

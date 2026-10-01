@@ -25,7 +25,7 @@
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests__comments": "Experimentally, it is faster to limit the number of workers.",
     "ts-tests": "npx jest --maxWorkers=8 --testPathIgnorePatterns src/integration/*",
-    "ts-tests:v2": "npx jest src/web/v2",
+    "ts-tests:v2": "node --no-deprecation node_modules/.bin/jest src/web/v2",
     "integration-tests": "npx playwright test src/integration/suites/",
     "rs-tests": "cargo test --package corpus",
     "py-tests": "python -m unittest discover",
