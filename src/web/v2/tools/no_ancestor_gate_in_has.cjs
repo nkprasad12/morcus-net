@@ -10,6 +10,12 @@ const messages = stylelint.utils.ruleMessages(ruleName, {
     `Scope gate attributes in \`:has()\` to a specific element tag or class ` +
     `(e.g. \`morcus-reader-view:not([data-upgraded])\`) to avoid catastrophic ` +
     `style invalidation in Firefox.`,
+  combinatorInNot: (not) =>
+    `Combinator inside \`${not}\` within \`:has()\`. Firefox re-scans the ` +
+    `document on every matching attribute or class change (measured ~20x ` +
+    `slower than the same selector without the \`:not()\`, whatever the ` +
+    `attribute or class). Move the ancestor condition outside \`:has()\`, ` +
+    `e.g. \`morcus-reader-view:not([data-upgraded]) .x\`.`,
 });
 
 const GATE_ATTRIBUTES = new Set(["data-upgraded", "data-js-failed"]);
@@ -57,6 +63,22 @@ const plugin = stylelint.createPlugin(ruleName, (primary) => {
           ast.walkPseudos((pseudo) => {
             if (pseudo.value !== ":has") return;
 
+            // Any combinator inside a :not() within :has() (attribute-independent).
+            pseudo.walkPseudos((not) => {
+              if (not.value !== ":not") return;
+              const hasCombinator = not.nodes.some((sel) =>
+                sel.nodes.some((n) => n.type === "combinator")
+              );
+              if (!hasCombinator) return;
+              stylelint.utils.report({
+                ruleName,
+                result,
+                node: rule,
+                word: not.toString(),
+                message: messages.combinatorInNot(not.toString()),
+              });
+            });
+
             pseudo.walkAttributes((attr) => {
               if (!GATE_ATTRIBUTES.has(attr.attribute)) return;
 
@@ -81,6 +103,10 @@ const plugin = stylelint.createPlugin(ruleName, (primary) => {
                     hasCombinator = true;
                     break;
                   }
+                }
+                if (hasCombinator && innerPseudo.value === ":not") {
+                  // Already reported by the combinator-in-:not() check above.
+                  return;
                 }
                 if (hasCombinator) {
                   stylelint.utils.report({
