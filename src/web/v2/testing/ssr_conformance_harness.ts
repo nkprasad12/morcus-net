@@ -27,7 +27,6 @@
  */
 
 import "@/web/v2/v2_elements.client";
-import { revealTarget } from "@/web/v2/core/reveal.client";
 import { isAllowlistedCreation } from "@/web/v2/testing/created_dom_allowlist";
 import {
   installMatchMediaStub,
@@ -37,6 +36,7 @@ import {
 } from "@/web/v2/testing/ssr_fixtures";
 import {
   NO_JS_CONTROLS,
+  checkAddresses,
   describeElement,
   describeParent,
   diffTree,
@@ -188,99 +188,11 @@ export function describeSsrConformance(name: string, suite: SsrSuite): void {
 
         for (const fixture of fixtures) {
           document.body.replaceChildren(parseInert(fixture.html));
-
-          // 3a. Unique IDs
-          const seenIds = new Set<string>();
-          for (const el of Array.from(document.body.querySelectorAll("[id]"))) {
-            const id = el.getAttribute("id") ?? "";
-            if (!id) {
-              duplicateIds.push(
-                `${fixture.name}: empty id on ${describeElement(el)}`
-              );
-              continue;
-            }
-            if (seenIds.has(id)) {
-              duplicateIds.push(`${fixture.name}: duplicate id="#${id}"`);
-            }
-            seenIds.add(id);
-          }
-
-          // 3b. Internal #hash resolution + 3c. Revealability
-          const anchors = Array.from(
-            document.body.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')
-          );
-          for (const anchor of anchors) {
-            const href = anchor.getAttribute("href") ?? "";
-            if (href === "#" || href === "#top") continue;
-
-            const rawId = href.slice(1);
-            let targetId: string;
-            try {
-              targetId = decodeURIComponent(rawId);
-            } catch {
-              targetId = rawId;
-            }
-
-            const target = document.getElementById(targetId);
-            if (!target) {
-              danglingHrefs.push(
-                `${fixture.name}: ${describeElement(
-                  anchor
-                )} points to missing #${targetId}`
-              );
-              continue;
-            }
-
-            // An anchor that is itself `[hidden]` (such as `#panel-tab-notes` on
-            // a page with no footnotes) is not an active user-facing link.
-            if (anchor.closest("[hidden]")) {
-              continue;
-            }
-
-            // Close any enclosing <details> first so we verify `revealTarget`
-            // actually opens closed disclosures.
-            const ancestorDetails = target.closest("details");
-            if (ancestorDetails) {
-              ancestorDetails.open = false;
-            }
-
-            revealTarget(target);
-
-            // Check that no ancestor <details> remains closed, no ancestor has
-            // `hidden`, and any enclosing `.reader-panel-view` is now `.active`.
-            let cur: HTMLElement | null = target;
-            while (cur && cur !== document.body) {
-              if (cur instanceof HTMLDetailsElement && !cur.open) {
-                unrevealedTargets.push(
-                  `${
-                    fixture.name
-                  }: #${targetId} remained inside closed ${describeElement(
-                    cur
-                  )} after revealTarget()`
-                );
-              }
-              if (cur.hasAttribute("hidden")) {
-                unrevealedTargets.push(
-                  `${
-                    fixture.name
-                  }: #${targetId} remained inside [hidden] ${describeElement(
-                    cur
-                  )} after revealTarget()`
-                );
-              }
-              if (
-                cur.classList.contains("reader-panel-view") &&
-                !cur.classList.contains("active")
-              ) {
-                unrevealedTargets.push(
-                  `${fixture.name}: #${targetId} inside ${describeElement(
-                    cur
-                  )} did not activate its companion panel view on revealTarget()`
-                );
-              }
-              cur = cur.parentElement;
-            }
-          }
+          const found = checkAddresses();
+          const prefix = (problem: string) => `${fixture.name}: ${problem}`;
+          duplicateIds.push(...found.duplicateIds.map(prefix));
+          danglingHrefs.push(...found.danglingHrefs.map(prefix));
+          unrevealedTargets.push(...found.unrevealedTargets.map(prefix));
         }
 
         expect({

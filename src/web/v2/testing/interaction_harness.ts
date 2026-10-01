@@ -48,6 +48,7 @@ import {
 } from "@/web/v2/testing/ssr_fixtures";
 import {
   NO_JS_CONTROLS,
+  checkAddresses,
   describeElement,
   describeParent,
   diffTree,
@@ -507,7 +508,16 @@ async function runScript(
             if (!found.has(problem)) found.set(problem, step.name);
           }
         }
-        if (mode === "settled") errors.push(...onSettled(log));
+        if (mode === "settled") {
+          errors.push(...onSettled(log));
+          // Section 3 of the SSR harness, on the swapped-in DOM. Last,
+          // since revealing targets changes the page. Duplicate ids are
+          // already checked after every step.
+          if (log.html.length > 0) {
+            const { danglingHrefs, unrevealedTargets } = checkAddresses();
+            errors.push(...danglingHrefs, ...unrevealedTargets);
+          }
+        }
         if (mode === "mid-body") {
           // Stops early once nothing is scheduled: the script fetched nothing.
           await advanceUntil(
