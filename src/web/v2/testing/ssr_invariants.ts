@@ -5,6 +5,8 @@
  * `created_dom_allowlist.ts` and `isomorphic_rerenders.ts`.
  */
 
+import { revealTarget } from "@/web/v2/core/reveal.client";
+
 export function describeElement(el: Element): string {
   const id = el.id ? `#${el.id}` : "";
   const classes =
@@ -127,3 +129,104 @@ export function noJsControlViolation(
 }
 
 export const NO_JS_CONTROLS = "button, input, select, textarea, a";
+
+export interface AddressProblems {
+  readonly duplicateIds: string[];
+  readonly danglingHrefs: string[];
+  readonly unrevealedTargets: string[];
+}
+
+/**
+ * The in-page address checks (SSR conformance section 3) on the live
+ * `document`: ids are unique and non-empty, every visible `#hash` link
+ * resolves, and `revealTarget` reveals its target (opens enclosing
+ * `<details>`, clears `[hidden]`, activates its companion panel view).
+ *
+ * Revealing changes the page, so run it last.
+ */
+export function checkAddresses(): AddressProblems {
+  const root = document.body;
+  const duplicateIds: string[] = [];
+  const danglingHrefs: string[] = [];
+  const unrevealedTargets: string[] = [];
+
+  const seenIds = new Set<string>();
+  for (const el of Array.from(root.querySelectorAll("[id]"))) {
+    const id = el.getAttribute("id") ?? "";
+    if (!id) {
+      duplicateIds.push(`empty id on ${describeElement(el)}`);
+      continue;
+    }
+    if (seenIds.has(id)) duplicateIds.push(`duplicate id="#${id}"`);
+    seenIds.add(id);
+  }
+
+  const anchors = Array.from(
+    root.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')
+  );
+  for (const anchor of anchors) {
+    const href = anchor.getAttribute("href") ?? "";
+    if (href === "#" || href === "#top") continue;
+
+    const rawId = href.slice(1);
+    let targetId: string;
+    try {
+      targetId = decodeURIComponent(rawId);
+    } catch {
+      targetId = rawId;
+    }
+
+    const target = document.getElementById(targetId);
+    if (!target) {
+      danglingHrefs.push(
+        `${describeElement(anchor)} points to missing #${targetId}`
+      );
+      continue;
+    }
+
+    // An anchor that is itself `[hidden]` (such as `#panel-tab-notes` on
+    // a page with no footnotes) is not an active user-facing link.
+    if (anchor.closest("[hidden]")) continue;
+
+    // Close any enclosing <details> first so we verify `revealTarget`
+    // actually opens closed disclosures.
+    const ancestorDetails = target.closest("details");
+    if (ancestorDetails) ancestorDetails.open = false;
+
+    revealTarget(target);
+
+    // Check that no ancestor <details> remains closed, no ancestor has
+    // `hidden`, and any enclosing `.reader-panel-view` is now `.active`.
+    for (
+      let cur: HTMLElement | null = target;
+      cur && cur !== root;
+      cur = cur.parentElement
+    ) {
+      if (cur instanceof HTMLDetailsElement && !cur.open) {
+        unrevealedTargets.push(
+          `#${targetId} remained inside closed ${describeElement(
+            cur
+          )} after revealTarget()`
+        );
+      }
+      if (cur.hasAttribute("hidden")) {
+        unrevealedTargets.push(
+          `#${targetId} remained inside [hidden] ${describeElement(
+            cur
+          )} after revealTarget()`
+        );
+      }
+      if (
+        cur.classList.contains("reader-panel-view") &&
+        !cur.classList.contains("active")
+      ) {
+        unrevealedTargets.push(
+          `#${targetId} inside ${describeElement(
+            cur
+          )} did not activate its companion panel view on revealTarget()`
+        );
+      }
+    }
+  }
+  return { duplicateIds, danglingHrefs, unrevealedTargets };
+}
