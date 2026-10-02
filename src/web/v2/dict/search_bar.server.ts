@@ -3,6 +3,7 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
+import { SAVE_PARAM } from "@/web/v2/dict/dict_selection.common";
 
 import {
   computeActiveLanguages,
@@ -64,6 +65,10 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     `;
   }).join("\n");
 
+  // The Apply button is a *named* submitter: `save=1` is sent only when it is clicked, so an
+  // ordinary search never persists (see `dict_persistence.server.ts`). LOAD-BEARING ORDER: Enter in
+  // the search input submits with the form's FIRST submit button in tree order, so `.search-btn`
+  // must stay ahead of every `name="save"` button or Enter would silently save. Tested.
   const settingsHtml = includeSettings
     ? `
       <morcus-dict-settings>
@@ -132,7 +137,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
             </div>
             
             <div class="settings-noscript-actions" data-nojs-only>
-              <button type="submit" class="btn btn-secondary settings-apply-btn">Apply Selection</button>
+              <button type="submit" name="${SAVE_PARAM}" value="1" class="btn btn-secondary settings-apply-btn">Apply Selection</button>
             </div>
           </div>
         </details>

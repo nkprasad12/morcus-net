@@ -10,13 +10,12 @@ import {
   resolveDictParams,
   parseInflectionParam,
   resolveInflection,
-  formatDictsCookie,
-  formatInflectedCookie,
   hasGreek,
   dictParamsFromQuery,
   toStringOrArray,
 } from "@/web/v2/dict/dict.server";
 import { trimRawQuery } from "@/common/text_cleaning";
+import { planDictPersistence } from "@/web/v2/dict/dict_persistence.server";
 import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
 import {
   isPartialRequest,
@@ -51,7 +50,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     const oParam = parseInflectionParam(toStringOrArray(req.query.o));
     const isInflected = resolveInflection(oParam, cookieHeader);
 
-    const { dictKeys, source } = resolveActiveDicts({
+    const { dictKeys } = resolveActiveDicts({
       keysFromQuery,
       cookieHeader,
       lang: langParam,
@@ -62,20 +61,24 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     // so the reader is protected even if it stops sending `lang`.
     const isScopedView = isEmbedded || langParam !== undefined;
 
-    // Persist explicit choices from full page form submissions so No-JS users keep them across
-    // sessions. The two cookies are written independently: a submission may legitimately change
-    // the inflection toggle while its dictionaries still resolve from the existing cookie.
-    if (!isPartial && !isScopedView) {
-      const cookies: string[] = [];
-      if (source === "url" && dictKeys.length > 0) {
-        cookies.push(formatDictsCookie(dictKeys));
-      }
-      if (oParam !== undefined) {
-        cookies.push(formatInflectedCookie(oParam));
-      }
-      if (cookies.length > 0) {
-        res.setHeader("Set-Cookie", cookies);
-      }
+    // A selection in the URL is view state only: a shared link must not overwrite the
+    // recipient's preferences. Cookies are written only for an explicit `save=1`, which then
+    // redirects to drop the marker. See `dict_persistence.server.ts`.
+    const persistence = planDictPersistence({
+      originalUrl: req.originalUrl,
+      cookieHeader,
+      isPartial,
+      isScopedView,
+      keysFromQuery,
+      oParam,
+    });
+    if (persistence.cookies.length > 0) {
+      res.setHeader("Set-Cookie", persistence.cookies);
+    }
+    if (persistence.redirectTo !== undefined) {
+      res.setHeader("Cache-Control", "no-store");
+      res.redirect(303, persistence.redirectTo);
+      return;
     }
 
     if (!query) {
