@@ -51,7 +51,8 @@ sequenceDiagram
 - `dict_search.client.ts`: Custom element managing form hijacking, history pushes, keyboard navigation, and client-side Latin word progressive enhancement.
 - `dict_suggestions.client.ts`: Accessible dropdown list rendering live autocomplete suggestions.
 - `dict_settings.client.ts`: Popover controlling highlight strength, individual dictionary selection checkboxes, and the inflection toggle. It adopts the server-rendered state and persists changes to cookies.
-- `dict_preferences.client.ts`: Reads the server-rendered dictionary state (`readRenderedDictState`) and writes the preference cookies.
+- `dict_preferences.client.ts`: Reads the server-rendered dictionary state (`readRenderedDictState`), decides whether a change may be saved (`mayPersistDictChange`), and writes the preference cookies.
+- `dict_persistence.server.ts`: Decides which preference cookies a request writes (`save=1` + 303, sliding refresh) and builds the borrowed-view chip's **Use mine** link.
 
 ---
 
@@ -59,7 +60,7 @@ sequenceDiagram
 
 The active dictionary selection follows a strict source-of-truth priority:
 
-$$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus\_dicts)} \succ \text{Default Preset (All Latin except Pozo)}$$
+$$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus\_d)} \succ \text{Default Preset (All Latin except Pozo)}$$
 
 ### 1. URL Parameter (`dict=` or `in=`)
 
@@ -70,8 +71,9 @@ $$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus
 
 - **The server resolves.** On every request the server applies URL → cookie → default (`resolveActiveDicts`, `resolveInflection`) and renders the result. That's the checkboxes' `checked` state plus `data-d` (bitmask) and `data-o` on the search `<form>`.
 - **The client adopts.** `<morcus-dict-settings>` reads the checkboxes' `defaultChecked`, and `<morcus-dict-search>` reads `readRenderedDictState(form)`. Neither re-parses the URL or reads `localStorage`, so the controls can't disagree with the rendered results.
-- **No-JS writes**: the server sends `Set-Cookie` (`SameSite=Lax; Path=/; Max-Age=1 year`) on full-page submissions. Scoped views (`embedded=1` or `lang=`) never persist.
-- **JS writes**: toggling a control in `<morcus-dict-settings>` writes `document.cookie` (`persistDictKeys` / `persistInflected`). There is no `localStorage` copy.
+- **A URL never saves by itself.** A shared link shows the sender's view without touching the recipient's cookies. The server writes cookies (`SameSite=Lax; Path=/; Max-Age=1 year`) only for `save=1` (the No-JS **Apply** button or the chip's **Save these**) and then 303s the marker away. Other full page loads re-send the cookies' own values (sliding refresh). Scoped views (`embedded=1` or `lang=`) never persist. See [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md#saving-content-preferences).
+- **Borrowed views**: when the view differs from a saved cookie, the tray shows _Not your saved settings [Save these] [Use mine]_ and the form gets `data-borrowed`.
+- **JS writes**: toggling a control in `<morcus-dict-settings>` writes `document.cookie` (`persistDictKeys` / `persistInflected`), except in borrowed views (deferred until **Save these**, or until the view matches the cookie again) and scoped views (`data-scoped`, never). There is no `localStorage` copy.
 - **Privacy & Compliance**: The cookie stores only functional UI preferences (e.g. `morcus_d=3`, the same base36 bitmask as `?d=`). Under GDPR/ePrivacy and CCPA, it qualifies as an exempt **strictly necessary / user preference** cookie and requires no consent banner.
 
 ### 3. Query Language Constraints (`lang=La`) vs Layout (`embedded=1`)
