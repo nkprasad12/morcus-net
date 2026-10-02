@@ -757,7 +757,53 @@ test.describe("UI V2 dictionary", () => {
     const after = (await context.cookies()).find((c) => c.name === "morcus_d");
     expect(after?.value).toBe("1");
 
+    // The borrowed view is flagged. Use mine goes back to the saved selection.
+    const chip = page.locator(".borrowed-chip");
+    await expect(chip).toBeVisible();
+    await chip.locator(".borrowed-use-mine").click();
+    await expect(page).not.toHaveURL(/d=2/);
+    await expect(page.locator('.dict-checkbox[value="L&S"]')).toBeChecked();
+    await expect(page.locator(".borrowed-chip")).toHaveCount(0);
+
+    // Save these adopts the borrowed selection.
+    await page.goto("/v2/dicts?q=habeo&d=2");
+    await page.locator(".borrowed-save-btn").click();
+    await expect(page).not.toHaveURL(/save=/);
+    await expect(page.locator(".borrowed-chip")).toHaveCount(0);
+    const adopted = (await context.cookies()).find(
+      (c) => c.name === "morcus_d"
+    );
+    expect(adopted?.value).toBe("2"); // GAF
+
     await context.close();
+  });
+
+  test("defers saving in a borrowed view until Save these (JS enabled)", async ({
+    page,
+    baseURL,
+  }) => {
+    const readDictCookie = async () =>
+      (await page.context().cookies()).find((c) => c.name === "morcus_d")
+        ?.value;
+    await page
+      .context()
+      .addCookies([{ name: "morcus_d", value: "1", url: baseURL! }]); // L&S
+
+    await page.goto("/v2/dicts?q=habeo&d=2"); // GAF
+    await expect(page.locator(".borrowed-chip")).toBeVisible();
+
+    // Ticking a box updates the view but doesn't adopt the borrowed selection.
+    await page.locator("morcus-dict-settings .settings-btn").click();
+    await page.locator('.dict-checkbox[value="FOR"]').check();
+    await expect(page).toHaveURL(/d=a(&|$)/); // GAF + FOR = 2 + 8
+    expect(await readDictCookie()).toBe("1");
+    await expect(page.locator(".borrowed-chip")).toBeVisible();
+
+    // Save these goes through the server and saves what's on screen.
+    await page.locator(".borrowed-save-btn").click();
+    await expect(page).not.toHaveURL(/save=/);
+    await expect(page.locator(".borrowed-chip")).toHaveCount(0);
+    expect(await readDictCookie()).toBe("a");
   });
 
   test("adjusts highlight strength via quick menu and persists to localStorage", async ({

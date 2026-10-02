@@ -311,3 +311,91 @@ describe("MorcusDictSettings", () => {
     });
   });
 });
+
+describe("MorcusDictSettings persistence in scoped and borrowed views", () => {
+  function clearCookies() {
+    for (const name of ["morcus_d", "morcus_inflected"]) {
+      document.cookie = `${name}=; Max-Age=0; Path=/`;
+    }
+  }
+
+  /** Mounts the whole search form, so the settings element sees its form's markers. */
+  function mountForm(
+    options: Partial<Parameters<typeof renderDictSearchBar>[0]>
+  ): HTMLFormElement {
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = renderDictSearchBar({
+      action: "/v2/dicts",
+      ...options,
+    });
+    const form = wrapper.querySelector<HTMLFormElement>("form")!;
+    document.body.appendChild(form);
+    return form;
+  }
+
+  function setChecked(form: HTMLFormElement, key: string, checked: boolean) {
+    const cb = form.querySelector<HTMLInputElement>(
+      `.dict-checkbox[data-key="${key}"]`
+    )!;
+    cb.checked = checked;
+    cb.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  beforeEach(() => {
+    clearCookies();
+    document.body.innerHTML = "";
+  });
+
+  afterEach(() => {
+    clearCookies();
+    document.body.innerHTML = "";
+  });
+
+  test("a scoped view never saves changes, but still emits them", () => {
+    const form = mountForm({ activeDicts: ["L&S"], scoped: true });
+    let emitted: unknown = null;
+    form.addEventListener("dict-selection-change", (e) => {
+      emitted = (e as CustomEvent).detail;
+    });
+
+    setChecked(form, "GAF", true);
+    const inflected =
+      form.querySelector<HTMLInputElement>("#toggle-inflected")!;
+    inflected.checked = false;
+    inflected.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(emitted).not.toBeNull();
+    expect(document.cookie).not.toContain("morcus_d=");
+    expect(document.cookie).not.toContain("morcus_inflected=");
+  });
+
+  test("a borrowed view defers saving while it still differs from the cookie", () => {
+    document.cookie = "morcus_d=1; Path=/"; // L&S only
+    const form = mountForm({
+      activeDicts: ["GAF"],
+      borrowed: { useMineHref: "/v2/dicts?q=amo" },
+    });
+
+    setChecked(form, "FOR", true);
+
+    expect(document.cookie).toContain("morcus_d=1");
+    expect(form.hasAttribute("data-borrowed")).toBe(true);
+    expect(form.querySelector(".borrowed-chip")).not.toBeNull();
+  });
+
+  test("the chip retires once the view matches the cookie, and later changes save", () => {
+    document.cookie = "morcus_d=1; Path=/"; // L&S only
+    const form = mountForm({
+      activeDicts: ["L&S", "GAF"],
+      borrowed: { useMineHref: "/v2/dicts?q=amo" },
+    });
+
+    setChecked(form, "GAF", false); // now L&S only: matches the cookie
+    expect(form.hasAttribute("data-borrowed")).toBe(false);
+    expect(form.querySelector(".borrowed-chip")).toBeNull();
+    expect(document.cookie).toContain("morcus_d=1");
+
+    setChecked(form, "FOR", true); // L&S + FOR = 1 + 8
+    expect(document.cookie).toContain("morcus_d=9");
+  });
+});

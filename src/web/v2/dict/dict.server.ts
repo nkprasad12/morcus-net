@@ -62,6 +62,7 @@ export {
   parseDictKeys,
   parseInflectionParam,
   resolveInflection,
+  isBorrowedView,
   resolveDictParams,
   parseDictsFromCookie,
   readCookie,

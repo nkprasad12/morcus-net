@@ -10,12 +10,16 @@ import {
   resolveDictParams,
   parseInflectionParam,
   resolveInflection,
+  isBorrowedView,
   hasGreek,
   dictParamsFromQuery,
   toStringOrArray,
 } from "@/web/v2/dict/dict.server";
 import { trimRawQuery } from "@/common/text_cleaning";
-import { planDictPersistence } from "@/web/v2/dict/dict_persistence.server";
+import {
+  ownSettingsHref,
+  planDictPersistence,
+} from "@/web/v2/dict/dict_persistence.server";
 import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
 import {
   isPartialRequest,
@@ -81,6 +85,18 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
       return;
     }
 
+    // Full pages only: the chip offers to save the view or go back to the user's own settings.
+    // Scoped views are excluded because they never persist, so there's nothing to offer.
+    const pagePersistence = {
+      scoped: isScopedView,
+      borrowed:
+        !isPartial &&
+        !isScopedView &&
+        isBorrowedView({ dictKeys, isInflected }, cookieHeader)
+          ? { useMineHref: ownSettingsHref(req.originalUrl) }
+          : undefined,
+    };
+
     if (!query) {
       if (isPartial) {
         res.send(
@@ -99,6 +115,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
           queriedDicts: dictKeys,
           isInflected,
           scale: dictScale,
+          ...pagePersistence,
         })
       );
       return;
@@ -122,6 +139,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
           queriedDicts: dictKeys,
           isInflected,
           scale: dictScale,
+          ...pagePersistence,
         })
       );
       return;
@@ -153,6 +171,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
           queriedDicts: dictKeys,
           isInflected,
           scale: dictScale,
+          ...pagePersistence,
         })
       );
     } catch (err) {
@@ -166,7 +185,9 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
           query,
           embedded: isEmbedded,
           queriedDicts: dictKeys,
+          isInflected,
           scale: dictScale,
+          ...pagePersistence,
         })
       );
     }

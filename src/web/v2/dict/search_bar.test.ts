@@ -150,13 +150,51 @@ describe("renderDictSearchBar", () => {
   test("the search button is the form's first submit button, so Enter never saves", () => {
     // Implicit submission (Enter in the input) uses the FIRST submit button in tree order. If a
     // `name="save"` button ever came first, every Enter would silently persist the selection.
+    for (const borrowed of [undefined, { useMineHref: "/v2/dicts?q=amo" }]) {
+      const html = renderDictSearchBar({
+        query: "amo",
+        action: "/v2/dicts",
+        borrowed,
+      });
+      const submitButtons = Array.from(
+        html.matchAll(/<button\b[^>]*type="submit"[^>]*>/g),
+        (m) => m[0]
+      );
+      expect(submitButtons.length).toBeGreaterThan(borrowed ? 2 : 1);
+      expect(submitButtons[0]).toContain('class="search-btn"');
+      expect(submitButtons[0]).not.toContain("name=");
+    }
+  });
+
+  test("renders no borrowed chip or persistence markers by default", () => {
     const html = renderDictSearchBar({ query: "amo", action: "/v2/dicts" });
-    const submitButtons = Array.from(
-      html.matchAll(/<button\b[^>]*type="submit"[^>]*>/g),
-      (m) => m[0]
+    expect(html).not.toContain("borrowed-chip");
+    expect(html).not.toContain("data-borrowed");
+    expect(html).not.toContain("data-scoped");
+  });
+
+  test("a borrowed view renders the chip with Save these and Use mine", () => {
+    const html = renderDictSearchBar({
+      query: "amo",
+      action: "/v2/dicts",
+      borrowed: { useMineHref: "/v2/dicts?q=amo&x=<" },
+    });
+    expect(html).toMatch(/<form class="search-form"[^>]* data-borrowed>/);
+    expect(html).toContain("Not your saved settings");
+    expect(html).toMatch(
+      /<button type="submit" name="save" value="1" class="[^"]*borrowed-save-btn"[^>]*>Save these<\/button>/
     );
-    expect(submitButtons.length).toBeGreaterThan(1);
-    expect(submitButtons[0]).toContain('class="search-btn"');
-    expect(submitButtons[0]).not.toContain("name=");
+    expect(html).toContain(
+      '<a class="borrowed-chip-btn borrowed-use-mine" href="/v2/dicts?q=amo&amp;x=&lt;">Use mine</a>'
+    );
+  });
+
+  test("a scoped view is marked data-scoped", () => {
+    const html = renderDictSearchBar({
+      query: "amo",
+      action: "/v2/dicts",
+      scoped: true,
+    });
+    expect(html).toMatch(/<form class="search-form"[^>]* data-scoped>/);
   });
 });

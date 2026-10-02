@@ -82,3 +82,16 @@ export function planDictPersistence(
   }
   return { cookies };
 }
+
+/** Every query parameter that carries dictionary content settings (or the save marker). */
+const SETTINGS_PARAMS = ["d", "dict", "in", "o", SAVE_PARAM] as const;
+
+/**
+ * The same page with every settings parameter removed, so the server falls back to the user's
+ * cookies. This is the borrowed-view chip's **Use mine** link: a plain GET, so it works without JS.
+ */
+export function ownSettingsHref(originalUrl: string): string {
+  const url = new URL(originalUrl, "http://localhost");
+  for (const name of SETTINGS_PARAMS) url.searchParams.delete(name);
+  return url.pathname + url.search;
+}

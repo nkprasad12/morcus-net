@@ -6,6 +6,7 @@ import {
   settingsStore,
 } from "@/web/v2/core/index.client";
 import {
+  mayPersistDictChange,
   persistDictKeys,
   persistInflected,
 } from "@/web/v2/dict/dict_preferences.client";
@@ -217,14 +218,22 @@ export class MorcusDictSettings extends BaseElement {
 
   private saveDictSelection() {
     const keys = Array.from(this.activeDictKeys);
-    persistDictKeys(keys);
+    if (this.mayPersist()) persistDictKeys(keys);
     const bitmask = encodeDictBitmask(keys);
     this.emit("dict-selection-change", { dictKeys: keys, bitmask });
   }
 
   private saveInflected() {
-    persistInflected(this.isInflected);
+    if (this.mayPersist()) persistInflected(this.isInflected);
     this.emit("dict-inflected-change", { isInflected: this.isInflected });
+  }
+
+  /** Scoped and borrowed views don't save changes; see `mayPersistDictChange`. */
+  private mayPersist(): boolean {
+    return mayPersistDictChange(this.closest("form"), {
+      dictKeys: Array.from(this.activeDictKeys),
+      isInflected: this.isInflected,
+    });
   }
 
   private closeSettingsPopover() {
