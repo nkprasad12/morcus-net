@@ -11,6 +11,7 @@ export {
   INFLECTED_COOKIE_NAME,
   parseDictKeys,
   parseInflectionParam,
+  resolveInflection,
   parseDictsFromCookie,
   formatDictsCookie,
   formatInflectedCookie,

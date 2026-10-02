@@ -20,7 +20,6 @@ export interface GlobalSettings {
   darkMode?: boolean;
   highlightStrength?: number;
   autoOpenLogeion?: boolean;
-  inflectedSearch?: boolean;
   readerWidth?: DraggedPageWidth;
   libraryWidth?: DraggedPageWidth;
   corpusWidth?: DraggedPageWidth;
@@ -65,7 +64,6 @@ const GLOBAL_SETTINGS_CHECKERS: FieldCheckers<GlobalSettings> = {
   darkMode: isBoolean,
   highlightStrength: isNumber,
   autoOpenLogeion: isBoolean,
-  inflectedSearch: isBoolean,
   readerWidth: isDraggedPageWidth,
   libraryWidth: isDraggedPageWidth,
   corpusWidth: isDraggedPageWidth,

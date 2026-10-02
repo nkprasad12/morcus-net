@@ -9,10 +9,9 @@ import {
   resolveActiveDicts,
   resolveDictParams,
   parseInflectionParam,
-  readCookie,
+  resolveInflection,
   formatDictsCookie,
   formatInflectedCookie,
-  INFLECTED_COOKIE_NAME,
   hasGreek,
   dictParamsFromQuery,
   toStringOrArray,
@@ -50,8 +49,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     // default). No-JS forms pair a hidden "0" with a checkbox "1", so a checked box arrives as
     // ["0", "1"]; parseInflectionParam owns that shape.
     const oParam = parseInflectionParam(toStringOrArray(req.query.o));
-    const isInflected =
-      oParam ?? readCookie(cookieHeader, INFLECTED_COOKIE_NAME) !== "0";
+    const isInflected = resolveInflection(oParam, cookieHeader);
 
     const { dictKeys, source } = resolveActiveDicts({
       keysFromQuery,

@@ -6,15 +6,10 @@ import {
   settingsStore,
 } from "@/web/v2/core/index.client";
 import {
-  dictSettingsStore,
-  inflectedSettingsStore,
+  persistDictKeys,
+  persistInflected,
 } from "@/web/v2/dict/dict_preferences.client";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
-import {
-  DEFAULT_DICT_KEYS,
-  parseInflectionParam,
-  resolveDictParams,
-} from "@/web/v2/dict/dict_selection.common";
 
 const DEFAULT_STRENGTH = 50;
 
@@ -43,8 +38,7 @@ export class MorcusDictSettings extends BaseElement {
 
   protected override onConnect() {
     this.strength = this.computeInitialStrength();
-    this.initActiveDicts();
-    this.initInflectedState();
+    this.adoptRenderedState();
     const edits = this.adoptPreHydrationEdits();
     this.enhanceMarkup();
     this.syncUi();
@@ -76,41 +70,22 @@ export class MorcusDictSettings extends BaseElement {
     return DEFAULT_STRENGTH;
   }
 
-  private initActiveDicts() {
-    // 1. Synchronize cookie with localStorage if cookie was missing
-    dictSettingsStore.syncWithCookie();
-
-    // 2. URL override: 'dict' checkboxes > 'd' bitmask > legacy 'in'
-    const searchParams = new URLSearchParams(window.location.search);
-    const keysFromQuery = resolveDictParams({
-      dictParam: searchParams.getAll("dict"),
-      bitmaskParam: searchParams.get("d"),
-      inParam: searchParams.getAll("in"),
-    });
-    if (keysFromQuery) {
-      this.activeDictKeys = new Set(keysFromQuery);
-      return;
+  /**
+   * The server resolves dictionaries and inflection (URL → cookie → default) and renders each
+   * control's `checked` attribute from the result, so `defaultChecked` *is* the resolved state.
+   * Adopt it rather than re-deriving: a second resolution site is what let the controls disagree
+   * with the rendered results (F1–F5).
+   */
+  private adoptRenderedState() {
+    this.activeDictKeys = new Set();
+    for (const cb of this.scope.$$<HTMLInputElement>(".dict-checkbox")) {
+      const key = cb.dataset.key || cb.value;
+      if (key && cb.defaultChecked) this.activeDictKeys.add(key);
     }
-
-    // 3. Fallback to localStorage
-    const stored = dictSettingsStore.get();
-    if (stored && stored.length > 0) {
-      this.activeDictKeys = new Set(stored);
-      return;
-    }
-
-    // 4. Fallback to default (all Latin dicts except Pozo)
-    this.activeDictKeys = new Set(DEFAULT_DICT_KEYS);
-  }
-
-  private initInflectedState() {
-    inflectedSettingsStore.syncWithCookie();
-    const searchParams = new URLSearchParams(window.location.search);
-    // getAll, not get: a No-JS form submits the hidden "0" and the checked box's "1" together.
-    this.isInflected =
-      parseInflectionParam(searchParams.getAll("o")) ??
-      inflectedSettingsStore.get() ??
-      true;
+    const inflectedCheckbox = this.scope.$<HTMLInputElement>(
+      "#toggle-inflected, .inflected-checkbox"
+    );
+    this.isInflected = inflectedCheckbox?.defaultChecked ?? true;
   }
 
   /**
@@ -242,13 +217,13 @@ export class MorcusDictSettings extends BaseElement {
 
   private saveDictSelection() {
     const keys = Array.from(this.activeDictKeys);
-    dictSettingsStore.set(keys);
+    persistDictKeys(keys);
     const bitmask = encodeDictBitmask(keys);
     this.emit("dict-selection-change", { dictKeys: keys, bitmask });
   }
 
   private saveInflected() {
-    inflectedSettingsStore.set(this.isInflected);
+    persistInflected(this.isInflected);
     this.emit("dict-inflected-change", { isInflected: this.isInflected });
   }
 

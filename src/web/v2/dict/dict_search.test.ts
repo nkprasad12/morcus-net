@@ -25,10 +25,14 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     jest.restoreAllMocks();
   });
 
-  function createDictSearch(resultsHtml: string = ""): MorcusDictSearch {
+  /** `formAttrs`: the resolved state the server renders onto the form (`data-d`, `data-o`). */
+  function createDictSearch(
+    resultsHtml: string = "",
+    formAttrs: string = ""
+  ): MorcusDictSearch {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="search-form" action="/v2/dicts" method="GET">
+      <form class="search-form" action="/v2/dicts" method="GET" ${formAttrs}>
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
           <morcus-dict-suggestions data-js-only data-input="dict-q">
@@ -168,7 +172,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   });
 
   test("generates anchor element with href preserving query params for middle-click / open in new tab", () => {
-    // Simulate active dict and embedded params in window.location.search
+    // `embedded` still comes from the page URL; dictionaries come from the rendered form state.
     window.history.replaceState(
       {},
       "",
@@ -183,19 +187,42 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       </article>
     `;
 
-    const el = createDictSearch(resultsHtml);
+    const el = createDictSearch(resultsHtml, 'data-d="1" data-o="1"');
     const galliaLink = el.querySelector<HTMLAnchorElement>(
       '.lat-word[data-word="Gallia"]'
     )!;
 
     expect(galliaLink).not.toBeNull();
     expect(galliaLink.tagName.toLowerCase()).toBe("a");
-    // L&S bit is 1, o default is 1
+    // L&S bit is 1
     expect(galliaLink.getAttribute("href")).toBe(
       "/v2/dicts?q=Gallia&d=1&o=1&embedded=1"
     );
 
     // Clean up history state
+    window.history.replaceState({}, "", "/v2/dicts");
+  });
+
+  test("adopts the server-rendered state over a disagreeing URL and localStorage", () => {
+    // Regression (F1–F4): the client used to re-resolve URL → localStorage → default, so it could
+    // query different dictionaries from the ones the server rendered results for.
+    window.history.replaceState({}, "", "/v2/dicts?q=habeo&d=an&o=1");
+    localStorage.setItem("SEARCH_SETTINGS_KEY", "L&S;GAF;GRG");
+    localStorage.setItem(
+      "GlobalSettings",
+      JSON.stringify({ inflectedSearch: true })
+    );
+
+    const resultsHtml = `
+      <article class="entry">
+        <div class="entry-content"><p><span class="lsQuote">Gallia</span></p></div>
+      </article>
+    `;
+    // GAF only (bit 1 → 2), exact headwords.
+    const el = createDictSearch(resultsHtml, 'data-d="2" data-o="0"');
+    const link = el.querySelector<HTMLAnchorElement>(".lat-word")!;
+    expect(link.getAttribute("href")).toBe("/v2/dicts?q=Gallia&d=2&o=0");
+
     window.history.replaceState({}, "", "/v2/dicts");
   });
 
@@ -323,12 +350,11 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("forwards active dict and lang parameters for suffix queries", () => {
     delete (window as any).location;
-    (window as any).location = new URL(
-      "http://localhost/v2/dicts?dict=ls,gaffiot&lang=La"
-    );
+    (window as any).location = new URL("http://localhost/v2/dicts?lang=La");
 
     jest.useFakeTimers();
-    const el = createDictSearch();
+    // L&S + GAF = 3, as the server would render it.
+    const el = createDictSearch("", 'data-d="3" data-o="1"');
     const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     input.value = "-arum";

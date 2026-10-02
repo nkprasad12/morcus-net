@@ -169,8 +169,9 @@ describe("MorcusDictSettings", () => {
     expect(eventDetail).not.toBeNull();
     expect(eventDetail.dictKeys).not.toContain("L&S");
     expect(eventDetail.bitmask).toBeDefined();
-    expect(localStorage.getItem("SEARCH_SETTINGS_KEY")).not.toContain("L&S");
     expect(document.cookie).toContain("morcus_dicts=");
+    // The cookie is the only durable store.
+    expect(localStorage.getItem("SEARCH_SETTINGS_KEY")).toBeNull();
   });
 
   test("handles inflection toggle and dispatches dict-inflected-change", () => {
@@ -188,10 +189,42 @@ describe("MorcusDictSettings", () => {
     inflectedCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
 
     expect(inflectedDetail).toEqual({ isInflected: false });
-    expect(localStorage.getItem("GlobalSettings")).toContain(
-      '"inflectedSearch":false'
-    );
     expect(document.cookie).toContain("morcus_inflected=0");
+    expect(localStorage.getItem("GlobalSettings") ?? "").not.toContain(
+      "inflectedSearch"
+    );
+  });
+
+  test("adopts the server-rendered selection, ignoring the URL and localStorage", () => {
+    // Regression (F1–F5): the client used to re-resolve URL → localStorage → default and then
+    // overwrite the server-rendered checkboxes with the result.
+    window.history.replaceState({}, "", "/v2/dicts?q=amo&d=an&o=1");
+    localStorage.setItem("SEARCH_SETTINGS_KEY", "L&S;GRG");
+    localStorage.setItem(
+      "GlobalSettings",
+      JSON.stringify({ inflectedSearch: true })
+    );
+
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = renderDictSearchBar({
+      action: "/v2/dicts",
+      activeDicts: ["GAF"],
+      isInflected: false,
+    });
+    const el = wrapper.querySelector<HTMLElement>("morcus-dict-settings")!;
+    document.body.appendChild(el);
+
+    const checked = Array.from(
+      el.querySelectorAll<HTMLInputElement>(".dict-checkbox")
+    )
+      .filter((cb) => cb.checked)
+      .map((cb) => cb.dataset.key);
+    expect(checked).toEqual(["GAF"]);
+    expect(
+      el.querySelector<HTMLInputElement>("#toggle-inflected")!.checked
+    ).toBe(false);
+
+    window.history.replaceState({}, "", "/");
   });
 
   test("synchronizes aria-expanded and closes on element disconnect", () => {
