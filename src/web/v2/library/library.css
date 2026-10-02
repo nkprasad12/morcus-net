@@ -3,7 +3,6 @@
 .library-view {
   display: block;
   width: 100%;
-  max-width: 1200px;
   margin: 0 auto;
   padding: var(--space-8) var(--space-6) 4rem;
 }

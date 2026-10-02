@@ -11,6 +11,8 @@ import {
 } from "@/bundler/v2_build_contract";
 import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
+import type { WidthSurface } from "@/web/v2/core/page_width.common";
+import { renderPageWidthHandles } from "@/web/v2/shell/page_width.server";
 
 export type V2ActivePage = "dicts" | "about" | "library" | "corpus";
 
@@ -32,6 +34,12 @@ export interface PageShellOptions {
   isReader?: boolean;
   isExternal?: boolean;
   extraHeadHtml?: string;
+  /**
+   * Gives the page draggable width handles, saved per surface
+   * (`core/page_width.client.ts`). Pages without one (About, External) keep
+   * their fixed width.
+   */
+  widthSurface?: WidthSurface;
 }
 
 /** Which client route a page is, for choosing its script chunks. */
@@ -194,6 +202,12 @@ export function renderPageShell(options: PageShellOptions): string {
   const bodyClasses: string[] = [];
   if (isReader) bodyClasses.push("body-reader");
   if (isEmbedded) bodyClasses.push("body-embedded");
+  const widthSurface = isEmbedded ? undefined : options.widthSurface;
+  // `body-reader` and `body-dict` are set separately; others get
+  // `body-{surface}`.
+  if (widthSurface === "library" || widthSurface === "corpus") {
+    bodyClasses.push(`body-${widthSurface}`);
+  }
   // Scopes the dictionary page width preset (shell/page_width.css). Embedded
   // dictionaries are excluded so the reader's iframe ignores the setting.
   if (options.activePage === "dicts" && !isReader && !isEmbedded) {
@@ -249,6 +263,7 @@ export function renderPageShell(options: PageShellOptions): string {
       ${options.contentHtml}
     </main>
   </div>
+  ${widthSurface ? renderPageWidthHandles(widthSurface) : ""}
 
   <a
     href="#top"

@@ -6,6 +6,7 @@
 @import "./core/drawer.css";
 @import "./core/components.css";
 @import "./core/settings.css";
+@import "./core/resize_handle.css";
 @import "./dict/search.css";
 @import "./dict/dict_settings.css";
 @import "./dict/dict_layout.css";

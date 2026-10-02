@@ -4,7 +4,7 @@
  * Implements the responsive results layout:
  * - Wide screens (>= 1080px): Sticky left rail sidebar (240px by default)
  *   alongside the primary reading content column (860px by default). Both
- *   follow the page width preset (shell/page_width.css).
+ *   follow the dragged page width (shell/page_width.css).
  * - Mobile / narrow screens (< 1080px): Bottom-docked sheet drawer.
  */
 
@@ -338,14 +338,12 @@
    Desktop (>= 1080px): Left Rail Sidebar Mode
    -------------------------------------------------------------------------- */
 @media (min-width: 1080px) {
-  /* Expand container to fit the TOC rail beside the reading column. Widths
-     come from the page width preset (shell/page_width.css); the fallbacks are
-     the Default preset (1180px container, 240px rail, 860px column), which is
-     also what embedded dictionaries get. */
+  /* Expand container to fit the TOC rail beside the reading column, which
+     keeps its width. Widths come from the dragged page width
+     (shell/page_width.css); the fallbacks (1180px container, 240px rail,
+     860px column) are what embedded dictionaries get. */
   .container:has(.results-layout.has-toc) {
-    max-width: calc(
-      var(--dict-page-max, 900px) + var(--dict-toc-w, 240px) + 40px
-    );
+    max-width: calc(var(--page-max, 900px) + var(--dict-toc-w, 240px) + 40px);
   }
 
   /* Two-column grid: TOC rail | Content column */
@@ -353,7 +351,7 @@
     display: grid;
     grid-template-columns:
       var(--dict-toc-w, 240px)
-      minmax(0, calc(var(--dict-page-max, 900px) - 40px));
+      minmax(0, calc(var(--page-max, 900px) - 40px));
     column-gap: 36px;
     align-items: start;
     padding-bottom: 0;

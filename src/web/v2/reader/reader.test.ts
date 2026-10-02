@@ -60,7 +60,7 @@ describe("reader_ssr", () => {
     expect(html).toContain("Belgae");
 
     // Desktop splitter & mobile sheet handle
-    expect(html).toContain('class="reader-splitter"');
+    expect(html).toContain('class="reader-splitter resize-handle"');
     expect(html).toContain('class="reader-sheet-bar"');
   });
 
@@ -552,7 +552,7 @@ describe("decomposed_reader_renderers", () => {
       const ctx = await resolveReaderContext({ workId: "dbg" });
       const html = renderReaderDictPanel(ctx);
 
-      expect(html).toContain('class="reader-splitter"');
+      expect(html).toContain('class="reader-splitter resize-handle"');
       expect(html).toContain('id="reader-dict"');
       expect(html).toContain("Open Dictionary Search");
       expect(html).toContain("Tap any word to view definitions");

@@ -1,5 +1,4 @@
 import { V2PreprocessedWork } from "@/common/library/v2/v2_types";
-import { renderPageWidthSelect } from "@/web/v2/shell/page_width.server";
 import * as he from "he";
 
 /**
@@ -184,15 +183,6 @@ export function renderReaderSettingsPopover(
                   <button type="button" class="stepper-btn" id="dict-size-inc" aria-label="Increase dictionary text size">A+</button>
                 </div>
               </div>
-            </div>
-
-            <!-- Page Width (hidden on mobile, where layouts are full width) -->
-            <div class="settings-group page-width-row">
-              <h3 class="settings-group-title">Layout</h3>
-              ${renderPageWidthSelect(
-                "reader-width-select",
-                "Select reader page width"
-              )}
             </div>
 
             <!-- Scholarly & Textual Aids -->

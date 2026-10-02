@@ -5,6 +5,7 @@ import "@/web/v2/core/index.client";
 // Shell elements present on every page.
 import "@/web/v2/shell/theme_toggle.client";
 import "@/web/v2/dialog/report_dialog.client";
+import "@/web/v2/shell/page_width_handles.client";
 
 import { setupAnchorScroll } from "@/web/v2/core/anchor_scroll.client";
 import { setupBackToTop } from "@/web/v2/core/back_to_top.client";

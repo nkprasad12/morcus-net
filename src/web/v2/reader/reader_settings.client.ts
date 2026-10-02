@@ -1,11 +1,8 @@
 import {
   BaseElement,
   type FieldCheckers,
-  getPageWidth,
   pickValid,
   registerElement,
-  setPageWidth,
-  syncPageWidth,
   storage,
 } from "@/web/v2/core/index.client";
 // Not in the core barrel: only the reader uses it, so it ships in reader.js.
@@ -300,18 +297,6 @@ export class MorcusReaderSettings extends BaseElement {
       });
     }
 
-    // Page width lives in GlobalSettings, not in ReaderPreferences, and is
-    // applied pre-paint from the `setPrepaint` snapshot.
-    const widthSelect = this.scope.$<HTMLSelectElement>("#reader-width-select");
-    if (widthSelect) {
-      syncPageWidth("reader");
-      widthSelect.value = getPageWidth("reader");
-      this.scope.listen(widthSelect, "change", () => {
-        setPageWidth("reader", widthSelect.value);
-        this.updatePosition();
-      });
-    }
-
     // The swipe toggle is read by the page-nav controller at gesture time, so
     // writing storage is all a change needs.
     const toggleSwipe = this.scope.$<HTMLInputElement>("#toggle-swipe-nav");
@@ -328,10 +313,6 @@ export class MorcusReaderSettings extends BaseElement {
         const workId = this.getWorkId();
         if (workId) {
           removeWorkMacra(workId);
-        }
-        if (widthSelect) {
-          widthSelect.value = "default";
-          setPageWidth("reader", "default");
         }
         storage.remove(SWIPE_NAV_KEY);
         if (toggleSwipe) toggleSwipe.checked = isSwipeNavOn();

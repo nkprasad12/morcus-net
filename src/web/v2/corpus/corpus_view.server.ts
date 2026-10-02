@@ -406,6 +406,7 @@ export function renderCorpusPageHtml(
   return renderPageShell({
     title: corpusPageTitle(view.params.q),
     activePage: "corpus",
+    widthSurface: "corpus",
     contentHtml: renderCorpusContentHtml(view, lemmataVersion),
   });
 }

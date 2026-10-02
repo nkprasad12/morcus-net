@@ -484,7 +484,7 @@ export function renderReaderDictPanelHtml(
   const activePageUrl = he.escape(closeHref);
 
   return `        <!-- Desktop Resizable Splitter Bar -->
-        <div class="reader-splitter"
+        <div class="reader-splitter resize-handle"
              role="separator"
              tabindex="0"
              aria-orientation="vertical"
@@ -492,7 +492,7 @@ export function renderReaderDictPanelHtml(
              aria-valuemin="300"
              aria-valuemax="750"
              aria-valuenow="420">
-          <div class="reader-splitter-handle" aria-hidden="true" data-js-only></div>
+          <div class="resize-grip" aria-hidden="true" data-js-only></div>
         </div>
 
         <!-- Right / Bottom Column: Dictionary Panel (Adaptive Sheet on Mobile) -->
@@ -752,6 +752,7 @@ export async function renderReaderPageHtml(
     title,
     activePage: "library",
     isReader: true,
+    widthSurface: "reader",
     contentHtml,
   });
 }

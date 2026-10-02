@@ -42,7 +42,8 @@ describe("critical_theme pre-paint applier", () => {
         "--reader-scale": "1.25",
         "--reader-font": "var(--font-sans)",
         "--dict-width": "512px",
-        "data-reader-width": "wide",
+        "--reader-page-max": "1234px",
+        "data-dict-width": "wide",
         "data-reader-hide-gutter": "",
       })
     );
@@ -54,7 +55,8 @@ describe("critical_theme pre-paint applier", () => {
       "var(--font-sans)"
     );
     expect(root.style.getPropertyValue("--dict-width")).toBe("512px");
-    expect(root.getAttribute("data-reader-width")).toBe("wide");
+    expect(root.style.getPropertyValue("--reader-page-max")).toBe("1234px");
+    expect(root.getAttribute("data-dict-width")).toBe("wide");
     expect(root.getAttribute("data-reader-hide-gutter")).toBe("");
   });
 
@@ -63,7 +65,7 @@ describe("critical_theme pre-paint applier", () => {
       PREPAINT_KEY,
       JSON.stringify({
         "--reader-scale": 1.25,
-        "data-reader-width": null,
+        "data-dict-width": null,
         onclick: "alert(1)",
         style: "display:none",
         class: "x",
@@ -73,7 +75,7 @@ describe("critical_theme pre-paint applier", () => {
     await runCriticalScript();
 
     expect(root.getAttribute("style") ?? "").toBe("");
-    expect(root.hasAttribute("data-reader-width")).toBe(false);
+    expect(root.hasAttribute("data-dict-width")).toBe(false);
     expect(root.hasAttribute("onclick")).toBe(false);
     expect(root.hasAttribute("class")).toBe(false);
   });
@@ -92,7 +94,7 @@ describe("critical_theme pre-paint applier", () => {
   test("no longer maps legacy preference stores itself", async () => {
     localStorage.setItem(
       "GlobalSettings",
-      JSON.stringify({ highlightStrength: 80, readerWidth: "wide" })
+      JSON.stringify({ highlightStrength: 80, readerWidth: 1234 })
     );
     localStorage.setItem(
       "morcus_reader_settings",
@@ -100,7 +102,6 @@ describe("critical_theme pre-paint applier", () => {
     );
     await runCriticalScript();
     expect(root.getAttribute("style") ?? "").toBe("");
-    expect(root.hasAttribute("data-reader-width")).toBe(false);
   });
 
   test("tolerates a corrupt or non-object snapshot", async () => {

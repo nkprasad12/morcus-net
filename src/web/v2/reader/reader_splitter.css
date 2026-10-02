@@ -16,81 +16,30 @@ body.resizing-panels {
    ========================================================================== */
 
 @media (min-width: 641px) {
+  /* The line, grip and hover/drag states come from .resize-handle
+     (core/resize_handle.css); this only sizes and places the splitter. */
   .reader-splitter {
     display: flex;
-    align-items: center;
-    justify-content: center;
     width: 16px;
     flex: 0 0 16px;
     margin: 0;
-    cursor: col-resize;
-    user-select: none;
-    touch-action: none;
     z-index: var(--z-raised);
     position: relative;
   }
 
-  .reader-splitter::before {
-    content: "";
-    width: 2px;
-    height: 100%;
-    background-color: var(--border);
-    transition: background-color 0.15s ease;
-  }
-
-  .reader-splitter-handle {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 8px;
-    height: 40px;
-    border-radius: var(--radius-sm);
-    background-color: var(--card-bg);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.65;
-    transition: opacity 0.15s ease, border-color 0.15s ease,
-      background-color 0.15s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  }
-
-  .reader-splitter-handle::after {
-    content: "";
-    width: 2px;
-    height: 16px;
-    background-color: var(--border-strong);
-    border-radius: var(--radius-xs);
-  }
-
-  .reader-splitter:hover::before,
-  .reader-splitter:focus-visible::before,
-  .reader-splitter.is-resizing::before {
-    background-color: var(--primary);
-    width: 2px;
-  }
-
-  .reader-splitter:hover .reader-splitter-handle,
-  .reader-splitter:focus-visible .reader-splitter-handle,
-  .reader-splitter.is-resizing .reader-splitter-handle {
-    opacity: 1;
-    border-color: var(--primary);
-  }
-
   /* No-JS, or a reader whose JS failed: the splitter is an inert dividing
-     seam (its drag handle is `data-js-only`). Appearance only, so this keys
-     on `(scripting)` rather than on upgrade: with JS on, the splitter looks
-     draggable from first paint. */
+     seam (its drag handle is `data-js-only`), drawn as a plain solid line.
+     Appearance only, so this keys on `(scripting)` rather than on upgrade:
+     with JS on, the splitter looks draggable from first paint. */
   @media (scripting: none) {
     .reader-splitter {
       cursor: default;
     }
 
+    .reader-splitter::before,
     .reader-splitter:hover::before {
-      background-color: var(--border);
-      width: 2px;
+      background: var(--border);
+      opacity: 1;
     }
   }
 
@@ -98,8 +47,9 @@ body.resizing-panels {
     cursor: default;
   }
 
+  [data-js-failed] .reader-splitter::before,
   [data-js-failed] .reader-splitter:hover::before {
-    background-color: var(--border);
-    width: 2px;
+    background: var(--border);
+    opacity: 1;
   }
 }

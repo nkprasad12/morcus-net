@@ -1,10 +1,4 @@
-import {
-  isBoolean,
-  isLiteral,
-  isNumber,
-  isOneOf,
-  Validator,
-} from "@/web/utils/rpc/parsing";
+import { isBoolean, isNumber, Validator } from "@/web/utils/rpc/parsing";
 import { storage } from "@/web/v2/core/storage.client";
 
 /**
@@ -12,23 +6,25 @@ import { storage } from "@/web/v2/core/storage.client";
  */
 
 /**
- * Non-default page width presets. "default" is never persisted: it is the
- * absence of a value. Pixel values live in `shell/page_width.css`.
+ * A dragged page width (see `core/page_width.client.ts`): a px width, or
+ * `"full"` to follow the window. The default is the absence of a value.
  */
-export type StoredPageWidth = "narrow" | "wide" | "full";
+export type DraggedPageWidth = number | "full";
 
-export const isStoredPageWidth: Validator<StoredPageWidth> = isOneOf(
-  isLiteral("narrow"),
-  isOneOf(isLiteral("wide"), isLiteral("full"))
-);
+export const isDraggedPageWidth: Validator<DraggedPageWidth> = (
+  x: unknown
+): x is DraggedPageWidth =>
+  x === "full" || (isNumber(x) && Number.isFinite(x) && x > 0);
 
 export interface GlobalSettings {
   darkMode?: boolean;
   highlightStrength?: number;
   autoOpenLogeion?: boolean;
   inflectedSearch?: boolean;
-  readerWidth?: StoredPageWidth;
-  dictWidth?: StoredPageWidth;
+  readerWidth?: DraggedPageWidth;
+  libraryWidth?: DraggedPageWidth;
+  corpusWidth?: DraggedPageWidth;
+  dictWidth?: DraggedPageWidth;
 }
 
 export const GLOBAL_SETTINGS_KEY = "GlobalSettings";
@@ -70,8 +66,10 @@ const GLOBAL_SETTINGS_CHECKERS: FieldCheckers<GlobalSettings> = {
   highlightStrength: isNumber,
   autoOpenLogeion: isBoolean,
   inflectedSearch: isBoolean,
-  readerWidth: isStoredPageWidth,
-  dictWidth: isStoredPageWidth,
+  readerWidth: isDraggedPageWidth,
+  libraryWidth: isDraggedPageWidth,
+  corpusWidth: isDraggedPageWidth,
+  dictWidth: isDraggedPageWidth,
 };
 
 export function parseSettings(raw: string | null): GlobalSettings {

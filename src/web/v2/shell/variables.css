@@ -49,6 +49,9 @@
   --primary: #0066cc;
   --primary-hover: #0052a3;
   --primary-light: rgba(0, 102, 204, 0.08);
+  /* Resize handles (page width, reader splitter): Morcus green, not --primary. */
+  --resize-accent: #2f7d62;
+  --resize-accent-light: rgba(47, 125, 98, 0.1);
   --border: #dfe3e1;
   --border-mid: #b7bac1;
   --border-strong: #8c919a;
@@ -137,6 +140,8 @@
     --primary: #8ab4f8;
     --primary-hover: #aecbfa;
     --primary-light: rgba(138, 180, 248, 0.15);
+    --resize-accent: #7cc4a6;
+    --resize-accent-light: rgba(124, 196, 166, 0.12);
     --border: #363a42;
     --border-mid: #4d525c;
     --border-strong: #656a76;
@@ -226,6 +231,8 @@
   --primary: #8ab4f8;
   --primary-hover: #aecbfa;
   --primary-light: rgba(138, 180, 248, 0.15);
+  --resize-accent: #7cc4a6;
+  --resize-accent-light: rgba(124, 196, 166, 0.12);
   --border: #363a42;
   --border-mid: #4d525c;
   --border-strong: #656a76;
