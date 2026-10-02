@@ -1,8 +1,17 @@
 import { LatinDict, LatinDictInfo } from "@/common/dictionaries/latin_dicts";
-import { decodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
+import {
+  decodeDictBitmask,
+  decodeStoredDictBitmask,
+  encodeDictBitmask,
+} from "@/web/v2/dict/dict_bitmask.common";
 import { formatCookie, readCookie } from "@/web/v2/core/cookies.common";
 
-export const DICT_COOKIE_NAME = "morcus_dicts";
+/**
+ * The dictionary preference cookie. It holds the same base36 bitmask as `?d=` (one canonical
+ * encoding). Renamed from `morcus_dicts`, which held a `;`-joined key list, so that old values are
+ * simply ignored rather than misread as a bitmask.
+ */
+export const DICT_COOKIE_NAME = "morcus_d";
 export const INFLECTED_COOKIE_NAME = "morcus_inflected";
 
 /** Default dictionary selection: all available Latin dictionaries except Pozo (matches V1 default). */
@@ -13,10 +22,10 @@ export const DEFAULT_DICTS: LatinDictInfo[] = LatinDict.AVAILABLE.filter(
 export const DEFAULT_DICT_KEYS: string[] = DEFAULT_DICTS.map((d) => d.key);
 
 /**
- * Formats canonical dict keys into a cookie value.
+ * Formats canonical dict keys into a cookie value (the `?d=` bitmask).
  */
 export function formatDictsCookie(dictKeys: string[]): string {
-  return formatCookie(DICT_COOKIE_NAME, dictKeys.join(";"));
+  return formatCookie(DICT_COOKIE_NAME, encodeDictBitmask(dictKeys));
 }
 
 /**
@@ -27,12 +36,13 @@ export function formatInflectedCookie(isInflected: boolean): string {
 }
 
 /**
- * Parses dictionary selection from HTTP Cookie header string.
+ * Parses dictionary selection from HTTP Cookie header string. Anything that isn't a canonical
+ * bitmask is ignored.
  */
 export function parseDictsFromCookie(
   cookieHeader: string | undefined | null
 ): string[] | null {
-  return parseDictKeys(readCookie(cookieHeader, DICT_COOKIE_NAME));
+  return decodeStoredDictBitmask(readCookie(cookieHeader, DICT_COOKIE_NAME));
 }
 
 /**

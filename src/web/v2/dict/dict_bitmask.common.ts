@@ -112,3 +112,20 @@ export function decodeDictBitmask(
 
   return keys.length > 0 ? keys : null;
 }
+
+/** A canonical encoded bitmask: lowercase base36 only, as `encodeDictBitmask` writes it. */
+const CANONICAL_BITMASK = /^[0-9a-z]{1,6}$/;
+
+/**
+ * Like `decodeDictBitmask`, but rejects anything `encodeDictBitmask` could not have written.
+ *
+ * Use this for values we stored ourselves (the preference cookie). `parseInt` stops at the first
+ * non-base36 character instead of failing, so a stale or foreign value such as `"L&S;GAF"` would
+ * otherwise decode as `"l"` = 21, i.e. a plausible but wrong selection (L&S + GES + S&H).
+ */
+export function decodeStoredDictBitmask(
+  encoded: string | null | undefined
+): string[] | null {
+  if (!encoded || !CANONICAL_BITMASK.test(encoded)) return null;
+  return decodeDictBitmask(encoded);
+}

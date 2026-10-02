@@ -1,34 +1,47 @@
 import {
   parseDictsFromCookie,
   formatDictsCookie,
-  formatDictsParam,
   resolveActiveDicts,
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/dict_selection.server";
 
 describe("dict_selection.server", () => {
   describe("parseDictsFromCookie", () => {
-    it("extracts morcus_dicts from cookie header", () => {
-      const cookie = "foo=bar; morcus_dicts=L%26S%3BGAF; other=baz";
+    it("decodes the morcus_d bitmask from the cookie header", () => {
+      // L&S (1) | GAF (2) = 3
+      const cookie = "foo=bar; morcus_d=3; other=baz";
       expect(parseDictsFromCookie(cookie)).toEqual(["L&S", "GAF"]);
     });
 
-    it("returns null when morcus_dicts is absent", () => {
+    it("returns null when morcus_d is absent", () => {
       expect(parseDictsFromCookie("foo=bar; test=123")).toBeNull();
       expect(parseDictsFromCookie(undefined)).toBeNull();
     });
+
+    it("ignores the old morcus_dicts cookie", () => {
+      expect(parseDictsFromCookie("morcus_dicts=L%26S%3BGAF")).toBeNull();
+    });
+
+    it("rejects non-canonical values instead of misreading them", () => {
+      // parseInt("L&S;GAF", 36) would read "l" = 21: L&S + GES + S&H.
+      expect(parseDictsFromCookie("morcus_d=L%26S%3BGAF")).toBeNull();
+      expect(parseDictsFromCookie("morcus_d=GAF")).toBeNull();
+      expect(parseDictsFromCookie("morcus_d=0")).toBeNull();
+    });
   });
 
-  describe("formatDictsCookie & formatDictsParam", () => {
-    it("formats cookie header string correctly", () => {
+  describe("formatDictsCookie", () => {
+    it("writes the canonical bitmask", () => {
       const header = formatDictsCookie(["L&S", "GAF"]);
-      expect(header).toContain("morcus_dicts=L%26S%3BGAF;");
+      expect(header).toContain("morcus_d=3;");
       expect(header).toContain("Path=/;");
       expect(header).toContain("SameSite=Lax");
     });
 
-    it("formats URL param using hyphen and n alias", () => {
-      expect(formatDictsParam(["L&S", "S&H", "GAF"])).toBe("LnS-SnH-GAF");
+    it("round-trips through parseDictsFromCookie", () => {
+      const keys = ["L&S", "S&H", "GRG", "NUM"];
+      const pair = formatDictsCookie(keys).split(";")[0];
+      expect(parseDictsFromCookie(pair)).toEqual(keys);
     });
   });
 
@@ -36,7 +49,7 @@ describe("dict_selection.server", () => {
     it("prefers keys resolved from the query over cookie and default", () => {
       const res = resolveActiveDicts({
         keysFromQuery: ["GAF"],
-        cookieHeader: "morcus_dicts=L%26S",
+        cookieHeader: "morcus_d=1",
       });
       expect(res.source).toBe("url");
       expect(res.dictKeys).toEqual(["GAF"]);
@@ -45,15 +58,14 @@ describe("dict_selection.server", () => {
     it("falls back to cookie if the query resolved nothing", () => {
       const res = resolveActiveDicts({
         keysFromQuery: null,
-        cookieHeader: "morcus_dicts=L%26S%3BGAF",
+        cookieHeader: "morcus_d=3",
       });
       expect(res.source).toBe("cookie");
       expect(res.dictKeys).toEqual(["L&S", "GAF"]);
     });
 
     it("resolves a single-dictionary cookie exactly", () => {
-      // Regression: base36 guessing used to expand "GAF" to six dictionaries.
-      const res = resolveActiveDicts({ cookieHeader: "morcus_dicts=GAF" });
+      const res = resolveActiveDicts({ cookieHeader: "morcus_d=2" });
       expect(res.source).toBe("cookie");
       expect(res.dictKeys).toEqual(["GAF"]);
     });
@@ -82,9 +94,9 @@ describe("dict_selection.server", () => {
     });
 
     it("applies lang=La while respecting user's custom cookie preferences", () => {
-      // User has explicitly enabled only L&S, GES, S&H, and GRG in cookies (Gaffiot disabled)
+      // User has explicitly enabled only L&S, GES, S&H, and GRG (1 + 4 + 16 + 64 = 85 = "2d")
       const res = resolveActiveDicts({
-        cookieHeader: "morcus_dicts=L%26S%3BGES%3BS%26H%3BGRG",
+        cookieHeader: "morcus_d=2d",
         lang: "La",
       });
       expect(res.source).toBe("cookie");

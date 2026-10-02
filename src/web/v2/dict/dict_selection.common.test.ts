@@ -120,9 +120,9 @@ describe("dict_selection.common", () => {
   });
 
   describe("formatDictsCookie & formatInflectedCookie", () => {
-    it("formats morcus_dicts cookie with proper URL encoding and attributes", () => {
+    it("formats the dictionary cookie as the bitmask, with attributes", () => {
       const cookie = formatDictsCookie(["L&S", "GAF"]);
-      expect(cookie).toContain(`${DICT_COOKIE_NAME}=L%26S%3BGAF`);
+      expect(cookie).toContain(`${DICT_COOKIE_NAME}=3;`);
       expect(cookie).toContain("Path=/;");
       expect(cookie).toContain("Max-Age=31536000;");
       expect(cookie).toContain("SameSite=Lax");
@@ -139,12 +139,12 @@ describe("dict_selection.common", () => {
   });
 
   describe("parseDictsFromCookie", () => {
-    it("extracts and parses morcus_dicts from a cookie string", () => {
-      const header = "foo=bar; morcus_dicts=L%26S%3BGAF; other=baz";
+    it("extracts and decodes the bitmask from a cookie string", () => {
+      const header = `foo=bar; ${DICT_COOKIE_NAME}=3; other=baz`;
       expect(parseDictsFromCookie(header)).toEqual(["L&S", "GAF"]);
     });
 
-    it("returns null when cookie header is missing or does not have morcus_dicts", () => {
+    it("returns null when cookie header is missing or does not have the cookie", () => {
       expect(parseDictsFromCookie(undefined)).toBeNull();
       expect(parseDictsFromCookie("other=123")).toBeNull();
     });

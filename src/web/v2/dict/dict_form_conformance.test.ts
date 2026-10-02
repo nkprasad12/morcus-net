@@ -270,7 +270,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     // 1. `dict` checkbox param beats `d` bitmask and cookie
     await request(app)
       .get(`/v2/dicts?q=amo&dict=GAF&d=${lsBitmask}`)
-      .set("Cookie", "morcus_dicts=SH");
+      .set("Cookie", "morcus_d=g"); // g = S&H (16)
     expect(mockGetEntry).toHaveBeenLastCalledWith({
       query: "amo",
       dicts: ["GAF"],
@@ -280,7 +280,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     // 2. `d` bitmask beats legacy `in` and cookie
     await request(app)
       .get(`/v2/dicts?q=amo&d=${grgBitmask}&in=L%26S`)
-      .set("Cookie", "morcus_dicts=SH");
+      .set("Cookie", "morcus_d=g"); // g = S&H (16)
     expect(mockGetEntry).toHaveBeenLastCalledWith({
       query: "amo",
       dicts: ["GRG"],
