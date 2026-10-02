@@ -218,10 +218,10 @@ describe("renderDictSearchBar", () => {
     });
 
     test("explains itself and links back to the user's settings", () => {
-      expect(html).toContain("Viewing this link's settings");
+      expect(html).toContain("Using link settings");
       expect(html).toContain("settings-guest-note");
       const returnLink =
-        '<a class="guest-return" href="/v2/dicts?q=amo&amp;x=&lt;">Return to my settings</a>';
+        '<a class="guest-return" href="/v2/dicts?q=amo&amp;x=&lt;">Restore saved</a>';
       // Once in the tray chip, once in the popover note.
       expect(html.split(returnLink).length - 1).toBe(2);
     });

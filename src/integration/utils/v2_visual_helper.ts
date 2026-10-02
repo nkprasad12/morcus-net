@@ -15,6 +15,14 @@ export interface V2VisualScenarioOptions {
   action?: (page: Page) => Promise<void>;
   /** Optional selector to capture only this specific element instead of the viewport */
   locator?: string;
+  /** Optional initial cookies to seed into the browser context before navigation */
+  cookies?: {
+    name: string;
+    value: string;
+    url?: string;
+    domain?: string;
+    path?: string;
+  }[];
 }
 
 /**
@@ -34,12 +42,25 @@ export function v2VisualScenario(
 
   for (const js of jsModes) {
     for (const theme of themes) {
-      test(`${scenarioName} [${js}] [${theme}]`, async ({ browser }) => {
+      test(`${scenarioName} [${js}] [${theme}]`, async ({
+        browser,
+        baseURL,
+      }) => {
         const isDark = theme === "dark";
         const context = await browser.newContext({
           javaScriptEnabled: js === "js",
           colorScheme: theme,
         });
+
+        if (options.cookies && options.cookies.length > 0) {
+          const defaultUrl = baseURL ?? "http://localhost:5757";
+          await context.addCookies(
+            options.cookies.map((cookie) => ({
+              ...(cookie.url || cookie.domain ? {} : { url: defaultUrl }),
+              ...cookie,
+            }))
+          );
+        }
 
         const page = await context.newPage();
 

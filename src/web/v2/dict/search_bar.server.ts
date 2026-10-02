@@ -79,7 +79,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   const returnLinkHtml = guest
     ? `<a class="guest-return" href="${he.escape(
         guest.returnHref
-      )}">Return to my settings</a>`
+      )}">Restore saved</a>`
     : "";
 
   const settingsDialogHtml = includeSettings
@@ -98,8 +98,10 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
 
   const guestChipHtml = guest
     ? `
+          <span class="tray-dot guest-tray-dot" aria-hidden="true">•</span>
           <span class="guest-chip" role="status">
-            <span class="guest-chip-text">Viewing this link's settings</span>
+            <span class="guest-chip-text">Using link settings</span>
+            <span class="tray-dot" aria-hidden="true">·</span>
             ${returnLinkHtml}
           </span>`
     : "";
@@ -237,7 +239,7 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
       ${input.extraHiddenInputsHtml}
       ${
         input.isGuest
-          ? `<p class="settings-guest-note">These are the link's settings. ${input.returnLinkHtml} to change them.</p>`
+          ? `<p class="settings-guest-note">Using this link's settings (read-only). ${input.returnLinkHtml} to change them.</p>`
           : ""
       }
       <div class="settings-slider-section" data-js-only>

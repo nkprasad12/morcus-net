@@ -93,11 +93,28 @@ test.describe("UI V2 Visual Regression Suite", () => {
     mask: ["[data-volatile]"],
   });
 
+  // 12. Dictionary Settings Dialog (modal dialog in JS, full-screen :target overlay in No-JS)
+  v2VisualScenario("v2-dicts-settings-dialog", {
+    path: "/v2/dicts?q=gladius",
+    waitFor: ".dict-card",
+    action: async (page) => {
+      await page.locator("#dict-settings-btn").click();
+      await page.waitForSelector("dialog#dict-settings", { state: "visible" });
+    },
+  });
+
+  // 13. Dictionary Guest Mode (link settings differ from saved cookie)
+  v2VisualScenario("v2-dicts-guest-mode", {
+    path: "/v2/dicts?q=gladius&d=2",
+    cookies: [{ name: "morcus_d", value: "1" }],
+    waitFor: ".guest-chip",
+  });
+
   // ==========================================================================
   // Dark Mode Curated Token Samples (High-Density Views)
   // ==========================================================================
 
-  // 12. Dark Mode Sample - Dictionary Results View (cards, chips, tags, tables)
+  // 14. Dark Mode Sample - Dictionary Results View (cards, chips, tags, tables)
   v2VisualScenario("v2-dicts-results-gladius", {
     path: "/v2/dicts?q=gladius",
     waitFor: ".dict-card",
@@ -105,7 +122,7 @@ test.describe("UI V2 Visual Regression Suite", () => {
     themes: ["dark"],
   });
 
-  // 13. Dark Mode Sample - Reader Passage View (reading canvas, active words, sticky bar)
+  // 15. Dark Mode Sample - Reader Passage View (reading canvas, active words, sticky bar)
   v2VisualScenario("v2-reader-passage", {
     path: "/v2/reader",
     waitFor: ".reader-passage",
@@ -113,11 +130,23 @@ test.describe("UI V2 Visual Regression Suite", () => {
     themes: ["dark"],
   });
 
-  // 14. Dark Mode Sample - Corpus Results View (cards, chips, mark highlights, pager)
+  // 16. Dark Mode Sample - Corpus Results View (cards, chips, mark highlights, pager)
   v2VisualScenario("v2-corpus-results", {
     path: "/v2/corpus?q=Roma",
     waitFor: ".corpus-result-list",
     mask: ["[data-volatile]"],
+    jsModes: ["js"],
+    themes: ["dark"],
+  });
+
+  // 17. Dark Mode Sample - Dictionary Settings Dialog
+  v2VisualScenario("v2-dicts-settings-dialog", {
+    path: "/v2/dicts?q=gladius",
+    waitFor: ".dict-card",
+    action: async (page) => {
+      await page.locator("#dict-settings-btn").click();
+      await page.waitForSelector("dialog#dict-settings", { state: "visible" });
+    },
     jsModes: ["js"],
     themes: ["dark"],
   });

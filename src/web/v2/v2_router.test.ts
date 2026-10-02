@@ -247,12 +247,10 @@ describe("v2_router integration", () => {
         .get("/v2/dicts?q=amo&d=2&o=0")
         .set("Cookie", "morcus_d=1; morcus_inflected=1");
       expect(res.status).toBe(200);
-      expect(res.text).toContain("Viewing this link's settings");
+      expect(res.text).toContain("Using link settings");
       expect(res.text).toMatch(/class="dict-checkbox"[^>]*disabled/);
       // Return drops the settings params so the recipient's cookies apply.
-      expect(res.text).toContain(
-        'href="/v2/dicts?q=amo">Return to my settings</a>'
-      );
+      expect(res.text).toContain('href="/v2/dicts?q=amo">Restore saved</a>');
       // The link's settings ride along in hidden fields, so the next search keeps them.
       expect(res.text).toContain('<input type="hidden" name="d" value="2" />');
       expect(res.text).toContain('<input type="hidden" name="o" value="0" />');
