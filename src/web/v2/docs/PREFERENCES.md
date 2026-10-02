@@ -2,9 +2,7 @@
 
 Where user preferences are stored, which ones get pre-paint treatment, and which side resolves them.
 The original defect analysis (findings F1–F9) is archived in
-[`archive/DICT_PREFERENCES_ANALYSIS.md`](archive/DICT_PREFERENCES_ANALYSIS.md). The dictionary
-doesn't fully follow this model yet; the remaining work is in
-[`../dict/TODOS.md`](../dict/TODOS.md#9-finish-the-preferences-model).
+[`archive/DICT_PREFERENCES_ANALYSIS.md`](archive/DICT_PREFERENCES_ANALYSIS.md).
 
 > **One owner per preference. One canonical encoding. One resolution site.**
 
@@ -58,3 +56,33 @@ adopts the state in the server-rendered DOM instead of re-deriving it from its o
 no localStorage fallback and no migration path (V2 keeps no backwards compatibility; see
 `AGENTS.md`). A preference change that affects content takes effect through a round trip, which it
 needs anyway, since the client has no data to re-render from. Presentation preferences stay instant.
+
+## Saving content preferences
+
+> **URL = ephemeral view state. Cookie = durable preference. The save marker = promote this view
+> into a preference.**
+
+The server can't tell "the user just ticked boxes" from "someone pasted a URL" by looking at the
+settings params, so it never infers intent from them. The dictionary route
+([`dict_persistence.server.ts`](../dict/dict_persistence.server.ts)) applies these rules:
+
+| Request                                                    | Cookies                              | Response                    |
+| :--------------------------------------------------------- | :----------------------------------- | :-------------------------- |
+| `save=1` (Apply, or the chip's **Save these**)             | the URL's settings                   | 303 to the URL minus `save` |
+| Any other full page load                                   | the cookies' **own** values, re-sent | renders the URL's view      |
+| Partial (`format=partial`) or scoped (`embedded`, `lang=`) | none                                 | renders                     |
+
+- **The marker is a named submit button, not a hidden input.** Hidden inputs submit every time, so
+  an ordinary search would save. Enter submits with the form's first submit button, so the search
+  button must come first.
+- **The 303 makes the marker last exactly one request.** A reload doesn't re-save, Back skips it,
+  and a copied URL can't carry it.
+- **The re-send is a sliding refresh.** JS saves with `document.cookie`, which Safari's ITP caps
+  at 7 days. Re-sending on every full load turns it into an HTTP cookie with a fresh `Max-Age`.
+  JS saves that need to bypass the cap outright (the chip's **Save these**) go through the server
+  instead.
+- **Borrowed views.** When the view differs from a saved cookie (`isBorrowedView`), the search
+  form gets `data-borrowed` and a _Not your saved settings [Save these] [Use mine]_ chip. While it's
+  set, JS changes update the view but aren't saved, so tweaking a shared link doesn't silently adopt
+  the sender's settings. The chip retires once the view matches the cookie again. Scoped views get
+  `data-scoped` and never save.
