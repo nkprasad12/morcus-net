@@ -43,6 +43,9 @@ export interface FetchAndSwapOptions {
    * Components should normally pass `this.scope.signal` or `this.scope.latest(lane)`.
    */
   signal: AbortSignal;
+  method?: "GET" | "POST";
+  body?: BodyInit;
+  headers?: Readonly<Record<string, string>>;
   loadingOpacity?: number;
   errorMessage?: string;
 }
@@ -74,7 +77,12 @@ export async function fetchAndSwapPartial(
 
   try {
     const res = await fetch(url, {
-      headers: { "X-Requested-With": "fetch" },
+      method: options.method ?? "GET",
+      body: options.body,
+      headers: {
+        "X-Requested-With": "fetch",
+        ...(options.headers ?? {}),
+      },
       signal: options.signal,
     });
 
@@ -113,13 +121,23 @@ export interface SwapSlotsOptions {
    * must match exactly one `[data-slot]` inside the host.
    */
   slots: readonly string[];
+  method?: "GET" | "POST";
+  body?: BodyInit;
+  headers?: Readonly<Record<string, string>>;
   /**
    * The full navigation used when the swap can't be done (HTTP or network
    * error, or a slot mismatch). Defaults to `location.assign(url)`. Pass a
    * `location.replace` variant when the URL is already the current entry
-   * (popstate), so the fallback doesn't add a duplicate history entry.
+   * (popstate), so the fallback doesn't add a duplicate history entry, or a
+   * native form submission callback for POST requests.
    */
   fallback?: (url: string) => void;
+  /**
+   * Also swap the slots of a non-2xx response that carries them (the
+   * server's error view) instead of falling back. Use it when the fallback
+   * would repeat an expensive or non-idempotent request, such as a POST.
+   */
+  swapErrorResponses?: boolean;
 }
 
 /** Thrown for a response that doesn't match the requested or live slots. */
@@ -211,7 +229,8 @@ function findByKey(
  *   `data-focus-key` (or `id`) in the new markup, else to the new slot
  *   itself, so it never drops to `<body>`.
  * - On an HTTP or network error, or a mismatch, falls back to a full
- *   navigation to `url` and resolves false. Aborting resolves false and
+ *   navigation to `url` and resolves false (with `swapErrorResponses`, an
+ *   HTTP error that carries the slots is swapped in instead). Aborting resolves false and
  *   leaves the DOM to whichever request replaced this one.
  */
 export async function swapSlots(
@@ -230,10 +249,15 @@ export async function swapSlots(
   let pairs: Array<{ live: HTMLElement; next: Element }>;
   try {
     const res = await fetch(url, {
-      headers: { "X-Requested-With": "fetch" },
+      method: options.method ?? "GET",
+      body: options.body,
+      headers: {
+        "X-Requested-With": "fetch",
+        ...(options.headers ?? {}),
+      },
       signal: options.signal,
     });
-    if (!res.ok) {
+    if (!res.ok && options.swapErrorResponses !== true) {
       throw new Error(`HTTP ${res.status}`);
     }
     const text = await res.text();

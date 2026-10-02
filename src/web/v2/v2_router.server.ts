@@ -9,6 +9,8 @@ import { createExternalRoutes } from "@/web/v2/external/external_routes.server";
 import { createApiRoutes, ApiRoutesOptions } from "@/web/v2/api_routes.server";
 import { createCorpusRoutes } from "@/web/v2/corpus/corpus_routes.server";
 import type { CorpusEngine } from "@/web/v2/corpus/corpus_query.server";
+import { createMacronizerRoutes } from "@/web/v2/macronizer/macronizer_routes.server";
+import type { MacronizerEngine } from "@/web/v2/macronizer/macronizer_engine.server";
 import { getV2BuildDir } from "@/bundler/v2_build_contract";
 
 // Filenames are content-hashed by esbuild, so they're safe to cache forever.
@@ -17,6 +19,8 @@ const V2_ASSETS_CACHE_CONTROL = "public, max-age=311040000, immutable";
 export interface V2RouterOptions extends ApiRoutesOptions {
   /** The corpus query engine; `/v2/corpus` answers 503 without one. */
   corpus?: CorpusEngine;
+  /** The macronizer engine; `POST /v2/macronizer` answers 503 without one. */
+  macronizer?: MacronizerEngine;
 }
 
 export function createV2Router(
@@ -50,6 +54,7 @@ export function createV2Router(
   router.use(createDictRoutes(fusedDict));
   router.use(createReaderRoutes());
   router.use(createCorpusRoutes({ engine: options?.corpus }));
+  router.use(createMacronizerRoutes({ engine: options?.macronizer }));
   router.use(createExternalRoutes());
   router.use(createApiRoutes(fusedDict, options));
 

@@ -46,6 +46,7 @@ export interface V2BundleBudget {
  *   dict.js:      29.8 kB raw /  9.5 kB gzip
  *   corpus.js:    16.2 kB raw /  6.1 kB gzip
  *   external.js:   9.7 kB raw /  3.9 kB gzip
+ *   macronizer.js: 12.4 kB raw /  3.9 kB gzip  (measured 2026-10-02)
  *   v2.css:      127.0 kB raw / 21.1 kB gzip
  *   critical.js:   424 B raw  /  300 B gzip  (inlined into every HTML <head>)
  *
@@ -55,6 +56,7 @@ export interface V2BundleBudget {
  *   corpus   (common + corpus):          67.1 kB raw / 23.2 kB gzip
  *   library  (common + reader):          95.9 kB raw / 29.8 kB gzip
  *   external (common + reader + external): 105.6 kB raw / 33.7 kB gzip
+ *   macronizer (common + macronizer):    69.9 kB raw / 23.4 kB gzip  (2026-10-02)
  *
  * Ceilings provide headroom to absorb routine fixes and features without
  * false positives, while hard-blocking major regressions or accidental imports
@@ -97,6 +99,13 @@ export interface V2BundleBudget {
  *   user-approved +0.5 kB headroom. Gzip only: `common.js` 20 -> 20.5,
  *   `library` 33 -> 33.5, `external` 37 -> 37.5 kB (those three were within
  *   ~0.2 kB of their ceilings; raw ceilings and CSS unchanged).
+ * - 2026-10-02: Macronizer route chunk. New ceilings: `macronizer.js` 16 / 6 kB
+ *   (measured 12.4 / 3.9 kB) and `macronizer` route 75 / 25.5 kB (measured
+ *   69.9 / 23.4 kB). CSS 130 / 23 -> 144 / 25 kB: `v2.css` measured
+ *   137.8 / 23.1 kB (+9.5 / +1.5 kB from `macronizer.css`). `common.js` grew
+ *   by 116 B raw / 31 B gzip from POST support in `swapSlots` /
+ *   `fetchAndSwapPartial`; its ceilings and the other route ceilings are
+ *   unchanged.
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
@@ -120,6 +129,10 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
       maxRawBytes: 12 * 1024,
       maxGzipBytes: 5 * 1024,
     },
+    "macronizer.js": {
+      maxRawBytes: 16 * 1024,
+      maxGzipBytes: 6 * 1024,
+    },
   },
   routes: {
     about: { maxRawBytes: 60 * 1024, maxGzipBytes: 20 * 1024 },
@@ -127,9 +140,10 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     corpus: { maxRawBytes: 76 * 1024, maxGzipBytes: 26 * 1024 },
     library: { maxRawBytes: 106 * 1024, maxGzipBytes: 33.5 * 1024 },
     external: { maxRawBytes: 117 * 1024, maxGzipBytes: 37.5 * 1024 },
+    macronizer: { maxRawBytes: 75 * 1024, maxGzipBytes: 25.5 * 1024 },
   },
-  maxCssRawBytes: 130 * 1024,
-  maxCssGzipBytes: 23 * 1024,
+  maxCssRawBytes: 144 * 1024,
+  maxCssGzipBytes: 25 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
   // pre-paint preference must not grow it. Baseline 2026-09-27: 424 B raw /
@@ -433,9 +447,9 @@ function collectLeafSourceModules(
 }
 
 /**
- * Verifies that Rspack's `dependOn` chunk graph produces all 5 expected JS
- * entry chunks (`common`, `reader`, `dict`, `corpus`, `external`) and that no
- * source module is duplicated across multiple JS chunks.
+ * Verifies that Rspack's `dependOn` chunk graph produces every expected JS
+ * entry chunk (`V2_JS_ENTRY_NAMES`) and that no source module is duplicated
+ * across multiple JS chunks.
  *
  * Why this guardrail is needed: Rspack's `dependOn: "common"` only deduplicates
  * modules that are reachable from `common` through a used import (a bare
@@ -455,6 +469,7 @@ export function checkV2ChunkDuplication(stats: RspackStatsCompilationLike): {
     dict: [],
     corpus: [],
     external: [],
+    macronizer: [],
   };
   const moduleToChunks = new Map<string, V2JsEntryName[]>();
 

@@ -1,5 +1,6 @@
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
+import { buildDictUrl } from "@/web/v2/dict/dict_params.common";
 import {
   V2PreprocessedPage,
   V2PreprocessedWork,
@@ -80,8 +81,8 @@ export interface ReaderRenderContext {
  */
 export function buildReaderDictIframeSrc(query: string): string {
   return query
-    ? `/v2/dicts?q=${encodeURIComponent(query)}&lang=La&o=1&embedded=1`
-    : `/v2/dicts?embedded=1`;
+    ? buildDictUrl({ q: query, inflected: true, lang: "La", embedded: "1" })
+    : "/v2/dicts?embedded=1";
 }
 
 /** The split layout opens the dictionary only when a lookup is active. */

@@ -26,9 +26,8 @@ export type V2ActivePage = "dicts" | "about" | "library" | "corpus";
 const BUNDLE_ONERROR =
   "document.documentElement.setAttribute('data-js-failed','')";
 
-export interface PageShellOptions {
+interface PageShellBaseOptions {
   title: string;
-  activePage: V2ActivePage;
   contentHtml: string;
   hideAppBar?: boolean;
   isReader?: boolean;
@@ -42,10 +41,33 @@ export interface PageShellOptions {
   widthSurface?: WidthSurface;
 }
 
+/** A page with an app-bar entry, which is highlighted. */
+interface NavPageShellOptions extends PageShellBaseOptions {
+  activePage: V2ActivePage;
+  /** The client route, when it isn't the one `activePage` implies. */
+  route?: V2Route;
+}
+
+/**
+ * A page with no app-bar entry (e.g. `/v2/macronizer`): nothing is
+ * highlighted, and `route` picks its client chunks.
+ */
+interface UnlistedPageShellOptions extends PageShellBaseOptions {
+  activePage?: undefined;
+  route: V2Route;
+}
+
+export type PageShellOptions = NavPageShellOptions | UnlistedPageShellOptions;
+
+type PageRouteOptions =
+  | Pick<NavPageShellOptions, "activePage" | "isExternal" | "route">
+  | Pick<UnlistedPageShellOptions, "activePage" | "isExternal" | "route">;
+
 /** Which client route a page is, for choosing its script chunks. */
-export function pageRoute(
-  options: Pick<PageShellOptions, "activePage" | "isExternal">
-): V2Route {
+export function pageRoute(options: PageRouteOptions): V2Route {
+  if (options.route !== undefined) {
+    return options.route;
+  }
   return options.isExternal ? "external" : options.activePage;
 }
 
@@ -59,7 +81,7 @@ export function pageRoute(
  * ancestors (it would silently never run).
  */
 export function resolvePageScripts(
-  options: Pick<PageShellOptions, "activePage" | "isExternal">
+  options: PageRouteOptions
 ): readonly V2JsChunkName[] {
   return v2RouteScripts(pageRoute(options));
 }
@@ -67,8 +89,9 @@ export function resolvePageScripts(
 /**
  * Renders the persistent accessible App Bar navigation.
  * Standard semantic HTML hyperlinks work natively without JavaScript.
+ * `activePage` is highlighted; with none, no entry is.
  */
-export function renderAppBar(activePage: V2ActivePage): string {
+export function renderAppBar(activePage?: V2ActivePage): string {
   const isDictsActive = activePage === "dicts";
   const isLibraryActive = activePage === "library";
   const isCorpusActive = activePage === "corpus";

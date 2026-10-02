@@ -246,6 +246,35 @@ const FIXTURES: Record<string, string> = {
         <button id="reader-settings-close-btn">&times;</button>
       </div>
     </morcus-reader-settings>`,
+
+  "morcus-macronizer-view": `
+    <morcus-macronizer-view class="mac-root">
+      <div class="mac-workspace mac-workspace-result" data-slot="macronizer-workspace">
+        <div class="mac-split">
+          <div class="mac-left">
+            <form id="mac-form" class="mac-input-form" method="post" action="/v2/macronizer">
+              <textarea id="mac-text" name="text" class="mac-textarea">malum</textarea>
+              <button type="submit" id="mac-submit-btn">Macronize</button>
+            </form>
+            <div class="mac-passage" id="mac-passage">
+              <a class="mac-word mac-ambig" id="t0" href="#w0" data-w="0" data-tier="1">malum</a>
+            </div>
+            <button type="button" id="mac-sheet-peek" data-js-only></button>
+          </div>
+          <aside class="mac-right" id="mac-drawer">
+            <div class="drawer-handle" data-js-only><span class="drawer-pill"></span></div>
+            <div class="mac-inspector" id="mac-inspector">
+              <details class="mac-card" open id="w0" data-w="0" data-orig="malum" data-tier="1">
+                <summary class="mac-card-summary">malum</summary>
+              </details>
+            </div>
+            <div class="mac-dict-wrap">
+              <iframe class="mac-dict-frame" id="mac-dict-frame" name="mac-dict" src="/v2/dicts?embedded=1"></iframe>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </morcus-macronizer-view>`,
 };
 
 beforeAll(() => {
@@ -342,6 +371,7 @@ const ENTRY_MANIFEST_FILES = [
   "reader/reader_entry.client.ts",
   "external/external_entry.client.ts",
   "corpus/corpus_entry.client.ts",
+  "macronizer/macronizer_entry.client.ts",
 ] as const;
 
 describe("V2 custom elements survive being moved in the DOM", () => {

@@ -47,6 +47,7 @@ import { getFormattedMemoryUsage, singletonOf } from "@/common/misc_utils";
 import { macronizeInput } from "@/macronizer/morcronizer";
 import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
+import { macronizerEngineFromEnv } from "@/web/v2/macronizer/macronizer_engine.server";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
 import { ForcelliniDict } from "@/common/dictionaries/forcellini/forcellini_dict";
@@ -271,7 +272,10 @@ export function startMorcusServer(): Promise<http.Server> {
     ],
     telemetry: telemetry,
     buildDir,
-    v2Router: createV2Router(fusedDict, { corpus: corpusHandler }),
+    v2Router: createV2Router(fusedDict, {
+      corpus: corpusHandler,
+      macronizer: macronizerEngineFromEnv(),
+    }),
   };
 
   setupServer(params);

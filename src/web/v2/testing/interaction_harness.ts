@@ -592,10 +592,13 @@ function find(selector: string): HTMLElement {
   return el;
 }
 
-function textField(selector: string): HTMLInputElement {
+function textField(selector: string): HTMLInputElement | HTMLTextAreaElement {
   const el = find(selector);
-  if (!(el instanceof HTMLInputElement)) {
-    throw new Error(`${selector} is not an <input>`);
+  if (
+    !(el instanceof HTMLInputElement) &&
+    !(el instanceof HTMLTextAreaElement)
+  ) {
+    throw new Error(`${selector} is not an <input> or <textarea>`);
   }
   return el;
 }

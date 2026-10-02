@@ -14,8 +14,9 @@ describe("applyDictSearch", () => {
 });
 
 describe("buildDictUrl", () => {
-  // Pinned to what `dict_search.client.ts` built inline before this module.
-  test("orders q, d, o, lang, embedded", () => {
+  // `lang` precedes `o` so embedded lookups keep the reader's long-standing
+  // `q, lang, o, embedded` order.
+  test("orders q, d, lang, o, embedded", () => {
     expect(
       buildDictUrl({
         q: "amo",
@@ -24,7 +25,7 @@ describe("buildDictUrl", () => {
         lang: "La",
         embedded: "1",
       })
-    ).toBe("/v2/dicts?q=amo&d=an&o=1&lang=La&embedded=1");
+    ).toBe("/v2/dicts?q=amo&d=an&lang=La&o=1&embedded=1");
   });
 
   test("omits empty optional params", () => {
@@ -37,6 +38,12 @@ describe("buildDictUrl", () => {
         embedded: "",
       })
     ).toBe("/v2/dicts?q=amo&d=3&o=0");
+  });
+
+  test("omits d when absent", () => {
+    expect(
+      buildDictUrl({ q: "arma", inflected: true, lang: "La", embedded: "1" })
+    ).toBe("/v2/dicts?q=arma&lang=La&o=1&embedded=1");
   });
 
   test("encodes Greek and macra", () => {

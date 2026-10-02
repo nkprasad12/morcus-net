@@ -20,3 +20,4 @@ import "@/web/v2/dict/dict_entry.client";
 import "@/web/v2/reader/reader_entry.client";
 import "@/web/v2/external/external_entry.client";
 import "@/web/v2/corpus/corpus_entry.client";
+import "@/web/v2/macronizer/macronizer_entry.client";

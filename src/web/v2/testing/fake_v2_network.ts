@@ -25,7 +25,17 @@ import {
   renderReaderPartialHtml,
   renderReaderTranslationHtml,
 } from "@/web/v2/reader/reader.server";
+import {
+  applyChoices,
+  resolveInitialResult,
+} from "@/web/v2/macronizer/macronizer_apply.server";
+import {
+  parseApplyBody,
+  parseMacronizeBody,
+} from "@/web/v2/macronizer/macronizer_params.server";
+import { renderMacronizerPartial } from "@/web/v2/macronizer/macronizer_view.server";
 import { CORPUS_TEST_AUTHORS } from "@/web/v2/testing/fake_corpus_engine";
+import { fakeMacronizerEngine } from "@/web/v2/testing/fake_macronizer_engine";
 import {
   DICT_AMO_QUERIED,
   DICT_AMO_RESULTS,
@@ -105,6 +115,25 @@ function isPartial(url: URL, init: RequestInit | undefined) {
   );
 }
 
+function parseUrlEncoded(
+  body: BodyInit | null | undefined
+): Record<string, string | string[]> {
+  const out: Record<string, string | string[]> = {};
+  const raw = typeof body === "string" ? body : "";
+  const params = new URLSearchParams(raw);
+  params.forEach((val, key) => {
+    const existing = out[key];
+    if (existing === undefined) {
+      out[key] = val;
+    } else if (Array.isArray(existing)) {
+      existing.push(val);
+    } else {
+      out[key] = [existing, val];
+    }
+  });
+  return out;
+}
+
 async function route(
   url: URL,
   init: RequestInit | undefined
@@ -143,6 +172,52 @@ async function route(
     return {
       status: 200,
       body: renderCorpusPartialHtml(view).toString(),
+      isHtml: true,
+    };
+  }
+  if (url.pathname === "/v2/macronizer" && isPartial(url, init)) {
+    const parsed = parseMacronizeBody(parseUrlEncoded(init?.body));
+    if (parsed.kind !== "ok") {
+      return {
+        status: 400,
+        body: renderMacronizerPartial({
+          inputText: parsed.text,
+          errorBanner: "Invalid input",
+        }),
+        isHtml: true,
+      };
+    }
+    const rawResult = await fakeMacronizerEngine().macronize(parsed.text);
+    const doc = resolveInitialResult(rawResult);
+    return {
+      status: 200,
+      body: renderMacronizerPartial({
+        inputText: parsed.text,
+        document: doc,
+      }),
+      isHtml: true,
+    };
+  }
+  if (url.pathname === "/v2/macronizer/apply" && isPartial(url, init)) {
+    const parsed = parseApplyBody(parseUrlEncoded(init?.body));
+    if (parsed.parseResult.kind !== "ok") {
+      return { status: 400, body: "" };
+    }
+    const rawResult = await fakeMacronizerEngine().analyzeOnly(
+      parsed.parseResult.text
+    );
+    const doc = applyChoices(rawResult, {
+      suggestions: parsed.suggestions,
+      priorShown: parsed.priorShown,
+      wordChoices: parsed.wordChoices,
+      vowelSubmissions: parsed.vowelSubmissions,
+    });
+    return {
+      status: 200,
+      body: renderMacronizerPartial({
+        inputText: parsed.parseResult.text,
+        document: doc,
+      }),
       isHtml: true,
     };
   }
