@@ -1,10 +1,13 @@
 import { LatinDict, LatinDictInfo } from "@/common/dictionaries/latin_dicts";
 import {
+  DEFAULT_DICT_KEYS,
   decodeDictBitmask,
   decodeStoredDictBitmask,
   encodeDictBitmask,
 } from "@/web/v2/dict/dict_bitmask.common";
 import { formatCookie, readCookie } from "@/web/v2/core/cookies.common";
+
+export { DEFAULT_DICT_KEYS };
 
 /**
  * The dictionary preference cookie. It holds the same base36 bitmask as `?d=` (one canonical
@@ -19,13 +22,6 @@ export const INFLECTED_COOKIE_NAME = "morcus_inflected";
  * preferences". Only the server acts on it; see `dict_persistence.server.ts`.
  */
 export const SAVE_PARAM = "save";
-
-/** Default dictionary selection: all available Latin dictionaries except Pozo (matches V1 default). */
-export const DEFAULT_DICTS: LatinDictInfo[] = LatinDict.AVAILABLE.filter(
-  (d) => d !== LatinDict.Pozo
-);
-
-export const DEFAULT_DICT_KEYS: string[] = DEFAULT_DICTS.map((d) => d.key);
 
 /**
  * Formats canonical dict keys into a cookie value (the `?d=` bitmask).
@@ -49,6 +45,66 @@ export function parseDictsFromCookie(
   cookieHeader: string | undefined | null
 ): string[] | null {
   return decodeStoredDictBitmask(readCookie(cookieHeader, DICT_COOKIE_NAME));
+}
+
+/**
+ * The user's saved dictionary preferences decoded once from the HTTP Cookie header.
+ */
+export interface SavedDictPrefs {
+  readonly dicts: string[] | null;
+  readonly inflected: boolean | undefined;
+}
+
+/**
+ * Reads and validates both dictionary preference cookies in a single pass.
+ */
+export function readSavedDictPrefs(
+  cookieHeader: string | undefined | null
+): SavedDictPrefs {
+  const dicts = parseDictsFromCookie(cookieHeader);
+  const rawInflected = readCookie(cookieHeader, INFLECTED_COOKIE_NAME);
+  const inflected =
+    rawInflected === "1" ? true : rawInflected === "0" ? false : undefined;
+  return { dicts, inflected };
+}
+
+function toSavedDictPrefs(
+  cookieOrPrefs: string | SavedDictPrefs | undefined | null
+): SavedDictPrefs {
+  if (typeof cookieOrPrefs === "object" && cookieOrPrefs !== null) {
+    return cookieOrPrefs;
+  }
+  return readSavedDictPrefs(cookieOrPrefs);
+}
+
+/**
+ * Resolves a dictionary key or alias to its canonical LatinDictInfo, handling case-insensitivity,
+ * URL-safe `LnS`/`SnH`/`RnA` forms, display names, and legacy short names.
+ */
+export function findDictInfo(key: string): LatinDictInfo | undefined {
+  const trimmed = key.trim();
+  if (!trimmed) return undefined;
+  const direct = LatinDict.BY_KEY.get(trimmed);
+  if (direct) return direct;
+  const lower = trimmed.toLowerCase();
+  const unaliased = trimmed
+    .replace(/([a-zA-Z])n([a-zA-Z])/g, "$1&$2")
+    .toLowerCase();
+  return LatinDict.AVAILABLE.find(
+    (d) =>
+      d.key.toLowerCase() === lower ||
+      d.key.toLowerCase() === unaliased ||
+      d.displayName.toLowerCase() === lower ||
+      (lower === "ls" && d.key === "L&S") ||
+      (lower === "sh" && d.key === "S&H") ||
+      ((lower === "ra" || lower === "riddle_arnold") && d.key === "R&A") ||
+      (lower === "gaffiot" && d.key === "GAF") ||
+      (lower === "georges" && d.key === "GRG") ||
+      (lower === "pozo" && d.key === "EGL") ||
+      (lower === "gesner" && d.key === "GES") ||
+      (lower === "forcellini" && d.key === "FOR") ||
+      (lower === "numeral" && d.key === "NUM")
+  );
 }
 
 /**
@@ -77,25 +133,7 @@ export function parseDictKeys(
 
   const parsedKeys: string[] = [];
   for (const item of rawList) {
-    const trimmed = item.trim();
-    if (!trimmed) continue;
-    // Map URL safe representations 'LnS' / 'SnH' or 'RnA' back to '&'
-    const unaliased = trimmed.replace(/([a-zA-Z])n([a-zA-Z])/g, "$1&$2");
-    // Find matching dict in LatinDict.AVAILABLE by key (case-insensitive or exact)
-    const match = LatinDict.AVAILABLE.find(
-      (d) =>
-        d.key.toLowerCase() === trimmed.toLowerCase() ||
-        d.key.toLowerCase() === unaliased.toLowerCase() ||
-        (trimmed.toLowerCase() === "ls" && d.key === "L&S") ||
-        (trimmed.toLowerCase() === "sh" && d.key === "S&H") ||
-        (trimmed.toLowerCase() === "gaffiot" && d.key === "GAF") ||
-        (trimmed.toLowerCase() === "georges" && d.key === "GRG") ||
-        (trimmed.toLowerCase() === "pozo" && d.key === "EGL") ||
-        (trimmed.toLowerCase() === "gesner" && d.key === "GES") ||
-        (trimmed.toLowerCase() === "forcellini" && d.key === "FOR") ||
-        (trimmed.toLowerCase() === "riddle_arnold" && d.key === "R&A") ||
-        (trimmed.toLowerCase() === "numeral" && d.key === "NUM")
-    );
+    const match = findDictInfo(item);
     if (match && !parsedKeys.includes(match.key)) {
       parsedKeys.push(match.key);
     }
@@ -137,9 +175,11 @@ export function parseInflectionParam(
  */
 export function resolveInflection(
   oParam: boolean | undefined,
-  cookieHeader: string | undefined | null
+  cookieHeaderOrPrefs: string | SavedDictPrefs | undefined | null
 ): boolean {
-  return oParam ?? readCookie(cookieHeader, INFLECTED_COOKIE_NAME) !== "0";
+  if (oParam !== undefined) return oParam;
+  const prefs = toSavedDictPrefs(cookieHeaderOrPrefs);
+  return prefs.inflected !== false;
 }
 
 /** The dictionary content settings a page is showing. */
@@ -156,18 +196,18 @@ export interface DictViewState {
  */
 export function isGuestView(
   view: DictViewState,
-  cookieHeader: string | undefined | null
+  cookieHeaderOrPrefs: string | SavedDictPrefs | undefined | null
 ): boolean {
-  const savedDicts = parseDictsFromCookie(cookieHeader);
-  if (savedDicts !== null) {
+  const prefs = toSavedDictPrefs(cookieHeaderOrPrefs);
+  if (prefs.dicts !== null) {
     const shown = new Set(view.dictKeys);
     const sameSet =
-      savedDicts.length === shown.size && savedDicts.every((k) => shown.has(k));
+      prefs.dicts.length === shown.size &&
+      prefs.dicts.every((k) => shown.has(k));
     if (!sameSet) return true;
   }
-  const savedInflected = readCookie(cookieHeader, INFLECTED_COOKIE_NAME);
-  if (savedInflected === "0" || savedInflected === "1") {
-    if ((savedInflected === "1") !== view.isInflected) return true;
+  if (prefs.inflected !== undefined) {
+    if (prefs.inflected !== view.isInflected) return true;
   }
   return false;
 }

@@ -26,25 +26,6 @@ export const DICT_BIT_REGISTRY: readonly string[] = [
   "NUM",
 ] as const;
 
-/** Canonical alias lookup mapping variant keys/names to registry keys */
-const ALIAS_TO_REGISTRY_KEY = new Map<string, string>();
-for (const key of DICT_BIT_REGISTRY) {
-  ALIAS_TO_REGISTRY_KEY.set(key.toUpperCase(), key);
-  ALIAS_TO_REGISTRY_KEY.set(key.toLowerCase(), key);
-  ALIAS_TO_REGISTRY_KEY.set(key.replace("&", "n").toUpperCase(), key);
-  ALIAS_TO_REGISTRY_KEY.set(key.replace("&", "n").toLowerCase(), key);
-}
-// Add descriptive aliases
-ALIAS_TO_REGISTRY_KEY.set("LS", "L&S");
-ALIAS_TO_REGISTRY_KEY.set("SH", "S&H");
-ALIAS_TO_REGISTRY_KEY.set("RA", "R&A");
-ALIAS_TO_REGISTRY_KEY.set("GAFFIOT", "GAF");
-ALIAS_TO_REGISTRY_KEY.set("GEORGES", "GRG");
-ALIAS_TO_REGISTRY_KEY.set("POZO", "EGL");
-ALIAS_TO_REGISTRY_KEY.set("GESNER", "GES");
-ALIAS_TO_REGISTRY_KEY.set("FORCELLINI", "FOR");
-ALIAS_TO_REGISTRY_KEY.set("NUMERAL", "NUM");
-
 /**
  * Bitmask encoding for default active dictionaries:
  * All available dictionaries except Pozo (EGL):
@@ -52,35 +33,20 @@ ALIAS_TO_REGISTRY_KEY.set("NUMERAL", "NUM");
  */
 export const DEFAULT_DICT_BITMASK = "an";
 
+/** Default dictionary selection: all available Latin dictionaries except Pozo (matches V1 default). */
 export const DEFAULT_DICT_KEYS: readonly string[] = DICT_BIT_REGISTRY.filter(
   (k) => k !== "EGL"
 );
 
 /**
- * Latin-source dictionaries: all lexicons where source language is Latin (La) or wildcard (*):
- * L&S (1), GAF (2), GES (4), FOR (8), NUM (256).
- * (1 | 2 | 4 | 8 | 256) = 271 -> "7j" in base 36.
- */
-export const LATIN_SOURCE_DICT_KEYS: readonly string[] = [
-  "L&S",
-  "GAF",
-  "GES",
-  "FOR",
-  "NUM",
-];
-export const LATIN_SOURCE_DICT_BITMASK = "7j";
-
-/**
- * Encodes an iterable of dictionary keys into a Base36 bitmask string.
+ * Encodes an iterable of canonical dictionary keys into a Base36 bitmask string.
  * Example: ["L&S", "GAF"] -> (1 | 2) = 3 -> "3"
  * Default all 8 enabled (everything except Pozo) -> 383 -> "an"
  */
 export function encodeDictBitmask(activeKeys: Iterable<string>): string {
   let mask = 0;
-  for (const rawKey of activeKeys) {
-    const canonical = ALIAS_TO_REGISTRY_KEY.get(rawKey.trim().toUpperCase());
-    if (!canonical) continue;
-    const index = DICT_BIT_REGISTRY.indexOf(canonical);
+  for (const key of activeKeys) {
+    const index = DICT_BIT_REGISTRY.indexOf(key);
     if (index >= 0) {
       mask |= 1 << index;
     }

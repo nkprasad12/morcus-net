@@ -4,9 +4,9 @@ import {
 } from "@/web/v2/dict/dict_params.common";
 
 describe("applyDictSearch", () => {
-  test("sets the search, drops legacy params and keeps the rest", () => {
+  test("sets the search, drops legacy and transient lang params, and keeps the rest", () => {
     const params = new URLSearchParams(
-      "embedded=1&dict=LS&in=1&q=old&scale=120"
+      "embedded=1&lang=La&dict=LS&in=1&q=old&scale=120"
     );
     applyDictSearch(params, { q: "amo", d: "an", inflected: false });
     expect(params.toString()).toBe("embedded=1&q=amo&scale=120&d=an&o=0");
@@ -16,7 +16,7 @@ describe("applyDictSearch", () => {
 describe("buildDictUrl", () => {
   // `lang` precedes `o` so embedded lookups keep the reader's long-standing
   // `q, lang, o, embedded` order.
-  test("orders q, d, lang, o, embedded", () => {
+  test("orders q, d, lang, o, embedded, save", () => {
     expect(
       buildDictUrl({
         q: "amo",
@@ -24,8 +24,9 @@ describe("buildDictUrl", () => {
         inflected: true,
         lang: "La",
         embedded: "1",
+        save: true,
       })
-    ).toBe("/v2/dicts?q=amo&d=an&lang=La&o=1&embedded=1");
+    ).toBe("/v2/dicts?q=amo&d=an&lang=La&o=1&embedded=1&save=1");
   });
 
   test("omits empty optional params", () => {
@@ -36,6 +37,7 @@ describe("buildDictUrl", () => {
         inflected: false,
         lang: null,
         embedded: "",
+        save: false,
       })
     ).toBe("/v2/dicts?q=amo&d=3&o=0");
   });

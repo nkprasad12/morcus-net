@@ -14,10 +14,10 @@ import {
 import {
   Candidate,
   clusterAndDeduplicate,
-  findDictInfo,
   getDictSourceLang,
   getExpandedPrefixes,
 } from "@/web/v2/dict/dict_clustering.common";
+import { findDictInfo } from "@/web/v2/dict/dict_selection.common";
 
 export {
   cleanCompletionQuery,
@@ -74,7 +74,7 @@ export async function getV2DictChunks(
   // Partition active dictionaries by source language
   const partitions = new Map<DictLang, string[]>();
   for (const dictKey of dictKeys) {
-    const lang = getDictSourceLang(dictKey);
+    const lang = getDictSourceLang(findDictInfo(dictKey)?.key ?? dictKey);
     let group = partitions.get(lang);
     if (!group) {
       group = [];

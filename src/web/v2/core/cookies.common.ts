@@ -48,16 +48,6 @@ export function readCookie(
 }
 
 /**
- * Checks whether a named cookie is present in the cookie string.
- */
-export function hasCookie(
-  cookieString: string | undefined | null,
-  name: string
-): boolean {
-  return readCookie(cookieString, name) !== null;
-}
-
-/**
  * Serializes a cookie name and value with standard attributes.
  * Defaults to: `; Path=/; Max-Age=31536000; SameSite=Lax`
  */

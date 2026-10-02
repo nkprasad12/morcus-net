@@ -16,6 +16,8 @@ import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
 import { hasGreek } from "@/web/v2/dict/dict_greek.common";
 import { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
 import { buildTocTree, renderDictTocHtml } from "@/web/v2/dict/dict_toc.server";
+import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
+import { buildDictUrl } from "@/web/v2/dict/dict_params.common";
 import * as he from "he";
 
 export {
@@ -31,6 +33,7 @@ export interface DictResultsOptions {
   queriedDicts?: string[];
   isInflected?: boolean;
   isEmbedded?: boolean;
+  canSave?: boolean;
 }
 
 /**
@@ -66,6 +69,8 @@ export interface NoEntriesOptions {
   query: string;
   queriedDicts?: string[];
   isInflected?: boolean;
+  isEmbedded?: boolean;
+  canSave?: boolean;
 }
 
 /**
@@ -73,10 +78,26 @@ export interface NoEntriesOptions {
  * including exact headword / inflected guidance and queried lexicon names.
  */
 export function renderNoEntriesHtml(options: NoEntriesOptions): string {
-  const { query, queriedDicts, isInflected = true } = options;
+  const {
+    query,
+    queriedDicts,
+    isInflected = true,
+    isEmbedded = false,
+    canSave = false,
+  } = options;
   const queriedNames = (queriedDicts ?? [])
     .map(resolveDictDisplayName)
     .join(", ");
+  const enableInflectedHref = buildDictUrl({
+    q: query,
+    d:
+      queriedDicts && queriedDicts.length > 0
+        ? encodeDictBitmask(queriedDicts)
+        : undefined,
+    inflected: true,
+    embedded: isEmbedded ? "1" : undefined,
+    save: canSave,
+  });
   return `
       <div class="no-results">
         <p>No dictionary entries found for "<strong>${he.escape(
@@ -86,9 +107,9 @@ export function renderNoEntriesHtml(options: NoEntriesOptions): string {
           !isInflected
             ? `<p class="no-results-sub inflected-hint">
                 Exact headword search is active.
-                <a href="/v2/dicts?q=${encodeURIComponent(
-                  query
-                )}&o=1" class="link">Enable inflected search</a> to find conjugated verbs and declined nouns.
+                <a href="${he.escape(
+                  enableInflectedHref
+                )}" class="link">Enable inflected search</a> to find conjugated verbs and declined nouns.
               </p>`
             : ""
         }
@@ -292,7 +313,12 @@ export function renderDictResultsHtml(
   results?: DictsFusedResponse,
   options: DictResultsOptions = {}
 ): string {
-  const { queriedDicts, isInflected = true, isEmbedded = false } = options;
+  const {
+    queriedDicts,
+    isInflected = true,
+    isEmbedded = false,
+    canSave = false,
+  } = options;
 
   if (!query.trim()) {
     return renderDictLandingHtml(queriedDicts, isInflected);
@@ -321,6 +347,8 @@ export function renderDictResultsHtml(
       query,
       queriedDicts: allQueriedKeys,
       isInflected,
+      isEmbedded,
+      canSave,
     });
   }
 
@@ -393,11 +421,18 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   const query = options.query || "";
   const isInflected = options.isInflected !== false;
   const isEmbedded = options.embedded ?? false;
-  const resultsHtml = renderDictResultsHtml(options.query, options.results, {
-    queriedDicts: options.queriedDicts,
-    isInflected,
-    isEmbedded,
-  });
+  const resultsHtml = renderDictResultsHtml(
+    options.query,
+    options.results,
+    options.isIdSearch
+      ? { isEmbedded }
+      : {
+          queriedDicts: options.queriedDicts,
+          isInflected,
+          isEmbedded,
+          canSave: !options.scoped && !options.guest,
+        }
+  );
 
   const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
 

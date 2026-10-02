@@ -1,7 +1,4 @@
-import {
-  LatinDict,
-  type LatinDictInfo,
-} from "@/common/dictionaries/latin_dicts";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { type DictLang } from "@/common/dictionaries/dictionaries";
 import { Vowels } from "@/common/character_utils";
 import { removeDiacritics } from "@/common/text_cleaning";
@@ -21,34 +18,11 @@ const EXTRA_KEY_LOOKUP = new Map<string, string>([
 ]);
 
 /**
- * Resolves a dictionary key to its LatinDictInfo, handling aliases and case-insensitivity.
- */
-export function findDictInfo(key: string): LatinDictInfo | undefined {
-  const direct = LatinDict.BY_KEY.get(key);
-  if (direct) return direct;
-  const lower = key.toLowerCase();
-  return LatinDict.AVAILABLE.find(
-    (d) =>
-      d.key.toLowerCase() === lower ||
-      d.displayName.toLowerCase() === lower ||
-      (lower === "ls" && d.key === "L&S") ||
-      (lower === "sh" && d.key === "S&H") ||
-      (lower === "ra" && d.key === "R&A") ||
-      (lower === "gaffiot" && d.key === "GAF") ||
-      (lower === "georges" && d.key === "GRG") ||
-      (lower === "pozo" && d.key === "EGL") ||
-      (lower === "gesner" && d.key === "GES") ||
-      (lower === "forcellini" && d.key === "FOR") ||
-      (lower === "numeral" && d.key === "NUM")
-  );
-}
-
-/**
- * Resolves the source language for a given dictionary key.
+ * Resolves the source language for a canonical dictionary key.
  * Defaults to "La" for universal ("*") or unrecognized dictionaries.
  */
 export function getDictSourceLang(dictKey: string): DictLang {
-  const info = findDictInfo(dictKey);
+  const info = LatinDict.BY_KEY.get(dictKey);
   if (!info || info.languages.from === "*") {
     return "La";
   }

@@ -17,7 +17,7 @@ function cookieNames(cookies: string[]): string[] {
 
 describe("planDictPersistence", () => {
   describe("the TODOS §8 table", () => {
-    test("own form submit with save=1: writes, then 303s to the URL without the marker", () => {
+    test("own form submit with save=1: writes, then 303s to the canonical URL without the marker", () => {
       const plan = planDictPersistence({
         ...BASE,
         originalUrl: "/v2/dicts?q=amo&dict=GAF&o=0&o=1&save=1",
@@ -28,7 +28,34 @@ describe("planDictPersistence", () => {
         expect.stringMatching(/^morcus_d=2;/),
         expect.stringMatching(/^morcus_inflected=1;/),
       ]);
-      expect(plan.redirectTo).toBe("/v2/dicts?q=amo&dict=GAF&o=0&o=1");
+      expect(plan.redirectTo).toBe("/v2/dicts?q=amo&o=1&d=2");
+    });
+
+    test("cross-site request with save=1 strips the marker without writing cookies", () => {
+      const plan = planDictPersistence({
+        ...BASE,
+        originalUrl: "/v2/dicts?q=amo&dict=GAF&o=0&save=1",
+        secFetchSite: "cross-site",
+        keysFromQuery: ["GAF"],
+        oParam: false,
+      });
+      expect(plan.cookies).toEqual([]);
+      expect(plan.redirectTo).toBe("/v2/dicts?q=amo&o=0&d=2");
+    });
+
+    test("same-origin request with save=1 writes cookies normally", () => {
+      const plan = planDictPersistence({
+        ...BASE,
+        originalUrl: "/v2/dicts?q=amo&dict=GAF&o=0&save=1",
+        secFetchSite: "same-origin",
+        keysFromQuery: ["GAF"],
+        oParam: false,
+      });
+      expect(cookieNames(plan.cookies)).toEqual([
+        "morcus_d",
+        "morcus_inflected",
+      ]);
+      expect(plan.redirectTo).toBe("/v2/dicts?q=amo&o=0&d=2");
     });
 
     test("recipient opens a shared link: writes nothing new, renders in place", () => {
@@ -74,7 +101,7 @@ describe("planDictPersistence", () => {
     expect(plan.redirectTo).toBe("/v2/dicts?o=0");
   });
 
-  test("the redirect keeps every other param, including repeats and embedded/scale", () => {
+  test("the redirect canonicalizes dict keys to d=<bitmask> and keeps other params", () => {
     const plan = planDictPersistence({
       ...BASE,
       originalUrl:
@@ -83,7 +110,8 @@ describe("planDictPersistence", () => {
     });
     const target = new URL(plan.redirectTo!, "http://x");
     expect(target.pathname).toBe("/v2/dicts");
-    expect(target.searchParams.getAll("dict")).toEqual(["L&S", "GRG"]);
+    expect(target.searchParams.get("d")).toBe("1t");
+    expect(target.searchParams.has("dict")).toBe(false);
     expect(target.searchParams.get("q")).toBe("amo");
     expect(target.searchParams.get("scale")).toBe("120");
     expect(target.searchParams.has("save")).toBe(false);

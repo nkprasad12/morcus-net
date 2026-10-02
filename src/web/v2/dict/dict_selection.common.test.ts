@@ -1,16 +1,59 @@
 import {
+  findDictInfo,
   parseDictKeys,
   resolveDictParams,
   parseInflectionParam,
   formatDictsCookie,
   formatInflectedCookie,
   parseDictsFromCookie,
+  readSavedDictPrefs,
   DICT_COOKIE_NAME,
   INFLECTED_COOKIE_NAME,
   isGuestView,
 } from "@/web/v2/dict/dict_selection.common";
 
 describe("dict_selection.common", () => {
+  describe("findDictInfo", () => {
+    it("resolves canonical keys, display names, URL-safe forms, and aliases", () => {
+      expect(findDictInfo("L&S")?.key).toBe("L&S");
+      expect(findDictInfo("LnS")?.key).toBe("L&S");
+      expect(findDictInfo("ls")?.key).toBe("L&S");
+      expect(findDictInfo("GAF")?.key).toBe("GAF");
+      expect(findDictInfo("gaffiot")?.key).toBe("GAF");
+      expect(findDictInfo("S&H")?.key).toBe("S&H");
+      expect(findDictInfo("SnH")?.key).toBe("S&H");
+      expect(findDictInfo("sh")?.key).toBe("S&H");
+      expect(findDictInfo("R&A")?.key).toBe("R&A");
+      expect(findDictInfo("RnA")?.key).toBe("R&A");
+      expect(findDictInfo("ra")?.key).toBe("R&A");
+      expect(findDictInfo("riddle_arnold")?.key).toBe("R&A");
+      expect(findDictInfo("GRG")?.key).toBe("GRG");
+      expect(findDictInfo("georges")?.key).toBe("GRG");
+      expect(findDictInfo("EGL")?.key).toBe("EGL");
+      expect(findDictInfo("pozo")?.key).toBe("EGL");
+      expect(findDictInfo("GES")?.key).toBe("GES");
+      expect(findDictInfo("gesner")?.key).toBe("GES");
+      expect(findDictInfo("FOR")?.key).toBe("FOR");
+      expect(findDictInfo("forcellini")?.key).toBe("FOR");
+      expect(findDictInfo("NUM")?.key).toBe("NUM");
+      expect(findDictInfo("numeral")?.key).toBe("NUM");
+      expect(findDictInfo("unknown_dict")).toBeUndefined();
+    });
+  });
+
+  describe("readSavedDictPrefs", () => {
+    it("reads both dictionary and inflection cookies in a single pass", () => {
+      expect(readSavedDictPrefs("morcus_d=3; morcus_inflected=0")).toEqual({
+        dicts: ["L&S", "GAF"],
+        inflected: false,
+      });
+      expect(readSavedDictPrefs(undefined)).toEqual({
+        dicts: null,
+        inflected: undefined,
+      });
+    });
+  });
+
   describe("parseDictKeys", () => {
     it("parses comma-separated keys", () => {
       expect(parseDictKeys("L&S,GAF,NUM")).toEqual(["L&S", "GAF", "NUM"]);

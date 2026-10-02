@@ -517,11 +517,11 @@ describe("Route-to-Bundle Conformance Harness", () => {
             label: "renderDictResultsHtml(?partial=1)",
             url: buildDictUrl({
               q: "amo",
-              d: encodeDictBitmask(["L&S", "SH"]),
+              d: encodeDictBitmask(["L&S", "S&H"]),
               inflected: true,
             }),
             html: renderDictResultsHtml("amo", dictResults, {
-              queriedDicts: ["L&S", "SH"],
+              queriedDicts: ["L&S", "S&H"],
             }),
           },
           {
@@ -540,7 +540,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
         url: "/v2/dicts?q=amo",
         fullHtml: renderDictPageHtml({
           query: "amo",
-          queriedDicts: ["L&S", "SH"],
+          queriedDicts: ["L&S", "S&H"],
           results: dictResults,
         }),
       },

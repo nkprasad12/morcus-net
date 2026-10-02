@@ -11,6 +11,7 @@ import {
   parseInflectionParam,
   resolveInflection,
   isGuestView,
+  readSavedDictPrefs,
   hasGreek,
   dictParamsFromQuery,
   toStringOrArray,
@@ -47,16 +48,17 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
     const langParam = toStringOrArray(req.query.lang);
     const cookieHeader = req.headers.cookie;
+    const savedPrefs = readSavedDictPrefs(cookieHeader);
 
     // Resolve inflection mode: o=0 (exact headwords, mode: 0) vs o=1 (inflected forms, mode: 1,
     // default). No-JS forms pair a hidden "0" with a checkbox "1", so a checked box arrives as
     // ["0", "1"]; parseInflectionParam owns that shape.
     const oParam = parseInflectionParam(toStringOrArray(req.query.o));
-    const isInflected = resolveInflection(oParam, cookieHeader);
+    const isInflected = resolveInflection(oParam, savedPrefs);
 
     const { dictKeys } = resolveActiveDicts({
       keysFromQuery,
-      cookieHeader,
+      savedPrefs,
       lang: langParam,
     });
 
@@ -71,6 +73,8 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     const persistence = planDictPersistence({
       originalUrl: req.originalUrl,
       cookieHeader,
+      savedPrefs,
+      secFetchSite: req.get("Sec-Fetch-Site"),
       isPartial,
       isScopedView,
       keysFromQuery,
@@ -88,12 +92,13 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     // Guest mode (full pages only): a link's settings that differ from the user's saved ones are
     // shown read-only, with a way back. Scoped views are excluded: they never persist, so there's
     // nothing to protect.
+    const isGuest =
+      !isScopedView && isGuestView({ dictKeys, isInflected }, savedPrefs);
+    const canSave = !isScopedView && !isGuest;
     const pagePersistence = {
       scoped: isScopedView,
       guest:
-        !isPartial &&
-        !isScopedView &&
-        isGuestView({ dictKeys, isInflected }, cookieHeader)
+        !isPartial && isGuest
           ? { returnHref: ownSettingsHref(req.originalUrl) }
           : undefined,
     };
@@ -105,6 +110,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
             queriedDicts: dictKeys,
             isInflected,
             isEmbedded,
+            canSave,
           })
         );
         return;
@@ -129,6 +135,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
             queriedDicts: dictKeys,
             isInflected,
             isEmbedded,
+            canSave,
           })
         );
         return;
@@ -159,6 +166,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
             queriedDicts: dictKeys,
             isInflected,
             isEmbedded,
+            canSave,
           })
         );
         return;
@@ -211,9 +219,22 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     // the client normalised the URL. Honour the search, not the stale id.
     const searchQuery = typeof req.query.q === "string" ? req.query.q : "";
     if (searchQuery && !isPartial) {
-      res.redirect(`/v2/dicts?${new URLSearchParams({ q: searchQuery })}`);
+      const url = new URL(req.originalUrl, "http://localhost");
+      res.redirect(`/v2/dicts${url.search}`);
       return;
     }
+
+    const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
+    const langParam = toStringOrArray(req.query.lang);
+    const savedPrefs = readSavedDictPrefs(req.headers.cookie);
+    const oParam = parseInflectionParam(toStringOrArray(req.query.o));
+    const isInflected = resolveInflection(oParam, savedPrefs);
+    const { dictKeys } = resolveActiveDicts({
+      keysFromQuery,
+      savedPrefs,
+      lang: langParam,
+    });
+    const isScopedView = isEmbedded || langParam !== undefined;
 
     try {
       const results = await fusedDict.getEntry({
@@ -233,6 +254,9 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
           results,
           isIdSearch: true,
           embedded: isEmbedded,
+          queriedDicts: dictKeys,
+          isInflected,
+          scoped: isScopedView,
           scale: dictScale,
         })
       );
@@ -247,6 +271,9 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
           query: id,
           isIdSearch: true,
           embedded: isEmbedded,
+          queriedDicts: dictKeys,
+          isInflected,
+          scoped: isScopedView,
           scale: dictScale,
         })
       );

@@ -1,9 +1,9 @@
 import {
+  DEFAULT_DICT_KEYS,
   decodeDictBitmask,
   encodeDictBitmask,
 } from "@/web/v2/dict/dict_bitmask.common";
 import {
-  DEFAULT_DICT_KEYS,
   formatDictsCookie,
   formatInflectedCookie,
 } from "@/web/v2/dict/dict_selection.common";

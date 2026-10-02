@@ -740,7 +740,7 @@ test.describe("UI V2 dictionary", () => {
 
     // The selection round-trips through the URL and results still render.
     await expect(page).toHaveURL(/q=habeo/);
-    await expect(page).toHaveURL(/dict=L%26S/);
+    await expect(page).toHaveURL(/d=1/);
     await expect(dialog).not.toBeVisible();
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");

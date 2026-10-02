@@ -140,19 +140,33 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/dicts/id/:id returns entry looked up by ID", async () => {
-    const res = await request(app).get("/v2/dicts/id/n20077");
+  test("GET /v2/dicts/id/:id returns entry looked up by ID and renders the user's saved settings", async () => {
+    const res = await request(app)
+      .get("/v2/dicts/id/n20077")
+      .set("Cookie", "morcus_d=2; morcus_inflected=0");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.headers["vary"]).toContain("X-Requested-With");
     expect(res.text).toContain("<!DOCTYPE html>");
     expect(res.text).toContain("ID n20077 - Morcus Dictionary");
     expect(res.text).toContain("amo");
+    // The search bar reflects the user's saved GAF-only, exact-headword preferences.
+    expect(res.text).toContain('data-d="2" data-o="0"');
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
       expect.objectContaining({
         query: "n20077",
         mode: 2,
       })
+    );
+  });
+
+  test("GET /v2/dicts/id/:id?q=... redirects to /v2/dicts preserving all query parameters", async () => {
+    const res = await request(app).get(
+      "/v2/dicts/id/n20077?q=bellum&d=2&o=0&embedded=1"
+    );
+    expect(res.status).toBe(302);
+    expect(res.header["location"]).toBe(
+      "/v2/dicts?q=bellum&d=2&o=0&embedded=1"
     );
   });
 
@@ -211,18 +225,27 @@ describe("v2_router integration", () => {
       expect(res.header["set-cookie"]).toBeUndefined();
     });
 
-    test("Apply (save=1) persists, then 303s to the same URL without the marker", async () => {
+    test("Done (save=1) persists, then 303s to the canonical URL without the marker", async () => {
       const res = await request(app).get(
         "/v2/dicts?q=amo&o=0&o=1&dict=GAF&save=1"
       );
       expect(res.status).toBe(303);
-      expect(res.header["location"]).toBe("/v2/dicts?q=amo&o=0&o=1&dict=GAF");
+      expect(res.header["location"]).toBe("/v2/dicts?q=amo&o=1&d=2");
       expect(res.header["cache-control"]).toBe("no-store");
       const cookies = res.header["set-cookie"].join("\n");
       expect(cookies).toContain("morcus_d=2;");
       expect(cookies).toContain("morcus_inflected=1;");
       // Redirects don't render, so nothing is queried.
       expect(mockFusedDict.getEntry).not.toHaveBeenCalled();
+    });
+
+    test("cross-site request with save=1 strips the marker without writing cookies", async () => {
+      const res = await request(app)
+        .get("/v2/dicts?q=amo&o=0&dict=GAF&save=1")
+        .set("Sec-Fetch-Site", "cross-site");
+      expect(res.status).toBe(303);
+      expect(res.header["location"]).toBe("/v2/dicts?q=amo&o=0&d=2");
+      expect(res.header["set-cookie"]).toBeUndefined();
     });
 
     test("a shared link does not overwrite the recipient's preferences", async () => {
