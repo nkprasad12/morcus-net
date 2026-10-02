@@ -123,6 +123,18 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 let _ = corpus.query_corpus(bitmask_query, &page_data, &options);
             })
         });
+
+        for (name, query) in [
+            ("arma virumque", "arma virumque"),
+            ("in abl", "in @case:abl"),
+            ("bitmask len 2", "@case:dat @case:acc"),
+        ] {
+            query_benches.bench_function(name, |b| {
+                b.iter(|| {
+                    let _ = corpus.query_corpus(query, &page_data, &options);
+                })
+            });
+        }
     }
     {
         let mut smear_benches = c.benchmark_group("Smear Bitmask");
