@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 
 import { processWords, removeDiacritics } from "@/common/text_cleaning";
-import { macronizeInput } from "@/macronizer/morcronizer";
+import { macronizeInput, stanzaTagger } from "@/macronizer/morcronizer";
 import type { MacronizedResult } from "@/web/api_routes";
 
 const GOLDENS_DIR = "src/macronizer/benchmarking/macronized_goldens";
@@ -204,7 +204,7 @@ const Alatius: Macronizer = [
 const MorcronizerStanza: Macronizer = [
   "MorcronizerStanza",
   async (input) => {
-    const macronized = await macronizeInput(input[1], true);
+    const macronized = await macronizeInput(input[1], stanzaTagger);
     return {
       text: macronized
         .map((w) =>
@@ -223,7 +223,7 @@ const MorcronizerStanza: Macronizer = [
 const MorcronizerLatinCy: Macronizer = [
   "MorcronizerLatinCy",
   async (input) => {
-    const macronized = await macronizeInput(input[1], false);
+    const macronized = await macronizeInput(input[1]);
     return {
       text: macronized
         .map((w) =>
