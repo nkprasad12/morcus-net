@@ -172,19 +172,30 @@ test.describe("UI V2 late hydration", () => {
     const release = await openBeforeHydration(
       page,
       "/v2/dicts?q=habeo",
-      "morcus-dict-settings"
+      // After the settings dialog in the markup (the host itself is `display: contents`).
+      ".dict-card"
     );
-    const settings = page.locator("morcus-dict-settings");
-    await settings.locator(".settings-btn").click();
-    const applyBtn = settings.locator(".settings-apply-btn");
+    // Before upgrade the trigger is a hash link: `:target` shows the dialog, with Done (a
+    // submit) but not the JS-only close button.
+    const dialog = page.locator("dialog#dict-settings");
+    const closeBtn = dialog.locator(".dialog-close-btn");
     const reportBtn = page.locator("morcus-report-dialog .report-btn");
-    await expect(applyBtn).toBeHidden();
+    await page.locator("#dict-settings-btn").click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator(".dict-settings-done")).toBeVisible();
+    await expect(closeBtn).toBeHidden();
     await expect(reportBtn).toBeHidden();
 
+    // At upgrade the element adopts the hash and keeps the dialog open, now modal.
     release();
     await expectUpgraded(page, "morcus-dict-settings");
     await expectUpgraded(page, "morcus-report-dialog");
-    await expect(applyBtn).toBeHidden();
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toHaveAttribute("open", "");
+    await expect(closeBtn).toBeVisible();
+    await expect(page).not.toHaveURL(/#dict-settings/);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
     await expect(reportBtn).toBeVisible();
   });
 
@@ -233,10 +244,12 @@ test.describe("UI V2 late hydration", () => {
 
     expect((await jsOnlyVisibility(page)).rendered).toBe(0);
 
-    const settings = page.locator("morcus-dict-settings");
-    await settings.locator(".settings-btn").click();
-    expect(await paintedFallbacks(page)).toBeGreaterThan(0);
-    await expect(settings.locator(".settings-apply-btn")).toBeVisible();
+    // The settings dialog works as it does without JS: `:target` opens it, Done submits.
+    const dialog = page.locator("dialog#dict-settings");
+    await page.locator("#dict-settings-btn").click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator(".dict-settings-done")).toBeVisible();
+    await expect(dialog.locator(".dialog-close-btn")).toBeHidden();
   });
 
   test("gate: without JavaScript, fallbacks show and JS-only UI takes no space", async ({
@@ -254,24 +267,27 @@ test.describe("UI V2 late hydration", () => {
     }
 
     await page.goto("/v2/dicts?q=habeo");
-    const settings = page.locator("morcus-dict-settings");
-    await settings.locator(".settings-btn").click();
-    expect(await paintedFallbacks(page)).toBeGreaterThan(0);
-    await expect(settings.locator(".settings-apply-btn")).toBeVisible();
+    const dialog = page.locator("dialog#dict-settings");
+    await page.locator("#dict-settings-btn").click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator(".dict-settings-done")).toBeVisible();
+    await expect(dialog.locator(".dialog-close-btn")).toBeHidden();
     await context.close();
   });
 
-  test("dictionary settings: checkboxes changed before upgrade are kept and saved (PH1)", async ({
+  test("dictionary settings: edits made before upgrade stay a draft and apply on Done (PH1)", async ({
     page,
   }) => {
     const release = await openBeforeHydration(
       page,
       "/v2/dicts?q=habeo",
-      "morcus-dict-settings"
+      // After the settings dialog in the markup (the host itself is `display: contents`).
+      ".dict-card"
     );
-    const settings = page.locator("morcus-dict-settings");
-    await settings.locator(".settings-btn").click();
-    const checkboxes = settings.locator(".dict-checkbox");
+    const dialog = page.locator("dialog#dict-settings");
+    await page.locator("#dict-settings-btn").click();
+    await expect(dialog).toBeVisible();
+    const checkboxes = dialog.locator(".dict-checkbox");
     const count = await checkboxes.count();
     const toUncheck: string[] = [];
     for (let i = 0; i < count; i++) {
@@ -287,21 +303,26 @@ test.describe("UI V2 late hydration", () => {
     }
     expect(toUncheck.length).toBeGreaterThan(0);
 
+    // The upgrade keeps the dialog open with the draft in it; nothing applies yet.
     release();
     await expectUpgraded(page, "morcus-dict-settings");
+    await expect(dialog).toBeVisible();
     for (const value of toUncheck) {
       await expect(
-        settings.locator(`.dict-checkbox[value="${value}"]`)
+        dialog.locator(`.dict-checkbox[value="${value}"]`)
       ).not.toBeChecked();
     }
 
-    // The adopted selection was persisted, not just left on screen.
+    // Done applies (with JS, in place) and saves.
+    await dialog.locator(".dict-settings-done").click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(".dict-title").first()).toContainText("Lewis");
     await page.unrouteAll({ behavior: "ignoreErrors" });
     await page.goto("/v2/dicts?q=habeo");
     await expectUpgraded(page, "morcus-dict-settings");
     for (const value of toUncheck) {
       await expect(
-        settings.locator(`.dict-checkbox[value="${value}"]`)
+        dialog.locator(`.dict-checkbox[value="${value}"]`)
       ).not.toBeChecked();
     }
   });

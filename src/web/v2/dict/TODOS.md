@@ -253,15 +253,16 @@ Opening someone else's link (`/v2/dicts?q=amo&dict=GAF`) used to permanently cha
 saved selection, because the route wrote the cookie whenever the selection came from the URL. It
 couldn't tell "the user just ticked boxes" from "someone pasted a URL".
 
-- [x] **Save marker.** Apply is a named submit button (`name="save" value="1"`). The route writes
+- [x] **Save marker.** Done is a named submit button (`name="save" value="1"`) in the settings
+      dialog's own form. The route writes
       cookies only for `save=1`, then 303s to the same URL without it, so a copied URL can't carry
-      the intent ([`dict_persistence.server.ts`](dict_persistence.server.ts)). The search button
-      stays the form's first submit button, so Enter never saves (tested).
+      the intent ([`dict_persistence.server.ts`](dict_persistence.server.ts)). The dialog is
+      outside the search form, so Enter in the search box never saves (tested).
 - [x] **Sliding refresh.** Every other full page load re-sends the cookies' own values, so a JS
       save (`document.cookie`, capped at 7 days by Safari ITP) is re-issued as an HTTP cookie.
 - [x] **Guest mode.** `isGuestView` (in `dict_selection.common.ts`) flags a page whose
       dictionaries or inflection differ from a saved cookie. Those settings are shown read-only
-      (disabled controls, no Apply) with _Viewing this link's settings · Return to my settings_,
+      (disabled controls; Done only closes) with _Viewing this link's settings · Return to my settings_,
       and stay in effect for new searches until **Return**. Scoped views (`data-scoped`) never
       save.
 

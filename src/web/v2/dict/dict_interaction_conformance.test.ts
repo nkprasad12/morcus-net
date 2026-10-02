@@ -6,6 +6,7 @@
  */
 
 import {
+  clickOn,
   describeInteractionConformance,
   focusOn,
   pressKey,
@@ -26,8 +27,9 @@ jest.mock("@/web/v2/reader/reader_loader.server", () =>
 
 describeInteractionConformance("dict", {
   fixtures: buildDictFixtures,
-  // 35 targets when this landed.
-  caps: { minRuns: 25 },
+  // 35 targets when this landed; 20 once the settings moved into a dialog, whose
+  // controls Tier 1 skips while it's closed (the "change settings" scenario covers them).
+  caps: { minRuns: 14 },
   scenarios: [
     {
       fixture: "dict-landing",
@@ -47,6 +49,16 @@ describeInteractionConformance("dict", {
         focusOn("#dict-q"),
         typeIn("#dict-q", "amor"),
         submitFormOf("#dict-q"),
+      ],
+      expectSwap: true,
+    },
+    {
+      fixture: "dict-results",
+      name: "change settings",
+      steps: [
+        clickOn("#dict-settings-btn"),
+        clickOn(".dict-checkbox:not(:checked)"),
+        clickOn(".dict-settings-done"),
       ],
       expectSwap: true,
     },

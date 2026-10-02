@@ -55,23 +55,59 @@ describe("renderDictSearchBar", () => {
     expect(html).toContain("&lt;script&gt;");
   });
 
-  test("renders dict checkboxes instead of a stale bitmask, plus the inflection toggle", () => {
+  /** The search form and the settings dialog's own form, parsed. */
+  function forms(html: string) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return {
+      doc,
+      search: doc.querySelector<HTMLFormElement>("form.search-form")!,
+      settings: doc.querySelector<HTMLFormElement>(
+        "dialog#dict-settings form.dict-settings-form"
+      )!,
+    };
+  }
+
+  test("the search form carries the rendered d and o; the dialog's form owns the controls", () => {
     const html = renderDictSearchBar({
       query: "amare",
       action: "/v2/dicts",
       activeDicts: ["L&S", "GAF"],
       isInflected: true,
     });
+    const { search, settings } = forms(html);
 
-    // The checkboxes are the live controls; a hidden bitmask beside them would be frozen to this
-    // render and would override the user's No-JS changes on submit.
-    expect(html).not.toContain('name="d"');
-    expect(html.match(/name="dict"/g)).toHaveLength(LatinDict.AVAILABLE.length);
-    expect(html.match(/checked/g)).toHaveLength(3); // L&S, GAF, and the inflection toggle
-    expect(html).toContain('<input type="hidden" name="o" value="0" />');
-    expect(html).toContain('id="toggle-inflected"');
-    expect(html).toContain('class="inflected-checkbox"');
-    expect(html).toContain("checked");
+    // Searches keep what's on screen: L&S (1) + GAF (2) = 3.
+    expect(new FormData(search).get("d")).toBe("3");
+    expect(new FormData(search).get("o")).toBe("1");
+    expect(search.querySelector('[name="dict"]')).toBeNull();
+
+    // The dialog is outside the search form, so Enter in the search box never submits it.
+    expect(search.contains(settings)).toBe(false);
+    expect(settings.querySelectorAll('[name="dict"]')).toHaveLength(
+      LatinDict.AVAILABLE.length
+    );
+    expect(settings.querySelector('[name="d"]')).toBeNull();
+    expect(new FormData(settings).getAll("dict")).toEqual(["L&S", "GAF"]);
+    expect(new FormData(settings).getAll("o")).toEqual(["0", "1"]);
+    expect(new FormData(settings).get("q")).toBe("amare");
+  });
+
+  test("the tray trigger is a hash link to the dialog", () => {
+    const { doc } = forms(
+      renderDictSearchBar({ query: "amo", action: "/v2/dicts" })
+    );
+    const trigger = doc.querySelector<HTMLAnchorElement>("#dict-settings-btn")!;
+    expect(trigger.getAttribute("href")).toBe("#dict-settings");
+    expect(trigger.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(
+      doc.querySelector("morcus-dict-settings > dialog#dict-settings")
+    ).not.toBeNull();
+    // The X needs JS; without it, Back (or Done) leaves.
+    expect(
+      doc
+        .querySelector("#dict-settings [data-dialog-close]")
+        ?.hasAttribute("data-js-only")
+    ).toBe(true);
   });
 
   test("keeps the hidden d bitmask when the settings popover is omitted", () => {
@@ -143,24 +179,25 @@ describe("renderDictSearchBar", () => {
     expect(html).not.toContain('class="search-tray"');
   });
 
-  test("the Apply button is a named save submitter", () => {
-    const html = renderDictSearchBar({ query: "amo", action: "/v2/dicts" });
-    expect(html).toMatch(
-      /<button type="submit" name="save" value="1" class="[^"]*settings-apply-btn/
+  test("Done is the settings form's save submitter", () => {
+    const { settings } = forms(
+      renderDictSearchBar({ query: "amo", action: "/v2/dicts" })
     );
+    const submits = settings.querySelectorAll('button[type="submit"]');
+    expect(submits).toHaveLength(1);
+    expect(submits[0].classList.contains("dict-settings-done")).toBe(true);
+    expect(submits[0].getAttribute("name")).toBe("save");
+    expect(submits[0].getAttribute("value")).toBe("1");
   });
 
-  test("the search button is the form's first submit button, so Enter never saves", () => {
-    // Implicit submission (Enter in the input) uses the FIRST submit button in tree order. If a
-    // `name="save"` button ever came first, every Enter would silently persist the selection.
-    const html = renderDictSearchBar({ query: "amo", action: "/v2/dicts" });
-    const submitButtons = Array.from(
-      html.matchAll(/<button\b[^>]*type="submit"[^>]*>/g),
-      (m) => m[0]
+  test("the search form's only submit button is the search button, so Enter never saves", () => {
+    const { search } = forms(
+      renderDictSearchBar({ query: "amo", action: "/v2/dicts" })
     );
-    expect(submitButtons.length).toBeGreaterThan(1);
-    expect(submitButtons[0]).toContain('class="search-btn"');
-    expect(submitButtons[0]).not.toContain("name=");
+    const submits = search.querySelectorAll('button[type="submit"]');
+    expect(submits).toHaveLength(1);
+    expect(submits[0].classList.contains("search-btn")).toBe(true);
+    expect(search.querySelector('[name="save"]')).toBeNull();
   });
 
   test("renders no guest chip or scoped marker by default", () => {
@@ -201,7 +238,7 @@ describe("renderDictSearchBar", () => {
 
     test("carries the link's settings in hidden fields, so a new search keeps them", () => {
       const doc = new DOMParser().parseFromString(html, "text/html");
-      const form = doc.querySelector("form")!;
+      const form = doc.querySelector<HTMLFormElement>("form.search-form")!;
       const submitted = new URLSearchParams();
       for (const el of Array.from(form.elements)) {
         if (!(el instanceof HTMLInputElement) || el.disabled || !el.name)
@@ -215,12 +252,12 @@ describe("renderDictSearchBar", () => {
     });
   });
 
-  test("a scoped view is marked data-scoped", () => {
-    const html = renderDictSearchBar({
-      query: "amo",
-      action: "/v2/dicts",
-      scoped: true,
-    });
-    expect(html).toMatch(/<form class="search-form"[^>]* data-scoped>/);
+  test("a scoped view marks the settings form data-scoped, and Done doesn't save", () => {
+    const { settings } = forms(
+      renderDictSearchBar({ query: "amo", action: "/v2/dicts", scoped: true })
+    );
+    expect(settings.hasAttribute("data-scoped")).toBe(true);
+    expect(settings.querySelector('[name="save"]')).toBeNull();
+    expect(settings.querySelector(".dict-settings-done")).not.toBeNull();
   });
 });

@@ -102,7 +102,7 @@ Follow these rules whenever adding or modifying UI V2 features:
 **Before upgrade, a page looks like the JS page but behaves like the No-JS page.** The upgrade then adopts whatever the user did in the meantime (adopt-before-write; see the [PH bug index](docs/TESTING.md#pre-hydration-ph-bug-index)). There is exactly one way to show or hide UI depending on whether JavaScript is running:
 
 - **`data-js-only`** on anything that only works with JS (a `type="button"` control, a client-populated list).
-- **`data-nojs-only`** on a No-JS fallback (an Apply submit button, "needs JavaScript" notes).
+- **`data-nojs-only`** on a No-JS fallback ("needs JavaScript" notes).
 - **The owner** is the nearest element carrying `data-upgraded`. `BaseElement` sets it on every custom element after `onConnect()` returns (and removes it on disconnect), so inside a component there is nothing to do. A global script that wires up one specific element outside any component calls `markUpgraded(el)` from `core/js_gate.client.ts`.
 
 Two separate facts decide two separate things:

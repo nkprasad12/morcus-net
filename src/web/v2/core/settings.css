@@ -35,8 +35,7 @@ details[open] > .settings-btn {
   background-color: var(--tag-bg);
 }
 
-/* A native <details> settings popover (dict search bar, corpus form). */
-morcus-dict-settings,
+/* A native <details> settings popover (corpus form). */
 .settings-details {
   position: relative;
   display: inline-flex;

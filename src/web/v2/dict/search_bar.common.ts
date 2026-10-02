@@ -2,6 +2,11 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { html, joinHtml } from "@/web/v2/core/html.common";
 import type { SafeHtml } from "@/web/v2/core/html.common";
 
+/** The dictionary settings `<dialog>`, also the `#hash` that opens it without JS. */
+export const DICT_SETTINGS_DIALOG_ID = "dict-settings";
+/** The tray button (a `#dict-settings` link) that opens the settings dialog. */
+export const DICT_SETTINGS_TRIGGER_ID = "dict-settings-btn";
+
 /**
  * Computes unique source languages ('from') from a collection of active LatinDict keys.
  * Filters out wildcard '*' (such as Numeral).

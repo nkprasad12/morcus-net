@@ -332,11 +332,20 @@ describe("v2_router integration", () => {
       );
     });
 
-    test("does not render a hidden bitmask input alongside the checkboxes", async () => {
+    test("the settings form has the checkboxes and no hidden bitmask; the search form carries d", async () => {
       const res = await request(app).get("/v2/dicts?q=amo");
       expect(res.status).toBe(200);
-      expect(res.text).not.toContain('name="d"');
-      expect(res.text).toContain('name="dict"');
+      const settingsForm = res.text.match(
+        /<form class="dict-settings-form"[\s\S]*?<\/form>/
+      )?.[0];
+      expect(settingsForm).toBeDefined();
+      expect(settingsForm).not.toContain('name="d"');
+      expect(settingsForm).toContain('name="dict"');
+      const searchForm = res.text.match(
+        /<form class="search-form"[\s\S]*?<\/form>/
+      )?.[0];
+      expect(searchForm).toContain('<input type="hidden" name="d"');
+      expect(searchForm).not.toContain('name="dict"');
     });
   });
 
@@ -379,7 +388,9 @@ describe("v2_router integration", () => {
       .get("/v2/dicts?q=arma&embedded=1&d=2")
       .set("Cookie", "morcus_d=1");
     expect(res.status).toBe(200);
-    expect(res.text).toMatch(/<form class="search-form"[^>]* data-scoped>/);
+    expect(res.text).toMatch(
+      /<form class="dict-settings-form"[^>]* data-scoped>/
+    );
     expect(res.text).not.toContain("guest-chip");
   });
 
