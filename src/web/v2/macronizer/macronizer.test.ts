@@ -291,6 +291,7 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
       .type("form")
       .send({ text: CANNED_MACRONIZER_TEXT });
     expect(fullRes.status).toBe(200);
+    expect(fullRes.headers["vary"]).toContain("X-Requested-With");
     expect(fullRes.text).toContain("<html");
     expect(fullRes.text).toContain('id="mac-passage"');
 
@@ -300,6 +301,7 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
       .type("form")
       .send({ text: CANNED_MACRONIZER_TEXT });
     expect(partialRes.status).toBe(200);
+    expect(partialRes.headers["vary"]).toContain("X-Requested-With");
     expect(partialRes.text).toContain(
       '<template data-slot="macronizer-workspace">'
     );

@@ -1,4 +1,4 @@
-import type { Request } from "express";
+import type { Request, Response } from "express";
 
 /**
  * Normalizes an unknown query parameter value to a string or array of strings.
@@ -24,10 +24,25 @@ export function readStringParam(val: unknown, fallback = ""): string {
 }
 
 /**
+ * Sets `Vary: X-Requested-With` on the response so HTTP caches and browser
+ * bfcache do not conflate full HTML pages and partial slot fragments.
+ * Should be called on any route that branches on `isPartialRequest`.
+ */
+export function setPartialVaryHeader(res: Response): void {
+  res.vary("X-Requested-With");
+}
+
+/**
  * Checks whether the incoming HTTP request is requesting an HTML fragment partial
  * via `format=partial` query param or the client's `X-Requested-With: fetch` header.
+ *
+ * If `res` is provided, automatically calls `setPartialVaryHeader(res)` so that
+ * HTTP caches and bfcache maintain separate representations for the URL.
  */
-export function isPartialRequest(req: Request): boolean {
+export function isPartialRequest(req: Request, res?: Response): boolean {
+  if (res) {
+    setPartialVaryHeader(res);
+  }
   return (
     req.query.format === "partial" ||
     req.headers["x-requested-with"] === "fetch"

@@ -1,8 +1,9 @@
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import {
   toStringOrArray,
   readStringParam,
   isPartialRequest,
+  setPartialVaryHeader,
   isEmbeddedRequest,
   readLimit,
   readDictParam,
@@ -101,6 +102,28 @@ describe("request_params.server", () => {
     test("returns false for empty request", () => {
       const req = createMockRequest();
       expect(isPartialRequest(req)).toBe(false);
+    });
+
+    test("sets Vary: X-Requested-With on response when res is passed for partial requests", () => {
+      const req = createMockRequest({ query: { format: "partial" } });
+      const res = { vary: jest.fn() } as unknown as Response;
+      expect(isPartialRequest(req, res)).toBe(true);
+      expect(res.vary).toHaveBeenCalledWith("X-Requested-With");
+    });
+
+    test("sets Vary: X-Requested-With on response when res is passed for full-page requests", () => {
+      const req = createMockRequest();
+      const res = { vary: jest.fn() } as unknown as Response;
+      expect(isPartialRequest(req, res)).toBe(false);
+      expect(res.vary).toHaveBeenCalledWith("X-Requested-With");
+    });
+  });
+
+  describe("setPartialVaryHeader", () => {
+    test("calls res.vary with X-Requested-With", () => {
+      const res = { vary: jest.fn() } as unknown as Response;
+      setPartialVaryHeader(res);
+      expect(res.vary).toHaveBeenCalledWith("X-Requested-With");
     });
   });
 

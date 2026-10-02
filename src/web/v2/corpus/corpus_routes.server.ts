@@ -61,7 +61,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
   getAsync("/corpus", async (req, res) => {
     const params = parseCorpusParams(req.query);
     // The same URL answers with a full page or a partial (DESIGN §4).
-    res.setHeader("Vary", "X-Requested-With");
+    const isPartial = isPartialRequest(req, res);
     if (options.engine === undefined) {
       res.status(503).send(renderCorpusUnavailableHtml(params.q));
       return;
@@ -73,7 +73,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
         await loadAuthors()
       );
       res.send(
-        isPartialRequest(req)
+        isPartial
           ? renderCorpusPartialHtml(view).toString()
           : renderCorpusPageHtml(view, lemmataVersion())
       );

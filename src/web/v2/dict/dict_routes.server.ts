@@ -34,7 +34,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
   getAsync("/dicts", async (req, res) => {
     const query =
       typeof req.query.q === "string" ? trimRawQuery(req.query.q) : "";
-    const isPartial = isPartialRequest(req);
+    const isPartial = isPartialRequest(req, res);
     const isEmbedded = isEmbeddedRequest(req);
 
     const dictScale = parseDictScale(req.query.scale);
@@ -170,7 +170,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
   // ID-based dictionary lookup route
   getAsync("/dicts/id/:id", async (req, res) => {
     const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
-    const isPartial = isPartialRequest(req);
+    const isPartial = isPartialRequest(req, res);
     const isEmbedded = isEmbeddedRequest(req);
 
     const dictScale = parseDictScale(req.query.scale);

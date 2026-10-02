@@ -20,6 +20,7 @@ import {
   type MacronizeInputParseResult,
 } from "@/web/v2/macronizer/macronizer_params.server";
 import { MACRONIZER_MAX_CHARS } from "@/web/v2/macronizer/macronizer_slots.common";
+import { isPartialRequest } from "@/web/v2/core/request_params.server";
 import {
   renderMacronizerPage,
   renderMacronizerPartial,
@@ -64,7 +65,7 @@ function sendPageOrPartial(
   res.status(status).type("html");
   // Fetch requests get the slot partial even for errors, so the client can
   // show the error in place instead of resubmitting the form natively.
-  if (req.get("X-Requested-With") === "fetch") {
+  if (isPartialRequest(req, res)) {
     res.send(renderMacronizerPartial(options));
     return;
   }
