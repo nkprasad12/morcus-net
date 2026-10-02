@@ -713,6 +713,11 @@ function startWebServer(args: any) {
   if (args.real_database === false) {
     serverEnv.CONSOLE_TELEMETRY = "yes";
   }
+  // Local dev has no LatinCy server; simulate macronizer suggestions unless
+  // the caller chose an engine. Production runs `build/server.js` directly.
+  if (!serverEnv.MACRONIZER_ENGINE) {
+    serverEnv.MACRONIZER_ENGINE = "fake-latincy";
+  }
   let baseCommand: string[] = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];

@@ -50,6 +50,7 @@ services:
       MONGODB_URI: "${MONGODB_URI}"
       PWA_SHORT_NAME_SUFFIX: " D"
       LATINCY_SERVER_ADDRESS: "http://latincy:8000"
+      MACRONIZER_ENGINE: latincy
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
     logging:
@@ -66,6 +67,7 @@ services:
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
       LATINCY_SERVER_ADDRESS: "http://latincy:8000"
+      MACRONIZER_ENGINE: latincy
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
     logging:
