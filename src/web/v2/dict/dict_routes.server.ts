@@ -59,11 +59,15 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
       lang: langParam,
     });
 
+    // Scoped views (the reader's dictionary iframe, or any `lang=`-filtered lookup) show a
+    // transient, narrowed selection and must never persist it. Keyed on both signals explicitly
+    // so the reader is protected even if it stops sending `lang`.
+    const isScopedView = isEmbedded || langParam !== undefined;
+
     // Persist explicit choices from full page form submissions so No-JS users keep them across
     // sessions. The two cookies are written independently: a submission may legitimately change
     // the inflection toggle while its dictionaries still resolve from the existing cookie.
-    // `langParam` requests are scoped views (e.g. the embedded reader iframe) and never persist.
-    if (!isPartial && !langParam) {
+    if (!isPartial && !isScopedView) {
       const cookies: string[] = [];
       if (source === "url" && dictKeys.length > 0) {
         cookies.push(formatDictsCookie(dictKeys));
