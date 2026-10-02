@@ -311,6 +311,24 @@ describe("v2_router integration", () => {
     expect(res.header["set-cookie"]).toBeUndefined();
   });
 
+  test("GET /v2/dicts never persists from an embedded view, even without lang", async () => {
+    // Regression (F7): the guard used to key on `lang`, so an iframe that stopped sending it
+    // would overwrite the user's preferences on every lookup.
+    const res = await request(app)
+      .get("/v2/dicts?q=arma&embedded=1&o=0&dict=GAF")
+      .set("Cookie", "morcus_dicts=L%26S; morcus_inflected=1");
+    expect(res.status).toBe(200);
+    expect(res.header["set-cookie"]).toBeUndefined();
+  });
+
+  test("GET /v2/dicts never persists from an iframe detected by Sec-Fetch-Dest", async () => {
+    const res = await request(app)
+      .get("/v2/dicts?q=arma&o=0&dict=GAF")
+      .set("Sec-Fetch-Dest", "iframe");
+    expect(res.status).toBe(200);
+    expect(res.header["set-cookie"]).toBeUndefined();
+  });
+
   test("GET /v2/dicts with Greek query renders Logeion fallback and skips Latin dict lookup", async () => {
     (mockFusedDict.getEntry as jest.Mock).mockClear();
     const res = await request(app).get(

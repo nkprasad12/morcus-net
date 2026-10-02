@@ -355,10 +355,9 @@ in localStorage), each with its own parser.
 V2 keeps no backwards compatibility (`AGENTS.md`), so there is **no migration step**: delete the
 localStorage copies outright. Each step is independently shippable:
 
-- [ ] **Key the persistence guard on an explicit scoped-view flag (F7).** `dict_routes.server.ts`
-      skips cookie writes when `langParam` is present, as a proxy for "this is the reader iframe".
-      If the reader stops sending `lang`, every passage read overwrites the user's inflection
-      preference. Use `isEmbeddedRequest()` or a new `isScopedView`. Small; worth doing first.
+- [x] **Key the persistence guard on an explicit scoped-view flag (F7).** `dict_routes.server.ts`
+      now skips cookie writes when `isScopedView` (`isEmbeddedRequest()` or a `lang` filter) is set,
+      rather than using `lang` alone as a proxy for "this is the reader iframe".
 - [ ] **Make the client adopt SSR state (F1–F5).** Set controls from the server-rendered DOM
       instead of re-deriving them, so hydration can't overwrite pre-upgrade input or show controls
       that disagree with the rendered results.
