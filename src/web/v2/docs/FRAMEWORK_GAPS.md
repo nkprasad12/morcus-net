@@ -12,20 +12,16 @@ duplication bites; delete the entry when it lands. Component-level debt lives in
 1. **Router: multi-param navigation.** `syncQueryParam` models one param. Corpus and the reader's
    page turns push whole URLs with `pushState` + `updatePath()`. A `pushUrl` / `replaceUrl` on the
    sync object would remove the duplication. _Missing primitive._
-2. **`Vary: X-Requested-With` in a shared partial-response helper.** Every route that branches on
-   `isPartialRequest` should send it, or a cache or the back/forward cache can replay a fragment as
-   a page. Corpus sets it by hand (`corpus_routes.server.ts`); the dictionary and reader partial
-   routes don't. _Correctness gap in a shared seam._
-3. **Live region around a slot.** `swapSlots` replaces the slot element, so announcements need a
+2. **Live region around a slot.** `swapSlots` replaces the slot element, so announcements need a
    stable wrapper (corpus wraps `summary`). Worth a sentence in `swapSlots`'s doc, or an option.
    _Sharp edge._
-4. **`dialog/dialog.server.ts` still uses `he` and string templates**, not `html`. It renders the
+3. **`dialog/dialog.server.ts` still uses `he` and string templates**, not `html`. It renders the
    report dialog on every page (`shell/page_shell.server.ts`). _Server `html` migration._
-5. **Keyed fetch cache.** `LemmaShardCache` (corpus) and `DictChunkCache` (dict) are both an
+4. **Keyed fetch cache.** `LemmaShardCache` (corpus) and `DictChunkCache` (dict) are both an
    in-memory map plus in-flight promise dedupe, and both leave the shared request uncancellable on
    purpose. Only the policy differs: dict evicts LRU, while corpus remembers a failure and doesn't
    retry. A `core/` cache with those two options would cover both. _Duplication._
-6. **Build version and cache policy for versioned URLs.** Three server modules read
+5. **Build version and cache policy for versioned URLs.** Three server modules read
    `process.env.COMMIT_ID` themselves, each differently: `about.server.ts`, `api_routes.server.ts`
    (falls back to `"undefined"`), and `corpus_routes.server.ts` (trims it, and treats empty as
    absent). Immutable `Cache-Control` values are per-route literals with different lifetimes: V2

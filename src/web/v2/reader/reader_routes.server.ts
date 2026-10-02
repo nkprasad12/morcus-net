@@ -104,7 +104,7 @@ export function createReaderRoutes(): Router {
       typeof req.query.matchText === "string" ? req.query.matchText.trim() : "";
     const jump =
       typeof req.query.jump === "string" ? req.query.jump.trim() : "";
-    const isPartial = isPartialRequest(req);
+    const isPartial = isPartialRequest(req, res);
 
     const work = await findReaderWork(author, name);
 
@@ -154,7 +154,7 @@ export function createReaderRoutes(): Router {
         : undefined;
     const jump =
       typeof req.query.jump === "string" ? req.query.jump.trim() : "";
-    const isPartial = isPartialRequest(req);
+    const isPartial = isPartialRequest(req, res);
 
     const work =
       (await getV2Work(workId)) ||

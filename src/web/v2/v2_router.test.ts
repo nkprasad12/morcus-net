@@ -84,6 +84,7 @@ describe("v2_router integration", () => {
     const res = await request(app).get("/v2/dicts?q=amo");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
+    expect(res.headers["vary"]).toContain("X-Requested-With");
     expect(res.text).toContain("<!DOCTYPE html>");
     expect(res.text).toContain("morcus-dict-search");
     expect(res.text).toContain("amo");
@@ -94,6 +95,7 @@ describe("v2_router integration", () => {
     const res = await request(app).get("/v2/dicts?q=amo&format=partial");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
+    expect(res.headers["vary"]).toContain("X-Requested-With");
     expect(res.text).not.toContain("<!DOCTYPE html>");
     expect(res.text).toContain("dict-card");
     expect(res.text).toContain("amo");
@@ -143,6 +145,7 @@ describe("v2_router integration", () => {
     const res = await request(app).get("/v2/dicts/id/n20077");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
+    expect(res.headers["vary"]).toContain("X-Requested-With");
     expect(res.text).toContain("<!DOCTYPE html>");
     expect(res.text).toContain("ID n20077 - Morcus Dictionary");
     expect(res.text).toContain("amo");
@@ -475,6 +478,7 @@ describe("v2_router integration", () => {
       const res = await request(app).get("/v2/reader");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
+      expect(res.headers["vary"]).toContain("X-Requested-With");
       expect(res.text).toContain("<!DOCTYPE html>");
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain("Julius Caesar");
@@ -488,6 +492,7 @@ describe("v2_router integration", () => {
       const res = await request(app).get("/v2/reader?q=Gallia");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
+      expect(res.headers["vary"]).toContain("X-Requested-With");
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain('id="dict-frame"');
       expect(res.text).toContain(
@@ -501,8 +506,21 @@ describe("v2_router integration", () => {
       );
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
+      expect(res.headers["vary"]).toContain("X-Requested-With");
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain("De bello Gallico");
+      expect(res.text).toContain("Gallia est omnis divisa in partes tres");
+    });
+
+    test("GET /v2/reader/:author/:name/:page? with format=partial returns only the passage slot fragment", async () => {
+      const res = await request(app).get(
+        "/v2/reader/caesar/de_bello_gallico/1.1?format=partial"
+      );
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("text/html");
+      expect(res.headers["vary"]).toContain("X-Requested-With");
+      expect(res.text).not.toContain("<!DOCTYPE html>");
+      expect(res.text).toContain('data-slot="text"');
       expect(res.text).toContain("Gallia est omnis divisa in partes tres");
     });
 
