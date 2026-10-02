@@ -715,11 +715,6 @@ export abstract class BaseElement<
    * Progressively intercepts a native <form> submission.
    * Calls preventDefault(), extracts trimmed field values,
    * and automatically cleans up the listener on disconnect.
-   *
-   * `options.passthrough` lets chosen submissions go through natively (no
-   * preventDefault, no onSubmit), e.g. a button whose action only the server
-   * can perform. It receives the submit button, or null for implicit
-   * submission (Enter) and environments without `SubmitEvent.submitter`.
    */
   protected hijackForm(
     formOrSelector: HTMLFormElement | string,
@@ -727,8 +722,7 @@ export abstract class BaseElement<
       data: Record<string, string>,
       formData: FormData,
       e: Event
-    ) => void,
-    options?: { passthrough?: (submitter: HTMLElement | null) => boolean }
+    ) => void
   ): HTMLFormElement | null {
     const form =
       typeof formOrSelector === "string"
@@ -737,15 +731,6 @@ export abstract class BaseElement<
     if (!form) return null;
 
     this.scope.listen(form, "submit", (e: Event) => {
-      // Read `submitter` structurally, not via `instanceof SubmitEvent`: JSDOM
-      // doesn't define that global and its submit events have no submitter.
-      const submitter =
-        "submitter" in e && e.submitter instanceof HTMLElement
-          ? e.submitter
-          : null;
-      if (options?.passthrough?.(submitter)) {
-        return;
-      }
       // hijackForm replaces this form's native submit with the caller's
       // onSubmit handler
       e.preventDefault();

@@ -16,7 +16,7 @@ import {
  * The server can't tell "the user just ticked boxes in our UI" from "someone pasted a URL" by
  * looking at `dict=` / `d=` / `o=`: both arrive the same way. So it never infers intent from them.
  * Persistence happens only when the request carries `save=1`, which only the settings popover's
- * **Apply** button (and the borrowed-view **Save these** button) submit. The route then 303s to the
+ * No-JS **Apply** button submits. The route then 303s to the
  * same URL without the marker, so a copied URL can't carry persistence intent.
  */
 
@@ -88,7 +88,7 @@ const SETTINGS_PARAMS = ["d", "dict", "in", "o", SAVE_PARAM] as const;
 
 /**
  * The same page with every settings parameter removed, so the server falls back to the user's
- * cookies. This is the borrowed-view chip's **Use mine** link: a plain GET, so it works without JS.
+ * cookies. This is guest mode's **Return to my settings** link: a plain GET, so it works without JS.
  */
 export function ownSettingsHref(originalUrl: string): string {
   const url = new URL(originalUrl, "http://localhost");

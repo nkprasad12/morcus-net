@@ -68,7 +68,7 @@ settings params, so it never infers intent from them. The dictionary route
 
 | Request                                                    | Cookies                              | Response                    |
 | :--------------------------------------------------------- | :----------------------------------- | :-------------------------- |
-| `save=1` (Apply, or the chip's **Save these**)             | the URL's settings                   | 303 to the URL minus `save` |
+| `save=1` (the No-JS **Apply** button)                      | the URL's settings                   | 303 to the URL minus `save` |
 | Any other full page load                                   | the cookies' **own** values, re-sent | renders the URL's view      |
 | Partial (`format=partial`) or scoped (`embedded`, `lang=`) | none                                 | renders                     |
 
@@ -79,10 +79,13 @@ settings params, so it never infers intent from them. The dictionary route
   and a copied URL can't carry it.
 - **The re-send is a sliding refresh.** JS saves with `document.cookie`, which Safari's ITP caps
   at 7 days. Re-sending on every full load turns it into an HTTP cookie with a fresh `Max-Age`.
-  JS saves that need to bypass the cap outright (the chip's **Save these**) go through the server
-  instead.
-- **Borrowed views.** When the view differs from a saved cookie (`isBorrowedView`), the search
-  form gets `data-borrowed` and a _Not your saved settings [Save these] [Use mine]_ chip. While it's
-  set, JS changes update the view but aren't saved, so tweaking a shared link doesn't silently adopt
-  the sender's settings. The chip retires once the view matches the cookie again. Scoped views get
-  `data-scoped` and never save.
+- **Guest mode.** When the URL's settings differ from a saved cookie (`isGuestView`), the page
+  shows them **read-only**: the tray says _Viewing this link's settings · Return to my settings_,
+  the dictionary and inflection controls are `disabled`, and No-JS Apply is hidden. So there's
+  never a question of whether a change on someone else's link saves. Guest mode is sticky: hidden
+  `d` / `o` fields (and, with JS, the adopted state) carry the link's settings into new searches
+  until the user follows **Return**, a plain link to the page without settings params. Users with
+  no saved settings never see it. This also catches a No-JS user who changes settings and presses
+  Enter instead of Apply; the result is the same, since nothing was saved.
+- **Scoped views** (reader iframe, `lang=`) get `data-scoped` on the form and never save, from
+  either side.

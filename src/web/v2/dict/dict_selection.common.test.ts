@@ -7,7 +7,7 @@ import {
   parseDictsFromCookie,
   DICT_COOKIE_NAME,
   INFLECTED_COOKIE_NAME,
-  isBorrowedView,
+  isGuestView,
 } from "@/web/v2/dict/dict_selection.common";
 
 describe("dict_selection.common", () => {
@@ -151,40 +151,38 @@ describe("dict_selection.common", () => {
     });
   });
 
-  describe("isBorrowedView", () => {
+  describe("isGuestView", () => {
     const LS_GAF = { dictKeys: ["L&S", "GAF"], isInflected: true };
 
-    test("is never borrowed without saved preferences", () => {
-      expect(isBorrowedView(LS_GAF, undefined)).toBe(false);
-      expect(isBorrowedView(LS_GAF, "other=1")).toBe(false);
+    test("is never a guest without saved preferences", () => {
+      expect(isGuestView(LS_GAF, undefined)).toBe(false);
+      expect(isGuestView(LS_GAF, "other=1")).toBe(false);
     });
 
     test("compares the dictionary set, ignoring order", () => {
-      expect(isBorrowedView(LS_GAF, "morcus_d=3")).toBe(false);
+      expect(isGuestView(LS_GAF, "morcus_d=3")).toBe(false);
       expect(
-        isBorrowedView({ ...LS_GAF, dictKeys: ["GAF", "L&S"] }, "morcus_d=3")
+        isGuestView({ ...LS_GAF, dictKeys: ["GAF", "L&S"] }, "morcus_d=3")
       ).toBe(false);
-      expect(isBorrowedView(LS_GAF, "morcus_d=1")).toBe(true);
-      expect(isBorrowedView(LS_GAF, "morcus_d=7")).toBe(true);
+      expect(isGuestView(LS_GAF, "morcus_d=1")).toBe(true);
+      expect(isGuestView(LS_GAF, "morcus_d=7")).toBe(true);
     });
 
     test("compares inflection only when it is saved", () => {
       const exact = { ...LS_GAF, isInflected: false };
-      expect(isBorrowedView(exact, "morcus_inflected=0")).toBe(false);
-      expect(isBorrowedView(exact, "morcus_inflected=1")).toBe(true);
+      expect(isGuestView(exact, "morcus_inflected=0")).toBe(false);
+      expect(isGuestView(exact, "morcus_inflected=1")).toBe(true);
       // An unsaved inflection preference can't be diverged from.
-      expect(isBorrowedView(exact, "morcus_d=3")).toBe(false);
+      expect(isGuestView(exact, "morcus_d=3")).toBe(false);
     });
 
     test("either mismatch is enough", () => {
-      expect(isBorrowedView(LS_GAF, "morcus_d=3; morcus_inflected=0")).toBe(
-        true
-      );
+      expect(isGuestView(LS_GAF, "morcus_d=3; morcus_inflected=0")).toBe(true);
     });
 
     test("ignores invalid cookie values", () => {
-      expect(isBorrowedView(LS_GAF, "morcus_d=L%26S")).toBe(false);
-      expect(isBorrowedView(LS_GAF, "morcus_inflected=yes")).toBe(false);
+      expect(isGuestView(LS_GAF, "morcus_d=L%26S")).toBe(false);
+      expect(isGuestView(LS_GAF, "morcus_inflected=yes")).toBe(false);
     });
   });
 });

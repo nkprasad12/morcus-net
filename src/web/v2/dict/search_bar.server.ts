@@ -23,10 +23,11 @@ export interface SearchBarOptions {
   isInflected?: boolean;
   extraHiddenInputs?: Record<string, string>;
   /**
-   * Set when the rendered settings disagree with the user's saved ones (`isBorrowedView`). Shows
-   * the borrowed-view chip; `useMineHref` is the same page without settings params.
+   * Guest mode: the page shows a link's settings, which differ from the user's saved ones
+   * (`isGuestView`). The settings are read-only and the tray offers a way back; `returnHref` is
+   * the same page without settings params.
    */
-  borrowed?: { useMineHref: string };
+  guest?: { returnHref: string };
   /**
    * A scoped view (reader iframe, `lang=` filter) shows a narrowed selection that must never be
    * saved. Published as `data-scoped` so the client skips persistence too.
@@ -54,6 +55,17 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   const langChipsHtml = renderLangChipsHtml(activeLangs);
   const inflectChipHtml = renderInflectChipHtml(isInflected);
 
+  // Guest mode locks the content settings. Disabled controls aren't submitted, so the link's
+  // settings ride along as hidden `d` / `o` fields instead: a new search keeps them (guest mode is
+  // sticky until the user returns to their own settings), with or without JS.
+  const guest = options.guest;
+  const disabledAttr = guest ? "disabled" : "";
+  const returnLinkHtml = guest
+    ? `<a class="guest-return" href="${he.escape(
+        guest.returnHref
+      )}">Return to my settings</a>`
+    : "";
+
   const dictItemsHtml = LatinDict.AVAILABLE.map((d) => {
     const isChecked = activeDictKeys.has(d.key);
     const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
@@ -68,6 +80,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           class="dict-checkbox"
           data-key="${he.escape(d.key)}"
           ${isChecked ? "checked" : ""}
+          ${disabledAttr}
         />
         <span class="dict-name">${he.escape(d.displayName)}</span>
         <span class="dict-lang">${langText}</span>
@@ -94,6 +107,11 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           </summary>
 
           <div class="settings-popover">
+            ${
+              guest
+                ? `<p class="settings-guest-note">These are the link's settings. ${returnLinkHtml} to change them.</p>`
+                : ""
+            }
             <div class="settings-slider-section" data-js-only>
               <div class="settings-header">
                 <span class="settings-title">Highlight Strength</span>
@@ -124,7 +142,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
 
             <div class="settings-inflected-section">
               <div class="settings-section-title">Search Scope</div>
-              <input type="hidden" name="o" value="0" />
+              ${guest ? "" : `<input type="hidden" name="o" value="0" />`}
               <label class="dict-item" title="Search conjugated verbs and declined nouns/adjectives">
                 <input
                   type="checkbox"
@@ -133,6 +151,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
                   id="toggle-inflected"
                   class="inflected-checkbox"
                   ${isInflected ? "checked" : ""}
+                  ${disabledAttr}
                 />
                 <span class="dict-name">Latin inflected forms</span>
               </label>
@@ -146,25 +165,25 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
               ${dictItemsHtml}
             </div>
             
-            <div class="settings-noscript-actions" data-nojs-only>
+            ${
+              guest
+                ? ""
+                : `<div class="settings-noscript-actions" data-nojs-only>
               <button type="submit" name="${SAVE_PARAM}" value="1" class="btn btn-secondary settings-apply-btn">Apply Selection</button>
-            </div>
+            </div>`
+            }
           </div>
         </details>
       </morcus-dict-settings>
     `.trim()
     : "";
 
-  // Save these is another `name="save"` submitter. It lives in the tray, after `.search-btn`, so
-  // the Enter rule above still holds. Use mine is a plain link to the page without settings params.
-  const borrowedChipHtml = options.borrowed
+  // A plain link, so returning works without JS.
+  const guestChipHtml = guest
     ? `
-          <span class="borrowed-chip" role="status">
-            <span class="borrowed-chip-text">Not your saved settings</span>
-            <button type="submit" name="${SAVE_PARAM}" value="1" class="borrowed-chip-btn borrowed-save-btn">Save these</button>
-            <a class="borrowed-chip-btn borrowed-use-mine" href="${he.escape(
-              options.borrowed.useMineHref
-            )}">Use mine</a>
+          <span class="guest-chip" role="status">
+            <span class="guest-chip-text">Viewing this link's settings</span>
+            ${returnLinkHtml}
           </span>`
     : "";
 
@@ -178,7 +197,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           </div>
           <span class="tray-dot" aria-hidden="true">•</span>
           <span class="tray-label">Inflection</span>
-          ${inflectChipHtml}${borrowedChipHtml}
+          ${inflectChipHtml}${guestChipHtml}
         </div>
         <div class="search-tray-right">
           ${settingsHtml}
@@ -201,17 +220,19 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   // The settings popover renders live `dict` checkboxes, which are the real form controls.
   // A static bitmask submitted alongside them can only ever be stale in No-JS mode, where nothing
   // updates it. When the popover is omitted the form has no other carrier of dictionary state,
-  // so the hidden field is kept there.
-  const dictStateInputHtml = includeSettings
-    ? ""
-    : `<input type="hidden" name="d" value="${he.escape(dictBitmask)}" />`;
+  // so the hidden field is kept there. Guest mode disables the controls, so it needs both fields.
+  const dictStateInputHtml =
+    guest || !includeSettings
+      ? `<input type="hidden" name="d" value="${he.escape(dictBitmask)}" />`
+      : "";
+  const inflectionStateInputHtml = guest
+    ? `<input type="hidden" name="o" value="${isInflected ? "1" : "0"}" />`
+    : "";
 
   // `data-d` / `data-o` publish the selection the server resolved for this render. The client
   // adopts them (`readRenderedDictState`) instead of re-deriving state from the URL or storage.
-  // `data-borrowed` / `data-scoped` tell it when *not* to save changes (`dict_preferences.client`).
-  const persistenceAttrs =
-    (options.borrowed ? " data-borrowed" : "") +
-    (options.scoped ? " data-scoped" : "");
+  // `data-scoped` tells it not to save changes (`dict_preferences.client`).
+  const persistenceAttrs = options.scoped ? " data-scoped" : "";
   return `
     <form class="search-form" action="${he.escape(
       options.action
@@ -219,6 +240,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     isInflected ? "1" : "0"
   }"${persistenceAttrs}>
       ${dictStateInputHtml}
+      ${inflectionStateInputHtml}
       ${hiddenInputsHtml}
       <div class="input-wrapper">
         <input

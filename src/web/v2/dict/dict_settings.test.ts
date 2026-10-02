@@ -312,7 +312,7 @@ describe("MorcusDictSettings", () => {
   });
 });
 
-describe("MorcusDictSettings persistence in scoped and borrowed views", () => {
+describe("MorcusDictSettings in scoped and guest views", () => {
   function clearCookies() {
     for (const name of ["morcus_d", "morcus_inflected"]) {
       document.cookie = `${name}=; Max-Age=0; Path=/`;
@@ -369,33 +369,23 @@ describe("MorcusDictSettings persistence in scoped and borrowed views", () => {
     expect(document.cookie).not.toContain("morcus_inflected=");
   });
 
-  test("a borrowed view defers saving while it still differs from the cookie", () => {
+  test("guest mode's locked controls stay locked and unchanged after upgrade", () => {
     document.cookie = "morcus_d=1; Path=/"; // L&S only
     const form = mountForm({
       activeDicts: ["GAF"],
-      borrowed: { useMineHref: "/v2/dicts?q=amo" },
+      guest: { returnHref: "/v2/dicts?q=amo" },
     });
 
-    setChecked(form, "FOR", true);
-
+    const controls = Array.from(
+      form.querySelectorAll<HTMLInputElement>(
+        ".dict-checkbox, #toggle-inflected"
+      )
+    );
+    expect(controls.every((c) => c.disabled)).toBe(true);
+    const checked = controls
+      .filter((c) => c.classList.contains("dict-checkbox") && c.checked)
+      .map((c) => c.dataset.key);
+    expect(checked).toEqual(["GAF"]);
     expect(document.cookie).toContain("morcus_d=1");
-    expect(form.hasAttribute("data-borrowed")).toBe(true);
-    expect(form.querySelector(".borrowed-chip")).not.toBeNull();
-  });
-
-  test("the chip retires once the view matches the cookie, and later changes save", () => {
-    document.cookie = "morcus_d=1; Path=/"; // L&S only
-    const form = mountForm({
-      activeDicts: ["L&S", "GAF"],
-      borrowed: { useMineHref: "/v2/dicts?q=amo" },
-    });
-
-    setChecked(form, "GAF", false); // now L&S only: matches the cookie
-    expect(form.hasAttribute("data-borrowed")).toBe(false);
-    expect(form.querySelector(".borrowed-chip")).toBeNull();
-    expect(document.cookie).toContain("morcus_d=1");
-
-    setChecked(form, "FOR", true); // L&S + FOR = 1 + 8
-    expect(document.cookie).toContain("morcus_d=9");
   });
 });

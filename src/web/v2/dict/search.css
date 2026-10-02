@@ -236,8 +236,8 @@
   border-color: transparent;
 }
 
-/* Borrowed-view chip: the view isn't the user's saved settings (e.g. a shared link) */
-.borrowed-chip {
+/* Guest mode: the page shows a link's settings, read-only */
+.guest-chip {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
@@ -250,23 +250,35 @@
   line-height: 1;
 }
 
-.borrowed-chip-btn {
-  display: inline-flex;
-  align-items: center;
-  font: inherit;
+.guest-return {
   font-weight: 600;
-  line-height: 1;
-  padding: var(--space-1) var(--space-2);
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
   color: var(--primary);
-  cursor: pointer;
   text-decoration: none;
 }
 
-.borrowed-chip-btn:hover,
-.borrowed-chip-btn:focus-visible {
-  background-color: var(--card-header-bg, rgba(0, 0, 0, 0.06));
+.guest-return:hover,
+.guest-return:focus-visible {
   text-decoration: underline;
+}
+
+.guest-chip .guest-return {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.guest-chip .guest-return:hover,
+.guest-chip .guest-return:focus-visible {
+  background-color: var(--card-header-bg, rgba(0, 0, 0, 0.06));
+}
+
+.settings-guest-note {
+  margin: 0 0 var(--space-3);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.dict-item input:disabled,
+.dict-item input:disabled ~ span {
+  cursor: not-allowed;
+  opacity: 0.6;
 }

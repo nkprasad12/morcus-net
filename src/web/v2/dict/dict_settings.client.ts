@@ -228,12 +228,9 @@ export class MorcusDictSettings extends BaseElement {
     this.emit("dict-inflected-change", { isInflected: this.isInflected });
   }
 
-  /** Scoped and borrowed views don't save changes; see `mayPersistDictChange`. */
+  /** Scoped views don't save changes; see `mayPersistDictChange`. */
   private mayPersist(): boolean {
-    return mayPersistDictChange(this.closest("form"), {
-      dictKeys: Array.from(this.activeDictKeys),
-      isInflected: this.isInflected,
-    });
+    return mayPersistDictChange(this.closest("form"));
   }
 
   private closeSettingsPopover() {
