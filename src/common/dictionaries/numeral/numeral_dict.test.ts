@@ -34,6 +34,11 @@ describe("NumeralDict", () => {
       const result = await numeralDict.getEntry("not a numeral");
       expect(result).toHaveLength(0);
     });
+
+    it("should not treat Latin words made of numeral letters as numerals", async () => {
+      expect(await numeralDict.getEntry("id")).toHaveLength(0);
+      expect(await numeralDict.getEntry("dixi")).toHaveLength(0);
+    });
   });
 
   describe("getEntryById", () => {
