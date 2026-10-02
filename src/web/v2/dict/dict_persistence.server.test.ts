@@ -1,4 +1,7 @@
-import { planDictPersistence } from "@/web/v2/dict/dict_persistence.server";
+import {
+  ownSettingsHref,
+  planDictPersistence,
+} from "@/web/v2/dict/dict_persistence.server";
 
 const BASE = {
   cookieHeader: undefined,
@@ -141,5 +144,20 @@ describe("planDictPersistence", () => {
       });
       expect(plan).toEqual({ cookies: [] });
     });
+  });
+});
+
+describe("ownSettingsHref", () => {
+  test("drops every settings parameter and keeps the rest", () => {
+    expect(
+      ownSettingsHref(
+        "/v2/dicts?q=amo&d=2&dict=GAF&in=ls&o=0&o=1&save=1&embedded=1&scale=90"
+      )
+    ).toBe("/v2/dicts?q=amo&embedded=1&scale=90");
+  });
+
+  test("works on a URL with nothing to drop", () => {
+    expect(ownSettingsHref("/v2/dicts?q=amo")).toBe("/v2/dicts?q=amo");
+    expect(ownSettingsHref("/v2/dicts")).toBe("/v2/dicts");
   });
 });

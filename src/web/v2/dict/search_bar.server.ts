@@ -22,6 +22,16 @@ export interface SearchBarOptions {
   activeDicts?: string[];
   isInflected?: boolean;
   extraHiddenInputs?: Record<string, string>;
+  /**
+   * Set when the rendered settings disagree with the user's saved ones (`isBorrowedView`). Shows
+   * the borrowed-view chip; `useMineHref` is the same page without settings params.
+   */
+  borrowed?: { useMineHref: string };
+  /**
+   * A scoped view (reader iframe, `lang=` filter) shows a narrowed selection that must never be
+   * saved. Published as `data-scoped` so the client skips persistence too.
+   */
+  scoped?: boolean;
 }
 
 /**
@@ -145,6 +155,19 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     `.trim()
     : "";
 
+  // Save these is another `name="save"` submitter. It lives in the tray, after `.search-btn`, so
+  // the Enter rule above still holds. Use mine is a plain link to the page without settings params.
+  const borrowedChipHtml = options.borrowed
+    ? `
+          <span class="borrowed-chip" role="status">
+            <span class="borrowed-chip-text">Not your saved settings</span>
+            <button type="submit" name="${SAVE_PARAM}" value="1" class="borrowed-chip-btn borrowed-save-btn">Save these</button>
+            <a class="borrowed-chip-btn borrowed-use-mine" href="${he.escape(
+              options.borrowed.useMineHref
+            )}">Use mine</a>
+          </span>`
+    : "";
+
   const trayHtml = includeSettings
     ? `
       <div class="search-tray">
@@ -155,7 +178,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           </div>
           <span class="tray-dot" aria-hidden="true">•</span>
           <span class="tray-label">Inflection</span>
-          ${inflectChipHtml}
+          ${inflectChipHtml}${borrowedChipHtml}
         </div>
         <div class="search-tray-right">
           ${settingsHtml}
@@ -185,12 +208,16 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
 
   // `data-d` / `data-o` publish the selection the server resolved for this render. The client
   // adopts them (`readRenderedDictState`) instead of re-deriving state from the URL or storage.
+  // `data-borrowed` / `data-scoped` tell it when *not* to save changes (`dict_preferences.client`).
+  const persistenceAttrs =
+    (options.borrowed ? " data-borrowed" : "") +
+    (options.scoped ? " data-scoped" : "");
   return `
     <form class="search-form" action="${he.escape(
       options.action
     )}" method="GET" data-d="${he.escape(dictBitmask)}" data-o="${
     isInflected ? "1" : "0"
-  }">
+  }"${persistenceAttrs}>
       ${dictStateInputHtml}
       ${hiddenInputsHtml}
       <div class="input-wrapper">

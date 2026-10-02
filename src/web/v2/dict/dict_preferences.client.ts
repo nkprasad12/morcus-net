@@ -6,6 +6,8 @@ import {
   DEFAULT_DICT_KEYS,
   formatDictsCookie,
   formatInflectedCookie,
+  isBorrowedView,
+  type DictViewState,
 } from "@/web/v2/dict/dict_selection.common";
 
 /**
@@ -48,4 +50,30 @@ export function persistDictKeys(dictKeys: string[]): void {
 /** Saves the inflection mode as the user's durable preference. */
 export function persistInflected(isInflected: boolean): void {
   document.cookie = formatInflectedCookie(isInflected);
+}
+
+/**
+ * Whether a settings change made in `form` may be saved. The server marks the form:
+ *
+ * - `data-scoped` (reader iframe, `lang=` filter): the selection is narrowed for this view, so
+ *   changes are never saved.
+ * - `data-borrowed` (the view isn't the user's saved settings, e.g. a shared link): changes update
+ *   the view but aren't saved, since that would silently adopt the borrowed selection. The chip's
+ *   **Save these** saves explicitly. Once `view` matches the saved cookies again there's nothing
+ *   borrowed left, so the chip is removed and later changes save as usual.
+ *
+ * A change outside any search form (there is none today) is saved.
+ */
+export function mayPersistDictChange(
+  form: HTMLFormElement | null,
+  view: DictViewState
+): boolean {
+  if (form === null) return true;
+  if (form.hasAttribute("data-scoped")) return false;
+  if (form.hasAttribute("data-borrowed")) {
+    if (isBorrowedView(view, document.cookie)) return false;
+    form.removeAttribute("data-borrowed");
+    form.querySelector(".borrowed-chip")?.remove();
+  }
+  return true;
 }

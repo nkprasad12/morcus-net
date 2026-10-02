@@ -307,6 +307,30 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     }
   });
 
+  test("lets a save submitter through natively, but still hijacks plain searches", () => {
+    const el = createDictSearch();
+    const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+    const saveBtn = document.createElement("button");
+    saveBtn.type = "submit";
+    saveBtn.name = "save";
+    saveBtn.value = "1";
+    form.appendChild(saveBtn);
+
+    // JSDOM's submit events carry no `submitter`, so attach one as a browser would.
+    const saveSubmit = new Event("submit", { bubbles: true, cancelable: true });
+    Object.defineProperty(saveSubmit, "submitter", { value: saveBtn });
+    form.dispatchEvent(saveSubmit);
+    expect(saveSubmit.defaultPrevented).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const plainSubmit = new Event("submit", {
+      bubbles: true,
+      cancelable: true,
+    });
+    form.dispatchEvent(plainSubmit);
+    expect(plainSubmit.defaultPrevented).toBe(true);
+  });
+
   test("sanitizes query by trimming quotes, punctuation, and whitespace on form submission", () => {
     const el = createDictSearch();
     const form = el.querySelector<HTMLFormElement>("form.search-form")!;

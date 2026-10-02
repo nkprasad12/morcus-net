@@ -242,6 +242,32 @@ describe("v2_router integration", () => {
       expect(cookies).not.toContain("morcus_inflected=0");
     });
 
+    test("a shared link that differs from the recipient's settings shows the borrowed chip", async () => {
+      const res = await request(app)
+        .get("/v2/dicts?q=amo&d=2&o=0")
+        .set("Cookie", "morcus_d=1; morcus_inflected=1");
+      expect(res.status).toBe(200);
+      expect(res.text).toMatch(/<form class="search-form"[^>]* data-borrowed>/);
+      expect(res.text).toContain("Not your saved settings");
+      // Use mine drops the settings params so the recipient's cookies apply.
+      expect(res.text).toContain('href="/v2/dicts?q=amo">Use mine</a>');
+    });
+
+    test("no borrowed chip when the link matches the user's settings", async () => {
+      const res = await request(app)
+        .get("/v2/dicts?q=amo&d=1&o=1")
+        .set("Cookie", "morcus_d=1; morcus_inflected=1");
+      expect(res.status).toBe(200);
+      expect(res.text).not.toContain("data-borrowed");
+      expect(res.text).not.toContain("borrowed-chip");
+    });
+
+    test("no borrowed chip without saved preferences", async () => {
+      const res = await request(app).get("/v2/dicts?q=amo&d=2&o=0");
+      expect(res.status).toBe(200);
+      expect(res.text).not.toContain("borrowed-chip");
+    });
+
     test("honours repeated dict checkboxes", async () => {
       const res = await request(app).get("/v2/dicts?q=amo&dict=L%26S&dict=GRG");
       expect(res.status).toBe(200);
@@ -341,6 +367,15 @@ describe("v2_router integration", () => {
       .set("Cookie", "morcus_d=1; morcus_inflected=1");
     expect(res.status).toBe(200);
     expect(res.header["set-cookie"]).toBeUndefined();
+  });
+
+  test("GET /v2/dicts marks embedded views scoped and never shows the borrowed chip", async () => {
+    const res = await request(app)
+      .get("/v2/dicts?q=arma&embedded=1&d=2")
+      .set("Cookie", "morcus_d=1");
+    expect(res.status).toBe(200);
+    expect(res.text).toMatch(/<form class="search-form"[^>]* data-scoped>/);
+    expect(res.text).not.toContain("borrowed-chip");
   });
 
   test("GET /v2/dicts never persists from an iframe detected by Sec-Fetch-Dest", async () => {

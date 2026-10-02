@@ -142,6 +142,39 @@ export function resolveInflection(
   return oParam ?? readCookie(cookieHeader, INFLECTED_COOKIE_NAME) !== "0";
 }
 
+/** The dictionary content settings a page is showing. */
+export interface DictViewState {
+  readonly dictKeys: readonly string[];
+  readonly isInflected: boolean;
+}
+
+/**
+ * Whether the view disagrees with a preference the user has actually saved: it is "borrowed",
+ * typically from a shared link (or from a No-JS search that wasn't Applied). Each setting is
+ * compared only when its cookie holds a valid value, so a user with no saved preferences never
+ * sees a borrowed view: there's nothing of theirs to diverge from.
+ *
+ * Isomorphic on purpose. The server uses it to render the chip; the client re-checks it against
+ * `document.cookie` after each change so the chip disappears as soon as the view matches again.
+ */
+export function isBorrowedView(
+  view: DictViewState,
+  cookieHeader: string | undefined | null
+): boolean {
+  const savedDicts = parseDictsFromCookie(cookieHeader);
+  if (savedDicts !== null) {
+    const shown = new Set(view.dictKeys);
+    const sameSet =
+      savedDicts.length === shown.size && savedDicts.every((k) => shown.has(k));
+    if (!sameSet) return true;
+  }
+  const savedInflected = readCookie(cookieHeader, INFLECTED_COOKIE_NAME);
+  if (savedInflected === "0" || savedInflected === "1") {
+    if ((savedInflected === "1") !== view.isInflected) return true;
+  }
+  return false;
+}
+
 export interface DictParamsInput {
   /** Explicit keys from `?dict=`, i.e. the No-JS form checkboxes. Highest precedence. */
   dictParam?: string | string[] | null;

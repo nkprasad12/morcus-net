@@ -235,3 +235,38 @@
   background-color: var(--app-bar-bg);
   border-color: transparent;
 }
+
+/* Borrowed-view chip: the view isn't the user's saved settings (e.g. a shared link) */
+.borrowed-chip {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.borrowed-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.borrowed-chip-btn:hover,
+.borrowed-chip-btn:focus-visible {
+  background-color: var(--card-header-bg, rgba(0, 0, 0, 0.06));
+  text-decoration: underline;
+}
