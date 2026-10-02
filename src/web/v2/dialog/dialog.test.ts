@@ -12,14 +12,15 @@ describe("dialog server utilities", () => {
         bodyHtml: "<p>Dialog body content</p>",
       });
 
-      expect(html).toContain('<dialog id="test-dialog" class="dialog"');
+      expect(html).toContain('id="test-dialog"');
+      expect(html).toContain('class="dialog"');
       expect(html).toContain('aria-labelledby="test-dialog-title"');
       expect(html).toContain(
         '<h2 id="test-dialog-title" class="dialog-title">Test Title</h2>'
       );
-      expect(html).toContain(
-        '<button type="button" class="dialog-close-btn" aria-label="Close dialog" data-dialog-close>'
-      );
+      expect(html).toContain('class="dialog-close-btn"');
+      expect(html).toContain('aria-label="Close dialog"');
+      expect(html).toContain("data-dialog-close");
       expect(html).toContain('class="dialog-close-icon"');
       expect(html).toContain("<p>Dialog body content</p>");
     });

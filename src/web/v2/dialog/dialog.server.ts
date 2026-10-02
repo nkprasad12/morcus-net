@@ -1,4 +1,4 @@
-import * as he from "he";
+import { html, raw, type SafeHtml } from "@/web/v2/core/html.common";
 
 export interface DialogOptions {
   id: string;
@@ -13,7 +13,7 @@ export interface DialogOptions {
 /**
  * Renders a standard accessible HTML5 <dialog> wrapper.
  */
-export function renderDialog(options: DialogOptions): string {
+export function renderDialog(options: DialogOptions): SafeHtml {
   const {
     id,
     title,
@@ -26,35 +26,52 @@ export function renderDialog(options: DialogOptions): string {
 
   const titleId = `${id}-title`;
   const describedByAttr = ariaDescribedBy
-    ? ` aria-describedby="${he.escape(ariaDescribedBy)}"`
+    ? html` aria-describedby="${ariaDescribedBy}"`
     : "";
 
   const closeButtonHtml = hideCloseButton
     ? ""
-    : `<button type="button" class="dialog-close-btn" aria-label="Close dialog" data-dialog-close><svg class="dialog-close-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>`;
+    : html`<button
+        type="button"
+        class="dialog-close-btn"
+        aria-label="Close dialog"
+        data-dialog-close>
+        <svg
+          class="dialog-close-icon"
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>`;
 
   const actionsContainerHtml = actionsHtml
-    ? `<div class="dialog-actions">${actionsHtml}</div>`
+    ? html`<div class="dialog-actions">${raw(actionsHtml)}</div>`
     : "";
 
   const classes = ["dialog", customClass].filter(Boolean).join(" ");
 
-  return `
-    <dialog id="${he.escape(id)}" class="${he.escape(
-    classes
-  )}" aria-labelledby="${titleId}"${describedByAttr}>
-      <div class="dialog-card">
-        <div class="dialog-header">
-          <h2 id="${titleId}" class="dialog-title">${he.escape(title)}</h2>
-          ${closeButtonHtml}
-        </div>
-        <div class="dialog-body">
-          ${bodyHtml}
-        </div>
-        ${actionsContainerHtml}
+  return html`<dialog
+    id="${id}"
+    class="${classes}"
+    aria-labelledby="${titleId}"
+    ${raw(describedByAttr)}>
+    <div class="dialog-card">
+      <div class="dialog-header">
+        <h2 id="${titleId}" class="dialog-title">${title}</h2>
+        ${raw(closeButtonHtml)}
       </div>
-    </dialog>
-  `.trim();
+      <div class="dialog-body">${raw(bodyHtml)}</div>
+      ${raw(actionsContainerHtml)}
+    </div>
+  </dialog>`;
 }
 
 export interface ReportIssueDialogOptions {
@@ -70,7 +87,7 @@ export const DEFAULT_REPORT_TEXT = "";
  */
 export function renderReportIssueDialog(
   options: ReportIssueDialogOptions = {}
-): string {
+): SafeHtml {
   const dialogId = options.id ?? "report-issue-dialog";
   const descId = `${dialogId}-desc`;
   const textareaId = `${dialogId}-textarea`;
@@ -78,18 +95,26 @@ export function renderReportIssueDialog(
   const defaultText = options.defaultText ?? DEFAULT_REPORT_TEXT;
   const defaultReporter = options.defaultReporter ?? "";
 
-  const escapedText = he.escape(defaultText);
-  const escapedReporter = he.escape(defaultReporter);
-
-  const bodyHtml = `
-    <div id="${descId}" class="report-notice">
-      <svg class="report-notice-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  const bodyHtml = html`<div id="${descId}" class="report-notice">
+      <svg
+        class="report-notice-icon"
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="12" y1="16" x2="12" y2="12"></line>
         <line x1="12" y1="8" x2="12.01" y2="8"></line>
       </svg>
       <div class="report-notice-text">
-        <strong>This report will be visible to the general public</strong> on our GitHub issue tracker. Please do not submit private or sensitive information.
+        <strong>This report will be visible to the general public</strong> on
+        our GitHub issue tracker. Please do not submit private or sensitive
+        information.
       </div>
     </div>
     <form class="report-form">
@@ -103,8 +128,9 @@ export function renderReportIssueDialog(
           class="textarea report-textarea"
           rows="5"
           required
-          placeholder="Describe what you noticed or would like to suggest..."
-        >${escapedText}</textarea>
+          placeholder="Describe what you noticed or would like to suggest...">
+${defaultText}</textarea
+        >
       </div>
       <div class="form-group">
         <label for="${reporterId}" class="form-label">
@@ -116,21 +142,23 @@ export function renderReportIssueDialog(
           name="reporter"
           class="input report-reporter"
           placeholder="Name, GitHub handle, or email"
-          value="${escapedReporter}"
-          autocomplete="name"
-        />
-        <span class="form-hint">Only needed if you want updates or clarification on GitHub.</span>
+          value="${defaultReporter}"
+          autocomplete="name" />
+        <span class="form-hint"
+          >Only needed if you want updates or clarification on GitHub.</span
+        >
       </div>
       <div class="report-status" aria-live="polite"></div>
       <div class="dialog-actions">
-        <button type="button" class="btn btn-secondary" data-dialog-close>Cancel</button>
+        <button type="button" class="btn btn-secondary" data-dialog-close>
+          Cancel
+        </button>
         <button type="submit" class="btn btn-primary report-submit-btn">
           <span class="report-submit-spinner" aria-hidden="true"></span>
           <span class="report-submit-text"><strong>Submit</strong></span>
         </button>
       </div>
-    </form>
-  `.trim();
+    </form>`;
 
   return renderDialog({
     id: dialogId,
