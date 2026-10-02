@@ -139,4 +139,24 @@ describe("renderDictSearchBar", () => {
 
     expect(html).not.toContain('class="search-tray"');
   });
+
+  test("the Apply button is a named save submitter", () => {
+    const html = renderDictSearchBar({ query: "amo", action: "/v2/dicts" });
+    expect(html).toMatch(
+      /<button type="submit" name="save" value="1" class="[^"]*settings-apply-btn/
+    );
+  });
+
+  test("the search button is the form's first submit button, so Enter never saves", () => {
+    // Implicit submission (Enter in the input) uses the FIRST submit button in tree order. If a
+    // `name="save"` button ever came first, every Enter would silently persist the selection.
+    const html = renderDictSearchBar({ query: "amo", action: "/v2/dicts" });
+    const submitButtons = Array.from(
+      html.matchAll(/<button\b[^>]*type="submit"[^>]*>/g),
+      (m) => m[0]
+    );
+    expect(submitButtons.length).toBeGreaterThan(1);
+    expect(submitButtons[0]).toContain('class="search-btn"');
+    expect(submitButtons[0]).not.toContain("name=");
+  });
 });

@@ -154,10 +154,22 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       cb.checked = cb.value === "GAF" || cb.value === "GRG";
     }
 
-    const step1Url = serializeGetForm(form1);
-    const res2 = await request(app).get(step1Url);
+    const step1Url = serializeGetForm(
+      form1,
+      form1.querySelector<HTMLElement>(".settings-apply-btn")
+    );
+    expect(step1Url).toContain("save=1");
+    const applyRes = await request(app).get(step1Url);
+    // Apply persists, then redirects to the same view without the marker.
+    expect(applyRes.status).toBe(303);
+    Object.assign(cookies, extractCookies(applyRes.header["set-cookie"]));
+    const redirectTarget = applyRes.header["location"];
+    expect(redirectTarget).not.toContain("save=");
+
+    const res2 = await request(app)
+      .get(redirectTarget)
+      .set("Cookie", formatCookieHeader(cookies));
     expect(res2.status).toBe(200);
-    Object.assign(cookies, extractCookies(res2.header["set-cookie"]));
 
     expect(mockGetEntry).toHaveBeenLastCalledWith({
       query: "amo",
@@ -239,6 +251,18 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       form5.querySelector<HTMLInputElement>("#toggle-inflected")!;
     expect(inflectCb5.checked).toBe(false);
     expect(getCheckedDictKeys(document.body)).toEqual(["GAF", "GRG"]);
+
+    // --- Step 4b: That was a plain search (Enter), not Apply, so it was not saved ---
+    expect(cookies["morcus_inflected"]).not.toBe("0");
+    const res5b = await request(app)
+      .get("/v2/dicts?q=rex")
+      .set("Cookie", formatCookieHeader(cookies));
+    expect(res5b.status).toBe(200);
+    expect(mockGetEntry).toHaveBeenLastCalledWith({
+      query: "rex",
+      dicts: ["GAF", "GRG"],
+      mode: 1,
+    });
 
     // --- Step 5: Toggle inflection back ON (`o=0` hidden + `o=1` checkbox repeated key) ---
     inflectCb5.checked = true;

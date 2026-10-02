@@ -744,6 +744,19 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
 
+    // Apply is an explicit save: the server set the cookie, then redirected the `save` marker
+    // away so the address bar can't carry it into a shared link.
+    await expect(page).not.toHaveURL(/save=/);
+    const saved = (await context.cookies()).find((c) => c.name === "morcus_d");
+    expect(saved?.value).toBe("1"); // L&S
+
+    // Opening a link with a different selection shows it but does not overwrite the cookie.
+    await page.goto("/v2/dicts?q=habeo&d=2");
+    await expect(page.locator('.dict-checkbox[value="GAF"]')).toBeChecked();
+    await expect(page.locator('.dict-checkbox[value="L&S"]')).not.toBeChecked();
+    const after = (await context.cookies()).find((c) => c.name === "morcus_d");
+    expect(after?.value).toBe("1");
+
     await context.close();
   });
 

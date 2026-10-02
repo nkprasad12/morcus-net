@@ -14,6 +14,12 @@ import { formatCookie, readCookie } from "@/web/v2/core/cookies.common";
 export const DICT_COOKIE_NAME = "morcus_d";
 export const INFLECTED_COOKIE_NAME = "morcus_inflected";
 
+/**
+ * The query parameter (and submit button `name`) marking an explicit "save these as my
+ * preferences". Only the server acts on it; see `dict_persistence.server.ts`.
+ */
+export const SAVE_PARAM = "save";
+
 /** Default dictionary selection: all available Latin dictionaries except Pozo (matches V1 default). */
 export const DEFAULT_DICTS: LatinDictInfo[] = LatinDict.AVAILABLE.filter(
   (d) => d !== LatinDict.Pozo

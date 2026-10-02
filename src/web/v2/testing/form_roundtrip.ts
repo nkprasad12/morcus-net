@@ -28,25 +28,35 @@ function serializeFormBody(
   form: HTMLFormElement,
   submitter?: HTMLElement | null
 ): string {
-  const formData = submitter
-    ? new FormData(form, submitter)
-    : new FormData(form);
   const params = new URLSearchParams();
-  formData.forEach((value, key) => {
+  new FormData(form).forEach((value, key) => {
     if (typeof value === "string") {
       params.append(key, value);
     }
   });
+  // Browsers include a named submitter's `name=value`. JSDOM's `FormData` ignores its
+  // `submitter` argument, so add it explicitly.
+  if (
+    (submitter instanceof HTMLButtonElement ||
+      submitter instanceof HTMLInputElement) &&
+    submitter.name
+  ) {
+    params.append(submitter.name, submitter.value);
+  }
   return params.toString();
 }
 
 /**
  * Serializes a `<form>` in JSDOM into a GET request URL using `new FormData(form)`,
  * matching native browser form submission (including hidden inputs and repeated keys).
+ * Pass the clicked `submitter` to include a named submit button's `name=value`, as browsers do.
  */
-export function serializeGetForm(form: HTMLFormElement): string {
+export function serializeGetForm(
+  form: HTMLFormElement,
+  submitter?: HTMLElement | null
+): string {
   const action = formAction(form);
-  const qs = serializeFormBody(form);
+  const qs = serializeFormBody(form, submitter);
   return qs ? `${action}?${qs}` : action;
 }
 
