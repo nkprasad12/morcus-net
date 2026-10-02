@@ -1,9 +1,11 @@
-import * as he from "he";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
+import {
+  DEFAULT_DICT_KEYS,
+  SAVE_PARAM,
+} from "@/web/v2/dict/dict_selection.common";
+import { escapeHtml } from "@/web/v2/core/html.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
-import { SAVE_PARAM } from "@/web/v2/dict/dict_selection.common";
 import { renderDialog } from "@/web/v2/dialog/dialog.server";
 
 import {
@@ -39,7 +41,7 @@ export interface SearchBarOptions {
 }
 
 function hiddenInput(name: string, value: string): string {
-  return `<input type="hidden" name="${he.escape(name)}" value="${he.escape(
+  return `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(
     value
   )}" />`;
 }
@@ -56,7 +58,7 @@ function hiddenInput(name: string, value: string): string {
  */
 export function renderDictSearchBar(options: SearchBarOptions): string {
   const query = options.query?.trim() ?? "";
-  const queryEscaped = query ? he.escape(query) : "";
+  const queryEscaped = query ? escapeHtml(query) : "";
   const placeholder = options.placeholder ?? "Search for a word";
   const includeSettings = options.includeSettings ?? true;
   const isInflected = options.isInflected !== false; // default true
@@ -77,7 +79,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   const guest = options.guest;
   const disabledAttr = guest ? "disabled" : "";
   const returnLinkHtml = guest
-    ? `<a class="guest-return" href="${he.escape(
+    ? `<a class="guest-return" href="${escapeHtml(
         guest.returnHref
       )}">Restore saved</a>`
     : "";
@@ -144,9 +146,9 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   // `data-d` / `data-o` publish the selection the server resolved for this render. The client
   // adopts them (`readRenderedDictState`) instead of re-deriving state from the URL or storage.
   return `
-    <form class="search-form" action="${he.escape(
+    <form class="search-form" action="${escapeHtml(
       options.action
-    )}" method="GET" data-d="${he.escape(dictBitmask)}" data-o="${
+    )}" method="GET" data-d="${escapeHtml(dictBitmask)}" data-o="${
     isInflected ? "1" : "0"
   }">
       ${hiddenInput("d", dictBitmask)}
@@ -159,7 +161,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           name="q"
           class="input"
           value="${queryEscaped}"
-          placeholder="${he.escape(placeholder)}"
+          placeholder="${escapeHtml(placeholder)}"
           autocomplete="off"
           enterkeyhint="search"
         />
@@ -204,19 +206,19 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
     const isChecked = input.activeDictKeys.has(d.key);
     const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
     return `
-      <label class="dict-item" title="${he.escape(
+      <label class="dict-item" title="${escapeHtml(
         d.displayName
       )} (${langText})">
         <input
           type="checkbox"
           name="dict"
-          value="${he.escape(d.key)}"
+          value="${escapeHtml(d.key)}"
           class="dict-checkbox"
-          data-key="${he.escape(d.key)}"
+          data-key="${escapeHtml(d.key)}"
           ${isChecked ? "checked" : ""}
           ${input.disabledAttr}
         />
-        <span class="dict-name">${he.escape(d.displayName)}</span>
+        <span class="dict-name">${escapeHtml(d.displayName)}</span>
         <span class="dict-lang">${langText}</span>
       </label>
     `;
@@ -232,7 +234,7 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
     : `<button type="submit"${saveAttrs} class="btn btn-primary dict-settings-done">Done</button>`;
 
   const bodyHtml = `
-    <form class="dict-settings-form" action="${he.escape(
+    <form class="dict-settings-form" action="${escapeHtml(
       input.action
     )}" method="GET"${input.isScoped ? " data-scoped" : ""}>
       ${input.query ? hiddenInput("q", input.query) : ""}

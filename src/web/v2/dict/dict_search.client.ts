@@ -138,6 +138,10 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         if (this.inputElement) {
           this.inputElement.value = q;
         }
+        this.syncUrlParams({
+          d: this.activeDictBitmask,
+          o: this.isInflected ? "1" : "0",
+        });
         void this.fetchResults(q);
       },
       title: (q) =>
@@ -308,11 +312,15 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
     // Searches keep what's on screen, so the search form carries the new state.
     const form = this.scope.$<HTMLFormElement>("form.search-form");
+    if (form) {
+      form.dataset.d = commit.bitmask;
+      form.dataset.o = o;
+    }
     const hiddenD = form?.querySelector<HTMLInputElement>('input[name="d"]');
     const hiddenO = form?.querySelector<HTMLInputElement>('input[name="o"]');
     if (hiddenD) hiddenD.value = commit.bitmask;
     if (hiddenO) hiddenO.value = o;
-    this.syncUrlParams({ d: commit.bitmask, o });
+    this.syncUrlParams({ d: commit.bitmask, o, dropLang: true });
 
     const langChipsContainer = this.scope.$<HTMLElement>(".lang-chips");
     if (langChipsContainer) {
@@ -371,7 +379,11 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     }
   }
 
-  private syncUrlParams(updates: { d?: string; o?: string }) {
+  private syncUrlParams(updates: {
+    d?: string;
+    o?: string;
+    dropLang?: boolean;
+  }) {
     const url = new URL(window.location.href);
     if (updates.d !== undefined) {
       if (updates.d) {
@@ -384,6 +396,9 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     }
     if (updates.o !== undefined) {
       url.searchParams.set("o", updates.o);
+    }
+    if (updates.dropLang) {
+      url.searchParams.delete("lang");
     }
     // Writes our own d/o query params
     window.history.replaceState(null, "", url.pathname + url.search);

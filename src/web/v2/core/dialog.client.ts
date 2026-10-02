@@ -106,10 +106,9 @@ export function setupModalDialog(
     scope.listen(trigger, "click", openDialog);
   }
 
-  // Backdrop click & cancel/close events
+  // Backdrop click & native close event (Escape fires cancel then close)
   scope.listen(dialog, "click", handleBackdropClick);
   scope.listen(dialog, "close", handleNativeClose);
-  scope.listen(dialog, "cancel", handleNativeClose);
 
   // Wire all close buttons marked with [data-dialog-close]
   const closeBtns = Array.from(

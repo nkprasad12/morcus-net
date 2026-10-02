@@ -101,4 +101,24 @@ describe("setupModalDialog client coordination", () => {
 
     handle.dispose();
   });
+
+  test("Escape (cancel followed by close) invokes onClose once, after the dialog closes", () => {
+    const onClose = jest.fn();
+    setupModalDialog(dialog, {
+      trigger: triggerBtn,
+      onClose,
+    });
+
+    triggerBtn.click();
+    expect(dialog.open).toBe(true);
+
+    dialog.dispatchEvent(new Event("cancel"));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
+
+    dialog.removeAttribute("open");
+    dialog.dispatchEvent(new Event("close"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+  });
 });

@@ -539,8 +539,14 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     replaceStateSpy.mockRestore();
   });
 
-  test("dict-settings-commit updates the search form's hidden d and o", () => {
-    const el = createDictSearch();
+  test("dict-settings-commit updates the search form's hidden d/o, dataset, and drops lang from URL", () => {
+    delete (window as any).location;
+    (window as any).location = new URL(
+      "http://localhost/v2/dicts?q=habeo&lang=La"
+    );
+    const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+
+    const el = createDictSearch("", 'data-d="an" data-o="1"');
     const form = el.querySelector<HTMLFormElement>("form.search-form")!;
     form.insertAdjacentHTML(
       "afterbegin",
@@ -552,6 +558,45 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const fields = new FormData(form);
     expect(fields.get("d")).toBe(encodeDictBitmask(["GRG"]));
     expect(fields.get("o")).toBe("0");
+    expect(form.dataset.d).toBe(encodeDictBitmask(["GRG"]));
+    expect(form.dataset.o).toBe("0");
+    expect(replaceStateSpy).toHaveBeenCalledWith(
+      null,
+      "",
+      `/v2/dicts?q=habeo&d=${encodeDictBitmask(["GRG"])}&o=0`
+    );
+
+    replaceStateSpy.mockRestore();
+  });
+
+  test("popstate navigation re-syncs current active d and o into the restored history entry", () => {
+    delete (window as any).location;
+    (window as any).location = new URL(
+      "http://localhost/v2/dicts?q=amo&d=an&o=1"
+    );
+    const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+
+    const el = createDictSearch("", 'data-d="an" data-o="1"');
+    commitSettings(el, ["GAF"], false);
+    replaceStateSpy.mockClear();
+
+    // Simulate browser Back restoring an older URL with stale d=an&o=1
+    (window as any).location = new URL(
+      "http://localhost/v2/dicts?q=bellum&d=an&o=1"
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(replaceStateSpy).toHaveBeenCalledWith(
+      null,
+      "",
+      "/v2/dicts?q=bellum&d=2&o=0"
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/v2/dicts?q=bellum&format=partial&d=2&o=0"),
+      expect.anything()
+    );
+
+    replaceStateSpy.mockRestore();
   });
 
   test("search execution explicitly syncs q, d, and o parameters in history and document title", async () => {

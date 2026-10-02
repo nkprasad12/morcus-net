@@ -289,19 +289,34 @@ describe("dict_ssr", () => {
     expect(html).toContain("No dictionary entries found for");
   });
 
-  test("renderDictResultsHtml renders inflected search guidance when isInflected is false and no results found", () => {
+  test("renderDictResultsHtml renders inflected search guidance preserving active dicts, embedded, and save", () => {
     const html = renderDictResultsHtml(
       "amavi",
       {},
       {
-        queriedDicts: ["L&S"],
+        queriedDicts: ["L&S", "GAF"],
         isInflected: false,
+        canSave: true,
       }
     );
     expect(html).toContain("No dictionary entries found for");
     expect(html).toContain("Exact headword search is active.");
     expect(html).toContain("Enable inflected search");
-    expect(html).toContain('/v2/dicts?q=amavi&o=1"');
+    expect(html).toContain('/v2/dicts?q=amavi&amp;d=3&amp;o=1&amp;save=1"');
+
+    const embeddedHtml = renderDictResultsHtml(
+      "amavi",
+      {},
+      {
+        queriedDicts: ["L&S"],
+        isInflected: false,
+        isEmbedded: true,
+        canSave: false,
+      }
+    );
+    expect(embeddedHtml).toContain(
+      '/v2/dicts?q=amavi&amp;d=1&amp;o=1&amp;embedded=1"'
+    );
   });
 
   test("renderDictResultsHtml renders dictionary cards", () => {
@@ -1297,7 +1312,7 @@ describe("dict_ssr", () => {
         });
         expect(html).toContain("Exact headword search is active.");
         expect(html).toContain("Enable inflected search");
-        expect(html).toContain('/v2/dicts?q=amavi&o=1"');
+        expect(html).toContain('/v2/dicts?q=amavi&amp;d=1&amp;o=1"');
       });
 
       test("handles empty queriedDicts gracefully", () => {

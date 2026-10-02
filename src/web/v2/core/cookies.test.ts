@@ -1,7 +1,6 @@
 import {
   COOKIE_MAX_AGE_ONE_YEAR,
   formatCookie,
-  hasCookie,
   readCookie,
 } from "@/web/v2/core/cookies.common";
 
@@ -51,26 +50,6 @@ describe("core/cookies.common", () => {
       const header = "malformed=%E0%A4%A; valid=ok";
       expect(readCookie(header, "malformed")).toBe("%E0%A4%A");
       expect(readCookie(header, "valid")).toBe("ok");
-    });
-  });
-
-  describe("hasCookie", () => {
-    it("returns true when cookie is present", () => {
-      expect(hasCookie("foo=bar; morcus_dicts=L%26S", "morcus_dicts")).toBe(
-        true
-      );
-    });
-
-    it("returns true for bare cookies and empty values", () => {
-      expect(hasCookie("bare_flag; other=1", "bare_flag")).toBe(true);
-      expect(hasCookie("empty=; other=1", "empty")).toBe(true);
-    });
-
-    it("returns false when cookie is absent or input is falsy", () => {
-      expect(hasCookie("foo=bar", "missing")).toBe(false);
-      expect(hasCookie(undefined, "foo")).toBe(false);
-      expect(hasCookie(null, "foo")).toBe(false);
-      expect(hasCookie("", "foo")).toBe(false);
     });
   });
 
@@ -136,9 +115,6 @@ describe("core/cookies.common", () => {
       expect(readCookie(header, "morcus_dicts")).toBe("L&S;GAF");
       expect(readCookie(header, "morcus_inflected")).toBe("1");
       expect(readCookie(header, "theme")).toBe("dark");
-      expect(hasCookie(header, "morcus_dicts")).toBe(true);
-      expect(hasCookie(header, "morcus_inflected")).toBe(true);
-      expect(hasCookie(header, "missing")).toBe(false);
     });
   });
 });

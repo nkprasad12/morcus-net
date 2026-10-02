@@ -562,6 +562,52 @@ describe("open-state popovers survive being moved in the DOM", () => {
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
   });
 
+  test("morcus-dict-settings and morcus-dict-search preserve committed state across a DOM move", () => {
+    document.body.innerHTML = `<morcus-dict-search>${renderDictSearchBar({
+      action: "/v2/dicts",
+      activeDicts: ["L&S"],
+      isInflected: true,
+    })}<output id="dict-results" class="results"></output></morcus-dict-search>`;
+
+    const searchEl = document.querySelector<HTMLElement>("morcus-dict-search")!;
+    const settingsEl = document.querySelector<HTMLElement>(
+      "morcus-dict-settings"
+    )!;
+    const triggerBtn =
+      document.querySelector<HTMLElement>("#dict-settings-btn")!;
+    const gafCb = settingsEl.querySelector<HTMLInputElement>(
+      '.dict-checkbox[data-key="GAF"]'
+    )!;
+    const inflectedCb =
+      settingsEl.querySelector<HTMLInputElement>("#toggle-inflected")!;
+    const doneBtn = settingsEl.querySelector<HTMLElement>(
+      ".dict-settings-done"
+    )!;
+
+    // Commit a settings change (enable GAF, disable inflection)
+    triggerBtn.click();
+    gafCb.checked = true;
+    inflectedCb.checked = false;
+    doneBtn.click();
+
+    const searchForm =
+      searchEl.querySelector<HTMLFormElement>("form.search-form")!;
+    expect(searchForm.dataset.d).toBe("3");
+    expect(searchForm.dataset.o).toBe("0");
+    expect(gafCb.defaultChecked).toBe(true);
+    expect(inflectedCb.defaultChecked).toBe(false);
+
+    // Move the entire <morcus-dict-search> subtree in the DOM
+    searchEl.remove();
+    document.body.appendChild(searchEl);
+
+    // Committed state must survive the disconnect/reconnect cycle
+    expect(gafCb.checked).toBe(true);
+    expect(inflectedCb.checked).toBe(false);
+    expect(searchForm.dataset.d).toBe("3");
+    expect(searchForm.dataset.o).toBe("0");
+  });
+
   test("ReaderTocController resets open state on move, tears down open-state listeners, and re-binds trigger listener", () => {
     document.body.innerHTML = FIXTURES["morcus-reader-view"];
     const readerView =

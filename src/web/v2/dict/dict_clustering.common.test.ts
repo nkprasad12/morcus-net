@@ -1,5 +1,4 @@
 import {
-  findDictInfo,
   getDictSourceLang,
   getExpandedPrefixes,
   clusterAndDeduplicate,
@@ -8,30 +7,6 @@ import {
 } from "@/web/v2/dict/dict_clustering.common";
 
 describe("dict_clustering.common", () => {
-  describe("findDictInfo", () => {
-    test("resolves canonical keys and aliases", () => {
-      expect(findDictInfo("L&S")?.key).toBe("L&S");
-      expect(findDictInfo("ls")?.key).toBe("L&S");
-      expect(findDictInfo("GAF")?.key).toBe("GAF");
-      expect(findDictInfo("gaffiot")?.key).toBe("GAF");
-      expect(findDictInfo("S&H")?.key).toBe("S&H");
-      expect(findDictInfo("sh")?.key).toBe("S&H");
-      expect(findDictInfo("R&A")?.key).toBe("R&A");
-      expect(findDictInfo("ra")?.key).toBe("R&A");
-      expect(findDictInfo("GRG")?.key).toBe("GRG");
-      expect(findDictInfo("georges")?.key).toBe("GRG");
-      expect(findDictInfo("EGL")?.key).toBe("EGL");
-      expect(findDictInfo("pozo")?.key).toBe("EGL");
-      expect(findDictInfo("GES")?.key).toBe("GES");
-      expect(findDictInfo("gesner")?.key).toBe("GES");
-      expect(findDictInfo("FOR")?.key).toBe("FOR");
-      expect(findDictInfo("forcellini")?.key).toBe("FOR");
-      expect(findDictInfo("NUM")?.key).toBe("NUM");
-      expect(findDictInfo("numeral")?.key).toBe("NUM");
-      expect(findDictInfo("unknown_dict")).toBeUndefined();
-    });
-  });
-
   describe("getDictSourceLang", () => {
     test("returns correct source language per lexicon", () => {
       expect(getDictSourceLang("L&S")).toBe("La");

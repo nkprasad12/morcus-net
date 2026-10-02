@@ -2,8 +2,6 @@ import {
   DICT_BIT_REGISTRY,
   encodeDictBitmask,
   decodeDictBitmask,
-  LATIN_SOURCE_DICT_KEYS,
-  LATIN_SOURCE_DICT_BITMASK,
 } from "@/web/v2/dict/dict_bitmask.common";
 
 describe("dict_bitmask.common", () => {
@@ -31,34 +29,18 @@ describe("dict_bitmask.common", () => {
     expect(decodeDictBitmask(encoded)).toEqual(defaultSet);
   });
 
-  it("is case-insensitive during decoding and alias resolution", () => {
+  it("is case-insensitive during decoding and ignores non-canonical keys when encoding", () => {
     expect(decodeDictBitmask("AN")).toEqual(
       DICT_BIT_REGISTRY.filter((k) => k !== "EGL")
     );
     expect(decodeDictBitmask("e7")).toEqual([...DICT_BIT_REGISTRY]);
-    expect(encodeDictBitmask(["ls", "gaffiot"])).toBe(
-      encodeDictBitmask(["L&S", "GAF"])
-    );
+    expect(encodeDictBitmask(["L&S", "unknown", "GAF"])).toBe("3");
   });
 
   it("safely handles forward-compatible higher bits beyond registry", () => {
     // 511 | (1 << 15) = 33279 -> 33279.toString(36) === "pof"
     const higherBits = (511 | (1 << 15)).toString(36);
     expect(decodeDictBitmask(higherBits)).toEqual([...DICT_BIT_REGISTRY]);
-  });
-
-  it("exports LATIN_SOURCE_DICT_KEYS and LATIN_SOURCE_DICT_BITMASK correctly", () => {
-    expect(encodeDictBitmask(LATIN_SOURCE_DICT_KEYS)).toBe(
-      LATIN_SOURCE_DICT_BITMASK
-    );
-    expect(LATIN_SOURCE_DICT_BITMASK).toBe("7j");
-    expect(decodeDictBitmask(LATIN_SOURCE_DICT_BITMASK)).toEqual([
-      "L&S",
-      "GAF",
-      "GES",
-      "FOR",
-      "NUM",
-    ]);
   });
 
   it("returns null for invalid inputs", () => {

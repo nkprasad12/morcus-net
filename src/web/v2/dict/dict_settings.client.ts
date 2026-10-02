@@ -64,6 +64,7 @@ export class MorcusDictSettings extends BaseElement {
     // (the hash names it), those edits are a draft that applies on close, as if made just now.
     // If it was closed again, No-JS semantics apply: closing without Done discards them.
     if (!this.isHashTarget()) this.resetControls();
+    this.syncDoneDisabled();
     this.syncStrengthUi(true);
 
     if (this.dialogEl) {
@@ -92,6 +93,9 @@ export class MorcusDictSettings extends BaseElement {
     this.scope.listen(this.formEl, "submit", (e: Event) => {
       e.preventDefault();
       this.modal?.close();
+    });
+    this.scope.listen(this.formEl, "change", () => {
+      this.syncDoneDisabled();
     });
 
     const sliderEl = this.scope.$<HTMLInputElement>(".settings-slider");
@@ -136,6 +140,14 @@ export class MorcusDictSettings extends BaseElement {
     return this.scope.$<HTMLInputElement>("#toggle-inflected");
   }
 
+  private syncDoneDisabled() {
+    const doneBtn = this.scope.$<HTMLButtonElement>(
+      "button.dict-settings-done"
+    );
+    if (!doneBtn) return;
+    doneBtn.disabled = !this.dictCheckboxes().some((cb) => cb.checked);
+  }
+
   /**
    * The server resolves dictionaries and inflection (URL → cookie → default) and renders each
    * control's `checked` attribute from the result, so `defaultChecked` *is* the committed state.
@@ -156,15 +168,21 @@ export class MorcusDictSettings extends BaseElement {
     }
     const inflected = this.inflectedCheckbox();
     if (inflected) inflected.checked = this.committedInflected;
+    this.syncDoneDisabled();
   }
 
   /** Applies the draft in the controls, if it differs from what's committed. */
   private commit() {
-    const draftDicts = this.dictCheckboxes()
+    const checkboxes = this.dictCheckboxes();
+    const draftDicts = checkboxes
       .filter((cb) => cb.checked)
       .map((cb) => cb.dataset.key || cb.value);
-    const draftInflected =
-      this.inflectedCheckbox()?.checked ?? this.committedInflected;
+    if (draftDicts.length === 0) {
+      this.resetControls();
+      return;
+    }
+    const inflected = this.inflectedCheckbox();
+    const draftInflected = inflected?.checked ?? this.committedInflected;
 
     const dictsChanged =
       draftDicts.length !== this.committedDicts.size ||
@@ -174,9 +192,14 @@ export class MorcusDictSettings extends BaseElement {
 
     this.committedDicts = new Set(draftDicts);
     this.committedInflected = draftInflected;
+    for (const cb of checkboxes) {
+      cb.defaultChecked = cb.checked;
+    }
+    if (inflected) inflected.defaultChecked = draftInflected;
+
     if (mayPersistDictChange(this.formEl)) {
-      if (dictsChanged) persistDictKeys(draftDicts);
-      if (inflectedChanged) persistInflected(draftInflected);
+      persistDictKeys(draftDicts);
+      persistInflected(draftInflected);
     }
     this.emit<DictSettingsCommit>("dict-settings-commit", {
       dictKeys: draftDicts,

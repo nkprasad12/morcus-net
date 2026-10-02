@@ -51,7 +51,6 @@ describe("dict_selection.server", () => {
         keysFromQuery: ["GAF"],
         cookieHeader: "morcus_d=1",
       });
-      expect(res.source).toBe("url");
       expect(res.dictKeys).toEqual(["GAF"]);
     });
 
@@ -60,19 +59,16 @@ describe("dict_selection.server", () => {
         keysFromQuery: null,
         cookieHeader: "morcus_d=3",
       });
-      expect(res.source).toBe("cookie");
       expect(res.dictKeys).toEqual(["L&S", "GAF"]);
     });
 
     it("resolves a single-dictionary cookie exactly", () => {
       const res = resolveActiveDicts({ cookieHeader: "morcus_d=2" });
-      expect(res.source).toBe("cookie");
       expect(res.dictKeys).toEqual(["GAF"]);
     });
 
     it("falls back to default preset if both are absent", () => {
       const res = resolveActiveDicts({});
-      expect(res.source).toBe("default");
       expect(res.dictKeys).toEqual(DEFAULT_DICT_KEYS);
     });
 
@@ -87,7 +83,6 @@ describe("dict_selection.server", () => {
 
     it("applies lang=La to default dictionaries, retaining only Latin-source lexica", () => {
       const res = resolveActiveDicts({ lang: "La" });
-      expect(res.source).toBe("default");
       // Default 8 enabled: L&S, GAF, GES, FOR, S&H, R&A, GRG, NUM.
       // Filtered with lang=La removes reverse dicts (S&H, R&A, GRG):
       expect(res.dictKeys).toEqual(["L&S", "GAF", "GES", "FOR", "NUM"]);
@@ -99,7 +94,6 @@ describe("dict_selection.server", () => {
         cookieHeader: "morcus_d=2d",
         lang: "La",
       });
-      expect(res.source).toBe("cookie");
       // Only L&S and GES match from="La"; S&H and GRG dropped; GAF not present in cookie
       expect(res.dictKeys).toEqual(["L&S", "GES"]);
     });

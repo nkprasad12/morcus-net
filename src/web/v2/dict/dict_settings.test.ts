@@ -248,6 +248,39 @@ describe("MorcusDictSettings", () => {
     expect(m.commits).toEqual([]);
   });
 
+  test("unchecking every dictionary disables Done and restores committed selection on Escape", () => {
+    const m = mount({ activeDicts: ["L&S"] });
+    const doneBtn = m.dialog.querySelector<HTMLButtonElement>(
+      "button.dict-settings-done"
+    )!;
+    expect(doneBtn.disabled).toBe(false);
+
+    m.trigger.click();
+    toggle(checkbox(m.el, "L&S"), false);
+    expect(doneBtn.disabled).toBe(true);
+
+    // Closing via Escape with 0 dictionaries checked restores the committed selection without committing.
+    m.dialog.dispatchEvent(new Event("cancel"));
+    m.dialog.removeAttribute("open");
+    m.dialog.dispatchEvent(new Event("close"));
+
+    expect(m.commits).toEqual([]);
+    expect(checkbox(m.el, "L&S").checked).toBe(true);
+    expect(doneBtn.disabled).toBe(false);
+    expect(document.cookie).not.toContain("morcus_d=");
+  });
+
+  test("committing an inflection-only change saves both morcus_d and morcus_inflected cookies", () => {
+    const m = mount({ activeDicts: ["L&S", "GAF"], isInflected: true });
+    m.trigger.click();
+    toggle(m.el.querySelector<HTMLInputElement>("#toggle-inflected")!, false);
+    clickDone(m);
+
+    expect(m.commits).toHaveLength(1);
+    expect(document.cookie).toContain("morcus_d=3");
+    expect(document.cookie).toContain("morcus_inflected=0");
+  });
+
   describe("pre-hydration edits (PH1)", () => {
     test("edits in a still-open (hash-targeted) dialog are a draft that applies on close", () => {
       window.history.replaceState(null, "", "/v2/dicts#dict-settings");
