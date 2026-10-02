@@ -247,7 +247,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     document.body.innerHTML = res5.text;
     // The controls are locked, Done can't save, and the link's settings ride along in the
     // search form, so a new search keeps them.
-    expect(res5.text).toContain("Viewing this link's settings");
+    expect(res5.text).toContain("Using link settings");
     const inflectCb5 =
       settingsForm().querySelector<HTMLInputElement>("#toggle-inflected")!;
     expect(inflectCb5.checked).toBe(false);
@@ -257,7 +257,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       document.body.querySelector<HTMLFormElement>("form.search-form")!;
     expect(serializeGetForm(form5)).toContain("o=0");
 
-    // "Return to my settings" goes back to the saved ones.
+    // "Restore saved" goes back to the saved ones.
     const returnHref = document.body
       .querySelector<HTMLAnchorElement>("a.guest-return")!
       .getAttribute("href")!;

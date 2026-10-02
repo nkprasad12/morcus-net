@@ -850,7 +850,7 @@ test.describe("UI V2 dictionary", () => {
     );
   });
 
-  test("guest mode locks a shared link's settings until Return (JS enabled)", async ({
+  test("guest mode locks a shared link's settings until Restore saved (JS enabled)", async ({
     page,
     baseURL,
   }) => {
@@ -880,7 +880,7 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator(".dict-title").first()).toContainText("Gaffiot");
     expect(await readDictCookie()).toBe("1");
 
-    // Return goes back to the user's own settings, which are editable again.
+    // Restore saved goes back to the user's own settings, which are editable again.
     await page.locator(".guest-chip .guest-return").click();
     await expect(page).not.toHaveURL(/d=2/);
     await expect(page.locator(".guest-chip")).toHaveCount(0);

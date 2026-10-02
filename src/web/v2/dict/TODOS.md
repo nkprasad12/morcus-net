@@ -262,8 +262,8 @@ couldn't tell "the user just ticked boxes" from "someone pasted a URL".
       save (`document.cookie`, capped at 7 days by Safari ITP) is re-issued as an HTTP cookie.
 - [x] **Guest mode.** `isGuestView` (in `dict_selection.common.ts`) flags a page whose
       dictionaries or inflection differ from a saved cookie. Those settings are shown read-only
-      (disabled controls; Done only closes) with _Viewing this link's settings · Return to my settings_,
-      and stay in effect for new searches until **Return**. Scoped views (`data-scoped`) never
+      (disabled controls; Done only closes) with _Using link settings · Restore saved_,
+      and stay in effect for new searches until **Restore saved**. Scoped views (`data-scoped`) never
       save.
 
 ---

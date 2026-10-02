@@ -88,7 +88,7 @@ const SETTINGS_PARAMS = ["d", "dict", "in", "o", SAVE_PARAM] as const;
 
 /**
  * The same page with every settings parameter removed, so the server falls back to the user's
- * cookies. This is guest mode's **Return to my settings** link: a plain GET, so it works without JS.
+ * cookies. This is guest mode's **Restore saved** link: a plain GET, so it works without JS.
  */
 export function ownSettingsHref(originalUrl: string): string {
   const url = new URL(originalUrl, "http://localhost");

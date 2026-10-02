@@ -241,9 +241,6 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 0.72rem;
   line-height: 1;
@@ -260,14 +257,10 @@
   text-decoration: underline;
 }
 
-.guest-chip .guest-return {
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-}
-
-.guest-chip .guest-return:hover,
-.guest-chip .guest-return:focus-visible {
-  background-color: var(--card-header-bg, rgba(0, 0, 0, 0.06));
+@media (width <= 480px) {
+  .guest-tray-dot {
+    display: none;
+  }
 }
 
 .settings-guest-note {

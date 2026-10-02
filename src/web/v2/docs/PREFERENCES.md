@@ -87,11 +87,11 @@ settings params, so it never infers intent from them. The dictionary route
 - **The re-send is a sliding refresh.** JS saves with `document.cookie`, which Safari's ITP caps
   at 7 days. Re-sending on every full load turns it into an HTTP cookie with a fresh `Max-Age`.
 - **Guest mode.** When the URL's settings differ from a saved cookie (`isGuestView`), the page
-  shows them **read-only**: the tray says _Viewing this link's settings · Return to my settings_,
+  shows them **read-only**: the tray says _Using link settings · Restore saved_,
   the dictionary and inflection controls are `disabled`, and Done only closes the dialog. So there's
   never a question of whether a change on someone else's link saves. Guest mode is sticky: hidden
   `d` / `o` fields (and, with JS, the adopted state) carry the link's settings into new searches
-  until the user follows **Return**, a plain link to the page without settings params. Users with
+  until the user follows **Restore saved**, a plain link to the page without settings params. Users with
   no saved settings never see it.
 - **Scoped views** (reader iframe, `lang=`) get `data-scoped` on the settings form, and Done has no
   `save` marker, so they never save, from either side.
