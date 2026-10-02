@@ -380,8 +380,8 @@ export interface DictPageOptions {
   isIdSearch?: boolean;
   embedded?: boolean;
   scale?: number;
-  /** See `SearchBarOptions.borrowed`. */
-  borrowed?: { useMineHref: string };
+  /** See `SearchBarOptions.guest`. */
+  guest?: { returnHref: string };
   /** See `SearchBarOptions.scoped`. */
   scoped?: boolean;
 }
@@ -417,7 +417,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
         activeDicts: options.queriedDicts,
         isInflected: isInflected,
         extraHiddenInputs: isEmbedded ? { embedded: "1" } : undefined,
-        borrowed: options.borrowed,
+        guest: options.guest,
         scoped: options.scoped,
       })}
 

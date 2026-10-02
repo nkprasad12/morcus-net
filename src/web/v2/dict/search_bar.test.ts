@@ -1,3 +1,6 @@
+/**
+ * @jest-environment jsdom
+ */
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 
@@ -150,43 +153,66 @@ describe("renderDictSearchBar", () => {
   test("the search button is the form's first submit button, so Enter never saves", () => {
     // Implicit submission (Enter in the input) uses the FIRST submit button in tree order. If a
     // `name="save"` button ever came first, every Enter would silently persist the selection.
-    for (const borrowed of [undefined, { useMineHref: "/v2/dicts?q=amo" }]) {
-      const html = renderDictSearchBar({
-        query: "amo",
-        action: "/v2/dicts",
-        borrowed,
-      });
-      const submitButtons = Array.from(
-        html.matchAll(/<button\b[^>]*type="submit"[^>]*>/g),
-        (m) => m[0]
-      );
-      expect(submitButtons.length).toBeGreaterThan(borrowed ? 2 : 1);
-      expect(submitButtons[0]).toContain('class="search-btn"');
-      expect(submitButtons[0]).not.toContain("name=");
-    }
+    const html = renderDictSearchBar({ query: "amo", action: "/v2/dicts" });
+    const submitButtons = Array.from(
+      html.matchAll(/<button\b[^>]*type="submit"[^>]*>/g),
+      (m) => m[0]
+    );
+    expect(submitButtons.length).toBeGreaterThan(1);
+    expect(submitButtons[0]).toContain('class="search-btn"');
+    expect(submitButtons[0]).not.toContain("name=");
   });
 
-  test("renders no borrowed chip or persistence markers by default", () => {
+  test("renders no guest chip or scoped marker by default", () => {
     const html = renderDictSearchBar({ query: "amo", action: "/v2/dicts" });
-    expect(html).not.toContain("borrowed-chip");
-    expect(html).not.toContain("data-borrowed");
+    expect(html).not.toContain("guest-chip");
+    expect(html).not.toContain("settings-guest-note");
+    expect(html).not.toContain("disabled");
     expect(html).not.toContain("data-scoped");
   });
 
-  test("a borrowed view renders the chip with Save these and Use mine", () => {
+  describe("guest mode", () => {
     const html = renderDictSearchBar({
       query: "amo",
       action: "/v2/dicts",
-      borrowed: { useMineHref: "/v2/dicts?q=amo&x=<" },
+      activeDicts: ["GAF"],
+      isInflected: false,
+      guest: { returnHref: "/v2/dicts?q=amo&x=<" },
     });
-    expect(html).toMatch(/<form class="search-form"[^>]* data-borrowed>/);
-    expect(html).toContain("Not your saved settings");
-    expect(html).toMatch(
-      /<button type="submit" name="save" value="1" class="[^"]*borrowed-save-btn"[^>]*>Save these<\/button>/
-    );
-    expect(html).toContain(
-      '<a class="borrowed-chip-btn borrowed-use-mine" href="/v2/dicts?q=amo&amp;x=&lt;">Use mine</a>'
-    );
+
+    test("explains itself and links back to the user's settings", () => {
+      expect(html).toContain("Viewing this link's settings");
+      expect(html).toContain("settings-guest-note");
+      const returnLink =
+        '<a class="guest-return" href="/v2/dicts?q=amo&amp;x=&lt;">Return to my settings</a>';
+      // Once in the tray chip, once in the popover note.
+      expect(html.split(returnLink).length - 1).toBe(2);
+    });
+
+    test("locks the content settings and offers no way to save", () => {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const controls = doc.querySelectorAll<HTMLInputElement>(
+        ".dict-checkbox, .inflected-checkbox"
+      );
+      expect(controls.length).toBeGreaterThan(1);
+      for (const c of Array.from(controls)) expect(c.disabled).toBe(true);
+      expect(doc.querySelector('[name="save"]')).toBeNull();
+    });
+
+    test("carries the link's settings in hidden fields, so a new search keeps them", () => {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const form = doc.querySelector("form")!;
+      const submitted = new URLSearchParams();
+      for (const el of Array.from(form.elements)) {
+        if (!(el instanceof HTMLInputElement) || el.disabled || !el.name)
+          continue;
+        if (el.type === "checkbox" && !el.checked) continue;
+        submitted.append(el.name, el.value);
+      }
+      expect(submitted.getAll("d")).toEqual(["2"]);
+      expect(submitted.getAll("o")).toEqual(["0"]);
+      expect(submitted.getAll("dict")).toEqual([]);
+    });
   });
 
   test("a scoped view is marked data-scoped", () => {

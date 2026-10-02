@@ -15,7 +15,7 @@ export const DICT_COOKIE_NAME = "morcus_d";
 export const INFLECTED_COOKIE_NAME = "morcus_inflected";
 
 /**
- * The query parameter (and submit button `name`) marking an explicit "save these as my
+ * The query parameter (and the No-JS Apply button's `name`) marking an explicit "save these as my
  * preferences". Only the server acts on it; see `dict_persistence.server.ts`.
  */
 export const SAVE_PARAM = "save";
@@ -149,15 +149,12 @@ export interface DictViewState {
 }
 
 /**
- * Whether the view disagrees with a preference the user has actually saved: it is "borrowed",
- * typically from a shared link (or from a No-JS search that wasn't Applied). Each setting is
- * compared only when its cookie holds a valid value, so a user with no saved preferences never
- * sees a borrowed view: there's nothing of theirs to diverge from.
- *
- * Isomorphic on purpose. The server uses it to render the chip; the client re-checks it against
- * `document.cookie` after each change so the chip disappears as soon as the view matches again.
+ * Whether the page is in guest mode: its settings (from the URL, typically a shared link) disagree
+ * with a preference the user has actually saved. Each setting is compared only when its cookie
+ * holds a valid value, so a user with no saved preferences is never a guest: there's nothing of
+ * theirs to protect or return to.
  */
-export function isBorrowedView(
+export function isGuestView(
   view: DictViewState,
   cookieHeader: string | undefined | null
 ): boolean {

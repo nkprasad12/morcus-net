@@ -242,30 +242,35 @@ describe("v2_router integration", () => {
       expect(cookies).not.toContain("morcus_inflected=0");
     });
 
-    test("a shared link that differs from the recipient's settings shows the borrowed chip", async () => {
+    test("a shared link that differs from the recipient's settings opens in guest mode", async () => {
       const res = await request(app)
         .get("/v2/dicts?q=amo&d=2&o=0")
         .set("Cookie", "morcus_d=1; morcus_inflected=1");
       expect(res.status).toBe(200);
-      expect(res.text).toMatch(/<form class="search-form"[^>]* data-borrowed>/);
-      expect(res.text).toContain("Not your saved settings");
-      // Use mine drops the settings params so the recipient's cookies apply.
-      expect(res.text).toContain('href="/v2/dicts?q=amo">Use mine</a>');
+      expect(res.text).toContain("Viewing this link's settings");
+      expect(res.text).toMatch(/class="dict-checkbox"[^>]*disabled/);
+      // Return drops the settings params so the recipient's cookies apply.
+      expect(res.text).toContain(
+        'href="/v2/dicts?q=amo">Return to my settings</a>'
+      );
+      // The link's settings ride along in hidden fields, so the next search keeps them.
+      expect(res.text).toContain('<input type="hidden" name="d" value="2" />');
+      expect(res.text).toContain('<input type="hidden" name="o" value="0" />');
     });
 
-    test("no borrowed chip when the link matches the user's settings", async () => {
+    test("no guest mode when the link matches the user's settings", async () => {
       const res = await request(app)
         .get("/v2/dicts?q=amo&d=1&o=1")
         .set("Cookie", "morcus_d=1; morcus_inflected=1");
       expect(res.status).toBe(200);
-      expect(res.text).not.toContain("data-borrowed");
-      expect(res.text).not.toContain("borrowed-chip");
+      expect(res.text).not.toContain("guest-chip");
+      expect(res.text).not.toMatch(/class="dict-checkbox"[^>]*disabled/);
     });
 
-    test("no borrowed chip without saved preferences", async () => {
+    test("no guest mode without saved preferences", async () => {
       const res = await request(app).get("/v2/dicts?q=amo&d=2&o=0");
       expect(res.status).toBe(200);
-      expect(res.text).not.toContain("borrowed-chip");
+      expect(res.text).not.toContain("guest-chip");
     });
 
     test("honours repeated dict checkboxes", async () => {
@@ -369,13 +374,13 @@ describe("v2_router integration", () => {
     expect(res.header["set-cookie"]).toBeUndefined();
   });
 
-  test("GET /v2/dicts marks embedded views scoped and never shows the borrowed chip", async () => {
+  test("GET /v2/dicts marks embedded views scoped and never uses guest mode", async () => {
     const res = await request(app)
       .get("/v2/dicts?q=arma&embedded=1&d=2")
       .set("Cookie", "morcus_d=1");
     expect(res.status).toBe(200);
     expect(res.text).toMatch(/<form class="search-form"[^>]* data-scoped>/);
-    expect(res.text).not.toContain("borrowed-chip");
+    expect(res.text).not.toContain("guest-chip");
   });
 
   test("GET /v2/dicts never persists from an iframe detected by Sec-Fetch-Dest", async () => {

@@ -259,14 +259,11 @@ couldn't tell "the user just ticked boxes" from "someone pasted a URL".
       stays the form's first submit button, so Enter never saves (tested).
 - [x] **Sliding refresh.** Every other full page load re-sends the cookies' own values, so a JS
       save (`document.cookie`, capped at 7 days by Safari ITP) is re-issued as an HTTP cookie.
-- [x] **Borrowed-view chip.** `isBorrowedView` (in `dict_selection.common.ts`) flags a view whose
-      dictionaries or inflection differ from a saved cookie. The tray then shows
-      _Not your saved settings [Save these] [Use mine]_. **Save these** is another `save` submitter;
-      with JS, `hijackForm`'s `passthrough` lets it submit natively. **Use mine** links to the page
-      without settings params.
-- [x] **JS defers saving while borrowed.** Changes in a `data-borrowed` form update the view but
-      aren't saved until **Save these**, or until the view matches the cookie again, which retires
-      the chip. Scoped views (`data-scoped`) never save.
+- [x] **Guest mode.** `isGuestView` (in `dict_selection.common.ts`) flags a page whose
+      dictionaries or inflection differ from a saved cookie. Those settings are shown read-only
+      (disabled controls, no Apply) with _Viewing this link's settings · Return to my settings_,
+      and stay in effect for new searches until **Return**. Scoped views (`data-scoped`) never
+      save.
 
 ---
 

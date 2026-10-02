@@ -254,6 +254,11 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
 
     // --- Step 4b: That was a plain search (Enter), not Apply, so it was not saved ---
     expect(cookies["morcus_inflected"]).not.toBe("0");
+    // The URL now disagrees with the saved settings, so the page is in guest mode: the controls
+    // are locked and the URL's settings ride along in hidden fields.
+    expect(res5.text).toContain("Viewing this link's settings");
+    expect(inflectCb5.disabled).toBe(true);
+    expect(serializeGetForm(form5)).toContain("o=0");
     const res5b = await request(app)
       .get("/v2/dicts?q=rex")
       .set("Cookie", formatCookieHeader(cookies));
@@ -264,9 +269,37 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       mode: 1,
     });
 
+    // --- Step 4c: Back on their own settings, untick inflection and Apply it ---
+    document.body.innerHTML = res5b.text;
+    const form5b =
+      document.body.querySelector<HTMLFormElement>("form.search-form")!;
+    form5b.querySelector<HTMLInputElement>("#toggle-inflected")!.checked =
+      false;
+    const applyRes5 = await request(app)
+      .get(
+        serializeGetForm(
+          form5b,
+          form5b.querySelector<HTMLElement>(".settings-apply-btn")
+        )
+      )
+      .set("Cookie", formatCookieHeader(cookies));
+    expect(applyRes5.status).toBe(303);
+    Object.assign(cookies, extractCookies(applyRes5.header["set-cookie"]));
+    expect(cookies["morcus_inflected"]).toBe("0");
+    const res5c = await request(app)
+      .get(applyRes5.header["location"])
+      .set("Cookie", formatCookieHeader(cookies));
+    document.body.innerHTML = res5c.text;
+    expect(res5c.text).not.toContain("guest-chip");
+
     // --- Step 5: Toggle inflection back ON (`o=0` hidden + `o=1` checkbox repeated key) ---
-    inflectCb5.checked = true;
-    const step5Url = serializeGetForm(form5);
+    const form6 =
+      document.body.querySelector<HTMLFormElement>("form.search-form")!;
+    const inflectCb6 =
+      form6.querySelector<HTMLInputElement>("#toggle-inflected")!;
+    expect(inflectCb6.checked).toBe(false);
+    inflectCb6.checked = true;
+    const step5Url = serializeGetForm(form6);
     // Verify the serialized form genuinely carries the repeated `o=0&o=1` wire format
     expect(step5Url).toContain("o=0");
     expect(step5Url).toContain("o=1");

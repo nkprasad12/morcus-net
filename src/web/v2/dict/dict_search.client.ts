@@ -11,7 +11,6 @@ import {
   tokenizeTargets,
 } from "@/web/v2/core/index.client";
 import { readRenderedDictState } from "@/web/v2/dict/dict_preferences.client";
-import { SAVE_PARAM } from "@/web/v2/dict/dict_selection.common";
 import { trimRawQuery } from "@/common/text_cleaning";
 import {
   cleanCompletionQuery,
@@ -188,23 +187,13 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       });
     }
 
-    this.hijackForm(
-      "form.search-form",
-      ({ q }) => {
-        this.clearSuggestions();
-        const cleaned = trimRawQuery(q || "");
-        if (cleaned) {
-          void this.searchQuery(cleaned);
-        }
-      },
-      {
-        // Saving (the borrowed-view chip's Save these) goes through the server even with JS: it
-        // sets HTTP cookies, which outlive Safari ITP's cap on `document.cookie`, then 303s to a
-        // fresh render.
-        passthrough: (submitter) =>
-          submitter?.getAttribute("name") === SAVE_PARAM,
+    this.hijackForm("form.search-form", ({ q }) => {
+      this.clearSuggestions();
+      const cleaned = trimRawQuery(q || "");
+      if (cleaned) {
+        void this.searchQuery(cleaned);
       }
-    );
+    });
 
     if (this.inputElement) {
       this.scope.listen(this.inputElement, "input", this.handleInput);

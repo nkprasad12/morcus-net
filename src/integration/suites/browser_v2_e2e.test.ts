@@ -757,28 +757,27 @@ test.describe("UI V2 dictionary", () => {
     const after = (await context.cookies()).find((c) => c.name === "morcus_d");
     expect(after?.value).toBe("1");
 
-    // The borrowed view is flagged. Use mine goes back to the saved selection.
-    const chip = page.locator(".borrowed-chip");
-    await expect(chip).toBeVisible();
-    await chip.locator(".borrowed-use-mine").click();
+    // Guest mode: the link's settings are read-only, and a new search keeps them.
+    await expect(page.locator(".guest-chip")).toBeVisible();
+    await expect(page.locator('.dict-checkbox[value="GAF"]')).toBeDisabled();
+    await expect(page.locator(".settings-apply-btn")).toHaveCount(0);
+    await page.locator("#dict-q").fill("amo");
+    await page.locator("#dict-q").press("Enter");
+    await expect(page).toHaveURL(/q=amo/);
+    await expect(page).toHaveURL(/d=2/);
+    await expect(page.locator(".guest-chip")).toBeVisible();
+
+    // Return goes back to the saved selection.
+    await page.locator(".guest-chip .guest-return").click();
     await expect(page).not.toHaveURL(/d=2/);
     await expect(page.locator('.dict-checkbox[value="L&S"]')).toBeChecked();
-    await expect(page.locator(".borrowed-chip")).toHaveCount(0);
-
-    // Save these adopts the borrowed selection.
-    await page.goto("/v2/dicts?q=habeo&d=2");
-    await page.locator(".borrowed-save-btn").click();
-    await expect(page).not.toHaveURL(/save=/);
-    await expect(page.locator(".borrowed-chip")).toHaveCount(0);
-    const adopted = (await context.cookies()).find(
-      (c) => c.name === "morcus_d"
-    );
-    expect(adopted?.value).toBe("2"); // GAF
+    await expect(page.locator('.dict-checkbox[value="L&S"]')).toBeEnabled();
+    await expect(page.locator(".guest-chip")).toHaveCount(0);
 
     await context.close();
   });
 
-  test("defers saving in a borrowed view until Save these (JS enabled)", async ({
+  test("guest mode locks a shared link's settings until Return (JS enabled)", async ({
     page,
     baseURL,
   }) => {
@@ -790,20 +789,26 @@ test.describe("UI V2 dictionary", () => {
       .addCookies([{ name: "morcus_d", value: "1", url: baseURL! }]); // L&S
 
     await page.goto("/v2/dicts?q=habeo&d=2"); // GAF
-    await expect(page.locator(".borrowed-chip")).toBeVisible();
-
-    // Ticking a box updates the view but doesn't adopt the borrowed selection.
+    await expect(page.locator(".guest-chip")).toBeVisible();
     await page.locator("morcus-dict-settings .settings-btn").click();
-    await page.locator('.dict-checkbox[value="FOR"]').check();
-    await expect(page).toHaveURL(/d=a(&|$)/); // GAF + FOR = 2 + 8
-    expect(await readDictCookie()).toBe("1");
-    await expect(page.locator(".borrowed-chip")).toBeVisible();
+    await expect(page.locator(".settings-guest-note")).toBeVisible();
+    await expect(page.locator('.dict-checkbox[value="FOR"]')).toBeDisabled();
 
-    // Save these goes through the server and saves what's on screen.
-    await page.locator(".borrowed-save-btn").click();
-    await expect(page).not.toHaveURL(/save=/);
-    await expect(page.locator(".borrowed-chip")).toHaveCount(0);
-    expect(await readDictCookie()).toBe("a");
+    // A new search keeps the link's settings.
+    await page.keyboard.press("Escape");
+    await page.locator("#dict-q").fill("amo");
+    await page.locator("#dict-q").press("Enter");
+    await expect(page).toHaveURL(/q=amo/);
+    await expect(page).toHaveURL(/d=2/);
+    await expect(page.locator(".dict-title").first()).toContainText("Gaffiot");
+    expect(await readDictCookie()).toBe("1");
+
+    // Return goes back to the user's own settings, which are editable again.
+    await page.locator(".guest-chip .guest-return").click();
+    await expect(page).not.toHaveURL(/d=2/);
+    await expect(page.locator(".guest-chip")).toHaveCount(0);
+    await expect(page.locator('.dict-checkbox[value="L&S"]')).toBeEnabled();
+    expect(await readDictCookie()).toBe("1");
   });
 
   test("adjusts highlight strength via quick menu and persists to localStorage", async ({

@@ -10,7 +10,7 @@ import {
   resolveDictParams,
   parseInflectionParam,
   resolveInflection,
-  isBorrowedView,
+  isGuestView,
   hasGreek,
   dictParamsFromQuery,
   toStringOrArray,
@@ -85,15 +85,16 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
       return;
     }
 
-    // Full pages only: the chip offers to save the view or go back to the user's own settings.
-    // Scoped views are excluded because they never persist, so there's nothing to offer.
+    // Guest mode (full pages only): a link's settings that differ from the user's saved ones are
+    // shown read-only, with a way back. Scoped views are excluded: they never persist, so there's
+    // nothing to protect.
     const pagePersistence = {
       scoped: isScopedView,
-      borrowed:
+      guest:
         !isPartial &&
         !isScopedView &&
-        isBorrowedView({ dictKeys, isInflected }, cookieHeader)
-          ? { useMineHref: ownSettingsHref(req.originalUrl) }
+        isGuestView({ dictKeys, isInflected }, cookieHeader)
+          ? { returnHref: ownSettingsHref(req.originalUrl) }
           : undefined,
     };
 
