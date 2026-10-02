@@ -15,13 +15,11 @@ duplication bites; delete the entry when it lands. Component-level debt lives in
 2. **Live region around a slot.** `swapSlots` replaces the slot element, so announcements need a
    stable wrapper (corpus wraps `summary`). Worth a sentence in `swapSlots`'s doc, or an option.
    _Sharp edge._
-3. **`dialog/dialog.server.ts` still uses `he` and string templates**, not `html`. It renders the
-   report dialog on every page (`shell/page_shell.server.ts`). _Server `html` migration._
-4. **Keyed fetch cache.** `LemmaShardCache` (corpus) and `DictChunkCache` (dict) are both an
+3. **Keyed fetch cache.** `LemmaShardCache` (corpus) and `DictChunkCache` (dict) are both an
    in-memory map plus in-flight promise dedupe, and both leave the shared request uncancellable on
    purpose. Only the policy differs: dict evicts LRU, while corpus remembers a failure and doesn't
    retry. A `core/` cache with those two options would cover both. _Duplication._
-5. **Build version and cache policy for versioned URLs.** Three server modules read
+4. **Build version and cache policy for versioned URLs.** Three server modules read
    `process.env.COMMIT_ID` themselves, each differently: `about.server.ts`, `api_routes.server.ts`
    (falls back to `"undefined"`), and `corpus_routes.server.ts` (trims it, and treats empty as
    absent). Immutable `Cache-Control` values are per-route literals with different lifetimes: V2
