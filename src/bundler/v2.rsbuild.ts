@@ -98,7 +98,15 @@ export function createV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
   return {
     source: {
       entry: {
-        ...V2_CHUNK_ENTRIES,
+        ...Object.fromEntries(
+          Object.entries(V2_CHUNK_ENTRIES).map(([name, spec]) => [
+            name,
+            {
+              import: [spec.import, ...(spec.shared ?? [])],
+              dependOn: spec.dependOn,
+            },
+          ])
+        ),
         v2: "./src/web/v2/v2.css",
         critical: "./src/web/v2/shell/critical_theme.client.ts",
       },
