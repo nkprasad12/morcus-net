@@ -33,16 +33,30 @@ export interface FormOptions {
   morph: string[];
 }
 
+export type MacronizedConfidence = "weak" | "tied" | "confident";
+
 export interface MacronizedWord {
+  /**
+   * The input word with diacritics removed (format characters such as soft
+   * hyphens are kept). For a word with no `options`, it's the word exactly as
+   * typed, so macrons the user typed on an unknown word survive.
+   */
   word: string;
   options: {
     form: string;
+    kind?: "numeral";
     options: FormOptions[];
   }[];
+  /** Index into `options` of the POS tagger's pick, if any. */
   suggested?: number;
+  /** Present exactly when `suggested` is. */
+  confidence?: MacronizedConfidence;
 }
 
 export type MacronizedResult = (MacronizedWord | string)[];
+
+const isMacronizedConfidence = (x: unknown): x is MacronizedConfidence =>
+  x === "weak" || x === "tied" || x === "confident";
 
 export const MacronizeApi: ApiRoute<string, MacronizedResult> = {
   path: "/api/macronize",
@@ -55,6 +69,7 @@ export const MacronizeApi: ApiRoute<string, MacronizedResult> = {
         word: isString,
         options: isArray(isAny),
         suggested: maybeUndefined(isNumber),
+        confidence: maybeUndefined(isMacronizedConfidence),
       })
     )
   ),
