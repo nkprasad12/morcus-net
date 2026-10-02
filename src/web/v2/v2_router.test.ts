@@ -111,13 +111,13 @@ describe("v2_router integration", () => {
       })
     );
     expect(res.header["set-cookie"]).toBeDefined();
-    expect(res.header["set-cookie"][0]).toContain("morcus_dicts=L%26S%3BGAF");
+    expect(res.header["set-cookie"][0]).toContain("morcus_d=3");
   });
 
   test("GET /v2/dicts uses cookie when no dict param is passed", async () => {
     const res = await request(app)
       .get("/v2/dicts?q=amo")
-      .set("Cookie", "morcus_dicts=GAF%3BGRG");
+      .set("Cookie", "morcus_d=1u");
     expect(res.status).toBe(200);
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -208,7 +208,7 @@ describe("v2_router integration", () => {
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
         expect.objectContaining({ query: "amo", dicts: ["GAF"] })
       );
-      expect(res.header["set-cookie"][0]).toContain("morcus_dicts=GAF");
+      expect(res.header["set-cookie"][0]).toContain("morcus_d=2");
     });
 
     test("honours repeated dict checkboxes", async () => {
@@ -232,7 +232,7 @@ describe("v2_router integration", () => {
     test("re-enables inflection from the hidden-0 plus checked-1 pair", async () => {
       const res = await request(app)
         .get("/v2/dicts?q=amavi&o=0&o=1&dict=GAF")
-        .set("Cookie", "morcus_dicts=GAF; morcus_inflected=0");
+        .set("Cookie", "morcus_d=2; morcus_inflected=0");
 
       expect(res.status).toBe(200);
       // Regression: ["0", "1"] matched neither branch, so the stale cookie kept inflection off.
@@ -258,7 +258,7 @@ describe("v2_router integration", () => {
     test("persists an inflection change even when dictionaries come from the cookie", async () => {
       const res = await request(app)
         .get("/v2/dicts?q=amavi&o=0")
-        .set("Cookie", "morcus_dicts=GAF");
+        .set("Cookie", "morcus_d=2");
 
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
@@ -272,7 +272,7 @@ describe("v2_router integration", () => {
     test("resolves a single-dictionary cookie exactly", async () => {
       const res = await request(app)
         .get("/v2/dicts?q=amo")
-        .set("Cookie", "morcus_dicts=GAF");
+        .set("Cookie", "morcus_d=2");
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
         expect.objectContaining({ dicts: ["GAF"] })
@@ -293,7 +293,7 @@ describe("v2_router integration", () => {
     // User has existing cookies: inflected disabled (morcus_inflected=0) and custom dicts
     const res = await request(app)
       .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
-      .set("Cookie", "morcus_dicts=L%26S%3BS%26H%3BGRG; morcus_inflected=0");
+      .set("Cookie", "morcus_d=29; morcus_inflected=0");
 
     expect(res.status).toBe(200);
 
@@ -316,7 +316,7 @@ describe("v2_router integration", () => {
     // would overwrite the user's preferences on every lookup.
     const res = await request(app)
       .get("/v2/dicts?q=arma&embedded=1&o=0&dict=GAF")
-      .set("Cookie", "morcus_dicts=L%26S; morcus_inflected=1");
+      .set("Cookie", "morcus_d=1; morcus_inflected=1");
     expect(res.status).toBe(200);
     expect(res.header["set-cookie"]).toBeUndefined();
   });

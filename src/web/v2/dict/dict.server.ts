@@ -67,7 +67,6 @@ export {
   readCookie,
   formatDictsCookie,
   formatInflectedCookie,
-  formatDictsParam,
   resolveActiveDicts,
   toStringOrArray,
   dictParamsFromQuery,

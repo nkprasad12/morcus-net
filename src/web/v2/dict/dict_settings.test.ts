@@ -169,7 +169,7 @@ describe("MorcusDictSettings", () => {
     expect(eventDetail).not.toBeNull();
     expect(eventDetail.dictKeys).not.toContain("L&S");
     expect(eventDetail.bitmask).toBeDefined();
-    expect(document.cookie).toContain("morcus_dicts=");
+    expect(document.cookie).toContain("morcus_d=");
     // The cookie is the only durable store.
     expect(localStorage.getItem("SEARCH_SETTINGS_KEY")).toBeNull();
   });

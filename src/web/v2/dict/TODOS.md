@@ -364,8 +364,9 @@ localStorage copies outright. Each step is independently shippable:
 - [x] **Make the cookie the only durable store (F6, F8).** `syncWithCookie`, `SEARCH_SETTINGS_KEY`
       and V2's `GlobalSettings.inflectedSearch` are gone; `resolveInflection` is the one defaulting
       rule for inflection.
-- [ ] **One encoding (F9).** Delete `formatDictsParam` and its re-export from `dict.server.ts`
-      (no production callers), and store the cookie as the bitmask. `?dict=` stays as the input
-      adapter for the No-JS checkbox group, and `parseDictKeys` stays tolerant of old links.
+- [x] **One encoding (F9).** `formatDictsParam` is deleted, and the cookie is now `morcus_d`, which
+      stores the `?d=` bitmask. The cookie was renamed so that old `;`-joined values are ignored
+      rather than misread by `parseInt`. `?dict=` stays as the input adapter for the No-JS checkbox
+      group, and `parseDictKeys` stays tolerant of old links.
 
 Item 8 (shared links overwriting preferences) builds on this.

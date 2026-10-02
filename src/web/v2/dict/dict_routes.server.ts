@@ -39,7 +39,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     const dictScale = parseDictScale(req.query.scale);
 
     // Resolve dictionary selection based on precedence:
-    // Query ('dict' checkboxes > 'd' bitmask > legacy 'in') > Cookie ('morcus_dicts')
+    // Query ('dict' checkboxes > 'd' bitmask > legacy 'in') > Cookie ('morcus_d')
     // > Default (All Latin except Pozo)
     const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
     const langParam = toStringOrArray(req.query.lang);

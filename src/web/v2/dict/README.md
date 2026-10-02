@@ -44,7 +44,7 @@ sequenceDiagram
 ## Component Roles
 
 - `dict_page.server.ts`: Generates the outer page shell, transparency status pills (including zero-hit pills), and multi-lexicon containers.
-- `dict_selection.server.ts`: Parses dictionary parameters from URL (`in=` or `dict=`), parses and formats functional UI cookies (`morcus_dicts=`), and resolves active dictionaries based on the precedence hierarchy and source language filters (`lang=La`).
+- `dict_selection.server.ts`: Parses dictionary parameters from URL (`in=` or `dict=`), parses and formats functional UI cookies (`morcus_d=`), and resolves active dictionaries based on the precedence hierarchy and source language filters (`lang=La`).
 - `entry_view.server.ts`: Renders entry headers, definition blocks, and inflection tables.
 - `search_bar.server.ts`: Renders the accessible search `<form>`, input field, action buttons, and dictionary settings triggers.
 - `xml_to_html.server.ts`: Safe transformer converting TEI XML AST nodes into sanitized HTML.
@@ -66,13 +66,13 @@ $$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus
 - Highest precedence. Allows bookmarks, reader deep-links, and shared URLs to function deterministically.
 - Supports comma- or hyphen-delimited keys (e.g. `?dict=L&S,GAF` or `?in=LnS-GAF`).
 
-### 2. Cookies (`morcus_dicts`, `morcus_inflected`): the only durable store
+### 2. Cookies (`morcus_d`, `morcus_inflected`): the only durable store
 
 - **The server resolves.** On every request the server applies URL → cookie → default (`resolveActiveDicts`, `resolveInflection`) and renders the result. That's the checkboxes' `checked` state plus `data-d` (bitmask) and `data-o` on the search `<form>`.
 - **The client adopts.** `<morcus-dict-settings>` reads the checkboxes' `defaultChecked`, and `<morcus-dict-search>` reads `readRenderedDictState(form)`. Neither re-parses the URL or reads `localStorage`, so the controls can't disagree with the rendered results.
 - **No-JS writes**: the server sends `Set-Cookie` (`SameSite=Lax; Path=/; Max-Age=1 year`) on full-page submissions. Scoped views (`embedded=1` or `lang=`) never persist.
 - **JS writes**: toggling a control in `<morcus-dict-settings>` writes `document.cookie` (`persistDictKeys` / `persistInflected`). There is no `localStorage` copy.
-- **Privacy & Compliance**: The cookie stores only functional UI preferences (e.g. `morcus_dicts=L%26S%3BGAF`). Under GDPR/ePrivacy and CCPA, it qualifies as an exempt **strictly necessary / user preference** cookie and requires no consent banner.
+- **Privacy & Compliance**: The cookie stores only functional UI preferences (e.g. `morcus_d=3`, the same base36 bitmask as `?d=`). Under GDPR/ePrivacy and CCPA, it qualifies as an exempt **strictly necessary / user preference** cookie and requires no consent banner.
 
 ### 3. Query Language Constraints (`lang=La`) vs Layout (`embedded=1`)
 
