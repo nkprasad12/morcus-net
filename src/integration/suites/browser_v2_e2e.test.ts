@@ -895,6 +895,7 @@ test.describe("UI V2 dictionary", () => {
         library: "/v2/library",
         corpus: "/v2/corpus",
         external: "/v2/externalReader",
+        macronizer: "/v2/macronizer",
       };
       const chunkPaths = new Map<V2JsChunkName, string>();
       let cssPath: string | undefined;

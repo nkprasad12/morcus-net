@@ -87,7 +87,9 @@ export function describeParent(node: Node | null, root: Element): string {
  * Why `ctrl` would be a dead control without JS, or `null` if it works
  * natively: a link with an `href`, a submit button for a form, or a named
  * form control inside a form. Ignores controls that aren't exposed: hidden,
- * inside a closed `<dialog>`, or gated by `data-js-only`.
+ * inside a closed `<dialog>`, or gated by `data-js-only`. Also ignores text
+ * fields marked `data-unsubmitted`: useful on their own without a form (e.g.
+ * a box to copy text from) and deliberately left out of any submission.
  */
 export function noJsControlViolation(
   ctrl: Element,
@@ -97,6 +99,13 @@ export function noJsControlViolation(
     ctrl.closest("[data-js-only]") ||
     ctrl.closest("[hidden]") ||
     ctrl.closest("dialog")
+  ) {
+    return null;
+  }
+  if (
+    ctrl.tagName.toLowerCase() === "textarea" &&
+    ctrl.hasAttribute("data-unsubmitted") &&
+    !ctrl.hasAttribute("name")
   ) {
     return null;
   }

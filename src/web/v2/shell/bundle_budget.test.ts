@@ -316,7 +316,7 @@ describe("UI V2 Bundle Budget", () => {
     });
   });
 
-  test("formats human-readable budget report with all 5 chunks", () => {
+  test("formats human-readable budget report with every chunk", () => {
     const manifest = writeAllChunks("console.log('test');");
     const report = checkV2BundleBudget(tmpDir, manifest);
 
@@ -338,7 +338,7 @@ describe("UI V2 Bundle Budget", () => {
   });
 
   describe("checkV2ChunkDuplication", () => {
-    test("passes when all 5 chunks are present and modules are disjoint", () => {
+    test("passes when every chunk is present and modules are disjoint", () => {
       const result = checkV2ChunkDuplication({
         chunks: [
           {
@@ -386,6 +386,15 @@ describe("UI V2 Bundle Budget", () => {
               {
                 nameForCondition:
                   "/repo/src/web/v2/external/external_loader.client.ts",
+              },
+            ],
+          },
+          {
+            names: ["macronizer"],
+            modules: [
+              {
+                nameForCondition:
+                  "/repo/src/web/v2/macronizer/macronizer_view.client.ts",
               },
             ],
           },
@@ -437,6 +446,15 @@ describe("UI V2 Bundle Budget", () => {
               },
             ],
           },
+          {
+            names: ["macronizer"],
+            modules: [
+              {
+                nameForCondition:
+                  "/repo/src/web/v2/macronizer/macronizer_view.client.ts",
+              },
+            ],
+          },
         ],
       });
 
@@ -476,6 +494,10 @@ describe("UI V2 Bundle Budget", () => {
           {
             names: ["external"],
             modules: [{ nameForCondition: "/repo/src/x.ts" }],
+          },
+          {
+            names: ["macronizer"],
+            modules: [{ nameForCondition: "/repo/src/d.ts" }],
           },
         ],
       });

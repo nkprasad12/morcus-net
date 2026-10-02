@@ -52,6 +52,11 @@ import {
 import { buildExternalReaderUrl } from "@/web/v2/external/external_url.common";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
 import { renderNotFoundPageHtml } from "@/web/v2/library/not_found.server";
+import { resolveInitialResult } from "@/web/v2/macronizer/macronizer_apply.server";
+import {
+  renderMacronizerPage,
+  renderMacronizerPartial,
+} from "@/web/v2/macronizer/macronizer_view.server";
 import {
   buildReaderPageUrl,
   renderReaderPageHtml,
@@ -62,6 +67,10 @@ import {
   fakeCorpusEngine,
   fakeResult,
 } from "@/web/v2/testing/fake_corpus_engine";
+import {
+  CANNED_MACRONIZER_RESULT,
+  CANNED_MACRONIZER_TEXT,
+} from "@/web/v2/testing/fake_macronizer_engine";
 import { MOCK_CAESAR_WORK } from "@/web/v2/testing/mock_reader_loader";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => {
@@ -624,6 +633,29 @@ describe("Route-to-Bundle Conformance Harness", () => {
         name: "/v2/corpus (503 unavailable)",
         url: "/v2/corpus?q=amo",
         fullHtml: renderCorpusUnavailableHtml("amo"),
+      },
+      {
+        name: "/v2/macronizer (landing + results + slot partials)",
+        url: "/v2/macronizer",
+        fullHtml: renderMacronizerPage(),
+        partialHtmls: [
+          {
+            label: "macronizer results full page",
+            url: "/v2/macronizer",
+            html: renderMacronizerPage({
+              inputText: CANNED_MACRONIZER_TEXT,
+              document: resolveInitialResult(CANNED_MACRONIZER_RESULT),
+            }),
+          },
+          {
+            label: "renderMacronizerPartial",
+            url: "/v2/macronizer",
+            html: renderMacronizerPartial({
+              inputText: CANNED_MACRONIZER_TEXT,
+              document: resolveInitialResult(CANNED_MACRONIZER_RESULT),
+            }),
+          },
+        ],
       },
       {
         name: "/v2/about",

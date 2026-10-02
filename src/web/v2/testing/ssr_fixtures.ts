@@ -24,12 +24,25 @@ import { renderCorpusContentHtml } from "@/web/v2/corpus/corpus_view.server";
 import { renderDictPageHtml } from "@/web/v2/dict/dict_page.server";
 import { renderExternalLandingContentHtml } from "@/web/v2/external/external.server";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
+import {
+  applyChoices,
+  resolveInitialResult,
+} from "@/web/v2/macronizer/macronizer_apply.server";
+import {
+  decodeSuggestions,
+  encodeSuggestions,
+} from "@/web/v2/macronizer/macronizer_params.server";
+import { renderMacronizerContentHtml } from "@/web/v2/macronizer/macronizer_view.server";
 import { renderReaderContentHtml } from "@/web/v2/reader/reader.server";
 import {
   CORPUS_TEST_AUTHORS,
   fakeCorpusEngine,
   fakeResult,
 } from "@/web/v2/testing/fake_corpus_engine";
+import {
+  CANNED_MACRONIZER_RESULT,
+  CANNED_MACRONIZER_TEXT,
+} from "@/web/v2/testing/fake_macronizer_engine";
 
 export interface SsrFixture {
   readonly name: string;
@@ -233,6 +246,54 @@ export async function buildCorpusFixtures(): Promise<SsrFixture[]> {
   ];
 }
 
+export function buildMacronizerFixtures(): SsrFixture[] {
+  const initialDoc = resolveInitialResult(CANNED_MACRONIZER_RESULT);
+  const suggestions = decodeSuggestions(
+    encodeSuggestions(CANNED_MACRONIZER_RESULT)
+  );
+  const appliedDoc = applyChoices(CANNED_MACRONIZER_RESULT, {
+    suggestions,
+    priorShown: new Map(),
+    wordChoices: new Map([[1, 1]]),
+    vowelSubmissions: new Map([[6, new Set([2])]]),
+  });
+
+  return [
+    {
+      name: "macronizer-landing",
+      html: renderMacronizerContentHtml(),
+    },
+    {
+      name: "macronizer-results",
+      html: renderMacronizerContentHtml({
+        inputText: CANNED_MACRONIZER_TEXT,
+        document: initialDoc,
+      }),
+    },
+    {
+      name: "macronizer-applied",
+      html: renderMacronizerContentHtml({
+        inputText: CANNED_MACRONIZER_TEXT,
+        document: appliedDoc,
+      }),
+    },
+    {
+      name: "macronizer-error",
+      html: renderMacronizerContentHtml({
+        inputText: "   ",
+        errorBanner: "Please enter some Latin text to macronize.",
+      }),
+    },
+    {
+      name: "macronizer-unavailable",
+      html: renderMacronizerContentHtml({
+        inputText: CANNED_MACRONIZER_TEXT,
+        errorBanner: "The macronizer service is not available on this server.",
+      }),
+    },
+  ];
+}
+
 /** Every fixture, for the suites that check all pages at once. */
 export async function buildSsrFixtures(): Promise<SsrFixture[]> {
   const groups = await Promise.all([
@@ -241,6 +302,7 @@ export async function buildSsrFixtures(): Promise<SsrFixture[]> {
     buildReaderFixtures(),
     buildExternalFixtures(),
     buildCorpusFixtures(),
+    buildMacronizerFixtures(),
   ]);
   return groups.flat();
 }

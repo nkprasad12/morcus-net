@@ -60,6 +60,15 @@ export const CREATED_DOM_ALLOWLIST: readonly CreatedDomRule[] = [
       "Transient loading state while the JS-only Translation tab fetches its " +
       "text (`ReaderPanelController.setTab`); replaced by the served translation.",
   },
+  {
+    selector: "#w-plain [data-plain-vowels], #w-plain [data-plain-lemmas]",
+    subtree: true,
+    from: "interaction",
+    reason:
+      "Per-character vowel toggles and the lemma list (one entry per lemma in " +
+      "the word's `data-l`) inside the single shared plain-word card " +
+      "(`MorcusMacronizerView.populatePlainCard`), avoiding duplicate server-rendered cards for every unambiguous word.",
+  },
 ];
 
 export function isAllowlistedCreation(

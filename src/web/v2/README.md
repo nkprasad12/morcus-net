@@ -54,12 +54,12 @@ Each slice has its own `README.md` and `TODOS.md`. Cross-cutting docs live in [`
 1. **Colocated Vertical Slices**: Each topic folder contains everything required for that domain: SSR HTML templates, Light DOM Web Components, stylesheets, and unit tests. Deleting or refactoring a feature is isolated to its topic folder.
 2. **Target Suffix Convention**: every module carries a tier, and the boundaries between them are enforced by `no-restricted-imports` rules in [eslint.config.mjs](../../../eslint.config.mjs) rather than by review.
    - `*.server.ts`: Executes in Node.js (Express SSR renderers, XML parsers, server-side utilities). **Never** bundled to browser assets; **no** browser DOM globals (`window`, `document`, `HTMLElement`). May not import `*.client.ts`.
-   - `*.client.ts`: Executes in the Browser (Light DOM Web Components, client event delegation). Bundled via Rsbuild into 5 route-aligned chunks in `build/v2/` (`common.js`, `dict.js`, `reader.js`, `external.js`, `corpus.js`). May not import `*.server.ts`, Node builtins, `express`, or `he`.
+   - `*.client.ts`: Executes in the Browser (Light DOM Web Components, client event delegation). Bundled via Rsbuild into 6 route-aligned chunks in `build/v2/` (`common.js`, `dict.js`, `reader.js`, `external.js`, `corpus.js`, `macronizer.js`; see [Build Pipeline](#build-pipeline)). May not import `*.server.ts`, Node builtins, `express`, or `he`.
    - `*.common.ts`: Isomorphic **logic and rendering**. Safe in both tiers, and subject to both restrictions above. See [The `.common.ts` contract](#the-commonts-contract) below.
    - `*.test.ts`: Colocated unit tests targeting adjacent modules. Deliberately exempt, since a test legitimately exercises both sides of a boundary.
    - `*.css`: Feature-scoped styles imported by the root `v2.css`.
 3. **Flat Topic Directories**: Topics remain flat by default (avoiding micro-directories for 1–2 files). Filename prefixes (e.g. `dict_search.*`, `dict_settings.*`) keep related files automatically clustered alphabetically. Subdirectories are introduced only when a subcomponent exceeds 4+ dedicated files.
-4. **Root Integration Hubs & Entry Chunks**: Top-level entry points (`v2_router.server.ts`, `v2.css`) and slice entry manifests (`shell/common_entry.client.ts`, `dict/dict_entry.client.ts`, `reader/reader_entry.client.ts`, `external/external_entry.client.ts`, `corpus/corpus_entry.client.ts`) aggregate exports across topics. They carry target suffixes like any other module — being an entry point is not an exemption.
+4. **Root Integration Hubs & Entry Chunks**: Top-level entry points (`v2_router.server.ts`, `v2.css`) and slice entry manifests (`shell/common_entry.client.ts`, `dict/dict_entry.client.ts`, `reader/reader_entry.client.ts`, `external/external_entry.client.ts`, `corpus/corpus_entry.client.ts`, `macronizer/macronizer_entry.client.ts`) aggregate exports across topics. They carry target suffixes like any other module — being an entry point is not an exemption.
 
 ---
 
@@ -183,7 +183,8 @@ Two consequences worth knowing before you "clean up" such a module:
 
 - **Bundler script**: [src/bundler/v2.rsbuild.ts](../../bundler/v2.rsbuild.ts)
 - **Build contract**: [src/bundler/v2_build_contract.ts](../../bundler/v2_build_contract.ts) (chunk names, `dependOn` graph, manifest asset names, build directory; shared by the bundler and the server)
-- **Output chunks**: `build/v2/{common,dict,reader,external,corpus}.js` (ESM chunks built via Rspack `dependOn` and loaded via `<script type="module">` tags emitted per route by `page_shell.server.ts`)
+- **Output chunks**: `build/v2/{common,dict,reader,external,corpus,macronizer}.js` (ESM chunks built via Rspack `dependOn` and loaded via `<script type="module">` tags emitted per route by `page_shell.server.ts`)
+- **Shared modules**: a module imported by two or more chunks that depend on the same ancestor must ship once, in that ancestor. List it in the ancestor's `shared` array in `V2_CHUNK_ENTRIES` (it becomes an extra entry module of that chunk). A plain `import` from the entry file isn't enough: Rspack drops imports of side-effect-free modules whose exports the chunk doesn't use. The build fails with this advice (`checkV2ChunkDuplication`) when a module is duplicated.
 - **Stylesheet**: `src/web/v2/v2.css` served statically at `/v2/assets/v2.css`
 
 ### Browser Support & Compatibility Target

@@ -31,6 +31,7 @@
 @import "./library/library.css";
 @import "./corpus/corpus.css";
 @import "./external/external.css";
+@import "./macronizer/macronizer.css";
 @import "./shell/page_width.css";
 
 /* Base link styling */

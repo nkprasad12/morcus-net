@@ -18,6 +18,7 @@ export const V2_JS_ENTRY_NAMES = [
   "dict",
   "corpus",
   "external",
+  "macronizer",
 ] as const;
 
 export type V2JsEntryName = (typeof V2_JS_ENTRY_NAMES)[number];
@@ -28,6 +29,7 @@ export const V2_JS_CHUNKS = [
   "dict.js",
   "corpus.js",
   "external.js",
+  "macronizer.js",
 ] as const;
 
 export type V2JsChunkName = (typeof V2_JS_CHUNKS)[number];
@@ -64,6 +66,8 @@ export const V2_CHUNK_ENTRIES: Readonly<
 > = {
   common: {
     import: "./src/web/v2/shell/common_entry.client.ts",
+    // Dictionary URLs: used by the dict and macronizer chunks.
+    shared: ["./src/web/v2/dict/dict_params.common.ts"],
   },
   dict: {
     import: "./src/web/v2/dict/dict_entry.client.ts",
@@ -81,6 +85,10 @@ export const V2_CHUNK_ENTRIES: Readonly<
     import: "./src/web/v2/corpus/corpus_entry.client.ts",
     dependOn: "common",
   },
+  macronizer: {
+    import: "./src/web/v2/macronizer/macronizer_entry.client.ts",
+    dependOn: "common",
+  },
 } as const;
 
 /**
@@ -94,6 +102,7 @@ export const V2_ROUTES = [
   "library",
   "corpus",
   "external",
+  "macronizer",
 ] as const;
 
 export type V2Route = (typeof V2_ROUTES)[number];
@@ -108,6 +117,7 @@ const V2_ROUTE_LEAF: Readonly<Record<V2Route, V2JsEntryName>> = {
   library: "reader",
   corpus: "corpus",
   external: "external",
+  macronizer: "macronizer",
 };
 
 /**

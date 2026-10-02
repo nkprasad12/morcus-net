@@ -27,16 +27,23 @@ export function applyDictSearch(
   params.delete("in");
 }
 
-export interface DictUrlOptions extends DictSearch {
+export interface DictUrlOptions extends Omit<DictSearch, "d"> {
+  /** The active dictionaries; when absent, no `d` param is written. */
+  readonly d?: string;
   readonly lang?: string | null;
   readonly embedded?: string | null;
 }
 
-/** The `/v2/dicts` URL (path and query) for a search. */
+/**
+ * The `/v2/dicts` URL (path and query) for a search, with params in the
+ * order `q`, `d`, `lang`, `o`, `embedded`.
+ */
 export function buildDictUrl(options: DictUrlOptions): string {
   const params = new URLSearchParams();
-  applyDictSearch(params, options);
+  params.set("q", options.q);
+  if (options.d !== undefined) params.set("d", options.d);
   if (options.lang) params.set("lang", options.lang);
+  params.set("o", options.inflected ? "1" : "0");
   if (options.embedded) params.set("embedded", options.embedded);
   return `/v2/dicts?${params.toString()}`;
 }
