@@ -132,6 +132,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
   return renderPageShell({
     title: "Classical Library - Morcus Latin Tools",
     activePage: "library",
+    widthSurface: "library",
     contentHtml,
   });
 }

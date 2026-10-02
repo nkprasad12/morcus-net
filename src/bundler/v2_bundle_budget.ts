@@ -93,12 +93,16 @@ export interface V2BundleBudget {
  *   `dicts` 90 / 30, `corpus` 76 / 26, `library` 106 / 33, `external` 117 / 37 kB),
  *   after adding shared `core/combobox.client.ts` (WAI-ARIA 1.2 `ComboboxController`,
  *   ~2.3 kB raw / ~1.0 kB gzip) to `common.js` for dict and corpus autocomplete.
+ * - 2026-10-02: draggable page width handles (reader/library/corpus/dict);
+ *   user-approved +0.5 kB headroom. Gzip only: `common.js` 20 -> 20.5,
+ *   `library` 33 -> 33.5, `external` 37 -> 37.5 kB (those three were within
+ *   ~0.2 kB of their ceilings; raw ceilings and CSS unchanged).
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
     "common.js": {
       maxRawBytes: 60 * 1024,
-      maxGzipBytes: 20 * 1024,
+      maxGzipBytes: 20.5 * 1024,
     },
     "reader.js": {
       maxRawBytes: 50 * 1024,
@@ -121,8 +125,8 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     about: { maxRawBytes: 60 * 1024, maxGzipBytes: 20 * 1024 },
     dicts: { maxRawBytes: 90 * 1024, maxGzipBytes: 30 * 1024 },
     corpus: { maxRawBytes: 76 * 1024, maxGzipBytes: 26 * 1024 },
-    library: { maxRawBytes: 106 * 1024, maxGzipBytes: 33 * 1024 },
-    external: { maxRawBytes: 117 * 1024, maxGzipBytes: 37 * 1024 },
+    library: { maxRawBytes: 106 * 1024, maxGzipBytes: 33.5 * 1024 },
+    external: { maxRawBytes: 117 * 1024, maxGzipBytes: 37.5 * 1024 },
   },
   maxCssRawBytes: 130 * 1024,
   maxCssGzipBytes: 23 * 1024,

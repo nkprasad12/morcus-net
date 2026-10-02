@@ -20,6 +20,7 @@ import "@/web/v2/v2_elements.client";
 import { getRegisteredElementTags } from "@/web/v2/core/base_element.client";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 import { renderAppBar } from "@/web/v2/shell/page_shell.server";
+import { renderPageWidthHandles } from "@/web/v2/shell/page_width.server";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -74,11 +75,12 @@ function describeTarget(target: EventTarget): string {
 const FIXTURES: Record<string, string> = {
   "morcus-theme-toggle": renderAppBar("dicts"),
 
+  "morcus-page-width": renderPageWidthHandles("reader"),
+
   "morcus-dict-suggestions": `<morcus-dict-suggestions><ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul></morcus-dict-suggestions>`,
 
   "morcus-dict-settings": renderDictSearchBar({
     action: "/v2/dicts",
-    includePageWidth: true,
   }),
 
   "morcus-dict-toc": `

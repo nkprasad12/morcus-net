@@ -407,7 +407,7 @@ test.describe("UI V2 late hydration", () => {
       );
       localStorage.setItem(
         "GlobalSettings",
-        JSON.stringify({ readerWidth: "wide" })
+        JSON.stringify({ readerWidth: 1680 })
       );
       localStorage.setItem(
         "morcus_prepaint",
@@ -416,7 +416,7 @@ test.describe("UI V2 late hydration", () => {
           "--reader-font": "var(--font-sans)",
           "--reader-line-height": "1.85",
           "data-reader-hide-gutter": "",
-          "data-reader-width": "wide",
+          "--reader-page-max": "1680px",
         })
       );
     });
@@ -430,7 +430,7 @@ test.describe("UI V2 late hydration", () => {
           scale: getComputedStyle(root)
             .getPropertyValue("--reader-scale")
             .trim(),
-          width: root.getAttribute("data-reader-width"),
+          width: root.style.getPropertyValue("--reader-page-max"),
           hideGutter: root.hasAttribute("data-reader-hide-gutter"),
           fontSize: style.fontSize,
           fontFamily: style.fontFamily,
@@ -444,7 +444,7 @@ test.describe("UI V2 late hydration", () => {
     const before = await measure();
     // The defaults would be 20px (1.25rem) serif.
     expect(before.scale).toBe("1.30");
-    expect(before.width).toBe("wide");
+    expect(before.width).toBe("1680px");
     expect(before.hideGutter).toBe(true);
     expect(before.fontSize).not.toBe("20px");
     expect(

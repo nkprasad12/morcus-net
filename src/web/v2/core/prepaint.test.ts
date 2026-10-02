@@ -16,7 +16,7 @@ function snapshot(): unknown {
 beforeEach(() => {
   localStorage.clear();
   root.removeAttribute("style");
-  root.removeAttribute("data-reader-width");
+  root.removeAttribute("data-dict-width");
 });
 
 afterEach(() => {
@@ -31,28 +31,28 @@ describe("setPrepaint", () => {
   });
 
   test("applies a data attribute to <html> and records it", () => {
-    setPrepaint("data-reader-width", "wide");
-    expect(root.getAttribute("data-reader-width")).toBe("wide");
-    expect(snapshot()).toEqual({ "data-reader-width": "wide" });
+    setPrepaint("data-dict-width", "wide");
+    expect(root.getAttribute("data-dict-width")).toBe("wide");
+    expect(snapshot()).toEqual({ "data-dict-width": "wide" });
   });
 
   test("merges with other owners' entries without clobbering them", () => {
     setPrepaint("--reader-scale", "1.25");
-    setPrepaint("data-reader-width", "wide");
+    setPrepaint("data-dict-width", "wide");
     setPrepaint("--reader-scale", "0.90");
     expect(snapshot()).toEqual({
       "--reader-scale": "0.90",
-      "data-reader-width": "wide",
+      "data-dict-width": "wide",
     });
   });
 
   test("null removes from <html> and from the snapshot", () => {
     setPrepaint("--reader-scale", "1.25");
-    setPrepaint("data-reader-width", "wide");
+    setPrepaint("data-dict-width", "wide");
     setPrepaint("--reader-scale", null);
-    setPrepaint("data-reader-width", null);
+    setPrepaint("data-dict-width", null);
     expect(root.style.getPropertyValue("--reader-scale")).toBe("");
-    expect(root.hasAttribute("data-reader-width")).toBe(false);
+    expect(root.hasAttribute("data-dict-width")).toBe(false);
     expect(snapshot()).toEqual({});
   });
 
@@ -85,7 +85,7 @@ describe("setPrepaint", () => {
     jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("SecurityError");
     });
-    expect(() => setPrepaint("data-reader-width", "full")).not.toThrow();
-    expect(root.getAttribute("data-reader-width")).toBe("full");
+    expect(() => setPrepaint("data-dict-width", "full")).not.toThrow();
+    expect(root.getAttribute("data-dict-width")).toBe("full");
   });
 });

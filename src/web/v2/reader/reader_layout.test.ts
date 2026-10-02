@@ -54,7 +54,7 @@ describe("ReaderLayoutController", () => {
              aria-valuemin="300"
              aria-valuemax="750"
              aria-valuenow="420">
-          <div class="reader-splitter-handle"></div>
+          <div class="resize-grip"></div>
         </div>
         <aside class="reader-dict-panel">
           <div class="reader-sheet-bar">Header</div>

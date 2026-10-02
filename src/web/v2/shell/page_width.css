@@ -1,50 +1,50 @@
-/* Page Width Presets (Reader & Standalone Dictionary)
+/* Page Widths
  *
- * <html data-reader-width="…"> / <html data-dict-width="…"> holds the
- * non-default preset: narrow | wide | full. No attribute means Default.
- * core/page_width.client.ts sets it and records it with `setPrepaint`, so
- * shell/critical_theme.client.ts applies it before first paint.
+ * Draggable surfaces (reader, dict, library, corpus): the saved width is
+ * `--{surface}-page-max` on :root, put there before first paint by
+ * shell/critical_theme.client.ts (see core/page_width.client.ts). Each
+ * surface maps it onto `--page-max`, which its column and app bar row read
+ * and the handles are positioned from. Defaults live ONLY in the var()
+ * fallbacks: a default declared on body would shadow the :root value.
+ * "Full" is 100vw, which is never the binding constraint.
  *
- * "Full" uses 100vw: it is never the binding constraint, so the calc()
- * expressions built on these variables (see dict/dict_toc.css) work
- * unchanged for every preset.
+ * The handles sit on the container edge: `--page-max` plus `--page-extra`,
+ * which is non-zero only on a dictionary entry with the contents rail, where
+ * the container widens to fit the rail beside the column (dict/dict_toc.css).
+ * It is a separate addend (not a pre-summed width) so the inline
+ * `--page-max` written during a drag still moves the handles.
  *
  * .body-dict is only set on standalone dictionary pages (never embedded), so
- * the reader's dictionary iframe ignores the dictionary preset.
+ * the reader's dictionary iframe ignores the dictionary width.
  */
 
-/* --- Dictionary ---------------------------------------------------------
-   --dict-page-max: container width without the contents rail.
-   --dict-search-max: search bar width, fixed per preset so the bar does not
-     move when the contents rail appears (capped at Wide for Full).
-   --dict-toc-w: contents rail width (grows less than the column). */
+/* --- Draggable surfaces -------------------------------------------------- */
 
+.body-reader {
+  --page-max: var(--reader-page-max, 1400px);
+}
+
+.body-library {
+  --page-max: var(--library-page-max, 900px);
+}
+
+.body-corpus {
+  --page-max: var(--corpus-page-max, 900px);
+}
+
+/* The saved dictionary width is the reading column. The search bar is
+   capped so it does not move when the rail appears; the rail follows the
+   viewport, so it stays constant during a drag. */
 .body-dict {
-  --dict-page-max: 900px;
-  --dict-search-max: 868px;
-  --dict-toc-w: 240px;
+  --page-max: var(--dict-page-max, 900px);
+  --dict-search-max: min(calc(var(--page-max) - 32px), 1108px);
+  --dict-toc-w: clamp(240px, 18vw, 320px);
 }
 
-:root[data-dict-width="narrow"] .body-dict {
-  --dict-page-max: 760px;
-  --dict-search-max: 728px;
-}
-
-:root[data-dict-width="wide"] .body-dict {
-  --dict-page-max: 1140px;
-  --dict-search-max: 1108px;
-  --dict-toc-w: 280px;
-}
-
-:root[data-dict-width="full"] .body-dict {
-  --dict-page-max: 100vw;
-  --dict-search-max: 1108px;
-  --dict-toc-w: clamp(240px, 18vw, 360px);
-}
-
-.body-dict .app-bar-inner,
-.body-dict .container {
-  max-width: var(--dict-page-max);
+@media (min-width: 1080px) {
+  .body-dict:has(.results-layout.has-toc) {
+    --page-extra: calc(var(--dict-toc-w) + 40px);
+  }
 }
 
 .body-dict .search-form {
@@ -52,35 +52,100 @@
   margin-inline: auto;
 }
 
-/* --- Reader -------------------------------------------------------------- */
-
-.body-reader {
-  --reader-page-max: 1400px;
+.body-dict .app-bar-inner,
+.body-dict .container,
+.body-library .app-bar-inner,
+.body-library .container,
+.body-corpus .app-bar-inner,
+.body-corpus .container {
+  max-width: var(--page-max);
 }
 
-:root[data-reader-width="narrow"] .body-reader {
-  --reader-page-max: 1100px;
+/* --- Handles (shell/page_width_handles.client.ts) -------------------------
+   Fixed, so they work on scrolling pages too, and centered on the column
+   edge. 50% of a fixed box is half the viewport without the scrollbar,
+   matching how the column is centered. At full width they pin to the
+   window edge. The line, grip and hover/drag states come from
+   .resize-handle (core/resize_handle.css), shared with .reader-splitter;
+   this only sizes and places the handles. */
+
+.page-handle,
+.page-gutter-tint {
+  position: fixed;
+  top: 65px;
+  bottom: 0;
 }
 
-:root[data-reader-width="wide"] .body-reader {
-  --reader-page-max: 1680px;
+.page-handle {
+  --edge: max(
+    0px,
+    calc(50% - (var(--page-max) + var(--page-extra, 0px)) / 2 - 8px)
+  );
+
+  z-index: var(--z-raised);
+  width: 16px;
+  outline: none;
 }
 
-:root[data-reader-width="full"] .body-reader {
-  --reader-page-max: 100vw;
+.page-handle[data-side="left"] {
+  left: var(--edge);
 }
 
-/* --- Controls ------------------------------------------------------------ */
-
-/* The dictionary label reuses .settings-section-title, whose bottom margin is
-   meant for stacked content; inline with the select it would misalign. */
-.page-width-row .settings-section-title {
-  margin-bottom: 0;
+.page-handle[data-side="right"] {
+  right: var(--edge);
 }
 
-/* Mobile layouts are already full width, so the preset has no effect. */
+/* While dragging: tint the gutters and show the width next to the pointer. */
+.page-gutter-tint {
+  width: max(0px, calc(50% - (var(--page-max) + var(--page-extra, 0px)) / 2));
+  background-color: var(--resize-accent-light);
+  pointer-events: none;
+}
+
+.page-gutter-tint[data-side="left"] {
+  left: 0;
+}
+
+.page-gutter-tint[data-side="right"] {
+  right: 0;
+}
+
+.page-width-readout {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-overlay);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: var(--text);
+  color: var(--bg);
+  font: 600 0.75rem/1 var(--font-sans);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.page-gutter-tint,
+.page-width-readout {
+  display: none;
+}
+
+body.resizing-page {
+  user-select: none;
+  cursor: col-resize;
+}
+
+body.resizing-page iframe {
+  pointer-events: none;
+}
+
+body.resizing-page .page-gutter-tint,
+body.resizing-page .page-width-readout {
+  display: block;
+}
+
+/* Mobile layouts are already full width. */
 @media (max-width: 640px) {
-  .page-width-row {
+  morcus-page-width {
     display: none;
   }
 }

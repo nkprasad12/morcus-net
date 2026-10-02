@@ -1,11 +1,8 @@
 import {
   BaseElement,
   bindDismissable,
-  getPageWidth,
   registerElement,
-  setPageWidth,
   setPrepaint,
-  syncPageWidth,
   settingsStore,
 } from "@/web/v2/core/index.client";
 import {
@@ -212,16 +209,6 @@ export class MorcusDictSettings extends BaseElement {
         this.saveInflected();
       }
     );
-
-    // Server-rendered only on standalone pages (omitted when embedded).
-    const widthSelect = this.scope.$<HTMLSelectElement>("#dict-width-select");
-    if (widthSelect) {
-      syncPageWidth("dict");
-      widthSelect.value = getPageWidth("dict");
-      this.scope.listen(widthSelect, "change", () =>
-        setPageWidth("dict", widthSelect.value)
-      );
-    }
   }
 
   /** `record`: also record the highlight scale for pre-paint (see applyScale). */

@@ -1,0 +1,88 @@
+/* Shared Resize Handle Look (reader splitter, page width handles)
+ *
+ * `.resize-handle` is the draggable strip, drawn as a vertical line on
+ * ::before; `.resize-grip` is the pill centered on it. Owners add the
+ * shared class next to their own (`.reader-splitter`, `.page-handle`) and
+ * keep only sizing and positioning in their files, so every dragger looks
+ * the same:
+ *   rest:        faint dotted line (0.3), grip at 0.55
+ *   hover/focus: dotted --resize-accent line at half strength, grip slightly
+ *                stronger with a neutral border
+ *   dragging:    solid --resize-accent line, green grip border
+ *
+ * Imported before the owners' stylesheets so they can override `display`
+ * (e.g. the reader splitter is hidden on mobile).
+ */
+
+.resize-handle {
+  display: flex;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.resize-handle::before {
+  --resize-line: var(--border-strong);
+
+  content: "";
+  align-self: stretch;
+  width: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--resize-line) 0 2px,
+    transparent 2px 6px
+  );
+  opacity: 0.3;
+  transition: opacity 0.15s ease;
+}
+
+.resize-handle:hover::before,
+.resize-handle:focus-visible::before {
+  --resize-line: var(--resize-accent);
+
+  opacity: 0.5;
+}
+
+/* Solid and full strength only while actually dragging. */
+.resize-handle.is-resizing::before {
+  background: var(--resize-accent);
+  opacity: 1;
+}
+
+.resize-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.resize-grip::after {
+  content: "";
+  width: 2px;
+  height: 16px;
+  background-color: var(--border-strong);
+  border-radius: var(--radius-xs);
+}
+
+.resize-handle:hover .resize-grip,
+.resize-handle:focus-visible .resize-grip {
+  opacity: 0.85;
+  border-color: var(--border-strong);
+}
+
+.resize-handle.is-resizing .resize-grip {
+  opacity: 1;
+  border-color: var(--resize-accent);
+}
