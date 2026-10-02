@@ -2,41 +2,90 @@
  * @jest-environment jsdom
  */
 import "@/web/v2/dict/dict_settings.client";
+import type { DictSettingsCommit } from "@/web/v2/dict/dict_settings.client";
+import { revealHashTarget } from "@/web/v2/core/reveal.client";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 
-function mountDictSettings(): HTMLElement {
-  const wrapper = document.createElement("div");
-  wrapper.innerHTML = renderDictSearchBar({ action: "/v2/dicts" });
-  const el = wrapper.querySelector<HTMLElement>("morcus-dict-settings")!;
-  document.body.appendChild(el);
-  return el;
+type BarOptions = Partial<Parameters<typeof renderDictSearchBar>[0]>;
+
+interface Mounted {
+  el: HTMLElement;
+  trigger: HTMLElement;
+  dialog: HTMLDialogElement;
+  form: HTMLFormElement;
+  commits: DictSettingsCommit[];
 }
 
+/** Builds the whole search bar (trigger in the search form, dialog after it), detached. */
+function build(options: BarOptions = {}): HTMLDivElement {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = renderDictSearchBar({ action: "/v2/dicts", ...options });
+  return wrapper;
+}
+
+function attach(wrapper: HTMLDivElement): Mounted {
+  const el = wrapper.querySelector<HTMLElement>("morcus-dict-settings")!;
+  const commits: DictSettingsCommit[] = [];
+  el.addEventListener("dict-settings-commit", (e) => {
+    if (e instanceof CustomEvent) commits.push(e.detail);
+  });
+  document.body.appendChild(wrapper);
+  return {
+    el,
+    trigger: document.querySelector<HTMLElement>("#dict-settings-btn")!,
+    dialog: el.querySelector<HTMLDialogElement>("dialog#dict-settings")!,
+    form: el.querySelector<HTMLFormElement>("form.dict-settings-form")!,
+    commits,
+  };
+}
+
+function mount(options: BarOptions = {}): Mounted {
+  return attach(build(options));
+}
+
+function checkbox(root: ParentNode, key: string): HTMLInputElement {
+  return root.querySelector<HTMLInputElement>(
+    `.dict-checkbox[data-key="${key}"]`
+  )!;
+}
+
+function toggle(input: HTMLInputElement, checked: boolean) {
+  input.checked = checked;
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function clickDone(m: Mounted) {
+  m.dialog.querySelector<HTMLElement>(".dict-settings-done")!.click();
+}
+
+function clearCookies() {
+  for (const name of ["morcus_d", "morcus_inflected"]) {
+    document.cookie = `${name}=; Max-Age=0; Path=/`;
+  }
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  clearCookies();
+  document.documentElement.style.removeProperty("--highlight-scale");
+  document.body.innerHTML = "";
+  window.history.replaceState(null, "", "/");
+});
+
+afterEach(() => {
+  document.body.innerHTML = "";
+  clearCookies();
+  window.history.replaceState(null, "", "/");
+});
+
 describe("MorcusDictSettings", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    document.documentElement.style.removeProperty("--highlight-scale");
-    document.body.innerHTML = "";
-  });
-
-  afterEach(() => {
-    document.body.innerHTML = "";
-  });
-
-  test("renders default state with 50% highlight strength", () => {
-    const el = mountDictSettings();
-
-    const btn = el.querySelector<HTMLElement>(".settings-btn");
-    const details = el.querySelector<HTMLDetailsElement>(
-      ".dict-settings-details"
-    );
-    const slider = el.querySelector<HTMLInputElement>(".settings-slider");
-    const valueDisplay = el.querySelector<HTMLElement>(".settings-value");
-
-    expect(btn).not.toBeNull();
-    expect(details?.open).toBe(false);
-    expect(slider?.value).toBe("50");
-    expect(valueDisplay?.textContent).toBe("50%");
+  test("renders default state with 50% highlight strength, dialog closed", () => {
+    const m = mount();
+    expect(m.dialog.open).toBe(false);
+    expect(
+      m.el.querySelector<HTMLInputElement>(".settings-slider")?.value
+    ).toBe("50");
+    expect(m.el.querySelector(".settings-value")?.textContent).toBe("50%");
     expect(
       document.documentElement.style.getPropertyValue("--highlight-scale")
     ).toBe("1");
@@ -47,152 +96,121 @@ describe("MorcusDictSettings", () => {
       "GlobalSettings",
       JSON.stringify({ highlightStrength: 20, darkMode: false })
     );
-
-    const el = mountDictSettings();
-
-    const slider = el.querySelector<HTMLInputElement>(".settings-slider");
-    const valueDisplay = el.querySelector<HTMLElement>(".settings-value");
-
-    expect(slider?.value).toBe("20");
-    expect(valueDisplay?.textContent).toBe("20%");
+    const m = mount();
+    expect(
+      m.el.querySelector<HTMLInputElement>(".settings-slider")?.value
+    ).toBe("20");
+    expect(m.el.querySelector(".settings-value")?.textContent).toBe("20%");
     expect(
       document.documentElement.style.getPropertyValue("--highlight-scale")
     ).toBe("0.4");
   });
 
-  test("toggles popover open and closed on button click", () => {
-    const el = mountDictSettings();
+  test("the trigger opens the dialog and tracks aria-expanded", () => {
+    const m = mount();
+    m.trigger.click();
+    expect(m.dialog.open).toBe(true);
+    expect(m.trigger.getAttribute("aria-expanded")).toBe("true");
 
-    const btn = el.querySelector<HTMLElement>(".settings-btn")!;
-    const details = el.querySelector<HTMLDetailsElement>(
-      ".dict-settings-details"
-    )!;
-
-    expect(details.open).toBe(false);
-
-    btn.click();
-    expect(details.open).toBe(true);
-
-    btn.click();
-    expect(details.open).toBe(false);
+    m.dialog.querySelector<HTMLElement>("[data-dialog-close]")!.click();
+    expect(m.dialog.open).toBe(false);
+    expect(m.trigger.getAttribute("aria-expanded")).toBe("false");
   });
 
-  test("updates highlight scale on slider input and persists on change", () => {
-    const el = mountDictSettings();
-
-    const slider = el.querySelector<HTMLInputElement>(".settings-slider")!;
-    const valueDisplay = el.querySelector<HTMLElement>(".settings-value")!;
+  test("highlight strength is live: scale on input, persisted on change", () => {
+    const m = mount();
+    const slider = m.el.querySelector<HTMLInputElement>(".settings-slider")!;
 
     slider.value = "80";
     slider.dispatchEvent(new Event("input"));
-
     expect(
       document.documentElement.style.getPropertyValue("--highlight-scale")
     ).toBe("1.6");
-    expect(valueDisplay.textContent).toBe("80%");
-
-    // Verify localStorage has not updated before change event
+    expect(m.el.querySelector(".settings-value")?.textContent).toBe("80%");
     expect(localStorage.getItem("GlobalSettings")).toBeNull();
     // Connect recorded the initial scale for pre-paint; the input tick didn't.
     const prepaint = () =>
       JSON.parse(localStorage.getItem("morcus_prepaint") ?? "{}");
     expect(prepaint()["--highlight-scale"]).toBe("1");
 
-    // Trigger change
     slider.dispatchEvent(new Event("change"));
-
-    const stored = JSON.parse(localStorage.getItem("GlobalSettings")!);
-    expect(stored.highlightStrength).toBe(80);
+    expect(JSON.parse(localStorage.getItem("GlobalSettings")!)).toEqual(
+      expect.objectContaining({ highlightStrength: 80 })
+    );
     expect(prepaint()["--highlight-scale"]).toBe("1.6");
+    // Strength isn't a content setting.
+    expect(m.commits).toEqual([]);
   });
 
-  test("closes popover on Escape key", () => {
-    const el = mountDictSettings();
+  test("content changes apply only when the dialog closes, once", () => {
+    const m = mount();
+    m.trigger.click();
 
-    const btn = el.querySelector<HTMLElement>(".settings-btn")!;
-    const details = el.querySelector<HTMLDetailsElement>(
-      ".dict-settings-details"
-    )!;
+    toggle(checkbox(m.el, "L&S"), false);
+    toggle(checkbox(m.el, "EGL"), true);
+    const inflected =
+      m.el.querySelector<HTMLInputElement>("#toggle-inflected")!;
+    toggle(inflected, false);
 
-    btn.click();
-    expect(details.open).toBe(true);
+    // Nothing applies while the dialog is open.
+    expect(m.commits).toEqual([]);
+    expect(document.cookie).not.toContain("morcus_d=");
 
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    expect(details.open).toBe(false);
-  });
-
-  test("closes popover on outside pointerdown", () => {
-    const el = mountDictSettings();
-
-    const outside = document.createElement("div");
-    document.body.appendChild(outside);
-
-    const btn = el.querySelector<HTMLElement>(".settings-btn")!;
-    const details = el.querySelector<HTMLDetailsElement>(
-      ".dict-settings-details"
-    )!;
-
-    btn.click();
-    expect(details.open).toBe(true);
-
-    outside.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-    expect(details.open).toBe(false);
-  });
-
-  test("renders dictionary checkboxes with defaults and handles toggle", () => {
-    const el = mountDictSettings();
-
-    const checkboxes = el.querySelectorAll<HTMLInputElement>(".dict-checkbox");
-    expect(checkboxes.length).toBeGreaterThan(0);
-
-    // L&S should be checked by default
-    const lsCheckbox = Array.from(checkboxes).find(
-      (cb) => cb.dataset.key === "L&S"
-    )!;
-    expect(lsCheckbox.checked).toBe(true);
-
-    // Pozo (EGL) should NOT be checked by default
-    const pozoCheckbox = Array.from(checkboxes).find(
-      (cb) => cb.dataset.key === "EGL"
-    )!;
-    expect(pozoCheckbox.checked).toBe(false);
-
-    // Toggle off L&S
-    let eventDetail: any = null;
-    el.addEventListener("dict-selection-change", (e: any) => {
-      eventDetail = e.detail;
-    });
-
-    lsCheckbox.checked = false;
-    lsCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
-
-    expect(eventDetail).not.toBeNull();
-    expect(eventDetail.dictKeys).not.toContain("L&S");
-    expect(eventDetail.bitmask).toBeDefined();
+    clickDone(m);
+    expect(m.dialog.open).toBe(false);
+    expect(m.commits).toHaveLength(1);
+    expect(m.commits[0].dictKeys).toContain("EGL");
+    expect(m.commits[0].dictKeys).not.toContain("L&S");
+    expect(m.commits[0].isInflected).toBe(false);
+    expect(m.commits[0].bitmask).toBeTruthy();
     expect(document.cookie).toContain("morcus_d=");
+    expect(document.cookie).toContain("morcus_inflected=0");
     // The cookie is the only durable store.
     expect(localStorage.getItem("SEARCH_SETTINGS_KEY")).toBeNull();
-  });
-
-  test("handles inflection toggle and dispatches dict-inflected-change", () => {
-    const el = mountDictSettings();
-    const inflectedCheckbox =
-      el.querySelector<HTMLInputElement>("#toggle-inflected")!;
-    expect(inflectedCheckbox.checked).toBe(true);
-
-    let inflectedDetail: any = null;
-    el.addEventListener("dict-inflected-change", (e: any) => {
-      inflectedDetail = e.detail;
-    });
-
-    inflectedCheckbox.checked = false;
-    inflectedCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
-
-    expect(inflectedDetail).toEqual({ isInflected: false });
-    expect(document.cookie).toContain("morcus_inflected=0");
     expect(localStorage.getItem("GlobalSettings") ?? "").not.toContain(
       "inflectedSearch"
     );
+  });
+
+  test("Escape commits too, without committing twice", () => {
+    const m = mount();
+    m.trigger.click();
+    toggle(checkbox(m.el, "EGL"), true);
+
+    // Native Escape fires `cancel` then `close`.
+    m.dialog.dispatchEvent(new Event("cancel"));
+    m.dialog.removeAttribute("open");
+    m.dialog.dispatchEvent(new Event("close"));
+
+    expect(m.commits).toHaveLength(1);
+  });
+
+  test("closing with nothing changed commits nothing", () => {
+    const m = mount();
+    m.trigger.click();
+    toggle(checkbox(m.el, "EGL"), true);
+    toggle(checkbox(m.el, "EGL"), false);
+    clickDone(m);
+
+    expect(m.commits).toEqual([]);
+    expect(document.cookie).not.toContain("morcus_d=");
+  });
+
+  test("a second session diffs against the last commit", () => {
+    const m = mount();
+    m.trigger.click();
+    toggle(checkbox(m.el, "EGL"), true);
+    clickDone(m);
+
+    m.trigger.click();
+    clickDone(m);
+    expect(m.commits).toHaveLength(1);
+
+    m.trigger.click();
+    toggle(checkbox(m.el, "EGL"), false);
+    clickDone(m);
+    expect(m.commits).toHaveLength(2);
+    expect(m.commits[1].dictKeys).not.toContain("EGL");
   });
 
   test("adopts the server-rendered selection, ignoring the URL and localStorage", () => {
@@ -205,179 +223,88 @@ describe("MorcusDictSettings", () => {
       JSON.stringify({ inflectedSearch: true })
     );
 
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = renderDictSearchBar({
-      action: "/v2/dicts",
-      activeDicts: ["GAF"],
-      isInflected: false,
-    });
-    const el = wrapper.querySelector<HTMLElement>("morcus-dict-settings")!;
-    document.body.appendChild(el);
+    const m = mount({ activeDicts: ["GAF"], isInflected: false });
 
     const checked = Array.from(
-      el.querySelectorAll<HTMLInputElement>(".dict-checkbox")
+      m.el.querySelectorAll<HTMLInputElement>(".dict-checkbox")
     )
       .filter((cb) => cb.checked)
       .map((cb) => cb.dataset.key);
     expect(checked).toEqual(["GAF"]);
     expect(
-      el.querySelector<HTMLInputElement>("#toggle-inflected")!.checked
+      m.el.querySelector<HTMLInputElement>("#toggle-inflected")!.checked
     ).toBe(false);
-
-    window.history.replaceState({}, "", "/");
   });
 
-  test("synchronizes aria-expanded and closes on element disconnect", () => {
-    const el = mountDictSettings();
+  test("disconnecting closes the dialog and drops the draft", () => {
+    const m = mount();
+    m.trigger.click();
+    toggle(checkbox(m.el, "EGL"), true);
 
-    const btn = el.querySelector<HTMLElement>(".settings-btn")!;
-    const details = el.querySelector<HTMLDetailsElement>(
-      ".dict-settings-details"
-    )!;
-
-    expect(details.open).toBe(false);
-
-    btn.click();
-    expect(details.open).toBe(true);
-    expect(btn.getAttribute("aria-expanded")).toBe("true");
-
-    // Disconnecting the host closes the details popover cleanly
-    el.remove();
-    expect(details.open).toBe(false);
-    expect(btn.getAttribute("aria-expanded")).toBe("false");
+    m.el.remove();
+    expect(m.dialog.open).toBe(false);
+    expect(m.trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(checkbox(m.el, "EGL").checked).toBe(false);
+    expect(m.commits).toEqual([]);
   });
 
   describe("pre-hydration edits (PH1)", () => {
-    function renderSsr(): HTMLElement {
-      // Built detached so the element doesn't connect until appended,
-      // mirroring server HTML that is interactive before v2.js arrives.
-      const container = document.createElement("div");
-      container.innerHTML = `
-        <morcus-dict-settings>
-          <details class="dict-settings-details" open>
-            <summary class="settings-btn"></summary>
-            <div class="settings-popover">
-              <input type="checkbox" id="toggle-inflected" class="inflected-checkbox" checked />
-              <input type="checkbox" class="dict-checkbox" data-key="L&S" checked />
-              <input type="checkbox" class="dict-checkbox" data-key="EGL" />
-            </div>
-          </details>
-        </morcus-dict-settings>
-      `;
-      return container;
-    }
+    test("edits in a still-open (hash-targeted) dialog are a draft that applies on close", () => {
+      window.history.replaceState(null, "", "/v2/dicts#dict-settings");
+      const wrapper = build();
+      // The user opened the dialog via `:target` and clicked before the upgrade.
+      toggle(checkbox(wrapper, "L&S"), false);
+      toggle(checkbox(wrapper, "EGL"), true);
 
-    test("keeps checkbox changes made before upgrade and applies them", () => {
-      const container = renderSsr();
-      const el = container.querySelector<HTMLElement>("morcus-dict-settings")!;
-      const ls = el.querySelector<HTMLInputElement>('[data-key="L&S"]')!;
-      const egl = el.querySelector<HTMLInputElement>('[data-key="EGL"]')!;
-      const inflected =
-        el.querySelector<HTMLInputElement>("#toggle-inflected")!;
+      const m = attach(wrapper);
+      // Page-ready hands the hash over: the element opens the dialog and clears the hash.
+      revealHashTarget();
+      expect(m.dialog.open).toBe(true);
+      expect(window.location.hash).toBe("");
+      expect(checkbox(m.el, "L&S").checked).toBe(false);
+      expect(checkbox(m.el, "EGL").checked).toBe(true);
+      expect(m.commits).toEqual([]);
 
-      // The user clicks before the component upgrades.
-      ls.checked = false;
-      egl.checked = true;
-      inflected.checked = false;
-
-      let selection: any = null;
-      let inflection: any = null;
-      el.addEventListener("dict-selection-change", (e: any) => {
-        selection = e.detail;
-      });
-      el.addEventListener("dict-inflected-change", (e: any) => {
-        inflection = e.detail;
-      });
-      document.body.appendChild(container);
-
-      expect(ls.checked).toBe(false);
-      expect(egl.checked).toBe(true);
-      expect(inflected.checked).toBe(false);
-      expect(selection.dictKeys).toContain("EGL");
-      expect(selection.dictKeys).not.toContain("L&S");
-      expect(inflection).toEqual({ isInflected: false });
+      clickDone(m);
+      expect(m.commits).toHaveLength(1);
+      expect(m.commits[0].dictKeys).toContain("EGL");
+      expect(m.commits[0].dictKeys).not.toContain("L&S");
     });
 
-    test("emits nothing when the user changed nothing", () => {
-      const container = renderSsr();
-      const el = container.querySelector<HTMLElement>("morcus-dict-settings")!;
-      const events: string[] = [];
-      el.addEventListener("dict-selection-change", () => events.push("dict"));
-      el.addEventListener("dict-inflected-change", () => events.push("infl"));
+    test("edits in a dialog closed again before upgrade are discarded", () => {
+      const wrapper = build();
+      toggle(checkbox(wrapper, "EGL"), true);
 
-      document.body.appendChild(container);
-
-      expect(events).toEqual([]);
+      const m = attach(wrapper);
+      expect(m.dialog.open).toBe(false);
+      expect(checkbox(m.el, "EGL").checked).toBe(false);
+      expect(m.commits).toEqual([]);
     });
   });
 });
 
 describe("MorcusDictSettings in scoped and guest views", () => {
-  function clearCookies() {
-    for (const name of ["morcus_d", "morcus_inflected"]) {
-      document.cookie = `${name}=; Max-Age=0; Path=/`;
-    }
-  }
+  test("a scoped view never saves changes, but still applies them", () => {
+    const m = mount({ activeDicts: ["L&S"], scoped: true });
+    m.trigger.click();
+    toggle(checkbox(m.el, "GAF"), true);
+    toggle(m.el.querySelector<HTMLInputElement>("#toggle-inflected")!, false);
+    clickDone(m);
 
-  /** Mounts the whole search form, so the settings element sees its form's markers. */
-  function mountForm(
-    options: Partial<Parameters<typeof renderDictSearchBar>[0]>
-  ): HTMLFormElement {
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = renderDictSearchBar({
-      action: "/v2/dicts",
-      ...options,
-    });
-    const form = wrapper.querySelector<HTMLFormElement>("form")!;
-    document.body.appendChild(form);
-    return form;
-  }
-
-  function setChecked(form: HTMLFormElement, key: string, checked: boolean) {
-    const cb = form.querySelector<HTMLInputElement>(
-      `.dict-checkbox[data-key="${key}"]`
-    )!;
-    cb.checked = checked;
-    cb.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-
-  beforeEach(() => {
-    clearCookies();
-    document.body.innerHTML = "";
-  });
-
-  afterEach(() => {
-    clearCookies();
-    document.body.innerHTML = "";
-  });
-
-  test("a scoped view never saves changes, but still emits them", () => {
-    const form = mountForm({ activeDicts: ["L&S"], scoped: true });
-    let emitted: unknown = null;
-    form.addEventListener("dict-selection-change", (e) => {
-      emitted = (e as CustomEvent).detail;
-    });
-
-    setChecked(form, "GAF", true);
-    const inflected =
-      form.querySelector<HTMLInputElement>("#toggle-inflected")!;
-    inflected.checked = false;
-    inflected.dispatchEvent(new Event("change", { bubbles: true }));
-
-    expect(emitted).not.toBeNull();
+    expect(m.commits).toHaveLength(1);
     expect(document.cookie).not.toContain("morcus_d=");
     expect(document.cookie).not.toContain("morcus_inflected=");
   });
 
-  test("guest mode's locked controls stay locked and unchanged after upgrade", () => {
+  test("guest mode's locked controls stay locked, and Done only closes", () => {
     document.cookie = "morcus_d=1; Path=/"; // L&S only
-    const form = mountForm({
+    const m = mount({
       activeDicts: ["GAF"],
       guest: { returnHref: "/v2/dicts?q=amo" },
     });
 
     const controls = Array.from(
-      form.querySelectorAll<HTMLInputElement>(
+      m.el.querySelectorAll<HTMLInputElement>(
         ".dict-checkbox, #toggle-inflected"
       )
     );
@@ -386,6 +313,11 @@ describe("MorcusDictSettings in scoped and guest views", () => {
       .filter((c) => c.classList.contains("dict-checkbox") && c.checked)
       .map((c) => c.dataset.key);
     expect(checked).toEqual(["GAF"]);
+
+    m.trigger.click();
+    clickDone(m);
+    expect(m.dialog.open).toBe(false);
+    expect(m.commits).toEqual([]);
     expect(document.cookie).toContain("morcus_d=1");
   });
 });

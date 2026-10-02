@@ -20,7 +20,6 @@ import { filterAndClusterDictionaryChunks } from "@/web/v2/dict/dict_clustering.
 import { DictChunkCache } from "@/web/v2/dict/dict_chunk_cache.client";
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import {
-  encodeDictBitmask,
   DEFAULT_DICT_BITMASK,
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/dict_bitmask.common";
@@ -28,6 +27,7 @@ import {
   applyDictSearch,
   buildDictUrl,
 } from "@/web/v2/dict/dict_params.common";
+import type { DictSettingsCommit } from "@/web/v2/dict/dict_settings.client";
 import { handleDictPermalinkClick } from "@/web/v2/dict/dict_permalink.client";
 import {
   computeActiveLanguages,
@@ -244,115 +244,12 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       });
     }
 
-    // Listen for dictionary selection changes to re-fetch or update active search
-    this.scope.listen<{ dictKeys: string[]; bitmask?: string }>(
-      this,
-      "dict-selection-change",
-      (e) => {
-        const bitmask =
-          e.detail?.bitmask ||
-          (e.detail?.dictKeys ? encodeDictBitmask(e.detail.dictKeys) : "");
-
-        if (bitmask) {
-          this.activeDictBitmask = bitmask;
-        }
-        if (e.detail?.dictKeys) {
-          this.activeDictKeys = e.detail.dictKeys;
-        }
-
-        // Update hidden input in form if present
-        const hiddenD = this.scope.$<HTMLInputElement>('input[name="d"]');
-        if (hiddenD && bitmask) {
-          hiddenD.value = bitmask;
-        }
-
-        // Update URL query parameter
-        this.syncUrlParams({ d: bitmask });
-
-        const currentQuery = this.inputElement?.value.trim() ?? "";
-        if (currentQuery) {
-          void this.fetchResults(currentQuery);
-        }
-
-        // Re-cluster suggestions immediately if active prefix is in chunk cache
-        if (this.shownSuggestions.length > 0 && currentQuery) {
-          const { query: activeQ, isSuffix: activeSuffix } =
-            cleanCompletionQuery(currentQuery);
-          if (!activeSuffix && activeQ.length >= 2) {
-            const prefix = activeQ.slice(0, 2).toLowerCase();
-            if (this.chunkCache.hasPrefix(prefix)) {
-              this.renderCachedCompletions(prefix, activeQ);
-            }
-          }
-        }
-
-        const welcomeEl = this.scope.$<HTMLElement>("#landing-welcome");
-        if (welcomeEl && this.activeDictKeys) {
-          welcomeEl.textContent = buildWelcomeMessage(
-            this.activeDictKeys,
-            this.isInflected
-          );
-        }
-
-        // Update dictionary list badges live on the landing page
-        if (e.detail?.dictKeys) {
-          const activeSet = new Set(
-            e.detail.dictKeys.map((k) => k.toUpperCase())
-          );
-          const items = this.scope.$$<HTMLElement>(".dict-list-item");
-          for (const item of items) {
-            const key = item.dataset.dictKey?.toUpperCase();
-            if (!key) continue;
-            const isEnabled = activeSet.has(key);
-            item.classList.toggle("dict-enabled", isEnabled);
-            item.classList.toggle("dict-disabled", !isEnabled);
-
-            const badge = item.querySelector(".lexicon-badge");
-            if (badge) {
-              badge.classList.toggle("dict-enabled", isEnabled);
-              badge.classList.toggle("dict-disabled", !isEnabled);
-            }
-          }
-        }
-
-        // Update language chips in the search bar tray live
-        const langChipsContainer = this.scope.$<HTMLElement>(".lang-chips");
-        if (langChipsContainer && this.activeDictKeys) {
-          const activeLangs = computeActiveLanguages(this.activeDictKeys);
-          setHtml(langChipsContainer, renderLangChipsHtml(activeLangs));
-        }
+    // The settings dialog commits once, when it closes, and only if something changed.
+    this.scope.listen<DictSettingsCommit>(this, "dict-settings-commit", (e) => {
+      if (e.detail) {
+        this.applySettingsCommit(e.detail);
       }
-    );
-
-    // Listen for inflection mode toggle changes
-    this.scope.listen<{ isInflected: boolean }>(
-      this,
-      "dict-inflected-change",
-      (e) => {
-        this.isInflected = e.detail?.isInflected !== false;
-
-        this.syncUrlParams({ o: this.isInflected ? "1" : "0" });
-
-        // Update inflection badge in the search bar tray live
-        const inflectChip = this.scope.$<HTMLElement>(".inflect-chip");
-        if (inflectChip) {
-          replaceWithHtml(inflectChip, renderInflectChipHtml(this.isInflected));
-        }
-
-        const welcomeEl = this.scope.$<HTMLElement>("#landing-welcome");
-        if (welcomeEl && this.activeDictKeys) {
-          welcomeEl.textContent = buildWelcomeMessage(
-            this.activeDictKeys,
-            this.isInflected
-          );
-        }
-
-        const currentQuery = this.inputElement?.value.trim() ?? "";
-        if (currentQuery) {
-          void this.fetchResults(currentQuery);
-        }
-      }
-    );
+    });
 
     // The input is usable before upgrade, so its live value may be text the
     // user typed rather than the query the server rendered results for. The
@@ -399,6 +296,71 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       window.scrollY === 0
     ) {
       this.inputElement.focus({ preventScroll: true });
+    }
+  }
+
+  /** Adopts committed dictionary settings: form, URL, tray, landing page, then one fetch. */
+  private applySettingsCommit(commit: DictSettingsCommit) {
+    this.activeDictKeys = commit.dictKeys;
+    this.activeDictBitmask = commit.bitmask;
+    this.isInflected = commit.isInflected;
+    const o = commit.isInflected ? "1" : "0";
+
+    // Searches keep what's on screen, so the search form carries the new state.
+    const form = this.scope.$<HTMLFormElement>("form.search-form");
+    const hiddenD = form?.querySelector<HTMLInputElement>('input[name="d"]');
+    const hiddenO = form?.querySelector<HTMLInputElement>('input[name="o"]');
+    if (hiddenD) hiddenD.value = commit.bitmask;
+    if (hiddenO) hiddenO.value = o;
+    this.syncUrlParams({ d: commit.bitmask, o });
+
+    const langChipsContainer = this.scope.$<HTMLElement>(".lang-chips");
+    if (langChipsContainer) {
+      const activeLangs = computeActiveLanguages(commit.dictKeys);
+      setHtml(langChipsContainer, renderLangChipsHtml(activeLangs));
+    }
+    const inflectChip = this.scope.$<HTMLElement>(".inflect-chip");
+    if (inflectChip) {
+      replaceWithHtml(inflectChip, renderInflectChipHtml(commit.isInflected));
+    }
+
+    const welcomeEl = this.scope.$<HTMLElement>("#landing-welcome");
+    if (welcomeEl) {
+      welcomeEl.textContent = buildWelcomeMessage(
+        commit.dictKeys,
+        commit.isInflected
+      );
+    }
+
+    // Dictionary list badges on the landing page.
+    const activeSet = new Set(commit.dictKeys.map((k) => k.toUpperCase()));
+    for (const item of this.scope.$$<HTMLElement>(".dict-list-item")) {
+      const key = item.dataset.dictKey?.toUpperCase();
+      if (!key) continue;
+      const isEnabled = activeSet.has(key);
+      item.classList.toggle("dict-enabled", isEnabled);
+      item.classList.toggle("dict-disabled", !isEnabled);
+      const badge = item.querySelector(".lexicon-badge");
+      if (badge) {
+        badge.classList.toggle("dict-enabled", isEnabled);
+        badge.classList.toggle("dict-disabled", !isEnabled);
+      }
+    }
+
+    const currentQuery = this.inputElement?.value.trim() ?? "";
+    if (!currentQuery) return;
+    void this.fetchResults(currentQuery);
+
+    // Re-cluster suggestions immediately if the active prefix is in the chunk cache.
+    if (this.shownSuggestions.length > 0) {
+      const { query: activeQ, isSuffix: activeSuffix } =
+        cleanCompletionQuery(currentQuery);
+      if (!activeSuffix && activeQ.length >= 2) {
+        const prefix = activeQ.slice(0, 2).toLowerCase();
+        if (this.chunkCache.hasPrefix(prefix)) {
+          this.renderCachedCompletions(prefix, activeQ);
+        }
+      }
     }
   }
 

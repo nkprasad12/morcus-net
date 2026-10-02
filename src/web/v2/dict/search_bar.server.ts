@@ -4,8 +4,11 @@ import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 import { SAVE_PARAM } from "@/web/v2/dict/dict_selection.common";
+import { renderDialog } from "@/web/v2/dialog/dialog.server";
 
 import {
+  DICT_SETTINGS_DIALOG_ID,
+  DICT_SETTINGS_TRIGGER_ID,
   computeActiveLanguages,
   renderLangChipsHtml,
   renderInflectChipHtml,
@@ -30,15 +33,26 @@ export interface SearchBarOptions {
   guest?: { returnHref: string };
   /**
    * A scoped view (reader iframe, `lang=` filter) shows a narrowed selection that must never be
-   * saved. Published as `data-scoped` so the client skips persistence too.
+   * saved. Published as `data-scoped` on the settings form so the client skips persistence too.
    */
   scoped?: boolean;
 }
 
+function hiddenInput(name: string, value: string): string {
+  return `<input type="hidden" name="${he.escape(name)}" value="${he.escape(
+    value
+  )}" />`;
+}
+
 /**
- * Shared search bar component rendering the two-tier compound search card,
- * text input, submit button with magnifying glass SVG, status badges tray,
- * and dictionary settings popover.
+ * Shared search bar component: the two-tier search card (input, search button, status tray) plus
+ * the dictionary settings dialog.
+ *
+ * The settings live in a `<dialog>` with **their own form**, outside the search form. A search
+ * therefore can't carry a settings change the user hasn't committed; instead the search form
+ * carries the rendered view's settings as hidden `d` / `o` fields, so a new search keeps what's
+ * on screen. Without JS the dialog opens via `#dict-settings` (`:target`) and **Done** submits
+ * it; with JS, `<morcus-dict-settings>` opens it with `showModal()` and applies on close.
  */
 export function renderDictSearchBar(options: SearchBarOptions): string {
   const query = options.query?.trim() ?? "";
@@ -55,9 +69,11 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   const langChipsHtml = renderLangChipsHtml(activeLangs);
   const inflectChipHtml = renderInflectChipHtml(isInflected);
 
-  // Guest mode locks the content settings. Disabled controls aren't submitted, so the link's
-  // settings ride along as hidden `d` / `o` fields instead: a new search keeps them (guest mode is
-  // sticky until the user returns to their own settings), with or without JS.
+  const extraHiddenInputsHtml = Object.entries(options.extraHiddenInputs ?? {})
+    .map(([k, v]) => hiddenInput(k, v))
+    .join("\n");
+
+  // Guest mode locks the content settings; the way out is a plain link, so it works without JS.
   const guest = options.guest;
   const disabledAttr = guest ? "disabled" : "";
   const returnLinkHtml = guest
@@ -66,119 +82,20 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
       )}">Return to my settings</a>`
     : "";
 
-  const dictItemsHtml = LatinDict.AVAILABLE.map((d) => {
-    const isChecked = activeDictKeys.has(d.key);
-    const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
-    return `
-      <label class="dict-item" title="${he.escape(
-        d.displayName
-      )} (${langText})">
-        <input
-          type="checkbox"
-          name="dict"
-          value="${he.escape(d.key)}"
-          class="dict-checkbox"
-          data-key="${he.escape(d.key)}"
-          ${isChecked ? "checked" : ""}
-          ${disabledAttr}
-        />
-        <span class="dict-name">${he.escape(d.displayName)}</span>
-        <span class="dict-lang">${langText}</span>
-      </label>
-    `;
-  }).join("\n");
-
-  // The Apply button is a *named* submitter: `save=1` is sent only when it is clicked, so an
-  // ordinary search never persists (see `dict_persistence.server.ts`). LOAD-BEARING ORDER: Enter in
-  // the search input submits with the form's FIRST submit button in tree order, so `.search-btn`
-  // must stay ahead of every `name="save"` button or Enter would silently save. Tested.
-  const settingsHtml = includeSettings
-    ? `
-      <morcus-dict-settings>
-        <details class="settings-details dict-settings-details">
-          <summary
-            class="settings-btn"
-            aria-label="Dictionary and highlight settings"
-            title="Dictionary and highlight settings"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="${TUNE_PATH}"></path>
-            </svg>
-          </summary>
-
-          <div class="settings-popover">
-            ${
-              guest
-                ? `<p class="settings-guest-note">These are the link's settings. ${returnLinkHtml} to change them.</p>`
-                : ""
-            }
-            <div class="settings-slider-section" data-js-only>
-              <div class="settings-header">
-                <span class="settings-title">Highlight Strength</span>
-                <span class="settings-value">50%</span>
-              </div>
-
-              <div class="settings-control-row">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="10"
-                  value="50"
-                  class="settings-slider"
-                  aria-label="Highlight strength"
-                />
-              </div>
-
-              <div class="settings-preview" aria-hidden="true">
-                <span class="lsOrth">Caesar</span>
-                <span class="lsGrammar">noun</span>
-                <span class="lsBibl">Gall. 1.1</span>
-                <span class="lsQuote">omnia</span>
-              </div>
-
-              <div class="settings-divider" role="separator"></div>
-            </div>
-
-            <div class="settings-inflected-section">
-              <div class="settings-section-title">Search Scope</div>
-              ${guest ? "" : `<input type="hidden" name="o" value="0" />`}
-              <label class="dict-item" title="Search conjugated verbs and declined nouns/adjectives">
-                <input
-                  type="checkbox"
-                  name="o"
-                  value="1"
-                  id="toggle-inflected"
-                  class="inflected-checkbox"
-                  ${isInflected ? "checked" : ""}
-                  ${disabledAttr}
-                />
-                <span class="dict-name">Latin inflected forms</span>
-              </label>
-              <p class="settings-caption">Match conjugated verbs and declined nouns/adjectives.</p>
-            </div>
-
-            <div class="settings-divider" role="separator"></div>
-
-            <div class="settings-section-title">Enabled Dictionaries</div>
-            <div class="dict-list">
-              ${dictItemsHtml}
-            </div>
-            
-            ${
-              guest
-                ? ""
-                : `<div class="settings-noscript-actions" data-nojs-only>
-              <button type="submit" name="${SAVE_PARAM}" value="1" class="btn btn-secondary settings-apply-btn">Apply Selection</button>
-            </div>`
-            }
-          </div>
-        </details>
-      </morcus-dict-settings>
-    `.trim()
+  const settingsDialogHtml = includeSettings
+    ? renderSettingsDialog({
+        action: options.action,
+        query,
+        extraHiddenInputsHtml,
+        activeDictKeys,
+        isInflected,
+        disabledAttr,
+        returnLinkHtml,
+        isGuest: guest !== undefined,
+        isScoped: options.scoped === true,
+      })
     : "";
 
-  // A plain link, so returning works without JS.
   const guestChipHtml = guest
     ? `
           <span class="guest-chip" role="status">
@@ -187,6 +104,8 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           </span>`
     : "";
 
+  // Without JS the trigger is a hash link that opens the dialog via `:target`; with JS,
+  // `<morcus-dict-settings>` intercepts it and calls `showModal()`.
   const trayHtml = includeSettings
     ? `
       <div class="search-tray">
@@ -200,48 +119,37 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           ${inflectChipHtml}${guestChipHtml}
         </div>
         <div class="search-tray-right">
-          ${settingsHtml}
+          <a
+            href="#${DICT_SETTINGS_DIALOG_ID}"
+            id="${DICT_SETTINGS_TRIGGER_ID}"
+            class="settings-btn"
+            role="button"
+            aria-haspopup="dialog"
+            aria-controls="${DICT_SETTINGS_DIALOG_ID}"
+            aria-expanded="false"
+            aria-label="Dictionary and highlight settings"
+            title="Dictionary and highlight settings"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="${TUNE_PATH}"></path>
+            </svg>
+          </a>
         </div>
       </div>
     `.trim()
     : "";
 
-  const hiddenInputsHtml = options.extraHiddenInputs
-    ? Object.entries(options.extraHiddenInputs)
-        .map(
-          ([k, v]) =>
-            `<input type="hidden" name="${he.escape(k)}" value="${he.escape(
-              v
-            )}">`
-        )
-        .join("\n")
-    : "";
-
-  // The settings popover renders live `dict` checkboxes, which are the real form controls.
-  // A static bitmask submitted alongside them can only ever be stale in No-JS mode, where nothing
-  // updates it. When the popover is omitted the form has no other carrier of dictionary state,
-  // so the hidden field is kept there. Guest mode disables the controls, so it needs both fields.
-  const dictStateInputHtml =
-    guest || !includeSettings
-      ? `<input type="hidden" name="d" value="${he.escape(dictBitmask)}" />`
-      : "";
-  const inflectionStateInputHtml = guest
-    ? `<input type="hidden" name="o" value="${isInflected ? "1" : "0"}" />`
-    : "";
-
   // `data-d` / `data-o` publish the selection the server resolved for this render. The client
   // adopts them (`readRenderedDictState`) instead of re-deriving state from the URL or storage.
-  // `data-scoped` tells it not to save changes (`dict_preferences.client`).
-  const persistenceAttrs = options.scoped ? " data-scoped" : "";
   return `
     <form class="search-form" action="${he.escape(
       options.action
     )}" method="GET" data-d="${he.escape(dictBitmask)}" data-o="${
     isInflected ? "1" : "0"
-  }"${persistenceAttrs}>
-      ${dictStateInputHtml}
-      ${inflectionStateInputHtml}
-      ${hiddenInputsHtml}
+  }">
+      ${hiddenInput("d", dictBitmask)}
+      ${hiddenInput("o", isInflected ? "1" : "0")}
+      ${extraHiddenInputsHtml}
       <div class="input-wrapper">
         <input
           type="text"
@@ -273,5 +181,127 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
       </div>
       ${trayHtml}
     </form>
+    ${settingsDialogHtml}
   `.trim();
+}
+
+interface SettingsDialogInput {
+  action: string;
+  query: string;
+  extraHiddenInputsHtml: string;
+  activeDictKeys: Set<string>;
+  isInflected: boolean;
+  disabledAttr: string;
+  returnLinkHtml: string;
+  isGuest: boolean;
+  isScoped: boolean;
+}
+
+function renderSettingsDialog(input: SettingsDialogInput): string {
+  const dictItemsHtml = LatinDict.AVAILABLE.map((d) => {
+    const isChecked = input.activeDictKeys.has(d.key);
+    const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
+    return `
+      <label class="dict-item" title="${he.escape(
+        d.displayName
+      )} (${langText})">
+        <input
+          type="checkbox"
+          name="dict"
+          value="${he.escape(d.key)}"
+          class="dict-checkbox"
+          data-key="${he.escape(d.key)}"
+          ${isChecked ? "checked" : ""}
+          ${input.disabledAttr}
+        />
+        <span class="dict-name">${he.escape(d.displayName)}</span>
+        <span class="dict-lang">${langText}</span>
+      </label>
+    `;
+  }).join("\n");
+
+  // Done commits. Without JS it submits this form: `save=1` makes the server store the settings
+  // and 303 back (`dict_persistence.server.ts`); scoped views never save, so theirs just reloads
+  // the view. With JS, `<morcus-dict-settings>` intercepts it and closes the dialog, which
+  // applies. In guest mode there's nothing to commit, so Done only closes.
+  const saveAttrs = input.isScoped ? "" : ` name="${SAVE_PARAM}" value="1"`;
+  const doneHtml = input.isGuest
+    ? `<a href="#" class="btn btn-primary dict-settings-done" role="button" data-dialog-close>Done</a>`
+    : `<button type="submit"${saveAttrs} class="btn btn-primary dict-settings-done">Done</button>`;
+
+  const bodyHtml = `
+    <form class="dict-settings-form" action="${he.escape(
+      input.action
+    )}" method="GET"${input.isScoped ? " data-scoped" : ""}>
+      ${input.query ? hiddenInput("q", input.query) : ""}
+      ${input.extraHiddenInputsHtml}
+      ${
+        input.isGuest
+          ? `<p class="settings-guest-note">These are the link's settings. ${input.returnLinkHtml} to change them.</p>`
+          : ""
+      }
+      <div class="settings-slider-section" data-js-only>
+        <div class="settings-header">
+          <span class="settings-title">Highlight Strength</span>
+          <span class="settings-value">50%</span>
+        </div>
+
+        <div class="settings-control-row">
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="10"
+            value="50"
+            class="settings-slider"
+            aria-label="Highlight strength"
+          />
+        </div>
+
+        <div class="settings-preview" aria-hidden="true">
+          <span class="lsOrth">Caesar</span>
+          <span class="lsGrammar">noun</span>
+          <span class="lsBibl">Gall. 1.1</span>
+          <span class="lsQuote">omnia</span>
+        </div>
+
+        <div class="settings-divider" role="separator"></div>
+      </div>
+
+      <div class="settings-inflected-section">
+        <div class="settings-section-title">Search Scope</div>
+        ${input.isGuest ? "" : hiddenInput("o", "0")}
+        <label class="dict-item" title="Search conjugated verbs and declined nouns/adjectives">
+          <input
+            type="checkbox"
+            name="o"
+            value="1"
+            id="toggle-inflected"
+            class="inflected-checkbox"
+            ${input.isInflected ? "checked" : ""}
+            ${input.disabledAttr}
+          />
+          <span class="dict-name">Latin inflected forms</span>
+        </label>
+        <p class="settings-caption">Match conjugated verbs and declined nouns/adjectives.</p>
+      </div>
+
+      <div class="settings-divider" role="separator"></div>
+
+      <div class="settings-section-title">Enabled Dictionaries</div>
+      <div class="dict-list">
+        ${dictItemsHtml}
+      </div>
+
+      <div class="dialog-actions">${doneHtml}</div>
+    </form>
+  `;
+
+  return `<morcus-dict-settings>${renderDialog({
+    id: DICT_SETTINGS_DIALOG_ID,
+    title: "Dictionary settings",
+    bodyHtml,
+    customClass: "dict-settings-dialog",
+    jsOnlyCloseButton: true,
+  })}</morcus-dict-settings>`;
 }

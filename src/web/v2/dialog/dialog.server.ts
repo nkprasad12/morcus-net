@@ -8,6 +8,11 @@ export interface DialogOptions {
   ariaDescribedBy?: string;
   customClass?: string;
   hideCloseButton?: boolean;
+  /**
+   * Marks the header close button `data-js-only`, for dialogs that also open without JS (via
+   * `:target`), where a script-driven close button would do nothing.
+   */
+  jsOnlyCloseButton?: boolean;
 }
 
 /**
@@ -22,6 +27,7 @@ export function renderDialog(options: DialogOptions): SafeHtml {
     ariaDescribedBy,
     customClass = "",
     hideCloseButton = false,
+    jsOnlyCloseButton = false,
   } = options;
 
   const titleId = `${id}-title`;
@@ -35,7 +41,8 @@ export function renderDialog(options: DialogOptions): SafeHtml {
         type="button"
         class="dialog-close-btn"
         aria-label="Close dialog"
-        data-dialog-close>
+        data-dialog-close
+        ${jsOnlyCloseButton ? raw("data-js-only") : ""}>
         <svg
           class="dialog-close-icon"
           viewBox="0 0 24 24"

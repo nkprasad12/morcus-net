@@ -5,6 +5,27 @@
 import "@/web/v2/dict/dict_suggestions.client";
 import "@/web/v2/dict/dict_search.client";
 import { MorcusDictSearch } from "@/web/v2/dict/dict_search.client";
+import {
+  DEFAULT_DICT_KEYS,
+  encodeDictBitmask,
+} from "@/web/v2/dict/dict_bitmask.common";
+import type { DictSettingsCommit } from "@/web/v2/dict/dict_settings.client";
+
+/** What `<morcus-dict-settings>` emits when its dialog closes with changes. */
+function commitSettings(
+  el: HTMLElement,
+  dictKeys: readonly string[],
+  isInflected: boolean
+) {
+  const detail: DictSettingsCommit = {
+    dictKeys: [...dictKeys],
+    bitmask: encodeDictBitmask(dictKeys),
+    isInflected,
+  };
+  el.dispatchEvent(
+    new CustomEvent("dict-settings-commit", { bubbles: true, detail })
+  );
+}
 
 describe("MorcusDictSearch client progressive enhancement", () => {
   beforeEach(() => {
@@ -396,7 +417,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     ]);
   });
 
-  test("re-clusters suggestions on dict-selection-change from cache with 0 network calls", () => {
+  test("re-clusters suggestions on dict-settings-commit from cache with 0 network calls", () => {
     const el = createDictSearch();
     const input = el.querySelector<HTMLInputElement>("input.input")!;
 
@@ -417,13 +438,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     (global.fetch as jest.Mock).mockClear();
 
-    // Fire dict-selection-change to only include GAF
-    el.dispatchEvent(
-      new CustomEvent("dict-selection-change", {
-        bubbles: true,
-        detail: { dictKeys: ["GAF"], bitmask: "2" },
-      })
-    );
+    // Fire dict-settings-commit to only include GAF
+    commitSettings(el, ["GAF"], true);
 
     // Suggestions immediately update with only GAF words
     expect(suggestionsEl.items.map((i: any) => i.word)).toEqual(["ămīcĭtĭa"]);
@@ -433,7 +449,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
   });
 
-  test("dict-selection-change does not reopen suggestions closed by blur", () => {
+  test("dict-settings-commit does not reopen suggestions closed by blur", () => {
     const el = createDictSearch();
     const input = el.querySelector<HTMLInputElement>("input.input")!;
     el.chunkCache.setChunks("am", {
@@ -451,19 +467,14 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     input.dispatchEvent(new Event("blur"));
     expect(listbox.hidden).toBe(true);
 
-    el.dispatchEvent(
-      new CustomEvent("dict-selection-change", {
-        bubbles: true,
-        detail: { dictKeys: ["GAF"], bitmask: "2" },
-      })
-    );
+    commitSettings(el, ["GAF"], true);
 
     expect(suggestionsEl.items).toEqual([]);
     expect(listbox.hidden).toBe(true);
     expect(input.getAttribute("aria-expanded")).toBe("false");
   });
 
-  test("updates landing welcome message and badges on dict-selection-change when query is empty", () => {
+  test("updates landing welcome message and badges on dict-settings-commit when query is empty", () => {
     const landingHtml = `
       <div id="landing-welcome">Initial Welcome</div>
       <div class="dict-list-item dict-enabled" data-dict-key="GRG">
@@ -478,13 +489,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const input = el.querySelector<HTMLInputElement>("input.input")!;
     input.value = ""; // Empty search query (landing state)
 
-    // Fire dict-selection-change with only L&S and S&H (disabling Georges)
-    el.dispatchEvent(
-      new CustomEvent("dict-selection-change", {
-        detail: { dictKeys: ["L&S", "S&H"] },
-        bubbles: true,
-      })
-    );
+    // Fire dict-settings-commit with only L&S and S&H (disabling Georges)
+    commitSettings(el, ["L&S", "S&H"], true);
 
     const welcomeEl = el.querySelector<HTMLElement>("#landing-welcome")!;
     expect(welcomeEl.textContent).toBe(
@@ -498,19 +504,14 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(grgItem.classList.contains("dict-enabled")).toBe(false);
 
     // Re-enable Georges
-    el.dispatchEvent(
-      new CustomEvent("dict-selection-change", {
-        detail: { dictKeys: ["L&S", "S&H", "GRG"] },
-        bubbles: true,
-      })
-    );
+    commitSettings(el, ["L&S", "S&H", "GRG"], true);
     expect(welcomeEl.textContent).toBe(
       "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
     );
     expect(grgItem.classList.contains("dict-enabled")).toBe(true);
   });
 
-  test("synchronizes d and o query parameters on dict-selection-change and dict-inflected-change", () => {
+  test("synchronizes d and o query parameters on dict-settings-commit", () => {
     delete (window as any).location;
     (window as any).location = new URL("http://localhost/v2/dicts?q=habeo");
     const replaceStateSpy = jest.spyOn(window.history, "replaceState");
@@ -518,12 +519,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const el = createDictSearch();
 
     // Toggle dict selection
-    el.dispatchEvent(
-      new CustomEvent("dict-selection-change", {
-        detail: { dictKeys: ["L&S", "GAF"], bitmask: "3" },
-        bubbles: true,
-      })
-    );
+    commitSettings(el, ["L&S", "GAF"], true);
 
     expect(replaceStateSpy).toHaveBeenCalledWith(
       null,
@@ -532,12 +528,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
 
     // Toggle inflection
-    el.dispatchEvent(
-      new CustomEvent("dict-inflected-change", {
-        detail: { isInflected: false },
-        bubbles: true,
-      })
-    );
+    commitSettings(el, ["L&S", "GAF"], false);
 
     expect(replaceStateSpy).toHaveBeenCalledWith(
       null,
@@ -546,6 +537,21 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
 
     replaceStateSpy.mockRestore();
+  });
+
+  test("dict-settings-commit updates the search form's hidden d and o", () => {
+    const el = createDictSearch();
+    const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+    form.insertAdjacentHTML(
+      "afterbegin",
+      '<input type="hidden" name="d" value="an" /><input type="hidden" name="o" value="1" />'
+    );
+
+    commitSettings(el, ["GRG"], false);
+
+    const fields = new FormData(form);
+    expect(fields.get("d")).toBe(encodeDictBitmask(["GRG"]));
+    expect(fields.get("o")).toBe("0");
   });
 
   test("search execution explicitly syncs q, d, and o parameters in history and document title", async () => {
@@ -582,7 +588,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     pushStateSpy.mockRestore();
   });
 
-  test("landing welcome message reacts live to dict-inflected-change", () => {
+  test("landing welcome message reacts live to dict-settings-commit", () => {
     const landingHtml = `
       <div id="landing-welcome">Initial Welcome</div>
     `;
@@ -591,12 +597,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const welcomeEl = el.querySelector<HTMLElement>("#landing-welcome")!;
 
     // Initial state with default dicts: Latin headwords and inflected forms
-    el.dispatchEvent(
-      new CustomEvent("dict-inflected-change", {
-        detail: { isInflected: false },
-        bubbles: true,
-      })
-    );
+    commitSettings(el, DEFAULT_DICT_KEYS, false);
 
     expect(welcomeEl.textContent).toBe(
       "Welcome to the dictionary. You can search Latin headwords, and words in English and German."
@@ -604,12 +605,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(welcomeEl.textContent).not.toContain("inflected forms");
 
     // Toggle back to inflected on
-    el.dispatchEvent(
-      new CustomEvent("dict-inflected-change", {
-        detail: { isInflected: true },
-        bubbles: true,
-      })
-    );
+    commitSettings(el, DEFAULT_DICT_KEYS, true);
 
     expect(welcomeEl.textContent).toBe(
       "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
@@ -631,13 +627,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const inflectChip = el.querySelector<HTMLElement>(".inflect-chip")!;
     expect(inflectChip.classList.contains("is-on")).toBe(true);
 
-    // 1. Dispatch dict-selection-change with only German (GRG)
-    el.dispatchEvent(
-      new CustomEvent("dict-selection-change", {
-        detail: { dictKeys: ["GRG"] },
-        bubbles: true,
-      })
-    );
+    // 1. Dispatch dict-settings-commit with only German (GRG)
+    commitSettings(el, ["GRG"], true);
 
     expect(chipsContainer.innerHTML).toContain(
       'class="lang-chip lang-chip-de"'
@@ -647,13 +638,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
     expect(chipsContainer.textContent).toContain("De");
 
-    // 2. Dispatch dict-inflected-change to false
-    el.dispatchEvent(
-      new CustomEvent("dict-inflected-change", {
-        detail: { isInflected: false },
-        bubbles: true,
-      })
-    );
+    // 2. Dispatch dict-settings-commit to false
+    commitSettings(el, ["GRG"], false);
 
     const updatedInflectChip = el.querySelector<HTMLElement>(".inflect-chip")!;
     expect(updatedInflectChip.classList.contains("is-off")).toBe(true);

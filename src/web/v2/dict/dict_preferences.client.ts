@@ -51,9 +51,10 @@ export function persistInflected(isInflected: boolean): void {
 }
 
 /**
- * Whether a settings change made in `form` may be saved. A scoped view (reader iframe, `lang=`
- * filter; the server marks its form `data-scoped`) shows a selection narrowed for that lookup, so
- * its changes are never saved. Guest mode needs no check here: its controls are disabled.
+ * Whether a settings change committed from the settings `form` may be saved. A scoped view (reader
+ * iframe, `lang=` filter; the server marks the form `data-scoped`) shows a selection narrowed for
+ * that lookup, so its changes are never saved. Guest mode needs no check here: its controls are
+ * disabled.
  */
 export function mayPersistDictChange(form: HTMLFormElement | null): boolean {
   return !form?.hasAttribute("data-scoped");

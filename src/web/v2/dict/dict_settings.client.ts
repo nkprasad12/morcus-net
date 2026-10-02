@@ -1,9 +1,11 @@
 import {
   BaseElement,
-  bindDismissable,
   registerElement,
+  registerRevealer,
   setPrepaint,
   settingsStore,
+  setupModalDialog,
+  type ModalDialogHandle,
 } from "@/web/v2/core/index.client";
 import {
   mayPersistDictChange,
@@ -11,141 +13,85 @@ import {
   persistInflected,
 } from "@/web/v2/dict/dict_preferences.client";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
+import {
+  DICT_SETTINGS_DIALOG_ID,
+  DICT_SETTINGS_TRIGGER_ID,
+} from "@/web/v2/dict/search_bar.common";
 
 const DEFAULT_STRENGTH = 50;
 
+/** Detail of `dict-settings-commit`: the committed dictionary content settings. */
+export interface DictSettingsCommit {
+  dictKeys: string[];
+  bitmask: string;
+  isInflected: boolean;
+}
+
 /**
- * Dictionary & typography preferences dropdown (<morcus-dict-settings>).
+ * The dictionary settings dialog (`<morcus-dict-settings>`), rendered by `renderDictSearchBar`.
  *
- * Architecture Note (Item 6.6):
- * This component intentionally uses native `<details>` / `<summary>` disclosure semantics
- * rather than `AnchoredPopoverController`. The `<details>` structure is a mandatory requirement
- * of UI V2's Zero-JS baseline (Core Principle 1), enabling dictionary selection and form
- * submission via a `data-nojs-only` Apply button without JavaScript (and before upgrade).
+ * Without JS the tray button is a `#dict-settings` link that shows the dialog via `:target`, and
+ * **Done** submits the dialog's own form (see `search_bar.server.ts`). Once upgraded:
  *
- * In client enhancement, `detailsEl.open` acts as the single canonical source of truth for
- * open/closed state (preventing `hidden`/`<details open>` attribute desync), dismissal is
- * managed via `bindDismissable`, and dropdown positioning is handled by standard CSS
- * relative anchoring without fixed coordinate recalculations or modal focus-trapping.
+ * - The button opens the dialog with `showModal()`, so the page behind it is inert.
+ * - **Content settings apply when the dialog closes** (Done, Escape, the close button or the
+ *   backdrop), not on each tick, so the results don't shift behind the dialog. If anything
+ *   changed, closing saves it (unless the view is scoped) and emits one `dict-settings-commit`.
+ * - Highlight strength is presentation only, so it stays live.
  */
 export class MorcusDictSettings extends BaseElement {
   private strength: number = DEFAULT_STRENGTH;
-  private activeDictKeys: Set<string> = new Set();
-  private isInflected: boolean = true;
+  private committedDicts: Set<string> = new Set();
+  private committedInflected: boolean = true;
 
-  private detailsEl: HTMLDetailsElement | null = null;
-  private summaryEl: HTMLElement | null = null;
-  private popoverEl: HTMLElement | null = null;
+  private dialogEl: HTMLDialogElement | null = null;
+  private formEl: HTMLFormElement | null = null;
+  private triggerEl: HTMLElement | null = null;
+  private modal: ModalDialogHandle | null = null;
 
   protected override onConnect() {
     this.strength = this.computeInitialStrength();
+    this.dialogEl = this.scope.$<HTMLDialogElement>(
+      `#${DICT_SETTINGS_DIALOG_ID}`
+    );
+    this.formEl = this.scope.$<HTMLFormElement>("form.dict-settings-form");
+    this.triggerEl = this.ownerDocument.getElementById(
+      DICT_SETTINGS_TRIGGER_ID
+    );
+
     this.adoptRenderedState();
-    const edits = this.adoptPreHydrationEdits();
-    this.enhanceMarkup();
-    this.syncUi();
-    // Apply what the user did before upgrade, as if they'd done it just now.
-    if (edits.dicts) this.saveDictSelection();
-    if (edits.inflected) this.saveInflected();
+    // Before upgrade the dialog may have been opened via `:target` and edited. If it's still open
+    // (the hash names it), those edits are a draft that applies on close, as if made just now.
+    // If it was closed again, No-JS semantics apply: closing without Done discards them.
+    if (!this.isHashTarget()) this.resetControls();
+    this.syncStrengthUi(true);
 
-    this.scope.use(
-      bindDismissable({
-        container: () => this.popoverEl,
-        isOpen: () => Boolean(this.detailsEl?.open),
-        onDismiss: () => this.closeSettingsPopover(),
-        triggerEl: () => this.summaryEl,
-        listenPointerDown: true,
-        ignore: (target) => Boolean(this.summaryEl?.contains(target)),
-      })
-    );
-  }
-
-  protected override onDisconnect() {
-    this.closeSettingsPopover();
-  }
-
-  private computeInitialStrength(): number {
-    const settings = settingsStore.get();
-    if (typeof settings.highlightStrength === "number") {
-      return Math.max(0, Math.min(100, settings.highlightStrength));
+    if (this.dialogEl) {
+      this.modal = setupModalDialog(this.dialogEl, {
+        trigger: this.triggerEl,
+        onClose: () => {
+          this.commit();
+          this.triggerEl?.focus();
+        },
+      });
+      this.scope.use(this.modal);
+      // Hash handover: `#dict-settings` opens the dialog (initial load or later navigation), then
+      // the component owns the state (`:target` CSS is scoped to un-upgraded hosts).
+      this.scope.use(
+        registerRevealer(
+          this.dialogEl,
+          () => {
+            if (!this.dialogEl?.open) this.modal?.open();
+          },
+          { ownsHash: true }
+        )
+      );
     }
-    return DEFAULT_STRENGTH;
-  }
 
-  /**
-   * The server resolves dictionaries and inflection (URL → cookie → default) and renders each
-   * control's `checked` attribute from the result, so `defaultChecked` *is* the resolved state.
-   * Adopt it rather than re-deriving: a second resolution site is what let the controls disagree
-   * with the rendered results (F1–F5).
-   */
-  private adoptRenderedState() {
-    this.activeDictKeys = new Set();
-    for (const cb of this.scope.$$<HTMLInputElement>(".dict-checkbox")) {
-      const key = cb.dataset.key || cb.value;
-      if (key && cb.defaultChecked) this.activeDictKeys.add(key);
-    }
-    const inflectedCheckbox = this.scope.$<HTMLInputElement>(
-      "#toggle-inflected, .inflected-checkbox"
-    );
-    this.isInflected = inflectedCheckbox?.defaultChecked ?? true;
-  }
-
-  /**
-   * PH1: the popover opens natively before upgrade, so the user may already
-   * have ticked checkboxes. A box whose `checked` differs from its
-   * server-rendered `defaultChecked` was changed by the user; fold that into
-   * the resolved state so `syncUi()` doesn't revert it.
-   */
-  private adoptPreHydrationEdits(): { dicts: boolean; inflected: boolean } {
-    let dicts = false;
-    for (const cb of this.scope.$$<HTMLInputElement>(".dict-checkbox")) {
-      const key = cb.dataset.key || cb.value;
-      if (!key || cb.checked === cb.defaultChecked) continue;
-      dicts = true;
-      if (cb.checked) {
-        this.activeDictKeys.add(key);
-      } else {
-        this.activeDictKeys.delete(key);
-      }
-    }
-    let inflected = false;
-    const inflectedCheckbox = this.scope.$<HTMLInputElement>(
-      "#toggle-inflected, .inflected-checkbox"
-    );
-    if (
-      inflectedCheckbox &&
-      inflectedCheckbox.checked !== inflectedCheckbox.defaultChecked
-    ) {
-      inflected = true;
-      this.isInflected = inflectedCheckbox.checked;
-    }
-    return { dicts, inflected };
-  }
-
-  private enhanceMarkup() {
-    this.detailsEl = this.scope.$<HTMLDetailsElement>(".dict-settings-details");
-    this.summaryEl = this.scope.$<HTMLElement>(".settings-btn");
-    this.popoverEl = this.scope.$<HTMLElement>(".settings-popover");
-
-    this.scope.listen(this.summaryEl, "click", (e: MouseEvent) => {
-      if (this.detailsEl) {
-        // JSDOM does not natively toggle details.open on summary click
-        this.detailsEl.open = !this.detailsEl.open;
-        this.summaryEl?.setAttribute(
-          "aria-expanded",
-          String(this.detailsEl.open)
-        );
-        // Toggles our own details element
-        e.preventDefault();
-      }
-    });
-
-    this.scope.listen(this.detailsEl, "toggle", () => {
-      if (this.detailsEl && this.summaryEl) {
-        this.summaryEl.setAttribute(
-          "aria-expanded",
-          String(this.detailsEl.open)
-        );
-      }
+    // Done submits the dialog's form without JS; with JS it just closes, which applies.
+    this.scope.listen(this.formEl, "submit", (e: Event) => {
+      e.preventDefault();
+      this.modal?.close();
     });
 
     const sliderEl = this.scope.$<HTMLInputElement>(".settings-slider");
@@ -159,93 +105,102 @@ export class MorcusDictSettings extends BaseElement {
         this.updateStrength(Number(e.target.value), true);
       }
     });
+  }
 
-    this.scope.delegate<HTMLInputElement>(
-      this,
-      "change",
-      ".dict-checkbox",
-      (_e, target) => {
-        const key = target.dataset.key || target.value;
-        if (!key) return;
-        if (target.checked) {
-          this.activeDictKeys.add(key);
-        } else {
-          this.activeDictKeys.delete(key);
-        }
-        this.saveDictSelection();
-      }
-    );
+  protected override onDisconnect() {
+    // Listeners are already gone, so this can't commit: a moved or removed host drops its draft.
+    if (this.dialogEl?.open) {
+      this.dialogEl.removeAttribute("open");
+    }
+    this.triggerEl?.setAttribute("aria-expanded", "false");
+    this.resetControls();
+  }
 
-    this.scope.delegate<HTMLInputElement>(
-      this,
-      "change",
-      "#toggle-inflected, .inflected-checkbox",
-      (_e, target) => {
-        this.isInflected = target.checked;
-        this.saveInflected();
-      }
+  private isHashTarget(): boolean {
+    return window.location.hash === `#${DICT_SETTINGS_DIALOG_ID}`;
+  }
+
+  private computeInitialStrength(): number {
+    const settings = settingsStore.get();
+    if (typeof settings.highlightStrength === "number") {
+      return Math.max(0, Math.min(100, settings.highlightStrength));
+    }
+    return DEFAULT_STRENGTH;
+  }
+
+  private dictCheckboxes(): HTMLInputElement[] {
+    return this.scope.$$<HTMLInputElement>(".dict-checkbox");
+  }
+
+  private inflectedCheckbox(): HTMLInputElement | null {
+    return this.scope.$<HTMLInputElement>("#toggle-inflected");
+  }
+
+  /**
+   * The server resolves dictionaries and inflection (URL → cookie → default) and renders each
+   * control's `checked` attribute from the result, so `defaultChecked` *is* the committed state.
+   */
+  private adoptRenderedState() {
+    this.committedDicts = new Set(
+      this.dictCheckboxes()
+        .filter((cb) => cb.defaultChecked)
+        .map((cb) => cb.dataset.key || cb.value)
     );
+    this.committedInflected = this.inflectedCheckbox()?.defaultChecked ?? true;
+  }
+
+  /** Puts the controls back to the committed state, discarding a draft. */
+  private resetControls() {
+    for (const cb of this.dictCheckboxes()) {
+      cb.checked = this.committedDicts.has(cb.dataset.key || cb.value);
+    }
+    const inflected = this.inflectedCheckbox();
+    if (inflected) inflected.checked = this.committedInflected;
+  }
+
+  /** Applies the draft in the controls, if it differs from what's committed. */
+  private commit() {
+    const draftDicts = this.dictCheckboxes()
+      .filter((cb) => cb.checked)
+      .map((cb) => cb.dataset.key || cb.value);
+    const draftInflected =
+      this.inflectedCheckbox()?.checked ?? this.committedInflected;
+
+    const dictsChanged =
+      draftDicts.length !== this.committedDicts.size ||
+      draftDicts.some((k) => !this.committedDicts.has(k));
+    const inflectedChanged = draftInflected !== this.committedInflected;
+    if (!dictsChanged && !inflectedChanged) return;
+
+    this.committedDicts = new Set(draftDicts);
+    this.committedInflected = draftInflected;
+    if (mayPersistDictChange(this.formEl)) {
+      if (dictsChanged) persistDictKeys(draftDicts);
+      if (inflectedChanged) persistInflected(draftInflected);
+    }
+    this.emit<DictSettingsCommit>("dict-settings-commit", {
+      dictKeys: draftDicts,
+      bitmask: encodeDictBitmask(draftDicts),
+      isInflected: draftInflected,
+    });
   }
 
   /** `record`: also record the highlight scale for pre-paint (see applyScale). */
-  private syncUi(record = true) {
-    for (const cb of this.scope.$$<HTMLInputElement>(".dict-checkbox")) {
-      const key = cb.dataset.key || cb.value;
-      if (key) {
-        cb.checked = this.activeDictKeys.has(key);
-      }
-    }
-
-    const inflectedCheckbox = this.scope.$<HTMLInputElement>(
-      "#toggle-inflected, .inflected-checkbox"
-    );
-    if (inflectedCheckbox) {
-      inflectedCheckbox.checked = this.isInflected;
-    }
-
+  private syncStrengthUi(record: boolean) {
     const sliderEl = this.scope.$<HTMLInputElement>(".settings-slider");
     if (sliderEl && Number(sliderEl.value) !== this.strength) {
       sliderEl.value = String(this.strength);
     }
-
     const valueDisplayEl = this.scope.$(".settings-value");
     if (valueDisplayEl) {
       valueDisplayEl.textContent = `${this.strength}%`;
     }
-
     this.applyScale(this.strength, record);
-  }
-
-  private saveDictSelection() {
-    const keys = Array.from(this.activeDictKeys);
-    if (this.mayPersist()) persistDictKeys(keys);
-    const bitmask = encodeDictBitmask(keys);
-    this.emit("dict-selection-change", { dictKeys: keys, bitmask });
-  }
-
-  private saveInflected() {
-    if (this.mayPersist()) persistInflected(this.isInflected);
-    this.emit("dict-inflected-change", { isInflected: this.isInflected });
-  }
-
-  /** Scoped views don't save changes; see `mayPersistDictChange`. */
-  private mayPersist(): boolean {
-    return mayPersistDictChange(this.closest("form"));
-  }
-
-  private closeSettingsPopover() {
-    if (this.detailsEl) {
-      this.detailsEl.open = false;
-    }
-    if (this.summaryEl) {
-      this.summaryEl.setAttribute("aria-expanded", "false");
-    }
   }
 
   private updateStrength(newStrength: number, persist: boolean) {
     this.strength = newStrength;
-    this.syncUi(persist);
-
+    this.syncStrengthUi(persist);
     if (persist) {
       settingsStore.update({ highlightStrength: newStrength });
     }

@@ -80,6 +80,8 @@ const UPGRADED_RATCHET: Readonly<Record<string, number>> = {
   "reader/reader_layout.css": 3,
   // `:target` opens the TOC drawer until the TOC controller adopts the hash.
   "reader/reader_toc.css": 2,
+  // `:target` opens the dictionary settings dialog until the element adopts the hash.
+  "dict/dict_settings.css": 2,
   "v2.css": 1,
   // The back-to-top link stays visible (a plain link) until its script runs,
   // and clears the drawer that a pre-upgrade `:target` inside it opens.

@@ -50,7 +50,7 @@ sequenceDiagram
 - `xml_to_html.server.ts`: Safe transformer converting TEI XML AST nodes into sanitized HTML.
 - `dict_search.client.ts`: Custom element managing form hijacking, history pushes, keyboard navigation, and client-side Latin word progressive enhancement.
 - `dict_suggestions.client.ts`: Accessible dropdown list rendering live autocomplete suggestions.
-- `dict_settings.client.ts`: Popover controlling highlight strength, individual dictionary selection checkboxes, and the inflection toggle. It adopts the server-rendered state and persists changes to cookies.
+- `dict_settings.client.ts`: The settings dialog (highlight strength, dictionary checkboxes, inflection toggle). Without JS it opens via `:target` and Done submits its own form; with JS it opens with `showModal()` and applies content changes when it closes (`dict-settings-commit`). It adopts the server-rendered state and persists changes to cookies.
 - `dict_preferences.client.ts`: Reads the server-rendered dictionary state (`readRenderedDictState`), decides whether a change may be saved (`mayPersistDictChange`), and writes the preference cookies.
 - `dict_persistence.server.ts`: Decides which preference cookies a request writes (`save=1` + 303, sliding refresh) and builds guest mode's **Return to my settings** link.
 
@@ -71,9 +71,9 @@ $$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus
 
 - **The server resolves.** On every request the server applies URL → cookie → default (`resolveActiveDicts`, `resolveInflection`) and renders the result. That's the checkboxes' `checked` state plus `data-d` (bitmask) and `data-o` on the search `<form>`.
 - **The client adopts.** `<morcus-dict-settings>` reads the checkboxes' `defaultChecked`, and `<morcus-dict-search>` reads `readRenderedDictState(form)`. Neither re-parses the URL or reads `localStorage`, so the controls can't disagree with the rendered results.
-- **A URL never saves by itself.** A shared link shows the sender's view without touching the recipient's cookies. The server writes cookies (`SameSite=Lax; Path=/; Max-Age=1 year`) only for `save=1` (the No-JS **Apply** button) and then 303s the marker away. Other full page loads re-send the cookies' own values (sliding refresh). Scoped views (`embedded=1` or `lang=`) never persist. See [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md#saving-content-preferences).
-- **Guest mode**: when the URL's settings differ from a saved cookie, they're shown read-only (disabled controls, no Apply) with _Viewing this link's settings · Return to my settings_. Hidden `d` / `o` fields keep them in effect for new searches until **Return**.
-- **JS writes**: toggling a control in `<morcus-dict-settings>` writes `document.cookie` (`persistDictKeys` / `persistInflected`), except in scoped views (`data-scoped`). There is no `localStorage` copy.
+- **A URL never saves by itself.** A shared link shows the sender's view without touching the recipient's cookies. The server writes cookies (`SameSite=Lax; Path=/; Max-Age=1 year`) only for `save=1` (the No-JS **Done** button) and then 303s the marker away. Other full page loads re-send the cookies' own values (sliding refresh). Scoped views (`embedded=1` or `lang=`) never persist. See [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md#saving-content-preferences).
+- **Guest mode**: when the URL's settings differ from a saved cookie, they're shown read-only (disabled controls; Done only closes) with _Viewing this link's settings · Return to my settings_. Hidden `d` / `o` fields keep them in effect for new searches until **Return**.
+- **JS writes**: closing the settings dialog with changes writes `document.cookie` (`persistDictKeys` / `persistInflected`), except in scoped views (`data-scoped`). There is no `localStorage` copy.
 - **Privacy & Compliance**: The cookie stores only functional UI preferences (e.g. `morcus_d=3`, the same base36 bitmask as `?d=`). Under GDPR/ePrivacy and CCPA, it qualifies as an exempt **strictly necessary / user preference** cookie and requires no consent banner.
 
 ### 3. Query Language Constraints (`lang=La`) vs Layout (`embedded=1`)

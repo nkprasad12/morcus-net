@@ -535,28 +535,30 @@ describe("open-state popovers survive being moved in the DOM", () => {
     const settingsEl = document.querySelector<HTMLElement>(
       "morcus-dict-settings"
     )!;
-    const triggerBtn = settingsEl.querySelector<HTMLElement>(".settings-btn")!;
-    const detailsEl = settingsEl.querySelector<HTMLDetailsElement>(
-      ".dict-settings-details"
+    // The trigger lives in the search form, outside the element; the dialog inside it.
+    const triggerBtn =
+      document.querySelector<HTMLElement>("#dict-settings-btn")!;
+    const dialogEl = settingsEl.querySelector<HTMLDialogElement>(
+      "dialog#dict-settings"
     )!;
 
-    // Open settings popover
+    // Open the settings dialog
     triggerBtn.click();
-    expect(detailsEl.open).toBe(true);
+    expect(dialogEl.open).toBe(true);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
 
     // Move in DOM (disconnect then reconnect)
     settingsEl.remove();
-    expect(detailsEl.open).toBe(false);
+    expect(dialogEl.open).toBe(false);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
 
     document.body.appendChild(settingsEl);
-    expect(detailsEl.open).toBe(false);
+    expect(dialogEl.open).toBe(false);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
 
-    // Re-trigger opens popover cleanly
+    // Re-trigger opens the dialog cleanly
     triggerBtn.click();
-    expect(detailsEl.open).toBe(true);
+    expect(dialogEl.open).toBe(true);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
   });
 

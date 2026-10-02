@@ -68,24 +68,30 @@ settings params, so it never infers intent from them. The dictionary route
 
 | Request                                                    | Cookies                              | Response                    |
 | :--------------------------------------------------------- | :----------------------------------- | :-------------------------- |
-| `save=1` (the No-JS **Apply** button)                      | the URL's settings                   | 303 to the URL minus `save` |
+| `save=1` (the No-JS **Done** button)                       | the URL's settings                   | 303 to the URL minus `save` |
 | Any other full page load                                   | the cookies' **own** values, re-sent | renders the URL's view      |
 | Partial (`format=partial`) or scoped (`embedded`, `lang=`) | none                                 | renders                     |
 
 - **The marker is a named submit button, not a hidden input.** Hidden inputs submit every time, so
-  an ordinary search would save. Enter submits with the form's first submit button, so the search
-  button must come first.
+  an ordinary search would save. It lives in the settings dialog's own form, outside the search
+  form, so Enter in the search box can never save. The search form always carries hidden `d` / `o`
+  for the rendered view, so a new search keeps what's on screen.
+- **One dialog, both modes.** The settings are a `<dialog id="dict-settings">`. Without JS the tray
+  button is a `#dict-settings` link and `:target` shows the dialog as a full-screen overlay; Done
+  submits, Back leaves without changes. With JS it opens with `showModal()`, and content settings
+  apply **when the dialog closes** (Done, Escape, close button, backdrop): one cookie write, one URL
+  update, one fetch, one `dict-settings-commit` event, and nothing if nothing changed. Highlight
+  strength is presentation only, so it stays live.
 - **The 303 makes the marker last exactly one request.** A reload doesn't re-save, Back skips it,
   and a copied URL can't carry it.
 - **The re-send is a sliding refresh.** JS saves with `document.cookie`, which Safari's ITP caps
   at 7 days. Re-sending on every full load turns it into an HTTP cookie with a fresh `Max-Age`.
 - **Guest mode.** When the URL's settings differ from a saved cookie (`isGuestView`), the page
   shows them **read-only**: the tray says _Viewing this link's settings · Return to my settings_,
-  the dictionary and inflection controls are `disabled`, and No-JS Apply is hidden. So there's
+  the dictionary and inflection controls are `disabled`, and Done only closes the dialog. So there's
   never a question of whether a change on someone else's link saves. Guest mode is sticky: hidden
   `d` / `o` fields (and, with JS, the adopted state) carry the link's settings into new searches
   until the user follows **Return**, a plain link to the page without settings params. Users with
-  no saved settings never see it. This also catches a No-JS user who changes settings and presses
-  Enter instead of Apply; the result is the same, since nothing was saved.
-- **Scoped views** (reader iframe, `lang=`) get `data-scoped` on the form and never save, from
-  either side.
+  no saved settings never see it.
+- **Scoped views** (reader iframe, `lang=`) get `data-scoped` on the settings form, and Done has no
+  `save` marker, so they never save, from either side.

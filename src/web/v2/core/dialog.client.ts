@@ -64,8 +64,10 @@ export function setupModalDialog(
     e?.preventDefault();
     if (typeof dialog.close === "function") {
       dialog.close();
-    } else {
+    } else if (dialog.hasAttribute("open")) {
       dialog.removeAttribute("open");
+      // Native close() fires `close`; keep onClose working where it's missing (e.g. JSDOM).
+      dialog.dispatchEvent(new Event("close"));
     }
   };
 

@@ -135,32 +135,38 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     );
   });
 
-  test("multi-step No-JS dictionary journey: select GAF+GRG -> search again -> reload from cookie -> toggle inflection off and back on", async () => {
+  /** The settings dialog's own form; its Done button saves without JS. */
+  function settingsForm(): HTMLFormElement {
+    return document.body.querySelector<HTMLFormElement>(
+      "form.dict-settings-form"
+    )!;
+  }
+
+  function doneButton(form: HTMLFormElement): HTMLElement | null {
+    return form.querySelector<HTMLElement>(".dict-settings-done");
+  }
+
+  test("multi-step No-JS dictionary journey: select GAF+GRG -> search again -> reload from cookie -> open a link -> toggle inflection off and back on", async () => {
     const cookies: Record<string, string> = {};
 
-    // --- Step 1: Load initial search page, select ONLY Gaffiot (GAF) and Georges (GRG) ---
+    // --- Step 1: Load initial search page, select ONLY Gaffiot (GAF) and Georges (GRG), Done ---
     const res1 = await request(app).get("/v2/dicts?q=amo");
     expect(res1.status).toBe(200);
     document.body.innerHTML = res1.text;
 
-    const form1 =
-      document.body.querySelector<HTMLFormElement>("form.search-form")!;
+    const form1 = settingsForm();
     expect(form1).not.toBeNull();
-
-    // Untick all dictionaries except GAF and GRG
     for (const cb of Array.from(
       form1.querySelectorAll<HTMLInputElement>("input.dict-checkbox")
     )) {
       cb.checked = cb.value === "GAF" || cb.value === "GRG";
     }
 
-    const step1Url = serializeGetForm(
-      form1,
-      form1.querySelector<HTMLElement>(".settings-apply-btn")
-    );
+    const step1Url = serializeGetForm(form1, doneButton(form1));
     expect(step1Url).toContain("save=1");
+    expect(step1Url).toContain("q=amo");
     const applyRes = await request(app).get(step1Url);
-    // Apply persists, then redirects to the same view without the marker.
+    // Done persists, then redirects to the same view without the marker.
     expect(applyRes.status).toBe(303);
     Object.assign(cookies, extractCookies(applyRes.header["set-cookie"]));
     const redirectTarget = applyRes.header["location"];
@@ -184,7 +190,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     ]);
     expect(getCheckedDictKeys(document.body)).toEqual(["GAF", "GRG"]);
 
-    // --- Step 2: Search a new word ("gladius") using the re-rendered form ---
+    // --- Step 2: Search a new word ("gladius") using the re-rendered search form ---
     const form2 =
       document.body.querySelector<HTMLFormElement>("form.search-form")!;
     const qInput2 = form2.querySelector<HTMLInputElement>('input[name="q"]')!;
@@ -207,6 +213,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       "Georges",
     ]);
     expect(getCheckedDictKeys(document.body)).toEqual(["GAF", "GRG"]);
+    expect(res3.text).not.toContain("guest-chip");
 
     // --- Step 3: Navigate to `/v2/dicts?q=rex` with cookie only (no dict params in URL) ---
     const res4 = await request(app)
@@ -225,42 +232,37 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     ]);
     expect(getCheckedDictKeys(document.body)).toEqual(["GAF", "GRG"]);
 
-    // --- Step 4: Toggle inflection OFF (`#toggle-inflected` unchecked -> only hidden `o=0` submits) ---
-    const form4 =
-      document.body.querySelector<HTMLFormElement>("form.search-form")!;
-    const inflectCb4 =
-      form4.querySelector<HTMLInputElement>("#toggle-inflected")!;
-    expect(inflectCb4.checked).toBe(true);
-    inflectCb4.checked = false;
-
+    // --- Step 4: Open someone's link with inflection off: guest mode, nothing saved ---
     const res5 = await request(app)
-      .get(serializeGetForm(form4))
+      .get(`/v2/dicts?q=rex&d=${encodeDictBitmask(["GAF", "GRG"])}&o=0`)
       .set("Cookie", formatCookieHeader(cookies));
     expect(res5.status).toBe(200);
     Object.assign(cookies, extractCookies(res5.header["set-cookie"]));
-
     expect(mockGetEntry).toHaveBeenLastCalledWith({
       query: "rex",
       dicts: ["GAF", "GRG"],
       mode: 0,
     });
+    expect(cookies["morcus_inflected"]).not.toBe("0");
     document.body.innerHTML = res5.text;
+    // The controls are locked, Done can't save, and the link's settings ride along in the
+    // search form, so a new search keeps them.
+    expect(res5.text).toContain("Viewing this link's settings");
+    const inflectCb5 =
+      settingsForm().querySelector<HTMLInputElement>("#toggle-inflected")!;
+    expect(inflectCb5.checked).toBe(false);
+    expect(inflectCb5.disabled).toBe(true);
+    expect(settingsForm().querySelector('[name="save"]')).toBeNull();
     const form5 =
       document.body.querySelector<HTMLFormElement>("form.search-form")!;
-    const inflectCb5 =
-      form5.querySelector<HTMLInputElement>("#toggle-inflected")!;
-    expect(inflectCb5.checked).toBe(false);
-    expect(getCheckedDictKeys(document.body)).toEqual(["GAF", "GRG"]);
-
-    // --- Step 4b: That was a plain search (Enter), not Apply, so it was not saved ---
-    expect(cookies["morcus_inflected"]).not.toBe("0");
-    // The URL now disagrees with the saved settings, so the page is in guest mode: the controls
-    // are locked and the URL's settings ride along in hidden fields.
-    expect(res5.text).toContain("Viewing this link's settings");
-    expect(inflectCb5.disabled).toBe(true);
     expect(serializeGetForm(form5)).toContain("o=0");
+
+    // "Return to my settings" goes back to the saved ones.
+    const returnHref = document.body
+      .querySelector<HTMLAnchorElement>("a.guest-return")!
+      .getAttribute("href")!;
     const res5b = await request(app)
-      .get("/v2/dicts?q=rex")
+      .get(returnHref)
       .set("Cookie", formatCookieHeader(cookies));
     expect(res5b.status).toBe(200);
     expect(mockGetEntry).toHaveBeenLastCalledWith({
@@ -269,19 +271,14 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       mode: 1,
     });
 
-    // --- Step 4c: Back on their own settings, untick inflection and Apply it ---
+    // --- Step 4c: Back on their own settings, untick inflection and press Done ---
     document.body.innerHTML = res5b.text;
-    const form5b =
-      document.body.querySelector<HTMLFormElement>("form.search-form")!;
+    expect(res5b.text).not.toContain("guest-chip");
+    const form5b = settingsForm();
     form5b.querySelector<HTMLInputElement>("#toggle-inflected")!.checked =
       false;
     const applyRes5 = await request(app)
-      .get(
-        serializeGetForm(
-          form5b,
-          form5b.querySelector<HTMLElement>(".settings-apply-btn")
-        )
-      )
+      .get(serializeGetForm(form5b, doneButton(form5b)))
       .set("Cookie", formatCookieHeader(cookies));
     expect(applyRes5.status).toBe(303);
     Object.assign(cookies, extractCookies(applyRes5.header["set-cookie"]));
@@ -291,21 +288,30 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       .set("Cookie", formatCookieHeader(cookies));
     document.body.innerHTML = res5c.text;
     expect(res5c.text).not.toContain("guest-chip");
+    expect(mockGetEntry).toHaveBeenLastCalledWith({
+      query: "rex",
+      dicts: ["GAF", "GRG"],
+      mode: 0,
+    });
 
     // --- Step 5: Toggle inflection back ON (`o=0` hidden + `o=1` checkbox repeated key) ---
-    const form6 =
-      document.body.querySelector<HTMLFormElement>("form.search-form")!;
+    const form6 = settingsForm();
     const inflectCb6 =
       form6.querySelector<HTMLInputElement>("#toggle-inflected")!;
     expect(inflectCb6.checked).toBe(false);
     inflectCb6.checked = true;
-    const step5Url = serializeGetForm(form6);
+    const step5Url = serializeGetForm(form6, doneButton(form6));
     // Verify the serialized form genuinely carries the repeated `o=0&o=1` wire format
     expect(step5Url).toContain("o=0");
     expect(step5Url).toContain("o=1");
 
-    const res6 = await request(app)
+    const applyRes6 = await request(app)
       .get(step5Url)
+      .set("Cookie", formatCookieHeader(cookies));
+    expect(applyRes6.status).toBe(303);
+    Object.assign(cookies, extractCookies(applyRes6.header["set-cookie"]));
+    const res6 = await request(app)
+      .get(applyRes6.header["location"])
       .set("Cookie", formatCookieHeader(cookies));
     expect(res6.status).toBe(200);
     expect(mockGetEntry).toHaveBeenLastCalledWith({
@@ -318,6 +324,16 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       document.body.querySelector<HTMLInputElement>("#toggle-inflected")!
         .checked
     ).toBe(true);
+  });
+
+  test("Enter in the search box never saves: the search form has no save submitter", async () => {
+    const res = await request(app).get("/v2/dicts?q=amo");
+    document.body.innerHTML = res.text;
+    const search =
+      document.body.querySelector<HTMLFormElement>("form.search-form")!;
+    expect(search.querySelector('[name="save"]')).toBeNull();
+    expect(search.contains(settingsForm())).toBe(false);
+    expect(serializeGetForm(search)).not.toContain("save=");
   });
 
   test("parameter precedence ladder: ?dict= overrides ?d= bitmask, which overrides ?in=, which overrides cookie", async () => {

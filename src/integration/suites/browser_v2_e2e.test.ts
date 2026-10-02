@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { gzipSync } from "zlib";
 import { disableSmoothScroll } from "@/integration/utils/playwright_utils";
+import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import {
   V2_BUNDLE_BUDGET,
   sumRouteSizes,
@@ -227,7 +228,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Verify URL, search input, and dictionary entry remain active and are not cleared
     await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
-    await expect(page.locator('input[name="q"]')).toHaveValue("habeo");
+    await expect(page.locator("#dict-q")).toHaveValue("habeo");
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
   });
@@ -331,7 +332,7 @@ test.describe("UI V2 dictionary", () => {
     ).toBeLessThanOrEqual(2);
 
     // Click-away dismisses it (the original tester report).
-    await page.locator('input[name="q"]').click();
+    await page.locator("#dict-q").click();
     await expect(menu).not.toBeVisible();
     await expect(anchor).toHaveAttribute("aria-expanded", "false");
 
@@ -713,22 +714,21 @@ test.describe("UI V2 dictionary", () => {
 
     await page.goto("/v2/dicts?q=habeo");
 
-    // The settings pane is server-rendered and reachable without JS: the
-    // trigger is a <details> summary, so it toggles natively.
-    const settings = page.locator("morcus-dict-settings");
-    await expect(settings).toBeVisible();
+    // The settings dialog is server-rendered and reachable without JS: the trigger is a
+    // `#dict-settings` link, and `:target` shows the dialog as a full-screen overlay.
+    const dialog = page.locator("dialog#dict-settings");
+    await expect(dialog).not.toBeVisible();
+    await page.locator("#dict-settings-btn").click();
+    await expect(page).toHaveURL(/#dict-settings$/);
+    await expect(dialog).toBeVisible();
 
-    const popover = settings.locator(".settings-popover");
-    await expect(popover).not.toBeVisible();
-    await settings.locator(".settings-btn").click();
-    await expect(popover).toBeVisible();
-
-    // Without JS the pane offers an explicit submit button to apply changes.
-    const applyBtn = popover.locator(".settings-apply-btn");
-    await expect(applyBtn).toBeVisible();
+    // Done submits the dialog's own form; the close button needs JS, so it isn't shown.
+    const doneBtn = dialog.locator(".dict-settings-done");
+    await expect(doneBtn).toBeVisible();
+    await expect(dialog.locator(".dialog-close-btn")).not.toBeVisible();
 
     // Narrow the selection to Lewis and Short and apply it via a native GET.
-    const checkboxes = popover.locator(".dict-checkbox");
+    const checkboxes = dialog.locator(".dict-checkbox");
     const count = await checkboxes.count();
     for (let i = 0; i < count; i++) {
       const box = checkboxes.nth(i);
@@ -736,19 +736,29 @@ test.describe("UI V2 dictionary", () => {
         await box.uncheck();
       }
     }
-    await applyBtn.click();
+    await doneBtn.click();
 
     // The selection round-trips through the URL and results still render.
     await expect(page).toHaveURL(/q=habeo/);
     await expect(page).toHaveURL(/dict=L%26S/);
+    await expect(dialog).not.toBeVisible();
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
 
-    // Apply is an explicit save: the server set the cookie, then redirected the `save` marker
+    // Done is an explicit save: the server set the cookie, then redirected the `save` marker
     // away so the address bar can't carry it into a shared link.
     await expect(page).not.toHaveURL(/save=/);
     const saved = (await context.cookies()).find((c) => c.name === "morcus_d");
     expect(saved?.value).toBe("1"); // L&S
+
+    // Back from an opened dialog leaves without changes.
+    await page.locator("#dict-settings-btn").click();
+    await expect(dialog).toBeVisible();
+    await dialog.locator('.dict-checkbox[value="GAF"]').check();
+    await page.goBack();
+    await expect(dialog).not.toBeVisible();
+    const kept = (await context.cookies()).find((c) => c.name === "morcus_d");
+    expect(kept?.value).toBe("1");
 
     // Opening a link with a different selection shows it but does not overwrite the cookie.
     await page.goto("/v2/dicts?q=habeo&d=2");
@@ -760,7 +770,7 @@ test.describe("UI V2 dictionary", () => {
     // Guest mode: the link's settings are read-only, and a new search keeps them.
     await expect(page.locator(".guest-chip")).toBeVisible();
     await expect(page.locator('.dict-checkbox[value="GAF"]')).toBeDisabled();
-    await expect(page.locator(".settings-apply-btn")).toHaveCount(0);
+    await expect(page.locator('[name="save"]')).toHaveCount(0);
     await page.locator("#dict-q").fill("amo");
     await page.locator("#dict-q").press("Enter");
     await expect(page).toHaveURL(/q=amo/);
@@ -777,6 +787,69 @@ test.describe("UI V2 dictionary", () => {
     await context.close();
   });
 
+  test("dictionary settings apply when the dialog closes (JS enabled)", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts?q=habeo");
+    await expect(page.locator(".dict-title").first()).toBeVisible();
+    const dialog = page.locator("dialog#dict-settings");
+    const trigger = page.locator("#dict-settings-btn");
+
+    await trigger.click();
+    await expect(dialog).toBeVisible();
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    // The hash never changes with JS: the element opens the dialog itself.
+    await expect(page).not.toHaveURL(/#dict-settings/);
+
+    // Toggling inside the dialog changes nothing behind it.
+    const requests: string[] = [];
+    page.on("request", (r) => {
+      if (r.url().includes("/v2/")) requests.push(r.url());
+    });
+    const checkboxes = dialog.locator(".dict-checkbox");
+    const count = await checkboxes.count();
+    for (let i = 0; i < count; i++) {
+      const box = checkboxes.nth(i);
+      if ((await box.getAttribute("value")) !== "GAF") {
+        await box.uncheck();
+      } else {
+        await box.check();
+      }
+    }
+    await expect(page.locator(".lang-chips")).not.toContainText("Fr");
+    expect(requests).toEqual([]);
+
+    // The dialog is modal: the search box behind it can't take focus or Enter.
+    await page.keyboard.press("Tab");
+    await expect(page.locator("#dict-q")).not.toBeFocused();
+
+    // Done applies: one fetch, the URL and tray follow, and the cookie is saved.
+    await dialog.locator(".dict-settings-done").click();
+    await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+    await expect(page.locator(".dict-title").first()).toContainText("Gaffiot");
+    await expect(page).toHaveURL(new RegExp(`d=${encodeDictBitmask(["GAF"])}`));
+    const saved = (await page.context().cookies()).find(
+      (c) => c.name === "morcus_d"
+    );
+    expect(saved?.value).toBe(encodeDictBitmask(["GAF"]));
+
+    // A new search keeps what's on screen.
+    await page.locator("#dict-q").fill("amo");
+    await page.locator("#dict-q").press("Enter");
+    await expect(page).toHaveURL(/q=amo/);
+    await expect(page.locator(".dict-title").first()).toContainText("Gaffiot");
+
+    // Escape also applies.
+    await trigger.click();
+    await dialog.locator('.dict-checkbox[value="L&S"]').check();
+    await page.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+    await expect(page).toHaveURL(
+      new RegExp(`d=${encodeDictBitmask(["L&S", "GAF"])}`)
+    );
+  });
+
   test("guest mode locks a shared link's settings until Return (JS enabled)", async ({
     page,
     baseURL,
@@ -790,12 +863,16 @@ test.describe("UI V2 dictionary", () => {
 
     await page.goto("/v2/dicts?q=habeo&d=2"); // GAF
     await expect(page.locator(".guest-chip")).toBeVisible();
-    await page.locator("morcus-dict-settings .settings-btn").click();
+    await page.locator("#dict-settings-btn").click();
     await expect(page.locator(".settings-guest-note")).toBeVisible();
     await expect(page.locator('.dict-checkbox[value="FOR"]')).toBeDisabled();
 
+    // Done only closes.
+    await page.locator("#dict-settings .dict-settings-done").click();
+    await expect(page.locator("dialog#dict-settings")).not.toBeVisible();
+    await expect(page).toHaveURL(/d=2/);
+
     // A new search keeps the link's settings.
-    await page.keyboard.press("Escape");
     await page.locator("#dict-q").fill("amo");
     await page.locator("#dict-q").press("Enter");
     await expect(page).toHaveURL(/q=amo/);
@@ -815,7 +892,7 @@ test.describe("UI V2 dictionary", () => {
     page,
   }) => {
     await page.goto("/v2/dicts?q=habeo");
-    await expect(page.locator(".settings-btn").first()).toBeVisible();
+    await expect(page.locator("#dict-settings-btn")).toBeVisible();
 
     // Verify initial scale is 1
     const initialScale = await page.evaluate(() =>
@@ -823,13 +900,13 @@ test.describe("UI V2 dictionary", () => {
     );
     expect(initialScale === "1" || initialScale === "").toBe(true);
 
-    // Open settings popover
-    await page.locator(".settings-btn").first().click();
-    const popover = page.locator(".settings-popover").first();
-    await expect(popover).toBeVisible();
+    // Open the settings dialog
+    await page.locator("#dict-settings-btn").click();
+    const dialog = page.locator("dialog#dict-settings");
+    await expect(dialog).toBeVisible();
 
-    // Adjust slider to 80%
-    const slider = popover.locator(".settings-slider");
+    // Adjust slider to 80%; strength stays live while the dialog is open.
+    const slider = dialog.locator(".settings-slider");
     await slider.fill("80");
     await slider.dispatchEvent("input");
     await slider.dispatchEvent("change");
@@ -848,7 +925,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Close on Escape
     await page.keyboard.press("Escape");
-    await expect(popover).not.toBeVisible();
+    await expect(dialog).not.toBeVisible();
   });
 
   test("supports reader sidebar dictionary search in the embedded frame", async ({
