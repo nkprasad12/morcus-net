@@ -43,6 +43,15 @@ export type V2AssetManifest = Partial<Record<V2AssetName, string>>;
 export interface V2ChunkEntrySpec {
   readonly import: string;
   readonly dependOn?: V2JsEntryName;
+  /**
+   * Modules that several chunks depending on this one import, bundled as
+   * extra entry modules of this chunk so they ship once, here. A plain
+   * `import` from the entry file isn't enough: Rspack drops an import of a
+   * side-effect-free module whose exports the chunk doesn't use, and then each
+   * dependent chunk bundles its own copy. Entry modules are never dropped.
+   * `checkV2ChunkDuplication` fails the build when a module needs listing.
+   */
+  readonly shared?: readonly string[];
 }
 
 /**

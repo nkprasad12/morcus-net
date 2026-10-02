@@ -13,6 +13,7 @@ import {
   type V2BundleBudget,
 } from "@/bundler/v2_bundle_budget";
 import {
+  V2_CHUNK_ENTRIES,
   V2_JS_CHUNKS,
   V2_ROUTES,
   type V2AssetManifest,
@@ -445,9 +446,12 @@ describe("UI V2 Bundle Budget", () => {
       );
       // dict and reader both depend only on common, so that's where it goes.
       expect(result.errors[0]).toContain(
-        "import it from './src/web/v2/shell/common_entry.client.ts'"
+        "Add it to `V2_CHUNK_ENTRIES.common.shared` in src/bundler/v2_build_contract.ts"
       );
-      expect(result.errors[0]).toContain("ships once, in common.js");
+      expect(result.errors[0]).toContain(
+        "An `import` from './src/web/v2/shell/common_entry.client.ts' is not enough"
+      );
+      expect(result.errors[0]).toContain("module of common.js and ships once");
     });
 
     test("points a reader/external duplicate at reader_entry", () => {
@@ -478,8 +482,23 @@ describe("UI V2 Bundle Budget", () => {
 
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toContain(
-        "import it from './src/web/v2/reader/reader_entry.client.ts'"
+        "Add it to `V2_CHUNK_ENTRIES.reader.shared`"
       );
+      expect(result.errors[0]).toContain("module of reader.js");
+    });
+  });
+
+  describe("V2_CHUNK_ENTRIES shared modules", () => {
+    test("every shared module exists and isn't an entry of its own", () => {
+      const entryImports = new Set(
+        Object.values(V2_CHUNK_ENTRIES).map((spec) => spec.import)
+      );
+      for (const spec of Object.values(V2_CHUNK_ENTRIES)) {
+        for (const shared of spec.shared ?? []) {
+          expect(fs.existsSync(path.resolve(process.cwd(), shared))).toBe(true);
+          expect(entryImports.has(shared)).toBe(false);
+        }
+      }
     });
   });
 });

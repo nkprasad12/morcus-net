@@ -438,9 +438,11 @@ function collectLeafSourceModules(
  * source module is duplicated across multiple JS chunks.
  *
  * Why this guardrail is needed: Rspack's `dependOn: "common"` only deduplicates
- * modules that `common` itself imports. If two feature chunks import a shared
- * helper that `common` does not import, Rspack silently duplicates that helper
- * into both feature chunks unless caught here.
+ * modules that are reachable from `common` through a used import (a bare
+ * import of a side-effect-free module doesn't count). If two feature chunks
+ * import a shared helper that `common` doesn't use, Rspack silently
+ * duplicates that helper into both feature chunks unless caught here. The
+ * fix is to list it in the ancestor's `V2ChunkEntrySpec.shared`.
  */
 export function checkV2ChunkDuplication(stats: RspackStatsCompilationLike): {
   chunkModules: Record<V2JsEntryName, string[]>;
@@ -495,11 +497,13 @@ export function checkV2ChunkDuplication(stats: RspackStatsCompilationLike): {
       errors.push(
         `Module '${modPath}' is duplicated across chunks [${owners.join(
           ", "
-        )}]. Rspack only deduplicates modules that a shared \`dependOn\` ` +
-          `ancestor imports: import it from ` +
-          `'${V2_CHUNK_ENTRIES[ancestor].import}' (the nearest entry every ` +
-          `one of these chunks depends on) so it ships once, in ` +
-          `${ancestor}.js.`
+        )}]. Add it to \`V2_CHUNK_ENTRIES.${ancestor}.shared\` in ` +
+          `src/bundler/v2_build_contract.ts (${ancestor} is the nearest ` +
+          `entry every one of these chunks depends on), so it is an entry ` +
+          `module of ${ancestor}.js and ships once. An \`import\` from ` +
+          `'${V2_CHUNK_ENTRIES[ancestor].import}' is not enough: Rspack ` +
+          `drops imports of side-effect-free modules whose exports that ` +
+          `chunk doesn't use.`
       );
     }
   }
