@@ -61,6 +61,7 @@ export {
   DEFAULT_DICT_KEYS,
   parseDictKeys,
   parseInflectionParam,
+  resolveInflection,
   resolveDictParams,
   parseDictsFromCookie,
   readCookie,

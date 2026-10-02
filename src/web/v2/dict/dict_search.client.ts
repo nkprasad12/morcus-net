@@ -10,10 +10,7 @@ import {
   setHtml,
   tokenizeTargets,
 } from "@/web/v2/core/index.client";
-import {
-  dictSettingsStore,
-  inflectedSettingsStore,
-} from "@/web/v2/dict/dict_preferences.client";
+import { readRenderedDictState } from "@/web/v2/dict/dict_preferences.client";
 import { trimRawQuery } from "@/common/text_cleaning";
 import {
   cleanCompletionQuery,
@@ -31,10 +28,6 @@ import {
   applyDictSearch,
   buildDictUrl,
 } from "@/web/v2/dict/dict_params.common";
-import {
-  parseInflectionParam,
-  resolveDictParams,
-} from "@/web/v2/dict/dict_selection.common";
 import { handleDictPermalinkClick } from "@/web/v2/dict/dict_permalink.client";
 import {
   computeActiveLanguages,
@@ -155,28 +148,19 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     this.scope.use(closeActiveSectionUI);
   }
 
+  /**
+   * Adopts the dictionary state the server resolved and rendered onto the form. The client never
+   * re-resolves it: the server has already read every durable store (see `docs/PREFERENCES.md`).
+   */
   private initActiveSettings() {
-    const params = new URLSearchParams(window.location.search);
-
-    // Resolve inflection state: URL 'o' > stored setting > default (true).
-    // getAll, not get: a No-JS form submits the hidden "0" and the checked box's "1" together.
-    this.isInflected =
-      parseInflectionParam(params.getAll("o")) ??
-      inflectedSettingsStore.get() ??
-      true;
-
-    // Resolve dictionaries: URL ('dict' > 'd' > 'in') > stored setting > default.
-    const keysFromQuery = resolveDictParams({
-      dictParam: params.getAll("dict"),
-      bitmaskParam: params.get("d"),
-      inParam: params.getAll("in"),
-    });
-    const keys = keysFromQuery ??
-      dictSettingsStore.get() ?? [...DEFAULT_DICT_KEYS];
-    this.activeDictKeys = keys;
+    const state = readRenderedDictState(
+      this.scope.$<HTMLElement>("form.search-form")
+    );
+    this.isInflected = state.isInflected;
+    this.activeDictKeys = state.dictKeys;
     // The bitmask is what we send to the server and write back to the URL, so it must never drift
     // from activeDictKeys.
-    this.activeDictBitmask = encodeDictBitmask(keys);
+    this.activeDictBitmask = state.bitmask;
   }
 
   private enhanceExistingMarkup() {

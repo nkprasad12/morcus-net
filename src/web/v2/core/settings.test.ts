@@ -105,13 +105,11 @@ describe("parseSettings", () => {
       darkMode: true,
       highlightStrength: 75,
       autoOpenLogeion: false,
-      inflectedSearch: true,
     });
     expect(parseSettings(json)).toEqual({
       darkMode: true,
       highlightStrength: 75,
       autoOpenLogeion: false,
-      inflectedSearch: true,
     });
   });
 
@@ -120,12 +118,12 @@ describe("parseSettings", () => {
       darkMode: "corrupt_string",
       highlightStrength: 30,
       autoOpenLogeion: null,
+      // Inflection lives in the `morcus_inflected` cookie, not here.
       inflectedSearch: false,
       extraneous: "drop_me",
     });
     expect(parseSettings(json)).toEqual({
       highlightStrength: 30,
-      inflectedSearch: false,
     });
   });
 });

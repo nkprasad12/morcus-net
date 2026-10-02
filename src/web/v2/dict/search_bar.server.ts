@@ -178,10 +178,14 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     ? ""
     : `<input type="hidden" name="d" value="${he.escape(dictBitmask)}" />`;
 
+  // `data-d` / `data-o` publish the selection the server resolved for this render. The client
+  // adopts them (`readRenderedDictState`) instead of re-deriving state from the URL or storage.
   return `
     <form class="search-form" action="${he.escape(
       options.action
-    )}" method="GET">
+    )}" method="GET" data-d="${he.escape(dictBitmask)}" data-o="${
+    isInflected ? "1" : "0"
+  }">
       ${dictStateInputHtml}
       ${hiddenInputsHtml}
       <div class="input-wrapper">

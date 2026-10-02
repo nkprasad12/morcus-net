@@ -358,13 +358,12 @@ localStorage copies outright. Each step is independently shippable:
 - [x] **Key the persistence guard on an explicit scoped-view flag (F7).** `dict_routes.server.ts`
       now skips cookie writes when `isScopedView` (`isEmbeddedRequest()` or a `lang` filter) is set,
       rather than using `lang` alone as a proxy for "this is the reader iframe".
-- [ ] **Make the client adopt SSR state (F1–F5).** Set controls from the server-rendered DOM
-      instead of re-deriving them, so hydration can't overwrite pre-upgrade input or show controls
-      that disagree with the rendered results.
-- [ ] **Make the cookie the only durable store (F6, F8).** Delete `syncWithCookie`,
-      `SEARCH_SETTINGS_KEY` and `GlobalSettings.inflectedSearch`, with one shared defaulting helper
-      for inflection (today the server says `cookie !== "0"` and the client `?? stored ?? true`).
-      Update the "Hydration Sync" bullet in [`README.md`](README.md).
+- [x] **Make the client adopt SSR state (F1–F5).** The server renders `data-d` / `data-o` on the
+      search form and `checked` on each control; `<morcus-dict-search>` and
+      `<morcus-dict-settings>` adopt those instead of re-deriving state from the URL or storage.
+- [x] **Make the cookie the only durable store (F6, F8).** `syncWithCookie`, `SEARCH_SETTINGS_KEY`
+      and V2's `GlobalSettings.inflectedSearch` are gone; `resolveInflection` is the one defaulting
+      rule for inflection.
 - [ ] **One encoding (F9).** Delete `formatDictsParam` and its re-export from `dict.server.ts`
       (no production callers), and store the cookie as the bitmask. `?dict=` stays as the input
       adapter for the No-JS checkbox group, and `parseDictKeys` stays tolerant of old links.

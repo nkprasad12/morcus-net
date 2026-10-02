@@ -50,7 +50,8 @@ sequenceDiagram
 - `xml_to_html.server.ts`: Safe transformer converting TEI XML AST nodes into sanitized HTML.
 - `dict_search.client.ts`: Custom element managing form hijacking, history pushes, keyboard navigation, and client-side Latin word progressive enhancement.
 - `dict_suggestions.client.ts`: Accessible dropdown list rendering live autocomplete suggestions.
-- `dict_settings.client.ts`: Popover controlling highlight strength, individual dictionary selection checkboxes, and `localStorage` / cookie synchronization.
+- `dict_settings.client.ts`: Popover controlling highlight strength, individual dictionary selection checkboxes, and the inflection toggle. It adopts the server-rendered state and persists changes to cookies.
+- `dict_preferences.client.ts`: Reads the server-rendered dictionary state (`readRenderedDictState`) and writes the preference cookies.
 
 ---
 
@@ -65,11 +66,12 @@ $$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus
 - Highest precedence. Allows bookmarks, reader deep-links, and shared URLs to function deterministically.
 - Supports comma- or hyphen-delimited keys (e.g. `?dict=L&S,GAF` or `?in=LnS-GAF`).
 
-### 2. Cookie (`morcus_dicts`) vs `localStorage` (`SEARCH_SETTINGS_KEY`)
+### 2. Cookies (`morcus_dicts`, `morcus_inflected`): the only durable store
 
-- **No-JS Baseline**: The server inspects the `morcus_dicts` cookie on SSR. When a user submits a form with a new dictionary selection, the server returns a `Set-Cookie` header with `SameSite=Lax; Path=/; Max-Age=1 year`.
-- **Client (JS Enhanced)**: The client reads and writes the existing V1 key `SEARCH_SETTINGS_KEY = "SEARCH_SETTINGS_KEY"` in `localStorage`. When the user toggles a dictionary checkbox or preset in `<morcus-dict-settings>`, JS updates **both** `localStorage` and `document.cookie`.
-- **Hydration Sync**: On initial client boot, if `localStorage` has saved preferences but the cookie is missing, client JS writes the cookie so subsequent direct SSR loads remain in sync.
+- **The server resolves.** On every request the server applies URL → cookie → default (`resolveActiveDicts`, `resolveInflection`) and renders the result. That's the checkboxes' `checked` state plus `data-d` (bitmask) and `data-o` on the search `<form>`.
+- **The client adopts.** `<morcus-dict-settings>` reads the checkboxes' `defaultChecked`, and `<morcus-dict-search>` reads `readRenderedDictState(form)`. Neither re-parses the URL or reads `localStorage`, so the controls can't disagree with the rendered results.
+- **No-JS writes**: the server sends `Set-Cookie` (`SameSite=Lax; Path=/; Max-Age=1 year`) on full-page submissions. Scoped views (`embedded=1` or `lang=`) never persist.
+- **JS writes**: toggling a control in `<morcus-dict-settings>` writes `document.cookie` (`persistDictKeys` / `persistInflected`). There is no `localStorage` copy.
 - **Privacy & Compliance**: The cookie stores only functional UI preferences (e.g. `morcus_dicts=L%26S%3BGAF`). Under GDPR/ePrivacy and CCPA, it qualifies as an exempt **strictly necessary / user preference** cookie and requires no consent banner.
 
 ### 3. Query Language Constraints (`lang=La`) vs Layout (`embedded=1`)

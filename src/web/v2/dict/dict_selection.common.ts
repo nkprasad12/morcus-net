@@ -114,6 +114,18 @@ export function parseInflectionParam(
   return undefined;
 }
 
+/**
+ * The single defaulting rule for inflection: an explicit URL value wins, then the cookie, and
+ * inflected search is on unless the cookie says `"0"`. Only the server resolves this; the client
+ * adopts the rendered result.
+ */
+export function resolveInflection(
+  oParam: boolean | undefined,
+  cookieHeader: string | undefined | null
+): boolean {
+  return oParam ?? readCookie(cookieHeader, INFLECTED_COOKIE_NAME) !== "0";
+}
+
 export interface DictParamsInput {
   /** Explicit keys from `?dict=`, i.e. the No-JS form checkboxes. Highest precedence. */
   dictParam?: string | string[] | null;

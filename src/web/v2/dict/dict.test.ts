@@ -344,8 +344,9 @@ describe("dict_ssr", () => {
     expect(pageHtml).toContain(
       `<script type="module" src="/v2/assets/dict.js" onerror="document.documentElement.setAttribute('data-js-failed','')"></script>`
     );
+    // The form publishes the resolved state for the client to adopt: defaults here.
     expect(pageHtml).toContain(
-      '<form class="search-form" action="/v2/dicts" method="GET">'
+      '<form class="search-form" action="/v2/dicts" method="GET" data-d="an" data-o="1">'
     );
     expect(pageHtml).toContain("<morcus-dict-search>");
     expect(pageHtml).toContain("<morcus-dict-settings>");
