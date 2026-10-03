@@ -3,7 +3,8 @@
  * `renderPageShell({ widthSurface })`.
  *
  * Both edges of the centered page column drag symmetrically (width =
- * start ± 2·dx), clamped between the surface minimum and the viewport, and
+ * start ± 2·dx), clamped between the surface minimum and the viewport (less
+ * the dictionary's contents rail beside the column), and
  * snap to the old presets and to full width. Double-click, Enter or Esc
  * reset; arrows step {@link KEY_STEP_PX}, Home goes to the minimum, End to
  * full width.
@@ -87,6 +88,13 @@ export class MorcusPageWidth extends BaseElement {
     this.updateAria(getSurfaceWidth(surface));
 
     for (const handle of this.handles) this.bindHandle(handle);
+    // The column and app bar row are outside this element: if it goes away
+    // mid-drag or mid-key-step (no release, keyup or blur will arrive), drop
+    // the uncommitted inline width rather than leave it on them.
+    this.scope.use(() => {
+      this.keyPending = null;
+      this.setLive(null);
+    });
   }
 
   private get config() {
@@ -98,30 +106,48 @@ export class MorcusPageWidth extends BaseElement {
   }
 
   /**
+   * How much wider the container is than the reading column: the
+   * dictionary's contents rail plus its gap when the rail shows beside the
+   * column (dict/dict_toc.css), else 0. Reads layout.
+   */
+  private railExtra(): number {
+    // The rail is sticky only in its desktop beside-the-column mode.
+    const rail = this.container?.querySelector<HTMLElement>(
+      ".results-layout.has-toc .drawer-toc"
+    );
+    return rail && getComputedStyle(rail).position === "sticky"
+      ? rail.getBoundingClientRect().width + RAIL_GAP_PX
+      : 0;
+  }
+
+  /**
+   * The widest the reading column can get: the viewport, less the rail
+   * beside it. Widths are clamped to this and snap to `"full"` near it, so a
+   * key step or drag past it doesn't stall at a width the column can't
+   * reach. Reads layout, so never call it mid-drag.
+   */
+  private maxWidth(): number {
+    return this.viewportWidth() - this.railExtra();
+  }
+
+  /**
    * The reading column's current width; reads layout, so never call it
-   * mid-drag. The container is wider than the column when the dictionary's
-   * contents rail shows beside it (dict/dict_toc.css): that extra is
-   * subtracted, so the saved width is always the column's.
+   * mid-drag. The rail's extra (see {@link railExtra}) is subtracted from the
+   * container, so the saved width is always the column's.
    */
   private measureWidth(): number {
     const container = this.container;
     if (!container) return this.config.def;
-    // The rail is sticky only in its desktop beside-the-column mode.
-    const rail = container.querySelector<HTMLElement>(
-      ".results-layout.has-toc .drawer-toc"
+    return (
+      container.getBoundingClientRect().width - this.railExtra() ||
+      this.config.def
     );
-    const extra =
-      rail && getComputedStyle(rail).position === "sticky"
-        ? rail.getBoundingClientRect().width + RAIL_GAP_PX
-        : 0;
-    return container.getBoundingClientRect().width - extra || this.config.def;
   }
 
   /** Commits a pending key-stepped width, if any. */
   private flushKeys(): void {
     const pending = this.keyPending;
     if (pending === null) return;
-    this.keyPending = null;
     this.commit(pending);
   }
 
@@ -155,7 +181,7 @@ export class MorcusPageWidth extends BaseElement {
         onStart: () => {
           this.flushKeys();
           startWidth = this.measureWidth();
-          max = this.viewportWidth();
+          max = this.maxWidth();
           pending = null;
           this.updateAria(getSurfaceWidth(this.surface), max);
         },
@@ -167,7 +193,8 @@ export class MorcusPageWidth extends BaseElement {
           );
           readoutX = currentX + 14;
           readoutY = currentY - 10;
-          if (!frame) frame = requestAnimationFrame(paint);
+          // Scope-managed, so a frame queued before a disconnect never runs.
+          if (!frame) frame = this.scope.rAF(paint);
         },
         onEnd: ({ isCancelled }) => {
           // A queued frame finds `pending` cleared and does nothing.
@@ -177,7 +204,7 @@ export class MorcusPageWidth extends BaseElement {
             this.setLive(null);
             return;
           }
-          this.commit(committed);
+          this.commit(committed, max);
         },
       })
     );
@@ -189,7 +216,7 @@ export class MorcusPageWidth extends BaseElement {
     );
     this.scope.listen(handle, "keydown", (e: KeyboardEvent) => {
       let next: DraggedPageWidth | undefined | null = null;
-      const keyMax = this.viewportWidth();
+      const keyMax = this.maxWidth();
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         const step = (e.key === "ArrowRight" ? 1 : -1) * sign * KEY_STEP_PX;
         next = resolveSurfaceWidth(
@@ -209,8 +236,7 @@ export class MorcusPageWidth extends BaseElement {
       // Keys on the separator it owns resize the page instead of scrolling.
       e.preventDefault();
       if (next === undefined) {
-        // Resets commit at once (and drop any pending step).
-        this.keyPending = null;
+        // Resets commit at once (commit drops any pending step).
         this.commit(undefined, keyMax);
         return;
       }
@@ -252,11 +278,15 @@ export class MorcusPageWidth extends BaseElement {
     );
   }
 
-  /** Saves `width` (`undefined` = default) and records it for pre-paint. */
+  /**
+   * Saves `width` (`undefined` = default) and records it for pre-paint. Any
+   * commit (release, reset, double-click) supersedes a pending key step.
+   */
   private commit(
     width: DraggedPageWidth | undefined,
-    max = this.viewportWidth()
+    max = this.maxWidth()
   ): void {
+    this.keyPending = null;
     // Record on :root first, then drop the inline values, so the column
     // never flashes back to the old width in between.
     setSurfaceWidth(this.surface, width);
@@ -266,7 +296,7 @@ export class MorcusPageWidth extends BaseElement {
 
   private updateAria(
     width: DraggedPageWidth | undefined,
-    max = this.viewportWidth()
+    max = this.maxWidth()
   ): void {
     const { def, min } = this.config;
     // aria-valuemin is static (server-rendered).

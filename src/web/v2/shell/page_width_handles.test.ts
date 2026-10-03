@@ -21,12 +21,13 @@ const root = document.documentElement;
 const VIEWPORT = 2000;
 
 let columnWidth = 1400;
-let rafQueue: FrameRequestCallback[] = [];
+let rafQueue = new Map<number, FrameRequestCallback>();
+let nextRafId = 1;
 
 function flushFrames() {
   const queue = rafQueue;
-  rafQueue = [];
-  for (const cb of queue) cb(0);
+  rafQueue = new Map();
+  for (const cb of queue.values()) cb(0);
 }
 
 function mountPage(): {
@@ -120,12 +121,18 @@ beforeEach(() => {
   localStorage.clear();
   root.removeAttribute("style");
   columnWidth = 1400;
-  rafQueue = [];
+  rafQueue = new Map();
   jest
     .spyOn(window, "requestAnimationFrame")
     .mockImplementation((cb: FrameRequestCallback) => {
-      rafQueue.push(cb);
-      return rafQueue.length;
+      const id = nextRafId++;
+      rafQueue.set(id, cb);
+      return id;
+    });
+  jest
+    .spyOn(window, "cancelAnimationFrame")
+    .mockImplementation((id: number) => {
+      rafQueue.delete(id);
     });
 });
 
@@ -372,6 +379,41 @@ describe("<morcus-page-width>", () => {
     expect(settingsStore.get().readerWidth).toBeUndefined();
   });
 
+  test("double-click mid-step resets and drops the pending step", () => {
+    const { host, right } = mountPage();
+    key(right, "Home");
+    right.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    expect(settingsStore.get().readerWidth).toBeUndefined();
+    expect(liveValues(host)).toEqual(NO_LIVE);
+    // The step's keyup and blur must not overwrite the reset.
+    key(right, "Home", "keyup");
+    right.dispatchEvent(new FocusEvent("blur"));
+    expect(settingsStore.get().readerWidth).toBeUndefined();
+  });
+
+  test("disconnecting mid-drag clears live values and drops the queued frame", () => {
+    const { host, right } = mountPage();
+    pointer("pointerdown", right, 1700);
+    pointer("pointermove", right, 1750);
+    flushFrames();
+    expect(liveValues(host).columnMax).not.toBe("");
+    pointer("pointermove", right, 1800); // queues another frame
+    host.remove();
+    expect(liveValues(host)).toEqual(NO_LIVE);
+    flushFrames();
+    expect(liveValues(host)).toEqual(NO_LIVE);
+    expect(settingsStore.get().readerWidth).toBeUndefined();
+  });
+
+  test("disconnecting mid-key-step clears live values and saves nothing", () => {
+    const { host, right } = mountPage();
+    key(right, "ArrowRight");
+    expect(liveValues(host).columnMax).not.toBe("");
+    host.remove();
+    expect(liveValues(host)).toEqual(NO_LIVE);
+    expect(settingsStore.get().readerWidth).toBeUndefined();
+  });
+
   test("other keys are left alone", () => {
     const { right } = mountPage();
     expect(key(right, "Tab").defaultPrevented).toBe(false);
@@ -390,7 +432,10 @@ describe("<morcus-page-width>", () => {
 });
 
 describe("<morcus-page-width> on a dictionary entry with the rail", () => {
-  function mountDict() {
+  /** Rail 260 + 40 gap: the container is 300px wider than the column. */
+  const RAIL_EXTRA = 300;
+
+  function mountDict(containerWidth = 1200) {
     document.body.className = "body-dict";
     document.body.innerHTML = `
       <header class="app-bar"><div class="app-bar-inner"></div></header>
@@ -402,8 +447,9 @@ describe("<morcus-page-width> on a dictionary entry with the rail", () => {
       ${renderPageWidthHandles("dict")}
     `;
     const container = document.querySelector<HTMLElement>(".container")!;
-    // Column 900 + rail 260 + 40 gap.
-    container.getBoundingClientRect = () => ({ width: 1200 } as DOMRect);
+    // Column (containerWidth - 300) + rail 260 + 40 gap.
+    container.getBoundingClientRect = () =>
+      ({ width: containerWidth } as DOMRect);
     document.querySelector<HTMLElement>(".drawer-toc")!.getBoundingClientRect =
       () => ({ width: 260 } as DOMRect);
     return document.querySelector<HTMLElement>(
@@ -422,5 +468,31 @@ describe("<morcus-page-width> on a dictionary entry with the rail", () => {
     press(right, "ArrowRight");
     // Mock still measures 1200 → column 900, + one step.
     expect(settingsStore.get().dictWidth).toBe(900 + KEY_STEP_PX);
+  });
+
+  test("the max is the viewport less the rail", () => {
+    const right = mountDict();
+    // The element connected before the rail's width was mocked; focus
+    // refreshes ARIA.
+    right.dispatchEvent(new FocusEvent("focus"));
+    expect(right.getAttribute("aria-valuemax")).toBe(
+      String(VIEWPORT - RAIL_EXTRA)
+    );
+  });
+
+  test("with the container viewport-bound, an outward step reaches full", () => {
+    // The column can't grow past VIEWPORT - RAIL_EXTRA; stepping from there
+    // used to save a width it could never reach, on every repeat.
+    const right = mountDict(VIEWPORT);
+    press(right, "ArrowRight");
+    expect(settingsStore.get().dictWidth).toBe("full");
+  });
+
+  test("with the container viewport-bound, an outward drag reaches full", () => {
+    const right = mountDict(VIEWPORT);
+    pointer("pointerdown", right, 1700);
+    pointer("pointermove", right, 1700 + 30);
+    pointer("pointerup", right, 1700 + 30);
+    expect(settingsStore.get().dictWidth).toBe("full");
   });
 });
