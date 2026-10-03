@@ -344,18 +344,22 @@
 @media (min-width: 1080px) {
   /* Expand container to fit the TOC rail beside the reading column, which
      keeps its width. Widths come from the dragged page width
-     (shell/page_width.css); the fallbacks (1180px container, 240px rail,
-     860px column) are what embedded dictionaries get. */
+     (shell/page_width.css); the fallbacks (1180px container, 240px rail)
+     are what embedded dictionaries get. During a drag this max-width is
+     overridden inline as `<width> + var(--page-extra)`, and
+     shell/page_width.css sets `--page-extra` to the `--dict-toc-w + 40px`
+     added here: change them together. */
   .container:has(.results-layout.has-toc) {
     max-width: calc(var(--page-max, 900px) + var(--dict-toc-w, 240px) + 40px);
   }
 
-  /* Two-column grid: TOC rail | Content column */
+  /* Two-column grid: TOC rail | Content column. The column takes the rest
+     of the container rather than reading --page-max, so it follows the
+     container's inline max-width during a page width drag (an inherited
+     --page-max on the container would restyle the whole entry per frame). */
   .results-layout.has-toc {
     display: grid;
-    grid-template-columns:
-      var(--dict-toc-w, 240px)
-      minmax(0, calc(var(--page-max, 900px) - 40px));
+    grid-template-columns: var(--dict-toc-w, 240px) minmax(0, 1fr);
     column-gap: 36px;
     align-items: start;
     padding-bottom: 0;

@@ -200,6 +200,8 @@
     overflow: hidden;
   }
 
+  /* Both max-widths are overridden inline during a page width drag
+     (setLive in shell/page_width_handles.client.ts): change them together. */
   body.body-reader .app-bar-inner {
     max-width: var(--page-max);
     padding-left: var(--space-7);

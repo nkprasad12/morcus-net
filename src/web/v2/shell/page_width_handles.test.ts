@@ -4,6 +4,7 @@
 
 import {
   KEY_STEP_PX,
+  liveContainerMaxWidth,
   pageWidthLabel,
 } from "@/web/v2/shell/page_width_handles.client";
 import { renderPageWidthHandles } from "@/web/v2/shell/page_width.server";
@@ -66,8 +67,8 @@ function pointer(type: string, el: HTMLElement, clientX: number) {
   );
 }
 
-function key(el: HTMLElement, k: string): KeyboardEvent {
-  const e = new KeyboardEvent("keydown", {
+function key(el: HTMLElement, k: string, type = "keydown"): KeyboardEvent {
+  const e = new KeyboardEvent(type, {
     key: k,
     bubbles: true,
     cancelable: true,
@@ -75,6 +76,34 @@ function key(el: HTMLElement, k: string): KeyboardEvent {
   el.dispatchEvent(e);
   return e;
 }
+
+/** A full key press: keydown, then keyup (which commits a step). */
+function press(el: HTMLElement, k: string): KeyboardEvent {
+  const e = key(el, k);
+  key(el, k, "keyup");
+  return e;
+}
+
+/** Every inline live value the handles may write, by element. */
+function liveValues(host: HTMLElement) {
+  const column = document.querySelector<HTMLElement>(".container")!;
+  const appBar = document.querySelector<HTMLElement>(".app-bar-inner")!;
+  return {
+    columnMax: column.style.getPropertyValue("max-width"),
+    columnVar: column.style.getPropertyValue("--page-max"),
+    appBarMax: appBar.style.getPropertyValue("max-width"),
+    appBarVar: appBar.style.getPropertyValue("--page-max"),
+    hostVar: host.style.getPropertyValue("--page-max"),
+  };
+}
+
+const NO_LIVE = {
+  columnMax: "",
+  columnVar: "",
+  appBarMax: "",
+  appBarVar: "",
+  hostVar: "",
+};
 
 function savedPrepaint(): Record<string, string> {
   return JSON.parse(localStorage.getItem(PREPAINT_KEY) ?? "{}");
@@ -115,6 +144,21 @@ describe("pageWidthLabel", () => {
   });
 });
 
+describe("liveContainerMaxWidth", () => {
+  // Mirrors `.container { max-width: var(--page-max) }` and, with the
+  // dictionary rail, `calc(var(--page-max) + var(--dict-toc-w) + 40px)`,
+  // where shell/page_width.css sets --page-extra to the added part. If this
+  // fails, update those CSS rules and setLive together.
+  test("adds --page-extra to the live width", () => {
+    expect(liveContainerMaxWidth("1234px")).toBe(
+      "calc(1234px + var(--page-extra, 0px))"
+    );
+    expect(liveContainerMaxWidth("100vw")).toBe(
+      "calc(100vw + var(--page-extra, 0px))"
+    );
+  });
+});
+
 describe("<morcus-page-width>", () => {
   test("upgrades and sets ARIA from the saved width", () => {
     localStorage.setItem(
@@ -134,17 +178,23 @@ describe("<morcus-page-width>", () => {
   });
 
   test("dragging the right edge grows symmetrically, writes live, persists on release only", () => {
-    const { column, right } = mountPage();
-    const appBar = document.querySelector<HTMLElement>(".app-bar-inner")!;
+    const { host, right } = mountPage();
 
     pointer("pointerdown", right, 1700);
     expect(document.body.classList.contains("resizing-page")).toBe(true);
     pointer("pointermove", right, 1750); // +50 → +100
     // rAF-throttled: nothing written until the frame.
-    expect(column.style.getPropertyValue("--page-max")).toBe("");
+    expect(liveValues(host)).toEqual(NO_LIVE);
     flushFrames();
-    expect(column.style.getPropertyValue("--page-max")).toBe("1500px");
-    expect(appBar.style.getPropertyValue("--page-max")).toBe("1500px");
+    // Non-inherited max-width on the column and app bar row; the inherited
+    // --page-max only on the handles' own element.
+    expect(liveValues(host)).toEqual({
+      columnMax: "calc(1500px + var(--page-extra, 0px))",
+      columnVar: "",
+      appBarMax: "1500px",
+      appBarVar: "",
+      hostVar: "1500px",
+    });
     expect(right.getAttribute("aria-valuenow")).toBe("1500");
     // Nothing persisted mid-drag.
     expect(settingsStore.get().readerWidth).toBeUndefined();
@@ -156,7 +206,7 @@ describe("<morcus-page-width>", () => {
     expect(root.style.getPropertyValue("--reader-page-max")).toBe("1500px");
     expect(savedPrepaint()["--reader-page-max"]).toBe("1500px");
     // Inline values are dropped once :root has the width.
-    expect(column.style.getPropertyValue("--page-max")).toBe("");
+    expect(liveValues(host)).toEqual(NO_LIVE);
   });
 
   test("dragging the left edge outward also grows the column", () => {
@@ -207,36 +257,37 @@ describe("<morcus-page-width>", () => {
   });
 
   test("a cancelled drag reverts and saves nothing", () => {
-    const { column, right } = mountPage();
+    const { host, right } = mountPage();
     pointer("pointerdown", right, 1700);
     pointer("pointermove", right, 1800);
     flushFrames();
+    expect(liveValues(host).columnMax).not.toBe("");
     pointer("pointercancel", right, 1800);
-    expect(column.style.getPropertyValue("--page-max")).toBe("");
+    expect(liveValues(host)).toEqual(NO_LIVE);
     expect(settingsStore.get().readerWidth).toBeUndefined();
   });
 
   test("arrow keys step outward-grows / inward-shrinks per side", () => {
     const { left, right } = mountPage();
-    const e = key(right, "ArrowRight");
+    const e = press(right, "ArrowRight");
     expect(e.defaultPrevented).toBe(true);
     expect(settingsStore.get().readerWidth).toBe(1400 + KEY_STEP_PX);
 
     columnWidth = 1500;
-    key(left, "ArrowRight"); // inward on the left edge shrinks
+    press(left, "ArrowRight"); // inward on the left edge shrinks
     expect(settingsStore.get().readerWidth).toBe(1500 - KEY_STEP_PX);
 
     columnWidth = 1500;
-    key(left, "ArrowLeft");
+    press(left, "ArrowLeft");
     expect(settingsStore.get().readerWidth).toBe(1500 + KEY_STEP_PX);
   });
 
   test("Home goes to the minimum, End to full", () => {
     const { right } = mountPage();
-    key(right, "Home");
+    press(right, "Home");
     expect(settingsStore.get().readerWidth).toBe(720);
     expect(right.getAttribute("aria-valuenow")).toBe("720");
-    key(right, "End");
+    press(right, "End");
     expect(settingsStore.get().readerWidth).toBe("full");
     expect(right.getAttribute("aria-valuenow")).toBe(String(VIEWPORT));
     expect(right.getAttribute("aria-valuetext")).toBe("Full width");
@@ -249,13 +300,76 @@ describe("<morcus-page-width>", () => {
       () => key(right, "Escape"),
       () => right.dispatchEvent(new MouseEvent("dblclick", { bubbles: true })),
     ]) {
-      key(right, "Home");
+      press(right, "Home");
       expect(settingsStore.get().readerWidth).toBe(720);
       reset();
       expect(settingsStore.get().readerWidth).toBeUndefined();
       expect(root.style.getPropertyValue("--reader-page-max")).toBe("");
       expect(right.getAttribute("aria-valuenow")).toBe("1400");
     }
+  });
+
+  test("held keys step live and write :root only on keyup", () => {
+    const { host, right } = mountPage();
+    key(right, "ArrowRight");
+    // Painted inline, ARIA updated, nothing on :root or saved yet.
+    expect(liveValues(host)).toEqual({
+      columnMax: `calc(${1400 + KEY_STEP_PX}px + var(--page-extra, 0px))`,
+      columnVar: "",
+      appBarMax: `${1400 + KEY_STEP_PX}px`,
+      appBarVar: "",
+      hostVar: `${1400 + KEY_STEP_PX}px`,
+    });
+    expect(right.getAttribute("aria-valuenow")).toBe(
+      String(1400 + KEY_STEP_PX)
+    );
+    expect(right.getAttribute("aria-valuetext")).toBe(
+      `${1400 + KEY_STEP_PX}px`
+    );
+    expect(root.style.getPropertyValue("--reader-page-max")).toBe("");
+    expect(settingsStore.get().readerWidth).toBeUndefined();
+
+    // A key repeat measures the live column and steps again.
+    columnWidth = 1400 + KEY_STEP_PX;
+    key(right, "ArrowRight");
+    expect(right.getAttribute("aria-valuenow")).toBe(
+      String(1400 + 2 * KEY_STEP_PX)
+    );
+    expect(root.style.getPropertyValue("--reader-page-max")).toBe("");
+
+    key(right, "ArrowRight", "keyup");
+    expect(settingsStore.get().readerWidth).toBe(1400 + 2 * KEY_STEP_PX);
+    expect(root.style.getPropertyValue("--reader-page-max")).toBe(
+      `${1400 + 2 * KEY_STEP_PX}px`
+    );
+    expect(liveValues(host)).toEqual(NO_LIVE);
+  });
+
+  test("blur commits a step whose keyup never arrived", () => {
+    const { host, right } = mountPage();
+    key(right, "End");
+    expect(root.style.getPropertyValue("--reader-page-max")).toBe("");
+    right.dispatchEvent(new FocusEvent("blur"));
+    expect(settingsStore.get().readerWidth).toBe("full");
+    expect(root.style.getPropertyValue("--reader-page-max")).toBe("100vw");
+    expect(liveValues(host)).toEqual(NO_LIVE);
+  });
+
+  test("a keyup or blur without a pending step saves nothing", () => {
+    const { right } = mountPage();
+    key(right, "Tab", "keyup");
+    right.dispatchEvent(new FocusEvent("blur"));
+    expect(localStorage.getItem(GLOBAL_SETTINGS_KEY)).toBeNull();
+  });
+
+  test("Escape mid-step resets at once and drops the pending step", () => {
+    const { host, right } = mountPage();
+    key(right, "Home");
+    key(right, "Escape");
+    expect(settingsStore.get().readerWidth).toBeUndefined();
+    expect(liveValues(host)).toEqual(NO_LIVE);
+    key(right, "Home", "keyup");
+    expect(settingsStore.get().readerWidth).toBeUndefined();
   });
 
   test("other keys are left alone", () => {
@@ -305,7 +419,7 @@ describe("<morcus-page-width> on a dictionary entry with the rail", () => {
     expect(settingsStore.get().dictWidth).toBe(1000);
     expect(root.style.getPropertyValue("--dict-page-max")).toBe("1000px");
 
-    key(right, "ArrowRight");
+    press(right, "ArrowRight");
     // Mock still measures 1200 → column 900, + one step.
     expect(settingsStore.get().dictWidth).toBe(900 + KEY_STEP_PX);
   });

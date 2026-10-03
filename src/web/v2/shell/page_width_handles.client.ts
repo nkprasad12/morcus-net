@@ -8,10 +8,14 @@
  * reset; arrows step {@link KEY_STEP_PX}, Home goes to the minimum, End to
  * full width.
  *
- * During a drag only `--page-max` on the column, the app bar row and this
- * element is written (once per frame). The saved width is recorded on
- * `:root` (`--{surface}-page-max`, applied before first paint) only on
- * commit: a root custom property restyles the whole page.
+ * While a drag or a key press is in progress, the width is written inline
+ * (`setLive`, at most once per frame while dragging): as non-inherited
+ * `max-width` on the column and the app bar row, and as `--page-max` only
+ * on this element (the handles and gutter tint). The inherited `--page-max`
+ * on the column would restyle every element inside it on every frame. The
+ * saved width is recorded on `:root` (`--{surface}-page-max`, applied
+ * before first paint) only on commit (pointer release, key release, blur,
+ * reset): a root custom property restyles the whole page.
  */
 
 import {
@@ -35,6 +39,20 @@ export const KEY_STEP_PX = 48;
 /** Container width beyond rail + column (dict/dict_toc.css: `+ 40px`). */
 const RAIL_GAP_PX = 40;
 
+/**
+ * The column's inline `max-width` for a live width (a CSS length).
+ *
+ * MIRRORS THE CSS: `max-width: var(--page-max)` on `.container`
+ * (shell/page_width.css, reader/reader_layout.css) and, on a dictionary
+ * entry with the contents rail, `calc(var(--page-max) + var(--dict-toc-w) +
+ * 40px)` (dict/dict_toc.css), where shell/page_width.css sets
+ * `--page-extra` to exactly `var(--dict-toc-w) + 40px`. Change them
+ * together.
+ */
+export function liveContainerMaxWidth(width: string): string {
+  return `calc(${width} + var(--page-extra, 0px))`;
+}
+
 /** The readout / `aria-valuetext` for a width. */
 export function pageWidthLabel(
   width: DraggedPageWidth | undefined,
@@ -48,9 +66,11 @@ export function pageWidthLabel(
 export class MorcusPageWidth extends BaseElement {
   private surface: WidthSurface = "reader";
   private handles: HTMLElement[] = [];
-  /** Elements that get `--page-max` inline while dragging. */
-  private liveTargets: HTMLElement[] = [];
+  private appBarRow: HTMLElement | null = null;
+  private container: HTMLElement | null = null;
   private readout: HTMLElement | null = null;
+  /** A key-stepped width shown live but not yet committed (see keyup). */
+  private keyPending: DraggedPageWidth | null = null;
 
   protected override onConnect(): void {
     const surface = this.dataset.surface;
@@ -62,11 +82,8 @@ export class MorcusPageWidth extends BaseElement {
       this.querySelectorAll<HTMLElement>(".page-handle")
     );
     this.readout = this.querySelector<HTMLElement>(".page-width-readout");
-    this.liveTargets = [this];
-    for (const sel of [".app-bar-inner", ".container"]) {
-      const el = document.querySelector<HTMLElement>(sel);
-      if (el) this.liveTargets.push(el);
-    }
+    this.appBarRow = document.querySelector<HTMLElement>(".app-bar-inner");
+    this.container = document.querySelector<HTMLElement>(".container");
     this.updateAria(getSurfaceWidth(surface));
 
     for (const handle of this.handles) this.bindHandle(handle);
@@ -87,7 +104,7 @@ export class MorcusPageWidth extends BaseElement {
    * subtracted, so the saved width is always the column's.
    */
   private measureWidth(): number {
-    const container = this.liveTargets[this.liveTargets.length - 1];
+    const container = this.container;
     if (!container) return this.config.def;
     // The rail is sticky only in its desktop beside-the-column mode.
     const rail = container.querySelector<HTMLElement>(
@@ -98,6 +115,14 @@ export class MorcusPageWidth extends BaseElement {
         ? rail.getBoundingClientRect().width + RAIL_GAP_PX
         : 0;
     return container.getBoundingClientRect().width - extra || this.config.def;
+  }
+
+  /** Commits a pending key-stepped width, if any. */
+  private flushKeys(): void {
+    const pending = this.keyPending;
+    if (pending === null) return;
+    this.keyPending = null;
+    this.commit(pending);
   }
 
   private bindHandle(handle: HTMLElement): void {
@@ -128,6 +153,7 @@ export class MorcusPageWidth extends BaseElement {
         // Measured once: onMove writes the width, so reading it per move
         // would force a synchronous layout on every pointer event.
         onStart: () => {
+          this.flushKeys();
           startWidth = this.measureWidth();
           max = this.viewportWidth();
           pending = null;
@@ -182,15 +208,48 @@ export class MorcusPageWidth extends BaseElement {
       }
       // Keys on the separator it owns resize the page instead of scrolling.
       e.preventDefault();
-      this.commit(next, keyMax);
+      if (next === undefined) {
+        // Resets commit at once (and drop any pending step).
+        this.keyPending = null;
+        this.commit(undefined, keyMax);
+        return;
+      }
+      // Steps paint inline only; a held arrow key would otherwise rewrite
+      // :root (a whole-document restyle) on every repeat. Committed on
+      // keyup, or on blur if the keyup never arrives.
+      this.keyPending = next;
+      this.setLive(next);
+      this.updateAria(next, keyMax);
     });
+    this.scope.listen(handle, "keyup", () => this.flushKeys());
+    this.scope.listen(handle, "blur", () => this.flushKeys());
   }
 
-  /** Writes (or clears) the in-progress width on the live targets. */
+  /**
+   * Writes (or clears) the in-progress width inline: non-inherited
+   * `max-width` on the column and the app bar row, so only they restyle,
+   * and `--page-max` on this element, which positions the handles and the
+   * gutter tint.
+   *
+   * MIRRORS THE CSS: the `max-width` values must match the rules they
+   * override (see {@link liveContainerMaxWidth}; the app bar row is
+   * `max-width: var(--page-max)` in shell/page_width.css and
+   * reader/reader_layout.css). Change them together.
+   */
   private setLive(width: DraggedPageWidth | null): void {
-    const value = width === null ? "" : widthCssValue(width) ?? "";
-    for (const el of this.liveTargets)
-      el.style.setProperty("--page-max", value);
+    const value = width === null ? null : widthCssValue(width);
+    if (value === null) {
+      this.style.removeProperty("--page-max");
+      this.appBarRow?.style.removeProperty("max-width");
+      this.container?.style.removeProperty("max-width");
+      return;
+    }
+    this.style.setProperty("--page-max", value);
+    this.appBarRow?.style.setProperty("max-width", value);
+    this.container?.style.setProperty(
+      "max-width",
+      liveContainerMaxWidth(value)
+    );
   }
 
   /** Saves `width` (`undefined` = default) and records it for pre-paint. */
