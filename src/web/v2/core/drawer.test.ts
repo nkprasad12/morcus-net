@@ -525,14 +525,16 @@ describe("DrawerController", () => {
       controller.dispose();
     });
 
-    test("toggles the body resizing class across the drag", () => {
+    test("leaves <body> classes alone across the drag", () => {
       const controller = connectController({ drawer, handle });
+      const before = document.body.className;
 
       pointerDown(handle);
-      expect(document.body.classList.contains("resizing-drawer")).toBe(true);
+      expect(document.body.classList.contains("resizing-drawer")).toBe(false);
+      expect(document.body.className).toBe(before);
 
       pointerEvent(handle, "pointerup");
-      expect(document.body.classList.contains("resizing-drawer")).toBe(false);
+      expect(document.body.className).toBe(before);
 
       controller.dispose();
     });
@@ -857,7 +859,7 @@ describe("DrawerController", () => {
       controller.dispose();
     });
 
-    test("clears targets on dispose()", () => {
+    test("clears only the targets on dispose(); the drawer keeps its height", () => {
       const controller = connectController({
         drawer,
         handle,
@@ -867,7 +869,92 @@ describe("DrawerController", () => {
       expect(target.style.getPropertyValue("--drawer-height")).toBe("200px");
       controller.dispose();
       expect(target.style.getPropertyValue("--drawer-height")).toBe("");
-      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("");
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("200px");
+    });
+
+    test("restore() -> dispose() -> connect() keeps the drawer's height and re-applies it to targets", () => {
+      const controller = connectController({
+        drawer,
+        handle,
+        heightTargets: () => [target],
+      });
+      controller.restore(70);
+      controller.dispose();
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("70svh");
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("");
+
+      controller.connect();
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("70svh");
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("70svh");
+      expect(controller.getPreferredSvh()).toBe(70);
+      expect(handle.getAttribute("aria-valuenow")).toBe("70");
+      controller.dispose();
+    });
+
+    test("does not query heightTargets during pointermove", () => {
+      const heightTargets = jest.fn(() => [target]);
+      const controller = connectController({ drawer, handle, heightTargets });
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 300,
+          pointerId: 1,
+          button: 0,
+        })
+      );
+      heightTargets.mockClear();
+      for (const clientY of [280, 260, 240]) {
+        handle.dispatchEvent(
+          new PointerEvent("pointermove", {
+            bubbles: true,
+            clientX: 100,
+            clientY,
+            pointerId: 1,
+          })
+        );
+      }
+      expect(heightTargets).not.toHaveBeenCalled();
+      expect(target.style.getPropertyValue("--drawer-height")).toBe(
+        drawer.style.getPropertyValue("--drawer-height")
+      );
+      controller.dispose();
+    });
+
+    test("picks up targets created after construction at drag start", () => {
+      target.remove();
+      const controller = connectController({
+        drawer,
+        handle,
+        heightTargets: () =>
+          document.querySelectorAll<HTMLElement>(".back-to-top"),
+      });
+      const late = document.body.appendChild(document.createElement("button"));
+      late.className = "back-to-top";
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 300,
+          pointerId: 1,
+          button: 0,
+        })
+      );
+      handle.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 200,
+          pointerId: 1,
+        })
+      );
+      expect(late.style.getPropertyValue("--drawer-height")).not.toBe("");
+      expect(late.style.getPropertyValue("--drawer-height")).toBe(
+        drawer.style.getPropertyValue("--drawer-height")
+      );
+      controller.dispose();
     });
   });
 });
