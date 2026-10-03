@@ -5,11 +5,10 @@
   display: none;
 }
 
-/* Resizing drag states across panels */
-body.resizing-panels {
-  user-select: none;
-  cursor: col-resize;
-}
+/* `body.resizing-panels` (set during a drag) deliberately carries no
+   `cursor` / `user-select`: both are inherited, so toggling them on <body>
+   restyles the whole document. The captured handle (`.resize-handle`)
+   supplies the cursor, and trackPointerDrag prevents text selection. */
 
 /* ==========================================================================
    Desktop Resizable Splitter Gutter (>= 641px)

@@ -162,8 +162,9 @@ export class ReaderLayoutController extends BaseController {
          * written. At this breakpoint `.reader-split-layout` is a `flex: 1`
          * row whose width comes from its parent, and `--dict-width` only
          * divides space between its children (reader.css). The drag classes
-         * applied immediately after this callback are `user-select` / `cursor` /
-         * `pointer-events` only, so measuring before them is equivalent.
+         * applied immediately after this callback only set the handle's
+         * `cursor` and the iframe's `pointer-events` / frozen width, so
+         * measuring before them is equivalent.
          *
          * The iframe width is read with them, before any write, and frozen
          * via `--dict-frozen-width` (reader_dict.css) so the embedded
