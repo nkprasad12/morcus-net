@@ -11,7 +11,7 @@
 
 import { BaseController } from "@/web/v2/core/base_element.client";
 import { trackPointerDrag } from "@/web/v2/core/gesture.client";
-import { setPrepaint } from "@/web/v2/core/prepaint.client";
+import { recordPrepaint, setPrepaint } from "@/web/v2/core/prepaint.client";
 import { storage } from "@/web/v2/core/storage.client";
 
 /**
@@ -123,18 +123,39 @@ export class ReaderLayoutController extends BaseController {
         splitter.setAttribute("aria-valuenow", String(parsed));
       }
     }
-    // Re-record on every connect so a stale pre-paint snapshot heals.
-    this.recordPrepaintWidth(restored);
+    // Re-record on every connect so a stale pre-paint snapshot heals. A saved
+    // width is now inline on the panel, which overrides whatever the critical
+    // script put on <html>, so it is recorded only. With none, <html> is
+    // cleared too: a stale snapshot may have put a width there that nothing
+    // would override.
+    if (restored === null) this.clearPrepaintWidth();
+    else this.recordPrepaintWidth(restored);
   }
 
   /**
-   * Records the persisted width for the critical script to apply to <html>
-   * before first paint. Only called for committed widths (release, keyboard,
-   * reset), never per pointer move: a root custom property restyles the
-   * whole page.
+   * Records a committed width (release, keyboard, connect) for the critical
+   * script to apply to <html> before first paint on the next load, without
+   * writing <html> now. Never called per pointer move.
+   *
+   * Writing an inherited custom property on <html> restyles the whole
+   * document (every passage element), and here it would be redundant: the
+   * committed width is already inline on `.reader-dict-panel`, which
+   * overrides the inherited one. So after this <html> may hold an older
+   * `--dict-width` than the panel. That is safe because:
+   * - `.reader-dict-panel` is the only rule that reads `--dict-width`
+   *   (reader_dict.css), and
+   * - only {@link resetWidth} removes the panel's inline value, and it
+   *   clears <html> in the same step ({@link clearPrepaintWidth}).
+   * The panel is server-rendered, so a fresh one only arrives with a new
+   * load, whose critical script applies the recorded value.
    */
-  private recordPrepaintWidth(width: number | null): void {
-    setPrepaint("--dict-width", width === null ? null : `${width}px`);
+  private recordPrepaintWidth(width: number): void {
+    recordPrepaint("--dict-width", `${width}px`);
+  }
+
+  /** Removes the width from <html> and from the pre-paint snapshot. */
+  private clearPrepaintWidth(): void {
+    setPrepaint("--dict-width", null);
   }
 
   private initDrag() {
@@ -311,7 +332,9 @@ export class ReaderLayoutController extends BaseController {
       this.splitter.setAttribute("aria-valuenow", String(DEFAULT_SPLIT_WIDTH));
     }
     storage.remove(this.storageKey);
-    this.recordPrepaintWidth(null);
+    // The panel's inline width is gone, so <html> is what the panel reads
+    // now; a stale value there would show. Clear it with the snapshot.
+    this.clearPrepaintWidth();
     this.onWidthChange?.(DEFAULT_SPLIT_WIDTH);
   }
 
