@@ -126,25 +126,69 @@ describe("trackHorizontalSwipe", () => {
 });
 
 describe("trackPointerDrag", () => {
-  function pointerDown(el: Element, button = 0): Event {
-    const e = new Event("pointerdown", { bubbles: true, cancelable: true });
+  function pointer(el: Element, type: string, button = 0): Event {
+    const e = new Event(type, { bubbles: true, cancelable: true });
     Object.assign(e, { button, pointerId: 1, clientX: 0, clientY: 0 });
     el.dispatchEvent(e);
     return e;
   }
 
-  it("prevents default on a primary pointerdown so no text selection starts", () => {
+  /** Dispatches a selectstart on a text node, as a browser would, and reports if it was cancelled. */
+  function selectionBlocked(): boolean {
+    const text = document.body.appendChild(document.createTextNode("x"));
+    const e = new Event("selectstart", { bubbles: true, cancelable: true });
+    text.dispatchEvent(e);
+    text.remove();
+    return e.defaultPrevented;
+  }
+
+  it("does not cancel the pointerdown, so the handle can still take focus", () => {
     const el = document.createElement("div");
     const cleanup = trackPointerDrag(el, {});
-    expect(pointerDown(el).defaultPrevented).toBe(true);
+    expect(pointer(el, "pointerdown").defaultPrevented).toBe(false);
     cleanup();
+  });
+
+  it("blocks text selection only while a drag is active", () => {
+    const el = document.createElement("div");
+    const cleanup = trackPointerDrag(el, {});
+    expect(selectionBlocked()).toBe(false);
+    pointer(el, "pointerdown");
+    expect(selectionBlocked()).toBe(true);
+    cleanup();
+  });
+
+  it.each(["pointerup", "pointercancel"])(
+    "stops blocking text selection after %s",
+    (type) => {
+      const el = document.createElement("div");
+      const cleanup = trackPointerDrag(el, {});
+      pointer(el, "pointerdown");
+      pointer(el, type);
+      expect(selectionBlocked()).toBe(false);
+      cleanup();
+    }
+  );
+
+  it("stops blocking text selection when unbound mid-drag", () => {
+    const el = document.createElement("div");
+    const cleanup = trackPointerDrag(el, {});
+    pointer(el, "pointerdown");
+    cleanup();
+    expect(selectionBlocked()).toBe(false);
   });
 
   it("leaves ignored pointerdowns alone", () => {
     const el = document.createElement("div");
-    const cleanup = trackPointerDrag(el, { filter: () => false });
-    expect(pointerDown(el).defaultPrevented).toBe(false);
-    expect(pointerDown(el, 2).defaultPrevented).toBe(false);
-    cleanup();
+    const filtered = trackPointerDrag(el, { filter: () => false });
+    pointer(el, "pointerdown");
+    pointer(el, "pointerdown", 2);
+    expect(selectionBlocked()).toBe(false);
+    filtered();
+
+    const refused = trackPointerDrag(el, { onStart: () => false });
+    pointer(el, "pointerdown");
+    expect(selectionBlocked()).toBe(false);
+    refused();
   });
 });

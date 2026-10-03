@@ -67,13 +67,26 @@ export function trackPointerDrag(
   let activePointerId = -1;
 
   /**
-   * Toggles every drag-state class at once.
+   * Blocks text selection while a drag is active.
    *
-   * Centralized because these classes have three separate removal paths (pointerup,
-   * pointercancel, and unbind while still dragging); toggling them individually at
+   * This replaces `user-select: none` on <body>: that property is inherited, so
+   * toggling it restyled the whole document at the start and end of every drag.
+   * Cancelling the pointerdown instead would also cancel the compatibility
+   * mousedown, whose default action focuses the handle (and blurs whatever had
+   * focus), so keyboard handling after a click would break.
+   */
+  const blockSelection = (e: Event) => e.preventDefault();
+  /** Owns the listeners that live only for one drag (the selection blocker). */
+  let dragScope: LifetimeScope | null = null;
+
+  /**
+   * Toggles every piece of drag state at once: the classes and the selection blocker.
+   *
+   * Centralized because this state has three separate removal paths (pointerup,
+   * pointercancel, and unbind while still dragging); toggling it piecemeal at
    * each one invites a state that is set but never cleared.
    */
-  const setDragClasses = (active: boolean) => {
+  const setDragState = (active: boolean) => {
     const { handleActiveClass, activeClassTarget, bodyActiveClass } = options;
     if (handleActiveClass) {
       handle.classList.toggle(handleActiveClass, active);
@@ -82,18 +95,18 @@ export function trackPointerDrag(
     if (bodyActiveClass) {
       document.body.classList.toggle(bodyActiveClass, active);
     }
+    dragScope?.dispose();
+    dragScope = null;
+    if (active) {
+      dragScope = scope.createScope(document);
+      dragScope.listen(document, "selectstart", blockSelection, true);
+    }
   };
 
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return; // Primary pointer only
     if (options.filter && !options.filter(e)) return;
     if (options.onStart && options.onStart(e) === false) return;
-
-    // Suppresses the compatibility mousedown, so the drag can never begin a
-    // text selection. This replaces `user-select: none` on <body>: that
-    // property is inherited, so toggling it restyled the whole document at
-    // the start and end of every drag. `click` still fires.
-    e.preventDefault();
 
     isDragging = true;
     startX = e.clientX;
@@ -107,7 +120,7 @@ export function trackPointerDrag(
       handle.setPointerCapture(e.pointerId);
     } catch {}
 
-    setDragClasses(true);
+    setDragState(true);
   };
 
   const onPointerMove = (e: PointerEvent) => {
@@ -139,7 +152,7 @@ export function trackPointerDrag(
     } catch {}
     activePointerId = -1;
 
-    setDragClasses(false);
+    setDragState(false);
 
     currentX = e.clientX;
     currentY = e.clientY;
@@ -175,7 +188,7 @@ export function trackPointerDrag(
 
   return () => {
     if (isDragging) {
-      setDragClasses(false);
+      setDragState(false);
     }
     scope.dispose();
   };
