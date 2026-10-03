@@ -76,6 +76,14 @@ growth; it is not a target.
 - [ ] 🟢 **Visual scenarios for post-interaction state in the dictionary.** `v2VisualScenario`'s
       `action` hook is used only by reader scenarios. Popover-open and results-with-one-dictionary
       would catch selection bugs as a pixel diff across all four form factors.
+- [ ] 🟡 **Catch optional client lookups that no server markup satisfies.** A missing
+      `this.scope.require(...)` target fails on connect, so the conformance sweeps catch it, but
+      an optional lookup (`this.scope.$`, `querySelector`, `getElementById`) just returns `null` and
+      the behaviour silently stops. Nothing checks these since `reader_selector_contract.test.ts` was
+      retired; it only scanned two reader modules by regex anyway. Fix: while
+      `core/ssr_conformance.test.ts` mounts its fixtures, record each optional scope lookup and its
+      result, and fail if a selector matches nothing in every fixture. Expect a short allowlist for
+      lookups that really are optional (e.g. `#toggle-macra` exists only for works with macra).
 
 ## Performance
 
