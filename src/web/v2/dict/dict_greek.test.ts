@@ -199,5 +199,37 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       details.dispatchEvent(new Event("toggle"));
       expect(toggleText.textContent).toBe("Open Logeion Embed");
     });
+
+    test("adopts pre-hydration opened details without auto-open setting (PH4)", () => {
+      settingsStore.update({ autoOpenLogeion: false });
+      const html = renderGreekFallbackHtml("λόγος").replace(
+        '<details class="greek-details">',
+        '<details class="greek-details" open>'
+      );
+      document.body.innerHTML = html;
+
+      const embedEl = document.querySelector("morcus-greek-embed")!;
+      const details =
+        embedEl.querySelector<HTMLDetailsElement>(".greek-details")!;
+      const toggleText =
+        embedEl.querySelector<HTMLElement>(".greek-toggle-text")!;
+      const toggleIcon =
+        embedEl.querySelector<HTMLElement>(".greek-toggle-icon")!;
+      const checkbox = embedEl.querySelector<HTMLInputElement>(
+        ".greek-auto-open-checkbox"
+      )!;
+
+      // Assert pre-hydration open state is preserved and reflected in controls
+      expect(details.open).toBe(true);
+      expect(toggleText.textContent).toBe("Close Logeion Embed");
+      expect(toggleIcon.textContent).toBe("▾");
+      expect(checkbox.checked).toBe(false);
+
+      // Toggling after adoption updates button text and icon back to closed
+      details.open = false;
+      details.dispatchEvent(new Event("toggle"));
+      expect(toggleText.textContent).toBe("Open Logeion Embed");
+      expect(toggleIcon.textContent).toBe("▸");
+    });
   });
 });
