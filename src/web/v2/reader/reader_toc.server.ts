@@ -7,14 +7,13 @@ import { citationToString } from "@/web/v2/reader/reader_types.server";
 import * as he from "he";
 
 export interface ReaderPageUrlOptions {
-  viewMode?: "single" | "parallel";
   query?: string;
   matchText?: string;
 }
 
 /**
  * Builds the canonical URL for a reader page within a work, preserving optional
- * view mode ("single" | "parallel"), search query, and matchText highlight ranges.
+ * search query and matchText highlight ranges.
  */
 export function buildReaderPageUrl(
   work: Pick<V2PreprocessedWork, "urlAuthor" | "urlName">,
@@ -23,7 +22,6 @@ export function buildReaderPageUrl(
 ): string {
   if (!page) return "#";
   const params = new URLSearchParams();
-  if (options.viewMode === "parallel") params.set("view", "parallel");
   if (options.query) params.set("q", options.query);
   if (options.matchText) params.set("matchText", options.matchText);
   const qStr = params.toString() ? `?${params.toString()}` : "";
@@ -39,7 +37,6 @@ export interface RenderTocItemsOptions {
     navTree?: NavTreeNode;
   };
   activePageIndex: number;
-  viewMode?: "single" | "parallel";
   query?: string;
 }
 
@@ -73,7 +70,7 @@ function buildNavTreeFromPages(pages: V2PreprocessedPage[]): NavTreeNode {
  * Renders the hierarchical tree of chapters and sections inside the TOC drawer.
  */
 export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
-  const { activePageIndex, work, viewMode, query } = options;
+  const { activePageIndex, work, query } = options;
   const pages = options.pages ?? work.pages ?? [];
   const textParts = work.textParts ?? [];
 
@@ -100,7 +97,6 @@ export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
     if (node.children.length === 0) {
       const page = pageMap.get(key);
       const pageUrl = buildReaderPageUrl(work, page ?? null, {
-        viewMode,
         query,
       });
       const isCurrent = key === activeId;
@@ -139,7 +135,6 @@ export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
 export interface ReaderTocDrawerOptions {
   work: V2PreprocessedWork;
   activePageIndex: number;
-  viewMode?: "single" | "parallel";
   query?: string;
 }
 
@@ -147,11 +142,10 @@ export interface ReaderTocDrawerOptions {
  * Renders the contained Table of Contents (TOC) drawer dialog.
  */
 export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
-  const { work, activePageIndex, viewMode, query } = options;
+  const { work, activePageIndex, query } = options;
   const tocItemsHtml = renderTocItemsHtml({
     work,
     activePageIndex,
-    viewMode,
     query,
   });
 

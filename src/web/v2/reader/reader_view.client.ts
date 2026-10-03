@@ -565,13 +565,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    const currentView = this.dataset.view ?? "single";
-    const targetView =
-      targetUrl.searchParams.get("view") === "parallel" ? "parallel" : "single";
     const isSamePath = targetUrl.pathname === window.location.pathname;
-    const isSameView = targetView === currentView;
 
-    if (isSamePath && isSameView) {
+    if (isSamePath) {
       if (targetUrl.hash) {
         // scrollToHash replaces the same-page jump; closes its TOC
         e.preventDefault();

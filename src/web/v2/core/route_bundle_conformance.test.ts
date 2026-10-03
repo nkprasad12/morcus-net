@@ -479,7 +479,6 @@ describe("Route-to-Bundle Conformance Harness", () => {
     const readerPartialHtml = await renderReaderPartialHtml({
       workId: "caesar_de_bello_gallico",
       pageId: "1.2",
-      view: "parallel",
       query: "Gallia",
     });
     const caesarPage12 =
@@ -560,18 +559,16 @@ describe("Route-to-Bundle Conformance Harness", () => {
         fullHtml: await renderLibraryPageHtml(),
       },
       {
-        name: "/v2/reader/caesar/de_bello_gallico (single + parallel + page-turn slot partials)",
-        url: "/v2/reader/caesar/de_bello_gallico?view=parallel&q=Gallia",
+        name: "/v2/reader/caesar/de_bello_gallico (single + page-turn slot partials)",
+        url: "/v2/reader/caesar/de_bello_gallico?q=Gallia",
         fullHtml: await renderReaderPageHtml({
           workId: "caesar_de_bello_gallico",
-          view: "parallel",
           query: "Gallia",
         }),
         partialHtmls: [
           {
             label: "renderReaderPartialHtml(?partial=1)",
             url: buildReaderPageUrl(MOCK_CAESAR_WORK, caesarPage12, {
-              viewMode: "parallel",
               query: "Gallia",
             }),
             html: readerPartialHtml,
