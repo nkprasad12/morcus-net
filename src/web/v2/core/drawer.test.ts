@@ -272,6 +272,156 @@ describe("DrawerController", () => {
     controller.dispose();
   });
 
+  describe("<details> sync with the async native toggle event", () => {
+    // `toggle` is dispatched a task after `open` changes (in browsers and in
+    // jsdom), so these tests await it rather than dispatching it by hand.
+    const nextTask = () => new Promise((r) => setTimeout(r, 0));
+
+    let detailsDrawer: HTMLElement;
+    let summary: HTMLElement;
+    let detailsEl: HTMLDetailsElement;
+
+    beforeEach(() => {
+      // A plain wrapper, not `<morcus-dict-toc>`: that tag isn't registered
+      // here, and `scope.listen` skips activation events (the summary click)
+      // inside an un-upgraded custom element.
+      document.body.innerHTML = `
+        <div id="drawer" class="drawer">
+          <details open>
+            <summary id="handle" class="drawer-bar">Contents</summary>
+            <div id="content">TOC items</div>
+          </details>
+        </div>
+        <button id="target" class="back-to-top"></button>
+      `;
+      detailsDrawer = document.getElementById("drawer")!;
+      summary = document.getElementById("handle")!;
+      detailsEl = detailsDrawer.querySelector("details")!;
+      target = document.getElementById("target")!;
+    });
+
+    function tap() {
+      const init = { bubbles: true, button: 0, clientY: 500, pointerId: 1 };
+      summary.dispatchEvent(new PointerEvent("pointerdown", init));
+      summary.dispatchEvent(new PointerEvent("pointerup", init));
+      // jsdom runs <summary>'s activation behaviour (toggling `open`) on click
+      summary.click();
+    }
+
+    test("minimize() and restore() run their callbacks once, not again on their own toggle", async () => {
+      const onMinimize = jest.fn();
+      const onRestore = jest.fn();
+      const controller = connectController({
+        drawer: detailsDrawer,
+        handle: summary,
+        onMinimize,
+        onRestore,
+      });
+
+      controller.minimize();
+      await nextTask();
+      expect(onMinimize).toHaveBeenCalledTimes(1);
+
+      controller.restore(60);
+      await nextTask();
+      expect(onRestore).toHaveBeenCalledTimes(1);
+
+      controller.dispose();
+    });
+
+    test("reset() is not undone by its own toggle", async () => {
+      const controller = connectController({
+        drawer: detailsDrawer,
+        handle: summary,
+        heightTargets: () => [target],
+        minHeight: 28,
+      });
+      controller.restore(60);
+      await nextTask();
+
+      controller.reset();
+      await nextTask();
+      expect(detailsEl.open).toBe(false);
+      expect(detailsDrawer.style.getPropertyValue("--drawer-height")).toBe("");
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("");
+
+      controller.dispose();
+    });
+
+    test("a tap on the minimized drawer opens it", async () => {
+      const onRestore = jest.fn();
+      const controller = connectController({
+        drawer: detailsDrawer,
+        handle: summary,
+        minHeight: 28,
+        onRestore,
+      });
+      controller.restore(62);
+      controller.minimize();
+      await nextTask();
+      onRestore.mockClear();
+
+      tap();
+      await nextTask();
+      expect(detailsEl.open).toBe(true);
+      expect(detailsDrawer.classList.contains("drawer-minimized")).toBe(false);
+      expect(detailsDrawer.style.getPropertyValue("--drawer-height")).toBe(
+        "62svh"
+      );
+      expect(onRestore).toHaveBeenCalledTimes(1);
+
+      controller.dispose();
+    });
+
+    test("a tap on the open drawer minimizes it", async () => {
+      const onMinimize = jest.fn();
+      const controller = connectController({
+        drawer: detailsDrawer,
+        handle: summary,
+        minHeight: 28,
+        onMinimize,
+      });
+      controller.restore(62);
+      await nextTask();
+
+      tap();
+      await nextTask();
+      expect(detailsEl.open).toBe(false);
+      expect(detailsDrawer.classList.contains("drawer-minimized")).toBe(true);
+      expect(detailsDrawer.style.getPropertyValue("--drawer-height")).toBe(
+        "28px"
+      );
+      expect(onMinimize).toHaveBeenCalledTimes(1);
+
+      controller.dispose();
+    });
+
+    test("a click without a pointer gesture (keyboard activation) toggles natively and is synced", async () => {
+      const controller = connectController({
+        drawer: detailsDrawer,
+        handle: summary,
+        minHeight: 28,
+      });
+      controller.restore(62);
+      await nextTask();
+
+      summary.click();
+      await nextTask();
+      expect(detailsEl.open).toBe(false);
+      expect(detailsDrawer.classList.contains("drawer-minimized")).toBe(true);
+
+      summary.click();
+      await nextTask();
+      expect(detailsEl.open).toBe(true);
+      expect(detailsDrawer.classList.contains("drawer-minimized")).toBe(false);
+      expect(detailsDrawer.style.getPropertyValue("--drawer-height")).toBe(
+        "62svh"
+      );
+
+      controller.dispose();
+    });
+  });
+
   test("handles keyboard navigation (ArrowUp, ArrowDown, Escape)", () => {
     const onEscape = jest.fn();
     const controller = connectController({

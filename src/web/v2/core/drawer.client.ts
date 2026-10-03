@@ -183,8 +183,6 @@ export class DrawerController extends BaseController {
   private readonly expandedSvh: number;
   private preferredSvh: number;
 
-  private isUpdatingDetails = false;
-
   constructor(private readonly options: DrawerControllerOptions) {
     super(options.root ?? options.drawer ?? document);
 
@@ -344,11 +342,7 @@ export class DrawerController extends BaseController {
     if (this.drawer) {
       this.drawer.classList.add("drawer-minimized");
     }
-    if (this.details && this.details.open) {
-      this.isUpdatingDetails = true;
-      this.details.open = false;
-      this.isUpdatingDetails = false;
-    }
+    if (this.details) this.details.open = false;
     this.writeHeight(`${this.minHeight}px`);
     this.handle?.setAttribute("aria-valuenow", "0");
     this.options.onMinimize?.();
@@ -368,11 +362,7 @@ export class DrawerController extends BaseController {
     if (this.drawer) {
       this.drawer.classList.remove("drawer-minimized");
     }
-    if (this.details && !this.details.open) {
-      this.isUpdatingDetails = true;
-      this.details.open = true;
-      this.isUpdatingDetails = false;
-    }
+    if (this.details) this.details.open = true;
     this.writeHeight(`${svh}svh`);
     this.handle?.setAttribute("aria-valuenow", String(svh));
 
@@ -402,7 +392,9 @@ export class DrawerController extends BaseController {
     let startHeight = 0;
     let winHeight = 800;
     let maxHeight = 800;
-    let wasDragged = false;
+    // Set once `onEnd` has applied the gesture itself, so the native `<summary>`
+    // click that follows pointerup must not toggle `<details>` again.
+    let suppressSummaryClick = false;
 
     this.scope.use(
       trackPointerDrag(handle, {
@@ -430,9 +422,7 @@ export class DrawerController extends BaseController {
           startHeight = drawer.getBoundingClientRect().height || this.minHeight;
           maxHeight = Math.round(winHeight * (this.expandedSvh / 100));
           if (this.details && !this.details.open) {
-            this.isUpdatingDetails = true;
             this.details.open = true;
-            this.isUpdatingDetails = false;
             startHeight =
               drawer.getBoundingClientRect().height || this.minHeight;
           }
@@ -440,13 +430,10 @@ export class DrawerController extends BaseController {
             drawer.classList.remove("drawer-minimized");
           }
           this.writeHeight(`${startHeight}px`);
-          wasDragged = false;
+          suppressSummaryClick = false;
           this.options.onDragStart?.();
         },
         onMove: ({ dy }) => {
-          if (Math.abs(dy) > 6) {
-            wasDragged = true;
-          }
           const newHeight = Math.max(
             this.minHeight,
             Math.min(maxHeight, startHeight - dy)
@@ -472,13 +459,15 @@ export class DrawerController extends BaseController {
             floorSvh: this.floorSvh,
             expandedSvh: this.expandedSvh,
           });
+          suppressSummaryClick = true;
 
           if (decision.action === "tap") {
-            wasDragged = false;
-            if (!this.details) {
+            // `onStart` already opened `<details>`, so the native click would
+            // close it again: toggle here instead.
+            if (this.details && !wasMinimized) {
+              this.minimize();
+            } else {
               this.restore();
-            } else if (!wasMinimized) {
-              this.writeHeight(`${this.preferredSvh}svh`);
             }
             return;
           }
@@ -498,14 +487,14 @@ export class DrawerController extends BaseController {
         this.summary,
         "click",
         (e: MouseEvent) => {
-          if (wasDragged) {
-            // A drag on this drawer's summary must not also toggle the
-            // <details> open state
+          if (suppressSummaryClick) {
+            // `onEnd` already applied this gesture; the native toggle would
+            // undo it
             e.preventDefault();
-            // Swallow the post-drag click so other listeners on this drawer's
-            // summary don't treat it as a tap
+            // Swallow the post-gesture click so other listeners on this
+            // drawer's summary don't treat it as a second tap
             e.stopImmediatePropagation();
-            wasDragged = false;
+            suppressSummaryClick = false;
           }
         },
         true
@@ -555,7 +544,13 @@ export class DrawerController extends BaseController {
   private initDetailsSync(): void {
     if (!this.details) return;
     this.scope.listen(this.details, "toggle", () => {
-      if (this.isUpdatingDetails || !this.details) return;
+      if (!this.details) return;
+      // `toggle` is dispatched a task after `open` changes, so a flag set
+      // around our own writes can't recognise them. Compare state instead:
+      // `minimize()`, `restore()`, `reset()` and drag start leave `open` and
+      // `.drawer-minimized` agreeing, so only a native toggle (the user
+      // activating `<summary>`) arrives with them disagreeing.
+      if (this.details.open !== this.isMinimizedClass()) return;
       if (this.details.open) {
         this.restore();
       } else {
@@ -573,11 +568,7 @@ export class DrawerController extends BaseController {
     if (this.drawer) {
       this.drawer.classList.add("drawer-minimized");
     }
-    if (this.details && this.details.open) {
-      this.isUpdatingDetails = true;
-      this.details.open = false;
-      this.isUpdatingDetails = false;
-    }
+    if (this.details) this.details.open = false;
     this.writeHeight(null);
     this.handle?.setAttribute("aria-valuenow", "0");
   }
