@@ -46,16 +46,6 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
       (`this.scope.require`) into a field, or hand the behaviour to a `core/` controller. A single
       lookup on connect is fine as it is.
 
-## Dead code
-
-- [ ] 🟢 **Use or delete `ReaderPageOptions.view`** (`reader/reader.server.ts`). Nothing reads it:
-      `resolveReaderContext` renders the passage from `singleHtml` either way, `renderTocDrawer` and
-      `buildReaderPageUrl` are never passed a `viewMode`, and the partial route
-      (`sendReaderPassage` in `reader_routes.server.ts`) doesn't forward `?view=`. Callers that pass
-      `view: "parallel"` (`core/route_bundle_conformance.test.ts`) get the single view. The client
-      still compares `?view=` in `MorcusReaderView.handleClick`, so a `view=parallel` link counts as a
-      different page.
-
 ## Client DOM construction outside `core/`
 
 Client code outside `core/` that builds or rewrites DOM duplicates markup the server already knows

@@ -55,7 +55,6 @@ export interface ReaderPageOptions {
   query?: string;
   matchText?: string;
   results?: DictsFusedResponse;
-  view?: "single" | "parallel";
   work?: V2PreprocessedWork;
 }
 
