@@ -12,7 +12,11 @@ import {
   type SafeHtml,
 } from "@/web/v2/core/html.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
-import { renderSlotTemplates, slotAttr } from "@/web/v2/core/slots.common";
+import {
+  liveSlot,
+  renderSlotTemplates,
+  slotAttr,
+} from "@/web/v2/core/slots.common";
 import {
   renderCorpusHelp,
   renderInlineHelpDisclosure,
@@ -391,9 +395,11 @@ export function renderCorpusContentHtml(
 ): SafeHtml {
   return html`<morcus-corpus-view class="corpus-page">
     ${raw(renderForm(view, lemmataVersion))}
-    <div class="corpus-summary-live" aria-live="polite">
-      ${raw(renderCorpusSlot(view, "summary"))}
-    </div>
+    ${raw(
+      liveSlot(renderCorpusSlot(view, "summary"), {
+        className: "corpus-summary-live",
+      })
+    )}
     ${raw(renderCorpusSlot(view, "results"))}
     ${raw(renderCorpusSlot(view, "pager"))}
   </morcus-corpus-view>`;

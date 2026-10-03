@@ -23,6 +23,37 @@ export function slotAttr(name: string): SafeHtml {
   return html`data-slot="${name}"`;
 }
 
+/** Options for {@link liveSlot}. */
+export interface LiveSlotOptions {
+  readonly politeness?: "polite" | "assertive";
+  readonly className?: string;
+}
+
+/**
+ * Wraps a rendered slot in a stable `aria-live` container for full-page SSR.
+ *
+ * {@link swapSlots} replaces each slot element whole (`live.replaceWith(next)`).
+ * Screen readers monitor live regions by tracking mutations inside an existing
+ * live-region container; if the live-region node itself is destroyed and
+ * replaced, announcements are dropped or unreliable across assistive technologies.
+ *
+ * Use this wrapper in full-page renderers around slots that announce updates
+ * (such as search outcome summaries), while passing the bare slot renderer to
+ * {@link renderSlotTemplates} so the partial response stays clean.
+ */
+export function liveSlot(
+  slotHtml: SafeHtml | string,
+  options: LiveSlotOptions = {}
+): SafeHtml {
+  const politeness = options.politeness ?? "polite";
+  const classAttr = options.className
+    ? html` class="${options.className}"`
+    : html``;
+  return html`<div${raw(classAttr)} aria-live="${politeness}">${raw(
+    slotHtml
+  )}</div>`;
+}
+
 /**
  * The partial response for a slot swap: one `<template data-slot>` per slot,
  * in the given order.
