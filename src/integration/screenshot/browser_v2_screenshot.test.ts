@@ -26,7 +26,8 @@ test.describe("UI V2 Visual Regression Suite", () => {
     waitFor: ".reader-passage",
   });
 
-  // 5. Reader Companion Panel Translation View
+  // 5. Reader Companion Panel Translation View. The name predates the removal
+  // of the `?view=parallel` mode; renaming it would rename its baselines.
   v2VisualScenario("v2-reader-parallel", {
     path: "/v2/reader/sallust/catalina1",
     waitFor: ".reader-passage",

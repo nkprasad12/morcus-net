@@ -22,7 +22,7 @@ Code comments and test names cite these IDs. Each is a bug in the window where a
 | PH1  | Dictionary settings: checkboxes changed before upgrade reset, popover couldn't submit | `dict/dict_settings.test.ts`, late-hydration suite |
 | PH2  | Library filter typed before upgrade ignored                                           | `library/library.test.ts`                          |
 | PH3  | Dictionary query typed before upgrade misread by the landing-page results check       | `dict/dict_search.test.ts`, late-hydration suite   |
-| PH4  | Greek embed `<details>` / checkbox toggled before upgrade clobbered                   | `dict/dict_greek.test.ts`                          |
+| PH4  | Greek embed `<details>` / checkbox toggled before upgrade clobbered                   | `dict/dict_greek.test.ts`; checkbox is JS-only     |
 | PH5  | Reader TOC drawer opened via `:target` before upgrade stuck open                      | late-hydration suite                               |
 | PH6  | Reader footnote and About links jumped to the bottom before panel relocation          | `reader/reader_panel.test.ts`                      |
 | PH7  | Reader mobile dictionary sheet opened via `:target` slammed shut on upgrade           | late-hydration suite                               |
