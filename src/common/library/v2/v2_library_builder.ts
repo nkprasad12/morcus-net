@@ -7,7 +7,12 @@ import {
   ProcessedWork2,
   LibraryWorkMetadata,
 } from "@/common/library/library_types";
-import { V2PreprocessedWork } from "@/common/library/v2/v2_types";
+import {
+  V2_LIBRARY_INDEX,
+  V2PreprocessedWork,
+  V2WorkSummary,
+} from "@/common/library/v2/v2_types";
+export { V2_LIBRARY_INDEX, type V2WorkSummary };
 import { preprocessWorkToV2 } from "@/common/library/v2/v2_preprocessor";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage } from "@/web/utils/rpc/parsing";
@@ -15,26 +20,6 @@ import { ServerMessage } from "@/web/utils/rpc/rpc";
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";
-
-export const V2_LIBRARY_INDEX = "morcus_v2_index.json";
-
-export interface V2WorkSummary {
-  id: string;
-  title: string;
-  shortTitle?: string;
-  author: string;
-  urlAuthor: string;
-  urlName: string;
-  attribution: "perseus" | "hypotactic" | "publicDomain";
-  hasMacra: boolean;
-  hasTranslation: boolean;
-  translator?: string;
-  editor?: string;
-  textParts: string[];
-  paginationDepth: number;
-  pageCount: number;
-  firstPageId: string[];
-}
 
 function decodeProcessedWork(rawBuffer: Buffer): ProcessedWork2 {
   // Check if buffer is gzipped (starts with 0x1f, 0x8b)
@@ -148,7 +133,7 @@ export async function buildV2Library(
   return summaries;
 }
 
-if (require.main === module) {
+if (process.env.MAIN === "build_v2_library") {
   buildV2Library().catch((err) => {
     console.error("Error building V2 library:", err);
     process.exit(1);

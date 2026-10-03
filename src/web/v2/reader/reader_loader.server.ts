@@ -1,12 +1,10 @@
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import {
+  V2_LIBRARY_INDEX,
   V2PreprocessedPage,
   V2PreprocessedWork,
-} from "@/common/library/v2/v2_types";
-import {
-  V2_LIBRARY_INDEX,
   V2WorkSummary,
-} from "@/common/library/v2/v2_library_builder";
+} from "@/common/library/v2/v2_types";
 export type { V2WorkSummary };
 import fs from "fs";
 import path from "path";

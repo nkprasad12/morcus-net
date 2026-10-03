@@ -1,8 +1,8 @@
 import type {
   V2PreprocessedPage,
   V2PreprocessedWork,
+  V2WorkSummary,
 } from "@/common/library/v2/v2_types";
-import type { V2WorkSummary } from "@/common/library/v2/v2_library_builder";
 
 export const MOCK_CAESAR_WORK: V2PreprocessedWork = {
   id: "phi0448.phi001.perseus-lat2",
