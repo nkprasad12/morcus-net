@@ -1,14 +1,15 @@
 import * as he from "he";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
+import { getBuildVersion } from "@/web/v2/core/build_version.server";
 
 export interface AboutPageOptions {
   commitId?: string;
 }
 
 export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
-  const commitId = options.commitId ?? process.env.COMMIT_ID;
+  const commitId = getBuildVersion(options.commitId);
   const commitLinkHtml =
-    commitId && commitId.length > 0
+    commitId !== undefined
       ? `<a href="https://github.com/nkprasad12/morcus-net/commit/${he.escape(
           commitId
         )}">${he.escape(commitId.slice(0, 7))}</a>`

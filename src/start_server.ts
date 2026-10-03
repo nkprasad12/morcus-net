@@ -111,7 +111,9 @@ const INFLECTION_PROVIDER = singletonOf<InflectionProvider>(() => {
 
 export function startMorcusServer(): Promise<http.Server> {
   log("Attempting to start server");
-  process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
+  process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt")
+    .toString()
+    .trim();
 
   const app = express();
   const server = http.createServer(app);

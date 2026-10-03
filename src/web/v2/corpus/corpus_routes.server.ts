@@ -1,5 +1,9 @@
 import { Router } from "express";
 import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
+import {
+  getBuildVersion,
+  setVersionedCacheControl,
+} from "@/web/v2/core/build_version.server";
 import { isPartialRequest } from "@/web/v2/core/request_params.server";
 import {
   buildLemmaShards,
@@ -19,9 +23,6 @@ import {
   renderCorpusUnavailableHtml,
 } from "@/web/v2/corpus/corpus_view.server";
 
-/** A versioned shard URL (`?v=<commit>`) never changes its response. */
-const VERSIONED_LEMMATA_CACHE_CONTROL = "public, max-age=31536000, immutable";
-
 export interface CorpusRoutesOptions {
   /** The Rust engine; without one, `/v2/corpus` answers 503. */
   readonly engine?: CorpusEngine;
@@ -31,7 +32,7 @@ export interface CorpusRoutesOptions {
   readonly loadLemmata?: () => Promise<readonly string[] | undefined>;
   /**
    * Versions the lemma shard URLs the page links to, so browsers can cache
-   * them forever. Defaults to `process.env.COMMIT_ID`.
+   * them forever. Defaults to `getBuildVersion()`.
    */
   readonly commitId?: string;
 }
@@ -53,10 +54,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
   };
 
   /** Read per request: the server sets `COMMIT_ID` at startup. */
-  const lemmataVersion = (): string | undefined => {
-    const commit = (options.commitId ?? process.env.COMMIT_ID)?.trim();
-    return commit ? commit : undefined;
-  };
+  const lemmataVersion = () => getBuildVersion(options.commitId);
 
   getAsync("/corpus", async (req, res) => {
     const params = parseCorpusParams(req.query);
@@ -102,12 +100,8 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
       res.status(503).json({ error: "Corpus lemmata unavailable." });
       return;
     }
-    // Without a version, the URL outlives a corpus rebuild: revalidate.
-    const versioned = typeof req.query.v === "string" && req.query.v !== "";
-    res.setHeader(
-      "Cache-Control",
-      versioned ? VERSIONED_LEMMATA_CACHE_CONTROL : "no-cache"
-    );
+    // Without the current version, the URL outlives a corpus rebuild.
+    setVersionedCacheControl(req, res, lemmataVersion());
     res.type("json").send(shards.get(letter.toLowerCase()) ?? "[]");
   });
 

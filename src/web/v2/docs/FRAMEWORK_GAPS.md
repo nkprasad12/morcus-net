@@ -16,13 +16,6 @@ duplication bites; delete the entry when it lands. Component-level debt lives in
    in-memory map plus in-flight promise dedupe, and both leave the shared request uncancellable on
    purpose. Only the policy differs: dict evicts LRU, while corpus remembers a failure and doesn't
    retry. A `core/` cache with those two options would cover both. _Duplication._
-3. **Build version and cache policy for versioned URLs.** Three server modules read
-   `process.env.COMMIT_ID` themselves, each differently: `about.server.ts`, `api_routes.server.ts`
-   (falls back to `"undefined"`), and `corpus_routes.server.ts` (trims it, and treats empty as
-   absent). Immutable `Cache-Control` values are per-route literals with different lifetimes: V2
-   assets 311040000 s, lemma shards 31536000 s, and V1's commit-hashed APIs 3153600 s (a tenth of a
-   year, on purpose, per `start_server.ts`). One `core/` helper for "the build version" and one for
-   "cache this versioned response" would keep these consistent. _Missing primitive._
 
 ---
 

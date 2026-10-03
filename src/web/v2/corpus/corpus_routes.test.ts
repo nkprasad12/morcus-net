@@ -130,7 +130,7 @@ describe("GET /v2/corpus: autocomplete host", () => {
   });
 
   test("the version defaults to COMMIT_ID, and is omitted when unknown", async () => {
-    process.env.COMMIT_ID = " fromenv\n";
+    process.env.COMMIT_ID = "fromenv";
     const withEnv = await request(makeApp(fakeCorpusEngine())).get(
       "/v2/corpus"
     );
@@ -158,10 +158,13 @@ describe("GET /v2/api/corpus/lemmata/:letter", () => {
   /** `null` stands for a corpus that isn't built. */
   function lemmaApp(lemmata: readonly string[] | null = LEMMATA) {
     const loadLemmata = jest.fn(() => Promise.resolve(lemmata ?? undefined));
-    return { app: makeApp(undefined, { loadLemmata }), loadLemmata };
+    return {
+      app: makeApp(undefined, { loadLemmata, commitId: "abc123" }),
+      loadLemmata,
+    };
   }
 
-  test("a versioned shard is JSON, cacheable for good", async () => {
+  test("a shard at the current version is JSON, cacheable for good", async () => {
     const res = await request(lemmaApp().app).get(
       "/v2/api/corpus/lemmata/c?v=abc123"
     );
@@ -176,6 +179,14 @@ describe("GET /v2/api/corpus/lemmata/:letter", () => {
 
   test("without a version, the browser must revalidate", async () => {
     const res = await request(lemmaApp().app).get("/v2/api/corpus/lemmata/c");
+    expect(res.status).toBe(200);
+    expect(res.headers["cache-control"]).toBe("no-cache");
+  });
+
+  test("a stale version (a tab open across a deploy) revalidates", async () => {
+    const res = await request(lemmaApp().app).get(
+      "/v2/api/corpus/lemmata/c?v=old"
+    );
     expect(res.status).toBe(200);
     expect(res.headers["cache-control"]).toBe("no-cache");
   });

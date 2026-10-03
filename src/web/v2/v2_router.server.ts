@@ -12,9 +12,7 @@ import type { CorpusEngine } from "@/web/v2/corpus/corpus_query.server";
 import { createMacronizerRoutes } from "@/web/v2/macronizer/macronizer_routes.server";
 import type { MacronizerEngine } from "@/web/v2/macronizer/macronizer_engine.server";
 import { getV2BuildDir } from "@/bundler/v2_build_contract";
-
-// Filenames are content-hashed by esbuild, so they're safe to cache forever.
-const V2_ASSETS_CACHE_CONTROL = "public, max-age=311040000, immutable";
+import { IMMUTABLE_CACHE_CONTROL } from "@/web/v2/core/build_version.server";
 
 export interface V2RouterOptions extends ApiRoutesOptions {
   /** The corpus query engine; `/v2/corpus` answers 503 without one. */
@@ -44,8 +42,9 @@ export function createV2Router(
   router.use(
     "/assets",
     express.static(getV2BuildDir(), {
+      // Filenames are content-hashed, so they're safe to cache forever.
       setHeaders: (res) => {
-        res.setHeader("Cache-Control", V2_ASSETS_CACHE_CONTROL);
+        res.setHeader("Cache-Control", IMMUTABLE_CACHE_CONTROL);
       },
     })
   );
