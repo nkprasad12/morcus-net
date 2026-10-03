@@ -210,6 +210,66 @@ describe("DrawerController", () => {
     controller.dispose();
   });
 
+  test("re-closes <details> on connect() when a minimized drawer had <details> opened while disposed", () => {
+    document.body.innerHTML = `
+      <morcus-dict-toc id="drawer" class="drawer">
+        <details open>
+          <summary id="handle" class="drawer-bar">Contents</summary>
+          <div id="content">TOC items</div>
+        </details>
+      </morcus-dict-toc>
+      <button id="target" class="back-to-top"></button>
+    `;
+    const detailsDrawer = document.getElementById("drawer")!;
+    const detailsHandle = document.getElementById("handle")!;
+    const detailsEl = detailsDrawer.querySelector("details")!;
+    const backToTop = document.getElementById("target")!;
+
+    const controller = connectController({
+      drawer: detailsDrawer,
+      handle: detailsHandle,
+      heightTargets: () => [backToTop],
+      minHeight: 28,
+    });
+
+    controller.restore(70);
+    controller.minimize();
+    expect(detailsEl.open).toBe(false);
+    expect(detailsDrawer.classList.contains("drawer-minimized")).toBe(true);
+    expect(detailsDrawer.style.getPropertyValue("--drawer-height")).toBe(
+      "28px"
+    );
+    expect(backToTop.style.getPropertyValue("--drawer-height")).toBe("28px");
+
+    // Simulate crossing to desktop: controller disposes and desktop rail forces <details open>
+    controller.dispose();
+    detailsEl.open = true;
+    expect(backToTop.style.getPropertyValue("--drawer-height")).toBe("");
+
+    // Simulate crossing back to mobile: controller reconnects
+    controller.connect();
+    expect(detailsEl.open).toBe(false);
+    expect(detailsDrawer.classList.contains("drawer-minimized")).toBe(true);
+    expect(controller.isMinimized()).toBe(true);
+    expect(detailsDrawer.style.getPropertyValue("--drawer-height")).toBe(
+      "28px"
+    );
+    expect(backToTop.style.getPropertyValue("--drawer-height")).toBe("28px");
+    expect(detailsHandle.getAttribute("aria-valuenow")).toBe("0");
+
+    // Tapping <summary> natively opens <details> and restores the prior 70svh height
+    detailsEl.open = true;
+    detailsEl.dispatchEvent(new Event("toggle"));
+    expect(controller.isMinimized()).toBe(false);
+    expect(detailsDrawer.classList.contains("drawer-minimized")).toBe(false);
+    expect(detailsDrawer.style.getPropertyValue("--drawer-height")).toBe(
+      "70svh"
+    );
+    expect(backToTop.style.getPropertyValue("--drawer-height")).toBe("70svh");
+
+    controller.dispose();
+  });
+
   test("handles keyboard navigation (ArrowUp, ArrowDown, Escape)", () => {
     const onEscape = jest.fn();
     const controller = connectController({

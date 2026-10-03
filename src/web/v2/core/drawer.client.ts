@@ -241,9 +241,15 @@ export class DrawerController extends BaseController {
     this.initDrag();
     this.initKeyboard();
     this.initDetailsSync();
-    // PH8: the `<details>` toggles natively before upgrade. If the user
-    // closed it, adopt that rather than leaving the drawer at full height.
-    if (this.details && !this.details.open && !this.isMinimizedClass()) {
+    // Reconcile `<details>` and `.drawer-minimized` when they disagree:
+    // - PH8: `<details>` toggles natively before upgrade; if the user closed
+    //   it (`!open && !minimized`), adopt that rather than leaving the drawer
+    //   at full height.
+    // - Reconnect after a desktop round-trip: `MorcusDictToc` forces
+    //   `<details open>` for the desktop rail while disposed; if the drawer
+    //   was minimized before disconnect (`open && minimized`), re-close
+    //   `<details>` on the way back to mobile.
+    if (this.details && this.details.open === this.isMinimizedClass()) {
       this.minimize();
     }
   }
@@ -511,6 +517,11 @@ export class DrawerController extends BaseController {
     this.resolveElements();
     if (this.drawer) {
       this.drawer.classList.add("drawer-minimized");
+    }
+    if (this.details && this.details.open) {
+      this.isUpdatingDetails = true;
+      this.details.open = false;
+      this.isUpdatingDetails = false;
     }
     this.writeHeight(null);
     this.handle?.setAttribute("aria-valuenow", "0");
