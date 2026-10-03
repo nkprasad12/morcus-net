@@ -40,6 +40,22 @@ export function expectSlotParity(
     const live = full.querySelectorAll(`[${SLOT_ATTR}="${name}"]`);
     expect(live).toHaveLength(1);
     expect(template.content.children).toHaveLength(1);
+
+    const slotEl = live[0];
+    const liveAttr =
+      slotEl.getAttribute("aria-live") ??
+      (slotEl.getAttribute("role") === "status" ||
+      slotEl.getAttribute("role") === "alert" ||
+      slotEl.getAttribute("role") === "log"
+        ? `role="${slotEl.getAttribute("role")}"`
+        : null);
+    if (liveAttr !== null) {
+      throw new Error(
+        `Slot "${name}" carries a live-region attribute (${liveAttr}) on the [${SLOT_ATTR}] root. ` +
+          `Wrap the slot with liveSlot() in the full-page renderer instead so swapSlots does not replace the live region element.`
+      );
+    }
+
     expect(template.content.children[0].outerHTML).toBe(live[0].outerHTML);
   }
 }

@@ -222,6 +222,9 @@ function findByKey(
  * should wrap only markup that changes with the page: stateful controls and
  * iframes stay outside every slot and are never touched.
  *
+ * - Live regions: because each slot element is replaced whole, `aria-live`
+ *   attributes must sit on a stable parent wrapper (e.g. `liveSlot()` from
+ *   `core/slots.common.ts`), not on the `[data-slot]` element itself.
  * - While loading, every live slot is `aria-busy` (style it in CSS).
  * - The response is validated before anything changes. A mismatch is a bug:
  *   it is logged and handled like a failed request.
