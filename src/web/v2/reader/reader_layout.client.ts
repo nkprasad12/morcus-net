@@ -145,6 +145,8 @@ export class ReaderLayoutController extends BaseController {
 
     let startWidth = 0;
     let maxWidth = MIN_SPLIT_WIDTH;
+    const unfreezeIframe = () =>
+      splitLayout.style.removeProperty("--dict-frozen-width");
 
     this.scope.use(
       trackPointerDrag(splitter, {
@@ -162,12 +164,26 @@ export class ReaderLayoutController extends BaseController {
          * divides space between its children (reader.css). The drag classes
          * applied immediately after this callback are `user-select` / `cursor` /
          * `pointer-events` only, so measuring before them is equivalent.
+         *
+         * The iframe width is read with them, before any write, and frozen
+         * via `--dict-frozen-width` (reader_dict.css) so the embedded
+         * dictionary document does not relayout on every move. A deferred
+         * dictionary has no iframe yet, so there is nothing to freeze.
          */
         onStart: () => {
           startWidth = dictPanel.getBoundingClientRect().width;
           const containerWidth = splitLayout.getBoundingClientRect().width;
+          const iframeWidth = dictPanel
+            .querySelector<HTMLElement>(".dict-iframe")
+            ?.getBoundingClientRect().width;
           maxWidth = computeMaxSplitWidth(containerWidth);
           splitter.setAttribute("aria-valuemax", String(maxWidth));
+          if (iframeWidth !== undefined && iframeWidth > 0) {
+            splitLayout.style.setProperty(
+              "--dict-frozen-width",
+              `${iframeWidth}px`
+            );
+          }
         },
         onMove: ({ dx }) => {
           const newWidth = Math.round(
@@ -185,9 +201,14 @@ export class ReaderLayoutController extends BaseController {
           );
           storage.set(this.storageKey, String(finalWidth));
           this.recordPrepaintWidth(finalWidth);
+          // Also runs on pointercancel. The final `--dict-width` is already
+          // set, so the iframe resizes to the committed width exactly once.
+          unfreezeIframe();
         },
       })
     );
+    // Unbinding mid-drag skips onEnd; never leave a stale frozen width.
+    this.scope.use(unfreezeIframe);
   }
 
   private initDblClick() {

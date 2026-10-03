@@ -400,4 +400,110 @@ describe("ReaderLayoutController", () => {
     expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("444px");
     controller.dispose();
   });
+
+  describe("dictionary iframe freeze during drags", () => {
+    const frozen = (c: ReaderLayoutController) =>
+      c.splitLayout!.style.getPropertyValue("--dict-frozen-width");
+
+    function setUp(withIframe: boolean) {
+      const controller = connectController({ root: container });
+      jest
+        .spyOn(controller.splitLayout!, "getBoundingClientRect")
+        .mockReturnValue({ width: 1200 } as DOMRect);
+      jest
+        .spyOn(controller.dictPanel!, "getBoundingClientRect")
+        .mockReturnValue({ width: 420 } as DOMRect);
+      if (withIframe) {
+        const iframe = document.createElement("iframe");
+        iframe.className = "dict-iframe";
+        controller.dictPanel!.appendChild(iframe);
+        jest
+          .spyOn(iframe, "getBoundingClientRect")
+          .mockReturnValue({ width: 404 } as DOMRect);
+      }
+      return controller;
+    }
+
+    function down(splitter: HTMLElement) {
+      splitter.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          clientX: 800,
+          clientY: 300,
+          pointerId: 1,
+        })
+      );
+      splitter.dispatchEvent(
+        new PointerEvent("pointermove", {
+          clientX: 740,
+          clientY: 300,
+          pointerId: 1,
+        })
+      );
+    }
+
+    test("drag start freezes and drag end releases the iframe width", () => {
+      const controller = setUp(true);
+      const splitter = controller.splitter!;
+      down(splitter);
+      expect(frozen(controller)).toBe("404px");
+
+      splitter.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
+      expect(frozen(controller)).toBe("");
+      expect(
+        controller.splitLayout!.style.getPropertyValue("--dict-width")
+      ).toBe("480px");
+      controller.dispose();
+    });
+
+    test("cancelled drag releases the frozen width", () => {
+      const controller = setUp(true);
+      const splitter = controller.splitter!;
+      down(splitter);
+      expect(frozen(controller)).toBe("404px");
+      splitter.dispatchEvent(
+        new PointerEvent("pointercancel", { pointerId: 1 })
+      );
+      expect(frozen(controller)).toBe("");
+      controller.dispose();
+    });
+
+    test("disposing mid-drag releases the frozen width", () => {
+      const controller = setUp(true);
+      down(controller.splitter!);
+      expect(frozen(controller)).toBe("404px");
+      controller.dispose();
+      expect(frozen(controller)).toBe("");
+    });
+
+    test("does nothing without an iframe", () => {
+      const controller = setUp(false);
+      const splitLayout = controller.splitLayout!;
+      const setSpy = jest.spyOn(splitLayout.style, "setProperty");
+      down(controller.splitter!);
+      expect(setSpy).not.toHaveBeenCalledWith(
+        "--dict-frozen-width",
+        expect.anything()
+      );
+      expect(frozen(controller)).toBe("");
+      controller.splitter!.dispatchEvent(
+        new PointerEvent("pointerup", { pointerId: 1 })
+      );
+      controller.dispose();
+    });
+
+    test("keyboard resizing never freezes the iframe", () => {
+      const controller = setUp(true);
+      const setSpy = jest.spyOn(controller.splitLayout!.style, "setProperty");
+      controller.splitter!.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft" })
+      );
+      expect(setSpy).toHaveBeenCalledWith("--dict-width", "444px");
+      expect(setSpy).not.toHaveBeenCalledWith(
+        "--dict-frozen-width",
+        expect.anything()
+      );
+      controller.dispose();
+    });
+  });
 });

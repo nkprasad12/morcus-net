@@ -126,6 +126,14 @@ body.resizing-panels .dict-iframe,
     box-shadow: none;
   }
 
+  /* While the splitter is dragged the dictionary document would relayout on
+     every pointer move for no visible benefit (its pointer events are already
+     off). Hold the iframe at its start width; the container clips it, and it
+     takes the committed width on release (reader_layout.client.ts). */
+  body.resizing-panels .dict-iframe {
+    width: var(--dict-frozen-width, 100%);
+  }
+
   /* Position button inside the dictionary right column */
   .reader-dict-back-to-top {
     position: fixed;
