@@ -16,6 +16,66 @@ export const DRAWER_FLOOR_SVH = 18;
 export const DRAWER_EXPANDED_SVH = 88;
 export const DRAWER_MIN_HEIGHT = 54;
 
+export interface DrawerSnapInput {
+  dy: number;
+  elapsedMs: number;
+  velocityY: number;
+  currentHeight: number;
+  winHeight: number;
+  floorSvh: number;
+  expandedSvh: number;
+}
+
+export type DrawerSnapDecision =
+  | { action: "tap" }
+  | { action: "minimize" }
+  | { action: "restore"; targetSvh: number };
+
+/**
+ * Pure snap decision math for drawer gestures on pointer release.
+ *
+ * Resolves tap early-return, fast flick downward to minimize, slow drag
+ * below the floor threshold into minimize, or release snapping to clamped svh.
+ */
+export function resolveDrawerSnapDecision(
+  input: DrawerSnapInput
+): DrawerSnapDecision {
+  const {
+    dy,
+    elapsedMs,
+    velocityY,
+    currentHeight,
+    winHeight,
+    floorSvh,
+    expandedSvh,
+  } = input;
+
+  // Handle simple tap (minimal movement)
+  if (Math.abs(dy) < 6 && elapsedMs < 350) {
+    return { action: "tap" };
+  }
+
+  // Fast flick down detection:
+  // vhPerSec represents viewport-heights traversed per second.
+  // Guard against divide-by-zero if elapsedMs <= 0 or winHeight <= 0.
+  const safeWinHeight = winHeight > 0 ? winHeight : 1;
+  const safeElapsedMs = elapsedMs > 0 ? elapsedMs : 1;
+  const vhPerSec = (dy / safeWinHeight) * (1000 / safeElapsedMs);
+  const isFastFlickDown = dy > 35 && (velocityY > 0.75 || vhPerSec > 1.1);
+
+  const currentSvh = Math.round((currentHeight / safeWinHeight) * 100);
+
+  // Dragged into floor threshold
+  const isDraggedToFloor = currentSvh < floorSvh || currentHeight < 110;
+
+  if (isFastFlickDown || isDraggedToFloor) {
+    return { action: "minimize" };
+  }
+
+  const clampedSvh = Math.min(expandedSvh, Math.max(floorSvh, currentSvh));
+  return { action: "restore", targetSvh: clampedSvh };
+}
+
 let svhProbe: HTMLElement | null = null;
 
 /**
@@ -402,10 +462,18 @@ export class DrawerController extends BaseController {
             measuredHeight > 0
               ? measuredHeight
               : Math.max(this.minHeight, Math.min(maxHeight, startHeight - dy));
-          const currentSvh = Math.round((currentHeight / winHeight) * 100);
 
-          // Handle simple tap (minimal movement)
-          if (Math.abs(dy) < 6 && elapsedMs < 350) {
+          const decision = resolveDrawerSnapDecision({
+            dy,
+            elapsedMs,
+            velocityY,
+            currentHeight,
+            winHeight,
+            floorSvh: this.floorSvh,
+            expandedSvh: this.expandedSvh,
+          });
+
+          if (decision.action === "tap") {
             wasDragged = false;
             if (!this.details) {
               this.restore();
@@ -415,25 +483,12 @@ export class DrawerController extends BaseController {
             return;
           }
 
-          // Fast flick down detection:
-          const vhPerSec = (dy / winHeight) * (1000 / elapsedMs);
-          const isFastFlickDown =
-            dy > 35 && (velocityY > 0.75 || vhPerSec > 1.1);
-
-          // Dragged into floor threshold
-          const isDraggedToFloor =
-            currentSvh < this.floorSvh || currentHeight < 110;
-
-          if (isFastFlickDown || isDraggedToFloor) {
+          if (decision.action === "minimize") {
             this.minimize();
             return;
           }
 
-          const clampedSvh = Math.min(
-            this.expandedSvh,
-            Math.max(this.floorSvh, currentSvh)
-          );
-          this.restore(clampedSvh);
+          this.restore(decision.targetSvh);
         },
       })
     );
