@@ -16,6 +16,24 @@ export const DRAWER_FLOOR_SVH = 18;
 export const DRAWER_EXPANDED_SVH = 88;
 export const DRAWER_MIN_HEIGHT = 54;
 
+/**
+ * Thresholds {@link resolveDrawerSnapDecision} applies on pointer release.
+ */
+export const DRAWER_SNAP = {
+  /** A release is a tap if it moved less than this (px)... */
+  tapMaxMovePx: 6,
+  /** ...and was released within this (ms). */
+  tapMaxMs: 350,
+  /** A downward release must travel more than this (px) to count as a flick. */
+  flickMinDownPx: 35,
+  /** Flick if the release velocity exceeds this (px/ms)... */
+  flickMinVelocity: 0.75,
+  /** ...or the average speed over the gesture exceeds this (viewport heights/s). */
+  flickMinVhPerSec: 1.1,
+  /** Minimize when released below this height (px), whatever the floor svh. */
+  minimizeBelowPx: 110,
+} as const;
+
 export interface DrawerSnapInput {
   dy: number;
   elapsedMs: number;
@@ -29,7 +47,8 @@ export interface DrawerSnapInput {
 export type DrawerSnapDecision =
   | { action: "tap" }
   | { action: "minimize" }
-  | { action: "restore"; targetSvh: number };
+  /** `targetSvh` is omitted when the viewport can't be measured: keep the preferred height. */
+  | { action: "restore"; targetSvh?: number };
 
 /**
  * Pure snap decision math for drawer gestures on pointer release.
@@ -50,28 +69,31 @@ export function resolveDrawerSnapDecision(
     expandedSvh,
   } = input;
 
-  // Handle simple tap (minimal movement)
-  if (Math.abs(dy) < 6 && elapsedMs < 350) {
+  if (
+    Math.abs(dy) < DRAWER_SNAP.tapMaxMovePx &&
+    elapsedMs < DRAWER_SNAP.tapMaxMs
+  ) {
     return { action: "tap" };
   }
 
-  // Fast flick down detection:
-  // vhPerSec represents viewport-heights traversed per second.
-  // Guard against divide-by-zero if elapsedMs <= 0 or winHeight <= 0.
-  const safeWinHeight = winHeight > 0 ? winHeight : 1;
+  // Fast flick down, by release velocity or by average speed over the gesture.
+  // `elapsedMs` is at least 1 from `trackPointerDrag`; guard it anyway.
   const safeElapsedMs = elapsedMs > 0 ? elapsedMs : 1;
-  const vhPerSec = (dy / safeWinHeight) * (1000 / safeElapsedMs);
-  const isFastFlickDown = dy > 35 && (velocityY > 0.75 || vhPerSec > 1.1);
-
-  const currentSvh = Math.round((currentHeight / safeWinHeight) * 100);
-
-  // Dragged into floor threshold
-  const isDraggedToFloor = currentSvh < floorSvh || currentHeight < 110;
-
-  if (isFastFlickDown || isDraggedToFloor) {
+  const isFastFlickDown =
+    dy > DRAWER_SNAP.flickMinDownPx &&
+    (velocityY > DRAWER_SNAP.flickMinVelocity ||
+      (winHeight > 0 &&
+        (dy / winHeight) * (1000 / safeElapsedMs) >
+          DRAWER_SNAP.flickMinVhPerSec));
+  if (isFastFlickDown || currentHeight < DRAWER_SNAP.minimizeBelowPx) {
     return { action: "minimize" };
   }
 
+  // Without a viewport height there is no svh to snap to.
+  if (winHeight <= 0) return { action: "restore" };
+
+  const currentSvh = Math.round((currentHeight / winHeight) * 100);
+  if (currentSvh < floorSvh) return { action: "minimize" };
   const clampedSvh = Math.min(expandedSvh, Math.max(floorSvh, currentSvh));
   return { action: "restore", targetSvh: clampedSvh };
 }
