@@ -60,8 +60,6 @@ growth; it is not a target.
       every library work has an About tab, and `.has-companion-tabs` hides the label at every width.
       Server-render a `data-js-only` `<strong>` and hint span and toggle them instead. Its `lat-word`
       span factory also duplicates `createWordLink` in `core/tokenize.client.ts`.
-- [ ] 🟢 **`library_view.client.ts`**, **`external_loader.client.ts`**: the resume badge and
-      saved-items list are built on the client.
 
 ## Test coverage
 

@@ -114,7 +114,9 @@ export class MorcusLibraryView extends BaseElement {
       )}#sec-${secId}`;
       card.setAttribute("href", jumpUrl);
 
-      // Add or update the corner tag
+      // Built on demand for the few cards with a saved spot in localStorage
+      // rather than pre-rendered hidden on all 126 cards (no server state to
+      // drift from).
       let tag = card.querySelector<HTMLElement>(".work-card-corner-tag");
       if (!tag) {
         tag = document.createElement("div");
