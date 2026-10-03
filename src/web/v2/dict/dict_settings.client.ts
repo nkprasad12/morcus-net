@@ -49,6 +49,11 @@ export class MorcusDictSettings extends BaseElement {
   private triggerEl: HTMLElement | null = null;
   private modal: ModalDialogHandle | null = null;
 
+  // Read in more than one place; a getter re-queries rather than caches.
+  private get sliderEl() {
+    return this.scope.$<HTMLInputElement>(".settings-slider");
+  }
+
   protected override onConnect() {
     this.strength = this.computeInitialStrength();
     this.dialogEl = this.scope.$<HTMLDialogElement>(
@@ -98,7 +103,7 @@ export class MorcusDictSettings extends BaseElement {
       this.syncDoneDisabled();
     });
 
-    const sliderEl = this.scope.$<HTMLInputElement>(".settings-slider");
+    const sliderEl = this.sliderEl;
     this.scope.listen(sliderEl, "input", (e: Event) => {
       if (e.target instanceof HTMLInputElement) {
         this.updateStrength(Number(e.target.value), false);
@@ -210,7 +215,7 @@ export class MorcusDictSettings extends BaseElement {
 
   /** `record`: also record the highlight scale for pre-paint (see applyScale). */
   private syncStrengthUi(record: boolean) {
-    const sliderEl = this.scope.$<HTMLInputElement>(".settings-slider");
+    const sliderEl = this.sliderEl;
     if (sliderEl && Number(sliderEl.value) !== this.strength) {
       sliderEl.value = String(this.strength);
     }

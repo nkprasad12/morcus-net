@@ -35,6 +35,8 @@ import {
   renderInflectChipHtml,
 } from "@/web/v2/dict/search_bar.common";
 
+const SEARCH_FORM = "form.search-form";
+
 /**
  * Progressively enhanced dictionary search component using Light DOM.
  *
@@ -130,6 +132,11 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     180
   );
 
+  // Read in more than one place; a getter re-queries rather than caches.
+  private get searchForm() {
+    return this.scope.$<HTMLFormElement>(SEARCH_FORM);
+  }
+
   protected override onConnect() {
     this.initActiveSettings();
 
@@ -157,9 +164,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
    * re-resolves it: the server has already read every durable store (see `docs/PREFERENCES.md`).
    */
   private initActiveSettings() {
-    const state = readRenderedDictState(
-      this.scope.$<HTMLElement>("form.search-form")
-    );
+    const state = readRenderedDictState(this.searchForm);
     this.isInflected = state.isInflected;
     this.activeDictKeys = state.dictKeys;
     // The bitmask is what we send to the server and write back to the URL, so it must never drift
@@ -191,7 +196,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       });
     }
 
-    this.hijackForm("form.search-form", ({ q }) => {
+    this.hijackForm(SEARCH_FORM, ({ q }) => {
       this.clearSuggestions();
       const cleaned = trimRawQuery(q || "");
       if (cleaned) {
@@ -311,7 +316,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     const o = commit.isInflected ? "1" : "0";
 
     // Searches keep what's on screen, so the search form carries the new state.
-    const form = this.scope.$<HTMLFormElement>("form.search-form");
+    const form = this.searchForm;
     if (form) {
       form.dataset.d = commit.bitmask;
       form.dataset.o = o;

@@ -116,6 +116,14 @@ export class MorcusExternalLoader extends BaseElement {
   /** Settles when the work started on connect is done (for tests). */
   public ready: Promise<void> = Promise.resolve();
 
+  // Read in more than one place; getters re-query rather than cache.
+  private get savedList() {
+    return this.scope.$("#external-saved-list");
+  }
+  private get savedEmpty() {
+    return this.scope.$("#external-saved-empty");
+  }
+
   protected override onConnect() {
     switch (this.dataset.page) {
       case "landing":
@@ -219,8 +227,8 @@ export class MorcusExternalLoader extends BaseElement {
   }
 
   private async renderSavedList(): Promise<void> {
-    const list = this.scope.$("#external-saved-list");
-    const empty = this.scope.$("#external-saved-empty");
+    const list = this.savedList;
+    const empty = this.savedEmpty;
     if (!list) return;
     let items: ExternalContentSummary[];
     try {
@@ -244,8 +252,8 @@ export class MorcusExternalLoader extends BaseElement {
       return;
     }
     button.closest("li")?.remove();
-    const empty = this.scope.$("#external-saved-empty");
-    const list = this.scope.$("#external-saved-list");
+    const empty = this.savedEmpty;
+    const list = this.savedList;
     if (empty && list) empty.hidden = list.children.length > 0;
   }
 

@@ -47,3 +47,5 @@ Already blocked by stylelint, so not repeated here: combinators inside `:not()` 
   comparator absorbs.
 - `no-unsanitized`'s `taggedTemplates: ["html"]`: it can't cover assigning a renderer's result.
   Route sinks through `setHtml` / `replaceWithHtml` instead.
+- Caching queried elements in fields on connect "for performance": lookups are microseconds, and
+  swaps replace nodes, so the cache goes stale. See README convention 9.

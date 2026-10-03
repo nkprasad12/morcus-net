@@ -39,12 +39,6 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
       while the first is in flight, and fires `onTabChange` again. `reader_view`'s
       `restoreDrawer()` is unverified. Fix: document it on `Revealer`, guard the in-flight
       translation load, and add a call-twice test per revealer (same state, one fetch).
-- [ ] 🟢 **Resolve repeatedly queried elements once, on connect.** Some controllers, mostly in the
-      reader (`reader_view`, `reader_settings`, `reader_toc`, `reader_panel`), look up the same
-      element by selector string at each use. Each lookup is a place where a markup change can
-      silently break behaviour. Where an element is looked up more than once, resolve it on connect
-      (`this.scope.require`) into a field, or hand the behaviour to a `core/` controller. A single
-      lookup on connect is fine as it is.
 
 ## Client DOM construction outside `core/`
 
