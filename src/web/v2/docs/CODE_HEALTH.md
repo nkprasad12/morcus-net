@@ -88,18 +88,6 @@ growth; it is not a target.
 - [ ] 🟡 **Reader preference save/hydrate lifecycle** (`reader_view.client.ts`).
 - [ ] 🟡 **`DrawerController` snap thresholds and flick-velocity logic**: extract the snap math to a
       pure function and test that directly.
-- [ ] 🟡 **Widen or retire the selector inventory contract test
-      ([`reader_selector_contract.test.ts`](../reader/reader_selector_contract.test.ts)).** First check
-      whether the SSR and interaction conformance harnesses ([`TESTING.md`](TESTING.md)) already cover
-      dead selectors; if so, delete it. Otherwise:
-  - Scan more than `reader_toc.client.ts` + `reader_settings.client.ts`. `reader_view.client.ts`
-    alone binds ~32 selectors and is unscanned, as are `reader_panel`, `drawer`, and every `dict_*`
-    module.
-  - Match `this.scope.require(...)`, which the current extractor regex misses.
-  - Match delegated selectors: the 3rd argument of `delegate(root, type, selector, fn)` (e.g.
-    `#btn-retry-translation`) is invisible today.
-  - Stop skipping comma-containing selectors (`if (!raw.includes(","))`), which silently exempts
-    real bindings such as `#toggle-inflected, .inflected-checkbox`.
 - [ ] 🟢 **Visual scenarios for post-interaction state in the dictionary.** `v2VisualScenario`'s
       `action` hook is used only by reader scenarios. Popover-open and results-with-one-dictionary
       would catch selection bugs as a pixel diff across all four form factors.

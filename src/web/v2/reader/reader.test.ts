@@ -383,13 +383,17 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain("<morcus-reader-settings");
       expect(html).not.toContain('data-has-macra="false"');
       expect(html).toContain('id="reader-settings-popover"');
+      expect(html).toContain('id="reader-settings-close-btn"');
+      expect(html).toContain('id="reader-size-label"');
       expect(html).toContain('id="reader-size-dec"');
       expect(html).toContain('id="reader-size-inc"');
+      expect(html).toContain('id="dict-size-label"');
       expect(html).toContain('id="dict-size-dec"');
       expect(html).toContain('id="dict-size-inc"');
       expect(html).toContain('id="toggle-macra"');
       expect(html).toContain("Show Macra");
       expect(html).toContain('id="toggle-gutter"');
+      expect(html).toContain('id="toggle-swipe-nav"');
       expect(html).toContain('id="font-select"');
       expect(html).toContain('id="line-height-select"');
       expect(html).toContain('id="reader-settings-reset-btn"');
@@ -429,6 +433,9 @@ describe("decomposed_reader_renderers", () => {
       expect(html).not.toContain('aria-modal="true"');
       expect(html).toContain("hidden");
       expect(html).toContain('id="reader-toc-close-btn"');
+      expect(html).toContain('id="reader-toc-search-input"');
+      expect(html).toContain('id="reader-toc-list"');
+      expect(html).toContain('id="reader-toc-empty"');
 
       // Clutter removed
       expect(html).not.toContain('id="reader-toc-back-btn"');
