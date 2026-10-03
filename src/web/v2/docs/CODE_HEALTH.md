@@ -16,13 +16,6 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
 
 ## Event handling
 
-- [ ] 🟢 **Tighten the reader's window-level keyboard shortcuts.** `reader_view.client.ts` listens
-      for `keydown` on `window` and calls `preventDefault` for page turns, TOC, panel tabs and
-      settings. It skips modifier keys, `contenteditable`, `input`, `textarea` and `select`, but
-      not `e.defaultPrevented`, `e.isComposing`, `role="textbox"`/`combobox`/`listbox` targets, or
-      focus inside a dialog, popover or menu elsewhere on the page (the report dialog, the section
-      menu). It also calls `settings.toggle()` on `morcus-reader-settings` without checking it
-      upgraded.
 - [ ] 🟢 **Review document-level takeovers in shared helpers.** `bindDismissable`
       (`core/dismissable.client.ts`) calls `preventDefault` on Escape for any target while its
       overlay is open, with no `defaultPrevented` check, so a nested widget that handles Escape

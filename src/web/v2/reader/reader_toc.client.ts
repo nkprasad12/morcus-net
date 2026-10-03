@@ -154,6 +154,7 @@ export class ReaderTocController extends BaseController {
     });
 
     this.scope.listen(this.searchInput, "keydown", (event: KeyboardEvent) => {
+      if (event.isComposing) return;
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         // Arrows in its own search input move the list selection
         event.preventDefault();

@@ -1135,6 +1135,55 @@ describe("MorcusReaderView desktop splitter drag", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "A" }));
     expect(settings?.isOpen()).toBe(false);
 
+    // Pressing 'a' focuses #reader-settings-close-btn inside role="dialog";
+    // dispatching 'a' from document.activeElement still closes the popover.
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
+    expect(settings?.isOpen()).toBe(true);
+    expect(document.activeElement?.id).toBe("reader-settings-close-btn");
+    document.activeElement!.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "a",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    expect(settings?.isOpen()).toBe(false);
+
+    el.remove();
+  });
+
+  test("does not call preventDefault on KeyT when TOC drawer is absent or on KeyA when settings element is absent", () => {
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.innerHTML = `
+      <div class="sticky-primary-row">
+        <button type="button" id="reader-settings-btn" aria-expanded="false">Aa</button>
+      </div>
+    `;
+    document.body.appendChild(el);
+
+    const settingsBtn = el.querySelector<HTMLButtonElement>(
+      "#reader-settings-btn"
+    )!;
+    const clickSpy = jest.fn();
+    settingsBtn.addEventListener("click", clickSpy);
+
+    const tEvent = new KeyboardEvent("keydown", {
+      key: "t",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(tEvent);
+    expect(tEvent.defaultPrevented).toBe(false);
+
+    const aEvent = new KeyboardEvent("keydown", {
+      key: "a",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(aEvent);
+    expect(aEvent.defaultPrevented).toBe(false);
+    expect(clickSpy).not.toHaveBeenCalled();
+
     el.remove();
   });
 
@@ -1616,6 +1665,153 @@ describe("MorcusReaderView companion panel & notes integration", () => {
       new KeyboardEvent("keydown", { key: "i", altKey: true })
     );
     expect(panelController?.activeTab).toBe("dict");
+  });
+
+  test("ignores window shortcuts when defaultPrevented or isComposing is true", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa</p>", {
+      aboutHtml: sampleAboutHtml,
+    });
+    const panelController = el.getPanelController();
+    expect(panelController?.activeTab).toBe("dict");
+
+    // Pre-cancelled event (defaultPrevented)
+    const preCancelled = new KeyboardEvent("keydown", {
+      key: "i",
+      bubbles: true,
+      cancelable: true,
+    });
+    preCancelled.preventDefault();
+    window.dispatchEvent(preCancelled);
+    expect(panelController?.activeTab).toBe("dict");
+
+    // IME composition event (isComposing)
+    const composing = new KeyboardEvent("keydown", {
+      key: "i",
+      isComposing: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(composing);
+    expect(composing.defaultPrevented).toBe(false);
+    expect(panelController?.activeTab).toBe("dict");
+  });
+
+  test("ignores window shortcuts when target is inside contenteditable or ARIA text/selection widgets", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa</p>", {
+      aboutHtml: sampleAboutHtml,
+    });
+    const panelController = el.getPanelController();
+
+    const editable = document.createElement("div");
+    editable.setAttribute("contenteditable", "true");
+    const editableChild = document.createElement("span");
+    editable.appendChild(editableChild);
+    document.body.appendChild(editable);
+
+    const editableEvent = new KeyboardEvent("keydown", {
+      key: "i",
+      bubbles: true,
+      cancelable: true,
+    });
+    editableChild.dispatchEvent(editableEvent);
+    expect(editableEvent.defaultPrevented).toBe(false);
+    expect(panelController?.activeTab).toBe("dict");
+    editable.remove();
+
+    for (const role of ["textbox", "searchbox", "combobox", "listbox"]) {
+      const widget = document.createElement("div");
+      widget.setAttribute("role", role);
+      const child = document.createElement("span");
+      widget.appendChild(child);
+      document.body.appendChild(widget);
+
+      const ev = new KeyboardEvent("keydown", {
+        key: "i",
+        bubbles: true,
+        cancelable: true,
+      });
+      child.dispatchEvent(ev);
+      expect(ev.defaultPrevented).toBe(false);
+      expect(panelController?.activeTab).toBe("dict");
+      widget.remove();
+    }
+  });
+
+  test("ignores window shortcuts when an external dialog, section menu, popover, or mobile menu is open or focused", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa</p>", {
+      aboutHtml: sampleAboutHtml,
+    });
+    const panelController = el.getPanelController();
+
+    // 1. Open <dialog open> (e.g. Report Issue modal) blocks even when event target is window
+    const dialog = document.createElement("dialog");
+    dialog.setAttribute("open", "");
+    document.body.appendChild(dialog);
+    const dialogEv = new KeyboardEvent("keydown", {
+      key: "i",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(dialogEv);
+    expect(dialogEv.defaultPrevented).toBe(false);
+    expect(panelController?.activeTab).toBe("dict");
+    dialog.remove();
+
+    // 2. Open .section-action-menu blocks shortcuts
+    const menu = document.createElement("div");
+    menu.className = "section-action-menu";
+    menu.setAttribute("role", "menu");
+    document.body.appendChild(menu);
+    const menuEv = new KeyboardEvent("keydown", {
+      key: "i",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(menuEv);
+    expect(menuEv.defaultPrevented).toBe(false);
+    expect(panelController?.activeTab).toBe("dict");
+    menu.remove();
+
+    // 3. Open .mobile-menu[open] blocks shortcuts
+    const mobileMenu = document.createElement("details");
+    mobileMenu.className = "mobile-menu";
+    mobileMenu.setAttribute("open", "");
+    document.body.appendChild(mobileMenu);
+    const mobileEv = new KeyboardEvent("keydown", {
+      key: "i",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(mobileEv);
+    expect(mobileEv.defaultPrevented).toBe(false);
+    expect(panelController?.activeTab).toBe("dict");
+    mobileMenu.remove();
+
+    // 4. Closed #abbr-popover[popover] in DOM does NOT block shortcuts unless event target is inside it
+    const popover = document.createElement("div");
+    popover.setAttribute("popover", "manual");
+    const popoverBtn = document.createElement("button");
+    popover.appendChild(popoverBtn);
+    document.body.appendChild(popover);
+
+    const insidePopoverEv = new KeyboardEvent("keydown", {
+      key: "i",
+      bubbles: true,
+      cancelable: true,
+    });
+    popoverBtn.dispatchEvent(insidePopoverEv);
+    expect(insidePopoverEv.defaultPrevented).toBe(false);
+    expect(panelController?.activeTab).toBe("dict");
+
+    const outsidePopoverEv = new KeyboardEvent("keydown", {
+      key: "i",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(outsidePopoverEv);
+    expect(outsidePopoverEv.defaultPrevented).toBe(true);
+    expect(panelController?.activeTab).toBe("about");
+    popover.remove();
   });
 
   test("resetDictScroll resets scroll position on dict panel, notes view, and about view", () => {
