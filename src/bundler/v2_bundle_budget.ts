@@ -106,6 +106,10 @@ export interface V2BundleBudget {
  *   by 116 B raw / 31 B gzip from POST support in `swapSlots` /
  *   `fetchAndSwapPartial`; its ceilings and the other route ceilings are
  *   unchanged.
+ * - 2026-10-03: Selector getters in the reader, dict, external and macronizer
+ *   controllers (README convention 9); user-approved. Gzip only: `external`
+ *   route 37.5 -> 37.7 kB (measured ~37.5 kB; `reader.js` +136 B raw / ~+105 B
+ *   gzip). Other ceilings unchanged.
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
@@ -139,7 +143,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     dicts: { maxRawBytes: 90 * 1024, maxGzipBytes: 30 * 1024 },
     corpus: { maxRawBytes: 76 * 1024, maxGzipBytes: 26 * 1024 },
     library: { maxRawBytes: 106 * 1024, maxGzipBytes: 33.5 * 1024 },
-    external: { maxRawBytes: 117 * 1024, maxGzipBytes: 37.5 * 1024 },
+    external: { maxRawBytes: 117 * 1024, maxGzipBytes: 37.7 * 1024 },
     macronizer: { maxRawBytes: 75 * 1024, maxGzipBytes: 25.5 * 1024 },
   },
   maxCssRawBytes: 144 * 1024,

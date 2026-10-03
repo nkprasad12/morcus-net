@@ -164,6 +164,21 @@ export class MorcusReaderSettings extends BaseElement {
     })
   );
 
+  // Controls read in more than one place. Getters, not cached fields: each
+  // read hits the live DOM, so no reference can outlive a markup swap.
+  private get toggleMacra() {
+    return this.scope.$<HTMLInputElement>("#toggle-macra");
+  }
+  private get toggleGutter() {
+    return this.scope.$<HTMLInputElement>("#toggle-gutter");
+  }
+  private get fontSelect() {
+    return this.scope.$<HTMLSelectElement>("#font-select");
+  }
+  private get lineHeightSelect() {
+    return this.scope.$<HTMLSelectElement>("#line-height-select");
+  }
+
   public getPreferences(): ReaderPreferences {
     return { ...this.currentPrefs };
   }
@@ -210,12 +225,7 @@ export class MorcusReaderSettings extends BaseElement {
     const readerSizeInc = this.scope.$<HTMLButtonElement>("#reader-size-inc");
     const dictSizeDec = this.scope.$<HTMLButtonElement>("#dict-size-dec");
     const dictSizeInc = this.scope.$<HTMLButtonElement>("#dict-size-inc");
-    const toggleMacra = this.scope.$<HTMLInputElement>("#toggle-macra");
-    const toggleGutter = this.scope.$<HTMLInputElement>("#toggle-gutter");
-    const fontSelect = this.scope.$<HTMLSelectElement>("#font-select");
-    const lineHeightSelect = this.scope.$<HTMLSelectElement>(
-      "#line-height-select"
-    );
+    const { toggleMacra, toggleGutter, fontSelect, lineHeightSelect } = this;
 
     this.syncUiWithPrefs(this.currentPrefs);
 
@@ -325,12 +335,7 @@ export class MorcusReaderSettings extends BaseElement {
   private syncUiWithPrefs(prefs: ReaderPreferences) {
     const readerSizeLabel = this.scope.$<HTMLElement>("#reader-size-label");
     const dictSizeLabel = this.scope.$<HTMLElement>("#dict-size-label");
-    const toggleMacra = this.scope.$<HTMLInputElement>("#toggle-macra");
-    const toggleGutter = this.scope.$<HTMLInputElement>("#toggle-gutter");
-    const fontSelect = this.scope.$<HTMLSelectElement>("#font-select");
-    const lineHeightSelect = this.scope.$<HTMLSelectElement>(
-      "#line-height-select"
-    );
+    const { toggleMacra, toggleGutter, fontSelect, lineHeightSelect } = this;
 
     if (readerSizeLabel) {
       readerSizeLabel.textContent = `${prefs.readerScale}%`;

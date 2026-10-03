@@ -32,7 +32,21 @@ interface ReviewBucket {
   readonly words: HTMLElement[];
 }
 
+const MAC_TEXT = "#mac-text";
+
 export class MorcusMacronizerView extends BaseElement<"macronize"> {
+  // Elements read in more than one place. Getters, not cached fields: the
+  // `macronizer-workspace` slot is replaced on every submit.
+  private get textarea() {
+    return this.querySelector<HTMLTextAreaElement>(MAC_TEXT);
+  }
+  private get passage() {
+    return this.querySelector<HTMLElement>("#mac-passage");
+  }
+  private get plainCard() {
+    return this.querySelector<HTMLElement>("#w-plain");
+  }
+
   private selectedWordIndex: number | null = null;
   private selectedBucketId: 1 | 2 | 3 | null = null;
   private selectedWordEl: HTMLElement | null = null;
@@ -65,9 +79,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     this.selectedWordEl = null;
     this.drawerController.dispose();
     this.drawerController.connect();
-    document.title = formatMacronizerPageTitle(
-      this.querySelector("#mac-passage") !== null
-    );
+    document.title = formatMacronizerPageTitle(this.passage !== null);
     this.initWorkspaceState();
   }
 
@@ -78,7 +90,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
 
   private bindEvents(): void {
     // 1. Live character counter & empty-input submit disable
-    this.scope.delegate<HTMLTextAreaElement>(this, "input", "#mac-text", () => {
+    this.scope.delegate<HTMLTextAreaElement>(this, "input", MAC_TEXT, () => {
       this.syncCharCounter();
     });
 
@@ -199,7 +211,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
   }
 
   private syncCharCounter(): void {
-    const textarea = this.querySelector<HTMLTextAreaElement>("#mac-text");
+    const textarea = this.textarea;
     const counter = this.querySelector<HTMLElement>("#mac-char-counter");
     const submitBtn = this.querySelector<HTMLButtonElement>("#mac-submit-btn");
     if (!textarea) return;
@@ -213,7 +225,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
   }
 
   private async handleMacronizeSubmit(form: HTMLFormElement): Promise<void> {
-    const textarea = form.querySelector<HTMLTextAreaElement>("#mac-text");
+    const textarea = this.textarea;
     const rawText = textarea ? textarea.value : "";
     if (rawText.trim().length === 0) {
       return;
@@ -300,7 +312,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     if (wordEl.classList.contains("mac-plain")) {
       this.selectedWordIndex = Number.isInteger(n) ? n : null;
       this.populatePlainCard(wordEl);
-      const plainCard = this.querySelector<HTMLElement>("#w-plain");
+      const plainCard = this.plainCard;
       plainCard?.classList.add("current");
       const orig = wordEl.dataset.orig ?? shownText;
       this.updateSheetLabel(`${orig} → ${shownText}`);
@@ -325,8 +337,22 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
+  /** Sets the plain card's shown form and its "edited"/"unambiguous" tag. */
+  private setPlainShown(shown: string, isEdited: boolean): void {
+    const plainCard = this.plainCard;
+    const shownEl = plainCard?.querySelector<HTMLElement>("[data-plain-shown]");
+    if (shownEl) shownEl.textContent = shown;
+    const tagEl = plainCard?.querySelector<HTMLElement>("[data-plain-tag]");
+    if (tagEl) {
+      tagEl.textContent = isEdited ? "edited" : "unambiguous";
+      tagEl.className = isEdited
+        ? "mac-tag mac-tag-chosen"
+        : "mac-tag mac-tag-plain";
+    }
+  }
+
   private populatePlainCard(wordEl: HTMLElement): void {
-    const plainCard = this.querySelector<HTMLElement>("#w-plain");
+    const plainCard = this.plainCard;
     if (!plainCard) return;
 
     const shown = (wordEl.textContent ?? "").normalize("NFC");
@@ -336,15 +362,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
 
     const origEl = plainCard.querySelector<HTMLElement>("[data-plain-orig]");
     if (origEl) origEl.textContent = orig;
-    const shownEl = plainCard.querySelector<HTMLElement>("[data-plain-shown]");
-    if (shownEl) shownEl.textContent = shown;
-    const tagEl = plainCard.querySelector<HTMLElement>("[data-plain-tag]");
-    if (tagEl) {
-      tagEl.textContent = isEdited ? "edited" : "unambiguous";
-      tagEl.className = isEdited
-        ? "mac-tag mac-tag-chosen"
-        : "mac-tag mac-tag-plain";
-    }
+    this.setPlainShown(shown, isEdited);
 
     const lemmasContainer = plainCard.querySelector<HTMLElement>(
       "[data-plain-lemmas]"
@@ -434,15 +452,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       wordEl.textContent = newForm;
       wordEl.classList.add("mac-chosen");
 
-      const plainCard = this.querySelector<HTMLElement>("#w-plain");
-      const shownEl =
-        plainCard?.querySelector<HTMLElement>("[data-plain-shown]");
-      if (shownEl) shownEl.textContent = newForm;
-      const tagEl = plainCard?.querySelector<HTMLElement>("[data-plain-tag]");
-      if (tagEl) {
-        tagEl.textContent = "edited";
-        tagEl.className = "mac-tag mac-tag-chosen";
-      }
+      this.setPlainShown(newForm, true);
       this.updateSheetLabel(`${orig} → ${newForm}`);
       return;
     }
@@ -702,7 +712,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
   }
 
   private async handleCopyPassage(): Promise<void> {
-    const passage = this.querySelector<HTMLElement>("#mac-passage");
+    const passage = this.passage;
     if (!passage) return;
     const text = (passage.textContent ?? "").normalize("NFC");
     const ok = await copyText(text);

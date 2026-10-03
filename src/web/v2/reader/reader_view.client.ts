@@ -224,6 +224,25 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     return this.currentNoteId;
   }
 
+  // Elements read in more than one place. Getters, not cached fields: page
+  // turns replace READER_PAGE_SLOTS nodes (`#reader-passage` is one of them),
+  // so a stored reference would go stale; a getter always reads the live DOM.
+  private get dictFrame() {
+    return this.querySelector<HTMLIFrameElement>("#dict-frame");
+  }
+  private get dictPanelEl() {
+    return this.querySelector<HTMLElement>(".reader-dict-panel");
+  }
+  private get sheetLabel() {
+    return this.querySelector<HTMLElement>(".reader-sheet-label");
+  }
+  private get splitLayoutEl() {
+    return this.querySelector<HTMLElement>(".reader-split-layout");
+  }
+  private get passage() {
+    return this.querySelector<HTMLElement>("#reader-passage");
+  }
+
   protected override onConnect() {
     if (typeof window !== "undefined" && window.history) {
       const original = window.history.scrollRestoration;
@@ -337,7 +356,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.initKeyboardShortcuts();
     this.initIframeThemeSync();
 
-    const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
+    const iframe = this.dictFrame;
     if (iframe) {
       this.scope.listen(iframe, "load", () => {
         this.applyDictScale(this.currentPrefs.dictScale);
@@ -357,7 +376,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   private initIframeThemeSync() {
-    const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
+    const iframe = this.dictFrame;
     if (!iframe) return;
 
     const syncTheme = () => {
@@ -691,7 +710,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     contentNodes: (Node | string)[],
     showExpandHint: boolean = false
   ): void {
-    const sheetLabel = this.querySelector<HTMLElement>(".reader-sheet-label");
+    const sheetLabel = this.sheetLabel;
     if (!sheetLabel) return;
 
     const nodes: (Node | string)[] = [...contentNodes];
@@ -727,16 +746,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   public dismissDrawer(): void {
-    const splitLayout =
-      this.layoutController.splitLayout ??
-      this.querySelector<HTMLElement>(".reader-split-layout");
+    const splitLayout = this.layoutController.splitLayout ?? this.splitLayoutEl;
     splitLayout?.classList.add("drawer-dismissed");
   }
 
   public undismissDrawer(): void {
-    const splitLayout =
-      this.layoutController.splitLayout ??
-      this.querySelector<HTMLElement>(".reader-split-layout");
+    const splitLayout = this.layoutController.splitLayout ?? this.splitLayoutEl;
     splitLayout?.classList.remove("drawer-dismissed");
     if (window.location.hash === "#reader-dict-dismissed") {
       // Clears its own #reader-dict-dismissed hash
@@ -836,7 +851,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.panelController?.reset();
 
     // Reset iframe to default embedded state
-    const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
+    const iframe = this.dictFrame;
     if (iframe) {
       iframe.src = "/v2/dicts?embedded=1";
     }
@@ -848,7 +863,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.drawerController.reset();
 
     // Update mobile teaser label
-    const sheetLabel = this.querySelector<HTMLElement>(".reader-sheet-label");
+    const sheetLabel = this.sheetLabel;
     if (sheetLabel) {
       sheetLabel.textContent = "Tap any word to view definitions";
     }
@@ -865,7 +880,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   ) {
     if (!word) return;
 
-    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+    const dictPanel = this.dictPanelEl;
     if (
       word === this.currentQuery &&
       dictPanel?.classList.contains("drawer-minimized")
@@ -885,7 +900,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.setActiveWord(activeAnchor ?? this.findWordElement(word));
 
     // Update dictionary iframe (filtering by lang=La and forcing inflected search o=1 for Latin text word lookups)
-    const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
+    const iframe = this.dictFrame;
     if (iframe) {
       const targetSrc = `/v2/dicts?q=${encodeURIComponent(
         word
@@ -942,7 +957,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * passage. The markup must use the library's section shape.
    */
   public adoptPassage(passageHtml: SafeHtml): void {
-    const passage = this.querySelector<HTMLElement>("#reader-passage");
+    const passage = this.passage;
     if (!passage) return;
     setHtml(passage, passageHtml);
     delete passage.dataset.enhanced;
@@ -959,7 +974,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   private enhancePassage() {
-    const passage = this.querySelector<HTMLElement>("#reader-passage");
+    const passage = this.passage;
     if (!passage) return;
 
     // Tokenizing rewrites the passage into `.lat-word` spans, so it must
@@ -1065,7 +1080,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const btn = this.querySelector<HTMLButtonElement>(
       ".reader-dict-back-to-top"
     );
-    const dictPanel = this.querySelector<HTMLElement>(".reader-dict-panel");
+    const dictPanel = this.dictPanelEl;
     if (!btn || !dictPanel) return;
 
     this.scope.use(bindBackToTop(btn, { container: dictPanel }));
@@ -1086,7 +1101,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   private applyDictScale(scalePercent: number) {
     const scale = (scalePercent / 100).toFixed(2);
-    const iframe = this.scope.$<HTMLIFrameElement>("#dict-frame");
+    const iframe = this.dictFrame;
     try {
       if (iframe?.contentDocument?.documentElement) {
         iframe.contentDocument.documentElement.style.setProperty(
@@ -1408,7 +1423,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (el) this.setActiveWord(el);
     } else {
       this.setActiveWord(null);
-      const iframe = this.querySelector<HTMLIFrameElement>("#dict-frame");
+      const iframe = this.dictFrame;
       if (iframe && iframe.getAttribute("src") !== "/v2/dicts?embedded=1") {
         iframe.src = "/v2/dicts?embedded=1";
       }

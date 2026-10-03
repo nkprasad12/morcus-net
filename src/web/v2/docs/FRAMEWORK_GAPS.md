@@ -52,5 +52,13 @@ another is found at runtime, by attribute list (`TARGET_ID_ATTRS` in `core/js_ga
   `core/boot_conformance.test.ts` bans importing `Morcus*` classes, type imports included.
 - Dangling `href="#…"`: section 3 of the SSR harness.
 
+**Also uncovered: element references that outlive a swap.** A component that stores a queried
+element in a field holds a detached node once a partial swap replaces it, with no error. Today only
+README convention 9 guards this: nothing tracks which fields hold elements or which regions a
+component swaps. Host-scoped declared refs would: the framework would own the ref and re-resolve
+it (or throw) on `onContentSwap`. If this ever ships a bug, the cheaper first step is a jsdom
+sweep that runs each component's swaps and fails on any `HTMLElement` field with
+`isConnected === false`.
+
 **Bar for revisiting.** Shipped bugs, or repeated sweep failures the gate can't cover. Awkwardness
 alone isn't enough. If it's met, start with typed ref names scoped to the host, not phantom types.

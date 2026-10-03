@@ -10,6 +10,11 @@ export class MorcusLibraryView extends BaseElement {
   private currentFilter: string = "all";
   private currentQuery: string = "";
 
+  // Read in more than one place; a getter re-queries rather than caches.
+  private get workCards() {
+    return this.scope.$$<HTMLAnchorElement>(".work-card");
+  }
+
   protected override onConnect() {
     this.hydrateSavedSpots();
 
@@ -65,7 +70,7 @@ export class MorcusLibraryView extends BaseElement {
   }
 
   private applyFilter() {
-    const cards = this.scope.$$<HTMLElement>(".work-card");
+    const cards = this.workCards;
     const emptyState = this.scope.$<HTMLElement>("#library-empty-state");
 
     let visibleCount = 0;
@@ -94,7 +99,7 @@ export class MorcusLibraryView extends BaseElement {
 
   private hydrateSavedSpots(): void {
     const spots = savedSpotsStore.getAll();
-    const cards = this.scope.$$<HTMLAnchorElement>(".work-card");
+    const cards = this.workCards;
     for (const card of cards) {
       const workId = card.dataset.workId || card.getAttribute("data-work-id");
       if (!workId) continue;
