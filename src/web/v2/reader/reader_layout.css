@@ -235,7 +235,9 @@
   .reader-split-layout {
     /* No --dict-width default here: it would shadow the saved width that
        critical_theme.client.ts puts on :root before first paint. The 420px
-       fallback lives in reader_dict.css. */
+       fallback lives in reader_dict.css. Live widths are written inline on
+       .reader-dict-panel (reader_layout.client.ts), not here, so a drag does
+       not restyle the passage through inheritance. */
     flex: 1;
     min-height: 0;
     height: 100%;

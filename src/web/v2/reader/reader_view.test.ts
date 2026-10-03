@@ -1051,7 +1051,7 @@ describe("MorcusReaderView desktop splitter drag", () => {
     );
 
     // Width should increase by 50px: 420 - (-50) = 470px
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("470px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("470px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("470");
 
     // CRITICAL: No layout reads performed during pointermove!
@@ -1074,19 +1074,19 @@ describe("MorcusReaderView desktop splitter drag", () => {
   });
 
   test("keyboard arrow keys resize splitter within bounds", () => {
-    const { splitLayout, splitter } = createSplitterReaderView();
+    const { splitLayout, splitter, dictPanel } = createSplitterReaderView();
     const splitSpy = jest
       .spyOn(splitLayout, "getBoundingClientRect")
       .mockReturnValue({ width: 1200 } as DOMRect);
 
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
     // default 420 + 24 = 444
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("444px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("444px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("444");
 
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
     // 444 - 24 = 420
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("420px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("420px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("420");
 
     splitSpy.mockRestore();

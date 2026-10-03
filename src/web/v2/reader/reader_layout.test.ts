@@ -124,7 +124,7 @@ describe("ReaderLayoutController", () => {
     const controller = connectController({ root: container });
 
     expect(controller.getWidth()).toBe(520);
-    expect(controller.splitLayout?.style.getPropertyValue("--dict-width")).toBe(
+    expect(controller.dictPanel?.style.getPropertyValue("--dict-width")).toBe(
       "520px"
     );
     expect(controller.splitter?.getAttribute("aria-valuenow")).toBe("520");
@@ -136,7 +136,7 @@ describe("ReaderLayoutController", () => {
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "150"); // < 300
     let controller = connectController({ root: container });
     expect(controller.getWidth()).toBe(420);
-    expect(controller.splitLayout?.style.getPropertyValue("--dict-width")).toBe(
+    expect(controller.dictPanel?.style.getPropertyValue("--dict-width")).toBe(
       ""
     );
     controller.dispose();
@@ -151,7 +151,7 @@ describe("ReaderLayoutController", () => {
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "1200");
     const controller = connectController({ root: container });
     expect(controller.getWidth()).toBe(1200);
-    expect(controller.splitLayout?.style.getPropertyValue("--dict-width")).toBe(
+    expect(controller.dictPanel?.style.getPropertyValue("--dict-width")).toBe(
       "1200px"
     );
     controller.dispose();
@@ -194,7 +194,10 @@ describe("ReaderLayoutController", () => {
       })
     );
 
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("480px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("480px");
+    // Inherited custom property: never on the split layout, or every move
+    // restyles the whole passage.
+    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("");
     expect(splitter.getAttribute("aria-valuenow")).toBe("480");
 
     // CRITICAL: Verify zero layout reads occurred during move
@@ -249,7 +252,7 @@ describe("ReaderLayoutController", () => {
       })
     );
 
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("458px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("458px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("458");
     expect(splitter.getAttribute("aria-valuemax")).toBe("458");
 
@@ -262,7 +265,7 @@ describe("ReaderLayoutController", () => {
       })
     );
 
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("300px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("300px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("300");
 
     splitter.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
@@ -274,14 +277,14 @@ describe("ReaderLayoutController", () => {
   test("double-clicking the splitter resets width and clears localStorage", () => {
     localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "560");
     const controller = connectController({ root: container });
-    const splitLayout = controller.splitLayout!;
+    const dictPanel = controller.dictPanel!;
     const splitter = controller.splitter!;
 
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("560px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("560px");
 
     splitter.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
 
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("");
     expect(splitter.getAttribute("aria-valuenow")).toBe(
       String(DEFAULT_SPLIT_WIDTH)
     );
@@ -293,6 +296,7 @@ describe("ReaderLayoutController", () => {
   test("keyboard navigation adjusts width and respects bounds", () => {
     const controller = connectController({ root: container });
     const splitLayout = controller.splitLayout!;
+    const dictPanel = controller.dictPanel!;
     const splitter = controller.splitter!;
 
     jest
@@ -301,30 +305,30 @@ describe("ReaderLayoutController", () => {
 
     // ArrowLeft: 420 + 24 = 444
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("444px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("444px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("444");
     expect(localStorage.getItem(READER_DICT_WIDTH_STORAGE_KEY)).toBe("444");
 
     // ArrowRight: 444 - 24 = 420
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("420px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("420px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("420");
 
     // Home: collapses to MIN_SPLIT_WIDTH (300)
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("300px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("300px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("300");
 
     // End: expands to max allowable (1200 container -> 1200 - 342 = 858;
     // no fixed cap)
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "End" }));
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("858px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("858px");
     expect(splitter.getAttribute("aria-valuenow")).toBe("858");
     expect(splitter.getAttribute("aria-valuemax")).toBe("858");
 
     // Escape resets to default
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("");
     expect(splitter.getAttribute("aria-valuenow")).toBe(
       String(DEFAULT_SPLIT_WIDTH)
     );
@@ -382,6 +386,7 @@ describe("ReaderLayoutController", () => {
     const controller = connectController({ root: container });
     const splitter = controller.splitter!;
     const splitLayout = controller.splitLayout!;
+    const dictPanel = controller.dictPanel!;
 
     jest
       .spyOn(splitLayout, "getBoundingClientRect")
@@ -391,19 +396,19 @@ describe("ReaderLayoutController", () => {
 
     // Keydown after dispose does not modify layout
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("");
     expect(localStorage.getItem(READER_DICT_WIDTH_STORAGE_KEY)).toBeNull();
 
     // Reconnecting re-binds keyboard listener
     controller.connect();
     splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
-    expect(splitLayout.style.getPropertyValue("--dict-width")).toBe("444px");
+    expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("444px");
     controller.dispose();
   });
 
   describe("dictionary iframe freeze during drags", () => {
     const frozen = (c: ReaderLayoutController) =>
-      c.splitLayout!.style.getPropertyValue("--dict-frozen-width");
+      c.dictPanel!.style.getPropertyValue("--dict-frozen-width");
 
     function setUp(withIframe: boolean) {
       const controller = connectController({ root: container });
@@ -450,9 +455,9 @@ describe("ReaderLayoutController", () => {
 
       splitter.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
       expect(frozen(controller)).toBe("");
-      expect(
-        controller.splitLayout!.style.getPropertyValue("--dict-width")
-      ).toBe("480px");
+      expect(controller.dictPanel!.style.getPropertyValue("--dict-width")).toBe(
+        "480px"
+      );
       controller.dispose();
     });
 
@@ -478,8 +483,7 @@ describe("ReaderLayoutController", () => {
 
     test("does nothing without an iframe", () => {
       const controller = setUp(false);
-      const splitLayout = controller.splitLayout!;
-      const setSpy = jest.spyOn(splitLayout.style, "setProperty");
+      const setSpy = jest.spyOn(controller.dictPanel!.style, "setProperty");
       down(controller.splitter!);
       expect(setSpy).not.toHaveBeenCalledWith(
         "--dict-frozen-width",
@@ -494,7 +498,7 @@ describe("ReaderLayoutController", () => {
 
     test("keyboard resizing never freezes the iframe", () => {
       const controller = setUp(true);
-      const setSpy = jest.spyOn(controller.splitLayout!.style, "setProperty");
+      const setSpy = jest.spyOn(controller.dictPanel!.style, "setProperty");
       controller.splitter!.dispatchEvent(
         new KeyboardEvent("keydown", { key: "ArrowLeft" })
       );

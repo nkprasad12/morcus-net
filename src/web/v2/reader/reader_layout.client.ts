@@ -107,9 +107,9 @@ export class ReaderLayoutController extends BaseController {
   }
 
   private restoreSavedWidth() {
-    const splitLayout = this.splitLayout;
+    const dictPanel = this.dictPanel;
     const splitter = this.splitter;
-    if (!splitLayout || !splitter) return;
+    if (!dictPanel || !splitter) return;
 
     const savedWidth = storage.get(this.storageKey);
     let restored: number | null = null;
@@ -119,7 +119,7 @@ export class ReaderLayoutController extends BaseController {
       // reader_dict.css clamps the panel to the current container.
       if (!isNaN(parsed) && parsed >= MIN_SPLIT_WIDTH) {
         restored = parsed;
-        splitLayout.style.setProperty("--dict-width", `${parsed}px`);
+        dictPanel.style.setProperty("--dict-width", `${parsed}px`);
         splitter.setAttribute("aria-valuenow", String(parsed));
       }
     }
@@ -146,7 +146,7 @@ export class ReaderLayoutController extends BaseController {
     let startWidth = 0;
     let maxWidth = MIN_SPLIT_WIDTH;
     const unfreezeIframe = () =>
-      splitLayout.style.removeProperty("--dict-frozen-width");
+      dictPanel.style.removeProperty("--dict-frozen-width");
 
     this.scope.use(
       trackPointerDrag(splitter, {
@@ -170,6 +170,11 @@ export class ReaderLayoutController extends BaseController {
          * via `--dict-frozen-width` (reader_dict.css) so the embedded
          * dictionary document does not relayout on every move. A deferred
          * dictionary has no iframe yet, so there is nothing to freeze.
+         *
+         * Both properties are written inline on the dictionary panel, the
+         * only element that reads them (directly or via `.dict-iframe`).
+         * Custom properties inherit, so writing them on the split layout
+         * would restyle the whole passage on every move.
          */
         onStart: () => {
           startWidth = dictPanel.getBoundingClientRect().width;
@@ -180,7 +185,7 @@ export class ReaderLayoutController extends BaseController {
           maxWidth = computeMaxSplitWidth(containerWidth);
           splitter.setAttribute("aria-valuemax", String(maxWidth));
           if (iframeWidth !== undefined && iframeWidth > 0) {
-            splitLayout.style.setProperty(
+            dictPanel.style.setProperty(
               "--dict-frozen-width",
               `${iframeWidth}px`
             );
@@ -190,7 +195,7 @@ export class ReaderLayoutController extends BaseController {
           const newWidth = Math.round(
             Math.max(MIN_SPLIT_WIDTH, Math.min(maxWidth, startWidth - dx))
           );
-          splitLayout.style.setProperty("--dict-width", `${newWidth}px`);
+          dictPanel.style.setProperty("--dict-width", `${newWidth}px`);
           splitter.setAttribute("aria-valuenow", String(newWidth));
           this.onWidthChange?.(newWidth);
         },
@@ -280,8 +285,8 @@ export class ReaderLayoutController extends BaseController {
    */
   public setWidth(width: number, persist: boolean = false): void {
     this.resolveElements();
-    if (this.splitLayout) {
-      this.splitLayout.style.setProperty("--dict-width", `${width}px`);
+    if (this.dictPanel) {
+      this.dictPanel.style.setProperty("--dict-width", `${width}px`);
     }
     if (this.splitter) {
       this.splitter.setAttribute("aria-valuenow", String(width));
@@ -299,8 +304,8 @@ export class ReaderLayoutController extends BaseController {
    */
   public resetWidth(): void {
     this.resolveElements();
-    if (this.splitLayout) {
-      this.splitLayout.style.removeProperty("--dict-width");
+    if (this.dictPanel) {
+      this.dictPanel.style.removeProperty("--dict-width");
     }
     if (this.splitter) {
       this.splitter.setAttribute("aria-valuenow", String(DEFAULT_SPLIT_WIDTH));
