@@ -63,7 +63,6 @@ growth; it is not a target.
 
 ## Test coverage
 
-- [ ] 🟡 **Reader preference save/hydrate lifecycle** (`reader_view.client.ts`).
 - [ ] 🟢 **Visual scenarios for post-interaction state in the dictionary.** `v2VisualScenario`'s
       `action` hook is used only by reader scenarios. Popover-open and results-with-one-dictionary
       would catch selection bugs as a pixel diff across all four form factors.

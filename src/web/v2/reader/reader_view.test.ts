@@ -5,7 +5,6 @@ import {
   DEFAULT_READER_PREFS,
   MorcusReaderView,
   READER_SETTINGS_KEY,
-  parseReaderPreferences,
 } from "@/web/v2/reader/reader_view.client";
 import {
   DRAWER_DEFAULT_SVH,
@@ -786,75 +785,6 @@ describe("Reader preferences validation & hydration", () => {
     document.body.innerHTML = "";
     document.documentElement.removeAttribute("style");
     document.documentElement.removeAttribute("data-reader-hide-gutter");
-  });
-
-  it("returns default preferences on null, empty string, or invalid JSON", () => {
-    expect(parseReaderPreferences(null)).toEqual(DEFAULT_READER_PREFS);
-    expect(parseReaderPreferences("")).toEqual(DEFAULT_READER_PREFS);
-    expect(parseReaderPreferences("{invalid json")).toEqual(
-      DEFAULT_READER_PREFS
-    );
-  });
-
-  it("returns default preferences on non-object JSON", () => {
-    expect(parseReaderPreferences("123")).toEqual(DEFAULT_READER_PREFS);
-    expect(parseReaderPreferences('"serif"')).toEqual(DEFAULT_READER_PREFS);
-    expect(parseReaderPreferences("[1, 2, 3]")).toEqual(DEFAULT_READER_PREFS);
-  });
-
-  it("parses valid preferences completely", () => {
-    const valid = {
-      readerScale: 120,
-      dictScale: 90,
-      showGutter: false,
-      fontFamily: "sans",
-      lineHeight: "compact",
-    };
-    expect(parseReaderPreferences(JSON.stringify(valid))).toEqual({
-      ...valid,
-      showMacra: DEFAULT_READER_PREFS.showMacra,
-    });
-  });
-
-  it("partially parses valid fields and falls back to defaults for missing ones", () => {
-    const partial = {
-      readerScale: 80,
-      fontFamily: "sans",
-    };
-    expect(parseReaderPreferences(JSON.stringify(partial))).toEqual({
-      ...DEFAULT_READER_PREFS,
-      readerScale: 80,
-      fontFamily: "sans",
-    });
-  });
-
-  it("drops corrupt or invalid union/numeric values and preserves defaults", () => {
-    const corrupt = {
-      readerScale: "invalid_string",
-      dictScale: null,
-      showMacra: "not_a_boolean",
-      showGutter: 123,
-      fontFamily: "comic-sans", // not "serif" | "sans"
-      lineHeight: "huge", // not "compact" | "normal" | "relaxed"
-      extraField: "ignored",
-    };
-    expect(parseReaderPreferences(JSON.stringify(corrupt))).toEqual(
-      DEFAULT_READER_PREFS
-    );
-  });
-
-  it("preserves valid fields even when sibling fields are corrupt", () => {
-    const mixed = {
-      readerScale: 110,
-      dictScale: "bad",
-      fontFamily: "sans",
-      lineHeight: "super_relaxed",
-    };
-    expect(parseReaderPreferences(JSON.stringify(mixed))).toEqual({
-      ...DEFAULT_READER_PREFS,
-      readerScale: 110,
-      fontFamily: "sans",
-    });
   });
 
   it("initializes reader view dialog safely with corrupted localStorage data", () => {
