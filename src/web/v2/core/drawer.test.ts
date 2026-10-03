@@ -7,6 +7,8 @@ import {
   DRAWER_EXPANDED_SVH,
   DRAWER_FLOOR_SVH,
   DRAWER_MIN_HEIGHT,
+  resolveDrawerSnapDecision,
+  type DrawerSnapInput,
 } from "@/web/v2/core/drawer.client";
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
@@ -1016,5 +1018,199 @@ describe("DrawerController", () => {
       );
       controller.dispose();
     });
+  });
+});
+
+describe("resolveDrawerSnapDecision", () => {
+  const baseInput: DrawerSnapInput = {
+    dy: 0,
+    elapsedMs: 200,
+    velocityY: 0,
+    currentHeight: 400,
+    winHeight: 800,
+    floorSvh: 18,
+    expandedSvh: 88,
+  };
+
+  test("tap detection: minimal movement (|dy| < 6) within 350ms resolves to tap", () => {
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 0,
+        elapsedMs: 100,
+      })
+    ).toEqual({ action: "tap" });
+
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 5.9,
+        elapsedMs: 349,
+      })
+    ).toEqual({ action: "tap" });
+
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: -5.9,
+        elapsedMs: 50,
+      })
+    ).toEqual({ action: "tap" });
+  });
+
+  test("tap threshold not met if |dy| >= 6 or elapsedMs >= 350", () => {
+    // Movement at or above 6px does not tap
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 6,
+        elapsedMs: 100,
+      })
+    ).not.toEqual({ action: "tap" });
+
+    // Duration >= 350ms does not tap
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 2,
+        elapsedMs: 350,
+      })
+    ).not.toEqual({ action: "tap" });
+  });
+
+  test("fast flick down by velocityY > 0.75 with dy > 35 resolves to minimize", () => {
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 40,
+        elapsedMs: 500, // vhPerSec would be (40/800)*(1000/500) = 0.1 <= 1.1
+        velocityY: 0.8,
+      })
+    ).toEqual({ action: "minimize" });
+  });
+
+  test("fast flick down by vhPerSec > 1.1 with dy > 35 resolves to minimize", () => {
+    // dy = 50, winHeight = 800, elapsedMs = 50ms => (50/800)*(1000/50) = 1.25 > 1.1
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 50,
+        elapsedMs: 50,
+        velocityY: 0.2, // low pointer velocity, but high average vhPerSec
+      })
+    ).toEqual({ action: "minimize" });
+  });
+
+  test("fast flick down suppressed if dy <= 35 (e.g. high velocity micro-jitter)", () => {
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 35,
+        elapsedMs: 500, // avoid tap (>=350)
+        velocityY: 1.5, // high velocity
+      })
+    ).toEqual({
+      action: "restore",
+      targetSvh: 50,
+    });
+  });
+
+  test("fast flick up (negative dy / velocityY < 0) never resolves to minimize", () => {
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: -80,
+        elapsedMs: 100,
+        velocityY: -1.5,
+        currentHeight: 480, // 480 / 800 = 60svh
+      })
+    ).toEqual({
+      action: "restore",
+      targetSvh: 60,
+    });
+  });
+
+  test("slow drag into floor zone (currentSvh < floorSvh or currentHeight < 110) resolves to minimize", () => {
+    // currentSvh < floorSvh (e.g. 100px / 800px = 13svh < 18svh)
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 200,
+        elapsedMs: 800,
+        velocityY: 0.1,
+        currentHeight: 120, // 120/800 = 15svh < 18svh
+      })
+    ).toEqual({ action: "minimize" });
+
+    // currentHeight < 110px even if currentSvh >= floorSvh (e.g. on small screen winHeight = 500)
+    // 105px / 500px = 21svh >= 18svh, but height < 110
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 100,
+        elapsedMs: 800,
+        velocityY: 0.1,
+        winHeight: 500,
+        currentHeight: 105,
+      })
+    ).toEqual({ action: "minimize" });
+  });
+
+  test("normal drag releases snap to clamped svh between floorSvh and expandedSvh", () => {
+    // Normal snap inside bounds: 400 / 800 = 50svh
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 10,
+        elapsedMs: 400,
+        velocityY: 0.1,
+        currentHeight: 400,
+      })
+    ).toEqual({ action: "restore", targetSvh: 50 });
+
+    // Clamped at expandedSvh: 750 / 800 = 94svh > 88svh
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: -200,
+        elapsedMs: 400,
+        velocityY: -0.2,
+        currentHeight: 750,
+      })
+    ).toEqual({ action: "restore", targetSvh: 88 });
+
+    // Clamped at floorSvh: 144 / 800 = 18svh (exactly floorSvh and >= 110px)
+    expect(
+      resolveDrawerSnapDecision({
+        ...baseInput,
+        dy: 100,
+        elapsedMs: 500,
+        velocityY: 0.05,
+        currentHeight: 144,
+      })
+    ).toEqual({ action: "restore", targetSvh: 18 });
+  });
+
+  test("guards edge cases (elapsedMs <= 0, zero or negative winHeight)", () => {
+    // elapsedMs <= 0 does not divide by zero or produce NaN
+    const zeroElapsed = resolveDrawerSnapDecision({
+      ...baseInput,
+      dy: 20,
+      elapsedMs: 0,
+      velocityY: 0.1,
+    });
+    expect(zeroElapsed).toEqual({ action: "restore", targetSvh: 50 });
+
+    // winHeight <= 0 uses safe divisor
+    const zeroWinHeight = resolveDrawerSnapDecision({
+      ...baseInput,
+      dy: 20,
+      elapsedMs: 400,
+      velocityY: 0.1,
+      winHeight: 0,
+      currentHeight: 200,
+    });
+    // With safeWinHeight = 1, currentSvh = 20000, clamped to expandedSvh 88
+    expect(zeroWinHeight).toEqual({ action: "restore", targetSvh: 88 });
   });
 });
