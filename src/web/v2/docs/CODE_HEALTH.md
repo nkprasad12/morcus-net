@@ -77,14 +77,6 @@ growth; it is not a target.
       `action` hook is used only by reader scenarios. Popover-open and results-with-one-dictionary
       would catch selection bugs as a pixel diff across all four form factors.
 
-## Lint
-
-- [ ] 🟢 **Extend the import-boundary lint beyond `src/web/v2` and `src/bundler`.** The tier rules in
-      `eslint.config.mjs` only match files inside those two trees. Elsewhere, e.g.
-      `src/start_server.ts`, `src/scripts/**` and `src/integration/**`, nothing stops Node code
-      importing a `*.client.ts` module (DOM globals at load time) or browser-bound code picking up a
-      `*.server.ts`. Low priority: no such import exists today.
-
 ## Performance
 
 This was found while investigating a report that resizing the reader drawer feels laggy. It has not
