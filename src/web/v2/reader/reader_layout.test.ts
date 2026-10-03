@@ -337,31 +337,106 @@ describe("ReaderLayoutController", () => {
     controller.dispose();
   });
 
-  test("records committed widths for pre-paint, and reset clears them", () => {
+  describe("pre-paint recording", () => {
     const root = document.documentElement;
     const rootWidth = () => root.style.getPropertyValue("--dict-width");
-    localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "512");
-    const controller = connectController({ root: container });
-    const splitter = controller.splitter!;
-    jest
-      .spyOn(controller.splitLayout!, "getBoundingClientRect")
-      .mockReturnValue({ width: 1200 } as DOMRect);
+    const snapshotWidth = (): unknown =>
+      JSON.parse(localStorage.getItem("morcus_prepaint") ?? "{}")[
+        "--dict-width"
+      ];
 
-    // Connect re-records the saved width (heals a stale snapshot).
-    expect(rootWidth()).toBe("512px");
-    expect(localStorage.getItem("morcus_prepaint")).toContain("512px");
+    afterEach(() => root.removeAttribute("style"));
 
-    splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft" }));
-    expect(rootWidth()).toBe("536px");
+    function setUp() {
+      const controller = connectController({ root: container });
+      jest
+        .spyOn(controller.splitLayout!, "getBoundingClientRect")
+        .mockReturnValue({ width: 1200 } as DOMRect);
+      jest
+        .spyOn(controller.dictPanel!, "getBoundingClientRect")
+        .mockReturnValue({ width: 420 } as DOMRect);
+      return controller;
+    }
 
-    splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    expect(rootWidth()).toBe("");
-    expect(localStorage.getItem("morcus_prepaint")).not.toContain(
-      "--dict-width"
-    );
+    test("connect re-records the saved width without writing <html>", () => {
+      localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "512");
+      const controller = setUp();
+      expect(snapshotWidth()).toBe("512px");
+      expect(rootWidth()).toBe("");
+      controller.dispose();
+    });
 
-    controller.dispose();
-    root.removeAttribute("style");
+    test("connect with no saved width clears a stale <html> value", () => {
+      root.style.setProperty("--dict-width", "600px");
+      localStorage.setItem(
+        "morcus_prepaint",
+        JSON.stringify({ "--dict-width": "600px" })
+      );
+      const controller = setUp();
+      expect(rootWidth()).toBe("");
+      expect(snapshotWidth()).toBeUndefined();
+      controller.dispose();
+    });
+
+    test("drag end records the width without writing <html>", () => {
+      const controller = setUp();
+      const splitter = controller.splitter!;
+      splitter.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          clientX: 800,
+          clientY: 300,
+          pointerId: 1,
+        })
+      );
+      splitter.dispatchEvent(
+        new PointerEvent("pointermove", {
+          clientX: 740,
+          clientY: 300,
+          pointerId: 1,
+        })
+      );
+      splitter.dispatchEvent(new PointerEvent("pointerup", { pointerId: 1 }));
+      expect(snapshotWidth()).toBe("480px");
+      expect(rootWidth()).toBe("");
+      controller.dispose();
+    });
+
+    test("keyboard steps record the width without writing <html>", () => {
+      const controller = setUp();
+      const splitter = controller.splitter!;
+      splitter.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft" })
+      );
+      expect(snapshotWidth()).toBe("444px");
+      splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "End" }));
+      expect(snapshotWidth()).toBe("858px");
+      expect(rootWidth()).toBe("");
+      controller.dispose();
+    });
+
+    test("resetWidth removes the width from <html> and the snapshot", () => {
+      localStorage.setItem(READER_DICT_WIDTH_STORAGE_KEY, "512");
+      // As the critical script would have, before first paint.
+      root.style.setProperty("--dict-width", "512px");
+      const controller = setUp();
+      controller.splitter!.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft" })
+      );
+      expect(snapshotWidth()).toBe("536px");
+      // <html> keeps the older value; the panel's inline one wins.
+      expect(rootWidth()).toBe("512px");
+
+      controller.splitter!.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape" })
+      );
+      expect(rootWidth()).toBe("");
+      expect(snapshotWidth()).toBeUndefined();
+      expect(controller.dictPanel!.style.getPropertyValue("--dict-width")).toBe(
+        ""
+      );
+      controller.dispose();
+    });
   });
 
   test("setActive toggles active and empty CSS classes on splitLayout", () => {

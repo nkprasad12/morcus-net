@@ -49,6 +49,12 @@ Owners call `setPrepaint` on every connect with their current value, not only on
 snapshot heals after one load. Theme is the one direct read left in the critical script, because V1
 still writes `GlobalSettings`; drop it at graduation.
 
+An owner that already paints the live value inline on a narrower element (the reader splitter puts
+`--dict-width` on `.reader-dict-panel`) calls `recordPrepaint` instead: it updates the snapshot but
+skips the `<html>` write, which would restyle the whole document. `<html>` may then hold an older
+value, so the owner must make sure nothing reads it there, and clear it with `setPrepaint(name, null)`
+when it drops its inline value.
+
 ## The server resolves, the client adopts
 
 For content preferences (cookie tier), the server has read every durable store, so the client

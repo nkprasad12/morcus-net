@@ -4,6 +4,7 @@
 import {
   PREPAINT_KEY,
   type PrepaintName,
+  recordPrepaint,
   setPrepaint,
 } from "@/web/v2/core/prepaint.client";
 
@@ -87,5 +88,31 @@ describe("setPrepaint", () => {
     });
     expect(() => setPrepaint("data-dict-width", "full")).not.toThrow();
     expect(root.getAttribute("data-dict-width")).toBe("full");
+  });
+});
+
+describe("recordPrepaint", () => {
+  test("records without touching <html>", () => {
+    root.style.setProperty("--dict-width", "400px");
+    recordPrepaint("--dict-width", "512px");
+    recordPrepaint("data-dict-width", "wide");
+    expect(root.style.getPropertyValue("--dict-width")).toBe("400px");
+    expect(root.hasAttribute("data-dict-width")).toBe(false);
+    expect(snapshot()).toEqual({
+      "--dict-width": "512px",
+      "data-dict-width": "wide",
+    });
+  });
+
+  test("null removes only the recorded entry", () => {
+    setPrepaint("--dict-width", "512px");
+    recordPrepaint("--dict-width", null);
+    expect(snapshot()).toEqual({});
+    expect(root.style.getPropertyValue("--dict-width")).toBe("512px");
+  });
+
+  test("rejects names the critical script must not copy", () => {
+    expect(() => recordPrepaint("onclick" as PrepaintName, "x")).toThrow();
+    expect(snapshot()).toBeNull();
   });
 });
