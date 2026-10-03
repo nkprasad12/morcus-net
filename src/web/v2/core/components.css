@@ -194,10 +194,16 @@ html:has(> body.body-embedded),
 body.body-embedded {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.25s ease;
 
-  &:hover {
-    scrollbar-color: var(--scrollbar-thumb) transparent;
+  /* Hover devices only: on touch there is no hover to reveal the thumb, and
+     the transition otherwise schedules per-frame animation style recalcs on
+     these large scrollers whenever :hover flips (e.g. during drags). */
+  @media (hover: hover) {
+    transition: scrollbar-color 0.25s ease;
+
+    &:hover {
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
   }
 
   &::-webkit-scrollbar {
@@ -212,11 +218,16 @@ body.body-embedded {
   &::-webkit-scrollbar-thumb {
     background-color: transparent;
     border-radius: var(--radius-full);
-    transition: background-color 0.25s ease;
   }
 
-  &:hover::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-thumb);
+  @media (hover: hover) {
+    &::-webkit-scrollbar-thumb {
+      transition: background-color 0.25s ease;
+    }
+
+    &:hover::-webkit-scrollbar-thumb {
+      background-color: var(--scrollbar-thumb);
+    }
   }
 
   &::-webkit-scrollbar-thumb:hover {

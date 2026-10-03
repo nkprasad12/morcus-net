@@ -210,7 +210,10 @@
   font-family: monospace;
   flex-shrink: 0;
   letter-spacing: 0.02em;
-  transition: all 0.15s ease-in-out;
+  /* Only what the enabled/disabled states change; `all` also animated
+     layout and inherited properties. */
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
 }
 
 /* Enabled dictionary status: themed with language chip tokens and a refined tag border */
