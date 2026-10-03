@@ -334,6 +334,10 @@ export class ReaderPanelController extends BaseController {
       !this.isTranslationLoaded &&
       this.onLoadTranslation
     ) {
+      // Built in place rather than pre-rendered as `hidden` siblings: the
+      // Translation tab is `data-js-only` (nothing to drift from), and
+      // replacing `#panel-view-translation`'s children keeps loading, error,
+      // and loaded content mutually exclusive by construction.
       setHtml(
         view,
         html`<div class="reader-translation-loading">
