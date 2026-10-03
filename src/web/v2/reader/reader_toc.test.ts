@@ -606,6 +606,17 @@ describe("ReaderTocController", () => {
       );
       expect(getSelectedPageId(root)).toBe("1.1");
 
+      // IME composition events should not move selection or trigger Enter navigation
+      const composingDown = new KeyboardEvent("keydown", {
+        key: "ArrowDown",
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      });
+      searchInput.dispatchEvent(composingDown);
+      expect(composingDown.defaultPrevented).toBe(false);
+      expect(getSelectedPageId(root)).toBe("1.1");
+
       controller.dispose();
     });
   });

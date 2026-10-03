@@ -68,6 +68,22 @@ import {
 
 export const READER_DRAWER_MIN_HEIGHT = 40;
 
+/**
+ * Targets where single-key reader shortcuts must not fire: native and ARIA text
+ * / selection controls, contenteditable regions, and overlays outside the
+ * reader's own TOC / Appearance popovers (those two are `<div role="dialog">`,
+ * not `<dialog>` or `[popover]`, so `t` and `a` can still close them while
+ * their close button or a TOC link holds focus).
+ */
+const SHORTCUT_BLOCKED_TARGET =
+  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), ' +
+  '[role="textbox"], [role="searchbox"], [role="combobox"], [role="listbox"], ' +
+  'dialog, [role="menu"], [popover], .mobile-menu';
+
+/** Open overlays that block reader shortcuts even before focus moves inside. */
+const SHORTCUT_BLOCKED_OPEN_OVERLAY =
+  "dialog[open], .section-action-menu, .mobile-menu[open]";
+
 export {
   type ReaderFontFamily,
   type ReaderLineHeight,
@@ -1145,37 +1161,27 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC, N Notes, I About, A Appearance) ---
   private initKeyboardShortcuts() {
     this.scope.listen(window, "keydown", (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.isComposing) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.target instanceof HTMLElement) {
-        if (e.target.isContentEditable) return;
-        const tag = e.target.tagName.toLowerCase();
-        if (tag === "input" || tag === "textarea" || tag === "select") return;
-      }
+
+      const target =
+        e.target instanceof Element ? e.target : document.activeElement;
+      if (target instanceof HTMLElement && target.isContentEditable) return;
+      if (target?.closest(SHORTCUT_BLOCKED_TARGET)) return;
+      if (document.querySelector(SHORTCUT_BLOCKED_OPEN_OVERLAY)) return;
 
       if (e.key === "[" || e.key === "]") {
         const dir: PageDir = e.key === "[" ? "prev" : "next";
         if (this.pagerLink(dir)) {
-          // Global shortcut; turnPage swaps the page itself. Skips modifiers
-          // and input/textarea/select/contenteditable targets
+          // Global shortcut; turnPage swaps the page itself
           e.preventDefault();
           void this.turnPage(dir);
         }
       } else if (e.key === "t" || e.key === "T") {
-        if (this.tocController) {
-          // Global shortcut toggles its own TOC controller
+        if (this.tocController.drawer) {
+          // Global shortcut toggles its own TOC controller when the page has a TOC
           e.preventDefault();
           this.tocController.toggle();
-        } else {
-          const tocDrawer = this.scope.$<HTMLElement>("#reader-toc-drawer");
-          if (tocDrawer) {
-            // Global shortcut clicks its own TOC button (controller absent)
-            e.preventDefault();
-            if (tocDrawer.hasAttribute("hidden")) {
-              this.scope.$<HTMLButtonElement>("#reader-toc-btn")?.click();
-            } else {
-              this.scope.$<HTMLButtonElement>("#reader-toc-close-btn")?.click();
-            }
-          }
         }
       } else if (e.key === "n" || e.key === "N") {
         if (this.panelController?.hasNotes) {
@@ -1199,13 +1205,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           // Global shortcut toggles its settings popover (same chunk)
           e.preventDefault();
           settings.toggle();
-        } else {
-          const btn = this.scope.$<HTMLButtonElement>("#reader-settings-btn");
-          if (btn) {
-            // Global shortcut clicks its own settings button
-            e.preventDefault();
-            btn.click();
-          }
         }
       }
     });
