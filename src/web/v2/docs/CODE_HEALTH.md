@@ -114,13 +114,15 @@ growth; it is not a target.
 
 ## Performance
 
-These were found while investigating a report that resizing the reader drawer feels laggy. The bug
-among them (a dead drag-transition selector) has landed and was expected to account for most of the
-symptom, so **re-measure before spending effort on these**. None has been profiled.
+This was found while investigating a report that resizing the reader drawer feels laggy. It has not
+been profiled, so **measure before spending effort on it**.
+
+The drag work itself (drawer, splitter, page width) has since been profiled and fixed. The main
+cost was writing inherited properties (custom properties, `cursor`, `user-select`) on an ancestor,
+which restyles every descendant on each move. Live drag values are now written on the element that
+consumes them. CSS containment on the text panel was tried and gave no measurable gain, so it is
+not tracked here.
 
 - [ ] 🟡 **Don't tokenize the whole chapter synchronously on mount.** `reader_view.client.ts` walks
       every target block calling `tokenizeElement` inside `onConnect`: one long task that delays
       first interaction. Batch via `requestIdleCallback`.
-- [ ] 🟡 **Add CSS containment to the reader text panel.** There is no `contain:` anywhere in
-      `src/web/v2` (only `content-visibility` on panel tabs), so a drawer or splitter resize
-      relayouts the full text panel and all of its inline word spans.
