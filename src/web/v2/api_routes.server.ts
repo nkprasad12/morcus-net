@@ -18,6 +18,7 @@ import {
 import type { ReportApiRequest } from "@/web/api_routes";
 import { GitHub } from "@/web/utils/github";
 import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
+import { getBuildVersion } from "@/web/v2/core/build_version.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
@@ -137,7 +138,7 @@ export function createApiRoutes(
       reportText: reportText || undefined,
       editedText,
       tags,
-      commit: process.env.COMMIT_ID ?? "undefined",
+      commit: getBuildVersion() ?? "undefined",
       url:
         isObj && "url" in body && typeof body.url === "string"
           ? body.url
