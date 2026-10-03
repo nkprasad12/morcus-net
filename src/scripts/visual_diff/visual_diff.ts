@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 /**
  * Visual Diff Inspector: collects changed screenshot baselines, renders
  * before / after / diff images, and serves an interactive viewer for them.

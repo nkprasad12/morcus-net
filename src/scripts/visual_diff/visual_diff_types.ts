@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 /**
  * Types shared between the visual diff generator (Node) and the viewer
  * (browser). This file must stay free of runtime imports so that the viewer
