@@ -176,5 +176,56 @@ describe("MorcusDictToc custom element", () => {
     mql.dispatchEvent(new Event("change"));
 
     expect(tocEl.getDrawerController()).not.toBeNull();
+    expect(details?.open).toBe(false);
+    expect(tocEl.classList.contains("drawer-minimized")).toBe(true);
+  });
+
+  test("preserves minimized state and preferred height across mobile -> desktop -> mobile round-trip", () => {
+    matchesMobile = true;
+    document.body.innerHTML = `
+      <morcus-dict-toc class="drawer drawer-toc">
+        <details class="toc-details" open>
+          <summary class="drawer-bar toc-bar">Contents</summary>
+          <div class="toc-body">Outline items</div>
+        </details>
+      </morcus-dict-toc>
+      <button class="back-to-top"></button>
+    `;
+
+    const tocEl = document.querySelector<MorcusDictToc>("morcus-dict-toc")!;
+    const details = tocEl.querySelector<HTMLDetailsElement>(".toc-details")!;
+    const backToTop = document.querySelector<HTMLElement>(".back-to-top")!;
+    const mql = (window.matchMedia as jest.Mock).mock.results[0].value;
+
+    const ctrl = tocEl.getDrawerController()!;
+    ctrl.restore(68);
+    ctrl.minimize();
+    expect(details.open).toBe(false);
+    expect(tocEl.classList.contains("drawer-minimized")).toBe(true);
+    expect(tocEl.style.getPropertyValue("--drawer-height")).toBe("28px");
+    expect(backToTop.style.getPropertyValue("--drawer-height")).toBe("28px");
+
+    // Widen to desktop (>= 1080px): controller disposes and <details> opens for rail
+    mql.matches = false;
+    mql.dispatchEvent(new Event("change"));
+    expect(tocEl.getDrawerController()).toBeNull();
+    expect(details.open).toBe(true);
+    expect(backToTop.style.getPropertyValue("--drawer-height")).toBe("");
+
+    // Narrow back to mobile (< 1080px): <details> re-closes to match minimized drawer
+    mql.matches = true;
+    mql.dispatchEvent(new Event("change"));
+    expect(tocEl.getDrawerController()).not.toBeNull();
+    expect(details.open).toBe(false);
+    expect(tocEl.classList.contains("drawer-minimized")).toBe(true);
+    expect(tocEl.style.getPropertyValue("--drawer-height")).toBe("28px");
+    expect(backToTop.style.getPropertyValue("--drawer-height")).toBe("28px");
+
+    // Native <summary> toggle opens <details> and restores the 68svh preferred height
+    details.open = true;
+    details.dispatchEvent(new Event("toggle"));
+    expect(tocEl.classList.contains("drawer-minimized")).toBe(false);
+    expect(tocEl.style.getPropertyValue("--drawer-height")).toBe("68svh");
+    expect(backToTop.style.getPropertyValue("--drawer-height")).toBe("68svh");
   });
 });
