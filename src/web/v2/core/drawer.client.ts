@@ -46,6 +46,16 @@ export function measureSvh100(): number {
   return (typeof window !== "undefined" && window.innerHeight) || 800;
 }
 
+/** Sets `--drawer-height` inline on `el`, or removes it when `value` is null. */
+function setDrawerHeight(el: HTMLElement | null, value: string | null): void {
+  if (!el) return;
+  if (value === null) {
+    el.style.removeProperty("--drawer-height");
+  } else {
+    el.style.setProperty("--drawer-height", value);
+  }
+}
+
 export interface DrawerControllerOptions {
   /** Optional root container used to resolve selectors (defaults to drawer or document) */
   root?: ParentNode;
@@ -104,6 +114,8 @@ export class DrawerController extends BaseController {
   public handle: HTMLElement | null = null;
   private details: HTMLDetailsElement | null = null;
   private summary: HTMLElement | null = null;
+  /** Cached `options.heightTargets`; see {@link resolveTargets}. */
+  private targets: HTMLElement[] = [];
 
   private readonly minHeight: number;
   private readonly defaultSvh: number;
@@ -130,15 +142,27 @@ export class DrawerController extends BaseController {
    * and every height target.
    */
   private writeHeight(value: string | null): void {
-    const targets = [this.drawer, ...(this.options.heightTargets?.() ?? [])];
-    for (const el of targets) {
-      if (!el) continue;
-      if (value === null) {
-        el.style.removeProperty("--drawer-height");
-      } else {
-        el.style.setProperty("--drawer-height", value);
-      }
-    }
+    setDrawerHeight(this.drawer, value);
+    this.writeTargets(value);
+  }
+
+  /**
+   * Sets `--drawer-height` (or removes it) on the height targets only.
+   *
+   * Uses the list cached by {@link resolveTargets}, so a drag's pointermoves
+   * never query the document.
+   */
+  private writeTargets(value: string | null): void {
+    for (const el of this.targets) setDrawerHeight(el, value);
+  }
+
+  /**
+   * Re-queries `options.heightTargets`. Runs whenever elements are resolved
+   * and at the start of each drag: the targets (e.g. `.back-to-top`) live in
+   * the page shell and may not exist yet when the controller is constructed.
+   */
+  private resolveTargets(): void {
+    this.targets = Array.from(this.options.heightTargets?.() ?? []);
   }
 
   private resolveElements(): void {
@@ -187,6 +211,8 @@ export class DrawerController extends BaseController {
     } else {
       this.summary = this.details?.querySelector("summary") ?? null;
     }
+
+    this.resolveTargets();
   }
 
   protected override onConnect(): void {
@@ -200,9 +226,18 @@ export class DrawerController extends BaseController {
       return;
     }
 
-    // Through the scope, not onDisconnect: also clears it if a step below
-    // throws (BaseController skips onDisconnect after a failed connect).
-    this.scope.use(() => this.writeHeight(null));
+    // The drawer keeps its own inline height across a disconnect (e.g. the
+    // dictionary TOC disposes at the desktop breakpoint and reconnects on the
+    // way back), so `preferredSvh` and `aria-valuenow` stay true to what is
+    // painted. Mirror it to the targets so they line up with it again.
+    const kept = this.drawer.style.getPropertyValue("--drawer-height");
+    if (kept) this.writeTargets(kept);
+    // Only the targets are cleared on teardown: they sit outside the drawer
+    // and would otherwise keep offsetting for a drawer that is no longer
+    // managed. Through the scope, not onDisconnect: also clears them if a
+    // step below throws (BaseController skips onDisconnect after a failed
+    // connect).
+    this.scope.use(() => this.writeTargets(null));
     this.initDrag();
     this.initKeyboard();
     this.initDetailsSync();
@@ -311,7 +346,6 @@ export class DrawerController extends BaseController {
         // That rule sets `pointer-events: none` on `.dict-iframe` so the dictionary iframe
         // cannot capture pointer events mid-drag.
         activeClassTarget: drawer,
-        bodyActiveClass: "resizing-drawer",
         filter: this.options.filter,
         /**
          * `100svh` (`measureSvh100()`) is measured once per gesture and reused by
@@ -323,6 +357,8 @@ export class DrawerController extends BaseController {
          * snap decision on the same basis as the heights the drag just painted.
          */
         onStart: () => {
+          // Once per gesture, so `onMove` writes to a cached list.
+          this.resolveTargets();
           winHeight = measureSvh100();
           wasMinimized = this.isMinimized();
           startHeight = drawer.getBoundingClientRect().height || this.minHeight;
@@ -478,13 +514,5 @@ export class DrawerController extends BaseController {
     }
     this.writeHeight(null);
     this.handle?.setAttribute("aria-valuenow", "0");
-  }
-
-  /**
-   * Disposes all event listeners and gesture tracking.
-   */
-  override dispose(): void {
-    this.writeHeight(null);
-    super.dispose();
   }
 }
