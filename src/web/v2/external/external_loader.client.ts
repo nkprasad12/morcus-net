@@ -54,6 +54,10 @@ function savedItemLabel(item: ExternalContentSummary): string {
     : item.title;
 }
 
+/**
+ * Built on the client: saved entries live only in IndexedDB (`data-js-only`
+ * section, so there is no server-rendered item markup to drift from).
+ */
 function renderSavedItem(item: ExternalContentSummary): SafeHtml {
   const label = savedItemLabel(item);
   // Kept compact: minification preserves whitespace inside templates.
