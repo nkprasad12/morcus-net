@@ -89,6 +89,12 @@ export function trackPointerDrag(
     if (options.filter && !options.filter(e)) return;
     if (options.onStart && options.onStart(e) === false) return;
 
+    // Suppresses the compatibility mousedown, so the drag can never begin a
+    // text selection. This replaces `user-select: none` on <body>: that
+    // property is inherited, so toggling it restyled the whole document at
+    // the start and end of every drag. `click` still fires.
+    e.preventDefault();
+
     isDragging = true;
     startX = e.clientX;
     startY = e.clientY;

@@ -5,6 +5,7 @@
 import {
   SWIPE_SLOP_PX,
   trackHorizontalSwipe,
+  trackPointerDrag,
 } from "@/web/v2/core/gesture.client";
 
 /** Dispatches a touch event whose `touches` list holds `points`. */
@@ -121,5 +122,29 @@ describe("trackHorizontalSwipe", () => {
     }
     unbind();
     expect(remove).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe("trackPointerDrag", () => {
+  function pointerDown(el: Element, button = 0): Event {
+    const e = new Event("pointerdown", { bubbles: true, cancelable: true });
+    Object.assign(e, { button, pointerId: 1, clientX: 0, clientY: 0 });
+    el.dispatchEvent(e);
+    return e;
+  }
+
+  it("prevents default on a primary pointerdown so no text selection starts", () => {
+    const el = document.createElement("div");
+    const cleanup = trackPointerDrag(el, {});
+    expect(pointerDown(el).defaultPrevented).toBe(true);
+    cleanup();
+  });
+
+  it("leaves ignored pointerdowns alone", () => {
+    const el = document.createElement("div");
+    const cleanup = trackPointerDrag(el, { filter: () => false });
+    expect(pointerDown(el).defaultPrevented).toBe(false);
+    expect(pointerDown(el, 2).defaultPrevented).toBe(false);
+    cleanup();
   });
 });

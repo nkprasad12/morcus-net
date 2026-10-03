@@ -10,12 +10,6 @@
   --drawer-min-height: 54px;
 }
 
-/* Resizing drag states */
-body.resizing-drawer {
-  user-select: none;
-  cursor: grabbing;
-}
-
 /* Core Docked Bottom Drawer */
 .drawer {
   position: fixed;
@@ -68,8 +62,11 @@ body.resizing-drawer {
   box-sizing: border-box;
 }
 
+/* The drag cursor lives on the (pointer-captured) handle, never on <body>:
+   `cursor` is inherited, so toggling it there restyles the whole document. */
 .drawer-bar.is-dragging,
-.reader-sheet-bar.is-dragging {
+.reader-sheet-bar.is-dragging,
+.drawer-handle.is-dragging {
   cursor: grabbing;
 }
 

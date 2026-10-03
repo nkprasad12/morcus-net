@@ -295,6 +295,10 @@
     cursor: grab;
   }
 
+  .drawer-toc .toc-bar.is-dragging {
+    cursor: grabbing;
+  }
+
   .drawer-toc .toc-body {
     max-height: calc(
       var(--drawer-height, 48svh) - var(--drawer-min-height, 28px)

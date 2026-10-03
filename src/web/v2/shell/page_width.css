@@ -129,11 +129,9 @@
   display: none;
 }
 
-body.resizing-page {
-  user-select: none;
-  cursor: col-resize;
-}
-
+/* No inherited `cursor` / `user-select` on `body.resizing-page`: toggling
+   them restyles the whole document. The captured `.resize-handle` supplies
+   the cursor and trackPointerDrag prevents text selection. */
 body.resizing-page iframe {
   pointer-events: none;
 }
