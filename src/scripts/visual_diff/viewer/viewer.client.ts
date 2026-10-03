@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 /**
  * Browser-side logic for the Visual Diff Inspector. Bundled by esbuild into
  * `viewer.js` at generation time (see `writeViewer` in `visual_diff.ts`).
