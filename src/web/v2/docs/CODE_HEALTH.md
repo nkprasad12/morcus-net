@@ -72,9 +72,6 @@ growth; it is not a target.
 
 ## Test coverage
 
-- [ ] 🟢 **PH4 has no test.** The Greek embed adopts a `<details>` or checkbox toggled before
-      upgrade (`dict/dict_greek.client.ts`), but nothing exercises it; see the PH index in
-      [`TESTING.md`](TESTING.md#pre-hydration-ph-bug-index).
 - [ ] 🟡 **Reader preference save/hydrate lifecycle** (`reader_view.client.ts`).
 - [ ] 🟢 **Visual scenarios for post-interaction state in the dictionary.** `v2VisualScenario`'s
       `action` hook is used only by reader scenarios. Popover-open and results-with-one-dictionary
