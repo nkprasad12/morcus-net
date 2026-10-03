@@ -83,3 +83,23 @@ export interface V2PreprocessedWork {
   /** Ordered list of pages */
   pages: V2PreprocessedPage[];
 }
+
+export const V2_LIBRARY_INDEX = "morcus_v2_index.json";
+
+export interface V2WorkSummary {
+  id: string;
+  title: string;
+  shortTitle?: string;
+  author: string;
+  urlAuthor: string;
+  urlName: string;
+  attribution: DocumentAttribution;
+  hasMacra: boolean;
+  hasTranslation: boolean;
+  translator?: string;
+  editor?: string;
+  textParts: string[];
+  paginationDepth: number;
+  pageCount: number;
+  firstPageId: string[];
+}

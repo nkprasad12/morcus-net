@@ -297,9 +297,13 @@ test.describe("UI V2 dictionary", () => {
 
     // Clicking "Copy permalink" copies an article-qualified permalink rather
     // than jumping. The fragment alone would be useless to a recipient: it
-    // names a sense but not the article it lives in.
-    const copied = await page.evaluate(() => navigator.clipboard.readText());
-    expect(copied).toMatch(/\/v2\/dicts\/id\/n20077#n20077/);
+    // names a sense but not the article it lives in. WebKit rejects
+    // `navigator.clipboard.readText()` in `page.evaluate` outside a user gesture.
+    if (browserName !== "webkit") {
+      const copied = await page.evaluate(() => navigator.clipboard.readText());
+      expect(copied).toMatch(/\/v2\/dicts\/id\/n20077#n20077/);
+    }
+    await expect(page.locator("#toast")).toBeVisible();
 
     // Copying must not move the viewport or rewrite the address bar.
     expect(page.url()).toBe(urlBefore);
@@ -605,8 +609,10 @@ test.describe("UI V2 dictionary", () => {
     const urlBefore = page.url();
     await copyPill.click();
 
-    const copied = await page.evaluate(() => navigator.clipboard.readText());
-    expect(copied).toMatch(/^https?:\/\/.+\/v2\/dicts\/id\/n20077$/);
+    if (browserName !== "webkit") {
+      const copied = await page.evaluate(() => navigator.clipboard.readText());
+      expect(copied).toMatch(/^https?:\/\/.+\/v2\/dicts\/id\/n20077$/);
+    }
     // The article is already on screen, so copying must not spend a server
     // render navigating to it.
     expect(page.url()).toBe(urlBefore);
@@ -980,6 +986,7 @@ test.describe("UI V2 dictionary", () => {
     );
 
     await page.goto("/v2/dicts");
+    await disableSmoothScroll(page);
     await expect(page.locator(".landing-container")).toBeVisible();
 
     // Verify root html document element does not leak internal overflow scrolling
@@ -989,7 +996,13 @@ test.describe("UI V2 dictionary", () => {
     expect(htmlOverflowY).toBe("visible");
 
     // Scroll window to bottom
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.evaluate(() => {
+      const maxScroll = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      );
+      window.scrollTo({ top: maxScroll, behavior: "instant" });
+    });
 
     // Verify footer tip is fully in viewport
     const tip = page.locator(".legend-settings-tip");
@@ -1007,7 +1020,11 @@ test.describe("UI V2 dictionary", () => {
     for (const fontSize of ["20px", "24px"]) {
       await page.evaluate((fs) => {
         document.documentElement.style.fontSize = fs;
-        window.scrollTo({ top: 99999, behavior: "instant" });
+        const maxScroll = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight
+        );
+        window.scrollTo({ top: maxScroll, behavior: "instant" });
       }, fontSize);
       await page.waitForTimeout(100);
       await expect(tip).toBeInViewport();

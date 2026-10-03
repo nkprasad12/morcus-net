@@ -10,6 +10,7 @@ import request from "supertest";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { createV2Router } from "@/web/v2/v2_router.server";
 import {
+  CORPUS_TEST_AUTHORS,
   fakeCorpusEngine,
   fakeResult,
 } from "@/web/v2/testing/fake_corpus_engine";
@@ -24,6 +25,11 @@ jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
 jest.mock("@/web/v2/reader/reader_loader.server", () =>
   jest.requireActual("@/web/v2/testing/mock_reader_loader")
 );
+
+jest.mock("@/web/v2/corpus/corpus_query.server", () => ({
+  ...jest.requireActual("@/web/v2/corpus/corpus_query.server"),
+  loadCorpusAuthors: () => Promise.resolve(CORPUS_TEST_AUTHORS),
+}));
 
 describe("Corpus form round-trip conformance", () => {
   let app: express.Express;
