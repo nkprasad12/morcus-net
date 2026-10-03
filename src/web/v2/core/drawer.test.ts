@@ -15,7 +15,7 @@ installPointerEventShims();
 describe("DrawerController", () => {
   let drawer: HTMLElement;
   let handle: HTMLElement;
-  let layoutElement: HTMLElement;
+  let target: HTMLElement;
 
   beforeEach(() => {
     document.body.innerHTML = `
@@ -30,11 +30,12 @@ describe("DrawerController", () => {
           </div>
           <div id="content">Drawer content</div>
         </aside>
+        <button id="target" class="back-to-top"></button>
       </div>
     `;
     drawer = document.getElementById("drawer")!;
     handle = document.getElementById("handle")!;
-    layoutElement = document.getElementById("layout")!;
+    target = document.getElementById("target")!;
   });
 
   function connectController(
@@ -54,7 +55,7 @@ describe("DrawerController", () => {
     const controller = connectController({
       drawer,
       handle,
-      layoutElement,
+      heightTargets: () => [target],
     });
 
     expect(controller.isMinimized()).toBe(false);
@@ -64,7 +65,11 @@ describe("DrawerController", () => {
   });
 
   test("uses DRAWER_* constants when svh and height options are omitted", () => {
-    const controller = connectController({ drawer, handle, layoutElement });
+    const controller = connectController({
+      drawer,
+      handle,
+      heightTargets: () => [target],
+    });
     expect(controller.getPreferredSvh()).toBe(DRAWER_DEFAULT_SVH);
     controller.minimize();
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe(
@@ -90,7 +95,7 @@ describe("DrawerController", () => {
     const controller = connectController({
       drawer,
       handle,
-      layoutElement,
+      heightTargets: () => [target],
       minHeight: 54,
       onMinimize,
     });
@@ -100,9 +105,7 @@ describe("DrawerController", () => {
     expect(controller.isMinimized()).toBe(true);
     expect(drawer.classList.contains("drawer-minimized")).toBe(true);
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe("54px");
-    expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
-      "54px"
-    );
+    expect(target.style.getPropertyValue("--drawer-height")).toBe("54px");
     expect(handle.getAttribute("aria-valuenow")).toBe("0");
     expect(onMinimize).toHaveBeenCalledTimes(1);
 
@@ -114,7 +117,7 @@ describe("DrawerController", () => {
     const controller = connectController({
       drawer,
       handle,
-      layoutElement,
+      heightTargets: () => [target],
       defaultSvh: 48,
       onRestore,
     });
@@ -127,9 +130,7 @@ describe("DrawerController", () => {
     expect(controller.isMinimized()).toBe(false);
     expect(drawer.classList.contains("drawer-minimized")).toBe(false);
     expect(drawer.style.getPropertyValue("--drawer-height")).toBe("65svh");
-    expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
-      "65svh"
-    );
+    expect(target.style.getPropertyValue("--drawer-height")).toBe("65svh");
     expect(handle.getAttribute("aria-valuenow")).toBe("65");
     expect(controller.getPreferredSvh()).toBe(65);
     expect(onRestore).toHaveBeenCalledWith(65);
@@ -408,7 +409,7 @@ describe("DrawerController", () => {
     const controller = connectController({
       drawer,
       handle,
-      layoutElement,
+      heightTargets: () => [target],
       onEscape,
     });
 
@@ -536,11 +537,11 @@ describe("DrawerController", () => {
       controller.dispose();
     });
 
-    test("reset() applies drawer-minimized, removes custom height from drawer and layout, and sets aria-valuenow to 0", () => {
+    test("reset() applies drawer-minimized, removes custom height from drawer and targets, and sets aria-valuenow to 0", () => {
       const controller = connectController({
         drawer,
         handle,
-        layoutElement,
+        heightTargets: () => [target],
         defaultSvh: 48,
         minHeight: 54,
       });
@@ -548,15 +549,13 @@ describe("DrawerController", () => {
       controller.restore(70);
       expect(drawer.classList.contains("drawer-minimized")).toBe(false);
       expect(drawer.style.getPropertyValue("--drawer-height")).toBe("70svh");
-      expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
-        "70svh"
-      );
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("70svh");
 
       controller.reset();
       expect(drawer.classList.contains("drawer-minimized")).toBe(true);
       expect(controller.isMinimized()).toBe(true);
       expect(drawer.style.getPropertyValue("--drawer-height")).toBe("");
-      expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe("");
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("");
       expect(handle.getAttribute("aria-valuenow")).toBe("0");
 
       controller.dispose();
@@ -568,7 +567,7 @@ describe("DrawerController", () => {
       const controller = connectController({
         drawer,
         handle,
-        layoutElement,
+        heightTargets: () => [target],
         defaultSvh: 48,
         minHeight: 38,
         onDragStart,
@@ -648,7 +647,7 @@ describe("DrawerController", () => {
       const controller = connectController({
         drawer,
         handle,
-        layoutElement,
+        heightTargets: () => [target],
         defaultSvh: 48,
       });
 
@@ -698,7 +697,7 @@ describe("DrawerController", () => {
       const controller = connectController({
         drawer,
         handle,
-        layoutElement,
+        heightTargets: () => [target],
         minHeight: 54,
       });
 
@@ -750,7 +749,7 @@ describe("DrawerController", () => {
       const controller = connectController({
         drawer,
         handle,
-        layoutElement,
+        heightTargets: () => [target],
         defaultSvh: 48,
       });
 
@@ -772,9 +771,7 @@ describe("DrawerController", () => {
         })
       );
       expect(drawer.style.getPropertyValue("--drawer-height")).toBe("455px");
-      expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
-        "455px"
-      );
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("455px");
 
       // Tap release without drag (dy = 2 < 6) restores --drawer-height to 65svh
       handle.dispatchEvent(
@@ -786,12 +783,91 @@ describe("DrawerController", () => {
         })
       );
       expect(drawer.style.getPropertyValue("--drawer-height")).toBe("65svh");
-      expect(layoutElement.style.getPropertyValue("--drawer-height")).toBe(
-        "65svh"
-      );
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("65svh");
       expect(controller.getPreferredSvh()).toBe(65);
 
       controller.dispose();
+    });
+  });
+
+  describe("heightTargets", () => {
+    function pageWideInline(): string[] {
+      return [document.documentElement, document.body].map((el) =>
+        el.style.getPropertyValue("--drawer-height")
+      );
+    }
+
+    test("never writes --drawer-height inline on <html> or <body>", () => {
+      const controller = connectController({
+        drawer,
+        handle,
+        heightTargets: () => [target],
+      });
+      controller.minimize();
+      expect(pageWideInline()).toEqual(["", ""]);
+      controller.restore(60);
+      expect(pageWideInline()).toEqual(["", ""]);
+      controller.setHeight(200);
+      expect(pageWideInline()).toEqual(["", ""]);
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 300,
+          pointerId: 1,
+          button: 0,
+        })
+      );
+      handle.dispatchEvent(
+        new PointerEvent("pointermove", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 200,
+          pointerId: 1,
+        })
+      );
+      expect(drawer.style.getPropertyValue("--drawer-height")).not.toBe("");
+      expect(target.style.getPropertyValue("--drawer-height")).toBe(
+        drawer.style.getPropertyValue("--drawer-height")
+      );
+      expect(pageWideInline()).toEqual(["", ""]);
+      handle.dispatchEvent(
+        new PointerEvent("pointerup", {
+          bubbles: true,
+          clientX: 100,
+          clientY: 200,
+          pointerId: 1,
+        })
+      );
+      expect(pageWideInline()).toEqual(["", ""]);
+      controller.dispose();
+    });
+
+    test("clears targets on reset()", () => {
+      const controller = connectController({
+        drawer,
+        handle,
+        heightTargets: () => [target],
+      });
+      controller.restore(70);
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("70svh");
+      controller.reset();
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("");
+      controller.dispose();
+    });
+
+    test("clears targets on dispose()", () => {
+      const controller = connectController({
+        drawer,
+        handle,
+        heightTargets: () => [target],
+      });
+      controller.setHeight(200);
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("200px");
+      controller.dispose();
+      expect(target.style.getPropertyValue("--drawer-height")).toBe("");
+      expect(drawer.style.getPropertyValue("--drawer-height")).toBe("");
     });
   });
 });

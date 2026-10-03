@@ -27,7 +27,8 @@ export class MorcusDictToc extends BaseElement {
       drawerSelector: ":scope",
       handleSelector: ".toc-bar",
       detailsSelector: ".toc-details",
-      layoutElement: () => document.documentElement,
+      heightTargets: () =>
+        document.querySelectorAll<HTMLElement>(".back-to-top"),
       minHeight: 28,
       defaultSvh: DRAWER_DEFAULT_SVH,
       floorSvh: DRAWER_FLOOR_SVH,
