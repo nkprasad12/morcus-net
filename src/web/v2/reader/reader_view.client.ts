@@ -132,7 +132,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       root: this,
       drawerSelector: ".reader-dict-panel",
       handleSelector: ".reader-sheet-bar",
-      layoutElement: () => document.documentElement,
+      heightTargets: () =>
+        document.querySelectorAll<HTMLElement>(".back-to-top"),
       minHeight: READER_DRAWER_MIN_HEIGHT,
       defaultSvh: DRAWER_DEFAULT_SVH,
       floorSvh: DRAWER_FLOOR_SVH,
