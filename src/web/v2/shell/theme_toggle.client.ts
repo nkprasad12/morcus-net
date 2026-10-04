@@ -4,10 +4,10 @@ import {
   settingsStore,
   syncIframeTheme,
 } from "@/web/v2/core/index.client";
-import { ICON_PATHS } from "@/web/v2/core/icons.common";
+import { ICON_MOON, ICON_SUN } from "@/web/v2/core/icons.common";
 
-const MOON_PATH = ICON_PATHS.moon;
-const SUN_PATH = ICON_PATHS.sun;
+const MOON_PATH = ICON_MOON;
+const SUN_PATH = ICON_SUN;
 
 export class MorcusThemeToggle extends BaseElement {
   private isDark: boolean = false;

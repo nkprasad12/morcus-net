@@ -476,6 +476,14 @@ export default [
           message:
             'Don\'t assign on* handlers; listen through a LifetimeScope so the activation gate applies. See README "The activation gate".',
         },
+        {
+          // Object properties aren't tree-shaken: using the table (directly
+          // or via renderIconSvg) ships every icon path in common.js.
+          selector:
+            "ImportSpecifier[imported.name=/^(ICON_PATHS|renderIconSvg)$/]",
+          message:
+            "Client code must import the standalone icon consts (e.g. ICON_LINK) from icons.common, not ICON_PATHS / renderIconSvg, so unused icons are tree-shaken.",
+        },
       ],
     },
   },

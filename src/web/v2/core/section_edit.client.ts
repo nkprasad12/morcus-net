@@ -3,7 +3,7 @@ import { LifetimeScope } from "@/web/v2/core/base_element.client";
 import { bindDismissable } from "@/web/v2/core/dismissable.client";
 import { setHtml } from "@/web/v2/core/dom.client";
 import { html, joinHtml } from "@/web/v2/core/html.common";
-import { ICON_PATHS } from "@/web/v2/core/icons.common";
+import { ICON_EDIT, ICON_LINK } from "@/web/v2/core/icons.common";
 import type { PopoverWillOpenDetail } from "@/web/v2/core/popover.client";
 import { showToast } from "@/web/v2/core/toast.client";
 
@@ -139,8 +139,8 @@ export function openSectionActionMenu(options: SectionActionOptions): void {
   setHtml(
     menu,
     html`${joinHtml([
-      renderMenuItem("copy", ICON_PATHS.link, "Copy permalink"),
-      renderMenuItem("edit", ICON_PATHS.edit, "Suggest correction"),
+      renderMenuItem("copy", ICON_LINK, "Copy permalink"),
+      renderMenuItem("edit", ICON_EDIT, "Suggest correction"),
     ])}`
   );
 
