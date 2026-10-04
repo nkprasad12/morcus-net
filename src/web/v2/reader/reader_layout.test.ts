@@ -326,8 +326,14 @@ describe("ReaderLayoutController", () => {
     expect(splitter.getAttribute("aria-valuenow")).toBe("858");
     expect(splitter.getAttribute("aria-valuemax")).toBe("858");
 
-    // Escape resets to default
-    splitter.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    // Escape resets to default, and is consumed so outer overlays ignore it
+    const escape = new KeyboardEvent("keydown", {
+      key: "Escape",
+      bubbles: true,
+      cancelable: true,
+    });
+    splitter.dispatchEvent(escape);
+    expect(escape.defaultPrevented).toBe(true);
     expect(dictPanel.style.getPropertyValue("--dict-width")).toBe("");
     expect(splitter.getAttribute("aria-valuenow")).toBe(
       String(DEFAULT_SPLIT_WIDTH)

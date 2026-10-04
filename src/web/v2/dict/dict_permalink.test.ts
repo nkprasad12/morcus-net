@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import { closeActiveSectionUI, showToast } from "@/web/v2/core/index.client";
+import { setupAbbrPopover } from "@/web/v2/dict/abbr_popover.client";
 import { handleDictPermalinkClick } from "@/web/v2/dict/dict_permalink.client";
 
 const ORIGIN = "http://localhost";
@@ -444,11 +445,101 @@ describe("handleDictPermalinkClick", () => {
         "Submit or cancel your current edit first"
       );
 
-      // Pressing Escape cancels even when dirty
-      document.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      // Pressing Escape inside the editor cancels even when dirty
+      textarea.focus();
+      textarea.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+          cancelable: true,
+        })
       );
       expect(document.querySelector(".section-edit-box")).toBeNull();
+    });
+
+    describe("Escape focus context", () => {
+      function openEditor(dirty: boolean): HTMLTextAreaElement {
+        clickOn('a[href="#n20077.1"]');
+        document
+          .querySelector<HTMLButtonElement>(
+            '.section-action-menu [data-action="edit"]'
+          )!
+          .click();
+        const textarea = document.querySelector<HTMLTextAreaElement>(
+          ".section-edit-input"
+        )!;
+        if (dirty) textarea.value = "Lit., to hold, aliquid";
+        return textarea;
+      }
+
+      function escapeOn(target: EventTarget): KeyboardEvent {
+        const e = new KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+          cancelable: true,
+        });
+        target.dispatchEvent(e);
+        return e;
+      }
+
+      const box = () => document.querySelector(".section-edit-box");
+
+      test.each([
+        ["clean", false],
+        ["dirty", true],
+      ])("a %s editor ignores Escape from an external input", (_, dirty) => {
+        document.body.insertAdjacentHTML("beforeend", `<input id="search">`);
+        openEditor(dirty);
+        const search = document.getElementById("search")!;
+        search.focus();
+        const e = escapeOn(search);
+        expect(box()).not.toBeNull();
+        expect(e.defaultPrevented).toBe(false);
+        expect(showToast).not.toHaveBeenCalledWith(
+          "Submit or cancel your current edit first"
+        );
+      });
+
+      test("Escape from <body> closes a clean editor", () => {
+        openEditor(false);
+        (document.activeElement as HTMLElement | null)?.blur();
+        escapeOn(document.body);
+        expect(box()).toBeNull();
+      });
+
+      test("Escape from <body> keeps a dirty editor and shows a toast", () => {
+        openEditor(true);
+        (document.activeElement as HTMLElement | null)?.blur();
+        escapeOn(document.body);
+        expect(box()).not.toBeNull();
+        expect(showToast).toHaveBeenCalledWith(
+          "Submit or cancel your current edit first"
+        );
+      });
+
+      test("Escape on a focused .lsHover closes only the abbr popover", () => {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<div id="abbr-popover"></div><span class="lsHover" tabindex="0" title="Cicero">Cic.</span>`
+        );
+        openEditor(true);
+        const unbindAbbr = setupAbbrPopover(document, window);
+        const abbr = document.querySelector<HTMLElement>(".lsHover")!;
+        const popover = document.getElementById("abbr-popover")!;
+        abbr.focus();
+        abbr.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+        expect(popover.style.display).toBe("block");
+        escapeOn(abbr);
+        expect(popover.style.display).toBe("none");
+        expect(box()).not.toBeNull();
+        unbindAbbr();
+      });
     });
 
     test("submits editedText with userEdit tag to /v2/api/report and restores DOM", async () => {

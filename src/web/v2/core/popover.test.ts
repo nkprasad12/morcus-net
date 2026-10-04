@@ -260,6 +260,84 @@ describe("AnchoredPopoverController & trapFocus", () => {
     winSpy.mockRestore();
   });
 
+  function tab(shiftKey = false): KeyboardEvent {
+    const e = new KeyboardEvent("keydown", {
+      key: "Tab",
+      shiftKey,
+      bubbles: true,
+      cancelable: true,
+    });
+    (document.activeElement ?? document).dispatchEvent(e);
+    return e;
+  }
+
+  test("trapFocus wraps from the trigger and from <body>", () => {
+    const fix = createPopoverFixture("trap-ctx");
+    fix.panel.hidden = false;
+    const unbind = trapFocus(fix.panel, () => fix.trigger);
+
+    fix.trigger.focus();
+    expect(tab().defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(fix.closeBtn);
+
+    fix.trigger.focus();
+    tab(true);
+    expect(document.activeElement).toBe(fix.actionBtn);
+
+    (document.activeElement as HTMLElement).blur();
+    expect(document.activeElement).toBe(document.body);
+    tab();
+    expect(document.activeElement).toBe(fix.closeBtn);
+
+    unbind();
+  });
+
+  test("trapFocus leaves Tab alone in an external control or an open <dialog>", () => {
+    const fix = createPopoverFixture("trap-ext");
+    fix.panel.hidden = false;
+    const dialog = document.createElement("dialog");
+    dialog.innerHTML = `<button id="dlg-btn">x</button>`;
+    container.appendChild(dialog);
+    const unbind = trapFocus(fix.panel, () => fix.trigger);
+
+    fix.outsideBtn.focus();
+    expect(tab().defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(fix.outsideBtn);
+
+    dialog.setAttribute("open", "");
+    const dlgBtn = dialog.querySelector<HTMLButtonElement>("#dlg-btn")!;
+    dlgBtn.focus();
+    expect(tab().defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(dlgBtn);
+
+    unbind();
+  });
+
+  test("an inner control consuming Escape does not dismiss the popover", () => {
+    const fix = createPopoverFixture("inner-esc");
+    const popover = new AnchoredPopoverController({
+      root: fix.wrapper,
+      getPanel: () => fix.panel,
+      getTrigger: () => fix.trigger,
+      getCloseBtn: () => fix.closeBtn,
+    });
+    popover.connect();
+    popover.open();
+    fix.actionBtn.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") e.preventDefault();
+    });
+    fix.actionBtn.focus();
+    fix.actionBtn.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    expect(popover.isOpen).toBe(true);
+    popover.dispose();
+  });
+
   test("bindDismissable registers keydown on document and invokes onDismiss exactly once on Escape", () => {
     const fix = createPopoverFixture("dismiss-test");
     const onDismiss = jest.fn();

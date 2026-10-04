@@ -271,6 +271,9 @@ export class ReaderLayoutController extends BaseController {
       } else if (e.key === "End") {
         nextWidth = keyMaxWidth;
       } else if (e.key === "Enter" || e.key === "Escape") {
+        // The splitter consumes Enter/Escape to reset its width, so outer
+        // Escape handlers (e.g. dismissable overlays) must not also act
+        e.preventDefault();
         this.resetWidth();
         return;
       }

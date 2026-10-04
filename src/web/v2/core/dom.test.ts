@@ -1,13 +1,13 @@
 /**
  * @jest-environment jsdom
  */
+import { isPlainLeftClick } from "@/web/v2/core/base_element.client";
 import {
   setHtml,
   replaceWithHtml,
   assertConnected,
   escapeId,
   flashElement,
-  isPlainLeftClick,
   syncIframeTheme,
 } from "@/web/v2/core/dom.client";
 import { detachedDomWrites } from "@/web/v2/core/dom_invariants.client";

@@ -414,6 +414,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   private readonly handleClick = (e: MouseEvent) => {
     if (!(e.target instanceof Element)) return;
+    // Consumed clicks and modified / non-primary clicks (open in new tab)
+    // keep their native behaviour for every branch below.
+    if (e.defaultPrevented || !isPlainLeftClick(e)) return;
 
     // Handle close button click (dismisses mobile drawer & clears word)
     const closeBtn = e.target.closest<HTMLAnchorElement>(

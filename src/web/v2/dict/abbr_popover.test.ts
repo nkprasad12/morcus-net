@@ -49,7 +49,8 @@ describe("setupAbbrPopover", () => {
     const event = new MouseEvent("click", { bubbles: true, cancelable: true });
     abbr.dispatchEvent(event);
 
-    expect(event.defaultPrevented).toBe(true);
+    // `.lsHover` has no native click action, so nothing is cancelled.
+    expect(event.defaultPrevented).toBe(false);
     expect(abbr.dataset.abbrExpansion).toBe("Cicero, Marcus Tullius");
     expect(abbr.hasAttribute("title")).toBe(false);
     expect(popover.textContent).toBe("Cicero, Marcus Tullius");

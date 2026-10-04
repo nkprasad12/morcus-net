@@ -403,6 +403,17 @@ export function startSectionEdit(options: SectionActionOptions): void {
           return;
         }
         if (reason === "escape") {
+          // bindDismissable only reports Escape with focus in box/anchor or
+          // on <body>. From <body> (e.g. after clicking whitespace), treat a
+          // dirty edit like an outside click: keep it and warn.
+          const active = doc.activeElement;
+          const focusInEditor =
+            active !== null &&
+            (box.contains(active) || anchor.contains(active));
+          if (!focusInEditor && editorState.isDirty()) {
+            showToast(DIRTY_EDIT_TOAST);
+            return;
+          }
           if (!editorState.busy) closeEditor(true);
           return;
         }

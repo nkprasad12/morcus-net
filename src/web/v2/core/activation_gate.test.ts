@@ -282,7 +282,8 @@ describe("bindDismissable", () => {
       onDismiss: (reason) => reasons.push(reason),
     });
     el("#out").click();
-    keydown(el("#out"), "Escape");
+    // Focus on <body>: in scope (an external control would not be).
+    keydown(document.body, "Escape");
     unbind();
     expect(reasons).toEqual(["pointer", "escape"]);
   });
@@ -298,5 +299,164 @@ describe("bindDismissable", () => {
     el("#a").click();
     unbind();
     expect(onDismiss).toHaveBeenCalledWith("pointer");
+  });
+
+  function bindEscape(
+    container: string,
+    extra: Partial<Parameters<typeof bindDismissable>[0]> = {}
+  ): { onDismiss: jest.Mock; unbind: () => void } {
+    const onDismiss = jest.fn();
+    const unbind = bindDismissable({
+      container: el(container),
+      isOpen: () => true,
+      onDismiss,
+      ...extra,
+    });
+    return { onDismiss, unbind };
+  }
+
+  test("skips Escape already consumed by an inner widget", () => {
+    document.body.innerHTML = `<div id="pop"><input id="in"></div>`;
+    el("#in").addEventListener("keydown", (e) => e.preventDefault());
+    const { onDismiss, unbind } = bindEscape("#pop");
+    keydown(el("#in"), "Escape");
+    unbind();
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  test("skips Escape during IME composition", () => {
+    document.body.innerHTML = `<div id="pop"><input id="in"></div>`;
+    const { onDismiss, unbind } = bindEscape("#pop");
+    el("#in").dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    unbind();
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  test("skips Escape while an unrelated <dialog open> is open", () => {
+    document.body.innerHTML = `<div id="pop"></div><dialog open><button id="d"></button></dialog>`;
+    const { onDismiss, unbind } = bindEscape("#pop");
+    keydown(document.body, "Escape");
+    unbind();
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  test("skips Escape with focus in an external control", () => {
+    document.body.innerHTML = `<div id="pop"></div><button id="trig"></button><input id="search">`;
+    const { onDismiss, unbind } = bindEscape("#pop", {
+      triggerEl: el("#trig"),
+    });
+    el("#search").focus();
+    const e = keydown(el("#search"), "Escape");
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
+    keydown(el("#trig"), "Escape");
+    unbind();
+    expect(onDismiss).toHaveBeenCalledWith("escape");
+  });
+
+  test.each([
+    ["edit box first", true],
+    ["abbr popover first", false],
+  ])(
+    "Escape on an ignore-matched node dismisses only its overlay (%s)",
+    (_, editFirst) => {
+      document.body.innerHTML = `<div class="section-edit-box"><textarea></textarea></div><span class="lsHover" tabindex="0">abbr</span><div id="abbr-popover"></div>`;
+      const bindEdit = () => bindEscape(".section-edit-box");
+      const bindAbbr = () =>
+        bindEscape("#abbr-popover", {
+          ignore: (t) => t instanceof Element && t.matches(".lsHover"),
+        });
+      const [edit, abbr] = editFirst
+        ? [bindEdit(), bindAbbr()]
+        : (() => {
+            const a = bindAbbr();
+            return [bindEdit(), a];
+          })();
+      el(".lsHover").focus();
+      keydown(el(".lsHover"), "Escape");
+      edit.unbind();
+      abbr.unbind();
+      expect(abbr.onDismiss).toHaveBeenCalledWith("escape");
+      expect(edit.onDismiss).not.toHaveBeenCalled();
+    }
+  );
+});
+
+describe("LifetimeScope pre-guards and delegate", () => {
+  test("listen skips keydown during IME composition", () => {
+    document.body.innerHTML = `<input id="in">`;
+    const seen = track("keydown");
+    el("#in").dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    expect(seen).toEqual([]);
+    keydown(el("#in"), "Enter");
+    expect(seen).toEqual(["keydown"]);
+  });
+
+  const MODIFIED: [string, MouseEventInit][] = [
+    ["ctrlKey", { ctrlKey: true }],
+    ["metaKey", { metaKey: true }],
+    ["shiftKey", { shiftKey: true }],
+    ["altKey", { altKey: true }],
+    ["middle button", { button: 1 }],
+  ];
+
+  test.each(MODIFIED)(
+    "listen and delegate skip a %s click inside <a href>",
+    (_, init) => {
+      document.body.innerHTML = `<a href="/x"><span id="s">x</span></a><button id="b"></button>`;
+      const seen = track("click");
+      const delegated = jest.fn();
+      scope.delegate(document, "click", "a", delegated);
+      const e = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      });
+      el("#s").dispatchEvent(e);
+      expect(seen).toEqual([]);
+      expect(delegated).not.toHaveBeenCalled();
+      expect(e.defaultPrevented).toBe(false);
+      // Not a link: still handled.
+      el("#b").dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true, ...init })
+      );
+      expect(seen).toEqual(["click"]);
+    }
+  );
+
+  test("delegate skips events already defaultPrevented", () => {
+    document.body.innerHTML = `<div id="root"><button id="b"></button></div>`;
+    scope = new LifetimeScope(document);
+    const delegated = jest.fn();
+    scope.delegate(el("#root"), "click", "button", delegated);
+    el("#b").addEventListener("click", (e) => e.preventDefault());
+    el("#b").click();
+    expect(delegated).not.toHaveBeenCalled();
+  });
+
+  test("listen still runs for events already defaultPrevented", () => {
+    document.body.innerHTML = `<form id="f"></form>`;
+    scope = new LifetimeScope(document);
+    const observer = jest.fn();
+    el("#f").addEventListener("submit", (e) => e.preventDefault());
+    scope.listen(el("#f"), "submit", observer);
+    el("#f").dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })
+    );
+    expect(observer).toHaveBeenCalledTimes(1);
   });
 });
