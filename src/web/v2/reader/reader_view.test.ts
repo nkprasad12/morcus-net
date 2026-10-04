@@ -1248,6 +1248,30 @@ describe("MorcusReaderView desktop splitter drag", () => {
     expect(toast.textContent).toBe("Copied permalink: § 1");
   });
 
+  test.each([{ ctrlKey: true }, { metaKey: true }])(
+    "leaves a modified click (%o) on section anchors and note refs to the browser",
+    (init) => {
+      const passageHtml = `
+        <div class="reader-section" id="sec-1.5">
+          <a href="#sec-1.5" class="section-anchor">§ 1.5</a>
+          <p class="reader-paragraph">Text<a href="#note-n1" class="reader-note-ref" id="noteref-n1">[1]</a></p>
+        </div>
+      `;
+      const el = createReaderView(passageHtml);
+      el.dataset.work = "phi0448.phi001.perseus-lat2";
+      for (const sel of ["a.section-anchor", "a.reader-note-ref"]) {
+        const click = new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          ...init,
+        });
+        el.querySelector(sel)!.dispatchEvent(click);
+        expect(click.defaultPrevented).toBe(false);
+      }
+      expect(document.querySelector(".section-action-menu")).toBeNull();
+    }
+  );
+
   test("handles rapid consecutive section anchor copy actions without premature toast dismissal", () => {
     jest.useFakeTimers();
     try {

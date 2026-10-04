@@ -242,6 +242,20 @@ describe("ReaderPanelController", () => {
       expect(controller.activeTab).toBe("notes");
     });
 
+    it.each([{ ctrlKey: true }, { metaKey: true }])(
+      "leaves a modified click (%o) on a tab to the browser",
+      (init) => {
+        const click = new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          ...init,
+        });
+        $(container, "#panel-tab-notes .reader-tab-label").dispatchEvent(click);
+        expect(click.defaultPrevented).toBe(false);
+        expect(controller.activeTab).toBe("dict");
+      }
+    );
+
     it("shows a note with scroll and highlight", () => {
       const note = $(container, "#note-n2");
       note.scrollIntoView = jest.fn();

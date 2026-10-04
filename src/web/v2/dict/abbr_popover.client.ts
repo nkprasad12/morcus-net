@@ -96,13 +96,11 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
       };
 
       const onClick = (e: MouseEvent) => {
-        if (!(e.target instanceof Element)) return;
+        if (e.defaultPrevented || !(e.target instanceof Element)) return;
         const abbr = e.target.closest<HTMLElement>(".lsHover");
-        if (abbr) {
-          // Opens the abbreviation popover itself
-          e.preventDefault();
-          openAbbrPopover(abbr);
-        }
+        // `.lsHover` is a plain span with no native click action, so there
+        // is nothing to cancel.
+        if (abbr) openAbbrPopover(abbr);
         // Outside clicks are closed by `bindDismissable` below, which (unlike
         // this gated listener) still runs when the click lands in a failed
         // component.

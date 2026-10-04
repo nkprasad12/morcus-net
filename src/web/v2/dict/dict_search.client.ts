@@ -212,7 +212,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       this.enhanceWords(this.resultsElement);
 
       this.scope.listen(this.resultsElement, "click", (e: MouseEvent) => {
-        if (!(e.target instanceof Element)) return;
+        if (e.defaultPrevented || !(e.target instanceof Element)) return;
 
         if (!isPlainLeftClick(e)) {
           return;

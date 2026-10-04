@@ -23,10 +23,47 @@ export interface DismissableOptions {
   triggerEl?: HTMLElement | (() => HTMLElement | null) | null;
   /** Listen on pointerdown/mousedown (preferred for instant touch/mouse dismiss) or click. */
   listenPointerDown?: boolean;
-  /** Optional predicate to ignore clicks on certain elements (e.g. trigger buttons). */
+  /**
+   * Optional predicate matching nodes outside `container` that belong to this
+   * overlay (e.g. its trigger buttons): clicks on them are not outside clicks,
+   * and focus on them is in scope for Escape dismissal.
+   */
   ignore?: (target: Node) => boolean;
   /** Optional Document instance to bind listeners on (defaults to global document). */
   doc?: Document;
+}
+
+/**
+ * Whether a `<dialog open>` outside `el` owns the keyboard.
+ *
+ * Assumes every open dialog is modal: V2 opens dialogs only via
+ * `showModal()` (`setupModalDialog`). A non-modal `show()` dialog doesn't own
+ * the keyboard and would wrongly match here. `:modal` would be exact, but
+ * jsdom doesn't support it.
+ */
+export function hasForeignDialog(
+  doc: Document,
+  el: Node | null | undefined
+): boolean {
+  const dialog = doc.querySelector("dialog[open]");
+  return dialog !== null && !el?.contains(dialog);
+}
+
+/**
+ * Whether keyboard focus `active` is in a widget's context: nowhere
+ * (`null` / `<body>` / `<html>`) or inside one of `owners`.
+ */
+export function isFocusIn(
+  doc: Document,
+  active: Element | null,
+  owners: (Node | null | undefined)[]
+): boolean {
+  return (
+    !active ||
+    active === doc.body ||
+    active === doc.documentElement ||
+    owners.some((o) => o?.contains(active))
+  );
 }
 
 /**
@@ -59,14 +96,43 @@ export function bindDismissable(options: DismissableOptions): CleanupFn {
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === "Escape" && options.isOpen()) {
-      // Escape dismisses this overlay (onDismiss) and returns focus to its
-      // trigger; only while the overlay is open
-      e.preventDefault();
-      options.onDismiss("escape");
-      const trigger = getTrigger();
-      trigger?.focus();
+    if (
+      e.defaultPrevented ||
+      e.isComposing ||
+      e.key !== "Escape" ||
+      !options.isOpen()
+    ) {
+      return;
     }
+    const container = getContainer();
+    // A modal dialog outside this overlay owns Escape. Otherwise only dismiss
+    // when focus is in this overlay's context: Escape in an unrelated control
+    // (e.g. the search input) belongs to that control.
+    if (hasForeignDialog(doc, container)) return;
+    const target = e.target;
+    const active =
+      target instanceof Element &&
+      target !== doc.body &&
+      target !== doc.documentElement
+        ? target
+        : doc.activeElement;
+    if (
+      !isFocusIn(doc, active, [container, getTrigger()]) &&
+      !(active && options.ignore?.(active))
+    ) {
+      return;
+    }
+    // With focus on <body>, every open overlay is in context, so the first
+    // registered listener takes Escape and the rest bail on defaultPrevented:
+    // registration order decides. Today that's the right order (boot-time
+    // singletons like the abbreviation popover bind before transient ones
+    // like the section editor), so keep it in mind when changing bind order.
+    //
+    // Escape dismisses this overlay (onDismiss) and returns focus to its
+    // trigger; only while the overlay is open
+    e.preventDefault();
+    options.onDismiss("escape");
+    getTrigger()?.focus();
   };
 
   const pointerEvents = options.listenPointerDown

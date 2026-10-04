@@ -106,13 +106,6 @@ export function flashElement(
 }
 
 /**
- * Returns true if a mouse event is a primary (left) click without modifier keys (Ctrl, Meta, Shift, Alt).
- */
-export function isPlainLeftClick(e: MouseEvent): boolean {
-  return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
-}
-
-/**
  * Synchronizes the data-theme attribute on an iframe's document to match the parent document theme.
  * When no explicit theme override exists (null), removes `data-theme` so the iframe's own
  * `@media (prefers-color-scheme: dark)` rules apply naturally.

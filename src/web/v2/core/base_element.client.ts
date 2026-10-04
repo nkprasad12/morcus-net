@@ -45,6 +45,32 @@ const GATED_TYPES: ReadonlySet<string> = new Set([
   "keydown",
 ]);
 
+/**
+ * Returns true if a mouse event is a primary (left) click without modifier keys (Ctrl, Meta, Shift, Alt).
+ */
+export function isPlainLeftClick(e: MouseEvent): boolean {
+  return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+}
+
+/** A `keydown` fired during active IME composition. */
+function isComposingKeydown(e: Event): boolean {
+  return e.type === "keydown" && e instanceof KeyboardEvent && e.isComposing;
+}
+
+/**
+ * A modified (Cmd / Ctrl / Shift / Alt) or non-primary click on or inside an
+ * `<a href>`: the browser's own action (new tab, new window, download) wins.
+ */
+function isModifiedLinkClick(e: Event): boolean {
+  return (
+    e.type === "click" &&
+    e instanceof MouseEvent &&
+    !isPlainLeftClick(e) &&
+    e.target instanceof Element &&
+    e.target.closest("a[href]") !== null
+  );
+}
+
 function requireFromRoot<T extends HTMLElement = HTMLElement>(
   root: ParentNode | null,
   selector: string
@@ -208,6 +234,18 @@ export class LifetimeScope<Lane extends string = never> {
    * {@link canHandleActivation}). A handler therefore never cancels a native
    * action whose No-JS replacement belongs to a failed or un-upgraded owner.
    * Skips log a `console.warn` outside production.
+   *
+   * **Pre-guards** (same event types, checked before the gate):
+   * - `keydown` during IME composition (`isComposing`) is skipped, so a key
+   *   that commits a composition never triggers a shortcut.
+   * - A modified (Cmd / Ctrl / Shift / Alt) or non-primary `click` on or
+   *   inside an `<a href>` is skipped, so the browser can open the link in a
+   *   new tab / window.
+   *
+   * `defaultPrevented` is deliberately *not* filtered here: `listen` attaches
+   * directly to its target and may be a same-element observer (e.g.
+   * `ComboboxController` observing a form's `submit` alongside `hijackForm`).
+   * {@link delegate} does filter it.
    */
   public listen<K extends keyof HTMLElementEventMap>(
     target: EventTarget | null | undefined,
@@ -238,6 +276,7 @@ export class LifetimeScope<Lane extends string = never> {
     const raw = listener as EventListenerOrEventListenerObject;
     const handler: EventListenerOrEventListenerObject = GATED_TYPES.has(type)
       ? (e: Event) => {
+          if (isComposingKeydown(e) || isModifiedLinkClick(e)) return;
           if (!canHandleActivation(e, this.owner)) return;
           if (typeof raw === "function") raw.call(target, e);
           else raw.handleEvent(e);
@@ -258,6 +297,12 @@ export class LifetimeScope<Lane extends string = never> {
   ): void {
     if (!root || this._disposed) return;
     const fn = (e: Event) => {
+      // Unlike `listen` (which may be a same-element observer, e.g. a
+      // combobox watching form `submit` alongside `hijackForm`), a delegated
+      // handler matches bubbling events against a child selector: always
+      // action-handler semantics. An event a deeper handler already consumed
+      // must not trigger a second action.
+      if (e.defaultPrevented) return;
       if (e.target instanceof Element) {
         const match = e.target.closest<T>(selector);
         if (match) {

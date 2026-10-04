@@ -14,15 +14,6 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
 
 ---
 
-## Event handling
-
-- [ ] 🟢 **Review document-level takeovers in shared helpers.** `bindDismissable`
-      (`core/dismissable.client.ts`) calls `preventDefault` on Escape for any target while its
-      overlay is open, with no `defaultPrevented` check, so a nested widget that handles Escape
-      still closes the outer overlay. `popover`'s focus trap takes Tab even when focus is outside
-      the panel (it does check `defaultPrevented`). `abbr_popover` suppresses clicks on any
-      `.lsHover`, which would also swallow navigation if one ever sat inside a link.
-
 ## Component contracts
 
 - [ ] 🟡 **Make revealers idempotent by contract, and test it.** README says `reveal(target)` must

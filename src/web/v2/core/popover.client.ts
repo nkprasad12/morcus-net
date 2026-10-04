@@ -12,7 +12,11 @@ import {
   type CleanupFn,
   LifetimeScope,
 } from "@/web/v2/core/base_element.client";
-import { bindDismissable } from "@/web/v2/core/dismissable.client";
+import {
+  bindDismissable,
+  hasForeignDialog,
+  isFocusIn,
+} from "@/web/v2/core/dismissable.client";
 import { assertConnected } from "@/web/v2/core/dom.client";
 
 export interface PopoverWillOpenDetail {
@@ -55,13 +59,28 @@ const FOCUSABLE_SELECTOR =
 
 /**
  * Traps Tab and Shift+Tab keyboard focus within `panel` while open.
- * Returns an unbind cleanup function.
+ *
+ * Only intercepts Tab when focus is in the popover's context (`panel`, the
+ * optional trigger, or nowhere / `<body>` — e.g. after clicking whitespace
+ * in `panel` or when its focused child became hidden) and no `<dialog open>`
+ * outside `panel` owns the keyboard. Returns an unbind cleanup function.
  */
-export function trapFocus(panel: HTMLElement): CleanupFn {
+export function trapFocus(
+  panel: HTMLElement,
+  getTrigger?: () => HTMLElement | null
+): CleanupFn {
   const doc = panel.ownerDocument ?? document;
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== "Tab" || e.defaultPrevented) return;
+
+    const active = doc.activeElement;
+    if (
+      hasForeignDialog(doc, panel) ||
+      !isFocusIn(doc, active, [panel, getTrigger?.()])
+    ) {
+      return;
+    }
 
     const focusables = Array.from(
       panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
@@ -76,7 +95,6 @@ export function trapFocus(panel: HTMLElement): CleanupFn {
 
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
-    const active = doc.activeElement;
 
     if (e.shiftKey) {
       if (active === first || !panel.contains(active)) {
@@ -342,6 +360,6 @@ export class AnchoredPopoverController extends BaseController {
         onDismiss: () => this.close(),
       })
     );
-    scope.use(trapFocus(panel));
+    scope.use(trapFocus(panel, () => this.getTrigger()));
   }
 }
