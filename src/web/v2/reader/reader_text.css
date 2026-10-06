@@ -441,7 +441,9 @@
     box-sizing: border-box;
     overflow-x: clip;
     overflow-y: visible;
-    padding: var(--space-4) var(--space-5) var(--space-7);
+    /* Static bottom scroll cushion sized to drawer clearance so the end of the text
+       can be scrolled into view when the drawer is open (matches reader_layout.css) */
+    padding: var(--space-4) var(--space-5) calc(66svh + 36px);
   }
 
   .reader-text-card {
