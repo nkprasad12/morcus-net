@@ -52,6 +52,18 @@ another is found at runtime, by attribute list (`TARGET_ID_ATTRS` in `core/js_ga
   `core/boot_conformance.test.ts` bans importing `Morcus*` classes, type imports included.
 - Dangling `href="#…"`: section 3 of the SSR harness.
 
+**Caveat: these checks see only the fixtures.** The sweeps, the SSR and interaction harnesses, and
+the selector-lookup check in `core/ssr_conformance.test.ts` all run over `testing/ssr_fixtures.ts`.
+That list is maintained by hand, and the only completeness check is that every registered element
+appears in _some_ fixture. A page (or page state) that reuses an element already shown elsewhere can
+be missing and every check still passes. In October the `?url=` and `?local=` external reader pages,
+about, and not-found had no fixtures. Adding them found a write to a detached passage after an
+IndexedDB read in `external_loader.client.ts`, and a reader `tokenizeTargets` fallback selector that
+no page renders. When adding a page or a materially different state (empty vs. loaded, verse vs.
+prose), add a fixture for it. A renderer-coverage check (every exported `render*PageHtml` /
+`render*ContentHtml` called while building fixtures) would enforce one fixture per page, but not per
+state; it isn't built.
+
 **Also uncovered: element references that outlive a swap.** A component that stores a queried
 element in a field holds a detached node once a partial swap replaces it, with no error. Today only
 README convention 9 guards this: nothing tracks which fields hold elements or which regions a

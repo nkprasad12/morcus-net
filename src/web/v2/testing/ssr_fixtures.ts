@@ -22,8 +22,14 @@ import {
 } from "@/web/v2/corpus/corpus_query.server";
 import { renderCorpusContentHtml } from "@/web/v2/corpus/corpus_view.server";
 import { renderDictPageHtml } from "@/web/v2/dict/dict_page.server";
-import { renderExternalLandingContentHtml } from "@/web/v2/external/external.server";
+import { renderAboutContentHtml } from "@/web/v2/about/about.server";
+import {
+  renderExternalLandingContentHtml,
+  renderExternalLocalContentHtml,
+  renderExternalReaderContentHtml,
+} from "@/web/v2/external/external.server";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
+import { renderNotFoundContentHtml } from "@/web/v2/library/not_found.server";
 import {
   applyChoices,
   resolveInitialResult,
@@ -203,6 +209,26 @@ export async function buildReaderFixtures(): Promise<SsrFixture[]> {
 export function buildExternalFixtures(): SsrFixture[] {
   return [
     { name: "external-landing", html: renderExternalLandingContentHtml() },
+    {
+      // `?url=`: a text imported from a web page, rendered on the server.
+      name: "external-url",
+      html: renderExternalReaderContentHtml({
+        sourceUrl: "https://example.com/gallia",
+        // Verse with a stanza break, so the loader's `.line-space` check hits.
+        text: "Vīvāmus, mea Lesbia, atque amēmus,\nrūmōrēsque senum sevēriōrum\n\nomnēs ūnius aestimēmus assis.",
+        lines: "verse",
+        query: "",
+      }),
+    },
+    {
+      // `?local=`: a saved text; the loader fills it in from IndexedDB.
+      name: "external-local",
+      html: renderExternalLocalContentHtml({
+        localKey: "saved-1",
+        lines: "keep",
+        query: "",
+      }),
+    },
   ];
 }
 
@@ -242,6 +268,17 @@ export async function buildCorpusFixtures(): Promise<SsrFixture[]> {
         input: "corpus-q",
         host: "morcus-corpus-suggestions",
       },
+    },
+  ];
+}
+
+/** Static pages: no feature elements, but the shell and page setups run. */
+export function buildStaticPageFixtures(): SsrFixture[] {
+  return [
+    { name: "about", html: renderAboutContentHtml() },
+    {
+      name: "not-found",
+      html: renderNotFoundContentHtml({ workSlug: "nobody/nothing" }),
     },
   ];
 }
@@ -303,6 +340,7 @@ export async function buildSsrFixtures(): Promise<SsrFixture[]> {
     buildExternalFixtures(),
     buildCorpusFixtures(),
     buildMacronizerFixtures(),
+    buildStaticPageFixtures(),
   ]);
   return groups.flat();
 }

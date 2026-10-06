@@ -62,7 +62,6 @@ export interface TokenizeWordOptions {
 
 export interface TokenizeTargetsOptions extends TokenizeWordOptions {
   targetSelector?: string;
-  fallbackSelector?: string;
 }
 
 const LATIN_LETTER_REGEX = /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/;
@@ -364,8 +363,8 @@ export function tokenizeSubtree(
 
 /**
  * Queries target elements within `container` and applies `tokenizeSubtree` to each target.
- * Supports a primary selector (defaulting to `[data-tokenize-target='true']`) with an
- * optional fallback selector for backwards compatibility with legacy markup shapes.
+ * Targets match `targetSelector` (default `[data-tokenize-target='true']`); if none
+ * do, `container` itself is the target when it matches.
  */
 export function tokenizeTargets(
   container: HTMLElement,
@@ -377,14 +376,8 @@ export function tokenizeTargets(
     container.querySelectorAll<HTMLElement>(primarySelector)
   );
 
-  if (targets.length === 0) {
-    if (container.matches(primarySelector)) {
-      targets = [container];
-    } else if (options.fallbackSelector) {
-      targets = Array.from(
-        container.querySelectorAll<HTMLElement>(options.fallbackSelector)
-      );
-    }
+  if (targets.length === 0 && container.matches(primarySelector)) {
+    targets = [container];
   }
 
   for (const target of targets) {

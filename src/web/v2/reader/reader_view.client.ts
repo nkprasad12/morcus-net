@@ -1025,9 +1025,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
       tokenizeTargets(passage, {
         targetSelector: "[data-tokenize-target='true']",
-        fallbackSelector:
-          ".reader-section p.reader-paragraph, " +
-          ".reader-section .reader-line",
         enhancedDatasetKey: "wordsEnhanced",
         // Word boundaries must match the corpus's, which `matchText` offsets
         // come from (`extractRowText`, rule 1).
