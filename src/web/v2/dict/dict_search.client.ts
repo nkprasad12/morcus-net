@@ -25,7 +25,7 @@ import {
 } from "@/web/v2/dict/dict_bitmask.common";
 import {
   applyDictSearch,
-  buildDictUrl,
+  dictUrlBuilder,
 } from "@/web/v2/dict/dict_params.common";
 import type { DictSettingsCommit } from "@/web/v2/dict/dict_settings.client";
 import { handleDictPermalinkClick } from "@/web/v2/dict/dict_permalink.client";
@@ -36,6 +36,14 @@ import {
 } from "@/web/v2/dict/search_bar.common";
 
 const SEARCH_FORM = "form.search-form";
+
+/**
+ * Classes of elements whose text is not split into lookup links: headwords,
+ * emphasis, hover notes, sense bullets, anchors and links. Matched as
+ * substrings of `className` (so `lsOrth` also covers `lsOrthSub` etc.).
+ */
+const NO_WORD_LINK_CLASSES =
+  /lsOrth|lsEmph|lsHover|lsSenseBullet|section-anchor|toc|dLink/;
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.
@@ -532,35 +540,24 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   public enhanceWords(container: HTMLElement | null) {
     if (!container) return;
 
+    // Hoisted out of `renderWord`: a long entry has thousands of words, so
+    // anything done per word here shows up directly in mount time.
+    const searchParams = new URLSearchParams(window.location.search);
+    const hrefFor = dictUrlBuilder({
+      d: this.activeDictBitmask,
+      inflected: this.isInflected,
+      lang: searchParams.get("lang"),
+      embedded: searchParams.get("embedded"),
+    });
     tokenizeTargets(container, {
       targetSelector: "[data-tokenize-target='true'], .entry-content",
       enhancedDatasetKey: "wordsEnhanced",
       isExcludedElement: (node) => {
         const cls = node.className;
-        return (
-          typeof cls === "string" &&
-          (cls.includes("lsOrth") ||
-            cls.includes("lsEmph") ||
-            cls.includes("lsHover") ||
-            cls.includes("lsSenseBullet") ||
-            cls.includes("section-anchor") ||
-            cls.includes("toc") ||
-            cls.includes("dLink"))
-        );
+        return typeof cls === "string" && NO_WORD_LINK_CLASSES.test(cls);
       },
       renderWord: (token, cleanWord) =>
-        createWordLink(token, cleanWord, this.buildWordHref(cleanWord)),
-    });
-  }
-
-  private buildWordHref(cleanWord: string): string {
-    const searchParams = new URLSearchParams(window.location.search);
-    return buildDictUrl({
-      q: cleanWord,
-      d: this.activeDictBitmask,
-      inflected: this.isInflected,
-      lang: searchParams.get("lang"),
-      embedded: searchParams.get("embedded"),
+        createWordLink(token, cleanWord, hrefFor(cleanWord)),
     });
   }
 }

@@ -162,7 +162,7 @@ function isRejectedElement(
   node: HTMLElement,
   options: TokenizeWordOptions
 ): boolean {
-  const tag = node.tagName.toLowerCase();
+  const tag = node.localName;
   return (
     tag === "a" ||
     tag === "button" ||
@@ -178,7 +178,7 @@ function isRejectedElement(
 
 /** Whether text continues across `el` under `joinAcrossInline`. */
 function isInlineStyling(el: HTMLElement): boolean {
-  const tag = el.tagName.toLowerCase();
+  const tag = el.localName;
   if (tag === "strong") {
     return true;
   }
@@ -302,7 +302,11 @@ export function tokenizeSubtree(
         continue;
       }
       const segments = segmentsOf(start, offset);
-      const { isLatin, cleanWord } = isLatinWord(token, isWord);
+      // Only word tokens can be Latin words; this skips the cleaning for the
+      // whitespace and punctuation tokens between them (half of all tokens).
+      const { isLatin, cleanWord } = isWord
+        ? isLatinWord(token, true)
+        : { isLatin: false, cleanWord: "" };
       if (!isLatin) {
         for (const segment of segments) {
           outputs[segment.node].push(document.createTextNode(segment.text));

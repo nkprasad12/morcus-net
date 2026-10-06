@@ -66,6 +66,11 @@ export interface DiacriticStripped {
  * @returns An object containing the stripped word and information to restore diacritics
  */
 export function stripDiacritics(word: string): DiacriticStripped {
+  // ASCII has no combining marks and is unchanged by NFD, so skip the
+  // normalize and per-character walk for it (most Latin text).
+  if (!/[\u0080-\uffff]/.test(word)) {
+    return { word };
+  }
   // Normalize the string to NFD to separate base characters from combining marks
   const normalized = word.normalize("NFD");
   const result: DiacriticStripped = { word: "" };
