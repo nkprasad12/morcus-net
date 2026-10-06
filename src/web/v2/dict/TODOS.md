@@ -310,3 +310,28 @@ To investigate:
 
 Spans would also be cheaper to create than anchors (no `href` to parse, no `:visited` matching),
 which helps the tokenize-on-mount work in [`../docs/CODE_HEALTH.md`](../docs/CODE_HEALTH.md).
+
+---
+
+## 11. Time-slice word tokenization
+
+**Status:** potential; not planned. Only worth doing if the post-paint block below becomes a
+problem in practice.
+
+`enhanceWordsAfterPaint` (`dict_search.client.ts`) tokenizes the results in one task right after
+they paint, so the results and the scroll to them are no longer delayed. That task is still long on
+big pages: with every default dictionary enabled, a search for `sum` (~5,900 word links) blocks for
+~190 ms on desktop and ~1.1 s at 4× CPU throttling (the long-animation-frame duration, including
+rendering). Anything during it waits: scrolling, typing in the search box, and the reader itself
+when the dictionary is its embedded panel, since the iframe shares the reader's main thread.
+
+Shape, if it's needed:
+
+- Chunk by text run, not by tokenize target: L&S `sum` is a single `.entry-content` of ~5,100
+  words, so per-target batches don't help on the pages that matter. `collectTextRuns` in
+  `core/tokenize.client.ts` already yields the runs.
+- Process runs in document order with a ~8 ms budget per slice, yielding with `setTimeout(0)` /
+  `MessageChannel` (not `requestIdleCallback`: Safari doesn't ship it, and we want the work done
+  soon, not when idle). Start from the hashed section when the URL has one.
+- Keep each slice free of layout reads, so its style and layout fold into the next frame.
+- Cancel through the existing `"words"` lane when new results arrive or the element disconnects.

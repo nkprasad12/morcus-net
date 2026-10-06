@@ -49,7 +49,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   /** `formAttrs`: the resolved state the server renders onto the form (`data-d`, `data-o`). */
   function createDictSearch(
     resultsHtml: string = "",
-    formAttrs: string = ""
+    formAttrs: string = "",
+    { flushWords = true }: { flushWords?: boolean } = {}
   ): MorcusDictSearch {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
@@ -66,6 +67,12 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       </output>
     `;
     document.body.appendChild(el);
+    // Tokenizing is deferred until after the first paint (tested separately
+    // below); run it now so these tests see the enhanced words. It is
+    // idempotent, so the deferred run later finds nothing left to do.
+    if (flushWords) {
+      el.enhanceWords(el.querySelector<HTMLElement>("#dict-results"));
+    }
     return el;
   }
 
@@ -142,6 +149,55 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     // data-word has diacritics stripped for lookup
     expect(words[0].dataset.word).toBe("causas");
     expect(words[1].dataset.word).toBe("memora");
+  });
+
+  describe("deferred tokenization", () => {
+    const RESULTS = `
+      <article class="entry">
+        <div class="entry-content"><p><span class="lsQuote">Gallia est</span></p></div>
+      </article>
+    `;
+
+    let frames: FrameRequestCallback[] = [];
+    function runFrame() {
+      const callbacks = frames;
+      frames = [];
+      callbacks.forEach((cb) => cb(performance.now()));
+    }
+
+    beforeEach(() => {
+      frames = [];
+      jest.useFakeTimers({
+        doNotFake: ["requestAnimationFrame", "cancelAnimationFrame"],
+      });
+      jest.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+        frames.push(cb);
+        return frames.length;
+      });
+    });
+    afterEach(() => jest.useRealTimers());
+
+    test("tokenizes after the first paint, not during connect", () => {
+      const el = createDictSearch(RESULTS, "", { flushWords: false });
+      // The load task leaves the results as plain text...
+      expect(el.querySelectorAll(".lat-word")).toHaveLength(0);
+      // ...and so does the frame that paints them (and scrolls to them).
+      runFrame();
+      expect(el.querySelectorAll(".lat-word")).toHaveLength(0);
+      // The task after that paint tokenizes.
+      jest.runOnlyPendingTimers();
+      expect(
+        Array.from(el.querySelectorAll(".lat-word"), (w) => w.textContent)
+      ).toEqual(["Gallia", "est"]);
+    });
+
+    test("does nothing if disconnected before it runs", () => {
+      const el = createDictSearch(RESULTS, "", { flushWords: false });
+      runFrame();
+      el.remove();
+      jest.runOnlyPendingTimers();
+      expect(el.querySelectorAll(".lat-word")).toHaveLength(0);
+    });
   });
 
   test("clicking an enhanced word triggers search for that word", () => {

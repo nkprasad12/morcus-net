@@ -61,7 +61,9 @@ const NO_WORD_LINK_CLASSES =
  * - Uses syncQueryParam for seamless browser back/forward and title sync.
  * - Performs smooth AJAX partial swaps via fetchAndSwapPartial without full page reloads.
  */
-export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
+export class MorcusDictSearch extends BaseElement<
+  "completions" | "results" | "words"
+> {
   public readonly chunkCache: DictChunkCache = new DictChunkCache();
 
   private inputElement: HTMLInputElement | null = null;
@@ -217,8 +219,6 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     }
 
     if (this.resultsElement) {
-      this.enhanceWords(this.resultsElement);
-
       this.scope.listen(this.resultsElement, "click", (e: MouseEvent) => {
         if (e.defaultPrevented || !(e.target instanceof Element)) return;
 
@@ -314,6 +314,28 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     ) {
       this.inputElement.focus({ preventScroll: true });
     }
+
+    this.enhanceWordsAfterPaint();
+  }
+
+  /**
+   * Tokenizes the results into word links in a task of its own, after the
+   * next paint, so the results (and the scroll to them) appear first. On a
+   * long entry tokenizing takes 100+ ms on desktop and most of a second on a
+   * phone. Until it runs the words are plain text, exactly as before the
+   * component upgraded. A newer call supersedes a pending one.
+   *
+   * Keep the task to tokenizing alone: a layout read after it (a `scrollY`,
+   * a `getBoundingClientRect`) would force the style and layout of every new
+   * link synchronously, instead of leaving it to the next frame.
+   */
+  private enhanceWordsAfterPaint() {
+    const signal = this.scope.latest("words");
+    this.scope.rAF(() => {
+      this.scope.timeout(() => {
+        if (!signal.aborted) this.enhanceWords(this.resultsElement);
+      }, 0);
+    });
   }
 
   /** Adopts committed dictionary settings: form, URL, tray, landing page, then one fetch. */
@@ -533,7 +555,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       loadingOpacity: 0.5,
     });
     if (success) {
-      this.enhanceWords(this.resultsElement);
+      this.enhanceWordsAfterPaint();
     }
   }
 

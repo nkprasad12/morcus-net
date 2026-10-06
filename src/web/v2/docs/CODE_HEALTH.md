@@ -19,18 +19,3 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
 - [ ] 🟢 **Visual scenarios for post-interaction state in the dictionary.** `v2VisualScenario`'s
       `action` hook is used only by reader scenarios. Popover-open and results-with-one-dictionary
       would catch selection bugs as a pixel diff across all four form factors.
-
-## Performance
-
-This was found while investigating a report that resizing the reader drawer feels laggy. It has not
-been profiled, so **measure before spending effort on it**.
-
-The drag work itself (drawer, splitter, page width) has since been profiled and fixed. The main
-cost was writing inherited properties (custom properties, `cursor`, `user-select`) on an ancestor,
-which restyles every descendant on each move. Live drag values are now written on the element that
-consumes them. CSS containment on the text panel was tried and gave no measurable gain, so it is
-not tracked here.
-
-- [ ] 🟡 **Don't tokenize the whole chapter synchronously on mount.** `reader_view.client.ts` walks
-      every target block calling `tokenizeElement` inside `onConnect`: one long task that delays
-      first interaction. Batch via `requestIdleCallback`.
