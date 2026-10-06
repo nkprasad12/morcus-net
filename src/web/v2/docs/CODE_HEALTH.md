@@ -14,16 +14,6 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
 
 ---
 
-## Component contracts
-
-- [ ] 🟡 **Make revealers idempotent by contract, and test it.** README says `reveal(target)` must
-      be idempotent, but the [`Revealer`](../core/reveal.client.ts) type doesn't, and no test calls a
-      revealer twice. Back/forward and `beforematch` can repeat a reveal. `reader_panel`'s
-      revealer calls `setTab("translation")`, which re-shows the spinner and starts a second fetch
-      while the first is in flight, and fires `onTabChange` again. `reader_view`'s
-      `restoreDrawer()` is unverified. Fix: document it on `Revealer`, guard the in-flight
-      translation load, and add a call-twice test per revealer (same state, one fetch).
-
 ## Client DOM construction outside `core/`
 
 Client code outside `core/` that builds or rewrites DOM duplicates markup the server already knows

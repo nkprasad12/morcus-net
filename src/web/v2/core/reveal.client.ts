@@ -20,7 +20,15 @@ import { decodeHashId } from "@/web/v2/core/js_gate.client";
  * disagree.
  */
 
-/** Makes `target` (the container itself or a descendant) visible. */
+/**
+ * Makes `target` (the container itself or a descendant) visible.
+ *
+ * Must be idempotent: open, don't toggle. `revealTarget` walks every
+ * ancestor revealer and may run several times for the same target
+ * (initial hash, `hashchange`, in-page anchor clicks), so revealing an
+ * already-visible target must be a no-op with no repeated side effects
+ * (no re-render, scroll reset, or duplicate fetch).
+ */
 export type Revealer = (target: HTMLElement) => void;
 
 export interface RevealerOptions {

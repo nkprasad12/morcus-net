@@ -361,7 +361,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const dictPanel = this.querySelector<HTMLElement>("#reader-dict");
     if (dictPanel) {
       this.scope.use(
-        registerRevealer(dictPanel, () => this.restoreDrawer(), {
+        registerRevealer(dictPanel, () => this.activatePanelLayout(), {
           ownsHash: true,
         })
       );
@@ -792,8 +792,22 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.drawerController.restore(targetSvh);
   }
 
+  /**
+   * Ensures the companion panel is open without re-running `restoreDrawer()`
+   * when it already is: `#panel-view-*` sits inside `#reader-dict`, so an
+   * unconditional restore would fire `onRestore` -> `resetDictScroll()` a
+   * second time after `showNote()` scrolled to a note, and would reset tab
+   * scroll positions on every tab switch.
+   */
   public activatePanelLayout(): void {
-    this.restoreDrawer();
+    const split = this.layoutController.splitLayout ?? this.splitLayoutEl;
+    const needsOpen =
+      this.drawerController.isMinimized() ||
+      split?.classList.contains("drawer-dismissed") ||
+      !split?.classList.contains("reader-layout-active");
+    if (needsOpen) {
+      this.restoreDrawer();
+    }
   }
 
   public activatePanelTab(tab: PanelTab): void {
@@ -1552,6 +1566,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         this.panelController.showTranslationError();
       }
     } else {
+      this.scope.cancel("translation");
       this.panelController?.resetTranslation();
     }
 

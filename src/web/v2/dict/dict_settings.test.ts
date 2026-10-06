@@ -3,7 +3,7 @@
  */
 import "@/web/v2/dict/dict_settings.client";
 import type { DictSettingsCommit } from "@/web/v2/dict/dict_settings.client";
-import { revealHashTarget } from "@/web/v2/core/reveal.client";
+import { revealHashTarget, revealTarget } from "@/web/v2/core/reveal.client";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 
 type BarOptions = Partial<Parameters<typeof renderDictSearchBar>[0]>;
@@ -313,6 +313,23 @@ describe("MorcusDictSettings", () => {
       expect(checkbox(m.el, "EGL").checked).toBe(false);
       expect(m.commits).toEqual([]);
     });
+  });
+
+  test("revealing the dialog is idempotent when called twice", () => {
+    const m = mount();
+    const setAttr = jest.spyOn(m.dialog, "setAttribute");
+    expect(m.dialog.open).toBe(false);
+
+    revealTarget(m.dialog);
+    expect(m.dialog.open).toBe(true);
+    expect(m.trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(setAttr).toHaveBeenCalledTimes(1);
+
+    // Already open: revealing again is a no-op rather than re-opening or toggling.
+    revealTarget(m.dialog);
+    expect(m.dialog.open).toBe(true);
+    expect(m.trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(setAttr).toHaveBeenCalledTimes(1);
   });
 });
 
