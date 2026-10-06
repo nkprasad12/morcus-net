@@ -287,3 +287,26 @@ defect analysis behind it (findings F1–F9) is archived in
       stores the `?d=` bitmask. The cookie was renamed so that old `;`-joined values are ignored
       rather than misread by `parseInt`. `?dict=` stays as the input adapter for the No-JS checkbox
       group, and `parseDictKeys` stays tolerant of old links.
+
+---
+
+## 10. Every word in an entry is a link (screen readers)
+
+**Status:** not started. **High priority** investigation.
+
+`enhanceWords` turns every Latin word in the results into an `<a href>` (`createWordLink` in
+[`core/tokenize.client.ts`](../core/tokenize.client.ts)), so a long entry exposes thousands of links:
+about 5,900 for `sum`. Screen reader users get all of them in the links list and in the tab order.
+The reader avoids this with spans and one delegated click handler on the passage.
+
+To investigate:
+
+- Why the dictionary kept real links. Candidates: middle-click / Ctrl+click to open a word in a new
+  tab, link previews, `:visited` styling. Decide which of these are worth keeping.
+- Whether the reader's pattern is right as is: it puts `role="button"` and `tabindex="0"` on every
+  word, so it has the same tab-order problem.
+- What screen reader users actually need from an entry: probably reading it as prose, with a way to
+  look up a word that doesn't involve tabbing through every one.
+
+Spans would also be cheaper to create than anchors (no `href` to parse, no `:visited` matching),
+which helps the tokenize-on-mount work in [`../docs/CODE_HEALTH.md`](../docs/CODE_HEALTH.md).
