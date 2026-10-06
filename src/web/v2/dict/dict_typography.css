@@ -219,7 +219,6 @@ a.lsSenseBullet:visited {
   text-decoration: none;
   border-radius: var(--radius-xs);
   cursor: pointer;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
 .lat-word:hover,
