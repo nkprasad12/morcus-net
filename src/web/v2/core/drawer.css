@@ -116,12 +116,6 @@
   padding: 0 var(--space-9);
 }
 
-.drawer-label strong,
-.reader-sheet-label strong {
-  color: var(--text);
-  font-weight: 700;
-}
-
 /* Close / Action Button inside Teaser */
 a.drawer-close,
 a.drawer-close:visited,

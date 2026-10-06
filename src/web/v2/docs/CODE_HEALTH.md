@@ -14,21 +14,6 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
 
 ---
 
-## Client DOM construction outside `core/`
-
-Client code outside `core/` that builds or rewrites DOM duplicates markup the server already knows
-how to render, and the two copies drift. Prefer server-rendering the markup and adopting it on
-connect, or moving the construction into a `core/` helper. `./morcus.sh inventory`
-(`domMutationOutsideCore` in [`inventory_ratchet.json`](../inventory_ratchet.json)) only guards against
-growth; it is not a target.
-
-- [ ] 🟡 **`reader_view.client.ts`**: the bottom-sheet label ("Definitions for **word**", the
-      " · tap to expand" hint, and the `textContent` reset in `dismissDictionary`) is rebuilt on the
-      client, replacing the server-rendered teaser spans. It is only visible in the External Reader:
-      every library work has an About tab, and `.has-companion-tabs` hides the label at every width.
-      Server-render a `data-js-only` `<strong>` and hint span and toggle them instead. Its `lat-word`
-      span factory also duplicates `createWordLink` in `core/tokenize.client.ts`.
-
 ## Test coverage
 
 - [ ] 🟢 **Visual scenarios for post-interaction state in the dictionary.** `v2VisualScenario`'s
