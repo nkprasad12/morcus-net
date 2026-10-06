@@ -419,17 +419,24 @@ describe("ReaderPanelController", () => {
       expect(note.classList.contains("note-active")).toBe(true);
     });
 
-    it("#reader-work-about opens the About tab", () => {
-      revealTarget($(container, "#reader-work-about"));
+    it("#reader-work-about opens the About tab and is idempotent on repeat reveals", () => {
+      const about = $(container, "#reader-work-about");
+      revealTarget(about);
+      revealTarget(about);
       expect(controller.activeTab).toBe("about");
       expect(tabChanges).toEqual(["about"]);
     });
 
-    it("a view's own id opens its tab", () => {
-      revealTarget($(container, "#panel-view-about"));
+    it("a view's own id opens its tab and is idempotent on repeat reveals", () => {
+      const aboutView = $(container, "#panel-view-about");
+      const dictView = $(container, "#panel-view-dict");
+      revealTarget(aboutView);
+      revealTarget(aboutView);
       expect(controller.activeTab).toBe("about");
-      revealTarget($(container, "#panel-view-dict"));
+      revealTarget(dictView);
+      revealTarget(dictView);
       expect(controller.activeTab).toBe("dict");
+      expect(tabChanges).toEqual(["about", "dict"]);
     });
 
     it("stops revealing after dispose", () => {
@@ -454,7 +461,7 @@ describe("ReaderPanelController", () => {
   });
 
   describe("with a translation", () => {
-    let loadTranslation: jest.Mock<Promise<string>>;
+    let loadTranslation: jest.Mock<Promise<string | null>>;
 
     beforeEach(() => {
       container = createFixture({
@@ -498,6 +505,53 @@ describe("ReaderPanelController", () => {
       expect(loadTranslation).toHaveBeenCalledTimes(1);
     });
 
+    it("does not re-render spinner or start a second load while in flight", async () => {
+      let resolve!: (html: string | null) => void;
+      loadTranslation
+        .mockReset()
+        .mockImplementation(
+          () => new Promise<string | null>((r) => (resolve = r))
+        );
+
+      const view = $(container, "#panel-view-translation");
+      revealTarget(view);
+      const firstSpinner = $(view, ".loading-spinner");
+      expect(loadTranslation).toHaveBeenCalledTimes(1);
+
+      // Repeat reveal and explicit setTab while in flight are no-ops on the load
+      revealTarget(view);
+      controller.setTab("dict");
+      controller.setTab("translation");
+      expect(loadTranslation).toHaveBeenCalledTimes(1);
+      expect($(view, ".loading-spinner")).toBe(firstSpinner);
+
+      resolve(TRANSLATION_HTML);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(view.textContent).toContain("Translated by John Selby Watson");
+    });
+
+    it("re-arms translation load when an in-flight load resolves to null", async () => {
+      loadTranslation
+        .mockReset()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(TRANSLATION_HTML);
+
+      controller.setTab("translation");
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(loadTranslation).toHaveBeenCalledTimes(1);
+
+      controller.setTab("dict");
+      controller.setTab("translation");
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(loadTranslation).toHaveBeenCalledTimes(2);
+      expect($(container, "#panel-view-translation").textContent).toContain(
+        "Translated by John Selby Watson"
+      );
+    });
+
     it("reloads after resetTranslation()", async () => {
       controller.setTab("translation");
       await Promise.resolve();
@@ -506,6 +560,41 @@ describe("ReaderPanelController", () => {
       expect($(container, "#panel-view-translation").textContent).toBe("");
       controller.setTab("translation");
       expect(loadTranslation).toHaveBeenCalledTimes(2);
+    });
+
+    it("ignores a stale in-flight load that resolves after resetTranslation()", async () => {
+      const resolvers: Array<(html: string | null) => void> = [];
+      loadTranslation.mockReset().mockImplementation(
+        () =>
+          new Promise<string | null>((r) => {
+            resolvers.push(r);
+          })
+      );
+
+      // Start load 1, then reset (simulating a page turn) and start load 2
+      controller.setTab("translation");
+      controller.setTab("dict");
+      controller.resetTranslation();
+      controller.setTab("translation");
+      expect(loadTranslation).toHaveBeenCalledTimes(2);
+
+      // Stale load 1 resolves (either with null from an abort or with old HTML);
+      // load 2 must remain in flight so a subsequent setTab does not start load 3.
+      resolvers[0]("<div>Stale page translation</div>");
+      await Promise.resolve();
+      await Promise.resolve();
+      expect($(container, "#panel-view-translation").textContent).not.toContain(
+        "Stale page translation"
+      );
+      controller.setTab("translation");
+      expect(loadTranslation).toHaveBeenCalledTimes(2);
+
+      resolvers[1](TRANSLATION_HTML);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect($(container, "#panel-view-translation").textContent).toContain(
+        "Translated by John Selby Watson"
+      );
     });
 
     it("takes content directly via setTranslationHtml()", () => {

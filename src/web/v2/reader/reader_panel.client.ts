@@ -43,7 +43,8 @@ export class ReaderPanelController extends BaseController {
   public hasTranslation: boolean = false;
   public hasAbout: boolean = false;
   public noteCount: number = 0;
-  private isTranslationLoaded: boolean = false;
+  private translationState: "idle" | "loading" | "loaded" = "idle";
+  private translationLoadId: number = 0;
   private readonly hasTranslationOption?: boolean | (() => boolean);
   private readonly onLoadTranslation?: () => Promise<string | null>;
   private readonly onTabChange?: (tab: PanelTab) => void;
@@ -276,7 +277,7 @@ export class ReaderPanelController extends BaseController {
       "click",
       "#btn-retry-translation",
       () => {
-        this.isTranslationLoaded = false;
+        this.translationState = "idle";
         this.setTab("translation");
       }
     );
@@ -299,7 +300,7 @@ export class ReaderPanelController extends BaseController {
                 : null;
             if (note) {
               this.showNote(note.id);
-            } else {
+            } else if (this._activeTab !== id) {
               this.setTab(id);
             }
           },
@@ -331,9 +332,11 @@ export class ReaderPanelController extends BaseController {
     if (
       tab === "translation" &&
       view &&
-      !this.isTranslationLoaded &&
+      this.translationState === "idle" &&
       this.onLoadTranslation
     ) {
+      this.translationState = "loading";
+      const loadId = ++this.translationLoadId;
       // Built in place rather than pre-rendered as `hidden` siblings: the
       // Translation tab is `data-js-only` (nothing to drift from), and
       // replacing `#panel-view-translation`'s children keeps loading, error,
@@ -346,13 +349,16 @@ export class ReaderPanelController extends BaseController {
       );
       this.onLoadTranslation()
         .then((transHtml) => {
-          if (transHtml !== null && this.isConnected) {
+          if (!this.isConnected || loadId !== this.translationLoadId) return;
+          if (transHtml !== null) {
             swapElementContent(view, transHtml);
-            this.isTranslationLoaded = true;
+            this.translationState = "loaded";
+          } else {
+            this.translationState = "idle";
           }
         })
         .catch((err) => {
-          if (!this.isConnected) return;
+          if (!this.isConnected || loadId !== this.translationLoadId) return;
           console.error("Failed to load translation:", err);
           this.showTranslationError();
         });
@@ -363,7 +369,8 @@ export class ReaderPanelController extends BaseController {
 
   public showTranslationError(): void {
     if (!this.translationView) return;
-    this.isTranslationLoaded = false;
+    this.translationLoadId++;
+    this.translationState = "idle";
     setHtml(
       this.translationView,
       html`<div class="reader-translation-error">
@@ -380,15 +387,17 @@ export class ReaderPanelController extends BaseController {
 
   public setTranslationHtml(transHtml: string): void {
     if (!this.translationView) return;
+    this.translationLoadId++;
     swapElementContent(this.translationView, transHtml);
-    this.isTranslationLoaded = true;
+    this.translationState = "loaded";
     this.translationView.scrollTop = 0;
   }
 
   public resetTranslation(): void {
     if (!this.translationView) return;
+    this.translationLoadId++;
     this.translationView.replaceChildren();
-    this.isTranslationLoaded = false;
+    this.translationState = "idle";
     this.translationView.scrollTop = 0;
   }
 

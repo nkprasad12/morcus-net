@@ -446,17 +446,20 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       expect(sheetLabelOf(el).textContent).toBe("Definitions for Arma");
     });
 
-    test("revealing #reader-dict (pre-upgrade :target, later hashes) restores the drawer", () => {
+    test("revealing #reader-dict (pre-upgrade :target, later hashes) restores the drawer once", () => {
       const el = createReaderView(passageHtml);
       el.minimizeDrawer();
       const restore = jest.spyOn(el, "restoreDrawer");
+      const dictPanel = el.querySelector<HTMLElement>("#reader-dict")!;
 
-      revealTarget(el.querySelector<HTMLElement>("#reader-dict")!);
-
+      revealTarget(dictPanel);
       expect(restore).toHaveBeenCalledTimes(1);
-      expect(
-        el.querySelector("#reader-dict")!.classList.contains("drawer-minimized")
-      ).toBe(false);
+      expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+
+      // Already open: revealing again is a no-op rather than re-running restoreDrawer.
+      revealTarget(dictPanel);
+      expect(restore).toHaveBeenCalledTimes(1);
+      expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
     });
 
     test("restoreDrawer clamps target svh within [DRAWER_FLOOR_SVH, DRAWER_EXPANDED_SVH] and falls back to DRAWER_DEFAULT_SVH", () => {
@@ -1496,6 +1499,46 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(panelController?.activeTab).toBe("notes");
     const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout");
     expect(splitLayout?.classList.contains("reader-layout-active")).toBe(true);
+
+    // Minimizing the sheet and clicking the already-active tab pill expands it again.
+    const dictPanel = el.querySelector<HTMLElement>("#reader-dict")!;
+    el.minimizeDrawer();
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+    notesTab?.click();
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+  });
+
+  test("revealing a note and openNote restore the drawer at most once and never reset scroll after scrolling to the note", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+    });
+    const restore = jest.spyOn(el, "restoreDrawer");
+    const notesView = el.querySelector<HTMLElement>("#panel-view-notes")!;
+    const note = el.querySelector<HTMLElement>("#note-n1")!;
+    const events: string[] = [];
+    notesView.scrollTo = jest.fn(() => {
+      events.push("resetScroll");
+    });
+    note.scrollIntoView = jest.fn(() => {
+      events.push("scrollIntoView");
+    });
+
+    revealTarget(note);
+    expect(restore).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(["resetScroll", "scrollIntoView"]);
+
+    // Second reveal of the same note re-highlights without re-restoring or resetting scroll.
+    events.length = 0;
+    revealTarget(note);
+    expect(restore).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(["scrollIntoView"]);
+
+    // Clicking a note marker while the panel is already open does not reset scroll after scrollIntoView.
+    events.length = 0;
+    const marker = el.querySelector<HTMLAnchorElement>("#noteref-n1")!;
+    marker.click();
+    expect(restore).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(["scrollIntoView"]);
   });
 
   test("clicking note backlink marks the corresponding marker in the passage", () => {
