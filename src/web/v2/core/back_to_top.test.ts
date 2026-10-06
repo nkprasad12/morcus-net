@@ -38,7 +38,7 @@ describe("setupBackToTop", () => {
     expect(() => cleanup()).not.toThrow();
   });
 
-  test("initializes visibility based on initial window.scrollY", () => {
+  test("initializes visibility from window.scrollY on the first frame", () => {
     document.body.innerHTML = `<a href="#top" class="back-to-top">Top</a>`;
     const btn = document.querySelector(".back-to-top") as HTMLAnchorElement;
 
@@ -49,6 +49,7 @@ describe("setupBackToTop", () => {
       writable: true,
     });
     cleanup = setupBackToTop(document, window);
+    flushRaf();
     expect(btn.classList.contains("visible")).toBe(false);
 
     // Above 300px
@@ -58,6 +59,10 @@ describe("setupBackToTop", () => {
       writable: true,
     });
     cleanup = setupBackToTop(document, window);
+    // Not read synchronously: setup runs in the page-load task, where reading
+    // scroll position forces a full style and layout.
+    expect(btn.classList.contains("visible")).toBe(false);
+    flushRaf();
     expect(btn.classList.contains("visible")).toBe(true);
   });
 
@@ -162,12 +167,16 @@ describe("setupBackToTop", () => {
     cleanup = setupBackToTop(document, window);
     cleanup();
 
-    // Trigger scroll
     Object.defineProperty(window, "scrollY", {
       value: 600,
       configurable: true,
       writable: true,
     });
+    // The initial update queued by setup is a no-op once cleaned up.
+    flushRaf();
+    expect(btn.classList.contains("visible")).toBe(false);
+
+    // Trigger scroll
     window.dispatchEvent(new Event("scroll"));
     expect(rafCallbacks.length).toBe(0);
 
@@ -241,6 +250,7 @@ describe("setupBackToTop", () => {
         threshold: 100,
         getTargetTop: () => 24,
       });
+      flushRaf();
       expect(btn.classList.contains("visible")).toBe(true);
 
       btn.click();

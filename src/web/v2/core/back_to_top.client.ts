@@ -96,7 +96,11 @@ export function bindBackToTop(
   for (const target of targets) {
     scope.listen(target, "scroll", onScroll, { passive: true });
   }
-  updateBackToTop();
+  // On the next frame, like scroll updates: setup runs inside the page-load
+  // task, where reading the scroll offset would force a synchronous style and
+  // layout of the whole page (~90 ms on a long dictionary entry). The button
+  // starts hidden, so a frame's delay is invisible.
+  onScroll();
 
   const onClick = (e: MouseEvent) => {
     // The `#top` jump is replaced by the scroll below, on the button this
