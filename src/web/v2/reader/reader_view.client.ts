@@ -64,6 +64,7 @@ import {
 import {
   isWordIndexHighlighted,
   parseTextHighlights,
+  type TextHighlightRange,
 } from "@/web/v2/reader/reader_highlight.common";
 
 export const READER_DRAWER_MIN_HEIGHT = 40;
@@ -1022,6 +1023,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
             undefined
           : undefined;
       const highlights = parseTextHighlights(matchText);
+      let lastRoot: HTMLElement | undefined;
+      let lastRanges: readonly TextHighlightRange[] | undefined;
 
       tokenizeTargets(passage, {
         targetSelector: "[data-tokenize-target='true']",
@@ -1030,13 +1033,19 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         // come from (`extractRowText`, rule 1).
         joinAcrossInline: true,
         renderWord: (token, _cleanWord, wordIndex, targetRoot, part) => {
-          const secEl = targetRoot.closest<HTMLElement>(".reader-section");
-          const secId = secEl?.id.startsWith("sec-")
-            ? secEl.id.slice(4)
-            : undefined;
+          // Runs once per word: resolve the section only when the target
+          // changes (words arrive target by target) and only if there is
+          // anything to highlight.
+          if (highlights !== undefined && targetRoot !== lastRoot) {
+            lastRoot = targetRoot;
+            const secEl = targetRoot.closest<HTMLElement>(".reader-section");
+            lastRanges = secEl?.id.startsWith("sec-")
+              ? highlights.get(secEl.id.slice(4))
+              : undefined;
+          }
           const isMatch =
-            secId !== undefined &&
-            isWordIndexHighlighted(wordIndex, highlights?.get(secId));
+            lastRanges !== undefined &&
+            isWordIndexHighlighted(wordIndex, lastRanges);
 
           const span = document.createElement("span");
           span.className = isMatch ? "lat-word reader-match" : "lat-word";

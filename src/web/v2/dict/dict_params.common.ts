@@ -52,3 +52,16 @@ export function buildDictUrl(options: DictUrlOptions): string {
   if (options.save) params.set("save", "1");
   return `/v2/dicts?${params.toString()}`;
 }
+
+/**
+ * Returns a function producing the same URLs as {@link buildDictUrl} for
+ * `options` with varying `q`. The shared part of the query is built once,
+ * which matters when linking every word of a long entry (thousands of calls).
+ */
+export function dictUrlBuilder(
+  options: Omit<DictUrlOptions, "q">
+): (q: string) => string {
+  // `q` is always the first param, so everything after it is fixed.
+  const rest = buildDictUrl({ ...options, q: "" }).slice("/v2/dicts?q=".length);
+  return (q) => `/v2/dicts?${new URLSearchParams({ q }).toString()}${rest}`;
+}

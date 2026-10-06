@@ -1,6 +1,7 @@
 import {
   applyDictSearch,
   buildDictUrl,
+  dictUrlBuilder,
 } from "@/web/v2/dict/dict_params.common";
 
 describe("applyDictSearch", () => {
@@ -54,6 +55,36 @@ describe("buildDictUrl", () => {
     );
     expect(buildDictUrl({ q: "amō", d: "an", inflected: true })).toBe(
       "/v2/dicts?q=am%C5%8D&d=an&o=1"
+    );
+  });
+});
+
+describe("dictUrlBuilder", () => {
+  test("matches buildDictUrl for every q", () => {
+    const options = {
+      d: "an",
+      inflected: true,
+      lang: "La",
+      embedded: "1",
+    } as const;
+    const hrefFor = dictUrlBuilder(options);
+    for (const q of [
+      "amo",
+      "amō",
+      "λόγος",
+      "a b",
+      "quis?",
+      "it's",
+      "",
+      "x&y=z",
+    ]) {
+      expect(hrefFor(q)).toBe(buildDictUrl({ ...options, q }));
+    }
+  });
+
+  test("omits absent params like buildDictUrl", () => {
+    expect(dictUrlBuilder({ inflected: false })("arma")).toBe(
+      "/v2/dicts?q=arma&o=0"
     );
   });
 });
