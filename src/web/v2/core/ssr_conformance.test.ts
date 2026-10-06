@@ -10,13 +10,19 @@
 import "@/web/v2/v2_elements.client";
 import fs from "fs";
 import path from "path";
-import { getRegisteredElementTags } from "@/web/v2/core/base_element.client";
+import {
+  BaseController,
+  LifetimeScope,
+  getRegisteredElementTags,
+} from "@/web/v2/core/base_element.client";
 import {
   PAGE_SETUPS,
   buildSsrFixtures,
   installMatchMediaStub,
+  mountFixture,
   type SsrFixture,
 } from "@/web/v2/testing/ssr_fixtures";
+import { parseInert } from "@/web/v2/testing/ssr_invariants";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
@@ -69,7 +75,97 @@ describe("SSR conformance across every page", () => {
     // The sweep must see the same document-level listeners as a real page.
     expect(Object.keys(PAGE_SETUPS).sort()).toEqual(setupsStartedByEntries());
   });
+
+  test("every connect-time and delegated selector lookup matches in at least one SSR fixture", () => {
+    const recorder = installLookupRecorder();
+    try {
+      for (const mediaMatches of [false, true]) {
+        stubMatchMedia(mediaMatches);
+        for (const fixture of fixtures) {
+          mountWithPageSetups(fixture, recorder);
+        }
+      }
+    } finally {
+      recorder.restore();
+      installMatchMediaStub();
+    }
+
+    const { matchedByKey } = recorder;
+    const unexpectedUnmatched = Array.from(matchedByKey)
+      .filter(
+        ([key, matched]) => !matched && !(key in UNMATCHED_SELECTOR_ALLOWLIST)
+      )
+      .map(([key]) => key)
+      .sort();
+    const staleAllowlist = Object.keys(UNMATCHED_SELECTOR_ALLOWLIST)
+      .filter((key) => matchedByKey.get(key) !== false)
+      .sort();
+
+    // Floor (~70% of the 82 recorded pairs when this check landed) so a
+    // refactor that drops lookups out of the connect path fails loudly.
+    expect(matchedByKey.size).toBeGreaterThanOrEqual(58);
+    expect({ unexpectedUnmatched, staleAllowlist }).toEqual({
+      unexpectedUnmatched: [],
+      staleAllowlist: [],
+    });
+  });
 });
+
+/** Mounts `fixture` on a clean page and runs every global page setup. */
+function mountWithPageSetups(fixture: SsrFixture, recorder: LookupRecorder) {
+  localStorage.clear();
+  window.history.replaceState(null, "", "/");
+  document.body.replaceChildren();
+  const cleanups: (() => void)[] = [];
+  try {
+    mountFixture(fixture, parseInert(fixture.html));
+    for (const [name, setup] of Object.entries(PAGE_SETUPS)) {
+      cleanups.push(recorder.withOwner(name, () => setup(document, window)));
+    }
+  } finally {
+    cleanups.forEach((cleanup) => cleanup());
+    document.body.replaceChildren();
+  }
+}
+
+/** Every media query reports `matches`, so both layout branches connect. */
+function stubMatchMedia(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: (query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
+/**
+ * Connect-time or delegated lookups whose targets are genuinely absent from
+ * the initial SSR fixtures. When a selector lookup fails above, decide whether
+ * the server dropped the element on purpose (delete the client code) or
+ * renamed it (fix the selector); only add an entry here when the target is
+ * created on the client or lives outside the fixture's scope.
+ */
+const UNMATCHED_SELECTOR_ALLOWLIST: Readonly<Record<string, string>> = {
+  "morcus-external-loader :: .external-saved-delete":
+    "Delete buttons are rendered on the client from IndexedDB saved items.",
+  "morcus-reader-view :: #btn-retry-translation":
+    "Retry button is rendered on the client when a translation fetch fails.",
+  "morcus-reader-view :: #reader-passage .reader-match":
+    "Match highlight spans are created when ?match= is present.",
+  "morcus-reader-view :: .back-to-top":
+    "Rendered by renderPageShell; reader fixtures mount renderReaderContentHtml.",
+  "morcus-reader-view :: .reader-note":
+    "Mock reader works in mock_reader_loader.ts have no footnotes.",
+  "setupDeferredIframes :: iframe[data-deferred-src], iframe[data-src]":
+    "Emitted only for dictionary entries with Mateo facsimile <figure> plates.",
+};
 
 /**
  * `setupX()` calls in `*_entry.client.ts` files. boot_conformance.test.ts
@@ -92,4 +188,123 @@ function setupsStartedByEntries(): string[] {
   };
   walk(path.resolve(__dirname, ".."));
   return [...names].sort();
+}
+
+interface LookupRecorder {
+  /** `"<owner> :: <selector>"` → whether it matched at least once. */
+  readonly matchedByKey: ReadonlyMap<string, boolean>;
+  /** Runs `fn` with `owner` credited for any lookups it makes. */
+  withOwner<T>(owner: string, fn: () => T): T;
+  /** Undoes every patch. */
+  restore(): void;
+}
+
+/**
+ * Patches DOM queries and `scope.delegate` to record each selector lookup
+ * and whether it matched, credited to the element (or page setup) whose
+ * connect path made it. Post-connect handler lookups are out of scope; those
+ * belong to `*_interaction_conformance.test.ts`.
+ */
+function installLookupRecorder(): LookupRecorder {
+  const matchedByKey = new Map<string, boolean>();
+  const ownerStack: string[] = [];
+  const restores: (() => void)[] = [];
+  let paused = false;
+
+  const record = (selector: string, matched: boolean) => {
+    const owner = ownerStack[ownerStack.length - 1];
+    if (paused || !owner || !selector) return;
+    const key = `${owner} :: ${selector}`;
+    matchedByKey.set(key, (matchedByKey.get(key) ?? false) || matched);
+  };
+
+  const withOwner = <T>(owner: string, fn: () => T): T => {
+    ownerStack.push(owner);
+    try {
+      return fn();
+    } finally {
+      ownerStack.pop();
+    }
+  };
+
+  // DOM query methods: every `scope.$`/`$$` ends up in one of these.
+  const spyQuery = (
+    proto: object,
+    name: string,
+    isHit: (result: unknown) => boolean,
+    prefix = ""
+  ) => {
+    const orig = Reflect.get(proto, name) as (
+      this: unknown,
+      arg: string
+    ) => unknown;
+    Reflect.set(proto, name, function (this: unknown, arg: string) {
+      const result = orig.call(this, arg);
+      record(prefix + arg, isHit(result));
+      return result;
+    });
+    restores.push(() => Reflect.set(proto, name, orig));
+  };
+  const found = (r: unknown) => r !== null;
+  const nonEmpty = (r: unknown) => (r as NodeList).length > 0;
+  spyQuery(Element.prototype, "querySelector", found);
+  spyQuery(Element.prototype, "querySelectorAll", nonEmpty);
+  spyQuery(Document.prototype, "querySelector", found);
+  spyQuery(Document.prototype, "querySelectorAll", nonEmpty);
+  spyQuery(Document.prototype, "getElementById", found, "#");
+
+  // Delegated selectors are checked against the delegate root up front.
+  const origDelegate = LifetimeScope.prototype.delegate;
+  LifetimeScope.prototype.delegate = function <
+    T extends HTMLElement = HTMLElement
+  >(
+    this: LifetimeScope,
+    root: EventTarget | null | undefined,
+    type: string,
+    selector: string,
+    handler: (e: Event, matched: T) => void,
+    options?: boolean | AddEventListenerOptions
+  ): void {
+    if (root instanceof Element || root instanceof Document) {
+      paused = true;
+      const hit = root.querySelector(selector) !== null;
+      paused = false;
+      record(selector, hit);
+    }
+    Reflect.apply(origDelegate, this, [root, type, selector, handler, options]);
+  };
+  restores.push(() => (LifetimeScope.prototype.delegate = origDelegate));
+
+  // jsdom snapshots `connectedCallback` at `customElements.define()` time,
+  // so wrap each registered element's `onConnect` instead.
+  for (const tag of getRegisteredElementTags()) {
+    const proto: unknown = customElements.get(tag)?.prototype;
+    if (typeof proto !== "object" || proto === null) continue;
+    const orig = Reflect.get(proto, "onConnect") as unknown;
+    if (typeof orig !== "function") continue;
+    const hadOwn = Object.prototype.hasOwnProperty.call(proto, "onConnect");
+    Reflect.set(proto, "onConnect", function (this: Element) {
+      withOwner(this.localName, () => orig.call(this));
+    });
+    restores.push(() =>
+      hadOwn
+        ? Reflect.set(proto, "onConnect", orig)
+        : Reflect.deleteProperty(proto, "onConnect")
+    );
+  }
+
+  // Controllers connect after their host's `onConnect`; credit the host.
+  const origConnect = BaseController.prototype.connect;
+  BaseController.prototype.connect = function (this: BaseController) {
+    const owner = this.owner?.localName ?? ownerStack[ownerStack.length - 1];
+    if (owner) withOwner(owner, () => origConnect.call(this));
+    else origConnect.call(this);
+  };
+  restores.push(() => (BaseController.prototype.connect = origConnect));
+
+  return {
+    matchedByKey,
+    withOwner,
+    restore: () => restores.reverse().forEach((undo) => undo()),
+  };
 }

@@ -62,5 +62,14 @@ describeInteractionConformance("dict", {
       ],
       expectSwap: true,
     },
+    {
+      fixture: "dict-landing",
+      name: "change settings on landing page",
+      steps: [
+        clickOn("#dict-settings-btn"),
+        clickOn(".dict-checkbox:not(:checked)"),
+        clickOn(".dict-settings-done"),
+      ],
+    },
   ],
 });
