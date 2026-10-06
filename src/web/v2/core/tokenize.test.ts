@@ -392,31 +392,4 @@ describe("tokenizeTargets", () => {
 
     expect(container.querySelectorAll(".lat-word")).toHaveLength(3);
   });
-
-  it("falls back to fallbackSelector when no primary target matches", () => {
-    const container = document.createElement("div");
-    container.innerHTML = `
-      <div class="reader-section">
-        <p class="reader-paragraph">Legacy paragraph text</p>
-      </div>
-      <div class="sidebar">Sidebar text</div>
-    `;
-    document.body.appendChild(container);
-
-    tokenizeTargets(container, {
-      targetSelector: "[data-tokenize-target='true']",
-      fallbackSelector: "p.reader-paragraph",
-      renderWord: (token) => {
-        const span = document.createElement("span");
-        span.className = "lat-word";
-        span.textContent = token;
-        return span;
-      },
-    });
-
-    const words = Array.from(container.querySelectorAll(".lat-word")).map(
-      (w) => w.textContent
-    );
-    expect(words).toEqual(["Legacy", "paragraph", "text"]);
-  });
 });

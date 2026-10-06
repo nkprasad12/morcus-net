@@ -230,13 +230,15 @@ export class MorcusExternalLoader extends BaseElement {
     const list = this.savedList;
     const empty = this.savedEmpty;
     if (!list) return;
+    const signal = this.scope.signal;
     let items: ExternalContentSummary[];
     try {
       items = await this.store.list();
     } catch {
-      if (empty) empty.textContent = STORAGE_UNAVAILABLE;
+      if (empty && !signal.aborted) empty.textContent = STORAGE_UNAVAILABLE;
       return;
     }
+    if (signal.aborted) return;
     setHtml(list, html`${joinHtml(items.map(renderSavedItem))}`);
     if (empty) empty.hidden = items.length > 0;
   }
@@ -264,8 +266,11 @@ export class MorcusExternalLoader extends BaseElement {
     if (!view) return;
     const key = this.dataset.localKey ?? "";
     const lines = parseLineMode(this.dataset.lines);
+    const signal = this.scope.signal;
 
     const record = await this.store.get(key).catch(() => undefined);
+    // Disconnected (or swapped out) while IndexedDB was reading.
+    if (signal.aborted) return;
     if (record === undefined) {
       view.adoptPassage(
         html`<p class="external-notice">

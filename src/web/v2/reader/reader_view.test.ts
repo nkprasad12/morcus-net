@@ -74,7 +74,12 @@ function createReaderView(
           <header class="reader-text-card-header">
             <div class="reader-text-meta"></div>
           </header>
-          <article class="reader-passage" id="reader-passage">
+          <article class="reader-passage" id="reader-passage"${
+            // Production passages carry the marker (v2_preprocessor.ts).
+            innerPassageHtml.includes("data-tokenize-target")
+              ? ""
+              : ' data-tokenize-target="true"'
+          }>
             ${innerPassageHtml}
           </article>
         </div>
@@ -2045,7 +2050,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
             <article class="reader-passage" id="reader-passage">
               ${
                 options.passageHtml ??
-                `<div class="reader-section" id="sec-1.1"><p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p></div>`
+                `<div class="reader-section" id="sec-1.1"><p class="reader-paragraph" data-tokenize-target="true">Gallia est omnis divisa in partes tres.</p></div>`
               }
             </article>
             <footer class="reader-passage-footer">
@@ -2083,7 +2088,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       </header>
       <article class="reader-passage" id="reader-passage">
         <div class="reader-section" id="sec-1.2">
-          <p class="reader-paragraph">Apud Helvetios longe nobilissimus fuit Orgetorix.</p>
+          <p class="reader-paragraph" data-tokenize-target="true">Apud Helvetios longe nobilissimus fuit Orgetorix.</p>
         </div>
       </article>
       <footer class="reader-passage-footer">
@@ -2526,7 +2531,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
           <h1 class="reader-passage-heading">Liber I: Caput 1</h1>
         </header>
         <article class="reader-passage" id="reader-passage">
-          <div class="reader-section" id="sec-1.1"><p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p></div>
+          <div class="reader-section" id="sec-1.1"><p class="reader-paragraph" data-tokenize-target="true">Gallia est omnis divisa in partes tres.</p></div>
         </article>
       </div>
     `;
