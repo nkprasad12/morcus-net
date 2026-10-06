@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import {
+  createWordSpan,
   isLatinWord,
   syncWordGroupHover,
   tokenizeSubtree,
@@ -207,11 +208,7 @@ describe("tokenizeSubtree with joinAcrossInline", () => {
       ...options,
       renderWord: (token, cleanWord, index, _root, part) => {
         seen.push({ token, cleanWord, index, part });
-        const span = document.createElement("span");
-        span.className = "lat-word";
-        span.dataset.word = part?.word ?? token;
-        span.textContent = token;
-        return span;
+        return createWordSpan(token, { part });
       },
     });
     return { div, seen };
@@ -234,6 +231,19 @@ describe("tokenizeSubtree with joinAcrossInline", () => {
     const italic = div.querySelector(".italic");
     expect(italic?.firstElementChild?.textContent).toBe("im");
     expect(div.textContent).toBe("impetu liberavissent");
+    const [firstPart, secondPart, wholeWord] = Array.from(
+      div.querySelectorAll<HTMLElement>(".lat-word")
+    );
+    expect(firstPart.getAttribute("role")).toBe("button");
+    expect(firstPart.getAttribute("tabindex")).toBe("0");
+    expect(firstPart.getAttribute("aria-label")).toBe("impetu");
+    expect(firstPart.getAttribute("aria-hidden")).toBeNull();
+    expect(secondPart.getAttribute("role")).toBeNull();
+    expect(secondPart.getAttribute("tabindex")).toBeNull();
+    expect(secondPart.getAttribute("aria-hidden")).toBe("true");
+    expect(wholeWord.getAttribute("role")).toBe("button");
+    expect(wholeWord.getAttribute("tabindex")).toBe("0");
+    expect(wholeWord.getAttribute("aria-label")).toBeNull();
   });
 
   it("gives every part of a word the same group", () => {

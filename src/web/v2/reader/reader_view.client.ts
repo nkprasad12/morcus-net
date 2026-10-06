@@ -8,6 +8,7 @@ import {
   bindBackToTop,
   closeActiveSectionUI,
   copyText,
+  createWordSpan,
   escapeId,
   isPlainLeftClick,
   measureSvh100,
@@ -172,14 +173,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         this.layoutController.setActive(true);
       },
       onMinimize: () => {
-        this.updateSheetLabel(true);
         this.resetDictScroll();
       },
       onRestore: (svh) => {
         this.undismissDrawer();
         this.layoutController.setActive(true);
         this.preferredDrawerSvh = svh;
-        this.updateSheetLabel(false);
         this.resetDictScroll();
       },
       onEscape: () => {
@@ -199,7 +198,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         ),
       onTabChange: () => {
         this.activatePanelLayout();
-        this.updateSheetLabel(false);
       },
     })
   );
@@ -249,9 +247,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
   private get dictPanelEl() {
     return this.querySelector<HTMLElement>(".reader-dict-panel");
-  }
-  private get sheetLabel() {
-    return this.querySelector<HTMLElement>(".reader-sheet-label");
   }
   private get splitLayoutEl() {
     return this.querySelector<HTMLElement>(".reader-split-layout");
@@ -716,55 +711,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.dismissDrawer();
   }
 
-  /**
-   * Renders the mobile drawer teaser label ("Definitions for <strong>word</strong>").
-   *
-   * The query originates from user-controlled input (the `?q=` URL parameter and word
-   * text content), so it is bound via `textContent` rather than interpolated into an
-   * HTML string. The `<strong>` wrapper is load-bearing: `.reader-sheet-label strong`
-   * in core/drawer.css supplies its color and weight.
-   *
-   * Mirrors the server-rendered markup in reader.server.ts.
-   */
-  private renderSheetTeaser(
-    contentNodes: (Node | string)[],
-    showExpandHint: boolean = false
-  ): void {
-    const sheetLabel = this.sheetLabel;
-    if (!sheetLabel) return;
-
-    const nodes: (Node | string)[] = [...contentNodes];
-    if (showExpandHint) {
-      const hint = document.createElement("span");
-      hint.style.opacity = "0.8";
-      hint.style.fontWeight = "400";
-      hint.textContent = "tap to expand";
-      nodes.push(" \u00b7 ", hint);
-    }
-
-    sheetLabel.replaceChildren(...nodes);
-  }
-
-  private setSheetLabel(query: string, showExpandHint: boolean = false): void {
-    if (!query) return;
-    const strong = document.createElement("strong");
-    strong.textContent = query;
-    this.renderSheetTeaser(["Definitions for ", strong], showExpandHint);
-  }
-
-  /**
-   * Only the dictionary needs a label: with any companion tab (Notes,
-   * Translation, About) the panel has `.has-companion-tabs`, which hides the
-   * label at every width (reader_panel.css), and the tab chips stand in for
-   * it. Every library work has an About tab, so in practice this label shows
-   * only in the External Reader.
-   */
-  private updateSheetLabel(showExpandHint: boolean = false): void {
-    if (this.panelController?.activeTab === "dict" && this.currentQuery) {
-      this.setSheetLabel(this.currentQuery, showExpandHint);
-    }
-  }
-
   public dismissDrawer(): void {
     const splitLayout = this.layoutController.splitLayout ?? this.splitLayoutEl;
     splitLayout?.classList.add("drawer-dismissed");
@@ -896,12 +842,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // Reset drawer height and ARIA on mobile
     this.drawerController.reset();
 
-    // Update mobile teaser label
-    const sheetLabel = this.sheetLabel;
-    if (sheetLabel) {
-      sheetLabel.textContent = "Tap any word to view definitions";
-    }
-
     if (updateHistory) {
       this.router?.replace("");
     }
@@ -955,9 +895,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (targetEl) {
       this.scrollTargetAboveDrawer(targetEl);
     }
-
-    // Update mobile teaser bar label
-    this.setSheetLabel(word);
 
     // Synchronize browser history and page title
     if (updateHistory) {
@@ -1047,26 +984,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
             lastRanges !== undefined &&
             isWordIndexHighlighted(wordIndex, lastRanges);
 
-          const span = document.createElement("span");
-          span.className = isMatch ? "lat-word reader-match" : "lat-word";
-          // A word split across inline markup (`<i>im</i>petu`) is one
-          // control: its first part is the button, labelled with the whole
-          // word, and the rest are hidden from assistive tech so the word is
-          // not read twice. Every part looks up the whole word on click.
-          if (part === undefined || part.index === 0) {
-            span.setAttribute("role", "button");
-            span.setAttribute("tabindex", "0");
-          }
-          if (part !== undefined) {
-            if (part.index === 0) {
-              span.setAttribute("aria-label", part.word);
-            } else {
-              span.setAttribute("aria-hidden", "true");
-            }
-          }
-          span.setAttribute("data-word", part?.word ?? token);
-          span.textContent = token;
-          return span;
+          return createWordSpan(token, {
+            part,
+            extraClass: isMatch ? "reader-match" : undefined,
+          });
         },
       });
     }

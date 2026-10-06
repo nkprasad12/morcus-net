@@ -624,14 +624,15 @@ describe("decomposed_reader_renderers", () => {
       ).toBe(false);
     });
 
-    test("renders query definition label and close link when query is present", async () => {
+    test("renders static teaser label and close link when query is present", async () => {
       const ctx = await resolveReaderContext({
         workId: "dbg",
         query: "omnis",
       });
       const html = renderReaderDictPanel(ctx);
 
-      expect(html).toContain("Definitions for <strong>omnis</strong>");
+      expect(html).toContain("reader-sheet-open-link");
+      expect(html).toContain("Tap any word to view definitions");
       expect(html).toContain('class="reader-sheet-close"');
       expect(html).toContain(
         'src="/v2/dicts?q=omnis&amp;lang=La&amp;o=1&amp;embedded=1"'

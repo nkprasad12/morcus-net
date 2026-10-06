@@ -109,6 +109,40 @@ export function createWordLink(
   return a;
 }
 
+/**
+ * Builds the `<span class="lat-word" role="button" tabindex="0" data-word="...">`
+ * element an interactive passage word is replaced with, for use as a `renderWord`
+ * factory.
+ *
+ * A word split across inline markup (`<i>im</i>petu`, via `joinAcrossInline`) is
+ * one control: its first part is the button, labelled with the whole word, and
+ * the rest are hidden from assistive tech so the word is not read twice. Every
+ * part carries the whole word in `data-word`.
+ */
+export function createWordSpan(
+  token: string,
+  options?: { part?: WordPart; extraClass?: string }
+): HTMLSpanElement {
+  const part = options?.part;
+  const extraClass = options?.extraClass;
+  const span = document.createElement("span");
+  span.className = extraClass ? `lat-word ${extraClass}` : "lat-word";
+  if (part === undefined || part.index === 0) {
+    span.setAttribute("role", "button");
+    span.setAttribute("tabindex", "0");
+  }
+  if (part !== undefined) {
+    if (part.index === 0) {
+      span.setAttribute("aria-label", part.word);
+    } else {
+      span.setAttribute("aria-hidden", "true");
+    }
+  }
+  span.setAttribute("data-word", part?.word ?? token);
+  span.textContent = token;
+  return span;
+}
+
 /** Group ids for split words; unique for the lifetime of the page. */
 let nextWordGroup = 0;
 

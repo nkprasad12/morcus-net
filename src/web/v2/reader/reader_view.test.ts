@@ -213,10 +213,6 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(iframe.src).toContain(
       "/v2/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1"
     );
-
-    // Sheet label updated
-    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label")!;
-    expect(sheetLabel.innerHTML).toContain("Mu\u0304sa");
   });
 
   test("clicking a word reflects customized dictScale in iframe query param", () => {
@@ -405,51 +401,12 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     ).toBe("1.00");
   });
 
-  describe("sheet label rendering", () => {
+  describe("drawer behavior", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">
         <span class="reader-line">Arma virumque cano.</span>
       </div>
     `;
-
-    function sheetLabelOf(el: MorcusReaderView): HTMLElement {
-      return el.querySelector<HTMLElement>(".reader-sheet-label")!;
-    }
-
-    test("renders the query inside a <strong> that CSS targets", () => {
-      const el = createReaderView(passageHtml);
-      el.querySelector<HTMLElement>(".lat-word")!.click();
-
-      const label = sheetLabelOf(el);
-      // `.reader-sheet-label strong` in core/drawer.css styles this element,
-      // so the wrapper must remain a real <strong>, not plain text.
-      const strong = label.querySelector("strong");
-      expect(strong).not.toBeNull();
-      expect(strong!.textContent).toBe("Arma");
-      expect(label.textContent).toBe("Definitions for Arma");
-    });
-
-    test("appends the 'tap to expand' hint only when minimized", () => {
-      const el = createReaderView(passageHtml);
-      el.querySelector<HTMLElement>(".lat-word")!.click();
-
-      // Restored state: no hint.
-      expect(sheetLabelOf(el).textContent).toBe("Definitions for Arma");
-
-      el.minimizeDrawer();
-
-      const label = sheetLabelOf(el);
-      expect(label.textContent).toBe(
-        "Definitions for Arma \u00b7 tap to expand"
-      );
-      const hint = label.querySelector<HTMLElement>("span");
-      expect(hint!.textContent).toBe("tap to expand");
-      expect(hint!.style.opacity).toBe("0.8");
-      expect(hint!.style.fontWeight).toBe("400");
-
-      el.restoreDrawer();
-      expect(sheetLabelOf(el).textContent).toBe("Definitions for Arma");
-    });
 
     test("revealing #reader-dict (pre-upgrade :target, later hashes) restores the drawer once", () => {
       const el = createReaderView(passageHtml);
@@ -560,31 +517,6 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
         }
         window.requestAnimationFrame = origRaf;
         window.scrollBy = origScrollBy;
-      }
-    });
-
-    test("does not execute markup supplied via the ?q= parameter", () => {
-      const payload = '<img src=x onerror="globalThis.__xss = true">';
-      history.replaceState(
-        null,
-        "",
-        `/v2/reader?q=${encodeURIComponent(payload)}`
-      );
-
-      try {
-        const el = createReaderView(passageHtml);
-        // Force the label to render the attacker-controlled query.
-        el.restoreDrawer();
-        el.minimizeDrawer();
-
-        const label = sheetLabelOf(el);
-        expect(label.querySelector("img")).toBeNull();
-        // The payload survives as literal text, not as markup.
-        expect(label.textContent).toContain(payload);
-        expect((globalThis as Record<string, unknown>).__xss).toBeUndefined();
-      } finally {
-        history.replaceState(null, "", "/");
-        delete (globalThis as Record<string, unknown>).__xss;
       }
     });
   });
@@ -1485,9 +1417,6 @@ describe("MorcusReaderView companion panel & notes integration", () => {
 
     const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame");
     expect(iframe?.src).toContain("q=divisa");
-
-    const sheetLabel = el.querySelector<HTMLElement>(".reader-sheet-label");
-    expect(sheetLabel?.textContent).toContain("divisa");
   });
 
   test("clicking Notes tab switches companion panel to notes", () => {
@@ -2807,6 +2736,13 @@ describe("MorcusReaderView client-side partial page navigation", () => {
         ".reader-dict-back-to-top"
       );
       expect(reconnectedBtns.length).toBe(1);
+      // Reconnecting resets the panel's scroll, so the button starts hidden.
+      flushRaf();
+      expect(btn?.classList.contains("visible")).toBe(false);
+      // The re-bound listener reacts to scrolling again.
+      dictPanel.scrollTop = 400;
+      dictPanel.dispatchEvent(new Event("scroll"));
+      flushRaf();
       expect(btn?.classList.contains("visible")).toBe(true);
     });
 

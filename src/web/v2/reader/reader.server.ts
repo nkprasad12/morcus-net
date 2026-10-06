@@ -512,16 +512,10 @@ export function renderReaderDictPanelHtml(
                aria-valuenow="${query ? "48" : "0"}">
             <div class="reader-sheet-handle" aria-hidden="true"></div>
             <div class="reader-sheet-teaser">
-              ${
-                query
-                  ? `<span class="reader-sheet-label">Definitions for <strong>${he.escape(
-                      query
-                    )}</strong></span>`
-                  : `<a href="#reader-dict" class="reader-sheet-label reader-sheet-open-link" title="Open Dictionary Search">
-                       <span class="reader-teaser-nojs" data-nojs-only>Open Dictionary Search &uarr;</span>
-                       <span class="reader-teaser-js" data-js-only>Tap any word to view definitions</span>
-                     </a>`
-              }
+              <a href="#reader-dict" class="reader-sheet-label reader-sheet-open-link" title="Open Dictionary Search">
+                <span class="reader-teaser-nojs" data-nojs-only>Open Dictionary Search &uarr;</span>
+                <span class="reader-teaser-js" data-js-only>Tap any word to view definitions</span>
+              </a>
               <nav class="reader-panel-tabs" aria-label="Companion panel"${
                 hasCompanionTabs ? "" : " hidden"
               }>
