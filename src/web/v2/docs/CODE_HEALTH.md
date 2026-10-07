@@ -14,8 +14,4 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
 
 ---
 
-## Test coverage
-
-- [ ] 🟢 **Visual scenarios for post-interaction state in the dictionary.** `v2VisualScenario`'s
-      `action` hook is used only by reader scenarios. Popover-open and results-with-one-dictionary
-      would catch selection bugs as a pixel diff across all four form factors.
+_No open items._

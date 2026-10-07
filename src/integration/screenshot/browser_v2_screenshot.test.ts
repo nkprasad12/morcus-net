@@ -111,11 +111,47 @@ test.describe("UI V2 Visual Regression Suite", () => {
     waitFor: ".guest-chip",
   });
 
+  // 14. Dictionary Results Filtered to One Lexicon via Settings (GAF only)
+  v2VisualScenario("v2-dicts-single-dict", {
+    path: "/v2/dicts?q=gladius",
+    waitFor: ".dict-card",
+    action: async (page) => {
+      await page.locator("#dict-settings-btn").click();
+      const dialog = page.locator("dialog#dict-settings");
+      await dialog.waitFor({ state: "visible" });
+      const checkboxes = dialog.locator(".dict-checkbox");
+      const count = await checkboxes.count();
+      for (let i = 0; i < count; i++) {
+        const box = checkboxes.nth(i);
+        if ((await box.getAttribute("value")) !== "GAF") {
+          await box.uncheck();
+        } else {
+          await box.check();
+        }
+      }
+      await dialog.locator(".dict-settings-done").click();
+      await dialog.waitFor({ state: "hidden" });
+      await page.locator("#dict-L-S").waitFor({ state: "detached" });
+      await page.locator("#dict-GAF").waitFor({ state: "visible" });
+    },
+  });
+
+  // 15. Dictionary Entry Abbreviation Popover (#abbr-popover anchored to .lsHover)
+  v2VisualScenario("v2-dicts-abbr-popover", {
+    path: "/v2/dicts?q=gladius",
+    waitFor: ".dict-card",
+    jsModes: ["js"],
+    action: async (page) => {
+      await page.locator(".lsHover").first().click();
+      await page.waitForSelector("#abbr-popover", { state: "visible" });
+    },
+  });
+
   // ==========================================================================
   // Dark Mode Curated Token Samples (High-Density Views)
   // ==========================================================================
 
-  // 14. Dark Mode Sample - Dictionary Results View (cards, chips, tags, tables)
+  // 16. Dark Mode Sample - Dictionary Results View (cards, chips, tags, tables)
   v2VisualScenario("v2-dicts-results-gladius", {
     path: "/v2/dicts?q=gladius",
     waitFor: ".dict-card",
@@ -123,7 +159,7 @@ test.describe("UI V2 Visual Regression Suite", () => {
     themes: ["dark"],
   });
 
-  // 15. Dark Mode Sample - Reader Passage View (reading canvas, active words, sticky bar)
+  // 17. Dark Mode Sample - Reader Passage View (reading canvas, active words, sticky bar)
   v2VisualScenario("v2-reader-passage", {
     path: "/v2/reader",
     waitFor: ".reader-passage",
@@ -131,7 +167,7 @@ test.describe("UI V2 Visual Regression Suite", () => {
     themes: ["dark"],
   });
 
-  // 16. Dark Mode Sample - Corpus Results View (cards, chips, mark highlights, pager)
+  // 18. Dark Mode Sample - Corpus Results View (cards, chips, mark highlights, pager)
   v2VisualScenario("v2-corpus-results", {
     path: "/v2/corpus?q=Roma",
     waitFor: ".corpus-result-list",
@@ -140,7 +176,7 @@ test.describe("UI V2 Visual Regression Suite", () => {
     themes: ["dark"],
   });
 
-  // 17. Dark Mode Sample - Dictionary Settings Dialog
+  // 19. Dark Mode Sample - Dictionary Settings Dialog
   v2VisualScenario("v2-dicts-settings-dialog", {
     path: "/v2/dicts?q=gladius",
     waitFor: ".dict-card",
