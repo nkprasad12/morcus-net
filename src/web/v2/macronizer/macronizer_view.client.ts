@@ -2,6 +2,7 @@ import {
   BaseElement,
   DrawerController,
   copyText,
+  currentIframeSrc,
   escapeId,
   html,
   joinHtml,
@@ -706,7 +707,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       lang: "La",
       embedded: "1",
     });
-    if (iframe.getAttribute("src") !== targetSrc) {
+    if (currentIframeSrc(iframe) !== targetSrc) {
       iframe.src = targetSrc;
     }
   }

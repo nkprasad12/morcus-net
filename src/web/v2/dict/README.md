@@ -71,17 +71,18 @@ $$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus
 
 - **The server resolves.** On every request the server applies URL → cookie → default (`resolveActiveDicts`, `resolveInflection`) and renders the result. That's the checkboxes' `checked` state plus `data-d` (bitmask) and `data-o` on the search `<form>`.
 - **The client adopts.** `<morcus-dict-settings>` reads the checkboxes' `defaultChecked`, and `<morcus-dict-search>` reads `readRenderedDictState(form)`. Neither re-parses the URL or reads `localStorage`, so the controls can't disagree with the rendered results.
-- **A URL never saves by itself.** A shared link shows the sender's view without touching the recipient's cookies. The server writes cookies (`SameSite=Lax; Path=/; Max-Age=1 year`) only for `save=1` (the No-JS **Done** button) and then 303s the marker away. Other full page loads re-send the cookies' own values (sliding refresh). Scoped views (`embedded=1` or `lang=`) never persist. See [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md#saving-content-preferences).
-- **Guest mode**: when the URL's settings differ from a saved cookie, they're shown read-only (disabled controls; Done only closes) with _Using link settings · Restore saved_. Hidden `d` / `o` fields keep them in effect for new searches until **Restore saved**.
-- **JS writes**: closing the settings dialog with changes writes `document.cookie` (`persistDictKeys` / `persistInflected`), except in scoped views (`data-scoped`). There is no `localStorage` copy.
+- **A URL never saves by itself.** A shared link shows the sender's view without touching the recipient's cookies. The server writes cookies (`SameSite=Lax; Path=/; Max-Age=1 year`) only for `save=1` (the No-JS **Done** button) and then 303s the marker away. Other full page loads re-send the cookies' own values (sliding refresh), except passive scoped loads (`embedded=1` or `lang=`), which write nothing. See [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md#saving-content-preferences).
+- **Guest mode**: when the URL's settings differ from a saved cookie, they're shown read-only (disabled controls; Done only closes) with _Using link settings · Restore saved_. Hidden `d` / `o` fields keep them in effect for new searches until **Restore saved**. In a scoped view only the in-scope dictionaries are compared.
+- **JS writes**: closing the settings dialog with changes writes `document.cookie` (`persistDictKeys` / `persistInflected`). `persistDictKeys` merges in only the dictionaries the dialog showed. There is no `localStorage` copy.
+- **Scoped views share the preference.** The reader's dictionary (`lang=La`) shows and saves only the From-Latin dictionaries, merging them into `morcus_d` (`mergeDictKeysForSave`), and has no inflection toggle: the lookup forces `o=1` and never saves it. See [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md#saving-content-preferences).
 - **Privacy & Compliance**: The cookie stores only functional UI preferences (e.g. `morcus_d=3`, the same base36 bitmask as `?d=`). Under GDPR/ePrivacy and CCPA, it qualifies as an exempt **strictly necessary / user preference** cookie and requires no consent banner.
 
 ### 3. Query Language Constraints (`lang=La`) vs Layout (`embedded=1`)
 
 - **`lang=La`** is strictly a search constraint: filters dictionaries down to those whose source language is Latin (`languages.from === "La" || "*"`).
-  - Used automatically when words are clicked in the Latin Reader.
+  - Used automatically when words are clicked in the Latin Reader. Following a word inside the results keeps it.
 - **`embedded=1`** is strictly a presentation/layout constraint: hides the site app bar and footer when rendered inside an iframe or reader drawer.
-  - Manual typing in an embedded search bar omits `lang` so users can freely search English-to-Latin (e.g. Smith & Hall) or German-to-Latin (Georges).
+  - A search typed into an embedded search bar drops `lang` (and `d`), so users can freely search English-to-Latin (e.g. Smith & Hall) or German-to-Latin (Georges) with their full saved selection. With JS this is a full load (`applyUnscopedDictSearch`), so the tray and settings dialog are re-rendered for the new scope. Autocomplete matches: in a `lang=` view it suggests from the saved selection (`morcus_d`, else the defaults), not the narrowed set on screen.
 
 ---
 

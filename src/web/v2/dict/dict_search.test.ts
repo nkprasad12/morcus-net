@@ -425,9 +425,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     jest.useRealTimers();
   });
 
-  test("forwards active dict and lang parameters for suffix queries", () => {
+  test("forwards the active dicts for suffix queries", () => {
     delete (window as any).location;
-    (window as any).location = new URL("http://localhost/v2/dicts?lang=La");
+    (window as any).location = new URL("http://localhost/v2/dicts");
 
     jest.useFakeTimers();
     // L&S + GAF = 3, as the server would render it.
@@ -439,12 +439,81 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     jest.advanceTimersByTime(200);
 
-    // Suffix query uses dynamic endpoint with d=3 (L&S + GAF)
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/v2/api/completions?q=-arum&d=3&lang=La"),
+      expect.stringContaining("/v2/api/completions?q=-arum&d=3"),
       expect.anything()
     );
     jest.useRealTimers();
+  });
+
+  describe("autocomplete in a lang= view suggests what a typed search will query", () => {
+    // A typed search there leaves the scope, so it uses the saved selection, not the narrowed one.
+    const SAVED = ["L&S", "S&H", "GRG"];
+
+    beforeEach(() => {
+      delete (window as any).location;
+      (window as any).location = new URL(
+        "http://localhost/v2/dicts?q=arma&lang=La&o=1&embedded=1"
+      );
+      document.cookie = `morcus_d=${encodeDictBitmask(SAVED)}; Path=/`;
+    });
+
+    afterEach(() => {
+      document.cookie = "morcus_d=; Max-Age=0; Path=/";
+      delete (window as any).location;
+      (window as any).location = new URL("http://localhost/v2/dicts");
+    });
+
+    test("prefix suggestions come from the saved dictionaries, in every language", () => {
+      // The server narrowed the view to L&S + GAF.
+      const el = createDictSearch("", 'data-d="3" data-o="1"');
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      el.chunkCache.setChunks("am", {
+        "L&S": ["amabilis"],
+        GAF: ["ămīcĭtĭa"],
+        "S&H": ["amber"],
+        GRG: ["Ameise"],
+      });
+
+      input.value = "am";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+
+      const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
+      expect(
+        suggestionsEl.items.map((i: any) => `${i.lang}:${i.word}`).sort()
+      ).toEqual(["De:Ameise", "En:amber", "La:amabilis"]);
+    });
+
+    test("suffix suggestions query the saved dictionaries without lang", () => {
+      jest.useFakeTimers();
+      const el = createDictSearch("", 'data-d="3" data-o="1"');
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      input.value = "-arum";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      jest.advanceTimersByTime(200);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `/v2/api/completions?q=-arum&d=${encodeDictBitmask(SAVED)}`,
+        expect.anything()
+      );
+      jest.useRealTimers();
+    });
+
+    test("with nothing saved, suggestions use the defaults", () => {
+      document.cookie = "morcus_d=; Max-Age=0; Path=/";
+      jest.useFakeTimers();
+      const el = createDictSearch("", 'data-d="3" data-o="1"');
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      input.value = "-arum";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      jest.advanceTimersByTime(200);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `/v2/api/completions?q=-arum&d=${encodeDictBitmask(DEFAULT_DICT_KEYS)}`,
+        expect.anything()
+      );
+      jest.useRealTimers();
+    });
   });
 
   test("renders suggestions instantly from chunkCache without network fetch when cached", () => {
@@ -595,7 +664,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     replaceStateSpy.mockRestore();
   });
 
-  test("dict-settings-commit updates the search form's hidden d/o, dataset, and drops lang from URL", () => {
+  test("dict-settings-commit updates the search form's hidden d/o and dataset, and keeps lang in the URL", () => {
     delete (window as any).location;
     (window as any).location = new URL(
       "http://localhost/v2/dicts?q=habeo&lang=La"
@@ -616,10 +685,11 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(fields.get("o")).toBe("0");
     expect(form.dataset.d).toBe(encodeDictBitmask(["GRG"]));
     expect(form.dataset.o).toBe("0");
+    // The new `d=` is narrowed to `lang`, so the two must stay together.
     expect(replaceStateSpy).toHaveBeenCalledWith(
       null,
       "",
-      `/v2/dicts?q=habeo&d=${encodeDictBitmask(["GRG"])}&o=0`
+      `/v2/dicts?q=habeo&lang=La&d=${encodeDictBitmask(["GRG"])}&o=0`
     );
 
     replaceStateSpy.mockRestore();
@@ -653,6 +723,71 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
 
     replaceStateSpy.mockRestore();
+  });
+
+  describe("in a lang= view (the reader's dictionary)", () => {
+    const READER_URL =
+      "http://localhost/v2/dicts?q=arma&lang=La&o=1&embedded=1&scale=120";
+    let assign: jest.Mock;
+
+    beforeEach(() => {
+      delete (window as any).location;
+      assign = jest.fn();
+      (window as any).location = Object.assign(new URL(READER_URL), {
+        assign,
+      });
+    });
+
+    test("a typed search leaves the scope with a full load, dropping lang and d", () => {
+      const pushStateSpy = jest.spyOn(window.history, "pushState");
+      // The narrowed selection the server rendered for `lang=La`.
+      const el = createDictSearch("", 'data-d="3" data-o="1"');
+      const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+      el.querySelector<HTMLInputElement>("input.input")!.value = "love";
+      (global.fetch as jest.Mock).mockClear();
+
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+
+      expect(assign).toHaveBeenCalledWith(
+        "/v2/dicts?q=love&o=1&embedded=1&scale=120"
+      );
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        expect.stringContaining("/v2/dicts?"),
+        expect.anything()
+      );
+    });
+
+    test("an autocomplete pick also leaves the scope", () => {
+      const el = createDictSearch("", 'data-d="3" data-o="1"');
+      el.querySelector("morcus-dict-suggestions")!.dispatchEvent(
+        new CustomEvent("suggestion-select", {
+          bubbles: true,
+          detail: { word: "love" },
+        })
+      );
+      expect(assign).toHaveBeenCalledWith(
+        "/v2/dicts?q=love&o=1&embedded=1&scale=120"
+      );
+    });
+
+    test("following a word in the results stays in scope", () => {
+      const pushStateSpy = jest.spyOn(window.history, "pushState");
+      const el = createDictSearch(
+        '<div class="entry-content"><span class="lsQuote">Gallia</span></div>',
+        'data-d="3" data-o="1"'
+      );
+      el.querySelector<HTMLElement>(".lat-word")!.click();
+
+      expect(assign).not.toHaveBeenCalled();
+      expect(pushStateSpy).toHaveBeenCalledWith(
+        { q: "Gallia" },
+        "",
+        "/v2/dicts?q=Gallia&lang=La&o=1&embedded=1&scale=120&d=3"
+      );
+    });
   });
 
   test("search execution explicitly syncs q, d, and o parameters in history and document title", async () => {

@@ -2,6 +2,10 @@ import {
   ownSettingsHref,
   planDictPersistence,
 } from "@/web/v2/dict/dict_persistence.server";
+import {
+  decodeDictBitmask,
+  encodeDictBitmask,
+} from "@/web/v2/dict/dict_bitmask.common";
 
 const BASE = {
   cookieHeader: undefined,
@@ -128,15 +132,123 @@ describe("planDictPersistence", () => {
     expect(plan).toEqual({ cookies: [] });
   });
 
-  test("scoped views never write or redirect, even with save=1", () => {
-    const plan = planDictPersistence({
-      ...BASE,
-      originalUrl: "/v2/dicts?q=amo&dict=GAF&embedded=1&save=1",
-      cookieHeader: "morcus_d=1; morcus_inflected=0",
-      isScopedView: true,
-      keysFromQuery: ["GAF"],
+  describe("scoped views", () => {
+    // The reader's lookup: Latin lexica only, inflection forced on.
+    const READER = "/v2/dicts?q=arma&lang=La&o=1&embedded=1";
+    // L&S + S&H + GRG: one From-Latin and two To-Latin dictionaries.
+    const SAVED = encodeDictBitmask(["L&S", "S&H", "GRG"]);
+
+    test("save=1 merges only the in-scope dictionaries and never writes inflection", () => {
+      const plan = planDictPersistence({
+        ...BASE,
+        originalUrl: `${READER}&dict=L%26S&dict=GAF&save=1`,
+        cookieHeader: `morcus_d=${SAVED}; morcus_inflected=0`,
+        isScopedView: true,
+        lang: "La",
+        keysFromQuery: ["L&S", "GAF"],
+        oParam: true,
+      });
+      expect(cookieNames(plan.cookies)).toEqual(["morcus_d"]);
+      const written = plan.cookies[0].split(";")[0].split("=")[1];
+      expect(new Set(decodeDictBitmask(written))).toEqual(
+        new Set(["L&S", "GAF", "S&H", "GRG"])
+      );
+      // The cookie (filtered by `lang`) is the only source after the redirect.
+      const target = new URL(plan.redirectTo!, "http://x");
+      expect(target.searchParams.has("save")).toBe(false);
+      expect(target.searchParams.has("dict")).toBe(false);
+      expect(target.searchParams.has("d")).toBe(false);
+      expect(target.searchParams.get("o")).toBe("1");
+      expect(target.searchParams.get("lang")).toBe("La");
+      expect(target.searchParams.get("embedded")).toBe("1");
     });
-    expect(plan).toEqual({ cookies: [] });
+
+    test("unchecking an in-scope dictionary clears it, out-of-scope ones stay", () => {
+      const plan = planDictPersistence({
+        ...BASE,
+        originalUrl: `${READER}&dict=GAF&save=1`,
+        cookieHeader: `morcus_d=${SAVED}`,
+        isScopedView: true,
+        lang: "La",
+        keysFromQuery: ["GAF"],
+        oParam: true,
+      });
+      const written = plan.cookies[0].split(";")[0].split("=")[1];
+      expect(new Set(decodeDictBitmask(written))).toEqual(
+        new Set(["GAF", "S&H", "GRG"])
+      );
+    });
+
+    test("with no saved preference, out-of-scope dictionaries keep their defaults", () => {
+      const plan = planDictPersistence({
+        ...BASE,
+        originalUrl: `${READER}&dict=GAF&save=1`,
+        isScopedView: true,
+        lang: "La",
+        keysFromQuery: ["GAF"],
+        oParam: true,
+      });
+      const written = plan.cookies[0].split(";")[0].split("=")[1];
+      expect(new Set(decodeDictBitmask(written))).toEqual(
+        new Set(["GAF", "S&H", "R&A", "GRG"])
+      );
+    });
+
+    test("passive loads write nothing", () => {
+      const plan = planDictPersistence({
+        ...BASE,
+        originalUrl: `${READER}&dict=GAF`,
+        cookieHeader: `morcus_d=${SAVED}; morcus_inflected=0`,
+        isScopedView: true,
+        lang: "La",
+        keysFromQuery: ["GAF"],
+        oParam: true,
+      });
+      expect(plan).toEqual({ cookies: [] });
+    });
+
+    test.each([[null], [[]]])(
+      "save=1 with no dictionaries (%p) writes no dictionary cookie",
+      (keysFromQuery) => {
+        const plan = planDictPersistence({
+          ...BASE,
+          originalUrl: `${READER}&save=1`,
+          cookieHeader: `morcus_d=${SAVED}`,
+          isScopedView: true,
+          lang: "La",
+          keysFromQuery,
+          oParam: true,
+        });
+        expect(plan.cookies).toEqual([]);
+        expect(plan.redirectTo).toBe(READER);
+      }
+    );
+
+    test("cross-site save=1 redirects without writing", () => {
+      const plan = planDictPersistence({
+        ...BASE,
+        originalUrl: `${READER}&dict=GAF&save=1`,
+        cookieHeader: `morcus_d=${SAVED}`,
+        secFetchSite: "cross-site",
+        isScopedView: true,
+        lang: "La",
+        keysFromQuery: ["GAF"],
+        oParam: true,
+      });
+      expect(plan).toEqual({ cookies: [], redirectTo: READER });
+    });
+
+    test("an embedded view without lang merges across every dictionary", () => {
+      const plan = planDictPersistence({
+        ...BASE,
+        originalUrl: "/v2/dicts?q=arma&embedded=1&dict=GAF&o=0&save=1",
+        cookieHeader: `morcus_d=${SAVED}; morcus_inflected=1`,
+        isScopedView: true,
+        keysFromQuery: ["GAF"],
+        oParam: false,
+      });
+      expect(plan.cookies).toEqual([expect.stringMatching(/^morcus_d=2;/)]);
+    });
   });
 
   test("save=0 or other values are not a save", () => {
@@ -187,5 +299,14 @@ describe("ownSettingsHref", () => {
   test("works on a URL with nothing to drop", () => {
     expect(ownSettingsHref("/v2/dicts?q=amo")).toBe("/v2/dicts?q=amo");
     expect(ownSettingsHref("/v2/dicts")).toBe("/v2/dicts");
+  });
+
+  test("keepInflection keeps o (and the scope) for scoped views", () => {
+    expect(
+      ownSettingsHref(
+        "/v2/dicts?q=amo&lang=La&o=1&embedded=1&scale=90&d=2&dict=GAF&in=ls&save=1",
+        { keepInflection: true }
+      )
+    ).toBe("/v2/dicts?q=amo&lang=La&o=1&embedded=1&scale=90");
   });
 });

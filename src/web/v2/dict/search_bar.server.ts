@@ -3,6 +3,7 @@ import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import {
   DEFAULT_DICT_KEYS,
   SAVE_PARAM,
+  filterDictsByLang,
 } from "@/web/v2/dict/dict_selection.common";
 import { escapeHtml } from "@/web/v2/core/html.common";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
@@ -26,7 +27,11 @@ export interface SearchBarOptions {
   includeSettings?: boolean;
   activeDicts?: string[];
   isInflected?: boolean;
-  extraHiddenInputs?: Record<string, string>;
+  /**
+   * View state carried by **both** forms (search and settings) as hidden inputs, so a No-JS
+   * submit keeps it. An array emits one input per value; `undefined` emits nothing.
+   */
+  extraHiddenInputs?: Record<string, string | readonly string[] | undefined>;
   /**
    * Guest mode: the page shows a link's settings, which differ from the user's saved ones
    * (`isGuestView`). The settings are read-only and the tray offers a way back; `returnHref` is
@@ -34,16 +39,44 @@ export interface SearchBarOptions {
    */
   guest?: { returnHref: string };
   /**
-   * A scoped view (reader iframe, `lang=` filter) shows a narrowed selection that must never be
-   * saved. Published as `data-scoped` on the settings form so the client skips persistence too.
+   * A scoped view (reader iframe, `lang=` filter) shows a lookup-specific inflection (the reader
+   * forces `o=1`), so the dialog omits the inflection toggle and saving never writes it. Saving
+   * the dictionaries still works; see `lang`.
    */
   scoped?: boolean;
+  /**
+   * The view's `lang=` scope (the reader's dictionary sends `lang=La`). It narrows what each form
+   * submits:
+   *
+   * - **Settings form**: shows only the dictionaries in scope (`filterDictsByLang`) and carries
+   *   `lang` as a hidden input, so a save merges just those into the saved preference
+   *   (`mergeDictKeysForSave`).
+   * - **Search form**: carries neither `lang` nor `d`. A typed word may be English or German, so
+   *   the search leaves the scope and the server uses the user's saved dictionaries in full. (A
+   *   narrowed `d` without its `lang` would also offer, and save, every dictionary as if it were
+   *   the whole selection.) The JS client does the same (`applyUnscopedDictSearch`).
+   */
+  lang?: string | readonly string[];
 }
 
 function hiddenInput(name: string, value: string): string {
   return `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(
     value
   )}" />`;
+}
+
+function hiddenInputs(
+  entries: Record<string, string | readonly string[] | undefined>
+): string {
+  return Object.entries(entries)
+    .flatMap(([name, value]) =>
+      value === undefined
+        ? []
+        : (typeof value === "string" ? [value] : value).map((v) =>
+            hiddenInput(name, v)
+          )
+    )
+    .join("\n");
 }
 
 /**
@@ -71,9 +104,10 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   const langChipsHtml = renderLangChipsHtml(activeLangs);
   const inflectChipHtml = renderInflectChipHtml(isInflected);
 
-  const extraHiddenInputsHtml = Object.entries(options.extraHiddenInputs ?? {})
-    .map(([k, v]) => hiddenInput(k, v))
-    .join("\n");
+  const extraHiddenInputsHtml = hiddenInputs(options.extraHiddenInputs ?? {});
+  const langs =
+    typeof options.lang === "string" ? [options.lang] : options.lang ?? [];
+  const isLangScoped = langs.length > 0;
 
   // Guest mode locks the content settings; the way out is a plain link, so it works without JS.
   const guest = options.guest;
@@ -88,13 +122,19 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     ? renderSettingsDialog({
         action: options.action,
         query,
-        extraHiddenInputsHtml,
+        extraHiddenInputsHtml: [
+          extraHiddenInputsHtml,
+          hiddenInputs({ lang: options.lang }),
+        ]
+          .filter(Boolean)
+          .join("\n"),
         activeDictKeys,
         isInflected,
         disabledAttr,
         returnLinkHtml,
         isGuest: guest !== undefined,
         isScoped: options.scoped === true,
+        lang: options.lang,
       })
     : "";
 
@@ -145,13 +185,14 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
 
   // `data-d` / `data-o` publish the selection the server resolved for this render. The client
   // adopts them (`readRenderedDictState`) instead of re-deriving state from the URL or storage.
+  // A `lang=` view's search leaves the scope, so it submits no `d` (see `SearchBarOptions.lang`).
   return `
     <form class="search-form" action="${escapeHtml(
       options.action
     )}" method="GET" data-d="${escapeHtml(dictBitmask)}" data-o="${
     isInflected ? "1" : "0"
   }">
-      ${hiddenInput("d", dictBitmask)}
+      ${isLangScoped ? "" : hiddenInput("d", dictBitmask)}
       ${hiddenInput("o", isInflected ? "1" : "0")}
       ${extraHiddenInputsHtml}
       <div class="input-wrapper">
@@ -199,13 +240,17 @@ interface SettingsDialogInput {
   returnLinkHtml: string;
   isGuest: boolean;
   isScoped: boolean;
+  lang?: string | readonly string[];
 }
 
 function renderSettingsDialog(input: SettingsDialogInput): string {
-  const dictItemsHtml = LatinDict.AVAILABLE.map((d) => {
-    const isChecked = input.activeDictKeys.has(d.key);
-    const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
-    return `
+  // Only the dictionaries this view's `lang=` scope can query: an out-of-scope checkbox would
+  // show unchecked whatever was saved, and ticking it would have no effect here.
+  const dictItemsHtml = filterDictsByLang(LatinDict.AVAILABLE, input.lang)
+    .map((d) => {
+      const isChecked = input.activeDictKeys.has(d.key);
+      const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
+      return `
       <label class="dict-item" title="${escapeHtml(
         d.displayName
       )} (${langText})">
@@ -222,21 +267,49 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
         <span class="dict-lang">${langText}</span>
       </label>
     `;
-  }).join("\n");
+    })
+    .join("\n");
 
   // Done commits. Without JS it submits this form: `save=1` makes the server store the settings
-  // and 303 back (`dict_persistence.server.ts`); scoped views never save, so theirs just reloads
-  // the view. With JS, `<morcus-dict-settings>` intercepts it and closes the dialog, which
-  // applies. In guest mode there's nothing to commit, so Done only closes.
-  const saveAttrs = input.isScoped ? "" : ` name="${SAVE_PARAM}" value="1"`;
+  // and 303 back (`dict_persistence.server.ts`). With JS, `<morcus-dict-settings>` intercepts it
+  // and closes the dialog, which applies. In guest mode there's nothing to commit, so Done only
+  // closes.
   const doneHtml = input.isGuest
     ? `<a href="#" class="btn btn-primary dict-settings-done" role="button" data-dialog-close>Done</a>`
-    : `<button type="submit"${saveAttrs} class="btn btn-primary dict-settings-done">Done</button>`;
+    : `<button type="submit" name="${SAVE_PARAM}" value="1" class="btn btn-primary dict-settings-done">Done</button>`;
+
+  // A scoped view's inflection belongs to the lookup (the reader forces `o=1`), so there's no
+  // toggle; the hidden input keeps it through a No-JS save and its redirect.
+  const inflectedSectionHtml = input.isScoped
+    ? input.isGuest
+      ? ""
+      : hiddenInput("o", input.isInflected ? "1" : "0")
+    : `
+      <div class="settings-inflected-section">
+        <div class="settings-section-title">Search Scope</div>
+        ${input.isGuest ? "" : hiddenInput("o", "0")}
+        <label class="dict-item" title="Search conjugated verbs and declined nouns/adjectives">
+          <input
+            type="checkbox"
+            name="o"
+            value="1"
+            id="toggle-inflected"
+            class="inflected-checkbox"
+            ${input.isInflected ? "checked" : ""}
+            ${input.disabledAttr}
+          />
+          <span class="dict-name">Latin inflected forms</span>
+        </label>
+        <p class="settings-caption">Match conjugated verbs and declined nouns/adjectives.</p>
+      </div>
+
+      <div class="settings-divider" role="separator"></div>
+    `;
 
   const bodyHtml = `
     <form class="dict-settings-form" action="${escapeHtml(
       input.action
-    )}" method="GET"${input.isScoped ? " data-scoped" : ""}>
+    )}" method="GET">
       ${input.query ? hiddenInput("q", input.query) : ""}
       ${input.extraHiddenInputsHtml}
       ${
@@ -272,25 +345,7 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
         <div class="settings-divider" role="separator"></div>
       </div>
 
-      <div class="settings-inflected-section">
-        <div class="settings-section-title">Search Scope</div>
-        ${input.isGuest ? "" : hiddenInput("o", "0")}
-        <label class="dict-item" title="Search conjugated verbs and declined nouns/adjectives">
-          <input
-            type="checkbox"
-            name="o"
-            value="1"
-            id="toggle-inflected"
-            class="inflected-checkbox"
-            ${input.isInflected ? "checked" : ""}
-            ${input.disabledAttr}
-          />
-          <span class="dict-name">Latin inflected forms</span>
-        </label>
-        <p class="settings-caption">Match conjugated verbs and declined nouns/adjectives.</p>
-      </div>
-
-      <div class="settings-divider" role="separator"></div>
+      ${inflectedSectionHtml}
 
       <div class="settings-section-title">Enabled Dictionaries</div>
       <div class="dict-list">

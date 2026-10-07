@@ -72,11 +72,12 @@ The server can't tell "the user just ticked boxes" from "someone pasted a URL" b
 settings params, so it never infers intent from them. The dictionary route
 ([`dict_persistence.server.ts`](../dict/dict_persistence.server.ts)) applies these rules:
 
-| Request                                                    | Cookies                              | Response                    |
-| :--------------------------------------------------------- | :----------------------------------- | :-------------------------- |
-| `save=1` (the No-JS **Done** button)                       | the URL's settings                   | 303 to the URL minus `save` |
-| Any other full page load                                   | the cookies' **own** values, re-sent | renders the URL's view      |
-| Partial (`format=partial`) or scoped (`embedded`, `lang=`) | none                                 | renders                     |
+| Request                                                | Cookies                                        | Response                                          |
+| :----------------------------------------------------- | :--------------------------------------------- | :------------------------------------------------ |
+| `save=1` (the No-JS **Done** button)                   | the URL's settings                             | 303 to the URL minus `save`                       |
+| `save=1` from a scoped view (`embedded`, `lang=`)      | in-scope dictionaries merged in; no inflection | 303 to the URL minus `save` and dictionary params |
+| Any other full page load                               | the cookies' **own** values, re-sent           | renders the URL's view                            |
+| Partial (`format=partial`), or scoped without `save=1` | none                                           | renders                                           |
 
 - **The marker is a named submit button, not a hidden input.** Hidden inputs submit every time, so
   an ordinary search would save. It lives in the settings dialog's own form, outside the search
@@ -99,5 +100,25 @@ settings params, so it never infers intent from them. The dictionary route
   `d` / `o` fields (and, with JS, the adopted state) carry the link's settings into new searches
   until the user follows **Restore saved**, a plain link to the page without settings params. Users with
   no saved settings never see it.
-- **Scoped views** (reader iframe, `lang=`) get `data-scoped` on the settings form, and Done has no
-  `save` marker, so they never save, from either side.
+- **Scoped views** (reader and macronizer iframes, `embedded=1`; any `lang=` lookup) share the one
+  `morcus_d` preference with `/v2/dicts`, as V1 did. Their lookup decides two things, and the
+  settings dialog follows it:
+  - **Dictionaries: scoped by `lang`.** The dialog shows only the dictionaries the lookup can query
+    (`filterDictsByLang`; for the reader's `lang=La`, the five From-Latin ones). Saving, from
+    either side, changes just those bits (`mergeDictKeysForSave`) and keeps the rest. The client
+    merges against the cookie as it is when the dialog closes, so with `/v2/dicts` and the reader
+    open in two tabs only the in-scope bits are last-writer-wins. The No-JS settings form carries a
+    hidden `lang` so the server applies the same mask, and its 303 drops the dictionary params so the
+    new cookie is the only source.
+  - **Inflection: the lookup's, never saved.** The reader forces `o=1`, so the dialog has no
+    inflection toggle (a hidden `o` keeps the view's value through a No-JS save) and nothing
+    writes `morcus_inflected`.
+  - **A typed search leaves the scope.** A word typed into the reader's dictionary may be English
+    or German, so the search drops `lang` and `d` and the server uses the full saved selection: the
+    No-JS search form submits neither, and the JS client loads the page instead of fetching a
+    partial (`applyUnscopedDictSearch`). Autocomplete suggests from that same full selection.
+    Following a word in the results stays in scope.
+  - **Guest mode** compares only what the view shows: the in-scope part of the saved dictionaries,
+    and never inflection. **Restore saved** keeps `o`.
+  - A passive scoped load (every reader word click) never writes cookies, not even the sliding
+    refresh.

@@ -6,6 +6,7 @@ import {
   renderReaderContentHtml,
   renderReaderPageHtml,
   resolveReaderContext,
+  buildReaderDictIframeSrc,
   renderReaderStickyBar,
   renderReaderTextPanel,
   renderReaderDictPanel,
@@ -659,6 +660,15 @@ describe("decomposed_reader_renderers", () => {
       expect(ctx.query).toBe("arma");
       expect(ctx.layoutStateClass).toBe("reader-layout-active");
       expect(ctx.dictIframeSrc).toBe("/v2/dicts?q=arma&lang=La&o=1&embedded=1");
+    });
+
+    test("the dictionary iframe src never pins dictionaries (d=), so the saved morcus_d applies", () => {
+      for (const q of ["", "arma", "Mūsa", "d=1"]) {
+        const src = new URL(buildReaderDictIframeSrc(q), "http://x");
+        expect(src.searchParams.has("d")).toBe(false);
+        expect(src.searchParams.has("dict")).toBe(false);
+        expect(src.searchParams.has("in")).toBe(false);
+      }
     });
 
     test("falls back to first section in matchText when pageId is omitted and preserves matchText on same-page URLs", async () => {

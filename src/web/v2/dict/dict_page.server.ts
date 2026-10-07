@@ -33,7 +33,11 @@ export interface DictResultsOptions {
   queriedDicts?: string[];
   isInflected?: boolean;
   isEmbedded?: boolean;
-  canSave?: boolean;
+  /**
+   * Whether the zero-results "Enable inflected search" link may save (`save=1`). False in
+   * scoped views (their inflection is the lookup's, never saved) and in guest mode.
+   */
+  canSaveInflection?: boolean;
 }
 
 /**
@@ -70,7 +74,7 @@ export interface NoEntriesOptions {
   queriedDicts?: string[];
   isInflected?: boolean;
   isEmbedded?: boolean;
-  canSave?: boolean;
+  canSaveInflection?: boolean;
 }
 
 /**
@@ -83,7 +87,7 @@ export function renderNoEntriesHtml(options: NoEntriesOptions): string {
     queriedDicts,
     isInflected = true,
     isEmbedded = false,
-    canSave = false,
+    canSaveInflection = false,
   } = options;
   const queriedNames = (queriedDicts ?? [])
     .map(resolveDictDisplayName)
@@ -96,7 +100,7 @@ export function renderNoEntriesHtml(options: NoEntriesOptions): string {
         : undefined,
     inflected: true,
     embedded: isEmbedded ? "1" : undefined,
-    save: canSave,
+    save: canSaveInflection,
   });
   return `
       <div class="no-results">
@@ -317,7 +321,7 @@ export function renderDictResultsHtml(
     queriedDicts,
     isInflected = true,
     isEmbedded = false,
-    canSave = false,
+    canSaveInflection = false,
   } = options;
 
   if (!query.trim()) {
@@ -348,7 +352,7 @@ export function renderDictResultsHtml(
       queriedDicts: allQueriedKeys,
       isInflected,
       isEmbedded,
-      canSave,
+      canSaveInflection,
     });
   }
 
@@ -412,6 +416,8 @@ export interface DictPageOptions {
   guest?: { returnHref: string };
   /** See `SearchBarOptions.scoped`. */
   scoped?: boolean;
+  /** The request's `lang=` scope. See `SearchBarOptions.lang`. */
+  lang?: string | string[];
 }
 
 /**
@@ -430,7 +436,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
           queriedDicts: options.queriedDicts,
           isInflected,
           isEmbedded,
-          canSave: !options.scoped && !options.guest,
+          canSaveInflection: !options.scoped && !options.guest,
         }
   );
 
@@ -451,9 +457,15 @@ export function renderDictPageHtml(options: DictPageOptions): string {
         action: "/v2/dicts",
         activeDicts: options.queriedDicts,
         isInflected: isInflected,
-        extraHiddenInputs: isEmbedded ? { embedded: "1" } : undefined,
+        // Both forms keep the view's frame. `lang` isn't part of it: only the settings form
+        // carries it (see `SearchBarOptions.lang`).
+        extraHiddenInputs: {
+          embedded: isEmbedded ? "1" : undefined,
+          scale: dictScale !== undefined ? String(dictScale) : undefined,
+        },
         guest: options.guest,
         scoped: options.scoped,
+        lang: options.lang,
       })}
 
       <output id="dict-results" class="results">

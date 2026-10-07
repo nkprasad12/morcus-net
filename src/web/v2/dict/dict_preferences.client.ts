@@ -6,6 +6,8 @@ import {
 import {
   formatDictsCookie,
   formatInflectedCookie,
+  mergeDictKeysForSave,
+  parseDictsFromCookie,
 } from "@/web/v2/dict/dict_selection.common";
 
 /**
@@ -40,22 +42,29 @@ export function readRenderedDictState(
   };
 }
 
-/** Saves the dictionary selection as the user's durable preference. */
-export function persistDictKeys(dictKeys: string[]): void {
-  document.cookie = formatDictsCookie(dictKeys);
+/**
+ * Saves the dictionary selection as the user's durable preference.
+ *
+ * With `inScopeKeys` (the dictionaries the settings dialog showed), only those change: the rest
+ * keep their value in the cookie as it is *now*, so a scoped dialog (the reader's, `lang=La`)
+ * never touches dictionaries it didn't offer, even if another tab saved them meanwhile.
+ */
+export function persistDictKeys(
+  dictKeys: string[],
+  inScopeKeys?: Iterable<string>
+): void {
+  const keys =
+    inScopeKeys === undefined
+      ? dictKeys
+      : mergeDictKeysForSave(
+          dictKeys,
+          inScopeKeys,
+          parseDictsFromCookie(document.cookie)
+        );
+  document.cookie = formatDictsCookie(keys);
 }
 
 /** Saves the inflection mode as the user's durable preference. */
 export function persistInflected(isInflected: boolean): void {
   document.cookie = formatInflectedCookie(isInflected);
-}
-
-/**
- * Whether a settings change committed from the settings `form` may be saved. A scoped view (reader
- * iframe, `lang=` filter; the server marks the form `data-scoped`) shows a selection narrowed for
- * that lookup, so its changes are never saved. Guest mode needs no check here: its controls are
- * disabled.
- */
-export function mayPersistDictChange(form: HTMLFormElement | null): boolean {
-  return !form?.hasAttribute("data-scoped");
 }

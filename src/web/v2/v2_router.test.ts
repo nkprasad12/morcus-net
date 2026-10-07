@@ -3,6 +3,8 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import request from "supertest";
+import { JSDOM } from "jsdom";
+import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import { createV2Router } from "@/web/v2/v2_router.server";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -404,13 +406,86 @@ describe("v2_router integration", () => {
     expect(res.header["set-cookie"]).toBeUndefined();
   });
 
-  test("GET /v2/dicts marks embedded views scoped and never uses guest mode", async () => {
+  test("GET /v2/dicts reader lookup: the settings form saves in scope, the search form leaves it", async () => {
     const res = await request(app)
-      .get("/v2/dicts?q=arma&embedded=1&d=2")
+      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
+      .set("Cookie", "morcus_d=29; morcus_inflected=0");
+    expect(res.status).toBe(200);
+    expect(res.header["set-cookie"]).toBeUndefined();
+
+    const doc = new JSDOM(res.text).window.document;
+    const hidden = (form: Element, name: string) =>
+      Array.from(
+        form.querySelectorAll(`input[type="hidden"][name="${name}"]`)
+      ).map((i) => i.getAttribute("value"));
+    const search = doc.querySelector("form.search-form")!;
+    const settings = doc.querySelector("form.dict-settings-form")!;
+    expect(hidden(settings, "lang")).toEqual(["La"]);
+    expect(hidden(settings, "embedded")).toEqual(["1"]);
+    expect(hidden(settings, "o")).toEqual(["1"]);
+    expect(hidden(search, "lang")).toEqual([]);
+    expect(hidden(search, "d")).toEqual([]);
+    expect(hidden(search, "embedded")).toEqual(["1"]);
+    expect(settings.hasAttribute("data-scoped")).toBe(false);
+    expect(
+      settings.querySelector('button[name="save"][value="1"]')
+    ).not.toBeNull();
+    expect(settings.querySelector("#toggle-inflected")).toBeNull();
+    expect(res.text).not.toContain("guest-chip");
+  });
+
+  test("GET /v2/dicts reader save=1 merges into morcus_d and redirects to the cookie-driven lookup", async () => {
+    const saved = encodeDictBitmask(["L&S", "S&H", "GRG"]);
+    const res = await request(app)
+      .get("/v2/dicts?q=arma&lang=La&embedded=1&o=1&dict=GAF&save=1")
+      .set("Cookie", `morcus_d=${saved}; morcus_inflected=0`);
+    expect(res.status).toBe(303);
+    expect(res.header.location).toBe("/v2/dicts?q=arma&lang=La&embedded=1&o=1");
+    const cookies: string[] = res.header["set-cookie"] as unknown as string[];
+    expect(cookies).toEqual([
+      `morcus_d=${encodeDictBitmask([
+        "GAF",
+        "S&H",
+        "GRG",
+      ])}; Path=/; Max-Age=31536000; SameSite=Lax`,
+    ]);
+  });
+
+  test("GET /v2/dicts scoped link whose dictionaries differ from the saved in-scope ones is a guest view", async () => {
+    const res = await request(app)
+      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La&d=2")
       .set("Cookie", "morcus_d=1");
     expect(res.status).toBe(200);
-    expect(res.text).toMatch(
-      /<form class="dict-settings-form"[^>]* data-scoped>/
+    expect(res.text).toContain("guest-chip");
+    const doc = new JSDOM(res.text).window.document;
+    expect(doc.querySelector("a.guest-return")?.getAttribute("href")).toBe(
+      "/v2/dicts?q=arma&embedded=1&o=1&lang=La"
+    );
+  });
+
+  test("GET /v2/dicts scoped lookup ignores out-of-scope saved dictionaries for guest mode", async () => {
+    const res = await request(app)
+      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
+      .set(
+        "Cookie",
+        `morcus_d=${encodeDictBitmask(["L&S", "S&H"])}; morcus_inflected=0`
+      );
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain("guest-chip");
+  });
+
+  test("GET /v2/dicts scoped lookup falls back to in-scope defaults without guest mode when cookie has only out-of-scope dicts", async () => {
+    (mockFusedDict.getEntry as jest.Mock).mockClear();
+    const res = await request(app)
+      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
+      .set("Cookie", `morcus_d=${encodeDictBitmask(["S&H", "R&A"])}`);
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "arma",
+        dicts: ["L&S", "GAF", "GES", "FOR", "NUM"],
+        mode: 1,
+      })
     );
     expect(res.text).not.toContain("guest-chip");
   });

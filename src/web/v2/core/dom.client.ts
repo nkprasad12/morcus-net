@@ -131,3 +131,24 @@ export function syncIframeTheme(
     // Cross-origin barrier safely ignored
   }
 }
+
+/**
+ * The path and query (`pathname + search`) a same-origin iframe is currently showing.
+ *
+ * Navigating inside the iframe (a typed dictionary search, a clicked entry word, `pushState` or
+ * `replaceState`) moves `contentWindow.location` while leaving the `<iframe>` element's `src`
+ * attribute on the initial lookup. Reading `contentWindow.location` first means re-clicking that
+ * initial word in the host passage sees that the iframe has moved on and navigates it back.
+ * Falls back to `getAttribute("src")` before the frame has loaded a document (e.g. `about:blank`).
+ */
+export function currentIframeSrc(iframe: HTMLIFrameElement): string | null {
+  try {
+    const loc = iframe.contentWindow?.location;
+    if (loc && loc.pathname.startsWith("/")) {
+      return loc.pathname + loc.search;
+    }
+  } catch {
+    // Cross-origin barrier safely ignored
+  }
+  return iframe.getAttribute("src");
+}

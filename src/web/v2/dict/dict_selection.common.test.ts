@@ -10,7 +10,11 @@ import {
   DICT_COOKIE_NAME,
   INFLECTED_COOKIE_NAME,
   isGuestView,
+  filterDictsByLang,
+  filterKeysByLang,
+  mergeDictKeysForSave,
 } from "@/web/v2/dict/dict_selection.common";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
 describe("dict_selection.common", () => {
   describe("findDictInfo", () => {
@@ -226,6 +230,85 @@ describe("dict_selection.common", () => {
     test("ignores invalid cookie values", () => {
       expect(isGuestView(LS_GAF, "morcus_d=L%26S")).toBe(false);
       expect(isGuestView(LS_GAF, "morcus_inflected=yes")).toBe(false);
+    });
+  });
+});
+
+describe("lang scoping and masked save", () => {
+  const FROM_LATIN = ["L&S", "GAF", "GES", "FOR", "NUM"];
+  const TO_LATIN = ["S&H", "R&A", "GRG", "EGL"];
+  const keysOf = (dicts: { key: string }[]) => dicts.map((d) => d.key);
+
+  describe("filterDictsByLang", () => {
+    it("keeps the dictionaries from that language plus the wildcard ones", () => {
+      expect(
+        new Set(keysOf(filterDictsByLang(LatinDict.AVAILABLE, "La")))
+      ).toEqual(new Set(FROM_LATIN));
+    });
+
+    it("accepts several languages", () => {
+      expect(
+        new Set(keysOf(filterDictsByLang(LatinDict.AVAILABLE, ["De", "Es"])))
+      ).toEqual(new Set(["GRG", "EGL", "NUM"]));
+    });
+
+    it.each([[undefined], [null], [""], [[]]])(
+      "returns every dictionary for no scope (%p)",
+      (lang) => {
+        expect(keysOf(filterDictsByLang(LatinDict.AVAILABLE, lang))).toEqual(
+          keysOf(LatinDict.AVAILABLE)
+        );
+      }
+    );
+  });
+
+  describe("filterKeysByLang", () => {
+    it("filters keys by source language, keeping wildcard ones", () => {
+      expect(filterKeysByLang(["S&H", "L&S", "NUM", "GRG"], "La")).toEqual([
+        "L&S",
+        "NUM",
+      ]);
+      expect(filterKeysByLang(["S&H", "L&S", "GRG"], ["En", "De"])).toEqual([
+        "S&H",
+        "GRG",
+      ]);
+    });
+
+    it("drops unknown keys, with or without a scope", () => {
+      expect(filterKeysByLang(["L&S", "nope"], "La")).toEqual(["L&S"]);
+      expect(filterKeysByLang(["L&S", "nope", "S&H"])).toEqual(["L&S", "S&H"]);
+    });
+  });
+
+  describe("mergeDictKeysForSave", () => {
+    it("takes the selection for in-scope keys and the saved value for the rest", () => {
+      const merged = mergeDictKeysForSave(["GAF"], FROM_LATIN, [
+        "L&S",
+        "S&H",
+        "GRG",
+      ]);
+      expect(new Set(merged)).toEqual(new Set(["GAF", "S&H", "GRG"]));
+    });
+
+    it("falls back to the defaults for out-of-scope keys when nothing is saved", () => {
+      const merged = mergeDictKeysForSave(["L&S"], FROM_LATIN, null);
+      expect(new Set(merged)).toEqual(
+        new Set(["L&S", ...TO_LATIN.filter((k) => k !== "EGL")])
+      );
+    });
+
+    it("with every key in scope, is just the selection", () => {
+      expect(
+        mergeDictKeysForSave(["GRG", "L&S"], keysOf(LatinDict.AVAILABLE), [
+          "S&H",
+        ])
+      ).toEqual(["L&S", "GRG"]);
+    });
+
+    it("ignores selected keys outside the scope", () => {
+      expect(
+        new Set(mergeDictKeysForSave(["L&S", "S&H"], ["L&S"], ["GAF"]))
+      ).toEqual(new Set(["L&S", "GAF"]));
     });
   });
 });

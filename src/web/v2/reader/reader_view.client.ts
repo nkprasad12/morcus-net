@@ -9,6 +9,7 @@ import {
   closeActiveSectionUI,
   copyText,
   createWordSpan,
+  currentIframeSrc,
   escapeId,
   isPlainLeftClick,
   measureSvh100,
@@ -854,9 +855,17 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   ) {
     if (!word) return;
 
+    const targetSrc = `/v2/dicts?q=${encodeURIComponent(
+      word
+    )}&lang=La&o=1&embedded=1&scale=${this.currentPrefs.dictScale}`;
+    const iframe = this.dictFrame;
+    const iframeAtTarget =
+      iframe !== null && currentIframeSrc(iframe) === targetSrc;
+
     const dictPanel = this.dictPanelEl;
     if (
       word === this.currentQuery &&
+      iframeAtTarget &&
       dictPanel?.classList.contains("drawer-minimized")
     ) {
       this.restoreDrawer();
@@ -874,14 +883,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.setActiveWord(activeAnchor ?? this.findWordElement(word));
 
     // Update dictionary iframe (filtering by lang=La and forcing inflected search o=1 for Latin text word lookups)
-    const iframe = this.dictFrame;
-    if (iframe) {
-      const targetSrc = `/v2/dicts?q=${encodeURIComponent(
-        word
-      )}&lang=La&o=1&embedded=1&scale=${this.currentPrefs.dictScale}`;
-      if (iframe.getAttribute("src") !== targetSrc) {
-        iframe.src = targetSrc;
-      }
+    if (iframe && !iframeAtTarget) {
+      iframe.src = targetSrc;
     }
 
     // Update split layout class to active (expands mobile sheet)
@@ -1367,7 +1370,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     } else {
       this.setActiveWord(null);
       const iframe = this.dictFrame;
-      if (iframe && iframe.getAttribute("src") !== "/v2/dicts?embedded=1") {
+      if (iframe && currentIframeSrc(iframe) !== "/v2/dicts?embedded=1") {
         iframe.src = "/v2/dicts?embedded=1";
       }
     }

@@ -213,6 +213,24 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(iframe.src).toContain(
       "/v2/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1"
     );
+
+    // If the user navigates inside the iframe (e.g. a typed English search that leaves lang=La),
+    // clicking the same passage word again reloads the word's lookup into the iframe.
+    Object.defineProperty(iframe, "contentWindow", {
+      configurable: true,
+      value: {
+        location: {
+          pathname: "/v2/dicts",
+          search: "?q=love&o=1&embedded=1&scale=100",
+        },
+      },
+    });
+    const srcSpy = jest.spyOn(iframe, "src", "set");
+    el.minimizeDrawer();
+    musaWord.click();
+    expect(srcSpy).toHaveBeenCalledWith(
+      "/v2/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1&scale=100"
+    );
   });
 
   test("clicking a word reflects customized dictScale in iframe query param", () => {

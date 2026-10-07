@@ -252,12 +252,71 @@ describe("renderDictSearchBar", () => {
     });
   });
 
-  test("a scoped view marks the settings form data-scoped, and Done doesn't save", () => {
-    const { settings } = forms(
-      renderDictSearchBar({ query: "amo", action: "/v2/dicts", scoped: true })
+  test("a scoped lang=La view shows only its dictionaries, no inflection toggle, and saves", () => {
+    const { search, settings } = forms(
+      renderDictSearchBar({
+        query: "amo",
+        action: "/v2/dicts",
+        scoped: true,
+        lang: "La",
+        isInflected: true,
+        extraHiddenInputs: { embedded: "1" },
+      })
     );
-    expect(settings.hasAttribute("data-scoped")).toBe(true);
-    expect(settings.querySelector('[name="save"]')).toBeNull();
-    expect(settings.querySelector(".dict-settings-done")).not.toBeNull();
+    const keys = Array.from(
+      settings.querySelectorAll<HTMLInputElement>(".dict-checkbox")
+    ).map((cb) => cb.dataset.key);
+    expect(new Set(keys)).toEqual(new Set(["L&S", "GAF", "GES", "FOR", "NUM"]));
+
+    expect(settings.querySelector("#toggle-inflected")).toBeNull();
+    expect(settings.querySelector(".settings-inflected-section")).toBeNull();
+    const fields = new FormData(settings);
+    expect(fields.getAll("o")).toEqual(["1"]);
+    expect(fields.getAll("lang")).toEqual(["La"]);
+    expect(fields.getAll("embedded")).toEqual(["1"]);
+
+    const done = settings.querySelector<HTMLButtonElement>(
+      ".dict-settings-done"
+    )!;
+    expect(done.name).toBe("save");
+    expect(done.value).toBe("1");
+    expect(settings.hasAttribute("data-scoped")).toBe(false);
+
+    // A typed search leaves the scope: no `lang`, and no narrowed `d` to stand in for the
+    // user's whole selection. It still keeps the view's frame and inflection.
+    const searchFields = new FormData(search);
+    expect(searchFields.has("lang")).toBe(false);
+    expect(searchFields.has("d")).toBe(false);
+    expect(searchFields.getAll("embedded")).toEqual(["1"]);
+    expect(searchFields.getAll("o")).toEqual(["1"]);
+  });
+
+  test("a scoped view keeps its rendered inflection in the hidden o", () => {
+    const { settings } = forms(
+      renderDictSearchBar({
+        action: "/v2/dicts",
+        scoped: true,
+        isInflected: false,
+      })
+    );
+    expect(new FormData(settings).getAll("o")).toEqual(["0"]);
+    // No `lang`: every dictionary is in scope.
+    expect(settings.querySelectorAll(".dict-checkbox")).toHaveLength(
+      LatinDict.AVAILABLE.length
+    );
+  });
+
+  test("extraHiddenInputs emits one input per array value and skips undefined", () => {
+    const { search, settings } = forms(
+      renderDictSearchBar({
+        action: "/v2/dicts",
+        extraHiddenInputs: { lang: ["La", "En"], embedded: undefined },
+      })
+    );
+    for (const form of [search, settings]) {
+      const fields = new FormData(form);
+      expect(fields.getAll("lang")).toEqual(["La", "En"]);
+      expect(fields.has("embedded")).toBe(false);
+    }
   });
 });
