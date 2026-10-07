@@ -296,7 +296,7 @@ describe("dict_ssr", () => {
       {
         queriedDicts: ["L&S", "GAF"],
         isInflected: false,
-        canSave: true,
+        canSaveInflection: true,
       }
     );
     expect(html).toContain("No dictionary entries found for");
@@ -311,7 +311,7 @@ describe("dict_ssr", () => {
         queriedDicts: ["L&S"],
         isInflected: false,
         isEmbedded: true,
-        canSave: false,
+        canSaveInflection: false,
       }
     );
     expect(embeddedHtml).toContain(

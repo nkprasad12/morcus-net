@@ -212,6 +212,74 @@ export function isGuestView(
   return false;
 }
 
+function toLangList(lang: string | readonly string[] | null | undefined) {
+  if (!lang) return [];
+  return typeof lang === "string" ? [lang] : lang;
+}
+
+function isDictInLangScope(
+  dict: LatinDictInfo,
+  langs: readonly string[]
+): boolean {
+  return (
+    langs.length === 0 ||
+    dict.languages.from === "*" ||
+    langs.includes(dict.languages.from)
+  );
+}
+
+/**
+ * The dictionaries a `lang=` scope covers: those whose source language is in `lang`, plus the
+ * wildcard (`*`) ones. No `lang` means no scope, so every dictionary is returned.
+ *
+ * This one rule decides both which dictionaries a scoped lookup queries and which checkboxes its
+ * settings dialog shows, so the two can't disagree.
+ */
+export function filterDictsByLang(
+  dicts: readonly LatinDictInfo[],
+  lang?: string | readonly string[] | null
+): LatinDictInfo[] {
+  const langs = toLangList(lang);
+  if (langs.length === 0) return [...dicts];
+  return dicts.filter((d) => isDictInLangScope(d, langs));
+}
+
+/**
+ * `filterDictsByLang` for dictionary keys. Unknown keys are always dropped, scoped or not.
+ */
+export function filterKeysByLang(
+  keys: readonly string[],
+  lang?: string | readonly string[] | null
+): string[] {
+  const langs = toLangList(lang);
+  return keys.filter((key) => {
+    const dictInfo = LatinDict.BY_KEY.get(key);
+    return dictInfo !== undefined && isDictInLangScope(dictInfo, langs);
+  });
+}
+
+/**
+ * The dictionary preference to save when the user edited only some of the dictionaries.
+ *
+ * A scoped settings dialog (e.g. the reader's, `lang=La`) shows only the dictionaries in its
+ * scope. Saving takes `selectedKeys` for those (`inScopeKeys`) and keeps every other dictionary
+ * as it was in `savedDicts` (or the default, when nothing is saved), so editing the reader's
+ * Latin lexica never changes the English → Latin ones. The result is in `LatinDict.AVAILABLE`
+ * order.
+ */
+export function mergeDictKeysForSave(
+  selectedKeys: Iterable<string>,
+  inScopeKeys: Iterable<string>,
+  savedDicts: readonly string[] | null | undefined
+): string[] {
+  const selected = new Set(selectedKeys);
+  const inScope = new Set(inScopeKeys);
+  const base = new Set(savedDicts ?? DEFAULT_DICT_KEYS);
+  return LatinDict.AVAILABLE.filter((d) =>
+    inScope.has(d.key) ? selected.has(d.key) : base.has(d.key)
+  ).map((d) => d.key);
+}
+
 export interface DictParamsInput {
   /** Explicit keys from `?dict=`, i.e. the No-JS form checkboxes. Highest precedence. */
   dictParam?: string | string[] | null;

@@ -16,6 +16,7 @@ import {
   dictParamsFromQuery,
   toStringOrArray,
 } from "@/web/v2/dict/dict.server";
+import type { SavedDictPrefs } from "@/web/v2/dict/dict_selection.common";
 import { trimRawQuery } from "@/common/text_cleaning";
 import {
   ownSettingsHref,
@@ -62,9 +63,10 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
       lang: langParam,
     });
 
-    // Scoped views (the reader's dictionary iframe, or any `lang=`-filtered lookup) show a
-    // transient, narrowed selection and must never persist it. Keyed on both signals explicitly
-    // so the reader is protected even if it stops sending `lang`.
+    // Scoped views (the reader's dictionary iframe, or any `lang=`-filtered lookup) show the
+    // dictionaries in their `lang` scope and an inflection forced by the lookup. Saving from one
+    // merges only the in-scope dictionaries into the preference and never writes inflection.
+    // Keyed on both signals so the reader is covered even if it stops sending `lang`.
     const isScopedView = isEmbedded || langParam !== undefined;
 
     // A selection in the URL is view state only: a shared link must not overwrite the
@@ -77,6 +79,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
       secFetchSite: req.get("Sec-Fetch-Site"),
       isPartial,
       isScopedView,
+      lang: langParam,
       keysFromQuery,
       oParam,
     });
@@ -90,16 +93,28 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     }
 
     // Guest mode (full pages only): a link's settings that differ from the user's saved ones are
-    // shown read-only, with a way back. Scoped views are excluded: they never persist, so there's
-    // nothing to protect.
-    const isGuest =
-      !isScopedView && isGuestView({ dictKeys, isInflected }, savedPrefs);
-    const canSave = !isScopedView && !isGuest;
+    // shown read-only, with a way back. A scoped view compares only what it shows and could save:
+    // the in-scope dictionaries resolved from the cookie, and never inflection (the lookup forces it).
+    const guestPrefs: SavedDictPrefs = isScopedView
+      ? {
+          dicts:
+            savedPrefs.dicts &&
+            resolveActiveDicts({ savedPrefs, lang: langParam }).dictKeys,
+          inflected: undefined,
+        }
+      : savedPrefs;
+    const isGuest = isGuestView({ dictKeys, isInflected }, guestPrefs);
+    const canSaveInflection = !isScopedView && !isGuest;
     const pagePersistence = {
       scoped: isScopedView,
+      lang: langParam,
       guest:
         !isPartial && isGuest
-          ? { returnHref: ownSettingsHref(req.originalUrl) }
+          ? {
+              returnHref: ownSettingsHref(req.originalUrl, {
+                keepInflection: isScopedView,
+              }),
+            }
           : undefined,
     };
 
@@ -110,7 +125,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
             queriedDicts: dictKeys,
             isInflected,
             isEmbedded,
-            canSave,
+            canSaveInflection,
           })
         );
         return;
@@ -135,7 +150,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
             queriedDicts: dictKeys,
             isInflected,
             isEmbedded,
-            canSave,
+            canSaveInflection,
           })
         );
         return;
@@ -166,7 +181,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
             queriedDicts: dictKeys,
             isInflected,
             isEmbedded,
-            canSave,
+            canSaveInflection,
           })
         );
         return;
@@ -257,6 +272,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
           queriedDicts: dictKeys,
           isInflected,
           scoped: isScopedView,
+          lang: langParam,
           scale: dictScale,
         })
       );
@@ -274,6 +290,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
           queriedDicts: dictKeys,
           isInflected,
           scoped: isScopedView,
+          lang: langParam,
           scale: dictScale,
         })
       );

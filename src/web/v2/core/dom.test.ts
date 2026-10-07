@@ -6,6 +6,7 @@ import {
   setHtml,
   replaceWithHtml,
   assertConnected,
+  currentIframeSrc,
   escapeId,
   flashElement,
   syncIframeTheme,
@@ -321,6 +322,41 @@ describe("core/dom.client", () => {
       });
 
       expect(() => syncIframeTheme(iframe, "dark")).not.toThrow();
+    });
+  });
+
+  describe("currentIframeSrc", () => {
+    it("prefers contentWindow.location when the iframe has navigated to a path", () => {
+      const iframe = document.createElement("iframe");
+      iframe.setAttribute("src", "/v2/dicts?q=arma&lang=La&o=1&embedded=1");
+      Object.defineProperty(iframe, "contentWindow", {
+        value: {
+          location: {
+            pathname: "/v2/dicts",
+            search: "?q=love&o=1&embedded=1",
+          },
+        },
+      });
+      expect(currentIframeSrc(iframe)).toBe("/v2/dicts?q=love&o=1&embedded=1");
+    });
+
+    it("falls back to the src attribute for about:blank or cross-origin iframes", () => {
+      const blankFrame = document.createElement("iframe");
+      blankFrame.setAttribute("src", "/v2/dicts?embedded=1");
+      document.body.appendChild(blankFrame);
+      expect(currentIframeSrc(blankFrame)).toBe("/v2/dicts?embedded=1");
+
+      const crossOriginFrame = document.createElement("iframe");
+      crossOriginFrame.setAttribute("src", "https://example.com");
+      Object.defineProperty(crossOriginFrame, "contentWindow", {
+        get() {
+          throw new DOMException(
+            "Cross-origin security barrier",
+            "SecurityError"
+          );
+        },
+      });
+      expect(currentIframeSrc(crossOriginFrame)).toBe("https://example.com");
     });
   });
 });

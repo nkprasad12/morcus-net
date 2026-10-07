@@ -22,9 +22,12 @@ import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import {
   DEFAULT_DICT_BITMASK,
   DEFAULT_DICT_KEYS,
+  encodeDictBitmask,
 } from "@/web/v2/dict/dict_bitmask.common";
+import { parseDictsFromCookie } from "@/web/v2/dict/dict_selection.common";
 import {
   applyDictSearch,
+  applyUnscopedDictSearch,
   dictUrlBuilder,
 } from "@/web/v2/dict/dict_params.common";
 import type { DictSettingsCommit } from "@/web/v2/dict/dict_settings.client";
@@ -83,11 +86,23 @@ export class MorcusDictSearch extends BaseElement<
     }
     const items = filterAndClusterDictionaryChunks(
       chunks,
-      this.activeDictKeys,
+      this.suggestionDictKeys(),
       query,
       25
     );
     this.showSuggestions(items);
+  }
+
+  /**
+   * The dictionaries autocomplete suggests from: the ones a typed search will query. In a `lang=`
+   * view (the reader's dictionary) a typed search leaves the scope (`searchQuery`) and the server
+   * resolves the user's saved selection, so suggest from that, not from the narrowed set on screen.
+   */
+  private suggestionDictKeys(): readonly string[] {
+    if (!new URLSearchParams(window.location.search).has("lang")) {
+      return this.activeDictKeys;
+    }
+    return parseDictsFromCookie(document.cookie) ?? DEFAULT_DICT_KEYS;
   }
 
   // Deliberately takes no query: by the time the debounce fires the one the
@@ -118,13 +133,9 @@ export class MorcusDictSearch extends BaseElement<
   private readonly debouncedFetchSuffixCompletions = this.debounce(
     (query: string) => {
       const signal = this.scope.latest("completions");
-      const currentParams = new URLSearchParams(window.location.search);
       const fetchParams = new URLSearchParams();
       fetchParams.set("q", query);
-      fetchParams.set("d", this.activeDictBitmask);
-
-      const langParam = currentParams.get("lang");
-      if (langParam) fetchParams.set("lang", langParam);
+      fetchParams.set("d", encodeDictBitmask(this.suggestionDictKeys()));
 
       fetch(`/v2/api/completions?${fetchParams.toString()}`, { signal })
         .then((res) => (res.ok ? res.json() : []))
@@ -200,7 +211,7 @@ export class MorcusDictSearch extends BaseElement<
             "word" in detail &&
             typeof detail.word === "string"
           ) {
-            this.chooseSuggestion(detail.word);
+            this.chooseSuggestion(detail.word, true);
           }
         }
       });
@@ -210,7 +221,7 @@ export class MorcusDictSearch extends BaseElement<
       this.clearSuggestions();
       const cleaned = trimRawQuery(q || "");
       if (cleaned) {
-        void this.searchQuery(cleaned);
+        void this.searchQuery(cleaned, true);
       }
     });
 
@@ -355,7 +366,8 @@ export class MorcusDictSearch extends BaseElement<
     const hiddenO = form?.querySelector<HTMLInputElement>('input[name="o"]');
     if (hiddenD) hiddenD.value = commit.bitmask;
     if (hiddenO) hiddenO.value = o;
-    this.syncUrlParams({ d: commit.bitmask, o, dropLang: true });
+    // Keeps `lang`: the new `d=` is still narrowed to it (the dialog showed only its dictionaries).
+    this.syncUrlParams({ d: commit.bitmask, o });
 
     const langChipsContainer = this.scope.$<HTMLElement>(".lang-chips");
     if (langChipsContainer) {
@@ -414,11 +426,7 @@ export class MorcusDictSearch extends BaseElement<
     }
   }
 
-  private syncUrlParams(updates: {
-    d?: string;
-    o?: string;
-    dropLang?: boolean;
-  }) {
+  private syncUrlParams(updates: { d?: string; o?: string }) {
     const url = new URL(window.location.href);
     if (updates.d !== undefined) {
       if (updates.d) {
@@ -431,9 +439,6 @@ export class MorcusDictSearch extends BaseElement<
     }
     if (updates.o !== undefined) {
       url.searchParams.set("o", updates.o);
-    }
-    if (updates.dropLang) {
-      url.searchParams.delete("lang");
     }
     // Writes our own d/o query params
     window.history.replaceState(null, "", url.pathname + url.search);
@@ -486,16 +491,21 @@ export class MorcusDictSearch extends BaseElement<
     }
   };
 
-  private chooseSuggestion(suggestion: string) {
+  /**
+   * `typed`: the user typed (or picked from autocomplete) the query, rather than following a word
+   * in the results. In a `lang=` view (the reader's dictionary) a typed word may be English or
+   * German, so it leaves the scope; a followed word is Latin, so it stays.
+   */
+  private chooseSuggestion(suggestion: string, typed = false) {
     const clean = trimRawQuery(suggestion);
     if (this.inputElement) {
       this.inputElement.value = clean;
     }
     this.clearSuggestions();
-    void this.searchQuery(clean);
+    void this.searchQuery(clean, typed);
   }
 
-  private async searchQuery(query: string) {
+  private async searchQuery(query: string, typed = false) {
     const cleanQuery = trimRawQuery(query);
     if (!cleanQuery) return;
     if (this.inputElement) {
@@ -510,6 +520,19 @@ export class MorcusDictSearch extends BaseElement<
     if (url.pathname.startsWith("/v2/dicts/id/")) {
       url.pathname = "/v2/dicts";
     }
+
+    if (typed && url.searchParams.has("lang")) {
+      // Leaving the scope changes the dictionaries, so the tray, the search form's `d` and the
+      // settings dialog's checkboxes all change too. A full load gets them from the server, which
+      // owns that resolution, rather than re-deriving it here.
+      applyUnscopedDictSearch(url.searchParams, {
+        q: cleanQuery,
+        inflected: this.isInflected,
+      });
+      window.location.assign(url.pathname + url.search);
+      return;
+    }
+
     applyDictSearch(url.searchParams, {
       q: cleanQuery,
       d: this.activeDictBitmask,

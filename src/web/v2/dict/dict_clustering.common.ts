@@ -151,7 +151,7 @@ export function clusterAndDeduplicate(
  */
 export function filterAndClusterDictionaryChunks(
   dictChunks: Record<string, string[]>,
-  activeDictKeys: string[],
+  activeDictKeys: readonly string[],
   query: string,
   limit: number = 25
 ): CompletionItem[] {

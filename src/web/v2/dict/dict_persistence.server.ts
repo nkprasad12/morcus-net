@@ -1,8 +1,11 @@
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import {
   SAVE_PARAM,
+  filterDictsByLang,
   formatDictsCookie,
   formatInflectedCookie,
+  mergeDictKeysForSave,
   readSavedDictPrefs,
   type SavedDictPrefs,
 } from "@/web/v2/dict/dict_selection.common";
@@ -28,8 +31,14 @@ export interface DictPersistenceInput {
   /** Value of the `Sec-Fetch-Site` request header, if sent by the browser. */
   readonly secFetchSite?: string;
   readonly isPartial: boolean;
-  /** Reader iframe or `lang=`-filtered lookups: show a narrowed view, never persist. */
+  /**
+   * Reader iframe or `lang=`-filtered lookup. Its passive loads never write cookies; a save
+   * merges only the in-scope dictionaries (see `lang`) and never writes inflection, which the
+   * lookup forces.
+   */
   readonly isScopedView: boolean;
+  /** The request's `lang=` scope: which dictionaries a save may change. */
+  readonly lang?: string | string[];
   /** Dictionary keys from the URL (`dict` > `d` > `in`), before any `lang` filtering. */
   readonly keysFromQuery: string[] | null;
   /** Inflection from the URL (`o`), or undefined when absent. */
@@ -50,11 +59,17 @@ function hasSaveMarker(params: URLSearchParams): boolean {
 /**
  * Decides which cookies to write and whether to redirect. This is a pure function of the request.
  *
- * - **Partial or scoped requests** never write anything.
- * - **`save=1`** writes the URL's dictionaries and inflection (whichever are present, unless the
- *   request is `Sec-Fetch-Site: cross-site`), then redirects to the canonical URL (`d=<bitmask>`,
- *   single `o=1|0`) minus `save`. The marker therefore lives for exactly one request, so a reload
- *   doesn't re-apply it, Back skips it, and copying the URL can't carry it.
+ * - **Partial requests** never write anything.
+ * - **`save=1`** (unless the request is `Sec-Fetch-Site: cross-site`) writes the URL's
+ *   dictionaries, merged into the saved ones so that only those in the `lang` scope change
+ *   (`mergeDictKeysForSave`), and, outside scoped views, the URL's inflection. It then redirects
+ *   minus `save`, so the marker lives for exactly one request: a reload doesn't re-apply it,
+ *   Back skips it, and copying the URL can't carry it. A standalone view redirects to its
+ *   canonical URL (`d=<bitmask>`, single `o=1|0`). A scoped view drops the dictionary
+ *   parameters instead, so the new cookie (filtered by `lang`) is the only source and the page
+ *   never lands in guest mode against what was just saved.
+ * - **Scoped views without `save=1`** never write anything: every reader word click is one of
+ *   these.
  * - **Otherwise**, the cookies the request already carries are re-sent with their **own** values
  *   (never the URL's) and a fresh `Max-Age`. A JS save writes via `document.cookie`, which Safari's
  *   ITP caps at 7 days; this re-issues it as an HTTP cookie on every full page load.
@@ -62,21 +77,38 @@ function hasSaveMarker(params: URLSearchParams): boolean {
 export function planDictPersistence(
   input: DictPersistenceInput
 ): DictPersistencePlan {
-  if (input.isPartial || input.isScopedView) return { cookies: [] };
+  if (input.isPartial) return { cookies: [] };
 
   const url = new URL(input.originalUrl, "http://localhost");
+  const prefs = input.savedPrefs ?? readSavedDictPrefs(input.cookieHeader);
   if (hasSaveMarker(url.searchParams)) {
+    const keys =
+      input.keysFromQuery && input.keysFromQuery.length > 0
+        ? input.keysFromQuery
+        : null;
     const cookies: string[] = [];
     if (input.secFetchSite !== "cross-site") {
-      if (input.keysFromQuery && input.keysFromQuery.length > 0) {
-        cookies.push(formatDictsCookie(input.keysFromQuery));
+      if (keys) {
+        const inScopeKeys = filterDictsByLang(
+          LatinDict.AVAILABLE,
+          input.lang
+        ).map((d) => d.key);
+        cookies.push(
+          formatDictsCookie(
+            mergeDictKeysForSave(keys, inScopeKeys, prefs.dicts)
+          )
+        );
       }
-      if (input.oParam !== undefined) {
+      if (!input.isScopedView && input.oParam !== undefined) {
         cookies.push(formatInflectedCookie(input.oParam));
       }
     }
-    if (input.keysFromQuery && input.keysFromQuery.length > 0) {
-      url.searchParams.set("d", encodeDictBitmask(input.keysFromQuery));
+    if (input.isScopedView) {
+      url.searchParams.delete("d");
+      url.searchParams.delete("dict");
+      url.searchParams.delete("in");
+    } else if (keys) {
+      url.searchParams.set("d", encodeDictBitmask(keys));
       url.searchParams.delete("dict");
       url.searchParams.delete("in");
     }
@@ -87,7 +119,8 @@ export function planDictPersistence(
     return { cookies, redirectTo: url.pathname + url.search };
   }
 
-  const prefs = input.savedPrefs ?? readSavedDictPrefs(input.cookieHeader);
+  if (input.isScopedView) return { cookies: [] };
+
   const cookies: string[] = [];
   if (prefs.dicts) cookies.push(formatDictsCookie(prefs.dicts));
   if (prefs.inflected !== undefined) {
@@ -102,9 +135,17 @@ const SETTINGS_PARAMS = ["d", "dict", "in", "o", SAVE_PARAM] as const;
 /**
  * The same page with every settings parameter removed, so the server falls back to the user's
  * cookies. This is guest mode's **Restore saved** link: a plain GET, so it works without JS.
+ *
+ * `keepInflection` (scoped views) keeps `o`: there it's the lookup's, not a setting.
  */
-export function ownSettingsHref(originalUrl: string): string {
+export function ownSettingsHref(
+  originalUrl: string,
+  options?: { keepInflection?: boolean }
+): string {
   const url = new URL(originalUrl, "http://localhost");
-  for (const name of SETTINGS_PARAMS) url.searchParams.delete(name);
+  for (const name of SETTINGS_PARAMS) {
+    if (name === "o" && options?.keepInflection) continue;
+    url.searchParams.delete(name);
+  }
   return url.pathname + url.search;
 }

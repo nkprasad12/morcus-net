@@ -5,6 +5,11 @@ import "@/web/v2/dict/dict_settings.client";
 import type { DictSettingsCommit } from "@/web/v2/dict/dict_settings.client";
 import { revealHashTarget, revealTarget } from "@/web/v2/core/reveal.client";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import {
+  decodeDictBitmask,
+  encodeDictBitmask,
+} from "@/web/v2/dict/dict_bitmask.common";
 
 type BarOptions = Partial<Parameters<typeof renderDictSearchBar>[0]>;
 
@@ -334,16 +339,49 @@ describe("MorcusDictSettings", () => {
 });
 
 describe("MorcusDictSettings in scoped and guest views", () => {
-  test("a scoped view never saves changes, but still applies them", () => {
-    const m = mount({ activeDicts: ["L&S"], scoped: true });
+  test("a scoped lang=La view saves only its dictionaries, and never inflection", () => {
+    // Every dictionary saved, plus a stale inflection preference that must survive.
+    document.cookie = `morcus_d=${encodeDictBitmask(
+      LatinDict.AVAILABLE.map((d) => d.key)
+    )}; Path=/`;
+    document.cookie = "morcus_inflected=0; Path=/";
+    const m = mount({
+      activeDicts: ["L&S", "GAF", "GES", "FOR", "NUM"],
+      isInflected: true,
+      scoped: true,
+      lang: "La",
+    });
     m.trigger.click();
-    toggle(checkbox(m.el, "GAF"), true);
-    toggle(m.el.querySelector<HTMLInputElement>("#toggle-inflected")!, false);
+    toggle(checkbox(m.el, "GAF"), false);
     clickDone(m);
 
-    expect(m.commits).toHaveLength(1);
-    expect(document.cookie).not.toContain("morcus_d=");
-    expect(document.cookie).not.toContain("morcus_inflected=");
+    expect(m.commits).toEqual([
+      expect.objectContaining({
+        dictKeys: ["L&S", "GES", "FOR", "NUM"],
+        isInflected: true,
+      }),
+    ]);
+    const saved = decodeDictBitmask(
+      /morcus_d=([^;]+)/.exec(document.cookie)![1]
+    );
+    expect(new Set(saved)).toEqual(
+      new Set(["L&S", "GES", "FOR", "NUM", "S&H", "R&A", "GRG", "EGL"])
+    );
+    expect(document.cookie).toContain("morcus_inflected=0");
+  });
+
+  test("a scoped save merges against the cookie as it is at commit time", () => {
+    const m = mount({ activeDicts: ["L&S"], scoped: true, lang: "La" });
+    // Another tab saves S&H only after this page rendered.
+    document.cookie = `morcus_d=${encodeDictBitmask(["S&H"])}; Path=/`;
+    m.trigger.click();
+    toggle(checkbox(m.el, "GAF"), true);
+    clickDone(m);
+
+    const saved = decodeDictBitmask(
+      /morcus_d=([^;]+)/.exec(document.cookie)![1]
+    );
+    expect(new Set(saved)).toEqual(new Set(["L&S", "GAF", "S&H"]));
   });
 
   test("guest mode's locked controls stay locked, and Done only closes", () => {

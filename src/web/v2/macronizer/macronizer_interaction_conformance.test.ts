@@ -225,6 +225,23 @@ describe("MorcusMacronizerView interactive contracts", () => {
     expect(plainCard.querySelector("[data-plain-tag]")?.textContent).toBe(
       "edited"
     );
+
+    // If the user searches inside #mac-dict-frame, clicking the same word again reloads its lookup.
+    const iframe = view.querySelector<HTMLIFrameElement>("#mac-dict-frame")!;
+    Object.defineProperty(iframe, "contentWindow", {
+      configurable: true,
+      value: {
+        location: {
+          pathname: "/v2/dicts",
+          search: "?q=love&o=1&embedded=1",
+        },
+      },
+    });
+    const srcSpy = jest.spyOn(iframe, "src", "set");
+    plainWord.click();
+    expect(srcSpy).toHaveBeenCalledWith(
+      "/v2/dicts?q=%C4%81ccl%C4%ABnat&lang=La&o=1&embedded=1"
+    );
   });
 
   test("tier review queue steps through tier 1 (with wrap-around), then tiers 2-4, then tier 5", () => {

@@ -13,9 +13,11 @@ export interface DictSearch {
 
 /**
  * Writes a search into a dictionary URL's params in place: sets `q`, `d` and
- * `o`, and drops the legacy `dict` and `in` params and any transient `lang`
- * filter (the active dictionary set is now encoded in `d`, matching the No-JS
- * search form). Every other param (`embedded`, `scale`) is left as it is.
+ * `o`, and drops the legacy `dict` and `in` params. Every other param
+ * (`embedded`, `scale`, `lang`) is left as it is. `lang` must stay: in a
+ * `lang=` view `d` is the narrowed selection, and a `d` without the `lang` that
+ * narrowed it would offer, and save, every dictionary as if it were the user's
+ * whole selection.
  */
 export function applyDictSearch(
   params: URLSearchParams,
@@ -26,7 +28,22 @@ export function applyDictSearch(
   params.set("o", search.inflected ? "1" : "0");
   params.delete("dict");
   params.delete("in");
-  params.delete("lang");
+}
+
+/**
+ * Writes a search that leaves the view's `lang=` scope: sets `q` and `o`, and
+ * drops `lang` together with every dictionary param, so the server resolves the
+ * user's saved dictionaries in full (cookie → default). A word typed into the
+ * reader's dictionary may be English or German, so it must reach the
+ * English → Latin and German → Latin lexica the reader's Latin scope leaves out.
+ */
+export function applyUnscopedDictSearch(
+  params: URLSearchParams,
+  search: Omit<DictSearch, "d">
+): void {
+  params.set("q", search.q);
+  params.set("o", search.inflected ? "1" : "0");
+  for (const name of ["d", "dict", "in", "lang"]) params.delete(name);
 }
 
 export interface DictUrlOptions extends Omit<DictSearch, "d"> {

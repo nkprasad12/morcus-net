@@ -97,5 +97,14 @@ describe("dict_selection.server", () => {
       // Only L&S and GES match from="La"; S&H and GRG dropped; GAF not present in cookie
       expect(res.dictKeys).toEqual(["L&S", "GES"]);
     });
+
+    it("falls back to in-scope defaults when the cookie contains only out-of-scope dictionaries", () => {
+      // S&H (16 = "g") is En -> La, so filtering by lang=La would leave 0 dictionaries.
+      const res = resolveActiveDicts({
+        cookieHeader: "morcus_d=g",
+        lang: "La",
+      });
+      expect(res.dictKeys).toEqual(["L&S", "GAF", "GES", "FOR", "NUM"]);
+    });
   });
 });

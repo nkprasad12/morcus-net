@@ -1,6 +1,6 @@
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
   DEFAULT_DICT_KEYS,
+  filterKeysByLang,
   parseDictsFromCookie,
   type SavedDictPrefs,
 } from "@/web/v2/dict/dict_selection.common";
@@ -19,6 +19,9 @@ export {
   formatDictsCookie,
   formatInflectedCookie,
   resolveDictParams,
+  filterDictsByLang,
+  filterKeysByLang,
+  mergeDictKeysForSave,
 } from "@/web/v2/dict/dict_selection.common";
 export type {
   DictParamsInput,
@@ -42,7 +45,9 @@ export {
  * competing dictionary parameters (`dict`, `d`, `in`) whose precedence only the caller can apply.
  *
  * If `lang` filter is specified (e.g. `lang=La`), only dictionaries matching that
- * source language (or wildcard '*') are returned.
+ * source language (or wildcard '*') are returned. If the user's cookie has only out-of-scope
+ * dictionaries (e.g. `S&H` only on standalone `/v2/dicts`), a scoped lookup falls back to the
+ * in-scope defaults rather than querying zero dictionaries.
  */
 export function resolveActiveDicts(options: {
   keysFromQuery?: string[] | null;
@@ -51,37 +56,29 @@ export function resolveActiveDicts(options: {
   lang?: string | string[] | null;
 }): { dictKeys: string[] } {
   const fromUrl = options.keysFromQuery;
-  let resolvedKeys: string[];
+  const hasLang = Boolean(options.lang && options.lang.length > 0);
 
   if (fromUrl && fromUrl.length > 0) {
-    resolvedKeys = fromUrl;
-  } else {
-    const fromCookie =
-      options.savedPrefs !== undefined
-        ? options.savedPrefs.dicts
-        : parseDictsFromCookie(options.cookieHeader);
-    if (fromCookie && fromCookie.length > 0) {
-      resolvedKeys = fromCookie;
-    } else {
-      resolvedKeys = [...DEFAULT_DICT_KEYS];
+    return {
+      dictKeys: hasLang ? filterKeysByLang(fromUrl, options.lang) : fromUrl,
+    };
+  }
+
+  const fromCookie =
+    options.savedPrefs !== undefined
+      ? options.savedPrefs.dicts
+      : parseDictsFromCookie(options.cookieHeader);
+  if (fromCookie && fromCookie.length > 0) {
+    const filtered = hasLang
+      ? filterKeysByLang(fromCookie, options.lang)
+      : fromCookie;
+    if (filtered.length > 0) {
+      return { dictKeys: filtered };
     }
   }
 
-  // Filter by source language if specified
-  const langs = options.lang
-    ? Array.isArray(options.lang)
-      ? options.lang
-      : [options.lang]
-    : [];
-
-  if (langs.length > 0) {
-    resolvedKeys = resolvedKeys.filter((key) => {
-      const dictInfo = LatinDict.BY_KEY.get(key);
-      if (!dictInfo) return false;
-      const fromLang = dictInfo.languages.from;
-      return fromLang === "*" || langs.includes(fromLang);
-    });
-  }
-
-  return { dictKeys: resolvedKeys };
+  const defaults = [...DEFAULT_DICT_KEYS];
+  return {
+    dictKeys: hasLang ? filterKeysByLang(defaults, options.lang) : defaults,
+  };
 }

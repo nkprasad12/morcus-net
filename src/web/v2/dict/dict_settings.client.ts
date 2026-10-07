@@ -8,7 +8,6 @@ import {
   type ModalDialogHandle,
 } from "@/web/v2/core/index.client";
 import {
-  mayPersistDictChange,
   persistDictKeys,
   persistInflected,
 } from "@/web/v2/dict/dict_preferences.client";
@@ -36,7 +35,8 @@ export interface DictSettingsCommit {
  * - The button opens the dialog with `showModal()`, so the page behind it is inert.
  * - **Content settings apply when the dialog closes** (Done, Escape, the close button or the
  *   backdrop), not on each tick, so the results don't shift behind the dialog. If anything
- *   changed, closing saves it (unless the view is scoped) and emits one `dict-settings-commit`.
+ *   changed, closing saves it and emits one `dict-settings-commit`. A scoped dialog (reader
+ *   iframe, `lang=`) saves only the dictionaries it shows, and has no inflection to save.
  * - Highlight strength is presentation only, so it stays live.
  */
 export class MorcusDictSettings extends BaseElement {
@@ -163,7 +163,12 @@ export class MorcusDictSettings extends BaseElement {
         .filter((cb) => cb.defaultChecked)
         .map((cb) => cb.dataset.key || cb.value)
     );
-    this.committedInflected = this.inflectedCheckbox()?.defaultChecked ?? true;
+    // A scoped dialog has no toggle, only the view's inflection as a hidden `o`.
+    this.committedInflected =
+      this.inflectedCheckbox()?.defaultChecked ??
+      this.formEl?.querySelector<HTMLInputElement>(
+        'input[type="hidden"][name="o"]'
+      )?.value !== "0";
   }
 
   /** Puts the controls back to the committed state, discarding a draft. */
@@ -202,8 +207,14 @@ export class MorcusDictSettings extends BaseElement {
     }
     if (inflected) inflected.defaultChecked = draftInflected;
 
-    if (mayPersistDictChange(this.formEl)) {
-      persistDictKeys(draftDicts);
+    // Only the dictionaries this dialog showed are saved: a scoped one (the reader's) offers just
+    // those in its `lang`, and the rest of the preference stays as it is. A scoped dialog has no
+    // inflection toggle (the lookup forces it), so inflection is saved only when there is one.
+    persistDictKeys(
+      draftDicts,
+      checkboxes.map((cb) => cb.dataset.key || cb.value)
+    );
+    if (inflected) {
       persistInflected(draftInflected);
     }
     this.emit<DictSettingsCommit>("dict-settings-commit", {

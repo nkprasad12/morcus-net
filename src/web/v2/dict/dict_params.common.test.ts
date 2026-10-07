@@ -1,16 +1,29 @@
 import {
   applyDictSearch,
+  applyUnscopedDictSearch,
   buildDictUrl,
   dictUrlBuilder,
 } from "@/web/v2/dict/dict_params.common";
 
 describe("applyDictSearch", () => {
-  test("sets the search, drops legacy and transient lang params, and keeps the rest", () => {
+  test("sets the search, drops legacy params, and keeps the rest, including lang", () => {
     const params = new URLSearchParams(
       "embedded=1&lang=La&dict=LS&in=1&q=old&scale=120"
     );
     applyDictSearch(params, { q: "amo", d: "an", inflected: false });
-    expect(params.toString()).toBe("embedded=1&q=amo&scale=120&d=an&o=0");
+    expect(params.toString()).toBe(
+      "embedded=1&lang=La&q=amo&scale=120&d=an&o=0"
+    );
+  });
+});
+
+describe("applyUnscopedDictSearch", () => {
+  test("drops lang and every dictionary param, and keeps the frame", () => {
+    const params = new URLSearchParams(
+      "q=arma&lang=La&o=1&embedded=1&scale=120&d=2&dict=LS&in=1"
+    );
+    applyUnscopedDictSearch(params, { q: "love", inflected: true });
+    expect(params.toString()).toBe("q=love&o=1&embedded=1&scale=120");
   });
 });
 
