@@ -325,10 +325,15 @@ describe("ReaderPanelController", () => {
 
   it("hands back to the No-JS rules when connect throws partway", () => {
     container = createFixture({ notesHtml: NOTES_HTML });
-    // Fail after the ARIA roles and the active view have been applied.
+    // Fail after the ARIA roles and the active view have been applied: the
+    // tab listeners are attached last, after the DOM state is synced.
+    let syncedWhenBroken = false;
     const spy = jest
-      .spyOn(ReaderPanelController.prototype as any, "initRevealers")
+      .spyOn($(container, ".reader-panel-tabs"), "addEventListener")
       .mockImplementation(() => {
+        syncedWhenBroken =
+          container.querySelector(".reader-panel-tabs[role]") !== null &&
+          container.querySelector(".reader-panel-view.active") !== null;
         throw new Error("broken");
       });
     try {
@@ -337,6 +342,7 @@ describe("ReaderPanelController", () => {
     } finally {
       spy.mockRestore();
     }
+    expect(syncedWhenBroken).toBe(true);
     expect(container.querySelector(".reader-panel-view.active")).toBeNull();
     expect(
       container.querySelector(

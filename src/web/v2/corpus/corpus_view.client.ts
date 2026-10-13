@@ -36,16 +36,18 @@ interface NavOptions {
  * builds or moves markup.
  */
 export class MorcusCorpusView extends BaseElement<"nav"> {
-  private form: HTMLFormElement | null = null;
-  private settings: HTMLDetailsElement | null = null;
-  private router: QueryParamSync | null = null;
+  #form: HTMLFormElement | null = null;
+  #settings: HTMLDetailsElement | null = null;
+  #router: QueryParamSync | null = null;
 
   protected override onConnect() {
-    this.settings = this.scope.$<HTMLDetailsElement>("details.corpus-settings");
-    this.form = this.hijackForm("form.corpus-form", (data) => {
-      if (this.settings) this.settings.open = false;
+    this.#settings = this.scope.$<HTMLDetailsElement>(
+      "details.corpus-settings"
+    );
+    this.#form = this.hijackForm("form.corpus-form", (data) => {
+      if (this.#settings) this.#settings.open = false;
       const url = `${CORPUS_PATH}?${new URLSearchParams(data).toString()}`;
-      void this.navigate(url, { push: true, scrollToResults: false });
+      void this.#navigate(url, { push: true, scrollToResults: false });
     });
 
     this.scope.delegate<HTMLAnchorElement>(
@@ -56,17 +58,17 @@ export class MorcusCorpusView extends BaseElement<"nav"> {
         if (!(e instanceof MouseEvent) || !isPlainLeftClick(e)) return;
         // Our nav links; navigate() swaps the result slots
         e.preventDefault();
-        void this.navigate(link.href, { push: true, scrollToResults: true });
+        void this.#navigate(link.href, { push: true, scrollToResults: true });
       }
     );
 
     const onPopState = () => {
-      void this.navigate(window.location.href, {
+      void this.#navigate(window.location.href, {
         push: false,
         scrollToResults: false,
       });
     };
-    this.router = this.syncQueryParam("q", {
+    this.#router = this.syncQueryParam("q", {
       onChange: onPopState,
       onNavigate: onPopState,
       title: corpusPageTitle,
@@ -77,7 +79,7 @@ export class MorcusCorpusView extends BaseElement<"nav"> {
    * Swaps in the page for `href`. Resolves false if the swap was superseded
    * or fell back to a full navigation.
    */
-  private async navigate(href: string, options: NavOptions): Promise<boolean> {
+  async #navigate(href: string, options: NavOptions): Promise<boolean> {
     const url = new URL(href, window.location.href);
     const path = url.pathname + url.search;
     const ok = await swapSlots(this, path, {
@@ -100,10 +102,10 @@ export class MorcusCorpusView extends BaseElement<"nav"> {
         // navigate() already swapped the slots; records the URL
         window.history.pushState(null, "", path);
       }
-      this.router?.updatePath(path);
+      this.#router?.updatePath(path);
       document.title = corpusPageTitle(params.q);
     }
-    this.syncControls(params);
+    this.#syncControls(params);
     if (options.scrollToResults) {
       const results = this.scope.$<HTMLElement>('[data-slot="results"]');
       if (typeof results?.scrollIntoView === "function") {
@@ -114,9 +116,9 @@ export class MorcusCorpusView extends BaseElement<"nav"> {
   }
 
   /** Makes the form show what the page now shows (links and popstate). */
-  private syncControls(params: CorpusParams) {
+  #syncControls(params: CorpusParams) {
     const field = (name: string) => {
-      const el = this.form?.elements.namedItem(name);
+      const el = this.#form?.elements.namedItem(name);
       return el instanceof HTMLInputElement ? el : null;
     };
     const q = field("q");

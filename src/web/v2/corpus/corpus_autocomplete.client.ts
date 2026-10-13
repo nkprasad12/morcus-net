@@ -487,8 +487,8 @@ function shardKey(prefix: string): string {
  * Each shard is fetched once and kept for the life of the page.
  */
 export class LemmaShardCache {
-  private readonly shards = new Map<string, readonly string[] | null>();
-  private readonly inFlight = new Map<string, Promise<void>>();
+  readonly #shards = new Map<string, readonly string[] | null>();
+  readonly #inFlight = new Map<string, Promise<void>>();
 
   /**
    * Up to `max` lemmata starting with `prefix`, matched as in V1: the first
@@ -497,7 +497,7 @@ export class LemmaShardCache {
    */
   complete(prefix: string, max: number): readonly string[] | null | undefined {
     if (prefix.length === 0) return [];
-    const shard = this.shards.get(shardKey(prefix));
+    const shard = this.#shards.get(shardKey(prefix));
     if (shard === undefined || shard === null) return shard;
     const normalized = prefix[0] + prefix.slice(1).toLowerCase();
     return findByPrefix(shard, normalized, max, (lemma) => lemma);
@@ -513,8 +513,8 @@ export class LemmaShardCache {
    */
   load(prefix: string, version: string | undefined): Promise<void> {
     const key = shardKey(prefix);
-    if (key === "" || this.shards.has(key)) return Promise.resolve();
-    const pending = this.inFlight.get(key);
+    if (key === "" || this.#shards.has(key)) return Promise.resolve();
+    const pending = this.#inFlight.get(key);
     if (pending !== undefined) return pending;
 
     const query =
@@ -526,16 +526,16 @@ export class LemmaShardCache {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body: unknown = await res.json();
         if (!isStringArray(body)) throw new Error("not a list of lemmata");
-        this.shards.set(key, body);
+        this.#shards.set(key, body);
       })
       .catch((err: unknown) => {
         console.warn(`Corpus lemmata for "${key}" unavailable:`, err);
-        this.shards.set(key, null);
+        this.#shards.set(key, null);
       })
       .finally(() => {
-        this.inFlight.delete(key);
+        this.#inFlight.delete(key);
       });
-    this.inFlight.set(key, request);
+    this.#inFlight.set(key, request);
     return request;
   }
 }
@@ -607,14 +607,14 @@ interface Parts {
  * by the core `ComboboxController`.
  */
 export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
-  private parts: Parts | null = null;
-  private authors: readonly string[] | undefined;
-  private lemmataVersion: string | undefined;
-  private combobox: ComboboxController<CorpusSuggestion> | null = null;
+  #parts: Parts | null = null;
+  #authors: readonly string[] | undefined;
+  #lemmataVersion: string | undefined;
+  #combobox: ComboboxController<CorpusSuggestion> | null = null;
 
-  private readonly lemmata = (prefix: string) => {
+  readonly #lemmata = (prefix: string) => {
     const found = LEMMA_SHARDS.complete(prefix, MAX_LEMMA_ROWS);
-    if (found === undefined) this.loadShard(prefix);
+    if (found === undefined) this.#loadShard(prefix);
     return found;
   };
 
@@ -630,24 +630,24 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
         "<morcus-corpus-suggestions> needs a data-input id and its listbox"
       );
     }
-    this.parts = { input, listbox };
-    this.authors = parseAuthors(this.dataset.authors);
-    this.lemmataVersion = this.dataset.lemmataVersion || undefined;
+    this.#parts = { input, listbox };
+    this.#authors = parseAuthors(this.dataset.authors);
+    this.#lemmataVersion = this.dataset.lemmataVersion || undefined;
 
-    if (!this.combobox) {
-      this.combobox = new ComboboxController<CorpusSuggestion>({
+    if (!this.#combobox) {
+      this.#combobox = new ComboboxController<CorpusSuggestion>({
         root: this,
-        getInput: () => this.parts?.input ?? null,
-        getListbox: () => this.parts?.listbox ?? null,
+        getInput: () => this.#parts?.input ?? null,
+        getListbox: () => this.#parts?.listbox ?? null,
         isSelectable: (row) => isCompletion(row),
         renderItems: (rows, box) => {
           setHtml(box, html`${joinHtml(rows.map(renderRow))}`);
         },
         onSelect: (_item, index) => {
-          this.choose(index);
+          this.#choose(index);
         },
         onRefresh: () => {
-          this.refresh();
+          this.#refresh();
         },
         onVisibilityChange: (open) => {
           if (!open) {
@@ -655,44 +655,44 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
           }
         },
       });
-      this.addController(this.combobox);
+      this.addController(this.#combobox);
     }
   }
 
   protected override onDisconnect(): void {
-    this.parts = null;
+    this.#parts = null;
   }
 
   /** Shows the rows for the text before the caret, while the input has focus. */
-  private refresh(): void {
-    const parts = this.parts;
+  #refresh(): void {
+    const parts = this.#parts;
     if (parts === null) return;
     const { input } = parts;
     if (input !== this.ownerDocument.activeElement) {
-      this.combobox?.close();
+      this.#combobox?.close();
       return;
     }
     this.scope.cancel("lemmata");
     const caret = input.selectionStart ?? input.value.length;
     const suggestions = corpusSuggestions(input.value.slice(0, caret), {
-      authors: this.authors,
-      lemmata: this.lemmata,
+      authors: this.#authors,
+      lemmata: this.#lemmata,
     });
-    this.combobox?.setItems(suggestions);
+    this.#combobox?.setItems(suggestions);
   }
 
   /** Fetches the shard for `prefix`, then re-suggests unless superseded. */
-  private loadShard(prefix: string): void {
+  #loadShard(prefix: string): void {
     const signal = this.scope.latest("lemmata");
-    void LEMMA_SHARDS.load(prefix, this.lemmataVersion).then(() => {
-      if (!signal.aborted) this.refresh();
+    void LEMMA_SHARDS.load(prefix, this.#lemmataVersion).then(() => {
+      if (!signal.aborted) this.#refresh();
     });
   }
 
   /** Splices a completion in at the caret. */
-  private choose(index: number): void {
-    const parts = this.parts;
-    const items = this.combobox?.items;
+  #choose(index: number): void {
+    const parts = this.#parts;
+    const items = this.#combobox?.items;
     const row = items?.[index];
     if (parts === null || !row || !isCompletion(row)) return;
     const { input } = parts;
@@ -706,7 +706,7 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     input.setRangeText(text, from, to);
     // Explicit rather than `setRangeText`'s "end" mode, which jsdom gets wrong.
     input.setSelectionRange(from + text.length, from + text.length);
-    this.refresh();
+    this.#refresh();
   }
 }
 

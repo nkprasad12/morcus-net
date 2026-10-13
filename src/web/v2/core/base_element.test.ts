@@ -215,19 +215,25 @@ registerElement(
 class TestConnectOrderChildController extends BaseController {
   public parentHeaderSeenAtConnect: HTMLElement | null = null;
 
+  readonly #tracker: {
+    resolvedHeader: HTMLElement | null;
+    executionLog: string[];
+  };
+
   constructor(
     root: ParentNode,
-    private readonly tracker: {
+    tracker: {
       resolvedHeader: HTMLElement | null;
       executionLog: string[];
     }
   ) {
     super(root);
+    this.#tracker = tracker;
   }
 
   protected override onConnect(): void {
-    this.tracker.executionLog.push("child:connect");
-    this.parentHeaderSeenAtConnect = this.tracker.resolvedHeader;
+    this.#tracker.executionLog.push("child:connect");
+    this.parentHeaderSeenAtConnect = this.#tracker.resolvedHeader;
   }
 }
 

@@ -63,20 +63,20 @@ export class ReaderLayoutController extends BaseController {
   public splitLayout: HTMLElement | null = null;
   public splitter: HTMLElement | null = null;
   public dictPanel: HTMLElement | null = null;
-  private readonly overrides?: Partial<ReaderLayoutElements>;
-  private readonly storageKey: string;
-  private readonly onWidthChange?: (width: number) => void;
+  readonly #overrides?: Partial<ReaderLayoutElements>;
+  readonly #storageKey: string;
+  readonly #onWidthChange?: (width: number) => void;
 
   constructor(options: ReaderLayoutOptions = {}) {
     super(options.root ?? document);
-    this.overrides = options.elements;
-    this.storageKey = options.storageKey ?? READER_DICT_WIDTH_STORAGE_KEY;
-    this.onWidthChange = options.onWidthChange;
-    this.resolveElements();
+    this.#overrides = options.elements;
+    this.#storageKey = options.storageKey ?? READER_DICT_WIDTH_STORAGE_KEY;
+    this.#onWidthChange = options.onWidthChange;
+    this.#resolveElements();
   }
 
-  private resolveElements(): void {
-    const overrides = this.overrides;
+  #resolveElements(): void {
+    const overrides = this.#overrides;
 
     this.splitLayout =
       overrides?.splitLayout !== undefined
@@ -95,23 +95,23 @@ export class ReaderLayoutController extends BaseController {
   }
 
   protected override onConnect(): void {
-    this.resolveElements();
+    this.#resolveElements();
     if (!this.splitter || !this.splitLayout || !this.dictPanel) {
       return;
     }
 
-    this.restoreSavedWidth();
-    this.initDrag();
-    this.initDblClick();
-    this.initKeyboard();
+    this.#restoreSavedWidth();
+    this.#initDrag();
+    this.#initDblClick();
+    this.#initKeyboard();
   }
 
-  private restoreSavedWidth() {
+  #restoreSavedWidth() {
     const dictPanel = this.dictPanel;
     const splitter = this.splitter;
     if (!dictPanel || !splitter) return;
 
-    const savedWidth = storage.get(this.storageKey);
+    const savedWidth = storage.get(this.#storageKey);
     let restored: number | null = null;
     if (savedWidth) {
       const parsed = parseInt(savedWidth, 10);
@@ -128,8 +128,8 @@ export class ReaderLayoutController extends BaseController {
     // script put on <html>, so it is recorded only. With none, <html> is
     // cleared too: a stale snapshot may have put a width there that nothing
     // would override.
-    if (restored === null) this.clearPrepaintWidth();
-    else this.recordPrepaintWidth(restored);
+    if (restored === null) this.#clearPrepaintWidth();
+    else this.#recordPrepaintWidth(restored);
   }
 
   /**
@@ -145,20 +145,20 @@ export class ReaderLayoutController extends BaseController {
    * - `.reader-dict-panel` is the only rule that reads `--dict-width`
    *   (reader_dict.css), and
    * - only {@link resetWidth} removes the panel's inline value, and it
-   *   clears <html> in the same step ({@link clearPrepaintWidth}).
+   *   clears <html> in the same step ({@link #clearPrepaintWidth}).
    * The panel is server-rendered, so a fresh one only arrives with a new
    * load, whose critical script applies the recorded value.
    */
-  private recordPrepaintWidth(width: number): void {
+  #recordPrepaintWidth(width: number): void {
     recordPrepaint("--dict-width", `${width}px`);
   }
 
   /** Removes the width from <html> and from the pre-paint snapshot. */
-  private clearPrepaintWidth(): void {
+  #clearPrepaintWidth(): void {
     setPrepaint("--dict-width", null);
   }
 
-  private initDrag() {
+  #initDrag() {
     const splitter = this.splitter;
     const splitLayout = this.splitLayout;
     const dictPanel = this.dictPanel;
@@ -218,7 +218,7 @@ export class ReaderLayoutController extends BaseController {
           );
           dictPanel.style.setProperty("--dict-width", `${newWidth}px`);
           splitter.setAttribute("aria-valuenow", String(newWidth));
-          this.onWidthChange?.(newWidth);
+          this.#onWidthChange?.(newWidth);
         },
         onEnd: () => {
           const finalWidth = parseInt(
@@ -226,8 +226,8 @@ export class ReaderLayoutController extends BaseController {
               String(DEFAULT_SPLIT_WIDTH),
             10
           );
-          storage.set(this.storageKey, String(finalWidth));
-          this.recordPrepaintWidth(finalWidth);
+          storage.set(this.#storageKey, String(finalWidth));
+          this.#recordPrepaintWidth(finalWidth);
           // Also runs on pointercancel. The final `--dict-width` is already
           // set, so the iframe resizes to the committed width exactly once.
           unfreezeIframe();
@@ -238,7 +238,7 @@ export class ReaderLayoutController extends BaseController {
     this.scope.use(unfreezeIframe);
   }
 
-  private initDblClick() {
+  #initDblClick() {
     const splitter = this.splitter;
     if (!splitter) return;
 
@@ -247,7 +247,7 @@ export class ReaderLayoutController extends BaseController {
     });
   }
 
-  private initKeyboard() {
+  #initKeyboard() {
     const splitter = this.splitter;
     const splitLayout = this.splitLayout;
     if (!splitter || !splitLayout) return;
@@ -292,7 +292,7 @@ export class ReaderLayoutController extends BaseController {
    * aria-valuenow attribute (falling back to DEFAULT_SPLIT_WIDTH).
    */
   public getWidth(): number {
-    this.resolveElements();
+    this.#resolveElements();
     if (this.splitter) {
       const parsed = parseInt(
         this.splitter.getAttribute("aria-valuenow") || "",
@@ -308,17 +308,17 @@ export class ReaderLayoutController extends BaseController {
    * Optionally persists the new width to localStorage.
    */
   public setWidth(width: number, persist: boolean = false): void {
-    this.resolveElements();
+    this.#resolveElements();
     if (this.dictPanel) {
       this.dictPanel.style.setProperty("--dict-width", `${width}px`);
     }
     if (this.splitter) {
       this.splitter.setAttribute("aria-valuenow", String(width));
     }
-    this.onWidthChange?.(width);
+    this.#onWidthChange?.(width);
     if (persist) {
-      storage.set(this.storageKey, String(width));
-      this.recordPrepaintWidth(width);
+      storage.set(this.#storageKey, String(width));
+      this.#recordPrepaintWidth(width);
     }
   }
 
@@ -327,25 +327,25 @@ export class ReaderLayoutController extends BaseController {
    * resets ARIA attributes, and clears the persisted entry from localStorage.
    */
   public resetWidth(): void {
-    this.resolveElements();
+    this.#resolveElements();
     if (this.dictPanel) {
       this.dictPanel.style.removeProperty("--dict-width");
     }
     if (this.splitter) {
       this.splitter.setAttribute("aria-valuenow", String(DEFAULT_SPLIT_WIDTH));
     }
-    storage.remove(this.storageKey);
+    storage.remove(this.#storageKey);
     // The panel's inline width is gone, so <html> is what the panel reads
     // now; a stale value there would show. Clear it with the snapshot.
-    this.clearPrepaintWidth();
-    this.onWidthChange?.(DEFAULT_SPLIT_WIDTH);
+    this.#clearPrepaintWidth();
+    this.#onWidthChange?.(DEFAULT_SPLIT_WIDTH);
   }
 
   /**
    * Updates split layout CSS classes between active (expanded content) and empty.
    */
   public setActive(active: boolean): void {
-    this.resolveElements();
+    this.#resolveElements();
     if (!this.splitLayout) return;
     if (active) {
       this.splitLayout.classList.remove("reader-layout-empty");

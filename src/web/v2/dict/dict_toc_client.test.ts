@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 
+import { DrawerController } from "@/web/v2/core/drawer.client";
 import { MorcusDictToc } from "@/web/v2/dict/dict_toc.client";
 
 describe("MorcusDictToc custom element", () => {
@@ -52,15 +53,18 @@ describe("MorcusDictToc custom element", () => {
       </details>
     `;
 
-    const drawerCtrl = Reflect.get(tocEl, "drawerController");
-    const connectSpy = jest.spyOn(drawerCtrl, "connect");
+    const connectSpy = jest.spyOn(DrawerController.prototype, "connect");
+    try {
+      document.body.appendChild(tocEl);
 
-    document.body.appendChild(tocEl);
-
-    expect(tocEl).toBeInstanceOf(MorcusDictToc);
-    expect(tocEl.getDrawerController()).not.toBeNull();
-    expect(connectSpy).toHaveBeenCalledTimes(1);
-    connectSpy.mockRestore();
+      expect(tocEl).toBeInstanceOf(MorcusDictToc);
+      const drawer = tocEl.getDrawerController();
+      expect(drawer).not.toBeNull();
+      expect(connectSpy).toHaveBeenCalledTimes(1);
+      expect(connectSpy.mock.contexts[0]).toBe(drawer);
+    } finally {
+      connectSpy.mockRestore();
+    }
   });
 
   test("does not initialize DrawerController on desktop viewport (>= 1080px) and ensures details is open", () => {

@@ -65,43 +65,43 @@ export function pageWidthLabel(
 }
 
 export class MorcusPageWidth extends BaseElement {
-  private surface: WidthSurface = "reader";
-  private handles: HTMLElement[] = [];
-  private appBarRow: HTMLElement | null = null;
-  private container: HTMLElement | null = null;
-  private readout: HTMLElement | null = null;
+  #surface: WidthSurface = "reader";
+  #handles: HTMLElement[] = [];
+  #appBarRow: HTMLElement | null = null;
+  #container: HTMLElement | null = null;
+  #readout: HTMLElement | null = null;
   /** A key-stepped width shown live but not yet committed (see keyup). */
-  private keyPending: DraggedPageWidth | null = null;
+  #keyPending: DraggedPageWidth | null = null;
 
   protected override onConnect(): void {
     const surface = this.dataset.surface;
     if (!isWidthSurface(surface)) return;
-    this.surface = surface;
+    this.#surface = surface;
     syncSurfaceWidth(surface);
 
-    this.handles = Array.from(
+    this.#handles = Array.from(
       this.querySelectorAll<HTMLElement>(".page-handle")
     );
-    this.readout = this.querySelector<HTMLElement>(".page-width-readout");
-    this.appBarRow = document.querySelector<HTMLElement>(".app-bar-inner");
-    this.container = document.querySelector<HTMLElement>(".container");
-    this.updateAria(getSurfaceWidth(surface));
+    this.#readout = this.querySelector<HTMLElement>(".page-width-readout");
+    this.#appBarRow = document.querySelector<HTMLElement>(".app-bar-inner");
+    this.#container = document.querySelector<HTMLElement>(".container");
+    this.#updateAria(getSurfaceWidth(surface));
 
-    for (const handle of this.handles) this.bindHandle(handle);
+    for (const handle of this.#handles) this.#bindHandle(handle);
     // The column and app bar row are outside this element: if it goes away
     // mid-drag or mid-key-step (no release, keyup or blur will arrive), drop
     // the uncommitted inline width rather than leave it on them.
     this.scope.use(() => {
-      this.keyPending = null;
-      this.setLive(null);
+      this.#keyPending = null;
+      this.#setLive(null);
     });
   }
 
-  private get config() {
-    return WIDTH_SURFACES[this.surface];
+  get #config() {
+    return WIDTH_SURFACES[this.#surface];
   }
 
-  private viewportWidth(): number {
+  #viewportWidth(): number {
     return document.documentElement.clientWidth;
   }
 
@@ -110,9 +110,9 @@ export class MorcusPageWidth extends BaseElement {
    * dictionary's contents rail plus its gap when the rail shows beside the
    * column (dict/dict_toc.css), else 0. Reads layout.
    */
-  private railExtra(): number {
+  #railExtra(): number {
     // The rail is sticky only in its desktop beside-the-column mode.
-    const rail = this.container?.querySelector<HTMLElement>(
+    const rail = this.#container?.querySelector<HTMLElement>(
       ".results-layout.has-toc .drawer-toc"
     );
     return rail && getComputedStyle(rail).position === "sticky"
@@ -126,32 +126,32 @@ export class MorcusPageWidth extends BaseElement {
    * key step or drag past it doesn't stall at a width the column can't
    * reach. Reads layout, so never call it mid-drag.
    */
-  private maxWidth(): number {
-    return this.viewportWidth() - this.railExtra();
+  #maxWidth(): number {
+    return this.#viewportWidth() - this.#railExtra();
   }
 
   /**
    * The reading column's current width; reads layout, so never call it
-   * mid-drag. The rail's extra (see {@link railExtra}) is subtracted from the
+   * mid-drag. The rail's extra (see {@link #railExtra}) is subtracted from the
    * container, so the saved width is always the column's.
    */
-  private measureWidth(): number {
-    const container = this.container;
-    if (!container) return this.config.def;
+  #measureWidth(): number {
+    const container = this.#container;
+    if (!container) return this.#config.def;
     return (
-      container.getBoundingClientRect().width - this.railExtra() ||
-      this.config.def
+      container.getBoundingClientRect().width - this.#railExtra() ||
+      this.#config.def
     );
   }
 
   /** Commits a pending key-stepped width, if any. */
-  private flushKeys(): void {
-    const pending = this.keyPending;
+  #flushKeys(): void {
+    const pending = this.#keyPending;
     if (pending === null) return;
-    this.commit(pending);
+    this.#commit(pending);
   }
 
-  private bindHandle(handle: HTMLElement): void {
+  #bindHandle(handle: HTMLElement): void {
     // The arrow (or drag direction) pointing away from the column grows it.
     const sign = handle.dataset.side === "left" ? -1 : 1;
     let startWidth = 0;
@@ -164,11 +164,11 @@ export class MorcusPageWidth extends BaseElement {
     const paint = () => {
       frame = 0;
       if (pending === null) return;
-      this.setLive(pending);
-      this.updateAria(pending, max);
-      if (this.readout) {
-        this.readout.textContent = pageWidthLabel(pending, this.config.def);
-        this.readout.style.transform = `translate(${readoutX}px, ${readoutY}px)`;
+      this.#setLive(pending);
+      this.#updateAria(pending, max);
+      if (this.#readout) {
+        this.#readout.textContent = pageWidthLabel(pending, this.#config.def);
+        this.#readout.style.transform = `translate(${readoutX}px, ${readoutY}px)`;
       }
     };
 
@@ -179,16 +179,16 @@ export class MorcusPageWidth extends BaseElement {
         // Measured once: onMove writes the width, so reading it per move
         // would force a synchronous layout on every pointer event.
         onStart: () => {
-          this.flushKeys();
-          startWidth = this.measureWidth();
-          max = this.maxWidth();
+          this.#flushKeys();
+          startWidth = this.#measureWidth();
+          max = this.#maxWidth();
           pending = null;
-          this.updateAria(getSurfaceWidth(this.surface), max);
+          this.#updateAria(getSurfaceWidth(this.#surface), max);
         },
         onMove: ({ dx, currentX, currentY }) => {
           pending = resolveSurfaceWidth(
             startWidth + 2 * sign * dx,
-            this.config,
+            this.#config,
             max
           );
           readoutX = currentX + 14;
@@ -201,31 +201,31 @@ export class MorcusPageWidth extends BaseElement {
           const committed = pending;
           pending = null;
           if (committed === null || isCancelled) {
-            this.setLive(null);
+            this.#setLive(null);
             return;
           }
-          this.commit(committed, max);
+          this.#commit(committed, max);
         },
       })
     );
 
-    this.scope.listen(handle, "dblclick", () => this.commit(undefined));
+    this.scope.listen(handle, "dblclick", () => this.#commit(undefined));
     // The saved width can change outside a drag (another tab, Reset).
     this.scope.listen(handle, "focus", () =>
-      this.updateAria(getSurfaceWidth(this.surface))
+      this.#updateAria(getSurfaceWidth(this.#surface))
     );
     this.scope.listen(handle, "keydown", (e: KeyboardEvent) => {
       let next: DraggedPageWidth | undefined | null = null;
-      const keyMax = this.maxWidth();
+      const keyMax = this.#maxWidth();
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         const step = (e.key === "ArrowRight" ? 1 : -1) * sign * KEY_STEP_PX;
         next = resolveSurfaceWidth(
-          this.measureWidth() + step,
-          this.config,
+          this.#measureWidth() + step,
+          this.#config,
           keyMax
         );
       } else if (e.key === "Home") {
-        next = this.config.min;
+        next = this.#config.min;
       } else if (e.key === "End") {
         next = "full";
       } else if (e.key === "Enter" || e.key === "Escape") {
@@ -237,18 +237,18 @@ export class MorcusPageWidth extends BaseElement {
       e.preventDefault();
       if (next === undefined) {
         // Resets commit at once (commit drops any pending step).
-        this.commit(undefined, keyMax);
+        this.#commit(undefined, keyMax);
         return;
       }
       // Steps paint inline only; a held arrow key would otherwise rewrite
       // :root (a whole-document restyle) on every repeat. Committed on
       // keyup, or on blur if the keyup never arrives.
-      this.keyPending = next;
-      this.setLive(next);
-      this.updateAria(next, keyMax);
+      this.#keyPending = next;
+      this.#setLive(next);
+      this.#updateAria(next, keyMax);
     });
-    this.scope.listen(handle, "keyup", () => this.flushKeys());
-    this.scope.listen(handle, "blur", () => this.flushKeys());
+    this.scope.listen(handle, "keyup", () => this.#flushKeys());
+    this.scope.listen(handle, "blur", () => this.#flushKeys());
   }
 
   /**
@@ -262,17 +262,17 @@ export class MorcusPageWidth extends BaseElement {
    * `max-width: var(--page-max)` in shell/page_width.css and
    * reader/reader_layout.css). Change them together.
    */
-  private setLive(width: DraggedPageWidth | null): void {
+  #setLive(width: DraggedPageWidth | null): void {
     const value = width === null ? null : widthCssValue(width);
     if (value === null) {
       this.style.removeProperty("--page-max");
-      this.appBarRow?.style.removeProperty("max-width");
-      this.container?.style.removeProperty("max-width");
+      this.#appBarRow?.style.removeProperty("max-width");
+      this.#container?.style.removeProperty("max-width");
       return;
     }
     this.style.setProperty("--page-max", value);
-    this.appBarRow?.style.setProperty("max-width", value);
-    this.container?.style.setProperty(
+    this.#appBarRow?.style.setProperty("max-width", value);
+    this.#container?.style.setProperty(
       "max-width",
       liveContainerMaxWidth(value)
     );
@@ -282,27 +282,24 @@ export class MorcusPageWidth extends BaseElement {
    * Saves `width` (`undefined` = default) and records it for pre-paint. Any
    * commit (release, reset, double-click) supersedes a pending key step.
    */
-  private commit(
-    width: DraggedPageWidth | undefined,
-    max = this.maxWidth()
-  ): void {
-    this.keyPending = null;
+  #commit(width: DraggedPageWidth | undefined, max = this.#maxWidth()): void {
+    this.#keyPending = null;
     // Record on :root first, then drop the inline values, so the column
     // never flashes back to the old width in between.
-    setSurfaceWidth(this.surface, width);
-    this.setLive(null);
-    this.updateAria(getSurfaceWidth(this.surface), max);
+    setSurfaceWidth(this.#surface, width);
+    this.#setLive(null);
+    this.#updateAria(getSurfaceWidth(this.#surface), max);
   }
 
-  private updateAria(
+  #updateAria(
     width: DraggedPageWidth | undefined,
-    max = this.maxWidth()
+    max = this.#maxWidth()
   ): void {
-    const { def, min } = this.config;
+    const { def, min } = this.#config;
     // aria-valuemin is static (server-rendered).
     const now = width === "full" ? max : width ?? def;
     const text = pageWidthLabel(width, def);
-    for (const handle of this.handles) {
+    for (const handle of this.#handles) {
       handle.setAttribute("aria-valuemax", String(Math.max(min, max)));
       handle.setAttribute("aria-valuenow", String(Math.round(now)));
       handle.setAttribute("aria-valuetext", text);

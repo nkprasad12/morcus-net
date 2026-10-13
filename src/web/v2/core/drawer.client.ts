@@ -194,46 +194,48 @@ export interface DrawerControllerOptions {
 export class DrawerController extends BaseController {
   public drawer: HTMLElement | null = null;
   public handle: HTMLElement | null = null;
-  private details: HTMLDetailsElement | null = null;
-  private summary: HTMLElement | null = null;
-  /** Cached `options.heightTargets`; see {@link resolveTargets}. */
-  private targets: HTMLElement[] = [];
+  #details: HTMLDetailsElement | null = null;
+  #summary: HTMLElement | null = null;
+  /** Cached `options.heightTargets`; see {@link #resolveTargets}. */
+  #targets: HTMLElement[] = [];
 
-  private readonly minHeight: number;
-  private readonly defaultSvh: number;
-  private readonly floorSvh: number;
-  private readonly expandedSvh: number;
-  private preferredSvh: number;
+  readonly #minHeight: number;
+  readonly #defaultSvh: number;
+  readonly #floorSvh: number;
+  readonly #expandedSvh: number;
+  #preferredSvh: number;
+  readonly #options: DrawerControllerOptions;
 
-  constructor(private readonly options: DrawerControllerOptions) {
+  constructor(options: DrawerControllerOptions) {
     super(options.root ?? options.drawer ?? document);
+    this.#options = options;
 
-    this.minHeight = options.minHeight ?? DRAWER_MIN_HEIGHT;
-    this.defaultSvh = options.defaultSvh ?? DRAWER_DEFAULT_SVH;
-    this.floorSvh = options.floorSvh ?? DRAWER_FLOOR_SVH;
-    this.expandedSvh = options.expandedSvh ?? DRAWER_EXPANDED_SVH;
-    this.preferredSvh = options.preferredSvh ?? this.defaultSvh;
+    this.#minHeight = options.minHeight ?? DRAWER_MIN_HEIGHT;
+    this.#defaultSvh = options.defaultSvh ?? DRAWER_DEFAULT_SVH;
+    this.#floorSvh = options.floorSvh ?? DRAWER_FLOOR_SVH;
+    this.#expandedSvh = options.expandedSvh ?? DRAWER_EXPANDED_SVH;
+    this.#preferredSvh = options.preferredSvh ?? this.#defaultSvh;
 
-    this.resolveElements();
+    this.#resolveElements();
   }
 
   /**
    * Sets `--drawer-height` (or removes it when `value` is null) on the drawer
    * and every height target.
    */
-  private writeHeight(value: string | null): void {
+  #writeHeight(value: string | null): void {
     setDrawerHeight(this.drawer, value);
-    this.writeTargets(value);
+    this.#writeTargets(value);
   }
 
   /**
    * Sets `--drawer-height` (or removes it) on the height targets only.
    *
-   * Uses the list cached by {@link resolveTargets}, so a drag's pointermoves
+   * Uses the list cached by {@link #resolveTargets}, so a drag's pointermoves
    * never query the document.
    */
-  private writeTargets(value: string | null): void {
-    for (const el of this.targets) setDrawerHeight(el, value);
+  #writeTargets(value: string | null): void {
+    for (const el of this.#targets) setDrawerHeight(el, value);
   }
 
   /**
@@ -241,12 +243,12 @@ export class DrawerController extends BaseController {
    * and at the start of each drag: the targets (e.g. `.back-to-top`) live in
    * the page shell and may not exist yet when the controller is constructed.
    */
-  private resolveTargets(): void {
-    this.targets = Array.from(this.options.heightTargets?.() ?? []);
+  #resolveTargets(): void {
+    this.#targets = Array.from(this.#options.heightTargets?.() ?? []);
   }
 
-  private resolveElements(): void {
-    const options = this.options;
+  #resolveElements(): void {
+    const options = this.#options;
 
     if (options.drawer !== undefined) {
       this.drawer = options.drawer;
@@ -273,34 +275,34 @@ export class DrawerController extends BaseController {
     }
 
     if (options.detailsElement !== undefined) {
-      this.details = options.detailsElement;
+      this.#details = options.detailsElement;
     } else if (options.detailsSelector) {
-      this.details = this.root.querySelector<HTMLDetailsElement>(
+      this.#details = this.root.querySelector<HTMLDetailsElement>(
         options.detailsSelector
       );
     } else if (this.drawer instanceof HTMLDetailsElement) {
-      this.details = this.drawer;
+      this.#details = this.drawer;
     } else {
-      this.details = this.drawer?.querySelector("details") ?? null;
+      this.#details = this.drawer?.querySelector("details") ?? null;
     }
 
     if (options.summaryElement !== undefined) {
-      this.summary = options.summaryElement;
+      this.#summary = options.summaryElement;
     } else if (this.handle?.tagName.toLowerCase() === "summary") {
-      this.summary = this.handle;
+      this.#summary = this.handle;
     } else {
-      this.summary = this.details?.querySelector("summary") ?? null;
+      this.#summary = this.#details?.querySelector("summary") ?? null;
     }
 
-    this.resolveTargets();
+    this.#resolveTargets();
   }
 
   protected override onConnect(): void {
-    if (this.options.enabled && !this.options.enabled()) {
+    if (this.#options.enabled && !this.#options.enabled()) {
       this.dispose();
       return;
     }
-    this.resolveElements();
+    this.#resolveElements();
     if (!this.drawer || !this.handle) {
       this.dispose();
       return;
@@ -311,16 +313,16 @@ export class DrawerController extends BaseController {
     // way back), so `preferredSvh` and `aria-valuenow` stay true to what is
     // painted. Mirror it to the targets so they line up with it again.
     const kept = this.drawer.style.getPropertyValue("--drawer-height");
-    if (kept) this.writeTargets(kept);
+    if (kept) this.#writeTargets(kept);
     // Only the targets are cleared on teardown: they sit outside the drawer
     // and would otherwise keep offsetting for a drawer that is no longer
     // managed. Through the scope, not onDisconnect: also clears them if a
     // step below throws (BaseController skips onDisconnect after a failed
     // connect).
-    this.scope.use(() => this.writeTargets(null));
-    this.initDrag();
-    this.initKeyboard();
-    this.initDetailsSync();
+    this.scope.use(() => this.#writeTargets(null));
+    this.#initDrag();
+    this.#initKeyboard();
+    this.#initDetailsSync();
     // Reconcile `<details>` and `.drawer-minimized` when they disagree:
     // - PH8: `<details>` toggles natively before upgrade; if the user closed
     //   it (`!open && !minimized`), adopt that rather than leaving the drawer
@@ -329,12 +331,12 @@ export class DrawerController extends BaseController {
     //   `<details open>` for the desktop rail while disposed; if the drawer
     //   was minimized before disconnect (`open && minimized`), re-close
     //   `<details>` on the way back to mobile.
-    if (this.details && this.details.open === this.isMinimizedClass()) {
+    if (this.#details && this.#details.open === this.#isMinimizedClass()) {
       this.minimize();
     }
   }
 
-  private isMinimizedClass(): boolean {
+  #isMinimizedClass(): boolean {
     return this.drawer?.classList.contains("drawer-minimized") ?? false;
   }
 
@@ -342,8 +344,8 @@ export class DrawerController extends BaseController {
    * Returns true if the drawer is currently in a minimized/collapsed state.
    */
   isMinimized(): boolean {
-    this.resolveElements();
-    if (this.details && !this.details.open) {
+    this.#resolveElements();
+    if (this.#details && !this.#details.open) {
       return true;
     }
     return this.drawer?.classList.contains("drawer-minimized") ?? false;
@@ -353,59 +355,62 @@ export class DrawerController extends BaseController {
    * Returns the current preferred height in svh.
    */
   getPreferredSvh(): number {
-    return this.preferredSvh;
+    return this.#preferredSvh;
   }
 
   /**
    * Minimizes the drawer to peek height (54px).
    */
   minimize(): void {
-    this.resolveElements();
+    this.#resolveElements();
     if (this.drawer) {
       this.drawer.classList.add("drawer-minimized");
     }
-    if (this.details) this.details.open = false;
-    this.writeHeight(`${this.minHeight}px`);
+    if (this.#details) this.#details.open = false;
+    this.#writeHeight(`${this.#minHeight}px`);
     this.handle?.setAttribute("aria-valuenow", "0");
-    this.options.onMinimize?.();
+    this.#options.onMinimize?.();
   }
 
   /**
    * Restores the drawer to the specified or preferred svh height.
    */
   restore(targetSvh?: number): void {
-    this.resolveElements();
+    this.#resolveElements();
     const svh = Math.min(
-      this.expandedSvh,
-      Math.max(this.floorSvh, targetSvh ?? this.preferredSvh ?? this.defaultSvh)
+      this.#expandedSvh,
+      Math.max(
+        this.#floorSvh,
+        targetSvh ?? this.#preferredSvh ?? this.#defaultSvh
+      )
     );
-    this.preferredSvh = svh;
+    this.#preferredSvh = svh;
 
     if (this.drawer) {
       this.drawer.classList.remove("drawer-minimized");
     }
-    if (this.details) this.details.open = true;
-    this.writeHeight(`${svh}svh`);
+    if (this.#details) this.#details.open = true;
+    this.#writeHeight(`${svh}svh`);
     this.handle?.setAttribute("aria-valuenow", String(svh));
 
-    this.options.onRestore?.(svh);
+    this.#options.onRestore?.(svh);
   }
 
   /**
    * Directly sets the drawer height in pixels within the allowed bounds.
    */
   setHeight(heightPx: number): void {
-    this.resolveElements();
+    this.#resolveElements();
     const winHeight = measureSvh100();
-    const maxHeight = Math.round(winHeight * (this.expandedSvh / 100));
-    const clamped = Math.max(this.minHeight, Math.min(maxHeight, heightPx));
-    this.writeHeight(`${clamped}px`);
+    const maxHeight = Math.round(winHeight * (this.#expandedSvh / 100));
+    const clamped = Math.max(this.#minHeight, Math.min(maxHeight, heightPx));
+    this.#writeHeight(`${clamped}px`);
     const percent = Math.round((clamped / winHeight) * 100);
     this.handle?.setAttribute("aria-valuenow", String(percent));
-    this.options.onHeightChange?.(clamped, percent);
+    this.#options.onHeightChange?.(clamped, percent);
   }
 
-  private initDrag(): void {
+  #initDrag(): void {
     const drawer = this.drawer;
     const handle = this.handle;
     if (!drawer || !handle) return;
@@ -426,7 +431,7 @@ export class DrawerController extends BaseController {
         // That rule sets `pointer-events: none` on `.dict-iframe` so the dictionary iframe
         // cannot capture pointer events mid-drag.
         activeClassTarget: drawer,
-        filter: this.options.filter,
+        filter: this.#options.filter,
         /**
          * `100svh` (`measureSvh100()`) is measured once per gesture and reused by
          * `onMove` and `onEnd`. It is layout-dependent, so reading it per move —
@@ -438,39 +443,43 @@ export class DrawerController extends BaseController {
          */
         onStart: () => {
           // Once per gesture, so `onMove` writes to a cached list.
-          this.resolveTargets();
+          this.#resolveTargets();
           winHeight = measureSvh100();
           wasMinimized = this.isMinimized();
-          startHeight = drawer.getBoundingClientRect().height || this.minHeight;
-          maxHeight = Math.round(winHeight * (this.expandedSvh / 100));
-          if (this.details && !this.details.open) {
-            this.details.open = true;
+          startHeight =
+            drawer.getBoundingClientRect().height || this.#minHeight;
+          maxHeight = Math.round(winHeight * (this.#expandedSvh / 100));
+          if (this.#details && !this.#details.open) {
+            this.#details.open = true;
             startHeight =
-              drawer.getBoundingClientRect().height || this.minHeight;
+              drawer.getBoundingClientRect().height || this.#minHeight;
           }
           if (wasMinimized) {
             drawer.classList.remove("drawer-minimized");
           }
-          this.writeHeight(`${startHeight}px`);
+          this.#writeHeight(`${startHeight}px`);
           suppressSummaryClick = false;
-          this.options.onDragStart?.();
+          this.#options.onDragStart?.();
         },
         onMove: ({ dy }) => {
           const newHeight = Math.max(
-            this.minHeight,
+            this.#minHeight,
             Math.min(maxHeight, startHeight - dy)
           );
-          this.writeHeight(`${newHeight}px`);
+          this.#writeHeight(`${newHeight}px`);
           const percent = Math.round((newHeight / winHeight) * 100);
           handle.setAttribute("aria-valuenow", String(percent));
-          this.options.onHeightChange?.(newHeight, percent);
+          this.#options.onHeightChange?.(newHeight, percent);
         },
         onEnd: ({ dy, elapsedMs, velocityY }) => {
           const measuredHeight = drawer.getBoundingClientRect().height;
           const currentHeight =
             measuredHeight > 0
               ? measuredHeight
-              : Math.max(this.minHeight, Math.min(maxHeight, startHeight - dy));
+              : Math.max(
+                  this.#minHeight,
+                  Math.min(maxHeight, startHeight - dy)
+                );
 
           const decision = resolveDrawerSnapDecision({
             dy,
@@ -478,15 +487,15 @@ export class DrawerController extends BaseController {
             velocityY,
             currentHeight,
             winHeight,
-            floorSvh: this.floorSvh,
-            expandedSvh: this.expandedSvh,
+            floorSvh: this.#floorSvh,
+            expandedSvh: this.#expandedSvh,
           });
           suppressSummaryClick = true;
 
           if (decision.action === "tap") {
             // `onStart` already opened `<details>`, so the native click would
             // close it again: toggle here instead.
-            if (this.details && !wasMinimized) {
+            if (this.#details && !wasMinimized) {
               this.minimize();
             } else {
               this.restore();
@@ -504,9 +513,9 @@ export class DrawerController extends BaseController {
       })
     );
 
-    if (this.summary) {
+    if (this.#summary) {
       this.scope.listen(
-        this.summary,
+        this.#summary,
         "click",
         (e: MouseEvent) => {
           if (suppressSummaryClick) {
@@ -524,7 +533,7 @@ export class DrawerController extends BaseController {
     }
   }
 
-  private initKeyboard(): void {
+  #initKeyboard(): void {
     const drawer = this.drawer;
     const handle = this.handle;
     if (!drawer || !handle) return;
@@ -535,9 +544,9 @@ export class DrawerController extends BaseController {
         // scrolling
         e.preventDefault();
         if (this.isMinimized()) {
-          this.restore(this.defaultSvh);
+          this.restore(this.#defaultSvh);
         } else {
-          this.restore(this.expandedSvh);
+          this.restore(this.#expandedSvh);
         }
       } else if (e.key === "ArrowDown") {
         // ArrowDown on this drawer's handle shrinks the drawer instead of
@@ -546,7 +555,7 @@ export class DrawerController extends BaseController {
         const currentHeight = drawer.getBoundingClientRect().height;
         const winHeight = measureSvh100();
         if (currentHeight > winHeight * 0.6) {
-          this.restore(this.defaultSvh);
+          this.restore(this.#defaultSvh);
         } else {
           this.minimize();
         }
@@ -554,8 +563,8 @@ export class DrawerController extends BaseController {
         // Escape on this drawer's handle minimizes the drawer (or runs
         // onEscape)
         e.preventDefault();
-        if (this.options.onEscape) {
-          this.options.onEscape();
+        if (this.#options.onEscape) {
+          this.#options.onEscape();
         } else {
           this.minimize();
         }
@@ -563,17 +572,17 @@ export class DrawerController extends BaseController {
     });
   }
 
-  private initDetailsSync(): void {
-    if (!this.details) return;
-    this.scope.listen(this.details, "toggle", () => {
-      if (!this.details) return;
+  #initDetailsSync(): void {
+    if (!this.#details) return;
+    this.scope.listen(this.#details, "toggle", () => {
+      if (!this.#details) return;
       // `toggle` is dispatched a task after `open` changes, so a flag set
       // around our own writes can't recognise them. Compare state instead:
       // `minimize()`, `restore()`, `reset()` and drag start leave `open` and
       // `.drawer-minimized` agreeing, so only a native toggle (the user
       // activating `<summary>`) arrives with them disagreeing.
-      if (this.details.open !== this.isMinimizedClass()) return;
-      if (this.details.open) {
+      if (this.#details.open !== this.#isMinimizedClass()) return;
+      if (this.#details.open) {
         this.restore();
       } else {
         this.minimize();
@@ -586,12 +595,12 @@ export class DrawerController extends BaseController {
    * height styles on the drawer and its height targets.
    */
   public reset(): void {
-    this.resolveElements();
+    this.#resolveElements();
     if (this.drawer) {
       this.drawer.classList.add("drawer-minimized");
     }
-    if (this.details) this.details.open = false;
-    this.writeHeight(null);
+    if (this.#details) this.#details.open = false;
+    this.#writeHeight(null);
     this.handle?.setAttribute("aria-valuenow", "0");
   }
 }

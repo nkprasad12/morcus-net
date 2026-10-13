@@ -138,15 +138,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       window.location.assign(url);
     }
   };
-  private currentQuery: string = "";
-  private preferredDrawerSvh: number = DRAWER_DEFAULT_SVH;
-  private readonly tocController = this.addController(
+  #currentQuery: string = "";
+  #preferredDrawerSvh: number = DRAWER_DEFAULT_SVH;
+  readonly #tocController = this.addController(
     new ReaderTocController({ root: this })
   );
-  private readonly layoutController = this.addController(
+  readonly #layoutController = this.addController(
     new ReaderLayoutController({ root: this })
   );
-  private readonly drawerController = this.addController(
+  readonly #drawerController = this.addController(
     new DrawerController({
       root: this,
       drawerSelector: ".reader-dict-panel",
@@ -171,23 +171,23 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       },
       onDragStart: () => {
         this.undismissDrawer();
-        this.layoutController.setActive(true);
+        this.#layoutController.setActive(true);
       },
       onMinimize: () => {
-        this.resetDictScroll();
+        this.#resetDictScroll();
       },
       onRestore: (svh) => {
         this.undismissDrawer();
-        this.layoutController.setActive(true);
-        this.preferredDrawerSvh = svh;
-        this.resetDictScroll();
+        this.#layoutController.setActive(true);
+        this.#preferredDrawerSvh = svh;
+        this.#resetDictScroll();
       },
       onEscape: () => {
-        this.dismissDictionary(true);
+        this.#dismissDictionary(true);
       },
     })
   );
-  private readonly panelController = this.addController(
+  readonly #panelController = this.addController(
     new ReaderPanelController({
       root: this,
       hasTranslation: () =>
@@ -203,13 +203,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     })
   );
   /** Keeps the screen awake while reading; released on idle or disconnect. */
-  private readonly wakeLock = this.addController(
+  readonly #wakeLock = this.addController(
     new WakeLockController({ root: this })
   );
-  private currentNoteId: string = "";
-  private router: QueryParamSync | null = null;
-  private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
-  private readonly translationCache = new Map<string, string>();
+  #currentNoteId: string = "";
+  #router: QueryParamSync | null = null;
+  #currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
+  readonly #translationCache = new Map<string, string>();
 
   constructor() {
     super();
@@ -218,18 +218,18 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.addController(
       new ReaderPageNavController({
         root: this,
-        canTurn: (dir) => this.pagerLink(dir) !== null,
-        turn: (dir) => this.turnPage(dir),
+        canTurn: (dir) => this.#pagerLink(dir) !== null,
+        turn: (dir) => this.#turnPage(dir),
       })
     );
   }
 
   public getLayoutController(): ReaderLayoutController | null {
-    return this.layoutController.isConnected ? this.layoutController : null;
+    return this.#layoutController.isConnected ? this.#layoutController : null;
   }
 
   public getPanelController(): ReaderPanelController | null {
-    return this.panelController.isConnected ? this.panelController : null;
+    return this.#panelController.isConnected ? this.#panelController : null;
   }
 
   public getSettingsElement() {
@@ -237,22 +237,22 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   public getActiveNoteId(): string {
-    return this.currentNoteId;
+    return this.#currentNoteId;
   }
 
   // Elements read in more than one place. Getters, not cached fields: page
   // turns replace READER_PAGE_SLOTS nodes (`#reader-passage` is one of them),
   // so a stored reference would go stale; a getter always reads the live DOM.
-  private get dictFrame() {
+  get #dictFrame() {
     return this.querySelector<HTMLIFrameElement>("#dict-frame");
   }
-  private get dictPanelEl() {
+  get #dictPanelEl() {
     return this.querySelector<HTMLElement>(".reader-dict-panel");
   }
-  private get splitLayoutEl() {
+  get #splitLayoutEl() {
     return this.querySelector<HTMLElement>(".reader-split-layout");
   }
-  private get passage() {
+  get #passage() {
     return this.querySelector<HTMLElement>("#reader-passage");
   }
 
@@ -277,20 +277,20 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       });
     }
 
-    this.preferredDrawerSvh = this.drawerController.getPreferredSvh();
-    this.currentPrefs = readerSettingsStore.get();
+    this.#preferredDrawerSvh = this.#drawerController.getPreferredSvh();
+    this.#currentPrefs = readerSettingsStore.get();
     const workId = this.dataset.work;
     if (workId) {
-      this.currentPrefs.showMacra = getWorkMacra(workId);
+      this.#currentPrefs.showMacra = getWorkMacra(workId);
     }
-    this.saveCurrentSpot();
-    this.enhancePassage();
-    this.applyPreferences(this.currentPrefs);
+    this.#saveCurrentSpot();
+    this.#enhancePassage();
+    this.#applyPreferences(this.#currentPrefs);
     // PH10: without a hash, the page loads at the top, so a non-zero scroll
     // means the reader scrolled before upgrade; leave them there. With a hash,
     // the browser's own anchor jump moved the page, so centring still applies.
     if (window.location.hash || window.scrollY === 0) {
-      this.scrollToFirstMatch(window.location.hash);
+      this.#scrollToFirstMatch(window.location.hash);
     }
     this.scope.use(closeActiveSectionUI);
 
@@ -299,19 +299,19 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       "reader-settings-change",
       (e) => {
         if (e.detail?.prefs) {
-          this.applyPreferences(e.detail.prefs);
+          this.#applyPreferences(e.detail.prefs);
         }
       }
     );
 
-    this.router = this.syncQueryParam("q", {
+    this.#router = this.syncQueryParam("q", {
       onChange: (q) => {
         if (!q) {
-          this.dismissDictionary(false);
+          this.#dismissDictionary(false);
           return;
         }
-        this.lookupWord(q, this.findWordElement(q), false);
-        this.refreshTitle();
+        this.#lookupWord(q, this.#findWordElement(q), false);
+        this.#refreshTitle();
       },
       onNavigate: (event) => {
         const prevUrl = new URL(event.prevPath, window.location.origin);
@@ -326,27 +326,27 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           });
         } else {
           if (!event.value) {
-            this.dismissDictionary(false);
+            this.#dismissDictionary(false);
           } else {
-            this.lookupWord(
+            this.#lookupWord(
               event.value,
-              this.findWordElement(event.value),
+              this.#findWordElement(event.value),
               false
             );
           }
-          this.refreshTitle();
+          this.#refreshTitle();
         }
       },
     });
 
-    this.currentQuery = this.router.get();
-    if (this.currentQuery) {
-      const el = this.findWordElement(this.currentQuery);
-      if (el) this.setActiveWord(el);
+    this.#currentQuery = this.#router.get();
+    if (this.#currentQuery) {
+      const el = this.#findWordElement(this.#currentQuery);
+      if (el) this.#setActiveWord(el);
     }
 
-    this.scope.listen(this, "click", this.handleClick);
-    this.scope.listen(this, "keydown", this.handlePassageKeydown);
+    this.scope.listen(this, "click", this.#handleClick);
+    this.scope.listen(this, "keydown", this.#handlePassageKeydown);
     // A word split across inline markup is several `.lat-word` parts; hover
     // styles all of them, not just the one under the pointer.
     this.scope.listen(this, "pointerover", syncWordGroupHover);
@@ -364,32 +364,32 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       );
     }
 
-    this.initBackToTop();
-    this.resetDictScroll();
-    this.initKeyboardShortcuts();
-    this.initIframeThemeSync();
+    this.#initBackToTop();
+    this.#resetDictScroll();
+    this.#initKeyboardShortcuts();
+    this.#initIframeThemeSync();
 
-    const iframe = this.dictFrame;
+    const iframe = this.#dictFrame;
     if (iframe) {
       this.scope.listen(iframe, "load", () => {
-        this.applyDictScale(this.currentPrefs.dictScale);
+        this.#applyDictScale(this.#currentPrefs.dictScale);
         // Searches inside the dictionary iframe are activity too, but its
         // events never reach this document's listeners.
-        this.wakeLock.extend();
+        this.#wakeLock.extend();
       });
-      if (this.currentPrefs.dictScale !== 100) {
+      if (this.#currentPrefs.dictScale !== 100) {
         const src = iframe.getAttribute("src");
         if (src && !src.includes("scale=")) {
           iframe.src = `${src}${src.includes("?") ? "&" : "?"}scale=${
-            this.currentPrefs.dictScale
+            this.#currentPrefs.dictScale
           }`;
         }
       }
     }
   }
 
-  private initIframeThemeSync() {
-    const iframe = this.dictFrame;
+  #initIframeThemeSync() {
+    const iframe = this.#dictFrame;
     if (!iframe) return;
 
     const syncTheme = () => {
@@ -409,7 +409,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     syncTheme();
   }
 
-  private readonly handleClick = (e: MouseEvent) => {
+  readonly #handleClick = (e: MouseEvent) => {
     if (!(e.target instanceof Element)) return;
     // Consumed clicks and modified / non-primary clicks (open in new tab)
     // keep their native behaviour for every branch below.
@@ -422,7 +422,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (closeBtn) {
       // Its drawer close link closes the drawer in place
       e.preventDefault();
-      this.closeDictionary(true);
+      this.#closeDictionary(true);
       return;
     }
 
@@ -466,7 +466,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
             3000
           );
         }
-        this.saveCurrentSpot(secId);
+        this.#saveCurrentSpot(secId);
         showToast(`Copied permalink: § ${secId}`);
       };
 
@@ -498,7 +498,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       e.preventDefault();
       const href = noteRef.getAttribute("href") || "";
       const bodyId = href.replace(/^#/, "");
-      if (bodyId && this.panelController) {
+      if (bodyId && this.#panelController) {
         this.openNote(bodyId, noteRef);
       }
       return;
@@ -522,7 +522,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
             inline: "nearest",
           });
         }
-        this.setActiveMarker(markerEl);
+        this.#setActiveMarker(markerEl);
       }
       return;
     }
@@ -533,7 +533,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       e.preventDefault();
       const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
       if (word) {
-        this.lookupWord(word, wordEl, true);
+        this.#lookupWord(word, wordEl, true);
       }
       return;
     }
@@ -568,7 +568,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (rawHref.startsWith("#sec-")) {
         // scrollToHash scrolls to and highlights its own sections
         e.preventDefault();
-        this.scrollToHash(rawHref);
+        this.#scrollToHash(rawHref);
       }
       return;
     }
@@ -580,7 +580,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    this.withCurrentQuery(targetUrl);
+    this.#withCurrentQuery(targetUrl);
 
     if (targetUrl.origin !== window.location.origin) {
       return;
@@ -606,16 +606,16 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (targetUrl.hash) {
         // scrollToHash replaces the same-page jump; closes its TOC
         e.preventDefault();
-        this.scrollToHash(targetUrl.hash);
-        if (this.tocController?.isOpen()) {
-          this.tocController.close();
+        this.#scrollToHash(targetUrl.hash);
+        if (this.#tocController?.isOpen()) {
+          this.#tocController.close();
         }
         return;
       }
-      if (this.tocController?.isOpen()) {
+      if (this.#tocController?.isOpen()) {
         // A same-page link only closes its open TOC
         e.preventDefault();
-        this.tocController.close();
+        this.#tocController.close();
         return;
       }
       return;
@@ -623,13 +623,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     // swapPage replaces navigation within this work
     e.preventDefault();
-    if (this.tocController?.isOpen()) {
-      this.tocController.close();
+    if (this.#tocController?.isOpen()) {
+      this.#tocController.close();
     }
     void this.swapPage(targetUrl.href, { push: true });
   };
 
-  private readonly handlePassageKeydown = (e: KeyboardEvent) => {
+  readonly #handlePassageKeydown = (e: KeyboardEvent) => {
     if (e.key !== "Enter" && e.key !== " ") return;
     if (!(e.target instanceof HTMLElement)) return;
     if (
@@ -645,7 +645,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       e.preventDefault();
       const word = e.target.dataset.word || e.target.textContent?.trim() || "";
       if (word) {
-        this.lookupWord(word, e.target, true);
+        this.#lookupWord(word, e.target, true);
       }
     } else {
       const noteRef = e.target.closest<HTMLAnchorElement>("a.reader-note-ref");
@@ -654,7 +654,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         e.preventDefault();
         const href = noteRef.getAttribute("href") || "";
         const bodyId = href.replace(/^#/, "");
-        if (bodyId && this.panelController) {
+        if (bodyId && this.#panelController) {
           this.openNote(bodyId, noteRef, { focus: true });
         }
         return;
@@ -677,14 +677,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
               inline: "nearest",
             });
           }
-          this.setActiveMarker(markerEl);
+          this.#setActiveMarker(markerEl);
           markerEl.focus?.();
         }
       }
     }
   };
 
-  private saveCurrentSpot(explicitSecId?: string): void {
+  #saveCurrentSpot(explicitSecId?: string): void {
     const workId = this.dataset.work;
     if (!workId) return;
 
@@ -707,18 +707,20 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  private closeDictionary(updateHistory: boolean = true) {
-    this.dismissDictionary(updateHistory);
+  #closeDictionary(updateHistory: boolean = true) {
+    this.#dismissDictionary(updateHistory);
     this.dismissDrawer();
   }
 
   public dismissDrawer(): void {
-    const splitLayout = this.layoutController.splitLayout ?? this.splitLayoutEl;
+    const splitLayout =
+      this.#layoutController.splitLayout ?? this.#splitLayoutEl;
     splitLayout?.classList.add("drawer-dismissed");
   }
 
   public undismissDrawer(): void {
-    const splitLayout = this.layoutController.splitLayout ?? this.splitLayoutEl;
+    const splitLayout =
+      this.#layoutController.splitLayout ?? this.#splitLayoutEl;
     splitLayout?.classList.remove("drawer-dismissed");
     if (window.location.hash === "#reader-dict-dismissed") {
       // Clears its own #reader-dict-dismissed hash
@@ -731,13 +733,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   public minimizeDrawer(): void {
-    this.drawerController.minimize();
+    this.#drawerController.minimize();
   }
 
   public restoreDrawer(targetSvh?: number): void {
     this.undismissDrawer();
-    this.layoutController.setActive(true);
-    this.drawerController.restore(targetSvh);
+    this.#layoutController.setActive(true);
+    this.#drawerController.restore(targetSvh);
   }
 
   /**
@@ -748,9 +750,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * scroll positions on every tab switch.
    */
   public activatePanelLayout(): void {
-    const split = this.layoutController.splitLayout ?? this.splitLayoutEl;
+    const split = this.#layoutController.splitLayout ?? this.#splitLayoutEl;
     const needsOpen =
-      this.drawerController.isMinimized() ||
+      this.#drawerController.isMinimized() ||
       split?.classList.contains("drawer-dismissed") ||
       !split?.classList.contains("reader-layout-active");
     if (needsOpen) {
@@ -759,7 +761,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   public activatePanelTab(tab: PanelTab): void {
-    this.panelController?.setTab(tab);
+    this.#panelController?.setTab(tab);
     this.activatePanelLayout();
   }
 
@@ -768,25 +770,25 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     markerEl: HTMLElement,
     opts: { focus?: boolean } = {}
   ): void {
-    this.currentNoteId = bodyId;
+    this.#currentNoteId = bodyId;
 
     // Clear active word highlight if any
-    this.setActiveWord(null);
+    this.#setActiveWord(null);
 
     // Highlight marker in passage
-    this.setActiveMarker(markerEl);
+    this.#setActiveMarker(markerEl);
 
     // Show note in companion panel
-    this.panelController?.showNote(bodyId, opts);
+    this.#panelController?.showNote(bodyId, opts);
 
     // Ensure layout is active
     this.activatePanelLayout();
 
     // Mobile scroll guard: Ensure tapped marker in passage is not occluded by the newly opened/restored drawer
-    this.scrollTargetAboveDrawer(markerEl);
+    this.#scrollTargetAboveDrawer(markerEl);
   }
 
-  private setActiveMarker(el?: HTMLElement | null): void {
+  #setActiveMarker(el?: HTMLElement | null): void {
     const active = this.querySelectorAll<HTMLElement>(
       "a.reader-note-ref.marker-active"
     );
@@ -808,7 +810,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * A word split across inline markup is several parts (`wordGroupParts`),
    * all of which are highlighted.
    */
-  private setActiveWord(el?: HTMLElement | null) {
+  #setActiveWord(el?: HTMLElement | null) {
     const active = this.querySelectorAll<HTMLElement>(
       ".reader-text-panel .word-active"
     );
@@ -820,35 +822,35 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  private dismissDictionary(updateHistory: boolean = true) {
-    this.currentQuery = "";
-    this.currentNoteId = "";
+  #dismissDictionary(updateHistory: boolean = true) {
+    this.#currentQuery = "";
+    this.#currentNoteId = "";
 
     // Remove active highlights
-    this.setActiveWord(null);
-    this.setActiveMarker(null);
+    this.#setActiveWord(null);
+    this.#setActiveMarker(null);
 
     // Arbitration Rule A4: Reset companion panel to Dictionary tab
-    this.panelController?.reset();
+    this.#panelController?.reset();
 
     // Reset iframe to default embedded state
-    const iframe = this.dictFrame;
+    const iframe = this.#dictFrame;
     if (iframe) {
       iframe.src = "/v2/dicts?embedded=1";
     }
 
     // Update split layout class to empty
-    this.layoutController.setActive(false);
+    this.#layoutController.setActive(false);
 
     // Reset drawer height and ARIA on mobile
-    this.drawerController.reset();
+    this.#drawerController.reset();
 
     if (updateHistory) {
-      this.router?.replace("");
+      this.#router?.replace("");
     }
   }
 
-  private lookupWord(
+  #lookupWord(
     word: string,
     activeAnchor?: HTMLElement,
     updateHistory: boolean = true
@@ -857,14 +859,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     const targetSrc = `/v2/dicts?q=${encodeURIComponent(
       word
-    )}&lang=La&o=1&embedded=1&scale=${this.currentPrefs.dictScale}`;
-    const iframe = this.dictFrame;
+    )}&lang=La&o=1&embedded=1&scale=${this.#currentPrefs.dictScale}`;
+    const iframe = this.#dictFrame;
     const iframeAtTarget =
       iframe !== null && currentIframeSrc(iframe) === targetSrc;
 
-    const dictPanel = this.dictPanelEl;
+    const dictPanel = this.#dictPanelEl;
     if (
-      word === this.currentQuery &&
+      word === this.#currentQuery &&
       iframeAtTarget &&
       dictPanel?.classList.contains("drawer-minimized")
     ) {
@@ -872,15 +874,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    this.currentQuery = word;
+    this.#currentQuery = word;
 
     // Arbitration Rule A1: Force switch to Dictionary tab if Notes tab was open
-    this.setActiveMarker(null);
-    this.currentNoteId = "";
-    this.panelController?.setTab("dict");
+    this.#setActiveMarker(null);
+    this.#currentNoteId = "";
+    this.#panelController?.setTab("dict");
 
     // Update active highlight in the text
-    this.setActiveWord(activeAnchor ?? this.findWordElement(word));
+    this.#setActiveWord(activeAnchor ?? this.#findWordElement(word));
 
     // Update dictionary iframe (filtering by lang=La and forcing inflected search o=1 for Latin text word lookups)
     if (iframe && !iframeAtTarget) {
@@ -888,28 +890,28 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     // Update split layout class to active (expands mobile sheet)
-    this.layoutController.setActive(true);
+    this.#layoutController.setActive(true);
 
     // Ensure drawer is open and restored to preferred dvh
     this.restoreDrawer();
 
     // Mobile scroll guard: Ensure tapped word is not occluded by the newly opened/restored drawer
-    const targetEl = activeAnchor || this.findWordElement(word);
+    const targetEl = activeAnchor || this.#findWordElement(word);
     if (targetEl) {
-      this.scrollTargetAboveDrawer(targetEl);
+      this.#scrollTargetAboveDrawer(targetEl);
     }
 
     // Synchronize browser history and page title
     if (updateHistory) {
-      this.router?.push(word);
+      this.#router?.push(word);
     }
   }
 
-  private scrollTargetAboveDrawer(targetEl: HTMLElement): void {
+  #scrollTargetAboveDrawer(targetEl: HTMLElement): void {
     if (window.innerWidth <= 640 && !targetEl.closest(".reader-dict-panel")) {
       this.scope.rAF(() => {
         const rect = targetEl.getBoundingClientRect();
-        const svh = this.preferredDrawerSvh || DRAWER_DEFAULT_SVH;
+        const svh = this.#preferredDrawerSvh || DRAWER_DEFAULT_SVH;
         const svh100 = measureSvh100();
         const winHeight = window.innerHeight || svh100;
         const drawerTop = winHeight - svh100 * (svh / 100);
@@ -931,24 +933,24 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * passage. The markup must use the library's section shape.
    */
   public adoptPassage(passageHtml: SafeHtml): void {
-    const passage = this.passage;
+    const passage = this.#passage;
     if (!passage) return;
     setHtml(passage, passageHtml);
     delete passage.dataset.enhanced;
-    this.enhancePassage();
-    this.applyPreferences(this.currentPrefs);
-    if (this.currentQuery) {
-      this.setActiveWord(this.findWordElement(this.currentQuery));
+    this.#enhancePassage();
+    this.#applyPreferences(this.#currentPrefs);
+    if (this.#currentQuery) {
+      this.#setActiveWord(this.#findWordElement(this.#currentQuery));
     }
-    this.refreshTitle();
+    this.#refreshTitle();
     const hash = window.location.hash;
-    if (!this.scrollToFirstMatch(hash) && hash) {
-      this.scrollToHash(hash);
+    if (!this.#scrollToFirstMatch(hash) && hash) {
+      this.#scrollToHash(hash);
     }
   }
 
-  private enhancePassage() {
-    const passage = this.passage;
+  #enhancePassage() {
+    const passage = this.#passage;
     if (!passage) return;
 
     // Tokenizing rewrites the passage into `.lat-word` spans, so it must
@@ -996,7 +998,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  private findWordElement(word: string): HTMLElement | undefined {
+  #findWordElement(word: string): HTMLElement | undefined {
     const rawWord = word.trim().toLowerCase();
     const nfcWord = rawWord.normalize("NFC");
     const strippedWord = removeMacrons(rawWord);
@@ -1023,7 +1025,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     return undefined;
   }
 
-  private resetDictScroll() {
+  #resetDictScroll() {
     for (const sel of [
       ".reader-dict-panel",
       ".reader-panel-notes",
@@ -1039,18 +1041,18 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   // --- Embedded Dictionary "Jump to top" Button ---
-  private initBackToTop() {
+  #initBackToTop() {
     const btn = this.querySelector<HTMLButtonElement>(
       ".reader-dict-back-to-top"
     );
-    const dictPanel = this.dictPanelEl;
+    const dictPanel = this.#dictPanelEl;
     if (!btn || !dictPanel) return;
 
     this.scope.use(bindBackToTop(btn, { container: dictPanel }));
   }
 
   // --- Reader Preferences & Canvas Styling ---
-  private applyMacra(show: boolean) {
+  #applyMacra(show: boolean) {
     if (this.dataset.hasMacra === "false") return;
     const words = this.scope.$$<HTMLElement>(".reader-passage .lat-word");
     for (const w of words) {
@@ -1062,9 +1064,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  private applyDictScale(scalePercent: number) {
+  #applyDictScale(scalePercent: number) {
     const scale = (scalePercent / 100).toFixed(2);
-    const iframe = this.dictFrame;
+    const iframe = this.#dictFrame;
     try {
       if (iframe?.contentDocument?.documentElement) {
         iframe.contentDocument.documentElement.style.setProperty(
@@ -1083,11 +1085,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * Called on every connect, which also heals a stale snapshot. Defaults are
    * removed, leaving the `var(--reader-*, default)` fallbacks in the CSS.
    */
-  private applyPreferences(prefs: ReaderPreferences) {
-    this.currentPrefs = prefs;
+  #applyPreferences(prefs: ReaderPreferences) {
+    this.#currentPrefs = prefs;
     setPrepaint("--reader-scale", (prefs.readerScale / 100).toFixed(2));
 
-    this.applyDictScale(prefs.dictScale);
+    this.#applyDictScale(prefs.dictScale);
 
     setPrepaint(
       "--reader-line-height",
@@ -1102,11 +1104,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       prefs.fontFamily === "sans" ? "var(--font-sans)" : null
     );
     setPrepaint("data-reader-hide-gutter", prefs.showGutter ? null : "");
-    this.applyMacra(prefs.showMacra);
+    this.#applyMacra(prefs.showMacra);
   }
 
   // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC, N Notes, I About, A Appearance) ---
-  private initKeyboardShortcuts() {
+  #initKeyboardShortcuts() {
     this.scope.listen(window, "keydown", (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.isComposing) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -1119,30 +1121,30 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
       if (e.key === "[" || e.key === "]") {
         const dir: PageDir = e.key === "[" ? "prev" : "next";
-        if (this.pagerLink(dir)) {
+        if (this.#pagerLink(dir)) {
           // Global shortcut; turnPage swaps the page itself
           e.preventDefault();
-          void this.turnPage(dir);
+          void this.#turnPage(dir);
         }
       } else if (e.key === "t" || e.key === "T") {
-        if (this.tocController.drawer) {
+        if (this.#tocController.drawer) {
           // Global shortcut toggles its own TOC controller when the page has a TOC
           e.preventDefault();
-          this.tocController.toggle();
+          this.#tocController.toggle();
         }
       } else if (e.key === "n" || e.key === "N") {
-        if (this.panelController?.hasNotes) {
+        if (this.#panelController?.hasNotes) {
           // Global shortcut switches its own panel to notes
           e.preventDefault();
-          const current = this.panelController.activeTab;
+          const current = this.#panelController.activeTab;
           const nextTab = current === "notes" ? "dict" : "notes";
           this.activatePanelTab(nextTab);
         }
       } else if (e.key === "i" || e.key === "I") {
-        if (this.panelController?.hasAbout) {
+        if (this.#panelController?.hasAbout) {
           // Global shortcut switches its own panel to about
           e.preventDefault();
-          const current = this.panelController.activeTab;
+          const current = this.#panelController.activeTab;
           const nextTab = current === "about" ? "dict" : "about";
           this.activatePanelTab(nextTab);
         }
@@ -1160,7 +1162,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   // --- In-Place Page Swapping & Partial Navigation ---
 
   /** The sticky-bar pager link toward `dir`, or null at that end of the work. */
-  private pagerLink(dir: PageDir): HTMLAnchorElement | null {
+  #pagerLink(dir: PageDir): HTMLAnchorElement | null {
     const link = this.scope.$<HTMLAnchorElement>(
       dir === "prev" ? "#pager-prev" : "#pager-next"
     );
@@ -1168,9 +1170,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   /** Carries the active dictionary query (`?q=`) over to `url`. */
-  private withCurrentQuery(url: URL): URL {
-    if (this.currentQuery) {
-      url.searchParams.set("q", this.currentQuery);
+  #withCurrentQuery(url: URL): URL {
+    if (this.#currentQuery) {
+      url.searchParams.set("q", this.#currentQuery);
     } else {
       url.searchParams.delete("q");
     }
@@ -1181,17 +1183,19 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * Turns to the adjacent page in place (keyboard shortcuts, swipe). Resolves
    * false if there is no page that way or the swap fails.
    */
-  private turnPage(dir: PageDir): Promise<boolean> {
-    const link = this.pagerLink(dir);
+  #turnPage(dir: PageDir): Promise<boolean> {
+    const link = this.#pagerLink(dir);
     if (!link) return Promise.resolve(false);
-    if (this.tocController?.isOpen()) {
-      this.tocController.close();
+    if (this.#tocController?.isOpen()) {
+      this.#tocController.close();
     }
-    const url = this.withCurrentQuery(new URL(link.href, window.location.href));
+    const url = this.#withCurrentQuery(
+      new URL(link.href, window.location.href)
+    );
     return this.swapPage(url.href, { push: true });
   }
 
-  private scrollToHash(hash: string): void {
+  #scrollToHash(hash: string): void {
     if (!hash) return;
     const targetId = hash.replace(/^#/, "");
     if (!targetId) return;
@@ -1219,7 +1223,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * it points somewhere else: `#sec-<id>` of the match's own section (added by
    * the server's matchText redirect and `?jump=`) still centres on the match.
    */
-  private scrollToFirstMatch(hash: string = ""): boolean {
+  #scrollToFirstMatch(hash: string = ""): boolean {
     const firstMatch = this.querySelector<HTMLElement>(
       "#reader-passage .reader-match"
     );
@@ -1250,7 +1254,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       : "";
   }
 
-  private getTranslationKey(pageUrl: string): string {
+  #getTranslationKey(pageUrl: string): string {
     try {
       const origin =
         typeof window !== "undefined" && window.location
@@ -1277,8 +1281,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (signal.aborted) {
       return null;
     }
-    const key = this.getTranslationKey(pageUrl);
-    const cached = this.translationCache.get(key);
+    const key = this.#getTranslationKey(pageUrl);
+    const cached = this.#translationCache.get(key);
     if (cached !== undefined) {
       await Promise.resolve();
       return signal.aborted ? null : cached;
@@ -1300,7 +1304,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       }
 
       const html = await res.text();
-      this.translationCache.set(key, html);
+      this.#translationCache.set(key, html);
       return signal.aborted ? null : html;
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") {
@@ -1310,7 +1314,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  private patchToc(newPageId: string): void {
+  #patchToc(newPageId: string): void {
     if (!newPageId) return;
 
     const prevActive = this.querySelectorAll<HTMLElement>(
@@ -1340,13 +1344,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  private refreshTitle(): void {
+  #refreshTitle(): void {
     const workTag = this.querySelector(".reader-work-tag")?.textContent?.trim();
     const heading = this.querySelector(
       ".reader-passage-heading"
     )?.textContent?.trim();
-    if (this.currentQuery) {
-      document.title = `${this.currentQuery} - Latin Reader - Morcus Latin Tools`;
+    if (this.#currentQuery) {
+      document.title = `${
+        this.#currentQuery
+      } - Latin Reader - Morcus Latin Tools`;
     } else if (heading && workTag) {
       document.title = `${workTag}: ${heading} - Latin Reader - Morcus Latin Tools`;
     } else if (workTag) {
@@ -1354,28 +1360,28 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  private hydratePage(
+  #hydratePage(
     options: {
       isPopState?: boolean;
       hash?: string;
     } = {}
   ): void {
-    this.saveCurrentSpot();
-    this.enhancePassage();
-    this.applyPreferences(this.currentPrefs);
+    this.#saveCurrentSpot();
+    this.#enhancePassage();
+    this.#applyPreferences(this.#currentPrefs);
 
-    if (this.currentQuery) {
-      const el = this.findWordElement(this.currentQuery);
-      if (el) this.setActiveWord(el);
+    if (this.#currentQuery) {
+      const el = this.#findWordElement(this.#currentQuery);
+      if (el) this.#setActiveWord(el);
     } else {
-      this.setActiveWord(null);
-      const iframe = this.dictFrame;
+      this.#setActiveWord(null);
+      const iframe = this.#dictFrame;
       if (iframe && currentIframeSrc(iframe) !== "/v2/dicts?embedded=1") {
         iframe.src = "/v2/dicts?embedded=1";
       }
     }
 
-    this.refreshTitle();
+    this.#refreshTitle();
 
     if (options.isPopState) {
       let targetY = 0;
@@ -1390,10 +1396,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         }
       }
       window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
-    } else if (this.scrollToFirstMatch(options.hash)) {
+    } else if (this.#scrollToFirstMatch(options.hash)) {
       // Centred on the matchText range.
     } else if (options.hash) {
-      this.scrollToHash(options.hash);
+      this.#scrollToHash(options.hash);
     } else {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }
@@ -1404,7 +1410,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     options: { push?: boolean; isPopState?: boolean } = {}
   ): Promise<boolean> {
     // Back/forward gestures turn pages without any in-document input event.
-    this.wakeLock.extend();
+    this.#wakeLock.extend();
     const url = new URL(targetUrl, window.location.href);
     const push = options.push ?? true;
     const isPopState = options.isPopState ?? false;
@@ -1442,7 +1448,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       fallback: (u: string) => this.navigate(u, { replace: isPopState }),
     };
 
-    const isTransActive = this.panelController?.activeTab === "translation";
+    const isTransActive = this.#panelController?.activeTab === "translation";
     let success = false;
     let transHtml: string | null = null;
     let transError = false;
@@ -1469,35 +1475,35 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const pathParts = url.pathname.split("/").filter(Boolean);
     const newPageId = pathParts.slice(4).join(".") || pathParts[4] || "";
 
-    this.currentQuery = url.searchParams.get("q") ?? "";
+    this.#currentQuery = url.searchParams.get("q") ?? "";
 
     if (push) {
       // swapPage pushes the URL of the page it just swapped in
       window.history.pushState(
-        { q: this.currentQuery, scrollY: 0 },
+        { q: this.#currentQuery, scrollY: 0 },
         "",
         url.pathname + url.search + url.hash
       );
-      this.router?.updatePath(url.pathname + url.search);
+      this.#router?.updatePath(url.pathname + url.search);
     } else {
-      this.router?.updatePath();
+      this.#router?.updatePath();
     }
 
     if (newPageId) {
       this.dataset.page = newPageId;
     }
-    this.patchToc(newPageId);
-    this.hydratePage({ isPopState, hash: url.hash });
+    this.#patchToc(newPageId);
+    this.#hydratePage({ isPopState, hash: url.hash });
 
     if (isTransActive) {
-      if (transHtml !== null && this.panelController) {
-        this.panelController.setTranslationHtml(transHtml);
-      } else if (transError && this.panelController) {
-        this.panelController.showTranslationError();
+      if (transHtml !== null && this.#panelController) {
+        this.#panelController.setTranslationHtml(transHtml);
+      } else if (transError && this.#panelController) {
+        this.#panelController.showTranslationError();
       }
     } else {
       this.scope.cancel("translation");
-      this.panelController?.resetTranslation();
+      this.#panelController?.resetTranslation();
     }
 
     return true;

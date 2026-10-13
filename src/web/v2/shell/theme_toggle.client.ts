@@ -10,32 +10,32 @@ const MOON_PATH = ICON_MOON;
 const SUN_PATH = ICON_SUN;
 
 export class MorcusThemeToggle extends BaseElement {
-  private isDark: boolean = false;
-  private buttonEl: HTMLButtonElement | null = null;
-  private pathEl: SVGPathElement | null = null;
+  #isDark: boolean = false;
+  #buttonEl: HTMLButtonElement | null = null;
+  #pathEl: SVGPathElement | null = null;
 
   protected override onConnect() {
-    this.isDark = this.computeIsDark();
-    this.buttonEl = this.scope.$<HTMLButtonElement>("button");
-    this.pathEl = this.querySelector<SVGPathElement>("path");
-    this.updateView();
+    this.#isDark = this.#computeIsDark();
+    this.#buttonEl = this.scope.$<HTMLButtonElement>("button");
+    this.#pathEl = this.querySelector<SVGPathElement>("path");
+    this.#updateView();
 
-    if (this.buttonEl) {
-      this.scope.listen(this.buttonEl, "click", this.toggleTheme);
+    if (this.#buttonEl) {
+      this.scope.listen(this.#buttonEl, "click", this.#toggleTheme);
     }
 
     if (typeof window.matchMedia === "function") {
       const mq = window.matchMedia("(prefers-color-scheme: dark)");
       if (typeof mq?.addEventListener === "function") {
         this.scope.listen(mq, "change", () => {
-          this.isDark = this.computeIsDark();
-          this.updateView();
+          this.#isDark = this.#computeIsDark();
+          this.#updateView();
         });
       }
     }
   }
 
-  private computeIsDark(): boolean {
+  #computeIsDark(): boolean {
     const currentAttr = document.documentElement.getAttribute("data-theme");
     if (currentAttr === "dark") return true;
     if (currentAttr === "light") return false;
@@ -52,40 +52,40 @@ export class MorcusThemeToggle extends BaseElement {
       : false;
   }
 
-  private readonly toggleTheme = (e?: Event) => {
+  readonly #toggleTheme = (e?: Event) => {
     if (e) {
       // Our button; toggles the theme itself
       e.preventDefault();
       // Click on our button is fully handled here
       e.stopPropagation();
     }
-    const nextDark = !this.computeIsDark();
-    this.isDark = nextDark;
+    const nextDark = !this.#computeIsDark();
+    this.#isDark = nextDark;
     const themeName = nextDark ? "dark" : "light";
 
     document.documentElement.setAttribute("data-theme", themeName);
     settingsStore.update({ darkMode: nextDark });
-    this.updateView();
-    this.syncIframesTheme(themeName);
+    this.#updateView();
+    this.#syncIframesTheme(themeName);
   };
 
-  private syncIframesTheme(themeName: string) {
+  #syncIframesTheme(themeName: string) {
     const iframes = document.querySelectorAll<HTMLIFrameElement>("iframe");
     for (const iframe of iframes) {
       syncIframeTheme(iframe, themeName);
     }
   }
 
-  private updateView() {
-    const label = this.isDark ? "Switch to light mode" : "Switch to dark mode";
-    const pathD = this.isDark ? SUN_PATH : MOON_PATH;
+  #updateView() {
+    const label = this.#isDark ? "Switch to light mode" : "Switch to dark mode";
+    const pathD = this.#isDark ? SUN_PATH : MOON_PATH;
 
-    if (this.buttonEl) {
-      this.buttonEl.setAttribute("aria-label", label);
-      this.buttonEl.setAttribute("title", label);
+    if (this.#buttonEl) {
+      this.#buttonEl.setAttribute("aria-label", label);
+      this.#buttonEl.setAttribute("title", label);
     }
-    if (this.pathEl) {
-      this.pathEl.setAttribute("d", pathD);
+    if (this.#pathEl) {
+      this.#pathEl.setAttribute("d", pathD);
     }
   }
 }

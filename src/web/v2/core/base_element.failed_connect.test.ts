@@ -10,12 +10,15 @@ import {
 const clicks: string[] = [];
 
 class ListeningController extends BaseController {
-  constructor(root: ParentNode, private readonly label: string) {
+  readonly #label: string;
+
+  constructor(root: ParentNode, label: string) {
     super(root);
+    this.#label = label;
   }
 
   protected override onConnect(): void {
-    this.scope.listen(this.root, "click", () => clicks.push(this.label));
+    this.scope.listen(this.root, "click", () => clicks.push(this.#label));
   }
 }
 

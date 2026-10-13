@@ -58,30 +58,30 @@ export interface ComboboxControllerOptions<T = unknown> {
 }
 
 export class ComboboxController<T = unknown> extends BaseController {
-  private readonly options: ComboboxControllerOptions<T>;
-  private _items: readonly T[] = [];
-  private _activeIndex = -1;
-  private input: HTMLInputElement | null = null;
-  private listbox: HTMLElement | null = null;
-  private addedListboxId = false;
-  private addedListboxRole = false;
+  readonly #options: ComboboxControllerOptions<T>;
+  #items: readonly T[] = [];
+  #activeIndex = -1;
+  #input: HTMLInputElement | null = null;
+  #listbox: HTMLElement | null = null;
+  #addedListboxId = false;
+  #addedListboxRole = false;
 
   constructor(options: ComboboxControllerOptions<T>) {
     super(options.root ?? document);
-    this.options = options;
+    this.#options = options;
   }
 
   public get items(): readonly T[] {
-    return this._items;
+    return this.#items;
   }
 
   public get activeIndex(): number {
-    return this._activeIndex;
+    return this.#activeIndex;
   }
 
   public get isOpen(): boolean {
     return (
-      this.listbox !== null && !this.listbox.hidden && this._items.length > 0
+      this.#listbox !== null && !this.#listbox.hidden && this.#items.length > 0
     );
   }
 
@@ -90,41 +90,43 @@ export class ComboboxController<T = unknown> extends BaseController {
     // after a failed connect, and this undoes attributes on elements it
     // doesn't own. Reads the fields at teardown, so it also covers a later
     // bind from setItems.
-    this.scope.use(() => this.unbind());
-    this.ensureBound();
+    this.scope.use(() => this.#unbind());
+    this.#ensureBound();
   }
 
-  private ensureBound(): void {
-    if (!this.listbox) {
-      const listbox = this.options.getListbox();
+  #ensureBound(): void {
+    if (!this.#listbox) {
+      const listbox = this.#options.getListbox();
       if (listbox) {
-        this.listbox = listbox;
+        this.#listbox = listbox;
         if (!listbox.id) {
           listbox.id = `combobox-listbox-${Math.random()
             .toString(36)
             .slice(2, 9)}`;
-          this.addedListboxId = true;
+          this.#addedListboxId = true;
         }
         if (!listbox.getAttribute("role")) {
           listbox.setAttribute("role", "listbox");
-          this.addedListboxRole = true;
+          this.#addedListboxRole = true;
         }
         listbox.hidden = true;
-        this.scope.listen(listbox, "mousedown", (e) => this.handleMouseDown(e));
+        this.scope.listen(listbox, "mousedown", (e) =>
+          this.#handleMouseDown(e)
+        );
       }
     }
 
-    if (!this.input && this.listbox) {
-      const input = this.options.getInput();
+    if (!this.#input && this.#listbox) {
+      const input = this.#options.getInput();
       if (input) {
-        this.input = input;
+        this.#input = input;
         input.setAttribute("role", "combobox");
         input.setAttribute("aria-autocomplete", "list");
-        input.setAttribute("aria-controls", this.listbox.id);
+        input.setAttribute("aria-controls", this.#listbox.id);
         input.setAttribute("aria-expanded", "false");
 
         const scope = this.scope;
-        const onRefresh = this.options.onRefresh;
+        const onRefresh = this.#options.onRefresh;
         if (onRefresh) {
           scope.listen(input, "focus", onRefresh);
           scope.listen(input, "input", onRefresh);
@@ -135,7 +137,7 @@ export class ComboboxController<T = unknown> extends BaseController {
             }
           });
         }
-        scope.listen(input, "keydown", (e) => this.handleKeyDown(e));
+        scope.listen(input, "keydown", (e) => this.#handleKeyDown(e));
         scope.listen(input, "blur", () => this.close());
         if (input.form) {
           scope.listen(input.form, "submit", () => this.close());
@@ -149,9 +151,9 @@ export class ComboboxController<T = unknown> extends BaseController {
     }
   }
 
-  private unbind(): void {
-    const input = this.input;
-    const listbox = this.listbox;
+  #unbind(): void {
+    const input = this.#input;
+    const listbox = this.#listbox;
 
     if (input) {
       for (const name of COMBOBOX_ATTRIBUTES) {
@@ -160,21 +162,21 @@ export class ComboboxController<T = unknown> extends BaseController {
     }
 
     if (listbox) {
-      if (this.addedListboxId) {
+      if (this.#addedListboxId) {
         listbox.removeAttribute("id");
-        this.addedListboxId = false;
+        this.#addedListboxId = false;
       }
-      if (this.addedListboxRole) {
+      if (this.#addedListboxRole) {
         listbox.removeAttribute("role");
-        this.addedListboxRole = false;
+        this.#addedListboxRole = false;
       }
       listbox.hidden = true;
     }
 
-    this._items = [];
-    this._activeIndex = -1;
-    this.input = null;
-    this.listbox = null;
+    this.#items = [];
+    this.#activeIndex = -1;
+    this.#input = null;
+    this.#listbox = null;
   }
 
   /**
@@ -183,25 +185,25 @@ export class ComboboxController<T = unknown> extends BaseController {
    * and resets activeIndex to -1.
    */
   public setItems(items: readonly T[]): void {
-    this._items = items;
-    this._activeIndex = -1;
+    this.#items = items;
+    this.#activeIndex = -1;
 
-    this.ensureBound();
-    const listbox = this.listbox;
+    this.#ensureBound();
+    const listbox = this.#listbox;
     if (!listbox) return;
 
-    this.input?.removeAttribute("aria-activedescendant");
+    this.#input?.removeAttribute("aria-activedescendant");
 
     const open = items.length > 0;
 
-    if (this.options.renderItems) {
-      this.options.renderItems(items, listbox);
+    if (this.#options.renderItems) {
+      this.#options.renderItems(items, listbox);
     }
 
     listbox.hidden = !open;
-    this.input?.setAttribute("aria-expanded", String(open));
+    this.#input?.setAttribute("aria-expanded", String(open));
 
-    this.options.onVisibilityChange?.(open);
+    this.#options.onVisibilityChange?.(open);
 
     if (open) {
       this.syncItemAttributes();
@@ -212,7 +214,7 @@ export class ComboboxController<T = unknown> extends BaseController {
    * Synchronizes role="option", deterministic IDs, and aria-selected on child elements.
    */
   public syncItemAttributes(): void {
-    const listbox = this.listbox;
+    const listbox = this.#listbox;
     if (!listbox) return;
 
     const children = listbox.children;
@@ -226,12 +228,12 @@ export class ComboboxController<T = unknown> extends BaseController {
       if (!child.getAttribute("role")) {
         child.setAttribute("role", "option");
       }
-      if (this.isSelectable(i)) {
+      if (this.#isSelectable(i)) {
         child.removeAttribute("aria-disabled");
       } else {
         child.setAttribute("aria-disabled", "true");
       }
-      const isActive = i === this._activeIndex;
+      const isActive = i === this.#activeIndex;
       child.setAttribute("aria-selected", String(isActive));
       child.classList.toggle("active", isActive);
     }
@@ -239,54 +241,54 @@ export class ComboboxController<T = unknown> extends BaseController {
 
   /** Closes the listbox, resets items, and removes aria-activedescendant. */
   public close(): void {
-    if (this._items.length > 0 || this.isOpen) {
+    if (this.#items.length > 0 || this.isOpen) {
       this.setItems([]);
     }
   }
 
   /** Sets the active highlighted item index (-1 to clear highlight). */
   public setActiveIndex(index: number): void {
-    const listbox = this.listbox;
+    const listbox = this.#listbox;
     if (!listbox) return;
 
-    if (this._activeIndex >= 0 && this._activeIndex < listbox.children.length) {
-      const prevEl = listbox.children.item(this._activeIndex);
+    if (this.#activeIndex >= 0 && this.#activeIndex < listbox.children.length) {
+      const prevEl = listbox.children.item(this.#activeIndex);
       prevEl?.setAttribute("aria-selected", "false");
       prevEl?.classList.remove("active");
     }
 
-    this._activeIndex = index;
+    this.#activeIndex = index;
 
     const activeEl = index >= 0 ? listbox.children.item(index) : null;
     if (activeEl instanceof HTMLElement) {
       activeEl.setAttribute("aria-selected", "true");
       activeEl.classList.add("active");
-      this.input?.setAttribute("aria-activedescendant", activeEl.id);
+      this.#input?.setAttribute("aria-activedescendant", activeEl.id);
       if (typeof activeEl.scrollIntoView === "function") {
         activeEl.scrollIntoView({ block: "nearest" });
       }
     } else {
-      this.input?.removeAttribute("aria-activedescendant");
+      this.#input?.removeAttribute("aria-activedescendant");
     }
   }
 
-  private isSelectable(index: number): boolean {
-    const item = this._items[index];
+  #isSelectable(index: number): boolean {
+    const item = this.#items[index];
     if (!item) return false;
-    return this.options.isSelectable ? this.options.isSelectable(item) : true;
+    return this.#options.isSelectable ? this.#options.isSelectable(item) : true;
   }
 
-  private choose(index: number): void {
-    if (index < 0 || index >= this._items.length) return;
-    const item = this._items[index];
-    if (!this.isSelectable(index)) {
+  #choose(index: number): void {
+    if (index < 0 || index >= this.#items.length) return;
+    const item = this.#items[index];
+    if (!this.#isSelectable(index)) {
       this.setActiveIndex(-1);
       return;
     }
-    this.options.onSelect(item, index);
+    this.#options.onSelect(item, index);
   }
 
-  private handleKeyDown(e: KeyboardEvent): void {
+  #handleKeyDown(e: KeyboardEvent): void {
     if (e.isComposing || e.altKey || e.ctrlKey || e.metaKey) {
       return;
     }
@@ -296,38 +298,38 @@ export class ComboboxController<T = unknown> extends BaseController {
       case "ArrowUp": {
         e.preventDefault();
         if (!this.isOpen) {
-          this.options.onRefresh?.();
+          this.#options.onRefresh?.();
         }
-        const currentCount = this._items.length;
+        const currentCount = this.#items.length;
         if (currentCount === 0) return;
         const step = e.key === "ArrowDown" ? 1 : -1;
         this.setActiveIndex(
-          this._activeIndex < 0
+          this.#activeIndex < 0
             ? step > 0
               ? 0
               : currentCount - 1
-            : (this._activeIndex + step + currentCount) % currentCount
+            : (this.#activeIndex + step + currentCount) % currentCount
         );
         return;
       }
       case "Enter": {
-        if (this._activeIndex < 0) {
+        if (this.#activeIndex < 0) {
           // Nothing highlighted: let native form submit proceed.
           this.close();
           return;
         }
         e.preventDefault();
-        this.choose(this._activeIndex);
+        this.#choose(this.#activeIndex);
         return;
       }
       case "Tab": {
-        const accept = this.options.acceptOnTab ?? true;
-        if (!accept || e.shiftKey || !this.isSelectable(this._activeIndex)) {
+        const accept = this.#options.acceptOnTab ?? true;
+        if (!accept || e.shiftKey || !this.#isSelectable(this.#activeIndex)) {
           this.close();
           return;
         }
         e.preventDefault();
-        this.choose(this._activeIndex);
+        this.#choose(this.#activeIndex);
         return;
       }
       case "Escape": {
@@ -340,12 +342,12 @@ export class ComboboxController<T = unknown> extends BaseController {
     }
   }
 
-  private handleMouseDown(e: MouseEvent): void {
+  #handleMouseDown(e: MouseEvent): void {
     // Keep focus in input
     e.preventDefault();
     if (e.button !== 0) return;
 
-    const listbox = this.listbox;
+    const listbox = this.#listbox;
     if (!listbox) return;
 
     const target = e
@@ -357,7 +359,7 @@ export class ComboboxController<T = unknown> extends BaseController {
     if (target instanceof HTMLElement) {
       const idx = Array.from(listbox.children).indexOf(target);
       if (idx >= 0) {
-        this.choose(idx);
+        this.#choose(idx);
       }
     }
   }

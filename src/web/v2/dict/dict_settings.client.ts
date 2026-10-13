@@ -40,54 +40,54 @@ export interface DictSettingsCommit {
  * - Highlight strength is presentation only, so it stays live.
  */
 export class MorcusDictSettings extends BaseElement {
-  private strength: number = DEFAULT_STRENGTH;
-  private committedDicts: Set<string> = new Set();
-  private committedInflected: boolean = true;
+  #strength: number = DEFAULT_STRENGTH;
+  #committedDicts: Set<string> = new Set();
+  #committedInflected: boolean = true;
 
-  private dialogEl: HTMLDialogElement | null = null;
-  private formEl: HTMLFormElement | null = null;
-  private triggerEl: HTMLElement | null = null;
-  private modal: ModalDialogHandle | null = null;
+  #dialogEl: HTMLDialogElement | null = null;
+  #formEl: HTMLFormElement | null = null;
+  #triggerEl: HTMLElement | null = null;
+  #modal: ModalDialogHandle | null = null;
 
   // Read in more than one place; a getter re-queries rather than caches.
-  private get sliderEl() {
+  get #sliderEl() {
     return this.scope.$<HTMLInputElement>(".settings-slider");
   }
 
   protected override onConnect() {
-    this.strength = this.computeInitialStrength();
-    this.dialogEl = this.scope.$<HTMLDialogElement>(
+    this.#strength = this.#computeInitialStrength();
+    this.#dialogEl = this.scope.$<HTMLDialogElement>(
       `#${DICT_SETTINGS_DIALOG_ID}`
     );
-    this.formEl = this.scope.$<HTMLFormElement>("form.dict-settings-form");
-    this.triggerEl = this.ownerDocument.getElementById(
+    this.#formEl = this.scope.$<HTMLFormElement>("form.dict-settings-form");
+    this.#triggerEl = this.ownerDocument.getElementById(
       DICT_SETTINGS_TRIGGER_ID
     );
 
-    this.adoptRenderedState();
+    this.#adoptRenderedState();
     // Before upgrade the dialog may have been opened via `:target` and edited. If it's still open
     // (the hash names it), those edits are a draft that applies on close, as if made just now.
     // If it was closed again, No-JS semantics apply: closing without Done discards them.
-    if (!this.isHashTarget()) this.resetControls();
-    this.syncDoneDisabled();
-    this.syncStrengthUi(true);
+    if (!this.#isHashTarget()) this.#resetControls();
+    this.#syncDoneDisabled();
+    this.#syncStrengthUi(true);
 
-    if (this.dialogEl) {
-      this.modal = setupModalDialog(this.dialogEl, {
-        trigger: this.triggerEl,
+    if (this.#dialogEl) {
+      this.#modal = setupModalDialog(this.#dialogEl, {
+        trigger: this.#triggerEl,
         onClose: () => {
-          this.commit();
-          this.triggerEl?.focus();
+          this.#commit();
+          this.#triggerEl?.focus();
         },
       });
-      this.scope.use(this.modal);
+      this.scope.use(this.#modal);
       // Hash handover: `#dict-settings` opens the dialog (initial load or later navigation), then
       // the component owns the state (`:target` CSS is scoped to un-upgraded hosts).
       this.scope.use(
         registerRevealer(
-          this.dialogEl,
+          this.#dialogEl,
           () => {
-            if (!this.dialogEl?.open) this.modal?.open();
+            if (!this.#dialogEl?.open) this.#modal?.open();
           },
           { ownsHash: true }
         )
@@ -95,41 +95,41 @@ export class MorcusDictSettings extends BaseElement {
     }
 
     // Done submits the dialog's form without JS; with JS it just closes, which applies.
-    this.scope.listen(this.formEl, "submit", (e: Event) => {
+    this.scope.listen(this.#formEl, "submit", (e: Event) => {
       e.preventDefault();
-      this.modal?.close();
+      this.#modal?.close();
     });
-    this.scope.listen(this.formEl, "change", () => {
-      this.syncDoneDisabled();
+    this.scope.listen(this.#formEl, "change", () => {
+      this.#syncDoneDisabled();
     });
 
-    const sliderEl = this.sliderEl;
+    const sliderEl = this.#sliderEl;
     this.scope.listen(sliderEl, "input", (e: Event) => {
       if (e.target instanceof HTMLInputElement) {
-        this.updateStrength(Number(e.target.value), false);
+        this.#updateStrength(Number(e.target.value), false);
       }
     });
     this.scope.listen(sliderEl, "change", (e: Event) => {
       if (e.target instanceof HTMLInputElement) {
-        this.updateStrength(Number(e.target.value), true);
+        this.#updateStrength(Number(e.target.value), true);
       }
     });
   }
 
   protected override onDisconnect() {
     // Listeners are already gone, so this can't commit: a moved or removed host drops its draft.
-    if (this.dialogEl?.open) {
-      this.dialogEl.removeAttribute("open");
+    if (this.#dialogEl?.open) {
+      this.#dialogEl.removeAttribute("open");
     }
-    this.triggerEl?.setAttribute("aria-expanded", "false");
-    this.resetControls();
+    this.#triggerEl?.setAttribute("aria-expanded", "false");
+    this.#resetControls();
   }
 
-  private isHashTarget(): boolean {
+  #isHashTarget(): boolean {
     return window.location.hash === `#${DICT_SETTINGS_DIALOG_ID}`;
   }
 
-  private computeInitialStrength(): number {
+  #computeInitialStrength(): number {
     const settings = settingsStore.get();
     if (typeof settings.highlightStrength === "number") {
       return Math.max(0, Math.min(100, settings.highlightStrength));
@@ -137,71 +137,71 @@ export class MorcusDictSettings extends BaseElement {
     return DEFAULT_STRENGTH;
   }
 
-  private dictCheckboxes(): HTMLInputElement[] {
+  #dictCheckboxes(): HTMLInputElement[] {
     return this.scope.$$<HTMLInputElement>(".dict-checkbox");
   }
 
-  private inflectedCheckbox(): HTMLInputElement | null {
+  #inflectedCheckbox(): HTMLInputElement | null {
     return this.scope.$<HTMLInputElement>("#toggle-inflected");
   }
 
-  private syncDoneDisabled() {
+  #syncDoneDisabled() {
     const doneBtn = this.scope.$<HTMLButtonElement>(
       "button.dict-settings-done"
     );
     if (!doneBtn) return;
-    doneBtn.disabled = !this.dictCheckboxes().some((cb) => cb.checked);
+    doneBtn.disabled = !this.#dictCheckboxes().some((cb) => cb.checked);
   }
 
   /**
    * The server resolves dictionaries and inflection (URL → cookie → default) and renders each
    * control's `checked` attribute from the result, so `defaultChecked` *is* the committed state.
    */
-  private adoptRenderedState() {
-    this.committedDicts = new Set(
-      this.dictCheckboxes()
+  #adoptRenderedState() {
+    this.#committedDicts = new Set(
+      this.#dictCheckboxes()
         .filter((cb) => cb.defaultChecked)
         .map((cb) => cb.dataset.key || cb.value)
     );
     // A scoped dialog has no toggle, only the view's inflection as a hidden `o`.
-    this.committedInflected =
-      this.inflectedCheckbox()?.defaultChecked ??
-      this.formEl?.querySelector<HTMLInputElement>(
+    this.#committedInflected =
+      this.#inflectedCheckbox()?.defaultChecked ??
+      this.#formEl?.querySelector<HTMLInputElement>(
         'input[type="hidden"][name="o"]'
       )?.value !== "0";
   }
 
   /** Puts the controls back to the committed state, discarding a draft. */
-  private resetControls() {
-    for (const cb of this.dictCheckboxes()) {
-      cb.checked = this.committedDicts.has(cb.dataset.key || cb.value);
+  #resetControls() {
+    for (const cb of this.#dictCheckboxes()) {
+      cb.checked = this.#committedDicts.has(cb.dataset.key || cb.value);
     }
-    const inflected = this.inflectedCheckbox();
-    if (inflected) inflected.checked = this.committedInflected;
-    this.syncDoneDisabled();
+    const inflected = this.#inflectedCheckbox();
+    if (inflected) inflected.checked = this.#committedInflected;
+    this.#syncDoneDisabled();
   }
 
   /** Applies the draft in the controls, if it differs from what's committed. */
-  private commit() {
-    const checkboxes = this.dictCheckboxes();
+  #commit() {
+    const checkboxes = this.#dictCheckboxes();
     const draftDicts = checkboxes
       .filter((cb) => cb.checked)
       .map((cb) => cb.dataset.key || cb.value);
     if (draftDicts.length === 0) {
-      this.resetControls();
+      this.#resetControls();
       return;
     }
-    const inflected = this.inflectedCheckbox();
-    const draftInflected = inflected?.checked ?? this.committedInflected;
+    const inflected = this.#inflectedCheckbox();
+    const draftInflected = inflected?.checked ?? this.#committedInflected;
 
     const dictsChanged =
-      draftDicts.length !== this.committedDicts.size ||
-      draftDicts.some((k) => !this.committedDicts.has(k));
-    const inflectedChanged = draftInflected !== this.committedInflected;
+      draftDicts.length !== this.#committedDicts.size ||
+      draftDicts.some((k) => !this.#committedDicts.has(k));
+    const inflectedChanged = draftInflected !== this.#committedInflected;
     if (!dictsChanged && !inflectedChanged) return;
 
-    this.committedDicts = new Set(draftDicts);
-    this.committedInflected = draftInflected;
+    this.#committedDicts = new Set(draftDicts);
+    this.#committedInflected = draftInflected;
     for (const cb of checkboxes) {
       cb.defaultChecked = cb.checked;
     }
@@ -225,21 +225,21 @@ export class MorcusDictSettings extends BaseElement {
   }
 
   /** `record`: also record the highlight scale for pre-paint (see applyScale). */
-  private syncStrengthUi(record: boolean) {
-    const sliderEl = this.sliderEl;
-    if (sliderEl && Number(sliderEl.value) !== this.strength) {
-      sliderEl.value = String(this.strength);
+  #syncStrengthUi(record: boolean) {
+    const sliderEl = this.#sliderEl;
+    if (sliderEl && Number(sliderEl.value) !== this.#strength) {
+      sliderEl.value = String(this.#strength);
     }
     const valueDisplayEl = this.scope.$(".settings-value");
     if (valueDisplayEl) {
-      valueDisplayEl.textContent = `${this.strength}%`;
+      valueDisplayEl.textContent = `${this.#strength}%`;
     }
-    this.applyScale(this.strength, record);
+    this.#applyScale(this.#strength, record);
   }
 
-  private updateStrength(newStrength: number, persist: boolean) {
-    this.strength = newStrength;
-    this.syncStrengthUi(persist);
+  #updateStrength(newStrength: number, persist: boolean) {
+    this.#strength = newStrength;
+    this.#syncStrengthUi(persist);
     if (persist) {
       settingsStore.update({ highlightStrength: newStrength });
     }
@@ -250,7 +250,7 @@ export class MorcusDictSettings extends BaseElement {
    * for the critical script (on connect and when a change is committed, not
    * on every slider tick).
    */
-  private applyScale(strength: number, record: boolean) {
+  #applyScale(strength: number, record: boolean) {
     const scale = String(strength / 50);
     if (record) {
       setPrepaint("--highlight-scale", scale);

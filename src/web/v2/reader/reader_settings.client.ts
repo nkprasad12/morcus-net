@@ -145,8 +145,8 @@ export interface ReaderSettingsChangeEventDetail {
  * custom event.
  */
 export class MorcusReaderSettings extends BaseElement {
-  private currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
-  private readonly popoverController = this.addController(
+  #currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
+  readonly #popoverController = this.addController(
     new AnchoredPopoverController({
       root: this,
       group: "reader-chrome",
@@ -166,21 +166,21 @@ export class MorcusReaderSettings extends BaseElement {
 
   // Controls read in more than one place. Getters, not cached fields: each
   // read hits the live DOM, so no reference can outlive a markup swap.
-  private get toggleMacra() {
+  get #toggleMacra() {
     return this.scope.$<HTMLInputElement>("#toggle-macra");
   }
-  private get toggleGutter() {
+  get #toggleGutter() {
     return this.scope.$<HTMLInputElement>("#toggle-gutter");
   }
-  private get fontSelect() {
+  get #fontSelect() {
     return this.scope.$<HTMLSelectElement>("#font-select");
   }
-  private get lineHeightSelect() {
+  get #lineHeightSelect() {
     return this.scope.$<HTMLSelectElement>("#line-height-select");
   }
 
   public getPreferences(): ReaderPreferences {
-    return { ...this.currentPrefs };
+    return { ...this.#currentPrefs };
   }
 
   public getWorkId(): string | null {
@@ -192,30 +192,30 @@ export class MorcusReaderSettings extends BaseElement {
   }
 
   public isOpen(): boolean {
-    return this.popoverController.isOpen;
+    return this.#popoverController.isOpen;
   }
 
   public open(): void {
-    this.popoverController.open();
+    this.#popoverController.open();
   }
 
   public close(): void {
-    this.popoverController.close();
+    this.#popoverController.close();
   }
 
   public toggle(): void {
-    this.popoverController.toggle();
+    this.#popoverController.toggle();
   }
 
   public updatePosition(): void {
-    this.popoverController.updatePosition();
+    this.#popoverController.updatePosition();
   }
 
   protected override onConnect() {
-    this.currentPrefs = readerSettingsStore.get();
+    this.#currentPrefs = readerSettingsStore.get();
     const workId = this.getWorkId();
     if (workId) {
-      this.currentPrefs.showMacra = getWorkMacra(workId);
+      this.#currentPrefs.showMacra = getWorkMacra(workId);
     }
 
     const resetBtn = this.scope.$<HTMLButtonElement>(
@@ -225,48 +225,51 @@ export class MorcusReaderSettings extends BaseElement {
     const readerSizeInc = this.scope.$<HTMLButtonElement>("#reader-size-inc");
     const dictSizeDec = this.scope.$<HTMLButtonElement>("#dict-size-dec");
     const dictSizeInc = this.scope.$<HTMLButtonElement>("#dict-size-inc");
-    const { toggleMacra, toggleGutter, fontSelect, lineHeightSelect } = this;
+    const toggleMacra = this.#toggleMacra;
+    const toggleGutter = this.#toggleGutter;
+    const fontSelect = this.#fontSelect;
+    const lineHeightSelect = this.#lineHeightSelect;
 
-    this.syncUiWithPrefs(this.currentPrefs);
+    this.#syncUiWithPrefs(this.#currentPrefs);
 
     // Stepper bindings
     if (readerSizeDec) {
       this.scope.listen(readerSizeDec, "click", () => {
-        this.currentPrefs.readerScale = Math.max(
+        this.#currentPrefs.readerScale = Math.max(
           MIN_READER_SCALE,
-          this.currentPrefs.readerScale - SCALE_STEP
+          this.#currentPrefs.readerScale - SCALE_STEP
         );
-        this.saveAndEmit();
+        this.#saveAndEmit();
       });
     }
 
     if (readerSizeInc) {
       this.scope.listen(readerSizeInc, "click", () => {
-        this.currentPrefs.readerScale = Math.min(
+        this.#currentPrefs.readerScale = Math.min(
           MAX_READER_SCALE,
-          this.currentPrefs.readerScale + SCALE_STEP
+          this.#currentPrefs.readerScale + SCALE_STEP
         );
-        this.saveAndEmit();
+        this.#saveAndEmit();
       });
     }
 
     if (dictSizeDec) {
       this.scope.listen(dictSizeDec, "click", () => {
-        this.currentPrefs.dictScale = Math.max(
+        this.#currentPrefs.dictScale = Math.max(
           MIN_DICT_SCALE,
-          this.currentPrefs.dictScale - SCALE_STEP
+          this.#currentPrefs.dictScale - SCALE_STEP
         );
-        this.saveAndEmit();
+        this.#saveAndEmit();
       });
     }
 
     if (dictSizeInc) {
       this.scope.listen(dictSizeInc, "click", () => {
-        this.currentPrefs.dictScale = Math.min(
+        this.#currentPrefs.dictScale = Math.min(
           MAX_DICT_SCALE,
-          this.currentPrefs.dictScale + SCALE_STEP
+          this.#currentPrefs.dictScale + SCALE_STEP
         );
-        this.saveAndEmit();
+        this.#saveAndEmit();
       });
     }
 
@@ -277,33 +280,33 @@ export class MorcusReaderSettings extends BaseElement {
         if (workId) {
           setWorkMacra(workId, toggleMacra.checked);
         }
-        this.currentPrefs.showMacra = toggleMacra.checked;
-        this.saveAndEmit();
+        this.#currentPrefs.showMacra = toggleMacra.checked;
+        this.#saveAndEmit();
       });
     }
 
     if (toggleGutter) {
       this.scope.listen(toggleGutter, "change", () => {
-        this.currentPrefs.showGutter = toggleGutter.checked;
-        this.saveAndEmit();
+        this.#currentPrefs.showGutter = toggleGutter.checked;
+        this.#saveAndEmit();
       });
     }
 
     // Select bindings
     if (fontSelect) {
       this.scope.listen(fontSelect, "change", () => {
-        this.currentPrefs.fontFamily =
+        this.#currentPrefs.fontFamily =
           fontSelect.value === "sans" ? "sans" : "serif";
-        this.saveAndEmit();
+        this.#saveAndEmit();
       });
     }
 
     if (lineHeightSelect) {
       this.scope.listen(lineHeightSelect, "change", () => {
         const val = lineHeightSelect.value;
-        this.currentPrefs.lineHeight =
+        this.#currentPrefs.lineHeight =
           val === "compact" || val === "relaxed" ? val : "normal";
-        this.saveAndEmit();
+        this.#saveAndEmit();
       });
     }
 
@@ -326,16 +329,19 @@ export class MorcusReaderSettings extends BaseElement {
         }
         storage.remove(SWIPE_NAV_KEY);
         if (toggleSwipe) toggleSwipe.checked = isSwipeNavOn();
-        this.currentPrefs = { ...DEFAULT_READER_PREFS };
-        this.saveAndEmit();
+        this.#currentPrefs = { ...DEFAULT_READER_PREFS };
+        this.#saveAndEmit();
       });
     }
   }
 
-  private syncUiWithPrefs(prefs: ReaderPreferences) {
+  #syncUiWithPrefs(prefs: ReaderPreferences) {
     const readerSizeLabel = this.scope.$<HTMLElement>("#reader-size-label");
     const dictSizeLabel = this.scope.$<HTMLElement>("#dict-size-label");
-    const { toggleMacra, toggleGutter, fontSelect, lineHeightSelect } = this;
+    const toggleMacra = this.#toggleMacra;
+    const toggleGutter = this.#toggleGutter;
+    const fontSelect = this.#fontSelect;
+    const lineHeightSelect = this.#lineHeightSelect;
 
     if (readerSizeLabel) {
       readerSizeLabel.textContent = `${prefs.readerScale}%`;
@@ -357,11 +363,11 @@ export class MorcusReaderSettings extends BaseElement {
     }
   }
 
-  private saveAndEmit() {
-    this.syncUiWithPrefs(this.currentPrefs);
-    readerSettingsStore.set(this.currentPrefs);
+  #saveAndEmit() {
+    this.#syncUiWithPrefs(this.#currentPrefs);
+    readerSettingsStore.set(this.#currentPrefs);
     this.emit<ReaderSettingsChangeEventDetail>("reader-settings-change", {
-      prefs: this.currentPrefs,
+      prefs: this.#currentPrefs,
     });
   }
 }

@@ -33,57 +33,57 @@ interface Entry {
 }
 
 export class ScrapeCache {
-  private readonly scrape: Scraper;
-  private readonly ttlMs: number;
-  private readonly maxEntries: number;
-  private readonly now: () => number;
+  readonly #scrape: Scraper;
+  readonly #ttlMs: number;
+  readonly #maxEntries: number;
+  readonly #now: () => number;
   /** Insertion order doubles as recency: hits are re-inserted at the end. */
-  private readonly entries = new Map<string, Entry>();
-  private readonly inFlight = new Map<string, Promise<string>>();
+  readonly #entries = new Map<string, Entry>();
+  readonly #inFlight = new Map<string, Promise<string>>();
 
   constructor(options: ScrapeCacheOptions) {
-    this.scrape = options.scrape;
-    this.ttlMs = options.ttlMs ?? DEFAULT_SCRAPE_TTL_MS;
-    this.maxEntries = options.maxEntries ?? DEFAULT_SCRAPE_MAX_ENTRIES;
-    this.now = options.now ?? Date.now;
+    this.#scrape = options.scrape;
+    this.#ttlMs = options.ttlMs ?? DEFAULT_SCRAPE_TTL_MS;
+    this.#maxEntries = options.maxEntries ?? DEFAULT_SCRAPE_MAX_ENTRIES;
+    this.#now = options.now ?? Date.now;
   }
 
   /** The page's text, from the cache when fresh. Rejects like the scraper. */
   get(url: string): Promise<string> {
     const key = scrapeCacheKey(url);
-    const hit = this.entries.get(key);
+    const hit = this.#entries.get(key);
     if (hit !== undefined) {
-      this.entries.delete(key);
-      if (hit.expiresAt > this.now()) {
-        this.entries.set(key, hit);
+      this.#entries.delete(key);
+      if (hit.expiresAt > this.#now()) {
+        this.#entries.set(key, hit);
         return Promise.resolve(hit.text);
       }
     }
-    const pending = this.inFlight.get(key);
+    const pending = this.#inFlight.get(key);
     if (pending !== undefined) return pending;
 
-    const request = this.scrape(url)
+    const request = this.#scrape(url)
       .then((text) => {
-        this.store(key, text);
+        this.#store(key, text);
         return text;
       })
       .finally(() => {
-        this.inFlight.delete(key);
+        this.#inFlight.delete(key);
       });
-    this.inFlight.set(key, request);
+    this.#inFlight.set(key, request);
     return request;
   }
 
   get size(): number {
-    return this.entries.size;
+    return this.#entries.size;
   }
 
-  private store(key: string, text: string): void {
-    this.entries.set(key, { text, expiresAt: this.now() + this.ttlMs });
-    while (this.entries.size > this.maxEntries) {
-      const oldest = this.entries.keys().next();
+  #store(key: string, text: string): void {
+    this.#entries.set(key, { text, expiresAt: this.#now() + this.#ttlMs });
+    while (this.#entries.size > this.#maxEntries) {
+      const oldest = this.#entries.keys().next();
       if (oldest.done === true) break;
-      this.entries.delete(oldest.value);
+      this.#entries.delete(oldest.value);
     }
   }
 }
