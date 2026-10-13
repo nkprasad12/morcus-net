@@ -58,25 +58,25 @@ function defaultProvider(): WakeLockProvider | null {
 }
 
 export class WakeLockController extends BaseController {
-  private readonly idleMs: number;
-  private readonly provider: () => WakeLockProvider | null;
-  private sentinel: WakeLockSentinel | null = null;
+  readonly #idleMs: number;
+  readonly #provider: () => WakeLockProvider | null;
+  #sentinel: WakeLockSentinel | null = null;
   /** Lifetime signal of the scope that owns the in-flight request, if any. */
-  private pendingFor: AbortSignal | null = null;
-  private lastActivity = 0;
-  private idleTimer = 0;
+  #pendingFor: AbortSignal | null = null;
+  #lastActivity = 0;
+  #idleTimer = 0;
 
   constructor(options: WakeLockOptions) {
     super(options.root);
-    this.idleMs = options.idleMs ?? WAKE_LOCK_IDLE_MS;
+    this.#idleMs = options.idleMs ?? WAKE_LOCK_IDLE_MS;
     const injected = options.wakeLock;
-    this.provider =
+    this.#provider =
       injected === undefined ? defaultProvider : () => injected ?? null;
   }
 
   /** Whether a wake lock is currently held. */
   public get isHeld(): boolean {
-    return this.sentinel !== null && !this.sentinel.released;
+    return this.#sentinel !== null && !this.#sentinel.released;
   }
 
   /**
@@ -85,13 +85,13 @@ export class WakeLockController extends BaseController {
    */
   public extend(): void {
     if (!this.isConnected) return;
-    this.lastActivity = Date.now();
+    this.#lastActivity = Date.now();
     if (this.isHeld) {
-      this.armIdleTimer(this.idleMs);
+      this.#armIdleTimer(this.#idleMs);
       return;
     }
-    if (this.pendingFor === this.scope.signal) return;
-    void this.acquire();
+    if (this.#pendingFor === this.scope.signal) return;
+    void this.#acquire();
   }
 
   protected override onConnect(): void {
@@ -108,19 +108,19 @@ export class WakeLockController extends BaseController {
     });
     this.scope.use(() => {
       // The scope clears its own timers; just forget the stale id.
-      this.idleTimer = 0;
-      this.release();
+      this.#idleTimer = 0;
+      this.#release();
     });
     this.extend();
   }
 
-  private async acquire(): Promise<void> {
+  async #acquire(): Promise<void> {
     if (this.ownerDocument.visibilityState !== "visible") return;
-    const provider = this.provider();
+    const provider = this.#provider();
     if (!provider) return;
 
     const signal = this.scope.signal;
-    this.pendingFor = signal;
+    this.#pendingFor = signal;
     let sentinel: WakeLockSentinel;
     try {
       sentinel = await provider.request("screen");
@@ -129,7 +129,7 @@ export class WakeLockController extends BaseController {
       // and friends. Retry happens naturally on the next activity.
       return;
     } finally {
-      if (this.pendingFor === signal) this.pendingFor = null;
+      if (this.#pendingFor === signal) this.#pendingFor = null;
     }
 
     if (signal.aborted || this.isHeld) {
@@ -137,39 +137,39 @@ export class WakeLockController extends BaseController {
       releaseQuietly(sentinel);
       return;
     }
-    this.sentinel = sentinel;
+    this.#sentinel = sentinel;
     this.scope.listen(
       sentinel,
       "release",
       () => {
-        if (this.sentinel === sentinel) this.sentinel = null;
+        if (this.#sentinel === sentinel) this.#sentinel = null;
       },
       { once: true }
     );
-    this.checkIdle();
+    this.#checkIdle();
   }
 
-  private armIdleTimer(delayMs: number): void {
-    if (this.idleTimer !== 0) return;
-    this.idleTimer = this.scope.timeout(() => {
-      this.idleTimer = 0;
-      this.checkIdle();
+  #armIdleTimer(delayMs: number): void {
+    if (this.#idleTimer !== 0) return;
+    this.#idleTimer = this.scope.timeout(() => {
+      this.#idleTimer = 0;
+      this.#checkIdle();
     }, delayMs);
   }
 
   /** Releases if the idle deadline has passed; otherwise re-arms for the remainder. */
-  private checkIdle(): void {
-    const remaining = this.lastActivity + this.idleMs - Date.now();
+  #checkIdle(): void {
+    const remaining = this.#lastActivity + this.#idleMs - Date.now();
     if (remaining > 0) {
-      this.armIdleTimer(remaining);
+      this.#armIdleTimer(remaining);
     } else {
-      this.release();
+      this.#release();
     }
   }
 
-  private release(): void {
-    const sentinel = this.sentinel;
-    this.sentinel = null;
+  #release(): void {
+    const sentinel = this.#sentinel;
+    this.#sentinel = null;
     if (sentinel) releaseQuietly(sentinel);
   }
 }

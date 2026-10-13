@@ -19,9 +19,9 @@ import {
 } from "@/web/v2/core/drawer.client";
 
 export class MorcusDictToc extends BaseElement {
-  private mediaQuery: MediaQueryList | null = null;
-  private readonly onMediaChange = () => this.syncDrawerState();
-  private readonly drawerController = this.addController(
+  #mediaQuery: MediaQueryList | null = null;
+  readonly #onMediaChange = () => this.#syncDrawerState();
+  readonly #drawerController = this.addController(
     new DrawerController({
       root: this,
       drawerSelector: ":scope",
@@ -33,43 +33,43 @@ export class MorcusDictToc extends BaseElement {
       defaultSvh: DRAWER_DEFAULT_SVH,
       floorSvh: DRAWER_FLOOR_SVH,
       expandedSvh: DRAWER_EXPANDED_SVH,
-      enabled: () => this.isMobileViewport(),
+      enabled: () => this.#isMobileViewport(),
     })
   );
 
-  private isMobileViewport(): boolean {
-    return this.mediaQuery?.matches ?? window.innerWidth < 1080;
+  #isMobileViewport(): boolean {
+    return this.#mediaQuery?.matches ?? window.innerWidth < 1080;
   }
 
   protected override onConnect() {
     if (typeof window.matchMedia === "function") {
-      this.mediaQuery = window.matchMedia("(max-width: 1079.98px)");
+      this.#mediaQuery = window.matchMedia("(max-width: 1079.98px)");
     }
-    this.scope.listen(this.mediaQuery, "change", this.onMediaChange);
-    if (!this.isMobileViewport()) {
-      this.ensureDesktopDetailsOpen();
+    this.scope.listen(this.#mediaQuery, "change", this.#onMediaChange);
+    if (!this.#isMobileViewport()) {
+      this.#ensureDesktopDetailsOpen();
     }
   }
 
   protected override onDisconnect() {
-    this.mediaQuery = null;
+    this.#mediaQuery = null;
   }
 
-  private ensureDesktopDetailsOpen() {
+  #ensureDesktopDetailsOpen() {
     const details = this.querySelector<HTMLDetailsElement>(".toc-details");
     if (details && !details.open) {
       details.open = true;
     }
   }
 
-  private syncDrawerState() {
-    if (this.isMobileViewport()) {
-      if (!this.drawerController.isConnected) {
-        this.drawerController.connect();
+  #syncDrawerState() {
+    if (this.#isMobileViewport()) {
+      if (!this.#drawerController.isConnected) {
+        this.#drawerController.connect();
       }
     } else {
-      this.drawerController.dispose();
-      this.ensureDesktopDetailsOpen();
+      this.#drawerController.dispose();
+      this.#ensureDesktopDetailsOpen();
     }
   }
 
@@ -77,7 +77,7 @@ export class MorcusDictToc extends BaseElement {
    * Exposed for testing: returns current active DrawerController.
    */
   getDrawerController(): DrawerController | null {
-    return this.drawerController.isConnected ? this.drawerController : null;
+    return this.#drawerController.isConnected ? this.#drawerController : null;
   }
 }
 

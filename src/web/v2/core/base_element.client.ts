@@ -22,7 +22,7 @@ export type { CleanupFn, Unregister };
 /**
  * Long-lived sub-controller attached to a BaseElement (or parent BaseController).
  * Registered once (typically as a class field); survives across disconnect/reconnect
- * cycles so controller state (_activeTab, preferredDvh) is preserved while listeners
+ * cycles so controller state (e.g. the active panel tab, the drawer's preferred height) is preserved while listeners
  * are cleanly torn down and re-registered on each cycle.
  */
 export interface Controller {
@@ -139,13 +139,13 @@ export class LifetimeScope<Lane extends string = never> {
    * with no owner it checks up to the document.
    */
   public readonly owner: Element | null;
-  private readonly disposables = new DisposableBag();
-  private readonly lifetime = new AbortController();
-  private readonly lanes = new Map<Lane, LatestTask>();
-  private readonly timeouts = new Set<number>();
-  private readonly rafs = new Set<number>();
-  private _disposed = false;
-  private readonly onDisposeCallback?: Unregister;
+  readonly #disposables = new DisposableBag();
+  readonly #lifetime = new AbortController();
+  readonly #lanes = new Map<Lane, LatestTask>();
+  readonly #timeouts = new Set<number>();
+  readonly #rafs = new Set<number>();
+  #disposed = false;
+  readonly #onDisposeCallback?: Unregister;
 
   constructor(
     root: ParentNode | null,
@@ -153,20 +153,20 @@ export class LifetimeScope<Lane extends string = never> {
     owner: Element | null = null
   ) {
     this.root = root;
-    this.onDisposeCallback = onDisposeCallback;
+    this.#onDisposeCallback = onDisposeCallback;
     this.owner = owner;
   }
 
   public get disposed(): boolean {
-    return this._disposed;
+    return this.#disposed;
   }
 
   public get signal(): AbortSignal {
-    return this.lifetime.signal;
+    return this.#lifetime.signal;
   }
 
-  private isScopeActive(): boolean {
-    if (this._disposed || !this.root) return false;
+  #isScopeActive(): boolean {
+    if (this.#disposed || !this.root) return false;
     if (this.root instanceof BaseElement && !this.root.isConnected) {
       return false;
     }
@@ -174,29 +174,29 @@ export class LifetimeScope<Lane extends string = never> {
   }
 
   public latest(lane: Lane): AbortSignal {
-    if (this._disposed) {
-      return this.lifetime.signal;
+    if (this.#disposed) {
+      return this.#lifetime.signal;
     }
-    let task = this.lanes.get(lane);
+    let task = this.#lanes.get(lane);
     if (task === undefined) {
       task = new LatestTask();
-      this.lanes.set(lane, task);
+      this.#lanes.set(lane, task);
     }
     return task.start();
   }
 
   public cancel(lane: Lane): void {
-    this.lanes.get(lane)?.cancel();
+    this.#lanes.get(lane)?.cancel();
   }
 
   public use(resource: Disposable): void {
     const cleanup: CleanupFn =
       typeof resource === "function" ? resource : () => resource.dispose();
-    if (this._disposed) {
+    if (this.#disposed) {
       cleanup();
       return;
     }
-    this.disposables.add(cleanup);
+    this.#disposables.add(cleanup);
   }
 
   /**
@@ -207,7 +207,7 @@ export class LifetimeScope<Lane extends string = never> {
   public createScope<ChildLane extends string = never>(
     root: ParentNode = this.root ?? document
   ): LifetimeScope<ChildLane> {
-    if (this._disposed) {
+    if (this.#disposed) {
       const dead = new LifetimeScope<ChildLane>(root, undefined, this.owner);
       dead.dispose();
       return dead;
@@ -221,7 +221,7 @@ export class LifetimeScope<Lane extends string = never> {
       },
       this.owner
     );
-    detach = this.disposables.add(() => child.dispose());
+    detach = this.#disposables.add(() => child.dispose());
     return child;
   }
 
@@ -271,7 +271,7 @@ export class LifetimeScope<Lane extends string = never> {
     listener: unknown,
     options?: boolean | AddEventListenerOptions
   ): void {
-    if (!target || this._disposed) return;
+    if (!target || this.#disposed) return;
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const raw = listener as EventListenerOrEventListenerObject;
     const handler: EventListenerOrEventListenerObject = GATED_TYPES.has(type)
@@ -295,7 +295,7 @@ export class LifetimeScope<Lane extends string = never> {
     handler: (e: Event, matched: T) => void,
     options?: boolean | AddEventListenerOptions
   ): void {
-    if (!root || this._disposed) return;
+    if (!root || this.#disposed) return;
     const fn = (e: Event) => {
       // Unlike `listen` (which may be a same-element observer, e.g. a
       // combobox watching form `submit` alongside `hijackForm`), a delegated
@@ -326,33 +326,33 @@ export class LifetimeScope<Lane extends string = never> {
   }
 
   public timeout(fn: () => void, ms: number): number {
-    if (!this.isScopeActive()) return 0;
+    if (!this.#isScopeActive()) return 0;
     const id = window.setTimeout(() => {
-      this.timeouts.delete(id);
+      this.#timeouts.delete(id);
       fn();
     }, ms);
-    this.timeouts.add(id);
+    this.#timeouts.add(id);
     return id;
   }
 
   public clearTimeout(id: number): void {
     window.clearTimeout(id);
-    this.timeouts.delete(id);
+    this.#timeouts.delete(id);
   }
 
   public rAF(fn: FrameRequestCallback): number {
-    if (!this.isScopeActive()) return 0;
+    if (!this.#isScopeActive()) return 0;
     const id = window.requestAnimationFrame((time) => {
-      this.rafs.delete(id);
+      this.#rafs.delete(id);
       fn(time);
     });
-    this.rafs.add(id);
+    this.#rafs.add(id);
     return id;
   }
 
   public cancelRAF(id: number): void {
     window.cancelAnimationFrame(id);
-    this.rafs.delete(id);
+    this.#rafs.delete(id);
   }
 
   public debounce<T extends (...args: never[]) => void>(
@@ -360,7 +360,7 @@ export class LifetimeScope<Lane extends string = never> {
     waitMs: number
   ): DebouncedFunction<T> {
     return createDurableDebounce(
-      () => this.isScopeActive(),
+      () => this.#isScopeActive(),
       () => this,
       fn,
       waitMs
@@ -368,25 +368,25 @@ export class LifetimeScope<Lane extends string = never> {
   }
 
   public dispose(): void {
-    if (this._disposed) return;
-    this._disposed = true;
-    this.onDisposeCallback?.();
+    if (this.#disposed) return;
+    this.#disposed = true;
+    this.#onDisposeCallback?.();
     // Cancel in-flight async work first, so listener teardown below cannot be
     // raced by a late response.
-    for (const task of this.lanes.values()) {
+    for (const task of this.#lanes.values()) {
       task.cancel();
     }
-    this.lanes.clear();
-    for (const id of this.timeouts) {
+    this.#lanes.clear();
+    for (const id of this.#timeouts) {
       window.clearTimeout(id);
     }
-    this.timeouts.clear();
-    for (const id of this.rafs) {
+    this.#timeouts.clear();
+    for (const id of this.#rafs) {
       window.cancelAnimationFrame(id);
     }
-    this.rafs.clear();
-    this.lifetime.abort();
-    this.disposables.dispose();
+    this.#rafs.clear();
+    this.#lifetime.abort();
+    this.#disposables.dispose();
   }
 }
 
@@ -453,10 +453,10 @@ export abstract class BaseController<Lane extends string = never>
   implements Controller
 {
   public readonly root: ParentNode;
-  private _scope: LifetimeScope<Lane> | null = null;
-  private readonly controllers: Controller[] = [];
+  #scope: LifetimeScope<Lane> | null = null;
+  readonly #controllers: Controller[] = [];
   /** Whether this controller set `data-js-failed` on its root. */
-  private markedFailed = false;
+  #markedFailed = false;
   /** The owning component, set by `addController`; `null` if standalone. */
   protected owner: Element | null = null;
 
@@ -475,11 +475,11 @@ export abstract class BaseController<Lane extends string = never>
   }
 
   public get isConnected(): boolean {
-    return this._scope !== null && !this._scope.disposed;
+    return this.#scope !== null && !this.#scope.disposed;
   }
 
   protected get scope(): LifetimeScope<Lane> {
-    return this._scope ?? DEAD_SCOPE;
+    return this.#scope ?? DEAD_SCOPE;
   }
 
   protected onConnect(): void {}
@@ -503,12 +503,12 @@ export abstract class BaseController<Lane extends string = never>
   }
 
   public addController<T extends Controller>(controller: T): T {
-    if (!this.controllers.includes(controller)) {
+    if (!this.#controllers.includes(controller)) {
       if (controller instanceof BaseController) {
         controller.adoptOwner(this.owner);
       }
-      this.controllers.push(controller);
-      if (this._scope && !this._scope.disposed) {
+      this.#controllers.push(controller);
+      if (this.#scope && !this.#scope.disposed) {
         controller.connect?.();
       }
     }
@@ -522,30 +522,30 @@ export abstract class BaseController<Lane extends string = never>
    */
   public adoptOwner(owner: Element | null): void {
     this.owner = owner;
-    for (const controller of this.controllers) {
+    for (const controller of this.#controllers) {
       if (controller instanceof BaseController) controller.adoptOwner(owner);
     }
   }
 
   public connect(): void {
-    if (this._scope && !this._scope.disposed) {
+    if (this.#scope && !this.#scope.disposed) {
       this.dispose();
     }
-    if (this.markedFailed && this.root instanceof Element) {
+    if (this.#markedFailed && this.root instanceof Element) {
       clearFailed(this.root);
-      this.markedFailed = false;
+      this.#markedFailed = false;
     }
-    this._scope = new LifetimeScope<Lane>(this.root, undefined, this.owner);
+    this.#scope = new LifetimeScope<Lane>(this.root, undefined, this.owner);
     let set = ACTIVE_CONTROLLERS_BY_ROOT.get(this.root);
     if (!set) {
       set = new Set<Controller>();
       ACTIVE_CONTROLLERS_BY_ROOT.set(this.root, set);
     }
     set.add(this);
-    const existingControllers = [...this.controllers];
+    const existingControllers = [...this.#controllers];
     try {
       this.onConnect();
-      if (!this._scope || this._scope.disposed) return;
+      if (!this.#scope || this.#scope.disposed) return;
       for (const controller of existingControllers) {
         controller.connect?.();
       }
@@ -553,9 +553,9 @@ export abstract class BaseController<Lane extends string = never>
       // Tear down anything registered before the throw. This skips
       // `dispose()`, which would also run `onDisconnect` and clear our mark.
       ACTIVE_CONTROLLERS_BY_ROOT.get(this.root)?.delete(this);
-      disposeControllers(this.controllers);
-      this._scope?.dispose();
-      this._scope = null;
+      disposeControllers(this.#controllers);
+      this.#scope?.dispose();
+      this.#scope = null;
       // Bring back the No-JS fallbacks in this controller's subtree (see
       // `core/js_gate.client.ts`). A document-level controller doesn't mark
       // <html>: that would revert every component on the page. Marked after
@@ -567,21 +567,21 @@ export abstract class BaseController<Lane extends string = never>
         root !== root.ownerDocument.documentElement
       ) {
         markFailed(root);
-        this.markedFailed = true;
+        this.#markedFailed = true;
       }
       throw err;
     }
   }
 
   public dispose(): void {
-    const wasConnected = this._scope !== null && !this._scope.disposed;
+    const wasConnected = this.#scope !== null && !this.#scope.disposed;
     ACTIVE_CONTROLLERS_BY_ROOT.get(this.root)?.delete(this);
-    if (this.markedFailed && this.root instanceof Element) {
+    if (this.#markedFailed && this.root instanceof Element) {
       clearFailed(this.root);
-      this.markedFailed = false;
+      this.#markedFailed = false;
     }
     try {
-      for (const controller of this.controllers) {
+      for (const controller of this.#controllers) {
         try {
           controller.dispose();
         } catch (err) {
@@ -592,13 +592,13 @@ export abstract class BaseController<Lane extends string = never>
         this.onDisconnect();
       }
     } finally {
-      this._scope?.dispose();
-      this._scope = null;
+      this.#scope?.dispose();
+      this.#scope = null;
     }
   }
 
   public onContentSwap(swappedRoot: Element): void {
-    for (const controller of this.controllers) {
+    for (const controller of this.#controllers) {
       controller.onContentSwap?.(swappedRoot);
     }
   }
@@ -622,14 +622,14 @@ export abstract class BaseController<Lane extends string = never>
 export abstract class BaseElement<
   Lane extends string = never
 > extends HTMLElement {
-  private _scope: LifetimeScope<Lane> | null = null;
-  private readonly controllers: Controller[] = [];
+  #scope: LifetimeScope<Lane> | null = null;
+  readonly #controllers: Controller[] = [];
 
   /**
    * Active connection scope. Backed by DEAD_SCOPE when disconnected.
    */
   protected get scope(): LifetimeScope<Lane> {
-    return this._scope ?? DEAD_SCOPE;
+    return this.#scope ?? DEAD_SCOPE;
   }
 
   /**
@@ -674,10 +674,10 @@ export abstract class BaseElement<
    * lockstep with this host element while preserving its instance across reconnects.
    */
   public addController<T extends Controller>(controller: T): T {
-    if (!this.controllers.includes(controller)) {
+    if (!this.#controllers.includes(controller)) {
       if (controller instanceof BaseController) controller.adoptOwner(this);
-      this.controllers.push(controller);
-      if (this._scope && !this._scope.disposed) {
+      this.#controllers.push(controller);
+      if (this.#scope && !this.#scope.disposed) {
         controller.connect?.();
       }
     }
@@ -693,7 +693,7 @@ export abstract class BaseElement<
     notified?: Set<Controller>
   ): void {
     this.onContentSwap(swappedRoot);
-    for (const controller of this.controllers) {
+    for (const controller of this.#controllers) {
       if (notified?.has(controller)) continue;
       notified?.add(controller);
       controller.onContentSwap?.(swappedRoot);
@@ -701,24 +701,24 @@ export abstract class BaseElement<
   }
 
   connectedCallback() {
-    if (this._scope && !this._scope.disposed) {
-      this._scope.dispose();
+    if (this.#scope && !this.#scope.disposed) {
+      this.#scope.dispose();
     }
     clearFailed(this);
-    this._scope = new LifetimeScope<Lane>(this, undefined, this);
-    const existingControllers = [...this.controllers];
+    this.#scope = new LifetimeScope<Lane>(this, undefined, this);
+    const existingControllers = [...this.#controllers];
     try {
       this.onConnect();
-      if (!this._scope || this._scope.disposed) return;
+      if (!this.#scope || this.#scope.disposed) return;
       for (const controller of existingControllers) {
         controller.connect?.();
       }
     } catch (err) {
       // Tear down anything registered before the throw, so no handler stays
       // live on a component that has reverted to its No-JS fallback.
-      disposeControllers(this.controllers);
-      this._scope?.dispose();
-      this._scope = null;
+      disposeControllers(this.#controllers);
+      this.#scope?.dispose();
+      this.#scope = null;
       // A broken component drops its `data-js-only` controls and paints its
       // No-JS fallbacks again (see `core/js_gate.client.ts`). Marked after
       // the teardown, since disposing a failed child controller rooted at
@@ -736,11 +736,11 @@ export abstract class BaseElement<
     // nulled the scope, so `onDisconnect` (which may assume `onConnect` ran
     // to completion) is skipped, as `BaseController.dispose` does. Undo
     // anything that must also be undone on failure with `this.scope.use()`.
-    const wasConnected = this._scope !== null && !this._scope.disposed;
+    const wasConnected = this.#scope !== null && !this.#scope.disposed;
     clearUpgraded(this);
     clearFailed(this);
     try {
-      for (const controller of this.controllers) {
+      for (const controller of this.#controllers) {
         try {
           controller.dispose();
         } catch (err) {
@@ -751,8 +751,8 @@ export abstract class BaseElement<
         this.onDisconnect();
       }
     } finally {
-      this._scope?.dispose();
-      this._scope = null;
+      this.#scope?.dispose();
+      this.#scope = null;
     }
   }
 

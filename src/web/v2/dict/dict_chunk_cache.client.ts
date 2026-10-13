@@ -10,12 +10,12 @@ import type { DictChunksResponse } from "@/web/v2/dict/dict_completions.common";
  * - LRU eviction to prevent unbounded memory growth while keeping active sessions snappy.
  */
 export class DictChunkCache {
-  private readonly chunks = new Map<string, DictChunksResponse>();
-  private readonly inFlight = new Map<string, Promise<DictChunksResponse>>();
-  private readonly maxPrefixes: number;
+  readonly #chunks = new Map<string, DictChunksResponse>();
+  readonly #inFlight = new Map<string, Promise<DictChunksResponse>>();
+  readonly #maxPrefixes: number;
 
   constructor(maxPrefixes: number = 60) {
-    this.maxPrefixes = maxPrefixes;
+    this.#maxPrefixes = maxPrefixes;
   }
 
   /**
@@ -23,7 +23,7 @@ export class DictChunkCache {
    */
   hasPrefix(prefix: string): boolean {
     const key = prefix.toLowerCase();
-    return this.chunks.has(key);
+    return this.#chunks.has(key);
   }
 
   /**
@@ -31,11 +31,11 @@ export class DictChunkCache {
    */
   getChunks(prefix: string): DictChunksResponse | undefined {
     const key = prefix.toLowerCase();
-    const val = this.chunks.get(key);
+    const val = this.#chunks.get(key);
     if (val) {
       // Re-insert to refresh LRU position
-      this.chunks.delete(key);
-      this.chunks.set(key, val);
+      this.#chunks.delete(key);
+      this.#chunks.set(key, val);
     }
     return val;
   }
@@ -45,15 +45,15 @@ export class DictChunkCache {
    */
   setChunks(prefix: string, chunks: DictChunksResponse): void {
     const key = prefix.toLowerCase();
-    if (this.chunks.has(key)) {
-      this.chunks.delete(key);
-    } else if (this.chunks.size >= this.maxPrefixes) {
-      const oldestKey = this.chunks.keys().next().value;
+    if (this.#chunks.has(key)) {
+      this.#chunks.delete(key);
+    } else if (this.#chunks.size >= this.#maxPrefixes) {
+      const oldestKey = this.#chunks.keys().next().value;
       if (oldestKey) {
-        this.chunks.delete(oldestKey);
+        this.#chunks.delete(oldestKey);
       }
     }
-    this.chunks.set(key, chunks);
+    this.#chunks.set(key, chunks);
   }
 
   /**
@@ -69,7 +69,7 @@ export class DictChunkCache {
     }
 
     // 2. Reuse active in-flight promise if a request is already pending
-    const existingPromise = this.inFlight.get(key);
+    const existingPromise = this.#inFlight.get(key);
     if (existingPromise) {
       return existingPromise;
     }
@@ -103,10 +103,10 @@ export class DictChunkCache {
         return {};
       })
       .finally(() => {
-        this.inFlight.delete(key);
+        this.#inFlight.delete(key);
       });
 
-    this.inFlight.set(key, promise);
+    this.#inFlight.set(key, promise);
     return promise;
   }
 
@@ -114,21 +114,21 @@ export class DictChunkCache {
    * Clears all cached chunks and in-flight promises.
    */
   clear(): void {
-    this.chunks.clear();
-    this.inFlight.clear();
+    this.#chunks.clear();
+    this.#inFlight.clear();
   }
 
   /**
    * Total number of cached prefixes currently in memory.
    */
   get size(): number {
-    return this.chunks.size;
+    return this.#chunks.size;
   }
 
   /**
    * Number of network requests currently in-flight.
    */
   get inFlightCount(): number {
-    return this.inFlight.size;
+    return this.#inFlight.size;
   }
 }

@@ -185,40 +185,40 @@ export interface ExternalContentStoreOptions {
  * can degrade to "saving isn't available in this browser".
  */
 export class ExternalContentStore {
-  private dbPromise: Promise<IDBDatabase> | null = null;
-  private readonly factory: IDBFactory | null;
-  private readonly now: () => number;
-  private readonly generateId: () => string;
+  #dbPromise: Promise<IDBDatabase> | null = null;
+  readonly #factory: IDBFactory | null;
+  readonly #now: () => number;
+  readonly #generateId: () => string;
 
   constructor(options: ExternalContentStoreOptions = {}) {
-    this.factory =
+    this.#factory =
       options.factory !== undefined
         ? options.factory
         : typeof indexedDB === "undefined"
         ? null
         : indexedDB;
-    this.now = options.now ?? Date.now;
-    this.generateId = options.generateId ?? generateOpaqueKey;
+    this.#now = options.now ?? Date.now;
+    this.#generateId = options.generateId ?? generateOpaqueKey;
   }
 
-  private db(): Promise<IDBDatabase> {
-    if (this.dbPromise === null) {
-      const factory = this.factory;
-      this.dbPromise = factory
+  #db(): Promise<IDBDatabase> {
+    if (this.#dbPromise === null) {
+      const factory = this.#factory;
+      this.#dbPromise = factory
         ? openDb(factory)
         : Promise.reject(new Error("IndexedDB is not available"));
       // A failed open must not be cached forever: retry on the next call.
-      this.dbPromise.catch(() => {
-        this.dbPromise = null;
+      this.#dbPromise.catch(() => {
+        this.#dbPromise = null;
       });
     }
-    return this.dbPromise;
+    return this.#dbPromise;
   }
 
-  private async objectStore(
+  async #objectStore(
     mode: IDBTransactionMode
   ): Promise<{ store: IDBObjectStore; tx: IDBTransaction }> {
-    const db = await this.db();
+    const db = await this.#db();
     const tx = db.transaction(EXTERNAL_CONTENT_STORE, mode);
     return { store: tx.objectStore(EXTERNAL_CONTENT_STORE), tx };
   }
@@ -228,7 +228,7 @@ export class ExternalContentStore {
    * after V2 rows, in key order among themselves.
    */
   async list(): Promise<ExternalContentSummary[]> {
-    const { store } = await this.objectStore("readonly");
+    const { store } = await this.#objectStore("readonly");
     const rows = await promisify(store.getAll());
     const summaries: ExternalContentSummary[] = [];
     for (const row of rows) {
@@ -248,7 +248,7 @@ export class ExternalContentStore {
 
   /** Returns the saved import for `storageKey`, or undefined if absent. */
   async get(storageKey: string): Promise<ExternalContentRecord | undefined> {
-    const { store } = await this.objectStore("readonly");
+    const { store } = await this.#objectStore("readonly");
     const row: unknown = await promisify(store.get(storageKey));
     return parseStoredRow(row) ?? undefined;
   }
@@ -258,8 +258,8 @@ export class ExternalContentStore {
    * a URL refreshes the cached copy instead of failing on the existing key.
    */
   async save(content: NewExternalContent): Promise<string> {
-    const now = this.now();
-    const storageKey = storageKeyFor(content, this.generateId);
+    const now = this.#now();
+    const storageKey = storageKeyFor(content, this.#generateId);
     const row: ExternalContentRecord = {
       storageKey,
       title: content.title,
@@ -268,7 +268,7 @@ export class ExternalContentStore {
       savedAt: now,
     };
     if (content.source) row.source = content.source;
-    const { store, tx } = await this.objectStore("readwrite");
+    const { store, tx } = await this.#objectStore("readwrite");
     store.put(row);
     await committed(tx);
     return storageKey;
@@ -276,7 +276,7 @@ export class ExternalContentStore {
 
   /** Remembers a new line mode for an existing import. No-op if absent. */
   async setLineMode(storageKey: string, lineMode: LineMode): Promise<void> {
-    const { store, tx } = await this.objectStore("readwrite");
+    const { store, tx } = await this.#objectStore("readwrite");
     const existing = parseStoredRow(await promisify(store.get(storageKey)));
     if (existing !== null) {
       store.put({ ...existing, lineMode });
@@ -286,15 +286,15 @@ export class ExternalContentStore {
 
   /** Deletes an import. Deleting a missing key is not an error. */
   async delete(storageKey: string): Promise<void> {
-    const { store, tx } = await this.objectStore("readwrite");
+    const { store, tx } = await this.#objectStore("readwrite");
     store.delete(storageKey);
     await committed(tx);
   }
 
   /** Closes the connection, e.g. on element disconnect or in tests. */
   async close(): Promise<void> {
-    const pending = this.dbPromise;
-    this.dbPromise = null;
+    const pending = this.#dbPromise;
+    this.#dbPromise = null;
     if (pending === null) return;
     try {
       (await pending).close();

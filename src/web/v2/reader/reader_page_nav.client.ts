@@ -51,24 +51,24 @@ const commitPx = () =>
 const hasSelection = () => window.getSelection()?.isCollapsed === false;
 
 export class ReaderPageNavController extends BaseController {
-  private readonly options: ReaderPageNavOptions;
-  private panel: HTMLElement | null = null;
+  readonly #options: ReaderPageNavOptions;
+  #panel: HTMLElement | null = null;
   /** True while a slide is running; new gestures are ignored until it ends. */
-  private busy = false;
+  #busy = false;
 
   constructor(options: ReaderPageNavOptions) {
     super(options.root);
-    this.options = options;
+    this.#options = options;
   }
 
   protected override onConnect(): void {
-    this.busy = false;
-    const panel = (this.panel = this.scope.$(".reader-text-panel"));
+    this.#busy = false;
+    const panel = (this.#panel = this.scope.$(".reader-text-panel"));
     if (!panel) return;
     this.scope.use(
       trackHorizontalSwipe(panel, {
         filter: (touch) =>
-          !this.busy &&
+          !this.#busy &&
           isSwipeNavOn() &&
           touch.clientX > EDGE_GUARD_PX &&
           touch.clientX < window.innerWidth - EDGE_GUARD_PX &&
@@ -76,9 +76,9 @@ export class ReaderPageNavController extends BaseController {
           (window.visualViewport?.scale ?? 1) < 1.01 &&
           !hasSelection(),
         onMove: (dx) => {
-          const x = this.options.canTurn(dirOf(dx)) ? dx : dx * RESISTANCE;
+          const x = this.#options.canTurn(dirOf(dx)) ? dx : dx * RESISTANCE;
           // Fades to half as the swipe arms, so "release now turns" is visible.
-          this.place(
+          this.#place(
             panel,
             "drag",
             x,
@@ -90,15 +90,15 @@ export class ReaderPageNavController extends BaseController {
           const commit =
             !cancelled &&
             Math.abs(dx) >= commitPx() &&
-            this.options.canTurn(dir);
-          void this.settle(panel, commit ? dir : null);
+            this.#options.canTurn(dir);
+          void this.#settle(panel, commit ? dir : null);
         },
       })
     );
   }
 
   protected override onDisconnect(): void {
-    if (this.panel) this.reset(this.panel);
+    if (this.#panel) this.#reset(this.#panel);
   }
 
   /**
@@ -106,27 +106,27 @@ export class ReaderPageNavController extends BaseController {
    * slides the new page in; without one (or if the turn fails), springs the
    * panel back into place. New swipes are ignored until this finishes.
    */
-  private async settle(panel: HTMLElement, dir: PageDir | null): Promise<void> {
-    this.busy = true;
+  async #settle(panel: HTMLElement, dir: PageDir | null): Promise<void> {
+    this.#busy = true;
     if (dir) {
       const sign = dir === "next" ? -1 : 1;
       const [ok] = await Promise.all([
-        this.options.turn(dir),
-        this.animate(panel, sign * window.innerWidth, 0),
+        this.#options.turn(dir),
+        this.#animate(panel, sign * window.innerWidth, 0),
       ]);
       if (ok) {
-        this.place(panel, "drag", -sign * ENTER_PX, 0);
+        this.#place(panel, "drag", -sign * ENTER_PX, 0);
         // Commit the start position so the entry below transitions from it.
         panel.getBoundingClientRect();
       }
     }
-    await this.animate(panel, 0, 1);
-    this.reset(panel);
-    this.busy = false;
+    await this.#animate(panel, 0, 1);
+    this.#reset(panel);
+    this.#busy = false;
   }
 
-  private animate(panel: HTMLElement, x: number, fade: number): Promise<void> {
-    this.place(panel, "anim", x, fade);
+  #animate(panel: HTMLElement, x: number, fade: number): Promise<void> {
+    this.#place(panel, "anim", x, fade);
     const ms = matches("(prefers-reduced-motion: reduce)") ? 0 : SLIDE_MS;
     return new Promise((resolve) => this.scope.timeout(() => resolve(), ms));
   }
@@ -135,7 +135,7 @@ export class ReaderPageNavController extends BaseController {
    * Writes only CSS variables; reader_page_nav.css maps them to `translate`
    * and `opacity`, next to the page-turn loading dim.
    */
-  private place(
+  #place(
     panel: HTMLElement,
     mode: "drag" | "anim",
     x: number,
@@ -146,7 +146,7 @@ export class ReaderPageNavController extends BaseController {
     panel.style.setProperty("--swipe-fade", `${fade}`);
   }
 
-  private reset(panel: HTMLElement): void {
+  #reset(panel: HTMLElement): void {
     delete panel.dataset.swipe;
     panel.style.removeProperty("--swipe-x");
     panel.style.removeProperty("--swipe-fade");

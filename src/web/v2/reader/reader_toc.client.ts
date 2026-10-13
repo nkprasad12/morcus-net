@@ -47,15 +47,15 @@ export class ReaderTocController extends BaseController {
   public listContainer: HTMLElement | null = null;
   public searchInput: HTMLInputElement | null = null;
   public emptyState: HTMLElement | null = null;
-  private selectedItem: HTMLAnchorElement | null = null;
-  private readonly opts: ReaderTocOptions;
-  private readonly popover: AnchoredPopoverController;
+  #selectedItem: HTMLAnchorElement | null = null;
+  readonly #opts: ReaderTocOptions;
+  readonly #popover: AnchoredPopoverController;
 
   constructor(options: ReaderTocOptions = {}) {
     const root = options.root ?? document;
     super(root);
-    this.opts = options;
-    this.popover = this.addController(
+    this.#opts = options;
+    this.#popover = this.addController(
       new AnchoredPopoverController({
         root,
         group: "reader-chrome",
@@ -79,19 +79,19 @@ export class ReaderTocController extends BaseController {
         },
         onOpen: () => {
           this.resetFilter();
-          this.opts.onOpen?.();
+          this.#opts.onOpen?.();
         },
         onClose: () => {
           this.resetFilter();
-          this.opts.onClose?.();
+          this.#opts.onClose?.();
         },
       })
     );
   }
 
   protected override onConnect(): void {
-    this.resolveElements();
-    this.bindFilterEvents();
+    this.#resolveElements();
+    this.#bindFilterEvents();
     // PH5: `#reader-toc-btn` is `<a href="#reader-toc-drawer">`, so before
     // upgrade the drawer opens via `:target`. Adopt that on connect (and on
     // later hash navigation) so the popover's own state agrees.
@@ -108,8 +108,8 @@ export class ReaderTocController extends BaseController {
     }
   }
 
-  private resolveElements(): void {
-    const overrides = this.opts.elements;
+  #resolveElements(): void {
+    const overrides = this.#opts.elements;
     this.drawer =
       overrides?.drawer !== undefined
         ? overrides.drawer
@@ -146,7 +146,7 @@ export class ReaderTocController extends BaseController {
           this.scope.$("#reader-toc-empty");
   }
 
-  private bindFilterEvents(): void {
+  #bindFilterEvents(): void {
     if (!this.searchInput) return;
 
     this.scope.listen(this.searchInput, "input", () => {
@@ -158,11 +158,11 @@ export class ReaderTocController extends BaseController {
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         // Arrows in its own search input move the list selection
         event.preventDefault();
-        this.moveSelection(event.key === "ArrowDown" ? 1 : -1);
+        this.#moveSelection(event.key === "ArrowDown" ? 1 : -1);
       } else if (event.key === "Enter") {
         // Enter in its own search input opens the selection
         event.preventDefault();
-        this.executeSelectedOrJump();
+        this.#executeSelectedOrJump();
       }
     });
   }
@@ -174,7 +174,7 @@ export class ReaderTocController extends BaseController {
     this.applyFilter("");
   }
 
-  private normalizeCitationInput(raw: string): string {
+  #normalizeCitationInput(raw: string): string {
     const cleaned = raw
       .replace(/^[§\s]+/, "")
       .trim()
@@ -196,7 +196,7 @@ export class ReaderTocController extends BaseController {
   public applyFilter(rawQuery: string): void {
     if (!this.listContainer) return;
 
-    const query = this.normalizeCitationInput(rawQuery);
+    const query = this.#normalizeCitationInput(rawQuery);
     const queryLower = query.toLowerCase();
     const isAlphaQuery = /^[a-z]+$/.test(queryLower);
 
@@ -275,13 +275,13 @@ export class ReaderTocController extends BaseController {
       }
     }
 
-    this.setSelectedItem(queryLower ? exactMatch ?? firstVisible : null);
+    this.#setSelectedItem(queryLower ? exactMatch ?? firstVisible : null);
     if (this.emptyState) {
       this.emptyState.hidden = !queryLower || visibleCount > 0;
     }
   }
 
-  private getVisibleItems(): HTMLAnchorElement[] {
+  #getVisibleItems(): HTMLAnchorElement[] {
     if (!this.listContainer) return [];
     return Array.from(
       this.listContainer.querySelectorAll<HTMLAnchorElement>(".reader-toc-item")
@@ -292,12 +292,12 @@ export class ReaderTocController extends BaseController {
     );
   }
 
-  private setSelectedItem(target: HTMLAnchorElement | null): void {
-    if (this.selectedItem) {
-      this.selectedItem.classList.remove("is-filter-selected");
-      this.selectedItem.removeAttribute("aria-selected");
+  #setSelectedItem(target: HTMLAnchorElement | null): void {
+    if (this.#selectedItem) {
+      this.#selectedItem.classList.remove("is-filter-selected");
+      this.#selectedItem.removeAttribute("aria-selected");
     }
-    this.selectedItem = target;
+    this.#selectedItem = target;
     if (target) {
       target.classList.add("is-filter-selected");
       target.setAttribute("aria-selected", "true");
@@ -305,12 +305,12 @@ export class ReaderTocController extends BaseController {
     }
   }
 
-  private moveSelection(delta: number): void {
-    const visibleItems = this.getVisibleItems();
+  #moveSelection(delta: number): void {
+    const visibleItems = this.#getVisibleItems();
     if (!visibleItems.length) return;
 
-    const currentIndex = this.selectedItem
-      ? visibleItems.indexOf(this.selectedItem)
+    const currentIndex = this.#selectedItem
+      ? visibleItems.indexOf(this.#selectedItem)
       : -1;
     const activeIndex = visibleItems.findIndex((el) =>
       el.classList.contains("active")
@@ -332,19 +332,19 @@ export class ReaderTocController extends BaseController {
     const parentGroup =
       nextItem.closest<HTMLDetailsElement>(".reader-toc-group");
     if (parentGroup) parentGroup.open = true;
-    this.setSelectedItem(nextItem);
+    this.#setSelectedItem(nextItem);
   }
 
-  private executeSelectedOrJump(): void {
+  #executeSelectedOrJump(): void {
     if (!this.listContainer) return;
 
-    const query = this.normalizeCitationInput(this.searchInput?.value ?? "");
+    const query = this.#normalizeCitationInput(this.searchInput?.value ?? "");
     const targetItem =
-      (this.selectedItem && !this.selectedItem.hidden
-        ? this.selectedItem
+      (this.#selectedItem && !this.#selectedItem.hidden
+        ? this.#selectedItem
         : null) ??
       (query
-        ? this.getVisibleItems()[0] ?? null
+        ? this.#getVisibleItems()[0] ?? null
         : this.listContainer.querySelector<HTMLAnchorElement>(
             ".reader-toc-item.active"
           ));
@@ -370,22 +370,22 @@ export class ReaderTocController extends BaseController {
   }
 
   public updatePosition(): void {
-    this.popover.updatePosition();
+    this.#popover.updatePosition();
   }
 
   public open(): void {
-    this.popover.open();
+    this.#popover.open();
   }
 
   public close(): void {
-    this.popover.close();
+    this.#popover.close();
   }
 
   public toggle(): void {
-    this.popover.toggle();
+    this.#popover.toggle();
   }
 
   public isOpen(): boolean {
-    return this.popover.isOpen;
+    return this.#popover.isOpen;
   }
 }

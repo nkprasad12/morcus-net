@@ -32,6 +32,24 @@ const HE_ENCODE_SYNTAX = [
   },
 ];
 
+// UI V2 uses ECMAScript `#private` members, not TypeScript's `private`
+// (src/web/v2/README.md, convention 10). Restated in every UI V2 block that
+// configures `no-restricted-syntax`, like HE_ENCODE_SYNTAX.
+const NO_TS_PRIVATE_MESSAGE =
+  "Use an ECMAScript #private member instead of TypeScript `private` (src/web/v2/README.md, convention 10).";
+const NO_TS_PRIVATE_SYNTAX = [
+  {
+    selector:
+      ":matches(PropertyDefinition, AccessorProperty, TSParameterProperty)[accessibility='private']",
+    message: NO_TS_PRIVATE_MESSAGE,
+  },
+  {
+    // A private constructor has no `#` form.
+    selector: "MethodDefinition[accessibility='private'][kind!='constructor']",
+    message: NO_TS_PRIVATE_MESSAGE,
+  },
+];
+
 // Shared `no-restricted-imports` patterns.
 //
 // NOTE: ESLint flat config *replaces* a rule's options when the same rule is
@@ -421,7 +439,11 @@ export default [
             "Prefer he.escape over he.encode in server templates. he.encode entity-encodes all non-ASCII (including Greek and accented Latin), wasting CPU and payload on every render.",
         },
       ],
-      "no-restricted-syntax": ["error", ...HE_ENCODE_SYNTAX],
+      "no-restricted-syntax": [
+        "error",
+        ...HE_ENCODE_SYNTAX,
+        ...NO_TS_PRIVATE_SYNTAX,
+      ],
     },
   },
   // Enables type-checked rules for UI V2 production code. The expensive
@@ -453,7 +475,8 @@ export default [
   // in those files is still flagged.
   //
   // NOTE: this block replaces the he.encode block's no-restricted-syntax
-  // options for these files, so it repeats HE_ENCODE_SYNTAX.
+  // options for these files, so it repeats HE_ENCODE_SYNTAX and
+  // NO_TS_PRIVATE_SYNTAX.
   {
     files: ["src/web/v2/**/*.client.ts"],
     ignores: [
@@ -464,6 +487,7 @@ export default [
       "no-restricted-syntax": [
         "error",
         ...HE_ENCODE_SYNTAX,
+        ...NO_TS_PRIVATE_SYNTAX,
         {
           selector: "CallExpression[callee.property.name='addEventListener']",
           message:
@@ -485,6 +509,15 @@ export default [
             "Client code must import the standalone icon consts (e.g. ICON_LINK) from icons.common, not ICON_PATHS / renderIconSvg, so unused icons are tree-shaken.",
         },
       ],
+    },
+  },
+  // UI V2 tests follow the same #private convention. No other block
+  // configures no-restricted-syntax for them, so this one only needs the
+  // private-member entries.
+  {
+    files: ["src/web/v2/**/*.test.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", ...NO_TS_PRIVATE_SYNTAX],
     },
   },
 ];

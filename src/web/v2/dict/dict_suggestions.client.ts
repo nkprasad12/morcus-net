@@ -14,18 +14,18 @@ import type { CompletionItem } from "@/web/v2/dict/dict_completions.common";
  * renders and handles clicks, with no input to make a combobox.
  */
 export class MorcusDictSuggestions extends BaseElement {
-  private listbox: HTMLUListElement | null = null;
-  private combobox: ComboboxController<CompletionItem> | null = null;
+  #listbox: HTMLUListElement | null = null;
+  #combobox: ComboboxController<CompletionItem> | null = null;
 
   protected override onConnect() {
     const listbox = this.firstElementChild;
     if (!(listbox instanceof HTMLUListElement)) {
       throw new Error("<morcus-dict-suggestions> needs its listbox");
     }
-    this.listbox = listbox;
+    this.#listbox = listbox;
 
-    if (!this.combobox) {
-      this.combobox = new ComboboxController<CompletionItem>({
+    if (!this.#combobox) {
+      this.#combobox = new ComboboxController<CompletionItem>({
         root: this,
         getInput: () => {
           const input = this.ownerDocument.getElementById(
@@ -33,7 +33,7 @@ export class MorcusDictSuggestions extends BaseElement {
           );
           return input instanceof HTMLInputElement ? input : null;
         },
-        getListbox: () => this.listbox,
+        getListbox: () => this.#listbox,
         acceptOnTab: false,
         onVisibilityChange: (open) => {
           this.style.display = open ? "" : "none";
@@ -63,20 +63,20 @@ export class MorcusDictSuggestions extends BaseElement {
           this.emit("suggestion-select", { word: item.word });
         },
       });
-      this.addController(this.combobox);
+      this.addController(this.#combobox);
     }
   }
 
   protected override onDisconnect() {
-    this.listbox = null;
+    this.#listbox = null;
   }
 
   get items(): readonly CompletionItem[] {
-    return this.combobox?.items ?? [];
+    return this.#combobox?.items ?? [];
   }
 
   set items(val: readonly CompletionItem[]) {
-    this.combobox?.setItems(val);
+    this.#combobox?.setItems(val);
   }
 }
 

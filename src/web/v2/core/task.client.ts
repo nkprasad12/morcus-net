@@ -7,30 +7,30 @@
  * when a new one begins.
  */
 export class LatestTask {
-  private controller: AbortController | null = null;
+  #controller: AbortController | null = null;
 
   /**
    * Aborts any pending execution and returns a new AbortSignal for the next operation.
    */
   start(): AbortSignal {
     this.cancel();
-    this.controller = new AbortController();
-    return this.controller.signal;
+    this.#controller = new AbortController();
+    return this.#controller.signal;
   }
 
   /**
    * Aborts the current operation if one is pending.
    */
   cancel(): void {
-    if (this.controller) {
-      this.controller.abort();
-      this.controller = null;
+    if (this.#controller) {
+      this.#controller.abort();
+      this.#controller = null;
     }
   }
 
   /** Current AbortSignal, or null if no task is active. */
   get signal(): AbortSignal | null {
-    return this.controller?.signal ?? null;
+    return this.#controller?.signal ?? null;
   }
 }
 

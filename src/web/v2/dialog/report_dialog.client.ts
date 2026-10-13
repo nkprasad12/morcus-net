@@ -14,93 +14,93 @@ import {
  *   backdrop clicking, and AJAX form submission.
  */
 export class MorcusReportDialog extends BaseElement {
-  private triggerBtn: HTMLButtonElement | null = null;
-  private dialogEl: HTMLDialogElement | null = null;
-  private dialogController: ModalDialogHandle | null = null;
-  private formEl: HTMLFormElement | null = null;
-  private textareaEl: HTMLTextAreaElement | null = null;
-  private reporterInputEl: HTMLInputElement | null = null;
-  private statusEl: HTMLElement | null = null;
-  private submitBtn: HTMLButtonElement | null = null;
+  #triggerBtn: HTMLButtonElement | null = null;
+  #dialogEl: HTMLDialogElement | null = null;
+  #dialogController: ModalDialogHandle | null = null;
+  #formEl: HTMLFormElement | null = null;
+  #textareaEl: HTMLTextAreaElement | null = null;
+  #reporterInputEl: HTMLInputElement | null = null;
+  #statusEl: HTMLElement | null = null;
+  #submitBtn: HTMLButtonElement | null = null;
 
   protected override onConnect() {
-    this.enhanceMarkup();
+    this.#enhanceMarkup();
   }
 
-  private enhanceMarkup() {
-    this.triggerBtn = this.scope.$<HTMLButtonElement>(".report-btn");
-    this.dialogEl = this.scope.$<HTMLDialogElement>("dialog.report-dialog");
-    this.formEl = this.scope.$<HTMLFormElement>("form.report-form");
-    this.textareaEl = this.scope.$<HTMLTextAreaElement>(
+  #enhanceMarkup() {
+    this.#triggerBtn = this.scope.$<HTMLButtonElement>(".report-btn");
+    this.#dialogEl = this.scope.$<HTMLDialogElement>("dialog.report-dialog");
+    this.#formEl = this.scope.$<HTMLFormElement>("form.report-form");
+    this.#textareaEl = this.scope.$<HTMLTextAreaElement>(
       "textarea.report-textarea"
     );
-    this.reporterInputEl = this.scope.$<HTMLInputElement>(
+    this.#reporterInputEl = this.scope.$<HTMLInputElement>(
       "input.report-reporter"
     );
-    this.statusEl = this.scope.$(".report-status");
-    this.submitBtn = this.scope.$<HTMLButtonElement>(".report-submit-btn");
+    this.#statusEl = this.scope.$(".report-status");
+    this.#submitBtn = this.scope.$<HTMLButtonElement>(".report-submit-btn");
 
-    if (this.dialogEl) {
-      this.dialogController = setupModalDialog(this.dialogEl, {
-        trigger: this.triggerBtn,
+    if (this.#dialogEl) {
+      this.#dialogController = setupModalDialog(this.#dialogEl, {
+        trigger: this.#triggerBtn,
         onOpen: () => {
-          this.clearStatus();
-          this.scope.timeout(() => this.textareaEl?.focus(), 50);
+          this.#clearStatus();
+          this.scope.timeout(() => this.#textareaEl?.focus(), 50);
         },
         onClose: () => {
-          this.clearStatus();
-          this.triggerBtn?.focus();
+          this.#clearStatus();
+          this.#triggerBtn?.focus();
         },
       });
-      this.scope.use(this.dialogController);
+      this.scope.use(this.#dialogController);
     }
 
     this.hijackForm("form.report-form", (data) => {
-      void this.submitReport(data.reportText || "", data.reporter || "");
+      void this.#submitReport(data.reportText || "", data.reporter || "");
     });
 
-    if (this.formEl) {
-      this.scope.listen(this.formEl, "keydown", this.handleFormKeyDown);
+    if (this.#formEl) {
+      this.scope.listen(this.#formEl, "keydown", this.#handleFormKeyDown);
     }
   }
 
-  private readonly handleFormKeyDown = (e: KeyboardEvent) => {
+  readonly #handleFormKeyDown = (e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       // Ctrl/Cmd+Enter in our form calls requestSubmit()
       e.preventDefault();
-      this.formEl?.requestSubmit();
+      this.#formEl?.requestSubmit();
     }
   };
 
-  private readonly clearStatus = () => {
-    if (this.statusEl) {
-      this.statusEl.className = "report-status";
-      this.statusEl.textContent = "";
+  readonly #clearStatus = () => {
+    if (this.#statusEl) {
+      this.#statusEl.className = "report-status";
+      this.#statusEl.textContent = "";
     }
   };
 
-  private resetForm() {
-    if (this.textareaEl) {
-      this.textareaEl.value = "";
+  #resetForm() {
+    if (this.#textareaEl) {
+      this.#textareaEl.value = "";
     }
-    if (this.reporterInputEl) {
-      this.reporterInputEl.value = "";
+    if (this.#reporterInputEl) {
+      this.#reporterInputEl.value = "";
     }
-    if (this.submitBtn) {
-      this.submitBtn.disabled = false;
-      this.submitBtn.classList.remove("loading");
+    if (this.#submitBtn) {
+      this.#submitBtn.disabled = false;
+      this.#submitBtn.classList.remove("loading");
     }
   }
 
   public openDialog() {
-    this.dialogController?.open();
+    this.#dialogController?.open();
   }
 
   public closeDialog() {
-    this.dialogController?.close();
+    this.#dialogController?.close();
   }
 
-  private readonly submitReport = async (text: string, reporter?: string) => {
+  readonly #submitReport = async (text: string, reporter?: string) => {
     const trimmedText = text.trim();
     if (!trimmedText) return;
 
@@ -112,13 +112,13 @@ export class MorcusReportDialog extends BaseElement {
       reportText = `${trimmedText}\n\nReporter: Anonymous`;
     }
 
-    if (this.submitBtn) {
-      this.submitBtn.disabled = true;
-      this.submitBtn.classList.add("loading");
+    if (this.#submitBtn) {
+      this.#submitBtn.disabled = true;
+      this.#submitBtn.classList.add("loading");
     }
-    if (this.statusEl) {
-      this.statusEl.className = "report-status";
-      this.statusEl.textContent = "Submitting report...";
+    if (this.#statusEl) {
+      this.#statusEl.className = "report-status";
+      this.#statusEl.textContent = "Submitting report...";
     }
 
     try {
@@ -140,26 +140,26 @@ export class MorcusReportDialog extends BaseElement {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      if (this.statusEl) {
-        this.statusEl.className = "report-status success";
-        this.statusEl.textContent =
+      if (this.#statusEl) {
+        this.#statusEl.className = "report-status success";
+        this.#statusEl.textContent =
           "✓ Thank you! Your report has been submitted.";
       }
 
       this.scope.timeout(() => {
         this.closeDialog();
-        this.resetForm();
+        this.#resetForm();
       }, 1200);
     } catch (err) {
       console.error("Failed to submit issue report:", err);
-      if (this.statusEl) {
-        this.statusEl.className = "report-status error";
-        this.statusEl.textContent =
+      if (this.#statusEl) {
+        this.#statusEl.className = "report-status error";
+        this.#statusEl.textContent =
           "Error submitting report. Please check your connection and try again.";
       }
-      if (this.submitBtn) {
-        this.submitBtn.disabled = false;
-        this.submitBtn.classList.remove("loading");
+      if (this.#submitBtn) {
+        this.#submitBtn.disabled = false;
+        this.#submitBtn.classList.remove("loading");
       }
     }
   };

@@ -48,6 +48,20 @@ function dictPanelHtml(
   });
 }
 
+/**
+ * Simulates the browser restoring `url` on Back/Forward: the entry is already
+ * current when `popstate` fires.
+ */
+function popStateTo(url: string): void {
+  window.history.replaceState(null, "", url);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+/** Clicks the dictionary's close link, as a reader does to dismiss it. */
+function clickDictClose(el: MorcusReaderView): void {
+  el.querySelector<HTMLAnchorElement>(".reader-sheet-close")!.click();
+}
+
 function createReaderView(
   innerPassageHtml: string,
   options: {
@@ -254,30 +268,31 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     localStorage.removeItem(READER_SETTINGS_KEY);
   });
 
-  test("findWordElement highlights word matching unaccented, NFC, or NFD queries", () => {
+  test("a query restored from the URL highlights the word whether unaccented, NFC, or NFD", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.8">
         <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
       </div>
     `;
 
+    window.history.replaceState(null, "", "/");
     const el = createReaderView(passageHtml);
     const musaWord = el.querySelector<HTMLElement>(".lat-word")!;
+    const isOnlyActiveWord = () =>
+      musaWord.classList.contains("word-active") &&
+      el.querySelectorAll(".word-active").length === 1;
 
-    // Case 1: Search unaccented "musa" matches "Mūsa"
-    // @ts-expect-error accessing private method for test verification
-    const matchUnaccented = el.findWordElement("musa");
-    expect(matchUnaccented).toBe(musaWord);
-
-    // Case 2: Search NFC precomposed "Mūsa" matches "Mu\u0304sa"
-    // @ts-expect-error accessing private method for test verification
-    const matchNfc = el.findWordElement("M\u016Bsa");
-    expect(matchNfc).toBe(musaWord);
-
-    // Case 3: Search exact NFD "Mu\u0304sa" matches
-    // @ts-expect-error accessing private method for test verification
-    const matchNfd = el.findWordElement("Mu\u0304sa");
-    expect(matchNfd).toBe(musaWord);
+    for (const q of [
+      "musa", // Unaccented
+      "M\u016Bsa", // NFC precomposed
+      "Mu\u0304sa", // Exact NFD
+    ]) {
+      popStateTo(`/?${new URLSearchParams({ q }).toString()}`);
+      expect(isOnlyActiveWord()).toBe(true);
+      // Back to no query clears it, so each case is matched afresh.
+      popStateTo("/");
+      expect(el.querySelectorAll(".word-active")).toHaveLength(0);
+    }
   });
 
   test("toggling Show Macra in settings strips and restores vowel markings", () => {
@@ -566,14 +581,15 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     });
 
     test("dismissing the dictionary clears the highlight", () => {
+      window.history.replaceState(null, "", "/");
       const el = createReaderView(PASSAGE);
       const word = textPanelWords(el)[0];
 
       word.click();
       expect(word.classList.contains("word-active")).toBe(true);
 
-      // @ts-expect-error accessing private method for test verification
-      el.dismissDictionary(false);
+      // Back to the entry before the lookup dismisses the dictionary.
+      popStateTo("/");
 
       expect(el.querySelectorAll(".word-active")).toHaveLength(0);
     });
@@ -591,8 +607,10 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       textPanelWords(el)[0].click();
       expect(entryWord.classList.contains("word-active")).toBe(true);
 
-      // @ts-expect-error accessing private method for test verification
-      el.dismissDictionary(false);
+      clickDictClose(el);
+      expect(textPanelWords(el)[0].classList.contains("word-active")).toBe(
+        false
+      );
       expect(entryWord.classList.contains("word-active")).toBe(true);
     });
 
@@ -1007,27 +1025,30 @@ describe("MorcusReaderView desktop splitter drag", () => {
     `;
     document.body.appendChild(el);
 
-    // @ts-expect-error accessing private tocController for instance preservation verification
-    const tocController = el.tocController;
-    expect(tocController).not.toBeNull();
-    expect(tocController.isOpen()).toBe(false);
+    const drawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
+    const button = el.querySelector<HTMLElement>("#reader-toc-btn")!;
+    const tocOpen = () =>
+      !drawer.hidden && button.getAttribute("aria-expanded") === "true";
+    const press = (key: string) =>
+      window.dispatchEvent(new KeyboardEvent("keydown", { key }));
+    expect(tocOpen()).toBe(false);
 
-    // Press 't' shortcut
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
-    expect(tocController.isOpen()).toBe(true);
+    press("t");
+    expect(tocOpen()).toBe(true);
 
-    // Press 'T' shortcut
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "T" }));
-    expect(tocController.isOpen()).toBe(false);
+    press("T");
+    expect(tocOpen()).toBe(false);
 
-    // Disconnect disposes controller scope while preserving controller instance across reconnects
+    // Disconnecting tears the shortcut down.
     el.remove();
-    // @ts-expect-error accessing private tocController for instance preservation verification
-    expect(el.tocController).toBe(tocController);
-    expect(tocController.isConnected).toBe(false);
+    press("t");
+    expect(tocOpen()).toBe(false);
 
+    // Reconnecting attaches it exactly once: a duplicate listener would toggle
+    // twice and leave the drawer closed.
     document.body.appendChild(el);
-    expect(tocController.isConnected).toBe(true);
+    press("t");
+    expect(tocOpen()).toBe(true);
   });
 
   test("closes settings popover when Table of Contents opens", () => {
@@ -1521,8 +1542,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(panelController?.activeTab).toBe("notes");
     expect(marker.classList.contains("marker-active")).toBe(true);
 
-    // @ts-expect-error accessing private method for test verification
-    el.dismissDictionary(false);
+    clickDictClose(el);
 
     expect(panelController?.activeTab).toBe("dict");
     expect(marker.classList.contains("marker-active")).toBe(false);
@@ -1833,7 +1853,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     popover.remove();
   });
 
-  test("resetDictScroll resets scroll position on dict panel, notes view, and about view", () => {
+  test("minimizing the drawer resets scroll position on dict panel, notes view, and about view", () => {
     const el = createReaderView(samplePassageWithNotes, {
       notesHtml: sampleNotesHtml,
       aboutHtml: sampleAboutHtml,
@@ -1846,8 +1866,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     notesView.scrollTop = 120;
     aboutView.scrollTop = 80;
 
-    // @ts-expect-error accessing private method for test verification
-    el.resetDictScroll();
+    el.minimizeDrawer();
 
     expect(dictPanel.scrollTop).toBe(0);
     expect(notesView.scrollTop).toBe(0);

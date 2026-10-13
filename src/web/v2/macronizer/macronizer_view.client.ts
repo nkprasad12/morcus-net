@@ -38,21 +38,21 @@ const MAC_TEXT = "#mac-text";
 export class MorcusMacronizerView extends BaseElement<"macronize"> {
   // Elements read in more than one place. Getters, not cached fields: the
   // `macronizer-workspace` slot is replaced on every submit.
-  private get textarea() {
+  get #textarea() {
     return this.querySelector<HTMLTextAreaElement>(MAC_TEXT);
   }
-  private get passage() {
+  get #passage() {
     return this.querySelector<HTMLElement>("#mac-passage");
   }
-  private get plainCard() {
+  get #plainCard() {
     return this.querySelector<HTMLElement>("#w-plain");
   }
 
-  private selectedWordIndex: number | null = null;
-  private selectedBucketId: 1 | 2 | 3 | null = null;
-  private selectedWordEl: HTMLElement | null = null;
+  #selectedWordIndex: number | null = null;
+  #selectedBucketId: 1 | 2 | 3 | null = null;
+  #selectedWordEl: HTMLElement | null = null;
 
-  private readonly drawerController = this.addController(
+  readonly #drawerController = this.addController(
     new DrawerController({
       root: this,
       drawerSelector: "#mac-drawer",
@@ -60,39 +60,39 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       detailsElement: null,
       enabled: () => this.querySelector("#mac-drawer") !== null,
       onEscape: () => {
-        this.drawerController.minimize();
-        this.selectedWordEl?.focus({ preventScroll: true });
+        this.#drawerController.minimize();
+        this.#selectedWordEl?.focus({ preventScroll: true });
       },
     })
   );
 
   protected override onConnect(): void {
-    this.bindEvents();
-    this.initWorkspaceState();
+    this.#bindEvents();
+    this.#initWorkspaceState();
   }
 
   protected override onContentSwap(swappedRoot: Element): void {
     if (swappedRoot.getAttribute("data-slot") !== "macronizer-workspace") {
       return;
     }
-    this.selectedWordIndex = null;
-    this.selectedBucketId = null;
-    this.selectedWordEl = null;
-    this.drawerController.dispose();
-    this.drawerController.connect();
-    document.title = formatMacronizerPageTitle(this.passage !== null);
-    this.initWorkspaceState();
+    this.#selectedWordIndex = null;
+    this.#selectedBucketId = null;
+    this.#selectedWordEl = null;
+    this.#drawerController.dispose();
+    this.#drawerController.connect();
+    document.title = formatMacronizerPageTitle(this.#passage !== null);
+    this.#initWorkspaceState();
   }
 
-  private initWorkspaceState(): void {
-    this.syncCharCounter();
-    this.adoptHashSelection();
+  #initWorkspaceState(): void {
+    this.#syncCharCounter();
+    this.#adoptHashSelection();
   }
 
-  private bindEvents(): void {
+  #bindEvents(): void {
     // 1. Live character counter & empty-input submit disable
     this.scope.delegate<HTMLTextAreaElement>(this, "input", MAC_TEXT, () => {
-      this.syncCharCounter();
+      this.#syncCharCounter();
     });
 
     // 2. Progressive POST form interception with native submit fallback
@@ -102,7 +102,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       "#mac-form",
       (e, form) => {
         e.preventDefault();
-        void this.handleMacronizeSubmit(form);
+        void this.#handleMacronizeSubmit(form);
       }
     );
 
@@ -121,7 +121,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
         }
         e.preventDefault();
         wordEl.focus({ preventScroll: true });
-        this.selectWordElement(wordEl, { restoreDrawer: true });
+        this.#selectWordElement(wordEl, { restoreDrawer: true });
       }
     );
 
@@ -131,8 +131,8 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       "focusin",
       "#mac-passage a.mac-ambig, #mac-passage a.mac-unknown",
       (_e, wordEl) => {
-        if (this.selectedWordEl !== wordEl) {
-          this.selectWordElement(wordEl, { restoreDrawer: false });
+        if (this.#selectedWordEl !== wordEl) {
+          this.#selectWordElement(wordEl, { restoreDrawer: false });
         }
       }
     );
@@ -146,7 +146,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
         btn.focus({ preventScroll: true });
         const n = Number(btn.dataset.keep);
         if (Number.isInteger(n)) {
-          this.keepAndAdvance(n);
+          this.#keepAndAdvance(n);
         }
       }
     );
@@ -158,7 +158,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       ".mac-opt-radio input[type='radio']",
       (_e, radio) => {
         radio.focus({ preventScroll: true });
-        this.handleRadioChoice(radio);
+        this.#handleRadioChoice(radio);
       }
     );
 
@@ -169,7 +169,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       ".mac-vowels input[type='checkbox']",
       (_e, checkbox) => {
         checkbox.focus({ preventScroll: true });
-        this.handleVowelToggle(checkbox);
+        this.#handleVowelToggle(checkbox);
       }
     );
 
@@ -179,7 +179,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       "click",
       "#mac-next-btn",
       () => {
-        this.advanceToNextWord();
+        this.#advanceToNextWord();
       }
     );
 
@@ -189,7 +189,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       "click",
       "#mac-copy-btn",
       () => {
-        void this.handleCopyPassage();
+        void this.#handleCopyPassage();
       }
     );
 
@@ -199,20 +199,20 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       "click",
       "#mac-sheet-peek",
       () => {
-        this.drawerController.restore();
+        this.#drawerController.restore();
       }
     );
 
     // 11. Keyboard shortcuts (Enter, ArrowDown, Escape)
     this.scope.listen(this, "keydown", (e: Event) => {
       if (e instanceof KeyboardEvent) {
-        this.handleKeydown(e);
+        this.#handleKeydown(e);
       }
     });
   }
 
-  private syncCharCounter(): void {
-    const textarea = this.textarea;
+  #syncCharCounter(): void {
+    const textarea = this.#textarea;
     const counter = this.querySelector<HTMLElement>("#mac-char-counter");
     const submitBtn = this.querySelector<HTMLButtonElement>("#mac-submit-btn");
     if (!textarea) return;
@@ -225,8 +225,8 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
-  private async handleMacronizeSubmit(form: HTMLFormElement): Promise<void> {
-    const textarea = this.textarea;
+  async #handleMacronizeSubmit(form: HTMLFormElement): Promise<void> {
+    const textarea = this.#textarea;
     const rawText = textarea ? textarea.value : "";
     if (rawText.trim().length === 0) {
       return;
@@ -250,7 +250,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     });
   }
 
-  private adoptHashSelection(): void {
+  #adoptHashSelection(): void {
     if (typeof window === "undefined") return;
     const hash = window.location.hash;
     const match = /^#[wt](\d+)$/.exec(hash);
@@ -260,7 +260,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       `#mac-passage a.mac-word[data-w="${escapeId(String(n))}"]`
     );
     if (wordEl) {
-      this.selectWordElement(wordEl, { restoreDrawer: false });
+      this.#selectWordElement(wordEl, { restoreDrawer: false });
       // Drop the hash so `:target` (the No-JS selection) doesn't keep a second
       // card and word highlighted once another word is selected.
       history.replaceState(
@@ -271,7 +271,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
-  private bucketForTier(tierStr: string | undefined): 1 | 2 | 3 | null {
+  #bucketForTier(tierStr: string | undefined): 1 | 2 | 3 | null {
     switch (tierStr) {
       case "1":
         return 1;
@@ -286,7 +286,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
-  private selectWordElement(
+  #selectWordElement(
     wordEl: HTMLElement,
     opts: { restoreDrawer: boolean }
   ): void {
@@ -295,7 +295,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     );
     prevSelected.forEach((el) => el.classList.remove("mac-selected"));
     wordEl.classList.add("mac-selected");
-    this.selectedWordEl = wordEl;
+    this.#selectedWordEl = wordEl;
 
     const prevCards = this.querySelectorAll<HTMLElement>(
       "#mac-inspector .mac-card.current"
@@ -311,36 +311,36 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     const shownText = (wordEl.textContent ?? "").trim();
 
     if (wordEl.classList.contains("mac-plain")) {
-      this.selectedWordIndex = Number.isInteger(n) ? n : null;
-      this.populatePlainCard(wordEl);
-      const plainCard = this.plainCard;
+      this.#selectedWordIndex = Number.isInteger(n) ? n : null;
+      this.#populatePlainCard(wordEl);
+      const plainCard = this.#plainCard;
       plainCard?.classList.add("current");
       const orig = wordEl.dataset.orig ?? shownText;
-      this.updateSheetLabel(`${orig} → ${shownText}`);
-      this.loadDictForWord(shownText, true);
+      this.#updateSheetLabel(`${orig} → ${shownText}`);
+      this.#loadDictForWord(shownText, true);
     } else if (Number.isInteger(n)) {
-      this.selectedWordIndex = n;
-      const bucket = this.bucketForTier(wordEl.dataset.tier);
+      this.#selectedWordIndex = n;
+      const bucket = this.#bucketForTier(wordEl.dataset.tier);
       if (bucket !== null) {
-        this.selectedBucketId = bucket;
+        this.#selectedBucketId = bucket;
       }
       const card = this.querySelector<HTMLElement>(`#w${escapeId(String(n))}`);
       if (card) {
         card.classList.add("current");
         const orig = card.dataset.orig ?? shownText;
-        this.updateSheetLabel(`${orig} → ${shownText}`);
+        this.#updateSheetLabel(`${orig} → ${shownText}`);
       }
-      this.loadDictForWord(shownText, true);
+      this.#loadDictForWord(shownText, true);
     }
 
-    if (opts.restoreDrawer && this.drawerController.isMinimized()) {
-      this.drawerController.restore();
+    if (opts.restoreDrawer && this.#drawerController.isMinimized()) {
+      this.#drawerController.restore();
     }
   }
 
   /** Sets the plain card's shown form and its "edited"/"unambiguous" tag. */
-  private setPlainShown(shown: string, isEdited: boolean): void {
-    const plainCard = this.plainCard;
+  #setPlainShown(shown: string, isEdited: boolean): void {
+    const plainCard = this.#plainCard;
     const shownEl = plainCard?.querySelector<HTMLElement>("[data-plain-shown]");
     if (shownEl) shownEl.textContent = shown;
     const tagEl = plainCard?.querySelector<HTMLElement>("[data-plain-tag]");
@@ -352,8 +352,8 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
-  private populatePlainCard(wordEl: HTMLElement): void {
-    const plainCard = this.plainCard;
+  #populatePlainCard(wordEl: HTMLElement): void {
+    const plainCard = this.#plainCard;
     if (!plainCard) return;
 
     const shown = (wordEl.textContent ?? "").normalize("NFC");
@@ -363,7 +363,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
 
     const origEl = plainCard.querySelector<HTMLElement>("[data-plain-orig]");
     if (origEl) origEl.textContent = orig;
-    this.setPlainShown(shown, isEdited);
+    this.#setPlainShown(shown, isEdited);
 
     const lemmasContainer = plainCard.querySelector<HTMLElement>(
       "[data-plain-lemmas]"
@@ -403,7 +403,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
-  private handleRadioChoice(radio: HTMLInputElement): void {
+  #handleRadioChoice(radio: HTMLInputElement): void {
     const card = radio.closest<HTMLElement>(".mac-card[data-w]");
     if (!card) return;
     const n = Number(card.dataset.w);
@@ -429,32 +429,32 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
 
     // Update card summary & keep button
-    this.updateCardSummary(card, chosenForm, "your choice", "mac-tag-chosen");
+    this.#updateCardSummary(card, chosenForm, "your choice", "mac-tag-chosen");
 
     // Sync card's vowel checkboxes to match the newly chosen form
     const { longAt } = splitMacrons(chosenForm);
-    this.syncCardVowelCheckboxes(card, longAt);
+    this.#syncCardVowelCheckboxes(card, longAt);
 
-    this.updateStatusCounts();
-    this.loadDictForWord(chosenForm, true);
+    this.#updateStatusCounts();
+    this.#loadDictForWord(chosenForm, true);
   }
 
-  private handleVowelToggle(checkbox: HTMLInputElement): void {
+  #handleVowelToggle(checkbox: HTMLInputElement): void {
     const vowelsGroup = checkbox.closest<HTMLElement>(".mac-vowels");
     if (!vowelsGroup) return;
 
     // Case 1: Shared plain-word card
     if (vowelsGroup.hasAttribute("data-plain-vowels")) {
-      const wordEl = this.selectedWordEl;
+      const wordEl = this.#selectedWordEl;
       if (!wordEl || !wordEl.classList.contains("mac-plain")) return;
       const orig = splitMacrons(wordEl.textContent ?? "").base;
-      const longAt = this.readCheckedVowelPositions(vowelsGroup, orig);
+      const longAt = this.#readCheckedVowelPositions(vowelsGroup, orig);
       const newForm = buildFromVowels(orig, longAt);
       wordEl.textContent = newForm;
       wordEl.classList.add("mac-chosen");
 
-      this.setPlainShown(newForm, true);
-      this.updateSheetLabel(`${orig} → ${newForm}`);
+      this.#setPlainShown(newForm, true);
+      this.#updateSheetLabel(`${orig} → ${newForm}`);
       return;
     }
 
@@ -464,7 +464,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     const card = this.querySelector<HTMLElement>(`#w${escapeId(String(n))}`);
     if (!card) return;
     const orig = wordBase(card.dataset.orig ?? "").base;
-    const longAt = this.readCheckedVowelPositions(vowelsGroup, orig);
+    const longAt = this.#readCheckedVowelPositions(vowelsGroup, orig);
     const newForm = buildFromVowels(orig, longAt);
 
     // Update word in passage
@@ -485,11 +485,11 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       el.removeAttribute("data-shown");
     });
 
-    this.updateCardSummary(card, newForm, "edited", "mac-tag-chosen");
-    this.updateStatusCounts();
+    this.#updateCardSummary(card, newForm, "edited", "mac-tag-chosen");
+    this.#updateStatusCounts();
   }
 
-  private readCheckedVowelPositions(
+  #readCheckedVowelPositions(
     vowelsGroup: HTMLElement,
     origWord: string
   ): Set<number> {
@@ -513,7 +513,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     return longAt;
   }
 
-  private syncCardVowelCheckboxes(
+  #syncCardVowelCheckboxes(
     card: HTMLElement,
     longAt: ReadonlySet<number>
   ): void {
@@ -533,7 +533,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     });
   }
 
-  private updateCardSummary(
+  #updateCardSummary(
     card: HTMLElement,
     shownForm: string,
     tagLabel: string,
@@ -549,10 +549,10 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     const keepFormEl = card.querySelector<HTMLElement>("[data-keep-form]");
     if (keepFormEl) keepFormEl.textContent = shownForm;
     const orig = card.dataset.orig ?? shownForm;
-    this.updateSheetLabel(`${orig} → ${shownForm}`);
+    this.#updateSheetLabel(`${orig} → ${shownForm}`);
   }
 
-  private markWordKept(n: number): void {
+  #markWordKept(n: number): void {
     const wordEl = this.querySelector<HTMLElement>(`#t${escapeId(String(n))}`);
     if (!wordEl) return;
     const shownForm = (wordEl.textContent ?? "").normalize("NFC");
@@ -572,23 +572,23 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
         shownRadio.checked = true;
       }
       const isEdited = wordEl.getAttribute("data-decision") === "edited";
-      this.updateCardSummary(
+      this.#updateCardSummary(
         card,
         shownForm,
         isEdited ? "edited" : "your choice",
         "mac-tag-chosen"
       );
     }
-    this.updateStatusCounts();
+    this.#updateStatusCounts();
   }
 
-  private keepAndAdvance(n: number): void {
-    this.markWordKept(n);
-    this.selectedWordIndex = n;
-    this.advanceToNextWord();
+  #keepAndAdvance(n: number): void {
+    this.#markWordKept(n);
+    this.#selectedWordIndex = n;
+    this.#advanceToNextWord();
   }
 
-  private collectReviewBuckets(): ReviewBucket[] {
+  #collectReviewBuckets(): ReviewBucket[] {
     const tier1: HTMLElement[] = [];
     const tier2to4: HTMLElement[] = [];
     const tier5: HTMLElement[] = [];
@@ -597,7 +597,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       "#mac-passage a.mac-ambig:not(.mac-chosen), #mac-passage a.mac-unknown:not(.mac-chosen)"
     );
     words.forEach((el) => {
-      const b = this.bucketForTier(el.dataset.tier);
+      const b = this.#bucketForTier(el.dataset.tier);
       if (b === 1) tier1.push(el);
       else if (b === 2) tier2to4.push(el);
       else if (b === 3) tier5.push(el);
@@ -610,8 +610,8 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     ];
   }
 
-  private advanceToNextWord(): void {
-    const buckets = this.collectReviewBuckets();
+  #advanceToNextWord(): void {
+    const buckets = this.#collectReviewBuckets();
     const activeBucket = buckets.find((b) => b.words.length > 0);
     if (!activeBucket) {
       showToast("All reviewed");
@@ -619,8 +619,8 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
 
     let nextWord: HTMLElement;
-    const prevBucketId = this.selectedBucketId;
-    const curIndex = this.selectedWordIndex;
+    const prevBucketId = this.#selectedBucketId;
+    const curIndex = this.#selectedWordIndex;
 
     if (prevBucketId !== null && activeBucket.id !== prevBucketId) {
       // Moved to a new priority tier: start from the top of the text and toast
@@ -635,13 +635,13 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       nextWord = activeBucket.words[0];
     }
 
-    this.selectedBucketId = activeBucket.id;
-    this.selectWordElement(nextWord, { restoreDrawer: false });
+    this.#selectedBucketId = activeBucket.id;
+    this.#selectWordElement(nextWord, { restoreDrawer: false });
     nextWord.focus({ preventScroll: true });
-    this.scrollWordInTextPane(nextWord);
+    this.#scrollWordInTextPane(nextWord);
   }
 
-  private scrollWordInTextPane(wordEl: HTMLElement): void {
+  #scrollWordInTextPane(wordEl: HTMLElement): void {
     const pane = this.querySelector<HTMLElement>(".mac-left");
     // `.mac-left` only scrolls on wide screens; on narrow ones the page does.
     if (!pane || pane.scrollHeight <= pane.clientHeight) {
@@ -659,8 +659,8 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
-  private updateStatusCounts(): void {
-    const buckets = this.collectReviewBuckets();
+  #updateStatusCounts(): void {
+    const buckets = this.#collectReviewBuckets();
     const unresolvedCount = buckets[0].words.length;
     const toCheckCount = buckets[1].words.length;
     const unknownCount = buckets[2].words.length;
@@ -689,14 +689,14 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
-  private updateSheetLabel(text: string): void {
+  #updateSheetLabel(text: string): void {
     const label = this.querySelector<HTMLElement>("#mac-sheet-label");
     if (label) {
       label.textContent = text;
     }
   }
 
-  private loadDictForWord(query: string, inflected: boolean): void {
+  #loadDictForWord(query: string, inflected: boolean): void {
     const trimmed = query.trim();
     if (!trimmed) return;
     const iframe = this.querySelector<HTMLIFrameElement>("#mac-dict-frame");
@@ -712,8 +712,8 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
-  private async handleCopyPassage(): Promise<void> {
-    const passage = this.passage;
+  async #handleCopyPassage(): Promise<void> {
+    const passage = this.#passage;
     if (!passage) return;
     const text = (passage.textContent ?? "").normalize("NFC");
     const ok = await copyText(text);
@@ -722,7 +722,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
   }
 
-  private handleKeydown(e: KeyboardEvent): void {
+  #handleKeydown(e: KeyboardEvent): void {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
 
@@ -735,7 +735,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
         target.dataset.w !== undefined
       ) {
         e.preventDefault();
-        this.keepAndAdvance(Number(target.dataset.w));
+        this.#keepAndAdvance(Number(target.dataset.w));
         return;
       }
       if (
@@ -745,12 +745,12 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
         e.preventDefault();
         if (!target.checked) {
           target.checked = true;
-          this.handleRadioChoice(target);
+          this.#handleRadioChoice(target);
         }
         const card = target.closest<HTMLElement>(".mac-card[data-w]");
         const n = Number(card?.dataset.w);
         if (Number.isInteger(n)) {
-          this.keepAndAdvance(n);
+          this.#keepAndAdvance(n);
         }
         return;
       }
@@ -786,9 +786,9 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     }
 
     if (e.key === "Escape") {
-      if (target.closest("#mac-inspector") && this.selectedWordEl) {
+      if (target.closest("#mac-inspector") && this.#selectedWordEl) {
         e.preventDefault();
-        this.selectedWordEl.focus({ preventScroll: true });
+        this.#selectedWordEl.focus({ preventScroll: true });
       }
     }
   }

@@ -69,28 +69,28 @@ export class MorcusDictSearch extends BaseElement<
 > {
   public readonly chunkCache: DictChunkCache = new DictChunkCache();
 
-  private inputElement: HTMLInputElement | null = null;
-  private resultsElement: HTMLElement | null = null;
+  #inputElement: HTMLInputElement | null = null;
+  #resultsElement: HTMLElement | null = null;
   /** The suggestions host, for events and dismissal (works before it upgrades). */
-  private suggestionsEl: HTMLElement | null = null;
+  #suggestionsEl: HTMLElement | null = null;
 
-  private activeDictBitmask: string = DEFAULT_DICT_BITMASK;
-  private activeDictKeys: string[] = [...DEFAULT_DICT_KEYS];
-  private isInflected: boolean = true;
+  #activeDictBitmask: string = DEFAULT_DICT_BITMASK;
+  #activeDictKeys: string[] = [...DEFAULT_DICT_KEYS];
+  #isInflected: boolean = true;
 
-  private renderCachedCompletions(prefix: string, query: string) {
+  #renderCachedCompletions(prefix: string, query: string) {
     const chunks = this.chunkCache.getChunks(prefix);
     if (!chunks) {
-      this.clearSuggestions();
+      this.#clearSuggestions();
       return;
     }
     const items = filterAndClusterDictionaryChunks(
       chunks,
-      this.suggestionDictKeys(),
+      this.#suggestionDictKeys(),
       query,
       25
     );
-    this.showSuggestions(items);
+    this.#showSuggestions(items);
   }
 
   /**
@@ -98,85 +98,79 @@ export class MorcusDictSearch extends BaseElement<
    * view (the reader's dictionary) a typed search leaves the scope (`searchQuery`) and the server
    * resolves the user's saved selection, so suggest from that, not from the narrowed set on screen.
    */
-  private suggestionDictKeys(): readonly string[] {
+  #suggestionDictKeys(): readonly string[] {
     if (!new URLSearchParams(window.location.search).has("lang")) {
-      return this.activeDictKeys;
+      return this.#activeDictKeys;
     }
     return parseDictsFromCookie(document.cookie) ?? DEFAULT_DICT_KEYS;
   }
 
   // Deliberately takes no query: by the time the debounce fires the one the
   // caller had is up to 180ms stale, so the live input value is re-read below.
-  private readonly debouncedFetchPrefixChunk = this.debounce(
-    (prefix: string) => {
-      const signal = this.scope.latest("completions");
-      this.chunkCache
-        .loadPrefix(prefix)
-        .then(() => {
-          if (signal.aborted) return;
-          if (document.activeElement !== this.inputElement) return;
-          const currentRaw = this.inputElement?.value ?? "";
-          const currentClean = cleanCompletionQuery(currentRaw).query;
-          if (!currentClean.toLowerCase().startsWith(prefix)) return;
+  readonly #debouncedFetchPrefixChunk = this.debounce((prefix: string) => {
+    const signal = this.scope.latest("completions");
+    this.chunkCache
+      .loadPrefix(prefix)
+      .then(() => {
+        if (signal.aborted) return;
+        if (document.activeElement !== this.#inputElement) return;
+        const currentRaw = this.#inputElement?.value ?? "";
+        const currentClean = cleanCompletionQuery(currentRaw).query;
+        if (!currentClean.toLowerCase().startsWith(prefix)) return;
 
-          this.renderCachedCompletions(prefix, currentClean);
-        })
-        .catch((e: unknown) => {
-          if (e instanceof Error && e.name !== "AbortError") {
-            console.error("Failed to load completions chunk", e);
-          }
-        });
-    },
-    180
-  );
+        this.#renderCachedCompletions(prefix, currentClean);
+      })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name !== "AbortError") {
+          console.error("Failed to load completions chunk", e);
+        }
+      });
+  }, 180);
 
-  private readonly debouncedFetchSuffixCompletions = this.debounce(
-    (query: string) => {
-      const signal = this.scope.latest("completions");
-      const fetchParams = new URLSearchParams();
-      fetchParams.set("q", query);
-      fetchParams.set("d", encodeDictBitmask(this.suggestionDictKeys()));
+  readonly #debouncedFetchSuffixCompletions = this.debounce((query: string) => {
+    const signal = this.scope.latest("completions");
+    const fetchParams = new URLSearchParams();
+    fetchParams.set("q", query);
+    fetchParams.set("d", encodeDictBitmask(this.#suggestionDictKeys()));
 
-      fetch(`/v2/api/completions?${fetchParams.toString()}`, { signal })
-        .then((res) => (res.ok ? res.json() : []))
-        .then((data: CompletionItem[]) => {
-          if (signal.aborted) return;
-          if (document.activeElement !== this.inputElement) return;
-          this.showSuggestions(Array.isArray(data) ? data : []);
-        })
-        .catch((e: unknown) => {
-          if (e instanceof Error && e.name !== "AbortError") {
-            console.error("Failed to fetch suffix suggestions", e);
-          }
-        });
-    },
-    180
-  );
+    fetch(`/v2/api/completions?${fetchParams.toString()}`, { signal })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: CompletionItem[]) => {
+        if (signal.aborted) return;
+        if (document.activeElement !== this.#inputElement) return;
+        this.#showSuggestions(Array.isArray(data) ? data : []);
+      })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name !== "AbortError") {
+          console.error("Failed to fetch suffix suggestions", e);
+        }
+      });
+  }, 180);
 
   // Read in more than one place; a getter re-queries rather than caches.
-  private get searchForm() {
+  get #searchForm() {
     return this.scope.$<HTMLFormElement>(SEARCH_FORM);
   }
 
   protected override onConnect() {
-    this.initActiveSettings();
+    this.#initActiveSettings();
 
     this.syncQueryParam("q", {
       onChange: (q) => {
-        if (this.inputElement) {
-          this.inputElement.value = q;
+        if (this.#inputElement) {
+          this.#inputElement.value = q;
         }
-        this.syncUrlParams({
-          d: this.activeDictBitmask,
-          o: this.isInflected ? "1" : "0",
+        this.#syncUrlParams({
+          d: this.#activeDictBitmask,
+          o: this.#isInflected ? "1" : "0",
         });
-        void this.fetchResults(q);
+        void this.#fetchResults(q);
       },
       title: (q) =>
         q ? `${q} - Morcus Dictionary` : "Morcus Dictionary (UI V2)",
     });
 
-    this.enhanceExistingMarkup();
+    this.#enhanceExistingMarkup();
     this.scope.use(closeActiveSectionUI);
   }
 
@@ -184,53 +178,57 @@ export class MorcusDictSearch extends BaseElement<
    * Adopts the dictionary state the server resolved and rendered onto the form. The client never
    * re-resolves it: the server has already read every durable store (see `docs/PREFERENCES.md`).
    */
-  private initActiveSettings() {
-    const state = readRenderedDictState(this.searchForm);
-    this.isInflected = state.isInflected;
-    this.activeDictKeys = state.dictKeys;
+  #initActiveSettings() {
+    const state = readRenderedDictState(this.#searchForm);
+    this.#isInflected = state.isInflected;
+    this.#activeDictKeys = state.dictKeys;
     // The bitmask is what we send to the server and write back to the URL, so it must never drift
     // from activeDictKeys.
-    this.activeDictBitmask = state.bitmask;
+    this.#activeDictBitmask = state.bitmask;
   }
 
-  private enhanceExistingMarkup() {
-    this.inputElement = this.scope.$<HTMLInputElement>("input.input");
-    this.resultsElement = this.scope.$<HTMLElement>("#dict-results");
+  #enhanceExistingMarkup() {
+    this.#inputElement = this.scope.$<HTMLInputElement>("input.input");
+    this.#resultsElement = this.scope.$<HTMLElement>("#dict-results");
 
     // Adopt the server-rendered suggestions host (see `renderDictSearchBar`).
     // Re-queried on every connect, so a re-attached element listens to the
     // child that is actually in its subtree.
-    this.suggestionsEl = this.scope.$("morcus-dict-suggestions");
-    if (this.suggestionsEl) {
-      this.scope.listen(this.suggestionsEl, "suggestion-select", (e: Event) => {
-        if (e instanceof CustomEvent) {
-          const detail: unknown = e.detail;
-          if (
-            typeof detail === "object" &&
-            detail !== null &&
-            "word" in detail &&
-            typeof detail.word === "string"
-          ) {
-            this.chooseSuggestion(detail.word, true);
+    this.#suggestionsEl = this.scope.$("morcus-dict-suggestions");
+    if (this.#suggestionsEl) {
+      this.scope.listen(
+        this.#suggestionsEl,
+        "suggestion-select",
+        (e: Event) => {
+          if (e instanceof CustomEvent) {
+            const detail: unknown = e.detail;
+            if (
+              typeof detail === "object" &&
+              detail !== null &&
+              "word" in detail &&
+              typeof detail.word === "string"
+            ) {
+              this.#chooseSuggestion(detail.word, true);
+            }
           }
         }
-      });
+      );
     }
 
     this.hijackForm(SEARCH_FORM, ({ q }) => {
-      this.clearSuggestions();
+      this.#clearSuggestions();
       const cleaned = trimRawQuery(q || "");
       if (cleaned) {
-        void this.searchQuery(cleaned, true);
+        void this.#searchQuery(cleaned, true);
       }
     });
 
-    if (this.inputElement) {
-      this.scope.listen(this.inputElement, "input", this.handleInput);
+    if (this.#inputElement) {
+      this.scope.listen(this.#inputElement, "input", this.#handleInput);
     }
 
-    if (this.resultsElement) {
-      this.scope.listen(this.resultsElement, "click", (e: MouseEvent) => {
+    if (this.#resultsElement) {
+      this.scope.listen(this.#resultsElement, "click", (e: MouseEvent) => {
         if (e.defaultPrevented || !(e.target instanceof Element)) return;
 
         if (!isPlainLeftClick(e)) {
@@ -247,7 +245,7 @@ export class MorcusDictSearch extends BaseElement<
           e.preventDefault();
           const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
           if (word) {
-            this.chooseSuggestion(word);
+            this.#chooseSuggestion(word);
           }
           return;
         }
@@ -266,7 +264,7 @@ export class MorcusDictSearch extends BaseElement<
             dLinkEl.textContent?.trim() ||
             "";
           if (toWord) {
-            this.chooseSuggestion(toWord);
+            this.#chooseSuggestion(toWord);
           }
         }
       });
@@ -275,17 +273,17 @@ export class MorcusDictSearch extends BaseElement<
     // The settings dialog commits once, when it closes, and only if something changed.
     this.scope.listen<DictSettingsCommit>(this, "dict-settings-commit", (e) => {
       if (e.detail) {
-        this.applySettingsCommit(e.detail);
+        this.#applySettingsCommit(e.detail);
       }
     });
 
     // The input is usable before upgrade, so its live value may be text the
     // user typed rather than the query the server rendered results for. The
     // server's value is `defaultValue` (the `value` attribute).
-    const renderedQuery = this.inputElement?.defaultValue.trim() ?? "";
+    const renderedQuery = this.#inputElement?.defaultValue.trim() ?? "";
     const typedBeforeUpgrade =
-      this.inputElement !== null &&
-      this.inputElement.value.trim() !== renderedQuery;
+      this.#inputElement !== null &&
+      this.#inputElement.value.trim() !== renderedQuery;
     const hasHash = Boolean(window.location.hash);
     const navEntry = performance.getEntriesByType?.("navigation")?.[0];
     const isBackForward =
@@ -299,34 +297,34 @@ export class MorcusDictSearch extends BaseElement<
     if (typedBeforeUpgrade) {
       // PH3: the user is mid-search; start autocomplete for what's already
       // typed (if they're still in the box), and don't scroll or refocus.
-      if (document.activeElement === this.inputElement) {
-        this.handleInput();
+      if (document.activeElement === this.#inputElement) {
+        this.#handleInput();
       }
     } else if (
       renderedQuery &&
       !hasHash &&
       !isBackForward &&
       window.scrollY === 0 &&
-      this.resultsElement
+      this.#resultsElement
     ) {
       this.scope.rAF(() => {
         if (window.scrollY === 0) {
-          this.scrollToResults("instant");
+          this.#scrollToResults("instant");
         }
       });
     } else if (
       !isEmbedded &&
       !renderedQuery &&
-      this.inputElement &&
+      this.#inputElement &&
       document.activeElement === document.body &&
       // PH9: a reader who has scrolled down the landing page shouldn't be
       // yanked back up (or get a keyboard popped up on mobile).
       window.scrollY === 0
     ) {
-      this.inputElement.focus({ preventScroll: true });
+      this.#inputElement.focus({ preventScroll: true });
     }
 
-    this.enhanceWordsAfterPaint();
+    this.#enhanceWordsAfterPaint();
   }
 
   /**
@@ -340,24 +338,24 @@ export class MorcusDictSearch extends BaseElement<
    * a `getBoundingClientRect`) would force the style and layout of every new
    * link synchronously, instead of leaving it to the next frame.
    */
-  private enhanceWordsAfterPaint() {
+  #enhanceWordsAfterPaint() {
     const signal = this.scope.latest("words");
     this.scope.rAF(() => {
       this.scope.timeout(() => {
-        if (!signal.aborted) this.enhanceWords(this.resultsElement);
+        if (!signal.aborted) this.enhanceWords(this.#resultsElement);
       }, 0);
     });
   }
 
   /** Adopts committed dictionary settings: form, URL, tray, landing page, then one fetch. */
-  private applySettingsCommit(commit: DictSettingsCommit) {
-    this.activeDictKeys = commit.dictKeys;
-    this.activeDictBitmask = commit.bitmask;
-    this.isInflected = commit.isInflected;
+  #applySettingsCommit(commit: DictSettingsCommit) {
+    this.#activeDictKeys = commit.dictKeys;
+    this.#activeDictBitmask = commit.bitmask;
+    this.#isInflected = commit.isInflected;
     const o = commit.isInflected ? "1" : "0";
 
     // Searches keep what's on screen, so the search form carries the new state.
-    const form = this.searchForm;
+    const form = this.#searchForm;
     if (form) {
       form.dataset.d = commit.bitmask;
       form.dataset.o = o;
@@ -367,7 +365,7 @@ export class MorcusDictSearch extends BaseElement<
     if (hiddenD) hiddenD.value = commit.bitmask;
     if (hiddenO) hiddenO.value = o;
     // Keeps `lang`: the new `d=` is still narrowed to it (the dialog showed only its dictionaries).
-    this.syncUrlParams({ d: commit.bitmask, o });
+    this.#syncUrlParams({ d: commit.bitmask, o });
 
     const langChipsContainer = this.scope.$<HTMLElement>(".lang-chips");
     if (langChipsContainer) {
@@ -402,31 +400,31 @@ export class MorcusDictSearch extends BaseElement<
       }
     }
 
-    const currentQuery = this.inputElement?.value.trim() ?? "";
+    const currentQuery = this.#inputElement?.value.trim() ?? "";
     if (!currentQuery) return;
-    void this.fetchResults(currentQuery);
+    void this.#fetchResults(currentQuery);
 
     // Re-cluster suggestions immediately if the active prefix is in the chunk cache.
-    if (this.shownSuggestions.length > 0) {
+    if (this.#shownSuggestions.length > 0) {
       const { query: activeQ, isSuffix: activeSuffix } =
         cleanCompletionQuery(currentQuery);
       if (!activeSuffix && activeQ.length >= 2) {
         const prefix = activeQ.slice(0, 2).toLowerCase();
         if (this.chunkCache.hasPrefix(prefix)) {
-          this.renderCachedCompletions(prefix, activeQ);
+          this.#renderCachedCompletions(prefix, activeQ);
         }
       }
     }
   }
 
-  private scrollToResults(behavior: ScrollBehavior = "instant") {
-    if (!this.resultsElement) return;
-    if (typeof this.resultsElement.scrollIntoView === "function") {
-      this.resultsElement.scrollIntoView({ behavior, block: "start" });
+  #scrollToResults(behavior: ScrollBehavior = "instant") {
+    if (!this.#resultsElement) return;
+    if (typeof this.#resultsElement.scrollIntoView === "function") {
+      this.#resultsElement.scrollIntoView({ behavior, block: "start" });
     }
   }
 
-  private syncUrlParams(updates: { d?: string; o?: string }) {
+  #syncUrlParams(updates: { d?: string; o?: string }) {
     const url = new URL(window.location.href);
     if (updates.d !== undefined) {
       if (updates.d) {
@@ -444,11 +442,11 @@ export class MorcusDictSearch extends BaseElement<
     window.history.replaceState(null, "", url.pathname + url.search);
   }
 
-  private clearSuggestions() {
-    this.debouncedFetchPrefixChunk.cancel();
-    this.debouncedFetchSuffixCompletions.cancel();
+  #clearSuggestions() {
+    this.#debouncedFetchPrefixChunk.cancel();
+    this.#debouncedFetchSuffixCompletions.cancel();
     this.scope.cancel("completions");
-    this.showSuggestions([]);
+    this.#showSuggestions([]);
   }
 
   /**
@@ -456,38 +454,38 @@ export class MorcusDictSearch extends BaseElement<
    * itself on blur and Escape, so a copy here would go stale and could
    * reopen it later (e.g. on a dictionary settings change).
    */
-  private get shownSuggestions(): readonly CompletionItem[] {
+  get #shownSuggestions(): readonly CompletionItem[] {
     return queryUpgraded(this, "morcus-dict-suggestions")?.items ?? [];
   }
 
-  private showSuggestions(items: readonly CompletionItem[]) {
+  #showSuggestions(items: readonly CompletionItem[]) {
     const suggestions = queryUpgraded(this, "morcus-dict-suggestions");
     if (suggestions) {
       suggestions.items = items;
     }
   }
 
-  private readonly handleInput = () => {
-    const raw = this.inputElement?.value ?? "";
+  readonly #handleInput = () => {
+    const raw = this.#inputElement?.value ?? "";
     const { query, isSuffix } = cleanCompletionQuery(raw);
     if (query.length < 2) {
-      this.clearSuggestions();
+      this.#clearSuggestions();
       return;
     }
 
     if (isSuffix) {
-      this.debouncedFetchPrefixChunk.cancel();
-      this.debouncedFetchSuffixCompletions(query);
+      this.#debouncedFetchPrefixChunk.cancel();
+      this.#debouncedFetchSuffixCompletions(query);
       return;
     }
 
-    this.debouncedFetchSuffixCompletions.cancel();
+    this.#debouncedFetchSuffixCompletions.cancel();
     const prefix = query.slice(0, 2).toLowerCase();
     if (this.chunkCache.hasPrefix(prefix)) {
-      this.debouncedFetchPrefixChunk.cancel();
-      this.renderCachedCompletions(prefix, query);
+      this.#debouncedFetchPrefixChunk.cancel();
+      this.#renderCachedCompletions(prefix, query);
     } else {
-      this.debouncedFetchPrefixChunk(prefix);
+      this.#debouncedFetchPrefixChunk(prefix);
     }
   };
 
@@ -496,21 +494,21 @@ export class MorcusDictSearch extends BaseElement<
    * in the results. In a `lang=` view (the reader's dictionary) a typed word may be English or
    * German, so it leaves the scope; a followed word is Latin, so it stays.
    */
-  private chooseSuggestion(suggestion: string, typed = false) {
+  #chooseSuggestion(suggestion: string, typed = false) {
     const clean = trimRawQuery(suggestion);
-    if (this.inputElement) {
-      this.inputElement.value = clean;
+    if (this.#inputElement) {
+      this.#inputElement.value = clean;
     }
-    this.clearSuggestions();
-    void this.searchQuery(clean, typed);
+    this.#clearSuggestions();
+    void this.#searchQuery(clean, typed);
   }
 
-  private async searchQuery(query: string, typed = false) {
+  async #searchQuery(query: string, typed = false) {
     const cleanQuery = trimRawQuery(query);
     if (!cleanQuery) return;
-    if (this.inputElement) {
-      this.inputElement.value = cleanQuery;
-      this.inputElement.blur();
+    if (this.#inputElement) {
+      this.#inputElement.value = cleanQuery;
+      this.#inputElement.blur();
     }
 
     const url = new URL(window.location.href);
@@ -527,7 +525,7 @@ export class MorcusDictSearch extends BaseElement<
       // owns that resolution, rather than re-deriving it here.
       applyUnscopedDictSearch(url.searchParams, {
         q: cleanQuery,
-        inflected: this.isInflected,
+        inflected: this.#isInflected,
       });
       window.location.assign(url.pathname + url.search);
       return;
@@ -535,17 +533,17 @@ export class MorcusDictSearch extends BaseElement<
 
     applyDictSearch(url.searchParams, {
       q: cleanQuery,
-      d: this.activeDictBitmask,
-      inflected: this.isInflected,
+      d: this.#activeDictBitmask,
+      inflected: this.#isInflected,
     });
 
     const newSearchPath = url.pathname + url.search;
     // Pushes our own search URL, then fetches the results
     window.history.pushState({ q: cleanQuery }, "", newSearchPath);
     document.title = `${cleanQuery} - Morcus Dictionary`;
-    await this.fetchResults(cleanQuery);
+    await this.#fetchResults(cleanQuery);
     this.scope.rAF(() => {
-      this.scrollToResults("smooth");
+      this.#scrollToResults("smooth");
     });
   }
 
@@ -556,8 +554,8 @@ export class MorcusDictSearch extends BaseElement<
    * by throwing. Callers in sync event handlers can therefore `void` this safely — if
    * that ever stops being true, they need real rejection handling instead.
    */
-  private async fetchResults(query: string) {
-    if (!this.resultsElement) return;
+  async #fetchResults(query: string) {
+    if (!this.#resultsElement) return;
     closeActiveSectionUI();
     const currentParams = new URLSearchParams(window.location.search);
     const isEmbedded = currentParams.get("embedded") === "1";
@@ -568,17 +566,17 @@ export class MorcusDictSearch extends BaseElement<
     fetchParams.set("format", "partial");
     if (isEmbedded) fetchParams.set("embedded", "1");
     if (langParam) fetchParams.set("lang", langParam);
-    fetchParams.set("d", this.activeDictBitmask);
-    fetchParams.set("o", this.isInflected ? "1" : "0");
+    fetchParams.set("d", this.#activeDictBitmask);
+    fetchParams.set("o", this.#isInflected ? "1" : "0");
 
     const url = `/v2/dicts?${fetchParams.toString()}`;
-    const success = await fetchAndSwapPartial(this.resultsElement, url, {
+    const success = await fetchAndSwapPartial(this.#resultsElement, url, {
       signal: this.scope.latest("results"),
       errorMessage: "Error loading results.",
       loadingOpacity: 0.5,
     });
     if (success) {
-      this.enhanceWordsAfterPaint();
+      this.#enhanceWordsAfterPaint();
     }
   }
 
@@ -589,8 +587,8 @@ export class MorcusDictSearch extends BaseElement<
     // anything done per word here shows up directly in mount time.
     const searchParams = new URLSearchParams(window.location.search);
     const hrefFor = dictUrlBuilder({
-      d: this.activeDictBitmask,
-      inflected: this.isInflected,
+      d: this.#activeDictBitmask,
+      inflected: this.#isInflected,
       lang: searchParams.get("lang"),
       embedded: searchParams.get("embedded"),
     });

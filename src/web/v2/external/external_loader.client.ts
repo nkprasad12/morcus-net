@@ -117,23 +117,23 @@ export class MorcusExternalLoader extends BaseElement {
   public ready: Promise<void> = Promise.resolve();
 
   // Read in more than one place; getters re-query rather than cache.
-  private get savedList() {
+  get #savedList() {
     return this.scope.$("#external-saved-list");
   }
-  private get savedEmpty() {
+  get #savedEmpty() {
     return this.scope.$("#external-saved-empty");
   }
 
   protected override onConnect() {
     switch (this.dataset.page) {
       case "landing":
-        this.ready = this.initLanding();
+        this.ready = this.#initLanding();
         break;
       case "local":
-        this.ready = this.loadLocal();
+        this.ready = this.#loadLocal();
         break;
       case "url":
-        this.ready = this.rememberUrlImport();
+        this.ready = this.#rememberUrlImport();
         break;
     }
   }
@@ -144,21 +144,21 @@ export class MorcusExternalLoader extends BaseElement {
 
   // ----- Landing ------------------------------------------------------------
 
-  private initLanding(): Promise<void> {
+  #initLanding(): Promise<void> {
     const form = this.scope.$<HTMLFormElement>("#external-form");
     if (form) {
-      this.syncSource();
+      this.#syncSource();
       for (const radio of this.querySelectorAll<HTMLInputElement>(
         'input[name="external-source"]'
       )) {
-        this.scope.listen(radio, "change", () => this.syncSource());
+        this.scope.listen(radio, "change", () => this.#syncSource());
       }
       this.scope.listen(form, "submit", (e) => {
         // Web pages submit natively (GET); pasted text stays on the device.
-        if (!this.pasteSelected()) return;
+        if (!this.#pasteSelected()) return;
         // Our form; savePaste() stores the text locally
         e.preventDefault();
-        void this.savePaste(form);
+        void this.#savePaste(form);
       });
     }
 
@@ -167,22 +167,22 @@ export class MorcusExternalLoader extends BaseElement {
       "click",
       ".external-saved-delete",
       (_e, button) => {
-        void this.deleteSaved(button);
+        void this.#deleteSaved(button);
       }
     );
 
-    return this.renderSavedList();
+    return this.#renderSavedList();
   }
 
-  private pasteSelected(): boolean {
+  #pasteSelected(): boolean {
     return (
       this.scope.$<HTMLInputElement>("#external-source-paste")?.checked === true
     );
   }
 
   /** Disables the hidden tab's fields, so its `required` can't block "Read". */
-  private syncSource(): void {
-    const paste = this.pasteSelected();
+  #syncSource(): void {
+    const paste = this.#pasteSelected();
     for (const field of this.querySelectorAll<
       HTMLInputElement | HTMLTextAreaElement
     >(".external-for-paste .external-input")) {
@@ -190,22 +190,22 @@ export class MorcusExternalLoader extends BaseElement {
     }
     const url = this.scope.$<HTMLInputElement>("#external-url");
     if (url) url.disabled = paste;
-    this.showPasteError("");
+    this.#showPasteError("");
   }
 
-  private showPasteError(message: string): void {
+  #showPasteError(message: string): void {
     const error = this.scope.$("#external-paste-error");
     if (!error) return;
     error.textContent = message;
     error.hidden = message === "";
   }
 
-  private async savePaste(form: HTMLFormElement): Promise<void> {
+  async #savePaste(form: HTMLFormElement): Promise<void> {
     // Read the raw value: trimming would eat the first line's indent in verse.
     const text = this.scope.$<HTMLTextAreaElement>("#external-text")?.value;
     const title = this.scope.$<HTMLInputElement>("#external-title")?.value;
     if (text === undefined || text.trim() === "") {
-      this.showPasteError("Paste some text to read.");
+      this.#showPasteError("Paste some text to read.");
       return;
     }
     const lines = new FormData(form).get("lines");
@@ -220,15 +220,15 @@ export class MorcusExternalLoader extends BaseElement {
         lineMode,
       });
     } catch {
-      this.showPasteError(STORAGE_UNAVAILABLE);
+      this.#showPasteError(STORAGE_UNAVAILABLE);
       return;
     }
     this.navigate(buildExternalReaderUrl({ local: key, lines: lineMode }));
   }
 
-  private async renderSavedList(): Promise<void> {
-    const list = this.savedList;
-    const empty = this.savedEmpty;
+  async #renderSavedList(): Promise<void> {
+    const list = this.#savedList;
+    const empty = this.#savedEmpty;
     if (!list) return;
     const signal = this.scope.signal;
     let items: ExternalContentSummary[];
@@ -243,7 +243,7 @@ export class MorcusExternalLoader extends BaseElement {
     if (empty) empty.hidden = items.length > 0;
   }
 
-  private async deleteSaved(button: HTMLButtonElement): Promise<void> {
+  async #deleteSaved(button: HTMLButtonElement): Promise<void> {
     const key = button.dataset.key;
     if (key === undefined || !this.confirmDelete(button.dataset.label ?? key)) {
       return;
@@ -254,14 +254,14 @@ export class MorcusExternalLoader extends BaseElement {
       return;
     }
     button.closest("li")?.remove();
-    const empty = this.savedEmpty;
-    const list = this.savedList;
+    const empty = this.#savedEmpty;
+    const list = this.#savedList;
     if (empty && list) empty.hidden = list.children.length > 0;
   }
 
   // ----- `?local=` ----------------------------------------------------------
 
-  private async loadLocal(): Promise<void> {
+  async #loadLocal(): Promise<void> {
     const view = closestUpgraded(this, "morcus-reader-view");
     if (!view) return;
     const key = this.dataset.localKey ?? "";
@@ -311,7 +311,7 @@ export class MorcusExternalLoader extends BaseElement {
 
   // ----- `?url=` ------------------------------------------------------------
 
-  private async rememberUrlImport(): Promise<void> {
+  async #rememberUrlImport(): Promise<void> {
     const url = this.dataset.url;
     const passage = document.getElementById("reader-passage");
     if (!url || !passage) return;

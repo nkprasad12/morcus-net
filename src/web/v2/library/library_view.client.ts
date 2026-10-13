@@ -7,16 +7,16 @@ import {
 import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 
 export class MorcusLibraryView extends BaseElement {
-  private currentFilter: string = "all";
-  private currentQuery: string = "";
+  #currentFilter: string = "all";
+  #currentQuery: string = "";
 
   // Read in more than one place; a getter re-queries rather than caches.
-  private get workCards() {
+  get #workCards() {
     return this.scope.$$<HTMLAnchorElement>(".work-card");
   }
 
   protected override onConnect() {
-    this.hydrateSavedSpots();
+    this.#hydrateSavedSpots();
 
     const input = this.scope.$<HTMLInputElement>("#library-search-input");
     const emptyResetBtn = this.scope.$<HTMLButtonElement>(
@@ -25,13 +25,13 @@ export class MorcusLibraryView extends BaseElement {
 
     if (input) {
       this.scope.listen(input, "input", () => {
-        this.currentQuery = input.value.trim().toLowerCase();
-        this.applyFilter();
+        this.#currentQuery = input.value.trim().toLowerCase();
+        this.#applyFilter();
       });
       // PH2: the input is usable before upgrade; apply anything already typed.
-      this.currentQuery = input.value.trim().toLowerCase();
-      if (this.currentQuery) {
-        this.applyFilter();
+      this.#currentQuery = input.value.trim().toLowerCase();
+      if (this.#currentQuery) {
+        this.#applyFilter();
       }
     }
 
@@ -43,21 +43,21 @@ export class MorcusLibraryView extends BaseElement {
         // Our filter pills; setFilter() filters in place
         e.preventDefault();
         const filter = pill.dataset.filter || "all";
-        this.setFilter(filter);
+        this.#setFilter(filter);
       }
     );
 
     if (emptyResetBtn && input) {
       this.scope.listen(emptyResetBtn, "click", () => {
         input.value = "";
-        this.currentQuery = "";
-        this.setFilter("all");
+        this.#currentQuery = "";
+        this.#setFilter("all");
       });
     }
   }
 
-  private setFilter(filter: string) {
-    this.currentFilter = filter;
+  #setFilter(filter: string) {
+    this.#currentFilter = filter;
     const pills = this.scope.$$<HTMLButtonElement>(".filter-pill");
     for (const p of pills) {
       if (p.dataset.filter === filter) {
@@ -66,15 +66,15 @@ export class MorcusLibraryView extends BaseElement {
         p.classList.remove("active");
       }
     }
-    this.applyFilter();
+    this.#applyFilter();
   }
 
-  private applyFilter() {
-    const cards = this.workCards;
+  #applyFilter() {
+    const cards = this.#workCards;
     const emptyState = this.scope.$<HTMLElement>("#library-empty-state");
 
     let visibleCount = 0;
-    const tokens = this.currentQuery.split(/\s+/).filter((t) => t.length > 0);
+    const tokens = this.#currentQuery.split(/\s+/).filter((t) => t.length > 0);
 
     for (const card of cards) {
       const author = card.dataset.author || "";
@@ -82,7 +82,7 @@ export class MorcusLibraryView extends BaseElement {
       const tags = (card.dataset.tags || "").split(" ");
 
       const matchesTag =
-        this.currentFilter === "all" || tags.includes(this.currentFilter);
+        this.#currentFilter === "all" || tags.includes(this.#currentFilter);
       const matchesQuery =
         tokens.length === 0 ||
         tokens.every((tok) => author.includes(tok) || title.includes(tok));
@@ -97,9 +97,9 @@ export class MorcusLibraryView extends BaseElement {
     }
   }
 
-  private hydrateSavedSpots(): void {
+  #hydrateSavedSpots(): void {
     const spots = savedSpotsStore.getAll();
-    const cards = this.workCards;
+    const cards = this.#workCards;
     for (const card of cards) {
       const workId = card.dataset.workId || card.getAttribute("data-work-id");
       if (!workId) continue;

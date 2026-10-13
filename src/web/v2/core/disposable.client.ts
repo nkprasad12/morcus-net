@@ -22,7 +22,7 @@ export type Unregister = () => void;
 export type CleanupFn = () => void;
 
 export class DisposableBag {
-  private disposables: CleanupFn[] = [];
+  #disposables: CleanupFn[] = [];
 
   /**
    * Registers a cleanup callback.
@@ -30,14 +30,14 @@ export class DisposableBag {
    * so it will not run when dispose() is called.
    */
   add(fn: CleanupFn): Unregister {
-    this.disposables.push(fn);
+    this.#disposables.push(fn);
     let unregistered = false;
     return () => {
       if (unregistered) return;
       unregistered = true;
-      const idx = this.disposables.indexOf(fn);
+      const idx = this.#disposables.indexOf(fn);
       if (idx !== -1) {
-        this.disposables.splice(idx, 1);
+        this.#disposables.splice(idx, 1);
       }
     };
   }
@@ -48,8 +48,8 @@ export class DisposableBag {
    * during teardown survives into the next disposal cycle.
    */
   dispose(): void {
-    const toRun = this.disposables;
-    this.disposables = [];
+    const toRun = this.#disposables;
+    this.#disposables = [];
 
     for (const fn of toRun) {
       try {
