@@ -254,4 +254,19 @@ describe("<morcus-corpus-view>", () => {
     expect(document.title).toBe("Corpus: amoris - Morcus Latin Tools");
     expect(currentPath()).toBe(target);
   });
+
+  test("the title reads q the way the server does, trimmed", async () => {
+    await mount("/v2/corpus?q=omnis&contextLen=20&pageSize=50");
+    serveSlots();
+
+    window.history.pushState(null, "", "/v2/corpus?q=++amoris+");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await settle();
+    expect(document.title).toBe("Corpus: amoris - Morcus Latin Tools");
+
+    window.history.pushState(null, "", "/v2/corpus?q=+++");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await settle();
+    expect(document.title).toBe("Corpus Query - Morcus Latin Tools");
+  });
 });

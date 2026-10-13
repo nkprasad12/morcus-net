@@ -4,20 +4,24 @@ import {
   createWordLink,
   fetchAndSwapPartial,
   isPlainLeftClick,
+  KeyedFetchCache,
   queryUpgraded,
   registerElement,
   replaceWithHtml,
   setHtml,
   tokenizeTargets,
+  type QueryParamSync,
 } from "@/web/v2/core/index.client";
 import { readRenderedDictState } from "@/web/v2/dict/dict_preferences.client";
 import { trimRawQuery } from "@/common/text_cleaning";
 import {
   cleanCompletionQuery,
   type CompletionItem,
+  type DictChunksResponse,
 } from "@/web/v2/dict/dict_completions.common";
 import { filterAndClusterDictionaryChunks } from "@/web/v2/dict/dict_clustering.common";
-import { DictChunkCache } from "@/web/v2/dict/dict_chunk_cache.client";
+import { createDictChunkCache } from "@/web/v2/dict/dict_chunk_cache.client";
+import { dictPageTitleForUrl } from "@/web/v2/dict/dict_title.common";
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import {
   DEFAULT_DICT_BITMASK,
@@ -67,10 +71,12 @@ const NO_WORD_LINK_CLASSES =
 export class MorcusDictSearch extends BaseElement<
   "completions" | "results" | "words"
 > {
-  public readonly chunkCache: DictChunkCache = new DictChunkCache();
+  public readonly chunkCache: KeyedFetchCache<DictChunksResponse> =
+    createDictChunkCache();
 
   #inputElement: HTMLInputElement | null = null;
   #resultsElement: HTMLElement | null = null;
+  #router: QueryParamSync | null = null;
   /** The suggestions host, for events and dismissal (works before it upgrades). */
   #suggestionsEl: HTMLElement | null = null;
 
@@ -79,7 +85,7 @@ export class MorcusDictSearch extends BaseElement<
   #isInflected: boolean = true;
 
   #renderCachedCompletions(prefix: string, query: string) {
-    const chunks = this.chunkCache.getChunks(prefix);
+    const chunks = this.chunkCache.get(prefix);
     if (!chunks) {
       this.#clearSuggestions();
       return;
@@ -109,21 +115,24 @@ export class MorcusDictSearch extends BaseElement<
   // caller had is up to 180ms stale, so the live input value is re-read below.
   readonly #debouncedFetchPrefixChunk = this.debounce((prefix: string) => {
     const signal = this.scope.latest("completions");
+    // The live query if this fetch still matters to it: not superseded, the
+    // input still focused, and what's typed still starts with `prefix`.
+    const liveQuery = (): string | undefined => {
+      if (signal.aborted) return undefined;
+      if (document.activeElement !== this.#inputElement) return undefined;
+      const query = cleanCompletionQuery(this.#inputElement?.value ?? "").query;
+      return query.toLowerCase().startsWith(prefix) ? query : undefined;
+    };
     this.chunkCache
-      .loadPrefix(prefix)
+      .load(prefix)
       .then(() => {
-        if (signal.aborted) return;
-        if (document.activeElement !== this.#inputElement) return;
-        const currentRaw = this.#inputElement?.value ?? "";
-        const currentClean = cleanCompletionQuery(currentRaw).query;
-        if (!currentClean.toLowerCase().startsWith(prefix)) return;
-
-        this.#renderCachedCompletions(prefix, currentClean);
+        const query = liveQuery();
+        if (query !== undefined) this.#renderCachedCompletions(prefix, query);
       })
       .catch((e: unknown) => {
-        if (e instanceof Error && e.name !== "AbortError") {
-          console.error("Failed to load completions chunk", e);
-        }
+        console.error(`Failed to load completions chunk "${prefix}"`, e);
+        // The list may still show an earlier prefix's suggestions.
+        if (liveQuery() !== undefined) this.#clearSuggestions();
       });
   }, 180);
 
@@ -155,7 +164,7 @@ export class MorcusDictSearch extends BaseElement<
   protected override onConnect() {
     this.#initActiveSettings();
 
-    this.syncQueryParam("q", {
+    this.#router = this.syncQueryParam("q", {
       onChange: (q) => {
         if (this.#inputElement) {
           this.#inputElement.value = q;
@@ -166,8 +175,7 @@ export class MorcusDictSearch extends BaseElement<
         });
         void this.#fetchResults(q);
       },
-      title: (q) =>
-        q ? `${q} - Morcus Dictionary` : "Morcus Dictionary (UI V2)",
+      title: (_q, url) => dictPageTitleForUrl(url),
     });
 
     this.#enhanceExistingMarkup();
@@ -410,7 +418,7 @@ export class MorcusDictSearch extends BaseElement<
         cleanCompletionQuery(currentQuery);
       if (!activeSuffix && activeQ.length >= 2) {
         const prefix = activeQ.slice(0, 2).toLowerCase();
-        if (this.chunkCache.hasPrefix(prefix)) {
+        if (this.chunkCache.has(prefix)) {
           this.#renderCachedCompletions(prefix, activeQ);
         }
       }
@@ -438,8 +446,8 @@ export class MorcusDictSearch extends BaseElement<
     if (updates.o !== undefined) {
       url.searchParams.set("o", updates.o);
     }
-    // Writes our own d/o query params
-    window.history.replaceState(null, "", url.pathname + url.search);
+    url.hash = "";
+    this.#router?.replaceUrl(url);
   }
 
   #clearSuggestions() {
@@ -481,7 +489,7 @@ export class MorcusDictSearch extends BaseElement<
 
     this.#debouncedFetchSuffixCompletions.cancel();
     const prefix = query.slice(0, 2).toLowerCase();
-    if (this.chunkCache.hasPrefix(prefix)) {
+    if (this.chunkCache.has(prefix)) {
       this.#debouncedFetchPrefixChunk.cancel();
       this.#renderCachedCompletions(prefix, query);
     } else {
@@ -537,10 +545,8 @@ export class MorcusDictSearch extends BaseElement<
       inflected: this.#isInflected,
     });
 
-    const newSearchPath = url.pathname + url.search;
-    // Pushes our own search URL, then fetches the results
-    window.history.pushState({ q: cleanQuery }, "", newSearchPath);
-    document.title = `${cleanQuery} - Morcus Dictionary`;
+    url.hash = "";
+    this.#router?.pushUrl(url, { state: { q: cleanQuery } });
     await this.#fetchResults(cleanQuery);
     this.scope.rAF(() => {
       this.#scrollToResults("smooth");

@@ -71,7 +71,10 @@ export class MorcusCorpusView extends BaseElement<"nav"> {
     this.#router = this.syncQueryParam("q", {
       onChange: onPopState,
       onNavigate: onPopState,
-      title: corpusPageTitle,
+      title: (_q, url) =>
+        corpusPageTitle(
+          readCorpusParams((name) => url.searchParams.get(name) ?? undefined).q
+        ),
     });
   }
 
@@ -96,14 +99,10 @@ export class MorcusCorpusView extends BaseElement<"nav"> {
     if (options.push) {
       const current = window.location.pathname + window.location.search;
       if (path === current) {
-        // navigate() already swapped the slots; records the URL
-        window.history.replaceState(null, "", path);
+        this.#router?.replaceUrl(url);
       } else {
-        // navigate() already swapped the slots; records the URL
-        window.history.pushState(null, "", path);
+        this.#router?.pushUrl(url);
       }
-      this.#router?.updatePath(path);
-      document.title = corpusPageTitle(params.q);
     }
     this.#syncControls(params);
     if (options.scrollToResults) {

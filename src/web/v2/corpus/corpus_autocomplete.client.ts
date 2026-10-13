@@ -19,6 +19,7 @@ import {
   ComboboxController,
   html,
   joinHtml,
+  KeyedFetchCache,
   raw,
   registerElement,
   setHtml,
@@ -487,8 +488,27 @@ function shardKey(prefix: string): string {
  * Each shard is fetched once and kept for the life of the page.
  */
 export class LemmaShardCache {
-  readonly #shards = new Map<string, readonly string[] | null>();
-  readonly #inFlight = new Map<string, Promise<void>>();
+  readonly #shards = new KeyedFetchCache<
+    readonly string[] | null,
+    string | undefined
+  >({
+    fetch: async (key, version) => {
+      const query =
+        version === undefined ? "" : `?v=${encodeURIComponent(version)}`;
+      try {
+        const res = await fetch(
+          `/v2/api/corpus/lemmata/${encodeURIComponent(key)}${query}`
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body: unknown = await res.json();
+        if (!isStringArray(body)) throw new Error("not a list of lemmata");
+        return body;
+      } catch (err: unknown) {
+        console.warn(`Corpus lemmata for "${key}" unavailable:`, err);
+        return null;
+      }
+    },
+  });
 
   /**
    * Up to `max` lemmata starting with `prefix`, matched as in V1: the first
@@ -511,32 +531,13 @@ export class LemmaShardCache {
    * Not abortable: the request is shared, so one caller can't cancel it for
    * the others. Callers that stop caring ignore the result instead.
    */
-  load(prefix: string, version: string | undefined): Promise<void> {
+  load(
+    prefix: string,
+    version: string | undefined
+  ): Promise<readonly string[] | null> {
     const key = shardKey(prefix);
-    if (key === "" || this.#shards.has(key)) return Promise.resolve();
-    const pending = this.#inFlight.get(key);
-    if (pending !== undefined) return pending;
-
-    const query =
-      version === undefined ? "" : `?v=${encodeURIComponent(version)}`;
-    const request = fetch(
-      `/v2/api/corpus/lemmata/${encodeURIComponent(key)}${query}`
-    )
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const body: unknown = await res.json();
-        if (!isStringArray(body)) throw new Error("not a list of lemmata");
-        this.#shards.set(key, body);
-      })
-      .catch((err: unknown) => {
-        console.warn(`Corpus lemmata for "${key}" unavailable:`, err);
-        this.#shards.set(key, null);
-      })
-      .finally(() => {
-        this.#inFlight.delete(key);
-      });
-    this.#inFlight.set(key, request);
-    return request;
+    if (key === "") return Promise.resolve([]);
+    return this.#shards.load(key, version);
   }
 }
 
