@@ -35,7 +35,7 @@ sequenceDiagram
         Client->>Router: GET /v2/dicts?q=habeo&format=partial (X-Requested-With: fetch)
         Router->>Fused: getEntry({ query: "habeo", mode: 1 })
         Router-->>Client: HTML fragment (<details class="dict-card">...)
-        Client->>User: replaceChildren(fragment) & history.pushState()
+        Client->>User: router.pushUrl() & replaceChildren(fragment)
     end
 ```
 

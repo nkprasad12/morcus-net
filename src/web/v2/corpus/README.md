@@ -82,12 +82,12 @@ The server imports `reader_loader.server.ts` and `reader_highlight.common.ts` (t
 
 **`<morcus-corpus-view>`** (`corpus_view.client.ts`) adopts server DOM and creates no nodes.
 
-| Trigger                           | Behaviour                                                                                                                                                                                 |
-| :-------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `onConnect`                       | Adopt-before-write: keep what the user typed before upgrade. Start the history sync.                                                                                                      |
-| Form submit                       | `swapSlots` with `scope.latest("nav")`, then `pushState` + `sync.updatePath()` and `document.title` (push only after a successful swap). Resubmitting the current URL replaces the entry. |
-| Link click (`a[data-corpus-nav]`) | Next link and help examples: same swap and push, then resync the form from the URL. Focus returns through `data-focus-key`. Modified clicks aren't intercepted.                           |
-| `popstate`                        | `swapSlots` with `location.replace` fallback, then write the URL's values into the controls.                                                                                              |
+| Trigger                           | Behaviour                                                                                                                                                                                |
+| :-------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `onConnect`                       | Adopt-before-write: keep what the user typed before upgrade. Start the history sync.                                                                                                     |
+| Form submit                       | `swapSlots` with `scope.latest("nav")`, then `router.pushUrl()` (push only after a successful swap; updates `document.title`). Resubmitting the current URL calls `router.replaceUrl()`. |
+| Link click (`a[data-corpus-nav]`) | Next link and help examples: same swap and push, then resync the form from the URL. Focus returns through `data-focus-key`. Modified clicks aren't intercepted.                          |
+| `popstate`                        | `swapSlots` with `location.replace` fallback, then write the URL's values into the controls.                                                                                             |
 
 ### Autocomplete boundary
 

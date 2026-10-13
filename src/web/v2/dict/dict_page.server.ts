@@ -18,6 +18,7 @@ import { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
 import { buildTocTree, renderDictTocHtml } from "@/web/v2/dict/dict_toc.server";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import { buildDictUrl } from "@/web/v2/dict/dict_params.common";
+import { dictPageTitle } from "@/web/v2/dict/dict_title.common";
 import * as he from "he";
 
 export {
@@ -440,8 +441,6 @@ export function renderDictPageHtml(options: DictPageOptions): string {
         }
   );
 
-  const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
-
   const dictScale = parseDictScale(options.scale);
   const extraHeadHtml =
     dictScale !== undefined
@@ -475,9 +474,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   `;
 
   return renderPageShell({
-    title: options.query
-      ? `${titlePrefix} - Morcus Dictionary`
-      : "Morcus Dictionary (UI V2)",
+    title: dictPageTitle(query, options.isIdSearch),
     activePage: "dicts",
     contentHtml,
     hideAppBar: isEmbedded,

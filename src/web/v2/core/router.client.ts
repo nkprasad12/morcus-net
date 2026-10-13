@@ -11,13 +11,22 @@ export interface NavigateEvent {
 export interface SyncQueryParamOptions {
   /** Callback fired when the query parameter changes via browser back/forward (popstate). */
   onChange: (value: string) => void;
-  /** Optional formatter to update document.title when the query changes. */
-  title?: (value: string) => string;
+  /**
+   * Optional formatter for document.title, applied on popstate and on every
+   * router write. `url` is the URL being shown, for titles that depend on more
+   * than the tracked param (e.g. the path).
+   */
+  title?: (value: string, url: URL) => string;
   /**
    * Optional callback fired on popstate navigation when path or query changes.
    * If provided, caller handles both path transitions and query synchronization.
    */
   onNavigate?: (event: NavigateEvent) => void;
+}
+
+export interface UrlNavigateOptions {
+  /** Stored as `history.state` (defaults to `null`). */
+  state?: unknown;
 }
 
 export interface QueryParamSync {
@@ -27,14 +36,16 @@ export interface QueryParamSync {
   push(value: string): void;
   /** Updates the query parameter and replaces the current browser history entry. */
   replace(value: string): void;
-  /** Updates internal tracked path when application navigation occurs outside this router. */
-  updatePath(path?: string): void;
+  /** Pushes `url` (path, search, and hash) as a new history entry and adopts it as the tracked path. */
+  pushUrl(url: string | URL, options?: UrlNavigateOptions): void;
+  /** Replaces the current history entry with `url` (path, search, and hash) and adopts it as the tracked path. */
+  replaceUrl(url: string | URL, options?: UrlNavigateOptions): void;
   /** Unregisters the popstate listener. */
   dispose(): void;
 }
 
 /**
- * Synchronizes a single URL query parameter (e.g. ?q=...) with browser history.
+ * Synchronizes a URL query parameter (e.g. ?q=...) with browser history.
  *
  * - Intercepts popstate back/forward navigation.
  * - Guards against infinite loops and hash-only in-page anchor jumps (#top).
@@ -58,7 +69,7 @@ export function syncQueryParam(
     const value = urlParams.get(paramName) ?? "";
 
     if (options.title) {
-      document.title = options.title(value);
+      document.title = options.title(value, new URL(window.location.href));
     }
     if (options.onNavigate) {
       options.onNavigate({
@@ -76,6 +87,31 @@ export function syncQueryParam(
   // eslint-disable-next-line no-restricted-syntax
   window.addEventListener("popstate", onPopState);
 
+  const commitUrl = (
+    input: string | URL,
+    state: unknown,
+    push: boolean
+  ): void => {
+    const url = new URL(input, window.location.href);
+    currentSearchPath = url.pathname + url.search;
+    const href = currentSearchPath + url.hash;
+
+    if (push) {
+      // The router owns its URL and writes it without a navigation
+      window.history.pushState(state, "", href);
+    } else {
+      // The router owns its URL and writes it without a navigation
+      window.history.replaceState(state, "", href);
+    }
+
+    if (options.title) {
+      document.title = options.title(
+        url.searchParams.get(paramName) ?? "",
+        url
+      );
+    }
+  };
+
   const navigate = (value: string, push: boolean) => {
     const url = new URL(window.location.href);
     if (value) {
@@ -83,20 +119,8 @@ export function syncQueryParam(
     } else {
       url.searchParams.delete(paramName);
     }
-    const newSearchPath = url.pathname + url.search;
-    currentSearchPath = newSearchPath;
-
-    if (push) {
-      // The router owns its query param and writes it without a navigation
-      window.history.pushState({ [paramName]: value }, "", newSearchPath);
-    } else {
-      // The router owns its query param and writes it without a navigation
-      window.history.replaceState({ [paramName]: value }, "", newSearchPath);
-    }
-
-    if (options.title) {
-      document.title = options.title(value);
-    }
+    url.hash = "";
+    commitUrl(url, { [paramName]: value }, push);
   };
 
   return {
@@ -109,9 +133,11 @@ export function syncQueryParam(
     replace(value: string) {
       navigate(value, false);
     },
-    updatePath(path?: string) {
-      currentSearchPath =
-        path ?? window.location.pathname + window.location.search;
+    pushUrl(url: string | URL, navOptions?: UrlNavigateOptions) {
+      commitUrl(url, navOptions?.state ?? null, true);
+    },
+    replaceUrl(url: string | URL, navOptions?: UrlNavigateOptions) {
+      commitUrl(url, navOptions?.state ?? null, false);
     },
     dispose() {
       window.removeEventListener("popstate", onPopState);

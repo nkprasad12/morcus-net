@@ -1478,15 +1478,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.#currentQuery = url.searchParams.get("q") ?? "";
 
     if (push) {
-      // swapPage pushes the URL of the page it just swapped in
-      window.history.pushState(
-        { q: this.#currentQuery, scrollY: 0 },
-        "",
-        url.pathname + url.search + url.hash
-      );
-      this.#router?.updatePath(url.pathname + url.search);
-    } else {
-      this.#router?.updatePath();
+      this.#router?.pushUrl(url, {
+        state: { q: this.#currentQuery, scrollY: 0 },
+      });
     }
 
     if (newPageId) {

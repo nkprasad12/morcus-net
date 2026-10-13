@@ -425,6 +425,41 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     jest.useRealTimers();
   });
 
+  test("a failed chunk fetch clears the previous prefix's suggestions", async () => {
+    delete (window as any).location;
+    (window as any).location = new URL("http://localhost/v2/dicts");
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.useFakeTimers();
+    try {
+      const el = createDictSearch();
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const suggestions = el.querySelector("morcus-dict-suggestions") as any;
+      input.focus();
+      el.chunkCache.set("am", { "L&S": ["amo"], GAF: ["ămō"] });
+
+      input.value = "amo";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      expect(suggestions.items).not.toHaveLength(0);
+
+      // "be" isn't cached and its fetch fails (e.g. offline).
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error("offline"));
+      input.value = "bello";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      jest.advanceTimersByTime(200);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/v2/api/completions?prefix=be")
+      );
+      jest.useRealTimers();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(suggestions.items).toEqual([]);
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+      errorSpy.mockRestore();
+    }
+  });
+
   test("forwards the active dicts for suffix queries", () => {
     delete (window as any).location;
     (window as any).location = new URL("http://localhost/v2/dicts");
@@ -468,7 +503,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       // The server narrowed the view to L&S + GAF.
       const el = createDictSearch("", 'data-d="3" data-o="1"');
       const input = el.querySelector<HTMLInputElement>("input.input")!;
-      el.chunkCache.setChunks("am", {
+      el.chunkCache.set("am", {
         "L&S": ["amabilis"],
         GAF: ["ămīcĭtĭa"],
         "S&H": ["amber"],
@@ -521,7 +556,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     // Pre-populate chunk cache for "am"
-    el.chunkCache.setChunks("am", {
+    el.chunkCache.set("am", {
       "L&S": ["amabilis", "amator", "amo", "amor"],
       GAF: ["ămābĭlis", "ămātŏr", "ămō", "ămŏr"],
     });
@@ -547,7 +582,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     // Pre-populate chunk cache with items from both default active dicts (L&S and GAF)
-    el.chunkCache.setChunks("am", {
+    el.chunkCache.set("am", {
       "L&S": ["amabilis"],
       GAF: ["ămīcĭtĭa"],
     });
@@ -577,7 +612,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   test("dict-settings-commit does not reopen suggestions closed by blur", () => {
     const el = createDictSearch();
     const input = el.querySelector<HTMLInputElement>("input.input")!;
-    el.chunkCache.setChunks("am", {
+    el.chunkCache.set("am", {
       "L&S": ["amabilis"],
       GAF: ["ămīcĭtĭa"],
     });
@@ -664,6 +699,28 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     replaceStateSpy.mockRestore();
   });
 
+  test("on an entry page, a settings commit keeps the server's ID title", () => {
+    delete (window as any).location;
+    (window as any).location = new URL("http://localhost/v2/dicts/id/n20077");
+    document.title = "ID n20077 - Morcus Dictionary";
+
+    const el = createDictSearch();
+    commitSettings(el, ["L&S", "GAF"], false);
+
+    expect(document.title).toBe("ID n20077 - Morcus Dictionary");
+  });
+
+  test("Back to an entry page restores its ID title", () => {
+    delete (window as any).location;
+    (window as any).location = new URL("http://localhost/v2/dicts?q=amo");
+    createDictSearch();
+
+    (window as any).location = new URL("http://localhost/v2/dicts/id/n20077");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(document.title).toBe("ID n20077 - Morcus Dictionary");
+  });
+
   test("dict-settings-commit updates the search form's hidden d/o and dataset, and keeps lang in the URL", () => {
     delete (window as any).location;
     (window as any).location = new URL(
@@ -723,6 +780,37 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
 
     replaceStateSpy.mockRestore();
+  });
+
+  test("popstate back to the initial URL after a search re-fetches the initial query", () => {
+    delete (window as any).location;
+    (window as any).location = new URL(
+      "http://localhost/v2/dicts?q=amo&d=an&o=1"
+    );
+
+    const el = createDictSearch("", 'data-d="an" data-o="1"');
+    const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+
+    // Submit a new search (pushes ?q=bellum&d=an&o=1)
+    input.value = "bellum";
+    form.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })
+    );
+    (global.fetch as jest.Mock).mockClear();
+
+    // Press Back to the exact connect-time URL
+    (window as any).location = new URL(
+      "http://localhost/v2/dicts?q=amo&d=an&o=1"
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(input.value).toBe("amo");
+    expect(document.title).toBe("amo - Morcus Dictionary");
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/v2/dicts?q=amo&format=partial&d=an&o=1"),
+      expect.anything()
+    );
   });
 
   describe("in a lang= view (the reader's dictionary)", () => {
@@ -1285,7 +1373,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect(input.getAttribute("aria-controls")).toBe(listbox.id);
       expect(listbox.hidden).toBe(true);
 
-      el.chunkCache.setChunks("am", {
+      el.chunkCache.set("am", {
         "L&S": ["amo", "amor"],
       });
       input.value = "amo";
@@ -1309,7 +1397,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         'ul[role="listbox"]'
       ) as HTMLElement;
 
-      el.chunkCache.setChunks("am", {
+      el.chunkCache.set("am", {
         "L&S": ["amo", "amor"],
       });
       input.value = "amo";
@@ -1361,7 +1449,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       const el = createDictSearch();
       const input = el.querySelector<HTMLInputElement>("input.input")!;
 
-      el.chunkCache.setChunks("am", {
+      el.chunkCache.set("am", {
         "L&S": ["amo"],
       });
       input.value = "amo";

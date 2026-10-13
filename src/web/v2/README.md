@@ -205,7 +205,7 @@ UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
 1. **Zero-JS Initial Paint**: The user issues a standard HTTP `GET` (e.g. `/v2/dicts?q=habeo` or `/v2/reader`). Express renders a complete semantic HTML document with native `<form>`, `<details>`, and `<a>` elements.
 2. **Non-Blocking Enhancement**: The browser downloads the route's client chunks (`common.js` plus any route-specific slice chunks) and defines native custom elements (`customElements.define`).
-3. **Client Form Hijack & Partial Swapping**: When JavaScript is active, Web Components intercept user actions, fetch partial HTML fragments (`format=partial`) or autocomplete JSON from the router, and swap DOM nodes instantaneously via `replaceChildren()` while syncing URL state with `history.pushState()`.
+3. **Client Form Hijack & Partial Swapping**: When JavaScript is active, Web Components intercept user actions, fetch partial HTML fragments (`format=partial`) or autocomplete JSON from the router, and swap DOM nodes instantaneously via `replaceChildren()`, writing URL state through the router (`this.syncQueryParam()`'s `push` / `pushUrl` / `replaceUrl`) so Back and Forward stay in sync.
 
 > **Topic-Specific Data Flows**: Detailed request lifecycle sequence diagrams and component breakdowns live in each topic's documentation (e.g., see [dict/README.md](dict/README.md)).
 

@@ -9,13 +9,7 @@ duplication bites; delete the entry when it lands. Component-level debt lives in
 
 ## Open
 
-1. **Router: multi-param navigation.** `syncQueryParam` models one param. Corpus and the reader's
-   page turns push whole URLs with `pushState` + `updatePath()`. A `pushUrl` / `replaceUrl` on the
-   sync object would remove the duplication. _Missing primitive._
-2. **Keyed fetch cache.** `LemmaShardCache` (corpus) and `DictChunkCache` (dict) are both an
-   in-memory map plus in-flight promise dedupe, and both leave the shared request uncancellable on
-   purpose. Only the policy differs: dict evicts LRU, while corpus remembers a failure and doesn't
-   retry. A `core/` cache with those two options would cover both. _Duplication._
+None.
 
 ---
 
