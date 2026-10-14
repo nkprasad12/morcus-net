@@ -32,7 +32,7 @@ describe("critical_theme pre-paint applier", () => {
       path.join(__dirname, "critical_theme.client.ts"),
       "utf8"
     );
-    expect(source).toContain(`read("${PREPAINT_KEY}")`);
+    expect(source).toContain(`localStorage.getItem("${PREPAINT_KEY}")`);
   });
 
   test("applies the snapshot's custom properties and data attributes", async () => {
@@ -80,15 +80,19 @@ describe("critical_theme pre-paint applier", () => {
     expect(root.hasAttribute("class")).toBe(false);
   });
 
-  test("takes the theme from GlobalSettings", async () => {
-    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: true }));
+  test("takes the theme from the snapshot", async () => {
+    localStorage.setItem(
+      PREPAINT_KEY,
+      JSON.stringify({ "data-theme": "dark" })
+    );
     await runCriticalScript();
     expect(root.getAttribute("data-theme")).toBe("dark");
+  });
 
-    resetState();
-    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: false }));
+  test("ignores the theme in GlobalSettings (theme_toggle owns the snapshot)", async () => {
+    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: true }));
     await runCriticalScript();
-    expect(root.getAttribute("data-theme")).toBe("light");
+    expect(root.hasAttribute("data-theme")).toBe(false);
   });
 
   test("no longer maps legacy preference stores itself", async () => {
@@ -105,7 +109,7 @@ describe("critical_theme pre-paint applier", () => {
   });
 
   test("tolerates a corrupt or non-object snapshot", async () => {
-    for (const raw of ["{not json", "null", "5", '"str"']) {
+    for (const raw of ["{not json", "null", "5", '"str"', '["--x"]']) {
       resetState();
       localStorage.setItem(PREPAINT_KEY, raw);
       await expect(runCriticalScript()).resolves.toBeUndefined();

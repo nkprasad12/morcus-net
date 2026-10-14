@@ -15,7 +15,8 @@ Before switching default traffic away from V1, verify that non-UI operational be
   - V1 recorded telemetry across its RPC endpoints and client flows that V2 does not yet emit.
   - Audit V1's server and client telemetry hooks (traffic counters, dictionary/reader query metrics, latency/memory reporting, error logging) and wire equivalent instrumentation into V2's Express routes (covering both full SSR navigations and `?format=partial` / autocomplete requests).
 - [ ] **Metadata, SEO & Static Entrypoints**:
-  - Verify canonical URLs, `<meta>` descriptions, OpenGraph tags, `robots.txt` / sitemaps, and PWA/manifest/favicon assets when served from `/` instead of `/v2`.
+  - Verify canonical URLs, `<meta>` descriptions, OpenGraph tags, and `robots.txt` / sitemaps when served from `/` instead of `/v2`.
+  - PWA installability is already in place and needs no cutover work: V2 pages link the manifest and `theme-color`, the favicon is served at `/favicon.ico`, and `/serviceworker.js` serves a script that removes the retired V1 offline worker and its storage. The manifest (`start_url`, `scope`, `shortcuts`) uses root paths shared by V1 and V2, so mounting V2 at `/` moves installed apps over with no reinstall. Keep `/public`, `/.well-known` (Android TWA `assetlinks.json`), `/favicon.ico`, and `/serviceworker.js` mounted ahead of the V2 router.
 - [ ] **Build-Versioned Caching for Partials & Fragments**:
   - Today repeated partial fetches revalidate by ETag, which Express computes from the rendered body, so every repeat costs a full server render. Content is static per build, so a background fetch carrying `?v=<commit>` can be served `immutable` and never leave the browser on repeats. Keep user-visible URLs unversioned (only the `fetch` URL carries `v`).
   - Stamp the build version once on `<html data-version>` in `renderPageShell`, add a client `withBuildVersion(url)` helper, and replace corpus's bespoke `data-lemmata-version`. Version explicitly at call sites (or via a `swapSlots` option), not implicitly inside `swapSlots`: POST must be excluded and `fallback(url)` must get the unversioned URL.
@@ -70,7 +71,7 @@ Once V2 is serving root traffic and no fallback to V1 is needed:
 - [ ] **Delete V1 Client Code**:
   - Remove `src/web/client/` (legacy SPA pages, components, routing, and V1 stylesheets/assets).
 - [ ] **Retire V1 Bundler & Build Steps**:
-  - Remove the V1 client build pipeline from `src/bundler/`, `src/scripts/prod_build_steps.ts`, and `src/scripts/run_morcus.ts`, making the Rsbuild V2 bundle the sole web client build.
+  - Remove the V1 client build pipeline from `src/bundler/`, `src/scripts/prod_build_steps.ts`, and `src/scripts/run_morcus.ts`, making the Rsbuild V2 bundle the sole web client build. This includes the V1 `serviceworker` environment in `morcus-net.rsbuild.ts` (its output is already shadowed by the `/serviceworker.js` cleanup route) and the `/offlineData/:resourceName` route in `web_server.ts`.
 - [ ] **Prune V1-Only Server Endpoints**:
   - Remove legacy JSON-RPC routes and server handlers in `src/web/` that existed solely for the V1 SPA, keeping only shared APIs or endpoints still consumed by V2.
 - [ ] **Dependency & Config Cleanup**:

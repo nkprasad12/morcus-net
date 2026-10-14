@@ -46,8 +46,9 @@ Highlight strength sits below the bar (`--highlight-scale` only multiplies alpha
 the rule and costs no critical bytes, so it stays. Apply the rule to new additions.
 
 Owners call `setPrepaint` on every connect with their current value, not only on change, so a stale
-snapshot heals after one load. Theme is the one direct read left in the critical script, because V1
-still writes `GlobalSettings`; drop it at graduation.
+snapshot heals after one load. Theme is an ordinary snapshot entry too: `theme_toggle.client.ts`
+owns `data-theme` (cleared when there is no saved choice, so the OS scheme applies), and the
+critical script makes no direct reads.
 
 An owner that already paints the live value inline on a narrower element (the reader splitter puts
 `--dict-width` on `.reader-dict-panel`) calls `recordPrepaint` instead: it updates the snapshot but

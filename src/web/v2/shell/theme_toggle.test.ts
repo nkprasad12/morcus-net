@@ -2,8 +2,17 @@
  * @jest-environment jsdom
  */
 import "@/web/v2/shell/theme_toggle.client";
-import { settingsStore, syncIframeTheme } from "@/web/v2/core/index.client";
+import {
+  PREPAINT_KEY,
+  settingsStore,
+  syncIframeTheme,
+} from "@/web/v2/core/index.client";
 import { renderAppBar } from "@/web/v2/shell/page_shell.server";
+import { THEME_COLOR } from "@/web/v2/shell/theme_color.common";
+
+function prepaintSnapshot(): Record<string, string> {
+  return JSON.parse(localStorage.getItem(PREPAINT_KEY) ?? "{}");
+}
 
 function mountThemeToggle(): HTMLElement {
   const wrapper = document.createElement("div");
@@ -41,6 +50,59 @@ describe("MorcusThemeToggle", () => {
     button.click();
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
     expect(settingsStore.get().darkMode).toBe(false);
+  });
+
+  test("records the theme in the pre-paint snapshot on toggle", () => {
+    const button = mountThemeToggle().querySelector("button")!;
+
+    button.click();
+    expect(prepaintSnapshot()["data-theme"]).toBe("dark");
+    button.click();
+    expect(prepaintSnapshot()["data-theme"]).toBe("light");
+  });
+
+  test("heals the snapshot from the saved choice on connect", () => {
+    settingsStore.update({ darkMode: true });
+    localStorage.setItem(
+      PREPAINT_KEY,
+      JSON.stringify({ "data-theme": "light" })
+    );
+    document.documentElement.setAttribute("data-theme", "light");
+
+    mountThemeToggle();
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(prepaintSnapshot()["data-theme"]).toBe("dark");
+  });
+
+  test("clears a stale snapshot theme when nothing is saved", () => {
+    localStorage.setItem(
+      PREPAINT_KEY,
+      JSON.stringify({ "data-theme": "dark" })
+    );
+    document.documentElement.setAttribute("data-theme", "dark");
+
+    mountThemeToggle();
+
+    expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
+    expect(prepaintSnapshot()).not.toHaveProperty("data-theme");
+  });
+
+  test("keeps <meta name=theme-color> in step with the theme", () => {
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = THEME_COLOR.light;
+    document.head.appendChild(meta);
+    try {
+      settingsStore.update({ darkMode: true });
+      const button = mountThemeToggle().querySelector("button")!;
+      expect(meta.content).toBe(THEME_COLOR.dark);
+
+      button.click();
+      expect(meta.content).toBe(THEME_COLOR.light);
+    } finally {
+      meta.remove();
+    }
   });
 
   test("respects OS prefers-color-scheme: dark when no saved preference exists", () => {

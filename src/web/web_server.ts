@@ -92,10 +92,20 @@ export function setupServer(params: WebServerParams): void {
   app.use(bodyParser.text());
   app.use(preCompressedMiddleware(params.buildDir));
   app.use(compression());
-  // app.use("/serviceworker.js", (_, res) => {
-  //   res.sendFile(path.join(params.buildDir, "serviceworker.js"));
-  //   return;
-  // });
+  app.get("/serviceworker.js", (_, res) => {
+    // Never cached, so a later change here reaches browsers on their next visit.
+    res.sendFile(path.resolve("public", "cleanup_service_worker.js"), {
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Content-Type": "application/javascript",
+      },
+    });
+  });
+  // Browsers request `/favicon.ico` on their own, so pages don't need a
+  // `<link rel="icon">`.
+  app.get("/favicon.ico", (_, res) => {
+    res.sendFile(path.resolve("public", "favicon.ico"), { maxAge: MAX_AGE });
+  });
   if (params.v2Router) {
     app.use("/v2", params.v2Router);
   }
@@ -111,7 +121,7 @@ export function setupServer(params: WebServerParams): void {
     return;
   });
   app.use("/public/pwa.webmanifest", (_, res) => {
-    res.send(PWA_WEBMANIFEST);
+    res.type("application/manifest+json").send(PWA_WEBMANIFEST);
     return;
   });
   app.use("/public", express.static("public", STATIC_OPTIONS));

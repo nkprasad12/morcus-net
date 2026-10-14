@@ -214,8 +214,8 @@ UI V2 follows a universal progressive enhancement lifecycle across all pages:
 ## Theme Switching Model
 
 - **No-JS**: Media query `@media (prefers-color-scheme: dark)` adapts colors automatically based on the user's OS preference. Interactive custom elements (`morcus-theme-toggle` and `morcus-report-dialog`) carry `data-js-only`, so no dead controls are shown to users without JavaScript (or before upgrade).
-- **With JS**: `<morcus-theme-toggle>` and `<morcus-report-dialog>` initialize and display buttons in the app bar. Theme selection toggles `[data-theme="dark"]` / `[data-theme="light"]` on `document.documentElement` and persists to `localStorage.getItem("GlobalSettings")`. Feedback reporting opens via native `<dialog>` modal and submits via AJAX.
-- **Zero Flicker**: An inline script in `<head>` executes before the first paint to apply the saved theme attribute immediately.
+- **With JS**: `<morcus-theme-toggle>` and `<morcus-report-dialog>` initialize and display buttons in the app bar. Theme selection toggles `[data-theme="dark"]` / `[data-theme="light"]` on `document.documentElement` (via `setPrepaint`), persists the choice to `localStorage.getItem("GlobalSettings")`, and updates `<meta name="theme-color">` (server-rendered with the light colour) to match the app bar. Feedback reporting opens via native `<dialog>` modal and submits via AJAX.
+- **Zero Flicker**: The critical `<head>` script restores `data-theme` from the pre-paint snapshot before the first paint (see [`docs/PREFERENCES.md`](docs/PREFERENCES.md)).
 
 ---
 

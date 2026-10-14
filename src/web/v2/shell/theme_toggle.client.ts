@@ -1,20 +1,34 @@
 import {
   BaseElement,
   registerElement,
+  setPrepaint,
   settingsStore,
   syncIframeTheme,
 } from "@/web/v2/core/index.client";
 import { ICON_MOON, ICON_SUN } from "@/web/v2/core/icons.common";
+import { THEME_COLOR } from "@/web/v2/shell/theme_color.common";
 
 const MOON_PATH = ICON_MOON;
 const SUN_PATH = ICON_SUN;
 
+/**
+ * Owner of the theme preference: `GlobalSettings.darkMode` is the saved
+ * choice, and `data-theme` on <html> is its pre-paint value, which the
+ * critical script restores on the next load. With no saved choice there is no
+ * `data-theme` and the OS colour scheme applies.
+ */
 export class MorcusThemeToggle extends BaseElement {
   #isDark: boolean = false;
   #buttonEl: HTMLButtonElement | null = null;
   #pathEl: SVGPathElement | null = null;
 
   protected override onConnect() {
+    // Re-record on every connect, so a stale or missing snapshot heals.
+    const saved = settingsStore.get().darkMode;
+    setPrepaint(
+      "data-theme",
+      saved === undefined ? null : saved ? "dark" : "light"
+    );
     this.#isDark = this.#computeIsDark();
     this.#buttonEl = this.scope.$<HTMLButtonElement>("button");
     this.#pathEl = this.querySelector<SVGPathElement>("path");
@@ -40,13 +54,7 @@ export class MorcusThemeToggle extends BaseElement {
     if (currentAttr === "dark") return true;
     if (currentAttr === "light") return false;
 
-    // Check localStorage settings
-    const settings = settingsStore.get();
-    if (typeof settings.darkMode === "boolean") {
-      return settings.darkMode;
-    }
-
-    // Fall back to system preference
+    // No saved choice: follow the system preference
     return typeof window.matchMedia === "function"
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
       : false;
@@ -63,7 +71,7 @@ export class MorcusThemeToggle extends BaseElement {
     this.#isDark = nextDark;
     const themeName = nextDark ? "dark" : "light";
 
-    document.documentElement.setAttribute("data-theme", themeName);
+    setPrepaint("data-theme", themeName);
     settingsStore.update({ darkMode: nextDark });
     this.#updateView();
     this.#syncIframesTheme(themeName);
@@ -87,6 +95,10 @@ export class MorcusThemeToggle extends BaseElement {
     if (this.#pathEl) {
       this.#pathEl.setAttribute("d", pathD);
     }
+    // The server renders the light colour; a dark page corrects it here.
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", THEME_COLOR[this.#isDark ? "dark" : "light"]);
   }
 }
 

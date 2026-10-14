@@ -232,4 +232,39 @@ describe("WebServer", () => {
       "no-cache, no-store, must-revalidate"
     );
   });
+
+  test("serves the legacy service worker cleanup script uncached", async () => {
+    fs.writeFileSync(`${TEMP_DIR}/serviceworker.js`, "// stale V1 build");
+    try {
+      const response = await request(app).get("/serviceworker.js");
+
+      expect(response.status).toBe(200);
+      expect(response.type).toBe("application/javascript");
+      expect(response.headers["cache-control"]).toBe(
+        "no-cache, no-store, must-revalidate"
+      );
+      // Takes precedence over a V1 build output of the same name.
+      expect(response.text).toContain("registration.unregister()");
+    } finally {
+      fs.unlinkSync(`${TEMP_DIR}/serviceworker.js`);
+    }
+  });
+
+  test("serves the favicon at the root", async () => {
+    const response = await request(app).get("/favicon.ico");
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-type"]).not.toContain("text/html");
+  });
+
+  test("serves the manifest as application/manifest+json", async () => {
+    const response = await request(app).get("/public/pwa.webmanifest");
+
+    expect(response.status).toBe(200);
+    expect(response.type).toBe("application/manifest+json");
+    expect(JSON.parse(response.text)).toMatchObject({
+      start_url: "/",
+      scope: "/",
+    });
+  });
 });
