@@ -35,8 +35,7 @@ import {
   EXTERNAL_READER_PATH,
   buildExternalReaderUrl,
 } from "@/web/v2/external/external_url.common";
-
-const PAGE_TITLE_SUFFIX = "Latin Reader - Morcus Latin Tools";
+import { formatReaderPageTitle } from "@/web/v2/reader/reader_slots.common";
 
 const LINE_MODE_LABELS: Record<LineMode, { name: string; hint: string }> = {
   keep: {
@@ -198,7 +197,8 @@ export function renderExternalLandingPageHtml(
   options: ExternalLandingOptions = {}
 ): string {
   return renderPageShell({
-    title: `Read your own text - ${PAGE_TITLE_SUFFIX}`,
+    title: formatReaderPageTitle({ heading: "Read your own text" }),
+    canonicalPath: EXTERNAL_READER_PATH,
     activePage: "library",
     isExternal: true,
     contentHtml: renderExternalLandingContentHtml(options),
@@ -245,9 +245,10 @@ function readerUrl(
 
 /** Tab title, in the same format the reader view's `refreshTitle` uses. */
 function pageTitle(model: ExternalFrameModel): string {
-  return model.query
-    ? `${model.query} - ${PAGE_TITLE_SUFFIX}`
-    : `${model.workTag}: ${model.title} - ${PAGE_TITLE_SUFFIX}`;
+  return formatReaderPageTitle({
+    workTag: model.workTag,
+    heading: model.title,
+  });
 }
 
 function renderStickyBar(model: ExternalFrameModel): string {

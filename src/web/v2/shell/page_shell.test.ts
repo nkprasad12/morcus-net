@@ -87,26 +87,50 @@ describe("renderPageShell", () => {
     expect(html).toContain('src="/v2/assets/dict.js"');
   });
 
-  test("links the manifest and theme colour on top-level pages only", () => {
-    const head = (hideAppBar: boolean) =>
+  test("links the manifest, theme colour, OpenGraph tags, and canonical URL on top-level pages only", () => {
+    const head = (hideAppBar: boolean, canonicalPath?: string) =>
       renderPageShell({
-        title: "T",
+        title: "Caesar & Gaul",
+        canonicalPath,
         activePage: "dicts",
         contentHtml: "<div></div>",
         hideAppBar,
       }).split("</head>")[0];
 
-    const topLevel = head(false);
+    const topLevel = head(false, "/v2/dicts?q=Gallia&o=1");
     expect(topLevel).toContain(
       '<link rel="manifest" href="/public/pwa.webmanifest">'
     );
     expect(topLevel).toContain(
       `<meta name="theme-color" content="${THEME_COLOR.light}">`
     );
+    expect(topLevel).toContain(
+      '<link rel="canonical" href="https://morcus.net/v2/dicts?q=Gallia&amp;o=1">'
+    );
+    expect(topLevel).toContain(
+      '<meta property="og:url" content="https://morcus.net/v2/dicts?q=Gallia&amp;o=1">'
+    );
+    expect(topLevel).toContain(
+      '<meta property="og:site_name" content="Morcus Latin Tools">'
+    );
+    expect(topLevel).toContain(
+      '<meta property="og:title" content="Caesar &amp; Gaul">'
+    );
+    expect(topLevel).toContain('<meta property="og:type" content="website">');
+    expect(topLevel).toContain(
+      '<meta property="og:image" content="https://morcus.net/public/logo512.png">'
+    );
 
-    const embedded = head(true);
+    const noCanonical = head(false);
+    expect(noCanonical).not.toContain('rel="canonical"');
+    expect(noCanonical).not.toContain('property="og:url"');
+    expect(noCanonical).toContain('property="og:title"');
+
+    const embedded = head(true, "/v2/dicts?q=Gallia");
     expect(embedded).not.toContain('rel="manifest"');
     expect(embedded).not.toContain('name="theme-color"');
+    expect(embedded).not.toContain('rel="canonical"');
+    expect(embedded).not.toContain('property="og:');
   });
 
   test("emits route-specific scripts in dependency order and dict.js prefetch on reader pages", () => {

@@ -473,8 +473,15 @@ export function renderDictPageHtml(options: DictPageOptions): string {
     </morcus-dict-search>
   `;
 
+  const canonicalPath = options.isIdSearch
+    ? `/v2/dicts/id/${encodeURIComponent(query)}`
+    : query
+    ? `/v2/dicts?${new URLSearchParams({ q: query }).toString()}`
+    : "/v2/dicts";
+
   return renderPageShell({
     title: dictPageTitle(query, options.isIdSearch),
+    canonicalPath,
     activePage: "dicts",
     contentHtml,
     hideAppBar: isEmbedded,

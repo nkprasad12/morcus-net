@@ -32,7 +32,10 @@ import {
 } from "@/web/v2/core/index.client";
 import type { SafeHtml } from "@/web/v2/core/html.common";
 import { removeMacrons } from "@/common/text_cleaning";
-import { READER_PAGE_SLOTS } from "@/web/v2/reader/reader_slots.common";
+import {
+  READER_PAGE_SLOTS,
+  formatReaderPageTitle,
+} from "@/web/v2/reader/reader_slots.common";
 import {
   DEFAULT_READER_PREFS,
   getWorkMacra,
@@ -298,7 +301,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           return;
         }
         this.#lookupWord(q, this.#findWordElement(q), false);
-        this.#refreshTitle();
       },
       onNavigate: (event) => {
         const prevUrl = new URL(event.prevPath, window.location.origin);
@@ -321,7 +323,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
               false
             );
           }
-          this.#refreshTitle();
         }
       },
     });
@@ -1376,14 +1377,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const heading = this.querySelector(
       ".reader-passage-heading"
     )?.textContent?.trim();
-    if (this.#currentQuery) {
-      document.title = `${
-        this.#currentQuery
-      } - Latin Reader - Morcus Latin Tools`;
-    } else if (heading && workTag) {
-      document.title = `${workTag}: ${heading} - Latin Reader - Morcus Latin Tools`;
-    } else if (workTag) {
-      document.title = `${workTag} - Latin Reader - Morcus Latin Tools`;
+    if (workTag || heading) {
+      document.title = formatReaderPageTitle({
+        workTag,
+        heading,
+      });
     }
   }
 

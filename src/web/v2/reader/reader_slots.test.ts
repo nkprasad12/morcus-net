@@ -7,7 +7,10 @@ import {
   renderReaderPartialHtml,
   type ReaderPageOptions,
 } from "@/web/v2/reader/reader.server";
-import { READER_PAGE_SLOTS } from "@/web/v2/reader/reader_slots.common";
+import {
+  READER_PAGE_SLOTS,
+  formatReaderPageTitle,
+} from "@/web/v2/reader/reader_slots.common";
 import { expectSlotParity } from "@/web/v2/testing/slot_parity";
 
 jest.mock("@/web/v2/reader/reader_loader.server", () =>
@@ -45,5 +48,26 @@ describe("reader page-turn slots", () => {
     ]) {
       expect(doc.getElementById(id)?.closest("[data-slot]")).toBeNull();
     }
+  });
+});
+
+describe("formatReaderPageTitle", () => {
+  test("formats work and heading with Morcus Latin Tools suffix", () => {
+    expect(
+      formatReaderPageTitle({
+        workTag: "De Bello Gallico",
+        heading: "Book 1, Chapter 1",
+      })
+    ).toBe("De Bello Gallico: Book 1, Chapter 1 - Morcus Latin Tools");
+    expect(
+      formatReaderPageTitle({
+        workTag: "Saved text",
+        heading: "Saved text",
+      })
+    ).toBe("Saved text - Morcus Latin Tools");
+    expect(formatReaderPageTitle({ heading: "Read your own text" })).toBe(
+      "Read your own text - Morcus Latin Tools"
+    );
+    expect(formatReaderPageTitle({})).toBe("Morcus Latin Tools");
   });
 });

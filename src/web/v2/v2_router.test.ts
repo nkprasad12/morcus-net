@@ -91,6 +91,9 @@ describe("v2_router integration", () => {
     expect(res.text).toContain("morcus-dict-search");
     expect(res.text).toContain("amo");
     expect(res.text).toContain("Lewis");
+    expect(res.text).toContain(
+      '<link rel="canonical" href="https://morcus.net/v2/dicts?q=amo">'
+    );
   });
 
   test("GET /v2/dicts with format=partial returns only the results snippet", async () => {
@@ -151,6 +154,9 @@ describe("v2_router integration", () => {
     expect(res.headers["vary"]).toContain("X-Requested-With");
     expect(res.text).toContain("<!DOCTYPE html>");
     expect(res.text).toContain("ID n20077 - Morcus Dictionary");
+    expect(res.text).toContain(
+      '<link rel="canonical" href="https://morcus.net/v2/dicts/id/n20077">'
+    );
     expect(res.text).toContain("amo");
     // The search bar reflects the user's saved GAF-only, exact-headword preferences.
     expect(res.text).toContain('data-d="2" data-o="0"');

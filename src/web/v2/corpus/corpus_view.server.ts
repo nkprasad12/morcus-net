@@ -409,8 +409,12 @@ export function renderCorpusPageHtml(
   view: CorpusSearchView,
   lemmataVersion?: string
 ): string {
+  const canonicalPath = view.params.q
+    ? `${CORPUS_PATH}?${new URLSearchParams({ q: view.params.q }).toString()}`
+    : CORPUS_PATH;
   return renderPageShell({
     title: corpusPageTitle(view.params.q),
+    canonicalPath,
     activePage: "corpus",
     widthSurface: "corpus",
     contentHtml: renderCorpusContentHtml(view, lemmataVersion),

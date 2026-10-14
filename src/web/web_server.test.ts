@@ -257,6 +257,16 @@ describe("WebServer", () => {
     expect(response.headers["content-type"]).not.toContain("text/html");
   });
 
+  test("serves robots.txt at the root ahead of the SPA fallback", async () => {
+    const response = await request(app).get("/robots.txt");
+
+    expect(response.status).toBe(200);
+    expect(response.type).toBe("text/plain");
+    expect(response.text).toContain("User-agent: *");
+    expect(response.text).toContain("Disallow: /api/");
+    expect(response.text).toContain("Disallow: /*?*format=partial");
+  });
+
   test("serves the manifest as application/manifest+json", async () => {
     const response = await request(app).get("/public/pwa.webmanifest");
 

@@ -131,6 +131,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
 
   return renderPageShell({
     title: "Classical Library - Morcus Latin Tools",
+    canonicalPath: "/v2/library",
     activePage: "library",
     widthSurface: "library",
     contentHtml,
