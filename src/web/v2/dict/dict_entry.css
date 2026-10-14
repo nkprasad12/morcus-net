@@ -201,6 +201,8 @@
   font-size: calc(0.92rem * var(--dict-scale, 1));
 }
 
+/* Sense list container inside an entry. Link/ordinal styling for `.toc-link`
+   and `.toc-ordinal` is owned by dict_toc.css (shared with the TOC rail). */
 .entry .toc-list,
 .toc-list {
   margin: 0;
@@ -212,29 +214,6 @@
 .toc-list li {
   margin-bottom: var(--space-3);
   line-height: 1.45;
-}
-
-.toc-link,
-.toc-link:visited {
-  color: var(--text);
-  text-decoration: none;
-}
-
-.toc-link:hover {
-  color: var(--primary);
-  text-decoration: underline;
-}
-
-.toc-link:focus:not(:focus-visible) {
-  color: var(--text);
-  text-decoration: none;
-  outline: none;
-}
-
-.toc-ordinal {
-  font-weight: 700;
-  color: var(--primary);
-  margin-right: var(--space-3);
 }
 
 .table-scroller {

@@ -71,13 +71,6 @@
     display: contents;
   }
 
-  /* Static bottom scroll cushion: sized to max drawer height so passage text is never
-     occluded and scrollHeight never jumps during scroll or drawer state changes */
-  .reader-text-panel {
-    flex: 1 1 auto;
-    padding-bottom: calc(88svh + 36px);
-  }
-
   /* Active state: Height drawer in stable svh units */
   .reader-layout-active .reader-dict-panel {
     flex: none;

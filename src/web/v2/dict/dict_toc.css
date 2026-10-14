@@ -68,15 +68,6 @@
   flex-direction: column;
 }
 
-.toc-section-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  margin-bottom: var(--space-3);
-}
-
 .toc-entries-summary {
   padding-bottom: var(--space-5);
   border-bottom: 1.5px dashed var(--border-mid);
@@ -237,6 +228,12 @@
 .toc-link:hover {
   color: var(--primary);
   text-decoration: underline;
+}
+
+.toc-link:focus:not(:focus-visible) {
+  color: var(--text);
+  text-decoration: none;
+  outline: none;
 }
 
 .toc-ordinal {

@@ -55,13 +55,12 @@
   display: none;
 }
 
+/* Base (flex, align-items, border-bottom) comes from the shared popover header
+   rule in core/components.css; only reader-specific additions live here. */
 .reader-toc-header {
-  display: flex;
-  align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   background: var(--card-header-bg, var(--bg));
-  border-bottom: 1px solid var(--border);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 

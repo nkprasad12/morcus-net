@@ -40,7 +40,16 @@
       "react": ["../node_modules/preact/compat/"],
       "react/jsx-runtime": ["../node_modules/preact/jsx-runtime"],
       "react-dom": ["../node_modules/preact/compat/"],
-      "react-dom/*": ["../node_modules/preact/compat/*"]
+      "react-dom/*": ["../node_modules/preact/compat/*"],
+      // ESM-only packages with an `exports`-only package.json, which the
+      // default (node10) module resolution cannot see. Jest resolves these
+      // itself (see `transformIgnorePatterns` in jest.config.js).
+      "@csstools/selector-resolve-nested": [
+        "../node_modules/@csstools/selector-resolve-nested/dist/index.d.ts"
+      ],
+      "@csstools/selector-specificity": [
+        "../node_modules/@csstools/selector-specificity/dist/index.d.ts"
+      ]
     },
     // "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
     // "typeRoots": [],                                  /* Specify multiple folders that act like './node_modules/@types'. */
