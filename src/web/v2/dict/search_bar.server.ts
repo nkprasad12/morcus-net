@@ -187,7 +187,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   // adopts them (`readRenderedDictState`) instead of re-deriving state from the URL or storage.
   // A `lang=` view's search leaves the scope, so it submits no `d` (see `SearchBarOptions.lang`).
   return `
-    <form class="search-form" action="${escapeHtml(
+    <form class="search-form" role="search" action="${escapeHtml(
       options.action
     )}" method="GET" data-d="${escapeHtml(dictBitmask)}" data-o="${
     isInflected ? "1" : "0"
@@ -205,6 +205,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           placeholder="${escapeHtml(placeholder)}"
           autocomplete="off"
           enterkeyhint="search"
+          aria-keyshortcuts="/"
         />
         <button
           type="submit"

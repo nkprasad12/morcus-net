@@ -473,6 +473,32 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator(".dict-card").first()).toBeVisible();
   });
 
+  test("'/' focuses the search box and pre-fills it from a selected word", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts?q=habeo");
+    const word = page.locator('.lat-word:has-text("habere")').first();
+    await expect(word).toBeVisible();
+
+    // Select the word with a real DOM range rather than a (double-)click,
+    // which would also look the word up.
+    await word.evaluate((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+    await page.keyboard.press("/");
+
+    const input = page.locator("#dict-q");
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue("habere");
+    // The query is selected, so typing replaces it.
+    await page.keyboard.type("amo");
+    await expect(input).toHaveValue("amo");
+  });
+
   test("words are plain spans until hovered, then middle-click opens a new tab", async ({
     page,
     context,
@@ -1009,6 +1035,36 @@ test.describe("UI V2 dictionary", () => {
     // Verify dictionary results render inside the frame
     await expect(frame.locator(".dict-card").first()).toBeVisible();
     await expect(frame.locator(".dict-title").first()).toContainText("Lewis");
+  });
+
+  test("'/' in the reader opens the dictionary panel and pre-fills its search box from a selected passage word", async ({
+    page,
+  }) => {
+    // No ?q=, so the dictionary panel starts closed and its lazy iframe may
+    // not have loaded yet: '/' has to wait for it.
+    await page.goto("/v2/reader/caesar/de_bello_gallico/1.1");
+    const word = page.locator("#reader-passage .lat-word").first();
+    await expect(word).toBeVisible();
+    const wordText = ((await word.textContent()) ?? "").trim();
+    expect(wordText).not.toBe("");
+
+    // Select the word with a real DOM range rather than a (double-)click,
+    // which would also look the word up and load the iframe at that query.
+    await word.evaluate((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+    await page.keyboard.press("/");
+
+    await expect(page.locator("aside.reader-dict-panel")).not.toHaveClass(
+      /\bdrawer-minimized\b/
+    );
+    const dictInput = page.frameLocator("#dict-frame").locator("#dict-q");
+    await expect(dictInput).toBeFocused();
+    await expect(dictInput).toHaveValue(wordText);
   });
 
   test("dictionary landing page on mobile viewports scrolls to bottom without clipping footer or trapping scroll", async ({

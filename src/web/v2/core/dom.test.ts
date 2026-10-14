@@ -8,7 +8,9 @@ import {
   assertConnected,
   currentIframeSrc,
   escapeId,
+  extractSelectedWord,
   flashElement,
+  isShortcutBlocked,
   syncIframeTheme,
 } from "@/web/v2/core/dom.client";
 import { detachedDomWrites } from "@/web/v2/core/dom_invariants.client";
@@ -357,6 +359,114 @@ describe("core/dom.client", () => {
         },
       });
       expect(currentIframeSrc(crossOriginFrame)).toBe("https://example.com");
+    });
+  });
+
+  describe("isShortcutBlocked", () => {
+    it("allows plain keydown events outside inputs and overlays", () => {
+      const ev = new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      });
+      document.body.dispatchEvent(ev);
+      expect(isShortcutBlocked(ev)).toBe(false);
+    });
+
+    it("blocks events with modifiers, defaultPrevented, or isComposing", () => {
+      expect(
+        isShortcutBlocked(
+          new KeyboardEvent("keydown", { key: "/", ctrlKey: true })
+        )
+      ).toBe(true);
+      expect(
+        isShortcutBlocked(
+          new KeyboardEvent("keydown", { key: "/", metaKey: true })
+        )
+      ).toBe(true);
+      expect(
+        isShortcutBlocked(
+          new KeyboardEvent("keydown", { key: "/", altKey: true })
+        )
+      ).toBe(true);
+      expect(
+        isShortcutBlocked(
+          new KeyboardEvent("keydown", { key: "/", isComposing: true })
+        )
+      ).toBe(true);
+
+      const cancelled = new KeyboardEvent("keydown", {
+        key: "/",
+        cancelable: true,
+      });
+      cancelled.preventDefault();
+      expect(isShortcutBlocked(cancelled)).toBe(true);
+    });
+
+    it("blocks events inside inputs, contenteditable, or open dialogs", () => {
+      const input = document.createElement("input");
+      document.body.appendChild(input);
+      const inputEv = new KeyboardEvent("keydown", { key: "/", bubbles: true });
+      input.dispatchEvent(inputEv);
+      expect(isShortcutBlocked(inputEv)).toBe(true);
+      input.remove();
+
+      const dialog = document.createElement("dialog");
+      dialog.setAttribute("open", "");
+      document.body.appendChild(dialog);
+      const bodyEv = new KeyboardEvent("keydown", { key: "/", bubbles: true });
+      document.body.dispatchEvent(bodyEv);
+      expect(isShortcutBlocked(bodyEv)).toBe(true);
+      dialog.remove();
+    });
+  });
+
+  describe("extractSelectedWord", () => {
+    afterEach(() => {
+      window.getSelection()?.removeAllRanges();
+    });
+
+    it("returns empty string when selection is empty or collapsed", () => {
+      expect(extractSelectedWord()).toBe("");
+
+      const p = document.createElement("p");
+      p.textContent = "Gallia est omnis";
+      document.body.appendChild(p);
+      const range = document.createRange();
+      range.setStart(p.firstChild!, 2);
+      range.collapse(true);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      expect(sel.isCollapsed).toBe(true);
+      expect(extractSelectedWord()).toBe("");
+    });
+
+    it("extracts the first word token and strips surrounding punctuation", () => {
+      const p = document.createElement("p");
+      p.textContent = "  «Mūsa,» mihī causas memora ";
+      document.body.appendChild(p);
+      const range = document.createRange();
+      range.selectNodeContents(p);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      expect(extractSelectedWord()).toBe("Mūsa");
+    });
+
+    it("returns empty string when selection contains only punctuation or whitespace", () => {
+      const p = document.createElement("p");
+      p.textContent = " — «...» ";
+      document.body.appendChild(p);
+      const range = document.createRange();
+      range.selectNodeContents(p);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      expect(extractSelectedWord()).toBe("");
     });
   });
 });

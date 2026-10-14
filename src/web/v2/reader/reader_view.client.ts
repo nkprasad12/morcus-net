@@ -11,7 +11,9 @@ import {
   createWordSpan,
   currentIframeSrc,
   escapeId,
+  extractSelectedWord,
   isPlainLeftClick,
+  isShortcutBlocked,
   measureSvh100,
   openSectionActionMenu,
   registerElement,
@@ -70,22 +72,6 @@ import {
 } from "@/web/v2/reader/reader_highlight.common";
 
 export const READER_DRAWER_MIN_HEIGHT = 40;
-
-/**
- * Targets where single-key reader shortcuts must not fire: native and ARIA text
- * / selection controls, contenteditable regions, and overlays outside the
- * reader's own TOC / Appearance popovers (those two are `<div role="dialog">`,
- * not `<dialog>` or `[popover]`, so `t` and `a` can still close them while
- * their close button or a TOC link holds focus).
- */
-const SHORTCUT_BLOCKED_TARGET =
-  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), ' +
-  '[role="textbox"], [role="searchbox"], [role="combobox"], [role="listbox"], ' +
-  'dialog, [role="menu"], [popover], .mobile-menu';
-
-/** Open overlays that block reader shortcuts even before focus moves inside. */
-const SHORTCUT_BLOCKED_OPEN_OVERLAY =
-  "dialog[open], .section-action-menu, .mobile-menu[open]";
 
 export {
   type ReaderFontFamily,
@@ -377,6 +363,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         // Searches inside the dictionary iframe are activity too, but its
         // events never reach this document's listeners.
         this.#wakeLock.extend();
+        this.#consumePendingDictFocus();
       });
       if (this.#currentPrefs.dictScale !== 100) {
         const src = iframe.getAttribute("src");
@@ -850,6 +837,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     updateHistory: boolean = true
   ) {
     if (!word) return;
+    this.#pendingDictFocusWord = null;
 
     const targetSrc = `/v2/dicts?q=${encodeURIComponent(
       word
@@ -1102,17 +1090,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.#applyMacra(prefs.showMacra);
   }
 
-  // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC, N Notes, I About, A Appearance) ---
+  // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC, N Notes, I About, A Appearance, / Search) ---
+  #pendingDictFocusWord: string | null = null;
+
   #initKeyboardShortcuts() {
     this.scope.listen(window, "keydown", (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.isComposing) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      const target =
-        e.target instanceof Element ? e.target : document.activeElement;
-      if (target instanceof HTMLElement && target.isContentEditable) return;
-      if (target?.closest(SHORTCUT_BLOCKED_TARGET)) return;
-      if (document.querySelector(SHORTCUT_BLOCKED_OPEN_OVERLAY)) return;
+      if (isShortcutBlocked(e)) return;
 
       if (e.key === "[" || e.key === "]") {
         const dir: PageDir = e.key === "[" ? "prev" : "next";
@@ -1150,8 +1133,57 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           e.preventDefault();
           settings.toggle();
         }
+      } else if (e.key === "/") {
+        if (this.#dictFrame) {
+          // Global shortcut opens the dictionary panel and focuses its search box
+          e.preventDefault();
+          const selectedWord = extractSelectedWord();
+          this.activatePanelTab("dict");
+          this.#focusDictSearch(selectedWord);
+        }
       }
     });
+  }
+
+  #findDictSearchInput(): HTMLInputElement | null {
+    try {
+      return (
+        this.#dictFrame?.contentDocument?.querySelector<HTMLInputElement>(
+          "#dict-q"
+        ) ?? null
+      );
+    } catch {
+      // Cross-origin barrier safely ignored
+      return null;
+    }
+  }
+
+  #applyDictSearchFocus(input: HTMLInputElement, word: string) {
+    if (word) {
+      input.value = word;
+    }
+    input.focus();
+    input.select();
+  }
+
+  #focusDictSearch(selectedWord: string) {
+    const input = this.#findDictSearchInput();
+    if (input) {
+      this.#pendingDictFocusWord = null;
+      this.#applyDictSearchFocus(input, selectedWord);
+      return;
+    }
+    this.#pendingDictFocusWord = selectedWord;
+  }
+
+  #consumePendingDictFocus() {
+    const word = this.#pendingDictFocusWord;
+    if (word === null) return;
+    this.#pendingDictFocusWord = null;
+    const input = this.#findDictSearchInput();
+    if (input) {
+      this.#applyDictSearchFocus(input, word);
+    }
   }
 
   // --- In-Place Page Swapping & Partial Navigation ---

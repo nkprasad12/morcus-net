@@ -12,8 +12,10 @@ describe("renderDictSearchBar", () => {
     });
 
     expect(html).toContain('class="search-form"');
+    expect(html).toContain('role="search"');
     expect(html).toContain('action="/v2/dicts"');
     expect(html).toContain('value="habeo"');
+    expect(html).toContain('aria-keyshortcuts="/"');
     expect(html).toContain("<morcus-dict-settings>");
     expect(html).toContain('class="input"');
     expect(html).toContain('placeholder="Search for a word"');

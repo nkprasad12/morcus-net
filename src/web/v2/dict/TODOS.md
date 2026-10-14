@@ -292,7 +292,7 @@ defect analysis behind it (findings F1–F9) is archived in
 
 ## 10. Every word in an entry is a link (screen readers)
 
-**Status:** done, except for the keyboard lookup path noted below.
+**Status:** done.
 
 `enhanceWords` used to turn every Latin word in the results into an `<a href>`, and the reader made
 every passage word a `role="button" tabindex="0"` span. Either way a long entry put thousands of
@@ -329,12 +329,15 @@ User-visible differences, for the record:
 - Touch: long-press on a dictionary word no longer offers "Open in new tab" (the swap is
   mouse-only). Tap-to-lookup is unchanged.
 - Keyboard: <kbd>Enter</kbd> / <kbd>Space</kbd> on a focused reader word is gone, since no word can
-  be focused. The remaining keyboard path is the search box.
+  be focused. Pressing <kbd>/</kbd> focuses the dictionary search box (opening the reader's
+  dictionary panel if needed) and pre-fills it from any non-collapsed text selection.
 
-- [ ] **Keyboard lookup without a mouse.** Deferred until someone asks for it. The obvious shape is
-      one shortcut in both slices that looks up the current text selection (first Latin word of
-      `getSelection()`), reusing the reader's `#initKeyboardShortcuts` guards. Selection without a
-      mouse comes from caret browsing, a screen reader's cursor, or <kbd>Shift</kbd>+arrows.
+- [x] **Keyboard lookup without a mouse.** Pressing <kbd>/</kbd> in either slice focuses and selects
+      `#dict-q` (annotated with `aria-keyshortcuts="/"` inside `<form class="search-form" role="search">`),
+      pre-filling the first word token of any non-collapsed `getSelection()` (`extractSelectedWord`
+      and `isShortcutBlocked` in [`core/dom.client.ts`](../core/dom.client.ts)) so the user can edit
+      or press <kbd>Enter</kbd> to submit; in the reader it also activates the dictionary companion
+      panel and restores the drawer.
 
 ---
 

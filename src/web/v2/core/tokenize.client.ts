@@ -173,11 +173,7 @@ export function canSwapWordOnHover(
   e: PointerEvent,
   wordEl: HTMLElement
 ): boolean {
-  if (
-    e.pointerType === "touch" ||
-    e.pointerType === "pen" ||
-    e.buttons !== 0
-  ) {
+  if (e.pointerType === "touch" || e.pointerType === "pen" || e.buttons !== 0) {
     return false;
   }
   const selection = document.getSelection();

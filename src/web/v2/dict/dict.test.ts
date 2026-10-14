@@ -361,7 +361,7 @@ describe("dict_ssr", () => {
     );
     // The form publishes the resolved state for the client to adopt: defaults here.
     expect(pageHtml).toContain(
-      '<form class="search-form" action="/v2/dicts" method="GET" data-d="an" data-o="1">'
+      '<form class="search-form" role="search" action="/v2/dicts" method="GET" data-d="an" data-o="1">'
     );
     expect(pageHtml).toContain("<morcus-dict-search>");
     expect(pageHtml).toContain("<morcus-dict-settings>");
