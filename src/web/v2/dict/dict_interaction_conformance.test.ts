@@ -9,6 +9,7 @@ import {
   clickOn,
   describeInteractionConformance,
   focusOn,
+  hoverOn,
   pressKey,
   submitFormOf,
   typeIn,
@@ -60,6 +61,14 @@ describeInteractionConformance("dict", {
         clickOn(".dict-checkbox:not(:checked)"),
         clickOn(".dict-settings-done"),
       ],
+      expectSwap: true,
+    },
+    {
+      // A hovered word becomes a link (`#linkifyHoveredWord`); nothing else
+      // in the page may change, and the link must be a usable No-JS control.
+      fixture: "dict-results",
+      name: "hover a word, then look it up",
+      steps: [hoverOn(".lat-word"), clickOn(".lat-word")],
       expectSwap: true,
     },
     {

@@ -1,7 +1,8 @@
 import {
   BaseElement,
+  canSwapWordOnHover,
   closeActiveSectionUI,
-  createWordLink,
+  createWordSpan,
   fetchAndSwapPartial,
   isPlainLeftClick,
   KeyedFetchCache,
@@ -9,6 +10,7 @@ import {
   registerElement,
   replaceWithHtml,
   setHtml,
+  swapWordSpanForLink,
   tokenizeTargets,
   type QueryParamSync,
 } from "@/web/v2/core/index.client";
@@ -236,6 +238,11 @@ export class MorcusDictSearch extends BaseElement<
     }
 
     if (this.#resultsElement) {
+      this.scope.listen(
+        this.#resultsElement,
+        "pointerover",
+        this.#linkifyHoveredWord
+      );
       this.scope.listen(this.#resultsElement, "click", (e: MouseEvent) => {
         if (e.defaultPrevented || !(e.target instanceof Element)) return;
 
@@ -336,7 +343,7 @@ export class MorcusDictSearch extends BaseElement<
   }
 
   /**
-   * Tokenizes the results into word links in a task of its own, after the
+   * Tokenizes the results into word spans in a task of its own, after the
    * next paint, so the results (and the scroll to them) appear first. On a
    * long entry tokenizing takes 100+ ms on desktop and most of a second on a
    * phone. Until it runs the words are plain text, exactly as before the
@@ -344,7 +351,7 @@ export class MorcusDictSearch extends BaseElement<
    *
    * Keep the task to tokenizing alone: a layout read after it (a `scrollY`,
    * a `getBoundingClientRect`) would force the style and layout of every new
-   * link synchronously, instead of leaving it to the next frame.
+   * span synchronously, instead of leaving it to the next frame.
    */
   #enhanceWordsAfterPaint() {
     const signal = this.scope.latest("words");
@@ -589,15 +596,12 @@ export class MorcusDictSearch extends BaseElement<
   public enhanceWords(container: HTMLElement | null) {
     if (!container) return;
 
-    // Hoisted out of `renderWord`: a long entry has thousands of words, so
-    // anything done per word here shows up directly in mount time.
-    const searchParams = new URLSearchParams(window.location.search);
-    const hrefFor = dictUrlBuilder({
-      d: this.#activeDictBitmask,
-      inflected: this.#isInflected,
-      lang: searchParams.get("lang"),
-      embedded: searchParams.get("embedded"),
-    });
+    // Words become plain spans, not links: a long entry has thousands of them
+    // (about 5,900 for `sum`), and as anchors they would all sit in the tab
+    // order and in a screen reader's links list. The click listener on the
+    // results handles lookup, and `#linkifyHoveredWord` gives a word a real
+    // `href` while the mouse is over it. Not building an `href` per word also
+    // keeps this tokenize pass, which runs right after paint, shorter.
     tokenizeTargets(container, {
       targetSelector: "[data-tokenize-target='true'], .entry-content",
       enhancedDatasetKey: "wordsEnhanced",
@@ -606,9 +610,41 @@ export class MorcusDictSearch extends BaseElement<
         return typeof cls === "string" && NO_WORD_LINK_CLASSES.test(cls);
       },
       renderWord: (token, cleanWord) =>
-        createWordLink(token, cleanWord, hrefFor(cleanWord)),
+        createWordSpan(token, { word: cleanWord }),
     });
   }
+
+  /**
+   * Builds the lookup URL a word links to, for the current dictionary selection
+   * and inflection setting and this page's `lang` / `embedded` scope.
+   */
+  #wordHref(word: string): string {
+    const searchParams = new URLSearchParams(window.location.search);
+    return dictUrlBuilder({
+      d: this.#activeDictBitmask,
+      inflected: this.#isInflected,
+      lang: searchParams.get("lang"),
+      embedded: searchParams.get("embedded"),
+    })(word);
+  }
+
+  /**
+   * `pointerover` on the results: turns the word under the mouse into a real
+   * link, so middle-click, Ctrl+click and the context menu's "Open in new tab"
+   * and "Copy link" work on it. Those all require hovering first, so making
+   * only hovered words links keeps the rest of the entry free of anchors. The
+   * swapped anchor stays; hovering it again only refreshes its `href`, which
+   * matters when the dictionary settings changed without the results being
+   * re-fetched (the search box was empty, or the fetch failed).
+   */
+  readonly #linkifyHoveredWord = (e: PointerEvent) => {
+    if (!(e.target instanceof Element)) return;
+    const wordEl = e.target.closest<HTMLElement>(".lat-word");
+    if (!wordEl || !canSwapWordOnHover(e, wordEl)) return;
+    const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
+    if (!word) return;
+    swapWordSpanForLink(wordEl, this.#wordHref(word));
+  };
 }
 
 registerElement("morcus-dict-search", MorcusDictSearch);

@@ -392,6 +392,10 @@ function checkInvariants(
   for (const el of removed) {
     if (swapped && inSwapRegion(el, baseline)) continue;
     if (inIsomorphicRerender(el, ssrParent)) continue;
+    // The baseline is taken after upgrade, so it holds JS-created nodes too.
+    // Those are not SSR nodes: the component that made one may replace it
+    // (the dictionary swaps a hovered `.lat-word` span for a link).
+    if (isAllowlistedCreation(el, "interaction")) continue;
     out.push(`removed ${describeElement(el)}`);
   }
   for (const { el, from } of reparented) {
@@ -626,6 +630,16 @@ export const submitFormOf = (selector: string): Step => ({
 export const clickOn = (selector: string): Step => ({
   name: `click ${selector}`,
   act: () => find(selector).click(),
+});
+/** Moves the mouse onto the element, as before a middle-click or context menu. */
+export const hoverOn = (selector: string): Step => ({
+  name: `hover ${selector}`,
+  act: () => {
+    // jsdom has no PointerEvent; listeners read `pointerType` off the event.
+    const e = new MouseEvent("pointerover", { bubbles: true });
+    Object.defineProperty(e, "pointerType", { value: "mouse" });
+    find(selector).dispatchEvent(e);
+  },
 });
 
 function runTier2(

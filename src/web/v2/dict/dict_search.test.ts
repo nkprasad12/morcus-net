@@ -248,7 +248,45 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
   });
 
-  test("generates anchor element with href preserving query params for middle-click / open in new tab", () => {
+  /**
+   * Moves the mouse onto `word`, as the browser would before any middle-click,
+   * Ctrl+click or context menu on it. jsdom has no `PointerEvent`, so this is a
+   * bubbling `MouseEvent` with the pointer fields the handler reads.
+   */
+  function hoverWord(
+    word: HTMLElement,
+    init: { pointerType?: string; buttons?: number } = {}
+  ): void {
+    const e = new MouseEvent("pointerover", {
+      bubbles: true,
+      buttons: init.buttons ?? 0,
+    });
+    Object.defineProperty(e, "pointerType", {
+      value: init.pointerType ?? "mouse",
+    });
+    word.dispatchEvent(e);
+  }
+
+  test("renders words as plain spans, not links or controls", () => {
+    const resultsHtml = `
+      <article class="entry">
+        <div class="entry-content">
+          <p><span class="lsQuote">Gallia est</span></p>
+        </div>
+      </article>
+    `;
+    const el = createDictSearch(resultsHtml);
+    const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
+    expect(words).toHaveLength(2);
+    for (const w of words) {
+      expect(w.localName).toBe("span");
+      expect(w.hasAttribute("href")).toBe(false);
+      expect(w.hasAttribute("role")).toBe(false);
+      expect(w.hasAttribute("tabindex")).toBe(false);
+    }
+  });
+
+  test("hovering a word with the mouse makes it a link whose href preserves the dictionary state", () => {
     // `embedded` still comes from the page URL; dictionaries come from the rendered form state.
     window.history.replaceState(
       {},
@@ -265,19 +303,99 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     `;
 
     const el = createDictSearch(resultsHtml, 'data-d="1" data-o="1"');
-    const galliaLink = el.querySelector<HTMLAnchorElement>(
+    const results = el.querySelector<HTMLElement>("#dict-results")!;
+    const galliaSpan = results.querySelector<HTMLElement>(
       '.lat-word[data-word="Gallia"]'
     )!;
+    hoverWord(galliaSpan);
 
-    expect(galliaLink).not.toBeNull();
+    const galliaLink = results.querySelector<HTMLElement>(
+      '.lat-word[data-word="Gallia"]'
+    )!;
     expect(galliaLink.tagName.toLowerCase()).toBe("a");
+    expect(galliaLink.textContent).toBe("Gallia");
+    // Still out of the tab order.
+    expect(galliaLink.getAttribute("tabindex")).toBe("-1");
     // L&S bit is 1
     expect(galliaLink.getAttribute("href")).toBe(
       "/v2/dicts?q=Gallia&d=1&o=1&embedded=1"
     );
+    // Only the hovered word changed.
+    expect(
+      results.querySelector('.lat-word[data-word="est"]')?.tagName.toLowerCase()
+    ).toBe("span");
+    // Hovering it again is a no-op.
+    hoverWord(galliaLink);
+    expect(results.querySelector('.lat-word[data-word="Gallia"]')).toBe(
+      galliaLink
+    );
 
     // Clean up history state
     window.history.replaceState({}, "", "/v2/dicts");
+  });
+
+  test("does not make a word a link for touch, mid-drag, or with a selection", () => {
+    const resultsHtml = `
+      <article class="entry">
+        <div class="entry-content">
+          <p><span class="lsQuote">Gallia est omnis</span></p>
+        </div>
+      </article>
+    `;
+    const el = createDictSearch(resultsHtml);
+    const results = el.querySelector<HTMLElement>("#dict-results")!;
+    const word = (w: string) =>
+      results.querySelector<HTMLElement>(`.lat-word[data-word="${w}"]`)!;
+
+    // A finger reaching the word before a tap.
+    hoverWord(word("Gallia"), { pointerType: "touch" });
+    expect(word("Gallia").localName).toBe("span");
+
+    // The mouse sweeping across the word during a drag-select.
+    hoverWord(word("est"), { buttons: 1 });
+    expect(word("est").localName).toBe("span");
+
+    // Hovering a word that is part of a selection must not replace its nodes,
+    // which would collapse the selection.
+    const range = document.createRange();
+    range.selectNodeContents(word("omnis"));
+    document.getSelection()!.addRange(range);
+    try {
+      hoverWord(word("omnis"));
+      expect(word("omnis").localName).toBe("span");
+      // A selection elsewhere doesn't stop middle-click on another word.
+      hoverWord(word("Gallia"));
+      expect(word("Gallia").localName).toBe("a");
+      expect(document.getSelection()!.toString()).toBe("omnis");
+    } finally {
+      document.getSelection()!.removeAllRanges();
+    }
+  });
+
+  test("re-hovering a swapped word refreshes its href after a settings change the results did not re-fetch", () => {
+    const resultsHtml = `
+      <article class="entry">
+        <div class="entry-content"><p><span class="lsQuote">Gallia</span></p></div>
+      </article>
+    `;
+    // Entry permalink pages render results with an empty search box, so a
+    // settings commit updates the state but has no query to re-fetch.
+    const el = createDictSearch(resultsHtml, 'data-d="1" data-o="1"');
+    el.querySelector<HTMLInputElement>("input.input")!.value = "";
+    const word = () => el.querySelector<HTMLAnchorElement>(".lat-word")!;
+
+    hoverWord(word());
+    expect(word().getAttribute("href")).toBe("/v2/dicts?q=Gallia&d=1&o=1");
+
+    commitSettings(el, ["GAF"], false);
+    expect(global.fetch).not.toHaveBeenCalled();
+    // Still the old link until the mouse comes back to it...
+    expect(word().getAttribute("href")).toBe("/v2/dicts?q=Gallia&d=1&o=1");
+    // ...and then it reflects the new settings, without being replaced.
+    const before = word();
+    hoverWord(before);
+    expect(word()).toBe(before);
+    expect(word().getAttribute("href")).toBe("/v2/dicts?q=Gallia&d=2&o=0");
   });
 
   test("adopts the server-rendered state over a disagreeing URL and localStorage", () => {
@@ -297,6 +415,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     `;
     // GAF only (bit 1 → 2), exact headwords.
     const el = createDictSearch(resultsHtml, 'data-d="2" data-o="0"');
+    hoverWord(el.querySelector<HTMLElement>(".lat-word")!);
     const link = el.querySelector<HTMLAnchorElement>(".lat-word")!;
     expect(link.getAttribute("href")).toBe("/v2/dicts?q=Gallia&d=2&o=0");
 
@@ -316,9 +435,12 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     `;
 
     const el = createDictSearch(resultsHtml);
+    // The mouse is over the word before any of these clicks, so it is a link.
+    hoverWord(el.querySelector<HTMLElement>('.lat-word[data-word="Gallia"]')!);
     const galliaLink = el.querySelector<HTMLAnchorElement>(
       '.lat-word[data-word="Gallia"]'
     )!;
+    expect(galliaLink.localName).toBe("a");
     const dLink = el.querySelector<HTMLAnchorElement>(".dLink")!;
 
     // Normal left-click should be prevented for AJAX swap

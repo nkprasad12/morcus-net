@@ -118,8 +118,9 @@ export {
  * - Searching words in the iframe maintains the reader's scroll position 100% stationary.
  *
  * With JS:
- * - Tokenizes text nodes into clickable <span class="lat-word" role="button"> on mount (< 2ms).
- * - Clicking or pressing Enter on a word updates the dictionary iframe src and history state.
+ * - Tokenizes text nodes into clickable <span class="lat-word"> on mount (< 2ms). The spans
+ *   are not focusable, so a passage reads as prose and can be tabbed past; see `createWordSpan`.
+ * - Clicking a word updates the dictionary iframe src and history state.
  * - Manages mobile bottom sheet expansion and desktop resizable panels.
  * - Performs seamless in-place partial page swaps without full reload or losing iframe state.
  * */
@@ -640,46 +641,39 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    if (e.target.classList.contains("lat-word")) {
-      // Enter/Space on its words looks the word up
+    // Words are plain spans and never receive focus (see `createWordSpan`), so
+    // only the note markers and backlinks need keyboard handling here.
+    const noteRef = e.target.closest<HTMLAnchorElement>("a.reader-note-ref");
+    if (noteRef) {
+      // Enter/Space on its note markers opens the note
       e.preventDefault();
-      const word = e.target.dataset.word || e.target.textContent?.trim() || "";
-      if (word) {
-        this.#lookupWord(word, e.target, true);
+      const href = noteRef.getAttribute("href") || "";
+      const bodyId = href.replace(/^#/, "");
+      if (bodyId && this.#panelController) {
+        this.openNote(bodyId, noteRef, { focus: true });
       }
-    } else {
-      const noteRef = e.target.closest<HTMLAnchorElement>("a.reader-note-ref");
-      if (noteRef) {
-        // Enter/Space on its note markers opens the note
-        e.preventDefault();
-        const href = noteRef.getAttribute("href") || "";
-        const bodyId = href.replace(/^#/, "");
-        if (bodyId && this.#panelController) {
-          this.openNote(bodyId, noteRef, { focus: true });
-        }
-        return;
-      }
+      return;
+    }
 
-      const backref = e.target.closest<HTMLAnchorElement>(
-        "a.reader-note-backref"
-      );
-      if (backref) {
-        const href = backref.getAttribute("href") || "";
-        const refId = href.replace(/^#/, "");
-        const markerEl = document.getElementById(refId);
-        if (markerEl) {
-          // Enter/Space on its note backlinks jumps to the marker
-          e.preventDefault();
-          if (typeof markerEl.scrollIntoView === "function") {
-            markerEl.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-              inline: "nearest",
-            });
-          }
-          this.#setActiveMarker(markerEl);
-          markerEl.focus?.();
+    const backref = e.target.closest<HTMLAnchorElement>(
+      "a.reader-note-backref"
+    );
+    if (backref) {
+      const href = backref.getAttribute("href") || "";
+      const refId = href.replace(/^#/, "");
+      const markerEl = document.getElementById(refId);
+      if (markerEl) {
+        // Enter/Space on its note backlinks jumps to the marker
+        e.preventDefault();
+        if (typeof markerEl.scrollIntoView === "function") {
+          markerEl.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
         }
+        this.#setActiveMarker(markerEl);
+        markerEl.focus?.();
       }
     }
   };
@@ -989,8 +983,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
             lastRanges !== undefined &&
             isWordIndexHighlighted(wordIndex, lastRanges);
 
+          // Every part of a split word carries the whole word in `data-word`.
           return createWordSpan(token, {
-            part,
+            word: part?.word,
             extraClass: isMatch ? "reader-match" : undefined,
           });
         },

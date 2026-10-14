@@ -652,7 +652,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       history.replaceState(null, "", "/");
     });
 
-    test("renders one control whose parts share the whole word", () => {
+    test("renders plain spans whose parts share the whole word", () => {
       const el = createReaderView(PASSAGE);
       const [first, second, next] = wordsOf(el);
 
@@ -664,17 +664,17 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       expect(second.dataset.word).toBe("i\u0304mpetu");
       expect(first.dataset.wordGroup).toBeDefined();
       expect(second.dataset.wordGroup).toBe(first.dataset.wordGroup);
-      // Only the first part is a focusable button, labelled with the word.
-      expect(first.getAttribute("role")).toBe("button");
-      expect(first.getAttribute("tabindex")).toBe("0");
-      expect(first.getAttribute("aria-label")).toBe("i\u0304mpetu");
-      expect(second.hasAttribute("role")).toBe(false);
-      expect(second.hasAttribute("tabindex")).toBe(false);
-      expect(second.getAttribute("aria-hidden")).toBe("true");
+      // Words are prose, not controls: nothing is focusable, and no part
+      // carries ARIA, so assistive tech reads the text once as written.
+      for (const part of [first, second, next]) {
+        expect(part.localName).toBe("span");
+        expect(part.hasAttribute("role")).toBe(false);
+        expect(part.hasAttribute("tabindex")).toBe(false);
+        expect(part.hasAttribute("aria-label")).toBe(false);
+        expect(part.hasAttribute("aria-hidden")).toBe(false);
+      }
       // A whole word is unchanged.
       expect(next.textContent).toBe("liberavissent");
-      expect(next.getAttribute("role")).toBe("button");
-      expect(next.hasAttribute("aria-label")).toBe(false);
       expect(next.dataset.wordGroup).toBeUndefined();
     });
 
@@ -2854,9 +2854,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
   describe("Mobile drawer dismissal, FAB restoration, and drag recovery", () => {
     test("clicking .reader-sheet-close dismisses drawer and clicking .reader-drawer-fab restores it", () => {
-      const el = createReaderView(
-        `<p><a class="lat-word" href="?q=Omnis">Omnis</a></p>`
-      );
+      const el = createReaderView(`<p>Omnis</p>`);
       const splitLayout = el.querySelector<HTMLElement>(
         ".reader-split-layout"
       )!;
@@ -2865,7 +2863,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
         ".reader-sheet-close"
       )!;
       const fab = el.querySelector<HTMLAnchorElement>(".reader-drawer-fab")!;
-      const word = el.querySelector<HTMLAnchorElement>(".lat-word")!;
+      const word = el.querySelector<HTMLElement>(".lat-word")!;
 
       // 1. Open drawer via word lookup
       word.click();
@@ -2889,16 +2887,14 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     });
 
     test("tapping a word in the passage while drawer is dismissed automatically undismisses and opens it", () => {
-      const el = createReaderView(
-        `<p><a class="lat-word" href="?q=Omnis">Omnis</a></p>`
-      );
+      const el = createReaderView(`<p>Omnis</p>`);
       const splitLayout = el.querySelector<HTMLElement>(
         ".reader-split-layout"
       )!;
       const closeBtn = el.querySelector<HTMLAnchorElement>(
         ".reader-sheet-close"
       )!;
-      const word = el.querySelector<HTMLAnchorElement>(".lat-word")!;
+      const word = el.querySelector<HTMLElement>(".lat-word")!;
 
       closeBtn.click();
       expect(splitLayout.classList.contains("drawer-dismissed")).toBe(true);
@@ -2909,9 +2905,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     });
 
     test("dragging .reader-sheet-bar after closing reactivates .reader-layout-active and resizes drawer", () => {
-      const el = createReaderView(
-        `<p><a class="lat-word" href="?q=Omnis">Omnis</a></p>`
-      );
+      const el = createReaderView(`<p>Omnis</p>`);
       const splitLayout = el.querySelector<HTMLElement>(
         ".reader-split-layout"
       )!;
