@@ -27,6 +27,7 @@ import { getFirstHighlightSectionId } from "@/web/v2/reader/reader_highlight.com
 import { renderSlotTemplates, slotAttr } from "@/web/v2/core/slots.common";
 import {
   READER_PAGE_SLOTS,
+  formatReaderPageTitle,
   type ReaderPageSlot,
 } from "@/web/v2/reader/reader_slots.common";
 import * as he from "he";
@@ -748,14 +749,17 @@ export async function renderReaderPageHtml(
 ): Promise<string> {
   const ctx = await resolveReaderContext(options);
 
-  const title = ctx.query
-    ? `${ctx.query} - Latin Reader - Morcus Latin Tools`
-    : `${ctx.work.title} - Latin Reader - Morcus Latin Tools`;
+  const title = formatReaderPageTitle({
+    workTag: ctx.work.title,
+    heading: ctx.activePage.title,
+  });
+  const canonicalPath = buildReaderPageUrl(ctx.work, ctx.activePage);
 
   const contentHtml = renderReaderContentHtmlFromContext(ctx);
 
   return renderPageShell({
     title,
+    canonicalPath,
     activePage: "library",
     isReader: true,
     widthSurface: "reader",

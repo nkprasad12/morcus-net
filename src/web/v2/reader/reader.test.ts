@@ -235,7 +235,10 @@ describe("reader_ssr", () => {
 
     expect(pageHtml).toContain("<!DOCTYPE html>");
     expect(pageHtml).toContain(
-      "<title>Gallia - Latin Reader - Morcus Latin Tools</title>"
+      "<title>De bello Gallico: Book 1, Chapter 1 - Morcus Latin Tools</title>"
+    );
+    expect(pageHtml).toContain(
+      '<link rel="canonical" href="https://morcus.net/v2/reader/caesar/de_bello_gallico/1.1">'
     );
     expect(pageHtml).toContain('<header class="app-bar">');
     expect(pageHtml).toContain('href="/v2/library"');

@@ -27,9 +27,18 @@ export type V2ActivePage = "dicts" | "about" | "library" | "corpus";
 const BUNDLE_ONERROR =
   "document.documentElement.setAttribute('data-js-failed','')";
 
+export const SITE_ORIGIN = "https://morcus.net";
+
 interface PageShellBaseOptions {
   title: string;
   contentHtml: string;
+  /**
+   * The page's canonical path (and canonical query, if any), starting with `/`.
+   * Emits `<link rel="canonical">` and `<meta property="og:url">` under
+   * {@link SITE_ORIGIN}. Omit on non-indexable views (e.g. 404/503 error pages,
+   * imported external texts, or embedded iframes).
+   */
+  canonicalPath?: string;
   hideAppBar?: boolean;
   isReader?: boolean;
   isExternal?: boolean;
@@ -253,15 +262,29 @@ export function renderPageShell(options: PageShellOptions): string {
   const dictPrefetchHtml = isReader
     ? `\n  <link rel="prefetch" href="${getV2AssetHref("dict.js")}">`
     : "";
-  // Installability and the browser UI colour. Skipped in embedded iframes,
-  // which browsers neither install nor colour. Every byte here ships on every
-  // page, so nothing else: the favicon is `/favicon.ico`, which browsers fetch
-  // unprompted (`web_server.ts`), and the manifest covers home-screen icons
-  // and standalone mode.
+  // Installability, browser UI colour, canonical URL, and OpenGraph link card
+  // metadata. Skipped in embedded iframes, which browsers neither install nor
+  // colour and crawlers/unfurlers never visit directly. Every byte here ships on
+  // every page, so nothing else: the favicon is `/favicon.ico`, which browsers
+  // fetch unprompted (`web_server.ts`), and the manifest covers home-screen
+  // icons and standalone mode.
+  const canonicalUrlEncoded =
+    !isEmbedded && options.canonicalPath
+      ? he.escape(`${SITE_ORIGIN}${options.canonicalPath}`)
+      : "";
+  const canonicalHeadHtml = canonicalUrlEncoded
+    ? `\n  <link rel="canonical" href="${canonicalUrlEncoded}">` +
+      `\n  <meta property="og:url" content="${canonicalUrlEncoded}">`
+    : "";
   const pwaHeadHtml = isEmbedded
     ? ""
     : `\n  <link rel="manifest" href="/public/pwa.webmanifest">` +
-      `\n  <meta name="theme-color" content="${THEME_COLOR.light}">`;
+      `\n  <meta name="theme-color" content="${THEME_COLOR.light}">` +
+      canonicalHeadHtml +
+      `\n  <meta property="og:site_name" content="Morcus Latin Tools">` +
+      `\n  <meta property="og:title" content="${titleEncoded}">` +
+      `\n  <meta property="og:type" content="website">` +
+      `\n  <meta property="og:image" content="${SITE_ORIGIN}/public/logo512.png">`;
   const extraHeadHtml = options.extraHeadHtml
     ? `\n  ${options.extraHeadHtml}`
     : "";

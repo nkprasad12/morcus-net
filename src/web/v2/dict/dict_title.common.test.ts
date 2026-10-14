@@ -7,7 +7,7 @@ describe("dictPageTitle", () => {
   test("query, ID lookup, and the landing page", () => {
     expect(dictPageTitle("amo")).toBe("amo - Morcus Dictionary");
     expect(dictPageTitle("n20077", true)).toBe("ID n20077 - Morcus Dictionary");
-    expect(dictPageTitle("")).toBe("Morcus Dictionary (UI V2)");
+    expect(dictPageTitle("")).toBe("Morcus Dictionary");
   });
 });
 
@@ -18,7 +18,7 @@ describe("dictPageTitleForUrl", () => {
   test("a search titles by q, cleaned as the server does", () => {
     expect(forUrl("/v2/dicts?q=amo&d=3&o=1")).toBe("amo - Morcus Dictionary");
     expect(forUrl("/v2/dicts?q=+amo+")).toBe("amo - Morcus Dictionary");
-    expect(forUrl("/v2/dicts")).toBe("Morcus Dictionary (UI V2)");
+    expect(forUrl("/v2/dicts")).toBe("Morcus Dictionary");
   });
 
   test("an entry page titles by its id and ignores q", () => {

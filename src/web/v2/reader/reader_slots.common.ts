@@ -20,3 +20,23 @@ export const READER_PAGE_SLOTS = [
 ] as const;
 
 export type ReaderPageSlot = (typeof READER_PAGE_SLOTS)[number];
+
+const READER_TITLE_SUFFIX = "Morcus Latin Tools";
+
+/**
+ * Formats the document `<title>` for a reader page, shared by SSR
+ * (`reader.server.ts`, `external.server.ts`) and client-side updates
+ * (`reader_view.client.ts`).
+ */
+export function formatReaderPageTitle(options: {
+  workTag?: string;
+  heading?: string;
+}): string {
+  const workTag = options.workTag?.trim() ?? "";
+  const heading = options.heading?.trim() ?? "";
+  const lead =
+    workTag && heading && heading !== workTag
+      ? `${workTag}: ${heading}`
+      : workTag || heading;
+  return lead ? `${lead} - ${READER_TITLE_SUFFIX}` : READER_TITLE_SUFFIX;
+}

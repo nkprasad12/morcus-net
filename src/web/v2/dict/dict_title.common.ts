@@ -12,7 +12,7 @@ const DICT_ID_PATH = "/v2/dicts/id/";
  * `isIdSearch`: the page is `/v2/dicts/id/:id`, and `query` is that id.
  */
 export function dictPageTitle(query: string, isIdSearch = false): string {
-  if (!query) return "Morcus Dictionary (UI V2)";
+  if (!query) return "Morcus Dictionary";
   return `${isIdSearch ? `ID ${query}` : query} - Morcus Dictionary`;
 }
 

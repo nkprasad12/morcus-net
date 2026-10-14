@@ -87,6 +87,7 @@ export function renderAboutPageHtml(options: AboutPageOptions = {}): string {
   const contentHtml = renderAboutContentHtml(options);
   return renderPageShell({
     title: "About - Morcus Latin Tools",
+    canonicalPath: "/v2/about",
     activePage: "about",
     contentHtml,
   });

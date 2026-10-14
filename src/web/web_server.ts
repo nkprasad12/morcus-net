@@ -106,6 +106,9 @@ export function setupServer(params: WebServerParams): void {
   app.get("/favicon.ico", (_, res) => {
     res.sendFile(path.resolve("public", "favicon.ico"), { maxAge: MAX_AGE });
   });
+  app.get("/robots.txt", (_, res) => {
+    res.sendFile(path.resolve("public", "robots.txt"), { maxAge: MAX_AGE });
+  });
   if (params.v2Router) {
     app.use("/v2", params.v2Router);
   }

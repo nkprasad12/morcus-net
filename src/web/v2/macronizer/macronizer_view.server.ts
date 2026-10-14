@@ -586,6 +586,7 @@ export function renderMacronizerPage(
   const hasResult = options.document !== undefined;
   return renderPageShell({
     title: formatMacronizerPageTitle(hasResult),
+    canonicalPath: hasResult ? undefined : "/v2/macronizer",
     route: "macronizer",
     contentHtml: String(renderMacronizerContentHtml(options)),
   });
