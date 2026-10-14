@@ -4,7 +4,7 @@ import express, {
   type Request,
   type Response,
 } from "express";
-import { asyncHandler } from "@/web/v2/core/async_handler.server";
+import { asyncHandler } from "@/web/v2/core/server/async_handler.server";
 import {
   applyChoices,
   resolveInitialResult,
@@ -20,7 +20,7 @@ import {
   type MacronizeInputParseResult,
 } from "@/web/v2/macronizer/macronizer_params.server";
 import { MACRONIZER_MAX_CHARS } from "@/web/v2/macronizer/macronizer_slots.common";
-import { isPartialRequest } from "@/web/v2/core/request_params.server";
+import { isPartialRequest } from "@/web/v2/core/server/request_params.server";
 import {
   renderMacronizerPage,
   renderMacronizerPartial,

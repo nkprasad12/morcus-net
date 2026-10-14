@@ -101,7 +101,7 @@ This mismatch causes PH1, PH5, PH7, and PH12—and will worsen when `v2.js` is s
 Several components create structure imperatively or move server-rendered content:
 
 - [`reader_panel.client.ts`](reader/reader_panel.client.ts) (761 lines, ~13.7 kB minified) builds the companion tab bar and its panels with `createElement`, then detaches `.reader-notes`, `#reader-work-about`, and `#dict-frame` and moves them into the tabs. Hash links break (PH6), and `onDisconnect()` takes 60 lines just to put nodes back.
-- [`section_edit.client.ts`](core/section_edit.client.ts) moves a section's content nodes into a hidden `<span>` while the correction editor is open.
+- [`section_edit.client.ts`](core/widgets/section_edit.client.ts) moves a section's content nodes into a hidden `<span>` while the correction editor is open.
 - [`reader_view.client.ts`](reader/reader_view.client.ts) (`patchStickyBar`, `renderSheetTeaser`) scrapes `.reader-continuation-card` links out of the swapped text card footer to manually patch `#pager-prev`, `#pager-next`, and the mobile drawer bar—duplicating server rendering logic in imperative DOM mutations.
 
 ### 2.4 Hydration and preference resolution clobber SSR state
@@ -203,7 +203,7 @@ export const DictSettingsContract = defineContract({
 
 #### A. Server Side: Phantom-Branded `SafeHtml<Guaranteed, Possible>`
 
-We unify `.server.ts` templates onto `html` (`SafeHtml` in [`core/html.common.ts`](core/html.common.ts)), eliminating raw string concatenation and manual `he.escape()` calls. `SafeHtml` is extended with two phantom type parameters that vanish at runtime:
+We unify `.server.ts` templates onto `html` (`SafeHtml` in [`core/dom/html.common.ts`](core/dom/html.common.ts)), eliminating raw string concatenation and manual `he.escape()` calls. `SafeHtml` is extended with two phantom type parameters that vanish at runtime:
 
 ```ts
 declare const GUARANTEED_REFS: unique symbol;
@@ -244,7 +244,7 @@ Because `html` unions `Guaranteed` across sequential interpolations (`${a}...${b
 
 #### B. Client Side: Type-Erased Lookups on `BaseElement`
 
-On the client, the contract is passed only as a **TypeScript type parameter** to [`BaseElement`](core/base_element.client.ts):
+On the client, the contract is passed only as a **TypeScript type parameter** to [`BaseElement`](core/dom/base_element.client.ts):
 
 ```ts
 export class MorcusDictSettings extends BaseElement<
@@ -279,19 +279,19 @@ export class MorcusDictSettings extends BaseElement<
 
 ### 8.2 Reveal Protocol
 
-Containers that hide content (tabs, drawers, `<details>`, collapsible dictionary cards) implement a standard `reveal(target: HTMLElement)` interface (registered on the element or controller). Anything that targets an element inside one routes through [`anchor_scroll.client.ts`](core/anchor_scroll.client.ts):
+Containers that hide content (tabs, drawers, `<details>`, collapsible dictionary cards) implement a standard `reveal(target: HTMLElement)` interface (registered on the element or controller). Anything that targets an element inside one routes through [`anchor_scroll.client.ts`](core/nav/anchor_scroll.client.ts):
 
 - the initial `window.location.hash` on connect, and later `hashchange` / in-page anchor clicks;
 - programmatic focus;
 - find-in-page, via `hidden="until-found"` / `beforematch` where supported.
 
-This generalizes `expandAncestorDisclosures()` in [`anchor_scroll.client.ts`](core/anchor_scroll.client.ts#L18-L32) so that `<details>`, companion panel tabs, and mobile drawers all open automatically when a descendant is targeted.
+This generalizes `expandAncestorDisclosures()` in [`anchor_scroll.client.ts`](core/nav/anchor_scroll.client.ts#L18-L32) so that `<details>`, companion panel tabs, and mobile drawers all open automatically when a descendant is targeted.
 
 ---
 
 ### 8.3 Temporary-UI Sessions
 
-Replaces ad-hoc module globals such as `activeEditor` / `menuEl` in [`section_edit.client.ts`](core/section_edit.client.ts).
+Replaces ad-hoc module globals such as `activeEditor` / `menuEl` in [`section_edit.client.ts`](core/widgets/section_edit.client.ts).
 
 - **One session at a time,** managed by a small helper in `core/` tied to a `LifetimeScope`. Provides the dirty-state guard, focus restoration to the trigger on close, and Escape / outside-click dismissal via `bindDismissable`.
 - **Temporary UI never moves page content.** Instead of moving section nodes into a hidden `<span>` stash, it hides them in place (`hidden` + `inert`) and mounts the editor in a sibling slot or top-layer popover.
@@ -303,7 +303,7 @@ Replaces ad-hoc module globals such as `activeEditor` / `menuEl` in [`section_ed
 
 To keep `fetchAndSwapPartial` fast and safe for tokenized text (`replaceChildren` + `notifyContentSwap`), we do **not** use DOM morphing. Instead, to eliminate manual DOM scraping like `patchStickyBar()` and `renderSheetTeaser()` in [`reader_view.client.ts`](reader/reader_view.client.ts):
 
-- When both the server and client must render the same piece of chrome (such as the reader mobile sheet teaser label, or the dictionary search bar language/inflection chips in [`search_bar.common.ts`](dict/search_bar.common.ts)), that renderer lives in `*.common.ts` and returns `SafeHtml`.
+- When both the server and client must render the same piece of chrome (such as the reader mobile sheet teaser label, or the dictionary search bar language/inflection chips in [`search_bar.common.ts`](dict/search/search_bar.common.ts)), that renderer lives in `*.common.ts` and returns `SafeHtml`.
 - When a partial navigation updates multiple regions (e.g. reader page turn updating both `.reader-sticky-bar` and `.reader-text-card`), either the partial endpoint returns the enclosing `.reader-main-column` or uses shared `.common.ts` renderers rather than scraping `href`s out of footer links.
 
 ---
@@ -351,7 +351,7 @@ Every structural invariant is checked statically before any test runs:
 
 ### 9.2 JSDOM Behavioral Conformance Harness
 
-Extends [`reattach_conformance.test.ts`](core/reattach_conformance.test.ts), replacing hand-written fake HTML strings with **real `.server.ts` renderer output** across each component's mode matrix:
+Extends [`reattach_conformance.test.ts`](core/conformance/reattach_conformance.test.ts), replacing hand-written fake HTML strings with **real `.server.ts` renderer output** across each component's mode matrix:
 
 1. **Real SSR Fixtures + Form Round-Trip:** Renders the component via its `.server.ts` function; for form components, mutates controls, serializes with `new FormData(form)`, and verifies the Express route handler response.
 2. **Pre-hydration adoption:** Mutates inputs, checkboxes, `<details>`, `location.hash`, and `scrollY` _before_ custom element upgrade; asserts that upgrading preserves every user change.
@@ -424,5 +424,5 @@ flowchart LR
 ```
 
 - **Step 2** validates the One-Tree CSS `:target` + `:has()` architecture on the hardest component (`reader_panel`) and immediately cuts ~500 lines of imperative DOM code.
-- **Steps 3–5** build the zero-bundle-cost compile-time contract (`SafeHtml<Guaranteed, Possible>` + `BaseElement` ref helpers + ESLint template rule) and pilot it on [`dict_settings.client.ts`](dict/dict_settings.client.ts) alongside the server-authoritative preference fix ([`dict/PREFERENCES.md`](dict/PREFERENCES.md)).
-- **Steps 6–7** migrate the remaining components, convert [`reattach_conformance.test.ts`](core/reattach_conformance.test.ts) to use real `.server.ts` fixtures, and add the late-hydration Playwright test.
+- **Steps 3–5** build the zero-bundle-cost compile-time contract (`SafeHtml<Guaranteed, Possible>` + `BaseElement` ref helpers + ESLint template rule) and pilot it on [`dict_settings.client.ts`](dict/settings/dict_settings.client.ts) alongside the server-authoritative preference fix ([`dict/PREFERENCES.md`](dict/PREFERENCES.md)).
+- **Steps 6–7** migrate the remaining components, convert [`reattach_conformance.test.ts`](core/conformance/reattach_conformance.test.ts) to use real `.server.ts` fixtures, and add the late-hydration Playwright test.

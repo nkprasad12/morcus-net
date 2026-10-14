@@ -1,7 +1,7 @@
 import {
   WIDTH_SURFACES,
   type WidthSurface,
-} from "@/web/v2/core/page_width.common";
+} from "@/web/v2/core/widgets/page_width.common";
 
 /**
  * Draggable page width handles for `surface`, one on each edge of the page

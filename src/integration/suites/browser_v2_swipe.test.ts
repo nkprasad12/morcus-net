@@ -2,7 +2,7 @@
  * UI V2 reader swipe page turns: what only a real browser can check.
  *
  * Gesture policy, the setting's storage, and the view's page-turn wiring are
- * covered by the jsdom tests (core/gesture.test.ts, reader_page_nav.test.ts,
+ * covered by the jsdom tests (core/widgets/gesture.test.ts, reader_page_nav.test.ts,
  * reader_settings.test.ts, reader_view.test.ts). This suite keeps the parts
  * that need real layout, CSS (media queries, `:has()`, pseudo-elements), and
  * the server. Kept separate from browser_v2_e2e.test.ts so it runs on its own:

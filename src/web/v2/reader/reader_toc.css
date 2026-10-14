@@ -45,7 +45,7 @@
 }
 
 /* No-JS (and pre-upgrade): open via :target. Once upgraded, the TOC
-   controller adopts the hash (see core/reveal.client.ts) and owns the state. */
+   controller adopts the hash (see core/nav/reveal.client.ts) and owns the state. */
 .reader-toc-drawer:target:not([data-upgraded] *) {
   /* stylelint-disable-next-line declaration-no-important */
   display: flex !important;
@@ -56,7 +56,7 @@
 }
 
 /* Base (flex, align-items, border-bottom) comes from the shared popover header
-   rule in core/components.css; only reader-specific additions live here. */
+   rule in core/nav/components.css; only reader-specific additions live here. */
 .reader-toc-header {
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);

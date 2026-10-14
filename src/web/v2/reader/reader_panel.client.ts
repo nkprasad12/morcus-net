@@ -15,12 +15,12 @@
  * Nothing is built, moved or put back, so the dictionary iframe never reloads.
  */
 
-import { BaseController } from "@/web/v2/core/base_element.client";
-import { escapeId, setHtml } from "@/web/v2/core/dom.client";
-import { html } from "@/web/v2/core/html.common";
-import { swapElementContent } from "@/web/v2/core/partial.client";
-import { registerRevealer } from "@/web/v2/core/reveal.client";
-import { SLOT_ATTR } from "@/web/v2/core/slots.common";
+import { BaseController } from "@/web/v2/core/dom/base_element.client";
+import { escapeId, setHtml } from "@/web/v2/core/dom/dom.client";
+import { html } from "@/web/v2/core/dom/html.common";
+import { swapElementContent } from "@/web/v2/core/nav/partial.client";
+import { registerRevealer } from "@/web/v2/core/nav/reveal.client";
+import { SLOT_ATTR } from "@/web/v2/core/nav/slots.common";
 
 // TODO(reader-shortcuts): Unified companion panel keyboard shortcuts.
 export const PANEL_TABS = ["dict", "notes", "translation", "about"] as const;
@@ -285,7 +285,7 @@ export class ReaderPanelController extends BaseController {
 
   /**
    * Hash targets inside a view switch to its tab: the initial URL hash,
-   * `hashchange`, and in-page links (see core/reveal.client.ts). The tabs are
+   * `hashchange`, and in-page links (see core/nav/reveal.client.ts). The tabs are
    * links to the views, so a view owns its own id's hash.
    */
   #initRevealers(): void {

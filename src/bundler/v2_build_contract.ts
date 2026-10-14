@@ -67,7 +67,7 @@ export const V2_CHUNK_ENTRIES: Readonly<
   common: {
     import: "./src/web/v2/shell/common_entry.client.ts",
     // Dictionary URLs: used by the dict and macronizer chunks.
-    shared: ["./src/web/v2/dict/dict_params.common.ts"],
+    shared: ["./src/web/v2/dict/search/dict_params.common.ts"],
   },
   dict: {
     import: "./src/web/v2/dict/dict_entry.client.ts",

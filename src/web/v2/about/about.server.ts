@@ -1,6 +1,6 @@
 import * as he from "he";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
-import { getBuildVersion } from "@/web/v2/core/build_version.server";
+import { getBuildVersion } from "@/web/v2/core/server/build_version.server";
 
 export interface AboutPageOptions {
   commitId?: string;

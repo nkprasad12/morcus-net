@@ -128,7 +128,7 @@
  * iframe and must stay flush, so the card styling hangs off its own class.
  *
  * `scrollbar-width` is deliberately absent: `.reader-panel-view` is part of the
- * ghost scrollbar group in `core/components.css`, which already thins these.
+ * ghost scrollbar group in `core/nav/components.css`, which already thins these.
  */
 .reader-panel-card {
   background-color: var(--card-bg);

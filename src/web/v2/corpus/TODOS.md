@@ -32,7 +32,7 @@ V2 reader's word count (0 of 146,951 rows). Keep these three in step:
   elements that both carry text, unless the first ends in `-` or the source already has whitespace
   there (rules 2–3). Note, gap, `br`, `space` and line/block/heading/list elements get no space, so
   note markers stay flush.
-- **Reader tokenizer:** the opt-in `joinAcrossInline` option in `core/tokenize.client.ts`, enabled
+- **Reader tokenizer:** the opt-in `joinAcrossInline` option in `core/dom/tokenize.client.ts`, enabled
   only by the reader, tokenizes across inline styling elements (rule 1). A word that crosses an
   element becomes several `lat-word` parts sharing `data-word`, one word index and a
   `data-word-group`. The parts are plain spans (no `role`, `tabindex` or ARIA; see `createWordSpan`),

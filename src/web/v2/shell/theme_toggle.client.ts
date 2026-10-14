@@ -5,7 +5,7 @@ import {
   settingsStore,
   syncIframeTheme,
 } from "@/web/v2/core/index.client";
-import { ICON_MOON, ICON_SUN } from "@/web/v2/core/icons.common";
+import { ICON_MOON, ICON_SUN } from "@/web/v2/core/widgets/icons.common";
 import { THEME_COLOR } from "@/web/v2/shell/theme_color.common";
 
 const MOON_PATH = ICON_MOON;
@@ -104,7 +104,7 @@ export class MorcusThemeToggle extends BaseElement {
 
 registerElement("morcus-theme-toggle", MorcusThemeToggle);
 
-declare module "@/web/v2/core/js_gate.client" {
+declare module "@/web/v2/core/dom/js_gate.client" {
   interface MorcusElementTagNameMap {
     "morcus-theme-toggle": MorcusThemeToggle;
   }

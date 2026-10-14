@@ -2,7 +2,7 @@ import express, { Router, Request, Response } from "express";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { renderAboutPageHtml } from "@/web/v2/about/about.server";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
-import { asyncHandler } from "@/web/v2/core/async_handler.server";
+import { asyncHandler } from "@/web/v2/core/server/async_handler.server";
 import { createDictRoutes } from "@/web/v2/dict/dict.server";
 import { createReaderRoutes } from "@/web/v2/reader/reader.server";
 import { createExternalRoutes } from "@/web/v2/external/external_routes.server";
@@ -12,7 +12,7 @@ import type { CorpusEngine } from "@/web/v2/corpus/corpus_query.server";
 import { createMacronizerRoutes } from "@/web/v2/macronizer/macronizer_routes.server";
 import type { MacronizerEngine } from "@/web/v2/macronizer/macronizer_engine.server";
 import { getV2BuildDir } from "@/bundler/v2_build_contract";
-import { IMMUTABLE_CACHE_CONTROL } from "@/web/v2/core/build_version.server";
+import { IMMUTABLE_CACHE_CONTROL } from "@/web/v2/core/server/build_version.server";
 
 export interface V2RouterOptions extends ApiRoutesOptions {
   /** The corpus query engine; `/v2/corpus` answers 503 without one. */

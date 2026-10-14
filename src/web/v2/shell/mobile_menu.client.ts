@@ -1,8 +1,8 @@
-import { bindDismissable } from "@/web/v2/core/dismissable.client";
+import { bindDismissable } from "@/web/v2/core/widgets/dismissable.client";
 import {
   createSingletonSetup,
   type CleanupFn,
-} from "@/web/v2/core/disposable.client";
+} from "@/web/v2/core/dom/disposable.client";
 
 /**
  * Mobile navigation menu outside-click and Escape key dismissal.

@@ -22,8 +22,8 @@
 import {
   BaseElement,
   registerElement,
-} from "@/web/v2/core/base_element.client";
-import { trackPointerDrag } from "@/web/v2/core/gesture.client";
+} from "@/web/v2/core/dom/base_element.client";
+import { trackPointerDrag } from "@/web/v2/core/widgets/gesture.client";
 import {
   getSurfaceWidth,
   isWidthSurface,
@@ -33,11 +33,11 @@ import {
   WIDTH_SURFACES,
   widthCssValue,
   type WidthSurface,
-} from "@/web/v2/core/page_width.client";
-import type { DraggedPageWidth } from "@/web/v2/core/settings.client";
+} from "@/web/v2/core/widgets/page_width.client";
+import type { DraggedPageWidth } from "@/web/v2/core/state/settings.client";
 
 export const KEY_STEP_PX = 48;
-/** Container width beyond rail + column (dict/dict_toc.css: `+ 40px`). */
+/** Container width beyond rail + column (dict/toc/dict_toc.css: `+ 40px`). */
 const RAIL_GAP_PX = 40;
 
 /**
@@ -46,7 +46,7 @@ const RAIL_GAP_PX = 40;
  * MIRRORS THE CSS: `max-width: var(--page-max)` on `.container`
  * (shell/page_width.css, reader/reader_layout.css) and, on a dictionary
  * entry with the contents rail, `calc(var(--page-max) + var(--dict-toc-w) +
- * 40px)` (dict/dict_toc.css), where shell/page_width.css sets
+ * 40px)` (dict/toc/dict_toc.css), where shell/page_width.css sets
  * `--page-extra` to exactly `var(--dict-toc-w) + 40px`. Change them
  * together.
  */
@@ -108,7 +108,7 @@ export class MorcusPageWidth extends BaseElement {
   /**
    * How much wider the container is than the reading column: the
    * dictionary's contents rail plus its gap when the rail shows beside the
-   * column (dict/dict_toc.css), else 0. Reads layout.
+   * column (dict/toc/dict_toc.css), else 0. Reads layout.
    */
   #railExtra(): number {
     // The rail is sticky only in its desktop beside-the-column mode.
@@ -309,7 +309,7 @@ export class MorcusPageWidth extends BaseElement {
 
 registerElement("morcus-page-width", MorcusPageWidth);
 
-declare module "@/web/v2/core/js_gate.client" {
+declare module "@/web/v2/core/dom/js_gate.client" {
   interface MorcusElementTagNameMap {
     "morcus-page-width": MorcusPageWidth;
   }

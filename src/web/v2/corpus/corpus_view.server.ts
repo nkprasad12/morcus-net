@@ -10,13 +10,13 @@ import {
   raw,
   type RawHtml,
   type SafeHtml,
-} from "@/web/v2/core/html.common";
-import { ICON_PATHS } from "@/web/v2/core/icons.common";
+} from "@/web/v2/core/dom/html.common";
+import { ICON_PATHS } from "@/web/v2/core/widgets/icons.common";
 import {
   liveSlot,
   renderSlotTemplates,
   slotAttr,
-} from "@/web/v2/core/slots.common";
+} from "@/web/v2/core/nav/slots.common";
 import {
   renderCorpusHelp,
   renderInlineHelpDisclosure,

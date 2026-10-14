@@ -1,7 +1,7 @@
 /* Corpus Search (/v2/corpus)
  *
- * The form reuses the dictionary search bar (dict/search.css) and the shared
- * settings popover (core/settings.css); only corpus-specific pieces live here.
+ * The form reuses the dictionary search bar (dict/search/search.css) and the shared
+ * settings popover (core/state/settings.css); only corpus-specific pieces live here.
  */
 
 .corpus-page {
@@ -34,7 +34,7 @@
 
 /* --- Autocomplete -------------------------------------------------------- */
 
-/* The listbox is `.suggestions` (dict/search.css); these are its rows, built
+/* The listbox is `.suggestions` (dict/search/search.css); these are its rows, built
  * by corpus_autocomplete.client.ts. The highlighted row is the one the input's
  * `aria-activedescendant` points at. */
 .corpus-suggestion {

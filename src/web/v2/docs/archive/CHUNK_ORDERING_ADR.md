@@ -13,7 +13,7 @@ follow-up starts from here rather than from the stopgap.
 > Status: **resolved (A + D, §8).** Global setups run from `onPageReady` (`DOMContentLoaded`,
 > after every chunk) and the anchor click handler leaves links native while the target's owner
 > hasn't upgraded. The `whenDefined` stopgap is gone. Enforced by
-> [`boot_conformance.test.ts`](core/boot_conformance.test.ts), `page_shell.test.ts` and the staged
+> [`boot_conformance.test.ts`](core/conformance/boot_conformance.test.ts), `page_shell.test.ts` and the staged
 > late-hydration cases. §1–§7 are kept as the record of how we got here.
 > Related: [PRE_HYDRATION.md](PRE_HYDRATION.md).
 
@@ -25,7 +25,7 @@ Before the split, the page loaded one bundle, `v2_bundle.client.ts`:
 
 ```ts
 import "@/web/v2/v2_elements.client"; // 1. define every custom element
-import "@/web/v2/core/anchor_scroll.client"; // 2. global startup (reads component state)
+import "@/web/v2/core/nav/anchor_scroll.client"; // 2. global startup (reads component state)
 ```
 
 Defining an element upgrades the instances already in the parsed DOM synchronously, so by the
@@ -71,17 +71,17 @@ own `common.js` → `dict.js` chain.
 [`shell/common_entry.client.ts`](shell/common_entry.client.ts) pulls in four modules that run a
 global setup at import time (`if (typeof document !== "undefined") setupX()`):
 
-| Setup                                                                                          | Shape | Status                                                                                                                                                                                                                                                                           |
-| ---------------------------------------------------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setupAnchorScroll` initial `revealHashTarget` ([anchor_scroll](core/anchor_scroll.client.ts)) | (a)   | **Confirmed.** Caused late-hydration PH5 (TOC) and PH7 (dict sheet) failures. Stopgap in place (§4).                                                                                                                                                                             |
-| `setupAnchorScroll` document `click` handler                                                   | (b)   | **Confirmed** in Chromium and Firefox (§7.1). The click is lost, not just delayed.                                                                                                                                                                                               |
-| `setupAnchorScroll` `hashchange` / `beforematch`                                               | (a)   | `hashchange` calls the same `revealHashTarget`, so the stopgap covers it (staged test passes). `beforematch` calls `revealTarget` directly and is not covered, but it is harmless: the browser removes `hidden="until-found"` itself, and `revealTarget` only opens `<details>`. |
-| `setupBackToTop` ([back_to_top](core/back_to_top.client.ts))                                   | -     | Safe: only touches shell markup (`.back-to-top`).                                                                                                                                                                                                                                |
-| `setupMobileMenu` ([mobile_menu](shell/mobile_menu.client.ts))                                 | -     | Safe: only touches shell markup.                                                                                                                                                                                                                                                 |
-| `setupDeferredIframes` ([deferred_iframe](core/deferred_iframe.client.ts))                     | -     | Safe: plain DOM (`<details>` + `iframe[data-deferred-src]`). Its `DOMContentLoaded` branch is dead code: module scripts run at `readyState === "interactive"`, never `"loading"`.                                                                                                |
-| `morcus-theme-toggle` ([theme_toggle](shell/theme_toggle.client.ts))                           | -     | Safe (audited): reads only `<html data-theme>`, `settingsStore` and `matchMedia`; dispatches nothing. Its iframe theme sync (on click only) sets `data-theme` on each same-origin frame's `<html>`, which no chunk state depends on.                                             |
-| `morcus-report-dialog` ([report_dialog](dialog/report_dialog.client.ts))                       | -     | Safe (audited): self-contained (`scope.$` inside its own host); dispatches nothing on connect.                                                                                                                                                                                   |
-| `core/index.client.ts` re-exports                                                              | -     | Safe (audited): no module-level statements other than declarations (`WeakMap`/`Set` registries, stores as plain objects). Listeners (`syncQueryParam` popstate, focus trap, dismissable) are installed only when called.                                                         |
+| Setup                                                                                              | Shape | Status                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setupAnchorScroll` initial `revealHashTarget` ([anchor_scroll](core/nav/anchor_scroll.client.ts)) | (a)   | **Confirmed.** Caused late-hydration PH5 (TOC) and PH7 (dict sheet) failures. Stopgap in place (§4).                                                                                                                                                                             |
+| `setupAnchorScroll` document `click` handler                                                       | (b)   | **Confirmed** in Chromium and Firefox (§7.1). The click is lost, not just delayed.                                                                                                                                                                                               |
+| `setupAnchorScroll` `hashchange` / `beforematch`                                                   | (a)   | `hashchange` calls the same `revealHashTarget`, so the stopgap covers it (staged test passes). `beforematch` calls `revealTarget` directly and is not covered, but it is harmless: the browser removes `hidden="until-found"` itself, and `revealTarget` only opens `<details>`. |
+| `setupBackToTop` ([back_to_top](core/widgets/back_to_top.client.ts))                               | -     | Safe: only touches shell markup (`.back-to-top`).                                                                                                                                                                                                                                |
+| `setupMobileMenu` ([mobile_menu](shell/mobile_menu.client.ts))                                     | -     | Safe: only touches shell markup.                                                                                                                                                                                                                                                 |
+| `setupDeferredIframes` ([deferred_iframe](core/widgets/deferred_iframe.client.ts))                 | -     | Safe: plain DOM (`<details>` + `iframe[data-deferred-src]`). Its `DOMContentLoaded` branch is dead code: module scripts run at `readyState === "interactive"`, never `"loading"`.                                                                                                |
+| `morcus-theme-toggle` ([theme_toggle](shell/theme_toggle.client.ts))                               | -     | Safe (audited): reads only `<html data-theme>`, `settingsStore` and `matchMedia`; dispatches nothing. Its iframe theme sync (on click only) sets `data-theme` on each same-origin frame's `<html>`, which no chunk state depends on.                                             |
+| `morcus-report-dialog` ([report_dialog](dialog/report_dialog.client.ts))                           | -     | Safe (audited): self-contained (`scope.$` inside its own host); dispatches nothing on connect.                                                                                                                                                                                   |
+| `core/index.client.ts` re-exports                                                                  | -     | Safe (audited): no module-level statements other than declarations (`WeakMap`/`Set` registries, stores as plain objects). Listeners (`syncQueryParam` popstate, focus trap, dismissable) are installed only when called.                                                         |
 
 Audit method: every top-level statement in `core/`, `shell/` and `dialog/` `*.client.ts`, plus
 every `addEventListener` / `dispatchEvent` / `emit` in `src/web/v2`. The only component events
@@ -94,7 +94,7 @@ it is not affected today.
 
 ### The anchor click handler in the intermediate state (confirmed)
 
-The handler in [`anchor_scroll.client.ts`](core/anchor_scroll.client.ts) catches any
+The handler in [`anchor_scroll.client.ts`](core/nav/anchor_scroll.client.ts) catches any
 `a[href^='#']` whose target exists, then `preventDefault()`, `revealTarget(target)`,
 `scrollIntoView()`, `history.replaceState(null, "", href)`.
 
@@ -119,7 +119,7 @@ The same happens to the mobile companion-panel tabs (`#panel-view-*`, PH7). Any 
 > Removed with the A + D fix: at `DOMContentLoaded` every custom element on the page is defined,
 > so there is nothing to wait for. Kept for the record.
 
-[`revealHashTarget`](core/reveal.client.ts) looked for the nearest ancestor of the target that
+[`revealHashTarget`](core/nav/reveal.client.ts) looked for the nearest ancestor of the target that
 was a custom element tag without a definition yet (`findUndefinedCustomHost`). If there was one,
 it waited for `customElements.whenDefined(tag)` and retried. `whenDefined` resolves after the
 element is defined, and defining it upgrades and connects the existing instances, so its
@@ -130,7 +130,7 @@ Limits:
 - It fixed one symptom in one function. It did not cover the click handler (§3).
 - It guessed that any undefined hyphenated tag would be defined soon. If a page ever rendered a
   custom tag whose chunk that page did not load, deep links under it would wait forever,
-  silently. [`route_bundle_conformance.test.ts`](core/route_bundle_conformance.test.ts) made
+  silently. [`route_bundle_conformance.test.ts`](core/conformance/route_bundle_conformance.test.ts) made
   that impossible for full pages and partial templates, which was the only reason the stopgap
   was safe.
 
@@ -183,7 +183,7 @@ measurement and a decision, not a default. Questions to settle (answered in §7 
       describe block "UI V2 chunk ordering: intermediate state"): TOC link (PH5), dictionary tab (PH7),
       a `#hash` deep link, a `hashchange`, and in-page links on the dictionary page.
 - [x] **The same inside the reader's dictionary iframe** (`common.js` → `dict.js`).
-- [x] **A conformance guard**: [`boot_conformance.test.ts`](core/boot_conformance.test.ts) and
+- [x] **A conformance guard**: [`boot_conformance.test.ts`](core/conformance/boot_conformance.test.ts) and
       the non-`async` script check in [`page_shell.test.ts`](shell/page_shell.test.ts) (§8).
 
 ## 7. Findings (Phase 1 and 2)
@@ -249,12 +249,12 @@ The first recommendation was B (explicit boot keyed by a leaf name from the page
 revisited once it was settled that V2 will carry **no analytics or third-party scripts**, which
 removed A's main cost. What was left:
 
-| Concern with A                                                                                     | Resolution                                                                                                                                                                                                                                   |
-| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DOMContentLoaded` fires even when a chunk fails to load or throws, so setups run over dead owners | **D**: the anchor click handler only takes over when every enclosing custom element carries `data-upgraded` (`ownersUpgraded` in [`js_gate.client.ts`](core/js_gate.client.ts)). A failed or missing owner keeps native `:target` behaviour. |
-| `DOMContentLoaded` does not wait for `async` scripts                                               | [`page_shell.test.ts`](shell/page_shell.test.ts) fails if any V2 script tag is not a plain `type="module"` (no `async`/`defer`).                                                                                                             |
-| Every static script tag delays startup                                                             | Only our own chunks exist. A heavy optional feature should be a lazy `import()`, which does not delay `DOMContentLoaded`; components it defines later are covered by D.                                                                      |
-| Lazy `import()` chunks are not waited for (true of B too)                                          | D, again: it works per owner, not per chunk.                                                                                                                                                                                                 |
+| Concern with A                                                                                     | Resolution                                                                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DOMContentLoaded` fires even when a chunk fails to load or throws, so setups run over dead owners | **D**: the anchor click handler only takes over when every enclosing custom element carries `data-upgraded` (`ownersUpgraded` in [`js_gate.client.ts`](core/dom/js_gate.client.ts)). A failed or missing owner keeps native `:target` behaviour. |
+| `DOMContentLoaded` does not wait for `async` scripts                                               | [`page_shell.test.ts`](shell/page_shell.test.ts) fails if any V2 script tag is not a plain `type="module"` (no `async`/`defer`).                                                                                                                 |
+| Every static script tag delays startup                                                             | Only our own chunks exist. A heavy optional feature should be a lazy `import()`, which does not delay `DOMContentLoaded`; components it defines later are covered by D.                                                                          |
+| Lazy `import()` chunks are not waited for (true of B too)                                          | D, again: it works per owner, not per chunk.                                                                                                                                                                                                     |
 
 Measured delay is the same as B's would be: `DOMContentLoaded` fires right after the last chunk
 runs (§7.2). A + D has fewer moving parts than B (no shell attribute, no per-entry
@@ -262,7 +262,7 @@ runs (§7.2). A + D has fewer moving parts than B (no shell attribute, no per-en
 
 ### What landed
 
-- [`core/page_ready.client.ts`](core/page_ready.client.ts): `onPageReady(setup)` runs `setup` on
+- [`core/dom/page_ready.client.ts`](core/dom/page_ready.client.ts): `onPageReady(setup)` runs `setup` on
   `DOMContentLoaded`, or at once if it has already fired. Module scripts run while `readyState`
   is already `"interactive"` but before the event, so "already fired" comes from Navigation Timing
   (`domContentLoadedEventStart`), not `readyState`.
@@ -275,7 +275,7 @@ runs (§7.2). A + D has fewer moving parts than B (no shell attribute, no per-en
 
 ### Guardrails
 
-- [`boot_conformance.test.ts`](core/boot_conformance.test.ts) (TypeScript AST): no `*.client.ts`
+- [`boot_conformance.test.ts`](core/conformance/boot_conformance.test.ts) (TypeScript AST): no `*.client.ts`
   has top-level side effects other than `registerElement(...)` (the inline head script
   `critical_theme.client.ts` is the one named exception); only `*_entry.client.ts` files call
   `onPageReady`; every exported `createSingletonSetup` setup is started from an `onPageReady`

@@ -21,8 +21,8 @@ import { XmlNode } from "@/common/xml/xml_node";
 import {
   decodeDictBitmask,
   encodeDictBitmask,
-} from "@/web/v2/dict/dict_bitmask.common";
-import { resolveDictParams } from "@/web/v2/dict/dict_selection.common";
+} from "@/web/v2/dict/settings/dict_bitmask.common";
+import { resolveDictParams } from "@/web/v2/dict/settings/dict_selection.common";
 import { createV2Router } from "@/web/v2/v2_router.server";
 import {
   fakeCorpusEngine,

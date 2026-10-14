@@ -10,7 +10,7 @@ import {
   raw,
   type RawHtml,
   type SafeHtml,
-} from "@/web/v2/core/html.common";
+} from "@/web/v2/core/dom/html.common";
 import { CORPUS_PATH } from "@/web/v2/corpus/corpus_params.common";
 import { INFLECTION_CATEGORIES } from "@/web/v2/corpus/corpus_syntax.common";
 

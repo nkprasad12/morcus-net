@@ -9,16 +9,16 @@ import {
 import {
   readLimit,
   toStringOrArray,
-} from "@/web/v2/core/request_params.server";
+} from "@/web/v2/core/server/request_params.server";
 import {
   getV2Completions,
   getV2DictChunks,
   cleanCompletionQuery,
-} from "@/web/v2/dict/dict_completions.server";
+} from "@/web/v2/dict/search/dict_completions.server";
 import type { ReportApiRequest } from "@/web/api_routes";
 import { GitHub } from "@/web/utils/github";
-import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
-import { getBuildVersion } from "@/web/v2/core/build_version.server";
+import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
+import { getBuildVersion } from "@/web/v2/core/server/build_version.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 

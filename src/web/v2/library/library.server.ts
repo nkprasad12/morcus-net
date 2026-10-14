@@ -1,6 +1,6 @@
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { getV2LibrarySummaries } from "@/web/v2/reader/reader_loader.server";
-import { ICON_PATHS } from "@/web/v2/core/icons.common";
+import { ICON_PATHS } from "@/web/v2/core/widgets/icons.common";
 import { EXTERNAL_READER_PATH } from "@/web/v2/external/external_url.common";
 import * as he from "he";
 

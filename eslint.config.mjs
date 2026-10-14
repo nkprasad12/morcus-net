@@ -70,7 +70,7 @@ const NO_RELATIVE_IMPORTS = {
 // `he` is singled out because it is ~100 KB of poorly tree-shakeable CommonJS: a
 // `.common.ts` importing it would quietly land the whole thing in the client
 // bundle. Browser-bound code should use the hand-rolled `escapeHtml` in
-// `dict/search_bar.common.ts` instead.
+// `dict/search/search_bar.common.ts` instead.
 const NO_SERVER_ONLY_IMPORTS = {
   group: [
     "**/*.server",
@@ -366,7 +366,7 @@ export default [
   // shipped twice.
   //
   // Markup should reach the DOM through `setHtml` / `replaceWithHtml` in
-  // `core/dom.client.ts`, which accept only the `SafeHtml` produced by the
+  // `core/dom/dom.client.ts`, which accept only the `SafeHtml` produced by the
   // `html` tagged template. Note that the *type system* is what covers markup
   // coming back from a renderer function: this rule sees a call expression and
   // has no way to know whether the callee escapes its inputs. The rule's job is
@@ -481,7 +481,7 @@ export default [
     files: ["src/web/v2/**/*.client.ts"],
     ignores: [
       "src/web/v2/**/*.test.ts",
-      "src/web/v2/core/base_element.client.ts",
+      "src/web/v2/core/dom/base_element.client.ts",
     ],
     rules: {
       "no-restricted-syntax": [

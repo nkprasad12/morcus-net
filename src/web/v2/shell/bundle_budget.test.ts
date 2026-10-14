@@ -344,7 +344,7 @@ describe("UI V2 Bundle Budget", () => {
           {
             names: ["common"],
             modules: [
-              { nameForCondition: "/repo/src/web/v2/core/dom.client.ts" },
+              { nameForCondition: "/repo/src/web/v2/core/dom/dom.client.ts" },
               { name: "webpack/runtime/chunk loaded", moduleType: "runtime" },
             ],
           },
@@ -356,7 +356,7 @@ describe("UI V2 Bundle Budget", () => {
                 modules: [
                   {
                     nameForCondition:
-                      "/repo/src/web/v2/dict/dict_search.client.ts",
+                      "/repo/src/web/v2/dict/search/dict_search.client.ts",
                   },
                 ],
               },
@@ -403,7 +403,7 @@ describe("UI V2 Bundle Budget", () => {
 
       expect(result.errors).toEqual([]);
       expect(result.chunkModules.dict).toEqual([
-        "/repo/src/web/v2/dict/dict_search.client.ts",
+        "/repo/src/web/v2/dict/search/dict_search.client.ts",
       ]);
     });
 
@@ -413,7 +413,7 @@ describe("UI V2 Bundle Budget", () => {
           {
             names: ["common"],
             modules: [
-              { nameForCondition: "/repo/src/web/v2/core/dom.client.ts" },
+              { nameForCondition: "/repo/src/web/v2/core/dom/dom.client.ts" },
             ],
           },
           {

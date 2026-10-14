@@ -1,7 +1,7 @@
 /* Shared transient confirmation toast.
    Generalised from the reader's .reader-toast, which required an element to
    be pre-rendered into the page markup. This one is created on demand by
-   core/toast.client.ts, so any view can use it without SSR changes. */
+   core/widgets/toast.client.ts, so any view can use it without SSR changes. */
 
 .toast {
   position: fixed;

@@ -10,8 +10,8 @@ import {
   type V2Route,
 } from "@/bundler/v2_build_contract";
 import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
-import { ICON_PATHS } from "@/web/v2/core/icons.common";
-import type { WidthSurface } from "@/web/v2/core/page_width.common";
+import { ICON_PATHS } from "@/web/v2/core/widgets/icons.common";
+import type { WidthSurface } from "@/web/v2/core/widgets/page_width.common";
 import { renderPageWidthHandles } from "@/web/v2/shell/page_width.server";
 import { THEME_COLOR } from "@/web/v2/shell/theme_color.common";
 
@@ -45,7 +45,7 @@ interface PageShellBaseOptions {
   extraHeadHtml?: string;
   /**
    * Gives the page draggable width handles, saved per surface
-   * (`core/page_width.client.ts`). Pages without one (About, External) keep
+   * (`core/widgets/page_width.client.ts`). Pages without one (About, External) keep
    * their fixed width.
    */
   widthSurface?: WidthSurface;
@@ -237,7 +237,7 @@ export function renderPageShell(options: PageShellOptions): string {
   if (isEmbedded) bodyClasses.push("body-embedded");
   const widthSurface = isEmbedded ? undefined : options.widthSurface;
   // `body-reader` and `body-dict` are set separately. These are spelled out
-  // as literals so `tools/css_audit_conformance.test.ts` can match them.
+  // as literals so `tools/css_audit/css_audit_conformance.test.ts` can match them.
   if (widthSurface === "library") bodyClasses.push("body-library");
   else if (widthSurface === "corpus") bodyClasses.push("body-corpus");
   // Scopes the dictionary page width preset (shell/page_width.css). Embedded

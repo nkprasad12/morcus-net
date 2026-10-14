@@ -6,19 +6,19 @@
 export {
   XmlNodeToHtmlOptions,
   xmlNodeToHtml,
-} from "@/web/v2/dict/xml_to_html.server";
+} from "@/web/v2/dict/entry/xml_to_html.server";
 
 export {
   EntryRenderOptions,
   formatInflectionForm,
   renderEntryResult,
-} from "@/web/v2/dict/entry_view.server";
+} from "@/web/v2/dict/entry/entry_view.server";
 
 export {
   dedupeInflections,
   renderInflectionInline,
   renderInflectionTable,
-} from "@/web/v2/dict/inflection_table.server";
+} from "@/web/v2/dict/entry/inflection_table.server";
 
 export {
   SubsectionGroup,
@@ -28,7 +28,7 @@ export {
   matchedAnchorIds,
   renderSubsectionNote,
   resolveSubsectionAnchor,
-} from "@/web/v2/dict/subsection_note.server";
+} from "@/web/v2/dict/entry/subsection_note.server";
 
 export {
   DICT_NAMES,
@@ -52,7 +52,7 @@ export {
 export {
   SearchBarOptions,
   renderDictSearchBar,
-} from "@/web/v2/dict/search_bar.server";
+} from "@/web/v2/dict/search/search_bar.server";
 
 export {
   DICT_COOKIE_NAME,
@@ -76,14 +76,14 @@ export {
   toStringOrArray,
   dictParamsFromQuery,
   readDictParam,
-} from "@/web/v2/dict/dict_selection.server";
+} from "@/web/v2/dict/settings/dict_selection.server";
 
 export {
   hasGreek,
   getLogeionUrl,
   EMBEDDED_LOGEION_SETTING_KEY,
-} from "@/web/v2/dict/dict_greek.common";
+} from "@/web/v2/dict/search/dict_greek.common";
 
-export { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
+export { renderGreekFallbackHtml } from "@/web/v2/dict/search/dict_greek.server";
 
 export { createDictRoutes } from "@/web/v2/dict/dict_routes.server";

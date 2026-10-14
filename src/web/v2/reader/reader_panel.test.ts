@@ -2,8 +2,8 @@
  * @jest-environment jsdom
  */
 
-import { notifyContentSwap } from "@/web/v2/core/base_element.client";
-import { revealTarget } from "@/web/v2/core/reveal.client";
+import { notifyContentSwap } from "@/web/v2/core/dom/base_element.client";
+import { revealTarget } from "@/web/v2/core/nav/reveal.client";
 import {
   renderReaderDictPanelHtml,
   renderReaderNotesSlot,

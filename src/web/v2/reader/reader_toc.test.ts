@@ -3,7 +3,7 @@
  */
 
 import { ReaderTocController } from "@/web/v2/reader/reader_toc.client";
-import { revealTarget } from "@/web/v2/core/reveal.client";
+import { revealTarget } from "@/web/v2/core/nav/reveal.client";
 
 describe("ReaderTocController", () => {
   let container: HTMLDivElement;

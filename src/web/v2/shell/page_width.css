@@ -2,7 +2,7 @@
  *
  * Draggable surfaces (reader, dict, library, corpus): the saved width is
  * `--{surface}-page-max` on :root, put there before first paint by
- * shell/critical_theme.client.ts (see core/page_width.client.ts). Each
+ * shell/critical_theme.client.ts (see core/widgets/page_width.client.ts). Each
  * surface maps it onto `--page-max`, which its column and app bar row read
  * and the handles are positioned from. Defaults live ONLY in the var()
  * fallbacks: a default declared on body would shadow the :root value.
@@ -10,7 +10,7 @@
  *
  * The handles sit on the container edge: `--page-max` plus `--page-extra`,
  * which is non-zero only on a dictionary entry with the contents rail, where
- * the container widens to fit the rail beside the column (dict/dict_toc.css).
+ * the container widens to fit the rail beside the column (dict/toc/dict_toc.css).
  * It is a separate addend (not a pre-summed width) so the inline
  * `--page-max` written on <morcus-page-width> during a drag still moves the
  * handles.
@@ -21,8 +21,8 @@
  * column and the app bar row inline instead, with formulas that mirror them:
  * `.container` gets `calc(<width> + var(--page-extra, 0px))` and
  * `.app-bar-inner` gets `<width>`. Keep `--page-extra` equal to what
- * dict/dict_toc.css adds to the container, and change the max-width rules
- * here, in reader/reader_layout.css and in dict/dict_toc.css together with
+ * dict/toc/dict_toc.css adds to the container, and change the max-width rules
+ * here, in reader/reader_layout.css and in dict/toc/dict_toc.css together with
  * `setLive` / `liveContainerMaxWidth`.
  *
  * .body-dict is only set on standalone dictionary pages (never embedded), so
@@ -54,7 +54,7 @@
 }
 
 /* Must equal what `.container:has(.results-layout.has-toc)` adds to
-   `--page-max` (dict/dict_toc.css): the live drag width reproduces that
+   `--page-max` (dict/toc/dict_toc.css): the live drag width reproduces that
    rule as `<width> + var(--page-extra)`. */
 @media (min-width: 1080px) {
   .body-dict:has(.results-layout.has-toc) {
@@ -83,7 +83,7 @@
    edge. 50% of a fixed box is half the viewport without the scrollbar,
    matching how the column is centered. At full width they pin to the
    window edge. The line, grip and hover/drag states come from
-   .resize-handle (core/resize_handle.css), shared with .reader-splitter;
+   .resize-handle (core/widgets/resize_handle.css), shared with .reader-splitter;
    this only sizes and places the handles. */
 
 .page-handle,

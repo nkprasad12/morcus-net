@@ -20,7 +20,7 @@ Before switching default traffic away from V1, verify that non-UI operational be
 - [ ] **Build-Versioned Caching for Partials & Fragments**:
   - Today repeated partial fetches revalidate by ETag, which Express computes from the rendered body, so every repeat costs a full server render. Content is static per build, so a background fetch carrying `?v=<commit>` can be served `immutable` and never leave the browser on repeats. Keep user-visible URLs unversioned (only the `fetch` URL carries `v`).
   - Stamp the build version once on `<html data-version>` in `renderPageShell`, add a client `withBuildVersion(url)` helper, and replace corpus's bespoke `data-lemmata-version`. Version explicitly at call sites (or via a `swapSlots` option), not implicitly inside `swapSlots`: POST must be excluded and `fallback(url)` must get the unversioned URL.
-  - Server side, use `setVersionedCacheControl` (`core/build_version.server.ts`), which only trusts the current build's version. Keep `Vary: X-Requested-With` on dual-mode routes.
+  - Server side, use `setVersionedCacheControl` (`core/server/build_version.server.ts`), which only trusts the current build's version. Keep `Vary: X-Requested-With` on dual-mode routes.
   - First pass: reader page-turn partials and translations (highest repeat rate), plus `/v2/api/completions` prefix and suffix chunks. Use `private` for HTML partials.
   - Exclude `/v2/dicts` partials at first: they fall back to cookies when `d`/`o` are absent, and `canSave` changes rendered links, so a `public` cache could serve one user's view to another. Revisit only with a guard (and a test) that the response doesn't depend on cookies.
   - Not cacheable: macronizer (POST body). V1's `CACHING_SETTER` (0.1 year, deliberate) goes away with V1.

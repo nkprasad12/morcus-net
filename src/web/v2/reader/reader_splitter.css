@@ -16,7 +16,7 @@
 
 @media (min-width: 641px) {
   /* The line, grip and hover/drag states come from .resize-handle
-     (core/resize_handle.css); this only sizes and places the splitter. */
+     (core/widgets/resize_handle.css); this only sizes and places the splitter. */
   .reader-splitter {
     display: flex;
     width: 16px;

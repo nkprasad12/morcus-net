@@ -11,8 +11,8 @@ import { renderPageWidthHandles } from "@/web/v2/shell/page_width.server";
 import {
   GLOBAL_SETTINGS_KEY,
   settingsStore,
-} from "@/web/v2/core/settings.client";
-import { PREPAINT_KEY } from "@/web/v2/core/prepaint.client";
+} from "@/web/v2/core/state/settings.client";
+import { PREPAINT_KEY } from "@/web/v2/core/dom/prepaint.client";
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 
 installPointerEventShims();

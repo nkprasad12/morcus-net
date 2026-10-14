@@ -10,9 +10,9 @@ import {
   getV2Work,
   resolvePageInWork,
 } from "@/web/v2/reader/reader_loader.server";
-import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
+import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
 import { renderNotFoundPageHtml } from "@/web/v2/library/not_found.server";
-import { isPartialRequest } from "@/web/v2/core/request_params.server";
+import { isPartialRequest } from "@/web/v2/core/server/request_params.server";
 import { getFirstHighlightSectionId } from "@/web/v2/reader/reader_highlight.common";
 
 function redirectReaderJump(

@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { scrapeUrlText } from "@/web/scraping/scraper";
-import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
+import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
 import {
   renderExternalLandingPageHtml,
   renderExternalLocalPageHtml,

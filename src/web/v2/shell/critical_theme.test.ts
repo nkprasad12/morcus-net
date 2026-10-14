@@ -3,7 +3,7 @@
  */
 import fs from "fs";
 import path from "path";
-import { PREPAINT_KEY } from "@/web/v2/core/prepaint.client";
+import { PREPAINT_KEY } from "@/web/v2/core/dom/prepaint.client";
 
 jest.mock("@/web/v2/v2-critical.css", () => ({}));
 

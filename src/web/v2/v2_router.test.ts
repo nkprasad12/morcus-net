@@ -4,7 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import request from "supertest";
 import { JSDOM } from "jsdom";
-import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
+import { encodeDictBitmask } from "@/web/v2/dict/settings/dict_bitmask.common";
 import { createV2Router } from "@/web/v2/v2_router.server";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { XmlNode } from "@/common/xml/xml_node";

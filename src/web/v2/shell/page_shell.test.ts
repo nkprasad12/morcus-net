@@ -162,7 +162,7 @@ describe("renderPageShell", () => {
     );
   });
 
-  // `onPageReady` (core/page_ready.client.ts) relies on DOMContentLoaded
+  // `onPageReady` (core/dom/page_ready.client.ts) relies on DOMContentLoaded
   // firing only after every chunk has run. That holds for non-`async` module
   // scripts; DOMContentLoaded does not wait for an `async` one, so global
   // setups could run before the route's components exist (docs/archive/CHUNK_ORDERING_ADR.md).

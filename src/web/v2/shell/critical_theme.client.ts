@@ -7,7 +7,7 @@
  * 2. Performance: This blocks HTML parsing and paint, and is inlined into every
  *    response. Its size is fixed and budgeted (src/bundler/v2_bundle_budget.ts):
  *    do NOT add per-preference logic here. Owners in the bundle call
- *    `setPrepaint` (core/prepaint.client.ts) with final values; this script
+ *    `setPrepaint` (core/dom/prepaint.client.ts) with final values; this script
  *    only copies them onto <html>.
  * 3. Bundling: Do NOT import external runtime libraries or shared chunks to ensure
  *    the output remains a single, standalone IIFE. That's why the storage key

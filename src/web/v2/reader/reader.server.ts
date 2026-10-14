@@ -1,6 +1,6 @@
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
-import { buildDictUrl } from "@/web/v2/dict/dict_params.common";
+import { buildDictUrl } from "@/web/v2/dict/search/dict_params.common";
 import {
   V2PreprocessedPage,
   V2PreprocessedWork,
@@ -22,9 +22,9 @@ import {
   renderReaderAboutSection,
   renderReaderSettingsPopover,
 } from "@/web/v2/reader/reader_dialogs.server";
-import { renderIconSvg } from "@/web/v2/core/icons.common";
+import { renderIconSvg } from "@/web/v2/core/widgets/icons.common";
 import { getFirstHighlightSectionId } from "@/web/v2/reader/reader_highlight.common";
-import { renderSlotTemplates, slotAttr } from "@/web/v2/core/slots.common";
+import { renderSlotTemplates, slotAttr } from "@/web/v2/core/nav/slots.common";
 import {
   READER_PAGE_SLOTS,
   formatReaderPageTitle,

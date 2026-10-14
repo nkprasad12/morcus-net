@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { gzipSync } from "zlib";
 import { disableSmoothScroll } from "@/integration/utils/playwright_utils";
-import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
+import { encodeDictBitmask } from "@/web/v2/dict/settings/dict_bitmask.common";
 import {
   V2_BUNDLE_BUDGET,
   sumRouteSizes,

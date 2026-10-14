@@ -2,12 +2,12 @@
  * @jest-environment jsdom
  */
 
-import { html, raw } from "@/web/v2/core/html.common";
+import { html, raw } from "@/web/v2/core/dom/html.common";
 import {
   liveSlot,
   renderSlotTemplates,
   slotAttr,
-} from "@/web/v2/core/slots.common";
+} from "@/web/v2/core/nav/slots.common";
 import { expectSlotParity } from "@/web/v2/testing/slot_parity";
 
 describe("slot_parity & liveSlot", () => {

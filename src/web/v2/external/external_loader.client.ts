@@ -331,7 +331,7 @@ export class MorcusExternalLoader extends BaseElement {
 
 registerElement("morcus-external-loader", MorcusExternalLoader);
 
-declare module "@/web/v2/core/js_gate.client" {
+declare module "@/web/v2/core/dom/js_gate.client" {
   interface MorcusElementTagNameMap {
     "morcus-external-loader": MorcusExternalLoader;
   }

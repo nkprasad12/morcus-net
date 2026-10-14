@@ -1,8 +1,8 @@
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
-import { renderEntryResult } from "@/web/v2/dict/entry_view.server";
-import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
+import { renderEntryResult } from "@/web/v2/dict/entry/entry_view.server";
+import { renderDictSearchBar } from "@/web/v2/dict/search/search_bar.server";
 import {
   DICT_ATTRIBUTIONS,
   DICT_NAMES,
@@ -12,12 +12,15 @@ import {
   dictCardId,
   resolveDictLang,
 } from "@/web/v2/dict/dict_attribution.server";
-import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
-import { hasGreek } from "@/web/v2/dict/dict_greek.common";
-import { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
-import { buildTocTree, renderDictTocHtml } from "@/web/v2/dict/dict_toc.server";
-import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
-import { buildDictUrl } from "@/web/v2/dict/dict_params.common";
+import { renderDictLandingHtml } from "@/web/v2/dict/landing/dict_landing.server";
+import { hasGreek } from "@/web/v2/dict/search/dict_greek.common";
+import { renderGreekFallbackHtml } from "@/web/v2/dict/search/dict_greek.server";
+import {
+  buildTocTree,
+  renderDictTocHtml,
+} from "@/web/v2/dict/toc/dict_toc.server";
+import { encodeDictBitmask } from "@/web/v2/dict/settings/dict_bitmask.common";
+import { buildDictUrl } from "@/web/v2/dict/search/dict_params.common";
 import { dictPageTitle } from "@/web/v2/dict/dict_title.common";
 import * as he from "he";
 
