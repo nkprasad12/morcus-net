@@ -226,11 +226,10 @@ export function renderPageShell(options: PageShellOptions): string {
   if (isReader) bodyClasses.push("body-reader");
   if (isEmbedded) bodyClasses.push("body-embedded");
   const widthSurface = isEmbedded ? undefined : options.widthSurface;
-  // `body-reader` and `body-dict` are set separately; others get
-  // `body-{surface}`.
-  if (widthSurface === "library" || widthSurface === "corpus") {
-    bodyClasses.push(`body-${widthSurface}`);
-  }
+  // `body-reader` and `body-dict` are set separately. These are spelled out
+  // as literals so `tools/css_audit_conformance.test.ts` can match them.
+  if (widthSurface === "library") bodyClasses.push("body-library");
+  else if (widthSurface === "corpus") bodyClasses.push("body-corpus");
   // Scopes the dictionary page width preset (shell/page_width.css). Embedded
   // dictionaries are excluded so the reader's iframe ignores the setting.
   if (options.activePage === "dicts" && !isReader && !isEmbedded) {
