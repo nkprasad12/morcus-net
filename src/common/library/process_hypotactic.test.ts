@@ -1,9 +1,12 @@
 import { setupFakeHypotacticData } from "@/common/library/hypotactic_test_helper";
 import { processHypotactic } from "@/common/library/process_hypotactic";
-
-setupFakeHypotacticData();
+import fs from "fs";
+import path from "path";
+import zlib from "zlib";
 
 describe("Hypotactic Library Processing", () => {
+  setupFakeHypotacticData();
+
   let works: ReturnType<typeof processHypotactic>;
 
   beforeAll(() => {
@@ -50,5 +53,34 @@ describe("Hypotactic Library Processing", () => {
     expect(work.rows[2][0]).toEqual(["2", "1"]);
     expect(work.rows[3][0]).toEqual(["2", "2"]);
     expect(work.textParts).toEqual(["poem", "line"]);
+  });
+});
+
+describe("Hypotactic Library Processing with duplicate poem numbers", () => {
+  const originalRoot = process.env.HYPOTACTIC_ROOT;
+  let testDataRoot: string;
+
+  beforeAll(() => {
+    testDataRoot = fs.mkdtempSync("hypotactic-dup-testdata-");
+    process.env.HYPOTACTIC_ROOT = testDataRoot;
+    // The Odes fixture has one book with poems "1" and "2"; relabel the
+    // second as "1", as the upstream data once did for Tristia 1.8.
+    const horace = JSON.parse(
+      fs.readFileSync("testdata/hypotactic/horace.json", "utf8")
+    );
+    horace["Horace"]["Odes"]["Odes 1"][1]["poem number"] = "1";
+    fs.writeFileSync(
+      path.join(testDataRoot, "horace.json.gz"),
+      zlib.gzipSync(JSON.stringify(horace))
+    );
+  });
+
+  afterAll(() => {
+    process.env.HYPOTACTIC_ROOT = originalRoot;
+    fs.rmSync(testDataRoot, { recursive: true, force: true });
+  });
+
+  test("rejects a work whose poems share an id", () => {
+    expect(() => processHypotactic()).toThrow(/Duplicate page id 1\.1/);
   });
 });

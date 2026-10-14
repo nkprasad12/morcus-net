@@ -476,6 +476,31 @@ function processBookAndLineWork(
   };
 }
 
+/**
+ * Checks that no two pages and no two rows of `work` share an id.
+ *
+ * Ids come straight from the `poem number` and `line number` fields of the
+ * Hypotactic JSON, and a slip there (Tristia 1 once numbered eleven poems as
+ * `1..7, 7, 8, 9, 10`) silently produces two pages with the same citation:
+ * the reader opens only the first, and the corpus cites the second under the
+ * wrong number. Failing the build is the only way the problem gets noticed.
+ */
+function assertUniqueIds(work: ProcessedWork2): void {
+  const workId = work.info.workId;
+  const seenPages = new Set<string>();
+  for (const page of work.pages) {
+    const id = page.id.join(".");
+    assert(!seenPages.has(id), `Duplicate page id ${id} in ${workId}`);
+    seenPages.add(id);
+  }
+  const seenRows = new Set<string>();
+  for (const [rowId] of work.rows) {
+    const id = rowId.join(".");
+    assert(!seenRows.has(id), `Duplicate row id ${id} in ${workId}`);
+    seenRows.add(id);
+  }
+}
+
 function isSupportedWork(author: string, title: string): boolean {
   for (const [supportedAuthor, supportedTitle] of SUPPORTED_WORKS) {
     if (author === supportedAuthor && title === supportedTitle) {
@@ -530,6 +555,9 @@ export function processHypotactic(): ProcessedWork2[] {
       // fs.writeFileSync(outputFile, JSON.stringify(work, null, 2));
       processedWorks.push(processBookAndLineWork(work));
     }
+  }
+  for (const work of processedWorks) {
+    assertUniqueIds(work);
   }
   return processedWorks;
 }
