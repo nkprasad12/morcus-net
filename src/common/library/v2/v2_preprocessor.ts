@@ -286,7 +286,11 @@ function renderPassageContent(
   isVerseWork: boolean,
   notes?: NoteCollector
 ): string {
-  const rendered = renderXmlNodeCleanHtml(node, notes);
+  return wrapPassageHtml(renderXmlNodeCleanHtml(node, notes), isVerseWork);
+}
+
+/** Wraps a row's rendered HTML in a verse line or prose paragraph. */
+function wrapPassageHtml(rendered: string, isVerseWork: boolean): string {
   if (isVerseWork) {
     // Matches `reader-line` with or without trailing rendition classes, so an
     // indented pentameter is not wrapped in a second, redundant line span.
@@ -357,6 +361,112 @@ function renderNotesSection(
     </aside>`;
 }
 
+type ProcessedPage = ProcessedWork2["pages"][number];
+
+/**
+ * Latin page ids whose translation page is cited differently, keyed by the
+ * Latin work id. The Latin and English editions are separate Perseus TEI
+ * files that disagree on a handful of divisions: Livy's preface is `1.pr` in
+ * Latin but `1.0` in English, the Latin *Pro Rabirio* splits a fragment off as
+ * `38b` where the English has `38f`, and the Latin *Amores* splits two poems
+ * (`2.9`, `3.11`) that the English translates whole. Every other page matches
+ * by id, so this stays a short explicit table rather than a fuzzy match.
+ */
+const TRANSLATION_PAGE_ALIASES: Readonly<
+  Record<string, Readonly<Record<string, string>>>
+> = {
+  // Livy, Ab urbe condita
+  "phi0914.phi001.perseus-lat2": { "1.pr": "1.0" },
+  // Cicero, Pro C. Rabirio Perduellionis Reo
+  "phi0474.phi012.perseus-lat2": { "38b": "38f" },
+  // Ovid, Amores. Both halves of a split poem show the whole English poem.
+  "phi0959.phi001.perseus-lat2": {
+    "2.9a": "2.9",
+    "2.9b": "2.9",
+    "3.11a": "3.11",
+    "3.11b": "3.11",
+  },
+};
+
+/**
+ * Finds the translation page for Latin pages, as V1's `findMatchPage` did:
+ * the Latin page id (after `TRANSLATION_PAGE_ALIASES`) is cut down to the
+ * translation's pagination depth, so a translation paginated more coarsely
+ * than the Latin (by book rather than by chapter, say) still matches.
+ *
+ * Translations are matched by page rather than by row because their rows do
+ * not line up with the Latin: verse translations rarely have the same number
+ * of lines, and editions differ in which sections they number.
+ */
+function createTranslationPageMatcher(
+  latinWorkId: string,
+  translationWork: ProcessedWork2
+): (latinPageId: string[]) => ProcessedPage | undefined {
+  const aliases = TRANSLATION_PAGE_ALIASES[latinWorkId] ?? {};
+  const depth = translationWork.pages[0]?.id.length ?? 0;
+  const pagesById = new Map<string, ProcessedPage>();
+  for (const page of translationWork.pages) {
+    const key = page.id.join(".");
+    if (!pagesById.has(key)) {
+      pagesById.set(key, page);
+    }
+  }
+  return (latinPageId) => {
+    const alias = aliases[latinPageId.join(".")];
+    const normalized = alias === undefined ? latinPageId : alias.split(".");
+    return pagesById.get(normalized.slice(0, depth).join("."));
+  };
+}
+
+/**
+ * Renders the rows of `transPage`, the translation of one Latin page, as
+ * translation sections. Rows that render nothing are skipped, and only leaf
+ * rows (lines or sections) get a citation in the gutter: headings and
+ * editorial notes sit at a coarser level and have no number of their own.
+ */
+function renderTranslationSections(
+  translationWork: ProcessedWork2,
+  transPage: ProcessedPage,
+  notes: NoteCollector
+): string[] {
+  const textParts = translationWork.textParts;
+  const isVerse =
+    textParts.length > 0 &&
+    textParts[textParts.length - 1].toLowerCase() === "line";
+  const [start, end] = transPage.rows;
+  const usedIds = new Set<string>();
+  const sections: string[] = [];
+  for (let j = start; j < end; j++) {
+    const [tId, tNode] = translationWork.rows[j];
+    const rendered = renderXmlNodeCleanHtml(tNode, notes);
+    if (rendered.trim() === "") {
+      continue;
+    }
+    const transHtml = wrapPassageHtml(rendered, isVerse);
+    const isLeafRow = tId.length === textParts.length;
+    const tDotId = tId.join(".");
+    // Only leaf rows carry an id, as on the Latin side: heading rows repeat
+    // their parent's id, and ids must stay unique within the page.
+    const idAttr =
+      isLeafRow && !usedIds.has(tDotId) ? ` id="trans-sec-${tDotId}"` : "";
+    usedIds.add(tDotId);
+    const gutterLabel = isLeafRow
+      ? `<span class="cite-local">${he.escape(
+          getSectionLocalId(tId, transPage.id)
+        )}</span>`
+      : "";
+    sections.push(
+      `
+          <div class="reader-translation-section"${idAttr}>
+            <div class="reader-translation-gutter">${gutterLabel}</div>
+            <div class="reader-translation-text">${transHtml}</div>
+          </div>
+        `.trim()
+    );
+  }
+  return sections;
+}
+
 export function preprocessWorkToV2(
   work: ProcessedWork2,
   metadata: LibraryWorkMetadata,
@@ -370,16 +480,9 @@ export function preprocessWorkToV2(
     work.pages[0]?.id.length ??
     (textParts.length > 1 ? textParts.length - 1 : 1);
 
-  // Index translation rows if available
-  const translationRowsByDotId = new Map<
-    string,
-    XmlNode<ProcessedWorkContentNodeType>
-  >();
-  if (translationWork) {
-    for (const [tId, tNode] of translationWork.rows) {
-      translationRowsByDotId.set(tId.join("."), tNode);
-    }
-  }
+  const findTranslationPage = translationWork
+    ? createTranslationPageMatcher(work.info.workId, translationWork)
+    : undefined;
 
   const v2Pages: V2PreprocessedPage[] = [];
 
@@ -389,7 +492,6 @@ export function preprocessWorkToV2(
     const [startIdx, endIdx] = page.rows;
 
     const singleSectionsHtml: string[] = [];
-    const translationSectionsHtml: string[] = [];
     const citationIds: string[] = [];
     const textNotes = createNoteCollector(work.notes, "n", "numeric");
     const translationNotes = createNoteCollector(
@@ -456,25 +558,6 @@ export function preprocessWorkToV2(
         </div>
       `.trim()
       );
-
-      // Check for matching translation
-      if (translationWork) {
-        const transNode = translationRowsByDotId.get(dotId);
-        const transHtml = transNode
-          ? renderPassageContent(transNode, isVerseWork, translationNotes)
-          : "";
-
-        translationSectionsHtml.push(
-          `
-          <div class="reader-translation-section" id="trans-sec-${dotId}">
-            <div class="reader-translation-gutter"><span class="cite-local">${he.escape(
-              localId
-            )}</span></div>
-            <div class="reader-translation-text">${transHtml}</div>
-          </div>
-        `.trim()
-        );
-      }
     }
 
     const citationRange: [string, string] = [
@@ -482,8 +565,17 @@ export function preprocessWorkToV2(
       citationIds[citationIds.length - 1] ?? "",
     ];
 
+    const transPage = findTranslationPage?.(pageId);
+    const translationSectionsHtml =
+      translationWork && transPage
+        ? renderTranslationSections(
+            translationWork,
+            transPage,
+            translationNotes
+          )
+        : [];
     let transPageHtml: string | undefined = undefined;
-    if (translationWork && translationSectionsHtml.length > 0) {
+    if (translationSectionsHtml.length > 0) {
       const transNotesHtml =
         translationNotes.collected.length > 0
           ? renderNotesSection(

@@ -701,7 +701,12 @@ export async function findReaderWork(
 
 /**
  * The translation partial for `pageParam` of `work`, fetched by the
- * companion panel's Translation view, or null if the page has none.
+ * companion panel's Translation view, or null if the work has no translation.
+ *
+ * A translated work can still leave single pages untranslated (Livy's
+ * translation covers only books 1-10), so such a page gets an empty-state
+ * message rather than null: a 404 would read as a failed load and offer a
+ * pointless retry.
  */
 export function renderReaderTranslationHtml(
   work: V2PreprocessedWork,
@@ -709,7 +714,14 @@ export function renderReaderTranslationHtml(
 ): string | null {
   if (!work.hasTranslation) return null;
   const page = resolvePageInWork(work, pageParam).page;
-  if (!page || !page.translationHtml) return null;
+  if (!page) return null;
+  if (!page.translationHtml) {
+    return `
+<div class="reader-translation-empty">
+  <p>No translation available for this page.</p>
+</div>
+        `.trim();
+  }
   return `
 <div class="reader-translation-content">
   <header class="reader-translation-header">
