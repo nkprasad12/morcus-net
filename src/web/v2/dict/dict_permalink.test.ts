@@ -51,7 +51,7 @@ beforeEach(() => {
         <a href="/v2/dicts/id/n20077" class="tab-pill copy-pill">Copy link</a>
         <li id="n20077.1">
           <a href="#n20077.1" class="section-anchor">I.</a>
-          Lit., <span class="lsTrans">to have</span>, <span class="lsQuote"><a class="lat-word">aliquid</a></span>
+          Lit., <span class="lsTrans">to have</span>, <span class="lsQuote"><span class="lat-word" data-word="aliquid">aliquid</span></span>
           <div class="mateo-embed-pane">Facsimile</div>
           <ol class="sense-list">
             <li id="n20077.2">

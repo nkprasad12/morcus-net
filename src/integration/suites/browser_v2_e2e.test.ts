@@ -473,6 +473,41 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator(".dict-card").first()).toBeVisible();
   });
 
+  test("words are plain spans until hovered, then middle-click opens a new tab", async ({
+    page,
+    context,
+    isMobile,
+    hasTouch,
+  }) => {
+    test.skip(isMobile || hasTouch, "Touch has no hover or middle-click.");
+    await page.goto("/v2/dicts?q=habeo");
+    await disableSmoothScroll(page);
+    const word = page.locator('.lat-word:has-text("habere")').first();
+    await expect(word).toBeVisible();
+
+    // At rest a word is not a link or a control, so it is not in the tab
+    // order or in a screen reader's links list.
+    await expect(word).toHaveJSProperty("localName", "span");
+    await expect(word).not.toHaveAttribute("href", /.*/);
+    await expect(word).not.toHaveAttribute("tabindex", /.*/);
+
+    // Hovering swaps it for a real link, which is what the browser's own
+    // middle-click / "Open in new tab" need.
+    await word.hover();
+    await expect(word).toHaveJSProperty("localName", "a");
+    await expect(word).toHaveAttribute("href", /\/v2\/dicts\?q=habere/);
+    // ...but still not a tab stop.
+    await expect(word).toHaveAttribute("tabindex", "-1");
+
+    const newPage = context.waitForEvent("page");
+    await word.click({ button: "middle" });
+    const opened = await newPage;
+    await expect(opened).toHaveURL(/\/v2\/dicts\?q=habere/);
+    await opened.close();
+    // The original page did not navigate.
+    await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
+  });
+
   test("report issue button is hidden without JavaScript (No-JS baseline)", async ({
     browser,
   }) => {

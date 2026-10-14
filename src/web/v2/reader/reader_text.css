@@ -211,20 +211,17 @@
   display: inline;
 }
 
-.reader-passage a:visited,
-.reader-passage .lat-word:visited {
+.reader-passage a:visited {
   color: inherit;
 }
 
 .reader-passage a:hover,
 .reader-passage .lat-word:hover,
-.reader-passage .lat-word.word-hover,
-.reader-passage .lat-word:focus-visible {
+.reader-passage .lat-word.word-hover {
   background-color: var(--word-hover-bg);
   color: inherit;
   font-weight: inherit;
   text-decoration: none;
-  outline: none;
 }
 
 .reader-passage a.word-active,

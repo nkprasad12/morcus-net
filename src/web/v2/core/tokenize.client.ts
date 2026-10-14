@@ -16,8 +16,9 @@ export interface WordPart {
 export interface TokenizeWordOptions {
   /**
    * Factory function that constructs the replacement DOM element for a Latin word token.
-   * - Reader: creates `<span class="lat-word" role="button" tabindex="0" data-word="...">`
-   * - Dictionary: creates `<a class="lat-word" href="..." data-word="...">`
+   * Both the reader and the dictionary use `createWordSpan`, which builds a plain
+   * `<span class="lat-word" data-word="...">`: not a link and not focusable, so
+   * thousands of words don't land in the tab order (see `createWordSpan`).
    *
    * `wordIndex` is the 0-based word token index within `root` (incremented on every
    * `isWord === true` token produced by `processTokens`, matching corpus and V1 indexing).
@@ -93,54 +94,101 @@ export function isLatinWord(
 }
 
 /**
- * Builds the `<a class="lat-word" href="..." data-word="...">` element a
- * linkified Latin word is replaced with, for use as a `renderWord` factory.
+ * Builds the `<span class="lat-word" data-word="...">` element a Latin word is
+ * replaced with, for use as a `renderWord` factory.
+ *
+ * The span is deliberately not a control: no `href`, `role` or `tabindex`. A
+ * long entry or passage has thousands of words, and making each one focusable
+ * puts every word in the tab order and in a screen reader's links or controls
+ * list, so the text can't be tabbed past or read as prose. Lookup is handled by
+ * a delegated click listener on the container instead, and the dictionary
+ * upgrades a word to a real link only while the mouse hovers it
+ * (`swapWordSpanForLink`), which is what middle-click and the context menu need.
+ *
+ * `options.word` is the value for `data-word` (a split word's whole token, or
+ * the dictionary's cleaned form); it defaults to `token`.
  */
-export function createWordLink(
+export function createWordSpan(
   token: string,
-  cleanWord: string,
+  options?: { word?: string; extraClass?: string }
+): HTMLSpanElement {
+  const extraClass = options?.extraClass;
+  const span = document.createElement("span");
+  span.className = extraClass ? `lat-word ${extraClass}` : "lat-word";
+  span.setAttribute("data-word", options?.word ?? token);
+  span.textContent = token;
+  return span;
+}
+
+/**
+ * Replaces a `.lat-word` span with an equivalent `<a href>` so that the
+ * browser's own link affordances (middle-click, Ctrl+click, "Open in new tab",
+ * "Copy link") work on it. Meant to be called from a delegated `pointerover`
+ * listener when the mouse reaches a word, so words are links only once a
+ * pointer can actually use them, and never for touch or assistive tech.
+ *
+ * The anchor gets `tabindex="-1"`: an `<a href>` is otherwise focusable, and
+ * the point of the span is to keep words out of the tab order. Mouse
+ * affordances don't need focusability.
+ *
+ * If the element is already a link, only its `href` is refreshed (the lookup
+ * URL depends on settings that can change after the first hover) and it is
+ * returned as is. Replacing an element collapses any selection `Range` inside
+ * it, so the caller is expected to check `canSwapWordOnHover` first.
+ */
+export function swapWordSpanForLink(
+  wordEl: HTMLElement,
   href: string
-): HTMLAnchorElement {
+): HTMLElement {
+  if (wordEl instanceof HTMLAnchorElement) {
+    if (wordEl.getAttribute("href") !== href) wordEl.href = href;
+    return wordEl;
+  }
   const a = document.createElement("a");
-  a.className = "lat-word";
+  a.className = wordEl.className;
+  for (const attr of wordEl.attributes) {
+    if (attr.name.startsWith("data-")) a.setAttribute(attr.name, attr.value);
+  }
   a.href = href;
-  a.dataset.word = cleanWord;
-  a.textContent = token;
+  a.tabIndex = -1;
+  a.textContent = wordEl.textContent;
+  wordEl.replaceWith(a);
   return a;
 }
 
 /**
- * Builds the `<span class="lat-word" role="button" tabindex="0" data-word="...">`
- * element an interactive passage word is replaced with, for use as a `renderWord`
- * factory.
+ * Whether the hovered `wordEl` may be swapped for a link right now: only for
+ * a mouse (touch and pen have no middle-click or hover-then-context-menu, and
+ * replacing the element under a finger mid-gesture can lose the tap), only
+ * when no button is held (a drag-select passing over the word must not have
+ * its nodes replaced), and only when the word is not part of a selection.
  *
- * A word split across inline markup (`<i>im</i>petu`, via `joinAcrossInline`) is
- * one control: its first part is the button, labelled with the whole word, and
- * the rest are hidden from assistive tech so the word is not read twice. Every
- * part carries the whole word in `data-word`.
+ * Replacing a node collapses every live `Range` boundary inside it, so a
+ * selection that touches the word would be damaged by the swap. A selection
+ * elsewhere on the page is unaffected: boundaries in other nodes don't move,
+ * and a boundary in the word's parent is adjusted by the removal and the
+ * insertion in equal measure.
  */
-export function createWordSpan(
-  token: string,
-  options?: { part?: WordPart; extraClass?: string }
-): HTMLSpanElement {
-  const part = options?.part;
-  const extraClass = options?.extraClass;
-  const span = document.createElement("span");
-  span.className = extraClass ? `lat-word ${extraClass}` : "lat-word";
-  if (part === undefined || part.index === 0) {
-    span.setAttribute("role", "button");
-    span.setAttribute("tabindex", "0");
+export function canSwapWordOnHover(
+  e: PointerEvent,
+  wordEl: HTMLElement
+): boolean {
+  if (
+    e.pointerType === "touch" ||
+    e.pointerType === "pen" ||
+    e.buttons !== 0
+  ) {
+    return false;
   }
-  if (part !== undefined) {
-    if (part.index === 0) {
-      span.setAttribute("aria-label", part.word);
-    } else {
-      span.setAttribute("aria-hidden", "true");
-    }
+  const selection = document.getSelection();
+  if (selection === null || selection.isCollapsed) return true;
+  // `Range.intersectsNode` rather than `Selection.containsNode(el, true)`:
+  // the same test per spec, but jsdom gets the latter wrong, and Firefox can
+  // hold several ranges.
+  for (let i = 0; i < selection.rangeCount; i++) {
+    if (selection.getRangeAt(i).intersectsNode(wordEl)) return false;
   }
-  span.setAttribute("data-word", part?.word ?? token);
-  span.textContent = token;
-  return span;
+  return true;
 }
 
 /** Group ids for split words; unique for the lifetime of the page. */

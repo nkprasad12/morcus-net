@@ -34,7 +34,7 @@ export const CREATED_DOM_ALLOWLIST: readonly CreatedDomRule[] = [
     selector: ".lat-word",
     from: "upgrade",
     reason:
-      "Inline word links wrapped by `tokenizeElement` in passages and entries.",
+      "Inline word spans wrapped by `tokenizeTargets` in passages and entries (the dictionary swaps a hovered one for a link).",
   },
   {
     selector: "morcus-corpus-suggestions > ul",

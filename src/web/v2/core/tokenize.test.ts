@@ -2,8 +2,10 @@
  * @jest-environment jsdom
  */
 import {
+  canSwapWordOnHover,
   createWordSpan,
   isLatinWord,
+  swapWordSpanForLink,
   syncWordGroupHover,
   tokenizeSubtree,
   tokenizeTargets,
@@ -11,6 +13,165 @@ import {
   wordGroupParts,
   type WordPart,
 } from "@/web/v2/core/tokenize.client";
+
+describe("createWordSpan", () => {
+  it("builds a plain, non-focusable span", () => {
+    const span = createWordSpan("Gallia");
+    expect(span.outerHTML).toBe(
+      '<span class="lat-word" data-word="Gallia">Gallia</span>'
+    );
+  });
+
+  it("takes a separate data-word and extra class", () => {
+    const span = createWordSpan("Galliā", {
+      word: "Gallia",
+      extraClass: "reader-match",
+    });
+    expect(span.className).toBe("lat-word reader-match");
+    expect(span.dataset.word).toBe("Gallia");
+    expect(span.textContent).toBe("Galliā");
+  });
+});
+
+describe("swapWordSpanForLink", () => {
+  it("replaces the span with an unfocusable anchor keeping class, data and text", () => {
+    const parent = document.createElement("p");
+    const span = createWordSpan("arma", {
+      word: "arma",
+      extraClass: "reader-match",
+    });
+    span.dataset.wordGroup = "7";
+    parent.append("Cano ", span, " virumque");
+
+    const a = swapWordSpanForLink(span, "/v2/dicts?q=arma");
+
+    expect(a.localName).toBe("a");
+    expect(a.parentElement).toBe(parent);
+    expect(span.isConnected).toBe(false);
+    expect(a.className).toBe("lat-word reader-match");
+    expect(a.dataset.word).toBe("arma");
+    expect(a.dataset.wordGroup).toBe("7");
+    expect(a.getAttribute("href")).toBe("/v2/dicts?q=arma");
+    expect(a.textContent).toBe("arma");
+    expect(parent.textContent).toBe("Cano arma virumque");
+    expect(a.getAttribute("role")).toBeNull();
+    // An `<a href>` is focusable by default; the word must stay out of the
+    // tab order, which is the whole reason it was a span.
+    expect(a.getAttribute("tabindex")).toBe("-1");
+    expect(a.tabIndex).toBe(-1);
+  });
+
+  it("keeps an element that is already a link, refreshing its href", () => {
+    const a = document.createElement("a");
+    a.className = "lat-word";
+    a.href = "/v2/dicts?q=arma&d=1";
+    expect(swapWordSpanForLink(a, "/v2/dicts?q=arma&d=1")).toBe(a);
+    expect(a.getAttribute("href")).toBe("/v2/dicts?q=arma&d=1");
+    expect(swapWordSpanForLink(a, "/v2/dicts?q=arma&d=2")).toBe(a);
+    expect(a.getAttribute("href")).toBe("/v2/dicts?q=arma&d=2");
+  });
+});
+
+describe("canSwapWordOnHover", () => {
+  function pointerOver(init: PointerEventInit): PointerEvent {
+    // jsdom has no PointerEvent constructor; a MouseEvent with the pointer
+    // fields attached is enough for the predicate.
+    const e = new MouseEvent("pointerover", init) as PointerEvent & {
+      pointerType: string;
+    };
+    Object.defineProperty(e, "pointerType", {
+      value: init.pointerType ?? "mouse",
+    });
+    return e;
+  }
+
+  let p: HTMLParagraphElement;
+  let word: HTMLElement;
+  let other: HTMLElement;
+  beforeEach(() => {
+    p = document.createElement("p");
+    word = createWordSpan("arma");
+    other = createWordSpan("virumque");
+    p.append("Cano ", word, " ", other, " cano");
+    document.body.appendChild(p);
+  });
+  afterEach(() => {
+    document.getSelection()?.removeAllRanges();
+    p.remove();
+  });
+
+  function select(range: (r: Range) => void) {
+    const r = document.createRange();
+    range(r);
+    document.getSelection()!.addRange(r);
+  }
+
+  it("allows a mouse hover with no button held and nothing selected", () => {
+    expect(
+      canSwapWordOnHover(pointerOver({ pointerType: "mouse" }), word)
+    ).toBe(true);
+  });
+
+  it("refuses touch and pen", () => {
+    expect(
+      canSwapWordOnHover(pointerOver({ pointerType: "touch" }), word)
+    ).toBe(false);
+    expect(canSwapWordOnHover(pointerOver({ pointerType: "pen" }), word)).toBe(
+      false
+    );
+  });
+
+  it("refuses while a button is held (drag-select in progress)", () => {
+    expect(
+      canSwapWordOnHover(
+        pointerOver({ pointerType: "mouse", buttons: 1 }),
+        word
+      )
+    ).toBe(false);
+  });
+
+  it("refuses while the word is part of a selection", () => {
+    select((r) => r.selectNodeContents(p));
+    expect(canSwapWordOnHover(pointerOver({}), word)).toBe(false);
+  });
+
+  it("refuses when a selection only partly covers the word", () => {
+    // From inside "arma" into the following text.
+    select((r) => {
+      r.setStart(word.firstChild!, 2);
+      r.setEnd(other.firstChild!, 3);
+    });
+    expect(canSwapWordOnHover(pointerOver({}), word)).toBe(false);
+    expect(canSwapWordOnHover(pointerOver({}), other)).toBe(false);
+  });
+
+  it("allows a hover when the selection is elsewhere", () => {
+    // A phrase selected in one place must not stop middle-click on a word
+    // somewhere else on the page.
+    select((r) => r.selectNodeContents(other));
+    expect(canSwapWordOnHover(pointerOver({}), word)).toBe(true);
+  });
+
+  it("swapping a word keeps a selection boundary in the same parent in place", () => {
+    // A boundary in the parent is adjusted by the removal and the insertion
+    // in equal measure, so it still points at the same sibling. (Boundaries
+    // in other text nodes never move per spec, but jsdom gets that wrong, so
+    // this test keeps the whole selection in the parent.)
+    select((r) => {
+      r.setStart(p, 3); // before `other`
+      r.setEnd(p, 4); // after `other`
+    });
+    expect(canSwapWordOnHover(pointerOver({}), word)).toBe(true);
+    swapWordSpanForLink(word, "/v2/dicts?q=arma");
+    const r = document.getSelection()!.getRangeAt(0);
+    expect(r.startContainer).toBe(p);
+    expect(r.startOffset).toBe(3);
+    expect(p.childNodes[r.startOffset]).toBe(other);
+    expect(r.endContainer).toBe(p);
+    expect(r.endOffset).toBe(4);
+    expect(r.toString()).toBe("virumque");
+  });
+});
 
 describe("isLatinWord", () => {
   it("identifies plain Latin words", () => {
@@ -208,7 +369,7 @@ describe("tokenizeSubtree with joinAcrossInline", () => {
       ...options,
       renderWord: (token, cleanWord, index, _root, part) => {
         seen.push({ token, cleanWord, index, part });
-        return createWordSpan(token, { part });
+        return createWordSpan(token, { word: part?.word });
       },
     });
     return { div, seen };
@@ -234,16 +395,18 @@ describe("tokenizeSubtree with joinAcrossInline", () => {
     const [firstPart, secondPart, wholeWord] = Array.from(
       div.querySelectorAll<HTMLElement>(".lat-word")
     );
-    expect(firstPart.getAttribute("role")).toBe("button");
-    expect(firstPart.getAttribute("tabindex")).toBe("0");
-    expect(firstPart.getAttribute("aria-label")).toBe("impetu");
-    expect(firstPart.getAttribute("aria-hidden")).toBeNull();
-    expect(secondPart.getAttribute("role")).toBeNull();
-    expect(secondPart.getAttribute("tabindex")).toBeNull();
-    expect(secondPart.getAttribute("aria-hidden")).toBe("true");
-    expect(wholeWord.getAttribute("role")).toBe("button");
-    expect(wholeWord.getAttribute("tabindex")).toBe("0");
-    expect(wholeWord.getAttribute("aria-label")).toBeNull();
+    // Words are prose, not controls: nothing is focusable and no part needs
+    // ARIA to be read once as a whole word.
+    for (const el of [firstPart, secondPart, wholeWord]) {
+      expect(el.localName).toBe("span");
+      expect(el.getAttribute("role")).toBeNull();
+      expect(el.getAttribute("tabindex")).toBeNull();
+      expect(el.getAttribute("aria-label")).toBeNull();
+      expect(el.getAttribute("aria-hidden")).toBeNull();
+    }
+    expect(firstPart.dataset.word).toBe("impetu");
+    expect(secondPart.dataset.word).toBe("impetu");
+    expect(wholeWord.dataset.word).toBe("liberavissent");
   });
 
   it("gives every part of a word the same group", () => {

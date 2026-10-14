@@ -35,8 +35,8 @@ V2 reader's word count (0 of 146,951 rows). Keep these three in step:
 - **Reader tokenizer:** the opt-in `joinAcrossInline` option in `core/tokenize.client.ts`, enabled
   only by the reader, tokenizes across inline styling elements (rule 1). A word that crosses an
   element becomes several `lat-word` parts sharing `data-word`, one word index and a
-  `data-word-group`; only the first part is focusable (`role="button"`, `aria-label` of the whole
-  word) and later parts are `aria-hidden`. The dictionary keeps per-text-node tokenizing.
+  `data-word-group`. The parts are plain spans (no `role`, `tabindex` or ARIA; see `createWordSpan`),
+  so assistive tech reads the word once as written. The dictionary keeps per-text-node tokenizing.
 
 V1's reader still splits words at markup, so its highlights drift in these rows. That is accepted:
 V1 is frozen.

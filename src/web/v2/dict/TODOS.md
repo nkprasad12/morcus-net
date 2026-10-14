@@ -292,24 +292,49 @@ defect analysis behind it (findings F1–F9) is archived in
 
 ## 10. Every word in an entry is a link (screen readers)
 
-**Status:** not started. **High priority** investigation.
+**Status:** done, except for the keyboard lookup path noted below.
 
-`enhanceWords` turns every Latin word in the results into an `<a href>` (`createWordLink` in
-[`core/tokenize.client.ts`](../core/tokenize.client.ts)), so a long entry exposes thousands of links:
-about 5,900 for `sum`. Screen reader users get all of them in the links list and in the tab order.
-The reader avoids this with spans and one delegated click handler on the passage.
+`enhanceWords` used to turn every Latin word in the results into an `<a href>`, and the reader made
+every passage word a `role="button" tabindex="0"` span. Either way a long entry put thousands of
+focus stops in the page (about 5,900 for `sum`): keyboard users could not tab past an entry, and
+screen readers listed every word as a link or control.
 
-To investigate:
+What changed:
 
-- Why the dictionary kept real links. Candidates: middle-click / Ctrl+click to open a word in a new
-  tab, link previews, `:visited` styling. Decide which of these are worth keeping.
-- Whether the reader's pattern is right as is: it puts `role="button"` and `tabindex="0"` on every
-  word, so it has the same tab-order problem.
-- What screen reader users actually need from an entry: probably reading it as prose, with a way to
-  look up a word that doesn't involve tabbing through every one.
+- Both slices now render words as plain `<span class="lat-word" data-word>` (`createWordSpan` in
+  [`core/tokenize.client.ts`](../core/tokenize.client.ts)): no `href`, `role`, `tabindex` or ARIA.
+  The split-word `aria-label` / `aria-hidden` handling went with it; the text reads once as written.
+- Lookup was already a single delegated click listener in both slices, so nothing changed there.
+- **Lazy links (dictionary only).** The browser's own link affordances (middle-click, Ctrl+click,
+  "Open in new tab", "Copy link") need a real anchor, and all of them require hovering first. So a
+  `pointerover` listener on the results (`#linkifyHoveredWord`) swaps the word under the mouse for
+  an equivalent `<a href tabindex="-1">` (`swapWordSpanForLink`); `tabindex="-1"` keeps it out of
+  the tab order, which is the point of the span. The swap is skipped for touch and pen, while a
+  button is held (drag-select), and when the word is inside a selection, since replacing a node
+  collapses any `Range` boundary within it (`canSwapWordOnHover`). Swapped anchors are left in
+  place; hovering one again only refreshes its `href`, so a settings change the results didn't
+  re-fetch (empty search box, as on entry permalink pages) still produces current links. The
+  reader never had an `href`, so it gets no lazy links.
+- Known gap, accepted: a word the mouse _released_ on after a drag, or entered while text was
+  selected, gets no `pointerover` once the condition clears, so a middle-click there without
+  moving first stays a no-op. Moving the mouse off and back on fixes it.
+- `isPlainLeftClick` still gates the click handler, which is what lets modifier clicks on a swapped
+  anchor fall through to the browser.
 
-Spans would also be cheaper to create than anchors (no `href` to parse, no `:visited` matching),
-which helps the tokenize-on-mount work in [`../docs/CODE_HEALTH.md`](../docs/CODE_HEALTH.md).
+User-visible differences, for the record:
+
+- Keyboard: <kbd>Tab</kbd> skips words; screen readers read an entry or passage as prose.
+- Mouse: nothing changes. Hover, click, middle-click, Ctrl+click and the context menu behave as
+  before.
+- Touch: long-press on a dictionary word no longer offers "Open in new tab" (the swap is
+  mouse-only). Tap-to-lookup is unchanged.
+- Keyboard: <kbd>Enter</kbd> / <kbd>Space</kbd> on a focused reader word is gone, since no word can
+  be focused. The remaining keyboard path is the search box.
+
+- [ ] **Keyboard lookup without a mouse.** Deferred until someone asks for it. The obvious shape is
+      one shortcut in both slices that looks up the current text selection (first Latin word of
+      `getSelection()`), reusing the reader's `#initKeyboardShortcuts` guards. Selection without a
+      mouse comes from caret browsing, a screen reader's cursor, or <kbd>Shift</kbd>+arrows.
 
 ---
 
@@ -320,9 +345,9 @@ problem in practice.
 
 `enhanceWordsAfterPaint` (`dict_search.client.ts`) tokenizes the results in one task right after
 they paint, so the results and the scroll to them are no longer delayed. That task is still long on
-big pages: with every default dictionary enabled, a search for `sum` (~5,900 word links) blocks for
+big pages: with every default dictionary enabled, a search for `sum` (~5,900 words) blocks for
 ~190 ms on desktop and ~1.1 s at 4× CPU throttling (the long-animation-frame duration, including
-rendering). Anything during it waits: scrolling, typing in the search box, and the reader itself
+rendering; measured when words were still anchors with an `href` each, so somewhat less now). Anything during it waits: scrolling, typing in the search box, and the reader itself
 when the dictionary is its embedded panel, since the iframe shares the reader's main thread.
 
 Shape, if it's needed:
