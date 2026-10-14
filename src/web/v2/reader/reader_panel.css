@@ -201,7 +201,8 @@
 }
 
 .reader-translation-loading,
-.reader-translation-error {
+.reader-translation-error,
+.reader-translation-empty {
   display: flex;
   flex-direction: column;
   align-items: center;

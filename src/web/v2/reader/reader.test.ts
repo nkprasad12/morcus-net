@@ -17,6 +17,7 @@ import {
   renderTocDrawer,
   renderTocItemsHtml,
   buildReaderPageUrl,
+  renderReaderTranslationHtml,
 } from "@/web/v2/reader/reader.server";
 import {
   citationToString,
@@ -28,6 +29,8 @@ import {
   resolveCitationJump,
 } from "@/web/v2/reader/reader_types.server";
 import { getReaderWork } from "@/web/v2/testing/reader_data";
+import { MOCK_SALLUST_WORK } from "@/web/v2/testing/mock_reader_loader";
+import type { V2PreprocessedWork } from "@/common/library/v2/v2_types";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
@@ -731,5 +734,38 @@ describe("decomposed_reader_renderers", () => {
         getDifferentialCitationLabel(["1", "1"], ["1", "2"], ["book"])
       ).toBe("Section 2");
     });
+  });
+});
+
+describe("renderReaderTranslationHtml", () => {
+  const untranslatedPage: V2PreprocessedWork = {
+    ...MOCK_SALLUST_WORK,
+    pages: [
+      MOCK_SALLUST_WORK.pages[0],
+      { ...MOCK_SALLUST_WORK.pages[1], translationHtml: undefined },
+    ],
+  };
+
+  test("renders the translation of a translated page", () => {
+    const html = renderReaderTranslationHtml(untranslatedPage, "1");
+    expect(html).toContain("reader-translation-content");
+    expect(html).toContain("Translated by John Selby Watson");
+    expect(html).toContain("It becomes all men");
+  });
+
+  test("renders an empty state for an untranslated page of a translated work", () => {
+    const html = renderReaderTranslationHtml(untranslatedPage, "2");
+    expect(html).toContain("reader-translation-empty");
+    expect(html).toContain("No translation available for this page.");
+    expect(html).not.toContain("reader-translation-content");
+  });
+
+  test("returns null for a work without a translation", () => {
+    expect(
+      renderReaderTranslationHtml(
+        { ...untranslatedPage, hasTranslation: false },
+        "1"
+      )
+    ).toBeNull();
   });
 });

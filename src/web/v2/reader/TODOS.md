@@ -7,14 +7,17 @@ This includes remaining V1 → V2 gaps. See [`README.md`](README.md) for how the
 
 ## 1. Guard the translation join
 
-**Status:** not started.
+**Status:** done.
 
 In `reader.server.ts` / `v2_preprocessor.ts`, `translationRowsByDotId.get(dotId)` matches Latin
 citation IDs with translation rows. When the granularity of translation divisions differs from the
 Latin text, the lookup fails silently to an empty cell.
 
-- **Proposed Solution**: Fall back to the nearest ancestor citation ID when an exact ID match is missing.
-- At minimum, log or surface citation granularity mismatches during build-time preprocessing.
+**Done:** `preprocessWorkToV2` now matches translations by page, as V1's `findMatchPage` did (with
+a small `TRANSLATION_PAGE_ALIASES` table for `1.pr`/`38b`/`2.9a`-style id mismatches), and renders
+the translation page's own rows; a page with no matching translation shows "No translation
+available for this page." Remaining data gap: Watson's Sallust folds chapters 35 and 57 into the
+ends of 34 and 56, so pages 35 and 57 show the empty state.
 
 ---
 

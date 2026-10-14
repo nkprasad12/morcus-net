@@ -38,6 +38,7 @@ interface WorkOptions {
   notes?: XmlNode[];
   translator?: string;
   isTranslation?: boolean;
+  workId?: string;
 }
 
 function makeWork(options: WorkOptions): ProcessedWork2 {
@@ -46,7 +47,7 @@ function makeWork(options: WorkOptions): ProcessedWork2 {
     info: {
       title: "Amores",
       author: "Ovid",
-      workId: "ovid.amores",
+      workId: options.workId ?? "ovid.amores",
       attribution: "perseus",
       translator: options.translator,
       isTranslation: options.isTranslation,
@@ -384,6 +385,243 @@ describe("preprocessWorkToV2 critical apparatus", () => {
     expect(page.notesHtml).toContain("Latin note body.");
     expect(page.translationHtml).toContain("The first part.");
     expect(page.translationHtml).not.toContain("Notes on the translation");
+  });
+});
+
+describe("preprocessWorkToV2 translation matching", () => {
+  const PROSE = ["book", "chapter", "section"];
+  const VERSE = ["book", "poem", "line"];
+
+  function line(text: string): ContentNode {
+    return span([["l", "1"]], text);
+  }
+
+  function translationOf(options: WorkOptions): ProcessedWork2 {
+    return makeWork({ ...options, isTranslation: true, translator: "T" });
+  }
+
+  /** The `[gutter, text]` pairs of each translation section, in order. */
+  function sections(html: string | undefined): [string, string][] {
+    const pattern =
+      /<div class="reader-translation-gutter">(.*?)<\/div>\s*<div class="reader-translation-text">(.*?)<\/div>/g;
+    return [...(html ?? "").matchAll(pattern)].map((m) => [
+      m[1].replace(/<[^>]*>/g, ""),
+      m[2].replace(/<[^>]*>/g, ""),
+    ]);
+  }
+
+  it("renders the matching translation page with its own citations", () => {
+    const latin = makeWork({
+      textParts: PROSE,
+      rows: [
+        [["1", "1", "1"], span([], "Prima.")],
+        [["1", "1", "2"], span([], "Secunda.")],
+      ],
+    });
+    const translation = translationOf({
+      textParts: PROSE,
+      rows: [
+        [["1", "1", "1"], span([], "First.")],
+        [["1", "1", "2"], span([], "Second.")],
+      ],
+    });
+
+    const html = preprocessWorkToV2(latin, METADATA, translation).pages[0]
+      .translationHtml;
+
+    expect(sections(html)).toEqual([
+      ["1", "First."],
+      ["2", "Second."],
+    ]);
+    expect(html).toContain('id="trans-sec-1.1.1"');
+    expect(html).toContain('id="trans-sec-1.1.2"');
+  });
+
+  it("renders every translation row, even past the Latin row count", () => {
+    const latin = makeWork({
+      textParts: VERSE,
+      rows: [
+        [["1", "1", "1"], line("Arma gravi numero")],
+        [["1", "1", "2"], line("edere parabam")],
+      ],
+    });
+    const translation = translationOf({
+      textParts: VERSE,
+      rows: [
+        [["1", "1", "1"], line("For mighty wars")],
+        [["1", "1", "2"], line("I thought to tune")],
+        [["1", "1", "3"], line("my lute")],
+      ],
+    });
+
+    const html = preprocessWorkToV2(latin, METADATA, translation).pages[0]
+      .translationHtml;
+
+    expect(sections(html)).toEqual([
+      ["1", "For mighty wars"],
+      ["2", "I thought to tune"],
+      ["3", "my lute"],
+    ]);
+    expect(html).toContain('<span class="reader-line">my lute</span>');
+  });
+
+  it("leaves pages without a translation page untranslated", () => {
+    const latin = makeWork({
+      textParts: PROSE,
+      rows: [
+        [["1", "1", "1"], span([], "Prima.")],
+        [["11", "1", "1"], span([], "Undecima.")],
+      ],
+      pages: [
+        { id: ["1", "1"], rows: [0, 1] },
+        { id: ["11", "1"], rows: [1, 2] },
+      ],
+    });
+    const translation = translationOf({
+      textParts: PROSE,
+      rows: [[["1", "1", "1"], span([], "First.")]],
+    });
+
+    const pages = preprocessWorkToV2(latin, METADATA, translation).pages;
+
+    expect(pages[0].translationHtml).toContain("First.");
+    expect(pages[1].translationHtml).toBeUndefined();
+  });
+
+  it("leaves a page untranslated when every translation row is empty", () => {
+    const latin = makeWork({
+      textParts: PROSE,
+      rows: [[["1", "1", "1"], span([], "Prima.")]],
+    });
+    const translation = translationOf({
+      textParts: PROSE,
+      rows: [[["1", "1", "1"], span([], "  ")]],
+    });
+
+    const page = preprocessWorkToV2(latin, METADATA, translation).pages[0];
+
+    expect(page.translationHtml).toBeUndefined();
+  });
+
+  it("skips empty translation rows", () => {
+    const latin = makeWork({
+      textParts: PROSE,
+      rows: [[["1", "1", "1"], span([], "Prima.")]],
+    });
+    const translation = translationOf({
+      textParts: PROSE,
+      rows: [
+        [["1", "1", "1"], span([], "First.")],
+        [["1", "1", "2"], span([], "")],
+        [["1", "1", "3"], span([], "Third.")],
+      ],
+    });
+
+    const html = preprocessWorkToV2(latin, METADATA, translation).pages[0]
+      .translationHtml;
+
+    expect(sections(html)).toEqual([
+      ["1", "First."],
+      ["3", "Third."],
+    ]);
+    expect(html).not.toContain("trans-sec-1.1.2");
+  });
+
+  it("maps known page id aliases to the translation page", () => {
+    const latin = makeWork({
+      workId: "phi0914.phi001.perseus-lat2",
+      textParts: PROSE,
+      rows: [[["1", "pr", "1"], span([], "Facturusne operae pretium sim.")]],
+      pages: [{ id: ["1", "pr"], rows: [0, 1] }],
+    });
+    const translation = translationOf({
+      textParts: PROSE,
+      rows: [[["1", "0", "1"], span([], "Whether I am likely to accomplish.")]],
+      pages: [{ id: ["1", "0"], rows: [0, 1] }],
+    });
+
+    const html = preprocessWorkToV2(latin, METADATA, translation).pages[0]
+      .translationHtml;
+
+    expect(sections(html)).toEqual([
+      ["1", "Whether I am likely to accomplish."],
+    ]);
+  });
+
+  it("does not apply another work's page id aliases", () => {
+    const latin = makeWork({
+      workId: "some.other.work",
+      textParts: PROSE,
+      rows: [[["1", "pr", "1"], span([], "Praefatio.")]],
+      pages: [{ id: ["1", "pr"], rows: [0, 1] }],
+    });
+    const translation = translationOf({
+      textParts: PROSE,
+      rows: [[["1", "0", "1"], span([], "Preface.")]],
+      pages: [{ id: ["1", "0"], rows: [0, 1] }],
+    });
+
+    const page = preprocessWorkToV2(latin, METADATA, translation).pages[0];
+
+    expect(page.translationHtml).toBeUndefined();
+  });
+
+  it("matches a translation paginated more coarsely than the Latin", () => {
+    const latin = makeWork({
+      textParts: PROSE,
+      rows: [
+        [["1", "1", "1"], span([], "Prima.")],
+        [["1", "2", "1"], span([], "Secunda.")],
+      ],
+      pages: [
+        { id: ["1", "1"], rows: [0, 1] },
+        { id: ["1", "2"], rows: [1, 2] },
+      ],
+    });
+    const translation = translationOf({
+      textParts: PROSE,
+      rows: [
+        [["1", "1", "1"], span([], "First.")],
+        [["1", "2", "1"], span([], "Second.")],
+      ],
+      pages: [{ id: ["1"], rows: [0, 2] }],
+    });
+
+    const pages = preprocessWorkToV2(latin, METADATA, translation).pages;
+
+    // Both Latin chapters show the whole translated book, cited within it.
+    for (const page of pages) {
+      expect(sections(page.translationHtml)).toEqual([
+        ["1.1", "First."],
+        ["2.1", "Second."],
+      ]);
+    }
+  });
+
+  it("gives heading rows no citation or id", () => {
+    const latin = makeWork({
+      textParts: VERSE,
+      rows: [[["1", "1", "1"], line("Arma gravi numero")]],
+    });
+    const translation = translationOf({
+      textParts: VERSE,
+      rows: [
+        [
+          ["1", "1"],
+          new XmlNode<ProcessedWorkContentNodeType>("head", [], ["Elegy I"]),
+        ],
+        [["1", "1", "1"], line("For mighty wars")],
+      ],
+    });
+
+    const html = preprocessWorkToV2(latin, METADATA, translation).pages[0]
+      .translationHtml;
+
+    expect(sections(html)).toEqual([
+      ["", "Elegy I"],
+      ["1", "For mighty wars"],
+    ]);
+    expect(html).not.toContain('id="trans-sec-1.1"');
   });
 });
 
