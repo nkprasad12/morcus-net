@@ -1872,6 +1872,187 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(notesView.scrollTop).toBe(0);
     expect(aboutView.scrollTop).toBe(0);
   });
+
+  test("pressing '/' switches to dictionary tab, restores drawer, and focuses #dict-q inside #dict-frame", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+    });
+    const panelController = el.getPanelController()!;
+    const splitLayout = el.querySelector<HTMLElement>(".reader-split-layout")!;
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+
+    const frameDoc = document.implementation.createHTMLDocument("");
+    frameDoc.body.innerHTML =
+      '<input type="text" id="dict-q" value="existing" />';
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
+    const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
+    const focusSpy = jest.spyOn(dictInput, "focus");
+    const selectSpy = jest.spyOn(dictInput, "select");
+
+    // Start on notes tab with minimized drawer
+    panelController.setTab("notes");
+    el.minimizeDrawer();
+    expect(panelController.activeTab).toBe("notes");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+
+    const ev = new KeyboardEvent("keydown", {
+      key: "/",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(ev);
+
+    expect(ev.defaultPrevented).toBe(true);
+    expect(panelController.activeTab).toBe("dict");
+    expect(splitLayout.classList.contains("reader-layout-active")).toBe(true);
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    expect(dictInput.value).toBe("existing");
+    expect(focusSpy).toHaveBeenCalled();
+    expect(selectSpy).toHaveBeenCalled();
+  });
+
+  test("pressing '/' pre-fills #dict-q from a non-collapsed passage selection and ignores a collapsed caret", () => {
+    const el = createReaderView('<p id="p1">«Gallia,» est omnis</p>');
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const frameDoc = document.implementation.createHTMLDocument("");
+    frameDoc.body.innerHTML =
+      '<input type="text" id="dict-q" value="initial" />';
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
+    const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
+
+    const p1 = el.querySelector<HTMLElement>("#p1")!;
+
+    // 1. Collapsed caret selection does not overwrite #dict-q
+    const collapsedRange = document.createRange();
+    collapsedRange.setStart(p1.firstChild!, 1);
+    collapsedRange.collapse(true);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(collapsedRange);
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    expect(dictInput.value).toBe("initial");
+
+    // 2. Non-collapsed selection extracts first word ("Gallia")
+    const wordRange = document.createRange();
+    wordRange.selectNodeContents(p1);
+    sel.removeAllRanges();
+    sel.addRange(wordRange);
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    expect(dictInput.value).toBe("Gallia");
+    sel.removeAllRanges();
+  });
+
+  test("pressing '/' before #dict-frame loads waits for load to pre-fill and focus #dict-q", () => {
+    const el = createReaderView('<p id="p1">Belgae incolunt</p>');
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const frameDoc = document.implementation.createHTMLDocument("");
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
+
+    const p1 = el.querySelector<HTMLElement>("#p1")!;
+    const range = document.createRange();
+    range.selectNodeContents(p1);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    sel.removeAllRanges();
+
+    // Populate #dict-q and dispatch load on the iframe
+    frameDoc.body.innerHTML = '<input type="text" id="dict-q" value="" />';
+    const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
+    const focusSpy = jest.spyOn(dictInput, "focus");
+    const selectSpy = jest.spyOn(dictInput, "select");
+
+    iframe.dispatchEvent(new Event("load"));
+
+    expect(dictInput.value).toBe("Belgae");
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+    expect(selectSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test("clicking a word before #dict-frame loads cancels any pending '/' focus", () => {
+    const el = createReaderView('<p id="p1">Belgae incolunt</p>');
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const frameDoc = document.implementation.createHTMLDocument("");
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
+
+    const p1 = el.querySelector<HTMLElement>("#p1")!;
+    const range = document.createRange();
+    range.selectNodeContents(p1);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    sel.removeAllRanges();
+
+    // User clicks the second word ("incolunt") before the iframe finishes loading
+    const words = el.querySelectorAll<HTMLElement>(".lat-word");
+    words[1].click();
+
+    frameDoc.body.innerHTML =
+      '<input type="text" id="dict-q" value="incolunt" />';
+    const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
+    const focusSpy = jest.spyOn(dictInput, "focus");
+
+    iframe.dispatchEvent(new Event("load"));
+
+    expect(dictInput.value).toBe("incolunt");
+    expect(focusSpy).not.toHaveBeenCalled();
+  });
+
+  test("pressing '/' does not preventDefault when #dict-frame is absent", () => {
+    const el = createReaderView('<p id="p1">Belgae incolunt</p>');
+    el.querySelector<HTMLIFrameElement>("#dict-frame")!.remove();
+
+    const ev = new KeyboardEvent("keydown", {
+      key: "/",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(ev);
+    expect(ev.defaultPrevented).toBe(false);
+  });
 });
 
 describe("MorcusReaderView client-side partial page navigation", () => {

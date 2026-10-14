@@ -3,8 +3,10 @@ import {
   canSwapWordOnHover,
   closeActiveSectionUI,
   createWordSpan,
+  extractSelectedWord,
   fetchAndSwapPartial,
   isPlainLeftClick,
+  isShortcutBlocked,
   KeyedFetchCache,
   queryUpgraded,
   registerElement,
@@ -235,6 +237,7 @@ export class MorcusDictSearch extends BaseElement<
 
     if (this.#inputElement) {
       this.scope.listen(this.#inputElement, "input", this.#handleInput);
+      this.scope.listen(window, "keydown", this.#handleWindowKeydown);
     }
 
     if (this.#resultsElement) {
@@ -502,6 +505,19 @@ export class MorcusDictSearch extends BaseElement<
     } else {
       this.#debouncedFetchPrefixChunk(prefix);
     }
+  };
+
+  readonly #handleWindowKeydown = (e: KeyboardEvent) => {
+    if (e.key !== "/" || isShortcutBlocked(e) || !this.#inputElement) return;
+    // Global `/` shortcut focuses the dictionary search box and pre-fills from selection
+    e.preventDefault();
+    const selectedWord = extractSelectedWord();
+    if (selectedWord) {
+      this.#inputElement.value = selectedWord;
+    }
+    this.#clearSuggestions();
+    this.#inputElement.focus();
+    this.#inputElement.select();
   };
 
   /**

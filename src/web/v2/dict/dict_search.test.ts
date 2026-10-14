@@ -1605,4 +1605,125 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect(input.hasAttribute("aria-autocomplete")).toBe(false);
     });
   });
+
+  describe("keyboard '/' search shortcut", () => {
+    afterEach(() => {
+      window.getSelection()?.removeAllRanges();
+    });
+
+    test("pressing '/' focuses and selects the search input without changing value when nothing is selected", () => {
+      const el = createDictSearch("habeo");
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      input.blur();
+      const focusSpy = jest.spyOn(input, "focus");
+      const selectSpy = jest.spyOn(input, "select");
+
+      const ev = new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      });
+      window.dispatchEvent(ev);
+
+      expect(ev.defaultPrevented).toBe(true);
+      expect(input.value).toBe("habeo");
+      expect(focusSpy).toHaveBeenCalled();
+      expect(selectSpy).toHaveBeenCalled();
+    });
+
+    test("pressing '/' pre-fills the first word of a non-collapsed selection and closes suggestions", () => {
+      const el = createDictSearch("habeo");
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const results = el.querySelector<HTMLElement>("#dict-results")!;
+      results.innerHTML = "<p>«Gallia,» est omnis divisa</p>";
+
+      // Open suggestions first to verify `/` closes them
+      el.chunkCache.set("ha", { "L&S": ["habeo"] });
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      expect(input.getAttribute("aria-expanded")).toBe("true");
+      input.blur();
+
+      const range = document.createRange();
+      range.selectNodeContents(results.querySelector("p")!);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      const selectSpy = jest.spyOn(input, "select");
+      const ev = new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      });
+      window.dispatchEvent(ev);
+
+      expect(ev.defaultPrevented).toBe(true);
+      expect(input.value).toBe("Gallia");
+      expect(document.activeElement).toBe(input);
+      expect(selectSpy).toHaveBeenCalled();
+      expect(input.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    test("pressing '/' ignores a collapsed caret selection", () => {
+      const el = createDictSearch("habeo");
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const results = el.querySelector<HTMLElement>("#dict-results")!;
+      results.innerHTML = "<p>Gallia est omnis</p>";
+      input.blur();
+
+      const range = document.createRange();
+      range.setStart(results.querySelector("p")!.firstChild!, 2);
+      range.collapse(true);
+      const sel = window.getSelection()!;
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      const ev = new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      });
+      window.dispatchEvent(ev);
+
+      expect(ev.defaultPrevented).toBe(true);
+      expect(input.value).toBe("habeo");
+      expect(document.activeElement).toBe(input);
+    });
+
+    test("pressing '/' is ignored when focus is inside an input, an open dialog is present, or modifiers are held", () => {
+      const el = createDictSearch("habeo");
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      input.focus();
+
+      const inInputEv = new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      });
+      input.dispatchEvent(inInputEv);
+      expect(inInputEv.defaultPrevented).toBe(false);
+
+      input.blur();
+      const ctrlEv = new KeyboardEvent("keydown", {
+        key: "/",
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+      });
+      window.dispatchEvent(ctrlEv);
+      expect(ctrlEv.defaultPrevented).toBe(false);
+
+      const dialog = document.createElement("dialog");
+      dialog.setAttribute("open", "");
+      document.body.appendChild(dialog);
+      const dialogEv = new KeyboardEvent("keydown", {
+        key: "/",
+        bubbles: true,
+        cancelable: true,
+      });
+      window.dispatchEvent(dialogEv);
+      expect(dialogEv.defaultPrevented).toBe(false);
+      dialog.remove();
+    });
+  });
 });
