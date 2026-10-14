@@ -9,7 +9,7 @@
 // jsdom.
 //
 // Feature modules have no import-time side effects beyond `registerElement`
-// (enforced by `core/boot_conformance.test.ts`); only entries start the
+// (enforced by `core/conformance/boot_conformance.test.ts`); only entries start the
 // global setups, via `onPageReady`. This barrel imports the entries, so it
 // starts them too: jsdom's document is already `complete`, so the setups
 // (anchor scroll, back-to-top, mobile menu, deferred iframes, the

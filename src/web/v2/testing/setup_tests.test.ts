@@ -6,14 +6,14 @@ import {
   detachedDomWrites,
   recordDetachedDomWrite,
   clearDetachedDomWrites,
-} from "@/web/v2/core/dom_invariants.client";
+} from "@/web/v2/core/dom/dom_invariants.client";
 import {
   allowDetachedDomWritesForTest,
   verifyNoDetachedDomWrites,
   allowConsoleForTest,
   verifyNoUnhandledConsole,
 } from "@/web/v2/testing/setup_tests";
-import { assertConnected } from "@/web/v2/core/dom.client";
+import { assertConnected } from "@/web/v2/core/dom/dom.client";
 
 describe("setup_tests detached DOM write enforcement fixture", () => {
   it("throws in verifyNoDetachedDomWrites() when a detached write occurs without opt-out", () => {

@@ -6,7 +6,7 @@ import {
   storage,
 } from "@/web/v2/core/index.client";
 // Not in the core barrel: only the reader uses it, so it ships in reader.js.
-import { AnchoredPopoverController } from "@/web/v2/core/popover.client";
+import { AnchoredPopoverController } from "@/web/v2/core/widgets/popover.client";
 import {
   isBoolean,
   isLiteral,
@@ -374,7 +374,7 @@ export class MorcusReaderSettings extends BaseElement {
 
 registerElement("morcus-reader-settings", MorcusReaderSettings);
 
-declare module "@/web/v2/core/js_gate.client" {
+declare module "@/web/v2/core/dom/js_gate.client" {
   interface MorcusElementTagNameMap {
     "morcus-reader-settings": MorcusReaderSettings;
   }

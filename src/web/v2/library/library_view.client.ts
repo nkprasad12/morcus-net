@@ -143,7 +143,7 @@ export class MorcusLibraryView extends BaseElement {
 
 registerElement("morcus-library-view", MorcusLibraryView);
 
-declare module "@/web/v2/core/js_gate.client" {
+declare module "@/web/v2/core/dom/js_gate.client" {
   interface MorcusElementTagNameMap {
     "morcus-library-view": MorcusLibraryView;
   }

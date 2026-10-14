@@ -110,7 +110,7 @@ This tiering is already correct in the codebase. The defects come from dictionar
 
 ### Pre-paint is a scarce budget
 
-The critical script is inlined into every HTML response: uncached, paid per page load, and it blocks parsing. It is now a **fixed-size applier**: owners in the bundle call `setPrepaint(name, value)` ([`core/prepaint.client.ts`](../core/prepaint.client.ts)) with the final `--custom-property` or `data-*` value, and [`critical_theme.client.ts`](../shell/critical_theme.client.ts) only copies the stored snapshot onto `<html>`. It never validates or maps values, so a new pre-paint preference costs it **0 bytes**, and its size is enforced by the budget in [`v2_bundle_budget.ts`](../../../bundler/v2_bundle_budget.ts).
+The critical script is inlined into every HTML response: uncached, paid per page load, and it blocks parsing. It is now a **fixed-size applier**: owners in the bundle call `setPrepaint(name, value)` ([`core/dom/prepaint.client.ts`](../core/prepaint.client.ts)) with the final `--custom-property` or `data-*` value, and [`critical_theme.client.ts`](../shell/critical_theme.client.ts) only copies the stored snapshot onto `<html>`. It never validates or maps values, so a new pre-paint preference costs it **0 bytes**, and its size is enforced by the budget in [`v2_bundle_budget.ts`](../../../bundler/v2_bundle_budget.ts).
 
 Bytes are no longer the constraint, but work before first paint and CSS on `:root` still are, so "Does it flash?" remains the wrong admission test:
 

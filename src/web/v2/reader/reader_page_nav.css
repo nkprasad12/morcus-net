@@ -73,7 +73,7 @@
   background-color: var(--app-bar-bg);
   box-shadow: 0 0 0 5px var(--app-bar-bg);
   pointer-events: none;
-  /* stylelint-disable no-unknown-animations -- `spin` lives in core/components.css */
+  /* stylelint-disable no-unknown-animations -- `spin` lives in core/nav/components.css */
   animation: page-loading-in 150ms ease-out 400ms both,
     spin 0.7s linear infinite;
   /* stylelint-enable no-unknown-animations */

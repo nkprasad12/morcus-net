@@ -36,8 +36,8 @@ import "@/web/v2/v2_elements.client";
 import {
   clearDetachedDomWrites,
   detachedDomWrites,
-} from "@/web/v2/core/dom_invariants.client";
-import { SLOT_ATTR } from "@/web/v2/core/slots.common";
+} from "@/web/v2/core/dom/dom_invariants.client";
+import { SLOT_ATTR } from "@/web/v2/core/nav/slots.common";
 import { isAllowlistedCreation } from "@/web/v2/testing/created_dom_allowlist";
 import { inIsomorphicRerender } from "@/web/v2/testing/isomorphic_rerenders";
 import {

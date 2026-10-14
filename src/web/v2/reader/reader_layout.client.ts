@@ -9,10 +9,10 @@
  * - Preserves zero-reflow layout writes during active drag gestures
  */
 
-import { BaseController } from "@/web/v2/core/base_element.client";
-import { trackPointerDrag } from "@/web/v2/core/gesture.client";
-import { recordPrepaint, setPrepaint } from "@/web/v2/core/prepaint.client";
-import { storage } from "@/web/v2/core/storage.client";
+import { BaseController } from "@/web/v2/core/dom/base_element.client";
+import { trackPointerDrag } from "@/web/v2/core/widgets/gesture.client";
+import { recordPrepaint, setPrepaint } from "@/web/v2/core/dom/prepaint.client";
+import { storage } from "@/web/v2/core/state/storage.client";
 
 /**
  * Bounds for the desktop dictionary panel, in px. There is no fixed maximum:

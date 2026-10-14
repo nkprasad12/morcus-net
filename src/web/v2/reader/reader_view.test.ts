@@ -10,11 +10,11 @@ import {
   DRAWER_DEFAULT_SVH,
   DRAWER_EXPANDED_SVH,
   DRAWER_FLOOR_SVH,
-} from "@/web/v2/core/drawer.client";
+} from "@/web/v2/core/widgets/drawer.client";
 import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
-import { WAKE_LOCK_IDLE_MS } from "@/web/v2/core/wake_lock.client";
-import { revealTarget } from "@/web/v2/core/reveal.client";
-import { PREPAINT_KEY } from "@/web/v2/core/prepaint.client";
+import { WAKE_LOCK_IDLE_MS } from "@/web/v2/core/widgets/wake_lock.client";
+import { revealTarget } from "@/web/v2/core/nav/reveal.client";
+import { PREPAINT_KEY } from "@/web/v2/core/dom/prepaint.client";
 
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 import {

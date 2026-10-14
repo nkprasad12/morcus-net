@@ -30,13 +30,13 @@ export const ISOMORPHIC_RERENDERS: readonly IsomorphicRerender[] = [
     owner: "morcus-dict-search",
     selector: ".lang-chips",
     replaces: "contents",
-    renderer: "renderLangChipsHtml (dict/search_bar.common.ts)",
+    renderer: "renderLangChipsHtml (dict/search/search_bar.common.ts)",
   },
   {
     owner: "morcus-dict-search",
     selector: ".inflect-chip",
     replaces: "self",
-    renderer: "renderInflectChipHtml (dict/search_bar.common.ts)",
+    renderer: "renderInflectChipHtml (dict/search/search_bar.common.ts)",
   },
 ];
 

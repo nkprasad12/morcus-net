@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { tokenizeTargets } from "@/web/v2/core/tokenize.client";
+import { tokenizeTargets } from "@/web/v2/core/dom/tokenize.client";
 import {
   DEFAULT_LINE_MODE,
   MAX_EXTERNAL_TEXT_CHARS,

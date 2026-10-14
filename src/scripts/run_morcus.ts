@@ -956,7 +956,9 @@ async function runVisualDiff(args: any): Promise<boolean> {
 }
 
 async function runInventory(args: any): Promise<boolean> {
-  const { runInventoryCli } = await import("@/web/v2/tools/inventory");
+  const { runInventoryCli } = await import(
+    "@/web/v2/tools/inventory/inventory"
+  );
   return runInventoryCli({
     update: Boolean(args.update),
     reportPath: args.report || undefined,

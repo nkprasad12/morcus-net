@@ -280,7 +280,7 @@ Attribute, class and text writes only. Server markup is never moved.
 
 ## 6. Shared and infra changes outside the slice
 
-- **`core/partial.client.ts`:** POST support plus a native-submit fallback (E1).
+- **`core/nav/partial.client.ts`:** POST support plus a native-submit fallback (E1).
 - **`testing/form_roundtrip.ts`:** `serializePostForm(form) → { action, body }` (E2).
 - **Dictionary iframe URL:** move the builder to a shared module (E12).
 - **`shell/page_shell.server.ts`:** add a `route` to `PageShellOptions`, or a macronizer `activePage` value (E5). Prefer `route`.
@@ -357,4 +357,4 @@ src/web/v2/testing/fake_macronizer_engine.ts    # canned, table-tagger fixture, 
 src/macronizer/morcronizer.ts, src/nlp/text_tokenization.ts, src/web/api_routes.ts   # PR 1
 ```
 
-Outside the slice: `v2_router.server.ts`, `start_server.ts`, `v2_elements.client.ts`, `v2.css`, `v2_build_contract.ts`, `v2_bundle_budget.ts`, `shell/page_shell.server.ts`, `core/partial.client.ts`, `testing/ssr_fixtures.ts`, `testing/fake_v2_network.ts`, `testing/form_roundtrip.ts`, `testing/created_dom_allowlist.ts`, `core/route_bundle_conformance.test.ts`, `core/reattach_conformance.test.ts`, the shared dictionary-URL module, and `integration/utils/morcus_integration_setup.ts`.
+Outside the slice: `v2_router.server.ts`, `start_server.ts`, `v2_elements.client.ts`, `v2.css`, `v2_build_contract.ts`, `v2_bundle_budget.ts`, `shell/page_shell.server.ts`, `core/nav/partial.client.ts`, `testing/ssr_fixtures.ts`, `testing/fake_v2_network.ts`, `testing/form_roundtrip.ts`, `testing/created_dom_allowlist.ts`, `core/conformance/route_bundle_conformance.test.ts`, `core/conformance/reattach_conformance.test.ts`, the shared dictionary-URL module, and `integration/utils/morcus_integration_setup.ts`.

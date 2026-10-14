@@ -1,5 +1,5 @@
-import { isRecord } from "@/web/v2/core/settings.client";
-import { storage } from "@/web/v2/core/storage.client";
+import { isRecord } from "@/web/v2/core/state/settings.client";
+import { storage } from "@/web/v2/core/state/storage.client";
 
 /**
  * Typed LocalStorage saved spots store for UI V2 Library and Reader.

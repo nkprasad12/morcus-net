@@ -23,11 +23,11 @@
  * - `verse`: every line is its own numbered section, as in library verse,
  *   with blank lines rendered as stanza breaks.
  *
- * This module must not import `he` (see `core/html.common.ts`).
+ * This module must not import `he` (see `core/dom/html.common.ts`).
  */
 
 import { processTokens } from "@/common/text_cleaning";
-import { html, joinHtml, type SafeHtml } from "@/web/v2/core/html.common";
+import { html, joinHtml, type SafeHtml } from "@/web/v2/core/dom/html.common";
 
 export type LineMode = "keep" | "prose" | "verse";
 

@@ -7,15 +7,15 @@ import {
   setSurfaceWidth,
   syncSurfaceWidth,
   WIDTH_SURFACES,
-} from "@/web/v2/core/page_width.client";
+} from "@/web/v2/core/widgets/page_width.client";
 import {
   GLOBAL_SETTINGS_KEY,
   parseSettings,
   settingsStore,
-} from "@/web/v2/core/settings.client";
+} from "@/web/v2/core/state/settings.client";
 import { renderPageWidthHandles } from "@/web/v2/shell/page_width.server";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
-import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
+import { renderDictSearchBar } from "@/web/v2/dict/search/search_bar.server";
 import { renderDictPageHtml } from "@/web/v2/dict/dict_page.server";
 import { renderReaderSettingsPopover } from "@/web/v2/reader/reader_dialogs.server";
 import "@/web/v2/reader/reader_settings.client";

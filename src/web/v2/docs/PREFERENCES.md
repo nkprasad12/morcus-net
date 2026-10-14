@@ -27,7 +27,7 @@ The line is content vs presentation, not "does the server want it":
 
 The critical script is inlined into every HTML response: uncached, paid per page load, and it blocks
 parsing. It is a **fixed-size applier**: owners in the bundle call `setPrepaint(name, value)`
-([`core/prepaint.client.ts`](../core/prepaint.client.ts)) with the final `--custom-property` or
+([`core/dom/prepaint.client.ts`](../core/prepaint.client.ts)) with the final `--custom-property` or
 `data-*` value, and [`critical_theme.client.ts`](../shell/critical_theme.client.ts) only copies the
 stored snapshot onto `<html>`. It never validates or maps values, so a new pre-paint preference costs
 it 0 bytes; its size is enforced by the budget in

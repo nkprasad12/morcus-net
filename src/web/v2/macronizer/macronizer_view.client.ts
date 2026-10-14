@@ -12,7 +12,7 @@ import {
   swapElementContent,
   swapSlots,
 } from "@/web/v2/core/index.client";
-import { buildDictUrl } from "@/web/v2/dict/dict_params.common";
+import { buildDictUrl } from "@/web/v2/dict/search/dict_params.common";
 import {
   MACRONIZER_MAX_CHARS,
   MACRONIZER_SLOTS,

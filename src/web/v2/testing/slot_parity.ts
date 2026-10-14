@@ -1,9 +1,9 @@
 /**
  * Parity check between a full page and its slot partial (see
- * `core/slots.common.ts`). Needs a jsdom test environment.
+ * `core/nav/slots.common.ts`). Needs a jsdom test environment.
  */
 
-import { SLOT_ATTR } from "@/web/v2/core/slots.common";
+import { SLOT_ATTR } from "@/web/v2/core/nav/slots.common";
 
 /**
  * Asserts that `partialHtml` holds exactly `slots`, in order, and that each

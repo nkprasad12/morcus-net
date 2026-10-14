@@ -30,7 +30,7 @@ import {
   wordGroupParts,
   queryUpgraded,
 } from "@/web/v2/core/index.client";
-import type { SafeHtml } from "@/web/v2/core/html.common";
+import type { SafeHtml } from "@/web/v2/core/dom/html.common";
 import { removeMacrons } from "@/common/text_cleaning";
 import {
   READER_PAGE_SLOTS,
@@ -1531,7 +1531,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
 registerElement("morcus-reader-view", MorcusReaderView);
 
-declare module "@/web/v2/core/js_gate.client" {
+declare module "@/web/v2/core/dom/js_gate.client" {
   interface MorcusElementTagNameMap {
     "morcus-reader-view": MorcusReaderView;
   }

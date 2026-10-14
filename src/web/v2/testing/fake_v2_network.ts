@@ -8,11 +8,11 @@
  * fail on them instead of silently testing an error path.
  */
 
-import type { CompletionsProvider } from "@/web/v2/dict/dict_completions.server";
+import type { CompletionsProvider } from "@/web/v2/dict/search/dict_completions.server";
 import {
   getV2Completions,
   getV2DictChunks,
-} from "@/web/v2/dict/dict_completions.server";
+} from "@/web/v2/dict/search/dict_completions.server";
 import { renderDictResultsHtml } from "@/web/v2/dict/dict_page.server";
 import { buildLemmaShards } from "@/web/v2/corpus/corpus_lemmata.server";
 import {

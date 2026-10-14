@@ -1,8 +1,13 @@
 import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
 import type { MacronizedWord } from "@/web/api_routes";
-import { html, joinHtml, raw, type SafeHtml } from "@/web/v2/core/html.common";
-import { renderSlotTemplates, slotAttr } from "@/web/v2/core/slots.common";
-import { buildDictUrl } from "@/web/v2/dict/dict_params.common";
+import {
+  html,
+  joinHtml,
+  raw,
+  type SafeHtml,
+} from "@/web/v2/core/dom/html.common";
+import { renderSlotTemplates, slotAttr } from "@/web/v2/core/nav/slots.common";
+import { buildDictUrl } from "@/web/v2/dict/search/dict_params.common";
 import type {
   MacronizerTierCounts,
   ResolvedMacronizerDocument,

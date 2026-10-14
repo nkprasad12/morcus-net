@@ -7,10 +7,10 @@ import "@/web/v2/shell/theme_toggle.client";
 import "@/web/v2/dialog/report_dialog.client";
 import "@/web/v2/shell/page_width_handles.client";
 
-import { setupAnchorScroll } from "@/web/v2/core/anchor_scroll.client";
-import { setupBackToTop } from "@/web/v2/core/back_to_top.client";
-import { setupDeferredIframes } from "@/web/v2/core/deferred_iframe.client";
-import { onPageReady } from "@/web/v2/core/page_ready.client";
+import { setupAnchorScroll } from "@/web/v2/core/nav/anchor_scroll.client";
+import { setupBackToTop } from "@/web/v2/core/widgets/back_to_top.client";
+import { setupDeferredIframes } from "@/web/v2/core/widgets/deferred_iframe.client";
+import { onPageReady } from "@/web/v2/core/dom/page_ready.client";
 import { setupMobileMenu } from "@/web/v2/shell/mobile_menu.client";
 
 // Global shell and interactive behaviours. They run once every chunk on the

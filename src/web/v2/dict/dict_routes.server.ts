@@ -16,17 +16,17 @@ import {
   dictParamsFromQuery,
   toStringOrArray,
 } from "@/web/v2/dict/dict.server";
-import type { SavedDictPrefs } from "@/web/v2/dict/dict_selection.common";
+import type { SavedDictPrefs } from "@/web/v2/dict/settings/dict_selection.common";
 import { trimRawQuery } from "@/common/text_cleaning";
 import {
   ownSettingsHref,
   planDictPersistence,
-} from "@/web/v2/dict/dict_persistence.server";
-import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
+} from "@/web/v2/dict/settings/dict_persistence.server";
+import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
 import {
   isPartialRequest,
   isEmbeddedRequest,
-} from "@/web/v2/core/request_params.server";
+} from "@/web/v2/core/server/request_params.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 

@@ -7,9 +7,9 @@
  * dismissal, and keyboard accessibility (Escape to close).
  */
 
-import { BaseController } from "@/web/v2/core/base_element.client";
-import { AnchoredPopoverController } from "@/web/v2/core/popover.client";
-import { registerRevealer } from "@/web/v2/core/reveal.client";
+import { BaseController } from "@/web/v2/core/dom/base_element.client";
+import { AnchoredPopoverController } from "@/web/v2/core/widgets/popover.client";
+import { registerRevealer } from "@/web/v2/core/nav/reveal.client";
 
 export interface ReaderTocElements {
   /** The slide-in drawer element (#reader-toc-drawer) */

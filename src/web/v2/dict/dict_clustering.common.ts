@@ -2,7 +2,7 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { type DictLang } from "@/common/dictionaries/dictionaries";
 import { Vowels } from "@/common/character_utils";
 import { removeDiacritics } from "@/common/text_cleaning";
-import type { CompletionItem } from "@/web/v2/dict/dict_completions.common";
+import type { CompletionItem } from "@/web/v2/dict/search/dict_completions.common";
 
 export interface Candidate {
   dictKey: string;

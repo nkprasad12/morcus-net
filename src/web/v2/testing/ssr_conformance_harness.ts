@@ -22,7 +22,7 @@
  * Checks that need every page at once (every registered element appears in
  * some fixture; the page setups match the entry files; every connect-time or
  * delegated selector lookup matches in some fixture) stay in
- * `core/ssr_conformance.test.ts`.
+ * `core/conformance/ssr_conformance.test.ts`.
  *
  * Suites must mock the modules `testing/ssr_fixtures.ts` asks for.
  */

@@ -155,7 +155,7 @@ When **Suggest correction** is chosen:
        </div>
      </div>
      ```
-4. **Styling & Design Tokens ([`variables.css`](../shell/variables.css), [`components.css`](../core/components.css))**:
+4. **Styling & Design Tokens ([`variables.css`](../shell/variables.css), [`components.css`](../core/nav/components.css))**:
 
    - Uses UI V2's standard tokens and `.btn` classes so it adapts to light/dark themes, reader font scale (`--reader-font`, `--reader-scale`), and dictionary scale (`--dict-scale`):
 
@@ -282,7 +282,7 @@ Existing logic in [`src/web/utils/github.ts:L16-35`](../../../web/utils/github.t
 
 ## 7. Verification & Testing Strategy
 
-1. **Shared Core & Slice Unit Tests (`core/`, `reader/reader_view.test.ts`, `dict/dict_permalink.test.ts`)**:
+1. **Shared Core & Slice Unit Tests (`core/`, `reader/reader_view.test.ts`, `dict/entry/dict_permalink.test.ts`)**:
    - Clicking `a.section-anchor` in Reader and Dictionary opens the 2-item popover menu (`Copy permalink` and `Suggest correction`).
    - External Reader (`<morcus-reader-view>` without `data-work`) does not expose "Suggest correction".
    - Dictionary article header `a.copy-pill` remains a direct 1-click copy without opening an edit menu.

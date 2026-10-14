@@ -10,10 +10,10 @@
 
 import type { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { XmlNode } from "@/common/xml/xml_node";
-import { setupAnchorScroll } from "@/web/v2/core/anchor_scroll.client";
-import { setupBackToTop } from "@/web/v2/core/back_to_top.client";
-import { setupDeferredIframes } from "@/web/v2/core/deferred_iframe.client";
-import { setupAbbrPopover } from "@/web/v2/dict/abbr_popover.client";
+import { setupAnchorScroll } from "@/web/v2/core/nav/anchor_scroll.client";
+import { setupBackToTop } from "@/web/v2/core/widgets/back_to_top.client";
+import { setupDeferredIframes } from "@/web/v2/core/widgets/deferred_iframe.client";
+import { setupAbbrPopover } from "@/web/v2/dict/entry/abbr_popover.client";
 import { setupMobileMenu } from "@/web/v2/shell/mobile_menu.client";
 import { CONTEXT_LEN, PAGE_SIZE } from "@/web/v2/corpus/corpus_params.common";
 import {

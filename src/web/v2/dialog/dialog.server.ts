@@ -1,4 +1,4 @@
-import { html, raw, type SafeHtml } from "@/web/v2/core/html.common";
+import { html, raw, type SafeHtml } from "@/web/v2/core/dom/html.common";
 
 export interface DialogOptions {
   id: string;

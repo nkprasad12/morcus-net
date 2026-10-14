@@ -12,8 +12,8 @@
   "domMutationOutsideCore": {
     "callsPerFile": {
       "src/web/v2/corpus/corpus_autocomplete.client.ts": 1,
-      "src/web/v2/dict/dict_search.client.ts": 2,
-      "src/web/v2/dict/dict_suggestions.client.ts": 8,
+      "src/web/v2/dict/search/dict_search.client.ts": 2,
+      "src/web/v2/dict/search/dict_suggestions.client.ts": 8,
       "src/web/v2/external/external_loader.client.ts": 1,
       "src/web/v2/library/library_view.client.ts": 3,
       "src/web/v2/reader/reader_panel.client.ts": 3,

@@ -1,10 +1,10 @@
 {
   "plugins": [
     "stylelint-declaration-strict-value",
-    "./src/web/v2/tools/max_file_lines.cjs",
-    "./src/web/v2/tools/no_duplicate_declaration_blocks.cjs",
-    "./src/web/v2/tools/no_ancestor_gate_in_has.cjs",
-    "./src/web/v2/tools/no_unscoped_target.cjs"
+    "./src/web/v2/tools/stylelint/max_file_lines.cjs",
+    "./src/web/v2/tools/stylelint/no_duplicate_declaration_blocks.cjs",
+    "./src/web/v2/tools/stylelint/no_ancestor_gate_in_has.cjs",
+    "./src/web/v2/tools/stylelint/no_unscoped_target.cjs"
   ],
   "rules": {},
   "overrides": [
@@ -35,7 +35,7 @@
         "function-disallowed-list": [
           ["env"],
           {
-            "message": "Do not use env(). Without viewport-fit=cover, Chrome and Safari report safe-area insets as 0, while Firefox Android reports the nav-bar height (see core/drawer.css)."
+            "message": "Do not use env(). Without viewport-fit=cover, Chrome and Safari report safe-area insets as 0, while Firefox Android reports the nav-bar height (see core/widgets/drawer.css)."
           }
         ],
         "function-no-unknown": true,

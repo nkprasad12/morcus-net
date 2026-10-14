@@ -3,7 +3,7 @@
  * Provides scholarly provenance, digitization sources, and open-access licenses.
  */
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { findDictInfo } from "@/web/v2/dict/dict_selection.common";
+import { findDictInfo } from "@/web/v2/dict/settings/dict_selection.common";
 
 export interface DictAttributionInfo {
   sourceText: string;

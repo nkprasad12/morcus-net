@@ -69,7 +69,7 @@ export interface V2BundleBudget {
  *   loader element, the IndexedDB store, and the text renderer shared with
  *   the server). None of it pulls in new dependencies.
  * - 2026-09-26: 135 / 38 -> 142 / 41 (combined 255 / 58 -> 265 / 62), after
- *   unified In-Flow "Edit and Report" (`core/section_edit.client.ts` + Reader
+ *   unified In-Flow "Edit and Report" (`core/widgets/section_edit.client.ts` + Reader
  *   and Dictionary adapters, ~5.3 kB raw / ~2.0 kB gzip JS and ~1.2 kB raw /
  *   ~0.2 kB gzip CSS).
  * - 2026-09-28: 142 / 41 -> 147 / 44 (combined 265 / 62 -> 267 / 64), after
@@ -93,7 +93,7 @@ export interface V2BundleBudget {
  *   102 / 31.5, `external` 112 / 35.5 kB).
  * - 2026-09-30: `common.js` 55 / 18 -> 60 / 20 kB (per-route: `about` 60 / 20,
  *   `dicts` 90 / 30, `corpus` 76 / 26, `library` 106 / 33, `external` 117 / 37 kB),
- *   after adding shared `core/combobox.client.ts` (WAI-ARIA 1.2 `ComboboxController`,
+ *   after adding shared `core/widgets/combobox.client.ts` (WAI-ARIA 1.2 `ComboboxController`,
  *   ~2.3 kB raw / ~1.0 kB gzip) to `common.js` for dict and corpus autocomplete.
  * - 2026-10-02: draggable page width handles (reader/library/corpus/dict);
  *   user-approved +0.5 kB headroom. Gzip only: `common.js` 20 -> 20.5,
@@ -148,7 +148,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   },
   maxCssRawBytes: 144 * 1024,
   maxCssGzipBytes: 25 * 1024,
-  // critical.js is a fixed-size pre-paint applier (core/prepaint.client.ts):
+  // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
   // pre-paint preference must not grow it. Baseline 2026-09-27: 424 B raw /
   // 300 B gzip; 2026-10-14: 300 B raw / 237 B gzip, after the theme became an

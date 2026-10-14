@@ -91,7 +91,7 @@ The server imports `reader_loader.server.ts` and `reader_highlight.common.ts` (t
 
 ### Autocomplete boundary
 
-**`<morcus-corpus-suggestions>`** (`corpus_autocomplete.client.ts`) is built on `ComboboxController` (`core/combobox.client.ts`). It creates only the `<li>` options (an allowlisted subtree), reads authors from `data-authors` on the server-rendered host, and fetches lemmata in one-letter shards through `LemmaShardCache`.
+**`<morcus-corpus-suggestions>`** (`corpus_autocomplete.client.ts`) is built on `ComboboxController` (`core/widgets/combobox.client.ts`). It creates only the `<li>` options (an allowlisted subtree), reads authors from `data-authors` on the server-rendered host, and fetches lemmata in one-letter shards through `LemmaShardCache`.
 
 `corpus_syntax.common.ts` holds the shared grammar: tokenizing, `validateQuery`, `transformQuery` (`#A` → `[A]`, `~N` → `N~`) and the category tables the help section renders.
 

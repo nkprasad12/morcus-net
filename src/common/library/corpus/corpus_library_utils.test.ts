@@ -10,7 +10,10 @@ import type {
 import { preprocessWorkToV2 } from "@/common/library/v2/v2_preprocessor";
 import { processTokens } from "@/common/text_cleaning";
 import { XmlNode } from "@/common/xml/xml_node";
-import { isLatinWord, tokenizeSubtree } from "@/web/v2/core/tokenize.client";
+import {
+  isLatinWord,
+  tokenizeSubtree,
+} from "@/web/v2/core/dom/tokenize.client";
 
 type ContentNode = XmlNode<ProcessedWorkContentNodeType>;
 

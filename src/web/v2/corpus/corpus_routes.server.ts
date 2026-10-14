@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { createAsyncRegistrars } from "@/web/v2/core/async_handler.server";
+import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
 import {
   getBuildVersion,
   setVersionedCacheControl,
-} from "@/web/v2/core/build_version.server";
-import { isPartialRequest } from "@/web/v2/core/request_params.server";
+} from "@/web/v2/core/server/build_version.server";
+import { isPartialRequest } from "@/web/v2/core/server/request_params.server";
 import {
   buildLemmaShards,
   loadCorpusLemmata,

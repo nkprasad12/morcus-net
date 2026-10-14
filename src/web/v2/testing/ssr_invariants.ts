@@ -5,7 +5,7 @@
  * `created_dom_allowlist.ts` and `isomorphic_rerenders.ts`.
  */
 
-import { revealTarget } from "@/web/v2/core/reveal.client";
+import { revealTarget } from "@/web/v2/core/nav/reveal.client";
 
 export function describeElement(el: Element): string {
   const id = el.id ? `#${el.id}` : "";

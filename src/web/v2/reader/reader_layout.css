@@ -82,7 +82,7 @@
   /* Minimized drawer (both initial empty state and collapsed active state):
      retains content in DOM but collapses to 40px teaser. Before upgrade, a
      `:target` on the drawer or inside it (a companion tab, a note) overrides
-     it; once upgraded, the reader adopts the hash (see core/reveal.client.ts)
+     it; once upgraded, the reader adopts the hash (see core/nav/reveal.client.ts)
      and the drawer state decides. */
   .reader-dict-panel.drawer-minimized:not(
       :is(:target, :has(:target)):not([data-upgraded] *)

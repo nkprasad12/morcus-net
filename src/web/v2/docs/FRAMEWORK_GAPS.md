@@ -31,7 +31,7 @@ them without meeting the bar below.
   runtime gate below fixed.
 
 **What covers cross-component references today.** A reference from inside one component to part of
-another is found at runtime, by attribute list (`TARGET_ID_ATTRS` in `core/js_gate.client.ts`) or by
+another is found at runtime, by attribute list (`TARGET_ID_ATTRS` in `core/dom/js_gate.client.ts`) or by
 `querySelector("morcus-…")`:
 
 - `href="#id"`, `aria-controls`, `popovertarget`, `commandfor`: the activation gate in
@@ -39,15 +39,15 @@ another is found at runtime, by attribute list (`TARGET_ID_ATTRS` in `core/js_ga
   running. The failed-owner sweep (section 4 of `testing/ssr_conformance_harness.ts`) activates
   controls that point into a failed component.
 - `label[for]`, `[form]`: the gate doesn't follow these, so `crossOwnerIdRefs` in
-  `core/route_bundle_conformance.test.ts` requires each to stay within one component.
+  `core/conformance/route_bundle_conformance.test.ts` requires each to stay within one component.
 - Same-page URLs with a fragment (not a bare `#id`): flagged by `samePageUrlHashLinks` in the same
   file.
 - Peer method calls: `queryUpgraded` / `closestUpgraded`, typed by `MorcusElementTagNameMap`.
-  `core/boot_conformance.test.ts` bans importing `Morcus*` classes, type imports included.
+  `core/conformance/boot_conformance.test.ts` bans importing `Morcus*` classes, type imports included.
 - Dangling `href="#…"`: section 3 of the SSR harness.
 
 **Caveat: these checks see only the fixtures.** The sweeps, the SSR and interaction harnesses, and
-the selector-lookup check in `core/ssr_conformance.test.ts` all run over `testing/ssr_fixtures.ts`.
+the selector-lookup check in `core/conformance/ssr_conformance.test.ts` all run over `testing/ssr_fixtures.ts`.
 That list is maintained by hand, and the only completeness check is that every registered element
 appears in _some_ fixture. A page (or page state) that reuses an element already shown elsewhere can
 be missing and every check still passes. In October the `?url=` and `?local=` external reader pages,

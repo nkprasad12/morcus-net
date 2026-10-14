@@ -214,7 +214,7 @@ Benchmarking across the entire corpus reveals:
 
 Make individual entry headers/headwords collapsible via the decoupled `<details class="entry-toggle">` pattern, mirroring dictionary card collapse.
 
-- Register a revealer for collapsed entries (`registerRevealer`, [`core/reveal.client.ts`](../core/reveal.client.ts)) so anchor deep-links automatically expand them.
+- Register a revealer for collapsed entries (`registerRevealer`, [`core/nav/reveal.client.ts`](../core/reveal.client.ts)) so anchor deep-links automatically expand them.
 - Improves scanability on results with multiple long entries inside the same lexicon.
 
 ---
@@ -302,7 +302,7 @@ screen readers listed every word as a link or control.
 What changed:
 
 - Both slices now render words as plain `<span class="lat-word" data-word>` (`createWordSpan` in
-  [`core/tokenize.client.ts`](../core/tokenize.client.ts)): no `href`, `role`, `tabindex` or ARIA.
+  [`core/dom/tokenize.client.ts`](../core/tokenize.client.ts)): no `href`, `role`, `tabindex` or ARIA.
   The split-word `aria-label` / `aria-hidden` handling went with it; the text reads once as written.
 - Lookup was already a single delegated click listener in both slices, so nothing changed there.
 - **Lazy links (dictionary only).** The browser's own link affordances (middle-click, Ctrl+click,
@@ -335,7 +335,7 @@ User-visible differences, for the record:
 - [x] **Keyboard lookup without a mouse.** Pressing <kbd>/</kbd> in either slice focuses and selects
       `#dict-q` (annotated with `aria-keyshortcuts="/"` inside `<form class="search-form" role="search">`),
       pre-filling the first word token of any non-collapsed `getSelection()` (`extractSelectedWord`
-      and `isShortcutBlocked` in [`core/dom.client.ts`](../core/dom.client.ts)) so the user can edit
+      and `isShortcutBlocked` in [`core/dom/dom.client.ts`](../core/dom.client.ts)) so the user can edit
       or press <kbd>Enter</kbd> to submit; in the reader it also activates the dictionary companion
       panel and restores the drawer.
 
@@ -357,7 +357,7 @@ Shape, if it's needed:
 
 - Chunk by text run, not by tokenize target: L&S `sum` is a single `.entry-content` of ~5,100
   words, so per-target batches don't help on the pages that matter. `collectTextRuns` in
-  `core/tokenize.client.ts` already yields the runs.
+  `core/dom/tokenize.client.ts` already yields the runs.
 - Process runs in document order with a ~8 ms budget per slice, yielding with `setTimeout(0)` /
   `MessageChannel` (not `requestIdleCallback`: Safari doesn't ship it, and we want the work done
   soon, not when idle). Start from the hashed section when the URL has one.
