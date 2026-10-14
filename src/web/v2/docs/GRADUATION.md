@@ -37,13 +37,13 @@ The `lit-prototype` branch has accumulated 260+ commits across multiple architec
   - Branch off `dev` and pull in changes bottom-up so every commit compiles (`npx tsc --noEmit`) and passes its unit tests (`npx jest`), keeping the series `git bisect`-safe:
     1. **Shared Non-V2 Fixes & Hardening**: `src/common/smith_and_hall/`, `src/common/text_cleaning*`, `src/web/utils/rpc/parsing*`, `src/web/scraping/`.
     2. **Library V2 Common Pipeline**: `src/common/library/v2/`, `src/scripts/process_lat_lib.ts`.
-    3. **Build, Lint & Bundler Infrastructure**: `package.json`, `eslint.config.mjs`, `.stylelintrc.json`, `src/bundler/v2.rsbuild.ts`, `src/bundler/v2_bundle_budget.ts`, `src/scripts/prod_build_steps.ts`.
-    4. **Developer Tooling & Visual Diff Inspector**: `src/scripts/visual_diff/`, `src/scripts/run_morcus.ts`.
-    5. **UI V2 Core & Testing Harness**: `src/web/v2/core/`, `src/web/v2/testing/`.
+    3. **Build, Lint & Bundler Infrastructure**: `package.json`, `eslint.config.mjs`, `.stylelintrc.json` together with the custom rules it loads from `src/web/v2/tools/stylelint/`, `src/bundler/v2.rsbuild.ts`, `src/bundler/v2_bundle_budget.ts`, `src/scripts/prod_build_steps.ts`.
+    4. **Developer Tooling & Visual Diff Inspector**: `src/scripts/visual_diff/`, `src/scripts/run_morcus.ts`, `src/web/v2/tools/css_audit/`, `src/web/v2/tools/inventory/` (+ `src/web/v2/inventory_ratchet.json`).
+    5. **UI V2 Core & Testing Harness**: `src/web/v2/core/`, `src/web/v2/testing/`. If finer commits help, the `core/` subdirectories give a natural inner order: `dom/` + `nav/` + `state/` (not separable: `base_element` imports `nav/router` and `prepaint` imports `state/storage`) → `widgets/` + `server/` → `index.client.ts` barrel + `conformance/` (the conformance tests scan every slice, so they land last with `testing/`).
     6. **UI V2 Shell & Dialogs**: `src/web/v2/shell/`, `src/web/v2/dialog/`.
-    7. **UI V2 Dictionary Slice**: `src/web/v2/dict/`.
+    7. **UI V2 Dictionary Slice**: `src/web/v2/dict/`. Inner order: `settings/` + `search_bar.common` → `landing/` + `entry/` + `toc/` → rest of `search/` (`dict_search.client` imports from `landing/` and `entry/`) → root routes/page/conformance tests.
     8. **UI V2 Library & Reader Slices**: `src/web/v2/library/`, `src/web/v2/reader/`.
-    9. **UI V2 Secondary Slices**: `src/web/v2/corpus/`, `src/web/v2/tools/`, `src/web/v2/external/`, `src/web/v2/about/`.
+    9. **UI V2 Secondary Slices**: `src/web/v2/corpus/`, `src/web/v2/external/`, `src/web/v2/about/`, `src/web/v2/macronizer/`.
     10. **V2 Entrypoints & Server Integration**: `src/web/v2/v2_*.ts`, `src/web/web_server.ts`, `src/start_server.ts`.
     11. **E2E Suites, Visual Baselines & Docs**: `src/integration/`, `src/web/v2/README.md`, `src/web/v2/docs/`, the slice `README.md` / `TODOS.md` files, `AGENTS.md`.
   - **Per-Slice Audit Check**: While staging each slice, review the files with fresh eyes to strip dead code, leftover transitional shims, or stale comments.
