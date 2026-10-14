@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import { THEME_COLOR } from "@/web/v2/shell/theme_color.common";
 
 const SHELL_DIR = __dirname;
 
@@ -86,5 +87,16 @@ describe("UI V2 Design Token Parity (variables.css & critical_variables.css)", (
     expect(blocks.light?.get("--border-mid")).toBe("#b7bac1");
     expect(blocks.mediaDark?.get("--border-mid")).toBe("#4d525c");
     expect(blocks.explicitDark?.get("--border-mid")).toBe("#4d525c");
+  });
+
+  test("THEME_COLOR matches --app-bar-bg", () => {
+    const css = fs.readFileSync(
+      path.join(SHELL_DIR, "critical_variables.css"),
+      "utf8"
+    );
+    const blocks = extractThemeBlocks(css);
+
+    expect(blocks.light?.get("--app-bar-bg")).toBe(THEME_COLOR.light);
+    expect(blocks.explicitDark?.get("--app-bar-bg")).toBe(THEME_COLOR.dark);
   });
 });

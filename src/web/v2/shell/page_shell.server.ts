@@ -13,6 +13,7 @@ import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
 import { ICON_PATHS } from "@/web/v2/core/icons.common";
 import type { WidthSurface } from "@/web/v2/core/page_width.common";
 import { renderPageWidthHandles } from "@/web/v2/shell/page_width.server";
+import { THEME_COLOR } from "@/web/v2/shell/theme_color.common";
 
 export type V2ActivePage = "dicts" | "about" | "library" | "corpus";
 
@@ -252,6 +253,15 @@ export function renderPageShell(options: PageShellOptions): string {
   const dictPrefetchHtml = isReader
     ? `\n  <link rel="prefetch" href="${getV2AssetHref("dict.js")}">`
     : "";
+  // Installability and the browser UI colour. Skipped in embedded iframes,
+  // which browsers neither install nor colour. Every byte here ships on every
+  // page, so nothing else: the favicon is `/favicon.ico`, which browsers fetch
+  // unprompted (`web_server.ts`), and the manifest covers home-screen icons
+  // and standalone mode.
+  const pwaHeadHtml = isEmbedded
+    ? ""
+    : `\n  <link rel="manifest" href="/public/pwa.webmanifest">` +
+      `\n  <meta name="theme-color" content="${THEME_COLOR.light}">`;
   const extraHeadHtml = options.extraHeadHtml
     ? `\n  ${options.extraHeadHtml}`
     : "";
@@ -270,7 +280,7 @@ export function renderPageShell(options: PageShellOptions): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${titleEncoded}</title>
+  <title>${titleEncoded}</title>${pwaHeadHtml}
   <style>${getV2CriticalCss()}</style>
   <script>${getV2CriticalJs()}</script>
   <link rel="stylesheet" href="${getV2AssetHref(

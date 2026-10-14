@@ -8,6 +8,7 @@ import {
   resolvePageScripts,
   type V2ActivePage,
 } from "@/web/v2/shell/page_shell.server";
+import { THEME_COLOR } from "@/web/v2/shell/theme_color.common";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
@@ -84,6 +85,28 @@ describe("renderPageShell", () => {
     expect(html).toContain("body-embedded");
     expect(html).toContain('src="/v2/assets/common.js"');
     expect(html).toContain('src="/v2/assets/dict.js"');
+  });
+
+  test("links the manifest and theme colour on top-level pages only", () => {
+    const head = (hideAppBar: boolean) =>
+      renderPageShell({
+        title: "T",
+        activePage: "dicts",
+        contentHtml: "<div></div>",
+        hideAppBar,
+      }).split("</head>")[0];
+
+    const topLevel = head(false);
+    expect(topLevel).toContain(
+      '<link rel="manifest" href="/public/pwa.webmanifest">'
+    );
+    expect(topLevel).toContain(
+      `<meta name="theme-color" content="${THEME_COLOR.light}">`
+    );
+
+    const embedded = head(true);
+    expect(embedded).not.toContain('rel="manifest"');
+    expect(embedded).not.toContain('name="theme-color"');
   });
 
   test("emits route-specific scripts in dependency order and dict.js prefetch on reader pages", () => {

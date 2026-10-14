@@ -14,4 +14,13 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
 
 ---
 
-_No open items._
+## Waiting on a date
+
+- 🟢 **Remove the V1 service worker cleanup script** (not before a few months after V1 is
+  decommissioned). `/serviceworker.js` serves `public/cleanup_service_worker.js`, which removes the
+  retired V1 offline worker, and its caches and IndexedDB data, from browsers that still have it
+  registered. A browser only replaces the worker when its user visits, so it has to outlive V1.
+  Then delete `public/cleanup_service_worker.js`, `src/web/server/cleanup_service_worker.test.ts`,
+  the `/serviceworker.js` route in `src/web/web_server.ts` and its test, the `public/**/*.js` block
+  in `eslint.config.mjs`, and the `!public/*.js` exception in `.prettierignore` (restore
+  `public/`).

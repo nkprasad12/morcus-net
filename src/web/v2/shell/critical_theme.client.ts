@@ -13,6 +13,9 @@
  *    the output remains a single, standalone IIFE. That's why the storage key
  *    below is a literal rather than an import of `PREPAINT_KEY`
  *    (critical_theme.test.ts checks they match).
+ *
+ * The theme is an ordinary snapshot entry (`data-theme`, owned by
+ * `theme_toggle.client.ts`), not a separate read.
  */
 
 // Extract critical CSS rules into critical.css
@@ -20,21 +23,17 @@ import "@/web/v2/v2-critical.css";
 
 try {
   const root = document.documentElement;
-  const read = (key: string): Partial<Record<string, unknown>> => {
-    const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "{}");
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
-  };
+  const parsed: unknown = JSON.parse(
+    localStorage.getItem("morcus_prepaint") ?? "{}"
+  );
+  const snapshot: Partial<Record<string, unknown>> =
+    typeof parsed === "object" && parsed !== null ? parsed : {};
   // Only `--*` custom properties and `data-*` attributes, so a value planted
   // in storage can't become an event handler attribute or `style` on <html>.
-  for (const [name, value] of Object.entries(read("morcus_prepaint"))) {
+  for (const [name, value] of Object.entries(snapshot)) {
     if (typeof value !== "string") continue;
     if (name.startsWith("--")) root.style.setProperty(name, value);
     else if (name.startsWith("data-")) root.setAttribute(name, value);
-  }
-  // Theme stays a direct read: V1 writes GlobalSettings. Drop at graduation.
-  const dark = read("GlobalSettings").darkMode;
-  if (typeof dark === "boolean") {
-    root.setAttribute("data-theme", dark ? "dark" : "light");
   }
 } catch {
   // Storage disabled (e.g. sandboxed iframe): render defaults.

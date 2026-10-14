@@ -91,14 +91,14 @@ via `?url=`.
 
 ## 7. External Reader: Web Share Target
 
-**Status:** idea, not scheduled. Beyond V1 parity. Blocked on V2 being installable.
+**Status:** idea, not scheduled. Beyond V1 parity.
 
 Make Morcus a target in the OS share sheet: select Latin in a PDF, e-book, or another app, then
 Share → Morcus to open it in the External Reader. It is declared with a `share_target` entry in the
 web app manifest.
 
-- **Prerequisite**: V1 serves a manifest (`src/web/server/pwa_utils.ts`, no `share_target`), but V2
-  pages don't link one yet, so V2 can't be installed.
+- **Prerequisite (done)**: V2 pages link the manifest (`src/web/server/pwa_utils.ts`, no
+  `share_target` yet), so V2 is installable.
 - **Reach**: it only works for installed apps, mainly Chrome on Android and installed desktop Chrome.
   iOS Safari doesn't support it.
 - **Privacy**: the simple `method: "GET"` form puts the shared text in the query string, which

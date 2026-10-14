@@ -520,4 +520,18 @@ export default [
       "no-restricted-syntax": ["error", ...NO_TS_PRIVATE_SYNTAX],
     },
   },
+  // Plain scripts served as-is from public/ (e.g. the service worker cleanup
+  // script). They aren't in the TypeScript program, so lint them without type
+  // information.
+  {
+    files: ["public/**/*.js"],
+    languageOptions: {
+      sourceType: "script",
+      globals: { ...globals.serviceworker },
+      parserOptions: { project: false, projectService: false },
+    },
+    rules: {
+      ...typescriptEslint.configs["disable-type-checked"].rules,
+    },
+  },
 ];

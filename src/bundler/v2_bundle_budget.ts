@@ -151,7 +151,9 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   // critical.js is a fixed-size pre-paint applier (core/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
   // pre-paint preference must not grow it. Baseline 2026-09-27: 424 B raw /
-  // 300 B gzip. Do not raise these to fit per-preference logic; move that
+  // 300 B gzip; 2026-10-14: 300 B raw / 237 B gzip, after the theme became an
+  // ordinary snapshot entry (dropping V1's direct `GlobalSettings` read).
+  // Do not raise these to fit per-preference logic; move that
   // logic into the owner instead (see "Pre-paint is a scarce budget" in
   // src/web/v2/docs/PREFERENCES.md).
   maxCriticalJsRawBytes: 450,
