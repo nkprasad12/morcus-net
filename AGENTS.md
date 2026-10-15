@@ -49,7 +49,7 @@ For all tasks involving UI V2 (`src/web/v2/`), consult the dedicated guides befo
 
 **Do NOT run `npm run integration-tests` when verifying UI V2.**
 
-1. It executes legacy V1 test suites that are not relevant to UI V2.
+1. It runs every suite under `src/integration/suites/` with the full project matrix, including the backend smoke tests meant for a built Docker image (that is how CI uses it). Use the `./morcus.sh e2e` commands below instead.
 2. It attempts to run against **WebKit / MobileSafari**, which is unsupported in this Linux environment and will fail or cause the test runner to hang.
 
 ### ⛔ Proactive Testing Rule

@@ -13,13 +13,13 @@ Morcus.net is an integrated digital platform and toolkit for Latin language stud
 - **Library Reader**: Structured reader for classical texts (sourced from Perseus, Hypotactic, and PHI) with hierarchical navigation, chunked sectioning, and interlinear lookup capabilities.
 - **Corpus Query Engine**: High-performance indexed search engine in Rust for searching syntax, lemmata, grammatical features, and word patterns across millions of Latin tokens.
 - **Macronizer**: Tool reconstructing classical vowel lengths (macrons) combining rule-based candidate generation (Morceus) with machine-learning disambiguation (LatinCy / spaCy, Stanza, Alatius).
-- **Offline / PWA**: Progressive Web App support utilizing Service Workers and client-side caching.
+- **Installable PWA**: Web app manifest and an Android TWA. There is no offline mode today; `/serviceworker.js` only removes the retired V1 offline worker from returning browsers.
 
 ```mermaid
 graph TD
-    Client["Web Client (Preact SPA / PWA)<br/>src/web/client/"]
+    Browser["Browser<br/>server-rendered HTML + progressive enhancement"]
     Server["Express Web Server<br/>src/web/web_server.ts"]
-    RPC["Type-Safe RPC Layer<br/>src/web/utils/rpc/"]
+    V2["UI V2 Router (pages, partials, JSON)<br/>src/web/v2/v2_router.server.ts"]
 
     FusedDict["FusedDictionary<br/>src/common/dictionaries/"]
     SQLite["SQLite Dictionaries (*.db)<br/>build/dbs/"]
@@ -27,19 +27,19 @@ graph TD
     Morceus["Morceus Analyzer & Cruncher<br/>src/morceus/ & morceus_rust/"]
 
     Library["Library & Reader Data<br/>src/common/library/"]
-    LibraryStorage["Pre-Encoded Texts<br/>build/library_processed/"]
+    LibraryStorage["Preprocessed Works<br/>build/library_processed/"]
 
     Corpus["Corpus Query Engine (Rust)<br/>corpus_rust/ & lib.rs"]
     CorpusData["Corpus Index<br/>build/corpus/"]
 
     Macronizer["Macronizer & NLP<br/>src/macronizer/ & src/py/"]
 
-    Client <-->|HTTP / RPC| Server
-    Server --> RPC
-    RPC --> FusedDict
-    RPC --> Library
-    RPC --> Corpus
-    RPC --> Macronizer
+    Browser <-->|HTTP| Server
+    Server --> V2
+    V2 --> FusedDict
+    V2 --> Library
+    V2 --> Corpus
+    V2 --> Macronizer
 
     FusedDict --> SQLite
     FusedDict --> Morceus
@@ -52,37 +52,29 @@ graph TD
 
 ## 2. Multi-Language Tech Stack
 
-| Layer                 | Technology                                    | Key Locations                                                           | Responsibility                                                                                     |
-| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Web Client**        | TypeScript, Preact, Emotion, Rsbuild / Rspack | `src/web/client/`, `src/bundler/morcus-net.rsbuild.ts`                  | Responsive SPA, PWA offline support, reader UI, interactive dictionary and corpus query interface. |
-| **Web Server**        | TypeScript, Node.js 22, Express, esbuild      | `src/start_server.ts`, `src/web/web_server.ts`, `src/web/api_routes.ts` | REST/RPC endpoints, static asset caching/compression, telemetry, worker orchestration.             |
-| **Native Extensions** | Rust, `node-bindgen`, `better-sqlite3`        | `lib.rs`, `corpus_rust/`, `morceus_rust/`, `Cargo.toml`                 | High-throughput corpus querying, bitmask operations, native morphological crunching.               |
-| **NLP & ML**          | Python 3.12, spaCy (LatinCy), Stanza, Alatius | `src/py/`, `src/macronizer/`, `requirements.txt`                        | Latin syntax analysis, part-of-speech tagging, vowel length disambiguation.                        |
-| **Storage & Data**    | SQLite, JSON, IndexedDB                       | `src/common/sqlite/`, `build/dbs/`, `build/library_processed/`          | Pre-built dictionary indices, cached textual corpuses, offline browser storage.                    |
-| **CLI & Automation**  | Bash, TypeScript (`ts-node`/`swc`/`bun`)      | `morcus.sh`, `src/scripts/run_morcus.ts`                                | Build pipelines, data processing orchestration, benchmark runners, test harnesses.                 |
+| Layer                 | Technology                                              | Key Locations                                                                 | Responsibility                                                                                     |
+| --------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Web UI (UI V2)**    | TypeScript, Light DOM custom elements, Rsbuild / Rspack | `src/web/v2/` (`*.client.ts`), `src/bundler/v2.rsbuild.ts`                    | Progressive enhancement of server-rendered pages: dictionary, reader, corpus, macronizer.          |
+| **Web Server**        | TypeScript, Node.js 22, Express, esbuild                | `src/start_server.ts`, `src/web/web_server.ts`, `src/web/v2/` (`*.server.ts`) | Server-side rendering, partials and JSON endpoints, precompressed static assets, telemetry.        |
+| **Native Extensions** | Rust, `node-bindgen`, `better-sqlite3`                  | `lib.rs`, `corpus_rust/`, `morceus_rust/`, `Cargo.toml`                       | High-throughput corpus querying, bitmask operations, native morphological crunching.               |
+| **NLP & ML**          | Python 3.12, spaCy (LatinCy), Stanza, Alatius           | `src/py/`, `src/macronizer/`, `requirements.txt`                              | Latin syntax analysis, part-of-speech tagging, vowel length disambiguation.                        |
+| **Storage & Data**    | SQLite, JSON, localStorage / IndexedDB                  | `src/common/sqlite/`, `build/dbs/`, `build/library_processed/`                | Pre-built dictionary indices, preprocessed texts; browser preferences and External Reader imports. |
+| **CLI & Automation**  | Bash, TypeScript (`ts-node`/`swc`/`bun`)                | `morcus.sh`, `src/scripts/run_morcus.ts`                                      | Build pipelines, data processing orchestration, benchmark runners, test harnesses.                 |
 
 ---
 
 ## 3. Subsystem Breakdown
 
-### 3.1. Web Server & RPC Framework (`src/web/`)
+### 3.1. Web Server & UI V2 Routes (`src/web/`)
 
 - **Server Entry Points**:
-  - `src/start_server.ts`: Assembles and initializes all services (dictionaries, corpus handler, telemetry, API routes) and starts the HTTP server.
-  - `src/web/web_server.ts`: Express middleware pipeline (bodyParser, compression, pre-compressed static assets with Brotli/Gzip, immutable cache headers).
-- **RPC Architecture (`src/web/utils/rpc/`)**:
-  - `rpc.ts`: Defines `ApiRoute<Input, Output>` contract.
-  - `parsing.ts`: Functional validator combinators (`isString`, `isNumber`, `matchesObject`, `isArray`, `isOneOf`, `maybeUndefined`).
-  - `server_rpc.ts`: Wraps Express routes via `RouteDefinition.create(route, handler)` with automatic request decoding and schema validation.
-  - `client_rpc.ts`: Browser-side RPC client (`callApi`, `useApiCall`) ensuring end-to-end type safety between client and server.
-- **Route Manifest (`src/web/api_routes.ts`)**:
-  - `/api/dicts/fused`: Multi-dictionary entries and inflected form queries (`DictsFusedApi`).
-  - `/api/completions/fused`: Prefix autocomplete across dictionaries (`CompletionsFusedApi`).
-  - `/api/library/list` & `/api/library/work`: Text catalog and section content retrieval (`ListLibraryWorks`, `GetWork`).
-  - `/api/corpus/query` & `/api/corpus/suggestions`: Corpus searches and syntax suggestions (`QueryCorpusApi`, `GetCorpusSuggestionsApi`).
-  - `/api/macronize`: Vowel length restoration (`MacronizeApi`).
-  - `/api/report`: Client issue reporting (creates GitHub issues via API or logs locally).
-  - `/api/logClientEvent`: Anonymized client telemetry.
+  - `src/start_server.ts`: Assembles the services (dictionaries, corpus handler, macronizer engine, telemetry), builds the UI V2 router with them, and starts the HTTP server.
+  - `src/web/web_server.ts`: Express pipeline: build-time precompressed `/assets` (Brotli/Gzip), `compression()`, PWA files (`/public`, `/.well-known`, `/favicon.ico`, `/robots.txt`, `/serviceworker.js`), then the UI V2 router at `/`.
+- **UI V2 Router (`src/web/v2/v2_router.server.ts`)**: Mounts each slice's routes. Pages are full server-rendered documents; with JS, the same URLs return partials (`?format=partial` / `X-Requested-With: fetch`) for in-place swaps.
+  - Pages: `/dicts`, `/dicts/id/:id`, `/library`, `/work/:author/:name/:page?` (plus legacy `/work/:workId` and `/work?id=` redirects), `/corpus`, `/macronizer`, `/externalReader`, `/about`.
+  - Fragments and JSON: `/work/:author/:name/:page/translation`, `/api/completions` (autocomplete chunks), `/api/corpus/lemmata/:letter`, `POST /api/report` (GitHub issues), `POST /macronizer` and `/macronizer/apply`.
+  - See [`src/web/v2/README.md`](src/web/v2/README.md) for the architecture and conventions.
+- **Shared plumbing (`src/web/utils/rpc/`)**: `parsing.ts` holds validator combinators (`isString`, `matchesObject`, `isArray`, `maybeUndefined`, ...) and `encodeMessage`/`decodeMessage`. `rpc.ts`/`server_rpc.ts` keep the `ServerMessage` envelope, in which build steps still write library works and corpus suggestion lists. (The V1 JSON-RPC layer is gone.)
 
 ### 3.2. Dictionary Subsystem (`src/common/dictionaries/` & `src/common/*`)
 
@@ -141,11 +133,11 @@ A specialized engine designed to query massive Latin textual corpora with comple
   - Raw sources: Perseus TEI XML, Hypotactic JSON, PHI (Packard Humanities Institute).
   - `process_library.ts`, `process_phi_json.ts`, `process_hypotactic.ts` normalize raw formats into `ProcessedWork2` structures (`library_types.ts`).
   - Hierarchical tree structure: works contain books, chapters, sections, and chunked paragraphs (`NavTreeNode`, `WorkPage`).
-  - Pre-encoded JSON output cached in `build/library_processed/` for instant retrieval with immutable HTTP caching.
-- **Reader UI (`src/web/client/pages/library/reader/`)**:
-  - Virtualized and paginated text rendering.
-  - Interactive word click-through to dictionary lookups.
-  - Support for parallel English translations and external content pasting.
+  - Output lands in `build/library_processed/`; `src/common/library/v2/` preprocesses it further into the pages the reader serves.
+- **Reader UI (`src/web/v2/reader/`, `src/web/v2/library/`, `src/web/v2/external/`)**:
+  - Server-rendered, citation-addressed pages with in-place page turns when JS is available.
+  - Word click-through to the embedded dictionary panel.
+  - Parallel English translations, notes, and the External Reader for pasted or scraped texts.
 
 ### 3.6. Macronizer & NLP (`src/macronizer/`, `src/latincy/`, `src/py/`)
 
@@ -153,24 +145,15 @@ A specialized engine designed to query massive Latin textual corpora with comple
   1. Input text is tokenized into words and whitespace (`src/nlp/text_tokenization.ts`).
   2. For each word, Morceus retrieves all valid morphological analyses and possible vowel length variants (e.g. `venit` -> `vĕnit` [pres] vs `vēnit` [perf]).
   3. Machine learning models (spaCy with LatinCy pipeline, Stanza, or Alatius) predict the contextual Part-of-Speech and grammatical properties.
-  4. Best candidate is selected and rendered with options for manual user disambiguation in `src/web/client/pages/macron.tsx`.
+  4. Best candidate is selected and rendered with options for manual user disambiguation in `src/web/v2/macronizer/`.
 
-### 3.7. Web Client Architecture (`src/web/client/`)
+### 3.7. UI V2 Architecture (`src/web/v2/`)
 
-- **Root & Routing**:
-  - `root.tsx`: Mounts Preact root with `SettingsHandler`, `PwaManagerProvider`, `StyleContextProvider`, and `Router.Root`.
-  - `routing/active_pages.tsx`: Defines application pages:
-    - `/dict`: Multi-dictionary search (`DictionaryViewV2`)
-    - `/library`: Text catalog & reader (`Library`, `ReadingPage`)
-    - `/corpus`: Corpus search interface (`CorpusQueryPage`)
-    - `/macron`: Interactive macronization tool (`Macronizer`)
-    - `/about`: Site & license details (`About`)
-    - `/settings`: User preferences & theme settings (`SiteSettings`)
-  - `router/router_v2.tsx`: URL search param & history state synchronization.
-- **Styling**:
-  - Pure Emotion CSS-in-JS + custom themes (light/dark mode, typography sizing) via `styling/styles.ts` and `style_context.tsx`.
-- **PWA & Offline (`src/web/client/offline_v2/`)**:
-  - Service worker caching (`serviceworker.ts`) with cache versioning and pre-caching of assets.
+- **Zero-JS baseline**: every page works as plain server-rendered HTML; client code only enhances it. See [`src/web/v2/README.md`](src/web/v2/README.md).
+- **Target suffixes**: `*.server.ts` runs in Node, `*.client.ts` in the browser, `*.common.ts` in both; ESLint enforces the boundaries.
+- **Vertical slices**: `dict/`, `reader/`, `library/`, `corpus/`, `macronizer/`, `external/`, `about/`, plus `shell/`, `dialog/` and `core/`.
+- **Client code**: Light DOM custom elements, bundled by Rsbuild into route-aligned chunks in `build/v2/` (hashed, immutable, precompressed).
+- **Testing**: [`src/web/v2/docs/TESTING.md`](src/web/v2/docs/TESTING.md) (Jest under jsdom, Playwright functional and visual suites).
 
 ---
 
@@ -183,6 +166,9 @@ A specialized engine designed to query massive Latin textual corpora with comple
 ```bash
 # Start dev web server (builds the minified UI V2 assets and serves on $PORT)
 ./morcus.sh web
+
+# Build only the UI V2 assets into build/v2/ (-m: minified and precompressed)
+./morcus.sh bundle -m
 
 # Build dictionary databases (run once or after editing dictionary sources)
 ./morcus.sh web --build_ls --build_sh --build_gaffiot
@@ -197,10 +183,10 @@ A specialized engine designed to query massive Latin textual corpora with comple
 ### 4.2. Production Build Pipeline (`src/scripts/prod_build_steps.ts`)
 
 1. Compile Rust bindings (`setup-node-bindgen` via `cargo` and `nj-cli`).
-2. Run database setup and text processing if required.
-3. Bundle client SPA using Rsbuild (`src/bundler/morcus-net.rsbuild.ts`) into `build/client/`.
-4. Bundle server using esbuild (`src/bundler/server.esbuild.ts`) into `build/server.js`.
-5. Pre-compress client bundle assets with Gzip and Brotli.
+2. Download sources and build the dictionary databases, library, V2 library and corpus.
+3. Bundle the UI V2 assets with Rsbuild (`src/bundler/v2.rsbuild.ts`) into `build/v2/`, writing Brotli and Gzip siblings.
+4. Write `build/morcusnet.build.json` (build provenance).
+5. Bundle the server with esbuild (`src/bundler/server.esbuild.ts`) into `build/server.js`, type-checking the repo.
 
 ---
 
@@ -214,22 +200,21 @@ When editing or extending the codebase, adhere to the following principles:
    - Example: `import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";`
    - _Never_ use relative imports like `../../common/` across top-level modules.
 
-2. **RPC Route Definitions**:
+2. **Routes**:
 
-   - Every API endpoint must be defined as an `ApiRoute<Input, Output>` with explicit input and output validators in `src/web/api_routes.ts`.
-   - Never create ad-hoc express route handlers without schema validation.
+   - Add routes in the owning UI V2 slice (`createXRoutes` in a `*.server.ts`) and mount them in `v2_router.server.ts`.
+   - Register async handlers through `asyncHandler` / `createAsyncRegistrars` (`core/server/async_handler.server.ts`) so rejections reach Express; read query parameters with the helpers in `core/server/request_params.server.ts`.
 
 3. **Performance & Caching**:
 
-   - Static/immutable endpoints (corpus, library works, dictionary entries with commit hash) must use `CACHING_SETTER` to leverage client-side caching.
+   - Static assets are content-hashed and served `immutable`. Fetches whose response is static per build carry `?v=<build version>` (`withBuildVersion`) and are cached with `setVersionedCacheControl`.
    - Large text assets must be chunked or streamed to avoid excessive Node heap usage.
 
 4. **Testing Conventions**:
 
-   - Unit tests are located alongside code with `.test.ts` or `.test.tsx` extensions.
+   - Unit tests are located alongside code with `.test.ts` extensions.
    - If a test requires browser DOM APIs, include `/** @jest-environment jsdom */` at the top of the test file.
-   - Mock RPC calls in client unit tests using `jest.mock("@/web/utils/rpc/client_rpc");`.
-   - Run tests with `npm run ts-tests`, `npm run py-tests`, or `cargo test --package corpus`.
+   - Run tests with `npm run ts-tests`, `npm run py-tests`, or `cargo test --package corpus`; UI V2 browser suites are described in `src/web/v2/docs/TESTING.md`.
 
 5. **Linting & Formatting**:
    - Run `npm run format` (ESLint + Prettier + Black) before concluding edits.

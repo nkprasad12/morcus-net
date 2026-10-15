@@ -87,7 +87,7 @@ REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e --debug
 
 ### Option E: Running via `run_morcus` (`morcus.sh`) (Recommended)
 
-To run the functional V2 tests without touching legacy V1 tests or unsupported WebKit:
+To run the functional V2 tests without the Docker-oriented suites or unsupported WebKit:
 
 ```bash
 # Fast run (Chromium + Mobile Chrome):
@@ -101,7 +101,7 @@ To run the functional V2 tests without touching legacy V1 tests or unsupported W
 >
 > **Do NOT run `npm run integration-tests` when working on UI V2.**
 >
-> `npm run integration-tests` runs legacy V1 tests and attempts to launch WebKit/Safari, which is unsupported on this Linux setup and will fail or cause the test runner to hang.
+> `npm run integration-tests` runs every suite (including backend smoke tests meant for a built Docker image) and attempts to launch WebKit/Safari, which is unsupported on this Linux setup and will fail or cause the test runner to hang.
 
 ### Option F: Visual Regression Tests & the Visual Diff Inspector
 
