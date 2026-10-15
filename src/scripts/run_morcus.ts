@@ -762,7 +762,7 @@ async function runE2eTests(args: any) {
 
     const testPath = isVisual
       ? "src/integration/screenshot/browser_v2_screenshot.test.ts"
-      : "src/integration/suites/browser_v2_e2e.test.ts src/integration/suites/browser_v2_late_hydration.test.ts";
+      : "src/integration/suites/browser_v2_e2e.test.ts src/integration/suites/browser_v2_reader.test.ts src/integration/suites/browser_v2_late_hydration.test.ts";
 
     const command = ["npx playwright test", testPath];
 

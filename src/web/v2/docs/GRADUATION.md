@@ -82,7 +82,7 @@ Since the §3 cutover, V1 is unreachable from browsers: `start_server.ts` always
 This work lands on `lit-prototype` **before** the §2 re-slot, which then ends with a single "Delete UI V1" slice. Order: precompression first, then E2E parity, then deletion.
 
 - [x] **Precompressed V2 Assets** (first, before any deletion): done; see §1, "Precompressed Static Assets". `compressOutputs` in `plugin_utils.ts` stays after the V1 bundler deletion because V2 uses it.
-- [ ] **Port V1-Only CUJs to V2 E2E** (before the V1 suites are deleted):
+- [x] **Port V1-Only CUJs to V2 E2E** (before the V1 suites are deleted): done in `src/integration/suites/browser_v2_reader.test.ts`, run by `./morcus.sh e2e --v2`; stable across all four projects over 3 repeats. One intended difference from V1: a TOC jump to a line on the current page scrolls in place without updating the URL, as gutter anchors do (V1 rewrote it to `?id=1.2.161`).
   - Dictionary and corpus are well covered in V2. The library and reader have almost no functional browser coverage (only screenshots, late hydration and swipe). Nine tests close the gap:
     - Library: filter, open a work, the reader loads.
     - Reader:
