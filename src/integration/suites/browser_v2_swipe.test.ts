@@ -50,11 +50,18 @@ async function openReader(page: Page): Promise<Swipe> {
   };
 }
 
+/**
+ * The page-turn slot inside the text panel: `swapSlots` marks it `aria-busy`
+ * while the next page loads, and the spinner CSS keys off it.
+ */
+const textSlot = (page: Page) =>
+  page.locator('.reader-text-panel > [data-slot="text"]');
+
 /** Waits for the slide (and the turn it may trigger) to finish. */
 async function settled(page: Page) {
   const panel = page.locator(".reader-text-panel");
   await expect(panel).not.toHaveAttribute("data-swipe", /.*/);
-  await expect(panel).not.toHaveAttribute("aria-busy", /.*/);
+  await expect(textSlot(page)).not.toHaveAttribute("aria-busy", /.*/);
 }
 
 test.describe("UI V2 reader swipe navigation (touch)", () => {
@@ -132,10 +139,7 @@ test.describe("UI V2 reader swipe navigation (touch)", () => {
       });
 
     await swipe(-220);
-    await expect(page.locator(".reader-text-panel")).toHaveAttribute(
-      "aria-busy",
-      "true"
-    );
+    await expect(textSlot(page)).toHaveAttribute("aria-busy", "true");
     // The delay is asserted from the stylesheet, not by racing the clock.
     const initial = await spinner();
     expect(initial.content).toBe('""');
