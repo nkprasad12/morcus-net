@@ -56,26 +56,24 @@ describe("syncQueryParam", () => {
       title: (q) => (q ? `${q} - Reader` : "Reader"),
     });
 
-    sync.pushUrl("/v2/reader/caesar/bg/1.2?q=Gallia#sec-2", {
+    sync.pushUrl("/v2/work/caesar/bg/1.2?q=Gallia#sec-2", {
       state: { q: "Gallia", scrollY: 0 },
     });
-    expect(window.location.pathname).toBe("/v2/reader/caesar/bg/1.2");
+    expect(window.location.pathname).toBe("/v2/work/caesar/bg/1.2");
     expect(window.location.search).toBe("?q=Gallia");
     expect(window.location.hash).toBe("#sec-2");
     expect(pushSpy).toHaveBeenCalledWith(
       { q: "Gallia", scrollY: 0 },
       "",
-      "/v2/reader/caesar/bg/1.2?q=Gallia#sec-2"
+      "/v2/work/caesar/bg/1.2?q=Gallia#sec-2"
     );
     expect(document.title).toBe("Gallia - Reader");
 
-    sync.replaceUrl(
-      new URL("http://localhost/v2/reader/caesar/bg/1.2?d=an&o=1")
-    );
+    sync.replaceUrl(new URL("http://localhost/v2/work/caesar/bg/1.2?d=an&o=1"));
     expect(replaceSpy).toHaveBeenCalledWith(
       null,
       "",
-      "/v2/reader/caesar/bg/1.2?d=an&o=1"
+      "/v2/work/caesar/bg/1.2?d=an&o=1"
     );
     expect(document.title).toBe("Reader");
 
@@ -129,15 +127,15 @@ describe("syncQueryParam", () => {
       onNavigate: (e) => events.push(e),
     });
 
-    sync.pushUrl("/v2/reader/caesar/bg/1.2?q=omni#top");
-    window.history.replaceState(null, "", "/v2/reader/caesar/bg/1.1");
+    sync.pushUrl("/v2/work/caesar/bg/1.2?q=omni#top");
+    window.history.replaceState(null, "", "/v2/work/caesar/bg/1.1");
     window.dispatchEvent(new PopStateEvent("popstate"));
 
     expect(onChange).not.toHaveBeenCalled();
     expect(events).toEqual([
       {
-        prevPath: "/v2/reader/caesar/bg/1.2?q=omni",
-        newPath: "/v2/reader/caesar/bg/1.1",
+        prevPath: "/v2/work/caesar/bg/1.2?q=omni",
+        newPath: "/v2/work/caesar/bg/1.1",
         value: "",
       },
     ]);

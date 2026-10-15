@@ -206,7 +206,7 @@ describe("runCorpusSearch", () => {
     const [result] = view.outcome.results;
     expect(result.heading).toBe("De Bello Gallico 1.1 [Caesar]");
     expect(result.href).toMatch(
-      /^\/v2\/reader\/caesar\/de_bello_gallico\?matchText=/
+      /^\/v2\/work\/caesar\/de_bello_gallico\?matchText=/
     );
     expect(result.snippet).toEqual(fakeMatch().text);
   });

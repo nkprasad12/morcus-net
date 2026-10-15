@@ -17,7 +17,7 @@
 1. **Forms first.** `/v2/corpus` is a plain `GET` form. Query (including any `#Author` filter), settings and page cursor all live in the URL. With JS off, the user can search, change settings, page, and follow result links into the reader.
 2. **Enhance with `swapSlots`.** With JS on, submits and pager clicks fetch one slot response and replace only the regions that change (`summary`, `results`, `pager`, `settings-summary`). The form, the input and its focus are never touched.
 3. **Instant, client-side autocomplete** as a later, self-contained enhancement (grammar and author list local; lemmata fetched in 1-letter shards).
-4. **Direct reader links.** Each result links to `/v2/reader/<author>/<work>?matchText=…`, which highlights the match.
+4. **Direct reader links.** Each result links to `/v2/work/<author>/<work>?matchText=…`, which highlights the match.
 5. **Keep it one slice.** Nothing outside `corpus/` except the router mount, the element manifest, `v2.css`, the app bar link, and (maybe) one small `core/` extension listed in §9.
 6. **V1 parity first.** Features V1 doesn't have (Previous page, multiple authors, …) go to [`TODO.md`](TODO.md), not into this design.
 
@@ -95,7 +95,7 @@ flowchart TD
 `runQuery` returns a string. Parse it and validate it with `CorpusQueryResult.isMatch` from `@/common/library/corpus/corpus_common`. Each match becomes:
 
 - **Heading:** `${workName} ${leaders[0][0]} [${author}]`, as a link.
-- **Link:** `/v2/reader/${urlAuthor}/${urlName}?matchText=…`
+- **Link:** `/v2/work/${urlAuthor}/${urlName}?matchText=…`
   - `urlAuthor` and `urlName` come from `getV2LibrarySummaries()`, via a `workId → slug` map built once.
   - `matchText` comes from `textHighlightParams(leaders.map(([id, start, len]) => ({ id, start, end: start + len })))`.
   - The reader route redirects a page-less `matchText` link to the right page with a `#sec-` hash, so no page lookup is needed here.

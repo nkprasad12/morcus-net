@@ -22,14 +22,14 @@ test.describe("UI V2 Visual Regression Suite", () => {
 
   // 4. Reader Default Passage View
   v2VisualScenario("v2-reader-passage", {
-    path: "/v2/reader",
+    path: "/v2/work",
     waitFor: ".reader-passage",
   });
 
   // 5. Reader Companion Panel Translation View. The name predates the removal
   // of the `?view=parallel` mode; renaming it would rename its baselines.
   v2VisualScenario("v2-reader-parallel", {
-    path: "/v2/reader/sallust/catalina1",
+    path: "/v2/work/sallust/catalina1",
     waitFor: ".reader-passage",
     action: async (page) => {
       const tab = page.locator("#panel-tab-translation");
@@ -46,7 +46,7 @@ test.describe("UI V2 Visual Regression Suite", () => {
   // The note marker is a plain `#note-*` link, so this opens the Notes view
   // via `:target` without JS and via the panel controller with it.
   v2VisualScenario("v2-reader-notes", {
-    path: "/v2/reader/cicero/cum_populo_gratias_egi",
+    path: "/v2/work/cicero/cum_populo_gratias_egi",
     waitFor: ".reader-passage",
     action: async (page) => {
       await page.locator("a.reader-note-ref").first().click();
@@ -161,7 +161,7 @@ test.describe("UI V2 Visual Regression Suite", () => {
 
   // 17. Dark Mode Sample - Reader Passage View (reading canvas, active words, sticky bar)
   v2VisualScenario("v2-reader-passage", {
-    path: "/v2/reader",
+    path: "/v2/work",
     waitFor: ".reader-passage",
     jsModes: ["js"],
     themes: ["dark"],

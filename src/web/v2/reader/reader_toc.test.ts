@@ -25,15 +25,15 @@ describe("ReaderTocController", () => {
         </div>
 
         <div class="reader-toc-list" id="reader-toc-list">
-          <a href="/v2/reader/vergil-aeneid/1" class="reader-toc-item active">
+          <a href="/v2/work/vergil-aeneid/1" class="reader-toc-item active">
             <span class="reader-toc-item-title">Book I: The Trojan Fleet</span>
             <span class="reader-toc-item-id">&sect; 1.1</span>
           </a>
-          <a href="/v2/reader/vergil-aeneid/2" class="reader-toc-item">
+          <a href="/v2/work/vergil-aeneid/2" class="reader-toc-item">
             <span class="reader-toc-item-title">Book II: The Fall of Troy</span>
             <span class="reader-toc-item-id">&sect; 2.1</span>
           </a>
-          <a href="/v2/reader/vergil-aeneid/6" class="reader-toc-item">
+          <a href="/v2/work/vergil-aeneid/6" class="reader-toc-item">
             <span class="reader-toc-item-title">Book VI: The Underworld</span>
             <span class="reader-toc-item-id">&sect; 6.1</span>
           </a>
@@ -356,7 +356,7 @@ describe("ReaderTocController", () => {
           const childrenHtml = groupItems
             .map(
               (it) => `
-              <a href="/v2/reader/author/work/${it.id}"
+              <a href="/v2/work/author/work/${it.id}"
                  class="reader-toc-item${
                    it.id === activePageId ? " active" : ""
                  }"
@@ -387,7 +387,7 @@ describe("ReaderTocController", () => {
         </div>
         <div id="reader-toc-drawer" class="reader-toc-drawer" role="dialog" aria-label="Table of Contents" hidden>
           <div class="reader-toc-header">
-            <form id="reader-toc-search-form" class="reader-toc-search-form" action="/v2/reader/author/work" method="GET">
+            <form id="reader-toc-search-form" class="reader-toc-search-form" action="/v2/work/author/work" method="GET">
               <input type="text" name="jump" id="reader-toc-search-input" class="reader-toc-search-input" />
             </form>
             <button type="button" id="reader-toc-close-btn" class="reader-toc-close-btn">&times;</button>
@@ -566,7 +566,7 @@ describe("ReaderTocController", () => {
       );
       expect(click12Spy).toHaveBeenCalledTimes(1);
       expect(item12.getAttribute("href")).toBe(
-        "/v2/reader/author/work/1.2#sec-1.2.3"
+        "/v2/work/author/work/1.2#sec-1.2.3"
       );
 
       // Relative sub-section .3 while on active page 1.1
@@ -583,7 +583,7 @@ describe("ReaderTocController", () => {
       );
       expect(click11Spy).toHaveBeenCalledTimes(1);
       expect(item11.getAttribute("href")).toBe(
-        "/v2/reader/author/work/1.1#sec-1.1.3"
+        "/v2/work/author/work/1.1#sec-1.1.3"
       );
 
       controller.dispose();

@@ -25,7 +25,7 @@ describeInteractionConformance("reader", {
   fixtures: buildReaderFixtures,
   // 6 targets when this landed.
   caps: { minRuns: 4 },
-  // Page turns: `swapSlots` on `/v2/reader/...`, plus the translation fetch
+  // Page turns: `swapSlots` on `/v2/work/...`, plus the translation fetch
   // when the Translation tab is open.
   scenarios: [
     {

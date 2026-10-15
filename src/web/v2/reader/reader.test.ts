@@ -238,7 +238,7 @@ describe("reader_ssr", () => {
       "<title>De bello Gallico: Book 1, Chapter 1 - Morcus Latin Tools</title>"
     );
     expect(pageHtml).toContain(
-      '<link rel="canonical" href="https://morcus.net/v2/reader/caesar/de_bello_gallico/1.1">'
+      '<link rel="canonical" href="https://morcus.net/v2/work/caesar/de_bello_gallico/1.1">'
     );
     expect(pageHtml).toContain('<header class="app-bar">');
     expect(pageHtml).toContain('href="/v2/library"');
@@ -327,7 +327,7 @@ describe("decomposed_reader_renderers", () => {
 
     test("constructs canonical page URL with dot citation", () => {
       expect(buildReaderPageUrl(dbgWork, dbgWork.pages[0])).toBe(
-        "/v2/reader/caesar/de_bello_gallico/1.1"
+        "/v2/work/caesar/de_bello_gallico/1.1"
       );
     });
 
@@ -336,7 +336,7 @@ describe("decomposed_reader_renderers", () => {
         buildReaderPageUrl(dbgWork, dbgWork.pages[0], {
           query: "gallia",
         })
-      ).toBe("/v2/reader/caesar/de_bello_gallico/1.1?q=gallia");
+      ).toBe("/v2/work/caesar/de_bello_gallico/1.1?q=gallia");
     });
   });
 
@@ -467,11 +467,11 @@ describe("decomposed_reader_renderers", () => {
 
       // Page 0 should not be active
       expect(itemsHtml).toContain(
-        'href="/v2/reader/caesar/de_bello_gallico/1.1"\n           class="reader-toc-item "\n           data-page-id="1.1"'
+        'href="/v2/work/caesar/de_bello_gallico/1.1"\n           class="reader-toc-item "\n           data-page-id="1.1"'
       );
       // Page 1 should be active
       expect(itemsHtml).toContain(
-        'href="/v2/reader/caesar/de_bello_gallico/1.2"\n           class="reader-toc-item active"\n           data-page-id="1.2"\n           aria-current="page"'
+        'href="/v2/work/caesar/de_bello_gallico/1.2"\n           class="reader-toc-item active"\n           data-page-id="1.2"\n           aria-current="page"'
       );
     });
   });

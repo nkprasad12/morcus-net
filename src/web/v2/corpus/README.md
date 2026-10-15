@@ -52,7 +52,7 @@ flowchart TD
 Each match becomes:
 
 - **Heading:** `${workName} ${leaders[0][0]} [${author}]`, as a link.
-- **Link:** `/v2/reader/${urlAuthor}/${urlName}?matchText=…`. The slugs come from `getV2LibrarySummaries()`; `matchText` comes from `textHighlightParams`. The reader route redirects a page-less `matchText` link to the right page with a `#sec-` hash. An unknown `workId` renders the heading as plain text and logs a warning.
+- **Link:** `/v2/work/${urlAuthor}/${urlName}?matchText=…`. The slugs come from `getV2LibrarySummaries()`; `matchText` comes from `textHighlightParams`. The reader route redirects a page-less `matchText` link to the right page with a `#sec-` hash. An unknown `workId` renders the heading as plain text and logs a warning.
 - **Snippet:** text runs with `<mark class="corpus-match">` around matches, in `white-space: pre-line`.
 
 The server imports `reader_loader.server.ts` and `reader_highlight.common.ts` (the `matchText` contract) from `reader/`. Nothing crosses slices in the client bundle.

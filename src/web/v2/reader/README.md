@@ -44,21 +44,21 @@ CHROME (fixed, single primary row)   PANEL (scalable, tabbed companion)
 sequenceDiagram
     autonumber
     actor User as Browser / User
-    participant Router as Express (/v2/reader)
+    participant Router as Express (/v2/work)
     participant Loader as reader_loader.server
     participant Render as reader.server
 
     alt Initial Load / Direct Link
-        User->>Router: GET /v2/reader/caesar/de_bello_gallico/1.1
+        User->>Router: GET /v2/work/caesar/de_bello_gallico/1.1
         Router->>Loader: getV2Work("caesar/de_bello_gallico")
         Loader-->>Router: V2PreprocessedWork (in-memory cached)
         Router->>Loader: resolvePageInWork(work, "1.1")
         Router->>Render: renderReaderPageHtml(work, page, view)
         Render-->>User: 200 OK (Full SSR document: sticky bar, text, TOC, footer)
     else Jump / Alias Redirect
-        User->>Router: GET /v2/reader?work=dbg&jump=2.3
+        User->>Router: GET /v2/work?work=dbg&jump=2.3
         Router->>Loader: resolvePageInWork(work, "2.3")
-        Router-->>User: 302 -> canonical /v2/reader/:author/:name/:page
+        Router-->>User: 302 -> canonical /v2/work/:author/:name/:page
     else In-Place Page Turn (With JS: arrows, TOC, continuation cards)
         User->>View: Click pager / continuation / TOC link
         View->>Router: GET <targetUrl> (X-Requested-With: fetch)
@@ -81,7 +81,7 @@ sequenceDiagram
 
 ### Server
 
-- `reader_routes.server.ts`: Registers `/reader/:author/:name/:page?` and the legacy `/reader?work=&jump=` entry point, handles alias/jump redirects to canonical URLs, and serves full pages or partials depending on `isPartialRequest`.
+- `reader_routes.server.ts`: Registers `/work/:author/:name/:page?` and the legacy `/work?work=&jump=` entry point, handles alias/jump redirects to canonical URLs, and serves full pages or partials depending on `isPartialRequest`.
 - `reader_loader.server.ts`: Reads preprocessed works from `LIB_DEFAULT_DIR`, transparently gunzips them, and caches works, slug→id mappings, and library summaries in memory. Also resolves a citation string to a concrete page.
 - `reader.server.ts`: Renders the page shell — primary sticky navigation bar (TOC drawer launcher, pager controls, anchored `Aa` typography launcher, and Info launcher), passage text with citation gutters, parallel translation column, and the passage footer with continuation cards.
 - `reader_toc.server.ts`: Renders the table of contents, including its `:target`-addressable No-JS fallback.
