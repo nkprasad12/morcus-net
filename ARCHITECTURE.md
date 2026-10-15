@@ -181,14 +181,8 @@ A specialized engine designed to query massive Latin textual corpora with comple
 `morcus.sh` acts as the command dispatcher running `src/scripts/run_morcus.ts` (with Node or Bun):
 
 ```bash
-# Start dev web server (builds client and serves on $PORT, default 5757)
+# Start dev web server (builds the minified UI V2 assets and serves on $PORT)
 ./morcus.sh web
-
-# Build for production (minified client bundle, no React StrictMode overhead)
-./morcus.sh web --minify
-
-# Start dev server with watch mode
-./morcus.sh web --watch
 
 # Build dictionary databases (run once or after editing dictionary sources)
 ./morcus.sh web --build_ls --build_sh --build_gaffiot

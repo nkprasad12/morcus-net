@@ -13,7 +13,7 @@
     "visual-diff": "npm run run-morcus -- visual-diff",
     "inventory": "npm run tsnp src/web/v2/tools/inventory/inventory.ts --",
     "inventory:update": "npm run tsnp src/web/v2/tools/inventory/inventory.ts -- --update",
-    "build": "npm run setup-rust && MAIN=build npm run tsnp src/scripts/prod_build_steps.ts && npm run tsnp src/bundler/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/",
+    "build": "npm run setup-rust && MAIN=build npm run tsnp src/scripts/prod_build_steps.ts && RUN_TSC=1 npm run tsnp src/bundler/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/",
     "start": "node build/server.js",
     "setup-rust": "npm run install-rust && . \"$HOME/.cargo/env\" && npm run setup-node-bindgen",
     "install-rust": "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y",

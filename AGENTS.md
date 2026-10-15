@@ -13,15 +13,15 @@ In this repository, operational tasks—such as starting development servers, bu
 
 ### Core Subcommands
 
-| Command       | Description                                                | Common Usage                                                                  |
-| ------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `web`         | Builds artifacts & starts the web server                   | `./morcus.sh web -w` (watch mode dev server)<br>`./morcus.sh web --build_all` |
-| `build`       | Builds dictionary/corpus artifacts without starting server | `./morcus.sh build --build_all`<br>`./morcus.sh build -b_ls -b_grg`           |
-| `bundle`      | Builds and bundles client JS/CSS                           | `./morcus.sh bundle -m` (minify)<br>`./morcus.sh bundle -a` (analyze)         |
-| `e2e`         | Runs E2E integration test pipelines                        | `./morcus.sh e2e -d` (local dev server)                                       |
-| `worker`      | Starts background cruncher/NLP workers                     | `./morcus.sh worker -wt ls`                                                   |
-| `corpus`      | Corpus processing utilities and Rust CLI                   | `./morcus.sh corpus -r`                                                       |
-| `visual-diff` | Interactive viewer for screenshot diffs (see §3.D)         | `./morcus.sh visual-diff --source results`                                    |
+| Command       | Description                                                | Common Usage                                                        |
+| ------------- | ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| `web`         | Builds artifacts & starts the web server                   | `./morcus.sh web` (dev server)<br>`./morcus.sh web --build_all`     |
+| `build`       | Builds dictionary/corpus artifacts without starting server | `./morcus.sh build --build_all`<br>`./morcus.sh build -b_ls -b_grg` |
+| `bundle`      | Builds the UI V2 client JS/CSS into `build/v2/`            | `./morcus.sh bundle -m` (minify and precompress)                    |
+| `e2e`         | Runs E2E integration test pipelines                        | `./morcus.sh e2e -d` (local dev server)                             |
+| `worker`      | Starts background cruncher/NLP workers                     | `./morcus.sh worker -wt ls`                                         |
+| `corpus`      | Corpus processing utilities and Rust CLI                   | `./morcus.sh corpus -r`                                             |
+| `visual-diff` | Interactive viewer for screenshot diffs (see §3.D)         | `./morcus.sh visual-diff --source results`                          |
 
 > [!TIP]
 > Run `./morcus.sh --help` or `./morcus.sh <command> --help` to inspect available flags and options.
@@ -163,7 +163,7 @@ Playwright tests require the server to be running (typically configured on port 
 
 - **Start local server via `run_morcus`**:
   ```bash
-  PORT=5757 ./morcus.sh web -w
+  PORT=5757 ./morcus.sh web
   ```
   _Alternatively:_
   ```bash
@@ -189,6 +189,6 @@ Run these before each commit to ensure code compiles and passes fast unit tests 
 
 Before pushing to the remote repository, ensure full browser matrix parity and 0 visual regressions on a running dev server:
 
-1. Start dev server: `PORT=5757 ./morcus.sh web -w` (if not already running)
+1. Start dev server: `PORT=5757 ./morcus.sh web` (if not already running)
 2. Run functional E2E tests: `./morcus.sh e2e --v2 --all`
 3. Run visual regression tests: `./morcus.sh e2e --visual --all` (ensure 0 pixel diffs across all 80 baseline snapshots). If any differ, follow the Visual Baseline Approval Rule and review them with `./morcus.sh visual-diff --source results`.

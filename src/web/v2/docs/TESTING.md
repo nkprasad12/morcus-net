@@ -212,7 +212,7 @@ Checks that span the whole app rather than one page stay in `core/`:
 
 1.  **Start dev server** (if not already running):
     ```bash
-    PORT=5757 ./morcus.sh web -w
+    PORT=5757 ./morcus.sh web
     ```
 2.  **Functional E2E tests (all browsers)**:
     ```bash

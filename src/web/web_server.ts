@@ -1,5 +1,5 @@
 import compression from "compression";
-import express, { Response } from "express";
+import express from "express";
 import bodyParser from "body-parser";
 import path from "path";
 import fs from "fs/promises";
@@ -19,23 +19,8 @@ const HOURS_IN_DAY = 24;
 const SECONDS_IN_HOUR = 3600;
 
 const MAX_AGE = 10 * DAYS_IN_YEAR * HOURS_IN_DAY * SECONDS_IN_HOUR;
-const CLIENT_BUNDLE_SUFFIX = ".client-bundle.js";
-const CLIENT_BUNDLE_CACHE_CONTROL = `public, max-age=${MAX_AGE}, immutable`;
-const SET_HEADERS = (res: Response, path: string) => {
-  // Force users to always fetch the index from the server so that they
-  // always get the latest Javascript bundles.
-  if (path.endsWith("index.html")) {
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  }
-  if (path.endsWith(CLIENT_BUNDLE_SUFFIX)) {
-    res.setHeader("Cache-Control", CLIENT_BUNDLE_CACHE_CONTROL);
-  }
-};
 
-const STATIC_OPTIONS = {
-  maxAge: MAX_AGE,
-  setHeaders: SET_HEADERS,
-};
+const STATIC_OPTIONS = { maxAge: MAX_AGE };
 
 interface Encoding {
   encoding: string;
@@ -84,7 +69,7 @@ async function isFile(file: string): Promise<boolean> {
 function preCompressedMiddleware(getSourceDir: () => string): express.Handler {
   const serve = async (
     req: express.Request,
-    res: Response,
+    res: express.Response,
     next: express.NextFunction
   ) => {
     const name = req.path.slice(1);
@@ -132,17 +117,14 @@ export interface WebServerParams {
   webApp: express.Express;
   routes: RouteDefinition<any, Data, RouteDefinitionType>[];
   telemetry: Promise<TelemetryLogger>;
-  buildDir: string;
-  v2Router?: express.Router;
+  v2Router: express.Router;
 }
 
 export function setupServer(params: WebServerParams): void {
   const app = params.webApp;
   app.use(bodyParser.text());
-  if (params.v2Router) {
-    // Ahead of the V2 router's own `/assets` static handler.
-    app.use("/assets", preCompressedMiddleware(getV2BuildDir));
-  }
+  // Ahead of the V2 router's own `/assets` static handler.
+  app.use("/assets", preCompressedMiddleware(getV2BuildDir));
   app.use(compression());
   app.get("/serviceworker.js", (_, res) => {
     // Never cached, so a later change here reaches browsers on their next visit.
@@ -161,45 +143,13 @@ export function setupServer(params: WebServerParams): void {
   app.get("/robots.txt", (_, res) => {
     res.sendFile(path.resolve("public", "robots.txt"), { maxAge: MAX_AGE });
   });
-  app.use("/offlineData/:resourceName", (req, res) => {
-    res.header("Content-Type", "application/octet-stream");
-    const resourceName: string = req.params["resourceName"];
-    console.debug(`/offlineData/${resourceName}`);
-    res.sendFile(
-      path.resolve(
-        path.join("build/offlineData", `${resourceName}.json.gz.chunked`)
-      )
-    );
-    return;
-  });
   app.use("/public/pwa.webmanifest", (_, res) => {
     res.type("application/manifest+json").send(PWA_WEBMANIFEST);
     return;
   });
   app.use("/public", express.static("public", STATIC_OPTIONS));
   app.use("/.well-known", express.static("public", STATIC_OPTIONS));
-  if (params.v2Router) {
-    app.use("/", params.v2Router);
-  }
-  app.use(
-    express.static(params.buildDir, {
-      ...STATIC_OPTIONS,
-      index: params.v2Router ? false : undefined,
-    })
-  );
-
-  if (!params.v2Router) {
-    app.use("/*", (req, res, next) => {
-      if (!req.baseUrl.startsWith("/api/")) {
-        // Force users to always fetch the index from the server so that they
-        // always get the latest Javascript bundles.
-        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        res.sendFile(path.join(params.buildDir, "index.html"));
-        return;
-      }
-      next();
-    });
-  }
+  app.use("/", params.v2Router);
 
   params.routes.forEach((r) => addApi(params, r));
 }

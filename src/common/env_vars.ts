@@ -18,7 +18,6 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["FORC_RAW_PATH", "forc_raw.txt"],
   ["FORC_PROCESSED_PATH", "build/dbs/forc.db"],
   ["DB_SOURCE", "unspecified"],
-  ["OFFLINE_DATA_DIR", "build/offlineData"],
   ["PWA_SHORT_NAME_SUFFIX", ""],
   ["MORCEUS_DATA_ROOT", "morceus-data/"],
   ["HYPOTACTIC_ROOT", "hypotactic/"],

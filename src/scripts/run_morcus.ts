@@ -1,7 +1,6 @@
 /* istanbul ignore file */
 
 import { assert, checkPresent } from "@/common/assert";
-import { envVar } from "@/common/env_vars";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import {
   StepConfig,
@@ -12,7 +11,6 @@ import {
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
 import { DEV_SERVER_ENV } from "@/web/v2/core/server/build_version.server";
-import { createDir } from "@/utils/file_utils";
 import { ArgumentParser, type ArgumentOptions } from "argparse";
 import { ChildProcess, spawn } from "child_process";
 
@@ -169,18 +167,10 @@ function parseArguments() {
   addArguments(build, COMMON_BUILD_ARGS);
 
   const bundle = subparsers.add_parser(BUNDLE, {
-    help: "Builds the client bundle.",
-  });
-  bundle.add_argument("-a", "--analyze", {
-    help: "Runs analysis on the generated bundle.",
-    action: "store_true",
-  });
-  bundle.add_argument("-to", "--transpile_only", {
-    help: "Skips type checking for the bundle.",
-    action: "store_true",
+    help: "Builds the UI V2 client assets into build/v2/.",
   });
   bundle.add_argument("-m", "--minify", {
-    help: "Minifies the bundle after building.",
+    help: "Minifies (and precompresses) the assets, as production does.",
     action: "store_true",
   });
 
@@ -189,10 +179,6 @@ function parseArguments() {
   });
   web.add_argument("--build_all", {
     help: "Builds all artifacts.",
-    action: "store_true",
-  });
-  web.add_argument("-no_bc", "--no_build_client", {
-    help: "The client bundle will not be built.",
     action: "store_true",
   });
   web.add_argument("-mot", "--morceus_tables", {
@@ -208,16 +194,8 @@ function parseArguments() {
     help: "Uses the real telemetry database.",
     action: "store_true",
   });
-  web.add_argument("-w", "--watch", {
-    help: "Runs a dev server for local iteration.",
-    action: "store_true",
-  });
-  web.add_argument("-m", "--minify", {
-    help: "Minifies the bundle after building.",
-    action: "store_true",
-  });
   web.add_argument("-to", "--transpile_only", {
-    help: "Skips type checking for the client and server.",
+    help: "Skips type checking for the server.",
     action: "store_true",
   });
 
@@ -505,39 +483,19 @@ function spawnChild(command: string[], env?: NodeJS.ProcessEnv): ChildProcess {
 function buildBundle(args: any): Promise<boolean> {
   return runPipeline([
     { operation: writeCommitId, label: "writeCommitId" },
-    bundleConfig(args),
+    v2BundleConfig(args, undefined, args.minify === true),
   ]);
 }
 
-function bundleConfig(args: any, priority?: number): StepConfig {
-  const executor = args.bun ? ["bun"] : TS_NODE;
-  const buildCommand = executor.concat(["src/bundler/morcus-net.rsbuild.ts"]);
-  const childEnv = { ...process.env };
-  childEnv.NODE_ENV = "production";
-  if (args.minify) {
-    childEnv.MINIFY = "1";
-  }
-  if (args.watch) {
-    childEnv.WATCH = "1";
-  }
-  if (args.analyze) {
-    childEnv.ANALYZE_BUNDLE = "1";
-  }
-  if (!args.transpile_only) {
-    childEnv.RUN_TSC = "1";
-  }
-  return {
-    operation: () => shellStep(buildCommand.join(" "), childEnv),
-    label: "Building bundle",
-    priority,
-  };
-}
-
-function v2BundleConfig(args: any, priority?: number): StepConfig {
+function v2BundleConfig(
+  args: any,
+  priority?: number,
+  minify: boolean = true
+): StepConfig {
   const executor = args.bun ? ["bun"] : TS_NODE;
   const buildCommand = executor.concat([
     "src/bundler/v2.rsbuild.ts",
-    "--minify",
+    ...(minify ? ["--minify"] : []),
   ]);
   return {
     operation: () => shellStep(buildCommand.join(" ")),
@@ -573,11 +531,6 @@ function artifactConfig(args: any): StepConfig[] {
     args.build_latin_library = true;
   }
 
-  setupSteps.push({
-    operation: () => createDir(envVar("OFFLINE_DATA_DIR")),
-    label: "Creating output dirs",
-    priority: 1,
-  });
   if (args.morceus_tables === true) {
     setupSteps.push({
       operation: MorceusTables.save,
@@ -678,12 +631,7 @@ function buildArtifacts(args: any): Promise<boolean> {
 
 async function setupAndStartWebServer(args: any) {
   const setupSteps: StepConfig[] = [];
-  if (args.no_build_client === false) {
-    writeCommitId();
-    if (args.watch !== true) {
-      setupSteps.push(bundleConfig(args, 1));
-    }
-  }
+  writeCommitId();
   setupSteps.push(v2BundleConfig(args, 1));
   setupSteps.push(...artifactConfig(args));
   const setupSuccess = await runPipeline(setupSteps, { parallel: true });
@@ -700,9 +648,6 @@ function startWebServer(args: any) {
   // Each restart gets a fresh build version, so the browser never keeps
   // `?v=` responses from before a server-side change.
   serverEnv[DEV_SERVER_ENV] = "1";
-  if (args.watch) {
-    bundleConfig(args).operation();
-  }
   if (args.real_database === false) {
     serverEnv.CONSOLE_TELEMETRY = "yes";
   }
@@ -714,9 +659,6 @@ function startWebServer(args: any) {
   let baseCommand: string[] = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];
-    if (args.watch) {
-      // Watch mode seems to have problems.
-    }
   } else if (args.transpile_only === true) {
     baseCommand.push("--swc");
   }

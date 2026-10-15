@@ -13,7 +13,6 @@ import { StoredEntryData } from "@/common/lewis_and_short/ls_dict";
 import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
-import { packCompressedChunks } from "@/web/server/chunking";
 import { encodeMessage } from "@/web/utils/rpc/parsing";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 
@@ -61,6 +60,5 @@ export namespace GenerateLs {
   export function saveArtifacts() {
     const allEntries = processPerseusXml(envVar("LS_PATH"));
     SqliteDict.save(allEntries, envVar("LS_PROCESSED_PATH"));
-    packCompressedChunks(allEntries, 100, "lsDict", envVar("OFFLINE_DATA_DIR"));
   }
 }

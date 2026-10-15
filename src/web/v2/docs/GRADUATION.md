@@ -99,16 +99,16 @@ This work lands on `lit-prototype` **before** the §2 re-slot, which then ends w
     - "editor shown on library landing": static SSR markup, covered by `library.test.ts`;
     - legacy dictionary URLs: server redirects, covered by `v2_router.test.ts`;
     - the V1 screenshot suite: covered by V2 visual baselines.
-- [ ] **Delete V1 Client Code**:
+- [x] **Delete V1 Client Code**:
   - Move `src/web/client/utils/indexdb/{types,wrappers}.ts` (and the test) to `src/common/indexdb/`. **Keep** `common/dictionaries/indexdb_backing.ts` and `common/bytedata/compression.ts` for a future offline mode, with a header note so dead-code sweeps leave them alone.
   - Replace `useApiCall` in the Morceus helper GUI with a local `fetch` hook.
   - Tag `archive/ui-v1` and point V2 comments and docs that cite V1 paths at it.
-  - Remove `src/web/client/` and the V1 Playwright suites: `browser_e2e`, `browser_screenshot` (+24 snapshots) and `bundle_validation`. `client_performance` is skipped until §5 re-targets it.
-- [ ] **Retire V1 Bundler & Build Steps**:
+  - Remove `src/web/client/` and the V1 Playwright suites: `browser_e2e`, `browser_screenshot` (+24 snapshots) and `bundle_validation`. `client_performance` stays: it only drives page URLs, which V2 serves; §5 re-targets its metrics.
+- [x] **Retire V1 Bundler & Build Steps** (landed with the deletion above, in one commit):
   - Remove the V1 client build pipeline from `src/bundler/`, `src/scripts/prod_build_steps.ts`, and `src/scripts/run_morcus.ts`, making the Rsbuild V2 bundle the sole web client build:
     - Delete `morcus-net.rsbuild.ts`, `morcus-net.esbuild.ts` and `rsbuild_plugins.ts`. This removes the V1 `serviceworker` environment, whose output is already shadowed by the `/serviceworker.js` cleanup route.
     - Point `./morcus.sh bundle` at `v2.rsbuild.ts`.
-    - Make V2 the default `e2e` target.
+    - Making V2 the default `e2e` target is left to §5.
   - `web_server.ts`: remove the `/offlineData/:resourceName` route, the `build/client` static mount, the SPA catch-all and the V1 precompression middleware. Make `v2Router` required.
   - Stop generating `build/offlineData` (`packCompressedChunks` in `ls_generate`, `gaf_generate` and `sh_generate`, `web/server/chunking.ts`, `OFFLINE_DATA_DIR`).
 - [ ] **Prune V1-Only Server Endpoints**:
