@@ -57,6 +57,7 @@ The `lit-prototype` branch has accumulated 260+ commits across multiple architec
     9. **UI V2 Secondary Slices**: `src/web/v2/corpus/`, `src/web/v2/external/`, `src/web/v2/about/`, `src/web/v2/macronizer/`.
     10. **V2 Entrypoints & Server Integration**: `src/web/v2/v2_*.ts`, `src/web/web_server.ts`, `src/start_server.ts`.
     11. **E2E Suites, Visual Baselines & Docs**: `src/integration/`, `src/web/v2/README.md`, `src/web/v2/docs/`, the slice `README.md` / `TODOS.md` files, `AGENTS.md`.
+    12. **Delete UI V1** (last): the §4 `[v1-removal]` commits on `lit-prototype`: `src/web/client/`, the V1 bundler and build steps, the V1 JSON-RPC routes and most of `src/web/utils/rpc/`, offline data generation, V1-only packages, and the repo-wide lint changes. Slices 1–11 should not stage V1-touching hunks; this slice carries them.
   - **Per-Slice Audit Check**: While staging each slice, review the files with fresh eyes to strip dead code, leftover transitional shims, or stale comments.
   - **Zero-Drift Verification**: Before merging to `dev`, verify `git diff archive/lit-prototype-raw..HEAD` contains _only_ intentional audit cleanups.
 
@@ -69,7 +70,7 @@ The `lit-prototype` branch has accumulated 260+ commits across multiple architec
 - [x] **Mount V2 Router at Root (`/`)**:
   - Mount the V2 router at `/` in [`src/web/web_server.ts`](../../web_server.ts) (replacing the V1 SPA catch-all), and strip the `/v2` prefix from internal V2 route helpers, links, and static asset paths (`/v2/assets/*` → `/assets/*` or equivalent).
 - [x] **Legacy V1 URL Compatibility**:
-  - Where V2 route paths or query parameters differ from deployed V1 URLs (e.g. `/dicts`, `/lat_lib`), add redirects or route aliases so existing external links and user bookmarks continue to work.
+  - Where V2 route paths or query parameters differ from deployed V1 URLs (e.g. `/dicts?q=<id>&o=2`, `/work/<workId>`, `/work/...?id=`), add redirects or route aliases so existing external links and user bookmarks continue to work.
 - [x] **Update Test Routes**:
   - Update V2 unit, E2E, and visual regression test URLs from `/v2/*` to `/*`.
 
@@ -77,7 +78,7 @@ The `lit-prototype` branch has accumulated 260+ commits across multiple architec
 
 ## 4. Decommissioning UI V1
 
-Since the §3 cutover, V1 is unreachable from browsers: `start_server.ts` always mounts the V2 router, so the SPA catch-all in `web_server.ts` never runs. V1 is still built, served from `build/client`, and tested, but nothing uses it. Nothing in V2 imports `src/web/client/`. Only two other files do: `morceus/projects/gui/morceus_helper_root.tsx` (`useApiCall`) and `common/dictionaries/indexdb_backing.ts` (the IndexedDB wrappers).
+**Done.** After the §3 cutover V1 was unreachable from browsers, but still built, served from `build/client`, and tested. Nothing in V2 imported `src/web/client/`; only two other files did (`morceus/projects/gui/morceus_helper_root.tsx` and `common/dictionaries/indexdb_backing.ts`). V1 is preserved at the `archive/ui-v1` tag.
 
 This work lands on `lit-prototype` **before** the §2 re-slot, which then ends with a single "Delete UI V1" slice. Order: precompression first, then E2E parity, then deletion.
 
@@ -124,6 +125,9 @@ This work lands on `lit-prototype` **before** the §2 re-slot, which then ends w
   - `no-floating-promises` / `no-misused-promises` now apply repo-wide. Fixing the 55 violations outside UI V2 found two real bugs: the server's periodic telemetry write and its teardown could reject unhandled (which exits Node), and an L&S test never awaited its assertions. The rest mark deliberate fire-and-forget calls (script entry points, benchmarks) with `void`.
   - The tier lint now covers all non-V2, non-bundler code under `src/` (servers, build steps, scripts, Playwright suites): it can't import `*.client.ts`. Tests are exempt, as in UI V2.
   - `tsconfig.json`: dropped Lit's `experimentalDecorators` (no decorators remain). `useDefineForClassFields: false` stays; flipping it changes class-field semantics across tsc, SWC and Rsbuild and needs its own check. `jest.config.js` is unchanged: the TSX left is the dev tools', which Jest never loads.
+- [x] **Docs**:
+  - `ARCHITECTURE.md` now describes the UI V2 server, routes and client (the V1 SPA, RPC route manifest and `CACHING_SETTER` conventions are gone); `README.md`, `.github/copilot-instructions.md`, `AGENTS.md` and `TESTING.md` drop V1 references and flags.
+  - New `CODE_HEALTH.md` items: move the External Reader store onto `src/common/indexdb/` wrappers, and stop Rsbuild copying `public/` into `build/v2/`.
 
 ---
 

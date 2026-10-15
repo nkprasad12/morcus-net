@@ -24,3 +24,15 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
   the `/serviceworker.js` route in `src/web/web_server.ts` and its test, the `public/**/*.js` block
   in `eslint.config.mjs`, and the `!public/*.js` exception in `.prettierignore` (restore
   `public/`).
+
+## Open
+
+- 🟡 **Use the shared IndexedDB wrappers in the External Reader store.**
+  `external/external_storage.client.ts` opens IndexedDB by hand. `src/common/indexdb/wrappers.ts`
+  (moved out of V1 in GRADUATION.md §4) already wraps open/upgrade/transactions with promises and
+  is tested; switching would drop the hand-rolled request plumbing. Keep the V1 schema
+  (`externalContent.db` v1, store `savedContent`) so existing imports survive.
+- 🟢 **Rsbuild copies `public/` into `build/v2/`.** So favicon, logos, `robots.txt`,
+  `assetlinks.json` and the cleanup service worker are also reachable at `/assets/*`. Harmless
+  but unintended: set `server.publicDir: false` (or equivalent) in `v2.rsbuild.ts` and check
+  nothing relies on the copies.
