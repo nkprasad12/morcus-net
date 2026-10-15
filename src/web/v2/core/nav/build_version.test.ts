@@ -14,8 +14,8 @@ describe("withBuildVersion", () => {
 
   test("leaves the URL alone without a build version", () => {
     expect(getPageBuildVersion()).toBeUndefined();
-    expect(withBuildVersion("/v2/reader/caesar/gallic-war/2")).toBe(
-      "/v2/reader/caesar/gallic-war/2"
+    expect(withBuildVersion("/v2/work/caesar/gallic-war/2")).toBe(
+      "/v2/work/caesar/gallic-war/2"
     );
   });
 

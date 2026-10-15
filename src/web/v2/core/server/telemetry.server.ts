@@ -13,7 +13,7 @@
  * Row format:
  *
  * - `name`: Express route pattern without the `/v2` mount (`/dicts`,
- *   `/reader/:author/:name/:page?`); non-GET routes are prefixed with the
+ *   `/work/:author/:name/:page?`); non-GET routes are prefixed with the
  *   method (`POST /macronizer`).
  * - `status`: final HTTP status.
  * - `latencyMs`: time to hand-off (the `sent` mark); see "Latency" below.

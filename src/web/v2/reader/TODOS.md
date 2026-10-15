@@ -51,7 +51,7 @@ For deep parallel reading on wide desktop displays, explore a 3-panel reading wo
 
 **Status:** not started.
 
-Currently, translations are loaded on demand via `/v2/reader/:author/:name/:page/translation` when
+Currently, translations are loaded on demand via `/v2/work/:author/:name/:page/translation` when
 selecting the companion panel's Translation tab.
 
 - For users with JavaScript disabled, explore an inline collapsible `<details>` fallback or server-rendered

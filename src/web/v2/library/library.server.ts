@@ -30,7 +30,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
         badges.push('<span class="badge badge-trans">Translated</span>');
       }
 
-      const readerUrl = `/v2/reader/${w.urlAuthor}/${w.urlName}`;
+      const readerUrl = `/v2/work/${w.urlAuthor}/${w.urlName}`;
 
       const metaParts: string[] = [];
       if (w.editor) {

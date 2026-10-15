@@ -998,7 +998,7 @@ test.describe("UI V2 dictionary", () => {
   test("supports reader sidebar dictionary search in the embedded frame", async ({
     page,
   }) => {
-    await page.goto("/v2/reader");
+    await page.goto("/v2/work");
 
     // Verify "Embedded Dictionary" header text is removed
     await expect(page.locator(".reader-dict-title")).toHaveCount(0);
@@ -1042,7 +1042,7 @@ test.describe("UI V2 dictionary", () => {
   }) => {
     // No ?q=, so the dictionary panel starts closed and its lazy iframe may
     // not have loaded yet: '/' has to wait for it.
-    await page.goto("/v2/reader/caesar/de_bello_gallico/1.1");
+    await page.goto("/v2/work/caesar/de_bello_gallico/1.1");
     const word = page.locator("#reader-passage .lat-word").first();
     await expect(word).toBeVisible();
     const wordText = ((await word.textContent()) ?? "").trim();
@@ -1243,7 +1243,7 @@ test.describe("UI V2 corpus", () => {
     // Verify heading links point to Reader with highlight parameters
     const firstHeading = page.locator(".corpus-result-heading").first();
     await expect(firstHeading).toBeVisible();
-    await expect(firstHeading).toHaveAttribute("href", /\/v2\/reader\//);
+    await expect(firstHeading).toHaveAttribute("href", /\/v2\/work\//);
 
     // Verify match highlighting within the snippet
     await expect(

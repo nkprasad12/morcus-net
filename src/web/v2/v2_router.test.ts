@@ -625,7 +625,7 @@ describe("v2_router integration", () => {
 
     test("reader page-turn partials at the current version are private and immutable", async () => {
       const res = await request(app)
-        .get("/v2/reader/caesar/de_bello_gallico/1.1?v=abc123")
+        .get("/v2/work/caesar/de_bello_gallico/1.1?v=abc123")
         .set("X-Requested-With", "fetch");
       expect(res.status).toBe(200);
       expect(res.header["cache-control"]).toBe(`private, ${IMMUTABLE}`);
@@ -634,14 +634,14 @@ describe("v2_router integration", () => {
 
     test("reader partials with a stale version revalidate", async () => {
       const res = await request(app)
-        .get("/v2/reader/caesar/de_bello_gallico/1.1?v=old")
+        .get("/v2/work/caesar/de_bello_gallico/1.1?v=old")
         .set("X-Requested-With", "fetch");
       expect(res.header["cache-control"]).toBe("no-cache");
     });
 
     test("full reader pages are never versioned", async () => {
       const res = await request(app).get(
-        "/v2/reader/caesar/de_bello_gallico/1.1?v=abc123"
+        "/v2/work/caesar/de_bello_gallico/1.1?v=abc123"
       );
       expect(res.status).toBe(200);
       expect(res.text).toContain('<html lang="en" data-version="abc123">');
@@ -650,7 +650,7 @@ describe("v2_router integration", () => {
 
     test("translations at the current version are private and immutable", async () => {
       const res = await request(app).get(
-        "/v2/reader/sallust/catalina1/1/translation?v=abc123"
+        "/v2/work/sallust/catalina1/1/translation?v=abc123"
       );
       expect(res.status).toBe(200);
       expect(res.header["cache-control"]).toBe(`private, ${IMMUTABLE}`);
@@ -658,7 +658,7 @@ describe("v2_router integration", () => {
 
     test("a missing translation is never cached", async () => {
       const res = await request(app).get(
-        "/v2/reader/caesar/de_bello_gallico/1.1/translation?v=abc123"
+        "/v2/work/caesar/de_bello_gallico/1.1/translation?v=abc123"
       );
       expect(res.status).toBe(404);
       expect(res.header["cache-control"]).toBeUndefined();
@@ -781,9 +781,9 @@ describe("v2_router integration", () => {
     }
   });
 
-  describe("GET /v2/reader", () => {
+  describe("GET /v2/work", () => {
     test("returns 200 with reader layout and dictionary iframe placeholder when no q", async () => {
-      const res = await request(app).get("/v2/reader");
+      const res = await request(app).get("/v2/work");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.headers["vary"]).toContain("X-Requested-With");
@@ -797,7 +797,7 @@ describe("v2_router integration", () => {
     });
 
     test("returns 200 and points dictionary iframe to embedded query when q is supplied", async () => {
-      const res = await request(app).get("/v2/reader?q=Gallia");
+      const res = await request(app).get("/v2/work?q=Gallia");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.headers["vary"]).toContain("X-Requested-With");
@@ -808,9 +808,9 @@ describe("v2_router integration", () => {
       );
     });
 
-    test("GET /v2/reader/:author/:name/:page? renders reader URL", async () => {
+    test("GET /v2/work/:author/:name/:page? renders reader URL", async () => {
       const res = await request(app).get(
-        "/v2/reader/caesar/de_bello_gallico/1.1"
+        "/v2/work/caesar/de_bello_gallico/1.1"
       );
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
@@ -820,9 +820,9 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("Gallia est omnis divisa in partes tres");
     });
 
-    test("GET /v2/reader/:author/:name/:page? with format=partial returns only the passage slot fragment", async () => {
+    test("GET /v2/work/:author/:name/:page? with format=partial returns only the passage slot fragment", async () => {
       const res = await request(app).get(
-        "/v2/reader/caesar/de_bello_gallico/1.1?format=partial"
+        "/v2/work/caesar/de_bello_gallico/1.1?format=partial"
       );
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
@@ -832,9 +832,9 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("Gallia est omnis divisa in partes tres");
     });
 
-    test("GET /v2/reader/:author/:name/:page? returns 404 for unknown works", async () => {
+    test("GET /v2/work/:author/:name/:page? returns 404 for unknown works", async () => {
       const res = await request(app).get(
-        "/v2/reader/unknown_author/nonexistent_work"
+        "/v2/work/unknown_author/nonexistent_work"
       );
       expect(res.status).toBe(404);
       expect(res.header["content-type"]).toContain("text/html");
@@ -845,9 +845,9 @@ describe("v2_router integration", () => {
       expect(res.text).not.toContain("style=");
     });
 
-    test("GET /v2/reader/:author/:name/:page/translation returns 200 and translation snippet for translated works", async () => {
+    test("GET /v2/work/:author/:name/:page/translation returns 200 and translation snippet for translated works", async () => {
       const res = await request(app).get(
-        "/v2/reader/sallust/catalina1/1/translation"
+        "/v2/work/sallust/catalina1/1/translation"
       );
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
@@ -857,47 +857,47 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("reader-translation-body");
     });
 
-    test("GET /v2/reader/:author/:name/:page/translation returns 404 for untranslated works", async () => {
+    test("GET /v2/work/:author/:name/:page/translation returns 404 for untranslated works", async () => {
       const res = await request(app).get(
-        "/v2/reader/caesar/de_bello_gallico/1.1/translation"
+        "/v2/work/caesar/de_bello_gallico/1.1/translation"
       );
       expect(res.status).toBe(404);
       expect(res.text).toBe("Translation not found");
     });
 
-    test("GET /v2/reader/:author/:name/:page/translation returns 404 for unknown works", async () => {
+    test("GET /v2/work/:author/:name/:page/translation returns 404 for unknown works", async () => {
       const res = await request(app).get(
-        "/v2/reader/unknown_author/nonexistent_work/1/translation"
+        "/v2/work/unknown_author/nonexistent_work/1/translation"
       );
       expect(res.status).toBe(404);
       expect(res.text).toBe("Translation not found");
     });
 
-    test("GET /v2/reader/:author/:name redirects matchText links to the matched page and section when :page is omitted", async () => {
+    test("GET /v2/work/:author/:name redirects matchText links to the matched page and section when :page is omitted", async () => {
       const res = await request(app).get(
-        "/v2/reader/caesar/de_bello_gallico?matchText=1.2.1~0~2"
+        "/v2/work/caesar/de_bello_gallico?matchText=1.2.1~0~2"
       );
       expect(res.status).toBe(302);
       expect(res.header.location).toBe(
-        "/v2/reader/caesar/de_bello_gallico/1.2?matchText=1.2.1%7E0%7E2#sec-1.2.1"
+        "/v2/work/caesar/de_bello_gallico/1.2?matchText=1.2.1%7E0%7E2#sec-1.2.1"
       );
     });
 
-    test("GET /v2/reader/:author/:name/:page with matchText renders the requested page without redirecting", async () => {
+    test("GET /v2/work/:author/:name/:page with matchText renders the requested page without redirecting", async () => {
       const res = await request(app).get(
-        "/v2/reader/caesar/de_bello_gallico/1.2?matchText=1.2.1~0~2"
+        "/v2/work/caesar/de_bello_gallico/1.2?matchText=1.2.1~0~2"
       );
       expect(res.status).toBe(200);
       expect(res.text).toContain('id="sec-1.2.1"');
     });
 
-    test("GET /v2/reader/:author/:name/:page?jump=... preserves matchText across redirect", async () => {
+    test("GET /v2/work/:author/:name/:page?jump=... preserves matchText across redirect", async () => {
       const res = await request(app).get(
-        "/v2/reader/caesar/de_bello_gallico/1.1?jump=1.2.1&matchText=1.2.1~0~2&q=Orgetorix"
+        "/v2/work/caesar/de_bello_gallico/1.1?jump=1.2.1&matchText=1.2.1~0~2&q=Orgetorix"
       );
       expect(res.status).toBe(302);
       expect(res.header.location).toBe(
-        "/v2/reader/caesar/de_bello_gallico/1.2?q=Orgetorix&matchText=1.2.1%7E0%7E2#sec-1.2.1"
+        "/v2/work/caesar/de_bello_gallico/1.2?q=Orgetorix&matchText=1.2.1%7E0%7E2#sec-1.2.1"
       );
     });
   });
@@ -1030,7 +1030,7 @@ describe("v2_router integration", () => {
             sectionId: "1.1.1",
           },
           tags: ["userEdit"],
-          url: "http://localhost:1337/v2/reader/caesar/bg/1.1#sec-1.1.1",
+          url: "http://localhost:1337/v2/work/caesar/bg/1.1#sec-1.1.1",
         });
 
       expect(res.status).toBe(200);
@@ -1043,7 +1043,7 @@ describe("v2_router integration", () => {
             sectionId: "1.1.1",
           },
           tags: ["userEdit"],
-          url: "http://localhost:1337/v2/reader/caesar/bg/1.1#sec-1.1.1",
+          url: "http://localhost:1337/v2/work/caesar/bg/1.1#sec-1.1.1",
         })
       );
     });
@@ -1184,8 +1184,8 @@ describe("v2_router integration", () => {
      * the request itself simply hangs. Asserting on the 500 pins the wrapper.
      */
     const FAILING_ROUTES = [
-      "/v2/reader?q=Gallia",
-      "/v2/reader/caesar/de_bello_gallico/1.1",
+      "/v2/work?q=Gallia",
+      "/v2/work/caesar/de_bello_gallico/1.1",
     ];
 
     beforeEach(() => {
@@ -1225,7 +1225,7 @@ describe("v2_router integration", () => {
         .mockImplementation(() => {});
       try {
         const res = await request(app)
-          .get("/v2/reader/caesar/de_bello_gallico/1.1?v=abc123")
+          .get("/v2/work/caesar/de_bello_gallico/1.1?v=abc123")
           .set("X-Requested-With", "fetch");
         expect(res.status).toBe(500);
         expect(res.header["cache-control"]).toBeUndefined();
@@ -1254,16 +1254,16 @@ describe("v2_router integration", () => {
       { route: "/dicts", method: "GET", url: "/v2/dicts?q=amo" },
       { route: "/dicts/id/:id", method: "GET", url: "/v2/dicts/id/n123" },
       {
-        route: "/reader/:author/:name/:page/translation",
+        route: "/work/:author/:name/:page/translation",
         method: "GET",
-        url: "/v2/reader/caesar/de_bello_gallico/1.1/translation",
+        url: "/v2/work/caesar/de_bello_gallico/1.1/translation",
       },
       {
-        route: "/reader/:author/:name/:page?",
+        route: "/work/:author/:name/:page?",
         method: "GET",
-        url: "/v2/reader/caesar/de_bello_gallico/1.1",
+        url: "/v2/work/caesar/de_bello_gallico/1.1",
       },
-      { route: "/reader", method: "GET", url: "/v2/reader" },
+      { route: "/work", method: "GET", url: "/v2/work" },
       { route: "/corpus", method: "GET", url: "/v2/corpus?q=amo" },
       {
         route: "/api/corpus/lemmata/:letter",

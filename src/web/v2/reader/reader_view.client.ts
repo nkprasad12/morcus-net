@@ -582,7 +582,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    const workPrefix = `/v2/reader/${author}/${name}`;
+    const workPrefix = `/v2/work/${author}/${name}`;
     if (
       targetUrl.pathname !== workPrefix &&
       !targetUrl.pathname.startsWith(`${workPrefix}/`)
@@ -1276,7 +1276,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const name = this.getAttribute("data-name");
     const page = this.dataset.page || this.getAttribute("data-page");
     if (author && name && page) {
-      return `/v2/reader/${author}/${name}/${page}`;
+      return `/v2/work/${author}/${name}/${page}`;
     }
     return typeof window !== "undefined" && window.location
       ? window.location.pathname.replace(/\/$/, "")
@@ -1291,7 +1291,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           : "http://localhost";
       const u = new URL(pageUrl, origin);
       const parts = u.pathname.split("/").filter(Boolean);
-      if (parts.length >= 4 && parts[0] === "v2" && parts[1] === "reader") {
+      if (parts.length >= 4 && parts[0] === "v2" && parts[1] === "work") {
         const author = parts[2];
         const name = parts[3];
         const pageId = parts.slice(4).join(".") || this.dataset.page || "1";
@@ -1320,7 +1320,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     try {
       let cleanUrl = pageUrl.split("?")[0].split("#")[0].replace(/\/$/, "");
       const parts = cleanUrl.split("/").filter(Boolean);
-      if (parts.length === 3 && parts[0] === "v2" && parts[1] === "reader") {
+      if (parts.length === 3 && parts[0] === "v2" && parts[1] === "work") {
         cleanUrl = `${cleanUrl}/${this.dataset.page || "1"}`;
       }
       const res = await fetch(withBuildVersion(`${cleanUrl}/translation`), {

@@ -121,7 +121,7 @@ describe("corpus page", () => {
     );
     expect(heading?.textContent?.trim()).toBe("De Bello Gallico 1.1 [Caesar]");
     expect(heading?.getAttribute("href")).toMatch(
-      /^\/v2\/reader\/caesar\/de_bello_gallico\?matchText=/
+      /^\/v2\/work\/caesar\/de_bello_gallico\?matchText=/
     );
     expect(text(doc, "mark.corpus-match")).toBe("omnis");
     expect(text(doc, ".corpus-snippet")).toBe(

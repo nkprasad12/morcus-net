@@ -19,7 +19,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const V2_SCRIPTS = /\/v2\/assets\/[^?]*\.js(\?|$)/;
-const READER = "/v2/reader/caesar/de_bello_gallico/1.1";
+const READER = "/v2/work/caesar/de_bello_gallico/1.1";
 
 /**
  * Holds every V2 asset script until the returned function is called, then

@@ -223,7 +223,7 @@ async function route(
   }
   // As `reader_routes.server.ts` serves them.
   const translation =
-    /^\/v2\/reader\/([^/]+)\/([^/]+)\/([^/]+)\/translation$/.exec(url.pathname);
+    /^\/v2\/work\/([^/]+)\/([^/]+)\/([^/]+)\/translation$/.exec(url.pathname);
   if (translation) {
     const [, author, name, page] = translation.map(decodeURIComponent);
     const work = await findReaderWork(author, name);
@@ -232,7 +232,7 @@ async function route(
       ? { status: 404, body: "Translation not found" }
       : { status: 200, body, isHtml: true };
   }
-  const reader = /^\/v2\/reader\/([^/]+)\/([^/]+)(?:\/([^/]+))?$/.exec(
+  const reader = /^\/v2\/work\/([^/]+)\/([^/]+)(?:\/([^/]+))?$/.exec(
     url.pathname
   );
   if (reader && isPartial(url, init)) {

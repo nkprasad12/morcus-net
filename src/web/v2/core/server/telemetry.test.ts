@@ -66,7 +66,7 @@ function makeApp(
   });
   sub.get("/moved", (_req, res) => res.redirect(302, "/v2/dicts"));
   sub.get(
-    "/reader/:author/:name/:page?",
+    "/work/:author/:name/:page?",
     asyncHandler(async () => {
       throw new Error("boom");
     })
@@ -248,20 +248,20 @@ describe("telemetryMiddleware", () => {
 
   test("logs a forwarded error as 500 with the name intact", async () => {
     const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    const res = await request(app).get("/v2/reader/caesar/gallic/1.1?q=x");
+    const res = await request(app).get("/v2/work/caesar/gallic/1.1?q=x");
     await settle();
 
     expect(res.status).toBe(500);
     expect(errorSpy).toHaveBeenCalledWith(
-      "[v2] GET /v2/reader/caesar/gallic/1.1?q=x",
+      "[v2] GET /v2/work/caesar/gallic/1.1?q=x",
       expect.any(Error)
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0].name).toBe("/reader/:author/:name/:page?");
+    expect(rows[0].name).toBe("/work/:author/:name/:page?");
     expect(rows[0].status).toBe(500);
     expect(rows[0].params).toEqual({ q: "x" });
     expect(rows[0].extras).toMatchObject({
-      path: "/v2/reader/caesar/gallic/1.1",
+      path: "/v2/work/caesar/gallic/1.1",
     });
     expect(typeof rows[0].extras?.error).toBe("number");
     errorSpy.mockRestore();

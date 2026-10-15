@@ -19,9 +19,9 @@
 
 import { test, expect, type Page } from "@playwright/test";
 
-const START = "/v2/reader/caesar/de_bello_gallico/1.1";
-const NEXT = /\/v2\/reader\/caesar\/de_bello_gallico\/1\.2$/;
-const PREV = /\/v2\/reader\/caesar\/de_bello_gallico\/1\.1$/;
+const START = "/v2/work/caesar/de_bello_gallico/1.1";
+const NEXT = /\/v2\/work\/caesar\/de_bello_gallico\/1\.2$/;
+const PREV = /\/v2\/work\/caesar\/de_bello_gallico\/1\.1$/;
 
 type Swipe = (dx: number) => Promise<void>;
 
@@ -111,7 +111,7 @@ test.describe("UI V2 reader swipe navigation (touch)", () => {
     const swipe = await openReader(page);
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));
-    await page.route("**/v2/reader/**", async (route) => {
+    await page.route("**/v2/work/**", async (route) => {
       if (route.request().headers()["x-requested-with"] === "fetch") {
         await gate;
       }

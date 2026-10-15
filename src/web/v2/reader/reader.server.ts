@@ -689,7 +689,7 @@ export async function renderReaderPartialHtml(
   );
 }
 
-/** The work at `/v2/reader/:author/:name`, or null if there is none. */
+/** The work at `/v2/work/:author/:name`, or null if there is none. */
 export async function findReaderWork(
   author: string,
   name: string

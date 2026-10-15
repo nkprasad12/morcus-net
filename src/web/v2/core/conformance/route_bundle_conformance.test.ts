@@ -559,8 +559,8 @@ describe("Route-to-Bundle Conformance Harness", () => {
         fullHtml: await renderLibraryPageHtml(),
       },
       {
-        name: "/v2/reader/caesar/de_bello_gallico (single + page-turn slot partials)",
-        url: "/v2/reader/caesar/de_bello_gallico?q=Gallia",
+        name: "/v2/work/caesar/de_bello_gallico (single + page-turn slot partials)",
+        url: "/v2/work/caesar/de_bello_gallico?q=Gallia",
         fullHtml: await renderReaderPageHtml({
           workId: "caesar_de_bello_gallico",
           query: "Gallia",
@@ -577,8 +577,8 @@ describe("Route-to-Bundle Conformance Harness", () => {
         expectDictPrefetch: true,
       },
       {
-        name: "/v2/reader/unknown (404 work not found)",
-        url: "/v2/reader/unknown_work",
+        name: "/v2/work/unknown (404 work not found)",
+        url: "/v2/work/unknown_work",
         fullHtml: renderNotFoundPageHtml({ workSlug: "unknown_work" }),
       },
       {

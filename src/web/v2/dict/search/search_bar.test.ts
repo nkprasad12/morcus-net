@@ -26,11 +26,11 @@ describe("renderDictSearchBar", () => {
   test("honors a custom action and placeholder", () => {
     const html = renderDictSearchBar({
       query: "Caesar",
-      action: "/v2/reader",
+      action: "/v2/work",
       placeholder: "Lookup word in text...",
     });
 
-    expect(html).toContain('action="/v2/reader"');
+    expect(html).toContain('action="/v2/work"');
     expect(html).toContain('placeholder="Lookup word in text..."');
     expect(html).toContain('value="Caesar"');
     expect(html).toContain("<morcus-dict-settings>");

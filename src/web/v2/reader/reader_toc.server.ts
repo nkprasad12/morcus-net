@@ -26,7 +26,7 @@ export function buildReaderPageUrl(
   if (options.matchText) params.set("matchText", options.matchText);
   const qStr = params.toString() ? `?${params.toString()}` : "";
   const pageId = Array.isArray(page.id) ? citationToString(page.id) : page.id;
-  return `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}`;
+  return `/v2/work/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}`;
 }
 
 export interface RenderTocItemsOptions {
@@ -152,7 +152,7 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
   const pages = work.pages ?? [];
   const activePage = pages[activePageIndex] ?? pages[0];
   const exampleId = activePage ? normalizeId(activePage.id) : "1.1";
-  const formAction = `/v2/reader/${he.escape(work.urlAuthor)}/${he.escape(
+  const formAction = `/v2/work/${he.escape(work.urlAuthor)}/${he.escape(
     work.urlName
   )}`;
   const hiddenQueryInput = query

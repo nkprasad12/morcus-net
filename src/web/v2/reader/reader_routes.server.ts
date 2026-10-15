@@ -35,7 +35,7 @@ function redirectReaderJump(
   const hash = jump && jump !== pageId ? `#sec-${jump}` : "";
   res.redirect(
     302,
-    `/v2/reader/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}${hash}`
+    `/v2/work/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}${hash}`
   );
 }
 
@@ -84,8 +84,8 @@ export function createReaderRoutes(): Router {
   const { getAsync } = createAsyncRegistrars(router);
 
   // TODO(reader-nojs): Zero-JS translation baseline support.
-  // Lazy-loading translation partial endpoint: /v2/reader/:author/:name/:page/translation
-  getAsync("/reader/:author/:name/:page/translation", async (req, res) => {
+  // Lazy-loading translation partial endpoint: /v2/work/:author/:name/:page/translation
+  getAsync("/work/:author/:name/:page/translation", async (req, res) => {
     const work = await findReaderWork(req.params.author, req.params.name);
     requestTimer(res).mark("lookupComplete");
     const body = work
@@ -100,8 +100,8 @@ export function createReaderRoutes(): Router {
     res.send(body);
   });
 
-  // Human-readable reader route: /v2/reader/:author/:name/:page?
-  getAsync("/reader/:author/:name/:page?", async (req, res) => {
+  // Human-readable reader route: /v2/work/:author/:name/:page?
+  getAsync("/work/:author/:name/:page?", async (req, res) => {
     const author = req.params.author;
     const name = req.params.name;
     const pageId = req.params.page;
@@ -145,7 +145,7 @@ export function createReaderRoutes(): Router {
   });
 
   // General reader route: handles jumps, legacy query parameters, and default work
-  getAsync("/reader", async (req, res) => {
+  getAsync("/work", async (req, res) => {
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const matchText =
       typeof req.query.matchText === "string" ? req.query.matchText.trim() : "";

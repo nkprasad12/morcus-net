@@ -51,7 +51,7 @@ function createFixture(
   const panel = renderReaderDictPanelHtml({
     query: "",
     dictIframeSrc: "/v2/dicts?embedded=1",
-    closeHref: "/v2/reader/caesar/de_bello_gallico",
+    closeHref: "/v2/work/caesar/de_bello_gallico",
     companion: companion && {
       notesHtml: "",
       aboutHtml: "",

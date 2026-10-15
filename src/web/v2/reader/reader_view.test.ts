@@ -39,7 +39,7 @@ function dictPanelHtml(
   return renderReaderDictPanelHtml({
     query: "",
     dictIframeSrc: "/v2/dicts?embedded=1",
-    closeHref: "/v2/reader",
+    closeHref: "/v2/work",
     companion: {
       notesHtml: options.notesHtml ?? "",
       aboutHtml: options.aboutHtml ?? "",
@@ -698,7 +698,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     });
 
     test("restores the highlight on every part from ?q=", () => {
-      history.replaceState(null, "", "/v2/reader?q=impetu");
+      history.replaceState(null, "", "/v2/work?q=impetu");
       const el = createReaderView(PASSAGE);
       const [first, second] = wordsOf(el);
 
@@ -723,7 +723,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     test("marks every part of a matchText word", () => {
       // Words [0, 1): `impetu` only.
-      history.replaceState(null, "", "/v2/reader?matchText=1.1~0~1");
+      history.replaceState(null, "", "/v2/work?matchText=1.1~0~1");
       const el = createReaderView(PASSAGE);
       const [first, second, next] = wordsOf(el);
 
@@ -2135,11 +2135,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     const workId = options.workId ?? `${author}_${name.replace(/-/g, "_")}`;
     const hasTranslation = options.hasTranslation ?? false;
 
-    window.history.replaceState(
-      {},
-      "",
-      `/v2/reader/${author}/${name}/${pageId}`
-    );
+    window.history.replaceState({}, "", `/v2/work/${author}/${name}/${pageId}`);
 
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     el.dataset.work = workId;
@@ -2150,7 +2146,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     el.dataset.hasMacra = "true";
 
     const prevUrl = options.prevPageUrl;
-    const nextUrl = options.nextPageUrl ?? `/v2/reader/${author}/${name}/2`;
+    const nextUrl = options.nextPageUrl ?? `/v2/work/${author}/${name}/2`;
 
     el.innerHTML = `
       <div class="reader-sticky-bar" id="reader-sticky-bar">
@@ -2176,10 +2172,10 @@ describe("MorcusReaderView client-side partial page navigation", () => {
           <details open>
             <summary>Liber I</summary>
             <ul class="reader-toc-list">
-              <li><a href="/v2/reader/${author}/${name}/1" class="reader-toc-item ${
+              <li><a href="/v2/work/${author}/${name}/1" class="reader-toc-item ${
       pageId === "1" ? "active" : ""
     }" data-page-id="1">Caput 1</a></li>
-              <li><a href="/v2/reader/${author}/${name}/2" class="reader-toc-item ${
+              <li><a href="/v2/work/${author}/${name}/2" class="reader-toc-item ${
       pageId === "2" ? "active" : ""
     }" data-page-id="2">Caput 2</a></li>
             </ul>
@@ -2240,8 +2236,8 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       </article>
       <footer class="reader-passage-footer">
         <nav class="reader-continuation-actions">
-          <a href="/v2/reader/caesar/de-bello-gallico/1" class="reader-continuation-card prev-card">Previous</a>
-          <a href="/v2/reader/caesar/de-bello-gallico/3" class="reader-continuation-card next-card">Next</a>
+          <a href="/v2/work/caesar/de-bello-gallico/1" class="reader-continuation-card prev-card">Previous</a>
+          <a href="/v2/work/caesar/de-bello-gallico/3" class="reader-continuation-card next-card">Next</a>
         </nav>
       </footer>
     </div>
@@ -2249,8 +2245,8 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
   const page2Response = pageResponse(page2CardHtml, {
     pageId: "2",
-    prevUrl: "/v2/reader/caesar/de-bello-gallico/1",
-    nextUrl: "/v2/reader/caesar/de-bello-gallico/3",
+    prevUrl: "/v2/work/caesar/de-bello-gallico/1",
+    nextUrl: "/v2/work/caesar/de-bello-gallico/3",
   });
 
   test("swapPage replaces the page slots in one request without touching dictionary iframe", async () => {
@@ -2262,11 +2258,11 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       text: async () => page2Response,
     });
 
-    const success = await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    const success = await el.swapPage("/v2/work/caesar/de-bello-gallico/2");
     expect(success).toBe(true);
 
     expect(window.fetch).toHaveBeenCalledWith(
-      "http://localhost/v2/reader/caesar/de-bello-gallico/2",
+      "http://localhost/v2/work/caesar/de-bello-gallico/2",
       expect.objectContaining({
         headers: { "X-Requested-With": "fetch" },
         signal: expect.any(AbortSignal),
@@ -2287,11 +2283,11 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     const pagerPrev = el.querySelector<HTMLAnchorElement>("#pager-prev")!;
     const pagerNext = el.querySelector<HTMLAnchorElement>("#pager-next")!;
     expect(pagerPrev.getAttribute("href")).toBe(
-      "/v2/reader/caesar/de-bello-gallico/1"
+      "/v2/work/caesar/de-bello-gallico/1"
     );
     expect(pagerPrev.classList.contains("disabled")).toBe(false);
     expect(pagerNext.getAttribute("href")).toBe(
-      "/v2/reader/caesar/de-bello-gallico/3"
+      "/v2/work/caesar/de-bello-gallico/3"
     );
     expect(pagerNext.classList.contains("disabled")).toBe(false);
 
@@ -2391,7 +2387,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       text: async () => page2Response,
     });
 
-    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    await el.swapPage("/v2/work/caesar/de-bello-gallico/2");
     // Drawer should be minimized on page turn
     expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
   });
@@ -2434,12 +2430,12 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       await flush();
 
       expect(window.fetch).toHaveBeenCalledWith(
-        "http://localhost/v2/reader/caesar/de-bello-gallico/2",
+        "http://localhost/v2/work/caesar/de-bello-gallico/2",
         expect.anything()
       );
       expect(el.dataset.page).toBe("2");
       expect(window.location.pathname).toBe(
-        "/v2/reader/caesar/de-bello-gallico/2"
+        "/v2/work/caesar/de-bello-gallico/2"
       );
     });
 
@@ -2467,7 +2463,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
       expect(tocDrawer.hasAttribute("hidden")).toBe(true);
       expect(window.fetch).toHaveBeenCalledWith(
-        "http://localhost/v2/reader/caesar/de-bello-gallico/2?q=Gallia",
+        "http://localhost/v2/work/caesar/de-bello-gallico/2?q=Gallia",
         expect.anything()
       );
     });
@@ -2519,14 +2515,14 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     panelController?.setTab("translation");
     expect(panelController?.activeTab).toBe("translation");
 
-    await el.swapPage("/v2/reader/sallust/catalina1/2");
+    await el.swapPage("/v2/work/sallust/catalina1/2");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("/v2/reader/sallust/catalina1/2"),
+      expect.stringContaining("/v2/work/sallust/catalina1/2"),
       expect.anything()
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      "/v2/reader/sallust/catalina1/2/translation",
+      "/v2/work/sallust/catalina1/2/translation",
       expect.anything()
     );
 
@@ -2538,15 +2534,15 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     expect(panelController?.activeTab).toBe("dict");
 
     fetchMock.mockClear();
-    await el.swapPage("/v2/reader/sallust/catalina1/1");
+    await el.swapPage("/v2/work/sallust/catalina1/1");
 
     // Only page partial is fetched, not translation
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining("/v2/reader/sallust/catalina1/1"),
+      expect.stringContaining("/v2/work/sallust/catalina1/1"),
       expect.anything()
     );
     expect(fetchMock).not.toHaveBeenCalledWith(
-      "/v2/reader/sallust/catalina1/1/translation",
+      "/v2/work/sallust/catalina1/1/translation",
       expect.anything()
     );
   });
@@ -2572,17 +2568,17 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       window.fetch = fetchMock;
       el.getPanelController()?.setTab("translation");
 
-      await el.swapPage("/v2/reader/sallust/catalina1/2");
+      await el.swapPage("/v2/work/sallust/catalina1/2");
 
       expect(fetchMock).toHaveBeenCalledWith(
-        "/v2/reader/sallust/catalina1/2?v=v1",
+        "/v2/work/sallust/catalina1/2?v=v1",
         expect.anything()
       );
       expect(fetchMock).toHaveBeenCalledWith(
-        "/v2/reader/sallust/catalina1/2/translation?v=v1",
+        "/v2/work/sallust/catalina1/2/translation?v=v1",
         expect.anything()
       );
-      expect(window.location.pathname).toBe("/v2/reader/sallust/catalina1/2");
+      expect(window.location.pathname).toBe("/v2/work/sallust/catalina1/2");
       expect(window.location.search).not.toContain("v=");
     } finally {
       delete document.documentElement.dataset.version;
@@ -2664,7 +2660,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
         </article>
         <footer class="reader-passage-footer">
           <nav class="reader-continuation-actions">
-            <a href="/v2/reader/caesar/de-bello-gallico/1" class="reader-continuation-card prev-card">Previous</a>
+            <a href="/v2/work/caesar/de-bello-gallico/1" class="reader-continuation-card prev-card">Previous</a>
           </nav>
         </footer>
       </div>
@@ -2681,13 +2677,13 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       text: async () =>
         pageResponse(pageWithNotesHtml, {
           pageId: "2",
-          prevUrl: "/v2/reader/caesar/de-bello-gallico/1",
+          prevUrl: "/v2/work/caesar/de-bello-gallico/1",
           notesHtml,
         }),
     });
     const notesView = el.querySelector("#panel-view-notes");
 
-    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    await el.swapPage("/v2/work/caesar/de-bello-gallico/2");
 
     expect(panelController.hasNotes).toBe(true);
     expect(panelController.noteCount).toBe(1);
@@ -2706,7 +2702,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       ok: true,
       text: async () => page2Response,
     });
-    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    await el.swapPage("/v2/work/caesar/de-bello-gallico/2");
     expect(el.dataset.page).toBe("2");
 
     // Mock page 1 HTML for popstate return
@@ -2725,7 +2721,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       text: async () =>
         pageResponse(page1CardHtml, {
           pageId: "1",
-          nextUrl: "/v2/reader/caesar/de-bello-gallico/2",
+          nextUrl: "/v2/work/caesar/de-bello-gallico/2",
         }),
     });
 
@@ -2733,7 +2729,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     window.history.replaceState(
       { scrollY: 180 },
       "",
-      "/v2/reader/caesar/de-bello-gallico/1"
+      "/v2/work/caesar/de-bello-gallico/1"
     );
     window.dispatchEvent(
       new PopStateEvent("popstate", { state: { scrollY: 180 } })
@@ -2742,7 +2738,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     await new Promise((r) => setTimeout(r, 20));
 
     expect(window.fetch).toHaveBeenCalledWith(
-      "http://localhost/v2/reader/caesar/de-bello-gallico/1",
+      "http://localhost/v2/work/caesar/de-bello-gallico/1",
       expect.any(Object)
     );
     expect(el.dataset.page).toBe("1");
@@ -2767,11 +2763,11 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       status: 500,
     });
 
-    const success = await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    const success = await el.swapPage("/v2/work/caesar/de-bello-gallico/2");
     expect(success).toBe(false);
 
     expect(navigate).toHaveBeenCalledWith(
-      "http://localhost/v2/reader/caesar/de-bello-gallico/2",
+      "http://localhost/v2/work/caesar/de-bello-gallico/2",
       { replace: false }
     );
     expect(pushStateSpy).not.toHaveBeenCalled();
@@ -2794,13 +2790,13 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       .mockImplementation(() => {});
     window.fetch = jest.fn().mockRejectedValue(new TypeError("offline"));
 
-    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2", {
+    await el.swapPage("/v2/work/caesar/de-bello-gallico/2", {
       push: false,
       isPopState: true,
     });
 
     expect(navigate).toHaveBeenCalledWith(
-      "http://localhost/v2/reader/caesar/de-bello-gallico/2",
+      "http://localhost/v2/work/caesar/de-bello-gallico/2",
       { replace: true }
     );
     consoleSpy.mockRestore();
@@ -2815,7 +2811,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       })
     );
 
-    const turn = el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    const turn = el.swapPage("/v2/work/caesar/de-bello-gallico/2");
     const busy = Array.from(el.querySelectorAll("[aria-busy='true']")).map(
       (e) => e.getAttribute("data-slot")
     );
@@ -2837,7 +2833,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     const oldNext = el.querySelector<HTMLAnchorElement>("#pager-next")!;
     oldNext.focus();
 
-    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    await el.swapPage("/v2/work/caesar/de-bello-gallico/2");
 
     const newNext = el.querySelector<HTMLAnchorElement>("#pager-next")!;
     expect(newNext).not.toBe(oldNext);
@@ -2852,7 +2848,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     });
     el.querySelector<HTMLAnchorElement>(".next-card")!.focus();
 
-    await el.swapPage("/v2/reader/caesar/de-bello-gallico/2");
+    await el.swapPage("/v2/work/caesar/de-bello-gallico/2");
 
     const card = el.querySelector<HTMLElement>(".reader-text-card")!;
     expect(card.querySelector(".reader-passage-heading")?.textContent).toBe(
@@ -2872,7 +2868,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       });
 
       const res1 = await el.fetchTranslation(
-        "/v2/reader/caesar/de-bello-gallico/1",
+        "/v2/work/caesar/de-bello-gallico/1",
         controller.signal
       );
       expect(res1).toBe("<p>Cached Translation</p>");
@@ -2880,7 +2876,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
       // Second call hits cache without calling fetch
       const res2 = await el.fetchTranslation(
-        "/v2/reader/caesar/de-bello-gallico/1",
+        "/v2/work/caesar/de-bello-gallico/1",
         controller.signal
       );
       expect(res2).toBe("<p>Cached Translation</p>");
@@ -2897,7 +2893,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       });
 
       await el.fetchTranslation(
-        "/v2/reader/caesar/de-bello-gallico/1",
+        "/v2/work/caesar/de-bello-gallico/1",
         liveCtrl.signal
       );
 
@@ -2906,7 +2902,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       abortedCtrl.abort();
 
       const res1 = await el.fetchTranslation(
-        "/v2/reader/caesar/de-bello-gallico/1",
+        "/v2/work/caesar/de-bello-gallico/1",
         abortedCtrl.signal
       );
       expect(res1).toBeNull();
@@ -2914,7 +2910,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       // 2. Signal aborted synchronously after fetchTranslation is called (mid-microtask)
       const midCtrl = new AbortController();
       const pending = el.fetchTranslation(
-        "/v2/reader/caesar/de-bello-gallico/1",
+        "/v2/work/caesar/de-bello-gallico/1",
         midCtrl.signal
       );
       midCtrl.abort();
@@ -2932,7 +2928,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       abortedCtrl.abort();
 
       const res = await el.fetchTranslation(
-        "/v2/reader/caesar/de-bello-gallico/99",
+        "/v2/work/caesar/de-bello-gallico/99",
         abortedCtrl.signal
       );
       expect(res).toBeNull();
@@ -3243,11 +3239,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = "";
-    window.history.replaceState(
-      {},
-      "",
-      "/v2/reader/caesar/de_bello_gallico/1.1"
-    );
+    window.history.replaceState({}, "", "/v2/work/caesar/de_bello_gallico/1.1");
   });
 
   afterEach(() => {
@@ -3259,7 +3251,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     window.history.replaceState(
       {},
       "",
-      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.1~1~3__1.1.1~4~5__1.1.2~0~2"
+      "/v2/work/caesar/de_bello_gallico/1.1?matchText=1.1.1~1~3__1.1.1~4~5__1.1.2~0~2"
     );
 
     const passageHtml = `
@@ -3303,7 +3295,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     window.history.replaceState(
       {},
       "",
-      "/v2/reader/vergil/aeneid/1?matchText=1.8~0~2"
+      "/v2/work/vergil/aeneid/1?matchText=1.8~0~2"
     );
 
     const passageHtml = `
@@ -3346,7 +3338,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     window.history.replaceState(
       {},
       "",
-      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.1~2~4"
+      "/v2/work/caesar/de_bello_gallico/1.1?matchText=1.1.1~2~4"
     );
 
     const scrollSpy = jest.fn();
@@ -3389,7 +3381,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     window.history.replaceState(
       {},
       "",
-      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.2~1~2#sec-1.1.2"
+      "/v2/work/caesar/de_bello_gallico/1.1?matchText=1.1.2~1~2#sec-1.1.2"
     );
     createReaderView(passageHtml);
     expect(scrollSpy).toHaveBeenCalledTimes(1);
@@ -3400,7 +3392,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     window.history.replaceState(
       {},
       "",
-      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.2~1~2#sec-1.1.1"
+      "/v2/work/caesar/de_bello_gallico/1.1?matchText=1.1.2~1~2#sec-1.1.1"
     );
     createReaderView(passageHtml);
     expect(scrollSpy).not.toHaveBeenCalled();
@@ -3410,7 +3402,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     window.history.replaceState(
       {},
       "",
-      "/v2/reader/caesar/de_bello_gallico/1.1?matchText=1.1.1~2~4"
+      "/v2/work/caesar/de_bello_gallico/1.1?matchText=1.1.1~2~4"
     );
     const scrollSpy = jest.fn();
     HTMLElement.prototype.scrollIntoView = scrollSpy;

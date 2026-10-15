@@ -125,7 +125,7 @@ Verifies pixel-perfect UI fidelity across 19 view/mode scenarios and 4 form-fact
 ```
 
 > [!NOTE]
-> The suite currently holds 80 baselines (19 views × 4 projects). Note that `v2-reader-passage` points at `/v2/reader`, which is the landing view and contains no passage text; real passage rendering is exercised by `v2-reader-parallel` and `v2-reader-notes`.
+> The suite currently holds 80 baselines (19 views × 4 projects). Note that `v2-reader-passage` points at `/v2/work`, which is the landing view and contains no passage text; real passage rendering is exercised by `v2-reader-parallel` and `v2-reader-notes`.
 
 #### D. Visual Diff Inspector
 
