@@ -1,13 +1,22 @@
 /**
  * Lemma shards for the autocomplete (DESIGN §4.4, §7.2).
  *
- * The corpus lemma list (~31k entries) is split by first letter, so the
- * browser fetches one shard (a few kB gzipped) the first time the user types
- * `@lemma:<letter>`, rather than the whole list up front.
+ * The corpus lemma list (~31k entries) is split by first letter and
+ * pre-compressed (`br -10` and `gzip -9`) into a small SQLite table at build
+ * time, so the browser fetches one shard (a few kB) the first time the user
+ * types `@lemma:<letter>`, and the server serves the pre-compressed bytes
+ * directly without parsing or re-compressing on the fly.
  */
 
-import { CORPUS_LEMMATA_LIST } from "@/common/library/corpus/corpus_common";
-import { readCorpusSuggestionList } from "@/web/v2/corpus/corpus_query.server";
+import path from "path";
+import {
+  CORPUS_DIR,
+  CORPUS_LEMMATA_DB,
+} from "@/common/library/corpus/corpus_common";
+import {
+  openPrecompressedJsonDb,
+  type PrecompressedJsonStore,
+} from "@/web/v2/core/server/precompressed_json.server";
 
 /** Lowercased first letter → the JSON array of the lemmata starting with it. */
 export type LemmaShards = ReadonlyMap<string, string>;
@@ -34,12 +43,22 @@ export function buildLemmaShards(lemmata: readonly string[]): LemmaShards {
   );
 }
 
-let cachedLemmata: Promise<readonly string[] | undefined> | null = null;
+let cachedLemmaStore: PrecompressedJsonStore | undefined | null = null;
 
-/** The corpus lemma list, or `undefined` if the corpus isn't built. */
-export function loadCorpusLemmata(): Promise<readonly string[] | undefined> {
-  if (cachedLemmata === null) {
-    cachedLemmata = readCorpusSuggestionList(CORPUS_LEMMATA_LIST);
+/**
+ * Opens the pre-compressed corpus lemma shards SQLite table, or returns
+ * `undefined` if the corpus isn't built.
+ */
+export function openCorpusLemmaStore(
+  corpusDir: string = CORPUS_DIR
+): PrecompressedJsonStore | undefined {
+  if (corpusDir !== CORPUS_DIR) {
+    return openPrecompressedJsonDb(path.join(corpusDir, CORPUS_LEMMATA_DB));
   }
-  return cachedLemmata;
+  if (cachedLemmaStore === null) {
+    cachedLemmaStore = openPrecompressedJsonDb(
+      path.join(CORPUS_DIR, CORPUS_LEMMATA_DB)
+    );
+  }
+  return cachedLemmaStore;
 }

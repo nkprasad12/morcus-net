@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { removeDiacritics } from "@/common/text_cleaning";
 import {
   resolveActiveDicts,
   resolveDictParams,
@@ -15,6 +16,7 @@ import {
   getV2DictChunks,
   cleanCompletionQuery,
 } from "@/web/v2/dict/search/dict_completions.server";
+import { hasGreek } from "@/web/v2/dict/search/dict_greek.common";
 import type { ReportApiRequest } from "@/web/utils/github";
 import { GitHub } from "@/web/utils/github";
 import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
@@ -22,13 +24,21 @@ import {
   getCommitId,
   setVersionedCacheControl,
 } from "@/web/v2/core/server/build_version.server";
+import {
+  precompressJson,
+  sendPrecompressedJson,
+  type PrecompressedJsonStore,
+} from "@/web/v2/core/server/precompressed_json.server";
 import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
+const EMPTY_JSON_OBJECT_ROW = precompressJson("{}");
 
 export interface ApiRoutesOptions {
   reportHandler?: (request: ReportApiRequest) => Promise<void>;
   githubToken?: string;
+  /** Pre-compressed 2-letter dictionary completion chunks (`build/dbs/completions.db`). */
+  completions?: PrecompressedJsonStore;
 }
 
 export function createApiRoutes(
@@ -46,13 +56,12 @@ export function createApiRoutes(
     const effectiveQuery = rawPrefix || rawQuery;
     const { query, isSuffix } = cleanCompletionQuery(effectiveQuery);
 
-    const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
-    const langParam = toStringOrArray(req.query.lang);
-    const limit = readLimit(req);
-
     // Suffix searches (-arum, -ibus): dynamic clustered completions. These may
     // fall back to the dictionary cookie, so they are never versioned.
     if (isSuffix) {
+      const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
+      const langParam = toStringOrArray(req.query.lang);
+      const limit = readLimit(req);
       const { dictKeys } = resolveActiveDicts({
         keysFromQuery,
         cookieHeader: req.headers.cookie,
@@ -74,22 +83,26 @@ export function createApiRoutes(
       return;
     }
 
-    // Prefix searches: a dictionary-keyed chunk. The client fetches it with
-    // `?v=`, so it is cached `public` for the rest of the build. That is only
-    // safe because it depends on nothing but the URL: no cookies here. Without
-    // `d`/`dict`, the chunk covers every dictionary.
-    let chunkDicts: string[] | undefined = undefined;
-    if (keysFromQuery !== null) {
-      const { dictKeys } = resolveActiveDicts({
-        keysFromQuery,
-        lang: langParam,
-      });
-      chunkDicts = dictKeys.length > 0 ? dictKeys : ALL_LATIN_DICTS;
+    // Prefix searches: a dictionary-keyed chunk covering every dictionary. The
+    // client fetches 2-letter prefixes with `?v=`, cached `public` for the rest
+    // of the build, and filters by active dictionaries on the client. Any
+    // `d`/`dict`/`lang` parameters or cookies are ignored here.
+    const normalizedPrefix = removeDiacritics(query).toLowerCase();
+    if (
+      options?.completions !== undefined &&
+      normalizedPrefix.length === 2 &&
+      !hasGreek(query)
+    ) {
+      setVersionedCacheControl(req, res);
+      const row =
+        options.completions.get(normalizedPrefix) ?? EMPTY_JSON_OBJECT_ROW;
+      sendPrecompressedJson(req, res, row);
+      return;
     }
+
     try {
       const chunks = await getV2DictChunks(fusedDict, {
         rawPrefix: query,
-        activeDictKeys: chunkDicts,
       });
       setVersionedCacheControl(req, res);
       res.json(chunks);

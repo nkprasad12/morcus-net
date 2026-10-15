@@ -11,6 +11,7 @@ import {
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
 import { DEV_SERVER_ENV } from "@/web/v2/core/server/build_version.server";
+import { buildCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
 import { ArgumentParser, type ArgumentOptions } from "argparse";
 import { ChildProcess, spawn } from "child_process";
 
@@ -603,6 +604,22 @@ function artifactConfig(args: any): StepConfig[] {
       operation: () => shellStep(command.join(" "), childEnv),
       label: "Processing Gaffiot",
       priority: 2,
+    });
+  }
+  if (
+    args.build_sh === true ||
+    args.build_ra === true ||
+    args.build_georges === true ||
+    args.build_pozo === true ||
+    args.build_gesner === true ||
+    args.build_forcellini === true ||
+    args.build_ls === true ||
+    args.build_gaffiot === true
+  ) {
+    setupSteps.push({
+      operation: () => buildCompletionsDb(),
+      label: "Building dictionary completions DB",
+      priority: 3,
     });
   }
   if (args.build_latin_library === true) {

@@ -2,9 +2,8 @@ import type { ServerMessage } from "@/web/utils/rpc/rpc";
 
 /**
  * Wraps `t` in the `ServerMessage` envelope, stamped with this build's commit.
- * Build steps still write library works and corpus suggestion lists in this
- * envelope (`process_library.ts`, `corpus_serialization.ts`), and UI V2 reads
- * them back with `ServerMessage.validator`.
+ * Build steps still write library works in this envelope (`process_library.ts`),
+ * and UI V2 reads them back with `ServerMessage.validator`.
  */
 export function serverMessage<T>(t: T): ServerMessage<T> {
   return {

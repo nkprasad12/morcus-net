@@ -39,7 +39,7 @@ export const CORPUS_INFLECTIONS_OFFSETS =
   "latin_corpus_inflections_offsets.bin";
 export const CORPUS_SUGGESTION_PREFIX = "latin_corpus_suggestions";
 export const CORPUS_AUTHORS_LIST = `${CORPUS_SUGGESTION_PREFIX}_authors.json`;
-export const CORPUS_LEMMATA_LIST = `${CORPUS_SUGGESTION_PREFIX}_lemmata.json`;
+export const CORPUS_LEMMATA_DB = `${CORPUS_SUGGESTION_PREFIX}_lemmata.db`;
 
 // // // // // // // // // //
 // Corpus Result Types   //

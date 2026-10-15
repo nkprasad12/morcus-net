@@ -1,12 +1,17 @@
 import { Router } from "express";
 import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
 import { setVersionedCacheControl } from "@/web/v2/core/server/build_version.server";
+import {
+  createInMemoryPrecompressedStore,
+  precompressJson,
+  sendPrecompressedJson,
+  type PrecompressedJsonStore,
+} from "@/web/v2/core/server/precompressed_json.server";
 import { isPartialRequest } from "@/web/v2/core/server/request_params.server";
 import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 import {
   buildLemmaShards,
-  loadCorpusLemmata,
-  type LemmaShards,
+  openCorpusLemmaStore,
 } from "@/web/v2/corpus/corpus_lemmata.server";
 import {
   CorpusUnavailableError,
@@ -21,6 +26,8 @@ import {
   renderCorpusUnavailableHtml,
 } from "@/web/v2/corpus/corpus_view.server";
 
+const EMPTY_JSON_ARRAY_ROW = precompressJson("[]");
+
 export interface CorpusRoutesOptions {
   /** The Rust engine; without one, `/v2/corpus` answers 503. */
   readonly engine?: CorpusEngine;
@@ -34,16 +41,23 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
   const router = Router();
   const { getAsync } = createAsyncRegistrars(router);
   const loadAuthors = options.loadAuthors ?? loadCorpusAuthors;
-  const loadLemmata = options.loadLemmata ?? loadCorpusLemmata;
 
-  let lemmaShards: Promise<LemmaShards | undefined> | null = null;
-  const loadLemmaShards = () => {
-    if (lemmaShards === null) {
-      lemmaShards = loadLemmata().then((lemmata) =>
-        lemmata === undefined ? undefined : buildLemmaShards(lemmata)
-      );
+  let lemmaStore: Promise<PrecompressedJsonStore | undefined> | null = null;
+  const loadLemmaStore = (): Promise<PrecompressedJsonStore | undefined> => {
+    if (lemmaStore === null) {
+      if (options.loadLemmata !== undefined) {
+        lemmaStore = options
+          .loadLemmata()
+          .then((lemmata) =>
+            lemmata === undefined
+              ? undefined
+              : createInMemoryPrecompressedStore(buildLemmaShards(lemmata))
+          );
+      } else {
+        lemmaStore = Promise.resolve(openCorpusLemmaStore());
+      }
     }
-    return lemmaShards;
+    return lemmaStore;
   };
 
   getAsync("/corpus", async (req, res) => {
@@ -85,16 +99,17 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
       res.status(400).json({ error: "Expected a single letter." });
       return;
     }
-    const shards = await loadLemmaShards();
+    const store = await loadLemmaStore();
     requestTimer(res).mark("lookupComplete");
-    if (shards === undefined) {
+    if (store === undefined) {
       res.setHeader("Cache-Control", "no-store");
       res.status(503).json({ error: "Corpus lemmata unavailable." });
       return;
     }
     // Without the current version, the URL outlives a corpus rebuild.
     setVersionedCacheControl(req, res);
-    res.type("json").send(shards.get(letter.toLowerCase()) ?? "[]");
+    const row = store.get(letter.toLowerCase()) ?? EMPTY_JSON_ARRAY_ROW;
+    sendPrecompressedJson(req, res, row);
   });
 
   return router;

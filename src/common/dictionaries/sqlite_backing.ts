@@ -13,19 +13,25 @@ export function sqliteBacking(
   input: SqliteDb | string
 ): StoredDictBacking<"Sync"> {
   const db = typeof input === "string" ? ReadOnlyDb.getDatabase(input) : input;
+  const selectAllEntryNames = db.prepare(
+    `SELECT orth, cleanOrth FROM orths ORDER BY cleanOrth`
+  );
+  const selectByCleanName = db.prepare(
+    `SELECT id, orth, senseId FROM orths WHERE cleanOrth = ?`
+  );
+  const selectByPrefix = db.prepare(
+    `SELECT DISTINCT orth FROM orths WHERE cleanOrth GLOB ? ORDER BY cleanOrth`
+  );
+  const selectBySuffix = db.prepare(
+    `SELECT DISTINCT orth FROM orths WHERE reverseCleanOrth GLOB ?`
+  );
   return {
     allEntryNames: () =>
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      db
-        .prepare(`SELECT orth, cleanOrth FROM orths ORDER BY cleanOrth`)
-        .all() as EntryName[],
+      selectAllEntryNames.all() as EntryName[],
     matchesForCleanName: (cleanName: string) => {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const rawRows = db
-        .prepare(
-          `SELECT id, orth, senseId FROM orths WHERE cleanOrth = '${cleanName}'`
-        )
-        .all() as OrthsTableRow[];
+      const rawRows = selectByCleanName.all(cleanName) as OrthsTableRow[];
       return rawRows.map(({ id, orth, senseId }) => {
         const result: Omit<OrthsTableRow, "cleanOrth"> = { id, orth };
         if (senseId !== null) {
@@ -43,22 +49,13 @@ export function sqliteBacking(
         .all(ids) as { id: string; entry: string }[];
     },
     entryNamesByPrefix: (prefix: string) =>
-      db
-        .prepare(
-          `SELECT DISTINCT orth FROM orths WHERE cleanOrth GLOB '${prefix}*'`
-        )
-        .all()
+      selectByPrefix
+        .all(`${prefix}*`)
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         .map((row) => (row as { orth: string }).orth),
     entryNamesBySuffix: (suffix: string) =>
-      db
-        .prepare(
-          `SELECT DISTINCT orth FROM orths WHERE reverseCleanOrth GLOB '${suffix
-            .split("")
-            .reverse()
-            .join("")}*'`
-        )
-        .all()
+      selectBySuffix
+        .all(`${suffix.split("").reverse().join("")}*`)
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         .map((row) => (row as { orth: string }).orth),
     lowMemory: false,
@@ -111,7 +108,7 @@ export namespace SqliteDict {
             return rows;
           }),
           tableName: "orths",
-          indices: [["cleanOrth"]],
+          indices: [["cleanOrth"], ["reverseCleanOrth"]],
           optionalKeys: ["senseId"],
         },
       ],

@@ -74,40 +74,30 @@ export function loadCorpusAuthors(): Promise<readonly string[] | undefined> {
 
 /**
  * Reads one of the corpus suggestion lists in `CORPUS_DIR` (the authors or
- * the lemmata). Each is a gzipped V1 RPC envelope: `{"w":{"data":[...]}}`.
+ * the lemmata). Each is a gzipped JSON `string[]`.
  * Resolves `undefined`, with a warning, if the file is missing or malformed.
  */
 export async function readCorpusSuggestionList(
-  fileName: string
+  fileName: string,
+  corpusDir: string = CORPUS_DIR
 ): Promise<string[] | undefined> {
   try {
-    const buffer = await fs.promises.readFile(`${CORPUS_DIR}/${fileName}`);
+    const buffer = await fs.promises.readFile(`${corpusDir}/${fileName}`);
     const parsed: unknown = JSON.parse(
       zlib.gunzipSync(buffer).toString("utf8")
     );
-    const list = extractEnvelopeList(parsed);
-    if (list === undefined) {
-      console.warn(`Corpus list ${fileName} has an unexpected shape.`);
+    if (
+      Array.isArray(parsed) &&
+      parsed.every((a): a is string => typeof a === "string")
+    ) {
+      return parsed;
     }
-    return list;
+    console.warn(`Corpus list ${fileName} has an unexpected shape.`);
+    return undefined;
   } catch (err: unknown) {
     console.warn(`Corpus list ${fileName} unavailable:`, err);
     return undefined;
   }
-}
-
-function extractEnvelopeList(parsed: unknown): string[] | undefined {
-  if (typeof parsed !== "object" || parsed === null || !("w" in parsed)) {
-    return undefined;
-  }
-  const w: unknown = parsed.w;
-  if (typeof w !== "object" || w === null || !("data" in w)) {
-    return undefined;
-  }
-  const data: unknown = w.data;
-  return Array.isArray(data) && data.every((a) => typeof a === "string")
-    ? data.filter((a): a is string => typeof a === "string")
-    : undefined;
 }
 
 // // // // // // //

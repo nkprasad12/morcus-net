@@ -1,3 +1,7 @@
+import fs from "fs";
+import os from "os";
+import path from "path";
+import zlib from "zlib";
 import {
   CONTEXT_LEN,
   PAGE_SIZE,
@@ -9,6 +13,7 @@ import {
 import {
   CorpusUnavailableError,
   parseCorpusParams,
+  readCorpusSuggestionList,
   runCorpusSearch,
 } from "@/web/v2/corpus/corpus_query.server";
 import {
@@ -300,5 +305,55 @@ describe("runCorpusSearch", () => {
         CORPUS_TEST_AUTHORS
       )
     ).rejects.toThrow("unexpected result shape");
+  });
+});
+
+describe("readCorpusSuggestionList", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "corpus-list-test-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("reads a gzipped JSON string array", async () => {
+    const fileName = "list.json";
+    fs.writeFileSync(
+      path.join(tmpDir, fileName),
+      zlib.gzipSync(Buffer.from(JSON.stringify(["Caesar", "Ovid"]), "utf8"))
+    );
+
+    await expect(readCorpusSuggestionList(fileName, tmpDir)).resolves.toEqual([
+      "Caesar",
+      "Ovid",
+    ]);
+  });
+
+  test("rejects non-string-array payloads with a warning", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const fileName = "bad.json";
+    fs.writeFileSync(
+      path.join(tmpDir, fileName),
+      zlib.gzipSync(
+        Buffer.from(JSON.stringify({ w: { data: ["Caesar"] } }), "utf8")
+      )
+    );
+
+    await expect(
+      readCorpusSuggestionList(fileName, tmpDir)
+    ).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  test("returns undefined when the file is missing", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    await expect(
+      readCorpusSuggestionList("missing.json", tmpDir)
+    ).resolves.toBeUndefined();
+    warn.mockRestore();
   });
 });

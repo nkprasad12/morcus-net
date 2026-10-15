@@ -44,17 +44,17 @@ export interface V2CompletionsOptions {
 
 export interface V2DictChunksOptions {
   rawPrefix: string;
-  activeDictKeys?: string[];
 }
 
 /**
- * Returns a dictionary-keyed map of string arrays for a 2-letter prefix chunk.
+ * Returns a dictionary-keyed map of string arrays for a prefix chunk across all
+ * dictionaries.
  */
 export async function getV2DictChunks(
   provider: CompletionsProvider,
   options: V2DictChunksOptions
 ): Promise<DictChunksResponse> {
-  const { rawPrefix, activeDictKeys } = options;
+  const { rawPrefix } = options;
 
   if (!rawPrefix || hasGreek(rawPrefix)) {
     return {};
@@ -65,11 +65,8 @@ export async function getV2DictChunks(
     return {};
   }
 
-  const prefix = query.toLowerCase();
-  const dictKeys =
-    activeDictKeys && activeDictKeys.length > 0
-      ? activeDictKeys
-      : LatinDict.AVAILABLE.map((d) => d.key);
+  const prefix = removeDiacritics(query).toLowerCase();
+  const dictKeys = LatinDict.AVAILABLE.map((d) => d.key);
 
   // Partition active dictionaries by source language
   const partitions = new Map<DictLang, string[]>();
@@ -109,12 +106,13 @@ export async function getV2DictChunks(
 
     for (const { res } of resolved) {
       for (const [dictKey, words] of Object.entries(res)) {
+        if (!words || words.length === 0) continue;
         let set = dictWordsMap.get(dictKey);
         if (!set) {
           set = new Set<string>();
           dictWordsMap.set(dictKey, set);
         }
-        for (const word of words || []) {
+        for (const word of words) {
           if (word) set.add(word);
         }
       }
@@ -122,13 +120,15 @@ export async function getV2DictChunks(
 
     const result: DictChunksResponse = {};
     for (const [dictKey, wordSet] of dictWordsMap.entries()) {
-      const sortedWords = Array.from(wordSet).sort((a, b) => {
-        const comp = removeDiacritics(a)
-          .toLowerCase()
-          .localeCompare(removeDiacritics(b).toLowerCase());
-        return comp !== 0 ? comp : a.localeCompare(b);
+      const decorated = Array.from(wordSet, (word) => ({
+        word,
+        clean: removeDiacritics(word).toLowerCase(),
+      }));
+      decorated.sort((a, b) => {
+        const comp = a.clean < b.clean ? -1 : a.clean > b.clean ? 1 : 0;
+        return comp !== 0 ? comp : a.word.localeCompare(b.word);
       });
-      result[dictKey] = sortedWords;
+      result[dictKey] = decorated.map((d) => d.word);
     }
 
     return result;
@@ -139,7 +139,7 @@ export async function getV2DictChunks(
 }
 
 /**
- * Server completion engine for V2 dictionary autocomplete.
+ * Server completion engine for V2 dictionary suffix autocomplete (`-arum`, `-ibus`).
  */
 export async function getV2Completions(
   provider: CompletionsProvider,
@@ -153,7 +153,7 @@ export async function getV2Completions(
   }
 
   const { query, isSuffix } = cleanCompletionQuery(rawQuery);
-  if (!query) {
+  if (!query || !isSuffix) {
     return [];
   }
 
@@ -162,87 +162,25 @@ export async function getV2Completions(
       ? activeDictKeys
       : LatinDict.AVAILABLE.map((d) => d.key);
 
-  // Suffix searches: query active dictionaries directly without prefix expansion
-  if (isSuffix) {
-    try {
-      const res = await provider.getCompletions({
-        query,
-        dicts: dictKeys,
-      });
-      const candidates: Candidate[] = [];
-      for (const [dictKey, words] of Object.entries(res)) {
-        const dictInfo = findDictInfo(dictKey);
-        const lang: DictLang =
-          dictInfo?.languages.from === "*"
-            ? "La"
-            : dictInfo?.languages.from ?? "La";
-        for (const word of words || []) {
-          candidates.push({ dictKey, lang, word });
-        }
-      }
-      return clusterAndDeduplicate(candidates, limit);
-    } catch (err) {
-      console.error("Error in suffix completions:", err);
-      return [];
-    }
-  }
-
-  // Prefix searches: partition active dictionaries by source language
-  const partitions = new Map<DictLang, string[]>();
-  for (const dictKey of dictKeys) {
-    const dictInfo = findDictInfo(dictKey);
-    const lang: DictLang =
-      dictInfo?.languages.from === "*"
-        ? "La"
-        : dictInfo?.languages.from ?? "La";
-    let group = partitions.get(lang);
-    if (!group) {
-      group = [];
-      partitions.set(lang, group);
-    }
-    group.push(dictKey);
-  }
-
-  const tasks: Promise<{
-    lang: DictLang;
-    res: CompletionsFusedResponse;
-  }>[] = [];
-
-  for (const [lang, groupDicts] of partitions.entries()) {
-    const prefixes = getExpandedPrefixes(query, lang);
-    for (const p of prefixes) {
-      tasks.push(
-        provider
-          .getCompletions({ query: p, dicts: groupDicts })
-          .then((res) => ({ lang, res }))
-          .catch((err) => {
-            console.error(`Error in completions for prefix "${p}":`, err);
-            return { lang, res: {} };
-          })
-      );
-    }
-  }
-
   try {
-    const resolved = await Promise.all(tasks);
-
+    const res = await provider.getCompletions({
+      query,
+      dicts: dictKeys,
+    });
     const candidates: Candidate[] = [];
-    for (const { lang: partitionLang, res } of resolved) {
-      for (const [dictKey, words] of Object.entries(res)) {
-        const dictInfo = findDictInfo(dictKey);
-        const lang: DictLang =
-          dictInfo?.languages.from === "*"
-            ? "La"
-            : dictInfo?.languages.from ?? partitionLang;
-        for (const word of words || []) {
-          candidates.push({ dictKey, lang, word });
-        }
+    for (const [dictKey, words] of Object.entries(res)) {
+      const dictInfo = findDictInfo(dictKey);
+      const lang: DictLang =
+        dictInfo?.languages.from === "*"
+          ? "La"
+          : dictInfo?.languages.from ?? "La";
+      for (const word of words || []) {
+        candidates.push({ dictKey, lang, word });
       }
     }
-
     return clusterAndDeduplicate(candidates, limit);
   } catch (err) {
-    console.error("Error in prefix completions:", err);
+    console.error("Error in suffix completions:", err);
     return [];
   }
 }
