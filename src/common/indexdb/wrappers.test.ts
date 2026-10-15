@@ -65,8 +65,11 @@ describe("indexDb simpleStore", () => {
 
   it("handles open then close", async () => {
     let store = simpleIndexDbStore(dbConfig());
-    void store.add({ x: 5 });
-    void store.add({ x: 7 });
+    // Await the writes: un-awaited, whether they land before the reopened
+    // connection reads depends on fake-indexeddb's scheduling, and failed
+    // intermittently in CI.
+    await store.add({ x: 5 });
+    await store.add({ x: 7 });
     store.close();
     await new Promise((r) => setTimeout(r, 10));
 
