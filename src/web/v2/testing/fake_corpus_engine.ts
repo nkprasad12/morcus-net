@@ -7,7 +7,7 @@ import type {
   CorpusQueryMatch,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
-import type { CorpusQueryRequest } from "@/web/api_routes";
+import type { CorpusQueryRequest } from "@/common/library/corpus/corpus_common";
 import type { CorpusEngine } from "@/web/v2/corpus/corpus_query.server";
 
 /** In `MOCK_V2_SUMMARIES` as `caesar/de_bello_gallico`. */

@@ -1,6 +1,6 @@
 import type { LatinToken } from "@/latincy/latincy_client";
 import type { Tagger } from "@/macronizer/morcronizer";
-import type { MacronizedResult } from "@/web/api_routes";
+import type { MacronizedResult } from "@/macronizer/macronizer_types";
 import {
   createMacronizerEngine,
   type MacronizerEngine,

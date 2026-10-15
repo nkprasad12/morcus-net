@@ -49,9 +49,6 @@ export async function scrapeUrlTextWith(
  * `safeFetchText`, which refuses private/reserved destinations and enforces
  * time, size, redirect and content-type limits, because the URL is arbitrary
  * visitor input.
- *
- * Keep this single-argument: it is registered as an RPC handler, and
- * `RouteDefinition` calls handlers with extra positional arguments.
  */
 export function scrapeUrlText(url: string): Promise<string> {
   return scrapeUrlTextWith(url, safeFetchText);

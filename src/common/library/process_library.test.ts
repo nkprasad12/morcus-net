@@ -1,9 +1,9 @@
 import { setupFakeHypotacticData } from "@/common/library/hypotactic_test_helper";
 import {
-  retrieveWorkPreEncoded,
-  retrieveWorksList,
+  LIBRARY_INDEX,
+  type LibraryIndex,
 } from "@/common/library/library_lookup";
-import { ProcessedWork2, WorkId } from "@/common/library/library_types";
+import { ProcessedWork2 } from "@/common/library/library_types";
 import { processLibrary } from "@/common/library/process_library";
 import { replaceEnvVar } from "@/common/test_helpers";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
@@ -52,14 +52,14 @@ afterAll(() => {
   process.env.MORCEUS_DATA_ROOT = ORIGINAL_MORCEUS_DATA_ROOT;
 });
 
-async function retrieveWork(
-  workId: WorkId,
-  acceptEncoding?: string
-): Promise<ProcessedWork2> {
-  const requestData = { acceptEncoding: acceptEncoding ?? "gzip" };
-  const response = await retrieveWorkPreEncoded(workId, LIB_DIR, requestData);
-  const isGzipped = requestData.acceptEncoding?.includes("gzip");
-  const decoded = (isGzipped ? zlib.gunzipSync(response) : response).toString();
+function readIndex(): LibraryIndex {
+  return JSON.parse(fs.readFileSync(`${LIB_DIR}/${LIBRARY_INDEX}`).toString());
+}
+
+/** Reads a work back the way the V2 library builder does. */
+function readWork(workId: string): ProcessedWork2 {
+  const [workPath] = readIndex()[workId];
+  const decoded = zlib.gunzipSync(fs.readFileSync(workPath)).toString();
   return decodeMessage(
     decoded,
     ServerMessage.validator(ProcessedWork2.isMatch),
@@ -68,39 +68,24 @@ async function retrieveWork(
 }
 
 describe("Library Processing", () => {
-  test("stores and retrieves by id correctly", async () => {
+  test("stores works that decode by id", async () => {
     await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
-    const result = await retrieveWork({ id: "phi0448.phi001.perseus-lat2" });
+    const result = readWork("phi0448.phi001.perseus-lat2");
     expect(result.info.author).toBe("Julius Caesar");
   });
 
-  test("stores and retrieves by name and author correctly", async () => {
+  test("indexes works by author and name", async () => {
     await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
-    const result = await retrieveWork({
-      nameAndAuthor: { urlName: "de_bello_gallico", urlAuthor: "caesar" },
-    });
-    expect(result.info.author).toBe("Julius Caesar");
-  });
-
-  test("stores and retrieves uncompressed correctly", async () => {
-    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
-    const result = await retrieveWork(
-      { id: "phi0448.phi001.perseus-lat2" },
-      ""
+    const dbg = Object.values(readIndex()).find(
+      ([_, meta]) =>
+        meta.urlAuthor === "caesar" && meta.urlName === "de_bello_gallico"
     );
-    expect(result.info.author).toBe("Julius Caesar");
-  });
-
-  test("handles invalid request correctly", async () => {
-    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
-    await expect(
-      retrieveWork({ id: "phi0448.phi001.perseus-lat" })
-    ).rejects.toHaveProperty("status", 404);
+    expect(dbg?.[1].id).toBe("phi0448.phi001.perseus-lat2");
   });
 
   test("returns correct index", async () => {
     await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
-    const result = await retrieveWorksList(LIB_DIR);
+    const result = Object.values(readIndex()).map(([_, meta]) => meta);
 
     expect(result).toHaveLength(5);
     expect(result[0].id).toBe("hypotactic_Eclogues_Calpurnius Siculus");

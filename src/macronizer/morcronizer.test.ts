@@ -1,7 +1,7 @@
 import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
 import { macronizeInput } from "@/macronizer/morcronizer";
 import * as latincy from "@/latincy/latincy_client";
-import type { MacronizedWord } from "@/web/api_routes";
+import type { MacronizedWord } from "@/macronizer/macronizer_types";
 
 // Mock the latincyAnalysis function
 jest.mock("@/latincy/latincy_client", () => ({

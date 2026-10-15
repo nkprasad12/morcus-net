@@ -21,7 +21,6 @@ function recordingLogger() {
       rows.push(row);
     },
     logServerHealth: async () => {},
-    logClientEvent: async () => {},
   };
   return { rows, logger };
 }

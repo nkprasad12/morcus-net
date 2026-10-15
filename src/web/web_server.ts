@@ -1,15 +1,7 @@
 import compression from "compression";
 import express from "express";
-import bodyParser from "body-parser";
 import path from "path";
 import fs from "fs/promises";
-import { TelemetryLogger } from "@/web/telemetry/telemetry";
-import {
-  Data,
-  RouteDefinition,
-  RouteDefinitionType,
-  addApi,
-} from "@/web/utils/rpc/server_rpc";
 import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
 import { getV2BuildDir } from "@/bundler/v2_build_contract";
 import { IMMUTABLE_CACHE_CONTROL } from "@/web/v2/core/server/build_version.server";
@@ -115,14 +107,11 @@ function preCompressedMiddleware(getSourceDir: () => string): express.Handler {
 
 export interface WebServerParams {
   webApp: express.Express;
-  routes: RouteDefinition<any, Data, RouteDefinitionType>[];
-  telemetry: Promise<TelemetryLogger>;
   v2Router: express.Router;
 }
 
 export function setupServer(params: WebServerParams): void {
   const app = params.webApp;
-  app.use(bodyParser.text());
   // Ahead of the V2 router's own `/assets` static handler.
   app.use("/assets", preCompressedMiddleware(getV2BuildDir));
   app.use(compression());
@@ -150,6 +139,4 @@ export function setupServer(params: WebServerParams): void {
   app.use("/public", express.static("public", STATIC_OPTIONS));
   app.use("/.well-known", express.static("public", STATIC_OPTIONS));
   app.use("/", params.v2Router);
-
-  params.routes.forEach((r) => addApi(params, r));
 }

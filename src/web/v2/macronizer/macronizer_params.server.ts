@@ -1,4 +1,7 @@
-import type { MacronizedConfidence, MacronizedResult } from "@/web/api_routes";
+import type {
+  MacronizedConfidence,
+  MacronizedResult,
+} from "@/macronizer/macronizer_types";
 import { MACRONIZER_MAX_CHARS } from "@/web/v2/macronizer/macronizer_slots.common";
 
 export type MacronizeInputParseResult =

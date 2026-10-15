@@ -1,4 +1,7 @@
-import type { MacronizedResult, MacronizedWord } from "@/web/api_routes";
+import type {
+  MacronizedResult,
+  MacronizedWord,
+} from "@/macronizer/macronizer_types";
 import {
   encodePriorShown,
   encodeSuggestions,

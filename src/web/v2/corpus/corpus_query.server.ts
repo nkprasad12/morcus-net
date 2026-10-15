@@ -15,7 +15,7 @@ import {
   type CorpusQueryMatch,
   type PageData,
 } from "@/common/library/corpus/corpus_common";
-import type { CorpusQueryRequest } from "@/web/api_routes";
+import type { CorpusQueryRequest } from "@/common/library/corpus/corpus_common";
 import {
   readCorpusParams,
   type CorpusParams,

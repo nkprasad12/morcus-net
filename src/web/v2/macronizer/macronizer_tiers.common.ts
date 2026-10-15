@@ -1,4 +1,7 @@
-import type { MacronizedConfidence, MacronizedWord } from "@/web/api_routes";
+import type {
+  MacronizedConfidence,
+  MacronizedWord,
+} from "@/macronizer/macronizer_types";
 
 /**
  * Attention tiers for macronized words:

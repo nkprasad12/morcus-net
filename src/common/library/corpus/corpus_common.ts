@@ -18,6 +18,16 @@ import {
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
+/** A corpus query, as the server-side engine takes it. */
+export interface CorpusQueryRequest {
+  query: string;
+  commitHash?: string;
+  pageData?: PageData;
+  pageSize?: number;
+  contextLen?: number;
+  strictMode?: boolean;
+}
+
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `latin_corpus.json`;
 export const CORPUS_RAW_TEXT = `latin_corpus_raw.txt`;

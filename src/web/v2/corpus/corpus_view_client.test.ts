@@ -4,7 +4,7 @@
 
 import "@/web/v2/corpus/corpus_view.client";
 import type { CorpusQueryResult } from "@/common/library/corpus/corpus_common";
-import type { CorpusQueryRequest } from "@/web/api_routes";
+import type { CorpusQueryRequest } from "@/common/library/corpus/corpus_common";
 import {
   parseCorpusParams,
   runCorpusSearch,

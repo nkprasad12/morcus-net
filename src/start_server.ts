@@ -6,32 +6,13 @@ import http from "http";
 import { setupServer, WebServerParams } from "@/web/web_server";
 import { envVar } from "@/common/env_vars";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
-import { GitHub } from "@/web/utils/github";
 import { MongoLogger } from "@/web/telemetry/mongo_logger";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
-import {
-  CompletionsFusedApi,
-  DictsFusedApi,
-  GetCorpusSuggestionsApi,
-  GetWork,
-  ListLibraryWorks,
-  LogClientEventApi,
-  MacronizeApi,
-  QueryCorpusApi,
-  ReportApi,
-  ScrapeUrlApi,
-} from "@/web/api_routes";
-import { RouteDefinition } from "@/web/utils/rpc/server_rpc";
 import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
-import {
-  retrieveWorkPreEncoded,
-  retrieveWorksList,
-} from "@/common/library/library_lookup";
 import { readFileSync } from "fs";
-import { scrapeUrlText } from "@/web/scraping/scraper";
 import { createV2Router } from "@/web/v2/v2_router.server";
 import {
   BUILD_ID_ENV,
@@ -47,17 +28,13 @@ import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arn
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
 import { getFormattedMemoryUsage, singletonOf } from "@/common/misc_utils";
-import { macronizeInput } from "@/macronizer/morcronizer";
 import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
 import { macronizerEngineFromEnv } from "@/web/v2/macronizer/macronizer_engine.server";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
 import { ForcelliniDict } from "@/common/dictionaries/forcellini/forcellini_dict";
-import {
-  corpusSuggestions,
-  rustCorpusApiHandler,
-} from "@/common/library/corpus/corpus_rust";
+import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -90,18 +67,6 @@ function log(message: string) {
 function logMemoryUsage(telemetry: TelemetryLogger): void {
   telemetry.logServerHealth(getFormattedMemoryUsage());
 }
-
-type MaybeCacheable = { commitHash?: string };
-
-const CACHING_SETTER = (res: http.ServerResponse, input: MaybeCacheable) => {
-  if (input.commitHash === undefined) {
-    return;
-  }
-  // Note 3153600 is 1/10 of a year. We don't want to set it too high because we
-  // we don't want the browser to hold on to older versions for too long.
-  // it's ok to request the resource ~once a month.
-  res.setHeader("Cache-Control", "public, max-age=3153600, immutable");
-};
 
 const INFLECTION_PROVIDER = singletonOf<InflectionProvider>(() => {
   const tables = timed(
@@ -225,62 +190,13 @@ export function startMorcusServer(): Promise<http.Server> {
       : consoleTelemetry
       ? Promise.resolve(TelemetryLogger.ConsoleLogger)
       : Promise.resolve(TelemetryLogger.NoOp);
-  const githubToken = process.env.GITHUB_TOKEN;
-  const githubTokenEmpty =
-    githubToken === undefined || githubToken.length === 0;
-  if (githubTokenEmpty) {
+  if (!process.env.GITHUB_TOKEN) {
     log(
       "No `GITHUB_TOKEN` environment variable set. Logging issues to console."
     );
   }
   const params: WebServerParams = {
     webApp: app,
-    routes: [
-      RouteDefinition.create(ReportApi, async (request) => {
-        if (!request.reportText && !request.editedText) {
-          return;
-        }
-        if (githubTokenEmpty) log(GitHub.createIssueBody(request));
-        else GitHub.reportIssue(request, githubToken);
-      }),
-      RouteDefinition.create(
-        DictsFusedApi,
-        (input, extras) => fusedDict.getEntry(input, extras),
-        undefined,
-        CACHING_SETTER
-      ),
-      RouteDefinition.create(CompletionsFusedApi, (input, extras) =>
-        fusedDict.getCompletions(input, extras)
-      ),
-      RouteDefinition.create(
-        GetWork,
-        (workId, _, requestData) =>
-          retrieveWorkPreEncoded(workId, undefined, requestData),
-        "PreEncoded",
-        CACHING_SETTER
-      ),
-      RouteDefinition.create(ListLibraryWorks, (_unused) =>
-        retrieveWorksList()
-      ),
-      RouteDefinition.create(ScrapeUrlApi, scrapeUrlText),
-      RouteDefinition.create(LogClientEventApi, async (eventData) => {
-        (await telemetry).logClientEvent(eventData);
-      }),
-      RouteDefinition.create(MacronizeApi, (input) => macronizeInput(input)),
-      RouteDefinition.create(
-        QueryCorpusApi,
-        async (r) => corpusHandler.runQuery(r),
-        "PreStringified",
-        CACHING_SETTER
-      ),
-      RouteDefinition.create(
-        GetCorpusSuggestionsApi,
-        (request, _2, requestData) => corpusSuggestions(request, requestData),
-        "PreEncoded",
-        CACHING_SETTER
-      ),
-    ],
-    telemetry: telemetry,
     v2Router: createV2Router(fusedDict, {
       telemetry,
       corpus: corpusHandler,

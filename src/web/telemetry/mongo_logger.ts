@@ -3,13 +3,11 @@ import {
   ApiCallData,
   TelemetryEvent,
   TelemetryLogger,
-  type ClientEventData,
 } from "@/web/telemetry/telemetry";
 import { assert, checkPresent } from "@/common/assert";
 
 const API_CALL_COLLECTION = "ApiCalls";
 const SERVER_HEALTH_COLLECTION = "ServerHealth";
-const CLIENT_EVENT_COLLECTION = "ClientEvents";
 
 const CLIENT_OPTIONS: MongoClientOptions = {
   serverApi: {
@@ -88,11 +86,6 @@ export class MongoLogger implements TelemetryLogger {
       return;
     }
     return this.log(data, API_CALL_COLLECTION);
-  }
-
-  async logClientEvent(data: Readonly<ClientEventData>): Promise<void> {
-    assert(this.initialized, "MongoLogger was not initialized.");
-    return this.log(data, CLIENT_EVENT_COLLECTION);
   }
 
   async logServerHealth(data: NodeJS.MemoryUsage): Promise<void> {

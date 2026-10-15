@@ -12,7 +12,7 @@ import {
   type CorpusQueryHandler,
 } from "@/common/library/corpus/corpus_rust";
 import { getFormattedMemoryUsage } from "@/common/misc_utils";
-import type { CorpusQueryRequest } from "@/web/api_routes";
+import type { CorpusQueryRequest } from "@/common/library/corpus/corpus_common";
 
 function formatQueryResult(result: CorpusQueryMatch): string {
   const data = result.metadata;
