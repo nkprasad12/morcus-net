@@ -180,55 +180,16 @@ describe("dict_completions.server", () => {
       ]);
     });
 
-    test("expands orthographic prefixes for Latin and deduplicates results", async () => {
+    test("returns empty array for non-suffix queries (prefix searches use getV2DictChunks)", async () => {
       const mockProvider: CompletionsProvider = {
-        getCompletions: jest.fn().mockImplementation(async (req) => {
-          if (req.query === "iust") {
-            return { GAF: ["iūstus", "iūstitia"] };
-          }
-          if (req.query === "just") {
-            return { "L&S": ["justus", "justitia"] };
-          }
-          return {};
-        }),
+        getCompletions: jest.fn(),
       };
-
       const results = await getV2Completions(mockProvider, {
-        rawQuery: "ivst",
+        rawQuery: "amo",
         activeDictKeys: ["L&S", "GAF"],
       });
-
-      // Should have queried expanded branches
-      expect(mockProvider.getCompletions).toHaveBeenCalledWith(
-        expect.objectContaining({ query: "iust" })
-      );
-      expect(mockProvider.getCompletions).toHaveBeenCalledWith(
-        expect.objectContaining({ query: "just" })
-      );
-
-      // Results should contain both iūstus (Gaffiot leader for iustus) and justus
-      expect(results).toContainEqual({ lang: "La", word: "iūstitia" });
-      expect(results).toContainEqual({ lang: "La", word: "iūstus" });
-      expect(results).toContainEqual({ lang: "La", word: "justitia" });
-      expect(results).toContainEqual({ lang: "La", word: "justus" });
-    });
-
-    test("partitions queries by dictionary language (e.g. Latin and German)", async () => {
-      const mockProvider: CompletionsProvider = {
-        getCompletions: jest.fn().mockImplementation(async (req) => {
-          if (req.dicts.includes("GRG")) {
-            return { GRG: ["nuss", "nuß"] };
-          }
-          return {};
-        }),
-      };
-
-      const results = await getV2Completions(mockProvider, {
-        rawQuery: "nuss",
-        activeDictKeys: ["L&S", "GRG"],
-      });
-
-      expect(results).toContainEqual({ lang: "De", word: "nuß" });
+      expect(results).toEqual([]);
+      expect(mockProvider.getCompletions).not.toHaveBeenCalled();
     });
   });
 
@@ -263,7 +224,7 @@ describe("dict_completions.server", () => {
     test("returns dictionary map of sorted words and expands prefixes", async () => {
       const mockProvider: CompletionsProvider = {
         getCompletions: jest.fn().mockImplementation(async (req) => {
-          if (req.query === "am") {
+          if (req.query === "am" && req.dicts.includes("L&S")) {
             return {
               "L&S": ["amor", "amabilis", "amator"],
               GAF: ["ămō", "ămātŏr"],
@@ -275,7 +236,6 @@ describe("dict_completions.server", () => {
 
       const res = await getV2DictChunks(mockProvider, {
         rawPrefix: "am",
-        activeDictKeys: ["L&S", "GAF"],
       });
 
       expect(res).toEqual({
@@ -299,7 +259,6 @@ describe("dict_completions.server", () => {
 
       const res = await getV2DictChunks(mockProvider, {
         rawPrefix: "ivst",
-        activeDictKeys: ["L&S", "GAF"],
       });
 
       expect(res).toEqual({

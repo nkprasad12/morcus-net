@@ -210,9 +210,9 @@ describe("StoredDict", () => {
     const dict = storedDict();
 
     expect(await dict.getCompletions("-s")).toStrictEqual([
+      "Alexios",
       "-us",
       "Julius",
-      "Alexios",
     ]);
     expect(await dict.getCompletions("-os")).toStrictEqual(["Alexios"]);
     expect(await dict.getCompletions("-us")).toStrictEqual(["-us", "Julius"]);

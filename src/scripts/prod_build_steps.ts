@@ -26,6 +26,7 @@ import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
 import { buildV2Bundle } from "@/bundler/v2.rsbuild";
 import { buildV2Library } from "@/common/library/v2/v2_library_builder";
+import { buildCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 
@@ -121,6 +122,10 @@ const MAKE_FORCELLINI: StepConfig = {
     path: envVar("FORC_RAW_PATH"),
   },
 };
+const MAKE_COMPLETIONS_DB: StepConfig = {
+  operation: () => buildCompletionsDb(),
+  label: "Dictionary completions DB creation",
+};
 const PROCESS_LAT_LIB: StepConfig = {
   operation: () =>
     processLibrary({
@@ -171,6 +176,7 @@ const ALL_STEPS = [
   MAKE_POZO,
   MAKE_GESNER,
   MAKE_FORCELLINI,
+  MAKE_COMPLETIONS_DB,
   PROCESS_LAT_LIB,
   MAKE_V2_LIBRARY,
   WRITE_BUILD_PROVENANCE,

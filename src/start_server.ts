@@ -35,6 +35,7 @@ import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
 import { ForcelliniDict } from "@/common/dictionaries/forcellini/forcellini_dict";
 import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
+import { openCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -206,6 +207,7 @@ export function startMorcusServer(): Promise<http.Server> {
       telemetry,
       corpus: corpusHandler,
       macronizer: macronizerEngineFromEnv(),
+      completions: openCompletionsDb(),
     }),
   };
 

@@ -96,6 +96,17 @@ export interface RequestTimer {
   serverExtras(): ServerExtras;
 }
 
+const UNCOMPRESSED_LENGTH_LOCALS_KEY = "morcusUncompressedLength";
+
+/**
+ * Records the uncompressed byte length of a pre-compressed response, so
+ * `ApiCalls.outputLength` stays comparable with responses `compression()`
+ * encodes downstream.
+ */
+export function recordUncompressedLength(res: Response, bytes: number): void {
+  res.locals[UNCOMPRESSED_LENGTH_LOCALS_KEY] = bytes;
+}
+
 class ActiveRequestTimer implements RequestTimer {
   readonly #timer: Timer;
 
@@ -295,11 +306,16 @@ function buildRow(
     extras.path = truncate(req.originalUrl.split("?")[0], MAX_PATH_LENGTH);
   }
 
+  const uncompressedOverride: unknown =
+    res.locals[UNCOMPRESSED_LENGTH_LOCALS_KEY];
   const row: ApiCallData = {
     name: method === "GET" ? pattern : `${method} ${pattern}`,
     status: res.statusCode,
     latencyMs: sentMs,
-    outputLength: state.outputLength,
+    outputLength:
+      typeof uncompressedOverride === "number"
+        ? uncompressedOverride
+        : state.outputLength,
     userAgent: req.get("User-Agent"),
     extras,
   };

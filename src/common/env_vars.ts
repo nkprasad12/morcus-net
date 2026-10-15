@@ -17,6 +17,7 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["GESNER_PROCESSED_PATH", "build/dbs/gesner.db"],
   ["FORC_RAW_PATH", "forc_raw.txt"],
   ["FORC_PROCESSED_PATH", "build/dbs/forc.db"],
+  ["COMPLETIONS_DB_PATH", "build/dbs/completions.db"],
   ["DB_SOURCE", "unspecified"],
   ["PWA_SHORT_NAME_SUFFIX", ""],
   ["MORCEUS_DATA_ROOT", "morceus-data/"],

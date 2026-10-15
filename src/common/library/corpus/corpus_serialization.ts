@@ -6,11 +6,11 @@ import {
   CORPUS_BUFFERS,
   CORPUS_TOKEN_STARTS,
   CORPUS_AUTHORS_LIST,
-  CORPUS_LEMMATA_LIST,
+  CORPUS_LEMMATA_DB,
   type CorpusIndexKeyTypes,
 } from "@/common/library/corpus/corpus_common";
-import { encodeMessage } from "@/web/utils/rpc/parsing";
-import { serverMessage } from "@/web/utils/rpc/server_rpc";
+import { savePrecompressedJsonDb } from "@/web/v2/core/server/precompressed_json.server";
+import { buildLemmaShards } from "@/web/v2/corpus/corpus_lemmata.server";
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";
@@ -29,9 +29,7 @@ type StoredMapValue = StoredArray | StoredBitmask;
 
 function writeAuthorsFile(corpus: InProgressLatinCorpus, corpusDir: string) {
   const authorsDest = path.join(corpusDir, CORPUS_AUTHORS_LIST);
-  const encoded = encodeMessage(
-    serverMessage(Object.keys(corpus.authorLookup))
-  );
+  const encoded = JSON.stringify(Object.keys(corpus.authorLookup));
   const compressed = zlib.gzipSync(Buffer.from(encoded, "utf8"), {
     level: 9,
   });
@@ -39,13 +37,9 @@ function writeAuthorsFile(corpus: InProgressLatinCorpus, corpusDir: string) {
 }
 
 function writeLemmataFile(corpus: InProgressLatinCorpus, corpusDir: string) {
-  const lemmataDest = path.join(corpusDir, CORPUS_LEMMATA_LIST);
-  const lemmata = Array.from(new Set(corpus.idTable.lemma.keys())).sort();
-  const encoded = encodeMessage(serverMessage(lemmata));
-  const compressed = zlib.gzipSync(Buffer.from(encoded, "utf8"), {
-    level: 9,
-  });
-  fs.writeFileSync(lemmataDest, compressed);
+  const lemmataDest = path.join(corpusDir, CORPUS_LEMMATA_DB);
+  const lemmata = Array.from(new Set(corpus.idTable.lemma.keys()));
+  savePrecompressedJsonDb(lemmataDest, buildLemmaShards(lemmata));
 }
 
 export async function writeCorpus(

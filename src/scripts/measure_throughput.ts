@@ -53,7 +53,9 @@ const V2_SUITE: Endpoint[] = [
     path: "/dicts?q=influence&dict=sh&format=partial",
   },
   { name: "dict entry by id", path: "/dicts/id/n20077" },
-  { name: "completions", path: "/api/completions?prefix=ca&dict=ls" },
+  { name: "completions", path: "/api/completions?prefix=ca" },
+  { name: "completions suffix", path: "/api/completions?q=-abo" },
+  { name: "corpus lemmata", path: "/api/corpus/lemmata/c" },
   { name: "library", path: "/library" },
   { name: "reader DBG page", path: "/work/caesar/de_bello_gallico/1.1" },
   {

@@ -107,7 +107,7 @@ test.describe("morcus.net backend integration", { tag: "@backend" }, () => {
     });
 
     test("serves autocomplete chunks", async () => {
-      const res = await get("/api/completions?prefix=can&dict=ls");
+      const res = await get("/api/completions?prefix=ca");
       expect(res.status).toBe(200);
       const chunks = await res.json();
       expect(chunks["L&S"]).toContain("cānăba");
@@ -160,7 +160,7 @@ test.describe("morcus.net backend integration", { tag: "@backend" }, () => {
       const version = html.match(/<html[^>]*\sdata-version="([^"]+)"/)?.[1];
       expect(version).toBeDefined();
       const res = await get(
-        `/api/completions?prefix=can&v=${encodeURIComponent(version!)}`
+        `/api/completions?prefix=ca&v=${encodeURIComponent(version!)}`
       );
       expect(res.status).toBe(200);
       expect(res.headers.get("cache-control")).toContain("immutable");

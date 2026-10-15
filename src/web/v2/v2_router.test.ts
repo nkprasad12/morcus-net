@@ -5,6 +5,7 @@ import * as path from "path";
 import request from "supertest";
 import { JSDOM } from "jsdom";
 import { encodeDictBitmask } from "@/web/v2/dict/settings/dict_bitmask.common";
+import { createInMemoryPrecompressedStore } from "@/web/v2/core/server/precompressed_json.server";
 import { createV2Router } from "@/web/v2/v2_router.server";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -588,6 +589,42 @@ describe("v2_router integration", () => {
     });
   });
 
+  test("GET /api/completions serves pre-compressed 2-letter unscoped chunks when completions store is configured", async () => {
+    const completions = createInMemoryPrecompressedStore(
+      new Map([["am", JSON.stringify({ "L&S": ["amo", "amor"] })]])
+    );
+    const precompressedApp = express();
+    precompressedApp.use(
+      "/",
+      createV2Router(mockFusedDict as FusedDictionary, { completions })
+    );
+
+    (mockFusedDict.getCompletions as jest.Mock).mockClear();
+    const hit = await request(precompressedApp)
+      .get("/api/completions?prefix=am")
+      .set("Accept-Encoding", "gzip");
+    expect(hit.status).toBe(200);
+    expect(hit.headers["content-encoding"]).toBe("gzip");
+    expect(hit.body).toEqual({ "L&S": ["amo", "amor"] });
+    expect(mockFusedDict.getCompletions).not.toHaveBeenCalled();
+
+    // Unknown 2-letter prefix returns pre-compressed "{}" without querying fusedDict.
+    const miss = await request(precompressedApp)
+      .get("/api/completions?prefix=zz")
+      .set("Accept-Encoding", "gzip");
+    expect(miss.status).toBe(200);
+    expect(miss.body).toEqual({});
+    expect(mockFusedDict.getCompletions).not.toHaveBeenCalled();
+
+    // dict/d query params on prefix requests are ignored and still served from the store.
+    const withDictParam = await request(precompressedApp)
+      .get("/api/completions?prefix=am&dict=L%26S")
+      .set("Accept-Encoding", "gzip");
+    expect(withDictParam.status).toBe(200);
+    expect(withDictParam.body).toEqual({ "L&S": ["amo", "amor"] });
+    expect(mockFusedDict.getCompletions).not.toHaveBeenCalled();
+  });
+
   describe("build-versioned caching", () => {
     const savedCommit = process.env.COMMIT_ID;
     const IMMUTABLE = "max-age=31536000, immutable";
@@ -703,29 +740,27 @@ describe("v2_router integration", () => {
     expect(Array.isArray(res.body)).toBe(true);
   });
 
-  test("GET /api/completions scopes completions to requested dicts", async () => {
+  test("GET /api/completions scopes suffix completions to requested dicts", async () => {
     const res = await request(app).get(
-      "/api/completions?prefix=am&dict=ls,gaffiot"
+      "/api/completions?q=-arum&dict=ls,gaffiot"
     );
     expect(res.status).toBe(200);
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
       expect.objectContaining({
-        query: "am",
+        query: "-arum",
         dicts: ["L&S", "GAF"],
       })
     );
   });
 
-  test("GET /api/completions partitions by language when dicts are specified", async () => {
-    const res = await request(app).get(
-      "/api/completions?prefix=am&dict=gaffiot,georges"
-    );
+  test("GET /api/completions partitions prefix chunks by language across all dicts", async () => {
+    const res = await request(app).get("/api/completions?prefix=am");
     expect(res.status).toBe(200);
     // Language-aware partitioning sends Latin dicts and German dicts separately
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
       expect.objectContaining({
         query: "am",
-        dicts: ["GAF"],
+        dicts: expect.arrayContaining(["L&S", "GAF"]),
       })
     );
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(

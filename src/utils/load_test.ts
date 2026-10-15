@@ -22,7 +22,7 @@ async function generateLoad() {
     get("/dicts?q=unda&dict=ls,sh&format=partial"),
   ]);
   void get("/dicts?q=canem&dict=ls,sh&o=1&format=partial");
-  void get("/api/completions?prefix=ca&dict=ls,sh");
+  void get("/api/completions?prefix=ca");
 }
 
 setInterval(() => void generateLoad(), 1000);
