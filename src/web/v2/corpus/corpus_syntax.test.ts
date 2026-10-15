@@ -1,6 +1,6 @@
 /**
  * Tests for the shared corpus grammar. The first four suites are ported from
- * V1 (`src/web/client/pages/corpus/autocomplete/*.test.ts` and the
+ * V1 (`archive/ui-v1:src/web/client/pages/corpus/autocomplete/*.test.ts` and the
  * `transformQuery` suite in `corpus_view.test.tsx`) so V2 keeps V1's grammar.
  */
 

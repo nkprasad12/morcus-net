@@ -6,12 +6,12 @@ import {
   type DbConfig,
   type Store,
   type TransactionType,
-} from "@/web/client/utils/indexdb/types";
+} from "@/common/indexdb/types";
 import {
   wrappedIndexDb,
   simpleIndexDbStore,
   deleteDb,
-} from "@/web/client/utils/indexdb/wrappers";
+} from "@/common/indexdb/wrappers";
 import {
   Validator,
   isAny,

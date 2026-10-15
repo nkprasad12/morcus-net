@@ -1,8 +1,5 @@
-import type {
-  Closeable,
-  SingleStoreDbConfig,
-} from "@/web/client/utils/indexdb/types";
-import { simpleIndexDbStore } from "@/web/client/utils/indexdb/wrappers";
+import type { Closeable, SingleStoreDbConfig } from "@/common/indexdb/types";
+import { simpleIndexDbStore } from "@/common/indexdb/wrappers";
 import { isAny, matchesObject, type Validator } from "@/web/utils/rpc/parsing";
 
 const ITEM_ID = 0;
