@@ -362,8 +362,10 @@ test.describe("UI V2 late hydration", () => {
     await page.evaluate(() =>
       window.scrollTo({ top: 200, behavior: "instant" })
     );
+    // WebKit's page can be a pixel shorter, capping the scroll at 199; what
+    // matters is that the page scrolled, and that the upgrade keeps it.
     const before = await page.evaluate(() => window.scrollY);
-    expect(before).toBe(200);
+    expect(before).toBeGreaterThan(0);
 
     release();
     await expectUpgraded(page, "morcus-dict-search");

@@ -520,6 +520,12 @@
   color: var(--text-muted);
   user-select: none;
 }
+/* The query time changes width with its digits ("8.123 ms" vs "12.345 ms"),
+   which shifted everything after it; visual tests mask the text, not the box. */
+.corpus-timing {
+  min-width: 12ch;
+  font-variant-numeric: tabular-nums;
+}
 .corpus-scope-text a,
 .corpus-syntax-link {
   color: var(--corpus-citation-link);

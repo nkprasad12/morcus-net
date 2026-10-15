@@ -70,13 +70,21 @@ async function collectV2AssetPaths(request: APIRequestContext): Promise<{
  * Opens the mobile navigation drawer and waits for its slide-in animation to
  * finish. Clicking a link mid-slide makes Playwright's actionability retries
  * stall on MobileChrome when JavaScript is disabled, so settle it first.
- * (`evaluate` runs in Playwright's own world, so it works with JS disabled.)
+ * The check is a synchronous `evaluate` polled from the test: with JS
+ * disabled, Firefox never settles a promise awaited inside `evaluate`
+ * (neither `Animation.finished` nor a timer), which hung the test.
  */
 async function openMobileMenu(page: Page): Promise<void> {
   await page.locator(".mobile-menu-btn").click();
-  await page
-    .locator(".mobile-menu-dropdown")
-    .evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+  const dropdown = page.locator(".mobile-menu-dropdown");
+  await expect
+    .poll(() =>
+      dropdown.evaluate(
+        (el) =>
+          el.getAnimations().filter((a) => a.playState === "running").length
+      )
+    )
+    .toBe(0);
 }
 
 test.describe("UI V2 dictionary", () => {
@@ -1172,6 +1180,13 @@ test.describe("UI V2 dictionary", () => {
 
     // Verify that with enlarged browser accessibility font sizes (e.g. 125% / 20px, 150% / 24px),
     // scrolling to the bottom keeps the footer tip fully in the viewport without clipping.
+    // Blur the autofocused search box first: WebKit scrolls a focused input back
+    // into view after a layout change, which the font-size switch below is.
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    });
     for (const fontSize of ["20px", "24px"]) {
       await page.evaluate((fs) => {
         document.documentElement.style.fontSize = fs;
