@@ -18,7 +18,7 @@ In this repository, operational tasks—such as starting development servers, bu
 | `web`         | Builds artifacts & starts the web server                   | `./morcus.sh web` (dev server)<br>`./morcus.sh web --build_all`     |
 | `build`       | Builds dictionary/corpus artifacts without starting server | `./morcus.sh build --build_all`<br>`./morcus.sh build -b_ls -b_grg` |
 | `bundle`      | Builds the UI V2 client JS/CSS into `build/v2/`            | `./morcus.sh bundle -m` (minify and precompress)                    |
-| `e2e`         | Runs E2E integration test pipelines                        | `./morcus.sh e2e -d` (local dev server)                             |
+| `e2e`         | Runs E2E integration test pipelines                        | `./morcus.sh e2e` (local dev server)<br>`./morcus.sh e2e --docker`  |
 | `worker`      | Starts background cruncher/NLP workers                     | `./morcus.sh worker -wt ls`                                         |
 | `corpus`      | Corpus processing utilities and Rust CLI                   | `./morcus.sh corpus -r`                                             |
 | `visual-diff` | Interactive viewer for screenshot diffs (see §3.D)         | `./morcus.sh visual-diff --source results`                          |
@@ -45,11 +45,11 @@ For all tasks involving UI V2 (`src/web/v2/`), consult the dedicated guides befo
 
 ## 3. Testing UI V2: Critical Rules & Commands
 
-### ⛔ Critical Restriction on Integration Tests
+### ⛔ Use `./morcus.sh e2e`, Not `npm run integration-tests`
 
-**Do NOT run `npm run integration-tests` when verifying UI V2.**
+**Do NOT run `npm run integration-tests` directly.**
 
-It runs every suite under `src/integration/suites/`, including the backend smoke tests meant for a built Docker image (that is how CI uses it). Use the `./morcus.sh e2e` commands below instead.
+It is CI's entry point: without `REUSE_DEV_SERVER` it starts a Docker image named by `IMAGE_TAG`. Use the `./morcus.sh e2e` commands below, which run the same suites against the dev server (or a Docker image with `--docker`).
 
 ### ⛔ Proactive Testing Rule
 
@@ -90,17 +90,21 @@ npx jest src/web/v2/v2_router.test.ts
 
 #### B. Functional E2E Tests (Playwright via `run_morcus`)
 
-Functional browser tests verifying both No-JS baseline and JS-enhanced behavior on a running dev server:
+Every suite under `src/integration/suites/` (browser journeys in No-JS and JS-enhanced modes, plus the no-browser server smoke test), run on a running dev server:
 
 ```bash
 # Fast run against Chromium & Mobile Chrome (default port 5757):
-./morcus.sh e2e --v2
+./morcus.sh e2e
 
 # All browser projects:
-./morcus.sh e2e --v2 --all
+./morcus.sh e2e --all
 
 # Custom server port or specific browser project:
-./morcus.sh e2e --v2 --port 1337 --project chromium
+./morcus.sh e2e --port 1337 --project chromium
+
+# Against a freshly built production Docker image instead, as CI does
+# (add --rerun to reuse an existing image, --tag to name it):
+./morcus.sh e2e --docker --all
 ```
 
 #### C. Visual Regression Tests (Multi-Dimensional Screen-Diff via `run_morcus`)
@@ -189,5 +193,5 @@ Run these before each commit to ensure code compiles and passes fast unit tests 
 Before pushing to the remote repository, ensure full browser matrix parity and 0 visual regressions on a running dev server:
 
 1. Start dev server: `PORT=5757 ./morcus.sh web` (if not already running)
-2. Run functional E2E tests: `./morcus.sh e2e --v2 --all`
+2. Run functional E2E tests: `./morcus.sh e2e --all`
 3. Run visual regression tests: `./morcus.sh e2e --visual --all` (ensure 0 pixel diffs across all baseline snapshots). If any differ, follow the Visual Baseline Approval Rule and review them with `./morcus.sh visual-diff --source results`.

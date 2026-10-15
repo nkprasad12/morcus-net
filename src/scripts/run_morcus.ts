@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { assert, checkPresent } from "@/common/assert";
+import { assert } from "@/common/assert";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import {
   StepConfig,
@@ -232,31 +232,30 @@ function parseArguments() {
   });
 
   const e2e = subparsers.add_parser(E2E, {
-    help: "Runs E2E tests.",
+    help:
+      "Runs the E2E suites (src/integration/suites/) against the running dev " +
+      "server, or the visual regression suite with --visual.",
   });
-  e2e.add_argument("-r", "--rerun", {
-    help: "Reuses an existing docker image for the tests.",
+  e2e.add_argument("--docker", {
+    help:
+      "Runs against a production Docker image instead of the dev server, as " +
+      "CI does. Builds the image first unless --rerun is set.",
     action: "store_true",
   });
-  e2e.add_argument("-d", "--dev-server", {
-    help: "Uses the local dev server instead of docker for the tests.",
+  e2e.add_argument("-r", "--rerun", {
+    help: "With --docker: reuses an existing image instead of building one.",
     action: "store_true",
   });
   e2e.add_argument("-t", "--tag", {
-    help: "The tag to use if using a docker image.",
-    default: "itests",
+    help: "With --docker: the image tag to build or reuse (default: itests).",
   });
   e2e.add_argument("-p", "--project", {
-    help: "The project (device) to use when limiting to only one device type.",
+    help: "Comma-separated browser projects to run (overrides --all).",
     default: "",
   });
   e2e.add_argument("-g", "--grep", {
     help: "The grep pattern to use to limit tests by name.",
     default: "",
-  });
-  e2e.add_argument("-b_v2", "--v2", {
-    help: "Runs UI V2 E2E tests (browser_v2_e2e and browser_v2_late_hydration in src/integration/suites/).",
-    action: "store_true",
   });
   e2e.add_argument("-vs", "--visual", {
     help: "Runs UI V2 visual regression tests (src/integration/screenshot/browser_v2_screenshot.test.ts).",
@@ -271,7 +270,7 @@ function parseArguments() {
     action: "store_true",
   });
   e2e.add_argument("-pt", "--port", {
-    help: "The port of the running dev server (defaults to 5757 for V2/visual, or 1337).",
+    help: "The port of the running dev server (default: $PORT, or 5757).",
     default: "",
   });
   e2e.add_argument("--headed", {
@@ -683,135 +682,109 @@ async function startLsEditor() {
 async function runE2eTests(args: any) {
   const childEnv = { ...process.env };
   const steps: StepConfig[] = [];
-
-  const isV2 = Boolean(args.v2);
   const isVisual = Boolean(args.visual);
+  // Without CI set, Playwright's HTML reporter opens and serves the report
+  // after any failure, blocking until killed. Keep it on disk instead.
+  childEnv.PLAYWRIGHT_HTML_OPEN = "never";
 
-  // V2 functional tests or visual regression tests
-  if (isV2 || isVisual) {
+  if (args.update && !(isVisual && args.all)) {
+    throw new Error(
+      "Refusing to update visual snapshots without `--visual --all`.\n" +
+        "Updating snapshots through the fast Chromium/MobileChrome path leaves the\n" +
+        "other projects' baselines stale, causing matrix drift.\n\n" +
+        "Please run: ./morcus.sh e2e --visual --all --update"
+    );
+  }
+  if (!args.docker && (args.rerun || args.tag !== undefined)) {
+    throw new Error("--rerun and --tag only apply with --docker.");
+  }
+
+  if (args.docker) {
+    const tag = args.tag ?? "itests";
+    if (!args.rerun) {
+      const fullTag = `ghcr.io/nkprasad12/morcus:${tag}`;
+      steps.push({
+        operation: () => shellStep(`docker build . -t ${fullTag}`),
+        label: `Building docker image ${fullTag}`,
+      });
+    }
+    childEnv.IMAGE_TAG = tag;
+  } else {
     childEnv.REUSE_DEV_SERVER = "1";
     childEnv.PORT = args.port || process.env.PORT || "5757";
-    childEnv.CI = "1";
-
-    if (isVisual && args.update && !args.all) {
-      throw new Error(
-        "Refusing to update visual snapshots without `--all`.\n" +
-          "Updating snapshots through the fast Chromium/MobileChrome path leaves Firefox\n" +
-          "and FirefoxSmallScreen baselines stale, causing matrix drift.\n\n" +
-          "Please run: ./morcus.sh e2e --visual --all --update"
-      );
-    }
-
-    const testPath = isVisual
-      ? "src/integration/screenshot/browser_v2_screenshot.test.ts"
-      : "src/integration/suites/browser_v2_e2e.test.ts src/integration/suites/browser_v2_reader.test.ts src/integration/suites/browser_v2_late_hydration.test.ts";
-
-    const command = ["npx playwright test", testPath];
-
-    if (args.project) {
-      for (const proj of args.project.split(",")) {
-        if (proj.trim()) {
-          command.push(`--project=${proj.trim()}`);
-        }
-      }
-    } else if (args.all) {
-      command.push(
-        "--project=chromium --project=MobileChrome --project=firefox --project=FirefoxSmallScreen --project=webkit --project=MobileSafari"
-      );
-    } else {
-      command.push("--project=chromium --project=MobileChrome");
-    }
-
-    if (args.grep) {
-      command.push(`--grep "${args.grep}"`);
-    }
-    if (args.update) {
-      command.push("--update-snapshots");
-    }
-    if (args.headed) {
-      command.push("--headed");
-    }
-
-    steps.push({
-      operation: async () => {
-        let testError: unknown = undefined;
-        try {
-          await shellStep(command.join(" "), childEnv);
-        } catch (err) {
-          testError = err;
-        }
-        if (isVisual && args.diff) {
-          // Without --update, Playwright leaves expected/actual pairs for each
-          // failure in test-results/. With --update, the baselines themselves
-          // were rewritten, so compare them against HEAD.
-          const serving = await runVisualDiffCommand({
-            source: args.update ? "git" : "results",
-          });
-          if (testError !== undefined && serving) {
-            // Throwing here would end the process and take the viewer down
-            // with it; record the failure in the exit code instead.
-            process.exitCode = 1;
-            console.log(
-              "⚠️  Visual tests failed; review the failures in the inspector above."
-            );
-            return;
-          }
-        } else if (isVisual && args.update) {
-          console.log(
-            "\n📸 Snapshots updated. Run `./morcus.sh visual-diff` to review them against HEAD."
-          );
-        } else if (isVisual && testError !== undefined) {
-          console.log(
-            "\n🔍 Run `./morcus.sh visual-diff --source results` to inspect the failures."
-          );
-        }
-        if (testError !== undefined) {
-          throw testError;
-        }
-      },
-      label: isVisual
-        ? "Running V2 visual regression tests"
-        : "Running V2 E2E tests",
-    });
-    return runPipeline(steps);
   }
 
-  // Default / legacy V1 E2E tests
-  if (args.rerun && args.dev_server) {
-    throw new Error("--rerun is incompatible with --dev-server");
-  }
-  const tag = checkPresent(args.tag);
-  if (!args.rerun && !args.dev_server) {
-    const fullTag = `ghcr.io/nkprasad12/morcus:${tag}`;
-    steps.push({
-      operation: () => shellStep(`docker build . -t ${fullTag}`),
-      label: `Building docker image ${fullTag}`,
-    });
-  }
-  if (args.dev_server === true) {
-    if (args.tag !== "itests") {
-      throw new Error("--tag is incompatible with --dev-server");
-    }
-    childEnv.REUSE_DEV_SERVER = "1";
-    if (args.port) {
-      childEnv.PORT = args.port;
-    }
-  } else {
-    childEnv.IMAGE_TAG = tag;
-  }
-  const command = ["npm run integration-tests", "--"];
+  const testPath = isVisual
+    ? "src/integration/screenshot/browser_v2_screenshot.test.ts"
+    : "src/integration/suites/";
+  const command = ["npx playwright test", testPath];
+
   if (args.project) {
-    command.push(`--project ${args.project}`);
+    for (const proj of args.project.split(",")) {
+      if (proj.trim()) {
+        command.push(`--project=${proj.trim()}`);
+      }
+    }
+  } else if (args.all) {
+    command.push(
+      "--project=chromium --project=MobileChrome --project=firefox --project=FirefoxSmallScreen --project=webkit --project=MobileSafari"
+    );
+  } else {
+    command.push("--project=chromium --project=MobileChrome");
   }
+
   if (args.grep) {
     command.push(`--grep "${args.grep}"`);
+  }
+  if (args.update) {
+    command.push("--update-snapshots");
   }
   if (args.headed) {
     command.push("--headed");
   }
+
   steps.push({
-    operation: () => shellStep(command.join(" "), childEnv),
-    label: "Running E2E tests",
+    operation: async () => {
+      let testError: unknown = undefined;
+      try {
+        await shellStep(command.join(" "), childEnv);
+      } catch (err) {
+        testError = err;
+      }
+      if (isVisual && args.diff) {
+        // Without --update, Playwright leaves expected/actual pairs for each
+        // failure in test-results/. With --update, the baselines themselves
+        // were rewritten, so compare them against HEAD.
+        const serving = await runVisualDiffCommand({
+          source: args.update ? "git" : "results",
+        });
+        if (testError !== undefined && serving) {
+          // Throwing here would end the process and take the viewer down
+          // with it; record the failure in the exit code instead.
+          process.exitCode = 1;
+          console.log(
+            "⚠️  Visual tests failed; review the failures in the inspector above."
+          );
+          return;
+        }
+      } else if (isVisual && args.update) {
+        console.log(
+          "\n📸 Snapshots updated. Run `./morcus.sh visual-diff` to review them against HEAD."
+        );
+      } else if (isVisual && testError !== undefined) {
+        console.log(
+          "\n🔍 Run `./morcus.sh visual-diff --source results` to inspect the failures."
+        );
+      } else if (testError !== undefined) {
+        console.log(
+          "\n🔍 Run `npx playwright show-report` to open the HTML report."
+        );
+      }
+      if (testError !== undefined) {
+        throw testError;
+      }
+    },
+    label: isVisual ? "Running visual regression tests" : "Running E2E tests",
   });
   return runPipeline(steps);
 }

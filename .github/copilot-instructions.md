@@ -59,8 +59,8 @@ npm run py-tests
 # Run all tests
 npm run test
 
-# Run integration tests
-npm run integration-tests
+# Run integration tests (against a running dev server; --docker for a built image)
+./morcus.sh e2e
 ```
 
 ## Project Patterns
