@@ -2,11 +2,12 @@ import { test, expect } from "@playwright/test";
 
 /**
  * Server smoke tests for a built morcus.net image (CI runs them against the
- * Docker image via `npm run integration-tests`). No browser: plain `fetch`
- * against the HTML pages and JSON endpoints UI V2 serves. They catch what the
- * dev-server E2E runs cannot: a production build missing an artifact (a
- * dictionary database, the library, the Rust corpus bindings, PWA files) or
- * serving it with the wrong headers.
+ * Docker image via `npm run integration-tests`; locally,
+ * `./morcus.sh e2e --docker`). No browser: plain `fetch` against the HTML
+ * pages and JSON endpoints UI V2 serves. They also pass against the dev server,
+ * but their point is what only a production build can get wrong: a missing
+ * artifact (a dictionary database, the library, the Rust corpus bindings, PWA
+ * files) or serving it with the wrong headers.
  */
 
 const BASE_URL = process.env.BASE_URL;

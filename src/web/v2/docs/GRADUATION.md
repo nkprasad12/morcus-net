@@ -133,8 +133,10 @@ This work lands on `lit-prototype` **before** the §2 re-slot, which then ends w
 
 ## 5. Test Suite & Performance Benchmark Migration
 
-- [ ] **Make V2 the Default Integration Target**:
-  - The V1 Playwright suites are deleted in §4, after their CUJs are ported. What remains: update `npm run integration-tests` and the CI integration job so the V2 functional and visual suites are the default target.
+- [x] **Make V2 the Default Integration Target**:
+  - The V1 Playwright suites are deleted in §4, after their CUJs are ported, so everything under `src/integration/suites/` is V2 and CI's `validate-image` job (`npm run integration-tests` against the built image, all six projects) already targets V2.
+  - `./morcus.sh e2e` lost its V1-era split: the `--v2` flag (a hand-picked subset that skipped the swipe suite and the server smoke test) and the Docker-by-default path are gone. It now runs the whole directory against the dev server, `--docker` (with `--tag` / `--rerun`) runs it against a production image as CI does, and `--visual` stays separate. Local runs no longer set `CI`, so they don't retry and flaky tests fail visibly.
+  - The visual suite stays out of CI: its baselines are rendered locally.
 - [ ] **Update Performance Benchmarks**:
   - Re-target performance test suites to measure V2 endpoints (SSR full-page render latency, `?format=partial` fragment latency, memory footprint under load, and client bundle/hydration metrics) rather than legacy V1 SPA/RPC flows.
   - [x] `client_performance.test.ts` (Chromium CDP metrics and LCP, run by CI's A/B job via `perf_a_b.ts`) passes on V2: the landing title check accepts any `Morcus …` title, and the L&S _unda_ check waits for the visible match, since V2's collapsed outline also contains the text. The A/B job runs the test from the current checkout against an older comparison image (`dev-latest` or `main-latest`), which is still V1 until V2 reaches `dev`, so its URLs and assertions stay valid on both. Reader pages keep the V1 `?id=` URLs, which V2 redirects; the redirect only affects LCP, by about a localhost round trip. Until both sides are V2, the A/B comparison is V1 vs V2 rather than a regression check.

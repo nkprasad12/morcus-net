@@ -8,9 +8,13 @@ Before writing a new test, read the [testing traps](DESIGN_TRAPS.md#testing): va
 
 ## 1. Test Locations
 
+Every suite under `src/integration/suites/` below runs with `./morcus.sh e2e` (§2, Option E).
+
 - **E2E Tests (Playwright)**: `src/integration/suites/browser_v2_e2e.test.ts`
-- **Library & reader E2E (Playwright)**: `src/integration/suites/browser_v2_reader.test.ts`. Covers the journeys that depend on a real browser: library filter → reader, saved spots surviving full navigations, Back after legacy `?id=` redirects, line deep links and the TOC jump field (JS and No-JS), translations following page turns, passage word lookup, copying verse lines, and keyboard autocomplete. Also run by `./morcus.sh e2e --v2`.
-- **Late-hydration E2E (Playwright)**: `src/integration/suites/browser_v2_late_hydration.test.ts` — holds back the `/assets/*.js` chunks, interacts in the pre-hydration window, then checks the upgrade adopts the state and the JS gate / pre-paint snapshot prevent flashes and layout shifts. A "chunk ordering: intermediate state" block uses `openStaged` to release `common.js` before the route chunk and interacts in between. Also run by `./morcus.sh e2e --v2`.
+- **Library & reader E2E (Playwright)**: `src/integration/suites/browser_v2_reader.test.ts`. Covers the journeys that depend on a real browser: library filter → reader, saved spots surviving full navigations, Back after legacy `?id=` redirects, line deep links and the TOC jump field (JS and No-JS), translations following page turns, passage word lookup, copying verse lines, and keyboard autocomplete.
+- **Late-hydration E2E (Playwright)**: `src/integration/suites/browser_v2_late_hydration.test.ts` — holds back the `/assets/*.js` chunks, interacts in the pre-hydration window, then checks the upgrade adopts the state and the JS gate / pre-paint snapshot prevent flashes and layout shifts. A "chunk ordering: intermediate state" block uses `openStaged` to release `common.js` before the route chunk and interacts in between.
+- **Reader swipe E2E (Playwright)**: `src/integration/suites/browser_v2_swipe.test.ts` — swipe page turns, which need real layout and touch emulation (touch cases run on MobileChrome only).
+- **Server smoke test (no browser)**: `src/integration/suites/morcus_backend_integration.test.ts` — `fetch`-only checks of pages, partials and JSON endpoints. Aimed at the production image (`./morcus.sh e2e --docker`, and CI), but also passes against the dev server.
 - **Unit Tests (Jest)**: Colocated alongside source modules matching `src/web/v2/**/*.test.ts` (run via `npm run ts-tests:v2`). Tests cover SSR renderers, routing, bitmask/clustering logic, custom elements, and core utilities across each vertical slice (`about/`, `core/`, `dialog/`, `dict/`, `reader/`, `shell/`, and `v2_router.test.ts`).
 
 ### Pre-hydration (PH) bug index
@@ -87,21 +91,25 @@ REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e --debug
 
 ### Option E: Running via `run_morcus` (`morcus.sh`) (Recommended)
 
-To run the functional V2 tests without the Docker-oriented suites:
+Runs every suite under `src/integration/suites/` against the dev server (`$PORT`, or 5757):
 
 ```bash
 # Fast run (Chromium + Mobile Chrome):
-./morcus.sh e2e --v2
+./morcus.sh e2e
 
 # All browser projects:
-./morcus.sh e2e --v2 --all
+./morcus.sh e2e --all
+
+# Against a freshly built production Docker image, as CI does
+# (--rerun reuses an existing image; --tag names it):
+./morcus.sh e2e --docker --all
 ```
 
 > [!WARNING]
 >
-> **Do NOT run `npm run integration-tests` when working on UI V2.**
+> **Do NOT run `npm run integration-tests` directly.**
 >
-> `npm run integration-tests` runs every suite, including backend smoke tests meant for a built Docker image (that is how CI uses it).
+> It is CI's entry point and, without `REUSE_DEV_SERVER`, starts the Docker image named by `IMAGE_TAG`. `./morcus.sh e2e` runs the same suites and sets this up for you.
 
 > [!NOTE]
 >
@@ -220,7 +228,7 @@ Checks that span the whole app rather than one page stay in `core/`:
     ```
 2.  **Functional E2E tests (all browsers)**:
     ```bash
-    ./morcus.sh e2e --v2 --all
+    ./morcus.sh e2e --all
     ```
 3.  **Visual regression tests (all browsers)**:
     ```bash

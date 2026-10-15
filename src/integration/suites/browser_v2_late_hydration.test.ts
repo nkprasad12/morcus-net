@@ -13,7 +13,7 @@
  *     src/integration/suites/browser_v2_late_hydration.test.ts \
  *     --project=chromium --project=MobileChrome
  *
- * (`./morcus.sh e2e --v2` runs it along with browser_v2_e2e.test.ts.)
+ * (`./morcus.sh e2e` runs it along with the other suites in this directory.)
  */
 
 import { test, expect, type Page } from "@playwright/test";
