@@ -178,8 +178,8 @@ describe("LewisAndShort", () => {
     SqliteDict.save(LS_DATA, TEMP_FILE);
     const dict = createLewisAndShort(sqliteBacking(TEMP_FILE));
 
-    expectEntriesWithIds(dict.getEntry("Julius"), ["Julius"]);
-    expectEntriesWithIds(dict.getEntry("Publius"), ["Publius"]);
+    await expectEntriesWithIds(dict.getEntry("Julius"), ["Julius"]);
+    await expectEntriesWithIds(dict.getEntry("Publius"), ["Publius"]);
   });
 
   test("getEntry returns expect outlines", async () => {

@@ -119,6 +119,13 @@ const NO_CORPUS_AUTOCOMPLETE_IMPORTS = {
 // depend on either tier's code. Facts both sides need (chunk names, the
 // `dependOn` graph, the build directory) live in
 // src/bundler/v2_build_contract.ts, which the server imports instead.
+// The only React (Preact) code left: two local developer tools. UI V2 has no
+// React, and react-hooks' use* naming heuristics would misfire on it.
+const PREACT_DEV_TOOLS = [
+  "src/common/lewis_and_short/editor/**/*.{ts,tsx}",
+  "src/morceus/projects/gui/**/*.{ts,tsx}",
+];
+
 const NO_TIERED_IMPORTS_FROM_BUNDLER = {
   group: ["**/*.server", "**/*.client"],
   message:
@@ -160,8 +167,7 @@ export default [
     compat.extends("plugin:react/recommended", "plugin:react-hooks/recommended")
   ).map((config) => ({
     ...config,
-    files: ["**/*.{js,jsx,mjs,cjs,ts,tsx}"],
-    ignores: ["src/web/v2/**"],
+    files: PREACT_DEV_TOOLS,
   })),
   {
     plugins: {
@@ -233,18 +239,17 @@ export default [
       ],
     },
   },
-  // React rules, settings, and plugins apply to legacy and tooling code, but are
-  // explicitly excluded from UI V2 (src/web/v2), which contains no React and would
-  // otherwise risk false positives on use* naming conventions in react-hooks rules.
+  // React rules, settings, and plugins apply only to the Preact dev tools.
   {
-    files: ["**/*.{js,jsx,mjs,cjs,ts,tsx}"],
-    ignores: ["src/web/v2/**"],
+    files: PREACT_DEV_TOOLS,
     plugins: {
       react: fixupPluginRules(react),
     },
     settings: {
       react: {
-        version: "detect",
+        // The dev tools use Preact through tsconfig's `react` aliases, so
+        // there is no `react` package to detect.
+        version: "18.3",
       },
     },
     rules: {
@@ -332,6 +337,21 @@ export default [
       ],
     },
   },
+  // Everything else under src/ runs in Node (servers, build steps, scripts,
+  // Playwright suites), so it gets the server-side ban too: a `*.client.ts`
+  // module expects browser globals at load time. Disjoint from the UI V2 and
+  // bundler blocks, which configure their own lists. Tests are exempt, as in
+  // UI V2: they may exercise both tiers (e.g. under jsdom).
+  {
+    files: ["src/**/*.ts"],
+    ignores: ["src/web/v2/**", "src/bundler/**", "**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [NO_RELATIVE_IMPORTS, NO_CLIENT_IMPORTS] },
+      ],
+    },
+  },
   {
     files: ["src/bundler/**/*.ts"],
     ignores: ["**/*.test.ts"],
@@ -342,20 +362,22 @@ export default [
       ],
     },
   },
-  // V2 is new code and can hold a higher async-safety bar than the legacy tree, which
-  // has 93 violations of these two rules.
+  // Async safety, repo-wide (it was UI V2-only while the V1 tree carried 93
+  // violations).
   //
   // `no-misused-promises` is the load-bearing one: Express 4 ignores a handler's return
   // value, so an async handler that rejects produces an unhandled rejection, which Node
-  // exits over. Two reader routes were doing exactly that. `no-floating-promises` makes
-  // fire-and-forget calls state themselves as `void`.
+  // exits over. Two reader routes were doing exactly that, and so was the server's
+  // periodic telemetry write. `no-floating-promises` makes fire-and-forget calls state
+  // themselves as `void` (top-level script entry points included: an unhandled
+  // rejection there still exits non-zero).
   //
   // NOTE: this block must not configure `no-restricted-imports`. Flat config replaces a
   // rule's options rather than merging them, so naming it here would disable the
-  // target-suffix bans in the three blocks above. Tests are included: there were no
-  // violations in them, so there is nothing to exempt.
+  // target-suffix bans in the blocks above. Tests are included: an un-awaited
+  // assertion helper is a test that can never fail.
   {
-    files: ["src/web/v2/**/*.ts"],
+    files: ["**/*.{ts,tsx}"],
     rules: {
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/no-misused-promises": "error",

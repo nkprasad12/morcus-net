@@ -89,7 +89,7 @@ function percentile(sorted: number[], p: number) {
   return sorted[Math.max(0, Math.min(idx, sorted.length - 1))];
 }
 
-(async () => {
+void (async () => {
   const args = parseArgs();
   const headers = getHeaders();
   const endTime = performance.now() + args.duration * 1000;

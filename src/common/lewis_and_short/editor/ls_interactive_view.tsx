@@ -29,18 +29,26 @@ async function getNext(result: string): Promise<string> {
 export function Editor() {
   const [text, setText] = useState<string | undefined>(undefined);
 
+  async function start() {
+    setText(
+      XmlNodeSerialization.DEFAULT.deserialize(await getNext("")).toString()
+    );
+  }
+
+  async function submitAndLoadNext() {
+    // @ts-ignore
+    const e: HTMLTextAreaElement = document.getElementById(
+      "XmlNodeEditorTextarea"
+    )!;
+    const editedValue = e.value;
+    e.value = "Waiting for next entry...";
+    e.value = await getNext(editedValue);
+  }
+
   if (text === undefined) {
     return (
       <div>
-        <button
-          type="button"
-          onClick={async () => {
-            setText(
-              XmlNodeSerialization.DEFAULT.deserialize(
-                await getNext("")
-              ).toString()
-            );
-          }}>
+        <button type="button" onClick={() => void start()}>
           Start
         </button>
       </div>
@@ -50,17 +58,7 @@ export function Editor() {
   return (
     <div>
       <div>
-        <button
-          type="button"
-          onClick={async () => {
-            // @ts-ignore
-            const e: HTMLTextAreaElement = document.getElementById(
-              "XmlNodeEditorTextarea"
-            )!;
-            const editedValue = e.value;
-            e.value = "Waiting for next entry...";
-            e.value = await getNext(editedValue);
-          }}>
+        <button type="button" onClick={() => void submitAndLoadNext()}>
           Next
         </button>
       </div>

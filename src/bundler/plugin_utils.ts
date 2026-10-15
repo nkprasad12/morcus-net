@@ -13,7 +13,7 @@ import { arrayMapBy } from "@/common/data_structures/collect_map";
 export interface CommonPlugin {
   name: string;
   onBuildStart?: () => void;
-  onBuildEnd?: () => void;
+  onBuildEnd?: () => void | Promise<void>;
 }
 
 export interface TypeCheckOptions {

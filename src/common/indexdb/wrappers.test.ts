@@ -41,12 +41,12 @@ describe("indexDb simpleStore", () => {
     const results = await store.getAll();
     expect(results).toHaveLength(0);
 
-    store.add({ x: 5 });
-    store.add({ x: 7 });
+    void store.add({ x: 5 });
+    void store.add({ x: 7 });
     expect(await store.get(7)).toEqual({ x: 7 });
     expect(await store.getAll()).toEqual([{ x: 5 }, { x: 7 }]);
 
-    store.delete(5);
+    void store.delete(5);
     expect(await store.getAll()).toEqual([{ x: 7 }]);
     expect(await store.get(7)).toEqual({ x: 7 });
     await expect(store.get(5)).rejects.toBe("No match");
@@ -56,8 +56,8 @@ describe("indexDb simpleStore", () => {
     const store1 = simpleIndexDbStore(dbConfig());
     const store2 = simpleIndexDbStore(dbConfig());
 
-    store1.add({ x: 5 });
-    store2.add({ x: 7 });
+    void store1.add({ x: 5 });
+    void store2.add({ x: 7 });
 
     expect(await store1.getAll()).toEqual([{ x: 5 }, { x: 7 }]);
     expect(await store2.getAll()).toEqual([{ x: 5 }, { x: 7 }]);
@@ -65,8 +65,8 @@ describe("indexDb simpleStore", () => {
 
   it("handles open then close", async () => {
     let store = simpleIndexDbStore(dbConfig());
-    store.add({ x: 5 });
-    store.add({ x: 7 });
+    void store.add({ x: 5 });
+    void store.add({ x: 7 });
     store.close();
     await new Promise((r) => setTimeout(r, 10));
 
@@ -163,8 +163,8 @@ describe("wrappedIndexDb with multiple stores", () => {
     expect(await fooStore("readonly").getAll()).toHaveLength(0);
     expect(await barStore("readonly").getAll()).toHaveLength(0);
 
-    fooStore("readwrite").add({ id: "5", foo: "5" });
-    fooStore("readwrite").add({ id: "7", foo: "7" });
+    void fooStore("readwrite").add({ id: "5", foo: "5" });
+    void fooStore("readwrite").add({ id: "7", foo: "7" });
     expect(await fooStore("readonly").get("7")).toEqual({ id: "7", foo: "7" });
     expect(await fooStore("readonly").getAll()).toEqual([
       { id: "5", foo: "5" },

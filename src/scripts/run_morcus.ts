@@ -29,23 +29,23 @@ const cleanupOperations: (() => unknown)[] = [];
 registerCleanup();
 const args = parseArguments();
 if (args.command === WEB_SERVER) {
-  setupAndStartWebServer(args).then((success) => assert(success));
+  void setupAndStartWebServer(args).then((success) => assert(success));
 } else if (args.command === WORKER) {
-  awaitAll([startWorker(args, args.workerType)]);
+  void awaitAll([startWorker(args, args.workerType)]);
 } else if (args.command === EDITOR) {
-  startLsEditor();
+  void startLsEditor();
 } else if (args.command === BUNDLE) {
-  buildBundle(args).then(assert);
+  void buildBundle(args).then(assert);
 } else if (args.command === BUILD) {
-  buildArtifacts(args).then(assert);
+  void buildArtifacts(args).then(assert);
 } else if (args.command === E2E) {
-  runE2eTests(args).then(assert);
+  void runE2eTests(args).then(assert);
 } else if (args.command === CORPUS) {
-  runCorpusCommand(args).then(assert);
+  void runCorpusCommand(args).then(assert);
 } else if (args.command === VISUAL_DIFF || args.command === "diff") {
-  runVisualDiff(args).then(assert);
+  void runVisualDiff(args).then(assert);
 } else if (args.command === INVENTORY) {
-  runInventory(args).then((ok) => {
+  void runInventory(args).then((ok) => {
     if (!ok) process.exit(1);
   });
 }
@@ -677,7 +677,7 @@ async function startLsEditor() {
     },
   ];
   assert(await runPipeline(steps));
-  runCommand(`${TS_NODE.join(" ")} ${editorRoot}/ls_interactive.ts`);
+  void runCommand(`${TS_NODE.join(" ")} ${editorRoot}/ls_interactive.ts`);
 }
 
 async function runE2eTests(args: any) {

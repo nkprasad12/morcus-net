@@ -181,6 +181,8 @@ export function simpleIndexDbStore<T extends object>(
     add: (t) => writeStore().then((s) => s.add(t)),
     update: (t) => writeStore().then((s) => s.update(t)),
     delete: (k) => writeStore().then((s) => s.delete(k)),
-    close: () => dbPromise.then((db) => db.close()),
+    close: () => {
+      void dbPromise.then((db) => db.close());
+    },
   };
 }

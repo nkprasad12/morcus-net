@@ -4,7 +4,7 @@
 import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
 
 const startTime = performance.now();
-generateShArtifacts().then(() => {
+void generateShArtifacts().then(() => {
   const runTime = Math.round(performance.now() - startTime);
   console.log(`Smith and Hall runtime: ${runTime} ms.`);
   // for (const [author, cits] of unmatched) {
