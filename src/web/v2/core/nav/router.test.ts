@@ -8,7 +8,7 @@ import {
 
 describe("syncQueryParam", () => {
   beforeEach(() => {
-    window.history.replaceState(null, "", "/v2/dicts?q=amo");
+    window.history.replaceState(null, "", "/dicts?q=amo");
     document.title = "Initial";
   });
 
@@ -16,7 +16,7 @@ describe("syncQueryParam", () => {
     const sync = syncQueryParam("q", { onChange: () => {} });
     expect(sync.get()).toBe("amo");
 
-    window.history.replaceState(null, "", "/v2/dicts");
+    window.history.replaceState(null, "", "/dicts");
     expect(sync.get()).toBe("");
     sync.dispose();
   });
@@ -34,13 +34,13 @@ describe("syncQueryParam", () => {
     expect(pushSpy).toHaveBeenCalledWith(
       { q: "bellum" },
       "",
-      "/v2/dicts?q=bellum"
+      "/dicts?q=bellum"
     );
     expect(document.title).toBe("bellum - Dict");
 
     sync.replace("");
     expect(window.location.search).toBe("");
-    expect(replaceSpy).toHaveBeenCalledWith({ q: "" }, "", "/v2/dicts");
+    expect(replaceSpy).toHaveBeenCalledWith({ q: "" }, "", "/dicts");
     expect(document.title).toBe("Dict");
 
     pushSpy.mockRestore();
@@ -56,24 +56,24 @@ describe("syncQueryParam", () => {
       title: (q) => (q ? `${q} - Reader` : "Reader"),
     });
 
-    sync.pushUrl("/v2/work/caesar/bg/1.2?q=Gallia#sec-2", {
+    sync.pushUrl("/work/caesar/bg/1.2?q=Gallia#sec-2", {
       state: { q: "Gallia", scrollY: 0 },
     });
-    expect(window.location.pathname).toBe("/v2/work/caesar/bg/1.2");
+    expect(window.location.pathname).toBe("/work/caesar/bg/1.2");
     expect(window.location.search).toBe("?q=Gallia");
     expect(window.location.hash).toBe("#sec-2");
     expect(pushSpy).toHaveBeenCalledWith(
       { q: "Gallia", scrollY: 0 },
       "",
-      "/v2/work/caesar/bg/1.2?q=Gallia#sec-2"
+      "/work/caesar/bg/1.2?q=Gallia#sec-2"
     );
     expect(document.title).toBe("Gallia - Reader");
 
-    sync.replaceUrl(new URL("http://localhost/v2/work/caesar/bg/1.2?d=an&o=1"));
+    sync.replaceUrl(new URL("http://localhost/work/caesar/bg/1.2?d=an&o=1"));
     expect(replaceSpy).toHaveBeenCalledWith(
       null,
       "",
-      "/v2/work/caesar/bg/1.2?d=an&o=1"
+      "/work/caesar/bg/1.2?d=an&o=1"
     );
     expect(document.title).toBe("Reader");
 
@@ -92,11 +92,11 @@ describe("syncQueryParam", () => {
       },
     });
 
-    sync.pushUrl("/v2/dicts/id/n1");
-    window.history.replaceState(null, "", "/v2/dicts?q=amo");
+    sync.pushUrl("/dicts/id/n1");
+    window.history.replaceState(null, "", "/dicts?q=amo");
     window.dispatchEvent(new PopStateEvent("popstate"));
 
-    expect(seen).toEqual(["|/v2/dicts/id/n1", "amo|/v2/dicts?q=amo"]);
+    expect(seen).toEqual(["|/dicts/id/n1", "amo|/dicts?q=amo"]);
     sync.dispose();
   });
 
@@ -108,8 +108,8 @@ describe("syncQueryParam", () => {
     });
 
     // Navigate away via pushUrl, then simulate Back to the connect-time URL.
-    sync.pushUrl("/v2/dicts?q=bellum&d=an&o=1", { state: { q: "bellum" } });
-    window.history.replaceState(null, "", "/v2/dicts?q=amo");
+    sync.pushUrl("/dicts?q=bellum&d=an&o=1", { state: { q: "bellum" } });
+    window.history.replaceState(null, "", "/dicts?q=amo");
     window.dispatchEvent(new PopStateEvent("popstate"));
 
     expect(onChange).toHaveBeenCalledTimes(1);
@@ -127,15 +127,15 @@ describe("syncQueryParam", () => {
       onNavigate: (e) => events.push(e),
     });
 
-    sync.pushUrl("/v2/work/caesar/bg/1.2?q=omni#top");
-    window.history.replaceState(null, "", "/v2/work/caesar/bg/1.1");
+    sync.pushUrl("/work/caesar/bg/1.2?q=omni#top");
+    window.history.replaceState(null, "", "/work/caesar/bg/1.1");
     window.dispatchEvent(new PopStateEvent("popstate"));
 
     expect(onChange).not.toHaveBeenCalled();
     expect(events).toEqual([
       {
-        prevPath: "/v2/work/caesar/bg/1.2?q=omni",
-        newPath: "/v2/work/caesar/bg/1.1",
+        prevPath: "/work/caesar/bg/1.2?q=omni",
+        newPath: "/work/caesar/bg/1.1",
         value: "",
       },
     ]);
@@ -147,12 +147,12 @@ describe("syncQueryParam", () => {
     const onChange = jest.fn();
     const sync = syncQueryParam("q", { onChange });
 
-    window.history.replaceState(null, "", "/v2/dicts?q=amo#entry-1");
+    window.history.replaceState(null, "", "/dicts?q=amo#entry-1");
     window.dispatchEvent(new PopStateEvent("popstate"));
     expect(onChange).not.toHaveBeenCalled();
 
     sync.dispose();
-    window.history.replaceState(null, "", "/v2/dicts?q=bellum");
+    window.history.replaceState(null, "", "/dicts?q=bellum");
     window.dispatchEvent(new PopStateEvent("popstate"));
     expect(onChange).not.toHaveBeenCalled();
   });

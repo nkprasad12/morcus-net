@@ -139,7 +139,7 @@ async function route(
   init: RequestInit | undefined
 ): Promise<Routed | undefined> {
   const q = url.searchParams;
-  if (url.pathname === "/v2/api/completions") {
+  if (url.pathname === "/api/completions") {
     const prefix = q.get("prefix");
     const body = prefix
       ? await getV2DictChunks(FAKE_COMPLETIONS, { rawPrefix: prefix })
@@ -149,12 +149,12 @@ async function route(
         });
     return { status: 200, body: JSON.stringify(body) };
   }
-  const lemmata = /^\/v2\/api\/corpus\/lemmata\/([^/])$/.exec(url.pathname);
+  const lemmata = /^\/api\/corpus\/lemmata\/([^/])$/.exec(url.pathname);
   if (lemmata) {
     const letter = decodeURIComponent(lemmata[1]).toLowerCase();
     return { status: 200, body: LEMMA_SHARDS.get(letter) ?? "[]" };
   }
-  if (url.pathname === "/v2/dicts" && isPartial(url, init)) {
+  if (url.pathname === "/dicts" && isPartial(url, init)) {
     const query = q.get("q") ?? "";
     const body = renderDictResultsHtml(
       query,
@@ -163,7 +163,7 @@ async function route(
     );
     return { status: 200, body, isHtml: true };
   }
-  if (url.pathname === "/v2/corpus" && isPartial(url, init)) {
+  if (url.pathname === "/corpus" && isPartial(url, init)) {
     const view = await runCorpusSearch(
       parseCorpusParams(Object.fromEntries(q)),
       ssrFixtureCorpusEngine(),
@@ -175,7 +175,7 @@ async function route(
       isHtml: true,
     };
   }
-  if (url.pathname === "/v2/macronizer" && isPartial(url, init)) {
+  if (url.pathname === "/macronizer" && isPartial(url, init)) {
     const parsed = parseMacronizeBody(parseUrlEncoded(init?.body));
     if (parsed.kind !== "ok") {
       return {
@@ -198,7 +198,7 @@ async function route(
       isHtml: true,
     };
   }
-  if (url.pathname === "/v2/macronizer/apply" && isPartial(url, init)) {
+  if (url.pathname === "/macronizer/apply" && isPartial(url, init)) {
     const parsed = parseApplyBody(parseUrlEncoded(init?.body));
     if (parsed.parseResult.kind !== "ok") {
       return { status: 400, body: "" };
@@ -222,8 +222,9 @@ async function route(
     };
   }
   // As `reader_routes.server.ts` serves them.
-  const translation =
-    /^\/v2\/work\/([^/]+)\/([^/]+)\/([^/]+)\/translation$/.exec(url.pathname);
+  const translation = /^\/work\/([^/]+)\/([^/]+)\/([^/]+)\/translation$/.exec(
+    url.pathname
+  );
   if (translation) {
     const [, author, name, page] = translation.map(decodeURIComponent);
     const work = await findReaderWork(author, name);
@@ -232,9 +233,7 @@ async function route(
       ? { status: 404, body: "Translation not found" }
       : { status: 200, body, isHtml: true };
   }
-  const reader = /^\/v2\/work\/([^/]+)\/([^/]+)(?:\/([^/]+))?$/.exec(
-    url.pathname
-  );
+  const reader = /^\/work\/([^/]+)\/([^/]+)(?:\/([^/]+))?$/.exec(url.pathname);
   if (reader && isPartial(url, init)) {
     const [, author, name, pageId] = reader.map((s) =>
       s === undefined ? s : decodeURIComponent(s)

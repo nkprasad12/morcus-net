@@ -42,6 +42,12 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     const isPartial = isPartialRequest(req, res);
     const isEmbedded = isEmbeddedRequest(req);
 
+    // Legacy V1 compatibility: `/dicts?q=<id>&o=2` was V1's article ID lookup URL.
+    if (req.query.o === "2" && query && !isPartial) {
+      res.redirect(`/dicts/id/${encodeURIComponent(query)}`);
+      return;
+    }
+
     const dictScale = parseDictScale(req.query.scale);
 
     // Resolve dictionary selection based on precedence:
@@ -232,7 +238,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     const dictScale = parseDictScale(req.query.scale);
 
     if (!id) {
-      res.redirect("/v2/dicts");
+      res.redirect("/dicts");
       return;
     }
 
@@ -241,7 +247,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     const searchQuery = typeof req.query.q === "string" ? req.query.q : "";
     if (searchQuery && !isPartial) {
       const url = new URL(req.originalUrl, "http://localhost");
-      res.redirect(`/v2/dicts${url.search}`);
+      res.redirect(`/dicts${url.search}`);
       return;
     }
 

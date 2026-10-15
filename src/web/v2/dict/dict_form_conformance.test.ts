@@ -31,7 +31,7 @@ import {
 import { serializeGetForm } from "@/web/v2/testing/form_roundtrip";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -123,7 +123,6 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
 
     app = express();
     app.use(
-      "/v2",
       createV2Router(mockFusedDict as FusedDictionary, {
         corpus: fakeCorpusEngine(() =>
           fakeResult({
@@ -150,7 +149,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     const cookies: Record<string, string> = {};
 
     // --- Step 1: Load initial search page, select ONLY Gaffiot (GAF) and Georges (GRG), Done ---
-    const res1 = await request(app).get("/v2/dicts?q=amo");
+    const res1 = await request(app).get("/dicts?q=amo");
     expect(res1.status).toBe(200);
     document.body.innerHTML = res1.text;
 
@@ -221,9 +220,9 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     expect(getCheckedDictKeys(document.body)).toEqual(["GAF", "GRG"]);
     expect(res3.text).not.toContain("guest-chip");
 
-    // --- Step 3: Navigate to `/v2/dicts?q=rex` with cookie only (no dict params in URL) ---
+    // --- Step 3: Navigate to `/dicts?q=rex` with cookie only (no dict params in URL) ---
     const res4 = await request(app)
-      .get("/v2/dicts?q=rex")
+      .get("/dicts?q=rex")
       .set("Cookie", formatCookieHeader(cookies));
     expect(res4.status).toBe(200);
     expect(mockGetEntry).toHaveBeenLastCalledWith(
@@ -243,7 +242,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
 
     // --- Step 4: Open someone's link with inflection off: guest mode, nothing saved ---
     const res5 = await request(app)
-      .get(`/v2/dicts?q=rex&d=${encodeDictBitmask(["GAF", "GRG"])}&o=0`)
+      .get(`/dicts?q=rex&d=${encodeDictBitmask(["GAF", "GRG"])}&o=0`)
       .set("Cookie", formatCookieHeader(cookies));
     expect(res5.status).toBe(200);
     Object.assign(cookies, extractCookies(res5.header["set-cookie"]));
@@ -348,7 +347,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
   });
 
   test("Enter in the search box never saves: the search form has no save submitter", async () => {
-    const res = await request(app).get("/v2/dicts?q=amo");
+    const res = await request(app).get("/dicts?q=amo");
     document.body.innerHTML = res.text;
     const search =
       document.body.querySelector<HTMLFormElement>("form.search-form")!;
@@ -363,7 +362,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
 
     // 1. `dict` checkbox param beats `d` bitmask and cookie
     await request(app)
-      .get(`/v2/dicts?q=amo&dict=GAF&d=${lsBitmask}`)
+      .get(`/dicts?q=amo&dict=GAF&d=${lsBitmask}`)
       .set("Cookie", "morcus_d=g"); // g = S&H (16)
     expect(mockGetEntry).toHaveBeenLastCalledWith(
       {
@@ -376,7 +375,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
 
     // 2. `d` bitmask beats legacy `in` and cookie
     await request(app)
-      .get(`/v2/dicts?q=amo&d=${grgBitmask}&in=L%26S`)
+      .get(`/dicts?q=amo&d=${grgBitmask}&in=L%26S`)
       .set("Cookie", "morcus_d=g"); // g = S&H (16)
     expect(mockGetEntry).toHaveBeenLastCalledWith(
       {
@@ -388,7 +387,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     );
 
     // 3. Single checkbox selection (`?dict=GAF`) is preserved as a 1-element array
-    const singleRes = await request(app).get("/v2/dicts?q=amo&dict=GAF");
+    const singleRes = await request(app).get("/dicts?q=amo&dict=GAF");
     document.body.innerHTML = singleRes.text;
     expect(getRenderedDictTitles(document.body)).toEqual(["Gaffiot"]);
     expect(getCheckedDictKeys(document.body)).toEqual(["GAF"]);

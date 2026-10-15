@@ -109,9 +109,6 @@ export function setupServer(params: WebServerParams): void {
   app.get("/robots.txt", (_, res) => {
     res.sendFile(path.resolve("public", "robots.txt"), { maxAge: MAX_AGE });
   });
-  if (params.v2Router) {
-    app.use("/v2", params.v2Router);
-  }
   app.use("/offlineData/:resourceName", (req, res) => {
     res.header("Content-Type", "application/octet-stream");
     const resourceName: string = req.params["resourceName"];
@@ -129,18 +126,28 @@ export function setupServer(params: WebServerParams): void {
   });
   app.use("/public", express.static("public", STATIC_OPTIONS));
   app.use("/.well-known", express.static("public", STATIC_OPTIONS));
-  app.use(express.static(params.buildDir, STATIC_OPTIONS));
+  if (params.v2Router) {
+    app.use("/", params.v2Router);
+  }
+  app.use(
+    express.static(params.buildDir, {
+      ...STATIC_OPTIONS,
+      index: params.v2Router ? false : undefined,
+    })
+  );
 
-  app.use("/*", (req, res, next) => {
-    if (!req.baseUrl.startsWith("/api/")) {
-      // Force users to always fetch the index from the server so that they
-      // always get the latest Javascript bundles.
-      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      res.sendFile(path.join(params.buildDir, "index.html"));
-      return;
-    }
-    next();
-  });
+  if (!params.v2Router) {
+    app.use("/*", (req, res, next) => {
+      if (!req.baseUrl.startsWith("/api/")) {
+        // Force users to always fetch the index from the server so that they
+        // always get the latest Javascript bundles.
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.sendFile(path.join(params.buildDir, "index.html"));
+        return;
+      }
+      next();
+    });
+  }
 
   params.routes.forEach((r) => addApi(params, r));
 }

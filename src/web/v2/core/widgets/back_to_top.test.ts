@@ -113,7 +113,7 @@ describe("setupBackToTop", () => {
       scrollY: 500,
       location: {
         hash: "#some-anchor",
-        pathname: "/v2/dicts",
+        pathname: "/dicts",
         search: "?q=test",
       },
       history: { replaceState },
@@ -130,7 +130,7 @@ describe("setupBackToTop", () => {
 
     expect(event.defaultPrevented).toBe(true);
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "instant" });
-    expect(replaceState).toHaveBeenCalledWith(null, "", "/v2/dicts?q=test");
+    expect(replaceState).toHaveBeenCalledWith(null, "", "/dicts?q=test");
   });
 
   test("does not call replaceState on click if hash is empty", () => {
@@ -141,7 +141,7 @@ describe("setupBackToTop", () => {
 
     const mockWin = {
       scrollY: 500,
-      location: { hash: "", pathname: "/v2/dicts", search: "?q=test" },
+      location: { hash: "", pathname: "/dicts", search: "?q=test" },
       history: { replaceState },
       scrollTo,
       addEventListener: jest.fn(),

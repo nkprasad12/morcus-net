@@ -50,8 +50,8 @@ function createFixture(
   root.className = "reader-split-layout";
   const panel = renderReaderDictPanelHtml({
     query: "",
-    dictIframeSrc: "/v2/dicts?embedded=1",
-    closeHref: "/v2/work/caesar/de_bello_gallico",
+    dictIframeSrc: "/dicts?embedded=1",
+    closeHref: "/work/caesar/de_bello_gallico",
     companion: companion && {
       notesHtml: "",
       aboutHtml: "",

@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 export interface V2VisualScenarioOptions {
-  /** Relative URL path to test, e.g. "/v2/dicts" */
+  /** Relative URL path to test, e.g. "/dicts" */
   path: string;
   /** Optional selector to wait for before taking the screenshot */
   waitFor?: string;

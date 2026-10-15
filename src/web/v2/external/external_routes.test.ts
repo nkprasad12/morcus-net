@@ -16,18 +16,18 @@ const TEXT = [
 
 function makeApp(scrape: (url: string) => Promise<string>) {
   const app = express();
-  app.use("/v2", createExternalRoutes({ scrape }));
+  app.use("/", createExternalRoutes({ scrape }));
   return app;
 }
 
-describe("GET /v2/externalReader", () => {
+describe("GET /externalReader", () => {
   test("without a url, renders the No-JS import form", async () => {
     const scrape = jest.fn();
-    const res = await request(makeApp(scrape)).get("/v2/externalReader");
+    const res = await request(makeApp(scrape)).get("/externalReader");
 
     expect(res.status).toBe(200);
     expect(res.text).toContain("<!DOCTYPE html>");
-    expect(res.text).toContain('action="/v2/externalReader"');
+    expect(res.text).toContain('action="/externalReader"');
     expect(res.text).toContain('method="get"');
     expect(res.text).toContain('name="url"');
     expect(res.text).toMatch(/value="keep" checked/);
@@ -35,7 +35,7 @@ describe("GET /v2/externalReader", () => {
   });
 
   test("offers paste as a JS-only tab beside the web-page import", async () => {
-    const res = await request(makeApp(jest.fn())).get("/v2/externalReader");
+    const res = await request(makeApp(jest.fn())).get("/externalReader");
 
     expect(res.text).toContain(
       '<morcus-external-loader class="external-landing"'
@@ -70,7 +70,7 @@ describe("GET /v2/externalReader", () => {
       makeApp(async () => {
         throw new UnsafeUrlError("Local addresses are not allowed");
       })
-    ).get(`/v2/externalReader?url=${encodeURIComponent("http://localhost/")}`);
+    ).get(`/externalReader?url=${encodeURIComponent("http://localhost/")}`);
 
     expect(res.text).toMatch(/id="external-source-url" value="url" checked/);
     expect(res.text).not.toMatch(
@@ -81,7 +81,7 @@ describe("GET /v2/externalReader", () => {
   test("?local= renders a reader shell for the saved text, never scraping", async () => {
     const scrape = jest.fn();
     const res = await request(makeApp(scrape)).get(
-      "/v2/externalReader?local=abc123&lines=verse"
+      "/externalReader?local=abc123&lines=verse"
     );
 
     expect(res.status).toBe(200);
@@ -94,14 +94,14 @@ describe("GET /v2/externalReader", () => {
     expect(res.text).toContain('class="external-notice" data-nojs-only');
     // Line modes stay on the saved text.
     expect(res.text).toContain(
-      'href="/v2/externalReader?local=abc123&amp;lines=prose"'
+      'href="/externalReader?local=abc123&amp;lines=prose"'
     );
   });
 
   test("renders the imported text in the shared reader frame", async () => {
     const scrape = jest.fn(async () => TEXT);
     const res = await request(makeApp(scrape)).get(
-      `/v2/externalReader?url=${SOURCE_PARAM}`
+      `/externalReader?url=${SOURCE_PARAM}`
     );
 
     expect(res.status).toBe(200);
@@ -131,7 +131,7 @@ describe("GET /v2/externalReader", () => {
 
   test("keeps No-JS lookups on the page with the drawer open", async () => {
     const res = await request(makeApp(async () => TEXT)).get(
-      `/v2/externalReader?url=${SOURCE_PARAM}&q=tandem`
+      `/externalReader?url=${SOURCE_PARAM}&q=tandem`
     );
 
     expect(res.status).toBe(200);
@@ -139,16 +139,16 @@ describe("GET /v2/externalReader", () => {
       "<title>example.com: Quo usque tandem abutere Catilina - Morcus Latin Tools</title>"
     );
     expect(res.text).toContain("reader-layout-active");
-    expect(res.text).toContain("/v2/dicts?q=tandem&amp;lang=La&amp;o=1");
+    expect(res.text).toContain("/dicts?q=tandem&amp;lang=La&amp;o=1");
     // Closing returns to the same import without the lookup.
     expect(res.text).toContain(
-      `href="/v2/externalReader?url=${SOURCE_PARAM}#reader-dict-dismissed"`
+      `href="/externalReader?url=${SOURCE_PARAM}#reader-dict-dismissed"`
     );
   });
 
   test("offers the other line modes as plain links", async () => {
     const res = await request(makeApp(async () => TEXT)).get(
-      `/v2/externalReader?url=${SOURCE_PARAM}&lines=verse`
+      `/externalReader?url=${SOURCE_PARAM}&lines=verse`
     );
 
     expect(res.status).toBe(200);
@@ -157,36 +157,34 @@ describe("GET /v2/externalReader", () => {
       /<span class="external-mode-link" aria-current="true">Number lines as verse<\/span>/
     );
     expect(res.text).toContain(
-      `href="/v2/externalReader?url=${SOURCE_PARAM}&amp;lines=prose"`
+      `href="/externalReader?url=${SOURCE_PARAM}&amp;lines=prose"`
     );
-    expect(res.text).toContain(`href="/v2/externalReader?url=${SOURCE_PARAM}"`);
+    expect(res.text).toContain(`href="/externalReader?url=${SOURCE_PARAM}"`);
   });
 
   test("redirects to the canonical URL", async () => {
     const app = makeApp(async () => TEXT);
 
     const withDefault = await request(app).get(
-      `/v2/externalReader?url=${SOURCE_PARAM}&lines=keep&utm=x`
+      `/externalReader?url=${SOURCE_PARAM}&lines=keep&utm=x`
     );
     expect(withDefault.status).toBe(302);
     expect(withDefault.header.location).toBe(
-      `/v2/externalReader?url=${SOURCE_PARAM}`
+      `/externalReader?url=${SOURCE_PARAM}`
     );
 
-    const unencoded = await request(app).get(
-      `/v2/externalReader?url=${SOURCE}`
-    );
+    const unencoded = await request(app).get(`/externalReader?url=${SOURCE}`);
     expect(unencoded.status).toBe(302);
     expect(unencoded.header.location).toBe(
-      `/v2/externalReader?url=${SOURCE_PARAM}`
+      `/externalReader?url=${SOURCE_PARAM}`
     );
   });
 
   test("scrapes a shared link once for many readers", async () => {
     const scrape = jest.fn(async () => TEXT);
     const app = makeApp(scrape);
-    await request(app).get(`/v2/externalReader?url=${SOURCE_PARAM}`);
-    await request(app).get(`/v2/externalReader?url=${SOURCE_PARAM}&q=tandem`);
+    await request(app).get(`/externalReader?url=${SOURCE_PARAM}`);
+    await request(app).get(`/externalReader?url=${SOURCE_PARAM}&q=tandem`);
     expect(scrape).toHaveBeenCalledTimes(1);
   });
 
@@ -195,7 +193,7 @@ describe("GET /v2/externalReader", () => {
       makeApp(async () => {
         throw new UnsafeUrlError("Local addresses are not allowed");
       })
-    ).get(`/v2/externalReader?url=${encodeURIComponent("http://localhost/")}`);
+    ).get(`/externalReader?url=${encodeURIComponent("http://localhost/")}`);
 
     expect(res.status).toBe(400);
     expect(res.text).toContain('role="alert"');
@@ -211,7 +209,7 @@ describe("GET /v2/externalReader", () => {
       q: hostile,
     });
     const res = await request(makeApp(async () => `${hostile} salve`)).get(
-      `/v2/externalReader?${search}`
+      `/externalReader?${search}`
     );
 
     expect(res.status).toBe(200);

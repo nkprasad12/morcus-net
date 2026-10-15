@@ -14,7 +14,7 @@ describe("createDictChunkCache", () => {
     global.fetch = originalFetch;
   });
 
-  test("fetches /v2/api/completions?prefix=... and caches the chunk on success", async () => {
+  test("fetches /api/completions?prefix=... and caches the chunk on success", async () => {
     const cache = createDictChunkCache();
     const mockResponse = {
       "L&S": ["amabilis", "amator"],
@@ -30,7 +30,7 @@ describe("createDictChunkCache", () => {
     const data1 = await cache.load("am");
     expect(data1).toEqual(mockResponse);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith("/v2/api/completions?prefix=am");
+    expect(fetchMock).toHaveBeenCalledWith("/api/completions?prefix=am");
     expect(cache.has("am")).toBe(true);
 
     const data2 = await cache.load("am");
@@ -49,7 +49,7 @@ describe("createDictChunkCache", () => {
 
       await createDictChunkCache().load("am");
       expect(fetchMock).toHaveBeenCalledWith(
-        "/v2/api/completions?prefix=am&v=abc123"
+        "/api/completions?prefix=am&v=abc123"
       );
     } finally {
       delete document.documentElement.dataset.version;

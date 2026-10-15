@@ -1,5 +1,5 @@
 /**
- * Server renderers for the External Content Reader (`/v2/externalReader`).
+ * Server renderers for the External Content Reader (`/externalReader`).
  *
  * The reading page reuses the library reader's frame, dictionary panel, and
  * typography popover (see `reader.server.ts`) and renders the text into the
@@ -187,7 +187,7 @@ export function renderExternalLandingContentHtml(
       </section>
 
       <p class="external-landing-back">
-        <a href="/v2/library">&larr; Return to Library Catalog</a>
+        <a href="/library">&larr; Return to Library Catalog</a>
       </p>
     </morcus-external-loader>
   `;

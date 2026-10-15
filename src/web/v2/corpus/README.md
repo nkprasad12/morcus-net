@@ -1,6 +1,6 @@
 # Corpus (`src/web/v2/corpus/`)
 
-Corpus search at `/v2/corpus`, backed by the Rust corpus engine. Related docs: [`TODOS.md`](TODOS.md) (open work and the word-boundary rule) and the archived design, [`../docs/archive/CORPUS_DESIGN.md`](../docs/archive/CORPUS_DESIGN.md), which has the full rationale and V1 deviations.
+Corpus search at `/corpus`, backed by the Rust corpus engine. Related docs: [`TODOS.md`](TODOS.md) (open work and the word-boundary rule) and the archived design, [`../docs/archive/CORPUS_DESIGN.md`](../docs/archive/CORPUS_DESIGN.md), which has the full rationale and V1 deviations.
 
 The page is a plain `GET` form. The query, including any `#Author` filter, the settings and the page cursor all live in the URL, so with JS off a user can search, change settings, page, and follow result links into the reader. With JS on, `<morcus-corpus-view>` swaps only the regions that change, and `<morcus-corpus-suggestions>` adds client-side autocomplete.
 
@@ -28,7 +28,7 @@ The page is a plain `GET` form. The query, including any `#Author` filter, the s
 
 ```mermaid
 flowchart TD
-  R["GET /v2/corpus?q=...&..."] --> P["parseCorpusParams (corpus_query.server.ts)"]
+  R["GET /corpus?q=...&..."] --> P["parseCorpusParams (corpus_query.server.ts)"]
   P -->|q empty| L["Landing view"]
   P --> V["validate + transformQuery (corpus_syntax.common.ts)"]
   V -->|grammar error| E["Error view (200), engine not called"]
@@ -43,7 +43,7 @@ flowchart TD
 
 - **User errors return 200.** Grammar errors, engine parse errors and over-long queries render the message in the `results` slot. No-JS users see it next to their query, and `swapSlots` falls back to a full navigation on any non-2xx.
 - **Engine errors return 503.** Missing bindings or a failed init give a 503 full page. A partial request gets the same 503, and `swapSlots` falls back to navigating there.
-- **`Vary: X-Requested-With`** is set on every `/v2/corpus` response, because the same URL serves a full page or a slot fragment.
+- **`Vary: X-Requested-With`** is set on every `/corpus` response, because the same URL serves a full page or a slot fragment.
 - **No `Cache-Control` for HTML.** `runQuery` is synchronous and blocks the event loop, as V1's does.
 - **Engine wiring.** `start_server.ts` builds one `rustCorpusApiHandler()` and passes it in with `createV2Router(fusedDict, { corpus })`. Tests inject a fake handler (`testing/fake_corpus_engine.ts`), so nothing needs the Rust bindings or `build/corpus`.
 
@@ -52,17 +52,17 @@ flowchart TD
 Each match becomes:
 
 - **Heading:** `${workName} ${leaders[0][0]} [${author}]`, as a link.
-- **Link:** `/v2/work/${urlAuthor}/${urlName}?matchText=…`. The slugs come from `getV2LibrarySummaries()`; `matchText` comes from `textHighlightParams`. The reader route redirects a page-less `matchText` link to the right page with a `#sec-` hash. An unknown `workId` renders the heading as plain text and logs a warning.
+- **Link:** `/work/${urlAuthor}/${urlName}?matchText=…`. The slugs come from `getV2LibrarySummaries()`; `matchText` comes from `textHighlightParams`. The reader route redirects a page-less `matchText` link to the right page with a `#sec-` hash. An unknown `workId` renders the heading as plain text and logs a warning.
 - **Snippet:** text runs with `<mark class="corpus-match">` around matches, in `white-space: pre-line`.
 
 The server imports `reader_loader.server.ts` and `reader_highlight.common.ts` (the `matchText` contract) from `reader/`. Nothing crosses slices in the client bundle.
 
 ### Routes
 
-| Route                                | Response                                                                                                                                                                                                                                                                                                          |
-| :----------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v2/corpus`                     | Full page or slot templates                                                                                                                                                                                                                                                                                       |
-| `GET /v2/api/corpus/lemmata/:letter` | JSON array of lemmata starting with `letter` (one lowercased char). URLs carry `?v=<build version>` (`withBuildVersion`, from `<html data-version>`); a request at the server's current version gets `Cache-Control: public, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`). |
+| Route                             | Response                                                                                                                                                                                                                                                                                                          |
+| :-------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /corpus`                     | Full page or slot templates                                                                                                                                                                                                                                                                                       |
+| `GET /api/corpus/lemmata/:letter` | JSON array of lemmata starting with `letter` (one lowercased char). URLs carry `?v=<build version>` (`withBuildVersion`, from `<html data-version>`); a request at the server's current version gets `Cache-Control: public, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`). |
 
 ---
 

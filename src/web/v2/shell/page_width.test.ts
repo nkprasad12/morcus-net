@@ -22,7 +22,7 @@ import "@/web/v2/reader/reader_settings.client";
 
 jest.mock("@/web/v2/v2-critical.css", () => ({}));
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "",
   getV2CriticalJs: () => "",
 }));
@@ -179,7 +179,7 @@ describe("pre-paint", () => {
 
 describe("server markup", () => {
   test("dictionary search bar has no page width select", () => {
-    const html = renderDictSearchBar({ query: "", action: "/v2/dicts" });
+    const html = renderDictSearchBar({ query: "", action: "/dicts" });
     expect(html).not.toContain("dict-width-select");
     expect(html).not.toContain("page-width-row");
   });

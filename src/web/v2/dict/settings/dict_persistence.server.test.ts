@@ -24,7 +24,7 @@ describe("planDictPersistence", () => {
     test("own form submit with save=1: writes, then 303s to the canonical URL without the marker", () => {
       const plan = planDictPersistence({
         ...BASE,
-        originalUrl: "/v2/dicts?q=amo&dict=GAF&o=0&o=1&save=1",
+        originalUrl: "/dicts?q=amo&dict=GAF&o=0&o=1&save=1",
         keysFromQuery: ["GAF"],
         oParam: true,
       });
@@ -32,25 +32,25 @@ describe("planDictPersistence", () => {
         expect.stringMatching(/^morcus_d=2;/),
         expect.stringMatching(/^morcus_inflected=1;/),
       ]);
-      expect(plan.redirectTo).toBe("/v2/dicts?q=amo&o=1&d=2");
+      expect(plan.redirectTo).toBe("/dicts?q=amo&o=1&d=2");
     });
 
     test("cross-site request with save=1 strips the marker without writing cookies", () => {
       const plan = planDictPersistence({
         ...BASE,
-        originalUrl: "/v2/dicts?q=amo&dict=GAF&o=0&save=1",
+        originalUrl: "/dicts?q=amo&dict=GAF&o=0&save=1",
         secFetchSite: "cross-site",
         keysFromQuery: ["GAF"],
         oParam: false,
       });
       expect(plan.cookies).toEqual([]);
-      expect(plan.redirectTo).toBe("/v2/dicts?q=amo&o=0&d=2");
+      expect(plan.redirectTo).toBe("/dicts?q=amo&o=0&d=2");
     });
 
     test("same-origin request with save=1 writes cookies normally", () => {
       const plan = planDictPersistence({
         ...BASE,
-        originalUrl: "/v2/dicts?q=amo&dict=GAF&o=0&save=1",
+        originalUrl: "/dicts?q=amo&dict=GAF&o=0&save=1",
         secFetchSite: "same-origin",
         keysFromQuery: ["GAF"],
         oParam: false,
@@ -59,13 +59,13 @@ describe("planDictPersistence", () => {
         "morcus_d",
         "morcus_inflected",
       ]);
-      expect(plan.redirectTo).toBe("/v2/dicts?q=amo&o=0&d=2");
+      expect(plan.redirectTo).toBe("/dicts?q=amo&o=0&d=2");
     });
 
     test("recipient opens a shared link: writes nothing new, renders in place", () => {
       const plan = planDictPersistence({
         ...BASE,
-        originalUrl: "/v2/dicts?q=amo&dict=GAF",
+        originalUrl: "/dicts?q=amo&dict=GAF",
         cookieHeader: "morcus_d=1",
         keysFromQuery: ["GAF"],
       });
@@ -77,7 +77,7 @@ describe("planDictPersistence", () => {
     test("recipient's own bare search afterwards: still nothing new", () => {
       const plan = planDictPersistence({
         ...BASE,
-        originalUrl: "/v2/dicts?q=amo",
+        originalUrl: "/dicts?q=amo",
         cookieHeader: "morcus_d=1",
       });
       expect(plan.redirectTo).toBeUndefined();
@@ -88,7 +88,7 @@ describe("planDictPersistence", () => {
   test("an ordinary No-JS search (Enter) persists nothing", () => {
     const plan = planDictPersistence({
       ...BASE,
-      originalUrl: "/v2/dicts?q=amo&o=0&dict=GAF",
+      originalUrl: "/dicts?q=amo&o=0&dict=GAF",
       keysFromQuery: ["GAF"],
       oParam: false,
     });
@@ -98,22 +98,22 @@ describe("planDictPersistence", () => {
   test("save=1 with only inflection in the URL writes only inflection", () => {
     const plan = planDictPersistence({
       ...BASE,
-      originalUrl: "/v2/dicts?o=0&save=1",
+      originalUrl: "/dicts?o=0&save=1",
       oParam: false,
     });
     expect(cookieNames(plan.cookies)).toEqual(["morcus_inflected"]);
-    expect(plan.redirectTo).toBe("/v2/dicts?o=0");
+    expect(plan.redirectTo).toBe("/dicts?o=0");
   });
 
   test("the redirect canonicalizes dict keys to d=<bitmask> and keeps other params", () => {
     const plan = planDictPersistence({
       ...BASE,
       originalUrl:
-        "/v2/dicts?q=amo&dict=L%26S&dict=GRG&save=1&scale=120&embedded=0",
+        "/dicts?q=amo&dict=L%26S&dict=GRG&save=1&scale=120&embedded=0",
       keysFromQuery: ["L&S", "GRG"],
     });
     const target = new URL(plan.redirectTo!, "http://x");
-    expect(target.pathname).toBe("/v2/dicts");
+    expect(target.pathname).toBe("/dicts");
     expect(target.searchParams.get("d")).toBe("1t");
     expect(target.searchParams.has("dict")).toBe(false);
     expect(target.searchParams.get("q")).toBe("amo");
@@ -124,7 +124,7 @@ describe("planDictPersistence", () => {
   test("partial requests never write or redirect, even with save=1", () => {
     const plan = planDictPersistence({
       ...BASE,
-      originalUrl: "/v2/dicts?q=amo&d=2&save=1&format=partial",
+      originalUrl: "/dicts?q=amo&d=2&save=1&format=partial",
       cookieHeader: "morcus_d=1",
       isPartial: true,
       keysFromQuery: ["GAF"],
@@ -134,7 +134,7 @@ describe("planDictPersistence", () => {
 
   describe("scoped views", () => {
     // The reader's lookup: Latin lexica only, inflection forced on.
-    const READER = "/v2/dicts?q=arma&lang=La&o=1&embedded=1";
+    const READER = "/dicts?q=arma&lang=La&o=1&embedded=1";
     // L&S + S&H + GRG: one From-Latin and two To-Latin dictionaries.
     const SAVED = encodeDictBitmask(["L&S", "S&H", "GRG"]);
 
@@ -241,7 +241,7 @@ describe("planDictPersistence", () => {
     test("an embedded view without lang merges across every dictionary", () => {
       const plan = planDictPersistence({
         ...BASE,
-        originalUrl: "/v2/dicts?q=arma&embedded=1&dict=GAF&o=0&save=1",
+        originalUrl: "/dicts?q=arma&embedded=1&dict=GAF&o=0&save=1",
         cookieHeader: `morcus_d=${SAVED}; morcus_inflected=1`,
         isScopedView: true,
         keysFromQuery: ["GAF"],
@@ -254,7 +254,7 @@ describe("planDictPersistence", () => {
   test("save=0 or other values are not a save", () => {
     const plan = planDictPersistence({
       ...BASE,
-      originalUrl: "/v2/dicts?q=amo&dict=GAF&save=0",
+      originalUrl: "/dicts?q=amo&dict=GAF&save=0",
       keysFromQuery: ["GAF"],
     });
     expect(plan).toEqual({ cookies: [] });
@@ -264,7 +264,7 @@ describe("planDictPersistence", () => {
     test("re-sends both existing cookies with their own values", () => {
       const plan = planDictPersistence({
         ...BASE,
-        originalUrl: "/v2/dicts?q=amo&d=an&o=1",
+        originalUrl: "/dicts?q=amo&d=an&o=1",
         cookieHeader: "morcus_d=3; morcus_inflected=0",
         keysFromQuery: ["L&S"],
         oParam: true,
@@ -278,7 +278,7 @@ describe("planDictPersistence", () => {
     test("does not re-send unparseable or stale cookies", () => {
       const plan = planDictPersistence({
         ...BASE,
-        originalUrl: "/v2/dicts?q=amo",
+        originalUrl: "/dicts?q=amo",
         cookieHeader:
           "morcus_dicts=L%26S; morcus_d=L%26S; morcus_inflected=maybe",
       });
@@ -291,22 +291,22 @@ describe("ownSettingsHref", () => {
   test("drops every settings parameter and keeps the rest", () => {
     expect(
       ownSettingsHref(
-        "/v2/dicts?q=amo&d=2&dict=GAF&in=ls&o=0&o=1&save=1&embedded=1&scale=90"
+        "/dicts?q=amo&d=2&dict=GAF&in=ls&o=0&o=1&save=1&embedded=1&scale=90"
       )
-    ).toBe("/v2/dicts?q=amo&embedded=1&scale=90");
+    ).toBe("/dicts?q=amo&embedded=1&scale=90");
   });
 
   test("works on a URL with nothing to drop", () => {
-    expect(ownSettingsHref("/v2/dicts?q=amo")).toBe("/v2/dicts?q=amo");
-    expect(ownSettingsHref("/v2/dicts")).toBe("/v2/dicts");
+    expect(ownSettingsHref("/dicts?q=amo")).toBe("/dicts?q=amo");
+    expect(ownSettingsHref("/dicts")).toBe("/dicts");
   });
 
   test("keepInflection keeps o (and the scope) for scoped views", () => {
     expect(
       ownSettingsHref(
-        "/v2/dicts?q=amo&lang=La&o=1&embedded=1&scale=90&d=2&dict=GAF&in=ls&save=1",
+        "/dicts?q=amo&lang=La&o=1&embedded=1&scale=90&d=2&dict=GAF&in=ls&save=1",
         { keepInflection: true }
       )
-    ).toBe("/v2/dicts?q=amo&lang=La&o=1&embedded=1&scale=90");
+    ).toBe("/dicts?q=amo&lang=La&o=1&embedded=1&scale=90");
   });
 });

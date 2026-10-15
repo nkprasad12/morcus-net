@@ -48,7 +48,7 @@ beforeEach(() => {
   document.body.innerHTML = `
     <div id="dict-results">
       <article class="entry" id="n20077">
-        <a href="/v2/dicts/id/n20077" class="tab-pill copy-pill">Copy link</a>
+        <a href="/dicts/id/n20077" class="tab-pill copy-pill">Copy link</a>
         <li id="n20077.1">
           <a href="#n20077.1" class="section-anchor">I.</a>
           Lit., <span class="lsTrans">to have</span>, <span class="lsQuote"><span class="lat-word" data-word="aliquid">aliquid</span></span>
@@ -83,7 +83,7 @@ describe("handleDictPermalinkClick", () => {
     expect(handled).toBe(true);
     expect(event.defaultPrevented).toBe(true);
     expect(document.querySelector(".section-action-menu")).toBeNull();
-    expect(copied).toEqual([`${ORIGIN}/v2/dicts/id/n20077`]);
+    expect(copied).toEqual([`${ORIGIN}/dicts/id/n20077`]);
   });
 
   test("opens section action menu on section-anchor click and copies article-qualified permalink", async () => {
@@ -102,7 +102,7 @@ describe("handleDictPermalinkClick", () => {
     await flush();
 
     expect(document.querySelector(".section-action-menu")).toBeNull();
-    expect(copied).toEqual([`${ORIGIN}/v2/dicts/id/n20077#n20077.1`]);
+    expect(copied).toEqual([`${ORIGIN}/dicts/id/n20077#n20077.1`]);
   });
 
   test("still copies a section link whose target does not resolve", async () => {
@@ -116,7 +116,7 @@ describe("handleDictPermalinkClick", () => {
       .click();
     await flush();
 
-    expect(copied).toEqual([`${ORIGIN}/v2/dicts/id/n20077#missing.9`]);
+    expect(copied).toEqual([`${ORIGIN}/dicts/id/n20077#missing.9`]);
   });
 
   test("ignores a section anchor with no resolvable article id", async () => {
@@ -149,7 +149,7 @@ describe("handleDictPermalinkClick", () => {
     clickOn("a.copy-pill");
     await flush();
 
-    expect(assign).toHaveBeenCalledWith(`${ORIGIN}/v2/dicts/id/n20077`);
+    expect(assign).toHaveBeenCalledWith(`${ORIGIN}/dicts/id/n20077`);
   });
 
   describe("section action menu dismissal", () => {
@@ -542,7 +542,7 @@ describe("handleDictPermalinkClick", () => {
       });
     });
 
-    test("submits editedText with userEdit tag to /v2/api/report and restores DOM", async () => {
+    test("submits editedText with userEdit tag to /api/report and restores DOM", async () => {
       const fetchMock = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
@@ -571,7 +571,7 @@ describe("handleDictPermalinkClick", () => {
       );
       await flush();
 
-      expect(fetchMock).toHaveBeenCalledWith("/v2/api/report", {
+      expect(fetchMock).toHaveBeenCalledWith("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -581,7 +581,7 @@ describe("handleDictPermalinkClick", () => {
             sectionId: "n20077.1",
           },
           tags: ["userEdit"],
-          url: `${ORIGIN}/v2/dicts/id/n20077#n20077.1`,
+          url: `${ORIGIN}/dicts/id/n20077#n20077.1`,
         }),
       });
       expect(document.querySelector(".section-edit-box")).toBeNull();

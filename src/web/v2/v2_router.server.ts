@@ -20,9 +20,9 @@ import {
 } from "@/web/v2/core/server/telemetry.server";
 
 export interface V2RouterOptions extends ApiRoutesOptions {
-  /** The corpus query engine; `/v2/corpus` answers 503 without one. */
+  /** The corpus query engine; `/corpus` answers 503 without one. */
   corpus?: CorpusEngine;
-  /** The macronizer engine; `POST /v2/macronizer` answers 503 without one. */
+  /** The macronizer engine; `POST /macronizer` answers 503 without one. */
   macronizer?: MacronizerEngine;
   /**
    * Receives one `ApiCalls` row per routed request (see `telemetry.server.ts`).
@@ -40,7 +40,7 @@ export function createV2Router(
 
   // Root redirect to dictionary
   router.get("/", (_req: Request, res: Response) => {
-    res.redirect("/v2/dicts");
+    res.redirect("/dicts");
   });
 
   // The manifest is a build artifact for the server, not a client asset.

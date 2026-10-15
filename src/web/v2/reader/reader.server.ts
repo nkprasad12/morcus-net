@@ -82,7 +82,7 @@ export interface ReaderRenderContext {
 export function buildReaderDictIframeSrc(query: string): string {
   return query
     ? buildDictUrl({ q: query, inflected: true, lang: "La", embedded: "1" })
-    : "/v2/dicts?embedded=1";
+    : "/dicts?embedded=1";
 }
 
 /** The split layout opens the dictionary only when a lookup is active. */
@@ -341,7 +341,7 @@ export function renderReaderTextCard(ctx: ReaderRenderContext): string {
 
               <!-- Return to Library Link -->
               <div class="reader-library-nav">
-                <a href="/v2/library" class="reader-library-link">&larr; Return to Library Catalog</a>
+                <a href="/library" class="reader-library-link">&larr; Return to Library Catalog</a>
               </div>
             </footer>
 
@@ -689,7 +689,7 @@ export async function renderReaderPartialHtml(
   );
 }
 
-/** The work at `/v2/work/:author/:name`, or null if there is none. */
+/** The work at `/work/:author/:name`, or null if there is none. */
 export async function findReaderWork(
   author: string,
   name: string

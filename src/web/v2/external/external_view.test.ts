@@ -58,7 +58,7 @@ describe("external text in <morcus-reader-view>", () => {
   });
 
   test("marks words for a No-JS lookup carried in the URL", () => {
-    window.history.replaceState(null, "", "/v2/externalReader?q=Belgae");
+    window.history.replaceState(null, "", "/externalReader?q=Belgae");
     const view = mount("Belgae");
     expect(
       view.querySelector(".lat-word.word-active")?.getAttribute("data-word")

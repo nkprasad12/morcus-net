@@ -89,7 +89,7 @@ export function renderEntryResult(
   // or plain navigation). With JS the click is intercepted and copied instead.
   const copyPillHtml = headword
     ? `
-      <a href="/v2/dicts/id/${encodeURIComponent(entryAnchorId)}"
+      <a href="/dicts/id/${encodeURIComponent(entryAnchorId)}"
          class="tab-pill copy-pill"
          title="Copy link to this article">
         <span class="copy-pill-icon" aria-hidden="true">${renderIconSvg(

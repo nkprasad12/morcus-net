@@ -80,7 +80,7 @@ const FIXTURES: Record<string, string> = {
   "morcus-dict-suggestions": `<morcus-dict-suggestions><ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul></morcus-dict-suggestions>`,
 
   "morcus-dict-settings": renderDictSearchBar({
-    action: "/v2/dicts",
+    action: "/dicts",
   }),
 
   "morcus-dict-toc": `
@@ -93,7 +93,7 @@ const FIXTURES: Record<string, string> = {
 
   "morcus-dict-search": `
     <morcus-dict-search>
-      <form class="search-form" action="/v2/dicts" method="GET">
+      <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
           <morcus-dict-suggestions data-js-only data-input="dict-q">
@@ -132,7 +132,7 @@ const FIXTURES: Record<string, string> = {
 
   "morcus-corpus-view": `
     <morcus-corpus-view class="corpus-page">
-      <form class="search-form corpus-form" action="/v2/corpus" method="GET">
+      <form class="search-form corpus-form" action="/corpus" method="GET">
         <input type="text" name="q" class="input" value="amoris" />
         <details class="settings-details corpus-settings">
           <summary class="settings-btn">Settings</summary>
@@ -141,14 +141,14 @@ const FIXTURES: Record<string, string> = {
       </form>
       <section class="corpus-results" data-slot="results"></section>
       <nav class="corpus-pager" data-slot="pager">
-        <a href="/v2/corpus?q=amoris&amp;cursor=1-2-3" data-corpus-nav>Next</a>
+        <a href="/corpus?q=amoris&amp;cursor=1-2-3" data-corpus-nav>Next</a>
       </nav>
     </morcus-corpus-view>`,
 
   // The host finds its input by id, so after the move to <body> it must bind
   // the input and form listeners again, not just the listbox's.
   "morcus-corpus-suggestions": `
-    <form class="search-form corpus-form" action="/v2/corpus" method="GET">
+    <form class="search-form corpus-form" action="/corpus" method="GET">
       <div class="input-wrapper">
         <input type="text" name="q" id="corpus-q" class="input" value="@case:" />
         <morcus-corpus-suggestions data-js-only data-input="corpus-q" data-authors='["Caesar"]'>
@@ -210,7 +210,7 @@ const FIXTURES: Record<string, string> = {
             </div>
           </div>
           <div class="dict-iframe-container">
-            <iframe id="dict-frame" src="/v2/dicts?embedded=1"></iframe>
+            <iframe id="dict-frame" src="/dicts?embedded=1"></iframe>
           </div>
           <button type="button" class="reader-dict-back-to-top" data-js-only></button>
         </aside>
@@ -252,7 +252,7 @@ const FIXTURES: Record<string, string> = {
       <div class="mac-workspace mac-workspace-result" data-slot="macronizer-workspace">
         <div class="mac-split">
           <div class="mac-left">
-            <form id="mac-form" class="mac-input-form" method="post" action="/v2/macronizer">
+            <form id="mac-form" class="mac-input-form" method="post" action="/macronizer">
               <textarea id="mac-text" name="text" class="mac-textarea">malum</textarea>
               <button type="submit" id="mac-submit-btn">Macronize</button>
             </form>
@@ -269,7 +269,7 @@ const FIXTURES: Record<string, string> = {
               </details>
             </div>
             <div class="mac-dict-wrap">
-              <iframe class="mac-dict-frame" id="mac-dict-frame" name="mac-dict" src="/v2/dicts?embedded=1"></iframe>
+              <iframe class="mac-dict-frame" id="mac-dict-frame" name="mac-dict" src="/dicts?embedded=1"></iframe>
             </div>
           </aside>
         </div>
@@ -564,7 +564,7 @@ describe("open-state popovers survive being moved in the DOM", () => {
 
   test("morcus-dict-settings and morcus-dict-search preserve committed state across a DOM move", () => {
     document.body.innerHTML = `<morcus-dict-search>${renderDictSearchBar({
-      action: "/v2/dicts",
+      action: "/dicts",
       activeDicts: ["L&S"],
       isInflected: true,
     })}<output id="dict-results" class="results"></output></morcus-dict-search>`;

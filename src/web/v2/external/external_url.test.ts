@@ -5,37 +5,35 @@ import {
 } from "@/web/v2/external/external_url.common";
 
 describe("buildExternalReaderUrl", () => {
-  test("matches V1's path under the /v2 prefix", () => {
-    expect(EXTERNAL_READER_PATH).toBe("/v2/externalReader");
-    expect(buildExternalReaderUrl()).toBe("/v2/externalReader");
+  test("matches V1's path at the root", () => {
+    expect(EXTERNAL_READER_PATH).toBe("/externalReader");
+    expect(buildExternalReaderUrl()).toBe("/externalReader");
   });
 
   test("encodes a URL import", () => {
     expect(
       buildExternalReaderUrl({ url: "https://thelatinlibrary.com/a b.html" })
-    ).toBe(
-      "/v2/externalReader?url=https%3A%2F%2Fthelatinlibrary.com%2Fa+b.html"
-    );
+    ).toBe("/externalReader?url=https%3A%2F%2Fthelatinlibrary.com%2Fa+b.html");
   });
 
   test("omits the default line mode but keeps others", () => {
     expect(buildExternalReaderUrl({ local: "k", lines: "keep" })).toBe(
-      "/v2/externalReader?local=k"
+      "/externalReader?local=k"
     );
     expect(buildExternalReaderUrl({ local: "k", lines: "verse" })).toBe(
-      "/v2/externalReader?local=k&lines=verse"
+      "/externalReader?local=k&lines=verse"
     );
   });
 
   test("url takes precedence over local", () => {
     expect(buildExternalReaderUrl({ url: "a.com", local: "k" })).toBe(
-      "/v2/externalReader?url=a.com"
+      "/externalReader?url=a.com"
     );
   });
 
   test("carries the dictionary query", () => {
     expect(buildExternalReaderUrl({ local: "k", q: "arma" })).toBe(
-      "/v2/externalReader?local=k&q=arma"
+      "/externalReader?local=k&q=arma"
     );
   });
 });
@@ -67,6 +65,17 @@ describe("parseExternalReaderParams", () => {
     expect(
       parseExternalReaderParams("url=a.com&local=k").local
     ).toBeUndefined();
+  });
+
+  test("accepts legacy V1 fromUrl parameter as fallback for url", () => {
+    expect(
+      parseExternalReaderParams("fromUrl=https%3A%2F%2Fa.com%2Fx")
+    ).toEqual({
+      url: "https://a.com/x",
+      local: undefined,
+      lines: "keep",
+      q: undefined,
+    });
   });
 
   test("accepts URLSearchParams", () => {

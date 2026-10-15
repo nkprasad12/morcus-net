@@ -47,7 +47,7 @@ function loadManifest(): V2AssetManifest {
 /** Resolves the content-hashed URL for a UI V2 asset; falls back gracefully if not yet built. */
 export function getV2AssetHref(name: V2AssetName): string {
   const filename = loadManifest()[name] ?? name;
-  return `/v2/assets/${filename}`;
+  return `/assets/${filename}`;
 }
 
 export function getV2CriticalCss(): string {

@@ -277,4 +277,34 @@ describe("WebServer", () => {
       scope: "/",
     });
   });
+
+  test("when v2Router is mounted at /, root and unknown routes do not fall back to V1 index.html", async () => {
+    const v2Router = express.Router();
+    v2Router.get("/", (_req, res) => res.redirect(302, "/dicts"));
+    v2Router.get("/dicts", (_req, res) => res.status(200).send("V2 Dicts"));
+
+    const v2App = express();
+    setupServer({
+      webApp: v2App,
+      routes: [NumberGet],
+      buildDir: path.resolve(TEMP_DIR),
+      telemetry: Promise.resolve(TelemetryLogger.NoOp),
+      v2Router,
+    });
+
+    const rootRes = await request(v2App).get("/");
+    expect(rootRes.status).toBe(302);
+    expect(rootRes.headers["location"]).toBe("/dicts");
+
+    const dictsRes = await request(v2App).get("/dicts");
+    expect(dictsRes.status).toBe(200);
+    expect(dictsRes.text).toBe("V2 Dicts");
+
+    const robotsRes = await request(v2App).get("/robots.txt");
+    expect(robotsRes.status).toBe(200);
+    expect(robotsRes.type).toBe("text/plain");
+
+    const unknownRes = await request(v2App).get("/notEvenRemotelyReal");
+    expect(unknownRes.status).toBe(404);
+  });
 });

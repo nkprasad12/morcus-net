@@ -147,14 +147,14 @@ describe("request_params.server", () => {
 
     test("returns true when referer contains embedded=1", () => {
       const req = createMockRequest({
-        headers: { referer: "http://localhost:5757/v2/work?embedded=1" },
+        headers: { referer: "http://localhost:5757/work?embedded=1" },
       });
       expect(isEmbeddedRequest(req)).toBe(true);
     });
 
     test("returns false when referer does not contain embedded=1", () => {
       const req = createMockRequest({
-        headers: { referer: "http://localhost:5757/v2/work" },
+        headers: { referer: "http://localhost:5757/work" },
       });
       expect(isEmbeddedRequest(req)).toBe(false);
     });

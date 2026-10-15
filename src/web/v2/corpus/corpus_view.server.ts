@@ -1,5 +1,5 @@
 /**
- * SSR for `/v2/corpus`: the full page, and each slot on its own for the
+ * SSR for `/corpus`: the full page, and each slot on its own for the
  * partial response. Both come from the same slot renderers, which a parity
  * test pins (`testing/slot_parity.ts`).
  */
@@ -89,8 +89,7 @@ function renderSummary(view: CorpusSearchView): SafeHtml {
   }
   items.push(
     html`<span class="corpus-scope-text"
-      >~3M words / ½ classical corpus indexed (<a href="/v2/library"
-        >view works</a
+      >~3M words / ½ classical corpus indexed (<a href="/library">view works</a
       >)</span
     >`
   );

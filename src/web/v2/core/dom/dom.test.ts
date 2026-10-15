@@ -330,23 +330,23 @@ describe("core/dom.client", () => {
   describe("currentIframeSrc", () => {
     it("prefers contentWindow.location when the iframe has navigated to a path", () => {
       const iframe = document.createElement("iframe");
-      iframe.setAttribute("src", "/v2/dicts?q=arma&lang=La&o=1&embedded=1");
+      iframe.setAttribute("src", "/dicts?q=arma&lang=La&o=1&embedded=1");
       Object.defineProperty(iframe, "contentWindow", {
         value: {
           location: {
-            pathname: "/v2/dicts",
+            pathname: "/dicts",
             search: "?q=love&o=1&embedded=1",
           },
         },
       });
-      expect(currentIframeSrc(iframe)).toBe("/v2/dicts?q=love&o=1&embedded=1");
+      expect(currentIframeSrc(iframe)).toBe("/dicts?q=love&o=1&embedded=1");
     });
 
     it("falls back to the src attribute for about:blank or cross-origin iframes", () => {
       const blankFrame = document.createElement("iframe");
-      blankFrame.setAttribute("src", "/v2/dicts?embedded=1");
+      blankFrame.setAttribute("src", "/dicts?embedded=1");
       document.body.appendChild(blankFrame);
-      expect(currentIframeSrc(blankFrame)).toBe("/v2/dicts?embedded=1");
+      expect(currentIframeSrc(blankFrame)).toBe("/dicts?embedded=1");
 
       const crossOriginFrame = document.createElement("iframe");
       crossOriginFrame.setAttribute("src", "https://example.com");

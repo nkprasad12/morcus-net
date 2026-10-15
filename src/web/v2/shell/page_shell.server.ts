@@ -60,7 +60,7 @@ interface NavPageShellOptions extends PageShellBaseOptions {
 }
 
 /**
- * A page with no app-bar entry (e.g. `/v2/macronizer`): nothing is
+ * A page with no app-bar entry (e.g. `/macronizer`): nothing is
  * highlighted, and `route` picks its client chunks.
  */
 interface UnlistedPageShellOptions extends PageShellBaseOptions {
@@ -113,34 +113,34 @@ export function renderAppBar(activePage?: V2ActivePage): string {
       <div class="app-bar-inner">
         <!-- Left on desktop / Center on mobile: Brand Logo & Desktop Nav -->
         <div class="brand-group">
-          <a href="/v2/dicts" class="brand-logo-link" aria-label="M&oacute;rcus Home">
+          <a href="/dicts" class="brand-logo-link" aria-label="M&oacute;rcus Home">
             <img src="/public/favicon.ico" alt="M&oacute;rcus Logo" class="brand-logo" width="48" height="48">
           </a>
           <!-- Desktop Navigation Links -->
           <nav class="nav nav-desktop" aria-label="Main Navigation">
             <a
-              href="/v2/dicts"
+              href="/dicts"
               class="nav-link ${isDictsActive ? "active" : ""}"
               ${isDictsActive ? 'aria-current="page"' : ""}
             >
               Dictionary
             </a>
             <a
-              href="/v2/library"
+              href="/library"
               class="nav-link ${isLibraryActive ? "active" : ""}"
               ${isLibraryActive ? 'aria-current="page"' : ""}
             >
               Library
             </a>
             <a
-              href="/v2/corpus"
+              href="/corpus"
               class="nav-link ${isCorpusActive ? "active" : ""}"
               ${isCorpusActive ? 'aria-current="page"' : ""}
             >
               Corpus
             </a>
             <a
-              href="/v2/about"
+              href="/about"
               class="nav-link ${isAboutActive ? "active" : ""}"
               ${isAboutActive ? 'aria-current="page"' : ""}
             >
@@ -190,28 +190,28 @@ export function renderAppBar(activePage?: V2ActivePage): string {
             </summary>
             <nav class="nav mobile-menu-dropdown" aria-label="Mobile Navigation">
               <a
-                href="/v2/dicts"
+                href="/dicts"
                 class="nav-link ${isDictsActive ? "active" : ""}"
                 ${isDictsActive ? 'aria-current="page"' : ""}
               >
                 Dictionary
               </a>
               <a
-                href="/v2/library"
+                href="/library"
                 class="nav-link ${isLibraryActive ? "active" : ""}"
                 ${isLibraryActive ? 'aria-current="page"' : ""}
               >
                 Library
               </a>
               <a
-                href="/v2/corpus"
+                href="/corpus"
                 class="nav-link ${isCorpusActive ? "active" : ""}"
                 ${isCorpusActive ? 'aria-current="page"' : ""}
               >
                 Corpus
               </a>
               <a
-                href="/v2/about"
+                href="/about"
                 class="nav-link ${isAboutActive ? "active" : ""}"
                 ${isAboutActive ? 'aria-current="page"' : ""}
               >

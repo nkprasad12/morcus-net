@@ -17,7 +17,7 @@ import {
 import { serializeGetForm } from "@/web/v2/testing/form_roundtrip";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -42,7 +42,6 @@ describe("Corpus form round-trip conformance", () => {
     };
     app = express();
     app.use(
-      "/v2",
       createV2Router(dict as FusedDictionary, {
         corpus: fakeCorpusEngine(() =>
           fakeResult({
@@ -55,7 +54,7 @@ describe("Corpus form round-trip conformance", () => {
   });
 
   test("Corpus No-JS form round-trips its settings, and the pager link keeps them", async () => {
-    const landing = await request(app).get("/v2/corpus");
+    const landing = await request(app).get("/corpus");
     expect(landing.status).toBe(200);
     document.body.innerHTML = landing.text;
 
@@ -69,7 +68,7 @@ describe("Corpus form round-trip conformance", () => {
 
     const url = serializeGetForm(form);
     expect(url).toBe(
-      "/v2/corpus?q=%23Caesar+bellum&contextLen=7&pageSize=50&strictMode=1"
+      "/corpus?q=%23Caesar+bellum&contextLen=7&pageSize=50&strictMode=1"
     );
 
     const results = await request(app).get(url);

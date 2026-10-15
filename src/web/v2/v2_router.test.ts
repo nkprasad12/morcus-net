@@ -80,11 +80,11 @@ describe("v2_router integration", () => {
     };
 
     app = express();
-    app.use("/v2", createV2Router(mockFusedDict as FusedDictionary));
+    app.use("/", createV2Router(mockFusedDict as FusedDictionary));
   });
 
-  test("GET /v2/dicts returns full SSR HTML page with 200", async () => {
-    const res = await request(app).get("/v2/dicts?q=amo");
+  test("GET /dicts returns full SSR HTML page with 200", async () => {
+    const res = await request(app).get("/dicts?q=amo");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.headers["vary"]).toContain("X-Requested-With");
@@ -93,12 +93,12 @@ describe("v2_router integration", () => {
     expect(res.text).toContain("amo");
     expect(res.text).toContain("Lewis");
     expect(res.text).toContain(
-      '<link rel="canonical" href="https://morcus.net/v2/dicts?q=amo">'
+      '<link rel="canonical" href="https://morcus.net/dicts?q=amo">'
     );
   });
 
-  test("GET /v2/dicts with format=partial returns only the results snippet", async () => {
-    const res = await request(app).get("/v2/dicts?q=amo&format=partial");
+  test("GET /dicts with format=partial returns only the results snippet", async () => {
+    const res = await request(app).get("/dicts?q=amo&format=partial");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.headers["vary"]).toContain("X-Requested-With");
@@ -107,8 +107,8 @@ describe("v2_router integration", () => {
     expect(res.text).toContain("amo");
   });
 
-  test("GET /v2/dicts filters by query param 'dict' without persisting it", async () => {
-    const res = await request(app).get("/v2/dicts?q=amo&dict=ls,gaffiot");
+  test("GET /dicts filters by query param 'dict' without persisting it", async () => {
+    const res = await request(app).get("/dicts?q=amo&dict=ls,gaffiot");
     expect(res.status).toBe(200);
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -120,9 +120,9 @@ describe("v2_router integration", () => {
     expect(res.header["set-cookie"]).toBeUndefined();
   });
 
-  test("GET /v2/dicts uses cookie when no dict param is passed", async () => {
+  test("GET /dicts uses cookie when no dict param is passed", async () => {
     const res = await request(app)
-      .get("/v2/dicts?q=amo")
+      .get("/dicts?q=amo")
       .set("Cookie", "morcus_d=1u");
     expect(res.status).toBe(200);
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
@@ -134,9 +134,9 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/dicts filters by lang=La (Latin source only)", async () => {
+  test("GET /dicts filters by lang=La (Latin source only)", async () => {
     const res = await request(app).get(
-      "/v2/dicts?q=amo&dict=ls,sh,gaffiot&lang=La"
+      "/dicts?q=amo&dict=ls,sh,gaffiot&lang=La"
     );
     expect(res.status).toBe(200);
     // L&S and GAF are Latin-source, S&H is English-to-Latin so excluded
@@ -149,9 +149,29 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/dicts/id/:id returns entry looked up by ID and renders the user's saved settings", async () => {
+  test("GET /dicts supports legacy V1 hyphen-delimited lang=La-En", async () => {
+    const res = await request(app).get(
+      "/dicts?q=love&dict=ls,sh,georges&lang=La-En"
+    );
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "love",
+        dicts: ["L&S", "S&H"],
+      }),
+      expect.anything()
+    );
+  });
+
+  test("GET /dicts?q=<id>&o=2 redirects legacy V1 ID lookups to /dicts/id/:id", async () => {
+    const res = await request(app).get("/dicts?q=n20077&o=2");
+    expect(res.status).toBe(302);
+    expect(res.header["location"]).toBe("/dicts/id/n20077");
+  });
+
+  test("GET /dicts/id/:id returns entry looked up by ID and renders the user's saved settings", async () => {
     const res = await request(app)
-      .get("/v2/dicts/id/n20077")
+      .get("/dicts/id/n20077")
       .set("Cookie", "morcus_d=2; morcus_inflected=0");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
@@ -159,7 +179,7 @@ describe("v2_router integration", () => {
     expect(res.text).toContain("<!DOCTYPE html>");
     expect(res.text).toContain("ID n20077 - Morcus Dictionary");
     expect(res.text).toContain(
-      '<link rel="canonical" href="https://morcus.net/v2/dicts/id/n20077">'
+      '<link rel="canonical" href="https://morcus.net/dicts/id/n20077">'
     );
     expect(res.text).toContain("amo");
     // The search bar reflects the user's saved GAF-only, exact-headword preferences.
@@ -173,18 +193,16 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/dicts/id/:id?q=... redirects to /v2/dicts preserving all query parameters", async () => {
+  test("GET /dicts/id/:id?q=... redirects to /dicts preserving all query parameters", async () => {
     const res = await request(app).get(
-      "/v2/dicts/id/n20077?q=bellum&d=2&o=0&embedded=1"
+      "/dicts/id/n20077?q=bellum&d=2&o=0&embedded=1"
     );
     expect(res.status).toBe(302);
-    expect(res.header["location"]).toBe(
-      "/v2/dicts?q=bellum&d=2&o=0&embedded=1"
-    );
+    expect(res.header["location"]).toBe("/dicts?q=bellum&d=2&o=0&embedded=1");
   });
 
-  test("GET /v2/dicts sanitizes query parameter before fetching entries", async () => {
-    const res = await request(app).get('/v2/dicts?q="amo,"');
+  test("GET /dicts sanitizes query parameter before fetching entries", async () => {
+    const res = await request(app).get('/dicts?q="amo,"');
     expect(res.status).toBe(200);
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -194,9 +212,9 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/dicts decodes Base36 d bitmask parameter", async () => {
+  test("GET /dicts decodes Base36 d bitmask parameter", async () => {
     // 3 = (L&S [1] | GAF [2])
-    const res = await request(app).get("/v2/dicts?q=amo&d=3");
+    const res = await request(app).get("/dicts?q=amo&d=3");
     expect(res.status).toBe(200);
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -208,8 +226,8 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/dicts supports o=0 for exact headword matching and o=1 for inflections", async () => {
-    const resExact = await request(app).get("/v2/dicts?q=amavi&o=0");
+  test("GET /dicts supports o=0 for exact headword matching and o=1 for inflections", async () => {
+    const resExact = await request(app).get("/dicts?q=amavi&o=0");
     expect(resExact.status).toBe(200);
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -219,7 +237,7 @@ describe("v2_router integration", () => {
       expect.anything()
     );
 
-    const resInflected = await request(app).get("/v2/dicts?q=amavi&o=1");
+    const resInflected = await request(app).get("/dicts?q=amavi&o=1");
     expect(resInflected.status).toBe(200);
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -232,7 +250,7 @@ describe("v2_router integration", () => {
 
   describe("No-JS form submissions", () => {
     test("honours a single selected dictionary without persisting it", async () => {
-      const res = await request(app).get("/v2/dicts?q=amo&dict=GAF");
+      const res = await request(app).get("/dicts?q=amo&dict=GAF");
       expect(res.status).toBe(200);
       // Regression: "GAF" used to be read as base36 21111, enabling six dictionaries.
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
@@ -245,10 +263,10 @@ describe("v2_router integration", () => {
 
     test("Done (save=1) persists, then 303s to the canonical URL without the marker", async () => {
       const res = await request(app).get(
-        "/v2/dicts?q=amo&o=0&o=1&dict=GAF&save=1"
+        "/dicts?q=amo&o=0&o=1&dict=GAF&save=1"
       );
       expect(res.status).toBe(303);
-      expect(res.header["location"]).toBe("/v2/dicts?q=amo&o=1&d=2");
+      expect(res.header["location"]).toBe("/dicts?q=amo&o=1&d=2");
       expect(res.header["cache-control"]).toBe("no-store");
       const cookies = res.header["set-cookie"].join("\n");
       expect(cookies).toContain("morcus_d=2;");
@@ -259,16 +277,16 @@ describe("v2_router integration", () => {
 
     test("cross-site request with save=1 strips the marker without writing cookies", async () => {
       const res = await request(app)
-        .get("/v2/dicts?q=amo&o=0&dict=GAF&save=1")
+        .get("/dicts?q=amo&o=0&dict=GAF&save=1")
         .set("Sec-Fetch-Site", "cross-site");
       expect(res.status).toBe(303);
-      expect(res.header["location"]).toBe("/v2/dicts?q=amo&o=0&d=2");
+      expect(res.header["location"]).toBe("/dicts?q=amo&o=0&d=2");
       expect(res.header["set-cookie"]).toBeUndefined();
     });
 
     test("a shared link does not overwrite the recipient's preferences", async () => {
       const res = await request(app)
-        .get("/v2/dicts?q=amo&d=2&o=0")
+        .get("/dicts?q=amo&d=2&o=0")
         .set("Cookie", "morcus_d=1; morcus_inflected=1");
       expect(res.status).toBe(200);
       // Renders the sender's exact view...
@@ -286,13 +304,13 @@ describe("v2_router integration", () => {
 
     test("a shared link that differs from the recipient's settings opens in guest mode", async () => {
       const res = await request(app)
-        .get("/v2/dicts?q=amo&d=2&o=0")
+        .get("/dicts?q=amo&d=2&o=0")
         .set("Cookie", "morcus_d=1; morcus_inflected=1");
       expect(res.status).toBe(200);
       expect(res.text).toContain("Using link settings");
       expect(res.text).toMatch(/class="dict-checkbox"[^>]*disabled/);
       // Return drops the settings params so the recipient's cookies apply.
-      expect(res.text).toContain('href="/v2/dicts?q=amo">Restore saved</a>');
+      expect(res.text).toContain('href="/dicts?q=amo">Restore saved</a>');
       // The link's settings ride along in hidden fields, so the next search keeps them.
       expect(res.text).toContain('<input type="hidden" name="d" value="2" />');
       expect(res.text).toContain('<input type="hidden" name="o" value="0" />');
@@ -300,7 +318,7 @@ describe("v2_router integration", () => {
 
     test("no guest mode when the link matches the user's settings", async () => {
       const res = await request(app)
-        .get("/v2/dicts?q=amo&d=1&o=1")
+        .get("/dicts?q=amo&d=1&o=1")
         .set("Cookie", "morcus_d=1; morcus_inflected=1");
       expect(res.status).toBe(200);
       expect(res.text).not.toContain("guest-chip");
@@ -308,13 +326,13 @@ describe("v2_router integration", () => {
     });
 
     test("no guest mode without saved preferences", async () => {
-      const res = await request(app).get("/v2/dicts?q=amo&d=2&o=0");
+      const res = await request(app).get("/dicts?q=amo&d=2&o=0");
       expect(res.status).toBe(200);
       expect(res.text).not.toContain("guest-chip");
     });
 
     test("honours repeated dict checkboxes", async () => {
-      const res = await request(app).get("/v2/dicts?q=amo&dict=L%26S&dict=GRG");
+      const res = await request(app).get("/dicts?q=amo&dict=L%26S&dict=GRG");
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
         expect.objectContaining({ dicts: ["L&S", "GRG"] }),
@@ -325,7 +343,7 @@ describe("v2_router integration", () => {
     test("prefers the checkboxes over the bitmask rendered into the same form", async () => {
       // The hidden `d` is gone now, but a stale bitmask may still sit in the page URL that the
       // form submits from.
-      const res = await request(app).get("/v2/dicts?q=amo&d=an&dict=GAF");
+      const res = await request(app).get("/dicts?q=amo&d=an&dict=GAF");
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
         expect.objectContaining({ dicts: ["GAF"] }),
@@ -335,7 +353,7 @@ describe("v2_router integration", () => {
 
     test("re-enables inflection from the hidden-0 plus checked-1 pair", async () => {
       const res = await request(app)
-        .get("/v2/dicts?q=amavi&o=0&o=1&dict=GAF")
+        .get("/dicts?q=amavi&o=0&o=1&dict=GAF")
         .set("Cookie", "morcus_d=2; morcus_inflected=0");
 
       expect(res.status).toBe(200);
@@ -347,7 +365,7 @@ describe("v2_router integration", () => {
     });
 
     test("disables inflection from the hidden 0 alone", async () => {
-      const res = await request(app).get("/v2/dicts?q=amavi&o=0&dict=GAF");
+      const res = await request(app).get("/dicts?q=amavi&o=0&dict=GAF");
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
         expect.objectContaining({ mode: 0 }),
@@ -357,7 +375,7 @@ describe("v2_router integration", () => {
 
     test("saving an inflection change leaves the dictionary cookie alone", async () => {
       const res = await request(app)
-        .get("/v2/dicts?q=amavi&o=0&save=1")
+        .get("/dicts?q=amavi&o=0&save=1")
         .set("Cookie", "morcus_d=2");
 
       expect(res.status).toBe(303);
@@ -368,7 +386,7 @@ describe("v2_router integration", () => {
 
     test("resolves a single-dictionary cookie exactly", async () => {
       const res = await request(app)
-        .get("/v2/dicts?q=amo")
+        .get("/dicts?q=amo")
         .set("Cookie", "morcus_d=2");
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
@@ -378,7 +396,7 @@ describe("v2_router integration", () => {
     });
 
     test("the settings form has the checkboxes and no hidden bitmask; the search form carries d", async () => {
-      const res = await request(app).get("/v2/dicts?q=amo");
+      const res = await request(app).get("/dicts?q=amo");
       expect(res.status).toBe(200);
       const settingsForm = res.text.match(
         /<form class="dict-settings-form"[\s\S]*?<\/form>/
@@ -394,12 +412,12 @@ describe("v2_router integration", () => {
     });
   });
 
-  test("GET /v2/dicts with reader query (embedded=1, o=1, lang=La) forces inflected search, filters to Latin lexica, and does not pollute cookies", async () => {
+  test("GET /dicts with reader query (embedded=1, o=1, lang=La) forces inflected search, filters to Latin lexica, and does not pollute cookies", async () => {
     (mockFusedDict.getEntry as jest.Mock).mockClear();
 
     // User has existing cookies: inflected disabled (morcus_inflected=0) and custom dicts
     const res = await request(app)
-      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
+      .get("/dicts?q=arma&embedded=1&o=1&lang=La")
       .set("Cookie", "morcus_d=29; morcus_inflected=0");
 
     expect(res.status).toBe(200);
@@ -419,19 +437,19 @@ describe("v2_router integration", () => {
     expect(res.header["set-cookie"]).toBeUndefined();
   });
 
-  test("GET /v2/dicts never persists from an embedded view, even without lang", async () => {
+  test("GET /dicts never persists from an embedded view, even without lang", async () => {
     // Regression (F7): the guard used to key on `lang`, so an iframe that stopped sending it
     // would overwrite the user's preferences on every lookup.
     const res = await request(app)
-      .get("/v2/dicts?q=arma&embedded=1&o=0&dict=GAF")
+      .get("/dicts?q=arma&embedded=1&o=0&dict=GAF")
       .set("Cookie", "morcus_d=1; morcus_inflected=1");
     expect(res.status).toBe(200);
     expect(res.header["set-cookie"]).toBeUndefined();
   });
 
-  test("GET /v2/dicts reader lookup: the settings form saves in scope, the search form leaves it", async () => {
+  test("GET /dicts reader lookup: the settings form saves in scope, the search form leaves it", async () => {
     const res = await request(app)
-      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
+      .get("/dicts?q=arma&embedded=1&o=1&lang=La")
       .set("Cookie", "morcus_d=29; morcus_inflected=0");
     expect(res.status).toBe(200);
     expect(res.header["set-cookie"]).toBeUndefined();
@@ -457,13 +475,13 @@ describe("v2_router integration", () => {
     expect(res.text).not.toContain("guest-chip");
   });
 
-  test("GET /v2/dicts reader save=1 merges into morcus_d and redirects to the cookie-driven lookup", async () => {
+  test("GET /dicts reader save=1 merges into morcus_d and redirects to the cookie-driven lookup", async () => {
     const saved = encodeDictBitmask(["L&S", "S&H", "GRG"]);
     const res = await request(app)
-      .get("/v2/dicts?q=arma&lang=La&embedded=1&o=1&dict=GAF&save=1")
+      .get("/dicts?q=arma&lang=La&embedded=1&o=1&dict=GAF&save=1")
       .set("Cookie", `morcus_d=${saved}; morcus_inflected=0`);
     expect(res.status).toBe(303);
-    expect(res.header.location).toBe("/v2/dicts?q=arma&lang=La&embedded=1&o=1");
+    expect(res.header.location).toBe("/dicts?q=arma&lang=La&embedded=1&o=1");
     const cookies: string[] = res.header["set-cookie"] as unknown as string[];
     expect(cookies).toEqual([
       `morcus_d=${encodeDictBitmask([
@@ -474,21 +492,21 @@ describe("v2_router integration", () => {
     ]);
   });
 
-  test("GET /v2/dicts scoped link whose dictionaries differ from the saved in-scope ones is a guest view", async () => {
+  test("GET /dicts scoped link whose dictionaries differ from the saved in-scope ones is a guest view", async () => {
     const res = await request(app)
-      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La&d=2")
+      .get("/dicts?q=arma&embedded=1&o=1&lang=La&d=2")
       .set("Cookie", "morcus_d=1");
     expect(res.status).toBe(200);
     expect(res.text).toContain("guest-chip");
     const doc = new JSDOM(res.text).window.document;
     expect(doc.querySelector("a.guest-return")?.getAttribute("href")).toBe(
-      "/v2/dicts?q=arma&embedded=1&o=1&lang=La"
+      "/dicts?q=arma&embedded=1&o=1&lang=La"
     );
   });
 
-  test("GET /v2/dicts scoped lookup ignores out-of-scope saved dictionaries for guest mode", async () => {
+  test("GET /dicts scoped lookup ignores out-of-scope saved dictionaries for guest mode", async () => {
     const res = await request(app)
-      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
+      .get("/dicts?q=arma&embedded=1&o=1&lang=La")
       .set(
         "Cookie",
         `morcus_d=${encodeDictBitmask(["L&S", "S&H"])}; morcus_inflected=0`
@@ -497,10 +515,10 @@ describe("v2_router integration", () => {
     expect(res.text).not.toContain("guest-chip");
   });
 
-  test("GET /v2/dicts scoped lookup falls back to in-scope defaults without guest mode when cookie has only out-of-scope dicts", async () => {
+  test("GET /dicts scoped lookup falls back to in-scope defaults without guest mode when cookie has only out-of-scope dicts", async () => {
     (mockFusedDict.getEntry as jest.Mock).mockClear();
     const res = await request(app)
-      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
+      .get("/dicts?q=arma&embedded=1&o=1&lang=La")
       .set("Cookie", `morcus_d=${encodeDictBitmask(["S&H", "R&A"])}`);
     expect(res.status).toBe(200);
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
@@ -514,18 +532,18 @@ describe("v2_router integration", () => {
     expect(res.text).not.toContain("guest-chip");
   });
 
-  test("GET /v2/dicts never persists from an iframe detected by Sec-Fetch-Dest", async () => {
+  test("GET /dicts never persists from an iframe detected by Sec-Fetch-Dest", async () => {
     const res = await request(app)
-      .get("/v2/dicts?q=arma&o=0&dict=GAF")
+      .get("/dicts?q=arma&o=0&dict=GAF")
       .set("Sec-Fetch-Dest", "iframe");
     expect(res.status).toBe(200);
     expect(res.header["set-cookie"]).toBeUndefined();
   });
 
-  test("GET /v2/dicts with Greek query renders Logeion fallback and skips Latin dict lookup", async () => {
+  test("GET /dicts with Greek query renders Logeion fallback and skips Latin dict lookup", async () => {
     (mockFusedDict.getEntry as jest.Mock).mockClear();
     const res = await request(app).get(
-      `/v2/dicts?q=${encodeURIComponent("λόγος")}`
+      `/dicts?q=${encodeURIComponent("λόγος")}`
     );
     expect(res.status).toBe(200);
     expect(res.text).toContain("<!DOCTYPE html>");
@@ -538,9 +556,9 @@ describe("v2_router integration", () => {
     expect(mockFusedDict.getEntry).not.toHaveBeenCalled();
   });
 
-  test("GET /v2/dicts with Greek query and format=partial returns only fallback fragment", async () => {
+  test("GET /dicts with Greek query and format=partial returns only fallback fragment", async () => {
     const res = await request(app).get(
-      `/v2/dicts?q=${encodeURIComponent("λόγος")}&format=partial`
+      `/dicts?q=${encodeURIComponent("λόγος")}&format=partial`
     );
     expect(res.status).toBe(200);
     expect(res.text).not.toContain("<!DOCTYPE html>");
@@ -548,18 +566,18 @@ describe("v2_router integration", () => {
     expect(res.text).toContain("This site does not (yet) support Greek.");
   });
 
-  test("GET /v2/api/completions returns empty object for Greek query without dictionary lookup", async () => {
+  test("GET /api/completions returns empty object for Greek query without dictionary lookup", async () => {
     (mockFusedDict.getCompletions as jest.Mock).mockClear();
     const res = await request(app).get(
-      `/v2/api/completions?prefix=${encodeURIComponent("λόγος")}`
+      `/api/completions?prefix=${encodeURIComponent("λόγος")}`
     );
     expect(res.status).toBe(200);
     expect(res.body).toEqual({});
     expect(mockFusedDict.getCompletions).not.toHaveBeenCalled();
   });
 
-  test("GET /v2/api/completions returns dictionary chunk map for prefix", async () => {
-    const res = await request(app).get("/v2/api/completions?prefix=am");
+  test("GET /api/completions returns dictionary chunk map for prefix", async () => {
+    const res = await request(app).get("/api/completions?prefix=am");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("application/json");
     expect(res.body).toEqual({
@@ -581,9 +599,7 @@ describe("v2_router integration", () => {
     });
 
     test("prefix chunks at the current version are public and immutable", async () => {
-      const res = await request(app).get(
-        "/v2/api/completions?prefix=am&v=abc123"
-      );
+      const res = await request(app).get("/api/completions?prefix=am&v=abc123");
       expect(res.header["cache-control"]).toBe(`public, ${IMMUTABLE}`);
     });
 
@@ -591,13 +607,13 @@ describe("v2_router integration", () => {
       const getCompletions = mockFusedDict.getCompletions as jest.Mock;
       getCompletions.mockClear();
       const plain = await request(app).get(
-        "/v2/api/completions?prefix=am&v=abc123"
+        "/api/completions?prefix=am&v=abc123"
       );
       const plainCalls = getCompletions.mock.calls.map((call) => call[0]);
 
       getCompletions.mockClear();
       const withCookie = await request(app)
-        .get("/v2/api/completions?prefix=am&v=abc123")
+        .get("/api/completions?prefix=am&v=abc123")
         .set("Cookie", `morcus_d=${encodeDictBitmask(["L&S"])}`);
       const cookieCalls = getCompletions.mock.calls.map((call) => call[0]);
 
@@ -608,8 +624,8 @@ describe("v2_router integration", () => {
 
     test("prefix chunks without the current version revalidate", async () => {
       for (const url of [
-        "/v2/api/completions?prefix=am",
-        "/v2/api/completions?prefix=am&v=old",
+        "/api/completions?prefix=am",
+        "/api/completions?prefix=am&v=old",
       ]) {
         const res = await request(app).get(url);
         expect(res.header["cache-control"]).toBe("no-cache");
@@ -617,15 +633,13 @@ describe("v2_router integration", () => {
     });
 
     test("suffix completions are never versioned (they read cookies)", async () => {
-      const res = await request(app).get(
-        "/v2/api/completions?q=-arum&v=abc123"
-      );
+      const res = await request(app).get("/api/completions?q=-arum&v=abc123");
       expect(res.header["cache-control"]).toBeUndefined();
     });
 
     test("reader page-turn partials at the current version are private and immutable", async () => {
       const res = await request(app)
-        .get("/v2/work/caesar/de_bello_gallico/1.1?v=abc123")
+        .get("/work/caesar/de_bello_gallico/1.1?v=abc123")
         .set("X-Requested-With", "fetch");
       expect(res.status).toBe(200);
       expect(res.header["cache-control"]).toBe(`private, ${IMMUTABLE}`);
@@ -634,14 +648,14 @@ describe("v2_router integration", () => {
 
     test("reader partials with a stale version revalidate", async () => {
       const res = await request(app)
-        .get("/v2/work/caesar/de_bello_gallico/1.1?v=old")
+        .get("/work/caesar/de_bello_gallico/1.1?v=old")
         .set("X-Requested-With", "fetch");
       expect(res.header["cache-control"]).toBe("no-cache");
     });
 
     test("full reader pages are never versioned", async () => {
       const res = await request(app).get(
-        "/v2/work/caesar/de_bello_gallico/1.1?v=abc123"
+        "/work/caesar/de_bello_gallico/1.1?v=abc123"
       );
       expect(res.status).toBe(200);
       expect(res.text).toContain('<html lang="en" data-version="abc123">');
@@ -650,7 +664,7 @@ describe("v2_router integration", () => {
 
     test("translations at the current version are private and immutable", async () => {
       const res = await request(app).get(
-        "/v2/work/sallust/catalina1/1/translation?v=abc123"
+        "/work/sallust/catalina1/1/translation?v=abc123"
       );
       expect(res.status).toBe(200);
       expect(res.header["cache-control"]).toBe(`private, ${IMMUTABLE}`);
@@ -658,15 +672,15 @@ describe("v2_router integration", () => {
 
     test("a missing translation is never cached", async () => {
       const res = await request(app).get(
-        "/v2/work/caesar/de_bello_gallico/1.1/translation?v=abc123"
+        "/work/caesar/de_bello_gallico/1.1/translation?v=abc123"
       );
       expect(res.status).toBe(404);
       expect(res.header["cache-control"]).toBeUndefined();
     });
   });
 
-  test("GET /v2/api/completions sanitizes query parameter", async () => {
-    const res = await request(app).get('/v2/api/completions?prefix="am,"');
+  test("GET /api/completions sanitizes query parameter", async () => {
+    const res = await request(app).get('/api/completions?prefix="am,"');
     expect(res.status).toBe(200);
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -675,8 +689,8 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/api/completions preserves suffix search query with leading hyphen", async () => {
-    const res = await request(app).get("/v2/api/completions?q=-arum");
+  test("GET /api/completions preserves suffix search query with leading hyphen", async () => {
+    const res = await request(app).get("/api/completions?q=-arum");
     expect(res.status).toBe(200);
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -686,9 +700,9 @@ describe("v2_router integration", () => {
     expect(Array.isArray(res.body)).toBe(true);
   });
 
-  test("GET /v2/api/completions scopes completions to requested dicts", async () => {
+  test("GET /api/completions scopes completions to requested dicts", async () => {
     const res = await request(app).get(
-      "/v2/api/completions?prefix=am&dict=ls,gaffiot"
+      "/api/completions?prefix=am&dict=ls,gaffiot"
     );
     expect(res.status).toBe(200);
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
@@ -699,9 +713,9 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/api/completions partitions by language when dicts are specified", async () => {
+  test("GET /api/completions partitions by language when dicts are specified", async () => {
     const res = await request(app).get(
-      "/v2/api/completions?prefix=am&dict=gaffiot,georges"
+      "/api/completions?prefix=am&dict=gaffiot,georges"
     );
     expect(res.status).toBe(200);
     // Language-aware partitioning sends Latin dicts and German dicts separately
@@ -719,7 +733,7 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/assets/v2.css serves the built, hashed stylesheet", async () => {
+  test("GET /assets/v2.css serves the built, hashed stylesheet", async () => {
     const res = await request(app).get(getV2AssetHref("v2.css"));
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/css");
@@ -729,38 +743,38 @@ describe("v2_router integration", () => {
     expect(res.text).not.toContain("2px dashed");
   });
 
-  test("GET /v2/assets/manifest.json is not exposed", async () => {
-    const res = await request(app).get("/v2/assets/manifest.json");
+  test("GET /assets/manifest.json is not exposed", async () => {
+    const res = await request(app).get("/assets/manifest.json");
     expect(res.status).toBe(404);
   });
 
-  test("GET /v2/api/completions/profile is not exposed", async () => {
+  test("GET /api/completions/profile is not exposed", async () => {
     // Deliberately removed: it ran a synchronous gzip over up to 50k results on
     // an unauthenticated GET. If profiling is needed again, prefer an offline
     // script over a production route.
-    const res = await request(app).get("/v2/api/completions/profile?q=am");
+    const res = await request(app).get("/api/completions/profile?q=am");
     expect(res.status).toBe(404);
   });
 
-  test("GET /v2/about returns full About page with 200", async () => {
-    const res = await request(app).get("/v2/about");
+  test("GET /about returns full About page with 200", async () => {
+    const res = await request(app).get("/about");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.text).toContain("<!DOCTYPE html>");
     expect(res.text).toContain("About M&oacute;rcus");
     expect(res.text).toContain("GPL-3.0");
     expect(res.text).toContain("CC BY-SA 4.0");
-    expect(res.text).toContain('href="/v2/about"');
+    expect(res.text).toContain('href="/about"');
     expect(res.text).toContain('class="nav-link active"');
   });
 
-  test("GET /v2 redirects to /v2/dicts", async () => {
-    const res = await request(app).get("/v2");
+  test("GET / redirects to /dicts", async () => {
+    const res = await request(app).get("/");
     expect(res.status).toBe(302);
-    expect(res.header.location).toBe("/v2/dicts");
+    expect(res.header.location).toBe("/dicts");
   });
 
-  test("GET /v2/assets/<chunk>.js serves all 5 built client chunks", async () => {
+  test("GET /assets/<chunk>.js serves all 5 built client chunks", async () => {
     const chunks = [
       { asset: "common.js" as const, expectedSymbol: "morcus-theme-toggle" },
       { asset: "dict.js" as const, expectedSymbol: "morcus-dict-search" },
@@ -781,9 +795,9 @@ describe("v2_router integration", () => {
     }
   });
 
-  describe("GET /v2/work", () => {
+  describe("GET /work", () => {
     test("returns 200 with reader layout and dictionary iframe placeholder when no q", async () => {
-      const res = await request(app).get("/v2/work");
+      const res = await request(app).get("/work");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.headers["vary"]).toContain("X-Requested-With");
@@ -791,27 +805,25 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain("Julius Caesar");
       expect(res.text).toContain('id="dict-frame"');
-      expect(res.text).toContain("/v2/dicts?embedded=1");
+      expect(res.text).toContain("/dicts?embedded=1");
       expect(res.text).toContain("Open Dictionary Search");
       expect(res.text).toContain("Tap any word to view definitions");
     });
 
     test("returns 200 and points dictionary iframe to embedded query when q is supplied", async () => {
-      const res = await request(app).get("/v2/work?q=Gallia");
+      const res = await request(app).get("/work?q=Gallia");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.headers["vary"]).toContain("X-Requested-With");
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain('id="dict-frame"');
       expect(res.text).toContain(
-        "/v2/dicts?q=Gallia&amp;lang=La&amp;o=1&amp;embedded=1"
+        "/dicts?q=Gallia&amp;lang=La&amp;o=1&amp;embedded=1"
       );
     });
 
-    test("GET /v2/work/:author/:name/:page? renders reader URL", async () => {
-      const res = await request(app).get(
-        "/v2/work/caesar/de_bello_gallico/1.1"
-      );
+    test("GET /work/:author/:name/:page? renders reader URL", async () => {
+      const res = await request(app).get("/work/caesar/de_bello_gallico/1.1");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.headers["vary"]).toContain("X-Requested-With");
@@ -820,9 +832,9 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("Gallia est omnis divisa in partes tres");
     });
 
-    test("GET /v2/work/:author/:name/:page? with format=partial returns only the passage slot fragment", async () => {
+    test("GET /work/:author/:name/:page? with format=partial returns only the passage slot fragment", async () => {
       const res = await request(app).get(
-        "/v2/work/caesar/de_bello_gallico/1.1?format=partial"
+        "/work/caesar/de_bello_gallico/1.1?format=partial"
       );
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
@@ -832,22 +844,22 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("Gallia est omnis divisa in partes tres");
     });
 
-    test("GET /v2/work/:author/:name/:page? returns 404 for unknown works", async () => {
+    test("GET /work/:author/:name/:page? returns 404 for unknown works", async () => {
       const res = await request(app).get(
-        "/v2/work/unknown_author/nonexistent_work"
+        "/work/unknown_author/nonexistent_work"
       );
       expect(res.status).toBe(404);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("Classical Work Not Found");
       expect(res.text).toContain("unknown_author/nonexistent_work");
-      expect(res.text).toContain('href="/v2/library"');
+      expect(res.text).toContain('href="/library"');
       expect(res.text).toContain("not-found-state");
       expect(res.text).not.toContain("style=");
     });
 
-    test("GET /v2/work/:author/:name/:page/translation returns 200 and translation snippet for translated works", async () => {
+    test("GET /work/:author/:name/:page/translation returns 200 and translation snippet for translated works", async () => {
       const res = await request(app).get(
-        "/v2/work/sallust/catalina1/1/translation"
+        "/work/sallust/catalina1/1/translation"
       );
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
@@ -857,54 +869,86 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("reader-translation-body");
     });
 
-    test("GET /v2/work/:author/:name/:page/translation returns 404 for untranslated works", async () => {
+    test("GET /work/:author/:name/:page/translation returns 404 for untranslated works", async () => {
       const res = await request(app).get(
-        "/v2/work/caesar/de_bello_gallico/1.1/translation"
+        "/work/caesar/de_bello_gallico/1.1/translation"
       );
       expect(res.status).toBe(404);
       expect(res.text).toBe("Translation not found");
     });
 
-    test("GET /v2/work/:author/:name/:page/translation returns 404 for unknown works", async () => {
+    test("GET /work/:author/:name/:page/translation returns 404 for unknown works", async () => {
       const res = await request(app).get(
-        "/v2/work/unknown_author/nonexistent_work/1/translation"
+        "/work/unknown_author/nonexistent_work/1/translation"
       );
       expect(res.status).toBe(404);
       expect(res.text).toBe("Translation not found");
     });
 
-    test("GET /v2/work/:author/:name redirects matchText links to the matched page and section when :page is omitted", async () => {
+    test("GET /work/:author/:name redirects matchText links to the matched page and section when :page is omitted", async () => {
       const res = await request(app).get(
-        "/v2/work/caesar/de_bello_gallico?matchText=1.2.1~0~2"
+        "/work/caesar/de_bello_gallico?matchText=1.2.1~0~2"
       );
       expect(res.status).toBe(302);
       expect(res.header.location).toBe(
-        "/v2/work/caesar/de_bello_gallico/1.2?matchText=1.2.1%7E0%7E2#sec-1.2.1"
+        "/work/caesar/de_bello_gallico/1.2?matchText=1.2.1%7E0%7E2#sec-1.2.1"
       );
     });
 
-    test("GET /v2/work/:author/:name/:page with matchText renders the requested page without redirecting", async () => {
+    test("GET /work/:author/:name redirects legacy V1 ?id= and ?pg= params to the canonical page", async () => {
+      const bySection = await request(app).get(
+        "/work/caesar/de_bello_gallico?id=1.2.1"
+      );
+      expect(bySection.status).toBe(302);
+      expect(bySection.header.location).toBe(
+        "/work/caesar/de_bello_gallico/1.2#sec-1.2.1"
+      );
+
+      const byPageNum = await request(app).get(
+        "/work/caesar/de_bello_gallico?pg=2"
+      );
+      expect(byPageNum.status).toBe(302);
+      expect(byPageNum.header.location).toBe(
+        "/work/caesar/de_bello_gallico/1.2"
+      );
+    });
+
+    test("GET /work/:workId redirects legacy V1 work ID URLs to canonical author/name/page URL", async () => {
       const res = await request(app).get(
-        "/v2/work/caesar/de_bello_gallico/1.2?matchText=1.2.1~0~2"
+        "/work/phi0448.phi001.perseus-lat2?id=1.2.1&matchText=1.2.1~0~2"
+      );
+      expect(res.status).toBe(302);
+      expect(res.header.location).toBe(
+        "/work/caesar/de_bello_gallico/1.2?matchText=1.2.1%7E0%7E2#sec-1.2.1"
+      );
+
+      const unknown = await request(app).get("/work/unknown_work_id");
+      expect(unknown.status).toBe(404);
+      expect(unknown.text).toContain("Classical Work Not Found");
+    });
+
+    test("GET /work/:author/:name/:page with matchText renders the requested page without redirecting", async () => {
+      const res = await request(app).get(
+        "/work/caesar/de_bello_gallico/1.2?matchText=1.2.1~0~2"
       );
       expect(res.status).toBe(200);
       expect(res.text).toContain('id="sec-1.2.1"');
     });
 
-    test("GET /v2/work/:author/:name/:page?jump=... preserves matchText across redirect", async () => {
+    test("GET /work/:author/:name/:page?jump=... preserves matchText across redirect", async () => {
       const res = await request(app).get(
-        "/v2/work/caesar/de_bello_gallico/1.1?jump=1.2.1&matchText=1.2.1~0~2&q=Orgetorix"
+        "/work/caesar/de_bello_gallico/1.1?jump=1.2.1&matchText=1.2.1~0~2&q=Orgetorix"
       );
       expect(res.status).toBe(302);
       expect(res.header.location).toBe(
-        "/v2/work/caesar/de_bello_gallico/1.2?q=Orgetorix&matchText=1.2.1%7E0%7E2#sec-1.2.1"
+        "/work/caesar/de_bello_gallico/1.2?q=Orgetorix&matchText=1.2.1%7E0%7E2#sec-1.2.1"
       );
     });
   });
 
-  describe("GET /v2/dicts with embedded mode", () => {
+  describe("GET /dicts with embedded mode", () => {
     test("renders minimal dictionary panel suitable for iframe and queries dictionary", async () => {
-      const res = await request(app).get("/v2/dicts?q=Gallia&embedded=1");
+      const res = await request(app).get("/dicts?q=Gallia&embedded=1");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("dict-card");
@@ -919,7 +963,7 @@ describe("v2_router integration", () => {
     });
 
     test("suppresses table of contents in embedded mode", async () => {
-      const res = await request(app).get("/v2/dicts?q=Gallia&embedded=1");
+      const res = await request(app).get("/dicts?q=Gallia&embedded=1");
       expect(res.status).toBe(200);
       expect(res.text).not.toContain("has-toc");
       expect(res.text).not.toContain("drawer-toc");
@@ -927,7 +971,7 @@ describe("v2_router integration", () => {
 
     test("partial format in embedded mode returns fragment without TOC and with lexicon badges", async () => {
       const res = await request(app).get(
-        "/v2/dicts?q=Gallia&embedded=1&format=partial"
+        "/dicts?q=Gallia&embedded=1&format=partial"
       );
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
@@ -939,28 +983,28 @@ describe("v2_router integration", () => {
     });
 
     test("SSR injects clamped font scale style tag from ?scale= query param", async () => {
-      const res = await request(app).get("/v2/dicts?q=Gallia&scale=120");
+      const res = await request(app).get("/dicts?q=Gallia&scale=120");
       expect(res.status).toBe(200);
       expect(res.text).toContain(
         "<style>:root { --dict-scale: 1.20; }</style>"
       );
 
-      const maxRes = await request(app).get("/v2/dicts?q=Gallia&scale=200");
+      const maxRes = await request(app).get("/dicts?q=Gallia&scale=200");
       expect(maxRes.text).toContain(
         "<style>:root { --dict-scale: 1.40; }</style>"
       );
 
-      const minRes = await request(app).get("/v2/dicts?q=Gallia&scale=40");
+      const minRes = await request(app).get("/dicts?q=Gallia&scale=40");
       expect(minRes.text).toContain(
         "<style>:root { --dict-scale: 0.70; }</style>"
       );
 
-      const invalidRes = await request(app).get("/v2/dicts?q=Gallia&scale=abc");
+      const invalidRes = await request(app).get("/dicts?q=Gallia&scale=abc");
       expect(invalidRes.text).not.toContain("--dict-scale");
     });
 
-    test("GET /v2/dicts/id/:id injects font scale style tag from ?scale=", async () => {
-      const res = await request(app).get("/v2/dicts/id/n20077?scale=125");
+    test("GET /dicts/id/:id injects font scale style tag from ?scale=", async () => {
+      const res = await request(app).get("/dicts/id/n20077?scale=125");
       expect(res.status).toBe(200);
       expect(res.text).toContain(
         "<style>:root { --dict-scale: 1.25; }</style>"
@@ -968,9 +1012,9 @@ describe("v2_router integration", () => {
     });
   });
 
-  describe("GET /v2/library", () => {
+  describe("GET /library", () => {
     test("returns 200 with catalog and author groupings", async () => {
-      const res = await request(app).get("/v2/library");
+      const res = await request(app).get("/library");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("morcus-library-view");
@@ -985,20 +1029,20 @@ describe("v2_router integration", () => {
     });
   });
 
-  describe("POST /v2/api/report", () => {
+  describe("POST /api/report", () => {
     test("submits issue report successfully and returns 200 with JSON", async () => {
       const mockReportHandler = jest.fn().mockResolvedValue(undefined);
       const testApp = express();
       testApp.use(
-        "/v2",
+        "/",
         createV2Router(mockFusedDict as FusedDictionary, {
           reportHandler: mockReportHandler,
         })
       );
 
-      const res = await request(testApp).post("/v2/api/report").send({
+      const res = await request(testApp).post("/api/report").send({
         reportText: "Found a typo in entry",
-        url: "http://localhost:1337/v2/dicts?q=amo",
+        url: "http://localhost:1337/dicts?q=amo",
       });
 
       expect(res.status).toBe(200);
@@ -1006,7 +1050,7 @@ describe("v2_router integration", () => {
       expect(mockReportHandler).toHaveBeenCalledWith(
         expect.objectContaining({
           reportText: "Found a typo in entry",
-          url: "http://localhost:1337/v2/dicts?q=amo",
+          url: "http://localhost:1337/dicts?q=amo",
         })
       );
     });
@@ -1015,14 +1059,14 @@ describe("v2_router integration", () => {
       const mockReportHandler = jest.fn().mockResolvedValue(undefined);
       const testApp = express();
       testApp.use(
-        "/v2",
+        "/",
         createV2Router(mockFusedDict as FusedDictionary, {
           reportHandler: mockReportHandler,
         })
       );
 
       const res = await request(testApp)
-        .post("/v2/api/report")
+        .post("/api/report")
         .send({
           editedText: {
             original: "Gallia est omnes divisa",
@@ -1030,7 +1074,7 @@ describe("v2_router integration", () => {
             sectionId: "1.1.1",
           },
           tags: ["userEdit"],
-          url: "http://localhost:1337/v2/work/caesar/bg/1.1#sec-1.1.1",
+          url: "http://localhost:1337/work/caesar/bg/1.1#sec-1.1.1",
         });
 
       expect(res.status).toBe(200);
@@ -1043,14 +1087,14 @@ describe("v2_router integration", () => {
             sectionId: "1.1.1",
           },
           tags: ["userEdit"],
-          url: "http://localhost:1337/v2/work/caesar/bg/1.1#sec-1.1.1",
+          url: "http://localhost:1337/work/caesar/bg/1.1#sec-1.1.1",
         })
       );
     });
 
     test("returns 400 when both reportText and editedText are missing or empty", async () => {
       const res = await request(app)
-        .post("/v2/api/report")
+        .post("/api/report")
         .send({ reportText: "   " });
 
       expect(res.status).toBe(400);
@@ -1069,14 +1113,14 @@ describe("v2_router integration", () => {
           .mockRejectedValue(new Error("GitHub API Error"));
         const testApp = express();
         testApp.use(
-          "/v2",
+          "/",
           createV2Router(mockFusedDict as FusedDictionary, {
             reportHandler: mockReportHandler,
           })
         );
 
         const res = await request(testApp)
-          .post("/v2/api/report")
+          .post("/api/report")
           .send({ reportText: "Broken page" });
 
         expect(res.status).toBe(500);
@@ -1122,7 +1166,7 @@ describe("v2_router integration", () => {
 
     test("escapes the query in the partial error response", async () => {
       const res = await request(app).get(
-        `/v2/dicts?format=partial&q=${encodeURIComponent(PAYLOAD)}`
+        `/dicts?format=partial&q=${encodeURIComponent(PAYLOAD)}`
       );
 
       expect(res.status).toBe(500);
@@ -1136,7 +1180,7 @@ describe("v2_router integration", () => {
 
     test("escapes the query in the full page error response", async () => {
       const res = await request(app).get(
-        `/v2/dicts?q=${encodeURIComponent(PAYLOAD)}`
+        `/dicts?q=${encodeURIComponent(PAYLOAD)}`
       );
 
       expect(res.status).toBe(500);
@@ -1149,7 +1193,7 @@ describe("v2_router integration", () => {
 
     test("escapes the id in the partial error response", async () => {
       const res = await request(app).get(
-        `/v2/dicts/id/${encodeURIComponent(PAYLOAD)}?format=partial`
+        `/dicts/id/${encodeURIComponent(PAYLOAD)}?format=partial`
       );
 
       expect(res.status).toBe(500);
@@ -1163,7 +1207,7 @@ describe("v2_router integration", () => {
 
     test("escapes the id in the full page error response", async () => {
       const res = await request(app).get(
-        `/v2/dicts/id/${encodeURIComponent(PAYLOAD)}`
+        `/dicts/id/${encodeURIComponent(PAYLOAD)}`
       );
 
       expect(res.status).toBe(500);
@@ -1184,8 +1228,8 @@ describe("v2_router integration", () => {
      * the request itself simply hangs. Asserting on the 500 pins the wrapper.
      */
     const FAILING_ROUTES = [
-      "/v2/work?q=Gallia",
-      "/v2/work/caesar/de_bello_gallico/1.1",
+      "/work?q=Gallia",
+      "/work/caesar/de_bello_gallico/1.1",
     ];
 
     beforeEach(() => {
@@ -1225,7 +1269,7 @@ describe("v2_router integration", () => {
         .mockImplementation(() => {});
       try {
         const res = await request(app)
-          .get("/v2/work/caesar/de_bello_gallico/1.1?v=abc123")
+          .get("/work/caesar/de_bello_gallico/1.1?v=abc123")
           .set("X-Requested-With", "fetch");
         expect(res.status).toBe(500);
         expect(res.header["cache-control"]).toBeUndefined();
@@ -1240,7 +1284,7 @@ describe("v2_router integration", () => {
   describe("telemetry coverage", () => {
     /**
      * One request per registered route, reaching its handler, and the row name
-     * it must produce: the pattern without `/v2`, prefixed on non-GET methods.
+     * it must produce: the pattern, prefixed on non-GET methods.
      * A route missing here fails the registry check below, so new routes are
      * covered too. This also pins the mount order of `telemetryMiddleware`.
      */
@@ -1251,52 +1295,57 @@ describe("v2_router integration", () => {
       form?: Record<string, string>;
       json?: Record<string, string>;
     }> = [
-      { route: "/dicts", method: "GET", url: "/v2/dicts?q=amo" },
-      { route: "/dicts/id/:id", method: "GET", url: "/v2/dicts/id/n123" },
+      { route: "/dicts", method: "GET", url: "/dicts?q=amo" },
+      { route: "/dicts/id/:id", method: "GET", url: "/dicts/id/n123" },
       {
         route: "/work/:author/:name/:page/translation",
         method: "GET",
-        url: "/v2/work/caesar/de_bello_gallico/1.1/translation",
+        url: "/work/caesar/de_bello_gallico/1.1/translation",
       },
       {
         route: "/work/:author/:name/:page?",
         method: "GET",
-        url: "/v2/work/caesar/de_bello_gallico/1.1",
+        url: "/work/caesar/de_bello_gallico/1.1",
       },
-      { route: "/work", method: "GET", url: "/v2/work" },
-      { route: "/corpus", method: "GET", url: "/v2/corpus?q=amo" },
+      {
+        route: "/work/:workId",
+        method: "GET",
+        url: "/work/unknown_work",
+      },
+      { route: "/work", method: "GET", url: "/work" },
+      { route: "/corpus", method: "GET", url: "/corpus?q=amo" },
       {
         route: "/api/corpus/lemmata/:letter",
         method: "GET",
-        url: "/v2/api/corpus/lemmata/a",
+        url: "/api/corpus/lemmata/a",
       },
-      { route: "/macronizer", method: "GET", url: "/v2/macronizer" },
+      { route: "/macronizer", method: "GET", url: "/macronizer" },
       {
         route: "/macronizer",
         method: "POST",
-        url: "/v2/macronizer",
+        url: "/macronizer",
         form: { text: "arma virumque cano" },
       },
       {
         route: "/macronizer/apply",
         method: "POST",
-        url: "/v2/macronizer/apply",
+        url: "/macronizer/apply",
         form: { text: "arma virumque cano" },
       },
-      { route: "/externalReader", method: "GET", url: "/v2/externalReader" },
+      { route: "/externalReader", method: "GET", url: "/externalReader" },
       {
         route: "/api/completions",
         method: "GET",
-        url: "/v2/api/completions?prefix=am",
+        url: "/api/completions?prefix=am",
       },
       {
         route: "/api/report",
         method: "POST",
-        url: "/v2/api/report",
+        url: "/api/report",
         json: { reportText: "telemetry coverage" },
       },
-      { route: "/library", method: "GET", url: "/v2/library" },
-      { route: "/about", method: "GET", url: "/v2/about" },
+      { route: "/library", method: "GET", url: "/library" },
+      { route: "/about", method: "GET", url: "/about" },
     ];
 
     /** Mounted ahead of the telemetry middleware, so never logged. */
@@ -1346,7 +1395,7 @@ describe("v2_router integration", () => {
         reportHandler: jest.fn().mockResolvedValue(undefined),
       });
       telemetryApp = express();
-      telemetryApp.use("/v2", v2Router);
+      telemetryApp.use("/", v2Router);
     });
 
     test("the table lists every registered route", () => {
@@ -1387,7 +1436,7 @@ describe("v2_router integration", () => {
       }
     );
 
-    test.each(["/v2/", "/v2/assets/manifest.json", "/v2/no-such-page"])(
+    test.each(["/", "/assets/manifest.json", "/no-such-page"])(
       "GET %s logs nothing",
       async (url) => {
         await request(telemetryApp).get(url);

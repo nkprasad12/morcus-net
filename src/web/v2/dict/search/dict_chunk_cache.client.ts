@@ -15,7 +15,7 @@ export async function fetchDictChunk(
   prefix: string
 ): Promise<DictChunksResponse> {
   const res = await fetch(
-    withBuildVersion(`/v2/api/completions?prefix=${encodeURIComponent(prefix)}`)
+    withBuildVersion(`/api/completions?prefix=${encodeURIComponent(prefix)}`)
   );
   if (!res.ok) {
     throw new Error(`Failed to fetch completions chunk: HTTP ${res.status}`);

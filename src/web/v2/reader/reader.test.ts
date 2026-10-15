@@ -33,7 +33,7 @@ import { MOCK_SALLUST_WORK } from "@/web/v2/testing/mock_reader_loader";
 import type { V2PreprocessedWork } from "@/common/library/v2/v2_types";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -57,7 +57,7 @@ describe("reader_ssr", () => {
 
     // Dictionary iframe panel in No-JS view
     expect(html).toContain('id="dict-frame"');
-    expect(html).toContain("/v2/dicts?embedded=1");
+    expect(html).toContain("/dicts?embedded=1");
 
     // Contains Latin words as clean semantic text
     expect(html).toContain("Gallia");
@@ -99,7 +99,7 @@ describe("reader_ssr", () => {
     // Dictionary iframe points to embedded query with Latin filter and forced inflections (o=1)
     expect(html).toContain('id="dict-frame"');
     expect(html).toContain(
-      "/v2/dicts?q=divisa&amp;lang=La&amp;o=1&amp;embedded=1"
+      "/dicts?q=divisa&amp;lang=La&amp;o=1&amp;embedded=1"
     );
 
     // Close button present in mobile sheet handle bar
@@ -238,10 +238,10 @@ describe("reader_ssr", () => {
       "<title>De bello Gallico: Book 1, Chapter 1 - Morcus Latin Tools</title>"
     );
     expect(pageHtml).toContain(
-      '<link rel="canonical" href="https://morcus.net/v2/work/caesar/de_bello_gallico/1.1">'
+      '<link rel="canonical" href="https://morcus.net/work/caesar/de_bello_gallico/1.1">'
     );
     expect(pageHtml).toContain('<header class="app-bar">');
-    expect(pageHtml).toContain('href="/v2/library"');
+    expect(pageHtml).toContain('href="/library"');
     expect(pageHtml).toContain('class="nav-link active"');
     expect(pageHtml).toContain('aria-current="page"');
     expect(pageHtml).toContain("body-reader");
@@ -327,7 +327,7 @@ describe("decomposed_reader_renderers", () => {
 
     test("constructs canonical page URL with dot citation", () => {
       expect(buildReaderPageUrl(dbgWork, dbgWork.pages[0])).toBe(
-        "/v2/work/caesar/de_bello_gallico/1.1"
+        "/work/caesar/de_bello_gallico/1.1"
       );
     });
 
@@ -336,7 +336,7 @@ describe("decomposed_reader_renderers", () => {
         buildReaderPageUrl(dbgWork, dbgWork.pages[0], {
           query: "gallia",
         })
-      ).toBe("/v2/work/caesar/de_bello_gallico/1.1?q=gallia");
+      ).toBe("/work/caesar/de_bello_gallico/1.1?q=gallia");
     });
   });
 
@@ -467,11 +467,11 @@ describe("decomposed_reader_renderers", () => {
 
       // Page 0 should not be active
       expect(itemsHtml).toContain(
-        'href="/v2/work/caesar/de_bello_gallico/1.1"\n           class="reader-toc-item "\n           data-page-id="1.1"'
+        'href="/work/caesar/de_bello_gallico/1.1"\n           class="reader-toc-item "\n           data-page-id="1.1"'
       );
       // Page 1 should be active
       expect(itemsHtml).toContain(
-        'href="/v2/work/caesar/de_bello_gallico/1.2"\n           class="reader-toc-item active"\n           data-page-id="1.2"\n           aria-current="page"'
+        'href="/work/caesar/de_bello_gallico/1.2"\n           class="reader-toc-item active"\n           data-page-id="1.2"\n           aria-current="page"'
       );
     });
   });
@@ -539,7 +539,7 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('id="reader-passage"');
       expect(html).toContain("Gallia est omnis divisa");
       expect(html).toContain("reader-continue-btn");
-      expect(html).toContain('href="/v2/library"');
+      expect(html).toContain('href="/library"');
     });
 
     test("leaves notes and About to the companion panel", async () => {
@@ -574,7 +574,7 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain("reader-teaser-js");
       expect(html).toContain('href="#reader-dict"');
       expect(html).toContain("reader-sheet-open-link");
-      expect(html).toContain('src="/v2/dicts?embedded=1"');
+      expect(html).toContain('src="/dicts?embedded=1"');
     });
 
     test("renders the companion tabs and views in their final position", async () => {
@@ -642,7 +642,7 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain("Tap any word to view definitions");
       expect(html).toContain('class="reader-sheet-close"');
       expect(html).toContain(
-        'src="/v2/dicts?q=omnis&amp;lang=La&amp;o=1&amp;embedded=1"'
+        'src="/dicts?q=omnis&amp;lang=La&amp;o=1&amp;embedded=1"'
       );
     });
   });
@@ -658,14 +658,14 @@ describe("decomposed_reader_renderers", () => {
       expect(ctx.nextPage).not.toBeNull();
       expect(ctx.work.hasTranslation).toBe(false);
       expect(ctx.layoutStateClass).toBe("reader-layout-empty");
-      expect(ctx.dictIframeSrc).toBe("/v2/dicts?embedded=1");
+      expect(ctx.dictIframeSrc).toBe("/dicts?embedded=1");
     });
 
     test("resolves layout state and dictionary iframe src when query is provided", async () => {
       const ctx = await resolveReaderContext({ workId: "dbg", query: "arma" });
       expect(ctx.query).toBe("arma");
       expect(ctx.layoutStateClass).toBe("reader-layout-active");
-      expect(ctx.dictIframeSrc).toBe("/v2/dicts?q=arma&lang=La&o=1&embedded=1");
+      expect(ctx.dictIframeSrc).toBe("/dicts?q=arma&lang=La&o=1&embedded=1");
     });
 
     test("the dictionary iframe src never pins dictionaries (d=), so the saved morcus_d applies", () => {

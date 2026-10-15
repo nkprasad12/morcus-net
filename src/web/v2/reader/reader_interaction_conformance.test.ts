@@ -12,7 +12,7 @@ import {
 import { buildReaderFixtures } from "@/web/v2/testing/ssr_fixtures";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -25,7 +25,7 @@ describeInteractionConformance("reader", {
   fixtures: buildReaderFixtures,
   // 6 targets when this landed.
   caps: { minRuns: 4 },
-  // Page turns: `swapSlots` on `/v2/work/...`, plus the translation fetch
+  // Page turns: `swapSlots` on `/work/...`, plus the translation fetch
   // when the Translation tab is open.
   scenarios: [
     {

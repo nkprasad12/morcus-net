@@ -56,7 +56,7 @@ export interface DictUrlOptions extends Omit<DictSearch, "d"> {
 }
 
 /**
- * The `/v2/dicts` URL (path and query) for a search, with params in the
+ * The `/dicts` URL (path and query) for a search, with params in the
  * order `q`, `d`, `lang`, `o`, `embedded`, `save`.
  */
 export function buildDictUrl(options: DictUrlOptions): string {
@@ -67,7 +67,7 @@ export function buildDictUrl(options: DictUrlOptions): string {
   params.set("o", options.inflected ? "1" : "0");
   if (options.embedded) params.set("embedded", options.embedded);
   if (options.save) params.set("save", "1");
-  return `/v2/dicts?${params.toString()}`;
+  return `/dicts?${params.toString()}`;
 }
 
 /**
@@ -79,6 +79,6 @@ export function dictUrlBuilder(
   options: Omit<DictUrlOptions, "q">
 ): (q: string) => string {
   // `q` is always the first param, so everything after it is fixed.
-  const rest = buildDictUrl({ ...options, q: "" }).slice("/v2/dicts?q=".length);
-  return (q) => `/v2/dicts?${new URLSearchParams({ q }).toString()}${rest}`;
+  const rest = buildDictUrl({ ...options, q: "" }).slice("/dicts?q=".length);
+  return (q) => `/dicts?${new URLSearchParams({ q }).toString()}${rest}`;
 }

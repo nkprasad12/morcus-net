@@ -102,12 +102,12 @@ settings params, so it never infers intent from them. The dictionary route
   until the user follows **Restore saved**, a plain link to the page without settings params. Users with
   no saved settings never see it.
 - **Scoped views** (reader and macronizer iframes, `embedded=1`; any `lang=` lookup) share the one
-  `morcus_d` preference with `/v2/dicts`, as V1 did. Their lookup decides two things, and the
+  `morcus_d` preference with `/dicts`, as V1 did. Their lookup decides two things, and the
   settings dialog follows it:
   - **Dictionaries: scoped by `lang`.** The dialog shows only the dictionaries the lookup can query
     (`filterDictsByLang`; for the reader's `lang=La`, the five From-Latin ones). Saving, from
     either side, changes just those bits (`mergeDictKeysForSave`) and keeps the rest. The client
-    merges against the cookie as it is when the dialog closes, so with `/v2/dicts` and the reader
+    merges against the cookie as it is when the dialog closes, so with `/dicts` and the reader
     open in two tabs only the in-scope bits are last-writer-wins. The No-JS settings form carries a
     hidden `lang` so the server applies the same mask, and its 303 drops the dictionary params so the
     new cookie is the only source.

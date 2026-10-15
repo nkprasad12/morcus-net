@@ -1,9 +1,6 @@
 User-agent: *
 Disallow: /api/
-Disallow: /v2/api/
 Disallow: /work/*/*/*/translation
-Disallow: /v2/work/*/*/*/translation
 Disallow: /externalReader?*
-Disallow: /v2/externalReader?*
 Disallow: /*?*format=partial
 Disallow: /*?*embedded=1

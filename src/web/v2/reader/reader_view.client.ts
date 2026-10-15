@@ -104,7 +104,7 @@ export {
  *
  * Without JS:
  * - Clean semantic HTML prose/verse rendered without word anchor bloat.
- * - Dictionary panel embeds a self-contained iframe (/v2/dicts?embedded=1).
+ * - Dictionary panel embeds a self-contained iframe (/dicts?embedded=1).
  * - Searching words in the iframe maintains the reader's scroll position 100% stationary.
  *
  * With JS:
@@ -582,7 +582,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
-    const workPrefix = `/v2/work/${author}/${name}`;
+    const workPrefix = `/work/${author}/${name}`;
     if (
       targetUrl.pathname !== workPrefix &&
       !targetUrl.pathname.startsWith(`${workPrefix}/`)
@@ -819,7 +819,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // Reset iframe to default embedded state
     const iframe = this.#dictFrame;
     if (iframe) {
-      iframe.src = "/v2/dicts?embedded=1";
+      iframe.src = "/dicts?embedded=1";
     }
 
     // Update split layout class to empty
@@ -841,7 +841,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (!word) return;
     this.#pendingDictFocusWord = null;
 
-    const targetSrc = `/v2/dicts?q=${encodeURIComponent(
+    const targetSrc = `/dicts?q=${encodeURIComponent(
       word
     )}&lang=La&o=1&embedded=1&scale=${this.#currentPrefs.dictScale}`;
     const iframe = this.#dictFrame;
@@ -1276,7 +1276,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const name = this.getAttribute("data-name");
     const page = this.dataset.page || this.getAttribute("data-page");
     if (author && name && page) {
-      return `/v2/work/${author}/${name}/${page}`;
+      return `/work/${author}/${name}/${page}`;
     }
     return typeof window !== "undefined" && window.location
       ? window.location.pathname.replace(/\/$/, "")
@@ -1291,10 +1291,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           : "http://localhost";
       const u = new URL(pageUrl, origin);
       const parts = u.pathname.split("/").filter(Boolean);
-      if (parts.length >= 4 && parts[0] === "v2" && parts[1] === "work") {
-        const author = parts[2];
-        const name = parts[3];
-        const pageId = parts.slice(4).join(".") || this.dataset.page || "1";
+      if (parts.length >= 3 && parts[0] === "work") {
+        const author = parts[1];
+        const name = parts[2];
+        const pageId = parts.slice(3).join(".") || this.dataset.page || "1";
         return `${author}/${name}/${pageId}`;
       }
       return u.pathname;
@@ -1320,7 +1320,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     try {
       let cleanUrl = pageUrl.split("?")[0].split("#")[0].replace(/\/$/, "");
       const parts = cleanUrl.split("/").filter(Boolean);
-      if (parts.length === 3 && parts[0] === "v2" && parts[1] === "work") {
+      if (parts.length === 3 && parts[0] === "work") {
         cleanUrl = `${cleanUrl}/${this.dataset.page || "1"}`;
       }
       const res = await fetch(withBuildVersion(`${cleanUrl}/translation`), {
@@ -1402,8 +1402,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     } else {
       this.#setActiveWord(null);
       const iframe = this.#dictFrame;
-      if (iframe && currentIframeSrc(iframe) !== "/v2/dicts?embedded=1") {
-        iframe.src = "/v2/dicts?embedded=1";
+      if (iframe && currentIframeSrc(iframe) !== "/dicts?embedded=1") {
+        iframe.src = "/dicts?embedded=1";
       }
     }
 
@@ -1500,7 +1500,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     const pathParts = url.pathname.split("/").filter(Boolean);
-    const newPageId = pathParts.slice(4).join(".") || pathParts[4] || "";
+    const newPageId = pathParts.slice(3).join(".") || pathParts[3] || "";
 
     this.#currentQuery = url.searchParams.get("q") ?? "";
 

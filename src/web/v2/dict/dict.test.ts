@@ -21,7 +21,7 @@ import { EntryResult } from "@/common/dictionaries/dict_result";
 import he from "he";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -127,7 +127,7 @@ describe("dict_ssr", () => {
     );
 
     const html = xmlNodeToHtml(node);
-    expect(html).toBe('<a class="dLink" href="/v2/dicts?q=regia">regia</a>');
+    expect(html).toBe('<a class="dLink" href="/dicts?q=regia">regia</a>');
   });
 
   test("xmlNodeToHtml handles void tags like br", () => {
@@ -302,7 +302,7 @@ describe("dict_ssr", () => {
     expect(html).toContain("No dictionary entries found for");
     expect(html).toContain("Exact headword search is active.");
     expect(html).toContain("Enable inflected search");
-    expect(html).toContain('/v2/dicts?q=amavi&amp;d=3&amp;o=1&amp;save=1"');
+    expect(html).toContain('/dicts?q=amavi&amp;d=3&amp;o=1&amp;save=1"');
 
     const embeddedHtml = renderDictResultsHtml(
       "amavi",
@@ -315,7 +315,7 @@ describe("dict_ssr", () => {
       }
     );
     expect(embeddedHtml).toContain(
-      '/v2/dicts?q=amavi&amp;d=1&amp;o=1&amp;embedded=1"'
+      '/dicts?q=amavi&amp;d=1&amp;o=1&amp;embedded=1"'
     );
   });
 
@@ -350,18 +350,16 @@ describe("dict_ssr", () => {
     expect(pageHtml).toContain(
       "<style>body{background-color:var(--bg)}</style>"
     );
+    expect(pageHtml).toContain('<link rel="stylesheet" href="/assets/v2.css">');
     expect(pageHtml).toContain(
-      '<link rel="stylesheet" href="/v2/assets/v2.css">'
+      `<script type="module" src="/assets/common.js" onerror="document.documentElement.setAttribute('data-js-failed','')"></script>`
     );
     expect(pageHtml).toContain(
-      `<script type="module" src="/v2/assets/common.js" onerror="document.documentElement.setAttribute('data-js-failed','')"></script>`
-    );
-    expect(pageHtml).toContain(
-      `<script type="module" src="/v2/assets/dict.js" onerror="document.documentElement.setAttribute('data-js-failed','')"></script>`
+      `<script type="module" src="/assets/dict.js" onerror="document.documentElement.setAttribute('data-js-failed','')"></script>`
     );
     // The form publishes the resolved state for the client to adopt: defaults here.
     expect(pageHtml).toContain(
-      '<form class="search-form" role="search" action="/v2/dicts" method="GET" data-d="an" data-o="1">'
+      '<form class="search-form" role="search" action="/dicts" method="GET" data-d="an" data-o="1">'
     );
     expect(pageHtml).toContain("<morcus-dict-search>");
     expect(pageHtml).toContain("<morcus-dict-settings>");
@@ -377,7 +375,7 @@ describe("dict_ssr", () => {
       ["Gallia est omnis"]
     );
     const html = xmlNodeToHtml(node);
-    expect(html).not.toContain('href="/v2/dicts?q=Gallia"');
+    expect(html).not.toContain('href="/dicts?q=Gallia"');
     expect(html).not.toContain('class="lat-word"');
     expect(html).toContain("Gallia est omnis");
   });
@@ -534,7 +532,7 @@ describe("dict_ssr", () => {
 
     // Emph becomes <b class="lsEmph"> and is not self-linkified
     expect(html).toContain('<b class="lsEmph">CABALLVS</b>');
-    expect(html).not.toContain('href="/v2/dicts?q=CABALLVS"');
+    expect(html).not.toContain('href="/dicts?q=CABALLVS"');
 
     // Foreign with lang="GR" becomes <span lang="el"> and Greek text is preserved (decoded)
     expect(html).toContain('<span lang="el">');
@@ -546,7 +544,7 @@ describe("dict_ssr", () => {
     expect(html).toContain("<i>si credimus</i>");
 
     // Latin words in regular text flow are clean text without word links
-    expect(html).not.toContain('href="/v2/dicts?q=cauando"');
+    expect(html).not.toContain('href="/dicts?q=cauando"');
     expect(html).toContain("a cauando dictus");
 
     // Verify no inner divs inside the <def> element (only the root div and def div exist)
@@ -579,7 +577,7 @@ describe("dict_ssr", () => {
     expect(html).toContain("<span>sollemnibus</span>");
     expect(html).toContain("<span>ac...les</span>");
     expect(html).toContain("<span></span>");
-    expect(html).toContain('href="/v2/dicts?q=baetylus"');
+    expect(html).toContain('href="/dicts?q=baetylus"');
     expect(html).toContain("BAETYLVS</a>");
 
     // No inner divs inside root
@@ -651,8 +649,8 @@ describe("dict_ssr", () => {
     expect(html).toContain('href="#n1"');
     expect(html).toContain('href="#n2"');
     // Each entry carries a shareable article permalink.
-    expect(html).toContain('href="/v2/dicts/id/n1"');
-    expect(html).toContain('href="/v2/dicts/id/n2"');
+    expect(html).toContain('href="/dicts/id/n1"');
+    expect(html).toContain('href="/dicts/id/n2"');
     expect(html).not.toContain("Entry 1 of 2");
   });
 
@@ -684,7 +682,7 @@ describe("dict_ssr", () => {
     // Entries with no outline and no inflections (Riddle & Arnold, Numerals)
     // used to render no header, and so had no permalink at all.
     expect(html).toContain('class="entry-header has-tools"');
-    expect(html).toContain('href="/v2/dicts/id/n0"');
+    expect(html).toContain('href="/dicts/id/n0"');
     expect(html).not.toContain("Outline");
     expect(html).not.toContain("Inflections");
   });
@@ -713,7 +711,7 @@ describe("dict_ssr", () => {
     expect(rendered).toContain('class="entry-headword"');
     // The headword is inert text now; the permalink lives in the copy pill.
     expect(rendered).not.toContain('href="#n20077"');
-    expect(rendered).toContain('href="/v2/dicts/id/n20077"');
+    expect(rendered).toContain('href="/dicts/id/n20077"');
     expect(rendered).toContain('<article class="entry has-tools" id="n20077">');
     // Root id="n20077" is omitted from inner div to prevent duplicate IDs in DOM
     const idCount = (rendered.match(/id="n20077"/g) || []).length;
@@ -1312,7 +1310,7 @@ describe("dict_ssr", () => {
         });
         expect(html).toContain("Exact headword search is active.");
         expect(html).toContain("Enable inflected search");
-        expect(html).toContain('/v2/dicts?q=amavi&amp;d=1&amp;o=1"');
+        expect(html).toContain('/dicts?q=amavi&amp;d=1&amp;o=1"');
       });
 
       test("handles empty queriedDicts gracefully", () => {

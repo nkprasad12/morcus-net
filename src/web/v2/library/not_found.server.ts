@@ -29,7 +29,7 @@ export function renderNotFoundContentHtml(
     <div class="empty-state empty-state-standalone library-empty-state not-found-state">
       <h2 class="empty-state-title library-empty-title">${he.escape(title)}</h2>
       <p class="empty-state-desc library-empty-desc">${descHtml}</p>
-      <a href="/v2/library" class="btn btn-primary">Browse Full Library</a>
+      <a href="/library" class="btn btn-primary">Browse Full Library</a>
     </div>
   `.trim();
 }
