@@ -7,6 +7,7 @@ import { envVar } from "@/common/env_vars";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
+import { writeBuildProvenance } from "@/scripts/build_provenance";
 import {
   DownloadConfig,
   StepConfig,
@@ -168,6 +169,13 @@ const MAKE_V2_LIBRARY: StepConfig = {
   },
   label: "Building V2 library",
 };
+// Last: it needs every input the earlier steps fetched.
+const WRITE_BUILD_PROVENANCE: StepConfig = {
+  operation: async () => {
+    await writeBuildProvenance();
+  },
+  label: "Writing build provenance",
+};
 const ALL_STEPS = [
   SETUP_DIRS,
   WRITE_COMMIT_ID,
@@ -184,6 +192,7 @@ const ALL_STEPS = [
   MAKE_FORCELLINI,
   PROCESS_LAT_LIB,
   MAKE_V2_LIBRARY,
+  WRITE_BUILD_PROVENANCE,
 ];
 
 export async function prodBuildSteps(): Promise<boolean> {
