@@ -5,6 +5,7 @@ import {
   setVersionedCacheControl,
 } from "@/web/v2/core/server/build_version.server";
 import { isPartialRequest } from "@/web/v2/core/server/request_params.server";
+import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 import {
   buildLemmaShards,
   loadCorpusLemmata,
@@ -70,6 +71,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
         options.engine,
         await loadAuthors()
       );
+      requestTimer(res).mark("lookupComplete");
       res.send(
         isPartial
           ? renderCorpusPartialHtml(view).toString()
@@ -95,6 +97,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
       return;
     }
     const shards = await loadLemmaShards();
+    requestTimer(res).mark("lookupComplete");
     if (shards === undefined) {
       res.setHeader("Cache-Control", "no-store");
       res.status(503).json({ error: "Corpus lemmata unavailable." });

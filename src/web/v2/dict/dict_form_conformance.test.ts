@@ -177,11 +177,14 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       .set("Cookie", formatCookieHeader(cookies));
     expect(res2.status).toBe(200);
 
-    expect(mockGetEntry).toHaveBeenLastCalledWith({
-      query: "amo",
-      dicts: ["GAF", "GRG"],
-      mode: 1,
-    });
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "amo",
+        dicts: ["GAF", "GRG"],
+        mode: 1,
+      },
+      expect.anything()
+    );
 
     document.body.innerHTML = res2.text;
     expect(getRenderedDictTitles(document.body)).toEqual([
@@ -202,11 +205,14 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     expect(res3.status).toBe(200);
     Object.assign(cookies, extractCookies(res3.header["set-cookie"]));
 
-    expect(mockGetEntry).toHaveBeenLastCalledWith({
-      query: "gladius",
-      dicts: ["GAF", "GRG"],
-      mode: 1,
-    });
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "gladius",
+        dicts: ["GAF", "GRG"],
+        mode: 1,
+      },
+      expect.anything()
+    );
     document.body.innerHTML = res3.text;
     expect(getRenderedDictTitles(document.body)).toEqual([
       "Gaffiot",
@@ -220,11 +226,14 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       .get("/v2/dicts?q=rex")
       .set("Cookie", formatCookieHeader(cookies));
     expect(res4.status).toBe(200);
-    expect(mockGetEntry).toHaveBeenLastCalledWith({
-      query: "rex",
-      dicts: ["GAF", "GRG"],
-      mode: 1,
-    });
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "rex",
+        dicts: ["GAF", "GRG"],
+        mode: 1,
+      },
+      expect.anything()
+    );
     document.body.innerHTML = res4.text;
     expect(getRenderedDictTitles(document.body)).toEqual([
       "Gaffiot",
@@ -238,11 +247,14 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       .set("Cookie", formatCookieHeader(cookies));
     expect(res5.status).toBe(200);
     Object.assign(cookies, extractCookies(res5.header["set-cookie"]));
-    expect(mockGetEntry).toHaveBeenLastCalledWith({
-      query: "rex",
-      dicts: ["GAF", "GRG"],
-      mode: 0,
-    });
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "rex",
+        dicts: ["GAF", "GRG"],
+        mode: 0,
+      },
+      expect.anything()
+    );
     expect(cookies["morcus_inflected"]).not.toBe("0");
     document.body.innerHTML = res5.text;
     // The controls are locked, Done can't save, and the link's settings ride along in the
@@ -265,11 +277,14 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       .get(returnHref)
       .set("Cookie", formatCookieHeader(cookies));
     expect(res5b.status).toBe(200);
-    expect(mockGetEntry).toHaveBeenLastCalledWith({
-      query: "rex",
-      dicts: ["GAF", "GRG"],
-      mode: 1,
-    });
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "rex",
+        dicts: ["GAF", "GRG"],
+        mode: 1,
+      },
+      expect.anything()
+    );
 
     // --- Step 4c: Back on their own settings, untick inflection and press Done ---
     document.body.innerHTML = res5b.text;
@@ -288,11 +303,14 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       .set("Cookie", formatCookieHeader(cookies));
     document.body.innerHTML = res5c.text;
     expect(res5c.text).not.toContain("guest-chip");
-    expect(mockGetEntry).toHaveBeenLastCalledWith({
-      query: "rex",
-      dicts: ["GAF", "GRG"],
-      mode: 0,
-    });
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "rex",
+        dicts: ["GAF", "GRG"],
+        mode: 0,
+      },
+      expect.anything()
+    );
 
     // --- Step 5: Toggle inflection back ON (`o=0` hidden + `o=1` checkbox repeated key) ---
     const form6 = settingsForm();
@@ -314,11 +332,14 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
       .get(applyRes6.header["location"])
       .set("Cookie", formatCookieHeader(cookies));
     expect(res6.status).toBe(200);
-    expect(mockGetEntry).toHaveBeenLastCalledWith({
-      query: "rex",
-      dicts: ["GAF", "GRG"],
-      mode: 1,
-    });
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "rex",
+        dicts: ["GAF", "GRG"],
+        mode: 1,
+      },
+      expect.anything()
+    );
     document.body.innerHTML = res6.text;
     expect(
       document.body.querySelector<HTMLInputElement>("#toggle-inflected")!
@@ -344,21 +365,27 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     await request(app)
       .get(`/v2/dicts?q=amo&dict=GAF&d=${lsBitmask}`)
       .set("Cookie", "morcus_d=g"); // g = S&H (16)
-    expect(mockGetEntry).toHaveBeenLastCalledWith({
-      query: "amo",
-      dicts: ["GAF"],
-      mode: 1,
-    });
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "amo",
+        dicts: ["GAF"],
+        mode: 1,
+      },
+      expect.anything()
+    );
 
     // 2. `d` bitmask beats legacy `in` and cookie
     await request(app)
       .get(`/v2/dicts?q=amo&d=${grgBitmask}&in=L%26S`)
       .set("Cookie", "morcus_d=g"); // g = S&H (16)
-    expect(mockGetEntry).toHaveBeenLastCalledWith({
-      query: "amo",
-      dicts: ["GRG"],
-      mode: 1,
-    });
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "amo",
+        dicts: ["GRG"],
+        mode: 1,
+      },
+      expect.anything()
+    );
 
     // 3. Single checkbox selection (`?dict=GAF`) is preserved as a 1-element array
     const singleRes = await request(app).get("/v2/dicts?q=amo&dict=GAF");

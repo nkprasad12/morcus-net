@@ -13,12 +13,22 @@ import { createMacronizerRoutes } from "@/web/v2/macronizer/macronizer_routes.se
 import type { MacronizerEngine } from "@/web/v2/macronizer/macronizer_engine.server";
 import { getV2BuildDir } from "@/bundler/v2_build_contract";
 import { IMMUTABLE_CACHE_CONTROL } from "@/web/v2/core/server/build_version.server";
+import { TelemetryLogger } from "@/web/telemetry/telemetry";
+import {
+  telemetryMiddleware,
+  v2ErrorHandler,
+} from "@/web/v2/core/server/telemetry.server";
 
 export interface V2RouterOptions extends ApiRoutesOptions {
   /** The corpus query engine; `/v2/corpus` answers 503 without one. */
   corpus?: CorpusEngine;
   /** The macronizer engine; `POST /v2/macronizer` answers 503 without one. */
   macronizer?: MacronizerEngine;
+  /**
+   * Receives one `ApiCalls` row per routed request (see `telemetry.server.ts`).
+   * Defaults to a no-op logger.
+   */
+  telemetry?: Promise<TelemetryLogger>;
 }
 
 export function createV2Router(
@@ -49,6 +59,14 @@ export function createV2Router(
     })
   );
 
+  // Request telemetry: after the static assets (not logged), before every
+  // route that should be. `v2ErrorHandler` at the end completes the pair.
+  router.use(
+    telemetryMiddleware(
+      options?.telemetry ?? Promise.resolve(TelemetryLogger.NoOp)
+    )
+  );
+
   // Mount vertical domain route handlers
   router.use(createDictRoutes(fusedDict));
   router.use(createReaderRoutes());
@@ -75,6 +93,10 @@ export function createV2Router(
   router.get("/about", (_req: Request, res: Response) => {
     res.send(renderAboutPageHtml());
   });
+
+  // Answers errors forwarded by handlers, so their telemetry row records the
+  // failure. Must be last.
+  router.use(v2ErrorHandler);
 
   return router;
 }

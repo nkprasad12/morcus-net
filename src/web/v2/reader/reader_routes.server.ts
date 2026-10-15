@@ -13,6 +13,7 @@ import {
 import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
 import { renderNotFoundPageHtml } from "@/web/v2/library/not_found.server";
 import { isPartialRequest } from "@/web/v2/core/server/request_params.server";
+import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 import { getFirstHighlightSectionId } from "@/web/v2/reader/reader_highlight.common";
 
 function redirectReaderJump(
@@ -83,6 +84,7 @@ export function createReaderRoutes(): Router {
   // Lazy-loading translation partial endpoint: /v2/reader/:author/:name/:page/translation
   getAsync("/reader/:author/:name/:page/translation", async (req, res) => {
     const work = await findReaderWork(req.params.author, req.params.name);
+    requestTimer(res).mark("lookupComplete");
     const body = work
       ? renderReaderTranslationHtml(work, req.params.page)
       : null;
@@ -107,6 +109,7 @@ export function createReaderRoutes(): Router {
     const isPartial = isPartialRequest(req, res);
 
     const work = await findReaderWork(author, name);
+    requestTimer(res).mark("lookupComplete");
 
     if (!work) {
       res.status(404).send(
@@ -160,6 +163,7 @@ export function createReaderRoutes(): Router {
       (await getV2Work(workId)) ||
       (await getV2Work("caesar_de_bello_gallico")) ||
       (await getV2Work("phi0448.phi001.perseus-lat2"));
+    requestTimer(res).mark("lookupComplete");
 
     if (!work) {
       res.redirect(302, "/v2/library");

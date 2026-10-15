@@ -19,6 +19,7 @@ import type { ReportApiRequest } from "@/web/api_routes";
 import { GitHub } from "@/web/utils/github";
 import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
 import { getBuildVersion } from "@/web/v2/core/server/build_version.server";
+import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
@@ -65,6 +66,7 @@ export function createApiRoutes(
         res.json(items);
       } catch (err) {
         console.error("Error in suffix completions:", err);
+        requestTimer(res).mark("error");
         res.json([]);
       }
       return;
@@ -83,6 +85,7 @@ export function createApiRoutes(
       res.json(chunks);
     } catch (err) {
       console.error("Error in completions chunk:", err);
+      requestTimer(res).mark("error");
       res.json({});
     }
   });

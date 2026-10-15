@@ -11,6 +11,7 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { buildV2Bundle } from "@/bundler/v2.rsbuild";
 import { getV2AssetHref } from "@/web/v2/shell/asset_manifest.server";
 import { getV2Work } from "@/web/v2/reader/reader_loader.server";
+import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
 
 // The mock loader is the real fixture-backed implementation, except that
 // `getV2Work` is wrapped in a `jest.fn` so tests can force it to reject and
@@ -113,7 +114,8 @@ describe("v2_router integration", () => {
       expect.objectContaining({
         query: "amo",
         dicts: ["L&S", "GAF"],
-      })
+      }),
+      expect.anything()
     );
     expect(res.header["set-cookie"]).toBeUndefined();
   });
@@ -127,7 +129,8 @@ describe("v2_router integration", () => {
       expect.objectContaining({
         query: "amo",
         dicts: ["GAF", "GRG"],
-      })
+      }),
+      expect.anything()
     );
   });
 
@@ -141,7 +144,8 @@ describe("v2_router integration", () => {
       expect.objectContaining({
         query: "amo",
         dicts: ["L&S", "GAF"],
-      })
+      }),
+      expect.anything()
     );
   });
 
@@ -164,7 +168,8 @@ describe("v2_router integration", () => {
       expect.objectContaining({
         query: "n20077",
         mode: 2,
-      })
+      }),
+      expect.anything()
     );
   });
 
@@ -184,7 +189,8 @@ describe("v2_router integration", () => {
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
       expect.objectContaining({
         query: "amo",
-      })
+      }),
+      expect.anything()
     );
   });
 
@@ -197,7 +203,8 @@ describe("v2_router integration", () => {
         query: "amo",
         dicts: ["L&S", "GAF"],
         mode: 1,
-      })
+      }),
+      expect.anything()
     );
   });
 
@@ -208,7 +215,8 @@ describe("v2_router integration", () => {
       expect.objectContaining({
         query: "amavi",
         mode: 0,
-      })
+      }),
+      expect.anything()
     );
 
     const resInflected = await request(app).get("/v2/dicts?q=amavi&o=1");
@@ -217,7 +225,8 @@ describe("v2_router integration", () => {
       expect.objectContaining({
         query: "amavi",
         mode: 1,
-      })
+      }),
+      expect.anything()
     );
   });
 
@@ -227,7 +236,8 @@ describe("v2_router integration", () => {
       expect(res.status).toBe(200);
       // Regression: "GAF" used to be read as base36 21111, enabling six dictionaries.
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
-        expect.objectContaining({ query: "amo", dicts: ["GAF"] })
+        expect.objectContaining({ query: "amo", dicts: ["GAF"] }),
+        expect.anything()
       );
       // Ordinary searches are view state; only Apply (save=1) persists.
       expect(res.header["set-cookie"]).toBeUndefined();
@@ -263,7 +273,8 @@ describe("v2_router integration", () => {
       expect(res.status).toBe(200);
       // Renders the sender's exact view...
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
-        expect.objectContaining({ dicts: ["GAF"], mode: 0 })
+        expect.objectContaining({ dicts: ["GAF"], mode: 0 }),
+        expect.anything()
       );
       // ...and only refreshes the recipient's own values.
       const cookies = res.header["set-cookie"].join("\n");
@@ -306,7 +317,8 @@ describe("v2_router integration", () => {
       const res = await request(app).get("/v2/dicts?q=amo&dict=L%26S&dict=GRG");
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
-        expect.objectContaining({ dicts: ["L&S", "GRG"] })
+        expect.objectContaining({ dicts: ["L&S", "GRG"] }),
+        expect.anything()
       );
     });
 
@@ -316,7 +328,8 @@ describe("v2_router integration", () => {
       const res = await request(app).get("/v2/dicts?q=amo&d=an&dict=GAF");
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
-        expect.objectContaining({ dicts: ["GAF"] })
+        expect.objectContaining({ dicts: ["GAF"] }),
+        expect.anything()
       );
     });
 
@@ -328,7 +341,8 @@ describe("v2_router integration", () => {
       expect(res.status).toBe(200);
       // Regression: ["0", "1"] matched neither branch, so the stale cookie kept inflection off.
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
-        expect.objectContaining({ query: "amavi", mode: 1 })
+        expect.objectContaining({ query: "amavi", mode: 1 }),
+        expect.anything()
       );
     });
 
@@ -336,7 +350,8 @@ describe("v2_router integration", () => {
       const res = await request(app).get("/v2/dicts?q=amavi&o=0&dict=GAF");
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
-        expect.objectContaining({ mode: 0 })
+        expect.objectContaining({ mode: 0 }),
+        expect.anything()
       );
     });
 
@@ -357,7 +372,8 @@ describe("v2_router integration", () => {
         .set("Cookie", "morcus_d=2");
       expect(res.status).toBe(200);
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
-        expect.objectContaining({ dicts: ["GAF"] })
+        expect.objectContaining({ dicts: ["GAF"] }),
+        expect.anything()
       );
     });
 
@@ -395,7 +411,8 @@ describe("v2_router integration", () => {
         query: "arma",
         dicts: ["L&S"],
         mode: 1,
-      })
+      }),
+      expect.anything()
     );
 
     // 3. Does not set or overwrite cookies for transient reader lookups
@@ -491,7 +508,8 @@ describe("v2_router integration", () => {
         query: "arma",
         dicts: ["L&S", "GAF", "GES", "FOR", "NUM"],
         mode: 1,
-      })
+      }),
+      expect.anything()
     );
     expect(res.text).not.toContain("guest-chip");
   });
@@ -798,7 +816,8 @@ describe("v2_router integration", () => {
         expect.objectContaining({
           query: "Gallia",
           mode: 1,
-        })
+        }),
+        expect.anything()
       );
     });
 
@@ -1086,9 +1105,179 @@ describe("v2_router integration", () => {
     test.each(FAILING_ROUTES)(
       "GET %s responds 500 instead of hanging",
       async (route) => {
+        const errorSpy = jest
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
         const res = await request(app).get(route);
 
         expect(res.status).toBe(500);
+        // The router's error handler logs what the handler forwarded.
+        expect(errorSpy).toHaveBeenCalledWith(
+          `[v2] GET ${route}`,
+          expect.any(Error)
+        );
+        errorSpy.mockRestore();
+      }
+    );
+  });
+
+  describe("telemetry coverage", () => {
+    /**
+     * One request per registered route, reaching its handler, and the row name
+     * it must produce: the pattern without `/v2`, prefixed on non-GET methods.
+     * A route missing here fails the registry check below, so new routes are
+     * covered too. This also pins the mount order of `telemetryMiddleware`.
+     */
+    const LOGGED_ROUTES: ReadonlyArray<{
+      route: string;
+      method: "GET" | "POST";
+      url: string;
+      form?: Record<string, string>;
+      json?: Record<string, string>;
+    }> = [
+      { route: "/dicts", method: "GET", url: "/v2/dicts?q=amo" },
+      { route: "/dicts/id/:id", method: "GET", url: "/v2/dicts/id/n123" },
+      {
+        route: "/reader/:author/:name/:page/translation",
+        method: "GET",
+        url: "/v2/reader/caesar/de_bello_gallico/1.1/translation",
+      },
+      {
+        route: "/reader/:author/:name/:page?",
+        method: "GET",
+        url: "/v2/reader/caesar/de_bello_gallico/1.1",
+      },
+      { route: "/reader", method: "GET", url: "/v2/reader" },
+      { route: "/corpus", method: "GET", url: "/v2/corpus?q=amo" },
+      {
+        route: "/api/corpus/lemmata/:letter",
+        method: "GET",
+        url: "/v2/api/corpus/lemmata/a",
+      },
+      { route: "/macronizer", method: "GET", url: "/v2/macronizer" },
+      {
+        route: "/macronizer",
+        method: "POST",
+        url: "/v2/macronizer",
+        form: { text: "arma virumque cano" },
+      },
+      {
+        route: "/macronizer/apply",
+        method: "POST",
+        url: "/v2/macronizer/apply",
+        form: { text: "arma virumque cano" },
+      },
+      { route: "/externalReader", method: "GET", url: "/v2/externalReader" },
+      {
+        route: "/api/completions",
+        method: "GET",
+        url: "/v2/api/completions?prefix=am",
+      },
+      {
+        route: "/api/report",
+        method: "POST",
+        url: "/v2/api/report",
+        json: { reportText: "telemetry coverage" },
+      },
+      { route: "/library", method: "GET", url: "/v2/library" },
+      { route: "/about", method: "GET", url: "/v2/about" },
+    ];
+
+    /** Mounted ahead of the telemetry middleware, so never logged. */
+    const UNLOGGED_ROUTES = ["GET /", "GET /assets/manifest.json"];
+
+    /** Every `METHOD /pattern` registered in an Express router, recursively. */
+    function registeredRoutes(router: any): string[] {
+      const found: string[] = [];
+      for (const layer of router.stack) {
+        if (layer.route) {
+          for (const method of Object.keys(layer.route.methods)) {
+            found.push(`${method.toUpperCase()} ${layer.route.path}`);
+          }
+        } else if (layer.handle?.stack) {
+          found.push(...registeredRoutes(layer.handle));
+        }
+      }
+      return found;
+    }
+
+    function rowName(entry: { route: string; method: string }): string {
+      return entry.method === "GET"
+        ? entry.route
+        : `${entry.method} ${entry.route}`;
+    }
+
+    async function settle(): Promise<void> {
+      for (let i = 0; i < 5; i++) {
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+    }
+
+    let rows: ApiCallData[];
+    let telemetryApp: express.Express;
+    let v2Router: express.Router;
+
+    beforeEach(() => {
+      rows = [];
+      const logger: TelemetryLogger = {
+        ...TelemetryLogger.NoOp,
+        logApiCall: async (row) => {
+          rows.push(row);
+        },
+      };
+      v2Router = createV2Router(mockFusedDict as FusedDictionary, {
+        telemetry: Promise.resolve(logger),
+        reportHandler: jest.fn().mockResolvedValue(undefined),
+      });
+      telemetryApp = express();
+      telemetryApp.use("/v2", v2Router);
+    });
+
+    test("the table lists every registered route", () => {
+      const expected = [
+        ...LOGGED_ROUTES.map((entry) => `${entry.method} ${entry.route}`),
+        ...UNLOGGED_ROUTES,
+      ];
+      expect(registeredRoutes(v2Router).sort()).toEqual(expected.sort());
+    });
+
+    test.each(LOGGED_ROUTES)(
+      "$method $url logs exactly one row",
+      async (entry) => {
+        // Unconfigured engines (corpus, macronizer) warn; that is fine here.
+        const warnSpy = jest
+          .spyOn(console, "warn")
+          .mockImplementation(() => {});
+        const errorSpy = jest
+          .spyOn(console, "error")
+          .mockImplementation(() => {});
+        const agent = request(telemetryApp);
+        const req =
+          entry.method === "GET"
+            ? agent.get(entry.url)
+            : entry.form
+            ? agent.post(entry.url).type("form").send(entry.form)
+            : agent.post(entry.url).send(entry.json);
+        const res = await req;
+        await settle();
+
+        expect(res.status).toBeLessThan(600);
+        expect(rows).toHaveLength(1);
+        expect(rows[0].name).toBe(rowName(entry));
+        expect(rows[0].status).toBe(res.status);
+        expect(rows[0].extras?.ui).toBe("v2");
+        warnSpy.mockRestore();
+        errorSpy.mockRestore();
+      }
+    );
+
+    test.each(["/v2/", "/v2/assets/manifest.json", "/v2/no-such-page"])(
+      "GET %s logs nothing",
+      async (url) => {
+        await request(telemetryApp).get(url);
+        await settle();
+
+        expect(rows).toEqual([]);
       }
     );
   });

@@ -27,6 +27,7 @@ import {
   isPartialRequest,
   isEmbeddedRequest,
 } from "@/web/v2/core/server/request_params.server";
+import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
@@ -169,11 +170,16 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     }
 
     try {
-      const results = await fusedDict.getEntry({
-        query,
-        dicts: dictKeys,
-        mode: isInflected ? 1 : 0, // 1: inflected forms, 0: exact headwords
-      });
+      const timer = requestTimer(res);
+      const results = await fusedDict.getEntry(
+        {
+          query,
+          dicts: dictKeys,
+          mode: isInflected ? 1 : 0, // 1: inflected forms, 0: exact headwords
+        },
+        timer.serverExtras()
+      );
+      timer.mark("lookupComplete");
 
       if (isPartial) {
         res.send(
@@ -252,11 +258,16 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     const isScopedView = isEmbedded || langParam !== undefined;
 
     try {
-      const results = await fusedDict.getEntry({
-        query: id,
-        dicts: ALL_LATIN_DICTS,
-        mode: 2, // Search by ID
-      });
+      const timer = requestTimer(res);
+      const results = await fusedDict.getEntry(
+        {
+          query: id,
+          dicts: ALL_LATIN_DICTS,
+          mode: 2, // Search by ID
+        },
+        timer.serverExtras()
+      );
+      timer.mark("lookupComplete");
 
       if (isPartial) {
         res.send(renderDictResultsHtml(id, results, { isEmbedded }));
