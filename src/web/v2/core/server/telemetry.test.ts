@@ -42,7 +42,7 @@ function makeApp(
 ): express.Express {
   const router = Router();
   router.use(express.json());
-  router.get("/", (_req, res) => res.redirect("/v2/dicts"));
+  router.get("/", (_req, res) => res.redirect("/dicts"));
   router.use("/assets", (_req, res) => {
     res.send("asset");
   });
@@ -64,7 +64,7 @@ function makeApp(
     res.write(Buffer.from("de"));
     res.end("f");
   });
-  sub.get("/moved", (_req, res) => res.redirect(302, "/v2/dicts"));
+  sub.get("/moved", (_req, res) => res.redirect(302, "/dicts"));
   sub.get(
     "/work/:author/:name/:page?",
     asyncHandler(async () => {
@@ -82,7 +82,7 @@ function makeApp(
 
   const app = express();
   if (options.compress) app.use(compression());
-  app.use("/v2", router);
+  app.use(router);
   return app;
 }
 
@@ -98,7 +98,7 @@ describe("telemetryMiddleware", () => {
 
   test("logs one row per request, named by the route pattern", async () => {
     const res = await request(app)
-      .get("/v2/dicts/id/n123")
+      .get("/dicts/id/n123")
       .set("User-Agent", "UA");
     await settle();
 
@@ -115,7 +115,7 @@ describe("telemetryMiddleware", () => {
   });
 
   test("measures latency at hand-off and flush separately", async () => {
-    await request(app).get("/v2/dicts?q=amo");
+    await request(app).get("/dicts?q=amo");
     await settle();
 
     const extras = rows[0].extras ?? {};
@@ -132,14 +132,14 @@ describe("telemetryMiddleware", () => {
   });
 
   test("does not log HEAD requests", async () => {
-    await request(app).head("/v2/dicts?q=amo");
+    await request(app).head("/dicts?q=amo");
     await settle();
 
     expect(rows).toEqual([]);
   });
 
   test("normal rows are not marked aborted", async () => {
-    await request(app).get("/v2/big");
+    await request(app).get("/big");
     await settle();
 
     expect(rows[0].extras?.aborted).toBeUndefined();
@@ -168,12 +168,12 @@ describe("telemetryMiddleware", () => {
     );
     const slowApp = express();
     slowApp.use(compression());
-    slowApp.use("/v2", router);
+    slowApp.use(router);
 
     const server = slowApp.listen(0);
     try {
       const { port } = server.address() as AddressInfo;
-      const clientReq = http.get(`http://127.0.0.1:${port}/v2/slow/7?q=x`);
+      const clientReq = http.get(`http://127.0.0.1:${port}/slow/7?q=x`);
       clientReq.on("error", () => {});
       await arrived;
       clientReq.destroy();
@@ -199,10 +199,10 @@ describe("telemetryMiddleware", () => {
   });
 
   test("does not log assets, redirects or unmatched paths", async () => {
-    await request(app).get("/v2/assets/v2.js");
-    await request(app).get("/v2/");
-    await request(app).get("/v2/moved");
-    await request(app).get("/v2/nothing-here");
+    await request(app).get("/assets/v2.js");
+    await request(app).get("/");
+    await request(app).get("/moved");
+    await request(app).get("/nothing-here");
     await settle();
 
     expect(rows).toEqual([]);
@@ -211,7 +211,7 @@ describe("telemetryMiddleware", () => {
   test("POST rows carry the method, inputLength and no params", async () => {
     const body = JSON.stringify({ reportText: "hi" });
     await request(app)
-      .post("/v2/api/report?q=secret")
+      .post("/api/report?q=secret")
       .set("Content-Type", "application/json")
       .send(body);
     await settle();
@@ -229,7 +229,7 @@ describe("telemetryMiddleware", () => {
       compress: true,
     });
     const res = await request(compressed)
-      .get("/v2/big")
+      .get("/big")
       .set("Accept-Encoding", "gzip");
     await settle();
 
@@ -240,7 +240,7 @@ describe("telemetryMiddleware", () => {
   });
 
   test("counts bytes passed to res.write as well as res.end", async () => {
-    await request(app).get("/v2/stream");
+    await request(app).get("/stream");
     await settle();
 
     expect(rows[0].outputLength).toBe(6);
@@ -248,12 +248,12 @@ describe("telemetryMiddleware", () => {
 
   test("logs a forwarded error as 500 with the name intact", async () => {
     const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    const res = await request(app).get("/v2/work/caesar/gallic/1.1?q=x");
+    const res = await request(app).get("/work/caesar/gallic/1.1?q=x");
     await settle();
 
     expect(res.status).toBe(500);
     expect(errorSpy).toHaveBeenCalledWith(
-      "[v2] GET /v2/work/caesar/gallic/1.1?q=x",
+      "[v2] GET /work/caesar/gallic/1.1?q=x",
       expect.any(Error)
     );
     expect(rows).toHaveLength(1);
@@ -261,7 +261,7 @@ describe("telemetryMiddleware", () => {
     expect(rows[0].status).toBe(500);
     expect(rows[0].params).toEqual({ q: "x" });
     expect(rows[0].extras).toMatchObject({
-      path: "/v2/work/caesar/gallic/1.1",
+      path: "/work/caesar/gallic/1.1",
     });
     expect(typeof rows[0].extras?.error).toBe("number");
     errorSpy.mockRestore();
@@ -269,7 +269,7 @@ describe("telemetryMiddleware", () => {
 
   test("keeps the status of a client error such as malformed JSON", async () => {
     const res = await request(app)
-      .post("/v2/api/report")
+      .post("/api/report")
       .set("Content-Type", "application/json")
       .send("{not json");
     await settle();
@@ -280,16 +280,16 @@ describe("telemetryMiddleware", () => {
   });
 
   test("adds no Vary header", async () => {
-    const res = await request(app).get("/v2/dicts?q=amo&format=partial");
+    const res = await request(app).get("/dicts?q=amo&format=partial");
 
     expect(res.headers.vary).toBeUndefined();
   });
 
   test("records mode and embedded independently", async () => {
-    await request(app).get("/v2/dicts?q=amo&embedded=1");
-    await request(app).get("/v2/dicts?q=amo&format=partial&embedded=1");
-    await request(app).get("/v2/dicts?q=amo").set("X-Requested-With", "fetch");
-    await request(app).get("/v2/api/completions?embedded=1");
+    await request(app).get("/dicts?q=amo&embedded=1");
+    await request(app).get("/dicts?q=amo&format=partial&embedded=1");
+    await request(app).get("/dicts?q=amo").set("X-Requested-With", "fetch");
+    await request(app).get("/api/completions?embedded=1");
     await settle();
 
     expect(rows.map((row) => [row.extras?.mode, row.extras?.embedded])).toEqual(
@@ -304,7 +304,7 @@ describe("telemetryMiddleware", () => {
 
   test("records raw Sec-Fetch headers", async () => {
     await request(app)
-      .get("/v2/dicts?q=amo")
+      .get("/dicts?q=amo")
       .set("Sec-Fetch-Mode", "navigate")
       .set("Sec-Fetch-Site", "same-origin");
     await settle();
@@ -324,9 +324,9 @@ describe("telemetryMiddleware", () => {
 
     test("is current, stale, or absent", async () => {
       process.env.COMMIT_ID = "abc";
-      await request(app).get("/v2/api/completions?v=abc");
-      await request(app).get("/v2/api/completions?v=old");
-      await request(app).get("/v2/api/completions");
+      await request(app).get("/api/completions?v=abc");
+      await request(app).get("/api/completions?v=old");
+      await request(app).get("/api/completions");
       await settle();
 
       expect(rows.map((row) => row.extras?.versioned)).toEqual([
@@ -339,7 +339,7 @@ describe("telemetryMiddleware", () => {
   });
 
   test("flags capped params", async () => {
-    await request(app).get(`/v2/dicts?q=${"a".repeat(200)}`);
+    await request(app).get(`/dicts?q=${"a".repeat(200)}`);
     await settle();
 
     expect(rows[0].params?.q).toBe(`${"a".repeat(127)}…`);
@@ -347,9 +347,7 @@ describe("telemetryMiddleware", () => {
   });
 
   test("does not flag ordinary requests", async () => {
-    await request(app).get(
-      "/v2/dicts?q=amo&d=1u&o=0&o=1&format=partial&save=1"
-    );
+    await request(app).get("/dicts?q=amo&d=1u&o=0&o=1&format=partial&save=1");
     await settle();
 
     expect(rows[0].params).toEqual({ q: "amo", d: "1u", o: "0,1" });
@@ -363,7 +361,7 @@ describe("telemetryMiddleware", () => {
       logApiCall: () => Promise.reject(new Error("mongo down")),
     };
     const res = await request(makeApp(Promise.resolve(failing))).get(
-      "/v2/dicts?q=amo"
+      "/dicts?q=amo"
     );
     await settle();
 
@@ -380,7 +378,7 @@ describe("telemetryMiddleware", () => {
     const debugSpy = jest.spyOn(console, "debug").mockImplementation(() => {});
     const rejected = Promise.reject(new Error("no logger"));
     rejected.catch(() => {});
-    const res = await request(makeApp(rejected)).get("/v2/dicts?q=amo");
+    const res = await request(makeApp(rejected)).get("/dicts?q=amo");
     await settle();
 
     expect(res.status).toBe(200);

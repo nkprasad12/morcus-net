@@ -24,7 +24,7 @@ Before switching default traffic away from V1, verify that non-UI operational be
   - PWA installability is already in place and needs no cutover work: V2 pages link the manifest and `theme-color`, the favicon is served at `/favicon.ico`, and `/serviceworker.js` serves a script that removes the retired V1 offline worker and its storage. The manifest (`start_url`, `scope`, `shortcuts`) uses root paths shared by V1 and V2, so mounting V2 at `/` moves installed apps over with no reinstall. Keep `/public`, `/.well-known` (Android TWA `assetlinks.json`), `/favicon.ico`, `/robots.txt`, and `/serviceworker.js` mounted ahead of the V2 router.
 - [x] **Build-Versioned Caching for Partials & Fragments**:
   - Background fetches whose response is static per build carry `?v=<build version>` and are served `immutable` at the current version, so repeats never leave the browser (previously each repeat revalidated by ETag, which still cost a full render). User-visible URLs stay unversioned. The build version is stamped on `<html data-version>` by `renderPageShell`; clients use `withBuildVersion(url)` or `swapSlots({ versioned: true })` (`core/nav/build_version.client.ts`), and routes call `setVersionedCacheControl` on the success path only (`core/server/build_version.server.ts`), which trusts only the current version.
-  - Versioned today: reader page-turn partials and translations (`private`), `/v2/api/completions` prefix chunks and corpus lemma shards (`public`). Not versioned: `/v2/dicts` partials and suffix completions (both can fall back to cookies), macronizer (POST), full pages.
+  - Versioned today: reader page-turn partials and translations (`private`), `/api/completions` prefix chunks and corpus lemma shards (`public`). Not versioned: `/dicts` partials and suffix completions (both can fall back to cookies), macronizer (POST), full pages.
   - `./morcus.sh web` sets `MORCUS_DEV_SERVER`, which adds a per-process nonce to the version, so a restart after a server-side change never serves markup cached from the previous process. `getCommitId()` stays the plain commit for the about page and issue reports.
 - [x] **Build Provenance ID**:
   - Prod builds download dictionary and library inputs from unpinned upstream branch HEADs, so a rebuild of the same commit (e.g. a CI re-run) can change content. The production build version therefore covers the inputs too: `runPipeline` records each download's git blob SHA-1 and each clone's HEAD (`src/scripts/build_provenance.ts`), the last step of `prod_build_steps.ts` writes `build/morcusnet.build.json` (`{ commit, inputs, buildId }`), and `start_server.ts` loads `buildId` into `BUILD_ID` when the file's commit matches `COMMIT_ID`. `getBuildVersion()` prefers it over the commit. Dev builds write no file and keep using the commit plus the per-process nonce.
@@ -61,11 +61,11 @@ The `lit-prototype` branch has accumulated 260+ commits across multiple architec
 
 `/v2/*` is only a development-time mount point for side-by-side coexistence and will never be deployed publicly. Cutover consists of dropping the `/v2` prefix so V2 serves directly from `/`:
 
-- [ ] **Mount V2 Router at Root (`/`)**:
+- [x] **Mount V2 Router at Root (`/`)**:
   - Mount the V2 router at `/` in [`src/web/web_server.ts`](../../web_server.ts) (replacing the V1 SPA catch-all), and strip the `/v2` prefix from internal V2 route helpers, links, and static asset paths (`/v2/assets/*` → `/assets/*` or equivalent).
-- [ ] **Legacy V1 URL Compatibility**:
+- [x] **Legacy V1 URL Compatibility**:
   - Where V2 route paths or query parameters differ from deployed V1 URLs (e.g. `/dicts`, `/lat_lib`), add redirects or route aliases so existing external links and user bookmarks continue to work.
-- [ ] **Update Test Routes**:
+- [x] **Update Test Routes**:
   - Update V2 unit, E2E, and visual regression test URLs from `/v2/*` to `/*`.
 
 ---

@@ -152,7 +152,7 @@ export interface CorpusSearchView {
 async function readerHrefs(): Promise<Map<string, string>> {
   const summaries = await getV2LibrarySummaries();
   return new Map(
-    summaries.map((s) => [s.id, `/v2/work/${s.urlAuthor}/${s.urlName}`])
+    summaries.map((s) => [s.id, `/work/${s.urlAuthor}/${s.urlName}`])
   );
 }
 

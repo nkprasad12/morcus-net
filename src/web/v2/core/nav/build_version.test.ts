@@ -14,8 +14,8 @@ describe("withBuildVersion", () => {
 
   test("leaves the URL alone without a build version", () => {
     expect(getPageBuildVersion()).toBeUndefined();
-    expect(withBuildVersion("/v2/work/caesar/gallic-war/2")).toBe(
-      "/v2/work/caesar/gallic-war/2"
+    expect(withBuildVersion("/work/caesar/gallic-war/2")).toBe(
+      "/work/caesar/gallic-war/2"
     );
   });
 
@@ -27,8 +27,8 @@ describe("withBuildVersion", () => {
 
   test("adds v and keeps the URL relative", () => {
     document.documentElement.dataset.version = "abc123";
-    expect(withBuildVersion("/v2/api/completions?prefix=am")).toBe(
-      "/v2/api/completions?prefix=am&v=abc123"
+    expect(withBuildVersion("/api/completions?prefix=am")).toBe(
+      "/api/completions?prefix=am&v=abc123"
     );
   });
 

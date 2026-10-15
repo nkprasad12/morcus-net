@@ -54,7 +54,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   ): MorcusDictSearch {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="search-form" action="/v2/dicts" method="GET" ${formAttrs}>
+      <form class="search-form" action="/dicts" method="GET" ${formAttrs}>
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
           <morcus-dict-suggestions data-js-only data-input="dict-q">
@@ -288,11 +288,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("hovering a word with the mouse makes it a link whose href preserves the dictionary state", () => {
     // `embedded` still comes from the page URL; dictionaries come from the rendered form state.
-    window.history.replaceState(
-      {},
-      "",
-      "/v2/dicts?q=habeo&dict=L%26S&embedded=1"
-    );
+    window.history.replaceState({}, "", "/dicts?q=habeo&dict=L%26S&embedded=1");
 
     const resultsHtml = `
       <article class="entry">
@@ -318,7 +314,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(galliaLink.getAttribute("tabindex")).toBe("-1");
     // L&S bit is 1
     expect(galliaLink.getAttribute("href")).toBe(
-      "/v2/dicts?q=Gallia&d=1&o=1&embedded=1"
+      "/dicts?q=Gallia&d=1&o=1&embedded=1"
     );
     // Only the hovered word changed.
     expect(
@@ -331,7 +327,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
 
     // Clean up history state
-    window.history.replaceState({}, "", "/v2/dicts");
+    window.history.replaceState({}, "", "/dicts");
   });
 
   test("does not make a word a link for touch, mid-drag, or with a selection", () => {
@@ -385,23 +381,23 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const word = () => el.querySelector<HTMLAnchorElement>(".lat-word")!;
 
     hoverWord(word());
-    expect(word().getAttribute("href")).toBe("/v2/dicts?q=Gallia&d=1&o=1");
+    expect(word().getAttribute("href")).toBe("/dicts?q=Gallia&d=1&o=1");
 
     commitSettings(el, ["GAF"], false);
     expect(global.fetch).not.toHaveBeenCalled();
     // Still the old link until the mouse comes back to it...
-    expect(word().getAttribute("href")).toBe("/v2/dicts?q=Gallia&d=1&o=1");
+    expect(word().getAttribute("href")).toBe("/dicts?q=Gallia&d=1&o=1");
     // ...and then it reflects the new settings, without being replaced.
     const before = word();
     hoverWord(before);
     expect(word()).toBe(before);
-    expect(word().getAttribute("href")).toBe("/v2/dicts?q=Gallia&d=2&o=0");
+    expect(word().getAttribute("href")).toBe("/dicts?q=Gallia&d=2&o=0");
   });
 
   test("adopts the server-rendered state over a disagreeing URL and localStorage", () => {
     // Regression (F1–F4): the client used to re-resolve URL → localStorage → default, so it could
     // query different dictionaries from the ones the server rendered results for.
-    window.history.replaceState({}, "", "/v2/dicts?q=habeo&d=an&o=1");
+    window.history.replaceState({}, "", "/dicts?q=habeo&d=an&o=1");
     localStorage.setItem("SEARCH_SETTINGS_KEY", "L&S;GAF;GRG");
     localStorage.setItem(
       "GlobalSettings",
@@ -417,9 +413,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const el = createDictSearch(resultsHtml, 'data-d="2" data-o="0"');
     hoverWord(el.querySelector<HTMLElement>(".lat-word")!);
     const link = el.querySelector<HTMLAnchorElement>(".lat-word")!;
-    expect(link.getAttribute("href")).toBe("/v2/dicts?q=Gallia&d=2&o=0");
+    expect(link.getAttribute("href")).toBe("/dicts?q=Gallia&d=2&o=0");
 
-    window.history.replaceState({}, "", "/v2/dicts");
+    window.history.replaceState({}, "", "/dicts");
   });
 
   test("allows native new-tab opening on middle click or modifier clicks (Ctrl, Cmd, Shift, Alt)", () => {
@@ -428,7 +424,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         <div class="entry-content">
           <p>
             <span class="lsQuote">Gallia est</span>
-            <a class="dLink" to="facio" href="/v2/dicts?q=facio">facio</a>
+            <a class="dLink" to="facio" href="/dicts?q=facio">facio</a>
           </p>
         </div>
       </article>
@@ -529,7 +525,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("fetches 2-letter chunk when prefix is not cached", () => {
     delete (window as any).location;
-    (window as any).location = new URL("http://localhost/v2/dicts");
+    (window as any).location = new URL("http://localhost/dicts");
 
     jest.useFakeTimers();
     const el = createDictSearch();
@@ -542,14 +538,14 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     // Queries 2-letter prefix "am"
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/v2/api/completions?prefix=am")
+      expect.stringContaining("/api/completions?prefix=am")
     );
     jest.useRealTimers();
   });
 
   test("a failed chunk fetch clears the previous prefix's suggestions", async () => {
     delete (window as any).location;
-    (window as any).location = new URL("http://localhost/v2/dicts");
+    (window as any).location = new URL("http://localhost/dicts");
     const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     jest.useFakeTimers();
     try {
@@ -569,7 +565,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       input.dispatchEvent(new Event("input", { bubbles: true }));
       jest.advanceTimersByTime(200);
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/v2/api/completions?prefix=be")
+        expect.stringContaining("/api/completions?prefix=be")
       );
       jest.useRealTimers();
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -584,7 +580,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("forwards the active dicts for suffix queries", () => {
     delete (window as any).location;
-    (window as any).location = new URL("http://localhost/v2/dicts");
+    (window as any).location = new URL("http://localhost/dicts");
 
     jest.useFakeTimers();
     // L&S + GAF = 3, as the server would render it.
@@ -597,7 +593,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     jest.advanceTimersByTime(200);
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/v2/api/completions?q=-arum&d=3"),
+      expect.stringContaining("/api/completions?q=-arum&d=3"),
       expect.anything()
     );
     jest.useRealTimers();
@@ -610,7 +606,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     beforeEach(() => {
       delete (window as any).location;
       (window as any).location = new URL(
-        "http://localhost/v2/dicts?q=arma&lang=La&o=1&embedded=1"
+        "http://localhost/dicts?q=arma&lang=La&o=1&embedded=1"
       );
       document.cookie = `morcus_d=${encodeDictBitmask(SAVED)}; Path=/`;
     });
@@ -618,7 +614,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     afterEach(() => {
       document.cookie = "morcus_d=; Max-Age=0; Path=/";
       delete (window as any).location;
-      (window as any).location = new URL("http://localhost/v2/dicts");
+      (window as any).location = new URL("http://localhost/dicts");
     });
 
     test("prefix suggestions come from the saved dictionaries, in every language", () => {
@@ -650,7 +646,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       jest.advanceTimersByTime(200);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        `/v2/api/completions?q=-arum&d=${encodeDictBitmask(SAVED)}`,
+        `/api/completions?q=-arum&d=${encodeDictBitmask(SAVED)}`,
         expect.anything()
       );
       jest.useRealTimers();
@@ -666,7 +662,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       jest.advanceTimersByTime(200);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        `/v2/api/completions?q=-arum&d=${encodeDictBitmask(DEFAULT_DICT_KEYS)}`,
+        `/api/completions?q=-arum&d=${encodeDictBitmask(DEFAULT_DICT_KEYS)}`,
         expect.anything()
       );
       jest.useRealTimers();
@@ -727,7 +723,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(suggestionsEl.items.map((i: any) => i.word)).toEqual(["ămīcĭtĭa"]);
     // Zero completion network calls made for suggestions
     expect(global.fetch).not.toHaveBeenCalledWith(
-      expect.stringContaining("/v2/api/completions")
+      expect.stringContaining("/api/completions")
     );
   });
 
@@ -795,7 +791,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("synchronizes d and o query parameters on dict-settings-commit", () => {
     delete (window as any).location;
-    (window as any).location = new URL("http://localhost/v2/dicts?q=habeo");
+    (window as any).location = new URL("http://localhost/dicts?q=habeo");
     const replaceStateSpy = jest.spyOn(window.history, "replaceState");
 
     const el = createDictSearch();
@@ -823,7 +819,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("on an entry page, a settings commit keeps the server's ID title", () => {
     delete (window as any).location;
-    (window as any).location = new URL("http://localhost/v2/dicts/id/n20077");
+    (window as any).location = new URL("http://localhost/dicts/id/n20077");
     document.title = "ID n20077 - Morcus Dictionary";
 
     const el = createDictSearch();
@@ -834,10 +830,10 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("Back to an entry page restores its ID title", () => {
     delete (window as any).location;
-    (window as any).location = new URL("http://localhost/v2/dicts?q=amo");
+    (window as any).location = new URL("http://localhost/dicts?q=amo");
     createDictSearch();
 
-    (window as any).location = new URL("http://localhost/v2/dicts/id/n20077");
+    (window as any).location = new URL("http://localhost/dicts/id/n20077");
     window.dispatchEvent(new PopStateEvent("popstate"));
 
     expect(document.title).toBe("ID n20077 - Morcus Dictionary");
@@ -846,7 +842,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   test("dict-settings-commit updates the search form's hidden d/o and dataset, and keeps lang in the URL", () => {
     delete (window as any).location;
     (window as any).location = new URL(
-      "http://localhost/v2/dicts?q=habeo&lang=La"
+      "http://localhost/dicts?q=habeo&lang=La"
     );
     const replaceStateSpy = jest.spyOn(window.history, "replaceState");
 
@@ -868,7 +864,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(replaceStateSpy).toHaveBeenCalledWith(
       null,
       "",
-      `/v2/dicts?q=habeo&lang=La&d=${encodeDictBitmask(["GRG"])}&o=0`
+      `/dicts?q=habeo&lang=La&d=${encodeDictBitmask(["GRG"])}&o=0`
     );
 
     replaceStateSpy.mockRestore();
@@ -876,9 +872,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("popstate navigation re-syncs current active d and o into the restored history entry", () => {
     delete (window as any).location;
-    (window as any).location = new URL(
-      "http://localhost/v2/dicts?q=amo&d=an&o=1"
-    );
+    (window as any).location = new URL("http://localhost/dicts?q=amo&d=an&o=1");
     const replaceStateSpy = jest.spyOn(window.history, "replaceState");
 
     const el = createDictSearch("", 'data-d="an" data-o="1"');
@@ -887,17 +881,17 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     // Simulate browser Back restoring an older URL with stale d=an&o=1
     (window as any).location = new URL(
-      "http://localhost/v2/dicts?q=bellum&d=an&o=1"
+      "http://localhost/dicts?q=bellum&d=an&o=1"
     );
     window.dispatchEvent(new PopStateEvent("popstate"));
 
     expect(replaceStateSpy).toHaveBeenCalledWith(
       null,
       "",
-      "/v2/dicts?q=bellum&d=2&o=0"
+      "/dicts?q=bellum&d=2&o=0"
     );
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/v2/dicts?q=bellum&format=partial&d=2&o=0"),
+      expect.stringContaining("/dicts?q=bellum&format=partial&d=2&o=0"),
       expect.anything()
     );
 
@@ -906,9 +900,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("popstate back to the initial URL after a search re-fetches the initial query", () => {
     delete (window as any).location;
-    (window as any).location = new URL(
-      "http://localhost/v2/dicts?q=amo&d=an&o=1"
-    );
+    (window as any).location = new URL("http://localhost/dicts?q=amo&d=an&o=1");
 
     const el = createDictSearch("", 'data-d="an" data-o="1"');
     const form = el.querySelector<HTMLFormElement>("form.search-form")!;
@@ -922,22 +914,20 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     (global.fetch as jest.Mock).mockClear();
 
     // Press Back to the exact connect-time URL
-    (window as any).location = new URL(
-      "http://localhost/v2/dicts?q=amo&d=an&o=1"
-    );
+    (window as any).location = new URL("http://localhost/dicts?q=amo&d=an&o=1");
     window.dispatchEvent(new PopStateEvent("popstate"));
 
     expect(input.value).toBe("amo");
     expect(document.title).toBe("amo - Morcus Dictionary");
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/v2/dicts?q=amo&format=partial&d=an&o=1"),
+      expect.stringContaining("/dicts?q=amo&format=partial&d=an&o=1"),
       expect.anything()
     );
   });
 
   describe("in a lang= view (the reader's dictionary)", () => {
     const READER_URL =
-      "http://localhost/v2/dicts?q=arma&lang=La&o=1&embedded=1&scale=120";
+      "http://localhost/dicts?q=arma&lang=La&o=1&embedded=1&scale=120";
     let assign: jest.Mock;
 
     beforeEach(() => {
@@ -961,11 +951,11 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       );
 
       expect(assign).toHaveBeenCalledWith(
-        "/v2/dicts?q=love&o=1&embedded=1&scale=120"
+        "/dicts?q=love&o=1&embedded=1&scale=120"
       );
       expect(pushStateSpy).not.toHaveBeenCalled();
       expect(global.fetch).not.toHaveBeenCalledWith(
-        expect.stringContaining("/v2/dicts?"),
+        expect.stringContaining("/dicts?"),
         expect.anything()
       );
     });
@@ -979,7 +969,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         })
       );
       expect(assign).toHaveBeenCalledWith(
-        "/v2/dicts?q=love&o=1&embedded=1&scale=120"
+        "/dicts?q=love&o=1&embedded=1&scale=120"
       );
     });
 
@@ -995,14 +985,14 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect(pushStateSpy).toHaveBeenCalledWith(
         { q: "Gallia" },
         "",
-        "/v2/dicts?q=Gallia&lang=La&o=1&embedded=1&scale=120&d=3"
+        "/dicts?q=Gallia&lang=La&o=1&embedded=1&scale=120&d=3"
       );
     });
   });
 
   test("search execution explicitly syncs q, d, and o parameters in history and document title", async () => {
     delete (window as any).location;
-    (window as any).location = new URL("http://localhost/v2/dicts");
+    (window as any).location = new URL("http://localhost/dicts");
     const pushStateSpy = jest.spyOn(window.history, "pushState");
 
     const el = createDictSearch();
@@ -1096,7 +1086,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   test("scrolls past search bar to results when loading with a search query and no hash", (done) => {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="search-form" action="/v2/dicts" method="GET">
+      <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
           <morcus-dict-suggestions data-js-only data-input="dict-q">
@@ -1132,7 +1122,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="search-form" action="/v2/dicts" method="GET">
+      <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
           <morcus-dict-suggestions data-js-only data-input="dict-q">
@@ -1170,7 +1160,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="search-form" action="/v2/dicts" method="GET">
+      <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
           <morcus-dict-suggestions data-js-only data-input="dict-q">
@@ -1209,7 +1199,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   test("focuses search input and does not auto-scroll on empty query landing page", (done) => {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="search-form" action="/v2/dicts" method="GET">
+      <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" class="input" value="" />
         </div>
@@ -1238,7 +1228,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     });
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="search-form" action="/v2/dicts" method="GET">
+      <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" class="input" value="" />
         </div>
@@ -1260,7 +1250,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   test("treats text typed before upgrade as a search in progress (PH3)", (done) => {
     const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
     el.innerHTML = `
-      <form class="search-form" action="/v2/dicts" method="GET">
+      <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" class="input" value="" />
         </div>
@@ -1415,7 +1405,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       const el = createDictSearch();
       const input = el.querySelector<HTMLInputElement>("input.input")!;
 
-      // A suffix query goes straight to /v2/api/completions. A prefix query
+      // A suffix query goes straight to /api/completions. A prefix query
       // would instead hit the shared chunk cache, which is deliberately not
       // cancellable.
       input.value = "-arum";
@@ -1437,14 +1427,12 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     test("does not autofocus search input when embedded in an iframe (embedded=1)", () => {
       delete (window as any).location;
-      (window as any).location = new URL(
-        "http://localhost/v2/dicts?embedded=1"
-      );
+      (window as any).location = new URL("http://localhost/dicts?embedded=1");
       const el = document.createElement(
         "morcus-dict-search"
       ) as MorcusDictSearch;
       el.innerHTML = `
-        <form class="search-form" action="/v2/dicts" method="GET">
+        <form class="search-form" action="/dicts" method="GET">
           <div class="input-wrapper">
             <input type="text" name="q" class="input" value="" />
           </div>
@@ -1460,12 +1448,12 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     test("autofocuses search input on landing when not embedded and query is empty", () => {
       delete (window as any).location;
-      (window as any).location = new URL("http://localhost/v2/dicts");
+      (window as any).location = new URL("http://localhost/dicts");
       const el = document.createElement(
         "morcus-dict-search"
       ) as MorcusDictSearch;
       el.innerHTML = `
-        <form class="search-form" action="/v2/dicts" method="GET">
+        <form class="search-form" action="/dicts" method="GET">
           <div class="input-wrapper">
             <input type="text" name="q" class="input" value="" />
           </div>

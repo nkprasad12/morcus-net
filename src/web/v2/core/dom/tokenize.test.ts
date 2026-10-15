@@ -43,7 +43,7 @@ describe("swapWordSpanForLink", () => {
     span.dataset.wordGroup = "7";
     parent.append("Cano ", span, " virumque");
 
-    const a = swapWordSpanForLink(span, "/v2/dicts?q=arma");
+    const a = swapWordSpanForLink(span, "/dicts?q=arma");
 
     expect(a.localName).toBe("a");
     expect(a.parentElement).toBe(parent);
@@ -51,7 +51,7 @@ describe("swapWordSpanForLink", () => {
     expect(a.className).toBe("lat-word reader-match");
     expect(a.dataset.word).toBe("arma");
     expect(a.dataset.wordGroup).toBe("7");
-    expect(a.getAttribute("href")).toBe("/v2/dicts?q=arma");
+    expect(a.getAttribute("href")).toBe("/dicts?q=arma");
     expect(a.textContent).toBe("arma");
     expect(parent.textContent).toBe("Cano arma virumque");
     expect(a.getAttribute("role")).toBeNull();
@@ -64,11 +64,11 @@ describe("swapWordSpanForLink", () => {
   it("keeps an element that is already a link, refreshing its href", () => {
     const a = document.createElement("a");
     a.className = "lat-word";
-    a.href = "/v2/dicts?q=arma&d=1";
-    expect(swapWordSpanForLink(a, "/v2/dicts?q=arma&d=1")).toBe(a);
-    expect(a.getAttribute("href")).toBe("/v2/dicts?q=arma&d=1");
-    expect(swapWordSpanForLink(a, "/v2/dicts?q=arma&d=2")).toBe(a);
-    expect(a.getAttribute("href")).toBe("/v2/dicts?q=arma&d=2");
+    a.href = "/dicts?q=arma&d=1";
+    expect(swapWordSpanForLink(a, "/dicts?q=arma&d=1")).toBe(a);
+    expect(a.getAttribute("href")).toBe("/dicts?q=arma&d=1");
+    expect(swapWordSpanForLink(a, "/dicts?q=arma&d=2")).toBe(a);
+    expect(a.getAttribute("href")).toBe("/dicts?q=arma&d=2");
   });
 });
 
@@ -162,7 +162,7 @@ describe("canSwapWordOnHover", () => {
       r.setEnd(p, 4); // after `other`
     });
     expect(canSwapWordOnHover(pointerOver({}), word)).toBe(true);
-    swapWordSpanForLink(word, "/v2/dicts?q=arma");
+    swapWordSpanForLink(word, "/dicts?q=arma");
     const r = document.getSelection()!.getRangeAt(0);
     expect(r.startContainer).toBe(p);
     expect(r.startOffset).toBe(3);

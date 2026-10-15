@@ -61,11 +61,11 @@ const NO_WORD_LINK_CLASSES =
  *
  * Without JS:
  * - The browser natively renders the inner server-rendered <form> and <output id="dict-results">.
- * - Submitting the form issues a standard HTTP GET /v2/dicts?q=... request.
+ * - Submitting the form issues a standard HTTP GET /dicts?q=... request.
  *
  * With JS:
  * - Intercepts form submit via hijackForm.
- * - Debounces input typing to fetch autocomplete suggestions from /v2/api/completions.
+ * - Debounces input typing to fetch autocomplete suggestions from /api/completions.
  * - Cancels stale requests via two independent supersession lanes: "completions"
  *   (typing) and "results" (submit). These run concurrently and must not cancel
  *   each other, which is why they are separate lanes rather than one controller.
@@ -146,7 +146,7 @@ export class MorcusDictSearch extends BaseElement<
     fetchParams.set("q", query);
     fetchParams.set("d", encodeDictBitmask(this.#suggestionDictKeys()));
 
-    fetch(`/v2/api/completions?${fetchParams.toString()}`, { signal })
+    fetch(`/api/completions?${fetchParams.toString()}`, { signal })
       .then((res) => (res.ok ? res.json() : []))
       .then((data: CompletionItem[]) => {
         if (signal.aborted) return;
@@ -544,10 +544,10 @@ export class MorcusDictSearch extends BaseElement<
 
     const url = new URL(window.location.href);
     // A search replaces whatever was on screen, so it must not stay under
-    // /v2/dicts/id/:id. That path renders the right results now, but on reload
+    // /dicts/id/:id. That path renders the right results now, but on reload
     // or when shared it re-runs the ID lookup and drops ?q entirely.
-    if (url.pathname.startsWith("/v2/dicts/id/")) {
-      url.pathname = "/v2/dicts";
+    if (url.pathname.startsWith("/dicts/id/")) {
+      url.pathname = "/dicts";
     }
 
     if (typed && url.searchParams.has("lang")) {
@@ -598,7 +598,7 @@ export class MorcusDictSearch extends BaseElement<
     fetchParams.set("d", this.#activeDictBitmask);
     fetchParams.set("o", this.#isInflected ? "1" : "0");
 
-    const url = `/v2/dicts?${fetchParams.toString()}`;
+    const url = `/dicts?${fetchParams.toString()}`;
     const success = await fetchAndSwapPartial(this.#resultsElement, url, {
       signal: this.scope.latest("results"),
       errorMessage: "Error loading results.",

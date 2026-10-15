@@ -130,7 +130,7 @@ export function xmlNodeToHtml(
     const toQuery = attrsMap.get("to");
     if (toQuery) {
       tagName = "a";
-      attrsMap.set("href", `/v2/dicts?q=${encodeURIComponent(toQuery)}`);
+      attrsMap.set("href", `/dicts?q=${encodeURIComponent(toQuery)}`);
     }
   }
 
@@ -166,7 +166,7 @@ export function xmlNodeToHtml(
     !currentHref.startsWith("/") &&
     !currentHref.startsWith("#")
   ) {
-    attrsMap.set("href", `/v2/dicts?q=${encodeURIComponent(currentHref)}`);
+    attrsMap.set("href", `/dicts?q=${encodeURIComponent(currentHref)}`);
   }
 
   // Mark expandable abbreviations and hover elements focusable for keyboard navigation and No-JS mobile focus

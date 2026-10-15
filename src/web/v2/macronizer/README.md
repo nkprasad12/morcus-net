@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory holds the server-side rendering, the progressive-enhancement custom element and the styles for the UI V2 **Latin Macronizer** (`/v2/macronizer`).
+This directory holds the server-side rendering, the progressive-enhancement custom element and the styles for the UI V2 **Latin Macronizer** (`/macronizer`).
 
 Companion docs:
 
@@ -18,20 +18,20 @@ Companion docs:
 sequenceDiagram
     autonumber
     actor User as Browser / User
-    participant Router as Express (/v2/macronizer)
+    participant Router as Express (/macronizer)
     participant Engine as MacronizerEngine (Morceus + POS tagger)
     participant Client as <morcus-macronizer-view>
 
     alt Landing Page
-        User->>Router: GET /v2/macronizer
+        User->>Router: GET /macronizer
         Router-->>User: 200 OK (Empty input form, features list, No-JS note)
     else Macronize Submission (No-JS or JS Partial Swap)
-        User->>Router: POST /v2/macronizer (text=...)
+        User->>Router: POST /macronizer (text=...)
         Router->>Engine: macronize(text)
         Engine-->>Router: MacronizedResult (words, options, suggested, confidence)
         Router-->>User: 200 OK (Full SSR document or macronizer-workspace partial)
     else No-JS Apply Choices Round-Trip
-        User->>Router: POST /v2/macronizer/apply (text, sug, shown, wN, mN)
+        User->>Router: POST /macronizer/apply (text, sug, shown, wN, mN)
         Router->>Engine: analyzeOnly(text) (Morceus only, no POS tagger call)
         Engine-->>Router: MacronizedResult (unsuggested)
         Router-->>User: 200 OK (Updated passage, copybox and inspector cards)
@@ -67,7 +67,7 @@ Any other value fails startup and lists the valid ones. `./morcus.sh web` defaul
 - [`macronizer_params.server.ts`](macronizer_params.server.ts): Request body parsing (`parseMacronizeBody`, `parseApplyBody`), CRLF normalization and the length check, and the compact round-trip encodings for tagger suggestions (`sug`) and prior shown forms (`shown`). Malformed entries are ignored.
 - [`macronizer_apply.server.ts`](macronizer_apply.server.ts): Pure `resolveInitialResult` and `applyChoices`. The initial render is Apply with only the tagger's suggestions, so both paths share one code path.
 - [`macronizer_view.server.ts`](macronizer_view.server.ts): SSR HTML for the landing state, the passage workspace, the status bar, inline word tokens, the No-JS copybox and the inspector cards (`#w-plain` + `#w0..#wN`).
-- [`macronizer_routes.server.ts`](macronizer_routes.server.ts): Express routes for `GET /v2/macronizer`, `POST /v2/macronizer` and `POST /v2/macronizer/apply`. The URL-encoded parser has a `1mb` body limit and a `parameterLimit` derived from the worst-case Apply form for 10,000 characters (see `MACRONIZER_PARAMETER_LIMIT`).
+- [`macronizer_routes.server.ts`](macronizer_routes.server.ts): Express routes for `GET /macronizer`, `POST /macronizer` and `POST /macronizer/apply`. The URL-encoded parser has a `1mb` body limit and a `parameterLimit` derived from the worst-case Apply form for 10,000 characters (see `MACRONIZER_PARAMETER_LIMIT`).
 - [`macronizer_view.client.ts`](macronizer_view.client.ts): `<morcus-macronizer-view>`: word selection, plain-word card population, live radio and vowel-pill updates, keyboard navigation (`Enter`, `↓`, `Escape`), clipboard copy, and the mobile bottom-sheet drawer.
 - [`macronizer_entry.client.ts`](macronizer_entry.client.ts): Route-specific client bundle entry registering `<morcus-macronizer-view>`.
 - [`macronizer.css`](macronizer.css): Scoped styles using UI V2 design tokens for the workspace layout, word underline tiers, inspector cards, vowel pills and the mobile drawer.
@@ -100,7 +100,7 @@ Tiers 2–4 look the same for now; the tier is still in `data-tier` so they can 
 
 ## Apply Precedence & Round-Trip Contract
 
-`POST /v2/macronizer/apply` re-runs Morceus via `engine.analyzeOnly(text)` (never calling the external POS tagger), overlays the first run's suggestions from `sug`, and resolves each word `N`:
+`POST /macronizer/apply` re-runs Morceus via `engine.analyzeOnly(text)` (never calling the external POS tagger), overlays the first run's suggestions from `sug`, and resolves each word `N`:
 
 1. **Edited vowels (`mN`)**: if the submitted vowel checkboxes differ from what was shown before this submission, the word is shown as built from those vowels (decision `edited`). A word edited in an earlier round stays edited unless a radio choice is made.
 2. **Radio option (`wN`)**: a valid option index selects `options[k].form` (decision `chosen`).

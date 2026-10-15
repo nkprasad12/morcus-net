@@ -212,9 +212,12 @@ export function isGuestView(
   return false;
 }
 
-function toLangList(lang: string | readonly string[] | null | undefined) {
+function toLangList(
+  lang: string | readonly string[] | null | undefined
+): string[] {
   if (!lang) return [];
-  return typeof lang === "string" ? [lang] : lang;
+  const rawList = typeof lang === "string" ? [lang] : lang;
+  return rawList.flatMap((item) => item.split(/[-,]/)).filter(Boolean);
 }
 
 function isDictInLangScope(

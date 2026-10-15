@@ -55,7 +55,7 @@ function renderInputForm(inputText: string): SafeHtml {
     id="mac-form"
     class="mac-input-form"
     method="post"
-    action="/v2/macronizer">
+    action="/macronizer">
     <div class="mac-form-header">
       <label for="mac-text" class="mac-form-label">
         Latin text
@@ -485,7 +485,7 @@ export function renderMacronizerWorkspaceHtml(
         id="mac-apply"
         class="mac-apply-form"
         method="post"
-        action="/v2/macronizer/apply">
+        action="/macronizer/apply">
         <input type="hidden" name="text" value="${inputText}" />
         <input type="hidden" name="sug" value="${doc.encodedSug}" />
         <input type="hidden" name="shown" value="${doc.encodedShown}" />
@@ -544,7 +544,7 @@ ${doc.plainText}</textarea
           id="mac-dict-frame"
           name="mac-dict"
           title="Dictionary lookup"
-          src="/v2/dicts?embedded=1"></iframe>
+          src="/dicts?embedded=1"></iframe>
       </div>
     </aside>
   </div>`;
@@ -591,7 +591,7 @@ export function renderMacronizerPage(
   const hasResult = options.document !== undefined;
   return renderPageShell({
     title: formatMacronizerPageTitle(hasResult),
-    canonicalPath: hasResult ? undefined : "/v2/macronizer",
+    canonicalPath: hasResult ? undefined : "/macronizer",
     route: "macronizer",
     contentHtml: String(renderMacronizerContentHtml(options)),
   });

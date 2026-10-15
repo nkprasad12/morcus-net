@@ -23,7 +23,7 @@ test.describe("UI V2 dictionary", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     await expect(page.locator("form.search-form")).toBeVisible();
 
     // Type query and submit native HTML form
@@ -36,7 +36,7 @@ test.describe("UI V2 dictionary", () => {
     // Verify native HTTP GET navigation and SSR response. The native submission
     // also serializes the settings pane's inputs, so `q` is not necessarily
     // the first query parameter.
-    await expect(page).toHaveURL(/\/v2\/dicts\?.*\bq=habeo\b/);
+    await expect(page).toHaveURL(/\/dicts\?.*\bq=habeo\b/);
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
     await expect(
@@ -47,14 +47,14 @@ test.describe("UI V2 dictionary", () => {
   });
 
   test("loads results by typing and enter (JS enhanced)", async ({ page }) => {
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
 
     const input = page.locator('input[name="q"]');
     await input.click();
     await input.fill("habeo");
     await page.keyboard.press("Enter");
 
-    await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
+    await expect(page).toHaveURL(/\/dicts\?q=habeo/);
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
     await expect(
@@ -68,7 +68,7 @@ test.describe("UI V2 dictionary", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts?q=habuit");
+    await page.goto("/dicts?q=habuit");
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
     await expect(
@@ -81,7 +81,7 @@ test.describe("UI V2 dictionary", () => {
   test("loads autocomplete suggestions and searches on suggestion click", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
 
     const input = page.locator('input[name="q"]');
     await input.click();
@@ -107,7 +107,7 @@ test.describe("UI V2 dictionary", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     await expect(page.locator("header.app-bar")).toBeVisible();
 
     // Click About link in the app bar (handles desktop bar or mobile dropdown menu)
@@ -117,7 +117,7 @@ test.describe("UI V2 dictionary", () => {
     } else {
       await page.locator('.nav-desktop a:has-text("About")').click();
     }
-    await expect(page).toHaveURL(/\/v2\/about$/);
+    await expect(page).toHaveURL(/\/about$/);
     await expect(page.locator("h1")).toContainText("About");
     await expect(page.getByText("GPL-3.0")).toBeVisible();
     await expect(page.getByText("CC BY-SA 4.0")).toBeVisible();
@@ -131,7 +131,7 @@ test.describe("UI V2 dictionary", () => {
     } else {
       await page.locator('.nav-desktop a:has-text("Dictionary")').click();
     }
-    await expect(page).toHaveURL(/\/v2\/dicts$/);
+    await expect(page).toHaveURL(/\/dicts$/);
     await expect(page.locator('input[name="q"]')).toBeVisible();
 
     await context.close();
@@ -140,7 +140,7 @@ test.describe("UI V2 dictionary", () => {
   test("allows navigating between Dictionary and About via app bar (JS enabled)", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     await expect(page.locator("header.app-bar")).toBeVisible();
 
     // Click About link in the app bar
@@ -150,7 +150,7 @@ test.describe("UI V2 dictionary", () => {
     } else {
       await page.locator('.nav-desktop a:has-text("About")').click();
     }
-    await expect(page).toHaveURL(/\/v2\/about$/);
+    await expect(page).toHaveURL(/\/about$/);
     await expect(page.locator("h1")).toContainText("About");
     await expect(page.getByText("Perseus project")).toBeVisible();
 
@@ -163,7 +163,7 @@ test.describe("UI V2 dictionary", () => {
     } else {
       await page.locator('.nav-desktop a:has-text("Dictionary")').click();
     }
-    await expect(page).toHaveURL(/\/v2\/dicts$/);
+    await expect(page).toHaveURL(/\/dicts$/);
     await expect(page.locator('input[name="q"]')).toBeVisible();
   });
 
@@ -173,7 +173,7 @@ test.describe("UI V2 dictionary", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     await expect(page.locator("header.app-bar")).toBeVisible();
     await expect(
       page.locator("morcus-theme-toggle .theme-toggle-btn")
@@ -185,7 +185,7 @@ test.describe("UI V2 dictionary", () => {
   test("toggles theme and persists preference with JavaScript enabled", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     const toggleBtn = page.locator("morcus-theme-toggle .theme-toggle-btn");
     await expect(toggleBtn).toBeVisible();
 
@@ -217,7 +217,7 @@ test.describe("UI V2 dictionary", () => {
   test("toggles theme without clearing active dictionary entry", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     await expect(page.locator(".dict-card").first()).toBeVisible();
 
     const toggleBtn = page.locator("morcus-theme-toggle .theme-toggle-btn");
@@ -227,7 +227,7 @@ test.describe("UI V2 dictionary", () => {
     await toggleBtn.click();
 
     // Verify URL, search input, and dictionary entry remain active and are not cleared
-    await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
+    await expect(page).toHaveURL(/\/dicts\?q=habeo/);
     await expect(page.locator("#dict-q")).toHaveValue("habeo");
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
@@ -236,7 +236,7 @@ test.describe("UI V2 dictionary", () => {
   test("loads entries by ID directly via /v2/dicts/id/:id", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts/id/n20077");
+    await page.goto("/dicts/id/n20077");
     await expect(page).toHaveTitle(/ID n20077/);
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
@@ -253,7 +253,7 @@ test.describe("UI V2 dictionary", () => {
     if (browserName === "chromium") {
       await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     }
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     const outlineSummary = page
       .locator('.tool-pane summary:has-text("Outline")')
       .first();
@@ -301,7 +301,7 @@ test.describe("UI V2 dictionary", () => {
     // `navigator.clipboard.readText()` in `page.evaluate` outside a user gesture.
     if (browserName !== "webkit") {
       const copied = await page.evaluate(() => navigator.clipboard.readText());
-      expect(copied).toMatch(/\/v2\/dicts\/id\/n20077#n20077/);
+      expect(copied).toMatch(/\/dicts\/id\/n20077#n20077/);
     }
     await expect(page.locator("#toast")).toBeVisible();
 
@@ -313,7 +313,7 @@ test.describe("UI V2 dictionary", () => {
   test("section action menu sits under its anchor and dismisses on click-away, Escape, and scroll", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     const anchor = page.locator(".section-anchor").first();
     const menu = page.locator(".section-action-menu");
     await expect(anchor).toBeVisible();
@@ -373,7 +373,7 @@ test.describe("UI V2 dictionary", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts?q=proximus");
+    await page.goto("/dicts?q=proximus");
 
     const note = page.locator(".subsection-note").first();
     await expect(note).toBeVisible();
@@ -400,7 +400,7 @@ test.describe("UI V2 dictionary", () => {
   test("jump chip scrolls to and highlights the matched subsection (JS enabled)", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts?q=proximus");
+    await page.goto("/dicts?q=proximus");
 
     const chips = page.locator(".subsection-note .subsection-chip");
     await expect(chips).toHaveCount(3);
@@ -413,7 +413,7 @@ test.describe("UI V2 dictionary", () => {
   });
 
   test("marks matched subsections in the entry body", async ({ page }) => {
-    await page.goto("/v2/dicts?q=proximus");
+    await page.goto("/dicts?q=proximus");
 
     const hits = page.locator(".entry-content .subsection-hit");
     await expect(hits).toHaveCount(3);
@@ -426,7 +426,7 @@ test.describe("UI V2 dictionary", () => {
     // `abbatissa` records a subsection id of `n36.0`, but L&S merges that first
     // sense into the opening blurb so no such element is ever emitted. The
     // anchor must fall back to `n36.blurb` rather than becoming a dead link.
-    await page.goto("/v2/dicts?q=abbatissa");
+    await page.goto("/dicts?q=abbatissa");
 
     const link = page.locator(".subsection-note .subsection-namelink");
     await expect(link).toHaveAttribute("href", "#n36.blurb");
@@ -445,7 +445,7 @@ test.describe("UI V2 dictionary", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     // Ensure no word link elements exist in No-JS mode
     const wordLinks = page.locator(".lat-word");
     await expect(wordLinks).toHaveCount(0);
@@ -460,7 +460,7 @@ test.describe("UI V2 dictionary", () => {
   test("click-to-lookup progressively enhances Latin words and navigates on click (JS enabled)", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     // On small screens the TOC drawer covers the link, so Playwright re-scrolls
     // before clicking; see `disableSmoothScroll` for why that flakes in Firefox.
     await disableSmoothScroll(page);
@@ -469,14 +469,14 @@ test.describe("UI V2 dictionary", () => {
 
     // Clicking the word triggers client-side lookup
     await wordLink.click();
-    await expect(page).toHaveURL(/\/v2\/dicts\?q=habere/);
+    await expect(page).toHaveURL(/\/dicts\?q=habere/);
     await expect(page.locator(".dict-card").first()).toBeVisible();
   });
 
   test("'/' focuses the search box and pre-fills it from a selected word", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     const word = page.locator('.lat-word:has-text("habere")').first();
     await expect(word).toBeVisible();
 
@@ -506,7 +506,7 @@ test.describe("UI V2 dictionary", () => {
     hasTouch,
   }) => {
     test.skip(isMobile || hasTouch, "Touch has no hover or middle-click.");
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     await disableSmoothScroll(page);
     const word = page.locator('.lat-word:has-text("habere")').first();
     await expect(word).toBeVisible();
@@ -521,17 +521,17 @@ test.describe("UI V2 dictionary", () => {
     // middle-click / "Open in new tab" need.
     await word.hover();
     await expect(word).toHaveJSProperty("localName", "a");
-    await expect(word).toHaveAttribute("href", /\/v2\/dicts\?q=habere/);
+    await expect(word).toHaveAttribute("href", /\/dicts\?q=habere/);
     // ...but still not a tab stop.
     await expect(word).toHaveAttribute("tabindex", "-1");
 
     const newPage = context.waitForEvent("page");
     await word.click({ button: "middle" });
     const opened = await newPage;
-    await expect(opened).toHaveURL(/\/v2\/dicts\?q=habere/);
+    await expect(opened).toHaveURL(/\/dicts\?q=habere/);
     await opened.close();
     // The original page did not navigate.
-    await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
+    await expect(page).toHaveURL(/\/dicts\?q=habeo/);
   });
 
   test("report issue button is hidden without JavaScript (No-JS baseline)", async ({
@@ -540,7 +540,7 @@ test.describe("UI V2 dictionary", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     const reportDialogEl = page.locator("morcus-report-dialog");
     await expect(reportDialogEl).toBeHidden();
 
@@ -550,7 +550,7 @@ test.describe("UI V2 dictionary", () => {
   test("report issue button is displayed and interactive when JS is enabled", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     const reportBtn = page.locator(".report-btn");
     await expect(reportBtn).toBeVisible();
   });
@@ -558,7 +558,7 @@ test.describe("UI V2 dictionary", () => {
   test("opens report dialog on click and closes via Cancel button", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     const reportBtn = page.locator(".report-btn");
     const dialog = page.locator("dialog.report-dialog");
 
@@ -585,7 +585,7 @@ test.describe("UI V2 dictionary", () => {
   });
 
   test("closes report dialog via Escape key", async ({ page }) => {
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     const reportBtn = page.locator(".report-btn");
     const dialog = page.locator("dialog.report-dialog");
 
@@ -599,7 +599,7 @@ test.describe("UI V2 dictionary", () => {
   test("submits issue report via AJAX and shows confirmation", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     const reportBtn = page.locator(".report-btn");
     const dialog = page.locator("dialog.report-dialog");
 
@@ -627,7 +627,7 @@ test.describe("UI V2 dictionary", () => {
   test("renders entry headers, dividers, and jump links for multi-entry dictionaries", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts?q=cum");
+    await page.goto("/dicts?q=cum");
     // Verify multi-entry dictionary has quick-jump links (inline .entry-nav on
     // narrow viewports, or .toc-entries-summary in the desktop left TOC rail).
     const nav = page.locator(".entry-nav").first();
@@ -645,7 +645,7 @@ test.describe("UI V2 dictionary", () => {
 
     const copyPill = page.locator(".copy-pill").first();
     await expect(copyPill).toBeVisible();
-    await expect(copyPill).toHaveAttribute("href", /^\/v2\/dicts\/id\/.+/);
+    await expect(copyPill).toHaveAttribute("href", /^\/dicts\/id\/.+/);
 
     // Verify jump link navigates to anchor
     const jumpLink = useInlineEntryNav
@@ -663,7 +663,7 @@ test.describe("UI V2 dictionary", () => {
     if (browserName === "chromium") {
       await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     }
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
 
     const copyPill = page.locator(".copy-pill").first();
     await expect(copyPill).toBeVisible();
@@ -672,7 +672,7 @@ test.describe("UI V2 dictionary", () => {
 
     if (browserName !== "webkit") {
       const copied = await page.evaluate(() => navigator.clipboard.readText());
-      expect(copied).toMatch(/^https?:\/\/.+\/v2\/dicts\/id\/n20077$/);
+      expect(copied).toMatch(/^https?:\/\/.+\/dicts\/id\/n20077$/);
     }
     // The article is already on screen, so copying must not spend a server
     // render navigating to it.
@@ -685,14 +685,14 @@ test.describe("UI V2 dictionary", () => {
   }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
 
     const copyPill = page.locator(".copy-pill").first();
     await expect(copyPill).toBeVisible();
     // No JS means no clipboard interception, so the anchor must still be a
     // genuinely navigable permalink rather than a decorative control.
     await copyPill.click();
-    await expect(page).toHaveURL(/\/v2\/dicts\/id\/n20077$/);
+    await expect(page).toHaveURL(/\/dicts\/id\/n20077$/);
     await expect(page.locator(".dict-card").first()).toBeVisible();
 
     await context.close();
@@ -704,7 +704,7 @@ test.describe("UI V2 dictionary", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     await expect(page.locator(".dict-card").first()).toBeVisible();
 
     const abbr = page.locator(".lsHover").first();
@@ -723,7 +723,7 @@ test.describe("UI V2 dictionary", () => {
   test("opens floating popover on clicking expandable abbreviation (JS enabled)", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     await expect(page.locator(".dict-card").first()).toBeVisible();
 
     const abbr = page.locator(".lsHover").first();
@@ -779,7 +779,7 @@ test.describe("UI V2 dictionary", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
 
     // The settings dialog is server-rendered and reachable without JS: the trigger is a
     // `#dict-settings` link, and `:target` shows the dialog as a full-screen overlay.
@@ -828,7 +828,7 @@ test.describe("UI V2 dictionary", () => {
     expect(kept?.value).toBe("1");
 
     // Opening a link with a different selection shows it but does not overwrite the cookie.
-    await page.goto("/v2/dicts?q=habeo&d=2");
+    await page.goto("/dicts?q=habeo&d=2");
     await expect(page.locator('.dict-checkbox[value="GAF"]')).toBeChecked();
     await expect(page.locator('.dict-checkbox[value="L&S"]')).not.toBeChecked();
     const after = (await context.cookies()).find((c) => c.name === "morcus_d");
@@ -857,7 +857,7 @@ test.describe("UI V2 dictionary", () => {
   test("dictionary settings apply when the dialog closes (JS enabled)", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     await expect(page.locator(".dict-title").first()).toBeVisible();
     const dialog = page.locator("dialog#dict-settings");
     const trigger = page.locator("#dict-settings-btn");
@@ -871,7 +871,7 @@ test.describe("UI V2 dictionary", () => {
     // Toggling inside the dialog changes nothing behind it.
     const requests: string[] = [];
     page.on("request", (r) => {
-      if (r.url().includes("/v2/")) requests.push(r.url());
+      if (r.url().includes("/dicts")) requests.push(r.url());
     });
     const checkboxes = dialog.locator(".dict-checkbox");
     const count = await checkboxes.count();
@@ -928,7 +928,7 @@ test.describe("UI V2 dictionary", () => {
       .context()
       .addCookies([{ name: "morcus_d", value: "1", url: baseURL! }]); // L&S
 
-    await page.goto("/v2/dicts?q=habeo&d=2"); // GAF
+    await page.goto("/dicts?q=habeo&d=2"); // GAF
     await expect(page.locator(".guest-chip")).toBeVisible();
     await page.locator("#dict-settings-btn").click();
     await expect(page.locator(".settings-guest-note")).toBeVisible();
@@ -958,7 +958,7 @@ test.describe("UI V2 dictionary", () => {
   test("adjusts highlight strength via quick menu and persists to localStorage", async ({
     page,
   }) => {
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     await expect(page.locator("#dict-settings-btn")).toBeVisible();
 
     // Verify initial scale is 1
@@ -998,7 +998,7 @@ test.describe("UI V2 dictionary", () => {
   test("supports reader sidebar dictionary search in the embedded frame", async ({
     page,
   }) => {
-    await page.goto("/v2/work");
+    await page.goto("/work");
 
     // Verify "Embedded Dictionary" header text is removed
     await expect(page.locator(".reader-dict-title")).toHaveCount(0);
@@ -1042,7 +1042,7 @@ test.describe("UI V2 dictionary", () => {
   }) => {
     // No ?q=, so the dictionary panel starts closed and its lazy iframe may
     // not have loaded yet: '/' has to wait for it.
-    await page.goto("/v2/work/caesar/de_bello_gallico/1.1");
+    await page.goto("/work/caesar/de_bello_gallico/1.1");
     const word = page.locator("#reader-passage .lat-word").first();
     await expect(word).toBeVisible();
     const wordText = ((await word.textContent()) ?? "").trim();
@@ -1076,7 +1076,7 @@ test.describe("UI V2 dictionary", () => {
       "Mobile-only viewport scroll test"
     );
 
-    await page.goto("/v2/dicts");
+    await page.goto("/dicts");
     await disableSmoothScroll(page);
     await expect(page.locator(".landing-container")).toBeVisible();
 
@@ -1139,12 +1139,12 @@ test.describe("UI V2 dictionary", () => {
       // 1. One URL per route. Together they must load every chunk, so a chunk
       //    that is built but never loaded by any route fails here.
       const routeUrls: Record<V2Route, string> = {
-        about: "/v2/about",
-        dicts: "/v2/dicts",
-        library: "/v2/library",
-        corpus: "/v2/corpus",
-        external: "/v2/externalReader",
-        macronizer: "/v2/macronizer",
+        about: "/about",
+        dicts: "/dicts",
+        library: "/library",
+        corpus: "/corpus",
+        external: "/externalReader",
+        macronizer: "/macronizer",
       };
       const chunkPaths = new Map<V2JsChunkName, string>();
       let cssPath: string | undefined;
@@ -1155,7 +1155,7 @@ test.describe("UI V2 dictionary", () => {
 
         const served = [
           ...html.matchAll(
-            /<script\s+type="module"\s+src="(\/v2\/assets\/([a-z]+)\.[a-f0-9]+\.js)"[^>]*>/g
+            /<script\s+type="module"\s+src="(\/assets\/([a-z]+)\.[a-f0-9]+\.js)"[^>]*>/g
           ),
         ];
         // The server emits exactly the route's dependency chain, in order.
@@ -1165,7 +1165,7 @@ test.describe("UI V2 dictionary", () => {
         }
 
         cssPath ??= html.match(
-          /<link\s+rel="stylesheet"\s+href="(\/v2\/assets\/v2\.[a-f0-9]+\.css)">/
+          /<link\s+rel="stylesheet"\s+href="(\/assets\/v2\.[a-f0-9]+\.css)">/
         )?.[1];
       }
       expect(new Set(chunkPaths.keys())).toEqual(new Set(V2_JS_CHUNKS));
@@ -1224,7 +1224,7 @@ test.describe("UI V2 corpus", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/corpus");
+    await page.goto("/corpus");
     await expect(page.locator(".corpus-welcome-card")).toBeVisible();
     await expect(page.locator("details.corpus-help")).toHaveAttribute(
       "open",
@@ -1236,14 +1236,14 @@ test.describe("UI V2 corpus", () => {
     await page.locator("form.corpus-form button.search-btn").click();
 
     // Verify native HTTP GET navigation and SSR response
-    await expect(page).toHaveURL(/\/v2\/corpus\?.*q=Roma/);
+    await expect(page).toHaveURL(/\/corpus\?.*q=Roma/);
     await expect(page.locator(".corpus-result-list")).toBeVisible();
     await expect(page.locator(".corpus-result").first()).toBeVisible();
 
     // Verify heading links point to Reader with highlight parameters
     const firstHeading = page.locator(".corpus-result-heading").first();
     await expect(firstHeading).toBeVisible();
-    await expect(firstHeading).toHaveAttribute("href", /\/v2\/work\//);
+    await expect(firstHeading).toHaveAttribute("href", /\/work\//);
 
     // Verify match highlighting within the snippet
     await expect(
@@ -1261,14 +1261,14 @@ test.describe("UI V2 corpus", () => {
   test("loads corpus results and updates title via Enter key (JS enhanced)", async ({
     page,
   }) => {
-    await page.goto("/v2/corpus");
+    await page.goto("/corpus");
 
     const input = page.locator('input[name="q"]');
     await input.click();
     await input.fill("Roma");
     await page.keyboard.press("Enter");
 
-    await expect(page).toHaveURL(/\/v2\/corpus\?q=Roma/);
+    await expect(page).toHaveURL(/\/corpus\?q=Roma/);
     await expect(page).toHaveTitle(/Corpus: Roma/);
     await expect(page.locator(".corpus-result-list")).toBeVisible();
     await expect(page.locator(".corpus-beta-chip")).toBeVisible();
@@ -1277,7 +1277,7 @@ test.describe("UI V2 corpus", () => {
   test("supports direct SSR deep-link and query parameter syncing", async ({
     page,
   }) => {
-    await page.goto("/v2/corpus?q=Roma&contextLen=25&pageSize=20&strictMode=1");
+    await page.goto("/corpus?q=Roma&contextLen=25&pageSize=20&strictMode=1");
 
     await expect(page.locator('input[name="q"]')).toHaveValue("Roma");
     const summary = page.locator('[data-slot="settings-summary"]');
@@ -1291,7 +1291,7 @@ test.describe("UI V2 corpus", () => {
   test("preserves form and focus during slot-swapped searches (slot swapping invariant)", async ({
     page,
   }) => {
-    await page.goto("/v2/corpus");
+    await page.goto("/corpus");
 
     // Mark the form in DOM to verify it is never recreated during slot replacement
     await page.evaluate(() => {
@@ -1323,7 +1323,7 @@ test.describe("UI V2 corpus", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/corpus?q=Roma");
+    await page.goto("/corpus?q=Roma");
 
     // Open settings tray
     await page.locator("details.corpus-settings summary").click();
@@ -1354,7 +1354,7 @@ test.describe("UI V2 corpus", () => {
   test("modifies settings via slot swap with JavaScript enabled", async ({
     page,
   }) => {
-    await page.goto("/v2/corpus?q=Roma");
+    await page.goto("/corpus?q=Roma");
 
     // Open settings tray
     await page.locator("details.corpus-settings summary").click();
@@ -1385,7 +1385,7 @@ test.describe("UI V2 corpus", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const noJsPage = await context.newPage();
 
-    await noJsPage.goto("/v2/corpus?q=Roma&pageSize=10");
+    await noJsPage.goto("/corpus?q=Roma&pageSize=10");
     const nextBtnNoJs = noJsPage.locator('[data-slot="pager"] a.corpus-next');
     await expect(nextBtnNoJs).toBeVisible();
     await expect(nextBtnNoJs).toHaveAttribute("rel", "next");
@@ -1399,7 +1399,7 @@ test.describe("UI V2 corpus", () => {
 
     // 2. JS pager navigation with slot swap & focus preservation
     const jsPage = await browser.newPage();
-    await jsPage.goto("/v2/corpus?q=Roma&pageSize=10");
+    await jsPage.goto("/corpus?q=Roma&pageSize=10");
     const nextBtnJs = jsPage.locator('[data-slot="pager"] a.corpus-next');
     await expect(nextBtnJs).toBeVisible();
 
@@ -1413,7 +1413,7 @@ test.describe("UI V2 corpus", () => {
   });
 
   test("restores query state via browser Back / popstate", async ({ page }) => {
-    await page.goto("/v2/corpus?q=Roma");
+    await page.goto("/corpus?q=Roma");
     await expect(page.locator('input[name="q"]')).toHaveValue("Roma");
     await expect(page.locator(".corpus-query-echo")).toHaveText("Roma");
 
@@ -1432,7 +1432,7 @@ test.describe("UI V2 corpus", () => {
   test("suggests authors and accepts with keyboard (autocomplete)", async ({
     page,
   }) => {
-    await page.goto("/v2/corpus");
+    await page.goto("/corpus");
 
     const input = page.locator('input[name="q"]');
     await input.click();
@@ -1454,7 +1454,7 @@ test.describe("UI V2 corpus", () => {
   test("suggests grammatical categories and lemma completions (autocomplete)", async ({
     page,
   }) => {
-    await page.goto("/v2/corpus");
+    await page.goto("/corpus");
 
     const input = page.locator('input[name="q"]');
     await input.click();
@@ -1482,7 +1482,7 @@ test.describe("UI V2 corpus", () => {
   test("renders empty state with open syntax guide for zero-result query", async ({
     page,
   }) => {
-    await page.goto("/v2/corpus?q=xyznonexistentword");
+    await page.goto("/corpus?q=xyznonexistentword");
     await expect(page.locator(".corpus-summary-headline")).toContainText(
       "No results found for"
     );
@@ -1497,13 +1497,13 @@ test.describe("UI V2 corpus", () => {
     page,
   }) => {
     // 1. Inflected query has disclaimer
-    await page.goto("/v2/corpus?q=@case:genitive");
+    await page.goto("/corpus?q=@case:genitive");
     await expect(
       page.locator("details.corpus-inflection-notice")
     ).toBeVisible();
 
     // 2. Uninflected word query does not show disclaimer
-    await page.goto("/v2/corpus?q=Roma");
+    await page.goto("/corpus?q=Roma");
     await expect(page.locator("details.corpus-inflection-notice")).toHaveCount(
       0
     );

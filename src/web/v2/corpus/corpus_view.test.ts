@@ -27,7 +27,7 @@ import {
 import { expectSlotParity } from "@/web/v2/testing/slot_parity";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "",
   getV2CriticalJs: () => "",
 }));
@@ -68,7 +68,7 @@ describe("corpus page", () => {
 
     expect(doc.title).toBe("Corpus Query - Morcus Latin Tools");
     const form = doc.querySelector("form.corpus-form");
-    expect(form?.getAttribute("action")).toBe("/v2/corpus");
+    expect(form?.getAttribute("action")).toBe("/corpus");
     expect(form?.getAttribute("method")).toBe("GET");
     expect(doc.querySelector("details.corpus-help")?.hasAttribute("open")).toBe(
       true
@@ -121,7 +121,7 @@ describe("corpus page", () => {
     );
     expect(heading?.textContent?.trim()).toBe("De Bello Gallico 1.1 [Caesar]");
     expect(heading?.getAttribute("href")).toMatch(
-      /^\/v2\/work\/caesar\/de_bello_gallico\?matchText=/
+      /^\/work\/caesar\/de_bello_gallico\?matchText=/
     );
     expect(text(doc, "mark.corpus-match")).toBe("omnis");
     expect(text(doc, ".corpus-snippet")).toBe(
@@ -156,7 +156,7 @@ describe("corpus page", () => {
     const doc = parse(renderCorpusPageHtml(view));
 
     expect(doc.querySelector(".corpus-next")?.getAttribute("href")).toBe(
-      "/v2/corpus?q=omnis&contextLen=20&pageSize=50&cursor=2-50-1"
+      "/corpus?q=omnis&contextLen=20&pageSize=50&cursor=2-50-1"
     );
     expect(doc.querySelector(".corpus-next svg")).not.toBeNull();
     expect(doc.querySelector(".corpus-next")?.getAttribute("aria-label")).toBe(

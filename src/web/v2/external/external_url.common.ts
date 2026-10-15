@@ -23,7 +23,7 @@ import {
   type LineMode,
 } from "@/web/v2/external/external_text.common";
 
-export const EXTERNAL_READER_PATH = "/v2/externalReader";
+export const EXTERNAL_READER_PATH = "/externalReader";
 
 export interface ExternalReaderParams {
   url?: string;
@@ -57,7 +57,7 @@ export function parseExternalReaderParams(
 ): ExternalReaderParams {
   const params =
     typeof search === "string" ? new URLSearchParams(search) : search;
-  const url = params.get("url")?.trim() || undefined;
+  const url = (params.get("url") ?? params.get("fromUrl"))?.trim() || undefined;
   const local = url ? undefined : params.get("local") || undefined;
   const q = params.get("q")?.trim() || undefined;
   return {

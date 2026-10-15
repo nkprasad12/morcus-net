@@ -98,7 +98,7 @@ describe("<morcus-external-loader>", () => {
 
       await until(() => navigate.mock.calls.length > 0);
       const target = new URL(navigate.mock.calls[0][0], "https://x");
-      expect(target.pathname).toBe("/v2/externalReader");
+      expect(target.pathname).toBe("/externalReader");
       expect(target.searchParams.get("lines")).toBe("verse");
       const key = target.searchParams.get("local")!;
       expect(key).not.toContain("Arma");
@@ -229,10 +229,10 @@ describe("<morcus-external-loader>", () => {
         "Pasted",
       ]);
       expect(links()[0].getAttribute("href")).toBe(
-        "/v2/externalReader?url=https%3A%2F%2Fexample.com%2Fa.html"
+        "/externalReader?url=https%3A%2F%2Fexample.com%2Fa.html"
       );
       expect(links()[1].getAttribute("href")).toMatch(
-        /^\/v2\/externalReader\?local=[^&]+&lines=prose$/
+        /^\/externalReader\?local=[^&]+&lines=prose$/
       );
       expect(
         loader.querySelector<HTMLElement>("#external-saved-empty")!.hidden
@@ -331,9 +331,7 @@ describe("<morcus-external-loader>", () => {
 
       const passage = document.getElementById("reader-passage")!;
       expect(passage.textContent).toContain("isn't saved in this browser");
-      expect(
-        passage.querySelector('a[href="/v2/externalReader"]')
-      ).not.toBeNull();
+      expect(passage.querySelector('a[href="/externalReader"]')).not.toBeNull();
     });
   });
 
@@ -397,9 +395,9 @@ describe("savedItemHref", () => {
         source: "fromUrl",
         lineMode: "keep",
       })
-    ).toBe("/v2/externalReader?url=https%3A%2F%2Fa.com%2Fx");
+    ).toBe("/externalReader?url=https%3A%2F%2Fa.com%2Fx");
     expect(
       savedItemHref({ storageKey: "k1", title: "t", lineMode: "verse" })
-    ).toBe("/v2/externalReader?local=k1&lines=verse");
+    ).toBe("/externalReader?local=k1&lines=verse");
   });
 });

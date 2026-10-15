@@ -8,12 +8,12 @@ describe("renderDictSearchBar", () => {
   test("renders default dictionary search bar", () => {
     const html = renderDictSearchBar({
       query: "habeo",
-      action: "/v2/dicts",
+      action: "/dicts",
     });
 
     expect(html).toContain('class="search-form"');
     expect(html).toContain('role="search"');
-    expect(html).toContain('action="/v2/dicts"');
+    expect(html).toContain('action="/dicts"');
     expect(html).toContain('value="habeo"');
     expect(html).toContain('aria-keyshortcuts="/"');
     expect(html).toContain("<morcus-dict-settings>");
@@ -26,11 +26,11 @@ describe("renderDictSearchBar", () => {
   test("honors a custom action and placeholder", () => {
     const html = renderDictSearchBar({
       query: "Caesar",
-      action: "/v2/work",
+      action: "/work",
       placeholder: "Lookup word in text...",
     });
 
-    expect(html).toContain('action="/v2/work"');
+    expect(html).toContain('action="/work"');
     expect(html).toContain('placeholder="Lookup word in text..."');
     expect(html).toContain('value="Caesar"');
     expect(html).toContain("<morcus-dict-settings>");
@@ -39,7 +39,7 @@ describe("renderDictSearchBar", () => {
   test("can omit settings component when includeSettings is false", () => {
     const html = renderDictSearchBar({
       query: "",
-      action: "/v2/dicts",
+      action: "/dicts",
       includeSettings: false,
     });
 
@@ -50,7 +50,7 @@ describe("renderDictSearchBar", () => {
   test("escapes HTML in query", () => {
     const html = renderDictSearchBar({
       query: '<script>alert("xss")</script>',
-      action: "/v2/dicts",
+      action: "/dicts",
     });
 
     expect(html).not.toContain("<script>");
@@ -72,7 +72,7 @@ describe("renderDictSearchBar", () => {
   test("the search form carries the rendered d and o; the dialog's form owns the controls", () => {
     const html = renderDictSearchBar({
       query: "amare",
-      action: "/v2/dicts",
+      action: "/dicts",
       activeDicts: ["L&S", "GAF"],
       isInflected: true,
     });
@@ -96,7 +96,7 @@ describe("renderDictSearchBar", () => {
 
   test("the tray trigger is a hash link to the dialog", () => {
     const { doc } = forms(
-      renderDictSearchBar({ query: "amo", action: "/v2/dicts" })
+      renderDictSearchBar({ query: "amo", action: "/dicts" })
     );
     const trigger = doc.querySelector<HTMLAnchorElement>("#dict-settings-btn")!;
     expect(trigger.getAttribute("href")).toBe("#dict-settings");
@@ -115,7 +115,7 @@ describe("renderDictSearchBar", () => {
   test("keeps the hidden d bitmask when the settings popover is omitted", () => {
     const html = renderDictSearchBar({
       query: "amare",
-      action: "/v2/dicts",
+      action: "/dicts",
       activeDicts: ["L&S", "GAF"],
       includeSettings: false,
     });
@@ -129,7 +129,7 @@ describe("renderDictSearchBar", () => {
   test("renders unchecked inflection toggle when isInflected is false", () => {
     const html = renderDictSearchBar({
       query: "amare",
-      action: "/v2/dicts",
+      action: "/dicts",
       isInflected: false,
     });
 
@@ -143,7 +143,7 @@ describe("renderDictSearchBar", () => {
   test("renders status tray with active language chips and inflection badge", () => {
     const html = renderDictSearchBar({
       query: "facio",
-      action: "/v2/dicts",
+      action: "/dicts",
       activeDicts: ["L&S", "S&H", "GRG"],
       isInflected: true,
     });
@@ -159,7 +159,7 @@ describe("renderDictSearchBar", () => {
   test("renders status tray with inflection off badge when isInflected is false", () => {
     const html = renderDictSearchBar({
       query: "facio",
-      action: "/v2/dicts",
+      action: "/dicts",
       activeDicts: ["L&S"],
       isInflected: false,
     });
@@ -174,7 +174,7 @@ describe("renderDictSearchBar", () => {
   test("omits status tray when includeSettings is false", () => {
     const html = renderDictSearchBar({
       query: "facio",
-      action: "/v2/dicts",
+      action: "/dicts",
       includeSettings: false,
     });
 
@@ -183,7 +183,7 @@ describe("renderDictSearchBar", () => {
 
   test("Done is the settings form's save submitter", () => {
     const { settings } = forms(
-      renderDictSearchBar({ query: "amo", action: "/v2/dicts" })
+      renderDictSearchBar({ query: "amo", action: "/dicts" })
     );
     const submits = settings.querySelectorAll('button[type="submit"]');
     expect(submits).toHaveLength(1);
@@ -194,7 +194,7 @@ describe("renderDictSearchBar", () => {
 
   test("the search form's only submit button is the search button, so Enter never saves", () => {
     const { search } = forms(
-      renderDictSearchBar({ query: "amo", action: "/v2/dicts" })
+      renderDictSearchBar({ query: "amo", action: "/dicts" })
     );
     const submits = search.querySelectorAll('button[type="submit"]');
     expect(submits).toHaveLength(1);
@@ -203,7 +203,7 @@ describe("renderDictSearchBar", () => {
   });
 
   test("renders no guest chip or scoped marker by default", () => {
-    const html = renderDictSearchBar({ query: "amo", action: "/v2/dicts" });
+    const html = renderDictSearchBar({ query: "amo", action: "/dicts" });
     expect(html).not.toContain("guest-chip");
     expect(html).not.toContain("settings-guest-note");
     expect(html).not.toContain("disabled");
@@ -213,17 +213,17 @@ describe("renderDictSearchBar", () => {
   describe("guest mode", () => {
     const html = renderDictSearchBar({
       query: "amo",
-      action: "/v2/dicts",
+      action: "/dicts",
       activeDicts: ["GAF"],
       isInflected: false,
-      guest: { returnHref: "/v2/dicts?q=amo&x=<" },
+      guest: { returnHref: "/dicts?q=amo&x=<" },
     });
 
     test("explains itself and links back to the user's settings", () => {
       expect(html).toContain("Using link settings");
       expect(html).toContain("settings-guest-note");
       const returnLink =
-        '<a class="guest-return" href="/v2/dicts?q=amo&amp;x=&lt;">Restore saved</a>';
+        '<a class="guest-return" href="/dicts?q=amo&amp;x=&lt;">Restore saved</a>';
       // Once in the tray chip, once in the popover note.
       expect(html.split(returnLink).length - 1).toBe(2);
     });
@@ -258,7 +258,7 @@ describe("renderDictSearchBar", () => {
     const { search, settings } = forms(
       renderDictSearchBar({
         query: "amo",
-        action: "/v2/dicts",
+        action: "/dicts",
         scoped: true,
         lang: "La",
         isInflected: true,
@@ -296,7 +296,7 @@ describe("renderDictSearchBar", () => {
   test("a scoped view keeps its rendered inflection in the hidden o", () => {
     const { settings } = forms(
       renderDictSearchBar({
-        action: "/v2/dicts",
+        action: "/dicts",
         scoped: true,
         isInflected: false,
       })
@@ -311,7 +311,7 @@ describe("renderDictSearchBar", () => {
   test("extraHiddenInputs emits one input per array value and skips undefined", () => {
     const { search, settings } = forms(
       renderDictSearchBar({
-        action: "/v2/dicts",
+        action: "/dicts",
         extraHiddenInputs: { lang: ["La", "En"], embedded: undefined },
       })
     );

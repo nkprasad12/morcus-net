@@ -9,7 +9,7 @@ The UI V2 prototype explores a server-rendered Multi-Page Application (MPA) mode
 1. **Zero-JS Baseline**: All primary user flows (dictionary lookup, inflected search, site navigation, and readability) function 100% without client-side JavaScript using standard HTML semantics (`<form method="GET">`, native `<details>`/`<summary>`, and semantic `<a>` links).
 2. **Light DOM Custom Elements (Zero Framework Overhead)**: Web Components extend native `HTMLElement` to wrap server-rendered markup without shadow root barriers or form association issues, keeping client bundle size minimal.
 3. **Safe DOM Manipulation**: Components use safe DOM APIs (`textContent`, `replaceChildren`) and typed HTML sinks (`setHtml`, `replaceWithHtml` in `core/dom/dom.client.ts`) accepting branded `SafeHtml` produced by `core/dom/html.common.ts`, backed by `eslint-plugin-no-unsanitized` for automated XSS prevention.
-4. **Coexistence**: Mounted under `/v2/*`, leaving the existing React/Preact SPA, RPC endpoints, and build pipelines completely unaffected.
+4. **Root Mounting**: Mounted directly at `/` on the Express web server.
 
 ---
 
@@ -28,7 +28,7 @@ src/web/v2/
 ├── corpus/             # Corpus search & concordances
 ├── dialog/             # Accessible modal dialogs & issue reporting
 ├── about/              # Project information & metadata
-├── v2_router.server.ts # Express router orchestrator mounted at /v2 (public integration)
+├── v2_router.server.ts # Express router orchestrator mounted at / (public integration)
 ├── v2_elements.client.ts # Test-only aggregator of all 5 route entry manifests (*_entry.client.ts)
 ├── v2.css              # Global stylesheet manifest (imports topic *.css)
 └── v2-critical.css     # Inlined above-the-fold critical CSS
@@ -188,7 +188,7 @@ Two consequences worth knowing before you "clean up" such a module:
 - **Build contract**: [src/bundler/v2_build_contract.ts](../../bundler/v2_build_contract.ts) (chunk names, `dependOn` graph, manifest asset names, build directory; shared by the bundler and the server)
 - **Output chunks**: `build/v2/{common,dict,reader,external,corpus,macronizer}.js` (ESM chunks built via Rspack `dependOn` and loaded via `<script type="module">` tags emitted per route by `page_shell.server.ts`)
 - **Shared modules**: a module imported by two or more chunks that depend on the same ancestor must ship once, in that ancestor. List it in the ancestor's `shared` array in `V2_CHUNK_ENTRIES` (it becomes an extra entry module of that chunk). A plain `import` from the entry file isn't enough: Rspack drops imports of side-effect-free modules whose exports the chunk doesn't use. The build fails with this advice (`checkV2ChunkDuplication`) when a module is duplicated.
-- **Stylesheet**: `src/web/v2/v2.css` served statically at `/v2/assets/v2.css`
+- **Stylesheet**: `src/web/v2/v2.css` served statically at `/assets/v2.css`
 
 ### Browser Support & Compatibility Target
 
@@ -204,7 +204,7 @@ Check new Web APIs against this floor, not just "works in my browser". For examp
 
 UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
-1. **Zero-JS Initial Paint**: The user issues a standard HTTP `GET` (e.g. `/v2/dicts?q=habeo` or `/v2/work`). Express renders a complete semantic HTML document with native `<form>`, `<details>`, and `<a>` elements.
+1. **Zero-JS Initial Paint**: The user issues a standard HTTP `GET` (e.g. `/dicts?q=habeo` or `/work`). Express renders a complete semantic HTML document with native `<form>`, `<details>`, and `<a>` elements.
 2. **Non-Blocking Enhancement**: The browser downloads the route's client chunks (`common.js` plus any route-specific slice chunks) and defines native custom elements (`customElements.define`).
 3. **Client Form Hijack & Partial Swapping**: When JavaScript is active, Web Components intercept user actions, fetch partial HTML fragments (`format=partial`) or autocomplete JSON from the router, and swap DOM nodes instantaneously via `replaceChildren()`, writing URL state through the router (`this.syncQueryParam()`'s `push` / `pushUrl` / `replaceUrl`) so Back and Forward stay in sync.
 

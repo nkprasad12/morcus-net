@@ -20,7 +20,7 @@ import {
 } from "@/web/v2/testing/ssr_fixtures";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -80,7 +80,7 @@ describe("MorcusMacronizerView interactive contracts", () => {
 
   beforeEach(() => {
     document.body.innerHTML = "";
-    window.history.replaceState(null, "", "/v2/macronizer");
+    window.history.replaceState(null, "", "/macronizer");
   });
 
   function mountResultsFixture(): HTMLElement {
@@ -232,7 +232,7 @@ describe("MorcusMacronizerView interactive contracts", () => {
       configurable: true,
       value: {
         location: {
-          pathname: "/v2/dicts",
+          pathname: "/dicts",
           search: "?q=love&o=1&embedded=1",
         },
       },
@@ -240,7 +240,7 @@ describe("MorcusMacronizerView interactive contracts", () => {
     const srcSpy = jest.spyOn(iframe, "src", "set");
     plainWord.click();
     expect(srcSpy).toHaveBeenCalledWith(
-      "/v2/dicts?q=%C4%81ccl%C4%ABnat&lang=La&o=1&embedded=1"
+      "/dicts?q=%C4%81ccl%C4%ABnat&lang=La&o=1&embedded=1"
     );
   });
 
@@ -300,7 +300,7 @@ describe("MorcusMacronizerView interactive contracts", () => {
   });
 
   test("adopts initial #wN URL hash on connect", () => {
-    window.history.replaceState(null, "", "/v2/macronizer#w2");
+    window.history.replaceState(null, "", "/macronizer#w2");
     const view = mountResultsFixture();
     expect(view.querySelector("#t2")?.classList.contains("mac-selected")).toBe(
       true

@@ -6,7 +6,7 @@ import { MorcusLibraryView } from "@/web/v2/library/library_view.client";
 import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -57,12 +57,10 @@ describe("library SSR & client hydration", () => {
       const html = await renderLibraryPageHtml();
 
       expect(html).toContain('data-work-id="phi0448.phi001.perseus-lat2"');
-      expect(html).toContain(
-        'data-reader-url="/v2/work/caesar/de_bello_gallico"'
-      );
+      expect(html).toContain('data-reader-url="/work/caesar/de_bello_gallico"');
       expect(html).toContain('data-work-id="phi0472.phi001.perseus-lat2"');
-      expect(html).toContain('data-reader-url="/v2/work/catullus/carmina"');
-      expect(html).toContain('href="/v2/work/caesar/de_bello_gallico"');
+      expect(html).toContain('data-reader-url="/work/catullus/carmina"');
+      expect(html).toContain('href="/work/caesar/de_bello_gallico"');
     });
   });
 
@@ -84,10 +82,10 @@ describe("library SSR & client hydration", () => {
         <div id="library-empty-state" hidden></div>
         <main class="library-main">
           <div class="library-grid">
-            <a href="/v2/work/caesar/de_bello_gallico"
+            <a href="/work/caesar/de_bello_gallico"
                class="card card-interactive work-card"
                data-work-id="phi0448.phi001.perseus-lat2"
-               data-reader-url="/v2/work/caesar/de_bello_gallico"
+               data-reader-url="/work/caesar/de_bello_gallico"
                data-author="gaius julius caesar"
                data-title="de bello gallico"
                data-tags="all macra">
@@ -99,10 +97,10 @@ describe("library SSR & client hydration", () => {
                 </div>
               </div>
             </a>
-            <a href="/v2/work/catullus/carmina"
+            <a href="/work/catullus/carmina"
                class="card card-interactive work-card"
                data-work-id="phi0472.phi001.perseus-lat2"
-               data-reader-url="/v2/work/catullus/carmina"
+               data-reader-url="/work/catullus/carmina"
                data-author="gaius valerius catullus"
                data-title="carmina"
                data-tags="all">
@@ -127,7 +125,7 @@ describe("library SSR & client hydration", () => {
       )!;
 
       expect(caesarCard.getAttribute("href")).toBe(
-        "/v2/work/caesar/de_bello_gallico"
+        "/work/caesar/de_bello_gallico"
       );
       expect(caesarCard.querySelector(".work-card-corner-tag")).toBeNull();
     });
@@ -145,7 +143,7 @@ describe("library SSR & client hydration", () => {
 
       // Caesar card was hydrated with resume target
       expect(caesarCard.getAttribute("href")).toBe(
-        "/v2/work/caesar/de_bello_gallico?jump=1.4#sec-1.4"
+        "/work/caesar/de_bello_gallico?jump=1.4#sec-1.4"
       );
       const cornerTag = caesarCard.querySelector<HTMLElement>(
         ".work-card-corner-tag"
@@ -156,9 +154,7 @@ describe("library SSR & client hydration", () => {
       expect(cornerTag!.querySelector(".badge-resume")).not.toBeNull();
 
       // Catullus has no saved spot and remains clean
-      expect(catullusCard.getAttribute("href")).toBe(
-        "/v2/work/catullus/carmina"
-      );
+      expect(catullusCard.getAttribute("href")).toBe("/work/catullus/carmina");
       expect(catullusCard.querySelector(".work-card-corner-tag")).toBeNull();
     });
 

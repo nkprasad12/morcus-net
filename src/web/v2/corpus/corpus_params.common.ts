@@ -1,12 +1,12 @@
 /**
- * The `/v2/corpus` URL contract, shared by the server (parsing requests,
+ * The `/corpus` URL contract, shared by the server (parsing requests,
  * building pager links) and `<morcus-corpus-view>` (syncing the form after a
  * client-side navigation). See `README.md`, "URL contract".
  */
 
 import type { PageData } from "@/common/library/corpus/corpus_common";
 
-export const CORPUS_PATH = "/v2/corpus";
+export const CORPUS_PATH = "/corpus";
 
 export const PAGE_SIZE = { default: 50, min: 10, max: 100 } as const;
 export const CONTEXT_LEN = { default: 20, min: 1, max: 100 } as const;
@@ -57,10 +57,10 @@ export function readCorpusParams(
 ): CorpusParams {
   return {
     q: (get("q") ?? "").trim(),
-    pageSize: clampInt(get("pageSize"), PAGE_SIZE),
-    contextLen: clampInt(get("contextLen"), CONTEXT_LEN),
-    strictMode: get("strictMode") === "1",
-    cursor: decodeCursor(get("cursor")),
+    pageSize: clampInt(get("pageSize") ?? get("ps"), PAGE_SIZE),
+    contextLen: clampInt(get("contextLen") ?? get("cl"), CONTEXT_LEN),
+    strictMode: (get("strictMode") ?? get("sm")) === "1",
+    cursor: decodeCursor(get("cursor") ?? get("cp")),
   };
 }
 

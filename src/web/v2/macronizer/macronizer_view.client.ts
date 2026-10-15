@@ -231,7 +231,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     if (rawText.trim().length === 0) {
       return;
     }
-    const action = form.getAttribute("action") || "/v2/macronizer";
+    const action = form.getAttribute("action") || "/macronizer";
     const body = new URLSearchParams({ text: rawText }).toString();
 
     await swapSlots(this, action, {

@@ -78,6 +78,24 @@ describe("parseCorpusParams", () => {
   test("strictMode is only on for 1", () => {
     expect(parseCorpusParams({ strictMode: "on" }).strictMode).toBe(false);
   });
+
+  test("accepts legacy V1 short parameter aliases (ps, cl, sm, cp)", () => {
+    expect(
+      parseCorpusParams({
+        q: "amoris",
+        ps: "30",
+        cl: "8",
+        sm: "1",
+        cp: "2-30-4",
+      })
+    ).toEqual({
+      q: "amoris",
+      pageSize: 30,
+      contextLen: 8,
+      strictMode: true,
+      cursor: { resultId: 2, resultIndex: 30, candidateIndex: 4 },
+    });
+  });
 });
 
 describe("cursor", () => {
@@ -104,14 +122,12 @@ describe("corpusUrl", () => {
         cursor: { resultId: 1, resultIndex: 50, candidateIndex: 2 },
       })
     ).toBe(
-      "/v2/corpus?q=%23Caesar+bellum&contextLen=20&pageSize=50&strictMode=1&cursor=1-50-2"
+      "/corpus?q=%23Caesar+bellum&contextLen=20&pageSize=50&strictMode=1&cursor=1-50-2"
     );
   });
 
   test("omits defaults-off flags", () => {
-    expect(corpusUrl(BASE)).toBe(
-      "/v2/corpus?q=amoris&contextLen=20&pageSize=50"
-    );
+    expect(corpusUrl(BASE)).toBe("/corpus?q=amoris&contextLen=20&pageSize=50");
   });
 
   test("round-trips through parseCorpusParams", () => {
@@ -206,7 +222,7 @@ describe("runCorpusSearch", () => {
     const [result] = view.outcome.results;
     expect(result.heading).toBe("De Bello Gallico 1.1 [Caesar]");
     expect(result.href).toMatch(
-      /^\/v2\/work\/caesar\/de_bello_gallico\?matchText=/
+      /^\/work\/caesar\/de_bello_gallico\?matchText=/
     );
     expect(result.snippet).toEqual(fakeMatch().text);
   });

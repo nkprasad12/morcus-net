@@ -14,25 +14,25 @@ Companion docs: [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md) explains how 
 sequenceDiagram
     autonumber
     actor User as Browser / User
-    participant Router as Express (/v2/dicts)
+    participant Router as Express (/dicts)
     participant Fused as FusedDictionary (Server)
     participant Client as Web Components (Client)
 
     alt Initial Load / No-JS Form Submit
-        User->>Router: GET /v2/dicts?q=habeo
+        User->>Router: GET /dicts?q=habeo
         Router->>Fused: getEntry({ query: "habeo", mode: 1 })
         Fused-->>Router: DictsFusedResponse
         Router-->>User: 200 OK (Full SSR HTML document with <details>, app bar)
     else With JS: Live Autocomplete
         User->>Client: Type "hab" into <input name="q">
-        Client->>Router: GET /v2/api/completions?q=hab
+        Client->>Router: GET /api/completions?q=hab
         Router->>Fused: getCompletions("hab")
         Fused-->>Router: string[]
         Router-->>Client: JSON string[]
         Client-->>User: Declarative <morcus-dict-suggestions> dropdown
     else With JS: Form Hijack (AJAX Swap)
         User->>Client: Submit form / select suggestion
-        Client->>Router: GET /v2/dicts?q=habeo&format=partial (X-Requested-With: fetch)
+        Client->>Router: GET /dicts?q=habeo&format=partial (X-Requested-With: fetch)
         Router->>Fused: getEntry({ query: "habeo", mode: 1 })
         Router-->>Client: HTML fragment (<details class="dict-card">...)
         Client->>User: router.pushUrl() & replaceChildren(fragment)

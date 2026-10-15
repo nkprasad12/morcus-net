@@ -485,7 +485,7 @@ function shardKey(prefix: string): string {
 
 /**
  * Lemma completions from per-letter shards
- * (`GET /v2/api/corpus/lemmata/<letter>`, see `corpus_lemmata.server.ts`).
+ * (`GET /api/corpus/lemmata/<letter>`, see `corpus_lemmata.server.ts`).
  * Each shard is fetched once and kept for the life of the page.
  */
 export class LemmaShardCache {
@@ -493,7 +493,7 @@ export class LemmaShardCache {
     fetch: async (key) => {
       try {
         const res = await fetch(
-          withBuildVersion(`/v2/api/corpus/lemmata/${encodeURIComponent(key)}`)
+          withBuildVersion(`/api/corpus/lemmata/${encodeURIComponent(key)}`)
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body: unknown = await res.json();

@@ -35,8 +35,33 @@ function redirectReaderJump(
   const hash = jump && jump !== pageId ? `#sec-${jump}` : "";
   res.redirect(
     302,
-    `/v2/work/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}${hash}`
+    `/work/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}${hash}`
   );
+}
+
+/**
+ * Resolves legacy V1 `?id=` (section/page citation) or `?pg=` (1-based page
+ * index) query parameters when `:page` is omitted from a reader route.
+ */
+function resolveLegacyPageJump(
+  work: V2PreprocessedWork,
+  req: Request,
+  pageId: string | undefined
+): string | undefined {
+  if (pageId) return undefined;
+  const rawId = typeof req.query.id === "string" ? req.query.id.trim() : "";
+  if (rawId) return rawId;
+  const rawPg = typeof req.query.pg === "string" ? req.query.pg.trim() : "";
+  if (!rawPg) return undefined;
+  if (/^\d+$/.test(rawPg) && work.pages.length > 0) {
+    const pgIndex = Math.min(
+      work.pages.length - 1,
+      Math.max(0, Number.parseInt(rawPg, 10) - 1)
+    );
+    const page = work.pages[pgIndex];
+    return Array.isArray(page.id) ? page.id.join(".") : page.id;
+  }
+  return rawPg;
 }
 
 async function sendReaderPassage(
@@ -84,7 +109,7 @@ export function createReaderRoutes(): Router {
   const { getAsync } = createAsyncRegistrars(router);
 
   // TODO(reader-nojs): Zero-JS translation baseline support.
-  // Lazy-loading translation partial endpoint: /v2/work/:author/:name/:page/translation
+  // Lazy-loading translation partial endpoint: /work/:author/:name/:page/translation
   getAsync("/work/:author/:name/:page/translation", async (req, res) => {
     const work = await findReaderWork(req.params.author, req.params.name);
     requestTimer(res).mark("lookupComplete");
@@ -100,7 +125,7 @@ export function createReaderRoutes(): Router {
     res.send(body);
   });
 
-  // Human-readable reader route: /v2/work/:author/:name/:page?
+  // Human-readable reader route: /work/:author/:name/:page?
   getAsync("/work/:author/:name/:page?", async (req, res) => {
     const author = req.params.author;
     const name = req.params.name;
@@ -124,10 +149,13 @@ export function createReaderRoutes(): Router {
       return;
     }
 
-    // A `matchText` link without a page redirects like a jump, so the URL is
-    // canonical and the `#sec-` hash scrolls No-JS readers to the match.
+    // A `matchText` or legacy `?id=` / `?pg=` link without a page redirects
+    // like a jump, so the URL is canonical and `#sec-` scrolls No-JS readers
+    // to the match.
     const jumpTarget =
-      jump || (pageId ? undefined : getFirstHighlightSectionId(matchText));
+      jump ||
+      resolveLegacyPageJump(work, req, pageId) ||
+      (pageId ? undefined : getFirstHighlightSectionId(matchText));
     if (jumpTarget) {
       redirectReaderJump(res, work, jumpTarget, query, matchText);
       return;
@@ -142,6 +170,35 @@ export function createReaderRoutes(): Router {
       logMessage: "Error rendering reader work:",
       errorMessage: "Error rendering reader passage",
     });
+  });
+
+  // Legacy V1 work ID route: /work/:workId (e.g. /work/phi0448.phi001.perseus-lat2?id=1.1.1)
+  getAsync("/work/:workId", async (req, res) => {
+    const workId = req.params.workId;
+    const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const matchText =
+      typeof req.query.matchText === "string" ? req.query.matchText.trim() : "";
+    const jump =
+      typeof req.query.jump === "string" ? req.query.jump.trim() : "";
+
+    const work = await getV2Work(workId);
+    requestTimer(res).mark("lookupComplete");
+
+    if (!work) {
+      res.status(404).send(
+        renderNotFoundPageHtml({
+          workSlug: workId,
+        })
+      );
+      return;
+    }
+
+    const jumpTarget =
+      jump ||
+      resolveLegacyPageJump(work, req, undefined) ||
+      getFirstHighlightSectionId(matchText) ||
+      "";
+    redirectReaderJump(res, work, jumpTarget, query, matchText);
   });
 
   // General reader route: handles jumps, legacy query parameters, and default work
@@ -170,7 +227,7 @@ export function createReaderRoutes(): Router {
     requestTimer(res).mark("lookupComplete");
 
     if (!work) {
-      res.redirect(302, "/v2/library");
+      res.redirect(302, "/library");
       return;
     }
 

@@ -39,7 +39,7 @@ import {
 } from "@/web/v2/testing/fake_macronizer_engine";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -73,7 +73,7 @@ function createTestApp(engine = fakeMacronizerEngine()): express.Express {
   };
   const app = express();
   app.use(
-    "/v2",
+    "/",
     createV2Router(dict as FusedDictionary, {
       macronizer: engine,
     })
@@ -223,16 +223,13 @@ describe("end-to-end acceptance behaviour", () => {
 
   test("a tampered sug=999:9:c or w5=7 is ignored without a 500", async () => {
     const app = createTestApp();
-    const res = await request(app)
-      .post("/v2/macronizer/apply")
-      .type("form")
-      .send({
-        text: CANNED_MACRONIZER_TEXT,
-        sug: "999:9:c,1:99:c",
-        w5: "7",
-        w999: "1",
-        m1: "99",
-      });
+    const res = await request(app).post("/macronizer/apply").type("form").send({
+      text: CANNED_MACRONIZER_TEXT,
+      sug: "999:9:c,1:99:c",
+      w5: "7",
+      w999: "1",
+      m1: "99",
+    });
 
     expect(res.status).toBe(200);
     // `sug` was replaced by the tampered one, whose only in-range word (1)
@@ -250,7 +247,7 @@ describe("end-to-end acceptance behaviour", () => {
     const untaggedEngine = tableTaggerMacronizerEngine({});
     const untaggedApp = createTestApp(untaggedEngine);
     const untaggedRes = await request(untaggedApp)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: "I" });
 
@@ -264,7 +261,7 @@ describe("end-to-end acceptance behaviour", () => {
     });
     const numApp = createTestApp(numEngine);
     const numRes = await request(numApp)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: "I" });
 
@@ -275,19 +272,19 @@ describe("end-to-end acceptance behaviour", () => {
   });
 });
 
-describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
-  test("GET /v2/macronizer serves the landing page", async () => {
+describe("Macronizer routes (/macronizer and /macronizer/apply)", () => {
+  test("GET /macronizer serves the landing page", async () => {
     const app = createTestApp();
-    const res = await request(app).get("/v2/macronizer");
+    const res = await request(app).get("/macronizer");
     expect(res.status).toBe(200);
     expect(res.text).toContain("Latin Macronizer");
-    expect(res.text).toContain('action="/v2/macronizer"');
+    expect(res.text).toContain('action="/macronizer"');
   });
 
-  test("POST /v2/macronizer serves full page or slot partial when X-Requested-With: fetch", async () => {
+  test("POST /macronizer serves full page or slot partial when X-Requested-With: fetch", async () => {
     const app = createTestApp();
     const fullRes = await request(app)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: CANNED_MACRONIZER_TEXT });
     expect(fullRes.status).toBe(200);
@@ -296,7 +293,7 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
     expect(fullRes.text).toContain('id="mac-passage"');
 
     const partialRes = await request(app)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .set("X-Requested-With", "fetch")
       .type("form")
       .send({ text: CANNED_MACRONIZER_TEXT });
@@ -308,10 +305,10 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
     expect(partialRes.text).not.toContain("<html");
   });
 
-  test("POST /v2/macronizer handles empty and >10,000 char inputs with error banners", async () => {
+  test("POST /macronizer handles empty and >10,000 char inputs with error banners", async () => {
     const app = createTestApp();
     const emptyRes = await request(app)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: "   " });
     expect(emptyRes.status).toBe(200);
@@ -320,7 +317,7 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
 
     const longText = "a".repeat(MACRONIZER_MAX_CHARS + 20);
     const longRes = await request(app)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: longText });
     expect(longRes.status).toBe(200);
@@ -328,11 +325,11 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
     expect(longRes.text).toContain("Input is too long");
   });
 
-  test("POST /v2/macronizer handles >1mb body (413) cleanly", async () => {
+  test("POST /macronizer handles >1mb body (413) cleanly", async () => {
     const app = createTestApp();
     const hugeBody = "text=" + "a".repeat(1024 * 1024 + 500);
     const res = await request(app)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .set("Content-Type", "application/x-www-form-urlencoded")
       .send(hugeBody);
     expect(res.status).toBe(200);
@@ -340,10 +337,10 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
     expect(res.text).toContain("Input is too long");
   });
 
-  test("POST /v2/macronizer returns 503 with preserved input when engine is unavailable or rejects", async () => {
+  test("POST /macronizer returns 503 with preserved input when engine is unavailable or rejects", async () => {
     const unavailApp = createTestApp(createMacronizerEngine());
     const res1 = await request(unavailApp)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: "Gallia est omnis" });
     expect(res1.status).toBe(503);
@@ -353,7 +350,7 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
     const throwingApp = createTestApp(throwingMacronizerEngine());
     const errors = expectErrorLogs();
     const res2 = await request(throwingApp)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: "Gallia est omnis" });
     expect(res2.status).toBe(503);
@@ -362,10 +359,10 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
     expect(errors).toHaveBeenCalledWith("Macronize failed:", expect.any(Error));
   });
 
-  test("POST /v2/macronizer/apply works even when the tagger is down (analyzeOnly)", async () => {
+  test("POST /macronizer/apply works even when the tagger is down (analyzeOnly)", async () => {
     const throwingApp = createTestApp(throwingMacronizerEngine());
     const res = await request(throwingApp)
-      .post("/v2/macronizer/apply")
+      .post("/macronizer/apply")
       .type("form")
       .send({
         text: CANNED_MACRONIZER_TEXT,
@@ -376,10 +373,10 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
     expect(res.text).toContain("m\u0101lum");
   });
 
-  test("POST /v2/macronizer/apply works without a tagger and returns 503 if analyzeOnly throws", async () => {
+  test("POST /macronizer/apply works without a tagger and returns 503 if analyzeOnly throws", async () => {
     const unavailApp = createTestApp(createMacronizerEngine());
     const okRes = await request(unavailApp)
-      .post("/v2/macronizer/apply")
+      .post("/macronizer/apply")
       .type("form")
       .send({
         text: "Panthia",
@@ -392,7 +389,7 @@ describe("Macronizer routes (/v2/macronizer and /v2/macronizer/apply)", () => {
     });
     const errors = expectErrorLogs();
     const res = await request(brokenEngineApp)
-      .post("/v2/macronizer/apply")
+      .post("/macronizer/apply")
       .type("form")
       .send({
         text: CANNED_MACRONIZER_TEXT,
@@ -440,7 +437,7 @@ describe("Macronizer No-JS form round-trips", () => {
     );
     const text = "Panthia\r\nPanthia\r\nPanthia";
     const res = await request(app)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text });
     expect(res.status).toBe(200);
@@ -450,7 +447,7 @@ describe("Macronizer No-JS form round-trips", () => {
     }
 
     const applied = await request(app)
-      .post("/v2/macronizer/apply")
+      .post("/macronizer/apply")
       .set("Content-Type", "application/x-www-form-urlencoded")
       .send(applyFormBody(res.text));
     expect(applied.status).toBe(200);
@@ -465,7 +462,7 @@ describe("Macronizer No-JS form round-trips", () => {
       tableTaggerMacronizerEngine({ Panthia: PANTHIA_ABL })
     );
     const res = await request(app)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: "Pan\u00ADthia" });
     expect(res.status).toBe(200);
@@ -474,7 +471,7 @@ describe("Macronizer No-JS form round-trips", () => {
     expect(res.text).toMatch(/name="m0" value="6" form="mac-apply" checked/);
 
     const applied = await request(app)
-      .post("/v2/macronizer/apply")
+      .post("/macronizer/apply")
       .set("Content-Type", "application/x-www-form-urlencoded")
       .send(applyFormBody(res.text));
     expect(applied.status).toBe(200);
@@ -485,7 +482,7 @@ describe("Macronizer No-JS form round-trips", () => {
   test("unknown words keep their typed macrons and soft hyphens don't break the lookup", async () => {
     const app = createTestApp(tableTaggerMacronizerEngine({}));
     const res = await request(app)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: "\u014Ctho\u0304 Brun\u00ADdisium" });
     expect(res.status).toBe(200);
@@ -498,7 +495,7 @@ describe("Macronizer No-JS form round-trips", () => {
   test("the copybox isn't posted with Apply", async () => {
     const app = createTestApp();
     const res = await request(app)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: CANNED_MACRONIZER_TEXT });
     expect(res.text).toContain('id="mac-plain-out"');
@@ -517,7 +514,7 @@ describe("Macronizer No-JS form round-trips", () => {
     }
     const app = createTestApp();
     const res = await request(app)
-      .post("/v2/macronizer/apply")
+      .post("/macronizer/apply")
       .set("Content-Type", "application/x-www-form-urlencoded")
       .send(fields.toString());
     expect(res.status).toBe(200);
@@ -532,7 +529,7 @@ describe("Macronizer No-JS form round-trips", () => {
     }
     const app = createTestApp();
     const res = await request(app)
-      .post("/v2/macronizer/apply")
+      .post("/macronizer/apply")
       .set("Content-Type", "application/x-www-form-urlencoded")
       .send(fields.toString());
     expect(res.status).toBe(200);
@@ -544,7 +541,7 @@ describe("Macronizer No-JS form round-trips", () => {
 
 describe("Macronizer page chrome", () => {
   test("no app-bar entry is highlighted", async () => {
-    const res = await request(createTestApp()).get("/v2/macronizer");
+    const res = await request(createTestApp()).get("/macronizer");
     expect(res.text).not.toContain('aria-current="page"');
   });
 
@@ -553,14 +550,14 @@ describe("Macronizer page chrome", () => {
       createMacronizerEngine(createTableTagger({}), { simulated: true })
     );
     const simulated = await request(simulatedApp)
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: "Gallia" });
     expect(simulated.text).toContain("data-simulated");
     expect(simulated.text).toContain("Suggestions are simulated");
 
     const real = await request(createTestApp())
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .type("form")
       .send({ text: CANNED_MACRONIZER_TEXT });
     expect(real.text).not.toContain("data-simulated");
@@ -569,7 +566,7 @@ describe("Macronizer page chrome", () => {
   test("fetch requests get the error view as a partial, keeping the status", async () => {
     const errors = expectErrorLogs();
     const res = await request(createTestApp(throwingMacronizerEngine()))
-      .post("/v2/macronizer")
+      .post("/macronizer")
       .set("X-Requested-With", "fetch")
       .type("form")
       .send({ text: "Gallia est omnis" });

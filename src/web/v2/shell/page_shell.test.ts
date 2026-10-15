@@ -11,7 +11,7 @@ import {
 import { THEME_COLOR } from "@/web/v2/shell/theme_color.common";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "/* critical css */",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -32,10 +32,10 @@ describe("renderAppBar", () => {
       expect(mobileDropdown).not.toBeNull();
 
       for (const p of pages) {
-        const desktopLink = navDesktop!.querySelector(`a[href="/v2/${p}"]`);
+        const desktopLink = navDesktop!.querySelector(`a[href="/${p}"]`);
         expect(desktopLink).not.toBeNull();
 
-        const mobileLink = mobileDropdown!.querySelector(`a[href="/v2/${p}"]`);
+        const mobileLink = mobileDropdown!.querySelector(`a[href="/${p}"]`);
         expect(mobileLink).not.toBeNull();
 
         if (p === activePage) {
@@ -67,10 +67,10 @@ describe("renderPageShell", () => {
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("<title>Corpus Search</title>");
     expect(html).toContain("<div id='content'>Content</div>");
-    expect(html).toContain('href="/v2/corpus"');
+    expect(html).toContain('href="/corpus"');
     expect(html).toContain('class="nav-link active"');
-    expect(html).toContain('src="/v2/assets/common.js"');
-    expect(html).toContain('src="/v2/assets/corpus.js"');
+    expect(html).toContain('src="/assets/common.js"');
+    expect(html).toContain('src="/assets/corpus.js"');
   });
 
   test("hides app bar when hideAppBar is true", () => {
@@ -83,8 +83,8 @@ describe("renderPageShell", () => {
 
     expect(html).not.toContain('<header class="app-bar">');
     expect(html).toContain("body-embedded");
-    expect(html).toContain('src="/v2/assets/common.js"');
-    expect(html).toContain('src="/v2/assets/dict.js"');
+    expect(html).toContain('src="/assets/common.js"');
+    expect(html).toContain('src="/assets/dict.js"');
   });
 
   describe("build version", () => {
@@ -123,7 +123,7 @@ describe("renderPageShell", () => {
         hideAppBar,
       }).split("</head>")[0];
 
-    const topLevel = head(false, "/v2/dicts?q=Gallia&o=1");
+    const topLevel = head(false, "/dicts?q=Gallia&o=1");
     expect(topLevel).toContain(
       '<link rel="manifest" href="/public/pwa.webmanifest">'
     );
@@ -131,10 +131,10 @@ describe("renderPageShell", () => {
       `<meta name="theme-color" content="${THEME_COLOR.light}">`
     );
     expect(topLevel).toContain(
-      '<link rel="canonical" href="https://morcus.net/v2/dicts?q=Gallia&amp;o=1">'
+      '<link rel="canonical" href="https://morcus.net/dicts?q=Gallia&amp;o=1">'
     );
     expect(topLevel).toContain(
-      '<meta property="og:url" content="https://morcus.net/v2/dicts?q=Gallia&amp;o=1">'
+      '<meta property="og:url" content="https://morcus.net/dicts?q=Gallia&amp;o=1">'
     );
     expect(topLevel).toContain(
       '<meta property="og:site_name" content="Morcus Latin Tools">'
@@ -152,7 +152,7 @@ describe("renderPageShell", () => {
     expect(noCanonical).not.toContain('property="og:url"');
     expect(noCanonical).toContain('property="og:title"');
 
-    const embedded = head(true, "/v2/dicts?q=Gallia");
+    const embedded = head(true, "/dicts?q=Gallia");
     expect(embedded).not.toContain('rel="manifest"');
     expect(embedded).not.toContain('name="theme-color"');
     expect(embedded).not.toContain('rel="canonical"');
@@ -184,7 +184,7 @@ describe("renderPageShell", () => {
       contentHtml: "<div>Reader</div>",
     });
     expect(readerHtml).toContain(
-      '<link rel="prefetch" href="/v2/assets/dict.js">'
+      '<link rel="prefetch" href="/assets/dict.js">'
     );
   });
 

@@ -456,7 +456,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
     <morcus-dict-search>
       ${renderDictSearchBar({
         query: options.isIdSearch ? "" : options.query,
-        action: "/v2/dicts",
+        action: "/dicts",
         activeDicts: options.queriedDicts,
         isInflected: isInflected,
         // Both forms keep the view's frame. `lang` isn't part of it: only the settings form
@@ -477,10 +477,10 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   `;
 
   const canonicalPath = options.isIdSearch
-    ? `/v2/dicts/id/${encodeURIComponent(query)}`
+    ? `/dicts/id/${encodeURIComponent(query)}`
     : query
-    ? `/v2/dicts?${new URLSearchParams({ q: query }).toString()}`
-    : "/v2/dicts";
+    ? `/dicts?${new URLSearchParams({ q: query }).toString()}`
+    : "/dicts";
 
   return renderPageShell({
     title: dictPageTitle(query, options.isIdSearch),

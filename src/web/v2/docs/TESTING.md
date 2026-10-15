@@ -9,7 +9,7 @@ Before writing a new test, read the [testing traps](DESIGN_TRAPS.md#testing): va
 ## 1. Test Locations
 
 - **E2E Tests (Playwright)**: `src/integration/suites/browser_v2_e2e.test.ts`
-- **Late-hydration E2E (Playwright)**: `src/integration/suites/browser_v2_late_hydration.test.ts` — holds back the `/v2/assets/*.js` chunks, interacts in the pre-hydration window, then checks the upgrade adopts the state and the JS gate / pre-paint snapshot prevent flashes and layout shifts. A "chunk ordering: intermediate state" block uses `openStaged` to release `common.js` before the route chunk and interacts in between. Also run by `./morcus.sh e2e --v2`.
+- **Late-hydration E2E (Playwright)**: `src/integration/suites/browser_v2_late_hydration.test.ts` — holds back the `/assets/*.js` chunks, interacts in the pre-hydration window, then checks the upgrade adopts the state and the JS gate / pre-paint snapshot prevent flashes and layout shifts. A "chunk ordering: intermediate state" block uses `openStaged` to release `common.js` before the route chunk and interacts in between. Also run by `./morcus.sh e2e --v2`.
 - **Unit Tests (Jest)**: Colocated alongside source modules matching `src/web/v2/**/*.test.ts` (run via `npm run ts-tests:v2`). Tests cover SSR renderers, routing, bitmask/clustering logic, custom elements, and core utilities across each vertical slice (`about/`, `core/`, `dialog/`, `dict/`, `reader/`, `shell/`, and `v2_router.test.ts`).
 
 ### Pre-hydration (PH) bug index

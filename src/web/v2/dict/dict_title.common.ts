@@ -6,10 +6,10 @@
 
 import { trimRawQuery } from "@/common/text_cleaning";
 
-const DICT_ID_PATH = "/v2/dicts/id/";
+const DICT_ID_PATH = "/dicts/id/";
 
 /**
- * `isIdSearch`: the page is `/v2/dicts/id/:id`, and `query` is that id.
+ * `isIdSearch`: the page is `/dicts/id/:id`, and `query` is that id.
  */
 export function dictPageTitle(query: string, isIdSearch = false): string {
   if (!query) return "Morcus Dictionary";
@@ -17,7 +17,7 @@ export function dictPageTitle(query: string, isIdSearch = false): string {
 }
 
 /**
- * The title the server renders for `url`: the id for `/v2/dicts/id/:id`
+ * The title the server renders for `url`: the id for `/dicts/id/:id`
  * (which ignores `q`), otherwise `q` cleaned as `dict_routes.server.ts` does.
  */
 export function dictPageTitleForUrl(url: URL): string {

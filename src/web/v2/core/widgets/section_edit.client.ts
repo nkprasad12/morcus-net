@@ -10,7 +10,7 @@ import { showToast } from "@/web/v2/core/widgets/toast.client";
 export interface SectionActionOptions {
   /** The clicked `a.section-anchor` element. */
   anchor: HTMLAnchorElement;
-  /** Section or sense identifier sent to `/v2/api/report` (e.g. `"1.1"` or `"n20077.1"`). */
+  /** Section or sense identifier sent to `/api/report` (e.g. `"1.1"` or `"n20077.1"`). */
   sectionId: string;
   /** Human-readable label shown in the editor header (e.g. `"§ 1.1"` or `"sense I."`). */
   label: string;
@@ -354,7 +354,7 @@ export function startSectionEdit(options: SectionActionOptions): void {
 
     setBusy(true);
     try {
-      const res = await fetch("/v2/api/report", {
+      const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

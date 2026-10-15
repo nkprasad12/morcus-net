@@ -4,7 +4,7 @@ import {
 } from "@/web/v2/library/not_found.server";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -20,7 +20,7 @@ describe("library not_found SSR", () => {
       expect(html).toContain(
         "Could not locate the requested resource in the library catalog."
       );
-      expect(html).toContain('href="/v2/library"');
+      expect(html).toContain('href="/library"');
       expect(html).toContain("btn btn-primary");
       expect(html).toContain("Browse Full Library");
       // Must not contain any inline styles
@@ -89,7 +89,7 @@ describe("library not_found SSR", () => {
         "<title>Work Not Found - Morcus Latin Tools</title>"
       );
       expect(pageHtml).toContain('<header class="app-bar">');
-      expect(pageHtml).toContain('href="/v2/library"');
+      expect(pageHtml).toContain('href="/library"');
       expect(pageHtml).toContain('class="nav-link active"');
       expect(pageHtml).toContain('aria-current="page"');
       expect(pageHtml).toContain("not-found-state");

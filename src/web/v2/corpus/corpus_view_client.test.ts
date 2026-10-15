@@ -98,7 +98,7 @@ describe("<morcus-corpus-view>", () => {
   });
 
   test("a submit swaps the slots and pushes the URL", async () => {
-    await mount("/v2/corpus");
+    await mount("/corpus");
     const fetchMock = serveSlots();
     const settings = document.querySelector<HTMLDetailsElement>(
       "details.corpus-settings"
@@ -112,8 +112,7 @@ describe("<morcus-corpus-view>", () => {
     document.querySelector("form.corpus-form")?.dispatchEvent(submit);
     await settle();
 
-    const expected =
-      "/v2/corpus?q=omnis&contextLen=20&pageSize=50&strictMode=1";
+    const expected = "/corpus?q=omnis&contextLen=20&pageSize=50&strictMode=1";
     expect(submit.defaultPrevented).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(expected, expect.anything());
     expect(currentPath()).toBe(expected);
@@ -128,7 +127,7 @@ describe("<morcus-corpus-view>", () => {
   });
 
   test("resubmitting the same query doesn't add a history entry", async () => {
-    await mount("/v2/corpus?q=omnis&contextLen=20&pageSize=50");
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
     serveSlots();
     const historyLength = window.history.length;
 
@@ -141,7 +140,7 @@ describe("<morcus-corpus-view>", () => {
   });
 
   test("the Next link swaps in the next page and scrolls to the results", async () => {
-    await mount("/v2/corpus?q=omnis&contextLen=20&pageSize=50");
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
     const fetchMock = serveSlots();
     const scrolled: Element[] = [];
     Element.prototype.scrollIntoView = function (this: Element) {
@@ -153,8 +152,7 @@ describe("<morcus-corpus-view>", () => {
     const event = click(next);
     await settle();
 
-    const expected =
-      "/v2/corpus?q=omnis&contextLen=20&pageSize=50&cursor=1-50-0";
+    const expected = "/corpus?q=omnis&contextLen=20&pageSize=50&cursor=1-50-0";
     expect(event.defaultPrevented).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(expected, expect.anything());
     expect(currentPath()).toBe(expected);
@@ -169,7 +167,7 @@ describe("<morcus-corpus-view>", () => {
   });
 
   test("a newer navigation supersedes an older one", async () => {
-    await mount("/v2/corpus");
+    await mount("/corpus");
     const pending: Array<() => void> = [];
     window.fetch = jest
       .fn()
@@ -199,11 +197,11 @@ describe("<morcus-corpus-view>", () => {
     expect(document.querySelector(".corpus-query-echo")?.textContent).toBe(
       "second"
     );
-    expect(currentPath()).toBe("/v2/corpus?q=second&contextLen=20&pageSize=50");
+    expect(currentPath()).toBe("/corpus?q=second&contextLen=20&pageSize=50");
   });
 
   test("modified clicks are left to the browser", async () => {
-    await mount("/v2/corpus?q=omnis&contextLen=20&pageSize=50");
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
     const fetchMock = serveSlots();
     // jsdom logs that it can't follow the link natively.
     const consoleError = jest
@@ -221,7 +219,7 @@ describe("<morcus-corpus-view>", () => {
   });
 
   test("a help example link runs the example and fills the form", async () => {
-    await mount("/v2/corpus?q=omnis&contextLen=7&pageSize=50");
+    await mount("/corpus?q=omnis&contextLen=7&pageSize=50");
     serveSlots();
 
     const example = document.querySelector<HTMLAnchorElement>(
@@ -238,10 +236,10 @@ describe("<morcus-corpus-view>", () => {
   });
 
   test("back/forward re-swaps and resyncs the form", async () => {
-    await mount("/v2/corpus?q=omnis&contextLen=20&pageSize=50");
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
     const fetchMock = serveSlots();
 
-    const target = "/v2/corpus?q=amoris&contextLen=5&pageSize=10&strictMode=1";
+    const target = "/corpus?q=amoris&contextLen=5&pageSize=10&strictMode=1";
     window.history.pushState(null, "", target);
     window.dispatchEvent(new PopStateEvent("popstate"));
     await settle();
@@ -256,15 +254,15 @@ describe("<morcus-corpus-view>", () => {
   });
 
   test("the title reads q the way the server does, trimmed", async () => {
-    await mount("/v2/corpus?q=omnis&contextLen=20&pageSize=50");
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
     serveSlots();
 
-    window.history.pushState(null, "", "/v2/corpus?q=++amoris+");
+    window.history.pushState(null, "", "/corpus?q=++amoris+");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await settle();
     expect(document.title).toBe("Corpus: amoris - Morcus Latin Tools");
 
-    window.history.pushState(null, "", "/v2/corpus?q=+++");
+    window.history.pushState(null, "", "/corpus?q=+++");
     window.dispatchEvent(new PopStateEvent("popstate"));
     await settle();
     expect(document.title).toBe("Corpus Query - Morcus Latin Tools");

@@ -4,7 +4,7 @@ import {
 } from "@/web/v2/about/about.server";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -43,10 +43,10 @@ describe("about_ssr", () => {
     expect(pageHtml).toContain("<!DOCTYPE html>");
     expect(pageHtml).toContain("<title>About - Morcus Latin Tools</title>");
     expect(pageHtml).toContain('<header class="app-bar">');
-    expect(pageHtml).toContain('href="/v2/about"');
+    expect(pageHtml).toContain('href="/about"');
     expect(pageHtml).toContain('class="nav-link active"');
     expect(pageHtml).toContain('aria-current="page"');
-    expect(pageHtml).toContain('href="/v2/dicts"');
+    expect(pageHtml).toContain('href="/dicts"');
     expect(pageHtml.indexOf('<nav class="nav"')).toBeLessThan(
       pageHtml.indexOf("morcus-theme-toggle")
     );

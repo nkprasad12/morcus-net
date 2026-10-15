@@ -16,7 +16,7 @@ import {
 import { serializePostForm } from "@/web/v2/testing/form_roundtrip";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -36,7 +36,7 @@ describe("Macronizer form round-trip conformance", () => {
     };
     app = express();
     app.use(
-      "/v2",
+      "/",
       createV2Router(dict as FusedDictionary, {
         macronizer: fakeMacronizerEngine(),
       })
@@ -44,7 +44,7 @@ describe("Macronizer form round-trip conformance", () => {
   });
 
   test("Macronize form and Apply form round-trip radio choices and manual vowel edits across submissions", async () => {
-    const landing = await request(app).get("/v2/macronizer");
+    const landing = await request(app).get("/macronizer");
     expect(landing.status).toBe(200);
     document.body.innerHTML = landing.text;
 
@@ -58,7 +58,7 @@ describe("Macronizer form round-trip conformance", () => {
     expect(inputForm.checkValidity()).toBe(true);
 
     const post1 = serializePostForm(inputForm);
-    expect(post1.action).toBe("/v2/macronizer");
+    expect(post1.action).toBe("/macronizer");
 
     const results = await request(app)
       .post(post1.action)
@@ -85,7 +85,7 @@ describe("Macronizer form round-trip conformance", () => {
     expect(applyForm).not.toBeNull();
 
     const post2 = serializePostForm(applyForm);
-    expect(post2.action).toBe("/v2/macronizer/apply");
+    expect(post2.action).toBe("/macronizer/apply");
 
     const applied = await request(app)
       .post(post2.action)

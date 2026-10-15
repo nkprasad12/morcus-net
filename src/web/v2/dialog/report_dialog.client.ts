@@ -125,7 +125,7 @@ export class MorcusReportDialog extends BaseElement {
       // Deliberately not cancellable. This is a mutation, not a read: once the
       // user has hit submit we want the report to land even if the dialog is
       // dismissed or the element goes away.
-      const response = await fetch("/v2/api/report", {
+      const response = await fetch("/api/report", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

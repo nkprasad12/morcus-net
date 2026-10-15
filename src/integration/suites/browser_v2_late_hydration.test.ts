@@ -18,8 +18,8 @@
 
 import { test, expect, type Page } from "@playwright/test";
 
-const V2_SCRIPTS = /\/v2\/assets\/[^?]*\.js(\?|$)/;
-const READER = "/v2/work/caesar/de_bello_gallico/1.1";
+const V2_SCRIPTS = /\/assets\/[^?]*\.js(\?|$)/;
+const READER = "/work/caesar/de_bello_gallico/1.1";
 
 /**
  * Holds every V2 asset script until the returned function is called, then
@@ -47,7 +47,7 @@ async function openBeforeHydration(
   return release;
 }
 
-const COMMON_SCRIPT = /\/v2\/assets\/common(\.[^/?]*)?\.js(\?|$)/;
+const COMMON_SCRIPT = /\/assets\/common(\.[^/?]*)?\.js(\?|$)/;
 
 interface StagedPage {
   /**
@@ -171,7 +171,7 @@ test.describe("UI V2 late hydration", () => {
   }) => {
     const release = await openBeforeHydration(
       page,
-      "/v2/dicts?q=habeo",
+      "/dicts?q=habeo",
       // After the settings dialog in the markup (the host itself is `display: contents`).
       ".dict-card"
     );
@@ -200,12 +200,12 @@ test.describe("UI V2 late hydration", () => {
   });
 
   const PAGES = [
-    { name: "dictionary", url: "/v2/dicts?q=habeo", ready: ".dict-card" },
-    { name: "library", url: "/v2/library", ready: ".work-card" },
+    { name: "dictionary", url: "/dicts?q=habeo", ready: ".dict-card" },
+    { name: "library", url: "/library", ready: ".work-card" },
     { name: "reader", url: READER, ready: ".reader-passage" },
     {
       name: "External Reader",
-      url: "/v2/externalReader",
+      url: "/externalReader",
       ready: ".external-import-card",
     },
   ];
@@ -239,7 +239,7 @@ test.describe("UI V2 late hydration", () => {
     page,
   }) => {
     await page.route(V2_SCRIPTS, (route) => route.abort());
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     await expect(page.locator("html")).toHaveAttribute("data-js-failed", "");
 
     expect((await jsOnlyVisibility(page)).rendered).toBe(0);
@@ -257,7 +257,7 @@ test.describe("UI V2 late hydration", () => {
   }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
-    for (const url of ["/v2/dicts?q=habeo", READER]) {
+    for (const url of ["/dicts?q=habeo", READER]) {
       await page.goto(url);
       const displays = await page
         .locator("[data-js-only]")
@@ -266,7 +266,7 @@ test.describe("UI V2 late hydration", () => {
       expect(displays.every((display) => display === "none")).toBe(true);
     }
 
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     const dialog = page.locator("dialog#dict-settings");
     await page.locator("#dict-settings-btn").click();
     await expect(dialog).toBeVisible();
@@ -280,7 +280,7 @@ test.describe("UI V2 late hydration", () => {
   }) => {
     const release = await openBeforeHydration(
       page,
-      "/v2/dicts?q=habeo",
+      "/dicts?q=habeo",
       // After the settings dialog in the markup (the host itself is `display: contents`).
       ".dict-card"
     );
@@ -318,7 +318,7 @@ test.describe("UI V2 late hydration", () => {
     await expect(dialog).toBeHidden();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
     await page.unrouteAll({ behavior: "ignoreErrors" });
-    await page.goto("/v2/dicts?q=habeo");
+    await page.goto("/dicts?q=habeo");
     await expectUpgraded(page, "morcus-dict-settings");
     for (const value of toUncheck) {
       await expect(
@@ -332,7 +332,7 @@ test.describe("UI V2 late hydration", () => {
   }) => {
     const release = await openBeforeHydration(
       page,
-      "/v2/dicts",
+      "/dicts",
       'input[name="q"]'
     );
     const input = page.locator('input[name="q"]');
@@ -356,7 +356,7 @@ test.describe("UI V2 late hydration", () => {
     });
     const release = await openBeforeHydration(
       page,
-      "/v2/dicts",
+      "/dicts",
       ".landing-container"
     );
     await page.evaluate(() =>
@@ -595,7 +595,7 @@ test.describe("UI V2 chunk ordering: intermediate state", () => {
   }) => {
     const staged = await openStaged(
       page,
-      "/v2/dicts?q=habeo",
+      "/dicts?q=habeo",
       ".dict-card",
       "morcus-dict-search"
     );
@@ -618,7 +618,7 @@ test.describe("UI V2 chunk ordering: intermediate state", () => {
       (page.viewportSize()?.width ?? 1280) <= 640,
       "The dictionary iframe is collapsed on mobile"
     );
-    const frameUrl = /\/v2\/dicts\?.*embedded=1/;
+    const frameUrl = /\/dicts\?.*embedded=1/;
     const staged = await openStaged(
       page,
       `${READER}?q=habeo`,

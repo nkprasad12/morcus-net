@@ -16,7 +16,7 @@ import {
 import { serializeGetForm } from "@/web/v2/testing/form_roundtrip";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
-  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2AssetHref: (name: string) => `/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--bg)}",
   getV2CriticalJs: () => "/* critical js */",
 }));
@@ -36,7 +36,7 @@ describe("External reader form round-trip conformance", () => {
     };
     app = express();
     app.use(
-      "/v2",
+      "/",
       createV2Router(dict as FusedDictionary, {
         corpus: fakeCorpusEngine(() =>
           fakeResult({
@@ -49,7 +49,7 @@ describe("External reader form round-trip conformance", () => {
   });
 
   test("External Reader No-JS form submits URL and line mode cleanly without paste fields blocking validity", async () => {
-    const res = await request(app).get("/v2/externalReader");
+    const res = await request(app).get("/externalReader");
     expect(res.status).toBe(200);
     document.body.innerHTML = res.text;
 
@@ -75,7 +75,7 @@ describe("External reader form round-trip conformance", () => {
 
     const serialized = serializeGetForm(form);
     expect(serialized).toBe(
-      "/v2/externalReader?url=thelatinlibrary.com%2Fcicero%2Fcat1.shtml&lines=verse"
+      "/externalReader?url=thelatinlibrary.com%2Fcicero%2Fcat1.shtml&lines=verse"
     );
   });
 });

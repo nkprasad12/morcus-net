@@ -77,7 +77,7 @@ jest.mock("@/web/v2/shell/asset_manifest.server", () => {
   const actual = jest.requireActual("@/web/v2/shell/asset_manifest.server");
   return {
     ...actual,
-    getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+    getV2AssetHref: (name: string) => `/assets/${name}`,
     getV2CriticalCss: () => "body{background-color:var(--bg)}",
     getV2CriticalJs: () => "/* critical js */",
   };
@@ -251,7 +251,7 @@ function extractEmittedScriptChunks(doc: Document): {
   );
   const chunks = scripts.map((s) => {
     const src = s.getAttribute("src") ?? "";
-    const match = src.match(/^\/v2\/assets\/([a-z]+\.js)$/);
+    const match = src.match(/^\/assets\/([a-z]+\.js)$/);
     if (!match) {
       throw new Error(`Unexpected module script src: ${src}`);
     }
@@ -422,20 +422,20 @@ describe("Route-to-Bundle Conformance Harness", () => {
       <morcus-a><label for="b-in">bad</label><button form="f">bad</button></morcus-a>
       <morcus-b><input id="b-in"><form id="f"></form></morcus-b>
       <a href="#x">ok</a>
-      <a href="/v2/dicts?q=amo#x">bad</a>
-      <a href="/v2/dicts?q=other#x">ok</a>
-      <a href="https://example.com/v2/dicts?q=amo#x">ok</a>
+      <a href="/dicts?q=amo#x">bad</a>
+      <a href="/dicts?q=other#x">ok</a>
+      <a href="https://example.com/dicts?q=amo#x">ok</a>
     `);
     expect(crossOwnerIdRefs(doc)).toHaveLength(2);
-    expect(samePageUrlHashLinks(doc, "/v2/dicts?q=amo")).toEqual([
-      "/v2/dicts?q=amo#x",
+    expect(samePageUrlHashLinks(doc, "/dicts?q=amo")).toEqual([
+      "/dicts?q=amo#x",
     ]);
     // A partial is shown at the URL the client pushes, so a link that is
     // in-page only there is flagged against that URL, not the parent page's.
-    const partial = parseDocument(`<a href="/v2/dicts?q=amo&d=an&o=1#x">x</a>`);
-    expect(samePageUrlHashLinks(partial, "/v2/dicts")).toEqual([]);
-    expect(samePageUrlHashLinks(partial, "/v2/dicts?q=amo&d=an&o=1")).toEqual([
-      "/v2/dicts?q=amo&d=an&o=1#x",
+    const partial = parseDocument(`<a href="/dicts?q=amo&d=an&o=1#x">x</a>`);
+    expect(samePageUrlHashLinks(partial, "/dicts")).toEqual([]);
+    expect(samePageUrlHashLinks(partial, "/dicts?q=amo&d=an&o=1")).toEqual([
+      "/dicts?q=amo&d=an&o=1#x",
     ]);
   });
   const entryGraph = extractEntryGraph();
@@ -508,8 +508,8 @@ describe("Route-to-Bundle Conformance Harness", () => {
 
     const fixtures: RouteFixture[] = [
       {
-        name: "/v2/dicts (landing + results partial)",
-        url: "/v2/dicts",
+        name: "/dicts (landing + results partial)",
+        url: "/dicts",
         fullHtml: renderDictPageHtml({ query: "" }),
         partialHtmls: [
           {
@@ -535,8 +535,8 @@ describe("Route-to-Bundle Conformance Harness", () => {
         ],
       },
       {
-        name: "/v2/dicts?q=amo (SSR results with .lsHover, Greek Logeion deferred iframe, and TOC)",
-        url: "/v2/dicts?q=amo",
+        name: "/dicts?q=amo (SSR results with .lsHover, Greek Logeion deferred iframe, and TOC)",
+        url: "/dicts?q=amo",
         fullHtml: renderDictPageHtml({
           query: "amo",
           queriedDicts: ["L&S", "S&H"],
@@ -544,8 +544,8 @@ describe("Route-to-Bundle Conformance Harness", () => {
         }),
       },
       {
-        name: "/v2/dicts?embedded=1 (reader dictionary iframe)",
-        url: "/v2/dicts?q=amo&embedded=1",
+        name: "/dicts?embedded=1 (reader dictionary iframe)",
+        url: "/dicts?q=amo&embedded=1",
         fullHtml: renderDictPageHtml({
           query: "amo",
           embedded: true,
@@ -554,13 +554,13 @@ describe("Route-to-Bundle Conformance Harness", () => {
         }),
       },
       {
-        name: "/v2/library (catalog)",
-        url: "/v2/library",
+        name: "/library (catalog)",
+        url: "/library",
         fullHtml: await renderLibraryPageHtml(),
       },
       {
-        name: "/v2/work/caesar/de_bello_gallico (single + page-turn slot partials)",
-        url: "/v2/work/caesar/de_bello_gallico?q=Gallia",
+        name: "/work/caesar/de_bello_gallico (single + page-turn slot partials)",
+        url: "/work/caesar/de_bello_gallico?q=Gallia",
         fullHtml: await renderReaderPageHtml({
           workId: "caesar_de_bello_gallico",
           query: "Gallia",
@@ -577,17 +577,17 @@ describe("Route-to-Bundle Conformance Harness", () => {
         expectDictPrefetch: true,
       },
       {
-        name: "/v2/work/unknown (404 work not found)",
-        url: "/v2/work/unknown_work",
+        name: "/work/unknown (404 work not found)",
+        url: "/work/unknown_work",
         fullHtml: renderNotFoundPageHtml({ workSlug: "unknown_work" }),
       },
       {
-        name: "/v2/externalReader (landing form — must include reader.js for ?local= and MorcusReaderView)",
-        url: "/v2/externalReader",
+        name: "/externalReader (landing form — must include reader.js for ?local= and MorcusReaderView)",
+        url: "/externalReader",
         fullHtml: renderExternalLandingPageHtml(),
       },
       {
-        name: "/v2/externalReader?url=... (imported URL reading view)",
+        name: "/externalReader?url=... (imported URL reading view)",
         url: buildExternalReaderUrl({
           url: "https://thelatinlibrary.com/cicero/cat1.shtml",
         }),
@@ -600,7 +600,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
         expectDictPrefetch: true,
       },
       {
-        name: "/v2/externalReader?local=... (saved local text reading view)",
+        name: "/externalReader?local=... (saved local text reading view)",
         url: buildExternalReaderUrl({ local: "local-123" }),
         fullHtml: renderExternalLocalPageHtml({
           localKey: "local-123",
@@ -610,8 +610,8 @@ describe("Route-to-Bundle Conformance Harness", () => {
         expectDictPrefetch: true,
       },
       {
-        name: "/v2/corpus (landing + search results + slot partials)",
-        url: "/v2/corpus",
+        name: "/corpus (landing + search results + slot partials)",
+        url: "/corpus",
         fullHtml: renderCorpusPageHtml(corpusLandingView),
         partialHtmls: [
           {
@@ -627,18 +627,18 @@ describe("Route-to-Bundle Conformance Harness", () => {
         ],
       },
       {
-        name: "/v2/corpus (503 unavailable)",
-        url: "/v2/corpus?q=amo",
+        name: "/corpus (503 unavailable)",
+        url: "/corpus?q=amo",
         fullHtml: renderCorpusUnavailableHtml("amo"),
       },
       {
-        name: "/v2/macronizer (landing + results + slot partials)",
-        url: "/v2/macronizer",
+        name: "/macronizer (landing + results + slot partials)",
+        url: "/macronizer",
         fullHtml: renderMacronizerPage(),
         partialHtmls: [
           {
             label: "macronizer results full page",
-            url: "/v2/macronizer",
+            url: "/macronizer",
             html: renderMacronizerPage({
               inputText: CANNED_MACRONIZER_TEXT,
               document: resolveInitialResult(CANNED_MACRONIZER_RESULT),
@@ -646,7 +646,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
           },
           {
             label: "renderMacronizerPartial",
-            url: "/v2/macronizer",
+            url: "/macronizer",
             html: renderMacronizerPartial({
               inputText: CANNED_MACRONIZER_TEXT,
               document: resolveInitialResult(CANNED_MACRONIZER_RESULT),
@@ -655,8 +655,8 @@ describe("Route-to-Bundle Conformance Harness", () => {
         ],
       },
       {
-        name: "/v2/about",
-        url: "/v2/about",
+        name: "/about",
+        url: "/about",
         fullHtml: renderAboutPageHtml(),
       },
     ];
@@ -693,9 +693,9 @@ describe("Route-to-Bundle Conformance Harness", () => {
         }
       }
 
-      // 3. Verify reader routes emit <link rel="prefetch" href="/v2/assets/dict.js">
+      // 3. Verify reader routes emit <link rel="prefetch" href="/assets/dict.js">
       const prefetchLink = doc.querySelector(
-        'head link[rel="prefetch"][href="/v2/assets/dict.js"]'
+        'head link[rel="prefetch"][href="/assets/dict.js"]'
       );
       if (fixture.expectDictPrefetch) {
         expect(prefetchLink).not.toBeNull();

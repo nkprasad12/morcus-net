@@ -27,7 +27,7 @@ interface Mounted {
 /** Builds the whole search bar (trigger in the search form, dialog after it), detached. */
 function build(options: BarOptions = {}): HTMLDivElement {
   const wrapper = document.createElement("div");
-  wrapper.innerHTML = renderDictSearchBar({ action: "/v2/dicts", ...options });
+  wrapper.innerHTML = renderDictSearchBar({ action: "/dicts", ...options });
   return wrapper;
 }
 
@@ -224,7 +224,7 @@ describe("MorcusDictSettings", () => {
   test("adopts the server-rendered selection, ignoring the URL and localStorage", () => {
     // Regression (F1–F5): the client used to re-resolve URL → localStorage → default and then
     // overwrite the server-rendered checkboxes with the result.
-    window.history.replaceState({}, "", "/v2/dicts?q=amo&d=an&o=1");
+    window.history.replaceState({}, "", "/dicts?q=amo&d=an&o=1");
     localStorage.setItem("SEARCH_SETTINGS_KEY", "L&S;GRG");
     localStorage.setItem(
       "GlobalSettings",
@@ -291,7 +291,7 @@ describe("MorcusDictSettings", () => {
 
   describe("pre-hydration edits (PH1)", () => {
     test("edits in a still-open (hash-targeted) dialog are a draft that applies on close", () => {
-      window.history.replaceState(null, "", "/v2/dicts#dict-settings");
+      window.history.replaceState(null, "", "/dicts#dict-settings");
       const wrapper = build();
       // The user opened the dialog via `:target` and clicked before the upgrade.
       toggle(checkbox(wrapper, "L&S"), false);
@@ -391,7 +391,7 @@ describe("MorcusDictSettings in scoped and guest views", () => {
     document.cookie = "morcus_d=1; Path=/"; // L&S only
     const m = mount({
       activeDicts: ["GAF"],
-      guest: { returnHref: "/v2/dicts?q=amo" },
+      guest: { returnHref: "/dicts?q=amo" },
     });
 
     const controls = Array.from(

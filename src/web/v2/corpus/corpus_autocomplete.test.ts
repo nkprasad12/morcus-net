@@ -310,7 +310,7 @@ describe("LemmaShardCache", () => {
     const first = cache.load("c");
     const second = cache.load("Cae");
     expect(second).toBe(first);
-    expect(fetch.mock.mock.calls).toEqual([["/v2/api/corpus/lemmata/c?v=abc"]]);
+    expect(fetch.mock.mock.calls).toEqual([["/api/corpus/lemmata/c?v=abc"]]);
 
     fetch.respond(["Caesar", "Cato", "cado", "caedes", "caedo", "canis"]);
     await first;
@@ -329,7 +329,7 @@ describe("LemmaShardCache", () => {
   test("without a page build version, the URL has no query", () => {
     const fetch = controlFetch();
     void new LemmaShardCache().load("x");
-    expect(fetch.mock).toHaveBeenCalledWith("/v2/api/corpus/lemmata/x");
+    expect(fetch.mock).toHaveBeenCalledWith("/api/corpus/lemmata/x");
   });
 
   test("a failed shard is remembered as unavailable, not retried", async () => {
@@ -784,9 +784,7 @@ describe("<morcus-corpus-suggestions>", () => {
       type(input, "@l:c");
       expect(rowTexts(listbox)).toEqual(["the lemma `c`"]);
       type(input, "@l:ca");
-      expect(fetch.mock.mock.calls).toEqual([
-        ["/v2/api/corpus/lemmata/c?v=v1"],
-      ]);
+      expect(fetch.mock.mock.calls).toEqual([["/api/corpus/lemmata/c?v=v1"]]);
 
       fetch.respond(["Caesar", "cado", "caedo", "canis"]);
       await settle();
@@ -807,9 +805,7 @@ describe("<morcus-corpus-suggestions>", () => {
       fetch.respond(["magnus", "mare", "maritus", "mors"]);
       await settle();
 
-      expect(fetch.mock.mock.calls).toEqual([
-        ["/v2/api/corpus/lemmata/m?v=v1"],
-      ]);
+      expect(fetch.mock.mock.calls).toEqual([["/api/corpus/lemmata/m?v=v1"]]);
       expect(rowTexts(listbox)).toEqual(["@lemma:mare ", "@lemma:maritus "]);
     });
 

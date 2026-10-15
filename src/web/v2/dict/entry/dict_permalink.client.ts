@@ -99,7 +99,7 @@ function sectionPermalink(anchor: HTMLAnchorElement): string | undefined {
   if (!articleId) {
     return undefined;
   }
-  return `${window.location.origin}/v2/dicts/id/${encodeURIComponent(
+  return `${window.location.origin}/dicts/id/${encodeURIComponent(
     articleId
   )}${href}`;
 }

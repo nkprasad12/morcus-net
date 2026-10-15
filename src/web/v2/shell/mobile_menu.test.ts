@@ -21,7 +21,7 @@ describe("setupMobileMenu", () => {
     document.body.innerHTML = `
       <details class="mobile-menu" open>
         <summary>Menu</summary>
-        <nav><a href="/v2/dicts">Dict</a></nav>
+        <nav><a href="/dicts">Dict</a></nav>
       </details>
       <div id="outside">Outside</div>
     `;
@@ -39,7 +39,7 @@ describe("setupMobileMenu", () => {
     document.body.innerHTML = `
       <details class="mobile-menu" open>
         <summary>Menu</summary>
-        <nav><a id="inside-link" href="/v2/dicts">Dict</a></nav>
+        <nav><a id="inside-link" href="/dicts">Dict</a></nav>
       </details>
     `;
     const menu = document.querySelector(".mobile-menu") as HTMLDetailsElement;
