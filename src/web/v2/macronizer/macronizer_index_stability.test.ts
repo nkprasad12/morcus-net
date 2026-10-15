@@ -2,7 +2,10 @@ import fs from "fs";
 
 import { removeMacrons } from "@/common/text_cleaning";
 import { fakeLatincyTagger } from "@/latincy/fake_latincy_tagger";
-import type { MacronizedResult, MacronizedWord } from "@/web/api_routes";
+import type {
+  MacronizedResult,
+  MacronizedWord,
+} from "@/macronizer/macronizer_types";
 import {
   applyChoices,
   resolveInitialResult,

@@ -24,7 +24,7 @@ import type {
   MacronizedResult,
   MacronizedWord,
   FormOptions,
-} from "@/web/api_routes";
+} from "@/macronizer/macronizer_types";
 
 const INPUT_MAX_LENGTH = 20000;
 

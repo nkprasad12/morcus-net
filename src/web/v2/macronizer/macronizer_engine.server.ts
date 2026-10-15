@@ -6,7 +6,7 @@ import {
   toUnsuggestedResult,
   type Tagger,
 } from "@/macronizer/morcronizer";
-import type { MacronizedResult } from "@/web/api_routes";
+import type { MacronizedResult } from "@/macronizer/macronizer_types";
 
 /** Thrown by `macronize` when no POS tagger is configured. */
 export class MacronizerUnavailableError extends Error {

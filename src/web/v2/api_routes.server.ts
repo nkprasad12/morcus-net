@@ -15,7 +15,7 @@ import {
   getV2DictChunks,
   cleanCompletionQuery,
 } from "@/web/v2/dict/search/dict_completions.server";
-import type { ReportApiRequest } from "@/web/api_routes";
+import type { ReportApiRequest } from "@/web/utils/github";
 import { GitHub } from "@/web/utils/github";
 import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
 import {

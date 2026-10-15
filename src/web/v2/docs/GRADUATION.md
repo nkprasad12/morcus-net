@@ -111,11 +111,13 @@ This work lands on `lit-prototype` **before** the §2 re-slot, which then ends w
     - Making V2 the default `e2e` target is left to §5.
   - `web_server.ts`: remove the `/offlineData/:resourceName` route, the `build/client` static mount, the SPA catch-all and the V1 precompression middleware. Make `v2Router` required.
   - Stop generating `build/offlineData` (`packCompressedChunks` in `ls_generate`, `gaf_generate` and `sh_generate`, `web/server/chunking.ts`, `OFFLINE_DATA_DIR`).
-- [ ] **Prune V1-Only Server Endpoints**:
-  - No V2 client calls the V1 JSON-RPC routes, and nothing outside the UI uses them, so all ten are removed from `start_server.ts`. V2's own `POST /api/report` already shadows V1's.
-  - Move the types V2 borrows from `web/api_routes.ts` to their owners, then delete the file: the macronizer types → `src/macronizer/`, `ReportApiRequest` → next to `github.ts`, `CorpusQueryRequest` → `common/library/corpus/`.
-  - Delete `addApi`/`RouteDefinition`, `client_rpc.ts`, `logClientEvent`/`ClientEventData`, and the route-only helpers. Keep `ServerExtras`/`RequestData`/`parsing.ts`.
-  - Re-target or delete the V1-RPC tools: `load_test.ts`, `benchmark_configs.ts`, `morcus_backend_integration.test.ts`, `rpc_integration.test.ts`.
+- [x] **Prune V1-Only Server Endpoints**:
+  - All ten V1 JSON-RPC routes are gone from `start_server.ts`, with `web/api_routes.ts`. Types V2 still uses moved to their owners: macronizer results → `src/macronizer/macronizer_types.ts`, `ReportApiRequest` → `web/utils/github.ts`, `CorpusQueryRequest` → `common/library/corpus/corpus_common.ts`.
+  - The RPC framework is reduced to what build artifacts need: `serverMessage` and the `ServerMessage` envelope (library works and corpus suggestion lists are still written in it), `ServerExtras` (dictionary timing hooks), and `parsing.ts`. Deleted: `addApi`/`RouteDefinition`, `client_rpc.ts`, `ApiRoute`, the never-registered `storage_routes.ts` (`object_storage.ts` stays for a possible share-a-pasted-text feature), and `bodyParser.text()` in `web_server.ts`.
+  - Deleted route-only helpers: `retrieveWorksList`/`retrieveWorkPreEncoded`, `corpusSuggestions`, `WorkId`/`ListLibraryWorksResponse`, the fused-dictionary wire validators, and `logClientEvent` (the Mongo `ClientEvents` collection gets no more writes; `ApiCalls` rows named after V1 paths stop too).
+  - The Morceus helper dev tool now uses a plain Express route and `fetch`.
+  - Tools updated for V2: `morcus_backend_integration.test.ts` is now a no-browser smoke test of a built image (PWA and TWA files, dictionary lookups and partials, completions, library, reader, translations, corpus with the Rust bindings, versioned caching, V1 URL redirects, 404); `load_test.ts` drives `/dicts` and `/api/completions`; `measuring_vms.md` measures a dictionary partial.
+  - Not covered yet (ideas for V2): a `/settings` redirect for V1 bookmarks (it 404s; V2 settings are dialogs), a health-check endpoint for deploys, and macronizer/report smoke checks that depend on the image's engine and GitHub configuration.
 - [ ] **Dependency & Config Cleanup**:
   - Uninstall V1-only npm packages from `package.json`: `@mui/material`, `@emotion/serialize`, `@testing-library/*` and `@rsbuild/plugin-preact`. Keep `preact`, the React lint plugins and the esbuild HTML plugins for the two Preact dev tools (LS editor, Morceus helper GUI).
   - Simplify `eslint.config.mjs`, `tsconfig.json`, and `jest.config.js` by removing legacy V1 exemptions. Scope the React lint blocks to the two dev-tool directories instead of "everything except `src/web/v2`".

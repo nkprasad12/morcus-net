@@ -1,8 +1,8 @@
 /* istanbul ignore file */
 
 import { checkPresent } from "@/common/assert";
-import { IsLsButNotMorceus } from "@/morceus/projects/gui/morceus_helper_apis";
-import { callApi } from "@/web/utils/rpc/client_rpc";
+import { isArray, isString } from "@/web/utils/rpc/parsing";
+import { LS_BUT_NOT_MORCEUS_PATH } from "@/morceus/projects/gui/morceus_helper_apis";
 import { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 
@@ -19,8 +19,13 @@ function LsButNotMorceus(props: { reversed: boolean }) {
   useEffect(() => {
     let current = true;
     setWordList("Loading");
-    callApi(IsLsButNotMorceus, 0)
-      .then((result) => {
+    fetch(LS_BUT_NOT_MORCEUS_PATH)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((result: unknown) => {
+        if (!isArray(isString)(result)) throw new Error("Bad response");
         if (current) setWordList(props.reversed ? result.reverse() : result);
       })
       .catch(() => {

@@ -7,7 +7,7 @@ import {
 } from "@/latincy/fake_latincy_tagger";
 import { analyzeWithMorceus, macronizeInput } from "@/macronizer/morcronizer";
 import { convertUpos } from "@/morceus/inflection_data_utils";
-import type { MacronizedConfidence } from "@/web/api_routes";
+import type { MacronizedConfidence } from "@/macronizer/macronizer_types";
 
 // These tests use the real Morceus tables from `morceus-data/` (checked into
 // the repo), since the fake tables only know a handful of words.

@@ -5,7 +5,7 @@ import path from "path";
 
 import { processWords, removeDiacritics } from "@/common/text_cleaning";
 import { macronizeInput, stanzaTagger } from "@/macronizer/morcronizer";
-import type { MacronizedResult } from "@/web/api_routes";
+import type { MacronizedResult } from "@/macronizer/macronizer_types";
 
 const GOLDENS_DIR = "src/macronizer/benchmarking/macronized_goldens";
 const ALATIUS_GOLDENS_DIR = "src/macronizer/benchmarking/alatius_goldens";

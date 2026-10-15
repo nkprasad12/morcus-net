@@ -1,5 +1,5 @@
 import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
-import type { MacronizedWord } from "@/web/api_routes";
+import type { MacronizedWord } from "@/macronizer/macronizer_types";
 import {
   html,
   joinHtml,
