@@ -30,6 +30,11 @@ Before switching default traffic away from V1, verify that non-UI operational be
   - Prod builds download dictionary and library inputs from unpinned upstream branch HEADs, so a rebuild of the same commit (e.g. a CI re-run) can change content. The production build version therefore covers the inputs too: `runPipeline` records each download's git blob SHA-1 and each clone's HEAD (`src/scripts/build_provenance.ts`), the last step of `prod_build_steps.ts` writes `build/morcusnet.build.json` (`{ commit, inputs, buildId }`), and `start_server.ts` loads `buildId` into `BUILD_ID` when the file's commit matches `COMMIT_ID`. `getBuildVersion()` prefers it over the commit. Dev builds write no file and keep using the commit plus the per-process nonce.
   - The recorded IDs are the ones GitHub reports (the contents API `sha` for a file, the branch commit for a clone), so the file doubles as a record of exactly which upstream data each deploy shipped. Hashing adds about a second to a prod build.
   - At re-slot time (§2), the pipeline half (`src/scripts/`) belongs with the build infrastructure slice and the `build_version.server.ts` half with core.
+- [x] **Precompressed Static Assets**:
+  - Every minified V2 build (production and `./morcus.sh web`) writes `.br` (quality 11) and `.gz` (level 9) siblings of each hashed asset in the manifest (`compressOutputs` in `src/bundler/plugin_utils.ts`). `critical.*` is inlined and `manifest.json` is never served, so neither gets siblings. This adds about 0.2 s to the build.
+  - The existing `preCompressedMiddleware` in `web_server.ts` was reworked in place to serve V2 instead of V1, mounted on `/assets` ahead of the V2 router. It serves a sibling whenever the client accepts that encoding (honouring `q=0`), preferring brotli over the client's order, since browsers list `gzip` first. Responses carry `Vary: Accept-Encoding`, `immutable, no-transform`, and `X-MorcusNet-PreCompressed: 1`. `compression()` leaves them alone because they already carry a `Content-Encoding`. A missing sibling falls back to on-the-fly gzip. The rework also fixed three bugs in the V1 version: `includes()` ignored `q=0`, `Content-Type` was always JS, and a cached directory listing missed files written after startup. V1 bundles are no longer served precompressed, since V1 is unreachable and about to be deleted.
+  - Measured on the current bundle: 302 kB raw, 79 kB on-the-fly gzip, **70 kB brotli** (−11%; the stylesheet −15%).
+  - Tests: `web_server.test.ts` covers negotiation, fallback, exclusions, traversal and HEAD. `v2_router.test.ts` checks that a real precompressed build writes siblings that decode to each asset. The "UI V2 bundle validation" E2E checks that every chunk and the stylesheet come back precompressed in br and gzip, identical to the original.
 
 ---
 
@@ -76,11 +81,7 @@ Since the §3 cutover, V1 is unreachable from browsers: `start_server.ts` always
 
 This work lands on `lit-prototype` **before** the §2 re-slot, which then ends with a single "Delete UI V1" slice. Order: precompression first, then E2E parity, then deletion.
 
-- [ ] **Precompressed V2 Assets** (first, before any deletion):
-  - V2's `/assets/*` is served by plain `express.static`, so `compression()` gzips each response on the fly at the default level, with no brotli. V1 shipped `.br`/`.gz` siblings built at max level.
-  - Build: emit `.br` (quality 11) and `.gz` (level 9) for every hashed `*.js`/`*.css` in `build/v2/`, skipping `critical.*` (inlined) and `manifest.json`, reusing the compressor in `src/bundler/plugin_utils.ts`.
-  - Serve: rework V1's `preCompressedMiddleware` in `web_server.ts` to serve V2's `/assets`. Keep `Vary: Accept-Encoding`, `immutable, no-transform`, and `X-MorcusNet-PreCompressed`.
-  - Test: encoding negotiation, fallback, exclusions and traversal. The V2 bundle-validation E2E gains V1's "served precompressed in br and gzip" and "all encodings decode identically" checks.
+- [x] **Precompressed V2 Assets** (first, before any deletion): done; see §1, "Precompressed Static Assets". `compressOutputs` in `plugin_utils.ts` stays after the V1 bundler deletion because V2 uses it.
 - [ ] **Port V1-Only CUJs to V2 E2E** (before the V1 suites are deleted):
   - Dictionary and corpus are well covered in V2. The library and reader have almost no functional browser coverage (only screenshots, late hydration and swipe). Nine tests close the gap:
     - Library: filter, open a work, the reader loads.

@@ -5,11 +5,7 @@ import type { BundleOptions } from "@/bundler/utils";
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
-import {
-  compressJsOutputs,
-  typeCheckCommon,
-  type CommonPlugin,
-} from "@/bundler/plugin_utils";
+import { typeCheckCommon, type CommonPlugin } from "@/bundler/plugin_utils";
 
 export interface RenameOptions {
   renameMap: Map<string, string>;
@@ -121,23 +117,6 @@ export function printStatsPlugin(options?: BundleOptions): esbuild.Plugin {
           printBuildResult(result, options);
         }
       });
-    },
-  };
-}
-
-async function compressResults(result: esbuild.BuildResult) {
-  const metafile = result.metafile;
-  if (metafile === undefined) {
-    return;
-  }
-  compressJsOutputs(Object.keys(metafile.outputs));
-}
-
-export function compressPlugin(): esbuild.Plugin {
-  return {
-    name: "compressJs",
-    setup(build) {
-      build.onEnd((result) => compressResults(result));
     },
   };
 }

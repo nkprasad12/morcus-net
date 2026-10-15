@@ -8,7 +8,9 @@ import { encodeDictBitmask } from "@/web/v2/dict/settings/dict_bitmask.common";
 import { createV2Router } from "@/web/v2/v2_router.server";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { XmlNode } from "@/common/xml/xml_node";
+import { brotliDecompressSync, gunzipSync } from "zlib";
 import { buildV2Bundle } from "@/bundler/v2.rsbuild";
+import { V2_ASSET_NAMES } from "@/bundler/v2_build_contract";
 import { getV2AssetHref } from "@/web/v2/shell/asset_manifest.server";
 import { getV2Work } from "@/web/v2/reader/reader_loader.server";
 import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
@@ -43,7 +45,8 @@ describe("v2_router integration", () => {
     process.env.MORCUS_V2_BUILD_DIR = buildDir;
     const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
     try {
-      await buildV2Bundle(false);
+      // Precompressed like a production build, to check the siblings.
+      await buildV2Bundle(false, { precompress: true });
     } finally {
       logSpy.mockRestore();
     }
@@ -793,6 +796,20 @@ describe("v2_router integration", () => {
       expect(res.header["cache-control"]).toContain("immutable");
       expect(res.text).toContain(expectedSymbol);
     }
+  });
+
+  test("the build writes br/gzip siblings of every manifest asset", () => {
+    // Serving them is `preCompressedMiddleware`'s job (`web_server.test.ts`).
+    for (const asset of V2_ASSET_NAMES) {
+      const file = path.join(buildDir, path.basename(getV2AssetHref(asset)));
+      const original = fs.readFileSync(file);
+      expect(brotliDecompressSync(fs.readFileSync(`${file}.br`))).toEqual(
+        original
+      );
+      expect(gunzipSync(fs.readFileSync(`${file}.gz`))).toEqual(original);
+    }
+    // Inlined into `<head>`, never fetched.
+    expect(fs.existsSync(path.join(buildDir, "critical.js.br"))).toBe(false);
   });
 
   describe("GET /work", () => {

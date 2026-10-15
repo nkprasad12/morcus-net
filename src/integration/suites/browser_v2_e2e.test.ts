@@ -1,5 +1,11 @@
-import { test, expect, type Page } from "@playwright/test";
+import {
+  test,
+  expect,
+  type APIRequestContext,
+  type Page,
+} from "@playwright/test";
 import { gzipSync } from "zlib";
+import { PRECOMPRESSED_HEADER } from "@/web/web_server";
 import { disableSmoothScroll } from "@/integration/utils/playwright_utils";
 import { encodeDictBitmask } from "@/web/v2/dict/settings/dict_bitmask.common";
 import {
@@ -14,6 +20,51 @@ import {
   type V2JsChunkName,
   type V2Route,
 } from "@/bundler/v2_build_contract";
+
+/**
+ * Fetches one page per route and returns the hashed asset URLs they reference.
+ * Together the routes must load every chunk, so a chunk that is built but
+ * never loaded by any route fails here, as does a route whose `<script>` tags
+ * are not exactly its dependency chain, in order.
+ */
+async function collectV2AssetPaths(request: APIRequestContext): Promise<{
+  chunkPaths: Map<V2JsChunkName, string>;
+  cssPath: string;
+}> {
+  const routeUrls: Record<V2Route, string> = {
+    about: "/about",
+    dicts: "/dicts",
+    library: "/library",
+    corpus: "/corpus",
+    external: "/externalReader",
+    macronizer: "/macronizer",
+  };
+  const chunkPaths = new Map<V2JsChunkName, string>();
+  let cssPath: string | undefined;
+  for (const route of V2_ROUTES) {
+    const res = await request.get(routeUrls[route]);
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+
+    const served = [
+      ...html.matchAll(
+        /<script\s+type="module"\s+src="(\/assets\/([a-z]+)\.[a-f0-9]+\.js)"[^>]*>/g
+      ),
+    ];
+    // The server emits exactly the route's dependency chain, in order.
+    expect(served.map((m) => `${m[2]}.js`)).toEqual(v2RouteScripts(route));
+    for (const m of served) {
+      chunkPaths.set(`${m[2]}.js` as V2JsChunkName, m[1]);
+    }
+
+    cssPath ??= html.match(
+      /<link\s+rel="stylesheet"\s+href="(\/assets\/v2\.[a-f0-9]+\.css)">/
+    )?.[1];
+  }
+  expect(new Set(chunkPaths.keys())).toEqual(new Set(V2_JS_CHUNKS));
+  expect(cssPath).toBeDefined();
+  return { chunkPaths, cssPath: cssPath! };
+}
 
 /**
  * Opens the mobile navigation drawer and waits for its slide-in animation to
@@ -1149,43 +1200,11 @@ test.describe("UI V2 dictionary", () => {
     test("every route loads its chunks, and served JS and CSS are within budget", async ({
       request,
     }) => {
-      // 1. One URL per route. Together they must load every chunk, so a chunk
-      //    that is built but never loaded by any route fails here.
-      const routeUrls: Record<V2Route, string> = {
-        about: "/about",
-        dicts: "/dicts",
-        library: "/library",
-        corpus: "/corpus",
-        external: "/externalReader",
-        macronizer: "/macronizer",
-      };
-      const chunkPaths = new Map<V2JsChunkName, string>();
-      let cssPath: string | undefined;
-      for (const route of V2_ROUTES) {
-        const res = await request.get(routeUrls[route]);
-        expect(res.status()).toBe(200);
-        const html = await res.text();
-
-        const served = [
-          ...html.matchAll(
-            /<script\s+type="module"\s+src="(\/assets\/([a-z]+)\.[a-f0-9]+\.js)"[^>]*>/g
-          ),
-        ];
-        // The server emits exactly the route's dependency chain, in order.
-        expect(served.map((m) => `${m[2]}.js`)).toEqual(v2RouteScripts(route));
-        for (const m of served) {
-          chunkPaths.set(`${m[2]}.js` as V2JsChunkName, m[1]);
-        }
-
-        cssPath ??= html.match(
-          /<link\s+rel="stylesheet"\s+href="(\/assets\/v2\.[a-f0-9]+\.css)">/
-        )?.[1];
-      }
-      expect(new Set(chunkPaths.keys())).toEqual(new Set(V2_JS_CHUNKS));
-      expect(cssPath).toBeDefined();
+      // 1. Every route loads its chunks, and together they load every chunk.
+      const { chunkPaths, cssPath } = await collectV2AssetPaths(request);
 
       // 2. Fetch and validate the CSS asset
-      const cssRes = await request.get(cssPath!);
+      const cssRes = await request.get(cssPath);
       expect(cssRes.status()).toBe(200);
       expect(cssRes.headers()["content-type"]).toContain("text/css");
       expect(cssRes.headers()["cache-control"]).toContain("immutable");
@@ -1225,6 +1244,38 @@ test.describe("UI V2 dictionary", () => {
         const budget = V2_BUNDLE_BUDGET.routes[route];
         expect(total.rawBytes).toBeLessThan(budget.maxRawBytes);
         expect(total.gzipBytes).toBeLessThan(budget.maxGzipBytes);
+      }
+    });
+
+    test("serves every asset precompressed, identical across encodings", async ({
+      request,
+    }) => {
+      const { chunkPaths, cssPath } = await collectV2AssetPaths(request);
+      const baseUrl = process.env.BASE_URL;
+      // Node's fetch, not Playwright's: it sends exactly the Accept-Encoding
+      // given and still decodes the body, so the encodings can be compared.
+      const fetchWith = (assetPath: string, acceptEncoding: string) =>
+        fetch(`${baseUrl}${assetPath}`, {
+          headers: { "accept-encoding": acceptEncoding },
+        });
+      for (const assetPath of [cssPath, ...chunkPaths.values()]) {
+        const identity = await fetchWith(assetPath, "identity");
+        expect(identity.status).toBe(200);
+        expect(identity.headers.get("content-encoding")).toBeNull();
+        const original = await identity.text();
+
+        for (const [acceptEncoding, expected] of [
+          ["gzip, deflate, br, zstd", "br"],
+          ["br", "br"],
+          ["gzip", "gzip"],
+        ] as const) {
+          const res = await fetchWith(assetPath, acceptEncoding);
+          expect(res.status).toBe(200);
+          expect(res.headers.get("content-encoding")).toBe(expected);
+          expect(res.headers.get(PRECOMPRESSED_HEADER)).toBe("1");
+          expect(res.headers.get("cache-control")).toContain("immutable");
+          expect(await res.text()).toBe(original);
+        }
       }
     });
   });

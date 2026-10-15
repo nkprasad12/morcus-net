@@ -11,6 +11,8 @@ import {
   addApi,
 } from "@/web/utils/rpc/server_rpc";
 import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
+import { getV2BuildDir } from "@/bundler/v2_build_contract";
+import { IMMUTABLE_CACHE_CONTROL } from "@/web/v2/core/server/build_version.server";
 
 const DAYS_IN_YEAR = 365;
 const HOURS_IN_DAY = 24;
@@ -19,9 +21,6 @@ const SECONDS_IN_HOUR = 3600;
 const MAX_AGE = 10 * DAYS_IN_YEAR * HOURS_IN_DAY * SECONDS_IN_HOUR;
 const CLIENT_BUNDLE_SUFFIX = ".client-bundle.js";
 const CLIENT_BUNDLE_CACHE_CONTROL = `public, max-age=${MAX_AGE}, immutable`;
-// Add no-transform to prevent proxies from uncompressing and then recompressing
-// the Javascript bundles at a lower compression level.
-const PRE_COMPRESSED_CACHE_CONTROL = `${CLIENT_BUNDLE_CACHE_CONTROL}, no-transform`;
 const SET_HEADERS = (res: Response, path: string) => {
   // Force users to always fetch the index from the server so that they
   // always get the latest Javascript bundles.
@@ -48,34 +47,84 @@ const PRE_COMPRESSED_ENCODINGS: Encoding[] = [
   { encoding: "gzip", extension: "gz" },
 ];
 
-function preCompressedMiddleware(sourceDir: string): express.Handler {
-  let sourceDirFiles: Set<string> | undefined = undefined;
-  return async (req, res, next) => {
-    const acceptEncoding = req.header("accept-encoding");
+/**
+ * Marks a response served from a build-time sibling, so tests (and anyone
+ * debugging) can tell it apart from on-the-fly `compression()` output.
+ */
+export const PRECOMPRESSED_HEADER = "X-MorcusNet-PreCompressed";
+
+const PRE_COMPRESSED_CONTENT_TYPES: Readonly<Record<string, string>> = {
+  ".js": "application/javascript; charset=UTF-8",
+  ".css": "text/css; charset=UTF-8",
+};
+
+/**
+ * UI V2's content-hashed assets (`<name>.<hash>.<js|css>`). This leaves out
+ * `critical.*` (inlined into `<head>`, never fetched) and `manifest.json`.
+ */
+const isV2HashedAsset = (name: string) =>
+  /^[\w-]+\.[\w-]+\.(?:js|css)$/.test(name);
+
+async function isFile(file: string): Promise<boolean> {
+  try {
+    return (await fs.stat(file)).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Serves the `.br` / `.gz` siblings `v2.rsbuild.ts` writes next to UI V2's
+ * hashed assets, when the client accepts
+ * that encoding. Mounted on `/assets`, ahead of the V2 router's static handler.
+ * Anything else falls through to the static handler, and `compression()`
+ * encodes it on the fly. `compression()` leaves these responses alone because
+ * they already carry a `Content-Encoding`.
+ */
+function preCompressedMiddleware(getSourceDir: () => string): express.Handler {
+  const serve = async (
+    req: express.Request,
+    res: Response,
+    next: express.NextFunction
+  ) => {
+    const name = req.path.slice(1);
     if (
-      acceptEncoding === undefined ||
-      !req.path.endsWith(CLIENT_BUNDLE_SUFFIX)
+      (req.method !== "GET" && req.method !== "HEAD") ||
+      !isV2HashedAsset(name)
     ) {
       next();
       return;
     }
-    if (sourceDirFiles === undefined) {
-      sourceDirFiles = new Set(await fs.readdir(sourceDir).catch(() => []));
-    }
+    // Server preference order, not the client's: browsers list `gzip` before
+    // `br` but take either, and brotli is ~12% smaller on our bundles.
+    // `acceptsEncodings` honours `q=0`.
     for (const { encoding, extension } of PRE_COMPRESSED_ENCODINGS) {
-      const fileName = path.basename(`${req.path}.${extension}`);
-      if (!acceptEncoding.includes(encoding) || !sourceDirFiles.has(fileName)) {
-        continue;
-      }
+      if (req.acceptsEncodings(encoding) !== encoding) continue;
+      // Checked per request rather than cached, so a rebuild under a running
+      // server is picked up.
+      const file = path.join(getSourceDir(), `${name}.${extension}`);
+      if (!(await isFile(file))) continue;
       res.setHeader("Content-Encoding", encoding);
       res.setHeader("Vary", "Accept-Encoding");
-      res.setHeader("Cache-Control", PRE_COMPRESSED_CACHE_CONTROL);
-      res.setHeader("Content-Type", "application/javascript");
-      res.setHeader("X-MorcusNet-PreCompressed", "1");
-      res.sendFile(path.join(sourceDir, fileName));
+      // `no-transform` keeps proxies from recompressing at a lower level.
+      res.setHeader(
+        "Cache-Control",
+        `${IMMUTABLE_CACHE_CONTROL}, no-transform`
+      );
+      res.setHeader(
+        "Content-Type",
+        PRE_COMPRESSED_CONTENT_TYPES[path.extname(name)]
+      );
+      res.setHeader(PRECOMPRESSED_HEADER, "1");
+      res.sendFile(file, (err) => {
+        if (err && !res.headersSent) next(err);
+      });
       return;
     }
     next();
+  };
+  return (req, res, next) => {
+    serve(req, res, next).catch(next);
   };
 }
 
@@ -90,7 +139,10 @@ export interface WebServerParams {
 export function setupServer(params: WebServerParams): void {
   const app = params.webApp;
   app.use(bodyParser.text());
-  app.use(preCompressedMiddleware(params.buildDir));
+  if (params.v2Router) {
+    // Ahead of the V2 router's own `/assets` static handler.
+    app.use("/assets", preCompressedMiddleware(getV2BuildDir));
+  }
   app.use(compression());
   app.get("/serviceworker.js", (_, res) => {
     // Never cached, so a later change here reaches browsers on their next visit.
