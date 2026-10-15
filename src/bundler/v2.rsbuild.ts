@@ -19,23 +19,26 @@ import {
   getV2BuildDir,
   type V2AssetManifest,
 } from "@/bundler/v2_build_contract";
+import { compressOutputs } from "@/bundler/plugin_utils";
 
 /**
  * Rsbuild plugin that writes `build/v2/manifest.json` mapping logical asset
  * names (`common.js`, `dict.js`, `reader.js`, `external.js`, `corpus.js`,
  * `v2.css`) to their content-hashed output filenames, removes the dummy JS
  * stub emitted for the standalone `v2.css` entry, enforces zero module
- * duplication across `dependOn` chunks, and (when `minify` is enabled)
- * enforces the V2 bundle size budget (`v2_bundle_budget.ts`).
+ * duplication across `dependOn` chunks, (when `minify` is enabled) enforces
+ * the V2 bundle size budget (`v2_bundle_budget.ts`), and (when `precompress`
+ * is enabled) writes `.br` / `.gz` siblings of every manifest asset.
  */
 function v2ManifestPlugin(
   outputDir: string,
-  enforceBudget: boolean
+  enforceBudget: boolean,
+  precompress: boolean
 ): RsbuildPlugin {
   return {
     name: "morcus:v2-manifest",
     setup(api) {
-      api.onAfterBuild(({ stats }) => {
+      api.onAfterBuild(async ({ stats }) => {
         if (!fs.existsSync(outputDir)) {
           return;
         }
@@ -88,13 +91,34 @@ function v2ManifestPlugin(
             );
           }
         }
+
+        if (precompress) {
+          // Only the hashed assets the browser fetches: `critical.*` is
+          // inlined into `<head>`, and `manifest.json` is never served.
+          await compressOutputs(
+            Object.values(manifest).map((file) => path.join(outputDir, file))
+          );
+        }
       });
     },
   };
 }
 
-export function createV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
+export interface V2BuildOptions {
+  /**
+   * Write `.br` / `.gz` siblings of each hashed asset for
+   * `preCompressedMiddleware` (`web/web_server.ts`). Defaults to `minify`: every minified
+   * build (production and `./morcus.sh web`) is precompressed.
+   */
+  precompress?: boolean;
+}
+
+export function createV2RsbuildConfig(
+  minify: boolean = false,
+  options: V2BuildOptions = {}
+): RsbuildConfig {
   const outputDir = getV2BuildDir();
+  const precompress = options.precompress ?? minify;
   return {
     source: {
       entry: {
@@ -141,7 +165,7 @@ export function createV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
         css: !minify,
       },
     },
-    plugins: [v2ManifestPlugin(outputDir, minify)],
+    plugins: [v2ManifestPlugin(outputDir, minify, precompress)],
     tools: {
       htmlPlugin: false,
       rspack: {
@@ -153,9 +177,12 @@ export function createV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
   };
 }
 
-export async function buildV2Bundle(minify: boolean = false): Promise<void> {
+export async function buildV2Bundle(
+  minify: boolean = false,
+  options: V2BuildOptions = {}
+): Promise<void> {
   const rsbuild = await createRsbuild({
-    rsbuildConfig: createV2RsbuildConfig(minify),
+    rsbuildConfig: createV2RsbuildConfig(minify, options),
   });
   await rsbuild.build();
 }

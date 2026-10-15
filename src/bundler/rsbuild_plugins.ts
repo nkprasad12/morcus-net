@@ -2,11 +2,7 @@
 
 import fs from "fs";
 
-import {
-  type CommonPlugin,
-  typeCheckCommon,
-  compressJsOutputs,
-} from "@/bundler/plugin_utils";
+import { type CommonPlugin, typeCheckCommon } from "@/bundler/plugin_utils";
 import type { BundleOptions } from "@/bundler/utils";
 import { assert } from "@/common/assert";
 import type { OnAfterBuildFn, RsbuildPlugin } from "@rsbuild/core";
@@ -110,17 +106,4 @@ function outputJsFiles(a: Parameters<OnAfterBuildFn>[0]): string[] {
   return Array.from(outputs).filter(
     (f) => f.endsWith(".js") && !f.endsWith("template.js")
   );
-}
-
-export function compress(): RsbuildPlugin {
-  return {
-    name: "compressJs",
-    setup: (api) => {
-      api.onAfterBuild((a) =>
-        compressJsOutputs(
-          outputJsFiles(a).map((f) => `${api.context.distPath}/${f}`)
-        )
-      );
-    },
-  };
 }

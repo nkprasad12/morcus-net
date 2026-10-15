@@ -183,10 +183,6 @@ function parseArguments() {
     help: "Minifies the bundle after building.",
     action: "store_true",
   });
-  bundle.add_argument("-c", "--compress", {
-    help: "Stores pre-compressed bundle outputs.",
-    action: "store_true",
-  });
 
   const web = subparsers.add_parser(WEB_SERVER, {
     help: "Builds artifacts and starts the web server.",
@@ -218,10 +214,6 @@ function parseArguments() {
   });
   web.add_argument("-m", "--minify", {
     help: "Minifies the bundle after building.",
-    action: "store_true",
-  });
-  web.add_argument("-c", "--compress", {
-    help: "Stores pre-compressed bundle outputs.",
     action: "store_true",
   });
   web.add_argument("-to", "--transpile_only", {
@@ -530,9 +522,6 @@ function bundleConfig(args: any, priority?: number): StepConfig {
   }
   if (args.analyze) {
     childEnv.ANALYZE_BUNDLE = "1";
-  }
-  if (args.compress) {
-    childEnv.COMPRESS = "1";
   }
   if (!args.transpile_only) {
     childEnv.RUN_TSC = "1";

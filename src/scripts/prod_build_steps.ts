@@ -146,7 +146,6 @@ const MAKE_BUNDLE: StepConfig = {
       ...process.env,
       RUN_TSC: "1",
       MINIFY: "1",
-      COMPRESS: "1",
     };
     return shellStep(
       "npm run tsnp src/bundler/morcus-net.rsbuild.ts",

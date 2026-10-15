@@ -5,7 +5,6 @@ import { pluginPreact } from "@rsbuild/plugin-preact";
 
 import { BundleOptions, getHash } from "@/bundler/utils";
 import {
-  compress,
   injectBuildInfo,
   typeCheck,
   type InjectBuildInfoOptions,
@@ -133,7 +132,6 @@ const rsbuildConfig: RsbuildConfig = {
   },
   plugins: [
     // These happen after the full build, so we don't want to register them on each environment.
-    ...(envOptions.compress ? [compress()] : []),
     injectBuildInfo(INJECT_BUILD_INFO_OPTIONS),
     ...(envOptions.typeCheck ? [typeCheck(envOptions)] : []),
   ],

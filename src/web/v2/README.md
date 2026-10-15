@@ -189,6 +189,7 @@ Two consequences worth knowing before you "clean up" such a module:
 - **Output chunks**: `build/v2/{common,dict,reader,external,corpus,macronizer}.js` (ESM chunks built via Rspack `dependOn` and loaded via `<script type="module">` tags emitted per route by `page_shell.server.ts`)
 - **Shared modules**: a module imported by two or more chunks that depend on the same ancestor must ship once, in that ancestor. List it in the ancestor's `shared` array in `V2_CHUNK_ENTRIES` (it becomes an extra entry module of that chunk). A plain `import` from the entry file isn't enough: Rspack drops imports of side-effect-free modules whose exports the chunk doesn't use. The build fails with this advice (`checkV2ChunkDuplication`) when a module is duplicated.
 - **Stylesheet**: `src/web/v2/v2.css` served statically at `/assets/v2.css`
+- **Precompression**: every minified build (production and `./morcus.sh web`) writes `.br` (quality 11) and `.gz` (level 9) next to each hashed asset in the manifest. `preCompressedMiddleware` in [`web_server.ts`](../web_server.ts) serves them ahead of the V2 router's static handler, preferring brotli whenever the client accepts it and marking them `X-MorcusNet-PreCompressed: 1`. A missing sibling falls back to on-the-fly gzip from `compression()`. `critical.*` is inlined, so it has no siblings.
 
 ### Browser Support & Compatibility Target
 
