@@ -1,5 +1,6 @@
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
+import { Timer } from "@/web/telemetry/timer";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { ApiRoute, ServerMessage } from "@/web/utils/rpc/rpc";
 import express, { Request, Response } from "express";
@@ -7,39 +8,6 @@ import express, { Request, Response } from "express";
 export type Data = boolean | string | number | object;
 
 const DATA_PLACEHOLDER = "__@PRE_STRINGIFIED_PLACEHOLDER";
-
-class Timer {
-  private readonly start: number;
-  private readonly events: [string, number][];
-  private readonly names: Map<string, number>;
-
-  constructor() {
-    this.start = performance.now();
-    this.events = [];
-    this.names = new Map();
-  }
-
-  event(event: string): number {
-    const currentTime = performance.now();
-    const elapsed = Math.round(100 * (currentTime - this.start)) / 100;
-    const i = this.names.get(event);
-    let suffix = "";
-    if (i === undefined) {
-      this.names.set(event, 2);
-    } else {
-      this.names.set(event, i + 1);
-      suffix = `_${i}`;
-    }
-    this.events.push([event + suffix, elapsed]);
-    return elapsed;
-  }
-
-  getEvents(): { [key: string]: number } {
-    const result: { [key: string]: number } = {};
-    this.events.forEach(([eventName, time]) => (result[eventName] = time));
-    return result;
-  }
-}
 
 export function serverMessage<T>(t: T): ServerMessage<T> {
   return {

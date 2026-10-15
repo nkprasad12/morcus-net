@@ -21,6 +21,7 @@ import {
 } from "@/web/v2/macronizer/macronizer_params.server";
 import { MACRONIZER_MAX_CHARS } from "@/web/v2/macronizer/macronizer_slots.common";
 import { isPartialRequest } from "@/web/v2/core/server/request_params.server";
+import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 import {
   renderMacronizerPage,
   renderMacronizerPartial,
@@ -174,6 +175,7 @@ export function createMacronizerRoutes(
 
       try {
         const rawResult = await engine.macronize(parsed.text);
+        requestTimer(res).mark("lookupComplete");
         const document = resolveInitialResult(rawResult);
         sendPageOrPartial(req, res, {
           inputText: parsed.text,
@@ -213,6 +215,7 @@ export function createMacronizerRoutes(
 
       try {
         const unsuggested = await engine.analyzeOnly(text);
+        requestTimer(res).mark("lookupComplete");
         const document = applyChoices(unsuggested, {
           suggestions: parsed.suggestions,
           priorShown: parsed.priorShown,
