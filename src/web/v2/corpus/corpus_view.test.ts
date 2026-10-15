@@ -245,7 +245,7 @@ describe("corpus page", () => {
   });
 
   test("the autocomplete host: JS-only, pointing at the input, with the authors", async () => {
-    const doc = parse(renderCorpusPageHtml(await search(), "abc123"));
+    const doc = parse(renderCorpusPageHtml(await search()));
     const host = doc.querySelector<HTMLElement>("morcus-corpus-suggestions");
     const input = doc.querySelector("input[name=q]");
 
@@ -255,7 +255,6 @@ describe("corpus page", () => {
     expect(JSON.parse(host?.dataset.authors ?? "")).toEqual(
       CORPUS_TEST_AUTHORS
     );
-    expect(host?.dataset.lemmataVersion).toBe("abc123");
     // The element only fills in options; the listbox is the server's.
     const listbox = host?.firstElementChild;
     expect(listbox?.getAttribute("role")).toBe("listbox");
@@ -270,7 +269,6 @@ describe("corpus page", () => {
       "morcus-corpus-suggestions"
     );
     expect(host?.hasAttribute("data-authors")).toBe(false);
-    expect(host?.hasAttribute("data-lemmata-version")).toBe(false);
   });
 
   test("unavailable page", () => {

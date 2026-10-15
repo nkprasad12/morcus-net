@@ -87,6 +87,32 @@ describe("renderPageShell", () => {
     expect(html).toContain('src="/v2/assets/dict.js"');
   });
 
+  describe("build version", () => {
+    const saved = process.env.COMMIT_ID;
+    afterEach(() => {
+      if (saved === undefined) delete process.env.COMMIT_ID;
+      else process.env.COMMIT_ID = saved;
+    });
+
+    const render = () =>
+      renderPageShell({
+        title: "Library",
+        activePage: "library",
+        contentHtml: "<div></div>",
+      });
+
+    test("is stamped on <html> when known", () => {
+      process.env.COMMIT_ID = "abc123";
+      expect(render()).toContain('<html lang="en" data-version="abc123">');
+    });
+
+    test("is omitted when unknown", () => {
+      delete process.env.COMMIT_ID;
+      expect(render()).toContain('<html lang="en">');
+      expect(render()).not.toContain("data-version");
+    });
+  });
+
   test("links the manifest, theme colour, OpenGraph tags, and canonical URL on top-level pages only", () => {
     const head = (hideAppBar: boolean, canonicalPath?: string) =>
       renderPageShell({

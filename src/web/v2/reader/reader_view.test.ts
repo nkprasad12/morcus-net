@@ -2551,6 +2551,44 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     );
   });
 
+  test("swapPage fetches the page and translation build-versioned, but keeps the address bar clean", async () => {
+    document.documentElement.dataset.version = "v1";
+    try {
+      const el = createNavigableReaderView({
+        pageId: "1",
+        author: "sallust",
+        name: "catalina1",
+        hasTranslation: true,
+      });
+      const fetchMock = jest.fn().mockImplementation((url: string) =>
+        Promise.resolve({
+          ok: true,
+          text: async () =>
+            url.includes("/translation")
+              ? '<div class="reader-translation-content">Trans Page 2</div>'
+              : page2Response,
+        })
+      );
+      window.fetch = fetchMock;
+      el.getPanelController()?.setTab("translation");
+
+      await el.swapPage("/v2/reader/sallust/catalina1/2");
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/v2/reader/sallust/catalina1/2?v=v1",
+        expect.anything()
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/v2/reader/sallust/catalina1/2/translation?v=v1",
+        expect.anything()
+      );
+      expect(window.location.pathname).toBe("/v2/reader/sallust/catalina1/2");
+      expect(window.location.search).not.toContain("v=");
+    } finally {
+      delete document.documentElement.dataset.version;
+    }
+  });
+
   test("disabled pager arrow prevents navigation and does not fetch", () => {
     const el = createNavigableReaderView({
       pageId: "1",

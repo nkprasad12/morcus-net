@@ -109,39 +109,11 @@ describe("GET /v2/corpus", () => {
 });
 
 describe("GET /v2/corpus: autocomplete host", () => {
-  const savedCommit = process.env.COMMIT_ID;
-
-  afterEach(() => {
-    if (savedCommit === undefined) {
-      delete process.env.COMMIT_ID;
-    } else {
-      process.env.COMMIT_ID = savedCommit;
-    }
-  });
-
-  test("carries the author list and the lemma shard version", async () => {
-    const res = await request(
-      makeApp(fakeCorpusEngine(), { commitId: "abc123" })
-    ).get("/v2/corpus");
+  test("carries the author list", async () => {
+    const res = await request(makeApp(fakeCorpusEngine())).get("/v2/corpus");
 
     expect(res.text).toContain("<morcus-corpus-suggestions");
-    expect(res.text).toContain('data-lemmata-version="abc123"');
     expect(res.text).toContain("data-authors=");
-  });
-
-  test("the version defaults to COMMIT_ID, and is omitted when unknown", async () => {
-    process.env.COMMIT_ID = "fromenv";
-    const withEnv = await request(makeApp(fakeCorpusEngine())).get(
-      "/v2/corpus"
-    );
-    expect(withEnv.text).toContain('data-lemmata-version="fromenv"');
-
-    delete process.env.COMMIT_ID;
-    const without = await request(makeApp(fakeCorpusEngine())).get(
-      "/v2/corpus"
-    );
-    expect(without.text).toContain("<morcus-corpus-suggestions");
-    expect(without.text).not.toContain("data-lemmata-version");
   });
 
   test("a partial response has no host: it sits outside every slot", async () => {
@@ -154,12 +126,25 @@ describe("GET /v2/corpus: autocomplete host", () => {
 
 describe("GET /v2/api/corpus/lemmata/:letter", () => {
   const LEMMATA = ["caedo", "amo", "Caesar", "cado", "Areus2"];
+  const savedCommit = process.env.COMMIT_ID;
+
+  beforeEach(() => {
+    process.env.COMMIT_ID = "abc123";
+  });
+
+  afterEach(() => {
+    if (savedCommit === undefined) {
+      delete process.env.COMMIT_ID;
+    } else {
+      process.env.COMMIT_ID = savedCommit;
+    }
+  });
 
   /** `null` stands for a corpus that isn't built. */
   function lemmaApp(lemmata: readonly string[] | null = LEMMATA) {
     const loadLemmata = jest.fn(() => Promise.resolve(lemmata ?? undefined));
     return {
-      app: makeApp(undefined, { loadLemmata, commitId: "abc123" }),
+      app: makeApp(undefined, { loadLemmata }),
       loadLemmata,
     };
   }

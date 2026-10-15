@@ -174,6 +174,78 @@ describe("swapSlots", () => {
     expect(host.querySelector("[aria-busy]")).toBeNull();
   });
 
+  describe("versioned", () => {
+    beforeEach(() => {
+      document.documentElement.dataset.version = "abc123";
+    });
+    afterEach(() => {
+      delete document.documentElement.dataset.version;
+    });
+
+    test("fetches the build-versioned URL", async () => {
+      const host = mountHost(HOST_HTML);
+      mockResponse(GOOD_RESPONSE);
+
+      await swapSlots(host, "/page/2?q=x", {
+        signal: new AbortController().signal,
+        slots: ["body", "next"],
+        fallback,
+        versioned: true,
+      });
+
+      expect(window.fetch).toHaveBeenCalledWith(
+        "/page/2?q=x&v=abc123",
+        expect.anything()
+      );
+    });
+
+    test("falls back to the unversioned URL", async () => {
+      const host = mountHost(HOST_HTML);
+      mockResponse("", false);
+
+      await swapSlots(host, "/page/2", {
+        signal: new AbortController().signal,
+        slots: ["body", "next"],
+        fallback,
+        versioned: true,
+      });
+
+      expect(window.fetch).toHaveBeenCalledWith(
+        "/page/2?v=abc123",
+        expect.anything()
+      );
+      expect(fallback).toHaveBeenCalledWith("/page/2");
+    });
+
+    test("is off by default and ignored for POST", async () => {
+      const host = mountHost(HOST_HTML);
+      mockResponse(GOOD_RESPONSE);
+
+      await swapSlots(host, "/page/2", {
+        signal: new AbortController().signal,
+        slots: ["body", "next"],
+        fallback,
+      });
+      expect(window.fetch).toHaveBeenLastCalledWith(
+        "/page/2",
+        expect.anything()
+      );
+
+      mockResponse(GOOD_RESPONSE.replace("/3", "/4"));
+      await swapSlots(host, "/page/2", {
+        signal: new AbortController().signal,
+        slots: ["body", "next"],
+        fallback,
+        method: "POST",
+        versioned: true,
+      });
+      expect(window.fetch).toHaveBeenLastCalledWith(
+        "/page/2",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+  });
+
   test("an aborted request neither swaps nor falls back", async () => {
     const host = mountHost(HOST_HTML);
     const controller = new AbortController();

@@ -18,7 +18,10 @@ import {
 import type { ReportApiRequest } from "@/web/api_routes";
 import { GitHub } from "@/web/utils/github";
 import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
-import { getBuildVersion } from "@/web/v2/core/server/build_version.server";
+import {
+  getCommitId,
+  setVersionedCacheControl,
+} from "@/web/v2/core/server/build_version.server";
 import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
@@ -47,16 +50,15 @@ export function createApiRoutes(
     const langParam = toStringOrArray(req.query.lang);
     const limit = readLimit(req);
 
-    const { dictKeys } = resolveActiveDicts({
-      keysFromQuery,
-      cookieHeader: req.headers.cookie,
-      lang: langParam,
-    });
-
-    const activeDicts = dictKeys.length > 0 ? dictKeys : ALL_LATIN_DICTS;
-
-    // Suffix searches (-arum, -ibus): dynamic clustered completions
+    // Suffix searches (-arum, -ibus): dynamic clustered completions. These may
+    // fall back to the dictionary cookie, so they are never versioned.
     if (isSuffix) {
+      const { dictKeys } = resolveActiveDicts({
+        keysFromQuery,
+        cookieHeader: req.headers.cookie,
+        lang: langParam,
+      });
+      const activeDicts = dictKeys.length > 0 ? dictKeys : ALL_LATIN_DICTS;
       try {
         const items = await getV2Completions(fusedDict, {
           rawQuery: query,
@@ -72,16 +74,24 @@ export function createApiRoutes(
       return;
     }
 
-    // Prefix searches: return dictionary-keyed chunk with aggressive HTTP cache
+    // Prefix searches: a dictionary-keyed chunk. The client fetches it with
+    // `?v=`, so it is cached `public` for the rest of the build. That is only
+    // safe because it depends on nothing but the URL: no cookies here. Without
+    // `d`/`dict`, the chunk covers every dictionary.
+    let chunkDicts: string[] | undefined = undefined;
+    if (keysFromQuery !== null) {
+      const { dictKeys } = resolveActiveDicts({
+        keysFromQuery,
+        lang: langParam,
+      });
+      chunkDicts = dictKeys.length > 0 ? dictKeys : ALL_LATIN_DICTS;
+    }
     try {
       const chunks = await getV2DictChunks(fusedDict, {
         rawPrefix: query,
-        activeDictKeys: keysFromQuery ? activeDicts : undefined,
+        activeDictKeys: chunkDicts,
       });
-      res.setHeader(
-        "Cache-Control",
-        "public, max-age=86400, stale-while-revalidate=604800"
-      );
+      setVersionedCacheControl(req, res);
       res.json(chunks);
     } catch (err) {
       console.error("Error in completions chunk:", err);
@@ -141,7 +151,7 @@ export function createApiRoutes(
       reportText: reportText || undefined,
       editedText,
       tags,
-      commit: getBuildVersion() ?? "undefined",
+      commit: getCommitId() ?? "undefined",
       url:
         isObj && "url" in body && typeof body.url === "string"
           ? body.url

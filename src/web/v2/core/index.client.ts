@@ -26,3 +26,4 @@ export * from "@/web/v2/core/dom/prepaint.client";
 export * from "@/web/v2/core/widgets/back_to_top.client";
 export * from "@/web/v2/core/widgets/combobox.client";
 export * from "@/web/v2/core/nav/keyed_fetch_cache.client";
+export * from "@/web/v2/core/nav/build_version.client";

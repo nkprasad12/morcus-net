@@ -558,13 +558,110 @@ describe("v2_router integration", () => {
     expect(mockFusedDict.getCompletions).not.toHaveBeenCalled();
   });
 
-  test("GET /v2/api/completions returns dictionary chunk map with Cache-Control header for prefix", async () => {
+  test("GET /v2/api/completions returns dictionary chunk map for prefix", async () => {
     const res = await request(app).get("/v2/api/completions?prefix=am");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("application/json");
-    expect(res.header["cache-control"]).toContain("public, max-age=86400");
     expect(res.body).toEqual({
       ls: ["amicitia", "amo", "amor"],
+    });
+  });
+
+  describe("build-versioned caching", () => {
+    const savedCommit = process.env.COMMIT_ID;
+    const IMMUTABLE = "max-age=31536000, immutable";
+
+    beforeEach(() => {
+      process.env.COMMIT_ID = "abc123";
+    });
+
+    afterEach(() => {
+      if (savedCommit === undefined) delete process.env.COMMIT_ID;
+      else process.env.COMMIT_ID = savedCommit;
+    });
+
+    test("prefix chunks at the current version are public and immutable", async () => {
+      const res = await request(app).get(
+        "/v2/api/completions?prefix=am&v=abc123"
+      );
+      expect(res.header["cache-control"]).toBe(`public, ${IMMUTABLE}`);
+    });
+
+    test("prefix chunks ignore the dictionary cookie (they are cached publicly)", async () => {
+      const getCompletions = mockFusedDict.getCompletions as jest.Mock;
+      getCompletions.mockClear();
+      const plain = await request(app).get(
+        "/v2/api/completions?prefix=am&v=abc123"
+      );
+      const plainCalls = getCompletions.mock.calls.map((call) => call[0]);
+
+      getCompletions.mockClear();
+      const withCookie = await request(app)
+        .get("/v2/api/completions?prefix=am&v=abc123")
+        .set("Cookie", `morcus_d=${encodeDictBitmask(["L&S"])}`);
+      const cookieCalls = getCompletions.mock.calls.map((call) => call[0]);
+
+      expect(plainCalls.length).toBeGreaterThan(0);
+      expect(cookieCalls).toEqual(plainCalls);
+      expect(withCookie.body).toEqual(plain.body);
+    });
+
+    test("prefix chunks without the current version revalidate", async () => {
+      for (const url of [
+        "/v2/api/completions?prefix=am",
+        "/v2/api/completions?prefix=am&v=old",
+      ]) {
+        const res = await request(app).get(url);
+        expect(res.header["cache-control"]).toBe("no-cache");
+      }
+    });
+
+    test("suffix completions are never versioned (they read cookies)", async () => {
+      const res = await request(app).get(
+        "/v2/api/completions?q=-arum&v=abc123"
+      );
+      expect(res.header["cache-control"]).toBeUndefined();
+    });
+
+    test("reader page-turn partials at the current version are private and immutable", async () => {
+      const res = await request(app)
+        .get("/v2/reader/caesar/de_bello_gallico/1.1?v=abc123")
+        .set("X-Requested-With", "fetch");
+      expect(res.status).toBe(200);
+      expect(res.header["cache-control"]).toBe(`private, ${IMMUTABLE}`);
+      expect(res.headers["vary"]).toContain("X-Requested-With");
+    });
+
+    test("reader partials with a stale version revalidate", async () => {
+      const res = await request(app)
+        .get("/v2/reader/caesar/de_bello_gallico/1.1?v=old")
+        .set("X-Requested-With", "fetch");
+      expect(res.header["cache-control"]).toBe("no-cache");
+    });
+
+    test("full reader pages are never versioned", async () => {
+      const res = await request(app).get(
+        "/v2/reader/caesar/de_bello_gallico/1.1?v=abc123"
+      );
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('<html lang="en" data-version="abc123">');
+      expect(res.header["cache-control"]).toBeUndefined();
+    });
+
+    test("translations at the current version are private and immutable", async () => {
+      const res = await request(app).get(
+        "/v2/reader/sallust/catalina1/1/translation?v=abc123"
+      );
+      expect(res.status).toBe(200);
+      expect(res.header["cache-control"]).toBe(`private, ${IMMUTABLE}`);
+    });
+
+    test("a missing translation is never cached", async () => {
+      const res = await request(app).get(
+        "/v2/reader/caesar/de_bello_gallico/1.1/translation?v=abc123"
+      );
+      expect(res.status).toBe(404);
+      expect(res.header["cache-control"]).toBeUndefined();
     });
   });
 
@@ -1119,6 +1216,25 @@ describe("v2_router integration", () => {
         errorSpy.mockRestore();
       }
     );
+
+    test("a failed versioned partial is never cached", async () => {
+      const savedCommit = process.env.COMMIT_ID;
+      process.env.COMMIT_ID = "abc123";
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      try {
+        const res = await request(app)
+          .get("/v2/reader/caesar/de_bello_gallico/1.1?v=abc123")
+          .set("X-Requested-With", "fetch");
+        expect(res.status).toBe(500);
+        expect(res.header["cache-control"]).toBeUndefined();
+      } finally {
+        errorSpy.mockRestore();
+        if (savedCommit === undefined) delete process.env.COMMIT_ID;
+        else process.env.COMMIT_ID = savedCommit;
+      }
+    });
   });
 
   describe("telemetry coverage", () => {

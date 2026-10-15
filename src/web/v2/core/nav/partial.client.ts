@@ -4,6 +4,7 @@
 
 import { notifyContentSwap } from "@/web/v2/core/dom/base_element.client";
 import { assertConnected, escapeId } from "@/web/v2/core/dom/dom.client";
+import { withBuildVersion } from "@/web/v2/core/nav/build_version.client";
 import { SLOT_ATTR } from "@/web/v2/core/nav/slots.common";
 
 /**
@@ -138,6 +139,14 @@ export interface SwapSlotsOptions {
    * would repeat an expensive or non-idempotent request, such as a POST.
    */
   swapErrorResponses?: boolean;
+  /**
+   * Fetch with `?v=<build version>` ({@link withBuildVersion}) so the browser
+   * caches the response for the rest of the build. Only for routes whose
+   * response depends on nothing but the URL (no cookies), and that answer
+   * with `setVersionedCacheControl`. Ignored for POST. `fallback` still
+   * receives the unversioned `url`.
+   */
+  versioned?: boolean;
 }
 
 /** Thrown for a response that doesn't match the requested or live slots. */
@@ -250,9 +259,14 @@ export async function swapSlots(
   busy.forEach((el) => el.setAttribute("aria-busy", "true"));
 
   let pairs: Array<{ live: HTMLElement; next: Element }>;
+  const method = options.method ?? "GET";
+  const fetchUrl =
+    options.versioned === true && method === "GET"
+      ? withBuildVersion(url)
+      : url;
   try {
-    const res = await fetch(url, {
-      method: options.method ?? "GET",
+    const res = await fetch(fetchUrl, {
+      method,
       body: options.body,
       headers: {
         "X-Requested-With": "fetch",
