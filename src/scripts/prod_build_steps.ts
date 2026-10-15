@@ -13,7 +13,6 @@ import {
   StepConfig,
   runPipeline,
   runtimeMessage,
-  shellStep,
 } from "@/scripts/script_utils";
 import { createCleanDir } from "@/utils/file_utils";
 import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
@@ -29,7 +28,6 @@ import { buildV2Bundle } from "@/bundler/v2.rsbuild";
 import { buildV2Library } from "@/common/library/v2/v2_library_builder";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
-const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
 
 const PERSEUS_CLL_TAG = "master";
 const PERSEUS_CLL_ROOT =
@@ -51,7 +49,6 @@ const SETUP_DIRS: StepConfig = {
     Promise.all([
       createCleanDir(LIB_DEFAULT_DIR),
       createCleanDir(RAW_LAT_LIB_DIR),
-      createCleanDir(OFFLINE_DATA_DIR),
     ]).then(() => {}),
 
   label: "Setting up directories",
@@ -140,20 +137,6 @@ const PROCESS_LAT_LIB: StepConfig = {
     ],
   },
 };
-const MAKE_BUNDLE: StepConfig = {
-  operation: () => {
-    const childEnv = {
-      ...process.env,
-      RUN_TSC: "1",
-      MINIFY: "1",
-    };
-    return shellStep(
-      "npm run tsnp src/bundler/morcus-net.rsbuild.ts",
-      childEnv
-    );
-  },
-  label: "Building client bundle",
-};
 const MAKE_V2_BUNDLE: StepConfig = {
   operation: () => buildV2Bundle(/* minify= */ true),
   label: "Building UI V2 assets",
@@ -178,7 +161,6 @@ const WRITE_BUILD_PROVENANCE: StepConfig = {
 const ALL_STEPS = [
   SETUP_DIRS,
   WRITE_COMMIT_ID,
-  MAKE_BUNDLE,
   MAKE_V2_BUNDLE,
   SAVE_TABLES,
   MAKE_SH,

@@ -23,12 +23,6 @@ import os from "os";
 
 console.debug = jest.fn();
 
-const TEMP_DIR = "web_server_test_ts";
-const TEMP_FILE = `${TEMP_DIR}/sample.html`;
-const TEMP_INDEX_FILE = `${TEMP_DIR}/index.html`;
-const BUNDLE_NAME = "root.ABC.client-bundle.js";
-const BUNDLE = `${TEMP_DIR}/${BUNDLE_NAME}`;
-
 const NumberPost: RouteDefinition<number, number> = {
   route: {
     path: "/api/NumberPost",
@@ -90,8 +84,8 @@ function getServer(): express.Express {
       NumberGetPreStringified,
       NumberGetPreEncoded,
     ],
-    buildDir: path.resolve(TEMP_DIR),
     telemetry: Promise.resolve(TelemetryLogger.NoOp),
+    v2Router: express.Router(),
   };
   setupServer(params);
   return app;
@@ -155,17 +149,6 @@ function decode(res: RawResponse): string {
 describe("WebServer", () => {
   const app = getServer();
 
-  beforeAll(() => {
-    fs.mkdirSync(TEMP_DIR);
-    fs.writeFileSync(TEMP_FILE, "<!DOCTYPE html>\n<html></html>");
-    fs.writeFileSync(TEMP_INDEX_FILE, "<!DOCTYPE html>\n<html></html>");
-    fs.writeFileSync(BUNDLE, "");
-  });
-
-  afterAll(() => {
-    fs.rmSync(TEMP_DIR, { recursive: true, force: true });
-  });
-
   test("handles post route with good data", async () => {
     const response = await request(app)
       .post(NumberPost.route.path)
@@ -222,51 +205,15 @@ describe("WebServer", () => {
     expect(response.body.toString()).toBe("foo PreEncodedGet");
   });
 
-  test("sends unknown requests to index", async () => {
-    const response = await request(app).get("/notEvenRemotelyReal");
-
-    expect(response.status).toBe(200);
-    expect(response.type).toBe("text/html");
-    expect(response.headers["cache-control"]).toBe(
-      "no-cache, no-store, must-revalidate"
-    );
-  });
-
-  test("sends bundle with correct cache control", async () => {
-    const response = await request(app).get(`/${BUNDLE_NAME}`);
+  test("serves the legacy service worker cleanup script uncached", async () => {
+    const response = await request(app).get("/serviceworker.js");
 
     expect(response.status).toBe(200);
     expect(response.type).toBe("application/javascript");
     expect(response.headers["cache-control"]).toBe(
-      "public, max-age=315360000, immutable"
-    );
-  });
-
-  test("sends out index without cache", async () => {
-    const response = await request(app).get("/index.html");
-
-    expect(response.status).toBe(200);
-    expect(response.type).toBe("text/html");
-    expect(response.headers["cache-control"]).toBe(
       "no-cache, no-store, must-revalidate"
     );
-  });
-
-  test("serves the legacy service worker cleanup script uncached", async () => {
-    fs.writeFileSync(`${TEMP_DIR}/serviceworker.js`, "// stale V1 build");
-    try {
-      const response = await request(app).get("/serviceworker.js");
-
-      expect(response.status).toBe(200);
-      expect(response.type).toBe("application/javascript");
-      expect(response.headers["cache-control"]).toBe(
-        "no-cache, no-store, must-revalidate"
-      );
-      // Takes precedence over a V1 build output of the same name.
-      expect(response.text).toContain("registration.unregister()");
-    } finally {
-      fs.unlinkSync(`${TEMP_DIR}/serviceworker.js`);
-    }
+    expect(response.text).toContain("registration.unregister()");
   });
 
   test("serves the favicon at the root", async () => {
@@ -276,7 +223,7 @@ describe("WebServer", () => {
     expect(response.headers["content-type"]).not.toContain("text/html");
   });
 
-  test("serves robots.txt at the root ahead of the SPA fallback", async () => {
+  test("serves robots.txt at the root ahead of the V2 router", async () => {
     const response = await request(app).get("/robots.txt");
 
     expect(response.status).toBe(200);
@@ -297,7 +244,7 @@ describe("WebServer", () => {
     });
   });
 
-  test("when v2Router is mounted at /, root and unknown routes do not fall back to V1 index.html", async () => {
+  test("the V2 router serves root routes, and unknown routes are not found", async () => {
     const v2Router = express.Router();
     v2Router.get("/", (_req, res) => res.redirect(302, "/dicts"));
     v2Router.get("/dicts", (_req, res) => res.status(200).send("V2 Dicts"));
@@ -306,7 +253,6 @@ describe("WebServer", () => {
     setupServer({
       webApp: v2App,
       routes: [NumberGet],
-      buildDir: path.resolve(TEMP_DIR),
       telemetry: Promise.resolve(TelemetryLogger.NoOp),
       v2Router,
     });
@@ -366,7 +312,6 @@ describe("pre-compressed V2 assets", () => {
     setupServer({
       webApp: app,
       routes: [],
-      buildDir: path.resolve(TEMP_DIR),
       telemetry: Promise.resolve(TelemetryLogger.NoOp),
       v2Router,
     });

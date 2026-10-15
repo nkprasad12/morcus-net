@@ -37,11 +37,8 @@ Morcus.net is a collection of digital tools for Latin language, including:
 # First-time setup
 ./set_up_or_update.sh
 
-# Start server with dev build
+# Build the UI V2 assets and start the server
 ./morcus.sh web
-
-# Build with minification (production)
-./morcus.sh web --minify
 
 # Process dictionaries (first time or after changes)
 ./morcus.sh web --build_ls --build_sh

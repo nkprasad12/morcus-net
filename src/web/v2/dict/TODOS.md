@@ -101,12 +101,10 @@ sizing exercise is still open.
 
 ## 2. Fix the dead-anchor bug in V1
 
-**Status:** not started. Low priority — only worth doing while V1 is still user-facing.
-
-V2 works around this in `resolveSubsectionAnchor`
-([`subsection_note.server.ts`](subsection_note.server.ts)), but V1's `SubsectionNote` in
-`src/web/client/pages/dictionary/dictionary_v2.tsx` has the same latent bug and no
-workaround.
+**Status:** obsolete. UI V1 was removed (GRADUATION.md §4). V2 works around the data
+issue below in `resolveSubsectionAnchor`
+([`subsection_note.server.ts`](subsection_note.server.ts)); fixing it at the source in
+`ls_orths.ts` is optional.
 
 When an L&S entry has a single level-1 sense, `displayEntryFree`
 (`src/common/lewis_and_short/ls_display.ts`) merges it into the opening blurb and never

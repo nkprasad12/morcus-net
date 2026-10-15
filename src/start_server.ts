@@ -6,7 +6,6 @@ import http from "http";
 import { setupServer, WebServerParams } from "@/web/web_server";
 import { envVar } from "@/common/env_vars";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
-import path from "path";
 import { GitHub } from "@/web/utils/github";
 import { MongoLogger } from "@/web/telemetry/mongo_logger";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
@@ -234,7 +233,6 @@ export function startMorcusServer(): Promise<http.Server> {
       "No `GITHUB_TOKEN` environment variable set. Logging issues to console."
     );
   }
-  const buildDir = path.join(process.cwd(), "build", "client");
   const params: WebServerParams = {
     webApp: app,
     routes: [
@@ -283,7 +281,6 @@ export function startMorcusServer(): Promise<http.Server> {
       ),
     ],
     telemetry: telemetry,
-    buildDir,
     v2Router: createV2Router(fusedDict, {
       telemetry,
       corpus: corpusHandler,
