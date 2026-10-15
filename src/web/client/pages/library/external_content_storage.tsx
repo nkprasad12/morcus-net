@@ -3,8 +3,8 @@ import type {
   ObjectStore,
   SingleStoreDbConfig,
   Store,
-} from "@/web/client/utils/indexdb/types";
-import { simpleIndexDbStore } from "@/web/client/utils/indexdb/wrappers";
+} from "@/common/indexdb/types";
+import { simpleIndexDbStore } from "@/common/indexdb/wrappers";
 import React, { useCallback, useContext, createContext } from "react";
 
 namespace IndexDbBackend {

@@ -9,7 +9,7 @@ import {
   DbConfig,
   SingleStoreDbConfig,
   Closeable,
-} from "@/web/client/utils/indexdb/types";
+} from "@/common/indexdb/types";
 
 export const NO_MATCH_FOR_GET = "No match";
 

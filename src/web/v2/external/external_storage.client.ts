@@ -3,7 +3,7 @@
  *
  * Reads and writes **V1's IndexedDB schema unchanged** (database
  * `externalContent.db` v1, store `savedContent`, keyPath `storageKey`; see
- * `src/web/client/pages/library/external_content_storage.tsx`), so texts a
+ * `archive/ui-v1:src/web/client/pages/library/external_content_storage.tsx`), so texts a
  * reader imported in V1 appear in V2 and vice versa. This follows the
  * precedent of V2 reusing V1 storage keys such as `macronButton-${workId}`.
  *

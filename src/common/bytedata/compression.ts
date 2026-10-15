@@ -1,3 +1,8 @@
+/**
+ * Kept for a future offline mode. Its only runtime user was UI V1's
+ * offline dictionaries, removed in GRADUATION.md §4.
+ */
+
 function writeToStream(
   message: ArrayBuffer,
   writable: WritableStream<ArrayBuffer>

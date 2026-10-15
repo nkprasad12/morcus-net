@@ -1,10 +1,10 @@
 import { assertEqual } from "@/common/assert";
 import { singletonOf } from "@/common/misc_utils";
-import type { SingleStoreDbConfig } from "@/web/client/utils/indexdb/types";
+import type { SingleStoreDbConfig } from "@/common/indexdb/types";
 import {
   NO_MATCH_FOR_GET,
   simpleIndexDbStore,
-} from "@/web/client/utils/indexdb/wrappers";
+} from "@/common/indexdb/wrappers";
 
 const OFFLINE_SETTINGS_CHANGED = "OfflineSettingsChanged";
 

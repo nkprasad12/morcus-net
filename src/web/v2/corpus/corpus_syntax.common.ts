@@ -1,7 +1,7 @@
 /**
  * The corpus query grammar, shared by the server and the browser.
  *
- * Ported from V1 (`src/web/client/pages/corpus/autocomplete/` and
+ * Ported from V1 (`archive/ui-v1:src/web/client/pages/corpus/autocomplete/` and
  * `transformQuery` in `corpus_view.tsx`). The server uses it to validate a
  * query and translate it into the Rust engine's syntax before running it; the
  * autocomplete element uses it to compute what may come next at the caret.

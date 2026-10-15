@@ -1,5 +1,5 @@
 import { assert } from "@/common/assert";
-import { Closeable } from "@/web/client/utils/indexdb/types";
+import { Closeable } from "@/common/indexdb/types";
 import { useEffect, useRef, useState } from "react";
 
 export function useCloseable<T extends Closeable>(provider: () => T): T;

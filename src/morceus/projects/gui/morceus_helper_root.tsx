@@ -2,8 +2,8 @@
 
 import { checkPresent } from "@/common/assert";
 import { IsLsButNotMorceus } from "@/morceus/projects/gui/morceus_helper_apis";
-import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
-import { useState } from "react";
+import { callApi } from "@/web/utils/rpc/client_rpc";
+import { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 
 const root = ReactDOM.createRoot(
@@ -16,12 +16,20 @@ function LsButNotMorceus(props: { reversed: boolean }) {
   );
   const [i, setI] = useState<number>(0);
 
-  useApiCall(IsLsButNotMorceus, 0, {
-    onLoading: () => setWordList("Loading"),
-    onError: () => setWordList("Error"),
-    onResult: (result) =>
-      setWordList(props.reversed ? result.reverse() : result),
-  });
+  useEffect(() => {
+    let current = true;
+    setWordList("Loading");
+    callApi(IsLsButNotMorceus, 0)
+      .then((result) => {
+        if (current) setWordList(props.reversed ? result.reverse() : result);
+      })
+      .catch(() => {
+        if (current) setWordList("Error");
+      });
+    return () => {
+      current = false;
+    };
+  }, [props.reversed]);
 
   if (wordList === "Error") {
     return <div>Error</div>;
