@@ -104,7 +104,7 @@ This work lands on `lit-prototype` **before** the §2 re-slot, which then ends w
   - Move `src/web/client/utils/indexdb/{types,wrappers}.ts` (and the test) to `src/common/indexdb/`. **Keep** `common/dictionaries/indexdb_backing.ts` and `common/bytedata/compression.ts` for a future offline mode, with a header note so dead-code sweeps leave them alone.
   - Replace `useApiCall` in the Morceus helper GUI with a local `fetch` hook.
   - Tag `archive/ui-v1` and point V2 comments and docs that cite V1 paths at it.
-  - Remove `src/web/client/` and the V1 Playwright suites: `browser_e2e`, `browser_screenshot` (+24 snapshots) and `bundle_validation`. `client_performance` stays: it only drives page URLs, which V2 serves; §5 re-targets its metrics.
+  - Remove `src/web/client/` and the V1 Playwright suites: `browser_e2e`, `browser_screenshot` (+24 snapshots) and `bundle_validation`. `client_performance` stays, but contrary to an earlier note here it did not pass on V2 unchanged: it asserted V1's page title, and its L&S check matched hidden outline text first. It is fixed in §5, and must keep working against the older comparison image as well (see §5).
 - [x] **Retire V1 Bundler & Build Steps** (landed with the deletion above, in one commit):
   - Remove the V1 client build pipeline from `src/bundler/`, `src/scripts/prod_build_steps.ts`, and `src/scripts/run_morcus.ts`, making the Rsbuild V2 bundle the sole web client build:
     - Delete `morcus-net.rsbuild.ts`, `morcus-net.esbuild.ts` and `rsbuild_plugins.ts`. This removes the V1 `serviceworker` environment, whose output is already shadowed by the `/serviceworker.js` cleanup route.
@@ -137,6 +137,7 @@ This work lands on `lit-prototype` **before** the §2 re-slot, which then ends w
   - The V1 Playwright suites are deleted in §4, after their CUJs are ported. What remains: update `npm run integration-tests` and the CI integration job so the V2 functional and visual suites are the default target.
 - [ ] **Update Performance Benchmarks**:
   - Re-target performance test suites to measure V2 endpoints (SSR full-page render latency, `?format=partial` fragment latency, memory footprint under load, and client bundle/hydration metrics) rather than legacy V1 SPA/RPC flows.
+  - [x] `client_performance.test.ts` (Chromium CDP metrics and LCP, run by CI's A/B job via `perf_a_b.ts`) passes on V2: the landing title check accepts any `Morcus …` title, and the L&S _unda_ check waits for the visible match, since V2's collapsed outline also contains the text. The A/B job runs the test from the current checkout against an older comparison image (`dev-latest` or `main-latest`), which is still V1 until V2 reaches `dev`, so its URLs and assertions stay valid on both. Reader pages keep the V1 `?id=` URLs, which V2 redirects; the redirect only affects LCP, by about a localhost round trip. Until both sides are V2, the A/B comparison is V1 vs V2 rather than a regression check.
 
 ---
 
