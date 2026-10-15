@@ -263,7 +263,7 @@ function parseArguments() {
     action: "store_true",
   });
   e2e.add_argument("-a", "--all", {
-    help: "Runs across all supported browser engines (chromium, MobileChrome, firefox, FirefoxSmallScreen).",
+    help: "Runs across all browser projects.",
     action: "store_true",
   });
   e2e.add_argument("-u", "--update", {
@@ -716,7 +716,7 @@ async function runE2eTests(args: any) {
       }
     } else if (args.all) {
       command.push(
-        "--project=chromium --project=MobileChrome --project=firefox --project=FirefoxSmallScreen"
+        "--project=chromium --project=MobileChrome --project=firefox --project=FirefoxSmallScreen --project=webkit --project=MobileSafari"
       );
     } else {
       command.push("--project=chromium --project=MobileChrome");
