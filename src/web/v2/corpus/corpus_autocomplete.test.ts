@@ -297,16 +297,18 @@ describe("LemmaShardCache", () => {
 
   afterEach(() => {
     window.fetch = originalFetch;
+    delete document.documentElement.dataset.version;
     jest.restoreAllMocks();
   });
 
   test("shares one request per letter, then binary-searches the shard", async () => {
+    document.documentElement.dataset.version = "abc";
     const fetch = controlFetch();
     const cache = new LemmaShardCache();
 
     expect(cache.complete("ca", 50)).toBeUndefined();
-    const first = cache.load("c", "abc");
-    const second = cache.load("Cae", "abc");
+    const first = cache.load("c");
+    const second = cache.load("Cae");
     expect(second).toBe(first);
     expect(fetch.mock.mock.calls).toEqual([["/v2/api/corpus/lemmata/c?v=abc"]]);
 
@@ -320,13 +322,13 @@ describe("LemmaShardCache", () => {
     expect(cache.complete("c", 2)).toEqual(["cado", "caedes"]);
     expect(cache.complete("cz", 50)).toEqual([]);
     // Loaded now, so no more requests.
-    await cache.load("c", "abc");
+    await cache.load("c");
     expect(fetch.mock).toHaveBeenCalledTimes(1);
   });
 
-  test("without a version, the URL has no query", () => {
+  test("without a page build version, the URL has no query", () => {
     const fetch = controlFetch();
-    void new LemmaShardCache().load("x", undefined);
+    void new LemmaShardCache().load("x");
     expect(fetch.mock).toHaveBeenCalledWith("/v2/api/corpus/lemmata/x");
   });
 
@@ -335,12 +337,12 @@ describe("LemmaShardCache", () => {
     const fetch = controlFetch();
     const cache = new LemmaShardCache();
 
-    const load = cache.load("p", "abc");
+    const load = cache.load("p");
     fetch.respond({ error: "unavailable" }, { ok: false, status: 503 });
     await load;
     expect(cache.complete("pa", 50)).toBeNull();
 
-    await cache.load("p", "abc");
+    await cache.load("p");
     expect(fetch.mock).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalled();
   });
@@ -350,9 +352,9 @@ describe("LemmaShardCache", () => {
     const fetch = controlFetch();
     const cache = new LemmaShardCache();
 
-    const network = cache.load("n", undefined);
+    const network = cache.load("n");
     fetch.fail(new Error("offline"));
-    const malformed = cache.load("m", undefined);
+    const malformed = cache.load("m");
     fetch.respond({ not: "a list" });
     await Promise.all([network, malformed]);
 
@@ -388,8 +390,7 @@ interface Mounted {
 /** Renders the real corpus page content and returns its parts. */
 function mount(withAuthors: boolean = true): Mounted {
   document.body.innerHTML = renderCorpusContentHtml(
-    landingView(withAuthors ? CORPUS_TEST_AUTHORS : undefined),
-    "v1"
+    landingView(withAuthors ? CORPUS_TEST_AUTHORS : undefined)
   );
   // The input lives in <morcus-corpus-view>, which this test doesn't define.
   // Mark it running, as on a live page, so the activation gate in
@@ -720,8 +721,7 @@ describe("<morcus-corpus-suggestions>", () => {
     // late while the user was already typing.
     const template = document.createElement("template");
     template.innerHTML = renderCorpusContentHtml(
-      landingView(CORPUS_TEST_AUTHORS),
-      "v1"
+      landingView(CORPUS_TEST_AUTHORS)
     );
     const host = template.content.querySelector("morcus-corpus-suggestions");
     const slot = document.createComment("host");
@@ -767,6 +767,14 @@ describe("<morcus-corpus-suggestions>", () => {
   describe("lemmata", () => {
     // The shard cache lives as long as the module, so each test uses its own
     // first letter.
+
+    // As `renderPageShell` stamps it in production.
+    beforeEach(() => {
+      document.documentElement.dataset.version = "v1";
+    });
+    afterEach(() => {
+      delete document.documentElement.dataset.version;
+    });
 
     test("fetch the letter's shard once, then complete from it", async () => {
       const fetch = controlFetch();

@@ -22,6 +22,7 @@ import {
   settingsStore,
   showToast,
   swapSlots,
+  withBuildVersion,
   syncIframeTheme,
   syncWordGroupHover,
   tokenizeTargets,
@@ -1322,7 +1323,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (parts.length === 3 && parts[0] === "v2" && parts[1] === "reader") {
         cleanUrl = `${cleanUrl}/${this.dataset.page || "1"}`;
       }
-      const res = await fetch(`${cleanUrl}/translation`, {
+      const res = await fetch(withBuildVersion(`${cleanUrl}/translation`), {
         headers: { "X-Requested-With": "fetch" },
         signal,
       });
@@ -1470,6 +1471,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const swapOptions = {
       signal,
       slots: READER_PAGE_SLOTS,
+      versioned: true,
       fallback: (u: string) => this.navigate(u, { replace: isPopState }),
     };
 

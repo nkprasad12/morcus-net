@@ -24,6 +24,7 @@ import {
   registerElement,
   setHtml,
   type SafeHtml,
+  withBuildVersion,
 } from "@/web/v2/core/index.client";
 import {
   INFLECTION_CATEGORIES,
@@ -488,16 +489,11 @@ function shardKey(prefix: string): string {
  * Each shard is fetched once and kept for the life of the page.
  */
 export class LemmaShardCache {
-  readonly #shards = new KeyedFetchCache<
-    readonly string[] | null,
-    string | undefined
-  >({
-    fetch: async (key, version) => {
-      const query =
-        version === undefined ? "" : `?v=${encodeURIComponent(version)}`;
+  readonly #shards = new KeyedFetchCache<readonly string[] | null>({
+    fetch: async (key) => {
       try {
         const res = await fetch(
-          `/v2/api/corpus/lemmata/${encodeURIComponent(key)}${query}`
+          withBuildVersion(`/v2/api/corpus/lemmata/${encodeURIComponent(key)}`)
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const body: unknown = await res.json();
@@ -531,13 +527,10 @@ export class LemmaShardCache {
    * Not abortable: the request is shared, so one caller can't cancel it for
    * the others. Callers that stop caring ignore the result instead.
    */
-  load(
-    prefix: string,
-    version: string | undefined
-  ): Promise<readonly string[] | null> {
+  load(prefix: string): Promise<readonly string[] | null> {
     const key = shardKey(prefix);
     if (key === "") return Promise.resolve([]);
-    return this.#shards.load(key, version);
+    return this.#shards.load(key);
   }
 }
 
@@ -610,7 +603,6 @@ interface Parts {
 export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
   #parts: Parts | null = null;
   #authors: readonly string[] | undefined;
-  #lemmataVersion: string | undefined;
   #combobox: ComboboxController<CorpusSuggestion> | null = null;
 
   readonly #lemmata = (prefix: string) => {
@@ -633,7 +625,6 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     }
     this.#parts = { input, listbox };
     this.#authors = parseAuthors(this.dataset.authors);
-    this.#lemmataVersion = this.dataset.lemmataVersion || undefined;
 
     if (!this.#combobox) {
       this.#combobox = new ComboboxController<CorpusSuggestion>({
@@ -685,7 +676,7 @@ export class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
   /** Fetches the shard for `prefix`, then re-suggests unless superseded. */
   #loadShard(prefix: string): void {
     const signal = this.scope.latest("lemmata");
-    void LEMMA_SHARDS.load(prefix, this.#lemmataVersion).then(() => {
+    void LEMMA_SHARDS.load(prefix).then(() => {
       if (!signal.aborted) this.#refresh();
     });
   }

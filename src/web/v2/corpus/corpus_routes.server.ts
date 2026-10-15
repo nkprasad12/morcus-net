@@ -1,9 +1,6 @@
 import { Router } from "express";
 import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
-import {
-  getBuildVersion,
-  setVersionedCacheControl,
-} from "@/web/v2/core/server/build_version.server";
+import { setVersionedCacheControl } from "@/web/v2/core/server/build_version.server";
 import { isPartialRequest } from "@/web/v2/core/server/request_params.server";
 import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 import {
@@ -31,11 +28,6 @@ export interface CorpusRoutesOptions {
   readonly loadAuthors?: () => Promise<readonly string[] | undefined>;
   /** Overrides the lemma list source (tests). */
   readonly loadLemmata?: () => Promise<readonly string[] | undefined>;
-  /**
-   * Versions the lemma shard URLs the page links to, so browsers can cache
-   * them forever. Defaults to `getBuildVersion()`.
-   */
-  readonly commitId?: string;
 }
 
 export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
@@ -53,9 +45,6 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
     }
     return lemmaShards;
   };
-
-  /** Read per request: the server sets `COMMIT_ID` at startup. */
-  const lemmataVersion = () => getBuildVersion(options.commitId);
 
   getAsync("/corpus", async (req, res) => {
     const params = parseCorpusParams(req.query);
@@ -75,7 +64,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
       res.send(
         isPartial
           ? renderCorpusPartialHtml(view).toString()
-          : renderCorpusPageHtml(view, lemmataVersion())
+          : renderCorpusPageHtml(view)
       );
     } catch (err: unknown) {
       if (err instanceof CorpusUnavailableError) {
@@ -104,7 +93,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
       return;
     }
     // Without the current version, the URL outlives a corpus rebuild.
-    setVersionedCacheControl(req, res, lemmataVersion());
+    setVersionedCacheControl(req, res);
     res.type("json").send(shards.get(letter.toLowerCase()) ?? "[]");
   });
 

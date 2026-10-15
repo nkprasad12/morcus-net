@@ -1,4 +1,4 @@
-import { Router, Response } from "express";
+import { Router, type Request, type Response } from "express";
 import type { V2PreprocessedWork } from "@/common/library/v2/v2_types";
 import {
   findReaderWork,
@@ -13,6 +13,7 @@ import {
 import { createAsyncRegistrars } from "@/web/v2/core/server/async_handler.server";
 import { renderNotFoundPageHtml } from "@/web/v2/library/not_found.server";
 import { isPartialRequest } from "@/web/v2/core/server/request_params.server";
+import { setVersionedCacheControl } from "@/web/v2/core/server/build_version.server";
 import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 import { getFirstHighlightSectionId } from "@/web/v2/reader/reader_highlight.common";
 
@@ -39,6 +40,7 @@ function redirectReaderJump(
 }
 
 async function sendReaderPassage(
+  req: Request,
   res: Response,
   options: {
     work: V2PreprocessedWork;
@@ -52,14 +54,15 @@ async function sendReaderPassage(
 ): Promise<void> {
   try {
     if (options.isPartial) {
-      res.send(
-        await renderReaderPartialHtml({
-          work: options.work,
-          pageId: options.pageId,
-          query: options.query,
-          matchText: options.matchText,
-        })
-      );
+      const body = await renderReaderPartialHtml({
+        work: options.work,
+        pageId: options.pageId,
+        query: options.query,
+        matchText: options.matchText,
+      });
+      // Page turns fetch `?v=`; the partial depends only on the URL.
+      setVersionedCacheControl(req, res, { scope: "private" });
+      res.send(body);
     } else {
       res.send(
         await renderReaderPageHtml({
@@ -93,6 +96,7 @@ export function createReaderRoutes(): Router {
       return;
     }
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    setVersionedCacheControl(req, res, { scope: "private" });
     res.send(body);
   });
 
@@ -129,7 +133,7 @@ export function createReaderRoutes(): Router {
       return;
     }
 
-    await sendReaderPassage(res, {
+    await sendReaderPassage(req, res, {
       work,
       pageId,
       query,
@@ -177,7 +181,7 @@ export function createReaderRoutes(): Router {
       return;
     }
 
-    await sendReaderPassage(res, {
+    await sendReaderPassage(req, res, {
       work,
       pageId,
       query,

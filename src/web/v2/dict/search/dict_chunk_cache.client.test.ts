@@ -38,6 +38,24 @@ describe("createDictChunkCache", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  test("fetches the build-versioned URL when the page has a version", async () => {
+    document.documentElement.dataset.version = "abc123";
+    try {
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+      global.fetch = fetchMock;
+
+      await createDictChunkCache().load("am");
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/v2/api/completions?prefix=am&v=abc123"
+      );
+    } finally {
+      delete document.documentElement.dataset.version;
+    }
+  });
+
   test("rejects on network or HTTP error without caching the failure", async () => {
     const cache = createDictChunkCache();
 

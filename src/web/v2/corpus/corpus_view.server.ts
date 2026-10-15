@@ -318,24 +318,16 @@ function renderSettings(view: CorpusSearchView): SafeHtml {
  * finds the input through `data-input`, so it doesn't depend on where it
  * sits in the form.
  */
-function renderSuggestions(
-  view: CorpusSearchView,
-  lemmataVersion: string | undefined
-): SafeHtml {
+function renderSuggestions(view: CorpusSearchView): SafeHtml {
   // Omitted rather than empty: the element reads absence as "unknown".
   const authors =
     view.authors === undefined
       ? html``
       : html`data-authors="${JSON.stringify(view.authors)}"`;
-  const version =
-    lemmataVersion === undefined
-      ? html``
-      : html`data-lemmata-version="${lemmataVersion}"`;
   return html`<morcus-corpus-suggestions
     data-js-only
     data-input="${QUERY_INPUT_ID}"
     ${raw(authors)}
-    ${raw(version)}
     ><ul
       id="corpus-suggestions"
       class="suggestions corpus-suggestions"
@@ -345,10 +337,7 @@ function renderSuggestions(
   ></morcus-corpus-suggestions>`;
 }
 
-function renderForm(
-  view: CorpusSearchView,
-  lemmataVersion: string | undefined
-): SafeHtml {
+function renderForm(view: CorpusSearchView): SafeHtml {
   return html`<form
     class="search-form corpus-form"
     role="search"
@@ -367,7 +356,7 @@ function renderForm(
         autocapitalize="off"
         spellcheck="false"
         enterkeyhint="search" />
-      ${raw(renderSuggestions(view, lemmataVersion))}
+      ${raw(renderSuggestions(view))}
       <button
         type="submit"
         class="search-btn"
@@ -385,16 +374,10 @@ function renderForm(
   </form>`;
 }
 
-/**
- * The page content inside the shell (exported for conformance fixtures).
- * `lemmataVersion` versions the autocomplete's lemma shard URLs.
- */
-export function renderCorpusContentHtml(
-  view: CorpusSearchView,
-  lemmataVersion?: string
-): SafeHtml {
+/** The page content inside the shell (exported for conformance fixtures). */
+export function renderCorpusContentHtml(view: CorpusSearchView): SafeHtml {
   return html`<morcus-corpus-view class="corpus-page">
-    ${raw(renderForm(view, lemmataVersion))}
+    ${raw(renderForm(view))}
     ${raw(
       liveSlot(renderCorpusSlot(view, "summary"), {
         className: "corpus-summary-live",
@@ -405,10 +388,7 @@ export function renderCorpusContentHtml(
   </morcus-corpus-view>`;
 }
 
-export function renderCorpusPageHtml(
-  view: CorpusSearchView,
-  lemmataVersion?: string
-): string {
+export function renderCorpusPageHtml(view: CorpusSearchView): string {
   const canonicalPath = view.params.q
     ? `${CORPUS_PATH}?${new URLSearchParams({ q: view.params.q }).toString()}`
     : CORPUS_PATH;
@@ -417,7 +397,7 @@ export function renderCorpusPageHtml(
     canonicalPath,
     activePage: "corpus",
     widthSurface: "corpus",
-    contentHtml: renderCorpusContentHtml(view, lemmataVersion),
+    contentHtml: renderCorpusContentHtml(view),
   });
 }
 

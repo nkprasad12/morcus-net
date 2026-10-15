@@ -255,15 +255,13 @@ export async function buildCorpusFixtures(): Promise<SsrFixture[]> {
     },
     {
       name: "corpus-results",
-      // With a commit id, as in production, so the autocomplete host has
-      // every attribute it can carry.
-      html: renderCorpusContentHtml(corpusResults, "test-commit"),
+      html: renderCorpusContentHtml(corpusResults),
     },
     {
       // Clicked into the search box before the bundle ran (DESIGN §7.3
       // rule 2), so the suggestions open during `onConnect()`.
       name: "corpus-focused-before-upgrade",
-      html: renderCorpusContentHtml(corpusLanding, "test-commit"),
+      html: renderCorpusContentHtml(corpusLanding),
       focusBeforeUpgrade: {
         input: "corpus-q",
         host: "morcus-corpus-suggestions",

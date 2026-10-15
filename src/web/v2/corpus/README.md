@@ -59,10 +59,10 @@ The server imports `reader_loader.server.ts` and `reader_highlight.common.ts` (t
 
 ### Routes
 
-| Route                                | Response                                                                                                                                                                                                                                                  |
-| :----------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /v2/corpus`                     | Full page or slot templates                                                                                                                                                                                                                               |
-| `GET /v2/api/corpus/lemmata/:letter` | JSON array of lemmata starting with `letter` (one lowercased char). URLs carry `?v=<commit>`; a request at the server's current version gets `Cache-Control: public, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`). |
+| Route                                | Response                                                                                                                                                                                                                                                                                                          |
+| :----------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v2/corpus`                     | Full page or slot templates                                                                                                                                                                                                                                                                                       |
+| `GET /v2/api/corpus/lemmata/:letter` | JSON array of lemmata starting with `letter` (one lowercased char). URLs carry `?v=<build version>` (`withBuildVersion`, from `<html data-version>`); a request at the server's current version gets `Cache-Control: public, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`). |
 
 ---
 

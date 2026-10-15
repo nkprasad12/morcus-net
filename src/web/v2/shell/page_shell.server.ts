@@ -10,6 +10,7 @@ import {
   type V2Route,
 } from "@/bundler/v2_build_contract";
 import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
+import { getBuildVersion } from "@/web/v2/core/server/build_version.server";
 import { ICON_PATHS } from "@/web/v2/core/widgets/icons.common";
 import type { WidthSurface } from "@/web/v2/core/widgets/page_width.common";
 import { renderPageWidthHandles } from "@/web/v2/shell/page_width.server";
@@ -298,8 +299,15 @@ export function renderPageShell(options: PageShellOptions): string {
     )
     .join("\n  ");
 
+  // Read by `withBuildVersion` (`core/nav/build_version.client.ts`).
+  const buildVersion = getBuildVersion();
+  const versionAttr =
+    buildVersion === undefined
+      ? ""
+      : ` data-version="${he.escape(buildVersion)}"`;
+
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en"${versionAttr}>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

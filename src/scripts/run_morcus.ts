@@ -11,6 +11,7 @@ import {
   shellStep,
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
+import { DEV_SERVER_ENV } from "@/web/v2/core/server/build_version.server";
 import { createDir } from "@/utils/file_utils";
 import { ArgumentParser, type ArgumentOptions } from "argparse";
 import { ChildProcess, spawn } from "child_process";
@@ -707,6 +708,9 @@ async function setupAndStartWebServer(args: any) {
 function startWebServer(args: any) {
   const serverEnv = { ...process.env };
   serverEnv.NODE_ENV = "production";
+  // Each restart gets a fresh build version, so the browser never keeps
+  // `?v=` responses from before a server-side change.
+  serverEnv[DEV_SERVER_ENV] = "1";
   if (args.watch) {
     bundleConfig(args).operation();
   }
