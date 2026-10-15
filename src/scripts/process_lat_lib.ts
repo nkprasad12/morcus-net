@@ -26,7 +26,7 @@ process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
 
 import { buildV2Library } from "@/common/library/v2/v2_library_builder";
 
-processLibrary({
+void processLibrary({
   outputDir: LIB_DEFAULT_DIR,
   works: worksList,
   shouldBuildCorpus: buildCorpus,

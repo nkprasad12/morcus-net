@@ -189,5 +189,5 @@ export async function prodBuildSteps(): Promise<boolean> {
 }
 
 if (process.env.MAIN === "build") {
-  prodBuildSteps().then((success) => assert(success));
+  void prodBuildSteps().then((success) => assert(success));
 }

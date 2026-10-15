@@ -21,8 +21,8 @@ async function generateLoad() {
     get("/dicts?q=canaba&dict=ls,sh&format=partial"),
     get("/dicts?q=unda&dict=ls,sh&format=partial"),
   ]);
-  get("/dicts?q=canem&dict=ls,sh&o=1&format=partial");
-  get("/api/completions?prefix=ca&dict=ls,sh");
+  void get("/dicts?q=canem&dict=ls,sh&o=1&format=partial");
+  void get("/api/completions?prefix=ca&dict=ls,sh");
 }
 
-setInterval(generateLoad, 1000);
+setInterval(() => void generateLoad(), 1000);

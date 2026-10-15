@@ -118,11 +118,12 @@ This work lands on `lit-prototype` **before** the §2 re-slot, which then ends w
   - The Morceus helper dev tool now uses a plain Express route and `fetch`.
   - Tools updated for V2: `morcus_backend_integration.test.ts` is now a no-browser smoke test of a built image (PWA and TWA files, dictionary lookups and partials, completions, library, reader, translations, corpus with the Rust bindings, versioned caching, V1 URL redirects, 404); `load_test.ts` drives `/dicts` and `/api/completions`; `measuring_vms.md` measures a dictionary partial.
   - Not covered yet (ideas for V2): a `/settings` redirect for V1 bookmarks (it 404s; V2 settings are dialogs), a health-check endpoint for deploys, and macronizer/report smoke checks that depend on the image's engine and GitHub configuration.
-- [ ] **Dependency & Config Cleanup**:
-  - Uninstall V1-only npm packages from `package.json`: `@mui/material`, `@emotion/serialize`, `@testing-library/*` and `@rsbuild/plugin-preact`. Keep `preact`, the React lint plugins and the esbuild HTML plugins for the two Preact dev tools (LS editor, Morceus helper GUI).
-  - Simplify `eslint.config.mjs`, `tsconfig.json`, and `jest.config.js` by removing legacy V1 exemptions. Scope the React lint blocks to the two dev-tool directories instead of "everything except `src/web/v2`".
-  - Fix the ~7 async-safety violations in `start_server.ts` / `web_server.ts` and extend `@typescript-eslint/no-floating-promises` / `@typescript-eslint/no-misused-promises` beyond `src/web/v2` to cover server entrypoints (or repo-wide once legacy V1 code is deleted).
-  - Extend the import-boundary tier lint in `eslint.config.mjs` beyond `src/web/v2` and `src/bundler` (e.g. to `src/start_server.ts`, `src/scripts/**`, and `src/integration/**`) so Node code cannot import `*.client.ts` modules (DOM globals at load time) and browser-bound code cannot import `*.server.ts`.
+- [x] **Dependency & Config Cleanup**:
+  - Uninstalled the V1-only packages: `@mui/material`, `@emotion/serialize`, `@testing-library/{jest-dom,react,user-event}` and `@rsbuild/plugin-preact`. `preact`, the React lint plugins and the esbuild HTML plugins stay for the two Preact dev tools (LS editor, Morceus helper GUI); `body-parser` stays for the LS editor.
+  - `eslint.config.mjs`: the React rules apply only to those two tools (`PREACT_DEV_TOOLS`), with the React version pinned since `react` is a Preact alias.
+  - `no-floating-promises` / `no-misused-promises` now apply repo-wide. Fixing the 55 violations outside UI V2 found two real bugs: the server's periodic telemetry write and its teardown could reject unhandled (which exits Node), and an L&S test never awaited its assertions. The rest mark deliberate fire-and-forget calls (script entry points, benchmarks) with `void`.
+  - The tier lint now covers all non-V2, non-bundler code under `src/` (servers, build steps, scripts, Playwright suites): it can't import `*.client.ts`. Tests are exempt, as in UI V2.
+  - `tsconfig.json`: dropped Lit's `experimentalDecorators` (no decorators remain). `useDefineForClassFields: false` stays; flipping it changes class-field semantics across tsc, SWC and Rsbuild and needs its own check. `jest.config.js` is unchanged: the TSX left is the dev tools', which Jest never loads.
 
 ---
 

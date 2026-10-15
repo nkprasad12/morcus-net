@@ -120,4 +120,4 @@ async function driver() {
 
 */
 
-driver();
+void driver();

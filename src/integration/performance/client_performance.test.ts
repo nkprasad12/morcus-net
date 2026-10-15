@@ -100,7 +100,7 @@ test.describe("Client Performance Tests", () => {
         runMemory.push({ total: total.value, used: used.value });
       }
     };
-    collectorHandle = setInterval(collector, 16);
+    collectorHandle = setInterval(() => void collector(), 16);
   });
 
   test.afterEach(async () => {

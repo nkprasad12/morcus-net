@@ -64,8 +64,13 @@ function log(message: string) {
   console.log(`[start_server] ${message}`);
 }
 
-function logMemoryUsage(telemetry: TelemetryLogger): void {
-  telemetry.logServerHealth(getFormattedMemoryUsage());
+function logMemoryUsage(telemetry: TelemetryLogger): Promise<void> {
+  return telemetry.logServerHealth(getFormattedMemoryUsage());
+}
+
+/** Telemetry is best-effort: a failed write is logged, never fatal. */
+function logTelemetryError(err: unknown): void {
+  console.error("[start_server] Telemetry error:", err);
 }
 
 const INFLECTION_PROVIDER = singletonOf<InflectionProvider>(() => {
@@ -214,14 +219,13 @@ export function startMorcusServer(): Promise<http.Server> {
   const port = portVar === undefined ? 0 : parseInt(portVar);
   return new Promise((resolve) => {
     server.listen(port, () => {
-      const memoryLogId = setInterval(
-        () => telemetry.then(logMemoryUsage),
-        1000 * 60 * randInRange(14.75, 15.25)
-      );
+      const memoryLogId = setInterval(() => {
+        telemetry.then(logMemoryUsage).catch(logTelemetryError);
+      }, 1000 * 60 * randInRange(14.75, 15.25));
       server.on("close", () => {
         log("Cleaning up resources.");
         clearInterval(memoryLogId);
-        telemetry.then((t) => t.teardown());
+        telemetry.then((t) => t.teardown()).catch(logTelemetryError);
       });
       resolve(server);
       const address = server.address();
@@ -233,7 +237,8 @@ export function startMorcusServer(): Promise<http.Server> {
 }
 
 if (process.env.MAIN === "start") {
-  startMorcusServer().then((server) => {
+  // A startup failure should crash the process.
+  void startMorcusServer().then((server) => {
     log("Server started! Press Ctrl+C to exit.");
     const cleanup = (signal: string) => {
       log(`${signal} received, closing server.`);

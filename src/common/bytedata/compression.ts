@@ -9,8 +9,8 @@ function writeToStream(
 ): void {
   const writer = writable.getWriter();
   // Trying to `await` these Promises blocks forever, but I'm not sure why.
-  writer.write(message);
-  writer.close();
+  void writer.write(message);
+  void writer.close();
 }
 
 async function readFromStream(

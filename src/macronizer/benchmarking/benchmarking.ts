@@ -239,7 +239,7 @@ const MorcronizerLatinCy: Macronizer = [
   },
 ];
 
-compareResults(getGoldens(), [
+void compareResults(getGoldens(), [
   MorcronizerStanza,
   MorcronizerLatinCy,
   Alatius,

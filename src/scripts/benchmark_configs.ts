@@ -14,9 +14,9 @@ export function sqlDictBenchmarkConfig(): BenchmarkConfig[] {
     {
       name: "compMixed",
       call: () => {
-        ls.getCompletions("b");
-        ls.getCompletions("d");
-        ls.getCompletions("q");
+        void ls.getCompletions("b");
+        void ls.getCompletions("d");
+        void ls.getCompletions("q");
       },
     },
     { name: "byIdEarly", call: () => ls.getById("n20") },
@@ -26,9 +26,9 @@ export function sqlDictBenchmarkConfig(): BenchmarkConfig[] {
     {
       name: "byQueryMixed",
       call: () => {
-        ls.getRawEntry("habeo");
-        ls.getRawEntry("unda");
-        ls.getRawEntry("canaba");
+        void ls.getRawEntry("habeo");
+        void ls.getRawEntry("unda");
+        void ls.getRawEntry("canaba");
       },
     },
 
