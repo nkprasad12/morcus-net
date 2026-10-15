@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { gzipSync } from "zlib";
 import { disableSmoothScroll } from "@/integration/utils/playwright_utils";
 import { encodeDictBitmask } from "@/web/v2/dict/settings/dict_bitmask.common";
@@ -14,6 +14,19 @@ import {
   type V2JsChunkName,
   type V2Route,
 } from "@/bundler/v2_build_contract";
+
+/**
+ * Opens the mobile navigation drawer and waits for its slide-in animation to
+ * finish. Clicking a link mid-slide makes Playwright's actionability retries
+ * stall on MobileChrome when JavaScript is disabled, so settle it first.
+ * (`evaluate` runs in Playwright's own world, so it works with JS disabled.)
+ */
+async function openMobileMenu(page: Page): Promise<void> {
+  await page.locator(".mobile-menu-btn").click();
+  await page
+    .locator(".mobile-menu-dropdown")
+    .evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+}
 
 test.describe("UI V2 dictionary", () => {
   test("loads results without JavaScript (No-JS fallback)", async ({
@@ -112,7 +125,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Click About link in the app bar (handles desktop bar or mobile dropdown menu)
     if (await page.locator(".mobile-menu-btn").isVisible()) {
-      await page.locator(".mobile-menu-btn").click();
+      await openMobileMenu(page);
       await page.locator('.mobile-menu-dropdown a:has-text("About")').click();
     } else {
       await page.locator('.nav-desktop a:has-text("About")').click();
@@ -124,7 +137,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Navigate back to Dictionary via app bar
     if (await page.locator(".mobile-menu-btn").isVisible()) {
-      await page.locator(".mobile-menu-btn").click();
+      await openMobileMenu(page);
       await page
         .locator('.mobile-menu-dropdown a:has-text("Dictionary")')
         .click();
@@ -145,7 +158,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Click About link in the app bar
     if (await page.locator(".mobile-menu-btn").isVisible()) {
-      await page.locator(".mobile-menu-btn").click();
+      await openMobileMenu(page);
       await page.locator('.mobile-menu-dropdown a:has-text("About")').click();
     } else {
       await page.locator('.nav-desktop a:has-text("About")').click();
@@ -156,7 +169,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Navigate back to Dictionary via app bar
     if (await page.locator(".mobile-menu-btn").isVisible()) {
-      await page.locator(".mobile-menu-btn").click();
+      await openMobileMenu(page);
       await page
         .locator('.mobile-menu-dropdown a:has-text("Dictionary")')
         .click();
