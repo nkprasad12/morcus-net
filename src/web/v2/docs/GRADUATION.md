@@ -72,17 +72,52 @@ The `lit-prototype` branch has accumulated 260+ commits across multiple architec
 
 ## 4. Decommissioning UI V1
 
-Once V2 is serving root traffic and no fallback to V1 is needed:
+Since the §3 cutover, V1 is unreachable from browsers: `start_server.ts` always mounts the V2 router, so the SPA catch-all in `web_server.ts` never runs. V1 is still built, served from `build/client`, and tested, but nothing uses it. Nothing in V2 imports `src/web/client/`. Only two other files do: `morceus/projects/gui/morceus_helper_root.tsx` (`useApiCall`) and `common/dictionaries/indexdb_backing.ts` (the IndexedDB wrappers).
 
+This work lands on `lit-prototype` **before** the §2 re-slot, which then ends with a single "Delete UI V1" slice. Order: precompression first, then E2E parity, then deletion.
+
+- [ ] **Precompressed V2 Assets** (first, before any deletion):
+  - V2's `/assets/*` is served by plain `express.static`, so `compression()` gzips each response on the fly at the default level, with no brotli. V1 shipped `.br`/`.gz` siblings built at max level.
+  - Build: emit `.br` (quality 11) and `.gz` (level 9) for every hashed `*.js`/`*.css` in `build/v2/`, skipping `critical.*` (inlined) and `manifest.json`, reusing the compressor in `src/bundler/plugin_utils.ts`.
+  - Serve: rework V1's `preCompressedMiddleware` in `web_server.ts` to serve V2's `/assets`. Keep `Vary: Accept-Encoding`, `immutable, no-transform`, and `X-MorcusNet-PreCompressed`.
+  - Test: encoding negotiation, fallback, exclusions and traversal. The V2 bundle-validation E2E gains V1's "served precompressed in br and gzip" and "all encodings decode identically" checks.
+- [ ] **Port V1-Only CUJs to V2 E2E** (before the V1 suites are deleted):
+  - Dictionary and corpus are well covered in V2. The library and reader have almost no functional browser coverage (only screenshots, late hydration and swipe). Nine tests close the gap:
+    - Library: filter, open a work, the reader loads.
+    - Reader:
+      - saved spot is restored after a Next page turn and after a TOC jump;
+      - opening a work without `id` → `replaceState` to `?id=1.1`, and Back returns to the library (with the `?id=1.3` deep link folded in);
+      - the line deep link `?id=1.2.161` scrolls the line into view;
+      - the TOC jump field works;
+      - translations load and follow page turns;
+      - clicking a passage word shows its entry;
+      - copying across verse lines gives `\n`-separated text (Juvenal, _Saturae_ 1.1).
+    - Dictionary: arrow-key autocomplete selection (one run).
+  - Intentionally not ported:
+    - the whitespace-query test: string cleanup, already in `dict_search.test.ts`;
+    - "editor shown on library landing": static SSR markup, covered by `library.test.ts`;
+    - legacy dictionary URLs: server redirects, covered by `v2_router.test.ts`;
+    - the V1 screenshot suite: covered by V2 visual baselines.
 - [ ] **Delete V1 Client Code**:
-  - Remove `src/web/client/` (legacy SPA pages, components, routing, and V1 stylesheets/assets).
+  - Move `src/web/client/utils/indexdb/{types,wrappers}.ts` (and the test) to `src/common/indexdb/`. **Keep** `common/dictionaries/indexdb_backing.ts` and `common/bytedata/compression.ts` for a future offline mode, with a header note so dead-code sweeps leave them alone.
+  - Replace `useApiCall` in the Morceus helper GUI with a local `fetch` hook.
+  - Tag `archive/ui-v1` and point V2 comments and docs that cite V1 paths at it.
+  - Remove `src/web/client/` and the V1 Playwright suites: `browser_e2e`, `browser_screenshot` (+24 snapshots) and `bundle_validation`. `client_performance` is skipped until §5 re-targets it.
 - [ ] **Retire V1 Bundler & Build Steps**:
-  - Remove the V1 client build pipeline from `src/bundler/`, `src/scripts/prod_build_steps.ts`, and `src/scripts/run_morcus.ts`, making the Rsbuild V2 bundle the sole web client build. This includes the V1 `serviceworker` environment in `morcus-net.rsbuild.ts` (its output is already shadowed by the `/serviceworker.js` cleanup route) and the `/offlineData/:resourceName` route in `web_server.ts`.
+  - Remove the V1 client build pipeline from `src/bundler/`, `src/scripts/prod_build_steps.ts`, and `src/scripts/run_morcus.ts`, making the Rsbuild V2 bundle the sole web client build:
+    - Delete `morcus-net.rsbuild.ts`, `morcus-net.esbuild.ts` and `rsbuild_plugins.ts`. This removes the V1 `serviceworker` environment, whose output is already shadowed by the `/serviceworker.js` cleanup route.
+    - Point `./morcus.sh bundle` at `v2.rsbuild.ts`.
+    - Make V2 the default `e2e` target.
+  - `web_server.ts`: remove the `/offlineData/:resourceName` route, the `build/client` static mount, the SPA catch-all and the V1 precompression middleware. Make `v2Router` required.
+  - Stop generating `build/offlineData` (`packCompressedChunks` in `ls_generate`, `gaf_generate` and `sh_generate`, `web/server/chunking.ts`, `OFFLINE_DATA_DIR`).
 - [ ] **Prune V1-Only Server Endpoints**:
-  - Remove legacy JSON-RPC routes and server handlers in `src/web/` that existed solely for the V1 SPA, keeping only shared APIs or endpoints still consumed by V2.
+  - No V2 client calls the V1 JSON-RPC routes, and nothing outside the UI uses them, so all ten are removed from `start_server.ts`. V2's own `POST /api/report` already shadows V1's.
+  - Move the types V2 borrows from `web/api_routes.ts` to their owners, then delete the file: the macronizer types → `src/macronizer/`, `ReportApiRequest` → next to `github.ts`, `CorpusQueryRequest` → `common/library/corpus/`.
+  - Delete `addApi`/`RouteDefinition`, `client_rpc.ts`, `logClientEvent`/`ClientEventData`, and the route-only helpers. Keep `ServerExtras`/`RequestData`/`parsing.ts`.
+  - Re-target or delete the V1-RPC tools: `load_test.ts`, `benchmark_configs.ts`, `morcus_backend_integration.test.ts`, `rpc_integration.test.ts`.
 - [ ] **Dependency & Config Cleanup**:
-  - Uninstall V1-only npm packages (legacy UI framework/component dependencies, unused bundler plugins) from `package.json`.
-  - Simplify `eslint.config.mjs`, `tsconfig.json`, and `jest.config.js` by removing legacy V1 exemptions and `.tsx` client overrides.
+  - Uninstall V1-only npm packages from `package.json`: `@mui/material`, `@emotion/serialize`, `@testing-library/*` and `@rsbuild/plugin-preact`. Keep `preact`, the React lint plugins and the esbuild HTML plugins for the two Preact dev tools (LS editor, Morceus helper GUI).
+  - Simplify `eslint.config.mjs`, `tsconfig.json`, and `jest.config.js` by removing legacy V1 exemptions. Scope the React lint blocks to the two dev-tool directories instead of "everything except `src/web/v2`".
   - Fix the ~7 async-safety violations in `start_server.ts` / `web_server.ts` and extend `@typescript-eslint/no-floating-promises` / `@typescript-eslint/no-misused-promises` beyond `src/web/v2` to cover server entrypoints (or repo-wide once legacy V1 code is deleted).
   - Extend the import-boundary tier lint in `eslint.config.mjs` beyond `src/web/v2` and `src/bundler` (e.g. to `src/start_server.ts`, `src/scripts/**`, and `src/integration/**`) so Node code cannot import `*.client.ts` modules (DOM globals at load time) and browser-bound code cannot import `*.server.ts`.
 
@@ -90,8 +125,8 @@ Once V2 is serving root traffic and no fallback to V1 is needed:
 
 ## 5. Test Suite & Performance Benchmark Migration
 
-- [ ] **Retire V1 Integration Suites**:
-  - Remove legacy V1 Playwright test files and update `npm run integration-tests` / `./morcus.sh e2e` so V2 functional and visual suites are the default integration target.
+- [ ] **Make V2 the Default Integration Target**:
+  - The V1 Playwright suites are deleted in §4, after their CUJs are ported. What remains: update `npm run integration-tests` and the CI integration job so the V2 functional and visual suites are the default target.
 - [ ] **Update Performance Benchmarks**:
   - Re-target performance test suites to measure V2 endpoints (SSR full-page render latency, `?format=partial` fragment latency, memory footprint under load, and client bundle/hydration metrics) rather than legacy V1 SPA/RPC flows.
 
