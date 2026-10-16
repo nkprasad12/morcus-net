@@ -18,6 +18,16 @@ import {
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
+/** A corpus query, as the server-side engine takes it. */
+export interface CorpusQueryRequest {
+  query: string;
+  commitHash?: string;
+  pageData?: PageData;
+  pageSize?: number;
+  contextLen?: number;
+  strictMode?: boolean;
+}
+
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `latin_corpus.json`;
 export const CORPUS_RAW_TEXT = `latin_corpus_raw.txt`;
@@ -29,7 +39,7 @@ export const CORPUS_INFLECTIONS_OFFSETS =
   "latin_corpus_inflections_offsets.bin";
 export const CORPUS_SUGGESTION_PREFIX = "latin_corpus_suggestions";
 export const CORPUS_AUTHORS_LIST = `${CORPUS_SUGGESTION_PREFIX}_authors.json`;
-export const CORPUS_LEMMATA_LIST = `${CORPUS_SUGGESTION_PREFIX}_lemmata.json`;
+export const CORPUS_LEMMATA_DB = `${CORPUS_SUGGESTION_PREFIX}_lemmata.db`;
 
 // // // // // // // // // //
 // Corpus Result Types   //
@@ -108,6 +118,8 @@ export interface CorpusInputWork {
   id: string;
   /** The name of the work. */
   workName: string;
+  /** Optional short display title used for deterministic ordering. */
+  shortTitle?: string;
   /** The author of the work. */
   author: string;
   /** A short and single-word code for the author. */

@@ -1,7 +1,7 @@
 import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
 import { macronizeInput } from "@/macronizer/morcronizer";
 import * as latincy from "@/latincy/latincy_client";
-import type { MacronizedWord } from "@/web/api_routes";
+import type { MacronizedWord } from "@/macronizer/macronizer_types";
 
 // Mock the latincyAnalysis function
 jest.mock("@/latincy/latincy_client", () => ({
@@ -276,5 +276,166 @@ describe("macronizeInput", () => {
     const acclinat = result[2] as MacronizedWord;
     expect(acclinat.word).toBe("acclinat");
     expect(acclinat.options).toHaveLength(1);
+  });
+
+  it("assigns confidence='confident' when Pass 1 matches a single form", async () => {
+    const result = await macronizeInput("Panthia", async () => [
+      ["Panthia", "Panthia", "Gender=Fem|Case=Abl"],
+    ]);
+    const panthia = result[0] as MacronizedWord;
+    expect(panthia.suggested).toBe(1);
+    expect(panthia.confidence).toBe("confident");
+  });
+
+  it("assigns confidence='tied' when Pass 1 matches multiple forms", async () => {
+    // caveo has both cavē (regular conj2) and cave (short-e irreg) for 2nd sg pres imperat act.
+    const result = await macronizeInput("cave", async () => [
+      [
+        "cave",
+        "caveo",
+        "Mood=Imp|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin|Voice=Act",
+      ],
+    ]);
+    const cave = result[0] as MacronizedWord;
+    expect(cave.options.length).toBeGreaterThan(1);
+    expect(cave.suggested).toBe(0);
+    expect(cave.confidence).toBe("tied");
+  });
+
+  it("assigns confidence='weak' when Pass 1 misses lemma and Pass 2 matches exact morph", async () => {
+    const result = await macronizeInput("Panthia", async () => [
+      ["Panthia", "otherLemma", "Case=Abl|Gender=Fem|Number=Sing"],
+    ]);
+    const panthia = result[0] as MacronizedWord;
+    expect(panthia.suggested).toBe(1);
+    expect(panthia.confidence).toBe("weak");
+  });
+
+  it("leaves suggested and confidence undefined when neither Pass 1 nor Pass 2 matches", async () => {
+    const result = await macronizeInput("Panthia", async () => [
+      ["Panthia", "otherLemma", "Case=Dat|Gender=Masc|Number=Plur"],
+    ]);
+    const panthia = result[0] as MacronizedWord;
+    expect(panthia.suggested).toBeUndefined();
+    expect(panthia.confidence).toBeUndefined();
+  });
+
+  it("handles letterless tokens and soft hyphens (\\p{Cf})", async () => {
+    const input = "ac\u00ADclinat — 123Panthia";
+    const result = await macronizeInput(input, async (words) =>
+      words.map((w) => [w, "", ""])
+    );
+    // "ac\u00ADclinat" crunches as acclinat while preserving raw word text
+    const acclinat = result[0] as MacronizedWord;
+    expect(acclinat.word).toBe("ac\u00ADclinat");
+    expect(acclinat.options).toHaveLength(1);
+    expect(acclinat.options[0].form).toBe("accli\u0304nat");
+    // " — " has no letters -> plain string separator(s), never an unknown word
+    expect(result.some((r) => typeof r !== "string" && r.word === "—")).toBe(
+      false
+    );
+  });
+
+  it("reclassifies unknown Roman numerals and praenomen/single-letter abbreviations before '.' as plain separators", async () => {
+    const input = "XVIII xxiv M. Cn. Sex. M'. Q. Blah.";
+    const result = await macronizeInput(input, async (words) =>
+      words.map((w) => [w, "", ""])
+    );
+    const wordObjects = result.filter(
+      (t): t is MacronizedWord => typeof t !== "string"
+    );
+    // Only "Blah" should remain a MacronizedWord (unknown); all numerals and abbreviations become string tokens.
+    expect(wordObjects.map((w) => w.word)).toEqual(["Blah"]);
+  });
+
+  it("appends kind='numeral' option to known all-caps Roman numerals", async () => {
+    // "I" is a known word (Ī from eo#1) and an all-caps Roman numeral.
+    const nonNumResult = await macronizeInput("I", async () => [
+      [
+        "I",
+        "eo",
+        "Mood=Imp|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin|Voice=Act",
+      ],
+    ]);
+    const wordNonNum = nonNumResult[0] as MacronizedWord;
+    expect(wordNonNum.options).toEqual([
+      {
+        form: "I\u0304",
+        options: [
+          {
+            lemma: "eo#1",
+            morph: ["perf ind act 1st sg", "pres imperat act 2nd sg"],
+          },
+        ],
+      },
+      {
+        form: "I",
+        kind: "numeral",
+        options: [],
+      },
+    ]);
+    expect(wordNonNum.suggested).toBeUndefined();
+    expect(wordNonNum.confidence).toBeUndefined();
+
+    // Lowercase "i" does not get a numeral option.
+    const lowerResult = await macronizeInput("i", async () => [
+      ["i", "eo", ""],
+    ]);
+    const wordLower = lowerResult[0] as MacronizedWord;
+    expect(wordLower.options).toHaveLength(1);
+    expect(wordLower.options[0].kind).toBeUndefined();
+  });
+});
+
+describe("macronizeInput edge cases", () => {
+  const echoTagger = async (words: string[]) =>
+    words.map((w): [string, string, string] => [w, "", ""]);
+
+  it("doesn't flag a numeral reading that prints the same as a known form", async () => {
+    // "C" is known (Gaius) and has no macron, so the numeral reading would
+    // print the same; "I" (Ī) still gets the numeral option.
+    const result = await macronizeInput("C. Iulius I", echoTagger);
+    const words = result.filter(
+      (t): t is MacronizedWord => typeof t !== "string"
+    );
+    expect(words[0].word).toBe("C");
+    expect(words[0].options.map((o) => o.kind)).toEqual([undefined]);
+    const i = words.find((w) => w.word === "I");
+    expect(i?.options.map((o) => o.kind)).toEqual([undefined, "numeral"]);
+  });
+
+  it("never suggests the numeral reading, even for a numeral-looking tag", async () => {
+    const numeralLookingMorphs = [
+      "NumForm=Roman|NumType=Card",
+      "NumType=Card|NumForm=Roman|Number=Plur",
+      "NumType=Ord|Case=Nom",
+    ];
+    for (const morph of numeralLookingMorphs) {
+      const result = await macronizeInput("I", async () => [["I", "I", morph]]);
+      const word = result[0] as MacronizedWord;
+      expect(word.options.map((o) => o.kind)).toEqual([undefined, "numeral"]);
+      expect(word.suggested).toBeUndefined();
+      expect(word.confidence).toBeUndefined();
+    }
+  });
+
+  it("treats CRLF line breaks like LF", async () => {
+    const crlf = await macronizeInput("Panthia\r\nPanthia", echoTagger);
+    const lf = await macronizeInput("Panthia\nPanthia", echoTagger);
+    expect(crlf).toEqual(lf);
+    expect(crlf[1]).toBe("\n");
+  });
+
+  it("keeps the typed spelling, macrons included, of unknown words", async () => {
+    const result = await macronizeInput("Ōthō Panthiā", echoTagger);
+    const otho = result[0] as MacronizedWord;
+    expect(otho.options).toHaveLength(0);
+    expect(otho.word).toBe("Ōthō");
+    // Known words still report the plain word; the macron picks the form.
+    const panthia = result[2] as MacronizedWord;
+    expect(panthia.word).toBe("Panthia");
+    expect(panthia.options.map((o) => o.form.normalize("NFC"))).toEqual([
+      "Panthi\u0101",
+    ]);
   });
 });

@@ -6,14 +6,13 @@ import type {
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import {
-  encodeMessage,
   isArray,
   isString,
   matchesObject,
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
+import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
 import { readFileSync } from "fs";
 
 const OUTLINE_SKIPS = new Set<string>(["aut", "oeuv", "refch", "cl"]);
@@ -511,10 +510,10 @@ export function processGaffiot(): RawDictEntry[] {
           .replace(/Œ/g, "OE")
           .replace(/œ/g, "oe"),
       ],
-      entry: encodeMessage(
-        { entry, outline: makeOutline(senses, headword, id) },
-        [XmlNodeSerialization.DEFAULT]
-      ),
+      entry: JSON.stringify({
+        entry: preRenderEntryHtml(entry),
+        outline: makeOutline(senses, headword, id),
+      }),
     });
   }
   return entries;

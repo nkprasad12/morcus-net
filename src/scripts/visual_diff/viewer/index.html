@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visual Diff Inspector</title>
+    <link rel="stylesheet" href="viewer.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="title">
+        <h1>Visual Diff Inspector</h1>
+        <span class="chip" id="total-count"></span>
+        <span class="chip muted" id="source-label"></span>
+      </div>
+      <div class="segmented" role="group" aria-label="View mode">
+        <button type="button" data-view="flip" title="Flip (Space)">
+          Flip <kbd>Space</kbd>
+        </button>
+        <button type="button" data-view="split" title="Split slider (S)">
+          Split <kbd>S</kbd>
+        </button>
+        <button type="button" data-view="diff" title="Diff mask (D)">
+          Diff <kbd>D</kbd>
+        </button>
+        <button type="button" data-view="side" title="Side by side (4)">
+          Side by side <kbd>4</kbd>
+        </button>
+      </div>
+      <button type="button" id="help-button" class="ghost">
+        Shortcuts <kbd>?</kbd>
+      </button>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="filters">
+          <input
+            type="search"
+            id="search"
+            placeholder="Search scenarios (press /)"
+            autocomplete="off" />
+          <div class="facets" id="facets"></div>
+          <div class="row">
+            <select id="browser-filter" aria-label="Browser">
+              <option value="all">All browsers</option>
+            </select>
+            <select id="sort-order" aria-label="Sort order">
+              <option value="diffDesc">Diff ↓</option>
+              <option value="diffAsc">Diff ↑</option>
+              <option value="name">Name</option>
+            </select>
+          </div>
+        </div>
+        <ul class="scenario-list" id="scenario-list"></ul>
+        <div class="sidebar-footer">
+          <span id="filtered-count"></span>
+          <button type="button" id="clear-filters" class="link" hidden>
+            Clear filters <kbd>C</kbd>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="active-info">
+            <span class="chip accent" id="active-category"></span>
+            <strong id="active-scenario"></strong>
+            <span id="active-badges" class="badges"></span>
+          </div>
+          <div class="toolbar-controls">
+            <div id="flip-controls" class="control-group">
+              <div class="segmented small">
+                <button type="button" id="show-before">
+                  <span id="before-button-label"></span> <kbd>1</kbd>
+                </button>
+                <button type="button" id="show-after">
+                  <span id="after-button-label"></span> <kbd>2</kbd>
+                </button>
+              </div>
+              <button type="button" id="peek" class="ghost">
+                Hold to peek
+              </button>
+              <button type="button" id="blink" class="ghost">
+                Auto-blink <kbd>B</kbd>
+              </button>
+            </div>
+            <label id="diff-controls" class="control-group">
+              Mask opacity
+              <input type="range" id="diff-opacity" min="0" max="100" />
+            </label>
+            <div class="segmented small" role="group" aria-label="Zoom">
+              <button type="button" data-zoom="fit">Fit</button>
+              <button type="button" data-zoom="1">100%</button>
+              <button type="button" data-zoom="1.5">150%</button>
+            </div>
+            <div class="control-group">
+              <button
+                type="button"
+                id="prev"
+                class="ghost"
+                title="Previous (K)">
+                ‹
+              </button>
+              <button type="button" id="next" class="ghost" title="Next (J)">
+                ›
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="viewport checkered" id="viewport"></div>
+
+        <footer class="status-bar">
+          <span id="stat-pixels"></span>
+          <span id="stat-pct"></span>
+          <span id="stat-dims"></span>
+        </footer>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="help-modal" hidden>
+      <div class="modal" role="dialog" aria-labelledby="help-title">
+        <h2 id="help-title">Keyboard shortcuts</h2>
+        <dl class="shortcuts">
+          <dt><kbd>Space</kbd> <kbd>X</kbd></dt>
+          <dd>Flip between before and after</dd>
+          <dt><kbd>1</kbd> <kbd>←</kbd></dt>
+          <dd>Show before</dd>
+          <dt><kbd>2</kbd> <kbd>→</kbd></dt>
+          <dd>Show after</dd>
+          <dt><kbd>B</kbd></dt>
+          <dd>Toggle auto-blink</dd>
+          <dt><kbd>S</kbd></dt>
+          <dd>Split slider</dd>
+          <dt><kbd>D</kbd> <kbd>3</kbd></dt>
+          <dd>Diff mask</dd>
+          <dt><kbd>4</kbd></dt>
+          <dd>Side by side</dd>
+          <dt><kbd>↓</kbd> <kbd>J</kbd> / <kbd>↑</kbd> <kbd>K</kbd></dt>
+          <dd>Next / previous snapshot</dd>
+          <dt><kbd>/</kbd></dt>
+          <dd>Focus search</dd>
+          <dt><kbd>C</kbd></dt>
+          <dd>Clear all filters</dd>
+          <dt><kbd>Esc</kbd></dt>
+          <dd>Close this dialog / leave search</dd>
+        </dl>
+        <button type="button" id="help-close">Close</button>
+      </div>
+    </div>
+
+    <!-- Filled in by writeViewer() in visual_diff.ts. -->
+    <script type="text/plain" id="manifest-data">
+      __VISUAL_DIFF_MANIFEST__
+    </script>
+    <script src="viewer.js"></script>
+  </body>
+</html>

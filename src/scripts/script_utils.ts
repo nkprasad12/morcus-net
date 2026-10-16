@@ -5,6 +5,7 @@ import { spawn } from "child_process";
 import { assert, assertEqual } from "@/common/assert";
 import { rm } from "fs/promises";
 import { arrayMap } from "@/common/data_structures/collect_map";
+import { recordClone, recordDownload } from "@/scripts/build_provenance";
 
 export const TS_NODE: ReadonlyArray<string> = [
   "node",
@@ -104,6 +105,7 @@ async function downloadAll(configs: DownloadConfig[]): Promise<boolean> {
   for (const dlInfo of configs) {
     try {
       await download(dlInfo.url, dlInfo.path);
+      await recordDownload(dlInfo.url, dlInfo.path);
     } catch (err) {
       success = false;
       await cleanupDownloads(configs);
@@ -126,6 +128,7 @@ async function cloneRepo(repoUrl: string): Promise<string | undefined> {
   const cloneDir = getRepoNameFromUrl(repoUrl);
   try {
     await shellStep(`git clone ${repoUrl} ${cloneDir}`);
+    recordClone(repoUrl, cloneDir);
     console.log(chalk.blue(`Cloned ${repoUrl} into ${cloneDir}`));
     return cloneDir;
   } catch (error) {

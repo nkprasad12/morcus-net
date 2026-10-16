@@ -28,18 +28,12 @@ export interface ApiCallData {
   userAgent?: string;
 }
 
-export interface ClientEventData {
-  name: string;
-  extras?: { [key: string]: unknown };
-}
-
 export interface ApiCallEvent extends TelemetryEvent, ApiCallData {}
 
 export interface TelemetryLogger {
   readonly teardown: () => Promise<void>;
   readonly logApiCall: (data: ApiCallData) => Promise<void>;
   readonly logServerHealth: (data: NodeJS.MemoryUsage) => Promise<void>;
-  readonly logClientEvent: (data: ClientEventData) => Promise<unknown>;
 }
 
 export namespace TelemetryLogger {
@@ -47,13 +41,11 @@ export namespace TelemetryLogger {
     teardown: async () => {},
     logApiCall: async (d) => console.debug(d),
     logServerHealth: async (d) => console.debug(d),
-    logClientEvent: async (d) => console.debug(d),
   };
 
   export const NoOp: TelemetryLogger = {
     teardown: async () => {},
     logApiCall: async () => {},
     logServerHealth: async () => {},
-    logClientEvent: async () => {},
   };
 }

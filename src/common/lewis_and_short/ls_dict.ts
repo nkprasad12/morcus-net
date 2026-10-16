@@ -2,9 +2,6 @@ import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { StoredDict } from "@/common/dictionaries/dict_storage";
 import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { XmlNode } from "@/common/xml/xml_node";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { decodeMessage } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
 import {
@@ -12,26 +9,19 @@ import {
   type InflectionProvider,
 } from "@/common/dictionaries/latin_dict_fetching";
 
-const REGISTRY = [XmlNodeSerialization.DEFAULT];
-
 export interface StoredEntryData {
   /** The disambiguation number for this entry, if applicable. */
   n?: string;
   /** The outline for this entry. */
   outline: EntryOutline;
-  /** The root node for a marked up entry. */
-  entry: XmlNode;
+  /** The pre-rendered HTML for a marked up entry. */
+  entry: string;
 }
 
 /** Exported only for unit tests. */
 export namespace StoredEntryData {
-  function validator(t: unknown): t is StoredEntryData {
-    // This is only used to restore from the SQL data so we don't need to check.
-    return true;
-  }
-
   export function fromEncoded(message: string): StoredEntryData {
-    return decodeMessage(message, validator, REGISTRY);
+    return JSON.parse(message);
   }
 
   export function toEntryResult(entry: StoredEntryData): EntryResult {

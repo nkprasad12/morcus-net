@@ -1,7 +1,5 @@
-import { XmlNode } from "@/common/xml/xml_node";
 import {
   matchesObject,
-  instanceOf,
   isString,
   maybeUndefined,
   isArray,
@@ -75,7 +73,7 @@ export namespace DictSubsectionResult {
 
 /** The pre-processed result for a dictionary entry. */
 export interface EntryResult {
-  entry: XmlNode;
+  entry: string;
   outline: EntryOutline;
   inflections?: InflectionData[];
   subsections?: DictSubsectionResult[];
@@ -84,7 +82,7 @@ export interface EntryResult {
 export namespace EntryResult {
   export const isMatch: (x: unknown) => x is EntryResult =
     matchesObject<EntryResult>({
-      entry: instanceOf(XmlNode),
+      entry: isString,
       outline: EntryOutline.isMatch,
       inflections: maybeUndefined(isArray(InflectionData.isMatch)),
       subsections: maybeUndefined(isArray(DictSubsectionResult.isMatch)),

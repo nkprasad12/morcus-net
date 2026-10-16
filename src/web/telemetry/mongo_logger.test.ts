@@ -89,12 +89,6 @@ describe("MongoLogger", () => {
     expect(mockInsertOne).not.toHaveBeenCalled();
   });
 
-  it("logs to database on client event", async () => {
-    const logger = await MongoLogger.create("foo", "bar");
-    await logger.logClientEvent({ name: "clickEvent" });
-    expect(mockCollection).toHaveBeenCalledWith("ClientEvents");
-  });
-
   it("logs to database on system health call", async () => {
     const logger = await MongoLogger.create("foo", "bar");
 

@@ -2,20 +2,25 @@ import { OutlineSection } from "@/common/dictionaries/dict_result";
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
 
+function stripHtmlTags(input: string): string {
+  return input.replace(/<[^>]+>/g, "").trim();
+}
+
 export function getOutline(entry: ShEntry, id: number): EntryOutline {
   const senses: OutlineSection[] = entry.senses.map((sense, j) => ({
     level: sense.level,
     ordinal: sense.bullet,
-    text: chooseOutlineText(sense.text, 50),
+    text: stripHtmlTags(chooseOutlineText(sense.text, 50)),
     sectionId: `sh${id}.${j}`,
   }));
+  const rawLabel = findShLabelText(entry.keys[0], entry.blurb);
   return {
     mainKey: entry.keys[0],
-    mainLabel: findShLabelText(entry.keys[0], entry.blurb),
+    mainLabel: rawLabel !== undefined ? stripHtmlTags(rawLabel) : undefined,
     mainSection: {
       level: 0,
       ordinal: "0",
-      text: chooseOutlineText(entry.blurb, 100),
+      text: stripHtmlTags(chooseOutlineText(entry.blurb, 100)),
       sectionId: `sh${id}`,
     },
     senses: senses,

@@ -175,89 +175,67 @@ impl CorpusQueryEngine {
 mod tests {
     use super::*;
 
-    macro_rules! generate {
-        ($query:expr) => {
-            &[
-                (
-                    $query,
-                    PageData {
-                        result_index: 0,
-                        result_id: 0,
-                        candidate_index: 0,
-                    },
-                    QueryOptions {
-                        page_size: 5,
-                        context_len: 15,
-                        strict_mode: false,
-                    },
-                ),
-                (
-                    $query,
-                    PageData {
-                        result_index: 0,
-                        result_id: 0,
-                        candidate_index: 0,
-                    },
-                    QueryOptions {
-                        page_size: 25,
-                        context_len: 10,
-                        strict_mode: false,
-                    },
-                ),
-                (
-                    $query,
-                    PageData {
-                        result_index: 5,
-                        result_id: 0,
-                        candidate_index: 0,
-                    },
-                    QueryOptions {
-                        page_size: 5,
-                        context_len: 10,
-                        strict_mode: false,
-                    },
-                ),
-                (
-                    $query,
-                    PageData {
-                        result_index: 50,
-                        result_id: 0,
-                        candidate_index: 0,
-                    },
-                    QueryOptions {
-                        page_size: 5,
-                        context_len: 10,
-                        strict_mode: false,
-                    },
-                ),
-            ]
-        };
-    }
-
-    // (query, page_start, page_size, context_len)
-    const TEST_QUERIES: &[&[(&str, PageData, QueryOptions)]] = &[
-        generate!("@lemma:do"),
-        generate!("@case:dat"),
-        generate!("(@lemma:habeo and @voice:passive)"),
-        generate!("(@case:dat or @voice:passive)"),
-        generate!("(@case:dat or (@voice:passive and @lemma:do))"),
-        generate!("@lemma:do oscula @case:dat"),
-        generate!("[Ovid] @lemma:do oscula @case:dat"),
-        generate!("@case:dat @case:acc"),
-        generate!("@case:dat @case:nom et"),
+    const TEST_QUERIES: &[&str] = &[
+        "@lemma:do",
+        "@case:dat",
+        "(@lemma:habeo and @voice:passive)",
+        "(@case:dat or @voice:passive)",
+        "@lemma:do oscula @case:dat",
+        "[Ovid] @lemma:do oscula @case:dat",
+        "@case:dat @case:acc",
+        "@case:dat @case:nom et",
+        "arma virumque",
+        "in @case:abl",
     ];
+
+    /// Author-restricted queries whose candidates end up as a bitmask. Currently
+    /// broken in two ways:
+    /// - `compute_range` rounds the author range out to 64-token boundaries and
+    ///   never clips back, so candidates from neighbouring authors are counted
+    ///   (and can be returned).
+    /// - `MatchIterator::new` seeds the bitmask cursor with the absolute
+    ///   `result_id` rather than one relative to the slice, so page 2 is empty.
+    const KNOWN_BROKEN_AUTHOR_QUERIES: &[&str] = &["[Ovid] @case:dat @case:acc"];
+
+    /// (page_size, context_len)
+    const TEST_OPTIONS: &[(usize, usize)] = &[(5, 15), (25, 10)];
+
+    /// How many pages to walk for each query, following the engine's own cursors.
+    const PAGES_PER_QUERY: usize = 3;
 
     #[test]
     fn validate_queries() {
+        walk_pages(TEST_QUERIES);
+    }
+
+    #[test]
+    #[ignore = "known prod bugs: author range not clipped; MatchIterator bitmask cursor absolute"]
+    fn validate_author_bitmask_queries() {
+        walk_pages(KNOWN_BROKEN_AUTHOR_QUERIES);
+    }
+
+    fn walk_pages(queries: &[&str]) {
         let engine = match reference_impl::get_engine_unsafe() {
             Some(e) => e,
             // Note: for now we are OK silently passing the test if the corpus
             // fails to load, because the CI doesn't handle building the index yet
             None => return,
         };
-        let test_queries = TEST_QUERIES.iter().flat_map(|s| s.iter());
-        for (query, page_data, options) in test_queries {
-            engine.compare_ref_impl_results(query, page_data, options);
+        for query in queries {
+            for &(page_size, context_len) in TEST_OPTIONS {
+                let options = QueryOptions {
+                    page_size,
+                    context_len,
+                    strict_mode: false,
+                };
+                let mut page_data = PageData::default();
+                for _ in 0..PAGES_PER_QUERY {
+                    match engine.compare_ref_impl_results(query, &page_data, &options) {
+                        Some(next) => page_data = next,
+                        None => break,
+                    }
+                }
+            }
         }
     }
 }

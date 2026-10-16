@@ -1,6 +1,5 @@
 import { XmlNode } from "@/common/xml/xml_node";
 import {
-  Validator,
   instanceOf,
   isArray,
   isBoolean,
@@ -151,36 +150,5 @@ export namespace LibraryWorkMetadata {
     translationId: maybeUndefined(isString),
     isTranslation: maybeUndefined(isBoolean),
     attribution: isString,
-  });
-}
-
-export type ListLibraryWorksResponse = LibraryWorkMetadata[];
-
-export namespace ListLibraryWorksResponse {
-  export const isMatch: Validator<ListLibraryWorksResponse> =
-    isArray<LibraryWorkMetadata>(LibraryWorkMetadata.isMatch);
-}
-
-interface NameAndAuthor {
-  urlName: string;
-  urlAuthor: string;
-}
-
-export interface WorkId {
-  id?: string;
-  nameAndAuthor?: NameAndAuthor;
-  commitHash?: string;
-}
-
-export namespace WorkId {
-  export const isMatch = matchesObject<WorkId>({
-    id: maybeUndefined(isString),
-    nameAndAuthor: maybeUndefined(
-      matchesObject<NameAndAuthor>({
-        urlName: isString,
-        urlAuthor: isString,
-      })
-    ),
-    commitHash: maybeUndefined(isString),
   });
 }

@@ -1,7 +1,6 @@
 /* istanbul ignore file */
 
-import { assert, checkPresent } from "@/common/assert";
-import { envVar } from "@/common/env_vars";
+import { assert } from "@/common/assert";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import {
   StepConfig,
@@ -11,7 +10,8 @@ import {
   shellStep,
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
-import { createDir } from "@/utils/file_utils";
+import { DEV_SERVER_ENV } from "@/web/v2/core/server/build_version.server";
+import { buildCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
 import { ArgumentParser, type ArgumentOptions } from "argparse";
 import { ChildProcess, spawn } from "child_process";
 
@@ -22,25 +22,33 @@ const BUNDLE = "bundle";
 const BUILD = "build";
 const E2E = "e2e";
 const CORPUS = "corpus";
+const VISUAL_DIFF = "visual-diff";
+const INVENTORY = "inventory";
 
 const cleanupOperations: (() => unknown)[] = [];
 
 registerCleanup();
 const args = parseArguments();
 if (args.command === WEB_SERVER) {
-  setupAndStartWebServer(args).then((success) => assert(success));
+  void setupAndStartWebServer(args).then((success) => assert(success));
 } else if (args.command === WORKER) {
-  awaitAll([startWorker(args, args.workerType)]);
+  void awaitAll([startWorker(args, args.workerType)]);
 } else if (args.command === EDITOR) {
-  startLsEditor();
+  void startLsEditor();
 } else if (args.command === BUNDLE) {
-  buildBundle(args).then(assert);
+  void buildBundle(args).then(assert);
 } else if (args.command === BUILD) {
-  buildArtifacts(args).then(assert);
+  void buildArtifacts(args).then(assert);
 } else if (args.command === E2E) {
-  runE2eTests(args).then(assert);
+  void runE2eTests(args).then(assert);
 } else if (args.command === CORPUS) {
-  runCorpusCommand(args).then(assert);
+  void runCorpusCommand(args).then(assert);
+} else if (args.command === VISUAL_DIFF || args.command === "diff") {
+  void runVisualDiff(args).then(assert);
+} else if (args.command === INVENTORY) {
+  void runInventory(args).then((ok) => {
+    if (!ok) process.exit(1);
+  });
 }
 
 interface CommandArgument {
@@ -153,25 +161,17 @@ function parseArguments() {
     help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
+  build.add_argument("-b_v2", "--build_v2", {
+    help: "Builds the UI V2 assets (now enabled by default).",
+    action: "store_true",
+  });
   addArguments(build, COMMON_BUILD_ARGS);
 
   const bundle = subparsers.add_parser(BUNDLE, {
-    help: "Builds the client bundle.",
-  });
-  bundle.add_argument("-a", "--analyze", {
-    help: "Runs analysis on the generated bundle.",
-    action: "store_true",
-  });
-  bundle.add_argument("-to", "--transpile_only", {
-    help: "Skips type checking for the bundle.",
-    action: "store_true",
+    help: "Builds the UI V2 client assets into build/v2/.",
   });
   bundle.add_argument("-m", "--minify", {
-    help: "Minifies the bundle after building.",
-    action: "store_true",
-  });
-  bundle.add_argument("-c", "--compress", {
-    help: "Stores pre-compressed bundle outputs.",
+    help: "Minifies (and precompresses) the assets, as production does.",
     action: "store_true",
   });
 
@@ -182,12 +182,12 @@ function parseArguments() {
     help: "Builds all artifacts.",
     action: "store_true",
   });
-  web.add_argument("-no_bc", "--no_build_client", {
-    help: "The client bundle will not be built.",
-    action: "store_true",
-  });
   web.add_argument("-mot", "--morceus_tables", {
     help: "Builds Morceus tables and saves to disk.",
+    action: "store_true",
+  });
+  web.add_argument("-b_v2", "--build_v2", {
+    help: "Builds the experimental UI V2 assets.",
     action: "store_true",
   });
   addArguments(web, COMMON_BUILD_ARGS);
@@ -195,20 +195,8 @@ function parseArguments() {
     help: "Uses the real telemetry database.",
     action: "store_true",
   });
-  web.add_argument("-w", "--watch", {
-    help: "Runs a dev server for local iteration.",
-    action: "store_true",
-  });
-  web.add_argument("-m", "--minify", {
-    help: "Minifies the bundle after building.",
-    action: "store_true",
-  });
-  web.add_argument("-c", "--compress", {
-    help: "Stores pre-compressed bundle outputs.",
-    action: "store_true",
-  });
   web.add_argument("-to", "--transpile_only", {
-    help: "Skips type checking for the client and server.",
+    help: "Skips type checking for the server.",
     action: "store_true",
   });
 
@@ -245,26 +233,104 @@ function parseArguments() {
   });
 
   const e2e = subparsers.add_parser(E2E, {
-    help: "Runs E2E tests.",
+    help:
+      "Runs the E2E suites (src/integration/suites/) against the running dev " +
+      "server, or the visual regression suite with --visual.",
   });
-  e2e.add_argument("-r", "--rerun", {
-    help: "Reuses an existing docker image for the tests.",
+  e2e.add_argument("--docker", {
+    help:
+      "Runs against a production Docker image instead of the dev server, as " +
+      "CI does. Builds the image first unless --rerun is set.",
     action: "store_true",
   });
-  e2e.add_argument("-d", "--dev-server", {
-    help: "Uses the local dev server instead of docker for the tests.",
+  e2e.add_argument("-r", "--rerun", {
+    help: "With --docker: reuses an existing image instead of building one.",
     action: "store_true",
   });
   e2e.add_argument("-t", "--tag", {
-    help: "The tag to use if using a docker image.",
-    default: "itests",
+    help: "With --docker: the image tag to build or reuse (default: itests).",
   });
   e2e.add_argument("-p", "--project", {
-    help: "The project (device) to use when limiting to only one device type.",
+    help: "Comma-separated browser projects to run (overrides --all).",
     default: "",
   });
   e2e.add_argument("-g", "--grep", {
     help: "The grep pattern to use to limit tests by name.",
+    default: "",
+  });
+  e2e.add_argument("-vs", "--visual", {
+    help: "Runs UI V2 visual regression tests (src/integration/screenshot/browser_v2_screenshot.test.ts).",
+    action: "store_true",
+  });
+  e2e.add_argument("-a", "--all", {
+    help: "Runs across all browser projects.",
+    action: "store_true",
+  });
+  e2e.add_argument("-u", "--update", {
+    help: "Updates screenshot baselines when running visual tests (requires --all with --visual).",
+    action: "store_true",
+  });
+  e2e.add_argument("-pt", "--port", {
+    help: "The port of the running dev server (default: $PORT, or 5757).",
+    default: "",
+  });
+  e2e.add_argument("--headed", {
+    help: "Runs Playwright tests in headed browser mode.",
+    action: "store_true",
+  });
+  e2e.add_argument("--diff", {
+    help:
+      "With --visual: open the Visual Diff Inspector afterwards. Without --update " +
+      "it shows Playwright's failures (expected vs actual); with --update it " +
+      "shows the rewritten baselines against HEAD.",
+    action: "store_true",
+  });
+
+  const visualDiff = subparsers.add_parser(VISUAL_DIFF, {
+    aliases: ["diff"],
+    help: "Interactive viewer for screenshot baseline changes (flip, split, diff mask).",
+  });
+  visualDiff.add_argument("-s", "--source", {
+    help:
+      "Where to find changes: 'git' (baselines vs --ref), 'results' (Playwright " +
+      "failures in test-results/), or 'auto' (git, then results). Default: auto.",
+    choices: ["auto", "git", "results"],
+    default: "auto",
+  });
+  visualDiff.add_argument("-r", "--ref", {
+    help: "Git ref to compare against for the git source (default: HEAD).",
+    default: "HEAD",
+  });
+  visualDiff.add_argument("-d", "--dir", {
+    help: "Snapshot directory for the git source (default: src/integration/screenshot/browser_v2_screenshot.test.ts-snapshots).",
+    default: "",
+  });
+  visualDiff.add_argument("--results-dir", {
+    help: "Playwright output directory for the results source (default: test-results).",
+    default: "",
+  });
+  visualDiff.add_argument("-o", "--out", {
+    help: "Output directory for diff artifacts and the viewer (default: .cache/visual-diff).",
+    default: "",
+  });
+  visualDiff.add_argument("-p", "--port", {
+    help: "Port to serve the viewer on; the next free port is used if taken (default: 8899).",
+    type: "int",
+  });
+  visualDiff.add_argument("--host", {
+    help: "Interface to bind the viewer to. Use 127.0.0.1 to restrict access to this machine (default: 0.0.0.0, all interfaces).",
+    default: "",
+  });
+  visualDiff.add_argument("--no-server", {
+    help: "Only write the viewer and report; do not start a server.",
+    action: "store_true",
+  });
+  visualDiff.add_argument("--open", {
+    help: "Open the viewer in the default browser.",
+    action: "store_true",
+  });
+  visualDiff.add_argument("--report", {
+    help: "Also write the markdown report to this path.",
     default: "",
   });
 
@@ -296,7 +362,29 @@ function parseArguments() {
     default: "10",
   });
 
-  for (const subcommand of [editor, worker, bundle, web, build, e2e, corpus]) {
+  const inventory = subparsers.add_parser(INVENTORY, {
+    help: "Runs the UI V2 cross-slice inventory and exact ratchet check.",
+  });
+  inventory.add_argument("-u", "--update", {
+    help: "Rewrites src/web/v2/inventory_ratchet.json from the current metrics.",
+    action: "store_true",
+  });
+  inventory.add_argument("-r", "--report", {
+    help: "Overrides the markdown report location (default: .cache/inventory/report.md).",
+    default: "",
+  });
+
+  for (const subcommand of [
+    editor,
+    worker,
+    bundle,
+    web,
+    build,
+    e2e,
+    corpus,
+    visualDiff,
+    inventory,
+  ]) {
     subcommand.add_argument("--bun", {
       help: "Runs supported commands with bun.",
       action: "store_true",
@@ -317,8 +405,20 @@ function registerCleanup() {
     }
   };
   process.on("exit", cleanup);
-  process.on("SIGINT", cleanup);
-  process.on("uncaughtException", cleanup);
+  process.on("SIGINT", () => {
+    cleanup();
+    process.exit(130);
+  });
+  process.on("uncaughtException", (err) => {
+    cleanup();
+    console.error(err);
+    process.exit(1);
+  });
+  process.on("unhandledRejection", (err) => {
+    cleanup();
+    console.error(err);
+    process.exit(1);
+  });
 }
 
 function startWorker(args: any, workerType: string): Promise<void> {
@@ -383,33 +483,23 @@ function spawnChild(command: string[], env?: NodeJS.ProcessEnv): ChildProcess {
 function buildBundle(args: any): Promise<boolean> {
   return runPipeline([
     { operation: writeCommitId, label: "writeCommitId" },
-    bundleConfig(args),
+    v2BundleConfig(args, undefined, args.minify === true),
   ]);
 }
 
-function bundleConfig(args: any, priority?: number): StepConfig {
+function v2BundleConfig(
+  args: any,
+  priority?: number,
+  minify: boolean = true
+): StepConfig {
   const executor = args.bun ? ["bun"] : TS_NODE;
-  const buildCommand = executor.concat(["src/bundler/morcus-net.rsbuild.ts"]);
-  const childEnv = { ...process.env };
-  childEnv.NODE_ENV = "production";
-  if (args.minify) {
-    childEnv.MINIFY = "1";
-  }
-  if (args.watch) {
-    childEnv.WATCH = "1";
-  }
-  if (args.analyze) {
-    childEnv.ANALYZE_BUNDLE = "1";
-  }
-  if (args.compress) {
-    childEnv.COMPRESS = "1";
-  }
-  if (!args.transpile_only) {
-    childEnv.RUN_TSC = "1";
-  }
+  const buildCommand = executor.concat([
+    "src/bundler/v2.rsbuild.ts",
+    ...(minify ? ["--minify"] : []),
+  ]);
   return {
-    operation: () => shellStep(buildCommand.join(" "), childEnv),
-    label: "Building bundle",
+    operation: () => shellStep(buildCommand.join(" ")),
+    label: "Building UI V2 assets",
     priority,
   };
 }
@@ -441,11 +531,6 @@ function artifactConfig(args: any): StepConfig[] {
     args.build_latin_library = true;
   }
 
-  setupSteps.push({
-    operation: () => createDir(envVar("OFFLINE_DATA_DIR")),
-    label: "Creating output dirs",
-    priority: 1,
-  });
   if (args.morceus_tables === true) {
     setupSteps.push({
       operation: MorceusTables.save,
@@ -521,6 +606,22 @@ function artifactConfig(args: any): StepConfig[] {
       priority: 2,
     });
   }
+  if (
+    args.build_sh === true ||
+    args.build_ra === true ||
+    args.build_georges === true ||
+    args.build_pozo === true ||
+    args.build_gesner === true ||
+    args.build_forcellini === true ||
+    args.build_ls === true ||
+    args.build_gaffiot === true
+  ) {
+    setupSteps.push({
+      operation: () => buildCompletionsDb(),
+      label: "Building dictionary completions DB",
+      priority: 3,
+    });
+  }
   if (args.build_latin_library === true) {
     if (args.build_corpus === true) {
       childEnv.BUILD_CORPUS = "1";
@@ -538,17 +639,15 @@ function artifactConfig(args: any): StepConfig[] {
 }
 
 function buildArtifacts(args: any): Promise<boolean> {
-  return runPipeline(artifactConfig(args), { parallel: true });
+  return runPipeline([v2BundleConfig(args, 1), ...artifactConfig(args)], {
+    parallel: true,
+  });
 }
 
 async function setupAndStartWebServer(args: any) {
   const setupSteps: StepConfig[] = [];
-  if (args.no_build_client === false) {
-    writeCommitId();
-    if (args.watch !== true) {
-      setupSteps.push(bundleConfig(args, 1));
-    }
-  }
+  writeCommitId();
+  setupSteps.push(v2BundleConfig(args, 1));
   setupSteps.push(...artifactConfig(args));
   const setupSuccess = await runPipeline(setupSteps, { parallel: true });
   if (!setupSuccess) {
@@ -561,18 +660,20 @@ async function setupAndStartWebServer(args: any) {
 function startWebServer(args: any) {
   const serverEnv = { ...process.env };
   serverEnv.NODE_ENV = "production";
-  if (args.watch) {
-    bundleConfig(args).operation();
-  }
+  // Each restart gets a fresh build version, so the browser never keeps
+  // `?v=` responses from before a server-side change.
+  serverEnv[DEV_SERVER_ENV] = "1";
   if (args.real_database === false) {
     serverEnv.CONSOLE_TELEMETRY = "yes";
+  }
+  // Local dev has no LatinCy server; simulate macronizer suggestions unless
+  // the caller chose an engine. Production runs `build/server.js` directly.
+  if (!serverEnv.MACRONIZER_ENGINE) {
+    serverEnv.MACRONIZER_ENGINE = "fake-latincy";
   }
   let baseCommand: string[] = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];
-    if (args.watch) {
-      // Watch mode seems to have problems.
-    }
   } else if (args.transpile_only === true) {
     baseCommand.push("--swc");
   }
@@ -591,41 +692,115 @@ async function startLsEditor() {
     },
   ];
   assert(await runPipeline(steps));
-  runCommand(`${TS_NODE.join(" ")} ${editorRoot}/ls_interactive.ts`);
+  void runCommand(`${TS_NODE.join(" ")} ${editorRoot}/ls_interactive.ts`);
 }
 
 async function runE2eTests(args: any) {
   const childEnv = { ...process.env };
   const steps: StepConfig[] = [];
-  if (args.rerun && args.dev_server) {
-    throw new Error("--rerun is incompatible with --dev-server");
+  const isVisual = Boolean(args.visual);
+  // Without CI set, Playwright's HTML reporter opens and serves the report
+  // after any failure, blocking until killed. Keep it on disk instead.
+  childEnv.PLAYWRIGHT_HTML_OPEN = "never";
+
+  if (args.update && !(isVisual && args.all)) {
+    throw new Error(
+      "Refusing to update visual snapshots without `--visual --all`.\n" +
+        "Updating snapshots through the fast Chromium/MobileChrome path leaves the\n" +
+        "other projects' baselines stale, causing matrix drift.\n\n" +
+        "Please run: ./morcus.sh e2e --visual --all --update"
+    );
   }
-  const tag = checkPresent(args.tag);
-  if (!args.rerun && !args.dev_server) {
-    const fullTag = `ghcr.io/nkprasad12/morcus:${tag}`;
-    steps.push({
-      operation: () => shellStep(`docker build . -t ${fullTag}`),
-      label: `Building docker image ${fullTag}`,
-    });
+  if (!args.docker && (args.rerun || args.tag !== undefined)) {
+    throw new Error("--rerun and --tag only apply with --docker.");
   }
-  if (args.dev_server === true) {
-    if (args.tag !== "itests") {
-      throw new Error("--tag is incompatible with --dev-server");
+
+  if (args.docker) {
+    const tag = args.tag ?? "itests";
+    if (!args.rerun) {
+      const fullTag = `ghcr.io/nkprasad12/morcus:${tag}`;
+      steps.push({
+        operation: () => shellStep(`docker build . -t ${fullTag}`),
+        label: `Building docker image ${fullTag}`,
+      });
     }
-    childEnv.REUSE_DEV_SERVER = "1";
-  } else {
     childEnv.IMAGE_TAG = tag;
+  } else {
+    childEnv.REUSE_DEV_SERVER = "1";
+    childEnv.PORT = args.port || process.env.PORT || "5757";
   }
-  const command = ["npm run integration-tests", "--"];
+
+  const testPath = isVisual
+    ? "src/integration/screenshot/browser_v2_screenshot.test.ts"
+    : "src/integration/suites/";
+  const command = ["npx playwright test", testPath];
+
   if (args.project) {
-    command.push(`--project ${args.project}`);
+    for (const proj of args.project.split(",")) {
+      if (proj.trim()) {
+        command.push(`--project=${proj.trim()}`);
+      }
+    }
+  } else if (args.all) {
+    command.push(
+      "--project=chromium --project=MobileChrome --project=firefox --project=FirefoxSmallScreen --project=webkit --project=MobileSafari"
+    );
+  } else {
+    command.push("--project=chromium --project=MobileChrome");
   }
+
   if (args.grep) {
     command.push(`--grep "${args.grep}"`);
   }
+  if (args.update) {
+    command.push("--update-snapshots");
+  }
+  if (args.headed) {
+    command.push("--headed");
+  }
+
   steps.push({
-    operation: () => shellStep(command.join(" "), childEnv),
-    label: "Running E2E tests",
+    operation: async () => {
+      let testError: unknown = undefined;
+      try {
+        await shellStep(command.join(" "), childEnv);
+      } catch (err) {
+        testError = err;
+      }
+      if (isVisual && args.diff) {
+        // Without --update, Playwright leaves expected/actual pairs for each
+        // failure in test-results/. With --update, the baselines themselves
+        // were rewritten, so compare them against HEAD.
+        const serving = await runVisualDiffCommand({
+          source: args.update ? "git" : "results",
+        });
+        if (testError !== undefined && serving) {
+          // Throwing here would end the process and take the viewer down
+          // with it; record the failure in the exit code instead.
+          process.exitCode = 1;
+          console.log(
+            "⚠️  Visual tests failed; review the failures in the inspector above."
+          );
+          return;
+        }
+      } else if (isVisual && args.update) {
+        console.log(
+          "\n📸 Snapshots updated. Run `./morcus.sh visual-diff` to review them against HEAD."
+        );
+      } else if (isVisual && testError !== undefined) {
+        console.log(
+          "\n🔍 Run `./morcus.sh visual-diff --source results` to inspect the failures."
+        );
+      } else if (testError !== undefined) {
+        console.log(
+          "\n🔍 Run `npx playwright show-report` to open the HTML report."
+        );
+      }
+      if (testError !== undefined) {
+        throw testError;
+      }
+    },
+    label: isVisual ? "Running visual regression tests" : "Running E2E tests",
   });
   return runPipeline(steps);
 }
@@ -669,4 +844,47 @@ async function runCorpusCommand(args: any) {
     label: "Building corpus",
   });
   return runPipeline(steps);
+}
+
+/**
+ * Runs the Visual Diff Inspector. Returns true iff a viewer server was
+ * started (and is keeping the process alive). Throws on failure.
+ */
+async function runVisualDiffCommand(args: any): Promise<boolean> {
+  const { runVisualDiffInspector } = await import(
+    "@/scripts/visual_diff/visual_diff"
+  );
+  const result = await runVisualDiffInspector({
+    source: args.source || "auto",
+    ref: args.ref || undefined,
+    snapshotDir: args.dir || undefined,
+    resultsDir: args.results_dir || undefined,
+    outDir: args.out || undefined,
+    port: args.port || undefined,
+    host: args.host || undefined,
+    startServer: !args.no_server,
+    openBrowser: Boolean(args.open),
+    reportPath: args.report || undefined,
+  });
+  return result.server !== undefined;
+}
+
+async function runVisualDiff(args: any): Promise<boolean> {
+  try {
+    await runVisualDiffCommand(args);
+    return true;
+  } catch (err) {
+    console.error("Visual diff inspection failed:", err);
+    return false;
+  }
+}
+
+async function runInventory(args: any): Promise<boolean> {
+  const { runInventoryCli } = await import(
+    "@/web/v2/tools/inventory/inventory"
+  );
+  return runInventoryCli({
+    update: Boolean(args.update),
+    reportPath: args.report || undefined,
+  });
 }

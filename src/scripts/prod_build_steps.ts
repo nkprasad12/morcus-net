@@ -7,12 +7,12 @@ import { envVar } from "@/common/env_vars";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
+import { writeBuildProvenance } from "@/scripts/build_provenance";
 import {
   DownloadConfig,
   StepConfig,
   runPipeline,
   runtimeMessage,
-  shellStep,
 } from "@/scripts/script_utils";
 import { createCleanDir } from "@/utils/file_utils";
 import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
@@ -24,9 +24,10 @@ import { processGeorges } from "@/common/dictionaries/georges/process_georges";
 import { processPozo } from "@/common/dictionaries/pozo/process_pozo";
 import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
+import { buildV2Bundle } from "@/bundler/v2.rsbuild";
+import { buildCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
-const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
 
 const PERSEUS_CLL_TAG = "master";
 const PERSEUS_CLL_ROOT =
@@ -48,7 +49,6 @@ const SETUP_DIRS: StepConfig = {
     Promise.all([
       createCleanDir(LIB_DEFAULT_DIR),
       createCleanDir(RAW_LAT_LIB_DIR),
-      createCleanDir(OFFLINE_DATA_DIR),
     ]).then(() => {}),
 
   label: "Setting up directories",
@@ -121,6 +121,10 @@ const MAKE_FORCELLINI: StepConfig = {
     path: envVar("FORC_RAW_PATH"),
   },
 };
+const MAKE_COMPLETIONS_DB: StepConfig = {
+  operation: () => buildCompletionsDb(),
+  label: "Dictionary completions DB creation",
+};
 const PROCESS_LAT_LIB: StepConfig = {
   operation: () =>
     processLibrary({
@@ -137,29 +141,25 @@ const PROCESS_LAT_LIB: StepConfig = {
     ],
   },
 };
-const MAKE_BUNDLE: StepConfig = {
-  operation: () => {
-    const childEnv = {
-      ...process.env,
-      RUN_TSC: "1",
-      MINIFY: "1",
-      COMPRESS: "1",
-    };
-    return shellStep(
-      "npm run tsnp src/bundler/morcus-net.rsbuild.ts",
-      childEnv
-    );
-  },
-  label: "Building client bundle",
+const MAKE_V2_BUNDLE: StepConfig = {
+  operation: () => buildV2Bundle(/* minify= */ true),
+  label: "Building UI V2 assets",
 };
 const WRITE_COMMIT_ID: StepConfig = {
   operation: writeCommitId,
   label: "Writing commit hash",
 };
+// Last: it needs every input the earlier steps fetched.
+const WRITE_BUILD_PROVENANCE: StepConfig = {
+  operation: async () => {
+    await writeBuildProvenance();
+  },
+  label: "Writing build provenance",
+};
 const ALL_STEPS = [
   SETUP_DIRS,
   WRITE_COMMIT_ID,
-  MAKE_BUNDLE,
+  MAKE_V2_BUNDLE,
   SAVE_TABLES,
   MAKE_SH,
   MAKE_GAF,
@@ -169,7 +169,9 @@ const ALL_STEPS = [
   MAKE_POZO,
   MAKE_GESNER,
   MAKE_FORCELLINI,
+  MAKE_COMPLETIONS_DB,
   PROCESS_LAT_LIB,
+  WRITE_BUILD_PROVENANCE,
 ];
 
 export async function prodBuildSteps(): Promise<boolean> {
@@ -185,5 +187,5 @@ export async function prodBuildSteps(): Promise<boolean> {
 }
 
 if (process.env.MAIN === "build") {
-  prodBuildSteps().then((success) => assert(success));
+  void prodBuildSteps().then((success) => assert(success));
 }

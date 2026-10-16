@@ -6,33 +6,18 @@ import http from "http";
 import { setupServer, WebServerParams } from "@/web/web_server";
 import { envVar } from "@/common/env_vars";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
-import path from "path";
-import { GitHub } from "@/web/utils/github";
 import { MongoLogger } from "@/web/telemetry/mongo_logger";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
-import {
-  CompletionsFusedApi,
-  DictsFusedApi,
-  GetCorpusSuggestionsApi,
-  GetWork,
-  ListLibraryWorks,
-  LogClientEventApi,
-  MacronizeApi,
-  QueryCorpusApi,
-  ReportApi,
-  ScrapeUrlApi,
-} from "@/web/api_routes";
-import { RouteDefinition } from "@/web/utils/rpc/server_rpc";
 import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
-import {
-  retrieveWorkPreEncoded,
-  retrieveWorksList,
-} from "@/common/library/library_lookup";
 import { readFileSync } from "fs";
-import { scrapeUrlText } from "@/web/scraping/scraper";
+import { createV2Router } from "@/web/v2/v2_router.server";
+import {
+  BUILD_ID_ENV,
+  loadBuildId,
+} from "@/web/v2/core/server/build_version.server";
 import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { timed } from "@/common/timing/timed_invocation";
@@ -43,16 +28,14 @@ import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arn
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
 import { getFormattedMemoryUsage, singletonOf } from "@/common/misc_utils";
-import { macronizeInput } from "@/macronizer/morcronizer";
 import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
+import { macronizerEngineFromEnv } from "@/web/v2/macronizer/macronizer_engine.server";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
 import { ForcelliniDict } from "@/common/dictionaries/forcellini/forcellini_dict";
-import {
-  corpusSuggestions,
-  rustCorpusApiHandler,
-} from "@/common/library/corpus/corpus_rust";
+import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
+import { openCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -82,21 +65,14 @@ function log(message: string) {
   console.log(`[start_server] ${message}`);
 }
 
-function logMemoryUsage(telemetry: TelemetryLogger): void {
-  telemetry.logServerHealth(getFormattedMemoryUsage());
+function logMemoryUsage(telemetry: TelemetryLogger): Promise<void> {
+  return telemetry.logServerHealth(getFormattedMemoryUsage());
 }
 
-type MaybeCacheable = { commitHash?: string };
-
-const CACHING_SETTER = (res: http.ServerResponse, input: MaybeCacheable) => {
-  if (input.commitHash === undefined) {
-    return;
-  }
-  // Note 3153600 is 1/10 of a year. We don't want to set it too high because we
-  // we don't want the browser to hold on to older versions for too long.
-  // it's ok to request the resource ~once a month.
-  res.setHeader("Cache-Control", "public, max-age=3153600, immutable");
-};
+/** Telemetry is best-effort: a failed write is logged, never fatal. */
+function logTelemetryError(err: unknown): void {
+  console.error("[start_server] Telemetry error:", err);
+}
 
 const INFLECTION_PROVIDER = singletonOf<InflectionProvider>(() => {
   const tables = timed(
@@ -109,7 +85,15 @@ const INFLECTION_PROVIDER = singletonOf<InflectionProvider>(() => {
 
 export function startMorcusServer(): Promise<http.Server> {
   log("Attempting to start server");
-  process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
+  process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt")
+    .toString()
+    .trim();
+  // Production builds also record their upstream inputs; dev builds don't.
+  const buildId = loadBuildId(process.env.COMMIT_ID || undefined);
+  if (buildId !== undefined) {
+    process.env[BUILD_ID_ENV] = buildId;
+    log(`Build ID: ${buildId}`);
+  }
 
   const app = express();
   const server = http.createServer(app);
@@ -212,64 +196,19 @@ export function startMorcusServer(): Promise<http.Server> {
       : consoleTelemetry
       ? Promise.resolve(TelemetryLogger.ConsoleLogger)
       : Promise.resolve(TelemetryLogger.NoOp);
-  const githubToken = process.env.GITHUB_TOKEN;
-  const githubTokenEmpty =
-    githubToken === undefined || githubToken.length === 0;
-  if (githubTokenEmpty) {
+  if (!process.env.GITHUB_TOKEN) {
     log(
       "No `GITHUB_TOKEN` environment variable set. Logging issues to console."
     );
   }
-  const buildDir = path.join(process.cwd(), "build", "client");
   const params: WebServerParams = {
     webApp: app,
-    routes: [
-      RouteDefinition.create(ReportApi, async (request) => {
-        if (!request.reportText && !request.editedText) {
-          return;
-        }
-        if (githubTokenEmpty) log(GitHub.createIssueBody(request));
-        else GitHub.reportIssue(request, githubToken);
-      }),
-      RouteDefinition.create(
-        DictsFusedApi,
-        (input, extras) => fusedDict.getEntry(input, extras),
-        undefined,
-        CACHING_SETTER
-      ),
-      RouteDefinition.create(CompletionsFusedApi, (input, extras) =>
-        fusedDict.getCompletions(input, extras)
-      ),
-      RouteDefinition.create(
-        GetWork,
-        (workId, _, requestData) =>
-          retrieveWorkPreEncoded(workId, undefined, requestData),
-        "PreEncoded",
-        CACHING_SETTER
-      ),
-      RouteDefinition.create(ListLibraryWorks, (_unused) =>
-        retrieveWorksList()
-      ),
-      RouteDefinition.create(ScrapeUrlApi, scrapeUrlText),
-      RouteDefinition.create(LogClientEventApi, async (eventData) => {
-        (await telemetry).logClientEvent(eventData);
-      }),
-      RouteDefinition.create(MacronizeApi, (input) => macronizeInput(input)),
-      RouteDefinition.create(
-        QueryCorpusApi,
-        async (r) => corpusHandler.runQuery(r),
-        "PreStringified",
-        CACHING_SETTER
-      ),
-      RouteDefinition.create(
-        GetCorpusSuggestionsApi,
-        (request, _2, requestData) => corpusSuggestions(request, requestData),
-        "PreEncoded",
-        CACHING_SETTER
-      ),
-    ],
-    telemetry: telemetry,
-    buildDir,
+    v2Router: createV2Router(fusedDict, {
+      telemetry,
+      corpus: corpusHandler,
+      macronizer: macronizerEngineFromEnv(),
+      completions: openCompletionsDb(),
+    }),
   };
 
   setupServer(params);
@@ -282,14 +221,13 @@ export function startMorcusServer(): Promise<http.Server> {
   const port = portVar === undefined ? 0 : parseInt(portVar);
   return new Promise((resolve) => {
     server.listen(port, () => {
-      const memoryLogId = setInterval(
-        () => telemetry.then(logMemoryUsage),
-        1000 * 60 * randInRange(14.75, 15.25)
-      );
+      const memoryLogId = setInterval(() => {
+        telemetry.then(logMemoryUsage).catch(logTelemetryError);
+      }, 1000 * 60 * randInRange(14.75, 15.25));
       server.on("close", () => {
         log("Cleaning up resources.");
         clearInterval(memoryLogId);
-        telemetry.then((t) => t.teardown());
+        telemetry.then((t) => t.teardown()).catch(logTelemetryError);
       });
       resolve(server);
       const address = server.address();
@@ -301,7 +239,8 @@ export function startMorcusServer(): Promise<http.Server> {
 }
 
 if (process.env.MAIN === "start") {
-  startMorcusServer().then((server) => {
+  // A startup failure should crash the process.
+  void startMorcusServer().then((server) => {
     log("Server started! Press Ctrl+C to exit.");
     const cleanup = (signal: string) => {
       log(`${signal} received, closing server.`);

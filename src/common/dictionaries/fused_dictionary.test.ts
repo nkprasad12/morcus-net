@@ -158,4 +158,54 @@ describe("FusedDictionary", () => {
 
     expect(fakeLs.getEntryById).toHaveBeenCalledWith("test", undefined);
   });
+
+  it("prefixes extras.log tags with each dictionary key", async () => {
+    const fakeLs: Dictionary = {
+      info: LatinDict.LewisAndShort,
+      getEntry: jest.fn(async (_input, extras) => {
+        extras?.log("inflectionAnalysis");
+        return [];
+      }),
+      getEntryById: jest.fn(async (_id, extras) => {
+        extras?.log("getById_sqlLookup");
+        return undefined;
+      }),
+      getCompletions: jest.fn(async (_input, extras) => {
+        extras?.log("completionsDone");
+        return [];
+      }),
+    };
+    const fakeGaf: Dictionary = {
+      info: LatinDict.Gaffiot,
+      getEntry: jest.fn(async (_input, extras) => {
+        extras?.log("inflectionAnalysis");
+        return [];
+      }),
+      getEntryById: jest.fn(async () => undefined),
+      getCompletions: jest.fn(async () => []),
+    };
+    const dict = new FusedDictionary([fakeLs, fakeGaf]);
+    const logged: string[] = [];
+    const extras: ServerExtras = { log: (tag) => logged.push(tag) };
+
+    await dict.getEntry(
+      { query: "habeo", dicts: [fakeLs.info.key, fakeGaf.info.key], mode: 1 },
+      extras
+    );
+    await dict.getEntry(
+      { query: "n1", dicts: [fakeLs.info.key], mode: 2 },
+      extras
+    );
+    await dict.getCompletions(
+      { query: "ha", dicts: [fakeLs.info.key] },
+      extras
+    );
+
+    expect(logged).toEqual([
+      `${fakeLs.info.key}_inflectionAnalysis`,
+      `${fakeGaf.info.key}_inflectionAnalysis`,
+      `${fakeLs.info.key}_getById_sqlLookup`,
+      `${fakeLs.info.key}_completionsDone`,
+    ]);
+  });
 });

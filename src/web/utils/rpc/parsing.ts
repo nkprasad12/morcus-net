@@ -1,5 +1,3 @@
-const PLACEHOLDER = "SERIALIZABLE_PLACEHOLDER";
-
 export type Validator<T> = (t: unknown) => t is T;
 
 export interface Serializable<T> {
@@ -10,105 +8,6 @@ export interface Serializable<T> {
 export interface Serialization<T> extends Serializable<T> {
   name: string;
   validator: Validator<T>;
-}
-
-/**
- * Stringifies the input object with handling of objects in the registry.
- *
- * @param t The object to serialize.
- * @param registry The registry containing serialization steps for classes.
- * @param isInUrl Whether the object will be sent as part of a URL.
- * @returns A serialized string representation of the input.
- */
-export function stringifyMessage<T>(
-  t: T,
-  registry?: Serialization<any>[]
-): string {
-  return JSON.stringify(t, (_key, value) => {
-    for (const cls of registry || []) {
-      if (!cls.validator(value)) {
-        continue;
-      }
-      const result: { [key: string]: string } = {};
-      result[PLACEHOLDER + cls.name] = cls.serialize(value);
-      return result;
-    }
-    return value;
-  });
-}
-
-/**
- * Encodes the input object for transfer to a remote reciever.
- *
- * @param t The object to serialize.
- * @param registry The registry containing serialization steps for classes.
- * @param isInUrl Whether the object will be sent as part of a URL.
- * @returns A serialized string representation of the input.
- */
-export function encodeMessage<T>(
-  t: T,
-  registry?: Serialization<any>[],
-  isInUrl?: boolean
-): string {
-  const serialized = stringifyMessage({ w: t }, registry);
-  return isInUrl === true ? encodeURIComponent(serialized) : serialized;
-}
-
-/**
- * Parses a message stringified by `stringifyMessage`.
- *
- * @param t The serialized string.
- * @param validator A function used to validate whether the raw string
- *                  conforms to the expected shape.
- * @param registry A registry of serializations for class objects.
- *
- * @returns The serialized object, if valid.
- */
-export function parseMessage<T>(
-  t: string,
-  validator: Validator<T>,
-  registry?: Serialization<any>[]
-): T {
-  const result = JSON.parse(t, (_key, value) => {
-    for (const serializable of registry || []) {
-      const registered = value[PLACEHOLDER + serializable.name];
-      if (registered === undefined) {
-        continue;
-      }
-      return serializable.deserialize(registered);
-    }
-    return value;
-  });
-  if (!validator(result)) {
-    throw new Error("Invalid message received!");
-  }
-  return result;
-}
-
-/**
- * Deserialized a serialized message.
- *
- * @param t The serialized string.
- * @param validator A function used to validate whether the raw string
- *                  conforms to the expected shape.
- * @param registry A registry of serializations for class objects.
- * @param isFromUrl Whether the the serialized string was received URL encoded.
- *
- * @returns The serialized object, if valid.
- */
-export function decodeMessage<T>(
-  t: string,
-  validator: Validator<T>,
-  registry?: Serialization<any>[],
-  isFromUrl?: boolean
-): T {
-  const decoded = isFromUrl ? decodeURIComponent(t) : t;
-  const result = parseMessage(
-    decoded,
-    matchesObject<{ w: T }>({ w: validator }),
-    registry
-  );
-  return result.w;
 }
 
 export function isString(x: unknown): x is string {
@@ -253,4 +152,10 @@ export function isBoth<T, U>(
   uChecker: Validator<U>
 ): Validator<T & U> {
   return (x: unknown): x is T & U => tChecker(x) && uChecker(x);
+}
+
+export function isLiteral<T extends string | number | boolean>(
+  literal: T
+): Validator<T> {
+  return (x: unknown): x is T => x === literal;
 }
