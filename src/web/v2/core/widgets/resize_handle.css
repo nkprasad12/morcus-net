@@ -6,9 +6,9 @@
  * keep only sizing and positioning in their files, so every dragger looks
  * the same:
  *   rest:        faint dotted line (0.3), grip at 0.55
- *   hover/focus: dotted --resize-accent line at half strength, grip slightly
+ *   hover/focus: dotted --primary line at half strength, grip slightly
  *                stronger with a neutral border
- *   dragging:    solid --resize-accent line, green grip border
+ *   dragging:    solid --primary line, green grip border
  *
  * Imported before the owners' stylesheets so they can override `display`
  * (e.g. the reader splitter is hidden on mobile).
@@ -39,14 +39,14 @@
 
 .resize-handle:hover::before,
 .resize-handle:focus-visible::before {
-  --resize-line: var(--resize-accent);
+  --resize-line: var(--primary);
 
   opacity: 0.5;
 }
 
 /* Solid and full strength only while actually dragging. */
 .resize-handle.is-resizing::before {
-  background: var(--resize-accent);
+  background: var(--primary);
   opacity: 1;
 }
 
@@ -84,5 +84,5 @@
 
 .resize-handle.is-resizing .resize-grip {
   opacity: 1;
-  border-color: var(--resize-accent);
+  border-color: var(--primary);
 }

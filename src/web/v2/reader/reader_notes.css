@@ -60,7 +60,7 @@ a.reader-note-ref::after {
 
 a.reader-note-ref:hover,
 a.reader-note-ref:focus-visible {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: underline;
   background-color: transparent;
 }
@@ -129,7 +129,7 @@ a.reader-note-ref:target {
    thing in it, so muting it too would erase the distinction. */
 .reader-note-backref,
 .reader-note-backref:visited {
-  color: var(--primary);
+  color: var(--link);
   text-align: right;
   text-decoration: none;
   font-family: var(--font-mono);

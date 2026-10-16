@@ -184,14 +184,14 @@ a.lsSenseBullet:visited {
 }
 
 .dLink {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
 }
 
 .dLink:hover {
-  color: var(--primary-hover);
+  color: var(--link-hover);
 }
 
 .numeralTable {
@@ -223,7 +223,7 @@ a.lsSenseBullet:visited {
 
 .lat-word:hover,
 .lat-word:visited:hover {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: underline;
   text-decoration-style: solid;
   text-underline-offset: 2px;

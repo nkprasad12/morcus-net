@@ -271,7 +271,7 @@
 /* Reviewed / user-chosen state overrides tier highlight */
 .mac-word.mac-chosen {
   background: transparent;
-  border-bottom: 1px solid var(--resize-accent);
+  border-bottom: 1px solid var(--primary);
 }
 
 /* Active selection in JS mode or :target in No-JS mode */

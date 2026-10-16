@@ -489,7 +489,7 @@ body.body-embedded {
 .section-edit-input:focus,
 .section-edit-input:focus-visible {
   border-color: var(--app-bar-toggle-border);
-  box-shadow: var(--theme-ring);
+  box-shadow: var(--focus-ring);
 }
 
 .section-edit-actions {
@@ -503,7 +503,7 @@ body.body-embedded {
 .lsSenseBullet.section-anchor:focus-visible,
 .reader-gutter .section-anchor:focus-visible {
   outline: none;
-  box-shadow: var(--theme-ring);
+  box-shadow: var(--focus-ring);
 }
 
 /* ==========================================================================

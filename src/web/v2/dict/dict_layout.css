@@ -464,14 +464,14 @@
   background-color: var(--tag-bg);
   border: 1px solid var(--border);
   text-decoration: none;
-  color: var(--primary);
+  color: var(--link);
   font-weight: 400;
   transition: all 0.15s ease-in-out;
 }
 
 .entry-nav-link:hover {
-  color: var(--primary-hover);
-  border-color: var(--primary);
+  color: var(--link-hover);
+  border-color: var(--link);
 }
 
 .entry-nav-word {
@@ -569,12 +569,12 @@
 /* Anchored target animation effect (one-shot subtle flash & fade) */
 @keyframes target-highlight {
   0% {
-    background-color: var(--target-highlight);
-    box-shadow: 0 0 0 3px var(--target-highlight);
+    background-color: var(--primary-light);
+    box-shadow: 0 0 0 3px var(--primary-light);
   }
   35% {
-    background-color: var(--target-highlight);
-    box-shadow: 0 0 0 3px var(--target-highlight);
+    background-color: var(--primary-light);
+    box-shadow: 0 0 0 3px var(--primary-light);
   }
   100% {
     background-color: transparent;
@@ -605,7 +605,7 @@
   .dict-card :target,
   .target-active {
     animation: none;
-    background-color: var(--target-highlight);
+    background-color: var(--primary-light);
   }
   .dict-card.target-active {
     background-color: transparent;

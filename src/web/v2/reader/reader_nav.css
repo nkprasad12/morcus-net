@@ -137,14 +137,14 @@
 .reader-btn:focus-visible {
   outline: none;
   border-color: var(--app-bar-toggle-border);
-  box-shadow: var(--theme-ring);
+  box-shadow: var(--focus-ring);
 }
 
 .reader-btn[aria-expanded="true"] {
   border-color: var(--app-bar-toggle-border);
   background: var(--card-bg);
   color: var(--text);
-  box-shadow: var(--theme-ring);
+  box-shadow: var(--focus-ring);
 }
 
 .sticky-section-btn .jump-glyph {

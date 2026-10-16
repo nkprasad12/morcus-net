@@ -66,14 +66,14 @@
 }
 
 .greek-link {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: underline;
   text-underline-offset: 2px;
   font-weight: 500;
 }
 
 .greek-link:hover {
-  color: var(--primary-hover);
+  color: var(--link-hover);
 }
 
 .greek-controls {

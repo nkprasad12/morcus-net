@@ -61,10 +61,10 @@
 }
 
 .about-section a {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: underline;
 }
 
 .about-section a:hover {
-  color: var(--primary-hover);
+  color: var(--link-hover);
 }

@@ -66,8 +66,8 @@
 }
 
 .subsection-chip:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--link);
+  color: var(--link);
 }
 
 /* Retained for anchors we could not resolve, so the match is still reported. */
@@ -95,8 +95,8 @@
 }
 
 .subsection-namelink:hover {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
+  color: var(--link);
+  border-bottom-color: var(--link);
 }
 
 /* A lone analysis is shown inline: a table costs far more vertical space than

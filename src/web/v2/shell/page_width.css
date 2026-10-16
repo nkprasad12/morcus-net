@@ -115,7 +115,7 @@
 /* While dragging: tint the gutters and show the width next to the pointer. */
 .page-gutter-tint {
   width: max(0px, calc(50% - (var(--page-max) + var(--page-extra, 0px)) / 2));
-  background-color: var(--resize-accent-light);
+  background-color: var(--primary-light);
   pointer-events: none;
 }
 
