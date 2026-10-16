@@ -37,7 +37,7 @@
 
 .meta-row dd a:hover,
 .meta-row dd a:focus-visible {
-  color: var(--primary);
+  color: var(--link);
 }
 
 .reader-about-attribution {
@@ -56,5 +56,5 @@
 
 .reader-about-attribution a:hover,
 .reader-about-attribution a:focus-visible {
-  color: var(--primary);
+  color: var(--link);
 }

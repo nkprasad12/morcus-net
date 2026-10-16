@@ -100,6 +100,7 @@ export function v2VisualScenario(
               fullPage: false,
               animations: "disabled",
               mask: maskLocators,
+              threshold: 0.05,
             }
           );
         } finally {

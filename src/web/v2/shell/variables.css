@@ -46,18 +46,16 @@
     Consolas, "Liberation Mono", "Courier New", monospace;
   --card-bg: var(--bg);
   --text-muted: #6c757d;
-  --primary: #0066cc;
-  --primary-hover: #0052a3;
-  --primary-light: rgba(0, 102, 204, 0.08);
-  /* Resize handles (page width, reader splitter): Morcus green, not --primary. */
-  --resize-accent: #2f7d62;
-  --resize-accent-light: rgba(47, 125, 98, 0.1);
+  --primary: #286e56;
+  --primary-hover: #1d5441;
+  --primary-light: rgba(40, 110, 86, 0.1);
+  --link: #0066cc;
+  --link-hover: #0052a3;
   --border: #dfe3e1;
   --border-mid: #b7bac1;
   --border-strong: #8c919a;
-  --border-focus: #80bdff;
-  --focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.2);
-  --theme-ring: 0 0 0 3px rgba(153, 194, 176, 0.4);
+  --border-focus: #6db099;
+  --focus-ring: 0 0 0 3px rgba(153, 194, 176, 0.4);
   --success: #198754;
   --danger: #dc3545;
   --on-accent: #ffffff;
@@ -86,7 +84,6 @@
   );
   --accent-quote: rgba(var(--rgb-quote), calc(0.084 * var(--highlight-scale)));
   --accent-bibl: rgba(var(--rgb-bibl), calc(0.105 * var(--highlight-scale)));
-  --target-highlight: rgba(0, 102, 204, 0.08);
   --bullet-bg: rgba(0, 0, 0, 0.08);
   --tab-chip-bg: var(--tag-bg);
   --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.07);
@@ -137,20 +134,19 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --text-muted: #9a9ea4;
-    --primary: #8ab4f8;
-    --primary-hover: #aecbfa;
-    --primary-light: rgba(138, 180, 248, 0.15);
-    --resize-accent: #7cc4a6;
-    --resize-accent-light: rgba(124, 196, 166, 0.12);
+    --primary: #7cc4a6;
+    --primary-hover: #9ad4bc;
+    --primary-light: rgba(124, 196, 166, 0.14);
+    --link: #8ab4f8;
+    --link-hover: #aecbfa;
     --border: #363a42;
     --border-mid: #4d525c;
     --border-strong: #656a76;
-    --border-focus: #8ab4f8;
-    --focus-ring: 0 0 0 3px rgba(77, 163, 255, 0.25);
-    --theme-ring: 0 0 0 3px rgba(109, 142, 126, 0.45);
+    --border-focus: #6d8e7e;
+    --focus-ring: 0 0 0 3px rgba(109, 142, 126, 0.45);
     --success: #5cdb95;
     --danger: #ff6b6b;
-    --on-accent: #ffffff;
+    --on-accent: #10261e;
     --tag-bg: #26292e;
     --card-header-bg: #26292d;
     --input-bg: #22262a;
@@ -176,7 +172,6 @@
       calc(0.154 * var(--highlight-scale))
     );
     --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
-    --target-highlight: rgba(138, 180, 248, 0.13);
     --bullet-bg: rgba(255, 255, 255, 0.12);
     --tab-chip-bg: rgba(255, 255, 255, 0.08);
     --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);
@@ -228,20 +223,19 @@
 :root[data-theme="dark"],
 [data-theme="dark"] {
   --text-muted: #9a9ea4;
-  --primary: #8ab4f8;
-  --primary-hover: #aecbfa;
-  --primary-light: rgba(138, 180, 248, 0.15);
-  --resize-accent: #7cc4a6;
-  --resize-accent-light: rgba(124, 196, 166, 0.12);
+  --primary: #7cc4a6;
+  --primary-hover: #9ad4bc;
+  --primary-light: rgba(124, 196, 166, 0.14);
+  --link: #8ab4f8;
+  --link-hover: #aecbfa;
   --border: #363a42;
   --border-mid: #4d525c;
   --border-strong: #656a76;
-  --border-focus: #8ab4f8;
-  --focus-ring: 0 0 0 3px rgba(77, 163, 255, 0.25);
-  --theme-ring: 0 0 0 3px rgba(109, 142, 126, 0.45);
+  --border-focus: #6d8e7e;
+  --focus-ring: 0 0 0 3px rgba(109, 142, 126, 0.45);
   --success: #5cdb95;
   --danger: #ff6b6b;
-  --on-accent: #ffffff;
+  --on-accent: #10261e;
   --tag-bg: #26292e;
   --card-header-bg: #26292d;
   --input-bg: #22262a;
@@ -264,7 +258,6 @@
   );
   --accent-quote: rgba(var(--rgb-quote), calc(0.154 * var(--highlight-scale)));
   --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
-  --target-highlight: rgba(138, 180, 248, 0.13);
   --bullet-bg: rgba(255, 255, 255, 0.12);
   --tab-chip-bg: rgba(255, 255, 255, 0.08);
   --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);

@@ -378,7 +378,7 @@
 }
 .guide-example-link {
   font-family: var(--font-mono, monospace);
-  color: var(--primary);
+  color: var(--link);
   font-weight: 500;
   text-decoration: none;
 }
@@ -387,7 +387,7 @@
 .guide-categories-summary:hover,
 .corpus-scope-text a:hover,
 .corpus-syntax-link:hover {
-  color: var(--primary);
+  color: var(--link-hover);
   text-decoration: underline;
 }
 
@@ -445,7 +445,7 @@
 .guide-mobile-example-query {
   font-family: var(--font-mono, monospace);
   font-weight: normal;
-  color: var(--primary);
+  color: var(--link);
 }
 
 .guide-mobile-example:hover .guide-mobile-example-query {

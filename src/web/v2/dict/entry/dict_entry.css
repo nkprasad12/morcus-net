@@ -242,7 +242,7 @@
   font-size: calc(0.8rem * var(--dict-scale, 1));
   font-weight: 500;
   line-height: 1.3;
-  color: var(--primary);
+  color: var(--link);
   background-color: var(--tag-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -253,7 +253,7 @@
 }
 
 .action-btn:hover {
-  color: var(--primary);
+  color: var(--link-hover);
   background-color: var(--border);
   border-color: var(--border-strong);
   text-decoration: none;

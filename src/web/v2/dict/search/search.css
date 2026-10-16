@@ -14,7 +14,7 @@
 
 .search-form:focus-within {
   border-color: var(--app-bar-toggle-border);
-  box-shadow: var(--theme-ring);
+  box-shadow: var(--focus-ring);
 }
 
 .input-wrapper {
@@ -248,7 +248,7 @@
 
 .guest-return {
   font-weight: 600;
-  color: var(--primary);
+  color: var(--link);
   text-decoration: none;
 }
 

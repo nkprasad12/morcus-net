@@ -36,17 +36,17 @@
 
 /* Base link styling */
 a {
-  color: var(--primary);
+  color: var(--link);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 a:visited {
-  color: var(--primary);
+  color: var(--link);
 }
 
 a:hover {
-  color: var(--primary-hover);
+  color: var(--link-hover);
 }
 
 /* W3C HTML5 standard UA reset: ensures [hidden] attribute wins over author display: flex/grid.
