@@ -315,6 +315,8 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     const words = Array.from(el.querySelectorAll<HTMLElement>(".lat-word"));
     expect(words[0].textContent).toBe("Mu\u0304sa");
     expect(words[2].textContent).toBe("causa\u0304s");
+    // Unstripped words on connect do not allocate data-original-text
+    expect(words[0].hasAttribute("data-original-text")).toBe(false);
 
     const toggleMacra = el.querySelector<HTMLInputElement>("#toggle-macra")!;
     expect(toggleMacra).not.toBeNull();
@@ -891,11 +893,13 @@ describe("Reader preferences validation & hydration", () => {
     );
     // Defaults fall back to the `var(--reader-*, default)` CSS fallbacks.
     expect(lineHeight()).toBe("");
+    expect(root.style.getPropertyValue("--reader-scale")).toBe("");
     expect(root.style.getPropertyValue("--reader-font")).toBe("");
     expect(root.hasAttribute("data-reader-hide-gutter")).toBe(false);
     expect(localStorage.getItem(PREPAINT_KEY)).not.toContain(
       "--reader-line-height"
     );
+    expect(localStorage.getItem(PREPAINT_KEY)).not.toContain("--reader-scale");
   });
 });
 
