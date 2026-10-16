@@ -81,6 +81,10 @@ function createReaderView(
     el.dataset.hasTranslation = String(options.hasTranslation);
   }
   const hasMacra = options.hasMacra ?? true;
+  // Production passages wrap each section's text in `.reader-section > .reader-passage`.
+  const normalizedPassageHtml = innerPassageHtml.includes("reader-section")
+    ? innerPassageHtml
+    : `<div class="reader-section"><div class="reader-passage">${innerPassageHtml}</div></div>`;
   el.innerHTML = `
     <div class="reader-split-layout reader-layout-empty">
       <section class="reader-text-panel">
@@ -88,13 +92,8 @@ function createReaderView(
           <header class="reader-text-card-header">
             <div class="reader-text-meta"></div>
           </header>
-          <article class="reader-passage" id="reader-passage"${
-            // Production passages carry the marker (v2_preprocessor.ts).
-            innerPassageHtml.includes("data-tokenize-target")
-              ? ""
-              : ' data-tokenize-target="true"'
-          }>
-            ${innerPassageHtml}
+          <article class="reader-passage" id="reader-passage">
+            ${normalizedPassageHtml}
           </article>
         </div>
       </section>
@@ -131,7 +130,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     // Aeneid 1.8 with combining macrons (\u0304): Mūsa, mihī causās memorā, quō nūmine laesō
     const passageHtml = `
       <div class="reader-section" id="sec-1.8">
-        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304, quo\u0304 nu\u0304mine laeso\u0304.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304, quo\u0304 nu\u0304mine laeso\u0304.</span>
+        </div>
       </div>
     `;
 
@@ -166,7 +167,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     // Composed: Mūsa, causās
     const passageHtml = `
       <div class="reader-section" id="sec-1.8">
-        <span class="reader-line">M\u016Bsa, mihi caus\u0101s memor\u0101.</span>
+        <div class="reader-passage">
+          <span class="reader-line">M\u016Bsa, mihi caus\u0101s memor\u0101.</span>
+        </div>
       </div>
     `;
 
@@ -178,10 +181,10 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(wordTexts).toEqual(["Mūsa", "mihi", "causās", "memorā"]);
   });
 
-  test("decouples tokenization from CSS selectors via data-tokenize-target attribute", () => {
+  test("scopes tokenization to .reader-section > .reader-passage", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">
-        <div class="reader-passage" data-tokenize-target="true">
+        <div class="reader-passage">
           <blockquote>Gallia est omnis divisa.</blockquote>
         </div>
         <div class="english-translation">
@@ -194,7 +197,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     const latinWords = Array.from(
       el.querySelectorAll<HTMLElement>(
-        '[data-tokenize-target="true"] .lat-word'
+        ".reader-section > .reader-passage .lat-word"
       )
     ).map((w) => w.textContent);
     expect(latinWords).toEqual(["Gallia", "est", "omnis", "divisa"]);
@@ -209,7 +212,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   test("clicking a word with macra opens dictionary with query and activates word", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.8">
-        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        </div>
       </div>
     `;
 
@@ -252,7 +257,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     );
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">
-        <span class="reader-line">arma virumque cano</span>
+        <div class="reader-passage">
+          <span class="reader-line">arma virumque cano</span>
+        </div>
       </div>
     `;
     const el = createReaderView(passageHtml);
@@ -269,7 +276,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   test("a query restored from the URL highlights the word whether unaccented, NFC, or NFD", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.8">
-        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        </div>
       </div>
     `;
 
@@ -296,7 +305,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   test("toggling Show Macra in settings strips and restores vowel markings", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.8">
-        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        </div>
       </div>
     `;
 
@@ -330,7 +341,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">
-        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        </div>
       </div>
     `;
 
@@ -348,7 +361,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">
-        <span class="reader-line">Gallia est omnis divisa in partes tres.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Gallia est omnis divisa in partes tres.</span>
+        </div>
       </div>
     `;
 
@@ -369,7 +384,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">
-        <span class="reader-line">Arma virumque cano.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Arma virumque cano.</span>
+        </div>
       </div>
     `;
 
@@ -394,7 +411,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   test("syncs --dict-scale to iframe on stepper change and iframe reload", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">
-        <span class="reader-line">Arma virumque cano.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Arma virumque cano.</span>
+        </div>
       </div>
     `;
 
@@ -435,7 +454,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   describe("drawer behavior", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">
-        <span class="reader-line">Arma virumque cano.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Arma virumque cano.</span>
+        </div>
       </div>
     `;
 
@@ -555,7 +576,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
   describe("active word highlight", () => {
     const PASSAGE = `
       <div class="reader-section" id="sec-1.8">
-        <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        <div class="reader-passage">
+          <span class="reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+        </div>
       </div>
     `;
 
@@ -635,7 +658,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     // styled part to exercise `applyMacra` per part.
     const PASSAGE = `
       <div class="reader-section" id="sec-1.1">
-        <div class="reader-passage" data-tokenize-target="true">
+        <div class="reader-passage">
           <p class="reader-paragraph"><span class="italic">i\u0304m</span>petu liberavissent.</p>
         </div>
       </div>
@@ -1311,7 +1334,7 @@ describe("MorcusReaderView desktop splitter drag", () => {
           <div class="reader-gutter">
             <a href="#sec-1.1" class="section-anchor">1.1</a>
           </div>
-          <div class="reader-passage" data-tokenize-target="true">
+          <div class="reader-passage">
             <span class="reader-line">Arma virumque cano<a href="#note-1" class="reader-note-ref"><sup>[1]</sup></a>,</span>
             <span class="reader-line">Troiae qui primus ab oris</span>
           </div>
@@ -1378,12 +1401,14 @@ describe("MorcusReaderView companion panel & notes integration", () => {
 
   const samplePassageWithNotes = `
     <div class="reader-section" id="sec-1.1">
-      <span class="reader-line">Gallia <span class="lat-word" data-word="divisa">divisa</span> in partes tres.
-        <a class="reader-note-ref" id="noteref-n1" href="#note-n1" role="doc-noteref" aria-label="Note 1"><sup>[1]</sup></a>
-      </span>
-      <span class="reader-line">Aliam incolunt Belgae.
-        <a class="reader-note-ref" id="noteref-n2" href="#note-n2" role="doc-noteref" aria-label="Note 2"><sup>[2]</sup></a>
-      </span>
+      <div class="reader-passage">
+        <span class="reader-line">Gallia <span class="lat-word" data-word="divisa">divisa</span> in partes tres.
+          <a class="reader-note-ref" id="noteref-n1" href="#note-n1" role="doc-noteref" aria-label="Note 1"><sup>[1]</sup></a>
+        </span>
+        <span class="reader-line">Aliam incolunt Belgae.
+          <a class="reader-note-ref" id="noteref-n2" href="#note-n2" role="doc-noteref" aria-label="Note 2"><sup>[2]</sup></a>
+        </span>
+      </div>
     </div>
   `;
 
@@ -2191,7 +2216,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
             <article class="reader-passage" id="reader-passage">
               ${
                 options.passageHtml ??
-                `<div class="reader-section" id="sec-1.1"><p class="reader-paragraph" data-tokenize-target="true">Gallia est omnis divisa in partes tres.</p></div>`
+                `<div class="reader-section" id="sec-1.1"><div class="reader-passage"><p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p></div></div>`
               }
             </article>
             <footer class="reader-passage-footer">
@@ -2229,7 +2254,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       </header>
       <article class="reader-passage" id="reader-passage">
         <div class="reader-section" id="sec-1.2">
-          <p class="reader-paragraph" data-tokenize-target="true">Apud Helvetios longe nobilissimus fuit Orgetorix.</p>
+          <div class="reader-passage"><p class="reader-paragraph">Apud Helvetios longe nobilissimus fuit Orgetorix.</p></div>
         </div>
       </article>
       <footer class="reader-passage-footer">
@@ -2708,7 +2733,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
           <h1 class="reader-passage-heading">Liber I: Caput 1</h1>
         </header>
         <article class="reader-passage" id="reader-passage">
-          <div class="reader-section" id="sec-1.1"><p class="reader-paragraph" data-tokenize-target="true">Gallia est omnis divisa in partes tres.</p></div>
+          <div class="reader-section" id="sec-1.1"><div class="reader-passage"><p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p></div></div>
         </article>
       </div>
     `;
@@ -3252,12 +3277,12 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
 
     const passageHtml = `
       <div class="reader-section" id="sec-1.1.1">
-        <div class="reader-passage" data-tokenize-target="true">
+        <div class="reader-passage">
           <p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p>
         </div>
       </div>
       <div class="reader-section" id="sec-1.1.2">
-        <div class="reader-passage" data-tokenize-target="true">
+        <div class="reader-passage">
           <p class="reader-paragraph">Hi omnes lingua institutis legibus inter se differunt.</p>
         </div>
       </div>
@@ -3276,7 +3301,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
   test("marks no words when matchText is absent", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.1.1">
-        <div class="reader-passage" data-tokenize-target="true">
+        <div class="reader-passage">
           <p class="reader-paragraph">Gallia est omnis divisa.</p>
         </div>
       </div>
@@ -3296,7 +3321,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
 
     const passageHtml = `
       <div class="reader-section" id="sec-1.8">
-        <div class="reader-passage" data-tokenize-target="true">
+        <div class="reader-passage">
           <span class="reader-line">M\u016Bsa, mihi caus\u0101s memor\u0101.</span>
         </div>
       </div>
@@ -3342,7 +3367,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
 
     const passageHtml = `
       <div class="reader-section" id="sec-1.1.1">
-        <div class="reader-passage" data-tokenize-target="true">
+        <div class="reader-passage">
           <p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p>
         </div>
       </div>
@@ -3359,12 +3384,12 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
   test("centres on the match when the hash targets the match's own section, but not for an unrelated hash", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.1.1">
-        <div class="reader-passage" data-tokenize-target="true">
+        <div class="reader-passage">
           <p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p>
         </div>
       </div>
       <div class="reader-section" id="sec-1.1.2">
-        <div class="reader-passage" data-tokenize-target="true">
+        <div class="reader-passage">
           <p class="reader-paragraph">Hi omnes lingua institutis legibus.</p>
         </div>
       </div>
@@ -3411,7 +3436,7 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     try {
       createReaderView(`
         <div class="reader-section" id="sec-1.1.1">
-          <div class="reader-passage" data-tokenize-target="true">
+          <div class="reader-passage">
             <p class="reader-paragraph">Gallia est omnis divisa in partes tres.</p>
           </div>
         </div>

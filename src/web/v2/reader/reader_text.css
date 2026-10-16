@@ -479,7 +479,14 @@
   }
 
   .cite-prefix {
-    display: none; /* Hides "2.1." on mobile, showing only "2" */
+    /* Visually hide prefix ("2.1.") on mobile so only the local section ("2")
+       is shown, while keeping the full citation in the accessibility tree. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .reader-continuation-actions {

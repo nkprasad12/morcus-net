@@ -671,16 +671,30 @@ describe("preprocessWorkToV2 poetry line labels", () => {
     // Lines 1, 5, and 10 must be visible by default (no .latent class)
     for (const visibleLine of [1, 5, 10]) {
       expect(html).toContain(
-        `<a href="#sec-1.1.${visibleLine}"\n             class="section-anchor"`
+        `<a href="#sec-1.1.${visibleLine}" class="section-anchor"><span class="cite-prefix">1.1.</span><span class="cite-local">${visibleLine}</span></a>`
       );
     }
 
     // Intermediate lines (2, 3, 4, 6, 7, 8, 9) must be marked .latent
     for (const latentLine of [2, 3, 4, 6, 7, 8, 9]) {
       expect(html).toContain(
-        `<a href="#sec-1.1.${latentLine}"\n             class="section-anchor latent"`
+        `<a href="#sec-1.1.${latentLine}" class="section-anchor latent"><span class="cite-prefix">1.1.</span><span class="cite-local">${latentLine}</span></a>`
       );
     }
+  });
+
+  it("omits .cite-prefix when the section has no prefix", () => {
+    const work = makeWork({
+      textParts: ["section"],
+      pages: [{ id: [], rows: [0, 1] }],
+      rows: [[["1"], span([], "Prima.")]],
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+    expect(html).toContain(
+      '<a href="#sec-1" class="section-anchor"><span class="cite-local">1</span></a>'
+    );
+    expect(html).not.toContain("cite-prefix");
   });
 
   it("never marks prose section labels as latent", () => {

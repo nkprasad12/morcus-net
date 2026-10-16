@@ -200,6 +200,71 @@ test.describe("UI V2 reader", () => {
         "vexatus totiens rauci Theseide Cordi?"
     );
   });
+
+  test("verse gutter numbers show 1 and every 5th line, and elide prefixes on mobile", async ({
+    page,
+  }) => {
+    await page.goto(`${JUVENAL}/1.1`);
+    const line1Anchor = passage(page).locator(
+      "#sec-1\\.1\\.1 a.section-anchor"
+    );
+    const line2Anchor = passage(page).locator(
+      "#sec-1\\.1\\.2 a.section-anchor"
+    );
+    const line5Anchor = passage(page).locator(
+      "#sec-1\\.1\\.5 a.section-anchor"
+    );
+
+    await expect(line1Anchor).not.toHaveClass(/\blatent\b/);
+    await expect(line2Anchor).toHaveClass(/\blatent\b/);
+    await expect(line5Anchor).not.toHaveClass(/\blatent\b/);
+
+    expect(
+      await line2Anchor.evaluate((el) => getComputedStyle(el).opacity)
+    ).toBe("0");
+
+    const isMobile = (page.viewportSize()?.width ?? 1280) <= 640;
+    const prefixPosition = await line1Anchor
+      .locator(".cite-prefix")
+      .evaluate((el) => getComputedStyle(el).position);
+    expect(prefixPosition).toBe(isMobile ? "absolute" : "static");
+    await expect(line1Anchor.locator(".cite-local")).toHaveText("1");
+    await expect(
+      passage(page).getByRole("link", { name: /^1\.1\.\s*1$/ })
+    ).toBeAttached();
+  });
+
+  test("section anchor opens action menu and pre-fills clean verse text in editor", async ({
+    page,
+  }) => {
+    await page.goto(`${JUVENAL}/1.1`);
+    const anchor = passage(page).locator("#sec-1\\.1\\.1 a.section-anchor");
+    await anchor.scrollIntoViewIfNeeded();
+    await anchor.click();
+
+    const menu = page.locator(".section-action-menu");
+    await expect(menu).toBeVisible();
+    await menu.locator('[data-action="edit"]').click();
+
+    const textarea = passage(page).locator(
+      "#sec-1\\.1\\.1 textarea.section-edit-input"
+    );
+    await expect(textarea).toBeVisible();
+    await expect(textarea).toHaveValue(
+      "Semper ego auditor tantum? numquamne reponam"
+    );
+  });
+
+  test("matchText highlights target word range in section and scrolls it into view", async ({
+    page,
+  }) => {
+    await page.goto(`${JUVENAL}/1.2?matchText=1.2.161~0~2`);
+    const matches = passage(page).locator(
+      "#sec-1\\.2\\.161 .lat-word.reader-match"
+    );
+    await expect(matches).toHaveCount(2);
+    await expect(matches.first()).toBeInViewport();
+  });
 });
 
 test.describe("UI V2 dictionary autocomplete", () => {

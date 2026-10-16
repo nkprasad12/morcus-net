@@ -77,9 +77,9 @@ describe("reader_ssr", () => {
     // Section 1.1.1
     expect(html).toContain('id="sec-1.1.1"');
     expect(html).toContain('class="reader-gutter"');
+    expect(html).toContain('href="#sec-1.1.1" class="section-anchor"');
     expect(html).toContain('class="cite-prefix">1.1.</span>');
     expect(html).toContain('class="cite-local">1</span>');
-    expect(html).toContain('aria-label="Section 1.1.1"');
 
     // Section 1.1.2
     expect(html).toContain('id="sec-1.1.2"');
