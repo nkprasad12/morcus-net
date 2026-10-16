@@ -116,7 +116,7 @@ describe("GET /externalReader", () => {
     expect(res.text).not.toContain('id="pager-prev"');
     // The library's passage shape, so tokenizing and gutters work unchanged.
     expect(res.text).toContain('id="sec-1"');
-    expect(res.text).toContain('data-tokenize-target="true"');
+    expect(res.text).toContain('<div class="reader-passage">');
     expect(res.text).toContain("patientia nostra?");
     // Shared dictionary panel and typography popover.
     expect(res.text).toContain('id="dict-frame"');

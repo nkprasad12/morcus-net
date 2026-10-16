@@ -953,7 +953,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       let lastRanges: readonly TextHighlightRange[] | undefined;
 
       tokenizeTargets(passage, {
-        targetSelector: "[data-tokenize-target='true']",
+        targetSelector: ".reader-section > .reader-passage",
         enhancedDatasetKey: "wordsEnhanced",
         // Word boundaries must match the corpus's, which `matchText` offsets
         // come from (`extractRowText`, rule 1).

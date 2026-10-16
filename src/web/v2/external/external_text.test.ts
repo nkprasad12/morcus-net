@@ -248,8 +248,9 @@ describe("renderExternalPassageHtml", () => {
       ".reader-gutter > a.section-anchor[href='#sec-1']"
     );
     expect(anchor?.querySelector(".cite-local")?.textContent).toBe("1");
+    expect(anchor?.querySelector(".cite-prefix")).toBeNull();
     const target = section!.querySelector(
-      ".reader-passage[data-tokenize-target='true'] > p.reader-paragraph"
+      ".reader-passage > p.reader-paragraph"
     );
     expect(target?.textContent).toBe("Gallia est omnis divisa");
   });
@@ -303,6 +304,7 @@ describe("renderExternalPassageHtml", () => {
     // each section's passage must be its own tokenize target.
     const passage = render("Gallia est omnis\ndivisa\n\nquarum unam", "keep");
     tokenizeTargets(passage, {
+      targetSelector: ".reader-section > .reader-passage",
       renderWord: (token, _clean, index) => {
         const span = document.createElement("span");
         span.className = "lat-word";

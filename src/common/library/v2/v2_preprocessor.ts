@@ -346,20 +346,14 @@ function renderNotesSection(
     const items = group.notes
       .map(
         (note) =>
-          `<li class="reader-note" id="${note.bodyId}">
-            <a class="reader-note-backref" href="#${note.refId}" role="doc-backlink" aria-label="Back to note ${note.label} in the text">[${note.label}]</a>
-            <div class="reader-note-body">${note.bodyHtml}</div>
-          </li>`
+          `<li class="reader-note" id="${note.bodyId}"><a class="reader-note-backref" href="#${note.refId}" role="doc-backlink" aria-label="Back to note ${note.label} in the text">[${note.label}]</a><div class="reader-note-body">${note.bodyHtml}</div></li>`
       )
       .join("\n");
     return `${heading}<ol class="reader-notes-list">${items}</ol>`;
   });
-  return `<aside class="reader-notes" role="doc-endnotes" aria-labelledby="${headingId}">
-      <h2 class="reader-notes-heading" id="${headingId}">${he.escape(
+  return `<aside class="reader-notes" role="doc-endnotes" aria-labelledby="${headingId}"><h2 class="reader-notes-heading" id="${headingId}">${he.escape(
     mainHeading
-  )}</h2>
-      ${sections.join("\n")}
-    </aside>`;
+  )}</h2>${sections.join("\n")}</aside>`;
 }
 
 type ProcessedPage = ProcessedWork2["pages"][number];
@@ -457,12 +451,7 @@ function renderTranslationSections(
         )}</span>`
       : "";
     sections.push(
-      `
-          <div class="reader-translation-section"${idAttr}>
-            <div class="reader-translation-gutter">${gutterLabel}</div>
-            <div class="reader-translation-text">${transHtml}</div>
-          </div>
-        `.trim()
+      `<div class="reader-translation-section"${idAttr}><div class="reader-translation-gutter">${gutterLabel}</div><div class="reader-translation-text">${transHtml}</div></div>`
     );
   }
   return sections;
@@ -529,19 +518,13 @@ export function preprocessWorkToV2(
         }
       }
 
+      const prefixHtml = prefix
+        ? `<span class="cite-prefix">${he.escape(prefix)}</span>`
+        : "";
       const gutterHtml = isLeafRow
-        ? `
-        <div class="reader-gutter">
-          <a href="#sec-${dotId}"
-             class="${anchorClass}"
-             title="Citation § ${dotId} (Click to copy anchor)"
-             aria-label="Section ${dotId}">
-            <span class="cite-prefix">${he.escape(
-              prefix
-            )}</span><span class="cite-local">${he.escape(localId)}</span>
-          </a>
-        </div>
-      `.trim()
+        ? `<div class="reader-gutter"><a href="#sec-${dotId}" class="${anchorClass}">${prefixHtml}<span class="cite-local">${he.escape(
+            localId
+          )}</span></a></div>`
         : '<div class="reader-gutter"></div>';
 
       const sectionClass = isVerseWork
@@ -550,14 +533,7 @@ export function preprocessWorkToV2(
       const idAttr = isLeafRow ? ` id="sec-${dotId}"` : "";
 
       singleSectionsHtml.push(
-        `
-        <div class="${sectionClass}"${idAttr}>
-          ${gutterHtml}
-          <div class="reader-passage" data-tokenize-target="true">
-            ${latinHtml}
-          </div>
-        </div>
-      `.trim()
+        `<div class="${sectionClass}"${idAttr}>${gutterHtml}<div class="reader-passage">${latinHtml}</div></div>`
       );
     }
 

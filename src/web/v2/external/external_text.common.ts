@@ -8,7 +8,7 @@
  *
  * The output deliberately reuses the section shape emitted for library works
  * by `v2_preprocessor.ts` (`.reader-section#sec-N` > `.reader-gutter` +
- * `.reader-passage[data-tokenize-target]`), so gutter numbers, permalink
+ * `.reader-passage`), so gutter numbers, permalink
  * anchors, typography, tokenization and `matchText` highlighting all apply
  * unchanged.
  *
@@ -284,20 +284,14 @@ function renderSection(
     : "section-anchor";
   const sectionClass =
     mode === "verse" ? "reader-section section-verse" : "reader-section";
-  const label = mode === "verse" ? "Line" : "Paragraph";
   const content = joinHtml(renderSectionContent(mode, section));
   return html`<div class="${sectionClass}" id="sec-${id}">
     <div class="reader-gutter">
-      <a
-        href="#sec-${id}"
-        class="${anchorClass}"
-        title="${label} ${id} (Click to copy link)"
-        aria-label="${label} ${id}"
-        ><span class="cite-prefix"></span
+      <a href="#sec-${id}" class="${anchorClass}"
         ><span class="cite-local">${id}</span></a
       >
     </div>
-    <div class="reader-passage" data-tokenize-target="true">${content}</div>
+    <div class="reader-passage">${content}</div>
   </div>`;
 }
 
