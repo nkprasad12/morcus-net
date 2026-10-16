@@ -183,7 +183,7 @@ describe("dict_ssr", () => {
 
   test("renderEntryResult formats entry and inflections without Lemma/Notes columns and without bold Form", () => {
     const entryResult: EntryResult = {
-      entry: new XmlNode("span", [["class", "lsOrth"]], ["amo"]),
+      entry: '<span class="lsOrth">amo</span>',
       outline: {
         mainKey: "amo",
         mainSection: { text: "amo", level: 0, ordinal: "", sectionId: "0" },
@@ -323,7 +323,7 @@ describe("dict_ssr", () => {
     const results = {
       ls: [
         {
-          entry: new XmlNode("span", [["class", "lsOrth"]], ["Caesar"]),
+          entry: '<span class="lsOrth">Caesar</span>',
           outline: {
             mainKey: "Caesar",
             mainSection: {
@@ -435,7 +435,7 @@ describe("dict_ssr", () => {
 
   test("renderEntryResult includes entry outline when senses exist", () => {
     const entryResult: EntryResult = {
-      entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+      entry: '<span class="lsOrth">habeo</span>',
       outline: {
         mainKey: "habeo",
         mainSection: {
@@ -589,7 +589,7 @@ describe("dict_ssr", () => {
     const results = {
       "L&S": [
         {
-          entry: new XmlNode("span", [["class", "lsOrth"]], ["cum"]),
+          entry: '<span class="lsOrth">cum</span>',
           outline: {
             mainKey: "cum1",
             mainLabel: "1. cum",
@@ -603,7 +603,7 @@ describe("dict_ssr", () => {
           },
         },
         {
-          entry: new XmlNode("span", [["class", "lsOrth"]], ["cum"]),
+          entry: '<span class="lsOrth">cum</span>',
           outline: {
             mainKey: "cum2",
             mainLabel: "2. cum",
@@ -658,7 +658,7 @@ describe("dict_ssr", () => {
     const results = {
       "L&S": [
         {
-          entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+          entry: '<span class="lsOrth">habeo</span>',
           outline: {
             mainKey: "habeo",
             mainSection: {
@@ -689,10 +689,13 @@ describe("dict_ssr", () => {
 
   test("renderEntryResult renders prominent headword heading and avoids duplicate root id", () => {
     const entryResult: EntryResult = {
-      entry: new XmlNode(
-        "div",
-        [["id", "n20077"]],
-        [new XmlNode("span", [["class", "lsOrth"]], ["habeo"])]
+      entry: xmlNodeToHtml(
+        new XmlNode(
+          "div",
+          [["id", "n20077"]],
+          [new XmlNode("span", [["class", "lsOrth"]], ["habeo"])]
+        ),
+        { omitRootId: true }
       ),
       outline: {
         mainKey: "habeo",
@@ -721,7 +724,7 @@ describe("dict_ssr", () => {
 
   test("renderEntryResult defensively strips HTML tags from headword", () => {
     const entryResult: EntryResult = {
-      entry: new XmlNode("div", [["id", "sh7671"]], ["dog content"]),
+      entry: "<div>dog content</div>",
       outline: {
         mainKey: "dog",
         mainLabel: "dog (<i>subs.</i>)",
@@ -771,7 +774,7 @@ describe("dict_ssr", () => {
     const results = {
       "L&S": [
         {
-          entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+          entry: '<span class="lsOrth">habeo</span>',
           outline: {
             mainKey: "habeo",
             mainSection: {
@@ -786,7 +789,7 @@ describe("dict_ssr", () => {
       ],
       GRG: [
         {
-          entry: new XmlNode("span", [["class", "grgOrth"]], ["habeo"]),
+          entry: '<span class="grgOrth">habeo</span>',
           outline: {
             mainKey: "habeo",
             mainSection: {
@@ -821,7 +824,7 @@ describe("dict_ssr", () => {
     const results = {
       "L&S": [
         {
-          entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+          entry: '<span class="lsOrth">habeo</span>',
           outline: {
             mainKey: "habeo",
             mainSection: {
@@ -918,7 +921,7 @@ describe("dict_ssr", () => {
     const results = {
       ls: [
         {
-          entry: new XmlNode("entry", [["id", "n100"]], ["habeo"]),
+          entry: "<div>habeo</div>",
           outline: {
             mainKey: "habeo",
             mainSection: {
@@ -962,7 +965,7 @@ describe("dict_ssr", () => {
     const results = {
       ls: [
         {
-          entry: new XmlNode("entry", [["id", "n200"]], ["abbas"]),
+          entry: "<div>abbas</div>",
           outline: {
             mainKey: "abbas",
             mainSection: {
@@ -990,7 +993,7 @@ describe("dict_ssr", () => {
     const results = {
       ls: [
         {
-          entry: new XmlNode("entry", [["id", "n200"]], ["canis"]),
+          entry: "<div>canis</div>",
           outline: {
             mainKey: "canis",
             mainSection: {
@@ -1007,7 +1010,7 @@ describe("dict_ssr", () => {
       ],
       gaffiot: [
         {
-          entry: new XmlNode("entry", [["id", "g300"]], ["canis"]),
+          entry: "<div>canis</div>",
           outline: {
             mainKey: "canis",
             mainSection: {
@@ -1036,7 +1039,7 @@ describe("dict_ssr", () => {
     const results = {
       ls: [
         {
-          entry: new XmlNode("entry", [["id", "n200"]], ["canis"]),
+          entry: "<div>canis</div>",
           outline: {
             mainKey: "canis",
             mainSection: {
@@ -1053,7 +1056,7 @@ describe("dict_ssr", () => {
       ],
       gaffiot: [
         {
-          entry: new XmlNode("entry", [["id", "g300"]], ["canis"]),
+          entry: "<div>canis</div>",
           outline: {
             mainKey: "canis",
             mainSection: {
@@ -1088,7 +1091,7 @@ describe("dict_ssr", () => {
 
   test("renderEntryResult emits tool-outline class on outline details element", () => {
     const entryResult = {
-      entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+      entry: '<span class="lsOrth">habeo</span>',
       outline: {
         mainKey: "habeo",
         mainSection: {
@@ -1328,7 +1331,7 @@ describe("dict_ssr", () => {
         const results = {
           "L&S": [
             {
-              entry: new XmlNode("span", [], ["amo"]),
+              entry: "<span>amo</span>",
               outline: {
                 mainKey: "amo",
                 mainSection: {
@@ -1354,7 +1357,7 @@ describe("dict_ssr", () => {
         const results = {
           "L&S": [
             {
-              entry: new XmlNode("span", [], ["habeo"]),
+              entry: "<span>habeo</span>",
               outline: {
                 mainKey: "habeo",
                 mainSection: {
@@ -1368,7 +1371,7 @@ describe("dict_ssr", () => {
           ],
           GRG: [
             {
-              entry: new XmlNode("span", [], ["habeo"]),
+              entry: "<span>habeo</span>",
               outline: {
                 mainKey: "habeo",
                 mainSection: {
@@ -1408,7 +1411,7 @@ describe("dict_ssr", () => {
         const results = {
           "L&S": [
             {
-              entry: new XmlNode("span", [], ["amo"]),
+              entry: "<span>amo</span>",
               outline: {
                 mainKey: "amo",
                 mainSection: {
@@ -1422,7 +1425,7 @@ describe("dict_ssr", () => {
           ],
           GRG: [
             {
-              entry: new XmlNode("span", [], ["amo2"]),
+              entry: "<span>amo2</span>",
               outline: {
                 mainKey: "amo2",
                 mainSection: {
@@ -1448,7 +1451,7 @@ describe("dict_ssr", () => {
       test("renders single entry card without quick-jump nav", () => {
         const entries: EntryResult[] = [
           {
-            entry: new XmlNode("span", [], ["habeo"]),
+            entry: "<span>habeo</span>",
             outline: {
               mainKey: "habeo",
               mainSection: {
@@ -1482,7 +1485,7 @@ describe("dict_ssr", () => {
       test("renders multi-entry card with quick-jump nav links", () => {
         const entries: EntryResult[] = [
           {
-            entry: new XmlNode("span", [], ["cum 1"]),
+            entry: "<span>cum 1</span>",
             outline: {
               mainKey: "cum1",
               mainLabel: "1. cum",
@@ -1496,7 +1499,7 @@ describe("dict_ssr", () => {
             },
           },
           {
-            entry: new XmlNode("span", [], ["cum 2"]),
+            entry: "<span>cum 2</span>",
             outline: {
               mainKey: "cum2",
               mainLabel: "2. cum",
@@ -1526,7 +1529,7 @@ describe("dict_ssr", () => {
       test("omits source attribution when key lacks attribution info", () => {
         const entries: EntryResult[] = [
           {
-            entry: new XmlNode("span", [], ["custom"]),
+            entry: "<span>custom</span>",
             outline: {
               mainKey: "custom",
               mainSection: {

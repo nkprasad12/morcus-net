@@ -5,9 +5,14 @@ Known follow-up work for this topic, including remaining V1 → V2 gaps. See
 
 ---
 
-## 1. Cache rendered entry bodies
+## 1. Pre-render dictionary entry bodies at build time
 
-**Status:** not started. Analysed and benchmarked; the design below is ready to build.
+**Status:** done. All eight SQLite dictionary generators (`ls`, `sh`, `gaf`, `georges`,
+`gesner`, `pozo`, `ra`, `forc`) and `NumeralDict` now call `preRenderEntryHtml(entry)` at
+build time and store `{ entry: string, outline, n? }` as plain JSON in `entries.entry`. At
+request time, [`entry_view.server.ts`](entry_view.server.ts) splices `subsection-hit` and
+`aria-current="location"` onto matched anchors via `markSubsectionHits`
+([`xml_to_html.server.ts`](xml_to_html.server.ts)) without walking an `XmlNode` tree.
 
 ### Motivation
 
@@ -119,17 +124,9 @@ every measured case (`.0` bucket: 8 direct + 32 via blurb + 0 unresolved).
 
 ## 3. Strip Smith & Hall label markup at build time
 
-**Status:** not started. The user-visible bug is fixed at runtime; this removes the workaround.
-
-S&H labels such as `sh7671` (_dog_) were extracted with inline HTML (`dog (<i>subs.</i>)`), which
-the entry header then escaped and showed as literal tags. Today `reviveRaw` in
-`src/common/smith_and_hall/sh_dict.ts` strips tags from `outline.mainLabel`, `mainSection.text` and
-`senses[].text` on load, and `entry_view.server.ts` / `dict_page.server.ts` strip `headword`
-defensively before escaping.
-
-- [ ] Fix `src/common/smith_and_hall/sh_outline.ts` (`getOutline`, `findShLabelText`,
-      `chooseOutlineText`) so `./morcus.sh build -b_sh` emits plaintext labels at the source, then
-      drop the runtime stripping in `sh_dict.ts`.
+**Status:** done. `getOutline` in `src/common/smith_and_hall/sh_outline.ts` now strips inline
+HTML tags from `mainLabel`, `mainSection.text` and `senses[].text` at build time, and the
+runtime stripping in `sh_dict.ts` has been removed.
 
 ---
 

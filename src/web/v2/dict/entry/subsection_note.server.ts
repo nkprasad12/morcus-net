@@ -50,6 +50,20 @@ export function collectXmlIds(root: XmlChild): Set<string> {
   return ids;
 }
 
+/** Collects every `id` attribute defined anywhere in a pre-rendered HTML entry. */
+export function collectHtmlIds(html: string, rootId?: string): Set<string> {
+  const ids = new Set<string>();
+  if (rootId) {
+    ids.add(rootId);
+  }
+  const regex = /\bid="([^"]+)"/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(html)) !== null) {
+    ids.add(he.unescape(match[1]));
+  }
+  return ids;
+}
+
 /**
  * Finds the element a subsection match should link to.
  *

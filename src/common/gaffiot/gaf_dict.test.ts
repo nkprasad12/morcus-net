@@ -8,7 +8,6 @@ import {
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import { processGaffiot } from "@/common/gaffiot/process_gaffiot";
 import { cleanupSqlTableFiles } from "@/common/test_helpers";
-import { XmlNode } from "@/common/xml/xml_node";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { CruncherOptions } from "@/morceus/cruncher_types";
@@ -55,7 +54,7 @@ async function expectEntriesWithIds(
   expected: string[]
 ) {
   const results = await promise;
-  const ids = results.map((r) => XmlNode.assertIsNode(r.entry).getAttr("id"));
+  const ids = results.map((r) => r.outline.mainSection.sectionId);
   expect(ids).toStrictEqual(expected);
 }
 

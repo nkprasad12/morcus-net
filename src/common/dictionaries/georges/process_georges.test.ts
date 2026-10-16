@@ -58,7 +58,7 @@ async function expectEntriesWithIds(
   expected: string[]
 ) {
   const results = await promise;
-  const ids = results.map((r) => r.entry.getAttr("id"));
+  const ids = results.map((r) => r.outline.mainSection.sectionId);
   expect(ids).toStrictEqual(expected);
 }
 

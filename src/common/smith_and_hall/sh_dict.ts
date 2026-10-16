@@ -2,13 +2,8 @@ import { EntryResult } from "@/common/dictionaries/dict_result";
 import { StoredDict } from "@/common/dictionaries/dict_storage";
 import { Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
-
-function stripHtmlTags(input: string): string {
-  return input.replace(/<[^>]+>/g, "").trim();
-}
 
 export class SmithAndHall implements Dictionary {
   readonly info = LatinDict.SmithAndHall;
@@ -19,29 +14,8 @@ export class SmithAndHall implements Dictionary {
     this.storage = new StoredDict(backing);
   }
 
-  private reviveRaw(input: string) {
-    const parsed = JSON.parse(input);
-    if (parsed.outline) {
-      if (parsed.outline.mainLabel) {
-        parsed.outline.mainLabel = stripHtmlTags(parsed.outline.mainLabel);
-      }
-      if (parsed.outline.mainSection?.text) {
-        parsed.outline.mainSection.text = stripHtmlTags(
-          parsed.outline.mainSection.text
-        );
-      }
-      if (parsed.outline.senses) {
-        for (const sense of parsed.outline.senses) {
-          if (sense.text) {
-            sense.text = stripHtmlTags(sense.text);
-          }
-        }
-      }
-    }
-    return {
-      entry: XmlNodeSerialization.DEFAULT.deserialize(parsed.entry),
-      outline: parsed.outline,
-    };
+  private reviveRaw(input: string): EntryResult {
+    return JSON.parse(input);
   }
 
   async getEntry(

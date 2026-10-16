@@ -13,10 +13,7 @@ import { StoredEntryData } from "@/common/lewis_and_short/ls_dict";
 import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
-import { encodeMessage } from "@/web/utils/rpc/parsing";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-
-const REGISTRY = [XmlNodeSerialization.DEFAULT];
+import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
 
 function* extractEntryData(
   rawFile: string,
@@ -34,14 +31,14 @@ function* extractEntryData(
     const regulars = orths.filter(isRegularOrth);
     const keys = regulars.length > 0 ? regulars : orths;
     const data: StoredEntryData = {
-      entry: displayEntryFree(root),
+      entry: preRenderEntryHtml(displayEntryFree(root)),
       outline: extractOutline(root),
       n: root.getAttr("n"),
     };
     yield {
       id: checkPresent(root.getAttr("id")),
       keys,
-      entry: encodeMessage(data, REGISTRY),
+      entry: JSON.stringify(data),
       derivedKeys: derivedOrths(root),
     };
     numHandled += 1;

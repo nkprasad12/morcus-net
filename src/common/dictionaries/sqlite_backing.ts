@@ -25,6 +25,9 @@ export function sqliteBacking(
   const selectBySuffix = db.prepare(
     `SELECT DISTINCT orth FROM orths WHERE reverseCleanOrth GLOB ?`
   );
+  const selectEntryById = db.prepare(
+    `SELECT id, entry FROM entries WHERE id = ?`
+  );
   return {
     allEntryNames: () =>
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -41,12 +44,17 @@ export function sqliteBacking(
       });
     },
     entriesForIds: (ids: string[]) => {
-      const filter = ids.map(() => `id=?`).join(" OR ");
-      const n = ids.length;
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      return db
-        .prepare(`SELECT id, entry FROM entries WHERE ${filter} LIMIT ${n}`)
-        .all(ids) as { id: string; entry: string }[];
+      const results: { id: string; entry: string }[] = [];
+      for (const id of ids) {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        const row = selectEntryById.get(id) as
+          | { id: string; entry: string }
+          | undefined;
+        if (row !== undefined) {
+          results.push(row);
+        }
+      }
+      return results;
     },
     entryNamesByPrefix: (prefix: string) =>
       selectByPrefix

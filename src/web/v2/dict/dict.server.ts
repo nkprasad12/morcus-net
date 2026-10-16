@@ -5,6 +5,8 @@
 
 export {
   XmlNodeToHtmlOptions,
+  markSubsectionHits,
+  preRenderEntryHtml,
   xmlNodeToHtml,
 } from "@/web/v2/dict/entry/xml_to_html.server";
 
@@ -23,6 +25,7 @@ export {
 export {
   SubsectionGroup,
   SubsectionTarget,
+  collectHtmlIds,
   collectXmlIds,
   dedupeSubsections,
   matchedAnchorIds,

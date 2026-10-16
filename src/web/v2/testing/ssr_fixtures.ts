@@ -10,6 +10,7 @@
 
 import type { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { XmlNode } from "@/common/xml/xml_node";
+import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
 import { setupAnchorScroll } from "@/web/v2/core/nav/anchor_scroll.client";
 import { setupBackToTop } from "@/web/v2/core/widgets/back_to_top.client";
 import { setupDeferredIframes } from "@/web/v2/core/widgets/deferred_iframe.client";
@@ -69,29 +70,31 @@ export const DICT_AMO_QUERIED: string[] = ["L&S", "SH"];
 export const DICT_AMO_RESULTS: DictsFusedResponse = {
   "L&S": [
     {
-      entry: new XmlNode(
-        "div",
-        [["id", "ls-amo-root"]],
-        [
-          new XmlNode("b", [["class", "lsOrth"]], ["amo"]),
-          " ",
-          new XmlNode("span", [["class", "lsQuote"]], ["Gallia est omnis"]),
-          new XmlNode(
-            "div",
-            [["id", "ls-amo-s1"]],
-            [
-              new XmlNode(
-                "span",
-                [
-                  ["class", "lsSenseBullet"],
-                  ["senseid", "ls-amo-s1"],
-                ],
-                ["I."]
-              ),
-              " To love",
-            ]
-          ),
-        ]
+      entry: preRenderEntryHtml(
+        new XmlNode(
+          "div",
+          [["id", "ls-amo-root"]],
+          [
+            new XmlNode("b", [["class", "lsOrth"]], ["amo"]),
+            " ",
+            new XmlNode("span", [["class", "lsQuote"]], ["Gallia est omnis"]),
+            new XmlNode(
+              "div",
+              [["id", "ls-amo-s1"]],
+              [
+                new XmlNode(
+                  "span",
+                  [
+                    ["class", "lsSenseBullet"],
+                    ["senseid", "ls-amo-s1"],
+                  ],
+                  ["I."]
+                ),
+                " To love",
+              ]
+            ),
+          ]
+        )
       ),
       outline: {
         mainKey: "amo",
@@ -117,10 +120,12 @@ export const DICT_AMO_RESULTS: DictsFusedResponse = {
   ],
   SH: [
     {
-      entry: new XmlNode(
-        "div",
-        [["id", "sh-love-root"]],
-        [new XmlNode("b", [["class", "lsOrth"]], ["love"]), " amo"]
+      entry: preRenderEntryHtml(
+        new XmlNode(
+          "div",
+          [["id", "sh-love-root"]],
+          [new XmlNode("b", [["class", "lsOrth"]], ["love"]), " amo"]
+        )
       ),
       outline: {
         mainKey: "love",

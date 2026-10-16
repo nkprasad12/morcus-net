@@ -15,7 +15,6 @@ import {
   truncateSenseText,
 } from "@/web/v2/dict/toc/dict_toc.server";
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
-import { XmlNode } from "@/common/xml/xml_node";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 
 function makeMockEntry(
@@ -24,7 +23,7 @@ function makeMockEntry(
   senses: { level: number; ordinal: string; text: string; sectionId: string }[]
 ): EntryResult {
   return {
-    entry: new XmlNode("entry", [["id", sectionId]], [headword]),
+    entry: `<div>${headword}</div>`,
     outline: {
       mainKey: headword,
       mainSection: {
@@ -514,7 +513,7 @@ describe("dict_toc.server", () => {
       expect(extractHeadword(entryWithTags, 0)).toBe("facio");
 
       const entryWithoutLabels = {
-        entry: new XmlNode("entry", [], []),
+        entry: "<div></div>",
         outline: undefined,
       };
       expect(extractHeadword(entryWithoutLabels, 2)).toBe("Entry 3");

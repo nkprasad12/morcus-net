@@ -10,7 +10,6 @@ import {
 } from "@/common/dictionaries/latin_dict_fetching";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import type { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 export class GesnerDict implements Dictionary {
@@ -26,11 +25,7 @@ export class GesnerDict implements Dictionary {
   }
 
   private processRaw(input: string): EntryResult {
-    const parsed = JSON.parse(input);
-    return {
-      entry: XmlNodeSerialization.DEFAULT.deserialize(parsed.entry),
-      outline: parsed.outline,
-    };
+    return JSON.parse(input);
   }
 
   async getEntry(
