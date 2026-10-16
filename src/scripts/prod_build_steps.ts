@@ -25,7 +25,6 @@ import { processPozo } from "@/common/dictionaries/pozo/process_pozo";
 import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
 import { buildV2Bundle } from "@/bundler/v2.rsbuild";
-import { buildV2Library } from "@/common/library/v2/v2_library_builder";
 import { buildCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
@@ -150,12 +149,6 @@ const WRITE_COMMIT_ID: StepConfig = {
   operation: writeCommitId,
   label: "Writing commit hash",
 };
-const MAKE_V2_LIBRARY: StepConfig = {
-  operation: async () => {
-    await buildV2Library(LIB_DEFAULT_DIR);
-  },
-  label: "Building V2 library",
-};
 // Last: it needs every input the earlier steps fetched.
 const WRITE_BUILD_PROVENANCE: StepConfig = {
   operation: async () => {
@@ -178,7 +171,6 @@ const ALL_STEPS = [
   MAKE_FORCELLINI,
   MAKE_COMPLETIONS_DB,
   PROCESS_LAT_LIB,
-  MAKE_V2_LIBRARY,
   WRITE_BUILD_PROVENANCE,
 ];
 

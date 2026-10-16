@@ -1,10 +1,5 @@
 import { checkPresent } from "@/common/assert";
 import type { CorpusInputWork } from "@/common/library/corpus/corpus_common";
-import {
-  LIB_DEFAULT_DIR,
-  LIBRARY_INDEX,
-  type LibraryIndex,
-} from "@/common/library/library_lookup";
 import { ProcessedWork2 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 
@@ -165,6 +160,7 @@ function convertToCorpusInputWork(work: ProcessedWork2): CorpusInputWork {
   return {
     id: work.info.workId,
     workName: work.info.title,
+    shortTitle: work.info.shortTitle,
     author: work.info.author,
     authorCode: toAuthorCode(work.info.author),
     rows: work.rows.map(([_, root]) => extractRowText(root)),
@@ -173,21 +169,26 @@ function convertToCorpusInputWork(work: ProcessedWork2): CorpusInputWork {
   };
 }
 
-function readFilesFromLibraryIndex(inputDir: string): string[] {
-  const indexPath = `${LIB_DEFAULT_DIR}/${LIBRARY_INDEX}`;
-  const rawContent = fs.readFileSync(indexPath, "utf8");
-  const libraryIndex: LibraryIndex = JSON.parse(rawContent);
-  return Object.values(libraryIndex)
-    .filter(
-      ([, metadata]) =>
-        metadata.isTranslation !== true && !SKIPS.has(metadata.id)
-    )
+function readSortedCorpusWorkPaths(inputDir: string): string[] {
+  const files = fs
+    .readdirSync(inputDir)
+    .filter((f) => f.endsWith(".json") && !SKIPS.has(f.slice(0, -5)));
+  const entries = files.map((f) => {
+    const filePath = `${inputDir}/${f}`;
+    const work: CorpusInputWork = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return {
+      filePath,
+      authorCode: work.authorCode,
+      sortName: work.shortTitle ?? work.workName,
+    };
+  });
+  return entries
     .sort(
       (a, b) =>
-        toAuthorCode(a[1].author).localeCompare(toAuthorCode(b[1].author)) ||
-        a[1].name.localeCompare(b[1].name)
+        a.authorCode.localeCompare(b.authorCode) ||
+        a.sortName.localeCompare(b.sortName)
     )
-    .map(([, metadata]) => `${inputDir}/${metadata.id}.json`);
+    .map((e) => e.filePath);
 }
 
 export function saveAsCorpusInputWork(
@@ -205,9 +206,9 @@ export function saveAsCorpusInputWork(
 export function* latinWorksFromLibrary(
   inputDir: string = LIB_CORPUS_INPUT_DIR
 ): Generator<CorpusInputWork> {
-  const filePaths = readFilesFromLibraryIndex(inputDir);
+  const filePaths = readSortedCorpusWorkPaths(inputDir);
   for (const filePath of filePaths) {
-    const work = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    const work: CorpusInputWork = JSON.parse(fs.readFileSync(filePath, "utf8"));
     yield work;
     if (process.env.SIMULATE_LARGE_CORPUS === "1") {
       for (let i = 0; i < 10; i++) {

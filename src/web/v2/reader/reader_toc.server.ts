@@ -29,12 +29,18 @@ export function buildReaderPageUrl(
   return `/work/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}`;
 }
 
-export interface RenderTocItemsOptions {
+export interface PreRenderTocItemsOptions {
   pages?: V2PreprocessedPage[];
   work: Pick<V2PreprocessedWork, "urlAuthor" | "urlName"> & {
     pages?: V2PreprocessedPage[];
     textParts?: string[];
     navTree?: NavTreeNode;
+  };
+}
+
+export interface RenderTocItemsOptions extends PreRenderTocItemsOptions {
+  work: PreRenderTocItemsOptions["work"] & {
+    tocHtml?: string;
   };
   activePageIndex: number;
   query?: string;
@@ -67,10 +73,14 @@ function buildNavTreeFromPages(pages: V2PreprocessedPage[]): NavTreeNode {
 }
 
 /**
- * Renders the hierarchical tree of chapters and sections inside the TOC drawer.
+ * Pre-renders the hierarchical tree of chapters and sections inside the TOC
+ * drawer without active/open state or query parameters, so `renderTocItemsHtml`
+ * can splice per-request state in O(1) string replacements.
  */
-export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
-  const { activePageIndex, work, query } = options;
+export function preRenderTocItemsHtml(
+  options: PreRenderTocItemsOptions
+): string {
+  const { work } = options;
   const pages = options.pages ?? work.pages ?? [];
   const textParts = work.textParts ?? [];
 
@@ -79,9 +89,6 @@ export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
     pageMap.set(normalizeId(p.id), p);
   }
 
-  const activePage = pages[activePageIndex];
-  const activeId = activePage ? normalizeId(activePage.id) : "";
-
   const tree =
     work.navTree && work.navTree.children && work.navTree.children.length > 0
       ? work.navTree
@@ -89,6 +96,7 @@ export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
 
   function renderNode(node: NavTreeNode): string {
     const key = node.id.join(".");
+    const escapedKey = he.escape(key);
     const partName = textParts[node.id.length - 1] || "section";
     const coord = node.id[node.id.length - 1] || "";
     const formattedPart = partName.charAt(0).toUpperCase() + partName.slice(1);
@@ -96,40 +104,67 @@ export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
 
     if (node.children.length === 0) {
       const page = pageMap.get(key);
-      const pageUrl = buildReaderPageUrl(work, page ?? null, {
-        query,
-      });
-      const isCurrent = key === activeId;
-      return `
-        <a href="${pageUrl}"
-           class="reader-toc-item ${isCurrent ? "active" : ""}"
-           data-page-id="${he.escape(key)}"
-           ${isCurrent ? 'aria-current="page"' : ""}>
-          <span class="reader-toc-item-title">${he.escape(label)}</span>
-          <span class="reader-toc-item-id">&sect; ${he.escape(key)}</span>
-        </a>
-      `;
+      const pageUrl = buildReaderPageUrl(work, page ?? null);
+      return `<a href="${pageUrl}" class="reader-toc-item" data-page-id="${escapedKey}"><span class="reader-toc-item-title">${he.escape(
+        label
+      )}</span><span class="reader-toc-item-id">&sect; ${escapedKey}</span></a>`;
     }
 
-    const isOpen = activeId === key || activeId.startsWith(key + ".");
     const childrenHtml = node.children
       .map((child) => renderNode(child))
       .join("\n");
 
-    return `
-      <details class="reader-toc-group" ${isOpen ? "open" : ""}>
-        <summary class="reader-toc-summary">
-          <span class="reader-toc-chevron" aria-hidden="true">▸</span>
-          <span class="reader-toc-group-label">${he.escape(label)}</span>
-        </summary>
-        <div class="reader-toc-group-children">
-          ${childrenHtml}
-        </div>
-      </details>
-    `;
+    return `<details class="reader-toc-group" data-group-id="${escapedKey}"><summary class="reader-toc-summary"><span class="reader-toc-chevron" aria-hidden="true">▸</span><span class="reader-toc-group-label">${he.escape(
+      label
+    )}</span></summary><div class="reader-toc-group-children">\n${childrenHtml}\n</div></details>`;
   }
 
   return tree.children.map((child) => renderNode(child)).join("\n");
+}
+
+/**
+ * Renders the hierarchical tree of chapters and sections inside the TOC drawer,
+ * splicing the active page and open ancestor `<details>` groups into the
+ * pre-rendered TOC markup.
+ */
+export function renderTocItemsHtml(options: RenderTocItemsOptions): string {
+  const { activePageIndex, work, query } = options;
+  const pages = options.pages ?? work.pages ?? [];
+  const canUsePreRendered =
+    options.pages === undefined || options.pages === work.pages;
+  let html =
+    canUsePreRendered && work.tocHtml !== undefined
+      ? work.tocHtml
+      : preRenderTocItemsHtml(options);
+
+  const activePage = pages[activePageIndex];
+  const activeId = activePage ? normalizeId(activePage.id) : "";
+
+  if (activeId) {
+    const escapedActiveId = he.escape(activeId);
+    html = html.replace(
+      `class="reader-toc-item" data-page-id="${escapedActiveId}">`,
+      `class="reader-toc-item active" data-page-id="${escapedActiveId}" aria-current="page">`
+    );
+
+    const segments = activeId.split(".");
+    for (let i = 1; i <= segments.length; i++) {
+      const prefix = he.escape(segments.slice(0, i).join("."));
+      html = html.replace(
+        `<details class="reader-toc-group" data-group-id="${prefix}">`,
+        `<details class="reader-toc-group" data-group-id="${prefix}" open>`
+      );
+    }
+  }
+
+  if (query) {
+    const params = new URLSearchParams();
+    params.set("q", query);
+    const qSuffix = `?${params.toString()}`;
+    html = html.replace(/href="(\/work\/[^"]+)"/g, `href="$1${qSuffix}"`);
+  }
+
+  return html;
 }
 
 export interface ReaderTocDrawerOptions {

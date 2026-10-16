@@ -324,7 +324,7 @@ const MOCK_SLUG_MAP = new Map<string, string>([
   ["vergil/aeneid", MOCK_VERGIL_WORK.id],
 ]);
 
-export const V2_LIBRARY_INDEX = "morcus_v2_index.json";
+export const V2_LIBRARY_DB = "v2_library.db";
 
 export function getV2LibrarySummaries(): Promise<V2WorkSummary[]> {
   return Promise.resolve(MOCK_V2_SUMMARIES);

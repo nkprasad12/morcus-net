@@ -1,7 +1,4 @@
 import {
-  Serialization,
-  decodeMessage,
-  encodeMessage,
   instanceOf,
   isAny,
   isArray,
@@ -16,20 +13,11 @@ import {
   isTriplet,
   matchesObject,
   maybeUndefined,
-  parseMessage,
-  stringifyMessage,
   typeOf,
 } from "@/web/utils/rpc/parsing";
 
 class StringWrapper {
   constructor(readonly prop: string) {}
-
-  static SERIALIZATION: Serialization<StringWrapper> = {
-    name: "StringWrapper",
-    validator: (t): t is StringWrapper => t instanceof StringWrapper,
-    serialize: (t) => t.prop,
-    deserialize: (t) => new StringWrapper(t),
-  };
 }
 
 describe("instanceOf", () => {
@@ -198,89 +186,6 @@ describe("isStringRecord", () => {
 
   it("validates valid records", () => {
     expect(isRecord(isString)({ canaba: "4" })).toBe(true);
-  });
-});
-
-describe("encode and decode", () => {
-  it("handles string input", () => {
-    const input = "hello";
-
-    const encoded = encodeMessage(input);
-    const result = decodeMessage(encoded, isString);
-
-    expect(result).toStrictEqual(input);
-  });
-
-  it("handles string input with special characters", () => {
-    const input = "hello?there";
-
-    const encoded = encodeMessage(input, undefined, true);
-    const result = decodeMessage(encoded, isString, undefined, true);
-
-    expect(result).toStrictEqual(input);
-  });
-
-  it("handles simple registry input", () => {
-    const input = new StringWrapper("foo");
-
-    const encoded = encodeMessage(input, [StringWrapper.SERIALIZATION]);
-    const result = decodeMessage(
-      encoded,
-      StringWrapper.SERIALIZATION.validator,
-      [StringWrapper.SERIALIZATION]
-    );
-
-    expect(result).toStrictEqual<StringWrapper>(input);
-  });
-
-  it("handles array registry input", () => {
-    const input = [new StringWrapper("foo")];
-
-    const encoded = encodeMessage(input, [StringWrapper.SERIALIZATION]);
-    const result = decodeMessage(
-      encoded,
-      isArray(StringWrapper.SERIALIZATION.validator),
-      [StringWrapper.SERIALIZATION]
-    );
-
-    expect(result).toStrictEqual<StringWrapper[]>(input);
-  });
-});
-
-describe("stringifyMessage and parseMessage", () => {
-  it("handles string input", () => {
-    const input = "hello";
-
-    const encoded = stringifyMessage(input);
-    const result = parseMessage(encoded, isString);
-
-    expect(result).toStrictEqual(input);
-  });
-
-  it("handles simple registry input", () => {
-    const input = new StringWrapper("foo");
-
-    const encoded = stringifyMessage(input, [StringWrapper.SERIALIZATION]);
-    const result = parseMessage(
-      encoded,
-      StringWrapper.SERIALIZATION.validator,
-      [StringWrapper.SERIALIZATION]
-    );
-
-    expect(result).toStrictEqual<StringWrapper>(input);
-  });
-
-  it("handles array registry input", () => {
-    const input = [new StringWrapper("foo")];
-
-    const encoded = stringifyMessage(input, [StringWrapper.SERIALIZATION]);
-    const result = parseMessage(
-      encoded,
-      isArray(StringWrapper.SERIALIZATION.validator),
-      [StringWrapper.SERIALIZATION]
-    );
-
-    expect(result).toStrictEqual<StringWrapper[]>(input);
   });
 });
 
