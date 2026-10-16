@@ -1,12 +1,12 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
-import { xmlNodeToHtml } from "@/web/v2/dict/entry/xml_to_html.server";
+import { markSubsectionHits } from "@/web/v2/dict/entry/xml_to_html.server";
 import {
   dedupeInflections,
   formatInflectionForm,
   renderInflectionTable,
 } from "@/web/v2/dict/entry/inflection_table.server";
 import {
-  collectXmlIds,
+  collectHtmlIds,
   dedupeSubsections,
   matchedAnchorIds,
   renderSubsectionNote,
@@ -51,17 +51,16 @@ export function renderEntryResult(
   const hasTools = outlineSenses !== undefined || inflections !== undefined;
   const isMultiEntry = Boolean(totalEntries && totalEntries > 1);
 
-  // Every `id` defined anywhere in this entry's XML. Used both to resolve
-  // subsection anchors and to decide whether a sense bullet needs to carry its
-  // own id so its `#senseid` link has something to land on.
-  const existingIds = collectXmlIds(result.entry);
-
   // Resolve which parts of this entry the query actually matched. Anchors are
   // resolved against the ids present in the entry, since not every subsection
   // id survives into the rendered markup.
   const subsectionGroups =
     result.subsections && result.subsections.length > 0
-      ? dedupeSubsections(result.subsections, entryAnchorId, existingIds)
+      ? dedupeSubsections(
+          result.subsections,
+          entryAnchorId,
+          collectHtmlIds(result.entry, entryAnchorId)
+        )
       : [];
   const subsectionNoteHtml = renderSubsectionNote(subsectionGroups, {
     mainKey: result.outline?.mainKey,
@@ -190,11 +189,10 @@ export function renderEntryResult(
     `
     : "";
 
-  const entryHtml = xmlNodeToHtml(result.entry, {
-    omitRootId: true,
-    matchedSubsectionIds: matchedAnchorIds(subsectionGroups),
-    existingIds,
-  });
+  const entryHtml = markSubsectionHits(
+    result.entry,
+    matchedAnchorIds(subsectionGroups)
+  );
 
   return `
     <article class="entry ${hasTools ? "has-tools" : ""}" id="${entryAnchorId}">

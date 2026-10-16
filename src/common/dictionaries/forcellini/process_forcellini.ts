@@ -4,7 +4,7 @@ import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
 import { XmlNode } from "@/common/xml/xml_node";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
 
 import fs from "fs";
 
@@ -103,7 +103,7 @@ function processRawEntry(
   );
 
   const entry = JSON.stringify({
-    entry: XmlNodeSerialization.DEFAULT.serialize(root),
+    entry: preRenderEntryHtml(root),
     outline,
   });
 

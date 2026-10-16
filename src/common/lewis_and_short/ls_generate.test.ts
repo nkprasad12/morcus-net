@@ -18,9 +18,8 @@ import type {
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { CruncherOptions } from "@/morceus/cruncher_types";
-import { encodeMessage } from "@/web/utils/rpc/parsing";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
+import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
 
 console.debug = jest.fn();
 
@@ -44,11 +43,26 @@ function createLewisAndShort(backing: StoredDictBacking<any>) {
   );
 }
 
-function toRawDictEntry(keys: string[], entry: StoredEntryData): RawDictEntry {
+function toRawDictEntry(
+  keys: string[],
+  entry: { entry: XmlNode; outline: EntryOutline; n?: string }
+): RawDictEntry {
+  const sectionId = entry.entry.getAttr("id") ?? keys[0];
+  const stored: StoredEntryData = {
+    entry: preRenderEntryHtml(entry.entry),
+    outline:
+      entry.outline === FAKE_OUTLINE
+        ? {
+            ...FAKE_OUTLINE,
+            mainSection: { ...FAKE_OUTLINE.mainSection, sectionId },
+          }
+        : entry.outline,
+    n: entry.n,
+  };
   return {
     id: keys[0],
     keys,
-    entry: encodeMessage(entry, [XmlNodeSerialization.DEFAULT]),
+    entry: JSON.stringify(stored),
   };
 }
 
@@ -101,7 +115,7 @@ describe("LewisAndShort", () => {
     expected: string[]
   ) {
     const results = await promise;
-    const ids = results.map((r) => r.entry.getAttr("id"));
+    const ids = results.map((r) => r.outline.mainSection.sectionId);
     expect(ids).toStrictEqual(expected);
   }
 
@@ -171,7 +185,7 @@ describe("LewisAndShort", () => {
 
     expect(await dict.getEntryById("Juliu")).toBe(undefined);
     const result = await dict.getEntryById("Julius")!;
-    expect(result?.entry.getAttr("id")).toBe("Julius");
+    expect(result?.outline.mainSection.sectionId).toBe("Julius");
   });
 
   test("getEntry returns expected entries", async () => {
@@ -188,7 +202,12 @@ describe("LewisAndShort", () => {
 
     const outline = (await dict.getEntry("Julius")).map((r) => r.outline);
 
-    expect(outline).toStrictEqual([FAKE_OUTLINE]);
+    expect(outline).toStrictEqual([
+      {
+        ...FAKE_OUTLINE,
+        mainSection: { ...FAKE_OUTLINE.mainSection, sectionId: "Julius" },
+      },
+    ]);
   });
 
   test("getEntry inflected returns no results with flag off", async () => {

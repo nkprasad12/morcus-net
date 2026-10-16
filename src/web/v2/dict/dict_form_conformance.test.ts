@@ -17,7 +17,6 @@ import express from "express";
 import request from "supertest";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { XmlNode } from "@/common/xml/xml_node";
 import {
   decodeDictBitmask,
   encodeDictBitmask,
@@ -99,7 +98,7 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
         for (const key of dicts) {
           response[key] = [
             {
-              entry: new XmlNode("span", [["class", "lsOrth"]], ["test"]),
+              entry: '<span class="lsOrth">test</span>',
               outline: {
                 mainKey: "test",
                 mainSection: {

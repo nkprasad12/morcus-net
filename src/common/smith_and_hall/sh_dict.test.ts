@@ -6,7 +6,6 @@ import {
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
 import { shListToRaw } from "@/common/smith_and_hall/sh_process";
-import { XmlNode } from "@/common/xml/xml_node";
 import fs from "fs";
 
 console.debug = jest.fn();
@@ -34,9 +33,7 @@ async function expectEntriesWithIds(
   expected: string[]
 ) {
   const results = await promise;
-  const ids = results.map((r) =>
-    XmlNode.assertIsNode(r.entry.children[0]).getAttr("id")
-  );
+  const ids = results.map((r) => r.outline.mainSection.sectionId);
   expect(ids).toStrictEqual(expected);
 }
 
@@ -78,33 +75,17 @@ describe("SmithAndHall dict", () => {
     expect(await dict.getCompletions("H")).toEqual(["Hello", "Hi"]);
   });
 
-  test("reviveRaw strips HTML tags from outline fields", async () => {
-    const rawEntry = {
-      id: "sh0",
-      keys: ["dog"],
-      entry: JSON.stringify({
-        entry: new XmlNode("div", [["id", "sh0"]], ["dog content"]).toString(),
-        outline: {
-          mainKey: "dog",
-          mainLabel: "dog (<i>subs.</i>)",
-          mainSection: {
-            level: 0,
-            ordinal: "0",
-            text: " <b>dog</b> (<i>subs.</i>)",
-            sectionId: "sh0",
-          },
-          senses: [
-            {
-              level: 2,
-              ordinal: "I.",
-              text: " <i>The animal</i>",
-              sectionId: "sh0.0",
-            },
-          ],
-        },
-      }),
-    };
-    SqliteDict.save([rawEntry], TEMP_FILE);
+  test("shListToRaw strips HTML tags from outline fields", async () => {
+    const entries: ShEntry[] = [
+      {
+        keys: ["dog"],
+        blurb: " <b>dog</b> (<i>subs.</i>): a canine",
+        senses: [
+          { level: 2, bullet: "I.", text: " <i>The animal</i>: fidelis" },
+        ],
+      },
+    ];
+    SqliteDict.save(shListToRaw(entries), TEMP_FILE);
     const dict = new SmithAndHall(sqliteBacking(TEMP_FILE));
     const result = await dict.getEntryById("sh0");
     expect(result).toBeDefined();

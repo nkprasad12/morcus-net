@@ -8,7 +8,6 @@ import { encodeDictBitmask } from "@/web/v2/dict/settings/dict_bitmask.common";
 import { createInMemoryPrecompressedStore } from "@/web/v2/core/server/precompressed_json.server";
 import { createV2Router } from "@/web/v2/v2_router.server";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
-import { XmlNode } from "@/common/xml/xml_node";
 import { brotliDecompressSync, gunzipSync } from "zlib";
 import { buildV2Bundle } from "@/bundler/v2.rsbuild";
 import { V2_ASSET_NAMES } from "@/bundler/v2_build_contract";
@@ -64,7 +63,7 @@ describe("v2_router integration", () => {
       getEntry: jest.fn().mockResolvedValue({
         ls: [
           {
-            entry: new XmlNode("span", [["class", "lsOrth"]], ["amo"]),
+            entry: '<span class="lsOrth">amo</span>',
             outline: {
               mainKey: "amo",
               mainSection: {

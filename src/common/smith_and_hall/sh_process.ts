@@ -12,9 +12,9 @@ import {
   ShLinkResolver,
   displayShEntry,
 } from "@/common/smith_and_hall/sh_display";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { getOutline } from "@/common/smith_and_hall/sh_outline";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
+import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
 
 type ProcessState = "In Blurb" | "In Sense" | "None";
 
@@ -62,7 +62,7 @@ export function shListToRaw(entries: ShEntry[]): RawDictEntry[] {
     }
     const displayEntry = displayShEntry(entry, i, resolver);
     const processedEntry = {
-      entry: XmlNodeSerialization.DEFAULT.serialize(displayEntry),
+      entry: preRenderEntryHtml(displayEntry),
       outline: getOutline(entry, i),
     };
     return {

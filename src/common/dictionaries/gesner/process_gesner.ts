@@ -5,8 +5,8 @@ import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
 import { singletonOf } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
+import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import {
@@ -150,7 +150,7 @@ function processRawEntry(
   };
   const processedRoot = processEntryForDisplay(root, id);
   const entry = JSON.stringify({
-    entry: XmlNodeSerialization.DEFAULT.serialize(processedRoot),
+    entry: preRenderEntryHtml(processedRoot),
     outline,
   });
   return { keys, id, entry };

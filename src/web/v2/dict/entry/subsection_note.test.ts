@@ -11,6 +11,7 @@ import {
   resolveSubsectionAnchor,
 } from "@/web/v2/dict/entry/subsection_note.server";
 import { renderEntryResult } from "@/web/v2/dict/entry/entry_view.server";
+import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
 import { dedupeInflections } from "@/web/v2/dict/entry/inflection_table.server";
 
 /** Builds an entry shaped like Lewis & Short output. */
@@ -39,7 +40,7 @@ function entryResult(
   mainKey = "propior"
 ): EntryResult {
   return {
-    entry: entryXml(entryId, senseIds),
+    entry: preRenderEntryHtml(entryXml(entryId, senseIds)),
     outline: {
       mainKey,
       mainSection: {

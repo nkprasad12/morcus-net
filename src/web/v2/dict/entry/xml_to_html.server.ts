@@ -1,4 +1,5 @@
 import { XmlChild } from "@/common/xml/xml_node";
+import { collectXmlIds } from "@/web/v2/dict/entry/subsection_note.server";
 import * as he from "he";
 
 export interface XmlNodeToHtmlOptions {
@@ -289,4 +290,55 @@ export function xmlNodeToHtml(
   }
 
   return baseHtml;
+}
+
+/**
+ * Pre-renders an entry's root XmlNode into static semantic HTML at build time,
+ * resolving internal sense-bullet anchors against all ids in the entry tree.
+ */
+export function preRenderEntryHtml(entry: XmlChild): string {
+  const existingIds = collectXmlIds(entry);
+  return xmlNodeToHtml(entry, { omitRootId: true, existingIds });
+}
+
+/**
+ * Marks matched subsection anchor elements in pre-rendered entry HTML with
+ * `subsection-hit` and `aria-current="location"`.
+ */
+export function markSubsectionHits(
+  html: string,
+  matchedIds: Set<string>
+): string {
+  if (matchedIds.size === 0) {
+    return html;
+  }
+  let result = html;
+  for (const id of matchedIds) {
+    const needle = ` id="${he.escape(id)}"`;
+    const idx = result.indexOf(needle);
+    if (idx === -1) {
+      continue;
+    }
+    const afterId = idx + needle.length;
+    if (result.startsWith(' class="', afterId)) {
+      const classStart = afterId + 8;
+      const classEnd = result.indexOf('"', classStart);
+      if (classEnd !== -1) {
+        const existingClass = result.slice(classStart, classEnd);
+        const nextClass = existingClass
+          ? `${existingClass} subsection-hit`
+          : "subsection-hit";
+        result =
+          result.slice(0, idx) +
+          `${needle} class="${nextClass}" aria-current="location"` +
+          result.slice(classEnd + 1);
+      }
+    } else {
+      result =
+        result.slice(0, idx) +
+        `${needle} class="subsection-hit" aria-current="location"` +
+        result.slice(afterId);
+    }
+  }
+  return result;
 }

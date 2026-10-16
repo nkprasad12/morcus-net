@@ -150,10 +150,12 @@ During V2 development, V2 deliberately consumed the exact same pre-built diction
 
 Once V1 is removed, audit and re-tune the offline artifact formats specifically around what V2 needs:
 
-- [ ] **Dictionary & Entry Artifacts**:
-  - V1 artifacts were structured around V1's RPC payload and client-side rendering expectations.
-  - Evaluate whether dictionary databases/artifacts (L&S, Gaffiot, Georges, Smith & Hall, Gesner, Pozo, etc.) can pre-compute or store data closer to V2's SSR/partial rendering and outline extraction needs—reducing per-request XML/string parsing overhead on the server.
-- [ ] **Inflection & Search Index Artifacts**:
-  - Review inflection lookup tables and autocomplete/search indices to ensure their schema and in-memory/SQLite representations match V2's query patterns and active-dictionary filtering without V1 compatibility shims.
+- [x] **Dictionary & Entry Artifacts**:
+  - All eight SQLite dictionary generators (`ls`, `sh`, `gaf`, `georges`, `gesner`, `pozo`, `ra`, `forc`) and `NumeralDict` now pre-render each entry's `XmlNode` tree into its HTML string at build time via `preRenderEntryHtml` (`dict/entry/xml_to_html.server.ts`), storing plain JSON `{ entry: string, outline, n? }` in `entries.entry` (without `ServerMessage` or `XmlNodeSerialization.DEFAULT`). S&H outline labels are also stripped of inline HTML at build time (`sh_outline.ts`).
+  - At request time, `entry_view.server.ts` splices `subsection-hit` and `aria-current="location"` onto matched anchors via `markSubsectionHits` (an `indexOf` string splice) and extracts `presentIds` only when an entry has matched subsections (`collectHtmlIds`). Dictionary lookup latency on _habeo_ dropped ~40–44% (`17.6 ms → 10.6 ms` L&S page, `23.1 ms → 13.5 ms` all-dict page, `16.2 ms → 9.1 ms` `/dicts/id/n20077`).
+- [x] **Inflection & Search Index Artifacts**:
+  - Indexed `reverseCleanOrth` in `SqliteDict.save` and pre-prepared parameterized SQLite statements in `sqliteBacking` (`/api/completions?q=-abo` suffix search p50 `26.4 ms → 1.7 ms`).
+  - Removed the unused 1-letter in-memory `StoredDict.table` (~20 MB V8 heap saved; dictionary startup init `616 ms → 6.8 ms`) and dropped dead `dict=` scoping on prefix completion chunks.
+  - Pre-computed and pre-compressed (`br -10` + `gzip -9`) all 386 valid 2-letter dictionary completion chunks into `build/dbs/completions.db` (`2.50 MiB`; `/api/completions?prefix=ca` p50 `38.0 ms → 3.0 ms`) and all 24 corpus lemma 1-letter shards into `build/corpus/latin_corpus_suggestions_lemmata.db` (`208 KiB`; `/api/corpus/lemmata/c` p50 `2.1 ms`). Corpus author suggestions are written as plain gzipped JSON without `ServerMessage`.
 - [ ] **Library & Work Artifacts**:
   - Consolidate `src/common/library/` and `src/scripts/process_lat_lib.ts` so the build pipeline emits only the V2 library/corpus formats, tuning pagination, TOC metadata, and parallel-reader alignment structures directly for V2's reader slice.

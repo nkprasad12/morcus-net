@@ -18,6 +18,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { XmlNode } from "@/common/xml/xml_node";
+import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
 import {
   V2_CHUNK_ENTRIES,
   type V2JsChunkName,
@@ -382,23 +383,25 @@ function buildDictSampleResults() {
   return {
     "L&S": [
       {
-        entry: new XmlNode(
-          "div",
-          [["id", "ls-amo-root"]],
-          [
-            new XmlNode("b", [["class", "lsOrth"]], ["amo"]),
-            " ",
-            new XmlNode(
-              "span",
-              [
-                ["class", "lsHover"],
-                ["title", "Cicero"],
-              ],
-              ["Cic."]
-            ),
-            " ",
-            new XmlNode("span", [["class", "lsQuote"]], ["Gallia est omnis"]),
-          ]
+        entry: preRenderEntryHtml(
+          new XmlNode(
+            "div",
+            [["id", "ls-amo-root"]],
+            [
+              new XmlNode("b", [["class", "lsOrth"]], ["amo"]),
+              " ",
+              new XmlNode(
+                "span",
+                [
+                  ["class", "lsHover"],
+                  ["title", "Cicero"],
+                ],
+                ["Cic."]
+              ),
+              " ",
+              new XmlNode("span", [["class", "lsQuote"]], ["Gallia est omnis"]),
+            ]
+          )
         ),
         outline: {
           mainKey: "amo",
