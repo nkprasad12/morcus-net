@@ -1087,6 +1087,11 @@ test.describe("UI V2 dictionary", () => {
       await expect(dictPanel).not.toHaveClass(/\bdrawer-minimized\b/);
     }
 
+    // Without an initial ?q= in JS mode, the dictionary starts on its landing
+    // card until the reader presses '/' (or clicks a word).
+    await expect(dictPanel.locator(".reader-dict-landing")).toBeVisible();
+    await page.keyboard.press("/");
+
     const frame = page.frameLocator("#dict-frame");
 
     // Verify search form and settings button exist inside the embedded dictionary

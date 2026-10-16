@@ -55,9 +55,12 @@ describe("reader_ssr", () => {
     expect(html).toContain("Gallico");
     expect(html).toContain("Chapter 1");
 
-    // Dictionary iframe panel in No-JS view
+    // Dictionary landing card and deferred iframe in initial view
     expect(html).toContain('id="dict-frame"');
-    expect(html).toContain("/dicts?embedded=1");
+    expect(html).toContain('src="/dicts?embedded=1"');
+    expect(html).toContain("data-dict-unarmed");
+    expect(html).toContain("reader-dict-landing");
+    expect(html).toContain("reader-dict-kbd");
 
     // Contains Latin words as clean semantic text
     expect(html).toContain("Gallia");
@@ -593,6 +596,8 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain("reader-teaser-js");
       expect(html).toContain('href="#reader-dict"');
       expect(html).toContain("reader-sheet-open-link");
+      expect(html).toContain("reader-dict-landing");
+      expect(html).toContain("data-dict-unarmed");
       expect(html).toContain('src="/dicts?embedded=1"');
     });
 
@@ -660,6 +665,7 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain("reader-sheet-open-link");
       expect(html).toContain("Tap any word to view definitions");
       expect(html).toContain('class="reader-sheet-close"');
+      expect(html).not.toContain("data-dict-unarmed");
       expect(html).toContain(
         'src="/dicts?q=omnis&amp;lang=La&amp;o=1&amp;embedded=1"'
       );

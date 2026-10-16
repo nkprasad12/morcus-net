@@ -167,6 +167,32 @@ test.describe("UI V2 reader", () => {
     ).toBeVisible();
   });
 
+  test("defers the embedded dictionary iframe on JS load and arms it on '/'", async ({
+    page,
+    viewport,
+  }) => {
+    const dictRequests: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/dicts")) {
+        dictRequests.push(req.url());
+      }
+    });
+
+    await page.goto(`${DBG}/1.1`);
+
+    if ((viewport?.width ?? 1280) > 640) {
+      await expect(page.locator(".reader-dict-landing")).toBeVisible();
+    }
+    expect(dictRequests).toEqual([]);
+
+    await page.keyboard.press("/");
+    const frame = page.frameLocator("#dict-frame");
+    await expect(frame.locator('input[name="q"]')).toBeVisible();
+    expect(dictRequests.some((u) => u.includes("/dicts?embedded=1"))).toBe(
+      true
+    );
+  });
+
   test("copying across verse lines gives one line per verse", async ({
     page,
     context,
