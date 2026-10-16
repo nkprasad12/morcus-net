@@ -467,11 +467,30 @@ describe("decomposed_reader_renderers", () => {
 
       // Page 0 should not be active
       expect(itemsHtml).toContain(
-        'href="/work/caesar/de_bello_gallico/1.1"\n           class="reader-toc-item "\n           data-page-id="1.1"'
+        '<a href="/work/caesar/de_bello_gallico/1.1" class="reader-toc-item" data-page-id="1.1">'
       );
       // Page 1 should be active
       expect(itemsHtml).toContain(
-        'href="/work/caesar/de_bello_gallico/1.2"\n           class="reader-toc-item active"\n           data-page-id="1.2"\n           aria-current="page"'
+        '<a href="/work/caesar/de_bello_gallico/1.2" class="reader-toc-item active" data-page-id="1.2" aria-current="page">'
+      );
+    });
+
+    test("renderTocItemsHtml splices active item, open group, and query into pre-rendered tocHtml", () => {
+      const baseHtml = renderTocItemsHtml({
+        activePageIndex: -1,
+        work: dbgWork,
+      });
+      const splicedHtml = renderTocItemsHtml({
+        activePageIndex: 1,
+        query: "gallia",
+        work: { ...dbgWork, tocHtml: baseHtml },
+      });
+
+      expect(splicedHtml).toContain(
+        '<details class="reader-toc-group" data-group-id="1" open>'
+      );
+      expect(splicedHtml).toContain(
+        '<a href="/work/caesar/de_bello_gallico/1.2?q=gallia" class="reader-toc-item active" data-page-id="1.2" aria-current="page">'
       );
     });
   });

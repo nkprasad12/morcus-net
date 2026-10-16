@@ -118,6 +118,8 @@ export interface CorpusInputWork {
   id: string;
   /** The name of the work. */
   workName: string;
+  /** Optional short display title used for deterministic ordering. */
+  shortTitle?: string;
   /** The author of the work. */
   author: string;
   /** A short and single-word code for the author. */

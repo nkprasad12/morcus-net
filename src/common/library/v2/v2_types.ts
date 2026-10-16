@@ -79,12 +79,14 @@ export interface V2PreprocessedWork {
   /** Depth at which text is paginated, e.g. 2 for chapter, 1 for book/poem */
   paginationDepth: number;
   /** Full multi-level hierarchical outline tree for drawer TOC */
-  navTree: NavTreeNode;
+  navTree?: NavTreeNode;
+  /** Pre-rendered HTML for the TOC drawer list (without active/open state) */
+  tocHtml?: string;
   /** Ordered list of pages */
   pages: V2PreprocessedPage[];
 }
 
-export const V2_LIBRARY_INDEX = "morcus_v2_index.json";
+export const V2_LIBRARY_DB = "v2_library.db";
 
 export interface V2WorkSummary {
   id: string;

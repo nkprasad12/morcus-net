@@ -1,21 +1,18 @@
 import { setupFakeHypotacticData } from "@/common/library/hypotactic_test_helper";
-import {
-  LIBRARY_INDEX,
-  type LibraryIndex,
-} from "@/common/library/library_lookup";
-import { ProcessedWork2 } from "@/common/library/library_types";
 import { processLibrary } from "@/common/library/process_library";
 import { replaceEnvVar } from "@/common/test_helpers";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { decodeMessage } from "@/web/utils/rpc/parsing";
-import { ServerMessage } from "@/web/utils/rpc/rpc";
+import {
+  getV2LibrarySummaries,
+  getV2Work,
+  resolvePageInWork,
+} from "@/web/v2/reader/reader_loader.server";
 import fs from "fs";
-import zlib from "zlib";
 
 console.debug = jest.fn();
 console.log = jest.fn();
 
 const LIB_DIR = "process_library_test_ts";
+const CORPUS_INPUT_DIR = "process_library_corpus_test_ts";
 const DBG_PATH =
   "texts/latin/perseus/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml";
 
@@ -48,50 +45,50 @@ beforeAll(() => {
 afterAll(() => {
   try {
     fs.rmSync(LIB_DIR, { recursive: true, force: true });
+    fs.rmSync(CORPUS_INPUT_DIR, { recursive: true, force: true });
   } catch {}
   process.env.MORCEUS_DATA_ROOT = ORIGINAL_MORCEUS_DATA_ROOT;
 });
 
-function readIndex(): LibraryIndex {
-  return JSON.parse(fs.readFileSync(`${LIB_DIR}/${LIBRARY_INDEX}`).toString());
-}
-
-/** Reads a work back the way the V2 library builder does. */
-function readWork(workId: string): ProcessedWork2 {
-  const [workPath] = readIndex()[workId];
-  const decoded = zlib.gunzipSync(fs.readFileSync(workPath)).toString();
-  return decodeMessage(
-    decoded,
-    ServerMessage.validator(ProcessedWork2.isMatch),
-    [XmlNodeSerialization.DEFAULT]
-  ).data;
-}
-
 describe("Library Processing", () => {
-  test("stores works that decode by id", async () => {
-    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
-    const result = readWork("phi0448.phi001.perseus-lat2");
-    expect(result.info.author).toBe("Julius Caesar");
+  test("stores works and pages in SQLite that load by id", async () => {
+    await processLibrary({
+      outputDir: LIB_DIR,
+      corpusInputDir: CORPUS_INPUT_DIR,
+      works: [DBG_PATH],
+    });
+    const result = await getV2Work("phi0448.phi001.perseus-lat2", LIB_DIR);
+    expect(result?.author).toBe("Julius Caesar");
+    expect(result?.tocHtml).toContain("reader-toc-item");
+    const { page } = resolvePageInWork(result!, "1.1");
+    expect(page).toBe(result!.pages[0]);
+    expect(page.singleHtml).toContain("Gallia est omnis divisa");
   });
 
-  test("indexes works by author and name", async () => {
-    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
-    const dbg = Object.values(readIndex()).find(
-      ([_, meta]) =>
-        meta.urlAuthor === "caesar" && meta.urlName === "de_bello_gallico"
-    );
-    expect(dbg?.[1].id).toBe("phi0448.phi001.perseus-lat2");
+  test("indexes works by author and name slug", async () => {
+    await processLibrary({
+      outputDir: LIB_DIR,
+      corpusInputDir: CORPUS_INPUT_DIR,
+      works: [DBG_PATH],
+    });
+    const dbg = await getV2Work("caesar/de_bello_gallico", LIB_DIR);
+    expect(dbg?.id).toBe("phi0448.phi001.perseus-lat2");
   });
 
-  test("returns correct index", async () => {
-    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
-    const result = Object.values(readIndex()).map(([_, meta]) => meta);
+  test("returns sorted work summaries", async () => {
+    await processLibrary({
+      outputDir: LIB_DIR,
+      corpusInputDir: CORPUS_INPUT_DIR,
+      works: [DBG_PATH],
+    });
+    const result = await getV2LibrarySummaries(LIB_DIR);
 
-    expect(result).toHaveLength(5);
-    expect(result[0].id).toBe("hypotactic_Eclogues_Calpurnius Siculus");
-    expect(result[1].id).toBe("hypotactic_Odes_Horace");
-    expect(result[2].id).toBe("hypotactic_Metamorphoses_Ovid");
-    expect(result[3].id).toBe("hypotactic_Heroides_Ovid");
-    expect(result[4].id).toBe("phi0448.phi001.perseus-lat2");
+    expect(result.map((s) => s.id)).toEqual([
+      "hypotactic_Eclogues_Calpurnius Siculus",
+      "hypotactic_Odes_Horace",
+      "phi0448.phi001.perseus-lat2",
+      "hypotactic_Heroides_Ovid",
+      "hypotactic_Metamorphoses_Ovid",
+    ]);
   });
 });

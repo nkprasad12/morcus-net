@@ -8,6 +8,7 @@ import type {
   V2PreprocessedWork,
 } from "@/common/library/v2/v2_types";
 import { XmlNode } from "@/common/xml/xml_node";
+import { preRenderTocItemsHtml } from "@/web/v2/reader/reader_toc.server";
 import * as he from "he";
 
 function formatPartCoordinate(partName: string, value: string): string {
@@ -635,6 +636,16 @@ export function preprocessWorkToV2(
     textParts,
     paginationDepth,
     navTree: work.navTree,
+    tocHtml: preRenderTocItemsHtml({
+      pages: v2Pages,
+      work: {
+        urlAuthor: metadata.urlAuthor,
+        urlName: metadata.urlName,
+        pages: v2Pages,
+        textParts,
+        navTree: work.navTree,
+      },
+    }),
     pages: v2Pages,
   };
 }
