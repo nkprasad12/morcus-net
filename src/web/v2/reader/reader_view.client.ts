@@ -921,6 +921,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (!passage) return;
     setHtml(passage, passageHtml);
     delete passage.dataset.enhanced;
+    delete passage.dataset.macraStripped;
     this.#enhancePassage();
     this.#applyPreferences(this.#currentPrefs);
     if (this.#currentQuery) {
@@ -1037,15 +1038,26 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   // --- Reader Preferences & Canvas Styling ---
+  /**
+   * Strips or restores macra on the passage's words. The server renders the
+   * text with macra, so when `show` is true and `#reader-passage` has not been
+   * stripped (`data-macra-stripped`), there is nothing to do.
+   */
   #applyMacra(show: boolean) {
     if (this.dataset.hasMacra === "false") return;
+    const passage = this.#passage;
+    if (!passage) return;
+    if (show && passage.dataset.macraStripped !== "true") return;
+    if (show) {
+      delete passage.dataset.macraStripped;
+    } else {
+      passage.dataset.macraStripped = "true";
+    }
     const words = this.scope.$$<HTMLElement>(".reader-passage .lat-word");
     for (const w of words) {
-      if (!w.hasAttribute("data-original-text")) {
-        w.setAttribute("data-original-text", w.textContent || "");
-      }
-      const orig = w.getAttribute("data-original-text") || "";
-      w.textContent = show ? orig : removeMacrons(orig);
+      const orig = (w.dataset.originalText ??= w.textContent || "");
+      const next = show ? orig : removeMacrons(orig);
+      if (w.textContent !== next) w.textContent = next;
     }
   }
 
@@ -1072,7 +1084,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    */
   #applyPreferences(prefs: ReaderPreferences) {
     this.#currentPrefs = prefs;
-    setPrepaint("--reader-scale", (prefs.readerScale / 100).toFixed(2));
+    setPrepaint(
+      "--reader-scale",
+      prefs.readerScale === 100 ? null : (prefs.readerScale / 100).toFixed(2)
+    );
 
     this.#applyDictScale(prefs.dictScale);
 

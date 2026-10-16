@@ -96,7 +96,7 @@ describe("MorcusDictSettings", () => {
     expect(m.el.querySelector(".settings-value")?.textContent).toBe("50%");
     expect(
       document.documentElement.style.getPropertyValue("--highlight-scale")
-    ).toBe("1");
+    ).toBe("");
   });
 
   test("loads initial strength from localStorage if present", () => {
@@ -136,16 +136,25 @@ describe("MorcusDictSettings", () => {
     ).toBe("1.6");
     expect(m.el.querySelector(".settings-value")?.textContent).toBe("80%");
     expect(localStorage.getItem("GlobalSettings")).toBeNull();
-    // Connect recorded the initial scale for pre-paint; the input tick didn't.
+    // Connect omitted the default scale from pre-paint; the input tick didn't record yet.
     const prepaint = () =>
       JSON.parse(localStorage.getItem("morcus_prepaint") ?? "{}");
-    expect(prepaint()["--highlight-scale"]).toBe("1");
+    expect(prepaint()["--highlight-scale"]).toBeUndefined();
 
     slider.dispatchEvent(new Event("change"));
     expect(JSON.parse(localStorage.getItem("GlobalSettings")!)).toEqual(
       expect.objectContaining({ highlightStrength: 80 })
     );
     expect(prepaint()["--highlight-scale"]).toBe("1.6");
+
+    // Returning to the default (50%) removes the inline property and pre-paint entry.
+    slider.value = "50";
+    slider.dispatchEvent(new Event("input"));
+    expect(
+      document.documentElement.style.getPropertyValue("--highlight-scale")
+    ).toBe("");
+    slider.dispatchEvent(new Event("change"));
+    expect(prepaint()["--highlight-scale"]).toBeUndefined();
     // Strength isn't a content setting.
     expect(m.commits).toEqual([]);
   });

@@ -248,12 +248,15 @@ export class MorcusDictSettings extends BaseElement {
   /**
    * Applies the highlight scale to <html>. With `record`, it's also recorded
    * for the critical script (on connect and when a change is committed, not
-   * on every slider tick).
+   * on every slider tick). The default is removed, leaving `:root`'s
+   * `--highlight-scale: 1` in `variables.css`.
    */
   #applyScale(strength: number, record: boolean) {
-    const scale = String(strength / 50);
+    const scale = strength === DEFAULT_STRENGTH ? null : String(strength / 50);
     if (record) {
       setPrepaint("--highlight-scale", scale);
+    } else if (scale === null) {
+      document.documentElement.style.removeProperty("--highlight-scale");
     } else {
       document.documentElement.style.setProperty("--highlight-scale", scale);
     }
