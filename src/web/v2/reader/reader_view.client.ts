@@ -367,13 +367,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         this.#wakeLock.extend();
         this.#consumePendingDictFocus();
       });
-      if (this.#currentPrefs.dictScale !== 100) {
-        const src = iframe.getAttribute("src");
-        if (src && !src.includes("scale=")) {
-          iframe.src = `${src}${src.includes("?") ? "&" : "?"}scale=${
-            this.#currentPrefs.dictScale
-          }`;
-        }
+      if (!iframe.hasAttribute("data-dict-unarmed")) {
+        this.#applyScaleToIframeSrc(iframe);
       }
     }
   }
@@ -816,12 +811,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // Arbitration Rule A4: Reset companion panel to Dictionary tab
     this.#panelController?.reset();
 
-    // Reset iframe to default embedded state
-    const iframe = this.#dictFrame;
-    if (iframe) {
-      iframe.src = "/dicts?embedded=1";
-    }
-
     // Update split layout class to empty
     this.#layoutController.setActive(false);
 
@@ -869,8 +858,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.#setActiveWord(activeAnchor ?? this.#findWordElement(word));
 
     // Update dictionary iframe (filtering by lang=La and forcing inflected search o=1 for Latin text word lookups)
-    if (iframe && !iframeAtTarget) {
-      iframe.src = targetSrc;
+    if (iframe) {
+      iframe.removeAttribute("data-dict-unarmed");
+      if (!iframeAtTarget) {
+        iframe.src = targetSrc;
+      }
     }
 
     // Update split layout class to active (expands mobile sheet)
@@ -1183,7 +1175,25 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     input.select();
   }
 
+  #applyScaleToIframeSrc(iframe: HTMLIFrameElement) {
+    if (this.#currentPrefs.dictScale === 100) return;
+    const src = iframe.getAttribute("src") || "/dicts?embedded=1";
+    if (!src.includes("scale=")) {
+      iframe.src = `${src}${src.includes("?") ? "&" : "?"}scale=${
+        this.#currentPrefs.dictScale
+      }`;
+    }
+  }
+
+  #armDictFrame() {
+    const iframe = this.#dictFrame;
+    if (!iframe || !iframe.hasAttribute("data-dict-unarmed")) return;
+    iframe.removeAttribute("data-dict-unarmed");
+    this.#applyScaleToIframeSrc(iframe);
+  }
+
   #focusDictSearch(selectedWord: string) {
+    this.#armDictFrame();
     const input = this.#findDictSearchInput();
     if (input) {
       this.#pendingDictFocusWord = null;
@@ -1416,10 +1426,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (el) this.#setActiveWord(el);
     } else {
       this.#setActiveWord(null);
-      const iframe = this.#dictFrame;
-      if (iframe && currentIframeSrc(iframe) !== "/dicts?embedded=1") {
-        iframe.src = "/dicts?embedded=1";
-      }
     }
 
     this.#refreshTitle();

@@ -28,6 +28,65 @@
   display: block;
 }
 
+.reader-dict-landing {
+  flex: 1 1 auto;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-6) var(--space-5) 4.625rem;
+  font-family: var(--font-sans);
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* Before the dictionary iframe has been armed in JS mode (`[data-dict-unarmed]`),
+   keep it `display: none` so `loading="lazy"` does not fetch `/dicts?embedded=1`,
+   and show `.reader-dict-landing` instead. In No-JS mode, on older browsers
+   without `@media (scripting)`, or if JS fails, the iframe stays `display: block`
+   and loads immediately while `.reader-dict-landing` stays `display: none`. */
+@media (scripting: enabled) {
+  .dict-iframe[data-dict-unarmed]:not([data-js-failed] *) {
+    display: none;
+  }
+
+  .dict-iframe-container:has(.dict-iframe[data-dict-unarmed])
+    .reader-dict-landing {
+    display: flex;
+  }
+}
+
+.reader-dict-landing-copy {
+  margin: 0;
+  max-width: 26ch;
+}
+
+.reader-dict-landing-copy strong {
+  color: inherit;
+  font-weight: 600;
+}
+
+.reader-dict-verb-mobile {
+  display: none;
+}
+
+.reader-dict-kbd {
+  display: inline-block;
+  padding: 1px var(--space-2);
+  margin: 0 2px;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text);
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+}
+
 body.resizing-panels .dict-iframe,
 .reader-dict-panel.is-dragging .dict-iframe {
   pointer-events: none;
@@ -43,6 +102,15 @@ body.resizing-panels .dict-iframe,
    ========================================================================== */
 
 @media (max-width: 640px) {
+  .reader-dict-verb-desktop,
+  .reader-dict-landing-shortcut {
+    display: none;
+  }
+
+  .reader-dict-verb-mobile {
+    display: inline;
+  }
+
   /* The embedded dictionary page renders flush (no inline padding) so it can
      align with the desktop companion tab bar. The iframe can't tell which
      layout hosts it, so the drawer supplies the gutter here (plus a small top

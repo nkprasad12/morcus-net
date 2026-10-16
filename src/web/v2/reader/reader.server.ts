@@ -483,6 +483,7 @@ export function renderReaderDictPanelHtml(
   };
   const hasCompanionTabs = shown.notes || shown.translation || shown.about;
   const activePageUrl = he.escape(closeHref);
+  const unarmedAttr = query ? "" : "\n                      data-dict-unarmed";
 
   return `        <!-- Desktop Resizable Splitter Bar -->
         <div class="reader-splitter resize-handle"
@@ -536,9 +537,12 @@ export function renderReaderDictPanelHtml(
                dictionary); ReaderPanelController takes over on upgrade. -->
           <div class="reader-panel-views">
             <div class="dict-iframe-container reader-panel-view" id="panel-view-dict">
+              <div class="reader-dict-landing" data-js-only>
+                <p class="reader-dict-landing-copy"><strong><span class="reader-dict-verb-desktop">Click</span><span class="reader-dict-verb-mobile">Tap</span> any word</strong> in the passage to look it up<span class="reader-dict-landing-shortcut">, or press <kbd class="reader-dict-kbd">/</kbd> to search</span>.</p>
+              </div>
               <iframe id="dict-frame"
                       name="dict-frame"
-                      src="${he.escape(dictIframeSrc)}"
+                      src="${he.escape(dictIframeSrc)}"${unarmedAttr}
                       class="dict-iframe"
                       title="Dictionary Search and Definitions"
                       loading="lazy"></iframe>

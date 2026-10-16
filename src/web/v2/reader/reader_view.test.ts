@@ -2080,6 +2080,71 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     window.dispatchEvent(ev);
     expect(ev.defaultPrevented).toBe(false);
   });
+
+  test("pressing '/' on an unarmed #dict-frame removes data-dict-unarmed, applies dictScale, and focuses #dict-q on load", () => {
+    localStorage.setItem(
+      READER_SETTINGS_KEY,
+      JSON.stringify({ dictScale: 120 })
+    );
+    const el = createReaderView('<p id="p1">Belgae incolunt</p>');
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    expect(iframe.hasAttribute("data-dict-unarmed")).toBe(true);
+    expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1");
+
+    const frameDoc = document.implementation.createHTMLDocument("");
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
+
+    const keyEv = new KeyboardEvent("keydown", {
+      key: "/",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(keyEv);
+
+    expect(keyEv.defaultPrevented).toBe(true);
+    expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
+    expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1&scale=120");
+
+    frameDoc.body.innerHTML = '<input type="text" id="dict-q" value="" />';
+    const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
+    const focusSpy = jest.spyOn(dictInput, "focus");
+    iframe.dispatchEvent(new Event("load"));
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+    localStorage.removeItem(READER_SETTINGS_KEY);
+  });
+
+  test("dismissing dictionary or turning pages without a query leaves #dict-frame armed and src intact", async () => {
+    const el = createReaderView('<p id="p1">Belgae incolunt</p>');
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const word = el.querySelector<HTMLElement>(".lat-word")!;
+    word.click();
+    expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
+    expect(iframe.getAttribute("src")).toContain("q=Belgae");
+
+    // Dismissing does not navigate the iframe back to /dicts?embedded=1
+    clickDictClose(el);
+    expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
+    expect(iframe.getAttribute("src")).toContain("q=Belgae");
+
+    // Looking up the same word again after dismiss still works
+    word.click();
+    expect(word.classList.contains("word-active")).toBe(true);
+  });
+
+  test("data-js-failed excludes unarmed #dict-frame from the JS-mode hide selector", () => {
+    const el = createReaderView('<p id="p1">Belgae incolunt</p>');
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const hideSelector =
+      ".dict-iframe[data-dict-unarmed]:not([data-js-failed] *)";
+
+    expect(iframe.matches(hideSelector)).toBe(true);
+
+    el.setAttribute("data-js-failed", "");
+    expect(iframe.matches(hideSelector)).toBe(false);
+  });
 });
 
 describe("MorcusReaderView client-side partial page navigation", () => {
