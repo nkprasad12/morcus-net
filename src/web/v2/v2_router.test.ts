@@ -837,10 +837,12 @@ describe("v2_router integration", () => {
     for (const asset of V2_ASSET_NAMES) {
       const file = path.join(buildDir, path.basename(getV2AssetHref(asset)));
       const original = fs.readFileSync(file);
-      expect(brotliDecompressSync(fs.readFileSync(`${file}.br`))).toEqual(
-        original
+      expect(
+        brotliDecompressSync(fs.readFileSync(`${file}.br`)).equals(original)
+      ).toBe(true);
+      expect(gunzipSync(fs.readFileSync(`${file}.gz`)).equals(original)).toBe(
+        true
       );
-      expect(gunzipSync(fs.readFileSync(`${file}.gz`))).toEqual(original);
     }
     // Inlined into `<head>`, never fetched.
     expect(fs.existsSync(path.join(buildDir, "critical.js.br"))).toBe(false);
