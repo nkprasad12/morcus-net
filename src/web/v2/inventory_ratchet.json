@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "cssDuplicates": {
+    "patterns": {},
+    "allowlist": {
+      "0937c20e": {
+        "files": ["src/web/v2/about/about.css", "src/web/v2/v2-critical.css"],
+        "reason": "v2-critical.css is inlined before v2.css and must be self-contained; .about-header matching the critical .brand-group block is incidental."
+      }
+    }
+  },
+  "domMutationOutsideCore": {
+    "callsPerFile": {
+      "src/web/v2/corpus/corpus_autocomplete.client.ts": 1,
+      "src/web/v2/dict/search/dict_search.client.ts": 2,
+      "src/web/v2/dict/search/dict_suggestions.client.ts": 8,
+      "src/web/v2/external/external_loader.client.ts": 1,
+      "src/web/v2/library/library_view.client.ts": 3,
+      "src/web/v2/reader/reader_panel.client.ts": 3,
+      "src/web/v2/reader/reader_view.client.ts": 1
+    }
+  }
+}

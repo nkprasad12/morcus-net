@@ -1,0 +1,519 @@
+/* Shared UI V2 Components & Design Shells */
+
+/* ==========================================================================
+   1. Base Card Shell (.card)
+   ========================================================================== */
+
+.card,
+.work-card {
+  background-color: var(--card-surface-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+}
+
+.card-interactive,
+.work-card {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.card-interactive:hover,
+.work-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* ==========================================================================
+   2. Button Utility Classes (.btn) & Shared Focus Rings
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4) var(--space-6);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+    color 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--on-accent);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--tag-bg);
+}
+
+.btn-sm {
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.85rem;
+}
+
+/* Shared 20px glyph inside icon-only buttons */
+.settings-btn svg,
+.theme-toggle-btn svg,
+.mobile-menu-btn svg,
+.corpus-next svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  display: block;
+}
+
+/* Shared vertical stacks (flex column with a fixed gap) */
+.toc-entries-groups,
+.toc-group,
+.external-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.toc-nav,
+.dict-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Shared 2px primary focus ring (2px offset) */
+.btn:focus-visible,
+.brand-logo-link:focus-visible,
+.theme-toggle-btn:focus-visible,
+.mobile-menu-btn:focus-visible,
+.back-to-top:focus-visible,
+.reader-dict-back-to-top:focus-visible,
+.reader-drawer-fab:focus-visible,
+.dialog-close-btn:focus-visible,
+.tab-pill:focus-visible,
+.jump-pill:focus-visible,
+.dict-summary:focus-visible,
+.subsection-chip:focus-visible,
+.subsection-namelink:focus-visible,
+.reader-panel-tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Shared 2px primary focus ring (1px offset for compact pills & inline links) */
+.settings-btn:focus-visible,
+.action-btn:focus-visible,
+.dict-source-btn:focus-visible,
+.reader-splitter:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+/* Shared 2px primary inset focus ring (-2px offset) */
+.drawer-bar:focus-visible,
+.reader-sheet-bar:focus-visible,
+.external-source-tab:has(input:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Shared text input focus ring */
+.report-reporter:focus-visible,
+.report-textarea:focus-visible,
+.external-input:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+/* ==========================================================================
+   3. Empty State Container (.empty-state)
+   ========================================================================== */
+
+.empty-state,
+.library-empty-state {
+  text-align: center;
+  padding: 3.5rem var(--space-8);
+  background: var(--card-bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-xl);
+  margin: var(--space-9) 0;
+}
+
+.empty-state-title,
+.library-empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 var(--space-4);
+}
+
+.empty-state-desc,
+.library-empty-desc {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0 0 var(--space-7);
+}
+
+.empty-state-standalone,
+.not-found-state {
+  margin: 4rem auto;
+  max-width: 600px;
+}
+
+/* ==========================================================================
+   4. Ghost Scrollbars
+   ========================================================================== */
+
+.reader-text-panel,
+.reader-dict-panel,
+.reader-panel-view,
+html:has(> body.body-embedded),
+body.body-embedded {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  /* The thumb is revealed on :hover everywhere: on touch, the sticky :hover a
+     tap leaves behind flips it on instantly. Only the fades are limited to
+     hover devices: the transition otherwise schedules per-frame animation
+     style recalcs on these large scrollers whenever :hover flips (e.g.
+     during drags). */
+  &:hover {
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  @media (hover: hover) {
+    transition: scrollbar-color 0.25s ease;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: var(--radius-full);
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+  }
+
+  @media (hover: hover) {
+    &::-webkit-scrollbar-thumb {
+      transition: background-color 0.25s ease;
+    }
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+}
+
+/* ==========================================================================
+   5. Loading Spinners (@keyframes spin)
+   ========================================================================== */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.report-submit-spinner,
+.loading-spinner {
+  animation: spin 0.6s linear infinite;
+}
+
+/* ==========================================================================
+   6. Language Badges & Chips (-la, -en, -de, -es) & Metadata Badges (.badge)
+   ========================================================================== */
+
+.lang-chip-la,
+.toc-badge-la,
+.dict-badge-la {
+  background-color: var(--chip-la-bg);
+  color: var(--chip-la-text);
+}
+
+.lang-chip-en,
+.toc-badge-en,
+.dict-badge-en {
+  background-color: var(--chip-en-bg);
+  color: var(--chip-en-text);
+}
+
+.lang-chip-de,
+.toc-badge-de,
+.dict-badge-de {
+  background-color: var(--chip-de-bg);
+  color: var(--chip-de-text);
+}
+
+.lang-chip-es,
+.toc-badge-es,
+.dict-badge-es {
+  background-color: var(--chip-es-bg);
+  color: var(--chip-es-text);
+}
+
+.badge {
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-sm);
+  line-height: 1.3;
+  display: inline-flex;
+  align-items: center;
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.badge-macra {
+  background: var(--badge-macra-bg);
+  color: var(--badge-macra-text);
+  border: 1px solid var(--badge-macra-border);
+}
+
+.badge-trans {
+  background: var(--badge-trans-bg);
+  color: var(--badge-trans-text);
+  border: 1px solid var(--badge-trans-border);
+}
+
+.badge-resume {
+  background: var(--badge-resume-bg);
+  color: var(--badge-resume-text);
+  border: 1px solid var(--badge-resume-border);
+  gap: var(--space-1);
+}
+
+.badge-resume .resume-label {
+  font-size: 0.65rem;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   7. Anchored Popover Shell (.anchored-popover)
+   ========================================================================== */
+
+.anchored-popover,
+.reader-settings-popover,
+.reader-toc-drawer {
+  position: fixed;
+  z-index: var(--z-dropdown);
+  max-width: calc(100vw - 24px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .report-submit-spinner,
+  .loading-spinner {
+    animation: none;
+  }
+}
+
+/* Caret indicator pointing at trigger button */
+.anchored-popover::before,
+.reader-settings-popover::before,
+.reader-toc-drawer::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: var(--caret-left, 50%);
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* Popover Header & Close Controls */
+.settings-popover-header,
+.reader-toc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.settings-popover-close,
+.reader-toc-close-btn {
+  background: none;
+  border: none;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.settings-popover-close:hover,
+.reader-toc-close-btn:hover,
+.dialog-close-btn:hover {
+  color: var(--text);
+  background: var(--tag-bg);
+}
+
+/* ==========================================================================
+   8. Section Action Menu & In-Place Editor (.section-action-menu, .section-edit-box)
+   ========================================================================== */
+
+.section-action-menu {
+  /* Undo the UA `[popover]` defaults: centring (inset/margin), clipping the
+     caret (overflow) and the system text colour. JS sets top/left. */
+  inset: auto;
+  margin: 0;
+  overflow: visible;
+  color: var(--text);
+  padding: var(--space-1);
+  min-width: 11.5rem;
+  border-color: var(--app-bar-toggle-border);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.section-action-menu::before {
+  border-color: var(--app-bar-toggle-border);
+}
+
+.section-action-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+.section-action-item svg {
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.section-action-item:hover {
+  background: var(--tag-bg);
+}
+
+.section-action-item:focus-visible {
+  background: var(--tag-bg);
+  box-shadow: inset 0 0 0 2px var(--app-bar-toggle-border);
+}
+
+.section-edit-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin: var(--space-1) 0;
+}
+
+.section-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-edit-label {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.section-edit-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  line-height: inherit;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--app-bar-toggle-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  overflow-y: hidden;
+  outline: none;
+}
+
+.section-edit-input:focus,
+.section-edit-input:focus-visible {
+  border-color: var(--app-bar-toggle-border);
+  box-shadow: var(--focus-ring);
+}
+
+.section-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+}
+
+.section-edit-actions .btn:focus-visible,
+.lsSenseBullet.section-anchor:focus-visible,
+.reader-gutter .section-anchor:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ==========================================================================
+   Slot swaps (core/nav/partial.client.ts swapSlots)
+   ========================================================================== */
+
+/* When the focused element has no counterpart in the new markup, swapSlots
+ * focuses the replaced slot (tabindex="-1") so focus never drops to <body>.
+ * The slot is a starting point for the next Tab, not a control, so it gets
+ * no ring. */
+[data-slot][tabindex="-1"]:focus {
+  outline: none;
+}

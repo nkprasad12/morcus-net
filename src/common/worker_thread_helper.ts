@@ -74,7 +74,7 @@ export async function multithreadedComputation<$O>(
   }
 }
 
-multithreadedComputation(
+void multithreadedComputation(
   (bounds) =>
     GenerateLs.processPerseusXml(envVar("LS_PATH"), bounds.start, bounds.end),
   (results) => SqliteDict.save(results, envVar("LS_PROCESSED_PATH")),

@@ -10,14 +10,10 @@ import {
 } from "@/common/dictionaries/latin_dict_fetching";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { decodeMessage } from "@/web/utils/rpc/parsing";
 import type { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 function revive(raw: string): EntryResult {
-  return decodeMessage(raw, EntryResult.isMatch, [
-    XmlNodeSerialization.DEFAULT,
-  ]);
+  return JSON.parse(raw);
 }
 
 export class GaffiotDict implements Dictionary {

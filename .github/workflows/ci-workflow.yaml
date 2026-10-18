@@ -14,13 +14,13 @@ jobs:
     timeout-minutes: 7
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: package.json
       - name: Installing npm dependencies
@@ -36,7 +36,7 @@ jobs:
       - name: Checking TS types
         run: npx tsc
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -47,9 +47,9 @@ jobs:
     timeout-minutes: 6
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Installing Python dependencies
@@ -69,7 +69,7 @@ jobs:
           #   os: ubuntu-24.04-arm
           #   tag_suffix: -arm
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}${{ matrix.tag_suffix }}
       LATEST: ghcr.io/nkprasad12/morcus:dev-latest${{ matrix.tag_suffix }}
@@ -77,7 +77,7 @@ jobs:
       PR_LATEST: ghcr.io/nkprasad12/morcus:pr-latest${{ matrix.tag_suffix }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build image
         run: docker build . --tag $CANDIDATE --label "runnumber=${GITHUB_RUN_ID}"
       - name: Log in to registry
@@ -111,12 +111,12 @@ jobs:
           #   os: ubuntu-24.04-arm
           #   tag_suffix: -arm
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: package.json
       - name: Installing npm dependencies
@@ -128,7 +128,7 @@ jobs:
       - name: Running integration checks
         run: IMAGE_TAG=${{ github.sha }}${{ matrix.tag_suffix }} npm run integration-tests
       - name: Upload test report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: functional-test-report-${{ matrix.arch }}
@@ -143,9 +143,9 @@ jobs:
         screenSize: [small, large]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: package.json
       - name: Pulling docker images
@@ -167,7 +167,7 @@ jobs:
       - name: Running Performance tests
         run: npm run tsnp src/scripts/perf_a_b.ts -- --A=$A_TAG --B=${{ github.sha }} --N=40 --screenSize=${{ matrix.screenSize }} --ci
       - name: Upload Performance report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: performance-report-${{ matrix.screenSize }}

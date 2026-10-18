@@ -6,7 +6,6 @@ import {
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
 import { shListToRaw } from "@/common/smith_and_hall/sh_process";
-import { XmlNode } from "@/common/xml/xml_node";
 import fs from "fs";
 
 console.debug = jest.fn();
@@ -34,9 +33,7 @@ async function expectEntriesWithIds(
   expected: string[]
 ) {
   const results = await promise;
-  const ids = results.map((r) =>
-    XmlNode.assertIsNode(r.entry.children[0]).getAttr("id")
-  );
+  const ids = results.map((r) => r.outline.mainSection.sectionId);
   expect(ids).toStrictEqual(expected);
 }
 
@@ -76,5 +73,24 @@ describe("SmithAndHall dict", () => {
     const dict = new SmithAndHall(sqliteBacking(TEMP_FILE));
 
     expect(await dict.getCompletions("H")).toEqual(["Hello", "Hi"]);
+  });
+
+  test("shListToRaw strips HTML tags from outline fields", async () => {
+    const entries: ShEntry[] = [
+      {
+        keys: ["dog"],
+        blurb: " <b>dog</b> (<i>subs.</i>): a canine",
+        senses: [
+          { level: 2, bullet: "I.", text: " <i>The animal</i>: fidelis" },
+        ],
+      },
+    ];
+    SqliteDict.save(shListToRaw(entries), TEMP_FILE);
+    const dict = new SmithAndHall(sqliteBacking(TEMP_FILE));
+    const result = await dict.getEntryById("sh0");
+    expect(result).toBeDefined();
+    expect(result!.outline.mainLabel).toBe("dog (subs.)");
+    expect(result!.outline.mainSection.text).toBe("dog (subs.)");
+    expect(result!.outline.senses![0].text).toBe("The animal");
   });
 });

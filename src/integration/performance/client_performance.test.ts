@@ -34,6 +34,10 @@ const PERF_METRICS = new Set([
 ]);
 const ALL_METRICS = new Set([...MEM_METRICS, ...PERF_METRICS]);
 
+// `perf_a_b.ts` runs this file from the current checkout against both the
+// candidate image and an older comparison image (`dev-latest` or
+// `main-latest`), so every URL and assertion here must work on both.
+
 async function largestContentfulPaint(page: Page): Promise<Metric> {
   const lcp = await page.evaluate(() => {
     return new Promise((resolve, reject) => {
@@ -100,7 +104,7 @@ test.describe("Client Performance Tests", () => {
         runMemory.push({ total: total.value, used: used.value });
       }
     };
-    collectorHandle = setInterval(collector, 16);
+    collectorHandle = setInterval(() => void collector(), 16);
   });
 
   test.afterEach(async () => {
@@ -140,13 +144,15 @@ test.describe("Client Performance Tests", () => {
 
   repeatedTest("metrics for dict landing", N, async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveTitle("Morcus Latin Tools");
+    await expect(page).toHaveTitle(/^Morcus /);
     await collectMetrics(page, "dicts-landing");
   });
 
   repeatedTest("metrics for dict-LS unda", N, async ({ page }) => {
     await page.goto(`/dicts/id/n49758`);
-    await expect(page.getByText("Water, moisture").first()).toBeVisible();
+    await expect(
+      page.getByText("Water, moisture").filter({ visible: true }).first()
+    ).toBeVisible();
     await collectMetrics(page, "dicts-ls-unda");
   });
 

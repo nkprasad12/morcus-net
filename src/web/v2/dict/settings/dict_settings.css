@@ -1,0 +1,82 @@
+/* Dictionary settings dialog (highlight, inflections, dictionary selection) */
+
+/* The element only owns behaviour; the dialog lays itself out. */
+morcus-dict-settings {
+  display: contents;
+}
+
+/* No-JS (and pre-upgrade): the tray link targets #dict-settings, which opens the
+   dialog as a full-screen overlay. Done submits; Back leaves. Once upgraded, the
+   element adopts the hash (see core/nav/reveal.client.ts) and uses showModal(). */
+.dict-settings-dialog:target:not([data-upgraded] *) {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: var(--space-5);
+  border: none;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+.dict-settings-dialog:target:not([data-upgraded] *) > .dialog-card {
+  width: 100%;
+  max-width: 540px;
+  max-height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card-bg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.dict-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Dictionary Selection Section */
+.settings-inflected-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.dict-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.dict-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: 0.78rem;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dict-name {
+  font-weight: 500;
+  flex: 1;
+}
+
+.dict-lang {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}

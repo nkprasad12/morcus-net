@@ -1,11 +1,16 @@
+/**
+ * Kept for a future offline mode. Its only runtime user was UI V1's
+ * offline dictionaries, removed in GRADUATION.md §4.
+ */
+
 function writeToStream(
   message: ArrayBuffer,
   writable: WritableStream<ArrayBuffer>
 ): void {
   const writer = writable.getWriter();
   // Trying to `await` these Promises blocks forever, but I'm not sure why.
-  writer.write(message);
-  writer.close();
+  void writer.write(message);
+  void writer.close();
 }
 
 async function readFromStream(

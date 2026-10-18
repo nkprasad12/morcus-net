@@ -42,6 +42,17 @@ export function removeDiacritics(input: string): string {
   return stripDiacritics(input).word;
 }
 
+/**
+ * Removes only combining macrons (U+0304 and U+0305) from text and normalizes
+ * back to NFC. Unlike removeDiacritics, preserves breves, accents, and other marks.
+ */
+export function removeMacrons(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[\u0304\u0305]/g, "")
+    .normalize("NFC");
+}
+
 export interface DiacriticStripped {
   word: string;
   diacritics?: string[];
@@ -55,6 +66,11 @@ export interface DiacriticStripped {
  * @returns An object containing the stripped word and information to restore diacritics
  */
 export function stripDiacritics(word: string): DiacriticStripped {
+  // ASCII has no combining marks and is unchanged by NFD, so skip the
+  // normalize and per-character walk for it (most Latin text).
+  if (!/[\u0080-\uffff]/.test(word)) {
+    return { word };
+  }
   // Normalize the string to NFD to separate base characters from combining marks
   const normalized = word.normalize("NFD");
   const result: DiacriticStripped = { word: "" };
@@ -80,4 +96,14 @@ export function stripDiacritics(word: string): DiacriticStripped {
   }
 
   return result;
+}
+
+/**
+ * Removes leading and trailing clusters of punctuation, whitespace, and
+ * dangling combining diacritic marks from a search query.
+ */
+export function trimRawQuery(query: string): string {
+  const LEAD_TRIM_RE = /^(?:[\p{P}\p{Z}\s]+[\p{M}]*)/u;
+  const TRAIL_TRIM_RE = /(?:[\p{M}]*[\p{P}\p{Z}\s]+)$/u;
+  return query.replace(LEAD_TRIM_RE, "").replace(TRAIL_TRIM_RE, "");
 }

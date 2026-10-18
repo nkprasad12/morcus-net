@@ -185,6 +185,53 @@ macro_rules! define_apply_op_with_bitmasks {
 define_apply_op_with_bitmasks!(apply_and_with_bitmasks, &, "&");
 define_apply_op_with_bitmasks!(apply_or_with_bitmasks, |, "|");
 
+/// Computes `first & shift(!second)` without materialising `!second`.
+///
+/// Exactly equivalent to negating every word of `second` and then calling
+/// [`apply_and_with_bitmasks`] with the same offset. In particular, the bits that
+/// the shift brings in from outside `second` are 0 in that formulation, so they are
+/// 0 here as well (rather than 1, as a naive `!shift(second)` would give).
+pub fn apply_and_not_with_bitmasks(first: &[u64], second: &[u64], offset: isize) -> Vec<u64> {
+    assert_eq!(
+        first.len(),
+        second.len(),
+        "Bitmasks must have the same length."
+    );
+    assert!(!first.is_empty(), "Bitmasks must not be empty.");
+    assert!(offset.abs() < 64, "Absolute offset must be less than 64.");
+    let len = first.len();
+    if offset == 0 {
+        return first.iter().zip(second).map(|(a, b)| a & !b).collect();
+    }
+    let mut result = vec![0u64; len];
+    if offset > 0 {
+        let offset = offset as usize;
+        let left_shift = 64 - offset;
+        // The low `offset` bits come from before the start of `second`: force them to 0.
+        let fill = (1u64 << offset) - 1;
+        result[0] = first[0] & !((second[0] << offset) | fill);
+        for (r, (a, w)) in result[1..]
+            .iter_mut()
+            .zip(first[1..].iter().zip(second.windows(2)))
+        {
+            *r = a & !((w[1] << offset) | (w[0] >> left_shift));
+        }
+    } else {
+        let offset = (-offset) as usize;
+        let right_shift = 64 - offset;
+        for (r, (a, w)) in result[..len - 1]
+            .iter_mut()
+            .zip(first[..len - 1].iter().zip(second.windows(2)))
+        {
+            *r = a & !((w[0] >> offset) | (w[1] << right_shift));
+        }
+        // The high `offset` bits come from past the end of `second`: force them to 0.
+        let fill = !(u64::MAX >> offset);
+        result[len - 1] = first[len - 1] & !((second[len - 1] >> offset) | fill);
+    }
+    result
+}
+
 /// Finds the index of the next set bit (1) in the bitmask starting from the given index.
 /// Returns `None` if no such bit is found.
 pub fn next_one_bit(bitmask: &[u64], start: usize) -> Option<usize> {
@@ -596,5 +643,42 @@ mod tests {
         ];
         verify_results_and(&a, &b, -63, 128);
         verify_results_or(&a, &b, -63, 128);
+    }
+
+    #[test]
+    fn and_not_matches_negate_then_and_for_all_offsets() {
+        // Simple xorshift so the test is deterministic without extra deps.
+        let mut state = 0x9E3779B97F4A7C15u64;
+        let mut next = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        for len in [1usize, 2, 5] {
+            for _ in 0..4 {
+                let a: Vec<u64> = (0..len).map(|_| next()).collect();
+                let b: Vec<u64> = (0..len).map(|_| next()).collect();
+                let not_b: Vec<u64> = b.iter().map(|x| !x).collect();
+                for offset in -63isize..=63 {
+                    assert_eq!(
+                        apply_and_not_with_bitmasks(&a, &b, offset),
+                        apply_and_with_bitmasks(&a, &not_b, offset),
+                        "len={len} offset={offset}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn and_not_edges_are_zero_filled() {
+        let all = vec![u64::MAX; 2];
+        let none = vec![0u64; 2];
+        // Shifting `second` right by 3 brings in 3 bits from "before" the mask.
+        let res = apply_and_not_with_bitmasks(&all, &none, 3);
+        assert_eq!(res, vec![u64::MAX << 3, u64::MAX]);
+        let res = apply_and_not_with_bitmasks(&all, &none, -3);
+        assert_eq!(res, vec![u64::MAX, u64::MAX >> 3]);
     }
 }

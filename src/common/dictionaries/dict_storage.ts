@@ -1,7 +1,6 @@
 import { removeDiacritics } from "@/common/text_cleaning";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { Vowels } from "@/common/character_utils";
-import { setMap } from "@/common/data_structures/collect_map";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
 import type { DictLang } from "@/common/dictionaries/dictionaries";
 
@@ -23,21 +22,7 @@ export interface StoredEntryAndMetadata {
 
 /** A generic stored dictionary. */
 export class StoredDict {
-  private readonly table: Promise<Map<string, string[]>> | undefined;
-
-  constructor(private readonly backing: StoredDictBacking<any>) {
-    this.table = this.backing.lowMemory
-      ? undefined
-      : Promise.resolve(this.backing.allEntryNames()).then((entries) => {
-          const lookup = setMap<string, string>();
-          entries.forEach(({ orth, cleanOrth }) =>
-            lookup.add(cleanOrth[0].toLowerCase(), orth)
-          );
-          return new Map(
-            [...lookup.map.entries()].map((e) => [e[0], [...e[1]]])
-          );
-        });
-  }
+  constructor(private readonly backing: StoredDictBacking<any>) {}
 
   /**
    * Returns the raw (serialized) entries for the given input
@@ -120,10 +105,6 @@ export class StoredDict {
   /** Returns the possible completions for the given prefix. */
   async getPrefixCompletions(input: string): Promise<string[]> {
     const prefix = removeDiacritics(input).toLowerCase();
-    const precomputed = (await this.table)?.get(prefix);
-    if (precomputed !== undefined) {
-      return precomputed;
-    }
     return this.backing.entryNamesByPrefix(prefix);
   }
 }

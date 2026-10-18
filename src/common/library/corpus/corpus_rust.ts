@@ -1,16 +1,9 @@
 import {
   CORPUS_DIR,
-  CORPUS_SUGGESTION_PREFIX,
+  type CorpusQueryRequest,
 } from "@/common/library/corpus/corpus_common";
 import { singletonOf } from "@/common/misc_utils";
 import { timed } from "@/common/timing/timed_invocation";
-import type {
-  CorpusQueryRequest,
-  GetCorpusSuggestionsRequest,
-} from "@/web/api_routes";
-import type { RequestData } from "@/web/utils/rpc/server_rpc";
-import { readFile } from "fs/promises";
-import zlib from "zlib";
 
 /**
  * A query engine that uses Rust for querying the corpus.
@@ -63,16 +56,4 @@ export function rustCorpusApiHandler(): CorpusQueryHandler {
     initialize: () => engine.get(),
     runQuery: (request) => engine.get().queryCorpus(request),
   };
-}
-
-export async function corpusSuggestions(
-  request: GetCorpusSuggestionsRequest,
-  requestData?: RequestData
-): Promise<Buffer> {
-  const listPath = `${CORPUS_DIR}/${CORPUS_SUGGESTION_PREFIX}_${request.resource}.json`;
-  const compressed = await readFile(listPath);
-  if (requestData?.acceptEncoding?.includes("gzip")) {
-    return compressed;
-  }
-  return Promise.resolve(zlib.gunzipSync(compressed));
 }

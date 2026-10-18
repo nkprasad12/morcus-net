@@ -1,27 +1,10 @@
 import { XmlNode } from "@/common/xml/xml_node";
-import {
-  Validator,
-  instanceOf,
-  isArray,
-  isBoolean,
-  isNumber,
-  isPair,
-  isString,
-  matchesObject,
-  maybeUndefined,
-} from "@/web/utils/rpc/parsing";
 
 export interface TranslationInfo {
   title: string;
   id: string;
   translator?: string;
 }
-
-const isTranslationInfo = matchesObject<TranslationInfo>({
-  title: isString,
-  id: isString,
-  translator: maybeUndefined(isString),
-});
 
 export type DocumentAttribution = "perseus" | "hypotactic" | "publicDomain";
 
@@ -41,45 +24,15 @@ export interface DocumentInfo {
   attribution: DocumentAttribution;
 }
 
-export namespace DocumentInfo {
-  export const isMatch = matchesObject<DocumentInfo>({
-    title: isString,
-    shortTitle: maybeUndefined(isString),
-    author: isString,
-    editor: maybeUndefined(isString),
-    translator: maybeUndefined(isString),
-    sponsor: maybeUndefined(isString),
-    funder: maybeUndefined(isString),
-    workId: isString,
-    translationId: maybeUndefined(isString),
-    isTranslation: maybeUndefined(isBoolean),
-    translationInfo: maybeUndefined(isTranslationInfo),
-    sourceRef: maybeUndefined(isArray(isString)),
-    attribution: isString,
-  });
-}
-
 export interface WorkPage {
   id: string[];
   // The start and end.
   rows: [number, number];
 }
 
-const isWorkPage = matchesObject<WorkPage>({
-  id: isArray(isString),
-  rows: isPair(isNumber, isNumber),
-});
-
 export interface NavTreeNode {
   id: string[];
   children: NavTreeNode[];
-}
-
-function isNavTreeNode(x: unknown): x is NavTreeNode {
-  return matchesObject<NavTreeNode>({
-    id: isArray(isString),
-    children: isArray(isNavTreeNode),
-  })(x);
 }
 
 export type ProcessedWorkContentNodeType =
@@ -110,17 +63,6 @@ export interface ProcessedWork2 {
   notes?: XmlNode[];
 }
 
-export namespace ProcessedWork2 {
-  export const isMatch = matchesObject<ProcessedWork2>({
-    info: DocumentInfo.isMatch,
-    textParts: isArray(isString),
-    rows: isArray(isPair(isArray(isString), instanceOf(XmlNode))),
-    pages: isArray(isWorkPage),
-    navTree: isNavTreeNode,
-    notes: maybeUndefined(isArray(instanceOf(XmlNode))),
-  });
-}
-
 /** Basic details about a single work in the library. */
 export interface LibraryWorkMetadata {
   /** The author of this work. */
@@ -139,48 +81,4 @@ export interface LibraryWorkMetadata {
   isTranslation?: boolean;
   /** The source of the raw data. */
   attribution: DocumentAttribution;
-}
-
-export namespace LibraryWorkMetadata {
-  export const isMatch = matchesObject<LibraryWorkMetadata>({
-    author: isString,
-    name: isString,
-    id: isString,
-    urlAuthor: isString,
-    urlName: isString,
-    translationId: maybeUndefined(isString),
-    isTranslation: maybeUndefined(isBoolean),
-    attribution: isString,
-  });
-}
-
-export type ListLibraryWorksResponse = LibraryWorkMetadata[];
-
-export namespace ListLibraryWorksResponse {
-  export const isMatch: Validator<ListLibraryWorksResponse> =
-    isArray<LibraryWorkMetadata>(LibraryWorkMetadata.isMatch);
-}
-
-interface NameAndAuthor {
-  urlName: string;
-  urlAuthor: string;
-}
-
-export interface WorkId {
-  id?: string;
-  nameAndAuthor?: NameAndAuthor;
-  commitHash?: string;
-}
-
-export namespace WorkId {
-  export const isMatch = matchesObject<WorkId>({
-    id: maybeUndefined(isString),
-    nameAndAuthor: maybeUndefined(
-      matchesObject<NameAndAuthor>({
-        urlName: isString,
-        urlAuthor: isString,
-      })
-    ),
-    commitHash: maybeUndefined(isString),
-  });
 }

@@ -101,7 +101,7 @@ describe("PozoDict dict", () => {
   test("entry structure and outline are correct for multi-sense entry", async () => {
     const results = await dict.getEntry("key1");
     const entryResult = results.find(
-      (r) => r.entry.getAttr("id") === "pozo_key1"
+      (r) => r.outline.mainSection.sectionId === "pozo_key1"
     );
     expect(entryResult).toBeDefined();
 

@@ -24,7 +24,7 @@ export function startMorcusFromDocker(): Promise<() => void> {
   const imageName = `ghcr.io/nkprasad12/morcus:${imageTag}`;
   console.log("Using image %s", imageName);
   const containerName = CONTAINER_BASE + randomUUID();
-  const container = `docker run -dp 127.0.0.1:1337:5757 --name ${containerName} ${imageName}`;
+  const container = `docker run -dp 127.0.0.1:1337:5757 -e MACRONIZER_ENGINE=fake-latincy --name ${containerName} ${imageName}`;
   console.log("Starting container: `%s`", container);
   const close: Closer = () => {
     try {
