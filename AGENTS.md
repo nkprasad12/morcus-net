@@ -22,6 +22,7 @@ In this repository, operational tasks—such as starting development servers, bu
 | `worker`      | Starts background cruncher/NLP workers                      | `./morcus.sh worker -wt ls`                                         |
 | `corpus`      | Corpus processing utilities and Rust CLI                    | `./morcus.sh corpus -r`                                             |
 | `visual-diff` | Interactive viewer for screenshot diffs (`TESTING.md` §2.F) | `./morcus.sh visual-diff --source results`                          |
+| `test`        | Jest: unit tests related to your changes, or a whole tier   | `./morcus.sh test`<br>`./morcus.sh test --whole-system`             |
 
 > [!TIP]
 > Run `./morcus.sh --help` or `./morcus.sh <command> --help` to inspect available flags and options.
@@ -52,8 +53,17 @@ It is CI's entry point: without `REUSE_DEV_SERVER` it starts a Docker image name
 ### ⛔ Proactive Testing Rule
 
 **Do NOT proactively run slow E2E or visual regression test suites without user confirmation.**
-Fast unit tests (`npm run ts-tests:v2`) may be run when verifying logic, but multi-browser E2E and visual diff tests require a running server, consume significant resources, and should only be run when requested or during final pre-commit verification.
+Related unit tests (`./morcus.sh test`) may be run when verifying logic, but multi-browser E2E and visual diff tests require a running server, consume significant resources, and should only be run when requested or during final pre-commit verification.
 The Visual Diff Inspector (`./morcus.sh visual-diff`) is exempt: it launches no browsers and only reads existing screenshots, so start it whenever there are diffs to show.
+
+### ⛔ Unit Tests: Test What You Changed, Then the Whole System Before Committing
+
+Jest tests are split into two projects in [`jest.config.js`](jest.config.js), by what they check rather than where they live:
+
+- **`unit`**: ordinary tests. After an edit, run only the ones related to what you changed: `./morcus.sh test`. It runs the `unit` tests that import any file changed since `HEAD` (including uncommitted and untracked files). Pass paths (`./morcus.sh test src/foo.ts`) to pick the scope yourself.
+- **`whole-system`**: `*_conformance.test.ts` and `inventory_ratchet.test.ts`. They sweep every SSR fixture, module and stylesheet, so they depend on almost everything and take most of the suite's time. **Don't run them after every edit.** Run them once before each commit: `./morcus.sh test --whole-system`.
+
+Testing only what changed since `HEAD` is safe because every commit is expected to pass both tiers, so the pre-commit `--whole-system` run is **required**. Related-test selection only follows `import`s: a change to a file that tests read from disk (CSS, JSON) is only caught by the whole-system tier.
 
 ### ⛔ Visual Baseline Approval Rule
 
@@ -78,8 +88,9 @@ For full command flags, debugging modes, and the complete Pre-Commit / Pre-Push 
 
 | Task                            | Command                                                                  |
 | ------------------------------- | ------------------------------------------------------------------------ |
-| **Web unit tests (Jest)**       | `npm run ts-tests:v2` (or `npx jest path/to/file.test.ts`)               |
-| **All TypeScript unit tests**   | `npm run ts-tests`                                                       |
+| **Unit tests for your changes** | `./morcus.sh test` (or `./morcus.sh test path/to/file.ts`)               |
+| **Whole-system tests**          | `./morcus.sh test --whole-system` (once, before committing)              |
+| **All TypeScript tests**        | `./morcus.sh test --all` (CI runs them via `npm run coverage`)           |
 | **Lint & style checks**         | `npx eslint --cache src/web/v2 && npm run lint:css && npx tsc --noEmit`  |
 | **Start dev server**            | `PORT=5757 ./morcus.sh web`                                              |
 | **Functional E2E (Playwright)** | `./morcus.sh e2e` (fast) · `./morcus.sh e2e --all` (all browsers)        |

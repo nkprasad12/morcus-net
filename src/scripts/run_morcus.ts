@@ -13,7 +13,7 @@ import { writeCommitId } from "@/scripts/write_source_version";
 import { DEV_SERVER_ENV } from "@/web/v2/core/server/build_version.server";
 import { buildCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
 import { ArgumentParser, type ArgumentOptions } from "argparse";
-import { ChildProcess, spawn } from "child_process";
+import { ChildProcess, execFileSync, execSync, spawn } from "child_process";
 
 const WEB_SERVER = "web";
 const WORKER = "worker";
@@ -24,6 +24,7 @@ const E2E = "e2e";
 const CORPUS = "corpus";
 const VISUAL_DIFF = "visual-diff";
 const INVENTORY = "inventory";
+const TEST = "test";
 
 const cleanupOperations: (() => unknown)[] = [];
 
@@ -47,6 +48,10 @@ if (args.command === WEB_SERVER) {
   void runVisualDiff(args).then(assert);
 } else if (args.command === INVENTORY) {
   void runInventory(args).then((ok) => {
+    if (!ok) process.exit(1);
+  });
+} else if (args.command === TEST) {
+  void runTests(args).then((ok) => {
     if (!ok) process.exit(1);
   });
 }
@@ -366,6 +371,26 @@ function parseArguments() {
     default: "",
   });
 
+  const test = subparsers.add_parser(TEST, {
+    help:
+      "Runs TypeScript unit tests. By default, runs the `unit` tests related to " +
+      "files changed since HEAD (including uncommitted and untracked files), " +
+      "skipping the slow whole-system suites. Run `--whole-system` once before committing.",
+  });
+  test.add_argument("paths", {
+    help: "Runs the `unit` tests related to these files instead of to the changes since HEAD.",
+    nargs: "*",
+  });
+  const testScope = test.add_mutually_exclusive_group();
+  testScope.add_argument("-w", "--whole-system", {
+    help: "Runs only the whole-system suites (*_conformance, inventory_ratchet).",
+    action: "store_true",
+  });
+  testScope.add_argument("-a", "--all", {
+    help: "Runs every TypeScript test: both the `unit` and whole-system projects.",
+    action: "store_true",
+  });
+
   for (const subcommand of [
     editor,
     worker,
@@ -376,6 +401,7 @@ function parseArguments() {
     corpus,
     visualDiff,
     inventory,
+    test,
   ]) {
     subcommand.add_argument("--bun", {
       help: "Runs supported commands with bun.",
@@ -879,4 +905,86 @@ async function runInventory(args: any): Promise<boolean> {
     update: Boolean(args.update),
     reportPath: args.report || undefined,
   });
+}
+
+/**
+ * Runs Jest for one of the tiers in `jest.config.js`. Returns whether the
+ * tests passed.
+ *
+ * By default, runs the `unit` tests related to the files changed since HEAD.
+ * That's safe because every commit is expected to have passed both tiers.
+ */
+async function runTests(args: any): Promise<boolean> {
+  const paths: string[] = args.paths ?? [];
+  const wholeSystem = Boolean(args.whole_system);
+  const all = Boolean(args.all);
+  if (paths.length > 0 && (wholeSystem || all)) {
+    console.error(
+      "`--whole-system` and `--all` run a whole tier; they don't take paths."
+    );
+    return false;
+  }
+
+  const jestArgs: string[] = [];
+  const related = !wholeSystem && !all;
+  if (wholeSystem) {
+    jestArgs.push("--selectProjects", "whole-system");
+  } else if (related) {
+    jestArgs.push("--selectProjects", "unit");
+    if (paths.length > 0) {
+      // Last, since it takes every remaining argument.
+      jestArgs.push("--findRelatedTests", ...paths);
+    } else {
+      const status = execSync("git status --porcelain", { encoding: "utf8" });
+      if (status.trim() === "") {
+        console.log(
+          "No changes since HEAD, so no related tests to run. Pass paths, " +
+            "`--whole-system`, or `--all` to choose tests explicitly."
+        );
+        return true;
+      }
+      jestArgs.push("--onlyChanged");
+    }
+  }
+
+  const jest = ["node", "--no-deprecation", "node_modules/.bin/jest"];
+  // morcus.sh exports NODE_ENV=production; Jest only defaults it to `test`
+  // when it's unset.
+  const env = { ...process.env, NODE_ENV: "test" };
+  if (related) {
+    // Changes Jest can't trace through imports (docs, CSS, JSON) select no
+    // tests. Say so, rather than report a pass that covered nothing.
+    const listed = execFileSync(
+      jest[0],
+      [...jest.slice(1), "--listTests", ...jestArgs],
+      { encoding: "utf8", env }
+    );
+    if (!listed.split("\n").some((line) => line.trim().startsWith("/"))) {
+      console.log(
+        "No unit tests import the changed files, so nothing ran. If you " +
+          "changed files that tests read from disk (CSS, JSON), run " +
+          "`./morcus.sh test --whole-system`."
+      );
+      return true;
+    }
+  }
+
+  const command = [...jest, ...jestArgs];
+  console.log(`Executing: '${command.join(" ")}'`);
+  const exitCode = await new Promise<number | null>((resolve, reject) => {
+    const child = spawn(command[0], command.slice(1), {
+      stdio: "inherit",
+      env,
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => resolve(code));
+  });
+  const passed = exitCode === 0;
+  if (passed && related) {
+    console.log(
+      "\nRelated unit tests passed. Before committing, also run " +
+        "`./morcus.sh test --whole-system`."
+    );
+  }
+  return passed;
 }

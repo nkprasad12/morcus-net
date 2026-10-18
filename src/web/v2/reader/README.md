@@ -126,4 +126,4 @@ These V1 features were reviewed and intentionally left out of V2. Revisit only w
 
 ## Testing
 
-Unit tests live alongside the sources (`reader.test.ts`, `reader_view.test.ts`, `reader_toc.test.ts`, `reader_settings.test.ts`, `reader_layout.test.ts`) and run with `npm run ts-tests:v2`. Functional and visual browser coverage is described in [`../docs/TESTING.md`](../docs/TESTING.md).
+Unit tests live alongside the sources (`reader.test.ts`, `reader_view.test.ts`, `reader_toc.test.ts`, `reader_settings.test.ts`, `reader_layout.test.ts`) and run with `./morcus.sh test` (see [`../docs/TESTING.md`](../docs/TESTING.md) §3). Functional and visual browser coverage is described in [`../docs/TESTING.md`](../docs/TESTING.md).

@@ -15,7 +15,7 @@ Every suite under `src/integration/suites/` below runs with `./morcus.sh e2e` (�
 - **Late-hydration E2E (Playwright)**: `src/integration/suites/browser_v2_late_hydration.test.ts` — holds back the `/assets/*.js` chunks, interacts in the pre-hydration window, then checks the upgrade adopts the state and the JS gate / pre-paint snapshot prevent flashes and layout shifts. A "chunk ordering: intermediate state" block uses `openStaged` to release `common.js` before the route chunk and interacts in between.
 - **Reader swipe E2E (Playwright)**: `src/integration/suites/browser_v2_swipe.test.ts` — swipe page turns, which need real layout and touch emulation (touch cases run on MobileChrome only).
 - **Server smoke test (no browser)**: `src/integration/suites/morcus_backend_integration.test.ts` — `fetch`-only checks of pages, partials and JSON endpoints. Aimed at the production image (`./morcus.sh e2e --docker`, and CI), but also passes against the dev server.
-- **Unit Tests (Jest)**: Colocated alongside source modules matching `src/web/v2/**/*.test.ts` (run via `npm run ts-tests:v2`). Tests cover SSR renderers, routing, bitmask/clustering logic, custom elements, and core utilities across each vertical slice (`about/`, `core/`, `dialog/`, `dict/`, `reader/`, `shell/`, and `v2_router.test.ts`).
+- **Unit Tests (Jest)**: Colocated alongside source modules as `*.test.ts` (run via `./morcus.sh test`; see §3). Tests cover SSR renderers, routing, bitmask/clustering logic, custom elements, and core utilities across each vertical slice (`about/`, `core/`, `dialog/`, `dict/`, `reader/`, `shell/`, and `v2_router.test.ts`).
 
 ### Pre-hydration (PH) bug index
 
@@ -167,17 +167,29 @@ The viewer offers before/after flip (<kbd>Space</kbd>, hold-to-peek, auto-blink 
 
 ## 3. Running Unit Tests
 
-For fast unit test verification of router, SSR rendering, and client components:
+Jest tests are split into two projects in [`jest.config.js`](../../../../jest.config.js), by what they check rather than where they live:
+
+- **`unit`**: ordinary tests of routers, SSR renderers, client components and utilities.
+- **`whole-system`**: `*_conformance.test.ts` and `tools/inventory/inventory_ratchet.test.ts`. They check invariants across the whole app (every SSR fixture, every module, every stylesheet), so they depend on almost everything and take most of the suite's time.
+
+Test what you changed, then run the whole-system tier once before committing:
 
 ```bash
-# Run all V2 unit tests
-npm run ts-tests:v2
+# After an edit: `unit` tests that import any file changed since HEAD
+# (uncommitted and untracked files included)
+./morcus.sh test
 
-# Run a specific unit test file
-npx jest src/web/v2/v2_router.test.ts
-npx jest src/web/v2/dict/dict.test.ts
-npx jest src/web/v2/core/widgets/dialog.test.ts
+# The same, for files you name
+./morcus.sh test src/web/v2/dict/dict_page.server.ts
+
+# Once before each commit (required)
+./morcus.sh test --whole-system
+
+# Everything: both projects (CI runs them via `npm run coverage`)
+./morcus.sh test --all
 ```
+
+Testing only what changed since `HEAD` is safe because every commit is expected to have passed both tiers. Related-test selection follows `import`s only, so a change to a file that tests read from disk (CSS, JSON) is caught by the whole-system tier, not by `./morcus.sh test`. While working on one feature's conformance files, you can run them directly, e.g. `npx jest src/web/v2/dict/dict_ssr_conformance.test.ts`.
 
 ### SSR conformance harnesses
 
@@ -225,8 +237,8 @@ Checks that span the whole app rather than one page stay in `core/`:
 >
 > **Rapid Iteration vs. Commit vs. Push**:
 >
-> - **During rapid iteration**: Make the fix and restart the dev server immediately. Do NOT run tests or linter after every minor tweak.
-> - **Pre-Commit**: Run fast checks (TypeScript, unit tests, code formatting).
+> - **During rapid iteration**: Make the fix and restart the dev server immediately. Do NOT run tests or linter after every minor tweak. When you do check, run `./morcus.sh test` (related unit tests only).
+> - **Pre-Commit**: Run fast checks (TypeScript, related unit tests, the whole-system tier, code formatting).
 > - **Pre-Push**: Run the full E2E matrix and visual regression tests across browsers.
 
 ### A. Pre-Commit Checklist (Fast)
@@ -247,9 +259,9 @@ Checks that span the whole app rather than one page stay in `core/`:
    ```bash
    npm run tsnp src/bundler/v2.rsbuild.ts -- --minify
    ```
-5. **Unit tests**:
+5. **Unit tests** (related, then whole-system; see §3):
    ```bash
-   npm run ts-tests:v2
+   ./morcus.sh test && ./morcus.sh test --whole-system
    ```
 6. **Code formatting**:
    ```bash
