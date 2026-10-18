@@ -793,7 +793,9 @@ describe("v2_router integration", () => {
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.text).toContain("<!DOCTYPE html>");
-    expect(res.text).toContain("About M&oacute;rcus");
+    expect(res.text).toContain(
+      "Clicking on the flag icon in the top navigation bar"
+    );
     expect(res.text).toContain("GPL-3.0");
     expect(res.text).toContain("CC BY-SA 4.0");
     expect(res.text).toContain('href="/about"');

@@ -2,12 +2,7 @@
   "version": 1,
   "cssDuplicates": {
     "patterns": {},
-    "allowlist": {
-      "0937c20e": {
-        "files": ["src/web/v2/about/about.css", "src/web/v2/v2-critical.css"],
-        "reason": "v2-critical.css is inlined before v2.css and must be self-contained; .about-header matching the critical .brand-group block is incidental."
-      }
-    }
+    "allowlist": {}
   },
   "domMutationOutsideCore": {
     "callsPerFile": {

@@ -1,35 +1,5 @@
 /* About Page Layout & Sections */
 
-.header {
-  margin-bottom: var(--space-8);
-}
-
-.about-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-}
-
-.about-logo {
-  width: 72px;
-  height: 72px;
-  flex-shrink: 0;
-  display: block;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-.header h1 {
-  margin: 0 0 var(--space-4) 0;
-  font-size: 1.8rem;
-}
-
-.header p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.95rem;
-}
-
 .about-article {
   max-width: 760px;
 }

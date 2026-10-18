@@ -190,7 +190,8 @@ export function openSectionActionMenu(options: SectionActionOptions): void {
         width: win.innerWidth || doc.documentElement.clientWidth,
         height: win.innerHeight,
       },
-      { align: "center", side: "below", gap: 8, margin: 12, caretInset: 12 }
+      // Bounds: left >= radius + 6 (12px), right >= radius + 8 (14px); anchors are left-side.
+      { align: "center", side: "below", gap: 8, margin: 4, caretInset: 13 }
     );
     menu.style.left = `${Math.round(left)}px`;
     menu.style.top = `${Math.round(top)}px`;

@@ -17,14 +17,6 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
 
   return `
     <article class="about-article">
-      <header class="header about-header">
-        <img src="/public/logo192.png" alt="M&oacute;rcus Logo" class="about-logo" width="48" height="48">
-        <div>
-          <h1>About M&oacute;rcus</h1>
-          <p>A free digital toolkit for Latin learners and scholars.</p>
-        </div>
-      </header>
-
       <section id="site" class="about-section">
         <h2>Site</h2>
         <p>
@@ -35,6 +27,7 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
         </p>
         <p>Comments, contributions, or feature requests are welcome by any of the following methods:</p>
         <ul>
+          <li>Clicking on the flag icon in the top navigation bar</li>
           <li>Opening an issue on the <a href="https://github.com/nkprasad12/morcus-net/issues" target="_blank" rel="noopener noreferrer">GitHub repository</a></li>
           <li>Asking for M&oacute;rcus on the <a href="https://discord.gg/latin" target="_blank" rel="noopener noreferrer">Latin Discord</a></li>
         </ul>

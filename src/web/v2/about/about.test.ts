@@ -14,7 +14,10 @@ describe("about_ssr", () => {
     const html = renderAboutContentHtml({ commitId: "abcdef123456" });
 
     // Header
-    expect(html).toContain("About M&oacute;rcus");
+    expect(html).not.toContain("about-header");
+    expect(html).toContain(
+      "Clicking on the flag icon in the top navigation bar"
+    );
 
     // Site & License
     expect(html).toContain("GPL-3.0");

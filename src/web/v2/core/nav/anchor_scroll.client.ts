@@ -3,7 +3,7 @@ import {
   createSingletonSetup,
   type CleanupFn,
 } from "@/web/v2/core/dom/disposable.client";
-import { flashElement } from "@/web/v2/core/dom/dom.client";
+import { flashElement, scrollToElement } from "@/web/v2/core/dom/dom.client";
 import { decodeHashId } from "@/web/v2/core/dom/js_gate.client";
 import {
   revealHashTarget,
@@ -79,15 +79,11 @@ export const setupAnchorScroll: (doc?: Document, win?: Window) => CleanupFn =
           const isJumpPill =
             anchor.classList.contains("jump-pill") ||
             targetEl.classList.contains("dict-card");
-          if (typeof targetEl.scrollIntoView === "function") {
-            targetEl.scrollIntoView({
-              behavior: isJumpPill ? "instant" : "smooth",
-            });
-          }
           // Records the fragment without a history entry; the owner (not
           // `:target`) now holds the state.
           win.history.replaceState(null, "", href);
           triggerAnchorHighlight(targetEl);
+          scrollToElement(targetEl, isJumpPill ? "instant" : "smooth", win);
         }
       };
 

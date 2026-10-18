@@ -358,10 +358,12 @@ describe("setupAnchorScroll", () => {
     const scrollIntoView = jest.fn();
     target.scrollIntoView = scrollIntoView;
 
+    const scrollTo = jest.fn();
     const replaceState = jest.fn();
     const mockWin = {
       location: { hash: "", pathname: "/", search: "" },
       history: { replaceState },
+      scrollTo,
     } as unknown as Window;
 
     cleanup = setupAnchorScroll(document, mockWin);
@@ -370,7 +372,11 @@ describe("setupAnchorScroll", () => {
     link.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(true);
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth" });
+    expect(scrollTo).toHaveBeenCalledWith({
+      top: expect.any(Number),
+      behavior: "smooth",
+    });
+    expect(scrollIntoView).not.toHaveBeenCalled();
     expect(replaceState).toHaveBeenCalledWith(null, "", "#target");
     expect(target.classList.contains("target-active")).toBe(true);
   });
@@ -406,9 +412,11 @@ describe("setupAnchorScroll", () => {
     const scrollIntoView = jest.fn();
     target.scrollIntoView = scrollIntoView;
 
+    const scrollTo = jest.fn();
     const mockWin = {
       location: { hash: "", pathname: "/", search: "" },
       history: { replaceState: jest.fn() },
+      scrollTo,
     } as unknown as Window;
 
     cleanup = setupAnchorScroll(document, mockWin);
@@ -416,7 +424,11 @@ describe("setupAnchorScroll", () => {
     const event = new MouseEvent("click", { bubbles: true, cancelable: true });
     link.dispatchEvent(event);
 
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "instant" });
+    expect(scrollTo).toHaveBeenCalledWith({
+      top: expect.any(Number),
+      behavior: "instant",
+    });
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
   test("cleanup removes document click listener", () => {
@@ -428,11 +440,13 @@ describe("setupAnchorScroll", () => {
     const target = document.getElementById("target") as HTMLElement;
     const scrollIntoView = jest.fn();
     target.scrollIntoView = scrollIntoView;
+    const scrollTo = jest.fn();
 
     const replaceState = jest.fn();
     const mockWin = {
       location: { hash: "", pathname: "/", search: "" },
       history: { replaceState },
+      scrollTo,
     } as unknown as Window;
 
     cleanup = setupAnchorScroll(document, mockWin);
@@ -442,6 +456,7 @@ describe("setupAnchorScroll", () => {
     link.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(false);
+    expect(scrollTo).not.toHaveBeenCalled();
     expect(scrollIntoView).not.toHaveBeenCalled();
     expect(replaceState).not.toHaveBeenCalled();
   });

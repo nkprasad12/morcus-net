@@ -67,4 +67,9 @@ export function installLayoutShims(): void {
       return this.parentElement ?? this.ownerDocument.body ?? null;
     },
   });
+
+  if (typeof window !== "undefined") {
+    window.scrollTo = () => {};
+    window.scrollBy = () => {};
+  }
 }

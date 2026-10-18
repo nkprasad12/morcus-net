@@ -1098,16 +1098,15 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         <div>Results for habeo</div>
       </output>
     `;
-    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
     const scrollMock = jest.fn();
-    resultsEl.scrollIntoView = scrollMock;
+    window.scrollTo = scrollMock;
 
     document.body.appendChild(el);
 
     requestAnimationFrame(() => {
       expect(scrollMock).toHaveBeenCalledWith({
+        top: expect.any(Number),
         behavior: "instant",
-        block: "start",
       });
       done();
     });
@@ -1134,9 +1133,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         <div>Results for habeo</div>
       </output>
     `;
-    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
     const scrollMock = jest.fn();
-    resultsEl.scrollIntoView = scrollMock;
+    window.scrollTo = scrollMock;
 
     document.body.appendChild(el);
 
@@ -1172,9 +1170,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         <div>Results for habeo</div>
       </output>
     `;
-    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
     const scrollMock = jest.fn();
-    resultsEl.scrollIntoView = scrollMock;
+    window.scrollTo = scrollMock;
 
     document.body.appendChild(el);
 
@@ -1206,9 +1203,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       </form>
       <output id="dict-results" class="results"></output>
     `;
-    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
     const scrollMock = jest.fn();
-    resultsEl.scrollIntoView = scrollMock;
+    window.scrollTo = scrollMock;
 
     document.body.appendChild(el);
 
@@ -1257,9 +1253,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       </form>
       <output id="dict-results" class="results"></output>
     `;
-    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
     const scrollMock = jest.fn();
-    resultsEl.scrollIntoView = scrollMock;
+    window.scrollTo = scrollMock;
     const input = el.querySelector<HTMLInputElement>("input.input")!;
 
     // Landing page (no ?q=); the user types before v2.js arrives.

@@ -288,7 +288,8 @@ export class AnchoredPopoverController extends BaseController {
         side: "below",
         gap: 8,
         margin: 12,
-        caretInset: centered ? 12 : 16,
+        // Bounds: left >= radius + 6 (14px), right >= radius + 8 (16px) for --radius-lg (8px).
+        caretInset: 16,
       }
     );
 

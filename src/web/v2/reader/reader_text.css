@@ -281,7 +281,7 @@
   color: var(--text-muted);
   opacity: 0.8;
   text-decoration: none;
-  display: inline-block;
+  display: block;
   padding: var(--space-1);
   border-radius: var(--radius-sm);
   transition: color 0.15s ease, opacity 0.15s ease;
@@ -289,7 +289,8 @@
 
 .reader-gutter .section-anchor:hover,
 .reader-gutter .section-anchor:visited:hover,
-.reader-gutter .section-anchor:focus-visible {
+.reader-gutter .section-anchor:focus-visible,
+.reader-gutter .section-anchor[aria-expanded="true"] {
   color: var(--text);
   background-color: transparent;
   opacity: 1;
@@ -307,7 +308,8 @@
 
 .reader-gutter .section-anchor.latent:hover,
 .reader-gutter .section-anchor.latent:visited:hover,
-.reader-gutter .section-anchor.latent:focus-visible {
+.reader-gutter .section-anchor.latent:focus-visible,
+.reader-gutter .section-anchor.latent[aria-expanded="true"] {
   opacity: 1;
 }
 
@@ -355,7 +357,7 @@
 
 /* Elegiac pentameters and other indented verse: the whole line shifts. */
 .reader-passage .indent {
-  display: inline-block;
+  display: block;
   padding-left: 1.5em;
 }
 

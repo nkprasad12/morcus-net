@@ -187,3 +187,29 @@ export function isShortcutBlocked(e: KeyboardEvent): boolean {
 
   return false;
 }
+
+/**
+ * Scrolls `targetEl` into view within its own document window, respecting
+ * CSS `scroll-margin-top` without propagating scrolling across iframe boundaries
+ * to parent browsing contexts.
+ *
+ * Precondition: `targetEl` must live in the root viewport scroller (`win`), not
+ * inside an inner overflow scroll container (e.g. an `overflow-y: auto` pane).
+ */
+export function scrollToElement(
+  targetEl: HTMLElement,
+  behavior: ScrollBehavior = "instant",
+  win: Window = targetEl.ownerDocument.defaultView ?? window
+): void {
+  if (typeof win.scrollTo !== "function") return;
+  const rawMargin =
+    typeof win.getComputedStyle === "function"
+      ? parseFloat(win.getComputedStyle(targetEl).scrollMarginTop)
+      : 0;
+  const margin = Number.isFinite(rawMargin) ? rawMargin : 0;
+  const top = Math.max(
+    0,
+    (win.scrollY || 0) + targetEl.getBoundingClientRect().top - margin
+  );
+  win.scrollTo({ top, behavior });
+}

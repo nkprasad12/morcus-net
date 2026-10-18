@@ -7,6 +7,7 @@ import {
   KeyedFetchCache,
   registerElement,
   replaceWithHtml,
+  scrollToElement,
   setHtml,
   type QueryParamSync,
 } from "@/web/v2/core/index.client";
@@ -271,9 +272,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
 
   #scrollToResults(behavior: ScrollBehavior = "instant") {
     if (!this.#resultsElement) return;
-    if (typeof this.#resultsElement.scrollIntoView === "function") {
-      this.#resultsElement.scrollIntoView({ behavior, block: "start" });
-    }
+    scrollToElement(this.#resultsElement, behavior);
   }
 
   #syncUrlParams(updates: { d?: string; o?: string }) {

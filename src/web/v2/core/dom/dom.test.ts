@@ -10,6 +10,7 @@ import {
   escapeId,
   flashElement,
   isShortcutBlocked,
+  scrollToElement,
   syncIframeTheme,
 } from "@/web/v2/core/dom/dom.client";
 import { detachedDomWrites } from "@/web/v2/core/dom/dom_invariants.client";
@@ -417,6 +418,133 @@ describe("core/dom.client", () => {
       document.body.dispatchEvent(bodyEv);
       expect(isShortcutBlocked(bodyEv)).toBe(true);
       dialog.remove();
+    });
+  });
+
+  describe("scrollToElement", () => {
+    it("subtracts numeric scrollMarginTop from scrollY + rect.top and forwards behavior", () => {
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+      jest.spyOn(el, "getBoundingClientRect").mockReturnValue({
+        top: 150,
+        bottom: 200,
+        left: 0,
+        right: 100,
+        width: 100,
+        height: 50,
+        x: 0,
+        y: 150,
+        toJSON: () => ({}),
+      });
+      const scrollToSpy = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+      const getComputedStyleSpy = jest
+        .spyOn(window, "getComputedStyle")
+        .mockReturnValue({ scrollMarginTop: "24px" } as CSSStyleDeclaration);
+
+      Object.defineProperty(window, "scrollY", { value: 100, configurable: true });
+
+      scrollToElement(el, "smooth");
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 226,
+        behavior: "smooth",
+      });
+
+      scrollToSpy.mockRestore();
+      getComputedStyleSpy.mockRestore();
+    });
+
+    it("falls back to 0 margin when scrollMarginTop is empty or non-numeric", () => {
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+      jest.spyOn(el, "getBoundingClientRect").mockReturnValue({
+        top: 80,
+        bottom: 120,
+        left: 0,
+        right: 100,
+        width: 100,
+        height: 40,
+        x: 0,
+        y: 80,
+        toJSON: () => ({}),
+      });
+      const scrollToSpy = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+      const getComputedStyleSpy = jest
+        .spyOn(window, "getComputedStyle")
+        .mockReturnValue({ scrollMarginTop: "auto" } as CSSStyleDeclaration);
+
+      Object.defineProperty(window, "scrollY", { value: 50, configurable: true });
+
+      scrollToElement(el);
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 130,
+        behavior: "instant",
+      });
+
+      scrollToSpy.mockRestore();
+      getComputedStyleSpy.mockRestore();
+    });
+
+    it("clamps scroll destination to 0 when offset would be negative", () => {
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+      jest.spyOn(el, "getBoundingClientRect").mockReturnValue({
+        top: 10,
+        bottom: 30,
+        left: 0,
+        right: 100,
+        width: 100,
+        height: 20,
+        x: 0,
+        y: 10,
+        toJSON: () => ({}),
+      });
+      const scrollToSpy = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+      const getComputedStyleSpy = jest
+        .spyOn(window, "getComputedStyle")
+        .mockReturnValue({ scrollMarginTop: "100px" } as CSSStyleDeclaration);
+
+      Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+
+      scrollToElement(el);
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 0,
+        behavior: "instant",
+      });
+
+      scrollToSpy.mockRestore();
+      getComputedStyleSpy.mockRestore();
+    });
+
+    it("supports passing an explicit Window object (e.g. iframe context)", () => {
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+      jest.spyOn(el, "getBoundingClientRect").mockReturnValue({
+        top: 60,
+        bottom: 100,
+        left: 0,
+        right: 100,
+        width: 100,
+        height: 40,
+        x: 0,
+        y: 60,
+        toJSON: () => ({}),
+      });
+
+      const mockWin = {
+        scrollTo: jest.fn(),
+        getComputedStyle: jest.fn().mockReturnValue({ scrollMarginTop: "10px" }),
+        scrollY: 20,
+      } as unknown as Window;
+
+      scrollToElement(el, "smooth", mockWin);
+
+      expect(mockWin.scrollTo).toHaveBeenCalledWith({
+        top: 70,
+        behavior: "smooth",
+      });
     });
   });
 });
