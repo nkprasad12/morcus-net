@@ -80,16 +80,6 @@ warnings within VSCode for any ESLint errors in the code.
 
 ## Deployment
 
-### Heroku
-
-There is a `Procfile` in the root directory for use with Heroku. There are some environment variables that can be set, but all are optional.
-
-1. `MONGODB_URI` - The URI to a MongoDB database. If set, system health and usage metrics will be written to this database. Otherwise, they will be logged locally.
-2. `DB_SOURCE` - Only used if `MONGODB_URI` is present. If set, this will be used to disambiguate records from different deployments (e.g. use `dev` for staging).
-3. `GITHUB_TOKEN` - A GitHub token with Issue creation permissions. If set, issue reports will be written to GitHub Issues. Otherwise, they will be logged locally.
-4. `APPNAME` - set to `Dev` for a staging / dev deployment.
-5. `NPM_CONFIG_OMIT` - set to `optional` as an optimization to avoid installing integration test dependencies.
-
 ### Docker Images
 
 Docker images are generated for each push. These can be downloaded from the registry at ghcr.io/nkprasad12/morcus. There are four tags of note:

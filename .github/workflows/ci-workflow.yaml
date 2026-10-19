@@ -51,10 +51,6 @@ jobs:
           - arch: amd64
             os: ubuntu-24.04
             tag_suffix: ""
-          # We don't need arm64 images for now.
-          # - arch: arm64
-          #   os: ubuntu-24.04-arm
-          #   tag_suffix: -arm
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     env:
@@ -98,10 +94,6 @@ jobs:
           - arch: amd64
             os: ubuntu-24.04
             tag_suffix: ""
-          # We don't need arm64 images for now.
-          # - arch: arm64
-          #   os: ubuntu-24.04-arm
-          #   tag_suffix: -arm
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
 
