@@ -95,29 +95,3 @@ export function decodeStoredDictBitmask(
   if (!encoded || !CANONICAL_BITMASK.test(encoded)) return null;
   return decodeDictBitmask(encoded);
 }
-
-export interface NormalizedDictParams {
-  readonly o: "0" | "1";
-  readonly d: string | undefined;
-}
-
-/**
- * Normalizes raw `o` and `d` URL parameters:
- * - `o`: `"1"` only for `"1"` (or `"true"`), otherwise `"0"`.
- * - `d`: canonical base36 bitmask if it decodes to at least one known dictionary,
- *   otherwise `undefined` (fall back to saved cookie or default dictionaries).
- */
-export function normalizeDictParams(
-  params:
-    | URLSearchParams
-    | { readonly o?: string | null; readonly d?: string | null }
-): NormalizedDictParams {
-  const rawO =
-    params instanceof URLSearchParams ? params.get("o") : params.o ?? null;
-  const rawD =
-    params instanceof URLSearchParams ? params.get("d") : params.d ?? null;
-  const o: "0" | "1" = rawO === "1" || rawO === "true" ? "1" : "0";
-  const decodedKeys = decodeDictBitmask(rawD);
-  const d = decodedKeys ? encodeDictBitmask(decodedKeys) : undefined;
-  return { o, d };
-}

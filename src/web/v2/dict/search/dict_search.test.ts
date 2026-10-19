@@ -1264,53 +1264,6 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         "/dicts?q=war&o=1&embedded=1&scale=120&d=3"
       );
     });
-
-    test("clamps scale client-side to [70, 140] on connect and search", () => {
-      const replaceStateSpy = jest.spyOn(window.history, "replaceState");
-
-      delete (window as any).location;
-      (window as any).location = new URL(
-        "http://localhost/dicts?q=arma&lang=La&o=1&embedded=1&scale=999"
-      );
-      createDictSearch(
-        '<input type="hidden" name="scale" value="999" />',
-        'data-d="3" data-o="1"'
-      );
-      expect(
-        document.documentElement.style.getPropertyValue("--dict-scale")
-      ).toBe("1.40");
-      expect(replaceStateSpy).toHaveBeenCalledWith(
-        null,
-        "",
-        "/dicts?q=arma&lang=La&o=1&embedded=1&scale=140"
-      );
-
-      replaceStateSpy.mockClear();
-      delete (window as any).location;
-      (window as any).location = new URL(
-        "http://localhost/dicts?q=arma&lang=La&o=1&embedded=1&scale=10"
-      );
-      const elLow = createDictSearch(
-        '<div class="entry-content"><span class="lsQuote">Gallia</span></div>',
-        'data-d="3" data-o="1"'
-      );
-      expect(
-        document.documentElement.style.getPropertyValue("--dict-scale")
-      ).toBe("0.70");
-      expect(replaceStateSpy).toHaveBeenCalledWith(
-        null,
-        "",
-        "/dicts?q=arma&lang=La&o=1&embedded=1&scale=70"
-      );
-
-      replaceStateSpy.mockClear();
-      elLow.querySelector<HTMLElement>(".lat-word")!.click();
-      expect(replaceStateSpy).toHaveBeenCalledWith(
-        { q: "Gallia" },
-        "",
-        "/dicts?q=Gallia&lang=La&o=1&embedded=1&scale=70&d=3"
-      );
-    });
   });
 
   test("search execution explicitly syncs q, d, and o parameters in history and document title", async () => {
@@ -2118,19 +2071,6 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         expect.stringContaining("/dicts?q=1&format=partial"),
         expect.anything()
       );
-    });
-
-    test("DICT-08: normalizes q=1+ab and strips invalid o=-1 and d=0 / d=zzzz from URL on connect", () => {
-      delete (window as any).location;
-      (window as any).location = new URL(
-        "http://localhost/dicts?q=1+ab&o=-1&d=0"
-      );
-      const replaceStateSpy = jest.spyOn(window.history, "replaceState");
-
-      createDictSearch("ab", 'data-d="an" data-o="1"');
-
-      expect(replaceStateSpy).toHaveBeenCalledWith(null, "", "/dicts?q=ab");
-      replaceStateSpy.mockRestore();
     });
 
     test("DICT-11: selecting an autocomplete suggestion blurs #dict-q inside requestAnimationFrame", () => {
