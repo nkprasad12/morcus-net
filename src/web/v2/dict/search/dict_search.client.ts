@@ -21,6 +21,7 @@ import {
   DEFAULT_DICT_BITMASK,
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/settings/dict_bitmask.common";
+import { ownSettingsHref } from "@/web/v2/dict/settings/dict_settings_href.common";
 import {
   applyDictSearch,
   applyUnscopedDictSearch,
@@ -101,16 +102,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     this.#initActiveSettings();
 
     this.#router = this.syncQueryParam("q", {
-      onChange: (q) => {
-        if (this.#inputElement) {
-          this.#inputElement.value = q;
-        }
-        this.#syncUrlParams({
-          d: this.#activeDictBitmask,
-          o: this.#isInflected ? "1" : "0",
-        });
-        void this.#fetchResults(q);
-      },
+      onChange: (q) => void this.#restoreFromUrl(q),
       title: (_q, url) => dictPageTitleForUrl(url),
     });
 
@@ -273,8 +265,26 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     const hiddenO = form?.querySelector<HTMLInputElement>('input[name="o"]');
     if (hiddenD) hiddenD.value = commit.bitmask;
     if (hiddenO) hiddenO.value = o;
+
+    const currentQuery = trimRawQuery(this.#inputElement?.value ?? "");
+    const renderedQ =
+      new URLSearchParams(window.location.search).get("q") ?? "";
+    const queryChanged = currentQuery !== "" && currentQuery !== renderedQ;
+    if (currentQuery) {
+      const settingsQ = this.scope.$<HTMLInputElement>(
+        'form.dict-settings-form input[name="q"]'
+      );
+      if (settingsQ) settingsQ.value = currentQuery;
+    }
     // Keeps `lang`: the new `d=` is still narrowed to it (the dialog showed only its dictionaries).
-    this.#syncUrlParams({ d: commit.bitmask, o });
+    this.#syncUrlParams(
+      {
+        d: commit.bitmask,
+        o,
+        ...(queryChanged ? { q: currentQuery } : {}),
+      },
+      queryChanged
+    );
 
     const langChipsContainer = this.scope.$<HTMLElement>(".lang-chips");
     if (langChipsContainer) {
@@ -309,7 +319,6 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       }
     }
 
-    const currentQuery = this.#inputElement?.value.trim() ?? "";
     if (!currentQuery) return;
     void this.#fetchResults(currentQuery);
     this.#autocomplete.refreshForDictChange(currentQuery);
@@ -320,8 +329,50 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     scrollToElement(this.#resultsElement, behavior);
   }
 
-  #syncUrlParams(updates: { d?: string; o?: string }) {
+  /** Back/Forward: show what the revisited URL names. Never writes history. */
+  async #restoreFromUrl(q: string) {
+    this.#autocomplete.clear();
+    if (this.#inputElement) {
+      this.#inputElement.value = q;
+    }
+    this.#syncGuestReturn();
+    const ok = await this.#fetchResults(q, { path: window.location.pathname });
+    if (ok) {
+      this.#scrollToHashOrResults();
+    }
+  }
+
+  #scrollToHashOrResults() {
+    if (!window.location.hash) return;
+    let id = window.location.hash.slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      // Keep raw hash slice if malformed percent-encoding.
+    }
+    const target = id ? document.getElementById(id) : null;
+    if (!target) return;
+    this.scope.rAF(() => {
+      scrollToElement(target, "instant");
+    });
+  }
+
+  #syncUrlParams(
+    updates: { d?: string; o?: string; q?: string },
+    push = false
+  ) {
     const url = new URL(window.location.href);
+    const isEmbedded = url.searchParams.get("embedded") === "1";
+    if (updates.q !== undefined) {
+      if (url.pathname.startsWith("/dicts/id/")) {
+        url.pathname = "/dicts";
+      }
+      if (updates.q) {
+        url.searchParams.set("q", updates.q);
+      } else {
+        url.searchParams.delete("q");
+      }
+    }
     if (updates.d !== undefined) {
       if (updates.d) {
         url.searchParams.set("d", updates.d);
@@ -336,7 +387,25 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     }
     clampScaleParam(url.searchParams);
     url.hash = "";
-    this.#router?.replaceUrl(url);
+    if (push && !isEmbedded) {
+      this.#router?.pushUrl(url, { state: { q: updates.q } });
+    } else if (push && isEmbedded) {
+      this.#router?.replaceUrl(url, { state: { q: updates.q } });
+    } else {
+      this.#router?.replaceUrl(url);
+    }
+    this.#syncGuestReturn(url);
+  }
+
+  #syncGuestReturn(url: URL = new URL(window.location.href)) {
+    const links = this.scope.$$<HTMLAnchorElement>("a.guest-return");
+    if (links.length === 0) return;
+    const href = ownSettingsHref(url.pathname + url.search, {
+      keepInflection: url.searchParams.has("lang"),
+    });
+    for (const link of links) {
+      link.href = href;
+    }
   }
 
   readonly #handleWindowKeydown = (e: KeyboardEvent) => {
@@ -416,6 +485,11 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     } else {
       this.#router?.pushUrl(url, { state: { q: cleanQuery } });
     }
+    this.#syncGuestReturn(url);
+    const settingsQ = this.scope.$<HTMLInputElement>(
+      'form.dict-settings-form input[name="q"]'
+    );
+    if (settingsQ) settingsQ.value = cleanQuery;
     await this.#fetchResults(cleanQuery);
     this.scope.rAF(() => {
       this.#scrollToResults("smooth");
@@ -429,22 +503,30 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
    * by throwing. Callers in sync event handlers can therefore `void` this safely — if
    * that ever stops being true, they need real rejection handling instead.
    */
-  async #fetchResults(query: string) {
-    if (!this.#resultsElement) return;
+  async #fetchResults(
+    query: string,
+    opts?: { path?: string }
+  ): Promise<boolean> {
+    if (!this.#resultsElement) return false;
     closeActiveSectionUI();
     const currentParams = new URLSearchParams(window.location.search);
     const isEmbedded = currentParams.get("embedded") === "1";
     const langParam = currentParams.get("lang");
 
+    const idMatch = opts?.path?.match(/^\/dicts\/id\/([^/]+)$/);
+    const base = idMatch && opts?.path ? opts.path : "/dicts";
+
     const fetchParams = new URLSearchParams();
-    fetchParams.set("q", query);
+    if (!idMatch) {
+      fetchParams.set("q", query);
+    }
     fetchParams.set("format", "partial");
     if (isEmbedded) fetchParams.set("embedded", "1");
     if (langParam) fetchParams.set("lang", langParam);
     fetchParams.set("d", this.#activeDictBitmask);
     fetchParams.set("o", this.#isInflected ? "1" : "0");
 
-    const url = `/dicts?${fetchParams.toString()}`;
+    const url = `${base}?${fetchParams.toString()}`;
     const success = await fetchAndSwapPartial(this.#resultsElement, url, {
       signal: this.scope.latest("results"),
       errorMessage: "Error loading results.",
@@ -453,6 +535,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     if (success) {
       this.#enhanceWordsAfterPaint();
     }
+    return success;
   }
 
   /**

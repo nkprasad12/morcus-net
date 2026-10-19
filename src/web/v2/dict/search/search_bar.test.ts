@@ -104,12 +104,8 @@ describe("renderDictSearchBar", () => {
     expect(
       doc.querySelector("morcus-dict-settings > dialog#dict-settings")
     ).not.toBeNull();
-    // The X needs JS; without it, Back (or Done) leaves.
-    expect(
-      doc
-        .querySelector("#dict-settings [data-dialog-close]")
-        ?.hasAttribute("data-js-only")
-    ).toBe(true);
+    // Done is the single close/apply button; there is no redundant header close button.
+    expect(doc.querySelector("#dict-settings .dialog-close-btn")).toBeNull();
   });
 
   test("keeps the hidden d bitmask when the settings popover is omitted", () => {

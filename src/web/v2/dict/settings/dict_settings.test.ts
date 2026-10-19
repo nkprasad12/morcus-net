@@ -120,7 +120,7 @@ describe("MorcusDictSettings", () => {
     expect(m.dialog.open).toBe(true);
     expect(m.trigger.getAttribute("aria-expanded")).toBe("true");
 
-    m.dialog.querySelector<HTMLElement>("[data-dialog-close]")!.click();
+    clickDone(m);
     expect(m.dialog.open).toBe(false);
     expect(m.trigger.getAttribute("aria-expanded")).toBe("false");
   });

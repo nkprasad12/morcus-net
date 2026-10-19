@@ -202,6 +202,20 @@ describe("v2_router integration", () => {
     expect(res.header["location"]).toBe("/dicts?q=bellum&d=2&o=0&embedded=1");
   });
 
+  test("GET /dicts/id/:id?format=partial returns only the results snippet without page shell or guest-return", async () => {
+    const res = await request(app)
+      .get("/dicts/id/n20077?format=partial&d=2&o=0")
+      .set("Cookie", "morcus_d=1; morcus_inflected=1");
+    expect(res.status).toBe(200);
+    expect(res.header["content-type"]).toContain("text/html");
+    expect(res.headers["vary"]).toContain("X-Requested-With");
+    expect(res.text).not.toContain("<!DOCTYPE html>");
+    expect(res.text).not.toContain("<html");
+    expect(res.text).not.toContain("guest-return");
+    expect(res.text).toContain("dict-card");
+    expect(res.text).toContain("amo");
+  });
+
   test("GET /dicts sanitizes query parameter before fetching entries", async () => {
     const res = await request(app).get('/dicts?q="amo,"');
     expect(res.status).toBe(200);

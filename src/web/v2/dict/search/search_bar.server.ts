@@ -279,7 +279,7 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
   // closes.
   const doneHtml = input.isGuest
     ? `<a href="#" class="btn btn-primary dict-settings-done" role="button" data-dialog-close>Done</a>`
-    : `<button type="submit" name="${SAVE_PARAM}" value="1" class="btn btn-primary dict-settings-done">Done</button>`;
+    : `<button type="submit" name="${SAVE_PARAM}" value="1" class="btn btn-primary dict-settings-done" data-dialog-close>Done</button>`;
 
   // A scoped view's inflection belongs to the lookup (the reader forces `o=1`), so there's no
   // toggle; the hidden input keeps it through a No-JS save and its redirect.
@@ -364,6 +364,6 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
     title: "Dictionary settings",
     bodyHtml,
     customClass: "dict-settings-dialog",
-    jsOnlyCloseButton: true,
+    hideCloseButton: true,
   })}</morcus-dict-settings>`;
 }

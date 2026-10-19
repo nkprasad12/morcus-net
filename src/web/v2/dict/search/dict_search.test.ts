@@ -29,7 +29,11 @@ function commitSettings(
 }
 
 describe("MorcusDictSearch client progressive enhancement", () => {
+  const originalLocation = window.location;
+
   beforeEach(() => {
+    (window as any).location = originalLocation;
+    window.history.replaceState(null, "", "/dicts");
     localStorage.clear();
     document.body.innerHTML = "";
     global.fetch = jest.fn().mockImplementation(() =>
@@ -43,6 +47,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   });
 
   afterEach(() => {
+    (window as any).location = originalLocation;
+    window.history.replaceState(null, "", "/dicts");
     document.body.innerHTML = "";
     jest.restoreAllMocks();
   });
@@ -823,6 +829,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     document.title = "ID n20077 - Morcus Dictionary";
 
     const el = createDictSearch();
+    el.querySelector<HTMLInputElement>("input.input")!.value = "";
     commitSettings(el, ["L&S", "GAF"], false);
 
     expect(document.title).toBe("ID n20077 - Morcus Dictionary");
@@ -870,32 +877,275 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     replaceStateSpy.mockRestore();
   });
 
-  test("popstate navigation re-syncs current active d and o into the restored history entry", () => {
+  test("popstate navigation fetches with current active d and o without mutating the restored history entry", () => {
     delete (window as any).location;
     (window as any).location = new URL("http://localhost/dicts?q=amo&d=an&o=1");
     const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+    const pushStateSpy = jest.spyOn(window.history, "pushState");
 
     const el = createDictSearch("", 'data-d="an" data-o="1"');
+    el.querySelector<HTMLInputElement>("input.input")!.value = "amo";
     commitSettings(el, ["GAF"], false);
     replaceStateSpy.mockClear();
+    pushStateSpy.mockClear();
+    (global.fetch as jest.Mock).mockClear();
 
-    // Simulate browser Back restoring an older URL with stale d=an&o=1
+    // Simulate browser Back restoring an older URL
     (window as any).location = new URL(
       "http://localhost/dicts?q=bellum&d=an&o=1"
     );
     window.dispatchEvent(new PopStateEvent("popstate"));
 
-    expect(replaceStateSpy).toHaveBeenCalledWith(
-      null,
-      "",
-      "/dicts?q=bellum&d=2&o=0"
-    );
+    expect(replaceStateSpy).not.toHaveBeenCalled();
+    expect(pushStateSpy).not.toHaveBeenCalled();
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/dicts?q=bellum&format=partial&d=2&o=0"),
       expect.anything()
     );
 
     replaceStateSpy.mockRestore();
+    pushStateSpy.mockRestore();
+  });
+
+  test("popstate to an article permalink (/dicts/id/:id#sense) fetches the ID route without q=, preserves hash, and scrolls to target", async () => {
+    window.history.replaceState(null, "", "/dicts?q=amo&d=an&o=1");
+    const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+    const pushStateSpy = jest.spyOn(window.history, "pushState");
+    const scrollMock = jest.fn();
+    window.scrollTo = scrollMock;
+
+    (global.fetch as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            '<article id="n2280"><div id="n2280-sense3">Sense 3</div></article>'
+          ),
+      } as unknown as Response)
+    );
+
+    const el = createDictSearch("", 'data-d="an" data-o="1"');
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+
+    window.history.replaceState(null, "", "/dicts/id/n2280#n2280-sense3");
+    replaceStateSpy.mockClear();
+    pushStateSpy.mockClear();
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(input.value).toBe("");
+    expect(replaceStateSpy).not.toHaveBeenCalled();
+    expect(pushStateSpy).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe("#n2280-sense3");
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    const fetchedUrl = (global.fetch as jest.Mock).mock.calls[0][0] as string;
+    expect(fetchedUrl).toBe("/dicts/id/n2280?format=partial&d=an&o=1");
+    expect(fetchedUrl).not.toContain("q=");
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(scrollMock).toHaveBeenCalledWith({
+      top: expect.any(Number),
+      behavior: "instant",
+    });
+
+    replaceStateSpy.mockRestore();
+    pushStateSpy.mockRestore();
+  });
+
+  test("popstate to /dicts?q=amo#sense-2 preserves #sense-2 without replaceState and scrolls to the sense", async () => {
+    window.history.replaceState(null, "", "/dicts?q=ut&d=an&o=1");
+    const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+    const scrollMock = jest.fn();
+    window.scrollTo = scrollMock;
+
+    (global.fetch as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            '<article class="entry"><div id="sense-2">Sense 2</div></article>'
+          ),
+      } as unknown as Response)
+    );
+
+    const el = createDictSearch("", 'data-d="an" data-o="1"');
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+
+    window.history.replaceState(null, "", "/dicts?q=amo&d=an&o=1#sense-2");
+    replaceStateSpy.mockClear();
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(input.value).toBe("amo");
+    expect(replaceStateSpy).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe("#sense-2");
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/dicts?q=amo&format=partial&d=an&o=1",
+      expect.anything()
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    expect(scrollMock).toHaveBeenCalledWith({
+      top: expect.any(Number),
+      behavior: "instant",
+    });
+
+    replaceStateSpy.mockRestore();
+  });
+
+  test("popstate clears open autocomplete suggestions and aborts in-flight completions (DICT-06)", () => {
+    window.history.replaceState(null, "", "/dicts?q=ut&d=an&o=1");
+    jest.useFakeTimers();
+    const el = createDictSearch("", 'data-d="an" data-o="1"');
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+    const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
+    const listbox = suggestionsEl.querySelector("ul") as HTMLUListElement;
+
+    // 1. Open suggestions from cache
+    el.chunkCache.set("qu", { "L&S": ["qui", "quis"] });
+    input.focus();
+    input.value = "qu";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(listbox.hidden).toBe(false);
+    expect(suggestionsEl.items).toHaveLength(2);
+
+    // 2. Also start an in-flight suffix completion fetch
+    let completionSignal: AbortSignal | undefined;
+    (global.fetch as jest.Mock).mockImplementation(
+      (url: string, init?: RequestInit) => {
+        if (url.includes("/api/completions")) {
+          completionSignal = init?.signal ?? undefined;
+          return new Promise(() => {});
+        }
+        return Promise.resolve({
+          ok: true,
+          text: () => Promise.resolve("<div>amo</div>"),
+        } as unknown as Response);
+      }
+    );
+    input.value = "-arum";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    jest.advanceTimersByTime(200);
+    jest.useRealTimers();
+    expect(completionSignal).toBeDefined();
+    expect(completionSignal!.aborted).toBe(false);
+
+    // 3. Navigate Back via popstate
+    window.history.replaceState(null, "", "/dicts?q=amo&d=an&o=1");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(suggestionsEl.items).toEqual([]);
+    expect(listbox.hidden).toBe(true);
+    expect(completionSignal!.aborted).toBe(true);
+  });
+
+  test("dict-settings-commit with unsubmitted input query pushes new q, updates title and settings form, and fetches it (DICT-04)", () => {
+    window.history.replaceState(null, "", "/dicts?q=ut");
+    const pushStateSpy = jest.spyOn(window.history, "pushState");
+    const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+
+    const el = createDictSearch("", 'data-d="an" data-o="1"');
+    const settingsForm = document.createElement("form");
+    settingsForm.className = "dict-settings-form";
+    settingsForm.innerHTML = '<input type="hidden" name="q" value="ut" />';
+    el.appendChild(settingsForm);
+
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+    input.value = "  qui  ";
+    (global.fetch as jest.Mock).mockClear();
+    pushStateSpy.mockClear();
+    replaceStateSpy.mockClear();
+
+    commitSettings(el, ["GAF"], true);
+
+    expect(pushStateSpy).toHaveBeenCalledTimes(1);
+    expect(replaceStateSpy).not.toHaveBeenCalled();
+    expect(new URLSearchParams(window.location.search).get("q")).toBe("qui");
+    expect(document.title).toBe("qui - Morcus Dictionary");
+    expect(
+      settingsForm.querySelector<HTMLInputElement>('input[name="q"]')!.value
+    ).toBe("qui");
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/dicts?q=qui&format=partial&d=2&o=1",
+      expect.anything()
+    );
+
+    // Subsequent settings commit when input matches rendered q uses replaceState only
+    pushStateSpy.mockClear();
+    replaceStateSpy.mockClear();
+    input.value = "qui";
+    commitSettings(el, ["GAF"], false);
+
+    expect(pushStateSpy).not.toHaveBeenCalled();
+    expect(replaceStateSpy).toHaveBeenCalledTimes(1);
+    expect(new URLSearchParams(window.location.search).get("q")).toBe("qui");
+
+    pushStateSpy.mockRestore();
+    replaceStateSpy.mockRestore();
+  });
+
+  test("dict-settings-commit with unsubmitted input query in embedded=1 uses replaceState instead of pushState", () => {
+    window.history.replaceState(null, "", "/dicts?q=ut&embedded=1");
+    const pushStateSpy = jest.spyOn(window.history, "pushState");
+    const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+
+    const el = createDictSearch("", 'data-d="an" data-o="1"');
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+    input.value = "qui";
+    pushStateSpy.mockClear();
+    replaceStateSpy.mockClear();
+
+    commitSettings(el, ["GAF"], true);
+
+    expect(pushStateSpy).not.toHaveBeenCalled();
+    expect(replaceStateSpy).toHaveBeenCalledWith(
+      { q: "qui" },
+      "",
+      "/dicts?q=qui&embedded=1&d=2&o=1"
+    );
+
+    pushStateSpy.mockRestore();
+    replaceStateSpy.mockRestore();
+  });
+
+  test("keeps guest mode a.guest-return href in sync across AJAX search, settings commit, and popstate (DICT-02)", () => {
+    window.history.replaceState(null, "", "/dicts?q=ut&d=2&o=0");
+    const el = createDictSearch(
+      '<div class="entry-content"><span class="lsQuote">Gallia</span></div>',
+      'data-d="2" data-o="0"'
+    );
+    const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+    form.insertAdjacentHTML(
+      "beforeend",
+      '<div class="search-tray"><a class="guest-return" href="/dicts?q=ut">Restore saved</a></div>'
+    );
+    const guestLink = el.querySelector<HTMLAnchorElement>("a.guest-return")!;
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+
+    // 1. AJAX search for "qui" updates a.guest-return (strips d and o)
+    input.value = "qui";
+    form.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })
+    );
+    expect(guestLink.getAttribute("href")).toBe("/dicts?q=qui");
+
+    // 2. Popstate back to /dicts?q=ut&d=2&o=0 restores /dicts?q=ut
+    window.history.replaceState(null, "", "/dicts?q=ut&d=2&o=0");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(guestLink.getAttribute("href")).toBe("/dicts?q=ut");
+
+    // 3. In a lang=La view, following a word keeps o in a.guest-return
+    window.history.replaceState(
+      null,
+      "",
+      "/dicts?q=arma&lang=La&o=0&embedded=1&d=2"
+    );
+    el.querySelector<HTMLElement>(".lat-word")!.click();
+    expect(guestLink.getAttribute("href")).toBe(
+      "/dicts?q=Gallia&lang=La&o=0&embedded=1"
+    );
   });
 
   test("popstate back to the initial URL after a search re-fetches the initial query", () => {
