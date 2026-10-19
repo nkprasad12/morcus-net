@@ -83,7 +83,9 @@ describe("dialog server utilities", () => {
       expect(html).toContain(
         '<form class="custom-form" action="/submit" method="GET">'
       );
-      expect(html).toContain('<button type="submit" class="btn-done">Done</button>');
+      expect(html).toContain(
+        '<button type="submit" class="btn-done">Done</button>'
+      );
       expect(html).not.toContain("dialog-close-btn");
     });
   });

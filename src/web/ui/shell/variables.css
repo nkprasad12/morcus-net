@@ -168,10 +168,7 @@
       var(--rgb-grammar),
       calc(0.24 * var(--highlight-scale))
     );
-    --accent-quote: rgba(
-      var(--rgb-quote),
-      calc(0.23 * var(--highlight-scale))
-    );
+    --accent-quote: rgba(var(--rgb-quote), calc(0.23 * var(--highlight-scale)));
     --accent-bibl: rgba(var(--rgb-bibl), calc(0.25 * var(--highlight-scale)));
     --bullet-bg: rgba(255, 255, 255, 0.15);
     --tab-chip-bg: rgba(255, 255, 255, 0.08);

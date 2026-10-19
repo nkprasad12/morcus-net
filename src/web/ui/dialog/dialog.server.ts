@@ -91,9 +91,7 @@ export function renderDialog(options: DialogOptions): SafeHtml {
     <div class="dialog-body">${raw(bodyHtml)}</div>
     ${raw(actionsContainerHtml)}`;
 
-  const formClassAttr = form?.className
-    ? html` class="${form.className}"`
-    : "";
+  const formClassAttr = form?.className ? html` class="${form.className}"` : "";
   const cardInnerHtml = form
     ? html`<form${raw(formClassAttr)} action="${form.action}" method="${
         form.method ?? "GET"
