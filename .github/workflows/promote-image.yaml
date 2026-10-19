@@ -5,6 +5,15 @@ on:
     branches:
       - main
 
+permissions:
+  packages: write
+
+# Promotions run one at a time, in order. If several are queued, GitHub keeps
+# only the newest pending one, which is the one we want to end up as latest.
+concurrency:
+  group: promote-main
+  cancel-in-progress: false
+
 jobs:
   promote-image:
     runs-on: ubuntu-24.04

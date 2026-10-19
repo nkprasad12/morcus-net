@@ -8,19 +8,30 @@ on:
     branches:
       - dev
 
+# Least privilege by default; jobs that need more ask for it explicitly.
+permissions:
+  contents: read
+
+# A new push to a PR cancels that PR's in-progress run. Pushes to `dev` each
+# get their own run (`run_id` is unique), so every `dev` commit is fully
+# tested; `dev-latest` ordering is handled in `build-image` instead.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   presubmit-checks:
     runs-on: ubuntu-24.04
     timeout-minutes: 7
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - name: Set up Python 3.12
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version-file: package.json
       - name: Installing npm dependencies
@@ -38,7 +49,7 @@ jobs:
       - name: Checking Python types
         run: npm run pyright
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
@@ -53,6 +64,9 @@ jobs:
             tag_suffix: ""
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
     env:
       CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}${{ matrix.tag_suffix }}
       LATEST: ghcr.io/nkprasad12/morcus:dev-latest${{ matrix.tag_suffix }}
@@ -60,7 +74,7 @@ jobs:
       PR_LATEST: ghcr.io/nkprasad12/morcus:pr-latest${{ matrix.tag_suffix }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - name: Build image
         run: |
           docker build . --tag $CANDIDATE \
@@ -72,11 +86,25 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
       - name: Push image
         run: docker push $CANDIDATE
-      - name: Backup current dev image
+      # If runs for two `dev` pushes overlap, the older one may finish last.
+      # Only move `dev-latest` (and `dev-previous`) if this commit is still
+      # the head of `dev`, so `dev-latest` can never go backwards.
+      - name: Check this commit is still the head of dev
+        id: head
         if: github.ref == 'refs/heads/dev'
+        run: |
+          HEAD_SHA=$(git ls-remote origin refs/heads/dev | cut -f1)
+          if [ "$HEAD_SHA" = "${{ github.sha }}" ]; then
+            echo "is_head=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dev has moved on to $HEAD_SHA; not updating dev-latest."
+            echo "is_head=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Backup current dev image
+        if: steps.head.outputs.is_head == 'true'
         run: docker pull $LATEST && docker tag $LATEST $PREVIOUS && docker push $PREVIOUS || true
       - name: Push latest dev image
-        if: github.ref == 'refs/heads/dev'
+        if: steps.head.outputs.is_head == 'true'
         run: |
           docker tag $CANDIDATE $LATEST
           docker push $LATEST
@@ -98,9 +126,9 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version-file: package.json
       - name: Installing npm dependencies
@@ -112,7 +140,7 @@ jobs:
       - name: Running integration checks
         run: IMAGE_TAG=${{ github.sha }}${{ matrix.tag_suffix }} npm run integration-tests
       - name: Upload test report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: ${{ !cancelled() }}
         with:
           name: functional-test-report-${{ matrix.arch }}
@@ -127,9 +155,9 @@ jobs:
         screenSize: [small, large]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version-file: package.json
       - name: Pulling docker images
@@ -151,7 +179,7 @@ jobs:
       - name: Running Performance tests
         run: npm run tsnp src/scripts/perf_a_b.ts -- --A=$A_TAG --B=${{ github.sha }} --N=40 --screenSize=${{ matrix.screenSize }} --ci
       - name: Upload Performance report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: ${{ !cancelled() }}
         with:
           name: performance-report-${{ matrix.screenSize }}
