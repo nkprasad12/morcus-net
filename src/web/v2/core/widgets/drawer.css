@@ -5,11 +5,6 @@
  * and drag-resize states shared across Reader and Table of Contents views.
  */
 
-:root {
-  --drawer-height: 48svh;
-  --drawer-min-height: 54px;
-}
-
 /* Core Docked Bottom Drawer */
 .drawer {
   position: fixed;

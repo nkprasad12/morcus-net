@@ -384,6 +384,12 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     if (this.#inputElement) {
       this.#inputElement.value = cleanQ;
     }
+    const settingsQ = this.querySelector<HTMLInputElement>(
+      'form.dict-settings-form input[name="q"]'
+    );
+    if (settingsQ) {
+      settingsQ.value = cleanQ;
+    }
     this.#syncGuestReturn();
     const ok = await this.#fetchResults(cleanQ, {
       path: window.location.pathname,

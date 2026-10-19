@@ -102,8 +102,15 @@ export async function scrapeUrlTextWith(
   fetcher: PageFetcher
 ): Promise<string> {
   const { text: rawText } = await fetcher(withDefaultScheme(url));
+  // Strip raw-text <script>/<style> blocks and HTML comments before XML parsing
+  // so unescaped `<` (e.g. `if (a < b)`) inside inline JS/CSS cannot confuse
+  // fast-xml-parser into swallowing subsequent document nodes.
+  const sanitized = rawText
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, "")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, "");
   const tree = checkPresent(
-    parseRawXml(`<root>${rawText}</root>`, {
+    parseRawXml(`<root>${sanitized}</root>`, {
       keepWhitespace: true,
       unpairedTags: UNPAIRED_TAGS,
     })

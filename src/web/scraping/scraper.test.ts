@@ -42,11 +42,12 @@ describe("Scraper", () => {
 
   test("scrapeUrlText handles modern HTML5 tags and skips non-text subtrees", async () => {
     const fetcher = fetcherFor(
-      "<!doctype html><html><head><title>T</title><style>p{}</style></head><body><header><nav><ul><li>Home</li></ul></nav></header><main><article><section><p>Gallia est <em>omnis</em> divisa</p></section></article></main><script>var x=1</script></body></html>"
+      "<!doctype html><html><head><title>T</title><style>p{}</style></head><body><script>if (a < b) { console.log('dont'); }</script><header><nav><ul><li>Home</li></ul></nav></header><main><article><section><p>Gallia est <em>omnis</em> divisa</p></section></article></main><script>var x=1</script></body></html>"
     );
     const result = await scrapeUrlTextWith(PAGE_URL, fetcher);
     expect(result).toContain("Gallia est omnis divisa");
     expect(result).not.toContain("var x");
+    expect(result).not.toContain("dont");
     expect(result).not.toContain("p{}");
     expect(result).not.toContain("T");
   });
