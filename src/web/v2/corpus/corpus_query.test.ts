@@ -16,6 +16,7 @@ import {
   readCorpusSuggestionList,
   runCorpusSearch,
 } from "@/web/v2/corpus/corpus_query.server";
+import { renderCorpusPageHtml } from "@/web/v2/corpus/corpus_view.server";
 import {
   CORPUS_TEST_AUTHORS,
   fakeCorpusEngine,
@@ -209,6 +210,50 @@ describe("runCorpusSearch", () => {
     ]);
   });
 
+  test("canonicalizes #author and @lemma casing for the engine without altering params.q", async () => {
+    const engine = fakeCorpusEngine();
+    const lemmata = ["fero", "Caesar", "Roma", "Magnus", "magnus"];
+
+    const authorView = await runCorpusSearch(
+      { ...BASE, q: "#caesar" },
+      engine,
+      CORPUS_TEST_AUTHORS,
+      lemmata
+    );
+    expect(authorView.outcome.kind).toBe("results");
+    expect(authorView.params.q).toBe("#caesar");
+    expect(engine.requests[0].query).toBe("[Caesar]");
+
+    const lemmaView = await runCorpusSearch(
+      { ...BASE, q: "@lemma:Fero" },
+      engine,
+      CORPUS_TEST_AUTHORS,
+      lemmata
+    );
+    expect(lemmaView.outcome.kind).toBe("results");
+    expect(lemmaView.params.q).toBe("@lemma:Fero");
+    expect(engine.requests[1].query).toBe("@lemma:fero");
+
+    await runCorpusSearch(
+      { ...BASE, q: "@lemma:Caesar @lemma:caesar" },
+      engine,
+      CORPUS_TEST_AUTHORS,
+      lemmata
+    );
+    expect(engine.requests[2].query).toBe("@lemma:Caesar @lemma:Caesar");
+
+    // Exact match wins over case-insensitive collision; ambiguous non-exact keeps user spelling.
+    await runCorpusSearch(
+      { ...BASE, q: "@lemma:Magnus @lemma:magnus @lemma:MAGNUS" },
+      engine,
+      CORPUS_TEST_AUTHORS,
+      lemmata
+    );
+    expect(engine.requests[3].query).toBe(
+      "@lemma:Magnus @lemma:magnus @lemma:MAGNUS"
+    );
+  });
+
   test("builds result views with reader links", async () => {
     const view = await runCorpusSearch(
       BASE,
@@ -355,5 +400,20 @@ describe("readCorpusSuggestionList", () => {
       readCorpusSuggestionList("missing.json", tmpDir)
     ).resolves.toBeUndefined();
     warn.mockRestore();
+  });
+});
+
+describe("renderCorpusPageHtml form attributes (CORP-02, CORP-04)", () => {
+  test("renders novalidate on form.corpus-form and autocomplete=off on settings inputs", async () => {
+    const view = await runCorpusSearch(
+      { ...BASE, q: "" },
+      fakeCorpusEngine(),
+      CORPUS_TEST_AUTHORS
+    );
+    const html = renderCorpusPageHtml(view);
+    expect(html).toMatch(/<form\b[^>]*\bclass="search-form corpus-form"[^>]*\bnovalidate\b/);
+    expect(html).toMatch(/<input\b[^>]*\bname="contextLen"[^>]*\bautocomplete="off"/);
+    expect(html).toMatch(/<input\b[^>]*\bname="pageSize"[^>]*\bautocomplete="off"/);
+    expect(html).toMatch(/<input\b[^>]*\bname="strictMode"[^>]*\bautocomplete="off"/);
   });
 });

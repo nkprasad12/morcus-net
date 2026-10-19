@@ -407,6 +407,19 @@ export function parseProximity(token: string): ProximityInfo | string {
 }
 
 /**
+ * The canonical spelling of `name` among `authors` (exact match wins, else
+ * case-insensitive), or `undefined`.
+ */
+export function canonicalAuthor(
+  name: string,
+  authors: readonly string[]
+): string | undefined {
+  if (authors.includes(name)) return name;
+  const lower = name.toLowerCase();
+  return authors.find((a) => a.toLowerCase() === lower);
+}
+
+/**
  * The errors in a single complete token, given the known authors (`undefined`
  * if the list isn't available, which skips the author check).
  */
@@ -415,10 +428,9 @@ export function errorsForToken(
   authors: readonly string[] | undefined
 ): string[] {
   if (token.startsWith("#")) {
-    const maybeAuthor = token.slice(1).toLowerCase();
     if (
       authors !== undefined &&
-      !authors.some((author) => author.toLowerCase() === maybeAuthor)
+      canonicalAuthor(token.slice(1), authors) === undefined
     ) {
       return [`invalid author #${token.slice(1)}`];
     }
@@ -490,6 +502,15 @@ export function hasInflectionFilters(query: string): boolean {
   return /@\w+:/.test(query);
 }
 
+export interface CanonicalizeContext {
+  readonly authors?: readonly string[];
+  /**
+   * Canonical lemma for a user-typed value (exact first, then
+   * case-insensitive), or `undefined`.
+   */
+  readonly canonicalLemma?: (value: string) => string | undefined;
+}
+
 /**
  * Translates the user-facing syntax into the Rust engine's syntax
  * (`corpus_rust/src/query_parsing_v2.rs`):
@@ -502,7 +523,10 @@ export function hasInflectionFilters(query: string): boolean {
  * A query with structural errors is returned unchanged; callers validate
  * first with {@link validateQuery}.
  */
-export function transformQuery(query: string): string {
+export function transformQuery(
+  query: string,
+  ctx: CanonicalizeContext = {}
+): string {
   const grouped = termGroups(tokenizeInput(query));
   if (typeof grouped === "string") {
     return query;
@@ -529,6 +553,18 @@ export function transformQuery(query: string): string {
         return `${num}~${rest}`;
       })
     )
-    .map((t) => t.replace(/^#(.+)$/, (_m, name: string) => `[${name}]`))
+    .map((t) =>
+      t.replace(
+        /^#(.+)$/,
+        (_m, name: string) =>
+          `[${(ctx.authors && canonicalAuthor(name, ctx.authors)) ?? name}]`
+      )
+    )
+    .map((t) =>
+      t.replace(/^@(lemma|l):(.+)$/i, (m, key: string, value: string) => {
+        const canon = ctx.canonicalLemma?.(value);
+        return canon === undefined ? m : `@${key}:${canon}`;
+      })
+    )
     .join(" ");
 }

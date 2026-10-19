@@ -5,6 +5,7 @@
  */
 
 import {
+  canonicalAuthor,
   categorizeToken,
   errorsForToken,
   findNextOptions,
@@ -865,6 +866,70 @@ describe("transformQuery", () => {
       );
     });
   });
+
+  describe("canonicalization context", () => {
+    const authors = ["Caesar", "Cicero"];
+    const lemmaMap = new Map([
+      ["fero", "fero"],
+      ["Fero", "fero"],
+      ["Caesar", "Caesar"],
+      ["caesar", "Caesar"],
+    ]);
+    const canonicalLemma = (v: string) => lemmaMap.get(v);
+
+    it("canonicalizes #author when authors are provided", () => {
+      expect(transformQuery("#caesar amor", { authors })).toBe("[Caesar] amor");
+    });
+
+    it("leaves #author raw when no context is provided", () => {
+      expect(transformQuery("#caesar amor")).toBe("[caesar] amor");
+    });
+
+    it("canonicalizes @lemma: and @l: values via canonicalLemma", () => {
+      expect(transformQuery("@lemma:Fero", { canonicalLemma })).toBe(
+        "@lemma:fero"
+      );
+      expect(transformQuery("@l:Fero", { canonicalLemma })).toBe("@l:fero");
+    });
+
+    it("preserves capitalized lemmata when canonicalLemma returns them", () => {
+      expect(transformQuery("@lemma:Caesar", { canonicalLemma })).toBe(
+        "@lemma:Caesar"
+      );
+      expect(transformQuery("@lemma:caesar", { canonicalLemma })).toBe(
+        "@lemma:Caesar"
+      );
+    });
+
+    it("keeps user spelling when canonicalLemma returns undefined", () => {
+      expect(
+        transformQuery("@lemma:Xyz", { canonicalLemma: () => undefined })
+      ).toBe("@lemma:Xyz");
+    });
+
+    it("combines author, proximity, and lemma canonicalization in order", () => {
+      expect(
+        transformQuery("#caesar amor ~3> @lemma:Fero", {
+          authors,
+          canonicalLemma,
+        })
+      ).toBe("[Caesar] amor 3~> @lemma:fero");
+    });
+  });
+});
+
+describe("canonicalAuthor", () => {
+  const authors = ["Caesar", "Cicero"];
+
+  it("matches case-insensitively and prefers exact match", () => {
+    expect(canonicalAuthor("caesar", authors)).toBe("Caesar");
+    expect(canonicalAuthor("CAESAR", authors)).toBe("Caesar");
+    expect(canonicalAuthor("Caesar", authors)).toBe("Caesar");
+  });
+
+  it("returns undefined for unknown authors", () => {
+    expect(canonicalAuthor("Homer", authors)).toBeUndefined();
+  });
 });
 
 describe("parseProximity", () => {
@@ -892,11 +957,15 @@ describe("errorsForToken", () => {
 
   it("accepts known authors case-insensitively", () => {
     expect(errorsForToken("#caesar", authors)).toEqual([]);
+    expect(errorsForToken("#CAESAR", authors)).toEqual([]);
   });
 
   it("rejects unknown authors", () => {
     expect(errorsForToken("#Homer", authors)).toEqual([
       "invalid author #Homer",
+    ]);
+    expect(errorsForToken("#nobody", ["Caesar"])).toEqual([
+      "invalid author #nobody",
     ]);
   });
 

@@ -17,6 +17,10 @@ import {
 } from "@/common/library/corpus/corpus_common";
 import type { CorpusQueryRequest } from "@/common/library/corpus/corpus_common";
 import {
+  canonicalCorpusLemma,
+  createLemmaCanonicalizer,
+} from "@/web/v2/corpus/corpus_lemmata.server";
+import {
   readCorpusParams,
   type CorpusParams,
 } from "@/web/v2/corpus/corpus_params.common";
@@ -185,7 +189,8 @@ function engineErrorMessage(err: unknown): string {
 export async function runCorpusSearch(
   params: CorpusParams,
   engine: CorpusEngine,
-  authors: readonly string[] | undefined
+  authors: readonly string[] | undefined,
+  lemmata?: ((value: string) => string | undefined) | readonly string[]
 ): Promise<CorpusSearchView> {
   const showInflectionDisclaimer = hasInflectionFilters(params.q);
   const view = (outcome: CorpusOutcome): CorpusSearchView => ({
@@ -202,7 +207,13 @@ export async function runCorpusSearch(
   if (syntaxError !== null) {
     return view({ kind: "error", message: syntaxError });
   }
-  const engineQuery = transformQuery(params.q);
+  const canonicalLemma =
+    typeof lemmata === "function"
+      ? lemmata
+      : lemmata !== undefined
+      ? createLemmaCanonicalizer(lemmata)
+      : canonicalCorpusLemma;
+  const engineQuery = transformQuery(params.q, { authors, canonicalLemma });
   if (engineQuery.length > MAX_ENGINE_QUERY_LENGTH) {
     return view({ kind: "error", message: "The query is too long." });
   }

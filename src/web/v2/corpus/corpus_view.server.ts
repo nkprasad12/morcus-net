@@ -275,7 +275,8 @@ function renderSettings(view: CorpusSearchView): SafeHtml {
           class="corpus-number"
           min="${CONTEXT_LEN.min}"
           max="${CONTEXT_LEN.max}"
-          value="${contextLen}" />
+          value="${contextLen}"
+          autocomplete="off" />
       </label>
       <label class="corpus-setting">
         <span>Page size (${PAGE_SIZE.min}–${PAGE_SIZE.max})</span>
@@ -285,7 +286,8 @@ function renderSettings(view: CorpusSearchView): SafeHtml {
           class="corpus-number"
           min="${PAGE_SIZE.min}"
           max="${PAGE_SIZE.max}"
-          value="${pageSize}" />
+          value="${pageSize}"
+          autocomplete="off" />
       </label>
       <label class="corpus-setting">
         <span>Strict mode</span>
@@ -293,6 +295,7 @@ function renderSettings(view: CorpusSearchView): SafeHtml {
           type="checkbox"
           name="strictMode"
           value="1"
+          autocomplete="off"
           ${strictMode ? "checked" : ""} />
       </label>
       <p class="settings-caption">
@@ -338,7 +341,8 @@ function renderForm(view: CorpusSearchView): SafeHtml {
     class="search-form corpus-form"
     role="search"
     action="${CORPUS_PATH}"
-    method="GET">
+    method="GET"
+    novalidate>
     <div class="input-wrapper">
       <input
         type="text"

@@ -9,6 +9,7 @@
  */
 
 import path from "path";
+import zlib from "zlib";
 import {
   CORPUS_DIR,
   CORPUS_LEMMATA_DB,
@@ -61,4 +62,86 @@ export function openCorpusLemmaStore(
     );
   }
   return cachedLemmaStore;
+}
+
+/**
+ * Resolves `value` against `lemmata`: exact match wins; otherwise a unique
+ * case-insensitive match is returned; if none or multiple case-insensitive
+ * matches exist, returns `undefined`.
+ */
+export function resolveCanonicalLemma(
+  value: string,
+  lemmata: readonly string[]
+): string | undefined {
+  if (lemmata.includes(value)) {
+    return value;
+  }
+  const lower = value.toLowerCase();
+  let match: string | undefined;
+  for (const lemma of lemmata) {
+    if (lemma.toLowerCase() === lower) {
+      if (match !== undefined && match !== lemma) {
+        return undefined;
+      }
+      match = lemma;
+    }
+  }
+  return match;
+}
+
+function isReadonlyStringArray(
+  source: PrecompressedJsonStore | readonly string[]
+): source is readonly string[] {
+  return Array.isArray(source);
+}
+
+/**
+ * Builds a lemma canonicalizer from a `PrecompressedJsonStore` of first-letter
+ * shards (decoding each shard at most once) or an in-memory lemma list.
+ */
+export function createLemmaCanonicalizer(
+  source: PrecompressedJsonStore | readonly string[] | undefined
+): (value: string) => string | undefined {
+  if (source === undefined) {
+    return () => undefined;
+  }
+  if (isReadonlyStringArray(source)) {
+    return (value: string) =>
+      value.length === 0 ? undefined : resolveCanonicalLemma(value, source);
+  }
+  const shardCache = new Map<string, readonly string[]>();
+  return (value: string): string | undefined => {
+    if (value.length === 0) {
+      return undefined;
+    }
+    const key = value[0].toLowerCase();
+    let shard = shardCache.get(key);
+    if (shard === undefined) {
+      const row = source.get(key);
+      if (row === undefined) {
+        shard = [];
+      } else {
+        const parsed: unknown = JSON.parse(
+          zlib.gunzipSync(row.gzip).toString("utf8")
+        );
+        shard = Array.isArray(parsed) ? parsed : [];
+      }
+      shardCache.set(key, shard);
+    }
+    return resolveCanonicalLemma(value, shard);
+  };
+}
+
+let cachedCanonicalLemma: ((value: string) => string | undefined) | null = null;
+
+/**
+ * Resolves `value` against the built corpus lemma shards (exact match first,
+ * then unique case-insensitive match), or returns `undefined` if the corpus
+ * isn't built or `value` is unknown/ambiguous.
+ */
+export function canonicalCorpusLemma(value: string): string | undefined {
+  if (cachedCanonicalLemma === null) {
+    cachedCanonicalLemma = createLemmaCanonicalizer(openCorpusLemmaStore());
+  }
+  return cachedCanonicalLemma(value);
 }
