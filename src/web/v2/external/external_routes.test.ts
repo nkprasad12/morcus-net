@@ -2,6 +2,7 @@ import express from "express";
 import request from "supertest";
 
 import { UnsafeUrlError } from "@/web/scraping/safe_fetch";
+import { scrapeUrlTextWith } from "@/web/scraping/scraper";
 import { createExternalRoutes } from "@/web/v2/external/external_routes.server";
 
 const SOURCE = "https://example.com/cat1.html";
@@ -214,5 +215,26 @@ describe("GET /externalReader", () => {
 
     expect(res.status).toBe(200);
     expect(res.text).not.toContain("<script>alert(1)</script>");
+  });
+
+  test("renders modern HTML5 pages through real scrapeUrlTextWith without HTTP 422", async () => {
+    const html5Fixture = [
+      "<!doctype html>",
+      "<html><head><title>Ignored Title</title><style>body { color: red; }</style></head>",
+      "<body><header><nav><ul><li>Menu</li></ul></nav></header>",
+      "<main><article><section><p>Gallia est <em>omnis</em> divisa in partes tres.</p></section></article></main>",
+      "<script>console.log('ignored');</script></body></html>",
+    ].join("");
+    const scrape = (url: string) =>
+      scrapeUrlTextWith(url, async () => ({ text: html5Fixture }));
+
+    const res = await request(makeApp(scrape)).get(
+      `/externalReader?url=${SOURCE_PARAM}`
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("Gallia est omnis divisa in partes tres.");
+    expect(res.text).not.toContain("console.log");
+    expect(res.text).not.toContain("Ignored Title");
   });
 });
