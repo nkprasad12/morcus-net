@@ -1,3 +1,8 @@
+# Many processes here use optional dependencies (Alatius, CLTK, Lamon, Stanza)
+# that are imported lazily and are not installed in CI.
+# pyright: reportMissingImports=false
+
+import builtins
 import time
 
 from src.py.nlp import tokenization
@@ -69,10 +74,8 @@ _MOOD_DICT = {
 class Alatius(processing.Process[str, str]):  # pragma: no cover
     def initialize(self) -> None:
         super().initialize()
-        # pytype: disable=import-error
         from src.libs.latin_macronizer.macronizer_modified import Macronizer
 
-        # pytype: enable=import-error
         self._macronizer = Macronizer()
 
     def process(self, input: str) -> str:
@@ -80,12 +83,12 @@ class Alatius(processing.Process[str, str]):  # pragma: no cover
 
 
 class AlatiusManualWeb(processing.Process[str, str]):  # pragma: no cover
-    def process(self, inputStr: str) -> str:
+    def process(self, input: str) -> str:
         print("Enter text into Alatius")
-        print(inputStr)
+        print(input)
         inputs = []
         while True:
-            read = input()
+            read = builtins.input()
             if read == "DONE!":
                 break
             inputs.append(read)
@@ -95,10 +98,8 @@ class AlatiusManualWeb(processing.Process[str, str]):  # pragma: no cover
 class AlatiusCustomTokenization(processing.Process[str, str]):  # pragma: no cover
     def initialize(self) -> None:
         super().initialize()
-        # pytype: disable=import-error
         from src.libs.latin_macronizer.macronizer_modified import Macronizer
 
-        # pytype: enable=import-error
         self._macronizer = Macronizer()
 
     def process(self, input: str) -> str:
@@ -234,18 +235,13 @@ class Timer:
 # Overall results are actually worse than Alatius, but preserving
 # for documentation reasons.
 class Lamon(processing.Process[str, str]):  # pragma: no cover
-    # pytype: disable=name-error
-    _lamon: "lamonpy.Lamon"
-    _macronizer: "src.libs.latin_macronizer.macronizer_modified.Macronizer"
-    # pytype: enable=name-error
+    _lamon: "lamonpy.Lamon"  # pyright: ignore[reportUndefinedVariable]
+    _macronizer: "src.libs.latin_macronizer.macronizer_modified.Macronizer"  # pyright: ignore[reportUndefinedVariable]
 
     def initialize(self) -> None:
         super().initialize()
-        # pytype: disable=import-error
         import lamonpy
         from src.libs.latin_macronizer.macronizer_modified import Macronizer
-
-        # pytype: enable=import-error
 
         self._lamon = lamonpy.Lamon()
         self._lamon.tag("ego")
@@ -264,11 +260,9 @@ class Lamon(processing.Process[str, str]):  # pragma: no cover
         self._macronizer.tokenization.addlemmas(self._macronizer.wordlist)
 
     def process(self, input: str) -> str:
-        # pytype: disable=import-error
         from cltk.alphabet.text_normalization import cltk_normalize
         from cltk.alphabet.text_normalization import remove_odd_punct
 
-        # pytype: enable=import-error
         sanitized = remove_odd_punct(cltk_normalize(input))
         lamon_result = self._lamon.tag(sanitized)[0][1]
 
@@ -309,10 +303,8 @@ class Lamon(processing.Process[str, str]):  # pragma: no cover
 
 
 class StanzaCustomTokenization(processing.Process[str, str]):  # pragma: no cover
-    # pytype: disable=name-error
-    _nlp: "stanza.Pipeline"
-    _macronizer: "src.libs.latin_macronizer.macronizer_modified.Macronizer"
-    # pytype: enable=name-error
+    _nlp: "stanza.Pipeline"  # pyright: ignore[reportUndefinedVariable]
+    _macronizer: "src.libs.latin_macronizer.macronizer_modified.Macronizer"  # pyright: ignore[reportUndefinedVariable]
 
     def __init__(self, use_gpu: bool = True, comparison_mode=False) -> None:
         super().__init__()
@@ -321,13 +313,10 @@ class StanzaCustomTokenization(processing.Process[str, str]):  # pragma: no cove
 
     def initialize(self) -> None:
         super().initialize()
-        # pytype: disable=import-error
         import stanza
         from src.libs.latin_macronizer.macronizer_modified import Macronizer
 
-        # pytype: enable=import-error
-
-        self._nlp = stanza.Pipeline(
+        self._nlp = stanza.Pipeline(  # pyright: ignore[reportAttributeAccessIssue]
             "la",
             tokenize_pretokenized=True,
             processors="tokenize,pos",
@@ -338,20 +327,16 @@ class StanzaCustomTokenization(processing.Process[str, str]):  # pragma: no cove
         self._macronizer = Macronizer()
 
     def _tokenize(self, text: str) -> "list[tokenization.Token]":
-        # pytype: disable=import-error
         from cltk.alphabet.text_normalization import cltk_normalize
         from cltk.alphabet.text_normalization import remove_odd_punct
 
-        # pytype: enable=import-error
         sanitized = remove_odd_punct(cltk_normalize(text))
         return tokenization.tokenize(sanitized)
 
     def _run_stanza_pos(self, tokens: "list[tokenization.Token]"):
-        # pytype: disable=import-error
         from cltk.core.data_types import Doc
         from cltk.dependency.processes import StanzaProcess
 
-        # pytype: enable=import-error
         sentences = tokenization.to_stanza(tokens)
         doc = Doc()
         stanza_doc = self._nlp.process(sentences)

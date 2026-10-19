@@ -31,7 +31,7 @@ class _LemmaHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"Content-Type must be application/json")
             return
-        doc = self.server.nlp(input)  # pytype: disable=attribute-error
+        doc = self.server.nlp(input)  # pyright: ignore[reportAttributeAccessIssue]
 
         result = []
         for sentence in doc.sentences:
@@ -59,7 +59,7 @@ def create_server(nlp, port: int):
 
 
 if __name__ == "__main__":
-    import stanza  # type: ignore # pytype: disable=import-error
+    import stanza  # pyright: ignore[reportMissingImports]
 
     logging.basicConfig(level=logging.INFO)
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     logging.info("Starting Latin Stanza server on port 8000")
     create_server(
-        stanza.Pipeline(
+        stanza.Pipeline(  # pyright: ignore[reportAttributeAccessIssue]
             "la",
             processors="tokenize,pos,lemma",
             use_gpu=False,

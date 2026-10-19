@@ -35,27 +35,14 @@ jobs:
         run: npm run format-check
       - name: Checking TS types
         run: npx tsc
+      - name: Checking Python types
+        run: npm run pyright
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v6
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           directory: ./coverage
-
-  pytype-checks:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 6
-
-    steps:
-      - uses: actions/checkout@v6
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Installing Python dependencies
-        run: pip install -r requirements.txt
-      - name: Checking Pytype
-        run: npm run pytype
 
   build-image:
     strategy:

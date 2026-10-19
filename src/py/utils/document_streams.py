@@ -48,7 +48,7 @@ def from_directory(
     filter: str = ".*",
     doc_limit: Number = float("inf"),
     tag: str = "debug",
-) -> results.DocumentStream:
+) -> Iterator[results.StorableDocument]:
     """A stream of documents from a directory.
 
     Args:
@@ -72,7 +72,7 @@ def from_directory(
         )
 
 
-def for_text(text: str, tag: str) -> results.DocumentStream:
+def for_text(text: str, tag: str) -> Iterator[results.StorableDocument]:
     """A simple stream wrapping wrap input text.
 
     Args:
@@ -86,7 +86,7 @@ def for_text(text: str, tag: str) -> results.DocumentStream:
     )
 
 
-def for_list(text_list: "list[str]", tag: str) -> results.DocumentStream:
+def for_list(text_list: "list[str]", tag: str) -> Iterator[results.StorableDocument]:
     """A simple stream wrapping wrap input text.
 
     Args:

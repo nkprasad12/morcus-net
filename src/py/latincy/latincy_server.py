@@ -28,11 +28,11 @@ class _LemmaHandler(BaseHTTPRequestHandler):
         data = self.rfile.read(content_length)
         if content_type == "application/json":
             json_data = json.loads(data)
-            input = self.server.docClass(
-                self.server.nlp.vocab,  # pytype: disable=attribute-error
+            input = self.server.docClass(  # pyright: ignore[reportAttributeAccessIssue]
+                self.server.nlp.vocab,  # pyright: ignore[reportAttributeAccessIssue]
                 words=json_data["words"],
                 spaces=json_data["spaces"],
-            )  # pytype: disable=attribute-error
+            )
         elif content_type == "text/plain":
             input = data.decode("utf-8")
         else:
@@ -40,7 +40,7 @@ class _LemmaHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"Content-Type must be application/json or text/plain")
             return
-        doc = self.server.nlp(input)  # pytype: disable=attribute-error
+        doc = self.server.nlp(input)  # pyright: ignore[reportAttributeAccessIssue]
 
         result = []
         for token in doc:
@@ -68,8 +68,8 @@ def create_server(nlp, docClass, port: int):
 
 
 if __name__ == "__main__":
-    import spacy  # type: ignore # pytype: disable=import-error
-    from spacy.tokens import Doc  # type: ignore # pytype: disable=import-error
+    import spacy  # pyright: ignore[reportMissingImports]
+    from spacy.tokens import Doc  # pyright: ignore[reportMissingImports]
 
     logging.basicConfig(level=logging.INFO)
 
