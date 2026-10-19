@@ -36,10 +36,3 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
   (`externalContent.db` v1, store `savedContent`) so existing imports survive.
 - 🟢 **Clarify and expand the External Reader callout copy on `/library`.**
   `library/library.server.ts` currently renders `"Or read your own text from any web page."` below `"Welcome to the library!"`. "From any web page" is slightly confusing because `/external` actually accepts pasted Latin text or uploaded files rather than fetching arbitrary URLs; expand and clarify this copy so users understand what the External Reader does.
-- 🟢 **Stabilize the Firefox `v2-corpus-results` / `v2-corpus-zero-results` visual snapshots.**
-  `./morcus.sh e2e --visual --all` intermittently fails these on `firefox` and `FirefoxSmallScreen`
-  (a different subset each run), always with ~400 differing pixels confined to the `view works`
-  link in the results blurb (0.04–0.14% of the frame). Chromium and WebKit are stable, and CI does
-  not run the visual suite, so this only costs local verification time. Likely a `:visited` /
-  underline anti-aliasing race on that link; pin its state in the scenario (or mask the link) rather
-  than loosening `maxDiffPixelRatio`.
