@@ -4,6 +4,10 @@
    1. Reader Sticky Quick Navigation Bar (Essentials Default with Expandable Tools)
    ========================================================================== */
 
+.reader-view {
+  --reader-sticky-offset: calc(var(--pill-height, 2.25rem) + 2 * var(--space-3) + var(--space-3));
+}
+
 .reader-sticky-bar {
   position: sticky;
   top: 0;
@@ -256,6 +260,10 @@
    ========================================================================== */
 
 @media (max-width: 640px) {
+  .reader-view {
+    --reader-sticky-offset: calc(1.75rem + 2 * var(--space-1) + var(--space-3));
+  }
+
   .reader-sticky-bar {
     --pill-height: 1.75rem;
     max-width: 100%;
@@ -353,6 +361,10 @@
 }
 
 @media (min-width: 641px) {
+  .reader-view {
+    --reader-sticky-offset: var(--space-4);
+  }
+
   .reader-sticky-bar {
     position: relative;
     top: auto;

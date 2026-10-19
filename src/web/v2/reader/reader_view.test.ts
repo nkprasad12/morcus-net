@@ -587,6 +587,59 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
         window.scrollBy = origScrollBy;
       }
     });
+
+    test("scrolls initial ?q= word into view on connect when no hash is present, and skips when hash is present", () => {
+      const origInnerHeight = Object.getOwnPropertyDescriptor(
+        window,
+        "innerHeight"
+      );
+      const origScrollTo = window.scrollTo;
+      const origGetBCR = HTMLElement.prototype.getBoundingClientRect;
+
+      Object.defineProperty(window, "innerHeight", {
+        configurable: true,
+        value: 800,
+      });
+      const scrollToSpy = jest.fn();
+      window.scrollTo = scrollToSpy;
+      HTMLElement.prototype.getBoundingClientRect = function (
+        this: HTMLElement
+      ) {
+        if (this.classList.contains("lat-word")) {
+          return { top: 2000, bottom: 2020 } as DOMRect;
+        }
+        return origGetBCR.call(this);
+      };
+
+      try {
+        window.history.replaceState(null, "", "/work?q=arma");
+        const el = createReaderView(passageHtml);
+        expect(
+          el.querySelector(".lat-word")?.classList.contains("word-active")
+        ).toBe(true);
+        expect(scrollToSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ behavior: "instant" })
+        );
+
+        document.body.innerHTML = "";
+        scrollToSpy.mockClear();
+        window.history.replaceState(null, "", "/work?q=arma#sec-1.1");
+        const elWithHash = createReaderView(passageHtml);
+        expect(
+          elWithHash
+            .querySelector(".lat-word")
+            ?.classList.contains("word-active")
+        ).toBe(true);
+        expect(scrollToSpy).not.toHaveBeenCalled();
+      } finally {
+        window.history.replaceState(null, "", "/");
+        if (origInnerHeight) {
+          Object.defineProperty(window, "innerHeight", origInnerHeight);
+        }
+        window.scrollTo = origScrollTo;
+        HTMLElement.prototype.getBoundingClientRect = origGetBCR;
+      }
+    });
   });
 
   describe("active word highlight", () => {
@@ -1554,20 +1607,81 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(events).toEqual(["scrollIntoView"]);
   });
 
-  test("clicking note backlink marks the corresponding marker in the passage", () => {
-    const el = createReaderView(samplePassageWithNotes, {
-      notesHtml: sampleNotesHtml,
+  test("clicking note backlink marks the corresponding marker in the passage and scrolls it above the drawer", () => {
+    const origInnerWidth = Object.getOwnPropertyDescriptor(
+      window,
+      "innerWidth"
+    );
+    const origInnerHeight = Object.getOwnPropertyDescriptor(
+      window,
+      "innerHeight"
+    );
+    const origRaf = window.requestAnimationFrame;
+    const origScrollTo = window.scrollTo;
+    const origScrollBy = window.scrollBy;
+
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 375,
     });
+    Object.defineProperty(window, "innerHeight", {
+      configurable: true,
+      value: 800,
+    });
+    const rafCallbacks: FrameRequestCallback[] = [];
+    window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb);
+      return rafCallbacks.length;
+    }) as typeof window.requestAnimationFrame;
+    const scrollToSpy = jest.fn();
+    const scrollBySpy = jest.fn();
+    window.scrollTo = scrollToSpy;
+    window.scrollBy = scrollBySpy;
 
-    const backlink = el.querySelector<HTMLAnchorElement>(
-      'a.reader-note-backref[href="#noteref-n1"]'
-    )!;
-    expect(backlink).not.toBeNull();
+    try {
+      const el = createReaderView(samplePassageWithNotes, {
+        notesHtml: sampleNotesHtml,
+      });
+      el.restoreDrawer(50);
 
-    backlink.click();
+      const marker = el.querySelector<HTMLElement>("#noteref-n1")!;
+      // First off-screen (top: -120 < stickyBottom 0), then after scrollTo it sits at bottom: 500 (> drawerTop - 24 = 376)
+      let calls = 0;
+      marker.getBoundingClientRect = jest.fn(() => {
+        calls += 1;
+        return calls === 1
+          ? ({ top: -120, bottom: -100 } as DOMRect)
+          : ({ top: 480, bottom: 500 } as DOMRect);
+      });
 
-    const marker = el.querySelector<HTMLElement>("#noteref-n1");
-    expect(marker?.classList.contains("marker-active")).toBe(true);
+      const backlink = el.querySelector<HTMLAnchorElement>(
+        'a.reader-note-backref[href="#noteref-n1"]'
+      )!;
+      expect(backlink).not.toBeNull();
+
+      backlink.click();
+      rafCallbacks.forEach((cb) => cb(0));
+
+      expect(marker.classList.contains("marker-active")).toBe(true);
+      expect(scrollToSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ behavior: "instant" })
+      );
+      expect(scrollBySpy).toHaveBeenCalledWith({
+        top: 124,
+        left: 0,
+        behavior: "smooth",
+      });
+    } finally {
+      if (origInnerWidth) {
+        Object.defineProperty(window, "innerWidth", origInnerWidth);
+      }
+      if (origInnerHeight) {
+        Object.defineProperty(window, "innerHeight", origInnerHeight);
+      }
+      window.requestAnimationFrame = origRaf;
+      window.scrollTo = origScrollTo;
+      window.scrollBy = origScrollBy;
+    }
   });
 
   test("dismissing dictionary resets companion panel to dictionary tab and clears active highlights", () => {

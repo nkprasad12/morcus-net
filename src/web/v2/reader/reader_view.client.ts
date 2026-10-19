@@ -20,6 +20,7 @@ import {
   registerElement,
   setHtml,
   setPrepaint,
+  scrollToElement,
   settingsStore,
   showToast,
   swapSlots,
@@ -292,7 +293,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.#currentQuery = this.#router.get();
     if (this.#currentQuery) {
       const el = this.#findWordElement(this.#currentQuery);
-      if (el) this.#setActiveWord(el);
+      if (el) {
+        this.#setActiveWord(el);
+        if (!window.location.hash) {
+          this.#scrollTargetAboveDrawer(el, true);
+        }
+      }
     }
 
     this.scope.listen(this, "click", this.#handleClick);
@@ -461,13 +467,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (markerEl) {
         // Its note backlinks scroll to and flash the marker
         e.preventDefault();
-        if (typeof markerEl.scrollIntoView === "function") {
-          markerEl.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-            inline: "nearest",
-          });
-        }
+        this.#scrollTargetAboveDrawer(markerEl, true);
         this.#setActiveMarker(markerEl);
       }
       return;
@@ -608,13 +608,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (markerEl) {
         // Enter/Space on its note backlinks jumps to the marker
         e.preventDefault();
-        if (typeof markerEl.scrollIntoView === "function") {
-          markerEl.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-            inline: "nearest",
-          });
-        }
+        this.#scrollTargetAboveDrawer(markerEl, true);
         this.#setActiveMarker(markerEl);
         markerEl.focus?.();
       }
@@ -833,8 +827,30 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  #scrollTargetAboveDrawer(targetEl: HTMLElement): void {
-    if (window.innerWidth <= 640 && !targetEl.closest(".reader-dict-panel")) {
+  #scrollTargetAboveDrawer(
+    targetEl: HTMLElement,
+    ensureVisible = false
+  ): void {
+    if (targetEl.closest(".reader-dict-panel")) {
+      if (ensureVisible && typeof targetEl.scrollIntoView === "function") {
+        targetEl.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+          inline: "nearest",
+        });
+      }
+      return;
+    }
+    if (ensureVisible) {
+      const r = targetEl.getBoundingClientRect();
+      const stickyBottom =
+        this.querySelector(".reader-sticky-bar")?.getBoundingClientRect()
+          .bottom ?? 0;
+      if (r.top < stickyBottom || (r.bottom ?? r.top) > window.innerHeight) {
+        scrollToElement(targetEl, "instant");
+      }
+    }
+    if (window.innerWidth <= 640) {
       this.scope.rAF(() => {
         const rect = targetEl.getBoundingClientRect();
         const svh = this.#preferredDrawerSvh || DRAWER_DEFAULT_SVH;

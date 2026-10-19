@@ -586,7 +586,7 @@
 }
 
 /* --- Results ------------------------------------------------------------- */
-.corpus-results {
+.corpus-results, .corpus-summary:focus {
   outline: none;
 }
 .corpus-summary[aria-busy="true"],

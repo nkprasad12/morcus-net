@@ -2,6 +2,7 @@ import {
   BaseElement,
   isPlainLeftClick,
   registerElement,
+  scrollToElement,
   swapSlots,
   type QueryParamSync,
 } from "@/web/v2/core/index.client";
@@ -106,9 +107,15 @@ class MorcusCorpusView extends BaseElement<"nav"> {
     }
     this.#syncControls(params);
     if (options.scrollToResults) {
-      const results = this.scope.$<HTMLElement>('[data-slot="results"]');
-      if (typeof results?.scrollIntoView === "function") {
-        results.scrollIntoView({ block: "start" });
+      const summary =
+        this.scope.$<HTMLElement>(".corpus-summary") ??
+        this.scope.$<HTMLElement>('[data-slot="results"]');
+      if (summary) {
+        scrollToElement(summary, "instant");
+        if (!summary.hasAttribute("tabindex")) {
+          summary.setAttribute("tabindex", "-1");
+        }
+        summary.focus({ preventScroll: true });
       }
     }
     return true;

@@ -139,31 +139,33 @@ describe("<morcus-corpus-view>", () => {
     expect(window.history.length).toBe(historyLength);
   });
 
-  test("the Next link swaps in the next page and scrolls to the results", async () => {
+  test("the Next link swaps in the next page, scrolls instantly to the summary, and moves focus there", async () => {
     await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
     const fetchMock = serveSlots();
-    const scrolled: Element[] = [];
-    Element.prototype.scrollIntoView = function (this: Element) {
-      scrolled.push(this);
-    };
+    const origScrollTo = window.scrollTo;
+    const scrollToSpy = jest.fn();
+    window.scrollTo = scrollToSpy;
 
-    const next = document.querySelector<HTMLAnchorElement>(".corpus-next");
-    next?.focus();
-    const event = click(next);
-    await settle();
+    try {
+      const next = document.querySelector<HTMLAnchorElement>(".corpus-next");
+      next?.focus();
+      const event = click(next);
+      await settle();
 
-    const expected = "/corpus?q=omnis&contextLen=20&pageSize=50&cursor=1-50-0";
-    expect(event.defaultPrevented).toBe(true);
-    expect(fetchMock).toHaveBeenCalledWith(expected, expect.anything());
-    expect(currentPath()).toBe(expected);
-    // Focus follows the link into the new pager (`data-focus-key`).
-    expect(document.activeElement?.getAttribute("data-focus-key")).toBe(
-      "corpus-next"
-    );
-    expect(document.activeElement).not.toBe(next);
-    expect(scrolled.map((el) => el.getAttribute("data-slot"))).toEqual([
-      "results",
-    ]);
+      const expected =
+        "/corpus?q=omnis&contextLen=20&pageSize=50&cursor=1-50-0";
+      expect(event.defaultPrevented).toBe(true);
+      expect(fetchMock).toHaveBeenCalledWith(expected, expect.anything());
+      expect(currentPath()).toBe(expected);
+      expect(scrollToSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ behavior: "instant" })
+      );
+      const summary = document.querySelector<HTMLElement>(".corpus-summary");
+      expect(summary?.getAttribute("tabindex")).toBe("-1");
+      expect(document.activeElement).toBe(summary);
+    } finally {
+      window.scrollTo = origScrollTo;
+    }
   });
 
   test("a newer navigation supersedes an older one", async () => {
