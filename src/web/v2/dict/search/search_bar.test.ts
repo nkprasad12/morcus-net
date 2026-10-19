@@ -317,4 +317,21 @@ describe("renderDictSearchBar", () => {
       expect(fields.has("embedded")).toBe(false);
     }
   });
+
+  test("normalizes leading/trailing homograph digits in query and falls back to default bitmask when activeDicts is empty", () => {
+    const { search, settings } = forms(
+      renderDictSearchBar({
+        query: "1 ab",
+        action: "/dicts",
+        activeDicts: [],
+        isInflected: false,
+      })
+    );
+    expect(search.querySelector<HTMLInputElement>("#dict-q")!.value).toBe("ab");
+    expect(new FormData(settings).get("q")).toBe("ab");
+    expect(new FormData(search).get("d")).toBe("an");
+    expect(search.dataset.d).toBe("an");
+    expect(new FormData(search).get("o")).toBe("0");
+    expect(search.dataset.o).toBe("0");
+  });
 });

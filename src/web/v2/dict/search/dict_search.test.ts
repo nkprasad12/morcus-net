@@ -2086,4 +2086,86 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       dialog.remove();
     });
   });
+
+  describe("DICT-07, DICT-08, DICT-11 regressions", () => {
+    test("DICT-07: strips leading/trailing homograph digits on form submit and word click while preserving standalone numbers", async () => {
+      delete (window as any).location;
+      (window as any).location = new URL("http://localhost/dicts");
+
+      const el = createDictSearch("");
+      const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+
+      input.value = "1 ab";
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+      await Promise.resolve();
+
+      expect(input.value).toBe("ab");
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/dicts?q=ab&format=partial"),
+        expect.anything()
+      );
+
+      input.value = "1";
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+      await Promise.resolve();
+
+      expect(input.value).toBe("1");
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/dicts?q=1&format=partial"),
+        expect.anything()
+      );
+    });
+
+    test("DICT-08: normalizes q=1+ab and strips invalid o=-1 and d=0 / d=zzzz from URL on connect", () => {
+      delete (window as any).location;
+      (window as any).location = new URL(
+        "http://localhost/dicts?q=1+ab&o=-1&d=0"
+      );
+      const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+
+      createDictSearch("ab", 'data-d="an" data-o="1"');
+
+      expect(replaceStateSpy).toHaveBeenCalledWith(null, "", "/dicts?q=ab");
+      replaceStateSpy.mockRestore();
+    });
+
+    test("DICT-11: selecting an autocomplete suggestion blurs #dict-q inside requestAnimationFrame", () => {
+      const rafCallbacks: FrameRequestCallback[] = [];
+      const rafSpy = jest
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation((cb) => {
+          rafCallbacks.push(cb);
+          return rafCallbacks.length;
+        });
+
+      const el = createDictSearch("");
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const suggestionsEl = el.querySelector("morcus-dict-suggestions")!;
+      input.focus();
+      const blurSpy = jest.spyOn(input, "blur");
+
+      suggestionsEl.dispatchEvent(
+        new CustomEvent("suggestion-select", {
+          detail: { word: "1 fero" },
+          bubbles: true,
+        })
+      );
+
+      expect(input.value).toBe("fero");
+      blurSpy.mockClear();
+
+      for (const cb of rafCallbacks) {
+        cb(16);
+      }
+      expect(blurSpy).toHaveBeenCalled();
+
+      blurSpy.mockRestore();
+      rafSpy.mockRestore();
+    });
+  });
 });

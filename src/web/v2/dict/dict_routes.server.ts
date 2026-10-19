@@ -20,7 +20,7 @@ import {
   dictParamsFromQuery,
 } from "@/web/v2/dict/settings/dict_selection.server";
 import { hasGreek } from "@/web/v2/dict/search/dict_greek.common";
-import { trimRawQuery } from "@/common/text_cleaning";
+import { cleanDictQuery } from "@/web/v2/dict/search/dict_params.common";
 import {
   ownSettingsHref,
   planDictPersistence,
@@ -35,14 +35,26 @@ import { requestTimer } from "@/web/v2/core/server/telemetry.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
+function extractCleanQuery(raw: string | string[] | undefined): string {
+  if (typeof raw === "string") {
+    return cleanDictQuery(raw);
+  }
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      const cleaned = cleanDictQuery(item);
+      if (cleaned.length > 0) return cleaned;
+    }
+  }
+  return "";
+}
+
 export function createDictRoutes(fusedDict: FusedDictionary): Router {
   const router = Router();
   const { getAsync } = createAsyncRegistrars(router);
 
   // Main dictionary route: handles both full SSR (HTML page) and AJAX partials
   getAsync("/dicts", async (req, res) => {
-    const query =
-      typeof req.query.q === "string" ? trimRawQuery(req.query.q) : "";
+    const query = extractCleanQuery(toStringOrArray(req.query.q));
     const isPartial = isPartialRequest(req, res);
     const isEmbedded = isEmbeddedRequest(req);
 
@@ -248,7 +260,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
 
     // A query on an article path means the user searched from that page before
     // the client normalised the URL. Honour the search, not the stale id.
-    const searchQuery = typeof req.query.q === "string" ? req.query.q : "";
+    const searchQuery = extractCleanQuery(toStringOrArray(req.query.q));
     if (searchQuery && !isPartial) {
       const url = new URL(req.originalUrl, "http://localhost");
       res.redirect(`/dicts${url.search}`);

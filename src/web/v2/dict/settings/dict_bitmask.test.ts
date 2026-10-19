@@ -47,6 +47,11 @@ describe("dict_bitmask.common", () => {
     expect(decodeDictBitmask("")).toBeNull();
     expect(decodeDictBitmask("   ")).toBeNull();
     expect(decodeDictBitmask("0")).toBeNull();
+    expect(decodeDictBitmask("-1")).toBeNull();
+    expect(decodeDictBitmask("zzzz")).toBeNull();
+    expect(decodeDictBitmask("1!@#")).toBeNull();
+    // 1 << 10 = 1024 ("sg" in base 36) has 0 known dictionary bits
+    expect(decodeDictBitmask((1 << 10).toString(36))).toBeNull();
     expect(decodeDictBitmask(null)).toBeNull();
     expect(decodeDictBitmask(undefined)).toBeNull();
   });

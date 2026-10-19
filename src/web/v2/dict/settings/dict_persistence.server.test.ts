@@ -105,6 +105,17 @@ describe("planDictPersistence", () => {
     expect(plan.redirectTo).toBe("/dicts?o=0");
   });
 
+  test("save=1 with invalid d=0 or o=-1 strips them from the redirect and writes no cookies", () => {
+    const plan = planDictPersistence({
+      ...BASE,
+      originalUrl: "/dicts?q=amo&d=0&o=-1&save=1",
+      keysFromQuery: null,
+      oParam: undefined,
+    });
+    expect(plan.cookies).toEqual([]);
+    expect(plan.redirectTo).toBe("/dicts?q=amo");
+  });
+
   test("the redirect canonicalizes dict keys to d=<bitmask> and keeps other params", () => {
     const plan = planDictPersistence({
       ...BASE,

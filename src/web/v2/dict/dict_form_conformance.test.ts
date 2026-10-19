@@ -392,6 +392,71 @@ describe("Dictionary form round-trip & parameter precedence conformance", () => 
     expect(getCheckedDictKeys(document.body)).toEqual(["GAF"]);
   });
 
+  test("DICT-07: leading/trailing homograph numbers (?q=1+ab, ?q=ab+1) and repeated q params (?q=amo&q=rex) normalize cleanly", async () => {
+    const res1 = await request(app).get("/dicts?q=1+ab&d=2&o=1");
+    expect(res1.status).toBe(200);
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "ab",
+        dicts: ["GAF"],
+        mode: 1,
+      },
+      expect.anything()
+    );
+    document.body.innerHTML = res1.text;
+    expect(
+      document.body.querySelector<HTMLInputElement>("#dict-q")!.value
+    ).toBe("ab");
+
+    const res2 = await request(app).get("/dicts?q=amo&q=rex");
+    expect(res2.status).toBe(200);
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      expect.objectContaining({ query: "amo" }),
+      expect.anything()
+    );
+  });
+
+  test("DICT-08: invalid o=-1 and d=0 / d=zzzz fall back to saved/default settings without triggering Guest Mode", async () => {
+    const res = await request(app)
+      .get("/dicts?q=amo&o=-1&d=0")
+      .set("Cookie", "morcus_d=2; morcus_inflected=0");
+    expect(res.status).toBe(200);
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "amo",
+        dicts: ["GAF"],
+        mode: 0,
+      },
+      expect.anything()
+    );
+    document.body.innerHTML = res.text;
+    expect(res.text).not.toContain("Using link settings");
+    const searchForm =
+      document.body.querySelector<HTMLFormElement>("form.search-form")!;
+    expect(searchForm.dataset.d).toBe("2");
+    expect(searchForm.dataset.o).toBe("0");
+    expect(
+      searchForm.querySelector<HTMLInputElement>('input[name="d"]')!.value
+    ).toBe("2");
+    expect(
+      searchForm.querySelector<HTMLInputElement>('input[name="o"]')!.value
+    ).toBe("0");
+
+    const resZ = await request(app)
+      .get("/dicts?q=amo&d=zzzz")
+      .set("Cookie", "morcus_d=2");
+    expect(resZ.status).toBe(200);
+    expect(resZ.text).not.toContain("Using link settings");
+    expect(mockGetEntry).toHaveBeenLastCalledWith(
+      {
+        query: "amo",
+        dicts: ["GAF"],
+        mode: 1,
+      },
+      expect.anything()
+    );
+  });
+
   test("property check: all 512 subsets of LatinDict.AVAILABLE round-trip through bitmask and param resolution", () => {
     const allKeys = LatinDict.AVAILABLE.map((d) => d.key);
     expect(allKeys.length).toBe(9);

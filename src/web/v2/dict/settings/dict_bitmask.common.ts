@@ -54,17 +54,20 @@ export function encodeDictBitmask(activeKeys: Iterable<string>): string {
   return mask.toString(36);
 }
 
+/** A canonical encoded bitmask: lowercase base36 only, as `encodeDictBitmask` writes it. */
+const CANONICAL_BITMASK = /^[0-9a-z]{1,3}$/;
+
 /**
  * Decodes a Base36 bitmask string back into an array of canonical dictionary keys.
  * Forward-compatible: safely ignores bits beyond known registry without throwing errors.
- * Returns null if input is empty, non-numeric, or <= 0.
+ * Returns null if input is empty, non-base36, <= 0, or matches no known dictionaries.
  */
 export function decodeDictBitmask(
   encoded: string | null | undefined
 ): string[] | null {
   if (!encoded || typeof encoded !== "string") return null;
   const trimmed = encoded.trim().toLowerCase();
-  if (!trimmed) return null;
+  if (!trimmed || !CANONICAL_BITMASK.test(trimmed)) return null;
 
   const mask = parseInt(trimmed, 36);
   if (isNaN(mask) || mask <= 0) return null;
@@ -78,9 +81,6 @@ export function decodeDictBitmask(
 
   return keys.length > 0 ? keys : null;
 }
-
-/** A canonical encoded bitmask: lowercase base36 only, as `encodeDictBitmask` writes it. */
-const CANONICAL_BITMASK = /^[0-9a-z]{1,6}$/;
 
 /**
  * Like `decodeDictBitmask`, but rejects anything `encodeDictBitmask` could not have written.

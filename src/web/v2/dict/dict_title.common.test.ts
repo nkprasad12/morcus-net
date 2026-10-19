@@ -18,6 +18,9 @@ describe("dictPageTitleForUrl", () => {
   test("a search titles by q, cleaned as the server does", () => {
     expect(forUrl("/dicts?q=amo&d=3&o=1")).toBe("amo - Morcus Dictionary");
     expect(forUrl("/dicts?q=+amo+")).toBe("amo - Morcus Dictionary");
+    expect(forUrl("/dicts?q=1+ab")).toBe("ab - Morcus Dictionary");
+    expect(forUrl("/dicts?q=ab+1")).toBe("ab - Morcus Dictionary");
+    expect(forUrl("/dicts?q=1")).toBe("1 - Morcus Dictionary");
     expect(forUrl("/dicts")).toBe("Morcus Dictionary");
   });
 

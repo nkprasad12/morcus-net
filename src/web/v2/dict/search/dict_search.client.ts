@@ -12,7 +12,6 @@ import {
   type QueryParamSync,
 } from "@/web/v2/core/index.client";
 import { readRenderedDictState } from "@/web/v2/dict/settings/dict_preferences.client";
-import { trimRawQuery } from "@/common/text_cleaning";
 import type { DictChunksResponse } from "@/web/v2/dict/search/dict_completions.common";
 import { DictAutocompleteController } from "@/web/v2/dict/search/dict_autocomplete.client";
 import { dictPageTitleForUrl } from "@/web/v2/dict/dict_title.common";
@@ -21,11 +20,14 @@ import {
   DEFAULT_DICT_BITMASK,
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/settings/dict_bitmask.common";
+import { parseInflectionParam } from "@/web/v2/dict/settings/dict_selection.common";
 import { ownSettingsHref } from "@/web/v2/dict/settings/dict_settings_href.common";
 import {
   applyDictSearch,
   applyUnscopedDictSearch,
+  cleanDictQuery,
   dictUrlBuilder,
+  normalizeDictParams,
 } from "@/web/v2/dict/search/dict_params.common";
 import type { DictSettingsCommit } from "@/web/v2/dict/settings/dict_settings.client";
 import {
@@ -129,7 +131,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
 
     this.hijackForm(SEARCH_FORM, ({ q }) => {
       this.#autocomplete.clear();
-      const cleaned = trimRawQuery(q || "");
+      const cleaned = cleanDictQuery(q || "");
       if (cleaned) {
         void this.#searchQuery(cleaned, true);
       }
@@ -169,8 +171,52 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       navEntry instanceof PerformanceNavigationTiming &&
       navEntry.type === "back_forward";
 
-    const currentParams = new URLSearchParams(window.location.search);
+    const url = new URL(window.location.href);
+    const currentParams = url.searchParams;
     const isEmbedded = currentParams.get("embedded") === "1";
+    let urlChanged = false;
+
+    if (currentParams.has("q") && !url.pathname.startsWith("/dicts/id/")) {
+      const rawQ = currentParams.getAll("q");
+      const cleanedQ =
+        rawQ.map((v) => cleanDictQuery(v)).find((v) => v.length > 0) ?? "";
+      if (rawQ.length !== 1 || rawQ[0] !== cleanedQ) {
+        if (cleanedQ) {
+          currentParams.set("q", cleanedQ);
+        } else {
+          currentParams.delete("q");
+        }
+        urlChanged = true;
+      }
+    }
+
+    if (currentParams.has("d")) {
+      const rawD = currentParams.getAll("d");
+      const lastD = rawD[rawD.length - 1] ?? null;
+      const { d: normalizedD } = normalizeDictParams({ d: lastD });
+      if (normalizedD === undefined) {
+        currentParams.delete("d");
+        urlChanged = true;
+      } else if (rawD.length !== 1 || rawD[0] !== normalizedD) {
+        currentParams.set("d", normalizedD);
+        urlChanged = true;
+      }
+    }
+
+    if (currentParams.has("o")) {
+      const rawO = currentParams.getAll("o");
+      const parsedO = parseInflectionParam(rawO);
+      if (parsedO === undefined) {
+        currentParams.delete("o");
+        urlChanged = true;
+      } else {
+        const canonicalO = parsedO ? "1" : "0";
+        if (rawO.length !== 1 || rawO[0] !== canonicalO) {
+          currentParams.set("o", canonicalO);
+          urlChanged = true;
+        }
+      }
+    }
 
     if (currentParams.has("scale")) {
       const rawScale = currentParams.get("scale");
@@ -187,16 +233,17 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
           hiddenScale.value = String(clampedScale);
         }
         if (rawScale !== String(clampedScale)) {
-          const url = new URL(window.location.href);
-          url.searchParams.set("scale", String(clampedScale));
-          this.#router?.replaceUrl(url);
+          urlChanged = true;
         }
       } else {
         document.documentElement.style.removeProperty("--dict-scale");
-        const url = new URL(window.location.href);
-        url.searchParams.delete("scale");
-        this.#router?.replaceUrl(url);
+        urlChanged = true;
       }
+    }
+
+    if (urlChanged) {
+      this.#router?.replaceUrl(url);
+      this.#syncGuestReturn(url);
     }
 
     if (
@@ -266,9 +313,10 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     if (hiddenD) hiddenD.value = commit.bitmask;
     if (hiddenO) hiddenO.value = o;
 
-    const currentQuery = trimRawQuery(this.#inputElement?.value ?? "");
-    const renderedQ =
-      new URLSearchParams(window.location.search).get("q") ?? "";
+    const currentQuery = cleanDictQuery(this.#inputElement?.value ?? "");
+    const renderedQ = cleanDictQuery(
+      new URLSearchParams(window.location.search).get("q") ?? ""
+    );
     const queryChanged = currentQuery !== "" && currentQuery !== renderedQ;
     if (currentQuery) {
       const settingsQ = this.scope.$<HTMLInputElement>(
@@ -331,12 +379,15 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
 
   /** Back/Forward: show what the revisited URL names. Never writes history. */
   async #restoreFromUrl(q: string) {
+    const cleanQ = cleanDictQuery(q);
     this.#autocomplete.clear();
     if (this.#inputElement) {
-      this.#inputElement.value = q;
+      this.#inputElement.value = cleanQ;
     }
     this.#syncGuestReturn();
-    const ok = await this.#fetchResults(q, { path: window.location.pathname });
+    const ok = await this.#fetchResults(cleanQ, {
+      path: window.location.pathname,
+    });
     if (ok) {
       this.#scrollToHashOrResults();
     }
@@ -427,16 +478,19 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
    * German, so it leaves the scope; a followed word is Latin, so it stays.
    */
   #chooseSuggestion(suggestion: string, typed = false) {
-    const clean = trimRawQuery(suggestion);
+    const clean = cleanDictQuery(suggestion);
     if (this.#inputElement) {
       this.#inputElement.value = clean;
     }
     this.#autocomplete.clear();
+    this.scope.rAF(() => {
+      this.#inputElement?.blur();
+    });
     void this.#searchQuery(clean, typed);
   }
 
   async #searchQuery(query: string, typed = false) {
-    const cleanQuery = trimRawQuery(query);
+    const cleanQuery = cleanDictQuery(query);
     if (!cleanQuery) return;
     if (this.#inputElement) {
       this.#inputElement.value = cleanQuery;

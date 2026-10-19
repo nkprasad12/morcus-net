@@ -4,7 +4,7 @@
  * the same title a full load would.
  */
 
-import { trimRawQuery } from "@/common/text_cleaning";
+import { cleanDictQuery } from "@/web/v2/dict/search/dict_params.common";
 
 const DICT_ID_PATH = "/dicts/id/";
 
@@ -12,8 +12,9 @@ const DICT_ID_PATH = "/dicts/id/";
  * `isIdSearch`: the page is `/dicts/id/:id`, and `query` is that id.
  */
 export function dictPageTitle(query: string, isIdSearch = false): string {
-  if (!query) return "Morcus Dictionary";
-  return `${isIdSearch ? `ID ${query}` : query} - Morcus Dictionary`;
+  const cleaned = isIdSearch ? query : cleanDictQuery(query);
+  if (!cleaned) return "Morcus Dictionary";
+  return `${isIdSearch ? `ID ${cleaned}` : cleaned} - Morcus Dictionary`;
 }
 
 /**
@@ -31,5 +32,5 @@ export function dictPageTitleForUrl(url: URL): string {
     }
     return dictPageTitle(id.trim(), true);
   }
-  return dictPageTitle(trimRawQuery(url.searchParams.get("q") ?? ""));
+  return dictPageTitle(cleanDictQuery(url.searchParams.get("q") ?? ""));
 }

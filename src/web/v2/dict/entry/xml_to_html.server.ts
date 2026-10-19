@@ -1,4 +1,5 @@
 import { XmlChild } from "@/common/xml/xml_node";
+import { cleanDictQuery } from "@/web/v2/dict/search/dict_params.common";
 import * as he from "he";
 
 /** Collects every `id` attribute defined anywhere in an entry's XML tree. */
@@ -151,7 +152,10 @@ export function xmlNodeToHtml(
     const toQuery = attrsMap.get("to");
     if (toQuery) {
       tagName = "a";
-      attrsMap.set("href", `/dicts?q=${encodeURIComponent(toQuery)}`);
+      attrsMap.set(
+        "href",
+        `/dicts?q=${encodeURIComponent(cleanDictQuery(toQuery))}`
+      );
     }
   }
 
@@ -187,7 +191,10 @@ export function xmlNodeToHtml(
     !currentHref.startsWith("/") &&
     !currentHref.startsWith("#")
   ) {
-    attrsMap.set("href", `/dicts?q=${encodeURIComponent(currentHref)}`);
+    attrsMap.set(
+      "href",
+      `/dicts?q=${encodeURIComponent(cleanDictQuery(currentHref))}`
+    );
   }
 
   // Mark expandable abbreviations and hover elements focusable for keyboard navigation and No-JS mobile focus

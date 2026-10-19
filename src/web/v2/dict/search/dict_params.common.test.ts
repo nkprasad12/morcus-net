@@ -2,8 +2,47 @@ import {
   applyDictSearch,
   applyUnscopedDictSearch,
   buildDictUrl,
+  cleanDictQuery,
   dictUrlBuilder,
+  normalizeDictParams,
 } from "@/web/v2/dict/search/dict_params.common";
+
+describe("cleanDictQuery", () => {
+  test.each([
+    ["1 ab", "ab"],
+    ["ab 1", "ab"],
+    ["  2   bellum  ", "bellum"],
+    ["bellum 3", "bellum"],
+    ["1", "1"],
+    ["42", "42"],
+    ["ab 1 c", "ab 1 c"],
+    ["", ""],
+    ["   ", ""],
+  ])("normalizes %j to %j", (raw, expected) => {
+    expect(cleanDictQuery(raw)).toBe(expected);
+  });
+});
+
+describe("normalizeDictParams", () => {
+  test.each([
+    [{ o: "-1", d: "3" }, { o: "0", d: "3" }],
+    [{ o: "abc", d: "an" }, { o: "0", d: "an" }],
+    [{ o: "", d: "1" }, { o: "0", d: "1" }],
+    [{ o: "0", d: "1" }, { o: "0", d: "1" }],
+    [{ o: "1", d: "e7" }, { o: "1", d: "e7" }],
+    [{ o: "true", d: "AN" }, { o: "1", d: "an" }],
+    [{ o: "1", d: "0" }, { o: "1", d: undefined }],
+    [{ o: "1", d: "zzzz" }, { o: "1", d: undefined }],
+    [{ o: "1", d: "-1" }, { o: "1", d: undefined }],
+    [{ o: "1", d: "sg" }, { o: "1", d: undefined }],
+  ])("normalizes %o to %o", (input, expected) => {
+    expect(normalizeDictParams(input)).toEqual(expected);
+    const searchParams = new URLSearchParams();
+    if (input.o !== undefined) searchParams.set("o", input.o);
+    if (input.d !== undefined) searchParams.set("d", input.d);
+    expect(normalizeDictParams(searchParams)).toEqual(expected);
+  });
+});
 
 describe("applyDictSearch", () => {
   test("sets the search, drops legacy params, and keeps the rest, including lang", () => {

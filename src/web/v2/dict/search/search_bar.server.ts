@@ -1,12 +1,15 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
+  DEFAULT_DICT_BITMASK,
   DEFAULT_DICT_KEYS,
+  decodeDictBitmask,
   encodeDictBitmask,
 } from "@/web/v2/dict/settings/dict_bitmask.common";
 import {
   SAVE_PARAM,
   filterDictsByLang,
 } from "@/web/v2/dict/settings/dict_selection.common";
+import { cleanDictQuery } from "@/web/v2/dict/search/dict_params.common";
 import { escapeHtml } from "@/web/v2/core/dom/html.common";
 import { ICON_PATHS } from "@/web/v2/core/widgets/icons.common";
 import { renderDialog } from "@/web/v2/dialog/dialog.server";
@@ -92,15 +95,22 @@ function hiddenInputs(
  * it; with JS, `<morcus-dict-settings>` opens it with `showModal()` and applies on close.
  */
 export function renderDictSearchBar(options: SearchBarOptions): string {
-  const query = options.query?.trim() ?? "";
+  const query = options.query ? cleanDictQuery(options.query) : "";
   const queryEscaped = query ? escapeHtml(query) : "";
   const placeholder = options.placeholder ?? "Search for a word";
   const includeSettings = options.includeSettings ?? true;
   const isInflected = options.isInflected !== false; // default true
 
-  const activeDictList = options.activeDicts ?? DEFAULT_DICT_KEYS;
+  const rawBitmask = encodeDictBitmask(
+    options.activeDicts ?? DEFAULT_DICT_KEYS
+  );
+  const activeDictList =
+    decodeDictBitmask(rawBitmask) !== null
+      ? options.activeDicts ?? DEFAULT_DICT_KEYS
+      : DEFAULT_DICT_KEYS;
   const activeDictKeys = new Set(activeDictList);
-  const dictBitmask = encodeDictBitmask(activeDictList);
+  const dictBitmask =
+    decodeDictBitmask(rawBitmask) !== null ? rawBitmask : DEFAULT_DICT_BITMASK;
 
   const activeLangs = computeActiveLanguages(activeDictKeys);
   const langChipsHtml = renderLangChipsHtml(activeLangs);

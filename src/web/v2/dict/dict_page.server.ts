@@ -18,7 +18,10 @@ import {
   renderDictTocHtml,
 } from "@/web/v2/dict/toc/dict_toc.server";
 import { encodeDictBitmask } from "@/web/v2/dict/settings/dict_bitmask.common";
-import { buildDictUrl } from "@/web/v2/dict/search/dict_params.common";
+import {
+  buildDictUrl,
+  cleanDictQuery,
+} from "@/web/v2/dict/search/dict_params.common";
 import { dictPageTitle } from "@/web/v2/dict/dict_title.common";
 import * as he from "he";
 
@@ -417,11 +420,13 @@ interface DictPageOptions {
  * Renders the full standalone HTML page for UI V2.
  */
 export function renderDictPageHtml(options: DictPageOptions): string {
-  const query = options.query || "";
+  const query = options.isIdSearch
+    ? options.query || ""
+    : cleanDictQuery(options.query || "");
   const isInflected = options.isInflected !== false;
   const isEmbedded = options.embedded ?? false;
   const resultsHtml = renderDictResultsHtml(
-    options.query,
+    query,
     options.results,
     options.isIdSearch
       ? { isEmbedded }
@@ -444,7 +449,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   const contentHtml = `
     <morcus-dict-search>
       ${renderDictSearchBar({
-        query: options.isIdSearch ? "" : options.query,
+        query: options.isIdSearch ? "" : query,
         action: "/dicts",
         activeDicts: options.queriedDicts,
         isInflected: isInflected,

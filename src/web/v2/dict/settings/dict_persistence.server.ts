@@ -111,9 +111,15 @@ export function planDictPersistence(
       url.searchParams.set("d", encodeDictBitmask(keys));
       url.searchParams.delete("dict");
       url.searchParams.delete("in");
+    } else {
+      url.searchParams.delete("d");
+      url.searchParams.delete("dict");
+      url.searchParams.delete("in");
     }
     if (input.oParam !== undefined) {
       url.searchParams.set("o", input.oParam ? "1" : "0");
+    } else {
+      url.searchParams.delete("o");
     }
     url.searchParams.delete(SAVE_PARAM);
     return { cookies, redirectTo: url.pathname + url.search };
