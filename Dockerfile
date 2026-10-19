@@ -13,7 +13,7 @@ USER node
 RUN npm ci
 # `.git` is excluded by `.dockerignore`, so `write_source_version.ts` reads
 # the commit hash from `SOURCE_VERSION` instead of running `git rev-parse`.
-ARG SOURCE_VERSION
+ARG SOURCE_VERSION=local-docker-build
 ENV SOURCE_VERSION=$SOURCE_VERSION
 RUN npm run build
 

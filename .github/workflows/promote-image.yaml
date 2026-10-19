@@ -6,6 +6,7 @@ on:
       - main
 
 permissions:
+  contents: read
   packages: write
 
 # Promotions run one at a time, in order. If several are queued, GitHub keeps
@@ -40,3 +41,25 @@ jobs:
           CANDIDATE=ghcr.io/nkprasad12/morcus:${{ github.sha }}${{ matrix.tag_suffix }}
           docker tag $CANDIDATE $LATEST
           docker push $LATEST
+
+  promote-helper-images:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: package.json
+          cache: npm
+      - name: Installing npm dependencies
+        run: npm ci
+      - name: Setting up .env
+        run: touch .env
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Promote helper images (morcus-proxy, morcus-latincy)
+        run: npm run tsnp src/scripts/helper_images.ts -- promote

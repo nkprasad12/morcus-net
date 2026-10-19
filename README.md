@@ -142,12 +142,9 @@ in your hosts file:
 127.0.0.1 foo.morcus.net
 ```
 
-#### Updating the Reverse Proxy image
+#### Helper Images (`morcus-proxy`, `morcus-latincy`)
 
-This is updated so infrequently that doing it as part of the CI workflow (where it would rebuild with every commit) was not really worth it. In order to update:
-
-1. `cd src/devops/reverse_proxy`
-2. `docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/nkprasad12/morcus-proxy:latest --push .`
+`morcus-proxy` (`src/devops/reverse_proxy`) and `morcus-latincy` (`src/py/latincy`) are built (`linux/amd64`) and smoke-tested automatically in CI (`build-helper-images` in `.github/workflows/ci-workflow.yaml`). Each image is tagged by the git tree hash of its source directory and build script (`:tree-<sha>`), so CI skips rebuilding when nothing has changed (~2s), and `.github/workflows/promote-image.yaml` promotes the tree tag to `:latest` (and backs up the old `:latest` to `:previous`) when `main` is updated.
 
 #### New VM Checklist
 
@@ -252,8 +249,7 @@ The following should be done at regular intervals:
   - Update the version used in the CI workflows
   - Update the version used in the `Dockerfile`
 - Update the `nginx` version, (currently `1.30.4-alpine-slim`). Due _before_ it goes EOL in `2027/04`ish.
-  - Update the `nginx` version in `src/devops/reverse_proxy/Dockerfile`
-  - Follow the build and push instructions [above](#updating-the-reverse-proxy-image)
+  - Update the `nginx` version in `src/devops/reverse_proxy/Dockerfile` (Dependabot also opens a quarterly PR for this; CI builds and promotes `morcus-proxy` automatically).
 
 ### Following a reboot
 

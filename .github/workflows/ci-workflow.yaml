@@ -26,6 +26,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
       - name: Set up Python 3.12
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
@@ -56,7 +58,7 @@ jobs:
         env:
           CARGO_INCREMENTAL: 0
         run: |
-          cargo clean --release -p corpus -p morceus -p corpus_rust_wrapper 2>/dev/null || true
+          cargo clean --release -p corpus -p morceus -p corpus_rust_wrapper || true
           npm run setup-node-bindgen
       - name: Installing Python dependencies
         run: pip install -r requirements.txt
@@ -148,6 +150,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
@@ -178,6 +182,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
@@ -207,3 +213,36 @@ jobs:
         with:
           name: performance-report-${{ matrix.screenSize }}
           path: e2e_metrics/
+
+  build-helper-images:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        name: [morcus-proxy, morcus-latincy]
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: package.json
+          cache: npm
+      - name: Installing npm dependencies
+        run: npm ci
+      - name: Setting up .env
+        run: touch .env
+      - name: Log in to registry
+        if: github.event_name == 'push'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Build and smoke-test ${{ matrix.name }} (PR)
+        if: github.event_name != 'push'
+        run: npm run tsnp src/scripts/helper_images.ts -- build-and-test ${{ matrix.name }}
+      - name: Build, smoke-test, and push ${{ matrix.name }} (dev)
+        if: github.event_name == 'push'
+        run: npm run tsnp src/scripts/helper_images.ts -- build-and-push ${{ matrix.name }}

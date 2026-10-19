@@ -176,6 +176,7 @@ function install_and_use_lts_node {
 }
 
 function warn_on_node_version_mismatch {
+  command -v node >/dev/null 2>&1 || return 0
   local expected actual
   expected="$(tr -d '[:space:]v' < .nvmrc)"
   actual="$(node -v | sed -E 's/^v([0-9]+).*/\1/')"

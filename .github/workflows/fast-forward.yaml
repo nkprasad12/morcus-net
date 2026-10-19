@@ -10,7 +10,8 @@ jobs:
     if: ${{ contains(github.event.comment.body, '/fast-forward')
       && github.event.issue.pull_request
       && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
 
     permissions:
       contents: write

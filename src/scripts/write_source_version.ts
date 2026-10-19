@@ -6,13 +6,20 @@ import { rmSync, writeFileSync, existsSync, mkdirSync } from "fs";
 const COMMIT_ID_FILE = "build/morcusnet.commit.txt";
 
 function calculateCommitId(): string {
-  // The Heroku build environment removes git metadata, but provides
-  // commit information via environment variable instead.
-  if (process.env.SOURCE_VERSION !== undefined) {
-    return process.env.SOURCE_VERSION.trim();
+  // The Docker build excludes `.git` via `.dockerignore` and passes the commit
+  // hash via the `SOURCE_VERSION` build arg / environment variable instead.
+  const fromEnv = process.env.SOURCE_VERSION?.trim();
+  if (fromEnv) {
+    return fromEnv;
   }
   const { stdout } = spawnSync("git", ["rev-parse", "HEAD"]);
-  return stdout.toString().trim();
+  const fromGit = stdout?.toString().trim();
+  if (!fromGit) {
+    throw new Error(
+      "Could not determine commit ID from SOURCE_VERSION or `git rev-parse HEAD`."
+    );
+  }
+  return fromGit;
 }
 
 export function writeCommitId() {
