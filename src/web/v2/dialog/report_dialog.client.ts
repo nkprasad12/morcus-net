@@ -102,7 +102,15 @@ class MorcusReportDialog extends BaseElement {
 
   readonly #submitReport = async (text: string, reporter?: string) => {
     const trimmedText = text.trim();
-    if (!trimmedText) return;
+    if (!trimmedText) {
+      if (this.#statusEl) {
+        this.#statusEl.className = "report-status error";
+        this.#statusEl.textContent =
+          "Please enter a message before submitting.";
+      }
+      this.#textareaEl?.focus();
+      return;
+    }
 
     let reportText = trimmedText;
     const trimmedReporter = reporter?.trim();

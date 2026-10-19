@@ -156,4 +156,40 @@ describe("MorcusThemeToggle", () => {
       iframe.contentDocument!.documentElement.getAttribute("data-theme")
     ).toBeNull();
   });
+
+  test("updates settingsStore before data-theme and stays consistent across rapid double-toggle", () => {
+    const iframe = document.createElement("iframe");
+    document.body.appendChild(iframe);
+    iframe.contentDocument!.write("<html><head></head><body></body></html>");
+    iframe.contentDocument!.close();
+
+    const el = mountThemeToggle();
+    const button = el.querySelector<HTMLButtonElement>("button")!;
+
+    let attrAtStoreUpdate: string | null = "unset";
+    const origUpdate = settingsStore.update.bind(settingsStore);
+    jest.spyOn(settingsStore, "update").mockImplementation((partial) => {
+      attrAtStoreUpdate = document.documentElement.getAttribute("data-theme");
+      return origUpdate(partial);
+    });
+
+    try {
+      // First click: light -> dark (store updates while data-theme is still null)
+      button.click();
+      expect(attrAtStoreUpdate).toBeNull();
+      expect(settingsStore.get().darkMode).toBe(true);
+      expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+
+      // Rapid second click: dark -> light (store updates while data-theme is still "dark")
+      button.click();
+      expect(attrAtStoreUpdate).toBe("dark");
+      expect(settingsStore.get().darkMode).toBe(false);
+      expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+      expect(
+        iframe.contentDocument!.documentElement.getAttribute("data-theme")
+      ).toBe("light");
+    } finally {
+      jest.restoreAllMocks();
+    }
+  });
 });

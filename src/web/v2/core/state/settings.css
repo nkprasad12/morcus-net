@@ -80,6 +80,8 @@ morcus-reader-settings {
 
 .reader-settings-popover {
   width: 320px;
+  max-width: calc(100vw - 16px);
+  min-width: min(310px, calc(100vw - 16px));
   max-height: calc(100vh - 72px);
   overflow: visible;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);

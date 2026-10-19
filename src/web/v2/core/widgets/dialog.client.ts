@@ -71,20 +71,30 @@ export function setupModalDialog(
     }
   };
 
+  let lastPointerDownTarget: EventTarget | null = null;
+
   const handleBackdropClick = (e: MouseEvent) => {
-    if (e.target === dialog) {
-      // In Chromium / modern WebKit, clicking the ::backdrop reports e.target as the dialog itself.
-      closeDialog(e);
+    const downTarget = lastPointerDownTarget;
+    lastPointerDownTarget = null;
+    if (downTarget !== null && downTarget !== dialog) {
       return;
     }
-    // Coordinate bounding box fallback for older browsers
+
     const rect = dialog.getBoundingClientRect();
-    const inDialog =
-      rect.top <= e.clientY &&
-      e.clientY <= rect.top + rect.height &&
-      rect.left <= e.clientX &&
-      e.clientX <= rect.left + rect.width;
-    if (!inDialog) {
+    if (rect.width > 0 && rect.height > 0) {
+      const outside =
+        e.clientY < rect.top ||
+        e.clientY > rect.top + rect.height ||
+        e.clientX < rect.left ||
+        e.clientX > rect.left + rect.width;
+      if (outside) {
+        closeDialog(e);
+      }
+      return;
+    }
+
+    if (e.target === dialog) {
+      // Fallback when layout metrics are 0x0 (e.g. JSDOM synthetic clicks).
       closeDialog(e);
     }
   };
@@ -105,6 +115,11 @@ export function setupModalDialog(
     trigger.removeAttribute("disabled");
     scope.listen(trigger, "click", openDialog);
   }
+
+  // Track mousedown target so drag-selecting inside dialog and releasing on backdrop doesn't close
+  scope.listen(dialog, "mousedown", (e: MouseEvent) => {
+    lastPointerDownTarget = e.target;
+  });
 
   // Backdrop click & native close event (Escape fires cancel then close)
   scope.listen(dialog, "click", handleBackdropClick);

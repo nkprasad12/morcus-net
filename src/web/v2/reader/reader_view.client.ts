@@ -96,6 +96,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   };
   #currentQuery: string = "";
+  #lastActiveWordEl: HTMLElement | null = null;
   #preferredDrawerSvh: number = DRAWER_DEFAULT_SVH;
   readonly #tocController = this.addController(
     new ReaderTocController({ root: this })
@@ -137,7 +138,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         this.undismissDrawer();
         this.#layoutController.setActive(true);
         this.#preferredDrawerSvh = svh;
-        this.#resetDictScroll();
       },
       onEscape: () => {
         this.#dismissDictionary(true);
@@ -154,7 +154,17 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           this.currentPageUrl,
           this.scope.latest("translation")
         ),
-      onTabChange: () => {
+      onTabChange: (tab) => {
+        if (tab !== "notes") {
+          this.#setActiveMarker(null);
+        }
+        if (
+          tab === "dict" &&
+          this.#currentQuery &&
+          this.#lastActiveWordEl?.isConnected
+        ) {
+          this.#setActiveWord(this.#lastActiveWordEl);
+        }
         this.activatePanelLayout();
       },
     })
@@ -345,15 +355,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (!iframe) return;
 
     const syncTheme = () => {
-      const explicitAttr = document.documentElement.getAttribute("data-theme");
       const savedDark = settingsStore.get().darkMode;
-      const currentTheme =
-        explicitAttr ||
-        (typeof savedDark === "boolean"
-          ? savedDark
-            ? "dark"
-            : "light"
-          : null);
+      const savedTheme =
+        typeof savedDark === "boolean" ? (savedDark ? "dark" : "light") : null;
+      const explicitAttr = document.documentElement.getAttribute("data-theme");
+      const currentTheme = savedTheme ?? explicitAttr;
+      if (savedTheme !== null && explicitAttr !== savedTheme) {
+        setPrepaint("data-theme", savedTheme);
+      }
       syncIframeTheme(iframe, currentTheme);
     };
 
@@ -706,11 +715,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // Clear active word highlight if any
     this.#setActiveWord(null);
 
-    // Highlight marker in passage
-    this.#setActiveMarker(markerEl);
-
     // Show note in companion panel
     this.#panelController?.showNote(bodyId, opts);
+
+    // Highlight marker in passage
+    this.#setActiveMarker(markerEl);
 
     // Ensure layout is active
     this.activatePanelLayout();
@@ -747,6 +756,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     );
     active.forEach((word) => word.classList.remove("word-active"));
     if (el) {
+      this.#lastActiveWordEl = el;
       for (const part of wordGroupParts(el)) {
         part.classList.add("word-active");
       }
@@ -756,6 +766,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   #dismissDictionary(updateHistory: boolean = true) {
     this.#currentQuery = "";
     this.#currentNoteId = "";
+    this.#lastActiveWordEl = null;
 
     // Remove active highlights
     this.#setActiveWord(null);
@@ -1142,10 +1153,17 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   }
 
   #applyScaleToIframeSrc(iframe: HTMLIFrameElement) {
-    if (this.#currentPrefs.dictScale === 100) return;
-    const src = iframe.getAttribute("src") || "/dicts?embedded=1";
-    if (!src.includes("scale=")) {
-      iframe.src = `${src}${src.includes("?") ? "&" : "?"}scale=${
+    const rawSrc = iframe.getAttribute("src");
+    const baseSrc =
+      !rawSrc || rawSrc === "about:blank" ? "/dicts?embedded=1" : rawSrc;
+    if (this.#currentPrefs.dictScale === 100) {
+      if (rawSrc !== baseSrc) {
+        iframe.src = baseSrc;
+      }
+      return;
+    }
+    if (!baseSrc.includes("scale=")) {
+      iframe.src = `${baseSrc}${baseSrc.includes("?") ? "&" : "?"}scale=${
         this.#currentPrefs.dictScale
       }`;
     }
@@ -1153,7 +1171,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   #armDictFrame() {
     const iframe = this.#dictFrame;
-    if (!iframe || !iframe.hasAttribute("data-dict-unarmed")) return;
+    if (!iframe) return;
+    const rawSrc = iframe.getAttribute("src");
+    const isBlank =
+      !rawSrc ||
+      rawSrc === "about:blank" ||
+      currentIframeSrc(iframe) === "about:blank";
+    if (!iframe.hasAttribute("data-dict-unarmed") && !isBlank) return;
     iframe.removeAttribute("data-dict-unarmed");
     this.#applyScaleToIframeSrc(iframe);
   }
@@ -1467,6 +1491,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         this.minimizeDrawer();
       }
       this.#currentQuery = "";
+      this.#lastActiveWordEl = null;
       this.#setActiveWord(null);
     }
 

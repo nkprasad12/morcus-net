@@ -142,6 +142,10 @@
   content-visibility: hidden;
 }
 
+.reader-panel-card:not(.active) {
+  overflow: hidden;
+}
+
 .reader-panel-notes .reader-note.note-active,
 .reader-panel-translation .reader-note.note-active {
   background-color: var(--primary-light);

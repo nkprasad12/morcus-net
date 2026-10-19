@@ -2,6 +2,8 @@
  * @jest-environment jsdom
  */
 import { setupModalDialog } from "@/web/v2/core/widgets/dialog.client";
+import "@/web/v2/dialog/report_dialog.client";
+import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
 
 describe("setupModalDialog client coordination", () => {
   let dialog: HTMLDialogElement;
@@ -120,5 +122,80 @@ describe("setupModalDialog client coordination", () => {
     dialog.dispatchEvent(new Event("close"));
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  test("does not close when mousedown originates inside dialog content and click lands on dialog backdrop (drag-out guard)", () => {
+    setupModalDialog(dialog, { trigger: triggerBtn });
+    triggerBtn.click();
+    expect(dialog.open).toBe(true);
+
+    const header = dialog.querySelector("h2")!;
+    header.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    dialog.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(dialog.close).not.toHaveBeenCalled();
+    expect(dialog.open).toBe(true);
+
+    // Subsequent clean backdrop click (mousedown + click on dialog itself) closes it
+    dialog.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    dialog.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(dialog.close).toHaveBeenCalledTimes(1);
+  });
+
+  test("uses bounding box coordinates when layout rect is non-zero so border clicks do not close", () => {
+    setupModalDialog(dialog, { trigger: triggerBtn });
+    triggerBtn.click();
+
+    jest.spyOn(dialog, "getBoundingClientRect").mockReturnValue({
+      top: 100,
+      left: 100,
+      width: 300,
+      height: 200,
+      bottom: 300,
+      right: 400,
+      x: 100,
+      y: 100,
+      toJSON: () => ({}),
+    });
+
+    // Click right on the 1px border (inside rect: 100, 150) where e.target === dialog
+    dialog.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, clientX: 100, clientY: 150 })
+    );
+    dialog.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, clientX: 100, clientY: 150 })
+    );
+    expect(dialog.close).not.toHaveBeenCalled();
+
+    // Click outside rect on backdrop (50, 50)
+    dialog.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, clientX: 50, clientY: 50 })
+    );
+    dialog.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, clientX: 50, clientY: 50 })
+    );
+    expect(dialog.close).toHaveBeenCalledTimes(1);
+  });
+
+  test("whitespace-only report submission shows validation error and focuses textarea", () => {
+    document.body.innerHTML = `<morcus-report-dialog><button type="button" class="report-btn">Feedback</button>${renderReportIssueDialog()}</morcus-report-dialog>`;
+    const reportEl = document.querySelector("morcus-report-dialog")!;
+    const textarea = reportEl.querySelector<HTMLTextAreaElement>(
+      "textarea[name='reportText']"
+    )!;
+    const statusEl = reportEl.querySelector<HTMLElement>(".report-status")!;
+    const form = reportEl.querySelector<HTMLFormElement>("form.report-form")!;
+    const focusSpy = jest.spyOn(textarea, "focus");
+
+    textarea.value = "   \n\t  ";
+    form.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })
+    );
+
+    expect(statusEl.className).toBe("report-status error");
+    expect(statusEl.textContent).toBe(
+      "Please enter a message before submitting."
+    );
+    expect(focusSpy).toHaveBeenCalled();
   });
 });

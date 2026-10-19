@@ -1591,7 +1591,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
 
     revealTarget(note);
     expect(restore).toHaveBeenCalledTimes(1);
-    expect(events).toEqual(["resetScroll", "scrollIntoView"]);
+    expect(events).toEqual(["scrollIntoView"]);
 
     // Second reveal of the same note re-highlights without re-restoring or resetting scroll.
     events.length = 0;
@@ -1858,6 +1858,100 @@ describe("MorcusReaderView companion panel & notes integration", () => {
       new KeyboardEvent("keydown", { key: "i", altKey: true })
     );
     expect(panelController?.activeTab).toBe("dict");
+  });
+
+  test("resizing/restoring open drawer does not reset Notes or About scrollTop (RDR-10)", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+      aboutHtml: sampleAboutHtml,
+    });
+    const notesView = el.querySelector<HTMLElement>("#panel-view-notes")!;
+    const aboutView = el.querySelector<HTMLElement>("#panel-view-about")!;
+    const notesScrollSpy = jest.fn();
+    const aboutScrollSpy = jest.fn();
+    notesView.scrollTo = notesScrollSpy;
+    aboutView.scrollTo = aboutScrollSpy;
+
+    notesView.scrollTop = 180;
+    aboutView.scrollTop = 95;
+
+    // Resizing / restoring the drawer should preserve scroll positions
+    el.restoreDrawer(68);
+    expect(notesScrollSpy).not.toHaveBeenCalled();
+    expect(aboutScrollSpy).not.toHaveBeenCalled();
+    expect(notesView.scrollTop).toBe(180);
+    expect(aboutView.scrollTop).toBe(95);
+
+    // Minimizing the drawer still resets scroll positions
+    el.minimizeDrawer();
+    expect(notesScrollSpy).toHaveBeenCalledWith({
+      top: 0,
+      behavior: "instant",
+    });
+    expect(aboutScrollSpy).toHaveBeenCalledWith({
+      top: 0,
+      behavior: "instant",
+    });
+  });
+
+  test("switching companion tabs clears .marker-active away from Notes and restores .word-active on Dictionary tab (RDR-11)", () => {
+    const el = createReaderView(samplePassageWithNotes, {
+      notesHtml: sampleNotesHtml,
+      aboutHtml: sampleAboutHtml,
+    });
+    const firstWord = el.querySelector<HTMLElement>(".lat-word")!;
+    const marker = el.querySelector<HTMLAnchorElement>("#noteref-n1")!;
+    const notesTab = el.querySelector<HTMLElement>("#panel-tab-notes")!;
+    const aboutTab = el.querySelector<HTMLElement>("#panel-tab-about")!;
+    const dictTab = el.querySelector<HTMLElement>("#panel-tab-dict")!;
+
+    // 1. Click a word to look it up
+    firstWord.click();
+    expect(firstWord.classList.contains("word-active")).toBe(true);
+
+    // 2. Click a note marker: switches to Notes tab, highlights marker, clears word highlight
+    marker.click();
+    expect(el.getPanelController()?.activeTab).toBe("notes");
+    expect(marker.classList.contains("marker-active")).toBe(true);
+    expect(firstWord.classList.contains("word-active")).toBe(false);
+
+    // 3. Switch to About tab: clears .marker-active
+    aboutTab.click();
+    expect(el.getPanelController()?.activeTab).toBe("about");
+    expect(marker.classList.contains("marker-active")).toBe(false);
+    expect(firstWord.classList.contains("word-active")).toBe(false);
+
+    // 4. Switch back to Notes via marker, then switch to Dictionary tab: clears .marker-active and restores .word-active
+    marker.click();
+    expect(marker.classList.contains("marker-active")).toBe(true);
+    dictTab.click();
+    expect(el.getPanelController()?.activeTab).toBe("dict");
+    expect(marker.classList.contains("marker-active")).toBe(false);
+    expect(firstWord.classList.contains("word-active")).toBe(true);
+
+    // Verify switching back to Notes via tab click does not keep marker-active if not opened via marker
+    notesTab.click();
+    expect(marker.classList.contains("marker-active")).toBe(false);
+  });
+
+  test("pressing '/' on desktop before any word click activates split layout and loads /dicts?embedded=1 when iframe is about:blank (RDR-12)", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
+    const split = el.querySelector<HTMLElement>(".reader-split-layout")!;
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+
+    // Simulate initial desktop state before any word click with about:blank src
+    split.classList.remove("reader-layout-active");
+    split.classList.add("reader-layout-empty");
+    iframe.setAttribute("src", "about:blank");
+    iframe.setAttribute("data-dict-unarmed", "");
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "/", bubbles: true })
+    );
+
+    expect(split.classList.contains("reader-layout-active")).toBe(true);
+    expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
+    expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1");
   });
 
   test("ignores window shortcuts when defaultPrevented or isComposing is true", () => {
@@ -3853,6 +3947,27 @@ describe("MorcusReaderView dictionary iframe theme synchronization", () => {
 
     localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: false }));
     iframe.dispatchEvent(new Event("load"));
+    expect(
+      iframe.contentDocument!.documentElement.getAttribute("data-theme")
+    ).toBe("light");
+  });
+
+  test("prefers settingsStore.darkMode and heals stale parent data-theme on iframe load (CORE-04)", () => {
+    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: true }));
+    document.documentElement.setAttribute("data-theme", "light");
+
+    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    iframe.contentDocument!.write("<html><head></head><body></body></html>");
+    iframe.contentDocument!.close();
+
+    // Simulate rapid double-toggle where settingsStore has darkMode: false
+    // while documentElement temporarily had "dark", then iframe finishes loading
+    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: false }));
+    document.documentElement.setAttribute("data-theme", "dark");
+
+    iframe.dispatchEvent(new Event("load"));
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
     expect(
       iframe.contentDocument!.documentElement.getAttribute("data-theme")
     ).toBe("light");

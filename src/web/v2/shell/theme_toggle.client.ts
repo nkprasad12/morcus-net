@@ -51,6 +51,9 @@ class MorcusThemeToggle extends BaseElement {
     if (currentAttr === "dark") return true;
     if (currentAttr === "light") return false;
 
+    const saved = settingsStore.get().darkMode;
+    if (typeof saved === "boolean") return saved;
+
     // No saved choice: follow the system preference
     return typeof window.matchMedia === "function"
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -68,8 +71,8 @@ class MorcusThemeToggle extends BaseElement {
     this.#isDark = nextDark;
     const themeName = nextDark ? "dark" : "light";
 
-    setPrepaint("data-theme", themeName);
     settingsStore.update({ darkMode: nextDark });
+    setPrepaint("data-theme", themeName);
     this.#updateView();
     this.#syncIframesTheme(themeName);
   };
