@@ -11,23 +11,11 @@
   margin-bottom: var(--space-7);
 }
 
-.library-title-group {
-  margin-bottom: 0;
-}
-
-.library-title {
-  font-family: var(--font-serif);
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-  letter-spacing: -0.01em;
-}
-
 .library-own-text {
-  margin: var(--space-2) 0 0;
+  margin: 0;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 /* Search Bar & Filter Pills (matches Dictionary design) */
@@ -154,12 +142,10 @@
 
 @media (max-width: 640px) {
   .library-header {
-    margin-bottom: var(--space-6);
-  }
-  .library-title {
-    font-size: 1.25rem;
+    margin-bottom: var(--space-5);
   }
   .library-grid {
     grid-template-columns: 1fr;
+    gap: var(--space-4);
   }
 }

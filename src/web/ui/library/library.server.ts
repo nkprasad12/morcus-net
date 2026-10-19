@@ -107,10 +107,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
           </div>
         </div>
 
-        <div class="library-title-group">
-          <h1 class="library-title">Welcome to the library!</h1>
-          <p class="library-own-text">Or <a href="${EXTERNAL_READER_PATH}">read your own text</a> from any web page.</p>
-        </div>
+        <p class="library-own-text">Welcome to the library! Choose a work below, or <a href="${EXTERNAL_READER_PATH}">read your own text</a>.</p>
       </header>
 
       <!-- Empty Filter State -->
