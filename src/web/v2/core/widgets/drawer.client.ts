@@ -323,6 +323,18 @@ export class DrawerController extends BaseController {
     this.#initDrag();
     this.#initKeyboard();
     this.#initDetailsSync();
+    this.scope.listen(
+      this.drawer.ownerDocument,
+      "morcus:section-edit-open",
+      (e: Event) => {
+        if (
+          !this.isMinimized() &&
+          !(e.target instanceof Node && this.drawer?.contains(e.target))
+        ) {
+          this.minimize();
+        }
+      }
+    );
     // Reconcile `<details>` and `.drawer-minimized` when they disagree:
     // - PH8: `<details>` toggles natively before upgrade; if the user closed
     //   it (`!open && !minimized`), adopt that rather than leaving the drawer

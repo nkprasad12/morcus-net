@@ -247,6 +247,41 @@ export function openSectionActionMenu(options: SectionActionOptions): void {
 }
 
 /**
+ * Nudges window scroll minimally when `.section-edit-box` extends below the
+ * viewport bottom or any visible fixed bottom drawer's minimized peek bar.
+ */
+function nudgeEditorAboveDrawers(
+  box: HTMLElement,
+  doc: Document,
+  win: Window
+): void {
+  let visibleBottom = win.innerHeight;
+  for (const d of doc.querySelectorAll<HTMLElement>(".drawer")) {
+    if (d.hidden || d.contains(box)) continue;
+    const style = win.getComputedStyle(d);
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      (style.position !== "fixed" && style.position !== "")
+    ) {
+      continue;
+    }
+    const r = d.getBoundingClientRect();
+    if (r.height > 0 && r.top > 0 && r.top < visibleBottom) {
+      visibleBottom = r.top;
+    }
+  }
+  if (visibleBottom <= 0) return;
+  const boxRect = box.getBoundingClientRect();
+  if (boxRect.bottom > visibleBottom && typeof win.scrollBy === "function") {
+    win.scrollBy({
+      top: boxRect.bottom - visibleBottom,
+      behavior: "instant",
+    });
+  }
+}
+
+/**
  * Swaps a section or sense's content nodes in-place with an auto-resizing `<textarea>`
  * and action bar (`Cancel` / `Submit Correction`).
  */
@@ -257,6 +292,7 @@ function startSectionEdit(options: SectionActionOptions): void {
 
   const { anchor, label } = options;
   const doc = anchor.ownerDocument ?? document;
+  const win = doc.defaultView ?? window;
 
   const stash = doc.createElement("span");
   stash.hidden = true;
@@ -309,6 +345,10 @@ function startSectionEdit(options: SectionActionOptions): void {
   autoResize();
   textarea.focus();
   textarea.setSelectionRange(originalText.length, originalText.length);
+  box.dispatchEvent(
+    new CustomEvent("morcus:section-edit-open", { bubbles: true })
+  );
+  nudgeEditorAboveDrawers(box, doc, win);
 
   const scope = new LifetimeScope(box);
   let closed = false;
