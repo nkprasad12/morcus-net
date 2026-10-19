@@ -154,6 +154,28 @@ export function currentIframeSrc(iframe: HTMLIFrameElement): string | null {
 }
 
 /**
+ * Navigates a same-origin iframe to `url` by replacing its current session
+ * history entry, so the navigation does not push to the top-level joint session
+ * history. Falls back to assigning `iframe.src` when `contentWindow` is null or
+ * throws.
+ */
+export function navigateFrameReplace(
+  iframe: HTMLIFrameElement,
+  url: string
+): void {
+  try {
+    const win = iframe.contentWindow;
+    if (win) {
+      win.location.replace(url);
+      return;
+    }
+  } catch {
+    // Cross-origin or sandboxed: fall through
+  }
+  iframe.src = url;
+}
+
+/**
  * Targets where single-key shortcuts must not fire: native and ARIA text /
  * selection controls, contenteditable regions, and overlays. In the reader,
  * the TOC / Appearance popovers are `<div role="dialog">` rather than

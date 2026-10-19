@@ -10,6 +10,7 @@ import {
   escapeId,
   flashElement,
   isShortcutBlocked,
+  navigateFrameReplace,
   scrollToElement,
   syncIframeTheme,
 } from "@/web/v2/core/dom/dom.client";
@@ -359,6 +360,58 @@ describe("core/dom.client", () => {
         },
       });
       expect(currentIframeSrc(crossOriginFrame)).toBe("https://example.com");
+    });
+  });
+
+  describe("navigateFrameReplace", () => {
+    it("replaces contentWindow.location without mutating the iframe src attribute", () => {
+      const iframe = document.createElement("iframe");
+      iframe.setAttribute("src", "/dicts?embedded=1");
+      const replaceSpy = jest.fn();
+      Object.defineProperty(iframe, "contentWindow", {
+        configurable: true,
+        value: {
+          location: {
+            replace: replaceSpy,
+          },
+        },
+      });
+
+      navigateFrameReplace(iframe, "/dicts?q=arma&lang=La&o=1&embedded=1");
+
+      expect(replaceSpy).toHaveBeenCalledWith(
+        "/dicts?q=arma&lang=La&o=1&embedded=1"
+      );
+      expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1");
+    });
+
+    it("falls back to assigning iframe.src when contentWindow is null or throws", () => {
+      const detachedFrame = document.createElement("iframe");
+      navigateFrameReplace(
+        detachedFrame,
+        "/dicts?q=arma&lang=La&o=1&embedded=1"
+      );
+      expect(detachedFrame.getAttribute("src")).toBe(
+        "/dicts?q=arma&lang=La&o=1&embedded=1"
+      );
+
+      const crossOriginFrame = document.createElement("iframe");
+      Object.defineProperty(crossOriginFrame, "contentWindow", {
+        configurable: true,
+        get() {
+          throw new DOMException(
+            "Cross-origin security barrier",
+            "SecurityError"
+          );
+        },
+      });
+      navigateFrameReplace(
+        crossOriginFrame,
+        "/dicts?q=virum&lang=La&o=1&embedded=1"
+      );
+      expect(crossOriginFrame.getAttribute("src")).toBe(
+        "/dicts?q=virum&lang=La&o=1&embedded=1"
+      );
     });
   });
 

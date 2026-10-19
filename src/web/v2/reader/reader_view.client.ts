@@ -15,6 +15,7 @@ import {
   isPlainLeftClick,
   isShortcutBlocked,
   measureSvh100,
+  navigateFrameReplace,
   openSectionActionMenu,
   registerElement,
   setHtml,
@@ -265,7 +266,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           this.#dismissDictionary(false);
           return;
         }
-        this.#lookupWord(q, this.#findWordElement(q), false);
+        this.#lookupWord(q, this.#findWordElement(q));
       },
       onNavigate: (event) => {
         const prevUrl = new URL(event.prevPath, window.location.origin);
@@ -282,11 +283,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           if (!event.value) {
             this.#dismissDictionary(false);
           } else {
-            this.#lookupWord(
-              event.value,
-              this.#findWordElement(event.value),
-              false
-            );
+            this.#lookupWord(event.value, this.#findWordElement(event.value));
           }
         }
       },
@@ -482,7 +479,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       e.preventDefault();
       const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
       if (word) {
-        this.#lookupWord(word, wordEl, true);
+        this.#lookupWord(word, wordEl);
       }
       return;
     }
@@ -528,8 +525,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     } catch {
       return;
     }
-
-    this.#withCurrentQuery(targetUrl);
 
     if (targetUrl.origin !== window.location.origin) {
       return;
@@ -786,11 +781,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  #lookupWord(
-    word: string,
-    activeAnchor?: HTMLElement,
-    updateHistory: boolean = true
-  ) {
+  #lookupWord(word: string, activeAnchor?: HTMLElement) {
     if (!word) return;
     this.#pendingDictFocusWord = null;
 
@@ -825,7 +816,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (iframe) {
       iframe.removeAttribute("data-dict-unarmed");
       if (!iframeAtTarget) {
-        iframe.src = targetSrc;
+        navigateFrameReplace(iframe, targetSrc);
       }
     }
 
@@ -839,11 +830,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const targetEl = activeAnchor || this.#findWordElement(word);
     if (targetEl) {
       this.#scrollTargetAboveDrawer(targetEl);
-    }
-
-    // Synchronize browser history and page title
-    if (updateHistory) {
-      this.#router?.push(word);
     }
   }
 
@@ -1187,16 +1173,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     return link && !link.classList.contains("disabled") ? link : null;
   }
 
-  /** Carries the active dictionary query (`?q=`) over to `url`. */
-  #withCurrentQuery(url: URL): URL {
-    if (this.#currentQuery) {
-      url.searchParams.set("q", this.#currentQuery);
-    } else {
-      url.searchParams.delete("q");
-    }
-    return url;
-  }
-
   /**
    * Turns to the adjacent page in place (keyboard shortcuts, swipe). Resolves
    * false if there is no page that way or the swap fails.
@@ -1207,9 +1183,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (this.#tocController?.isOpen()) {
       this.#tocController.close();
     }
-    const url = this.#withCurrentQuery(
-      new URL(link.href, window.location.href)
-    );
+    const url = new URL(link.href, window.location.href);
     return this.swapPage(url.href, { push: true });
   }
 
@@ -1446,8 +1420,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     const isPageTurn = url.pathname !== window.location.pathname;
+    const isTransActive = this.#panelController?.activeTab === "translation";
     if (isPageTurn) {
-      this.minimizeDrawer();
+      if (!isTransActive) {
+        this.minimizeDrawer();
+      }
+      this.#currentQuery = "";
+      this.#setActiveWord(null);
     }
 
     const signal = this.scope.latest("page");
@@ -1460,7 +1439,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       fallback: (u: string) => this.navigate(u, { replace: isPopState }),
     };
 
-    const isTransActive = this.#panelController?.activeTab === "translation";
     let success = false;
     let transHtml: string | null = null;
     let transError = false;
@@ -1487,11 +1465,16 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const pathParts = url.pathname.split("/").filter(Boolean);
     const newPageId = pathParts.slice(3).join(".") || pathParts[3] || "";
 
-    this.#currentQuery = url.searchParams.get("q") ?? "";
+    if (isPageTurn) {
+      url.searchParams.delete("q");
+      this.#currentQuery = "";
+    } else {
+      this.#currentQuery = url.searchParams.get("q") ?? "";
+    }
 
     if (push) {
       this.#router?.pushUrl(url, {
-        state: { q: this.#currentQuery, scrollY: 0 },
+        state: { scrollY: 0 },
       });
     }
 

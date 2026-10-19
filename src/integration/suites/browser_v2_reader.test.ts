@@ -150,6 +150,8 @@ test.describe("UI V2 reader", () => {
   }) => {
     await page.goto(`${DBG}/1.1`);
     await disableSmoothScroll(page);
+    const initialHistoryLength = await page.evaluate(() => history.length);
+
     await passage(page)
       .locator(".lat-word", { hasText: /^divisa$/ })
       .first()
@@ -164,6 +166,12 @@ test.describe("UI V2 reader", () => {
         exact: true,
       })
     ).toBeVisible();
+
+    // Word lookups replace the iframe entry in-place without pushing ?q= or history entries.
+    await expect(page).toHaveURL(new RegExp(`${DBG}/1\\.1$`));
+    expect(await page.evaluate(() => history.length)).toBe(
+      initialHistoryLength
+    );
   });
 
   test("defers the embedded dictionary iframe on JS load and arms it on '/'", async ({

@@ -38,6 +38,24 @@ import {
 } from "@/web/v2/dict/search/search_bar.common";
 
 const SEARCH_FORM = "form.search-form";
+const MIN_DICT_SCALE = 50;
+const MAX_DICT_SCALE = 200;
+
+function clampScaleParam(params: URLSearchParams): number | undefined {
+  if (!params.has("scale")) return undefined;
+  const raw = params.get("scale");
+  const num = Number(raw);
+  if (!raw || !Number.isFinite(num)) {
+    params.delete("scale");
+    return undefined;
+  }
+  const clamped = Math.min(
+    MAX_DICT_SCALE,
+    Math.max(MIN_DICT_SCALE, Math.round(num))
+  );
+  params.set("scale", String(clamped));
+  return clamped;
+}
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.
@@ -161,6 +179,33 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
 
     const currentParams = new URLSearchParams(window.location.search);
     const isEmbedded = currentParams.get("embedded") === "1";
+
+    if (currentParams.has("scale")) {
+      const rawScale = currentParams.get("scale");
+      const clampedScale = clampScaleParam(currentParams);
+      if (clampedScale !== undefined) {
+        document.documentElement.style.setProperty(
+          "--dict-scale",
+          (clampedScale / 100).toFixed(2)
+        );
+        const hiddenScale = this.#searchForm?.querySelector<HTMLInputElement>(
+          'input[name="scale"]'
+        );
+        if (hiddenScale) {
+          hiddenScale.value = String(clampedScale);
+        }
+        if (rawScale !== String(clampedScale)) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("scale", String(clampedScale));
+          this.#router?.replaceUrl(url);
+        }
+      } else {
+        document.documentElement.style.removeProperty("--dict-scale");
+        const url = new URL(window.location.href);
+        url.searchParams.delete("scale");
+        this.#router?.replaceUrl(url);
+      }
+    }
 
     if (
       !typedBeforeUpgrade &&
@@ -289,6 +334,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     if (updates.o !== undefined) {
       url.searchParams.set("o", updates.o);
     }
+    clampScaleParam(url.searchParams);
     url.hash = "";
     this.#router?.replaceUrl(url);
   }
@@ -329,6 +375,8 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     }
 
     const url = new URL(window.location.href);
+    const isEmbedded = url.searchParams.get("embedded") === "1";
+    clampScaleParam(url.searchParams);
     // A search replaces whatever was on screen, so it must not stay under
     // /dicts/id/:id. That path renders the right results now, but on reload
     // or when shared it re-runs the ID lookup and drops ?q entirely.
@@ -344,7 +392,15 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
         q: cleanQuery,
         inflected: this.#isInflected,
       });
-      window.location.assign(url.pathname + url.search);
+      if (
+        isEmbedded &&
+        "replace" in window.location &&
+        typeof window.location.replace === "function"
+      ) {
+        window.location.replace(url.pathname + url.search);
+      } else {
+        window.location.assign(url.pathname + url.search);
+      }
       return;
     }
 
@@ -355,7 +411,11 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     });
 
     url.hash = "";
-    this.#router?.pushUrl(url, { state: { q: cleanQuery } });
+    if (isEmbedded) {
+      this.#router?.replaceUrl(url, { state: { q: cleanQuery } });
+    } else {
+      this.#router?.pushUrl(url, { state: { q: cleanQuery } });
+    }
     await this.#fetchResults(cleanQuery);
     this.scope.rAF(() => {
       this.#scrollToResults("smooth");

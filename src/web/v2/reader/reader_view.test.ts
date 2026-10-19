@@ -16,6 +16,7 @@ import { savedSpotsStore } from "@/web/v2/reader/saved_spots.client";
 import { WAKE_LOCK_IDLE_MS } from "@/web/v2/core/widgets/wake_lock.client";
 import { revealTarget } from "@/web/v2/core/nav/reveal.client";
 import { PREPAINT_KEY } from "@/web/v2/core/dom/prepaint.client";
+import { currentIframeSrc } from "@/web/v2/core/dom/dom.client";
 
 import { installPointerEventShims } from "@/web/v2/testing/pointer_events";
 import {
@@ -219,7 +220,11 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       </div>
     `;
 
+    window.history.replaceState(null, "", "/work/vergil/aeneid/1");
+    const pushStateSpy = jest.spyOn(window.history, "pushState");
     const el = createReaderView(passageHtml);
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const replaceSpy = jest.spyOn(iframe.contentWindow!.location, "replace");
     const musaWord = el.querySelector<HTMLElement>(".lat-word")!;
     expect(musaWord.textContent).toBe("Mu\u0304sa");
 
@@ -228,25 +233,33 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     // Word receives active highlight class
     expect(musaWord.classList.contains("word-active")).toBe(true);
 
-    // Dictionary iframe source is updated with Latin filter and forced inflections (o=1)
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-    expect(iframe.src).toContain("/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1");
+    // Dictionary iframe is navigated via location.replace without pushing ?q= to parent URL
+    expect(replaceSpy).toHaveBeenCalledWith(
+      "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1&scale=100"
+    );
+    expect(currentIframeSrc(iframe)).toContain(
+      "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1"
+    );
+    expect(pushStateSpy).not.toHaveBeenCalled();
+    pushStateSpy.mockRestore();
+    expect(window.location.search).toBe("");
 
     // If the user navigates inside the iframe (e.g. a typed English search that leaves lang=La),
     // clicking the same passage word again reloads the word's lookup into the iframe.
+    const innerReplaceSpy = jest.fn();
     Object.defineProperty(iframe, "contentWindow", {
       configurable: true,
       value: {
         location: {
           pathname: "/dicts",
           search: "?q=love&o=1&embedded=1&scale=100",
+          replace: innerReplaceSpy,
         },
       },
     });
-    const srcSpy = jest.spyOn(iframe, "src", "set");
     el.minimizeDrawer();
     musaWord.click();
-    expect(srcSpy).toHaveBeenCalledWith(
+    expect(innerReplaceSpy).toHaveBeenCalledWith(
       "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1&scale=100"
     );
   });
@@ -268,7 +281,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     armaWord.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-    expect(iframe.src).toContain(
+    expect(currentIframeSrc(iframe)).toContain(
       "/dicts?q=arma&lang=La&o=1&embedded=1&scale=120"
     );
     localStorage.removeItem(READER_SETTINGS_KEY);
@@ -612,8 +625,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       word.click();
       expect(word.classList.contains("word-active")).toBe(true);
 
-      // Back to the entry before the lookup dismisses the dictionary.
-      popStateTo("/");
+      clickDictClose(el);
 
       expect(el.querySelectorAll(".word-active")).toHaveLength(0);
     });
@@ -709,7 +721,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       second.click();
 
       const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-      expect(iframe.src).toContain(
+      expect(currentIframeSrc(iframe)).toContain(
         `/dicts?q=${encodeURIComponent("i\u0304mpetu")}&`
       );
       expect(first.classList.contains("word-active")).toBe(true);
@@ -1482,8 +1494,8 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(latWord.classList.contains("word-active")).toBe(true);
     expect(marker1.classList.contains("marker-active")).toBe(false);
 
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame");
-    expect(iframe?.src).toContain("q=divisa");
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    expect(currentIframeSrc(iframe)).toContain("q=divisa");
   });
 
   test("clicking Notes tab switches companion panel to notes", () => {
@@ -2123,12 +2135,12 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     const word = el.querySelector<HTMLElement>(".lat-word")!;
     word.click();
     expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
-    expect(iframe.getAttribute("src")).toContain("q=Belgae");
+    expect(currentIframeSrc(iframe)).toContain("q=Belgae");
 
     // Dismissing does not navigate the iframe back to /dicts?embedded=1
     clickDictClose(el);
     expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
-    expect(iframe.getAttribute("src")).toContain("q=Belgae");
+    expect(currentIframeSrc(iframe)).toContain("q=Belgae");
 
     // Looking up the same word again after dismiss still works
     word.click();
@@ -2541,10 +2553,11 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       expect(el.dataset.page).toBe("1");
     });
 
-    test("a swipe closes the TOC and keeps the dictionary query", async () => {
+    test("a swipe closes the TOC, clears the active word, and does not carry ?q= across page turns", async () => {
       const el = createNavigableReaderView({ pageId: "1" });
       mockPage2Fetch();
       el.querySelector<HTMLElement>(".lat-word")!.click();
+      expect(el.querySelectorAll(".word-active")).toHaveLength(1);
       el.querySelector<HTMLElement>("#reader-toc-btn")!.click();
       const tocDrawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
       expect(tocDrawer.hasAttribute("hidden")).toBe(false);
@@ -2554,9 +2567,11 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
       expect(tocDrawer.hasAttribute("hidden")).toBe(true);
       expect(window.fetch).toHaveBeenCalledWith(
-        "http://localhost/work/caesar/de-bello-gallico/2?q=Gallia",
+        "http://localhost/work/caesar/de-bello-gallico/2",
         expect.anything()
       );
+      expect(window.location.search).toBe("");
+      expect(el.querySelectorAll(".word-active")).toHaveLength(0);
     });
 
     test("] and [ turn pages through the same path, only where a page exists", async () => {
@@ -2636,6 +2651,46 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       "/work/sallust/catalina1/1/translation",
       expect.anything()
     );
+  });
+
+  test("page turn keeps drawer open on Translation tab and minimizes it on Dictionary tab", async () => {
+    const el = createNavigableReaderView({
+      pageId: "1",
+      author: "sallust",
+      name: "catalina1",
+      hasTranslation: true,
+    });
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+    window.fetch = jest.fn().mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("/translation")) {
+        return Promise.resolve({
+          ok: true,
+          text: async () =>
+            '<div class="reader-translation-content">Trans Page</div>',
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        text: async () => page2Response,
+      });
+    });
+
+    // 1. On Translation tab: drawer stays open across page turn
+    el.activatePanelTab("translation");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+
+    await el.swapPage("/work/sallust/catalina1/2");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+
+    // 2. On Dictionary tab: drawer minimizes and active word clears on page turn
+    el.querySelector<HTMLElement>(".lat-word")!.click();
+    expect(el.getPanelController()?.activeTab).toBe("dict");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    expect(el.querySelectorAll(".word-active")).toHaveLength(1);
+
+    await el.swapPage("/work/sallust/catalina1/1");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+    expect(el.querySelectorAll(".word-active")).toHaveLength(0);
   });
 
   test("swapPage fetches the page and translation build-versioned, but keeps the address bar clean", async () => {
@@ -3407,13 +3462,13 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
     expect(words[1].classList.contains("reader-match")).toBe(true);
     expect(words[2].classList.contains("reader-match")).toBe(false);
 
-    // Clicking a highlighted word adds .word-active and preserves .reader-match and matchText in URL
+    // Clicking a highlighted word adds .word-active and preserves .reader-match and matchText in URL without pushing ?q=
     words[0].click();
     expect(words[0].classList.contains("word-active")).toBe(true);
     expect(words[0].classList.contains("reader-match")).toBe(true);
     const params = new URLSearchParams(window.location.search);
     expect(params.get("matchText")).toBe("1.8~0~2");
-    expect(params.get("q")).toBe("Mūsa");
+    expect(params.get("q")).toBeNull();
 
     // Toggling macra off preserves .reader-match
     el.dispatchEvent(

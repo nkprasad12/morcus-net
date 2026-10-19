@@ -72,4 +72,61 @@ export function installLayoutShims(): void {
     window.scrollTo = () => {};
     window.scrollBy = () => {};
   }
+
+  if (typeof HTMLIFrameElement !== "undefined") {
+    const origContentWindowDesc = Object.getOwnPropertyDescriptor(
+      HTMLIFrameElement.prototype,
+      "contentWindow"
+    );
+    if (origContentWindowDesc?.get) {
+      const shimmedWindows = new WeakMap<HTMLIFrameElement, Window>();
+
+      Object.defineProperty(HTMLIFrameElement.prototype, "contentWindow", {
+        configurable: true,
+        get(this: HTMLIFrameElement) {
+          const rawWin: unknown = origContentWindowDesc.get?.call(this);
+          if (typeof rawWin !== "object" || rawWin === null) return null;
+
+          let shimmed = shimmedWindows.get(this);
+          if (!shimmed) {
+            let replacedUrl: URL | null = null;
+
+            const locShim = {
+              replace(url: string): void {
+                replacedUrl = new URL(url, window.location.origin);
+              },
+              assign(url: string): void {
+                replacedUrl = new URL(url, window.location.origin);
+              },
+              get href(): string {
+                return replacedUrl?.href ?? "about:blank";
+              },
+              get pathname(): string {
+                return replacedUrl?.pathname ?? "blank";
+              },
+              get search(): string {
+                return replacedUrl?.search ?? "";
+              },
+              get hash(): string {
+                return replacedUrl?.hash ?? "";
+              },
+              get origin(): string {
+                return replacedUrl?.origin ?? "null";
+              },
+            };
+
+            shimmed = new Proxy(rawWin as Window, {
+              get(target, prop) {
+                if (prop === "location") return locShim;
+                const val: unknown = Reflect.get(target, prop, target);
+                return typeof val === "function" ? val.bind(target) : val;
+              },
+            });
+            shimmedWindows.set(this, shimmed);
+          }
+          return shimmed;
+        },
+      });
+    }
+  }
 }

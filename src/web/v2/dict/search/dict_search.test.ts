@@ -975,6 +975,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     test("following a word in the results stays in scope", () => {
       const pushStateSpy = jest.spyOn(window.history, "pushState");
+      const replaceStateSpy = jest.spyOn(window.history, "replaceState");
       const el = createDictSearch(
         '<div class="entry-content"><span class="lsQuote">Gallia</span></div>',
         'data-d="3" data-o="1"'
@@ -982,10 +983,82 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       el.querySelector<HTMLElement>(".lat-word")!.click();
 
       expect(assign).not.toHaveBeenCalled();
-      expect(pushStateSpy).toHaveBeenCalledWith(
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      expect(replaceStateSpy).toHaveBeenCalledWith(
         { q: "Gallia" },
         "",
         "/dicts?q=Gallia&lang=La&o=1&embedded=1&scale=120&d=3"
+      );
+    });
+
+    test("submitting a search in embedded=1 after leaving lang= uses replaceState instead of pushState", () => {
+      delete (window as any).location;
+      (window as any).location = new URL(
+        "http://localhost/dicts?q=love&o=1&embedded=1&scale=120"
+      );
+      const pushStateSpy = jest.spyOn(window.history, "pushState");
+      const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+
+      const el = createDictSearch("", 'data-d="3" data-o="1"');
+      const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+      el.querySelector<HTMLInputElement>("input.input")!.value = "war";
+
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      expect(replaceStateSpy).toHaveBeenCalledWith(
+        { q: "war" },
+        "",
+        "/dicts?q=war&o=1&embedded=1&scale=120&d=3"
+      );
+    });
+
+    test("clamps scale client-side to [50, 200] on connect and search", () => {
+      const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+
+      delete (window as any).location;
+      (window as any).location = new URL(
+        "http://localhost/dicts?q=arma&lang=La&o=1&embedded=1&scale=999"
+      );
+      createDictSearch(
+        '<input type="hidden" name="scale" value="999" />',
+        'data-d="3" data-o="1"'
+      );
+      expect(
+        document.documentElement.style.getPropertyValue("--dict-scale")
+      ).toBe("2.00");
+      expect(replaceStateSpy).toHaveBeenCalledWith(
+        null,
+        "",
+        "/dicts?q=arma&lang=La&o=1&embedded=1&scale=200"
+      );
+
+      replaceStateSpy.mockClear();
+      delete (window as any).location;
+      (window as any).location = new URL(
+        "http://localhost/dicts?q=arma&lang=La&o=1&embedded=1&scale=10"
+      );
+      const elLow = createDictSearch(
+        '<div class="entry-content"><span class="lsQuote">Gallia</span></div>',
+        'data-d="3" data-o="1"'
+      );
+      expect(
+        document.documentElement.style.getPropertyValue("--dict-scale")
+      ).toBe("0.50");
+      expect(replaceStateSpy).toHaveBeenCalledWith(
+        null,
+        "",
+        "/dicts?q=arma&lang=La&o=1&embedded=1&scale=50"
+      );
+
+      replaceStateSpy.mockClear();
+      elLow.querySelector<HTMLElement>(".lat-word")!.click();
+      expect(replaceStateSpy).toHaveBeenCalledWith(
+        { q: "Gallia" },
+        "",
+        "/dicts?q=Gallia&lang=La&o=1&embedded=1&scale=50&d=3"
       );
     });
   });
@@ -1585,6 +1658,61 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect(input.hasAttribute("aria-controls")).toBe(false);
       expect(input.hasAttribute("aria-expanded")).toBe(false);
       expect(input.hasAttribute("aria-autocomplete")).toBe(false);
+    });
+
+    test("folds macrons and breves into 2-char chunk key (ămo -> am) and ignores single-letter NFD input", async () => {
+      jest.useFakeTimers();
+      const el = createDictSearch();
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const suggestions = el.querySelector("morcus-dict-suggestions")!;
+      const listbox = suggestions.querySelector<HTMLElement>(
+        'ul[role="listbox"]'
+      )!;
+      const loadSpy = jest
+        .spyOn(el.chunkCache, "load")
+        .mockImplementation((key: string) => {
+          const data: Record<string, string[]> =
+            key === "am" ? { "L&S": ["amo", "amor"] } : {};
+          el.chunkCache.set(key, data);
+          return Promise.resolve(data);
+        });
+
+      input.focus();
+
+      // Single letter with combining breve in NFD (2 UTF-16 code units) must not fetch
+      input.value = "a\u0306";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      jest.advanceTimersByTime(200);
+      expect(loadSpy).not.toHaveBeenCalled();
+      expect(listbox.hidden).toBe(true);
+
+      // Typing "ămo" fetches chunk "am" (not "ăm") and renders matching completions
+      input.value = "ămo";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      jest.advanceTimersByTime(200);
+      jest.useRealTimers();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(loadSpy).toHaveBeenCalledWith("am");
+      expect(listbox.hidden).toBe(false);
+      const items = Array.from(
+        listbox.querySelectorAll<HTMLLIElement>(".suggestion-item"),
+        (li) => li.dataset.word
+      );
+      expect(items).toEqual(["amo", "amor"]);
+
+      // NFD "a\u0306mo" and "amō" also resolve against cached chunk "am"
+      for (const query of ["a\u0306mo", "amō"]) {
+        input.value = query;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        expect(listbox.hidden).toBe(false);
+        expect(
+          Array.from(
+            listbox.querySelectorAll<HTMLLIElement>(".suggestion-item"),
+            (li) => li.dataset.word
+          )
+        ).toEqual(["amo", "amor"]);
+      }
     });
   });
 
