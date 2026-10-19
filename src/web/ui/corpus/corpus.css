@@ -128,7 +128,7 @@
   color: var(--text);
   background-color: var(--input-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
@@ -159,7 +159,7 @@
 }
 
 .guide-summary {
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-3) var(--space-5);
   font-weight: normal;
 }
 
@@ -238,7 +238,7 @@
 
 .guide-inner {
   border-top: 1px solid var(--border);
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-5);
   font-size: 0.75rem;
   background-color: var(--bg);
 }
@@ -564,8 +564,8 @@
 
 /* --- Welcome Card -------------------------------------------------------- */
 .corpus-welcome-card {
-  padding: var(--space-4);
-  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   background-color: var(--input-bg);
   font-size: 0.8rem;

@@ -129,7 +129,7 @@ body.resizing-panels .dict-iframe,
   /* Mobile Drawer Top Bar & Handle (balanced) */
   .reader-sheet-bar {
     display: flex;
-    padding: 5px var(--space-4) var(--space-1);
+    padding: var(--space-2) var(--space-4);
   }
 
   .reader-sheet-handle {

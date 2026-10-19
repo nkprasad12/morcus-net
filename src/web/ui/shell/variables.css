@@ -133,6 +133,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    --card-bg: #23272c;
     --text-muted: #9a9ea4;
     --primary: #7cc4a6;
     --primary-hover: #9ad4bc;
@@ -147,37 +148,37 @@
     --success: #5cdb95;
     --danger: #ff6b6b;
     --on-accent: #10261e;
-    --tag-bg: #26292e;
-    --card-header-bg: #26292d;
-    --input-bg: #22262a;
+    --tag-bg: #2c3138;
+    --card-header-bg: #282d33;
+    --input-bg: #21252a;
     --input-border: #383d46;
     --input-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    --card-surface-bg: #22262a;
-    --paper-bg: #1c1e21;
+    --card-surface-bg: #23272c;
+    --paper-bg: #1e2125;
     --card-border: #383d46;
     --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
     --card-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.55);
     --dict-title: #cad5cf;
-    --rgb-orth: 240, 90, 100;
-    --rgb-grammar: 255, 145, 50;
-    --rgb-quote: 70, 140, 255;
-    --rgb-bibl: 160, 110, 240;
-    --accent-orth: rgba(var(--rgb-orth), calc(0.175 * var(--highlight-scale)));
+    --rgb-orth: 245, 80, 105;
+    --rgb-grammar: 245, 165, 35;
+    --rgb-quote: 65, 145, 255;
+    --rgb-bibl: 165, 105, 250;
+    --accent-orth: rgba(var(--rgb-orth), calc(0.25 * var(--highlight-scale)));
     --accent-grammar: rgba(
       var(--rgb-grammar),
-      calc(0.175 * var(--highlight-scale))
+      calc(0.24 * var(--highlight-scale))
     );
     --accent-quote: rgba(
       var(--rgb-quote),
-      calc(0.154 * var(--highlight-scale))
+      calc(0.23 * var(--highlight-scale))
     );
-    --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
-    --bullet-bg: rgba(255, 255, 255, 0.12);
+    --accent-bibl: rgba(var(--rgb-bibl), calc(0.25 * var(--highlight-scale)));
+    --bullet-bg: rgba(255, 255, 255, 0.15);
     --tab-chip-bg: rgba(255, 255, 255, 0.08);
-    --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);
-    --app-bar-nav-active-bg: rgba(0, 0, 0, 0.15);
-    --app-bar-nav-active-text: #061912;
-    --app-bar-toggle-border: #6d8e7e;
+    --app-bar-nav-hover-bg: rgba(255, 255, 255, 0.08);
+    --app-bar-nav-active-bg: rgba(255, 255, 255, 0.15);
+    --app-bar-nav-active-text: #ffffff;
+    --app-bar-toggle-border: #43695a;
     --toast-bg: #f4f5f7;
     --toast-text: #14171a;
     --toast-border: rgba(0, 0, 0, 0.15);
@@ -186,8 +187,8 @@
     --match-highlight-fg: #e8743b;
     --corpus-citation-link: #71abd4;
     --corpus-citation-link-hover: #aecbfa;
-    --disclaimer-bg: rgba(255, 107, 107, 0.08);
-    --disclaimer-border: rgba(255, 107, 107, 0.25);
+    --disclaimer-bg: rgba(232, 116, 59, 0.1);
+    --disclaimer-border: rgba(232, 116, 59, 0.28);
     --beta-chip-bg: rgba(143, 174, 159, 0.25);
     --beta-chip-border: #7c9b8c;
     --beta-chip-text: #a3c9b8;
@@ -222,6 +223,7 @@
 
 :root[data-theme="dark"],
 [data-theme="dark"] {
+  --card-bg: #23272c;
   --text-muted: #9a9ea4;
   --primary: #7cc4a6;
   --primary-hover: #9ad4bc;
@@ -236,34 +238,34 @@
   --success: #5cdb95;
   --danger: #ff6b6b;
   --on-accent: #10261e;
-  --tag-bg: #26292e;
-  --card-header-bg: #26292d;
-  --input-bg: #22262a;
+  --tag-bg: #2c3138;
+  --card-header-bg: #282d33;
+  --input-bg: #21252a;
   --input-border: #383d46;
   --input-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --card-surface-bg: #22262a;
-  --paper-bg: #1c1e21;
+  --card-surface-bg: #23272c;
+  --paper-bg: #1e2125;
   --card-border: #383d46;
   --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   --card-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.55);
   --dict-title: #cad5cf;
-  --rgb-orth: 240, 90, 100;
-  --rgb-grammar: 255, 145, 50;
-  --rgb-quote: 70, 140, 255;
-  --rgb-bibl: 160, 110, 240;
-  --accent-orth: rgba(var(--rgb-orth), calc(0.175 * var(--highlight-scale)));
+  --rgb-orth: 245, 80, 105;
+  --rgb-grammar: 245, 165, 35;
+  --rgb-quote: 65, 145, 255;
+  --rgb-bibl: 165, 105, 250;
+  --accent-orth: rgba(var(--rgb-orth), calc(0.25 * var(--highlight-scale)));
   --accent-grammar: rgba(
     var(--rgb-grammar),
-    calc(0.175 * var(--highlight-scale))
+    calc(0.24 * var(--highlight-scale))
   );
-  --accent-quote: rgba(var(--rgb-quote), calc(0.154 * var(--highlight-scale)));
-  --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
-  --bullet-bg: rgba(255, 255, 255, 0.12);
+  --accent-quote: rgba(var(--rgb-quote), calc(0.23 * var(--highlight-scale)));
+  --accent-bibl: rgba(var(--rgb-bibl), calc(0.25 * var(--highlight-scale)));
+  --bullet-bg: rgba(255, 255, 255, 0.15);
   --tab-chip-bg: rgba(255, 255, 255, 0.08);
-  --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);
-  --app-bar-nav-active-bg: rgba(0, 0, 0, 0.15);
-  --app-bar-nav-active-text: #061912;
-  --app-bar-toggle-border: #6d8e7e;
+  --app-bar-nav-hover-bg: rgba(255, 255, 255, 0.08);
+  --app-bar-nav-active-bg: rgba(255, 255, 255, 0.15);
+  --app-bar-nav-active-text: #ffffff;
+  --app-bar-toggle-border: #43695a;
   --toast-bg: #f4f5f7;
   --toast-text: #14171a;
   --toast-border: rgba(0, 0, 0, 0.15);
@@ -272,8 +274,8 @@
   --match-highlight-fg: #e8743b;
   --corpus-citation-link: #71abd4;
   --corpus-citation-link-hover: #aecbfa;
-  --disclaimer-bg: rgba(255, 107, 107, 0.08);
-  --disclaimer-border: rgba(255, 107, 107, 0.25);
+  --disclaimer-bg: rgba(232, 116, 59, 0.1);
+  --disclaimer-border: rgba(232, 116, 59, 0.28);
   --beta-chip-bg: rgba(143, 174, 159, 0.25);
   --beta-chip-border: #7c9b8c;
   --beta-chip-text: #a3c9b8;

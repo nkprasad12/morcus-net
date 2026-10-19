@@ -149,7 +149,7 @@
   background-color: var(--primary);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .subsection-note {
     padding: var(--space-4) var(--space-5);
   }

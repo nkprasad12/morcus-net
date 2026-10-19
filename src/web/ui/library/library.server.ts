@@ -81,11 +81,6 @@ export async function renderLibraryPageHtml(): Promise<string> {
     <morcus-library-view class="library-view">
       <!-- Library Hero Header -->
       <header class="library-header">
-        <div class="library-title-group">
-          <h1 class="library-title">Welcome to the library!</h1>
-          <p class="library-own-text">Or <a href="${EXTERNAL_READER_PATH}">read your own text</a> from any web page.</p>
-        </div>
-
         <!-- Interactive Search & Feature Filters -->
         <div class="library-search-form search-form" data-js-only>
           <div class="input-wrapper">
@@ -110,6 +105,11 @@ export async function renderLibraryPageHtml(): Promise<string> {
               <button type="button" class="filter-pill" data-filter="translation">Translated</button>
             </div>
           </div>
+        </div>
+
+        <div class="library-title-group">
+          <h1 class="library-title">Welcome to the library!</h1>
+          <p class="library-own-text">Or <a href="${EXTERNAL_READER_PATH}">read your own text</a> from any web page.</p>
         </div>
       </header>
 

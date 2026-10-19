@@ -39,20 +39,20 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #191b1d;
-    --text: #c4c7cb;
-    --app-bar-bg: #8fae9f;
-    --app-bar-border: #7c9b8c;
-    --app-bar-text: #10261e;
-    --app-bar-nav-text: #1d3b33;
+    --text: #cfd3d8;
+    --app-bar-bg: #1f332b;
+    --app-bar-border: #2d473d;
+    --app-bar-text: #e2ece7;
+    --app-bar-nav-text: #b4ccc1;
   }
 }
 
 :root[data-theme="dark"],
 [data-theme="dark"] {
   --bg: #191b1d;
-  --text: #c4c7cb;
-  --app-bar-bg: #8fae9f;
-  --app-bar-border: #7c9b8c;
-  --app-bar-text: #10261e;
-  --app-bar-nav-text: #1d3b33;
+  --text: #cfd3d8;
+  --app-bar-bg: #1f332b;
+  --app-bar-border: #2d473d;
+  --app-bar-text: #e2ece7;
+  --app-bar-nav-text: #b4ccc1;
 }

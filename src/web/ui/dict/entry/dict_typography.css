@@ -96,7 +96,7 @@ a.lsSenseBullet:visited {
 }
 
 .lsHover {
-  text-decoration: underline dotted var(--border-strong);
+  text-decoration: underline dotted var(--text-muted);
   text-underline-offset: 3px;
   cursor: pointer;
   touch-action: manipulation;

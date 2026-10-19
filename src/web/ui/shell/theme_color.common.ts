@@ -6,4 +6,4 @@
  *
  * Must match `--app-bar-bg` in `critical_variables.css` (`variables.test.ts`).
  */
-export const THEME_COLOR = { light: "#bfdecf", dark: "#8fae9f" } as const;
+export const THEME_COLOR = { light: "#bfdecf", dark: "#1f332b" } as const;

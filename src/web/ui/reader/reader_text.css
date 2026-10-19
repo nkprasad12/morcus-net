@@ -107,7 +107,7 @@
   padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--card-surface-bg);
   text-decoration: none;
   color: var(--text);
   transition: background 0.15s ease, border-color 0.15s ease,
@@ -162,7 +162,7 @@
 .reader-continuation-card:hover,
 .reader-continuation-card:visited:hover {
   border-color: var(--primary);
-  background: var(--card-bg);
+  background: var(--tag-bg);
   box-shadow: var(--card-shadow);
   transform: translateY(-1px);
 }
@@ -240,6 +240,10 @@
   color: var(--match-highlight-fg);
 }
 
+.reader-passage .lat-word.word-active.reader-match {
+  background-color: var(--primary-light);
+}
+
 /* ==========================================================================
    3. Section Gutter & Responsive Numbering
    ========================================================================== */
@@ -292,7 +296,6 @@
 .reader-gutter .section-anchor,
 .reader-gutter .section-anchor:visited {
   color: var(--text-muted);
-  opacity: 0.8;
   text-decoration: none;
   display: block;
   padding: var(--space-1);
@@ -306,7 +309,6 @@
 .reader-gutter .section-anchor[aria-expanded="true"] {
   color: var(--text);
   background-color: transparent;
-  opacity: 1;
 }
 
 .reader-gutter .section-anchor.latent {
