@@ -168,9 +168,21 @@ function source_nvm {
 }
 
 function install_and_use_lts_node {
-  echo -e "${INDENT}${COLOR_INFO}Installing and using latest LTS version of Node.js with nvm...${COLOR_RESET}"
-  nvm install --lts
-  nvm use --lts
+  # With no version argument, nvm uses the version in `.nvmrc`, which matches
+  # the version used in CI and the production image.
+  echo -e "${INDENT}${COLOR_INFO}Installing and using the Node.js version from .nvmrc with nvm...${COLOR_RESET}"
+  nvm install
+  nvm use
+}
+
+function warn_on_node_version_mismatch {
+  local expected actual
+  expected="$(tr -d '[:space:]v' < .nvmrc)"
+  actual="$(node -v | sed -E 's/^v([0-9]+).*/\1/')"
+  if [ "$actual" != "$expected" ]; then
+    echo -e "${COLOR_WARN}Node.js $actual detected, but Morcus uses Node.js $expected (see .nvmrc).${COLOR_RESET}"
+    echo -e "${INDENT}If you use nvm, run 'nvm install && nvm use' in the morcus-net directory."
+  fi
 }
 
 function ensure_node_and_npm {
@@ -262,6 +274,9 @@ if [ "$current_branch" != "dev" ]; then
     echo -e "${COLOR_WARN}Continuing setup on branch '$current_branch' (not 'dev').${COLOR_RESET}"
   fi
 fi
+
+ensure_node_and_npm
+warn_on_node_version_mismatch
 
 # Prompt before running npm ci if node_modules exists
 if [ -d "node_modules" ]; then
