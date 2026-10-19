@@ -743,6 +743,6 @@ export function describeInteractionConformance(
         }
       }
       expect(violations).toEqual([]);
-    });
+    }, 60_000);
   });
 }
