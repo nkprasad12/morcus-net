@@ -13,10 +13,11 @@ import {
 } from "@/web/v2/core/dom/base_element.client";
 import {
   DrawerController,
-  DRAWER_DEFAULT_SVH,
   DRAWER_EXPANDED_SVH,
   DRAWER_FLOOR_SVH,
 } from "@/web/v2/core/widgets/drawer.client";
+
+export const TOC_DRAWER_DEFAULT_SVH = 30;
 
 export class MorcusDictToc extends BaseElement {
   #mediaQuery: MediaQueryList | null = null;
@@ -28,9 +29,11 @@ export class MorcusDictToc extends BaseElement {
       handleSelector: ".toc-bar",
       detailsSelector: ".toc-details",
       heightTargets: () =>
-        document.querySelectorAll<HTMLElement>(".back-to-top"),
+        document.querySelectorAll<HTMLElement>(
+          ".back-to-top, .results-layout.has-toc"
+        ),
       minHeight: 28,
-      defaultSvh: DRAWER_DEFAULT_SVH,
+      defaultSvh: TOC_DRAWER_DEFAULT_SVH,
       floorSvh: DRAWER_FLOOR_SVH,
       expandedSvh: DRAWER_EXPANDED_SVH,
       enabled: () => this.#isMobileViewport(),

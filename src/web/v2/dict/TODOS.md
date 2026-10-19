@@ -358,3 +358,11 @@ Shape, if it's needed:
   soon, not when idle). Start from the hashed section when the URL has one.
 - Keep each slice free of layout reads, so its style and layout fold into the next frame.
 - Cancel through the existing `"words"` lane when new results arrive or the element disconnects.
+
+---
+
+## 12. Session persistence of mobile TOC drawer state across lookups
+
+**Status:** potential; deferred.
+
+- On mobile (`< 1080px`), each dictionary lookup renders `<details class="toc-details" open>` at the default `30svh` height. Persisting the user's chosen drawer height and minimized/expanded state across AJAX and full-page lookups within a tab (e.g. via `sessionStorage`) is a potential future ergonomic enhancement.

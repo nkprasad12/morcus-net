@@ -253,14 +253,23 @@
    -------------------------------------------------------------------------- */
 @media (max-width: 1079.98px) {
   /* Add bottom padding to results when TOC bottom drawer is present so
-     the lowest content isn't obscured by the minimized drawer teaser handle */
+     the lowest content isn't obscured by the drawer or its minimized bar */
   .results-layout.has-toc {
-    padding-bottom: calc(var(--drawer-min-height, 28px) + 12px);
+    padding-bottom: calc(28px + 12px);
+  }
+
+  /* When the drawer is open, reserve its full height so the last entry can
+     scroll above it. --drawer-height is mirrored here by DrawerController
+     (heightTargets); zero-JS / pre-hydration falls back to the 30svh default. */
+  .results-layout.has-toc:has(.drawer-toc .toc-details[open]):not(
+      :has(.drawer-toc.drawer-minimized)
+    ) {
+    padding-bottom: calc(var(--drawer-height, 30svh) + 12px);
   }
 
   .drawer-toc {
     --drawer-min-height: 28px;
-    height: var(--drawer-height, 48svh);
+    height: var(--drawer-height, 30svh);
     max-height: 88svh;
     border-top: 2px solid var(--border-strong);
     border-top-left-radius: 16px;
@@ -277,6 +286,14 @@
 
   .drawer-toc .drawer-teaser {
     display: none;
+    min-height: 0;
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .drawer-toc.drawer-minimized .drawer-teaser,
+  .drawer-toc:not(:has(.toc-details[open])) .drawer-teaser {
+    display: flex;
   }
 
   .drawer-toc .drawer-handle {
@@ -292,13 +309,19 @@
     cursor: grab;
   }
 
+  .drawer-toc.drawer-minimized .toc-bar,
+  .drawer-toc:not(:has(.toc-details[open])) .toc-bar {
+    padding: var(--space-1) var(--space-5);
+    gap: 2px;
+  }
+
   .drawer-toc .toc-bar.is-dragging {
     cursor: grabbing;
   }
 
   .drawer-toc .toc-body {
     max-height: calc(
-      var(--drawer-height, 48svh) - var(--drawer-min-height, 28px)
+      var(--drawer-height, 30svh) - var(--drawer-min-height, 28px)
     );
     overflow-y: auto;
   }

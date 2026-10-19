@@ -3,7 +3,10 @@
  */
 
 import { DrawerController } from "@/web/v2/core/widgets/drawer.client";
-import { MorcusDictToc } from "@/web/v2/dict/toc/dict_toc.client";
+import {
+  MorcusDictToc,
+  TOC_DRAWER_DEFAULT_SVH,
+} from "@/web/v2/dict/toc/dict_toc.client";
 
 describe("MorcusDictToc custom element", () => {
   let originalMatchMedia: typeof window.matchMedia;
@@ -231,5 +234,42 @@ describe("MorcusDictToc custom element", () => {
     expect(tocEl.classList.contains("drawer-minimized")).toBe(false);
     expect(tocEl.style.getPropertyValue("--drawer-height")).toBe("68svh");
     expect(backToTop.style.getPropertyValue("--drawer-height")).toBe("68svh");
+  });
+
+  test("defaults mobile drawer preferred height to 30svh and mirrors --drawer-height onto .results-layout.has-toc", () => {
+    matchesMobile = true;
+    document.body.innerHTML = `
+      <div class="results-layout has-toc">
+        <morcus-dict-toc class="drawer drawer-toc">
+          <details class="toc-details" open>
+            <summary class="drawer-bar toc-bar">Contents</summary>
+            <div class="toc-body">Outline items</div>
+          </details>
+        </morcus-dict-toc>
+        <div class="results-main"></div>
+      </div>
+      <button class="back-to-top"></button>
+    `;
+
+    const layout = document.querySelector<HTMLElement>(
+      ".results-layout.has-toc"
+    )!;
+    const tocEl = document.querySelector<MorcusDictToc>("morcus-dict-toc")!;
+    const mql = (window.matchMedia as jest.Mock).mock.results[0].value;
+
+    const ctrl = tocEl.getDrawerController()!;
+    expect(TOC_DRAWER_DEFAULT_SVH).toBe(30);
+    expect(ctrl.getPreferredSvh()).toBe(30);
+
+    ctrl.restore(42);
+    expect(layout.style.getPropertyValue("--drawer-height")).toBe("42svh");
+
+    ctrl.minimize();
+    expect(layout.style.getPropertyValue("--drawer-height")).toBe("28px");
+
+    // Flip to desktop: --drawer-height is cleared from .results-layout.has-toc
+    mql.matches = false;
+    mql.dispatchEvent(new Event("change"));
+    expect(layout.style.getPropertyValue("--drawer-height")).toBe("");
   });
 });

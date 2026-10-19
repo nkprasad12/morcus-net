@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+
 import {
   TOC_MIN_MULTI_ENTRIES,
   TOC_MIN_SINGLE_ENTRY_SENSES,
@@ -756,6 +759,30 @@ describe("dict_toc.server", () => {
       );
       // Verify indentation style on level 2
       expect(html).toContain('style="margin-left: 0.75rem;"');
+    });
+  });
+
+  describe("mobile bottom drawer CSS (dict_toc.css)", () => {
+    const css = fs.readFileSync(
+      path.join(__dirname, "dict_toc.css"),
+      "utf-8"
+    );
+
+    test("uses 30svh default mobile drawer height and tracks open drawer height in .results-layout.has-toc padding", () => {
+      expect(css).toContain("height: var(--drawer-height, 30svh);");
+      expect(css).not.toContain("48svh");
+      expect(css).toContain(
+        ".results-layout.has-toc {\n    padding-bottom: calc(28px + 12px);\n  }"
+      );
+      expect(css).toMatch(
+        /\.results-layout\.has-toc:has\(\.drawer-toc \.toc-details\[open\]\):not\(\s*:has\(\.drawer-toc\.drawer-minimized\)\s*\)\s*\{\s*padding-bottom:\s*calc\(var\(--drawer-height,\s*30svh\)\s*\+\s*12px\);/
+      );
+    });
+
+    test("displays .drawer-teaser when minimized or closed in No-JS", () => {
+      expect(css).toMatch(
+        /\.drawer-toc\.drawer-minimized \.drawer-teaser,\s*\.drawer-toc:not\(:has\(\.toc-details\[open\]\)\) \.drawer-teaser\s*\{\s*display:\s*flex;/
+      );
     });
   });
 });
