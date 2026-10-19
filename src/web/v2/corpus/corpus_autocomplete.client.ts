@@ -690,9 +690,21 @@ class MorcusCorpusSuggestions extends BaseElement<"lemmata"> {
     const end = input.selectionEnd ?? start;
     const text = row.replacement ?? row.option;
     const from = row.replacement === undefined ? start : 0;
-    // A completed token ends with a space; reuse one already after the caret.
+    // Swallow the rest of the token under the caret (`#Caes|ar` → `#Caesar `).
+    let tokenEnd = end;
+    if (start > 0 && !/[\s()]/.test(input.value[start - 1])) {
+      while (
+        tokenEnd < input.value.length &&
+        !/[\s()]/.test(input.value[tokenEnd])
+      ) {
+        tokenEnd++;
+      }
+    }
+    // A completed token ends with a space; reuse one already after the token.
     const to =
-      text.endsWith(" ") && input.value.charAt(end) === " " ? end + 1 : end;
+      text.endsWith(" ") && input.value.charAt(tokenEnd) === " "
+        ? tokenEnd + 1
+        : tokenEnd;
     input.setRangeText(text, from, to);
     // Explicit rather than `setRangeText`'s "end" mode, which jsdom gets wrong.
     input.setSelectionRange(from + text.length, from + text.length);

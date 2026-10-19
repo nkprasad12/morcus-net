@@ -278,6 +278,15 @@ export class ComboboxController<T = unknown> extends BaseController {
     return this.#options.isSelectable ? this.#options.isSelectable(item) : true;
   }
 
+  #nextSelectable(from: number, step: 1 | -1): number {
+    const n = this.#items.length;
+    for (let k = 1; k <= n; k++) {
+      const i = (((from + step * k) % n) + n) % n;
+      if (this.#isSelectable(i)) return i;
+    }
+    return -1;
+  }
+
   #choose(index: number): void {
     if (index < 0 || index >= this.#items.length) return;
     const item = this.#items[index];
@@ -303,13 +312,13 @@ export class ComboboxController<T = unknown> extends BaseController {
         const currentCount = this.#items.length;
         if (currentCount === 0) return;
         const step = e.key === "ArrowDown" ? 1 : -1;
-        this.setActiveIndex(
+        const origin =
           this.#activeIndex < 0
             ? step > 0
-              ? 0
-              : currentCount - 1
-            : (this.#activeIndex + step + currentCount) % currentCount
-        );
+              ? -1
+              : currentCount
+            : this.#activeIndex;
+        this.setActiveIndex(this.#nextSelectable(origin, step));
         return;
       }
       case "Enter": {

@@ -172,5 +172,27 @@ describe("dict_clustering.common", () => {
       expect(results).toContainEqual({ lang: "La", word: "justitia" });
       expect(results).toContainEqual({ lang: "La", word: "justus" });
     });
+
+    test("folds macrons, breves (NFC and NFD), and uppercase in query prefixes", () => {
+      const dictChunks = {
+        "L&S": ["amo", "amor", "fero", "rex"],
+      };
+
+      for (const query of ["amō", "ămo", "a\u0306mo", "AMŌ"]) {
+        expect(
+          filterAndClusterDictionaryChunks(dictChunks, ["L&S"], query)
+        ).toEqual([
+          { lang: "La", word: "amo" },
+          { lang: "La", word: "amor" },
+        ]);
+      }
+
+      expect(
+        filterAndClusterDictionaryChunks(dictChunks, ["L&S"], "ferō")
+      ).toEqual([{ lang: "La", word: "fero" }]);
+      expect(
+        filterAndClusterDictionaryChunks(dictChunks, ["L&S"], "rēx")
+      ).toEqual([{ lang: "La", word: "rex" }]);
+    });
   });
 });

@@ -570,6 +570,25 @@ describe("<morcus-corpus-suggestions>", () => {
     expect(input.selectionStart).toBe(13);
   });
 
+  test("selecting a completion mid-token replaces the rest of the active token without duplicating its tail", () => {
+    const { input } = mount();
+    input.focus();
+
+    // Mid-token replacement completion (`#Caes|ar @lemma:fero` -> `#Caesar @lemma:fero`)
+    type(input, "#Caesar @lemma:fero", 5);
+    press(input, "ArrowDown");
+    press(input, "Enter");
+    expect(input.value).toBe("#Caesar @lemma:fero");
+    expect(input.selectionStart).toBe(8);
+
+    // Mid-token suffix-inserted completion (`@case:da|tive et` -> `@case:dative et`)
+    type(input, "@case:dative et", 8);
+    press(input, "ArrowDown");
+    press(input, "Enter");
+    expect(input.value).toBe("@case:dative et");
+    expect(input.selectionStart).toBe(13);
+  });
+
   test("a replacement rewrites the text before the caret", () => {
     const { input, listbox } = mount();
     input.focus();
@@ -616,7 +635,7 @@ describe("<morcus-corpus-suggestions>", () => {
     expect(listbox.hidden).toBe(false);
   });
 
-  test("errors are status rows: reachable, labelled, never chosen", () => {
+  test("errors are status rows: skipped by arrow keys, labelled, never chosen", () => {
     const { input, listbox } = mount();
     input.focus();
     type(input, "#Nobody ");
@@ -630,11 +649,11 @@ describe("<morcus-corpus-suggestions>", () => {
     );
 
     press(input, "ArrowDown");
-    expect(input.getAttribute("aria-activedescendant")).toBe(row.id);
-    const enter = press(input, "Enter");
-    expect(enter.defaultPrevented).toBe(true);
-    expect(input.value).toBe("#Nobody ");
     expect(input.hasAttribute("aria-activedescendant")).toBe(false);
+    const enter = press(input, "Enter");
+    expect(enter.defaultPrevented).toBe(false);
+    expect(input.value).toBe("#Nobody ");
+    expect(listbox.hidden).toBe(true);
   });
 
   test("clicking a row chooses it without taking focus from the input", () => {

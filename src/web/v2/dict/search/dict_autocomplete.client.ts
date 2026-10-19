@@ -1,3 +1,4 @@
+import { removeDiacritics } from "@/common/text_cleaning";
 import {
   BaseController,
   KeyedFetchCache,
@@ -81,7 +82,9 @@ export class DictAutocompleteController extends BaseController<"completions"> {
       if (signal.aborted) return undefined;
       if (document.activeElement !== this.#inputElement) return undefined;
       const query = cleanCompletionQuery(this.#inputElement?.value ?? "").query;
-      return query.toLowerCase().startsWith(prefix) ? query : undefined;
+      return removeDiacritics(query).toLowerCase().startsWith(prefix)
+        ? query
+        : undefined;
     };
     this.chunkCache
       .load(prefix)
@@ -170,8 +173,9 @@ export class DictAutocompleteController extends BaseController<"completions"> {
     if (this.#shownSuggestions.length === 0) return;
     const { query: activeQ, isSuffix: activeSuffix } =
       cleanCompletionQuery(currentQuery);
-    if (!activeSuffix && activeQ.length >= 2) {
-      const prefix = activeQ.slice(0, 2).toLowerCase();
+    const folded = removeDiacritics(activeQ).toLowerCase();
+    if (!activeSuffix && folded.length >= 2) {
+      const prefix = folded.slice(0, 2);
       if (this.chunkCache.has(prefix)) {
         this.#renderCachedCompletions(prefix, activeQ);
       }
@@ -200,19 +204,24 @@ export class DictAutocompleteController extends BaseController<"completions"> {
   readonly #handleInput = () => {
     const raw = this.#inputElement?.value ?? "";
     const { query, isSuffix } = cleanCompletionQuery(raw);
-    if (query.length < 2) {
-      this.clear();
-      return;
-    }
-
     if (isSuffix) {
+      if (query.length < 2) {
+        this.clear();
+        return;
+      }
       this.#debouncedFetchPrefixChunk.cancel();
       this.#debouncedFetchSuffixCompletions(query);
       return;
     }
 
+    const folded = removeDiacritics(query).toLowerCase();
+    if (folded.length < 2) {
+      this.clear();
+      return;
+    }
+
     this.#debouncedFetchSuffixCompletions.cancel();
-    const prefix = query.slice(0, 2).toLowerCase();
+    const prefix = folded.slice(0, 2);
     if (this.chunkCache.has(prefix)) {
       this.#debouncedFetchPrefixChunk.cancel();
       this.#renderCachedCompletions(prefix, query);

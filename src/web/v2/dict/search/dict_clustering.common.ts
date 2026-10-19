@@ -152,6 +152,8 @@ export function filterAndClusterDictionaryChunks(
 ): CompletionItem[] {
   const clean = query.trim();
   if (!clean) return [];
+  const folded = removeDiacritics(clean).toLowerCase();
+  if (!folded) return [];
 
   const dictsToScan =
     activeDictKeys.length > 0 ? activeDictKeys : Object.keys(dictChunks);
@@ -163,7 +165,7 @@ export function filterAndClusterDictionaryChunks(
     if (!words || words.length === 0) continue;
 
     const lang = getDictSourceLang(dictKey);
-    const prefixes = getExpandedPrefixes(clean.toLowerCase(), lang);
+    const prefixes = getExpandedPrefixes(folded, lang);
 
     for (const word of words) {
       const cleanWord = removeDiacritics(word).toLowerCase();

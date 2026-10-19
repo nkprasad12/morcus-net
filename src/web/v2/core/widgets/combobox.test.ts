@@ -246,6 +246,60 @@ describe("ComboboxController", () => {
     expect(input.getAttribute("aria-activedescendant")).toBe("test-listbox-1");
   });
 
+  test("ArrowDown and ArrowUp skip disabled status/hint items and wrap only over selectable items", () => {
+    mount();
+    const items: TestItem[] = [
+      { id: "hint", label: "Hint (disabled)", selectable: false },
+      { id: "a", label: "Option A", selectable: true },
+      { id: "b", label: "Option B", selectable: true },
+    ];
+    listbox.innerHTML = items.map((item) => `<li>${item.label}</li>`).join("");
+    host.controller.setItems(items);
+
+    // ArrowDown from unhighlighted skips index 0 (disabled) and highlights index 1
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowDown", cancelable: true })
+    );
+    expect(host.controller.activeIndex).toBe(1);
+    expect(input.getAttribute("aria-activedescendant")).toBe("test-listbox-1");
+
+    // ArrowUp from index 1 wraps to index 2 and skips index 0
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowUp", cancelable: true })
+    );
+    expect(host.controller.activeIndex).toBe(2);
+    expect(input.getAttribute("aria-activedescendant")).toBe("test-listbox-2");
+
+    // ArrowDown from index 2 wraps to index 1 and skips index 0
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowDown", cancelable: true })
+    );
+    expect(host.controller.activeIndex).toBe(1);
+  });
+
+  test("when all items are disabled, ArrowDown leaves aria-activedescendant absent and Enter does not preventDefault", () => {
+    mount();
+    const items: TestItem[] = [
+      { id: "hint", label: "Only hint", selectable: false },
+    ];
+    listbox.innerHTML = items.map((item) => `<li>${item.label}</li>`).join("");
+    host.controller.setItems(items);
+
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowDown", cancelable: true })
+    );
+    expect(host.controller.activeIndex).toBe(-1);
+    expect(input.hasAttribute("aria-activedescendant")).toBe(false);
+
+    const enter = new KeyboardEvent("keydown", {
+      key: "Enter",
+      cancelable: true,
+    });
+    input.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(false);
+    expect(host.controller.isOpen).toBe(false);
+  });
+
   test("Enter with active item selects it and prevents default", () => {
     mount();
     const items: TestItem[] = [
