@@ -3009,6 +3009,120 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     });
   });
 
+  test("swapPage to bare work URL (/work/:author/:work) resolves newPageId from first TOC item and updates dataset.page, TOC active state, and Translation tab", async () => {
+    const el = createNavigableReaderView({
+      pageId: "1.1",
+      author: "ovid",
+      name: "amores",
+      hasTranslation: true,
+    });
+
+    // Replace TOC content with epigram + multi-book groups to test RDR-03 and RDR-04 together
+    const tocDrawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
+    tocDrawer.innerHTML = `
+      <form class="reader-toc-search-form" action="/work/ovid/amores/1.1" method="GET"></form>
+      <button id="reader-toc-close-btn">&times;</button>
+      <div class="reader-toc-list" id="reader-toc-list">
+        <a href="/work/ovid/amores/ep" class="reader-toc-item" data-page-id="ep">Epigram</a>
+        <details class="reader-toc-group" data-group-id="1" open>
+          <summary><span class="reader-toc-group-label">Book 1</span></summary>
+          <a href="/work/ovid/amores/1.1" class="reader-toc-item active" data-page-id="1.1" aria-current="page">Elegy 1</a>
+        </details>
+        <details class="reader-toc-group" data-group-id="2">
+          <summary><span class="reader-toc-group-label">Book 2</span></summary>
+          <a href="/work/ovid/amores/2.1" class="reader-toc-item" data-page-id="2.1">Elegy 1</a>
+        </details>
+      </div>
+    `;
+
+    const epCardHtml = `
+      <div class="reader-text-card" data-slot="text">
+        <header class="reader-text-card-header">
+          <span class="reader-work-tag">Amores</span>
+          <h1 class="reader-passage-heading">Epigram</h1>
+        </header>
+        <article class="reader-passage" id="reader-passage">
+          <div class="reader-section" id="sec-ep.1"><div class="reader-passage"><p class="reader-paragraph">Qui modo Nasonis fueramus quinque libelli.</p></div></div>
+        </article>
+      </div>
+    `;
+    const epPartial = pageResponse(epCardHtml, {
+      pageId: "ep",
+      nextUrl: "/work/ovid/amores/1.1",
+    });
+
+    const fetchMock = jest.fn().mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("/translation")) {
+        return Promise.resolve({
+          ok: true,
+          text: async () =>
+            '<div class="reader-translation-content">We who just now were five little books of Naso</div>',
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        text: async () => epPartial,
+      });
+    });
+    window.fetch = fetchMock;
+
+    const panelController = el.getPanelController()!;
+    panelController.setTab("translation");
+
+    // 1. Cross-book turn from 1.1 to 2.1 closes Book 1 group and opens Book 2 group (RDR-04)
+    const book2Partial = pageResponse(epCardHtml, {
+      pageId: "2.1",
+      prevUrl: "/work/ovid/amores/1.1",
+    });
+    fetchMock.mockImplementationOnce(() =>
+      Promise.resolve({ ok: true, text: async () => book2Partial })
+    );
+    await el.swapPage("/work/ovid/amores/2.1");
+
+    const group1 = tocDrawer.querySelector<HTMLDetailsElement>(
+      'details.reader-toc-group[data-group-id="1"]'
+    )!;
+    const group2 = tocDrawer.querySelector<HTMLDetailsElement>(
+      'details.reader-toc-group[data-group-id="2"]'
+    )!;
+    expect(group1.open).toBe(false);
+    expect(group2.open).toBe(true);
+    expect(
+      tocDrawer
+        .querySelector('.reader-toc-search-form')
+        ?.getAttribute("action")
+    ).toBe("/work/ovid/amores/2.1");
+
+    // 2. Popstate back to bare work URL /work/ovid/amores resolves newPageId = "ep" (RDR-03)
+    fetchMock.mockClear();
+    window.history.replaceState({}, "", "/work/ovid/amores");
+    await el.swapPage("/work/ovid/amores", {
+      push: false,
+      isPopState: true,
+    });
+
+    expect(el.dataset.page).toBe("ep");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/work/ovid/amores/ep/translation",
+      expect.anything()
+    );
+    expect(
+      el.querySelector("#panel-view-translation")?.textContent
+    ).toContain("We who just now were five little books of Naso");
+
+    const epItem = tocDrawer.querySelector<HTMLElement>(
+      '.reader-toc-item[data-page-id="ep"]'
+    )!;
+    const item21 = tocDrawer.querySelector<HTMLElement>(
+      '.reader-toc-item[data-page-id="2.1"]'
+    )!;
+    expect(epItem.classList.contains("active")).toBe(true);
+    expect(epItem.getAttribute("aria-current")).toBe("page");
+    expect(item21.classList.contains("active")).toBe(false);
+    expect(group1.open).toBe(false);
+    expect(group2.open).toBe(false);
+  });
+
   test("a failed page turn falls back to a full navigation without pushing history", async () => {
     const el = createNavigableReaderView({ pageId: "1" });
     const navigate = jest.fn();

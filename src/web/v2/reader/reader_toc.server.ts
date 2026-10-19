@@ -171,13 +171,14 @@ interface ReaderTocDrawerOptions {
   work: V2PreprocessedWork;
   activePageIndex: number;
   query?: string;
+  jumpMiss?: string;
 }
 
 /**
  * Renders the contained Table of Contents (TOC) drawer dialog.
  */
 export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
-  const { work, activePageIndex, query } = options;
+  const { work, activePageIndex, query, jumpMiss } = options;
   const tocItemsHtml = renderTocItemsHtml({
     work,
     activePageIndex,
@@ -189,9 +190,17 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
   const exampleId = activePage ? normalizeId(activePage.id) : "1.1";
   const formAction = `/work/${he.escape(work.urlAuthor)}/${he.escape(
     work.urlName
-  )}`;
+  )}${activePage ? `/${he.escape(exampleId)}` : ""}`;
   const hiddenQueryInput = query
     ? `<input type="hidden" name="q" value="${he.escape(query)}" />`
+    : "";
+  const searchValueAttr = jumpMiss
+    ? `\n                   value="${he.escape(jumpMiss)}"`
+    : "";
+  const missBannerHtml = jumpMiss
+    ? `\n        <p class="reader-toc-miss" role="status">No section &ldquo;${he.escape(
+        jumpMiss
+      )}&rdquo; in this work.</p>`
     : "";
 
   return `      <!-- Contained Table of Contents (TOC) Drawer -->
@@ -209,7 +218,7 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
             <input type="text"
                    name="jump"
                    id="reader-toc-search-input"
-                   class="reader-toc-search-input"
+                   class="reader-toc-search-input"${searchValueAttr}
                    placeholder="Go to section (e.g. ${he.escape(
                      exampleId
                    )}) or filter…"
@@ -223,7 +232,7 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
              id="reader-toc-close-btn"
              role="button"
              aria-label="Close table of contents">&times;</a>
-        </div>
+        </div>${missBannerHtml}
 
         <div class="reader-toc-list" id="reader-toc-list">
           ${tocItemsHtml}

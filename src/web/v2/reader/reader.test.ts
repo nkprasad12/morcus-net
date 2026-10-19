@@ -2,6 +2,8 @@
  * @jest-environment jsdom
  */
 
+import express from "express";
+import request from "supertest";
 import {
   renderReaderContentHtml,
   renderReaderPageHtml,
@@ -12,6 +14,8 @@ import {
   renderReaderDictPanel,
   renderReaderTranslationHtml,
 } from "@/web/v2/reader/reader.server";
+import { createReaderRoutes } from "@/web/v2/reader/reader_routes.server";
+import { resolvePageInWork } from "@/web/v2/reader/reader_loader.server";
 import {
   renderReaderAboutSection,
   renderReaderSettingsPopover,
@@ -26,8 +30,15 @@ import {
   parseCitationString,
   getDifferentialCitationLabel,
 } from "@/web/v2/reader/reader_types.server";
-import { MOCK_SALLUST_WORK } from "@/web/v2/testing/mock_reader_loader";
+import {
+  MOCK_CAESAR_WORK,
+  MOCK_SALLUST_WORK,
+} from "@/web/v2/testing/mock_reader_loader";
 import type { V2PreprocessedWork } from "@/common/library/v2/v2_types";
+
+const realResolvePageInWork: typeof resolvePageInWork = jest.requireActual<
+  typeof import("@/web/v2/reader/reader_loader.server")
+>("@/web/v2/reader/reader_loader.server").resolvePageInWork;
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/assets/${name}`,
@@ -776,5 +787,158 @@ describe("renderReaderTranslationHtml", () => {
         "1"
       )
     ).toBeNull();
+  });
+
+  test("returns null when pageParam does not match any page in the work", () => {
+    expect(renderReaderTranslationHtml(untranslatedPage, "999")).toBeNull();
+    expect(renderReaderTranslationHtml(untranslatedPage, "15")).toBeNull();
+  });
+});
+
+describe("resolvePageInWork citation resolution and RDR-07 route handling", () => {
+  const multiBookWork: V2PreprocessedWork = {
+    ...MOCK_CAESAR_WORK,
+    urlAuthor: "ovid",
+    urlName: "amores",
+    textParts: ["book", "poem", "line"],
+    paginationDepth: 2,
+    pages: [
+      { ...MOCK_CAESAR_WORK.pages[0], id: ["1", "1"], title: "Book 1, Elegy 1" },
+      { ...MOCK_CAESAR_WORK.pages[1], id: ["1", "5"], title: "Book 1, Elegy 5" },
+      { ...MOCK_CAESAR_WORK.pages[0], id: ["2", "1"], title: "Book 2, Elegy 1" },
+      { ...MOCK_CAESAR_WORK.pages[1], id: ["2", "3"], title: "Book 2, Elegy 3" },
+    ],
+  };
+
+  test.each([
+    ["production resolvePageInWork", realResolvePageInWork],
+    ["mock resolvePageInWork", resolvePageInWork],
+  ])("%s distinguishes matched vs unmatched citations and enforces segment boundaries", (_, resolver) => {
+    // Bare URL resolves to first page with matched: true
+    expect(resolver(multiBookWork, undefined)).toEqual({
+      page: multiBookWork.pages[0],
+      index: 0,
+      pageIndex: 0,
+      matched: true,
+    });
+    expect(resolver(multiBookWork, "   ")).toEqual({
+      page: multiBookWork.pages[0],
+      index: 0,
+      pageIndex: 0,
+      matched: true,
+    });
+
+    // Exact match
+    expect(resolver(multiBookWork, "1.5")).toEqual({
+      page: multiBookWork.pages[1],
+      index: 1,
+      pageIndex: 1,
+      matched: true,
+    });
+
+    // Sub-page citation (e.g. "1.5.10" -> "1.5")
+    expect(resolver(multiBookWork, "1.5.10")).toEqual({
+      page: multiBookWork.pages[1],
+      index: 1,
+      pageIndex: 1,
+      matched: true,
+    });
+
+    // Book prefix citation (e.g. "2" -> "2.1")
+    expect(resolver(multiBookWork, "2")).toEqual({
+      page: multiBookWork.pages[2],
+      index: 2,
+      pageIndex: 2,
+      matched: true,
+    });
+
+    // Leading label word stripped (e.g. "Book 2" -> "2" -> "2.1")
+    expect(resolver(multiBookWork, "Book 2")).toEqual({
+      page: multiBookWork.pages[2],
+      index: 2,
+      pageIndex: 2,
+      matched: true,
+    });
+
+    // Non-segment prefix "1.55" must NEVER prefix-match "1.5"
+    expect(resolver(multiBookWork, "1.55")).toEqual({
+      page: multiBookWork.pages[0],
+      index: 0,
+      pageIndex: 0,
+      matched: false,
+    });
+
+    // Unknown citation "999" returns matched: false
+    expect(resolver(multiBookWork, "999")).toEqual({
+      page: multiBookWork.pages[0],
+      index: 0,
+      pageIndex: 0,
+      matched: false,
+    });
+  });
+
+  test("renderTocDrawer renders jumpMiss status banner and pre-fills search input when jumpMiss is provided", () => {
+    const html = renderTocDrawer({
+      work: MOCK_CAESAR_WORK,
+      activePageIndex: 1,
+      query: "Gallia",
+      jumpMiss: "999",
+    });
+
+    expect(html).toContain(
+      'action="/work/caesar/de_bello_gallico/1.2"'
+    );
+    expect(html).toContain(
+      '<p class="reader-toc-miss" role="status">No section &ldquo;999&rdquo; in this work.</p>'
+    );
+    expect(html).toContain('value="999"');
+  });
+
+  test("reader routes return 404 for unknown path citations and redirect ?jump misses back to current page with ?jumpMiss", async () => {
+    const app = express();
+    app.use("/", createReaderRoutes());
+
+    // 1. Direct path citation miss (full and partial) -> 404
+    const missFull = await request(app).get("/work/caesar/de_bello_gallico/999");
+    expect(missFull.status).toBe(404);
+    expect(missFull.text).toContain("Classical Work Not Found");
+    expect(missFull.text).toContain("caesar/de_bello_gallico/999");
+
+    const missSegment = await request(app).get(
+      "/work/caesar/de_bello_gallico/1.15"
+    );
+    expect(missSegment.status).toBe(404);
+
+    const missPartial = await request(app).get(
+      "/work/caesar/de_bello_gallico/999?format=partial"
+    );
+    expect(missPartial.status).toBe(404);
+
+    // 2. ?jump= miss from /work/caesar/de_bello_gallico/1.2 stays on /1.2 with ?jumpMiss=...#reader-toc-drawer
+    const jumpMissFromPage = await request(app).get(
+      "/work/caesar/de_bello_gallico/1.2?jump=999&q=Gallia"
+    );
+    expect(jumpMissFromPage.status).toBe(302);
+    expect(jumpMissFromPage.header.location).toBe(
+      "/work/caesar/de_bello_gallico/1.2?q=Gallia&jumpMiss=999#reader-toc-drawer"
+    );
+
+    // 3. Following the redirect renders page 1.2 with the miss banner inside #reader-toc-drawer
+    const renderedMiss = await request(app).get(
+      "/work/caesar/de_bello_gallico/1.2?q=Gallia&jumpMiss=999"
+    );
+    expect(renderedMiss.status).toBe(200);
+    expect(renderedMiss.text).toContain('data-page="1.2"');
+    expect(renderedMiss.text).toContain(
+      '<p class="reader-toc-miss" role="status">No section &ldquo;999&rdquo; in this work.</p>'
+    );
+    expect(renderedMiss.text).toContain('value="999"');
+
+    // 4. ?jump=Book+1 resolves via label stripping without appending a bogus #sec-Book 1 hash
+    const jumpBook = await request(app).get(
+      "/work/caesar/de_bello_gallico/1.2?jump=Book+1"
+    );
+    expect(jumpBook.status).toBe(302);
+    expect(jumpBook.header.location).toBe("/work/caesar/de_bello_gallico/1.1");
   });
 });

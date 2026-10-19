@@ -36,6 +36,7 @@ export interface ReaderPageOptions {
   pageId?: string | CitationId;
   query?: string;
   matchText?: string;
+  jumpMiss?: string;
   work?: V2PreprocessedWork;
 }
 
@@ -48,6 +49,7 @@ interface ReaderRenderContext {
   nextPage: V2PreprocessedPage | null;
   query: string;
   matchText: string;
+  jumpMiss: string;
   passageHtml: string;
   singleViewUrl: string;
   dictIframeSrc: string;
@@ -78,6 +80,7 @@ export async function resolveReaderContext(
 ): Promise<ReaderRenderContext> {
   const query = options.query?.trim() ?? "";
   const matchText = options.matchText?.trim() ?? "";
+  const jumpMiss = options.jumpMiss?.trim() ?? "";
 
   const work: V2PreprocessedWork | null =
     options.work ?? (options.workId ? await getV2Work(options.workId) : null);
@@ -128,6 +131,7 @@ export async function resolveReaderContext(
     nextPage,
     query,
     matchText,
+    jumpMiss,
     passageHtml,
     singleViewUrl,
     dictIframeSrc,
@@ -571,6 +575,7 @@ function renderReaderContentHtmlFromContext(ctx: ReaderRenderContext): string {
       work: ctx.work,
       activePageIndex: ctx.activePageIndex,
       query: ctx.query,
+      jumpMiss: ctx.jumpMiss,
     }),
     layoutStateClass: ctx.layoutStateClass,
     stickyBarHtml: renderReaderStickyBar(ctx),
@@ -690,8 +695,9 @@ export function renderReaderTranslationHtml(
   pageParam: string
 ): string | null {
   if (!work.hasTranslation) return null;
-  const page = resolvePageInWork(work, pageParam).page;
-  if (!page) return null;
+  const resolved = resolvePageInWork(work, pageParam);
+  if (!resolved.matched || !resolved.page) return null;
+  const page = resolved.page;
   if (!page.translationHtml) {
     return `
 <div class="reader-translation-empty">

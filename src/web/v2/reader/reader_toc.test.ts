@@ -457,7 +457,7 @@ describe("ReaderTocController", () => {
         expectedSelected: "4.1",
       },
       {
-        desc: "Ammianus-style work (active 14.1): typing '1' shows all 1* pages (1.x, 14.x, 15.x), not just 14.1",
+        desc: "Ammianus-style work (active 14.1): typing '1' shows all 1* pages (1.x, 14.x, 15.x) across books without auto-selecting",
         active: "14.1",
         query: "1",
         expectedVisible: [
@@ -471,7 +471,7 @@ describe("ReaderTocController", () => {
           "14.2",
           "15.1",
         ],
-        expectedSelected: "1.prologue",
+        expectedSelected: null,
       },
       {
         desc: "Typing '14' narrows to Book 14 (14.1, 14.2) and excludes 1.14",
@@ -495,11 +495,11 @@ describe("ReaderTocController", () => {
         expectedSelected: "1.14",
       },
       {
-        desc: "Named chapter 'pro' (no space) matches both top-level 'prologue' and nested '1.prologue'",
+        desc: "Named chapter 'pro' (no space) matches both top-level 'prologue' and nested '1.prologue' across groups without auto-selecting",
         active: "1.1",
         query: "pro",
         expectedVisible: ["prologue", "1.prologue"],
-        expectedSelected: "prologue",
+        expectedSelected: null,
       },
       {
         desc: "Exact named chapter 'prologue' selects 'prologue'",
@@ -528,6 +528,27 @@ describe("ReaderTocController", () => {
         query: "§ 1:4",
         expectedVisible: ["1.4", "1.40"],
         expectedSelected: "1.4",
+      },
+      {
+        desc: "Group label 'Book 2' shows all Book 2 items (and not Book 20) and auto-selects first item in Book 2",
+        active: "1.1",
+        query: "Book 2",
+        expectedVisible: ["2.praef", "2.1", "2.4"],
+        expectedSelected: "2.praef",
+      },
+      {
+        desc: "Unique item title 'Belgae' shows 2.4 and auto-selects it",
+        active: "1.1",
+        query: "Belgae",
+        expectedVisible: ["2.4"],
+        expectedSelected: "2.4",
+      },
+      {
+        desc: "Ambiguous multi-book item title 'Chapter 1' shows matches across all books without auto-selecting",
+        active: "1.1",
+        query: "Chapter 1",
+        expectedVisible: ["1.1", "2.1", "4.1", "14.1", "15.1", "20.1"],
+        expectedSelected: null,
       },
     ])("$desc", ({ active, query, expectedVisible, expectedSelected }) => {
       document.body.innerHTML = "";
@@ -616,6 +637,136 @@ describe("ReaderTocController", () => {
       searchInput.dispatchEvent(composingDown);
       expect(composingDown.defaultPrevented).toBe(false);
       expect(getSelectedPageId(root)).toBe("1.1");
+
+      controller.dispose();
+    });
+
+    test("Enter on unmatched or ambiguous multi-group query does not submit form or jump until ArrowDown selects an item", () => {
+      document.body.innerHTML = "";
+      const root = createComprehensiveTocFixture("2.4");
+      const controller = connectController({ root });
+      const searchInput = controller.searchInput!;
+      const form = searchInput.form!;
+      const submitSpy = jest.spyOn(form, "submit").mockImplementation(() => {});
+      controller.open();
+
+      // 1. Unmatched query "999" shows empty state, selects nothing, and Enter does not submit form
+      searchInput.value = "999";
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+      expect(getVisiblePageIds(root)).toEqual([]);
+      expect(getSelectedPageId(root)).toBeNull();
+      expect(controller.emptyState?.hidden).toBe(false);
+
+      searchInput.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      expect(submitSpy).not.toHaveBeenCalled();
+      expect(controller.isOpen()).toBe(true);
+
+      // Direct form submit event is also prevented in JS mode
+      const submitEv = new Event("submit", { bubbles: true, cancelable: true });
+      form.dispatchEvent(submitEv);
+      expect(submitEv.defaultPrevented).toBe(true);
+      expect(submitSpy).not.toHaveBeenCalled();
+
+      // 2. Ambiguous multi-book query "Chapter 1" leaves selection null on input; Enter is a no-op until ArrowDown selects an item
+      searchInput.value = "Chapter 1";
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+      expect(getVisiblePageIds(root)).toEqual([
+        "1.1",
+        "2.1",
+        "4.1",
+        "14.1",
+        "15.1",
+        "20.1",
+      ]);
+      expect(getSelectedPageId(root)).toBeNull();
+
+      const item11 = root.querySelector<HTMLAnchorElement>(
+        '[data-page-id="1.1"]'
+      )!;
+      const click11Spy = jest.fn((e: MouseEvent) => e.preventDefault());
+      item11.addEventListener("click", click11Spy);
+
+      searchInput.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      expect(click11Spy).not.toHaveBeenCalled();
+      expect(submitSpy).not.toHaveBeenCalled();
+
+      // Pressing ArrowDown selects the first visible item (1.1), and Enter now clicks it
+      searchInput.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true })
+      );
+      expect(getSelectedPageId(root)).toBe("1.1");
+      searchInput.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      );
+      expect(click11Spy).toHaveBeenCalledTimes(1);
+
+      submitSpy.mockRestore();
+      controller.dispose();
+    });
+
+    test("open() centers active TOC item inside listContainer with instant scroll after resetFilter()", () => {
+      document.body.innerHTML = "";
+      const root = createComprehensiveTocFixture("14.1");
+      const controller = connectController({ root });
+      const list = controller.listContainer!;
+      const active = list.querySelector<HTMLElement>(".reader-toc-item.active")!;
+
+      Object.defineProperty(list, "clientHeight", {
+        value: 300,
+        configurable: true,
+      });
+      Object.defineProperty(list, "scrollTop", {
+        value: 50,
+        configurable: true,
+        writable: true,
+      });
+      jest.spyOn(list, "getBoundingClientRect").mockReturnValue({
+        top: 100,
+        bottom: 400,
+        left: 0,
+        right: 360,
+        width: 360,
+        height: 300,
+        x: 0,
+        y: 100,
+        toJSON: () => ({}),
+      });
+      jest.spyOn(active, "getBoundingClientRect").mockReturnValue({
+        top: 600,
+        bottom: 632,
+        left: 0,
+        right: 360,
+        width: 360,
+        height: 32,
+        x: 0,
+        y: 600,
+        toJSON: () => ({}),
+      });
+      const scrollToSpy = jest.fn();
+      list.scrollTo = scrollToSpy;
+      const activeScrollIntoViewSpy = jest.fn();
+      active.scrollIntoView = activeScrollIntoViewSpy;
+
+      controller.open();
+
+      // top = (600 - 100) + 50 = 550; targetTop = 550 - 300 / 2 = 400
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 400,
+        behavior: "instant",
+      });
+      expect(activeScrollIntoViewSpy).not.toHaveBeenCalled();
 
       controller.dispose();
     });

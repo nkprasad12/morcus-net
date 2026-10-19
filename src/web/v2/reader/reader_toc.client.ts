@@ -69,7 +69,6 @@ export class ReaderTocController extends BaseController {
           const active = drawer.querySelector<HTMLElement>(
             ".reader-toc-item.active"
           );
-          active?.scrollIntoView?.({ block: "nearest" });
           const isCoarsePointer =
             typeof window !== "undefined" &&
             window.matchMedia?.("(pointer: coarse)").matches;
@@ -79,6 +78,7 @@ export class ReaderTocController extends BaseController {
         },
         onOpen: () => {
           this.resetFilter();
+          this.#scrollActiveItemIntoCenter();
           this.#opts.onOpen?.();
         },
         onClose: () => {
@@ -165,6 +165,32 @@ export class ReaderTocController extends BaseController {
         this.#executeSelectedOrJump();
       }
     });
+
+    const form = this.searchInput.form;
+    if (form) {
+      this.scope.listen(form, "submit", (event: SubmitEvent) => {
+        // Intercepts its own TOC jump form submission in JS mode
+        event.preventDefault();
+        this.#executeSelectedOrJump();
+      });
+    }
+  }
+
+  #scrollActiveItemIntoCenter(): void {
+    const list = this.listContainer;
+    const active = list?.querySelector<HTMLElement>(".reader-toc-item.active");
+    if (!list || !active) return;
+
+    const top =
+      active.getBoundingClientRect().top -
+      list.getBoundingClientRect().top +
+      list.scrollTop;
+    const targetTop = Math.max(0, top - list.clientHeight / 2);
+    if (typeof list.scrollTo === "function") {
+      list.scrollTo({ top: targetTop, behavior: "instant" });
+    } else {
+      list.scrollTop = targetTop;
+    }
   }
 
   public resetFilter(): void {
@@ -220,15 +246,50 @@ export class ReaderTocController extends BaseController {
           .split(".")
           .some((segment) => segment.startsWith(queryLower)));
 
+    const hasLetters = /[a-z]/.test(queryLower);
+    const textPattern =
+      queryLower && hasLetters
+        ? new RegExp(
+            queryLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+              (/\d$/.test(queryLower) ? "(?!\\d)" : "")
+          )
+        : null;
+    const matchesText = (text: string): boolean =>
+      Boolean(textPattern && textPattern.test(text.toLowerCase()));
+
+    const matchingGroups = new Set<HTMLDetailsElement>();
+    if (textPattern) {
+      for (const group of groups) {
+        const labelText =
+          group.querySelector<HTMLElement>(
+            ":scope > summary .reader-toc-group-label"
+          )?.textContent ??
+          group.querySelector<HTMLElement>(":scope > summary")?.textContent ??
+          "";
+        if (matchesText(labelText.trim())) {
+          matchingGroups.add(group);
+        }
+      }
+    }
+
+    const itemMatchesDirectly = (item: HTMLAnchorElement): boolean => {
+      const pageIdLower = (item.dataset.pageId ?? "").toLowerCase();
+      if (matchesPageId(pageIdLower)) return true;
+      if (!textPattern) return false;
+      const titleText =
+        item.querySelector<HTMLElement>(".reader-toc-item-title")
+          ?.textContent ?? "";
+      if (matchesText(titleText.trim())) return true;
+      for (const group of matchingGroups) {
+        if (group.contains(item)) return true;
+      }
+      return false;
+    };
+
     // If no TOC item directly matches, check if query is a deep sub-page
     // citation (e.g. "1.2.3" belonging to page "1.2").
     let deepParentId = "";
-    if (
-      queryLower &&
-      !items.some((item) =>
-        matchesPageId((item.dataset.pageId ?? "").toLowerCase())
-      )
-    ) {
+    if (queryLower && !items.some((item) => itemMatchesDirectly(item))) {
       for (const item of items) {
         const pageId = item.dataset.pageId ?? "";
         if (
@@ -244,12 +305,13 @@ export class ReaderTocController extends BaseController {
     let exactMatch: HTMLAnchorElement | null = null;
     let firstVisible: HTMLAnchorElement | null = null;
     let visibleCount = 0;
+    const visibleGroups = new Set<HTMLDetailsElement | null>();
 
     for (const item of items) {
       const pageId = item.dataset.pageId ?? "";
       const pageIdLower = pageId.toLowerCase();
       const isVisible =
-        matchesPageId(pageIdLower) ||
+        itemMatchesDirectly(item) ||
         Boolean(deepParentId && pageId === deepParentId);
 
       item.hidden = !isVisible;
@@ -259,6 +321,9 @@ export class ReaderTocController extends BaseController {
         if (pageIdLower === queryLower && !exactMatch) {
           exactMatch = item;
         }
+        visibleGroups.add(
+          item.closest<HTMLDetailsElement>(".reader-toc-group")
+        );
       }
     }
 
@@ -275,7 +340,14 @@ export class ReaderTocController extends BaseController {
       }
     }
 
-    this.#setSelectedItem(queryLower ? exactMatch ?? firstVisible : null);
+    const autoSelected =
+      !queryLower || visibleCount === 0
+        ? null
+        : exactMatch ??
+          (visibleCount === 1 || visibleGroups.size === 1
+            ? firstVisible
+            : null);
+    this.#setSelectedItem(autoSelected);
     if (this.emptyState) {
       this.emptyState.hidden = !queryLower || visibleCount > 0;
     }
@@ -340,14 +412,13 @@ export class ReaderTocController extends BaseController {
 
     const query = this.#normalizeCitationInput(this.searchInput?.value ?? "");
     const targetItem =
-      (this.#selectedItem && !this.#selectedItem.hidden
+      this.#selectedItem && !this.#selectedItem.hidden
         ? this.#selectedItem
-        : null) ??
-      (query
-        ? this.#getVisibleItems()[0] ?? null
-        : this.listContainer.querySelector<HTMLAnchorElement>(
+        : !query
+        ? this.listContainer.querySelector<HTMLAnchorElement>(
             ".reader-toc-item.active"
-          ));
+          )
+        : null;
 
     if (targetItem) {
       const pageId = targetItem.dataset.pageId ?? "";
@@ -360,12 +431,6 @@ export class ReaderTocController extends BaseController {
         isSubPageJump ? `${baseHref}#sec-${query}` : baseHref
       );
       targetItem.click();
-      return;
-    }
-
-    if (query && this.searchInput?.form) {
-      this.searchInput.value = query;
-      this.searchInput.form.submit();
     }
   }
 

@@ -245,56 +245,99 @@ export function getV2Work(
 export function resolvePageInWork(
   work: V2PreprocessedWork,
   pageIdOrCitation?: string | string[]
-): { page: V2PreprocessedPage; index: number; pageIndex: number } {
+): {
+  page: V2PreprocessedPage;
+  index: number;
+  pageIndex: number;
+  matched: boolean;
+} {
   if (!pageIdOrCitation || work.pages.length === 0) {
-    return { page: work.pages[0], index: 0, pageIndex: 0 };
+    return { page: work.pages[0], index: 0, pageIndex: 0, matched: true };
   }
 
-  const needle = Array.isArray(pageIdOrCitation)
+  const rawNeedle = Array.isArray(pageIdOrCitation)
     ? pageIdOrCitation.join(".")
     : pageIdOrCitation.trim();
 
-  // 1. Exact string match against page.id (e.g. "1.1" === "1.1")
-  const exactIdx = work.pages.findIndex((p) => {
-    const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
-    return pIdStr === needle;
-  });
-  if (exactIdx !== -1) {
-    return { page: work.pages[exactIdx], index: exactIdx, pageIndex: exactIdx };
+  if (!rawNeedle) {
+    return { page: work.pages[0], index: 0, pageIndex: 0, matched: true };
   }
 
-  // 2. Prefix match if user typed a deeper citation (e.g. "1.2.3" -> page "1.2")
-  const tokens = needle.split(".").filter((t) => t.length > 0);
   const k =
     work.paginationDepth ||
     (work.textParts.length > 1 ? work.textParts.length - 1 : 1);
-  const pageTokens = tokens.slice(0, k);
-  const pageTokenStr = pageTokens.join(".");
 
-  const prefixIdx = work.pages.findIndex((p) => {
-    const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
-    return pIdStr === pageTokenStr;
-  });
-  if (prefixIdx !== -1) {
-    return {
-      page: work.pages[prefixIdx],
-      index: prefixIdx,
-      pageIndex: prefixIdx,
-    };
+  const tryResolve = (
+    needle: string
+  ): {
+    page: V2PreprocessedPage;
+    index: number;
+    pageIndex: number;
+    matched: true;
+  } | null => {
+    // 1. Exact string match against page.id (e.g. "1.1" === "1.1")
+    const exactIdx = work.pages.findIndex((p) => {
+      const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
+      return pIdStr === needle;
+    });
+    if (exactIdx !== -1) {
+      return {
+        page: work.pages[exactIdx],
+        index: exactIdx,
+        pageIndex: exactIdx,
+        matched: true,
+      };
+    }
+
+    // 2. Prefix match if user typed a deeper citation (e.g. "1.2.3" -> page "1.2")
+    const tokens = needle.split(".").filter((t) => t.length > 0);
+    const pageTokens = tokens.slice(0, k);
+    const pageTokenStr = pageTokens.join(".");
+
+    const prefixIdx = work.pages.findIndex((p) => {
+      const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
+      return pIdStr === pageTokenStr;
+    });
+    if (prefixIdx !== -1) {
+      return {
+        page: work.pages[prefixIdx],
+        index: prefixIdx,
+        pageIndex: prefixIdx,
+        matched: true,
+      };
+    }
+
+    // 3. Segment-delimited prefix match (e.g. "2" -> "2.1" or "1.5.10" -> "1.5",
+    //    never "1.55" -> "1.5")
+    const startsWithIdx = work.pages.findIndex((p) => {
+      const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
+      return (
+        needle.startsWith(pIdStr + ".") || pIdStr.startsWith(needle + ".")
+      );
+    });
+    if (startsWithIdx !== -1) {
+      return {
+        page: work.pages[startsWithIdx],
+        index: startsWithIdx,
+        pageIndex: startsWithIdx,
+        matched: true,
+      };
+    }
+
+    return null;
+  };
+
+  const direct = tryResolve(rawNeedle);
+  if (direct) return direct;
+
+  // Strip optional leading label word (e.g. Zero-JS `?jump=Book+2` -> "2")
+  const stripped = rawNeedle
+    .replace(/^(book|liber|chapter|caput|elegy|poem|carmen)\s+/i, "")
+    .trim();
+  if (stripped && stripped !== rawNeedle) {
+    const afterStrip = tryResolve(stripped);
+    if (afterStrip) return afterStrip;
   }
 
-  // 3. Substring / startsWith match
-  const startsWithIdx = work.pages.findIndex((p) => {
-    const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
-    return needle.startsWith(pIdStr) || pIdStr.startsWith(needle);
-  });
-  if (startsWithIdx !== -1) {
-    return {
-      page: work.pages[startsWithIdx],
-      index: startsWithIdx,
-      pageIndex: startsWithIdx,
-    };
-  }
-
-  return { page: work.pages[0], index: 0, pageIndex: 0 };
+  return { page: work.pages[0], index: 0, pageIndex: 0, matched: false };
 }

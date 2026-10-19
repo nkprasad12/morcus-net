@@ -22,17 +22,32 @@ function redirectReaderJump(
   work: V2PreprocessedWork,
   jump: string,
   query: string,
-  matchText: string = ""
+  matchText: string = "",
+  currentPageId?: string
 ): void {
   const resolved = resolvePageInWork(work, jump);
   const params = new URLSearchParams();
   if (query) params.set("q", query);
   if (matchText) params.set("matchText", matchText);
+  if (!resolved.matched) {
+    params.set("jumpMiss", jump);
+    const basePath = `/work/${work.urlAuthor}/${work.urlName}${
+      currentPageId ? `/${encodeURIComponent(currentPageId)}` : ""
+    }`;
+    res.redirect(302, `${basePath}?${params.toString()}#reader-toc-drawer`);
+    return;
+  }
   const qStr = params.toString() ? `?${params.toString()}` : "";
   const pageId = Array.isArray(resolved.page.id)
     ? resolved.page.id.join(".")
     : resolved.page.id;
-  const hash = jump && jump !== pageId ? `#sec-${jump}` : "";
+  const cleanJump = jump
+    .replace(/^(book|liber|chapter|caput|elegy|poem|carmen)\s+/i, "")
+    .trim();
+  const hash =
+    cleanJump && cleanJump !== pageId && !pageId.startsWith(cleanJump + ".")
+      ? `#sec-${cleanJump}`
+      : "";
   res.redirect(
     302,
     `/work/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}${hash}`
@@ -72,6 +87,7 @@ async function sendReaderPassage(
     pageId?: string;
     query: string;
     matchText: string;
+    jumpMiss?: string;
     isPartial: boolean;
     logMessage: string;
     errorMessage: string;
@@ -84,6 +100,7 @@ async function sendReaderPassage(
         pageId: options.pageId,
         query: options.query,
         matchText: options.matchText,
+        jumpMiss: options.jumpMiss,
       });
       // Page turns fetch `?v=`; the partial depends only on the URL.
       setVersionedCacheControl(req, res, { scope: "private" });
@@ -95,6 +112,7 @@ async function sendReaderPassage(
           pageId: options.pageId,
           query: options.query,
           matchText: options.matchText,
+          jumpMiss: options.jumpMiss,
         })
       );
     }
@@ -134,6 +152,8 @@ export function createReaderRoutes(): Router {
       typeof req.query.matchText === "string" ? req.query.matchText.trim() : "";
     const jump =
       typeof req.query.jump === "string" ? req.query.jump.trim() : "";
+    const jumpMiss =
+      typeof req.query.jumpMiss === "string" ? req.query.jumpMiss.trim() : "";
     const isPartial = isPartialRequest(req, res);
 
     const work = await findReaderWork(author, name);
@@ -156,7 +176,16 @@ export function createReaderRoutes(): Router {
       resolveLegacyPageJump(work, req, pageId) ||
       (pageId ? undefined : getFirstHighlightSectionId(matchText));
     if (jumpTarget) {
-      redirectReaderJump(res, work, jumpTarget, query, matchText);
+      redirectReaderJump(res, work, jumpTarget, query, matchText, pageId);
+      return;
+    }
+
+    if (pageId && !resolvePageInWork(work, pageId).matched) {
+      res.status(404).send(
+        renderNotFoundPageHtml({
+          workSlug: `${author}/${name}/${pageId}`,
+        })
+      );
       return;
     }
 
@@ -165,6 +194,7 @@ export function createReaderRoutes(): Router {
       pageId,
       query,
       matchText,
+      jumpMiss,
       isPartial,
       logMessage: "Error rendering reader work:",
       errorMessage: "Error rendering reader passage",

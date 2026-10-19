@@ -1262,7 +1262,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       : "";
   }
 
-  #getTranslationKey(pageUrl: string): string {
+  #getTranslationKey(pageUrl: string, fallbackPageId?: string): string {
     try {
       const origin =
         typeof window !== "undefined" && window.location
@@ -1273,7 +1273,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       if (parts.length >= 3 && parts[0] === "work") {
         const author = parts[1];
         const name = parts[2];
-        const pageId = parts.slice(3).join(".") || this.dataset.page || "1";
+        const pageId =
+          parts.slice(3).join(".") ||
+          fallbackPageId ||
+          this.dataset.page ||
+          "1";
         return `${author}/${name}/${pageId}`;
       }
       return u.pathname;
@@ -1284,12 +1288,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   public async fetchTranslation(
     pageUrl: string,
-    signal: AbortSignal
+    signal: AbortSignal,
+    fallbackPageId?: string
   ): Promise<string | null> {
     if (signal.aborted) {
       return null;
     }
-    const key = this.#getTranslationKey(pageUrl);
+    const key = this.#getTranslationKey(pageUrl, fallbackPageId);
     const cached = this.#translationCache.get(key);
     if (cached !== undefined) {
       await Promise.resolve();
@@ -1300,7 +1305,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       let cleanUrl = pageUrl.split("?")[0].split("#")[0].replace(/\/$/, "");
       const parts = cleanUrl.split("/").filter(Boolean);
       if (parts.length === 3 && parts[0] === "work") {
-        cleanUrl = `${cleanUrl}/${this.dataset.page || "1"}`;
+        cleanUrl = `${cleanUrl}/${
+          fallbackPageId || this.dataset.page || "1"
+        }`;
       }
       const res = await fetch(withBuildVersion(`${cleanUrl}/translation`), {
         headers: { "X-Requested-With": "fetch" },
@@ -1325,6 +1332,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   #patchToc(newPageId: string): void {
     if (!newPageId) return;
 
+    const author = this.dataset.author;
+    const name = this.dataset.name;
+    const searchForm = this.querySelector<HTMLFormElement>(
+      ".reader-toc-drawer .reader-toc-search-form"
+    );
+    if (searchForm && author && name) {
+      searchForm.setAttribute("action", `/work/${author}/${name}/${newPageId}`);
+    }
+
     const prevActive = this.querySelectorAll<HTMLElement>(
       ".reader-toc-drawer .reader-toc-item.active, .reader-toc-drawer [aria-current='page']"
     );
@@ -1341,6 +1357,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (target) {
       target.classList.add("active");
       target.setAttribute("aria-current", "page");
+
+      const openGroups = this.querySelectorAll<HTMLDetailsElement>(
+        ".reader-toc-drawer details.reader-toc-group[open]"
+      );
+      openGroups.forEach((group) => {
+        if (!group.contains(target)) {
+          group.open = false;
+        }
+      });
 
       let parent = target.parentElement;
       while (parent && !parent.classList.contains("reader-toc-drawer")) {
@@ -1455,6 +1480,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       fallback: (u: string) => this.navigate(u, { replace: isPopState }),
     };
 
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    const newPageId =
+      pathParts.slice(3).join(".") ||
+      this.querySelector<HTMLElement>(
+        ".reader-toc-drawer .reader-toc-item[data-page-id]"
+      )?.dataset.pageId ||
+      "";
+
     let success = false;
     let transHtml: string | null = null;
     let transError = false;
@@ -1462,7 +1495,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (isTransActive) {
       const [passageSuccess, translationResult] = await Promise.all([
         swapSlots(this, url.href, swapOptions),
-        this.fetchTranslation(url.pathname, signal).catch((err) => {
+        this.fetchTranslation(url.pathname, signal, newPageId).catch((err) => {
           console.error("fetchTranslation failed:", err);
           transError = true;
           return null;
@@ -1477,9 +1510,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (!success) {
       return false;
     }
-
-    const pathParts = url.pathname.split("/").filter(Boolean);
-    const newPageId = pathParts.slice(3).join(".") || pathParts[3] || "";
 
     if (isPageTurn) {
       url.searchParams.delete("q");
