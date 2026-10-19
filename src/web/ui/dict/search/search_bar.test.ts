@@ -104,8 +104,12 @@ describe("renderDictSearchBar", () => {
     expect(
       doc.querySelector("morcus-dict-settings > dialog#dict-settings")
     ).not.toBeNull();
-    // Done is the single close/apply button; there is no redundant header close button.
+    // Done is the single close/apply button in the header; there is no redundant header X or footer.
     expect(doc.querySelector("#dict-settings .dialog-close-btn")).toBeNull();
+    expect(doc.querySelector("#dict-settings .dialog-actions")).toBeNull();
+    expect(
+      doc.querySelector("#dict-settings .dialog-header .dict-settings-done")
+    ).not.toBeNull();
   });
 
   test("keeps the hidden d bitmask when the settings popover is omitted", () => {

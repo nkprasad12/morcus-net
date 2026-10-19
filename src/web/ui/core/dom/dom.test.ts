@@ -364,7 +364,7 @@ describe("core/dom.client", () => {
   });
 
   describe("navigateFrameReplace", () => {
-    it("replaces contentWindow.location without mutating the iframe src attribute", () => {
+    it("replaces contentWindow.location without mutating the iframe src attribute once a document is loaded", () => {
       const iframe = document.createElement("iframe");
       iframe.setAttribute("src", "/dicts?embedded=1");
       const replaceSpy = jest.fn();
@@ -372,6 +372,7 @@ describe("core/dom.client", () => {
         configurable: true,
         value: {
           location: {
+            pathname: "/dicts",
             replace: replaceSpy,
           },
         },
@@ -383,6 +384,28 @@ describe("core/dom.client", () => {
         "/dicts?q=arma&lang=La&o=1&embedded=1"
       );
       expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1");
+    });
+
+    it("assigns iframe.src when the frame is still on about:blank (e.g. deferred lazy load)", () => {
+      const iframe = document.createElement("iframe");
+      iframe.setAttribute("src", "/dicts?embedded=1");
+      const replaceSpy = jest.fn();
+      Object.defineProperty(iframe, "contentWindow", {
+        configurable: true,
+        value: {
+          location: {
+            pathname: "blank",
+            replace: replaceSpy,
+          },
+        },
+      });
+
+      navigateFrameReplace(iframe, "/dicts?q=arma&lang=La&o=1&embedded=1");
+
+      expect(replaceSpy).not.toHaveBeenCalled();
+      expect(iframe.getAttribute("src")).toBe(
+        "/dicts?q=arma&lang=La&o=1&embedded=1"
+      );
     });
 
     it("falls back to assigning iframe.src when contentWindow is null or throws", () => {

@@ -1018,6 +1018,7 @@ test.describe("UI V2 dictionary", () => {
     await page.locator("#dict-q").press("Enter");
     await expect(page).toHaveURL(/q=amo/);
     await expect(page).toHaveURL(/d=2/);
+    await expect(page.locator("#dict-results")).toContainText("aimer");
     await expect(page.locator(".dict-title").first()).toContainText("Gaffiot");
     expect(await readDictCookie()).toBe("1");
 

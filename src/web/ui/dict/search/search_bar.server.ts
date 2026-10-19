@@ -320,9 +320,6 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
     `;
 
   const bodyHtml = `
-    <form class="dict-settings-form" action="${escapeHtml(
-      input.action
-    )}" method="GET">
       ${input.query ? hiddenInput("q", input.query) : ""}
       ${input.extraHiddenInputsHtml}
       ${
@@ -364,16 +361,18 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
       <div class="dict-list">
         ${dictItemsHtml}
       </div>
-
-      <div class="dialog-actions">${doneHtml}</div>
-    </form>
   `;
 
   return `<morcus-dict-settings>${renderDialog({
     id: DICT_SETTINGS_DIALOG_ID,
     title: "Dictionary settings",
+    headerActionHtml: doneHtml,
+    form: {
+      className: "dict-settings-form",
+      action: input.action,
+      method: "GET",
+    },
     bodyHtml,
     customClass: "dict-settings-dialog",
-    hideCloseButton: true,
   })}</morcus-dict-settings>`;
 }

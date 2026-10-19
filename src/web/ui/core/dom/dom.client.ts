@@ -156,8 +156,9 @@ export function currentIframeSrc(iframe: HTMLIFrameElement): string | null {
 /**
  * Navigates a same-origin iframe to `url` by replacing its current session
  * history entry, so the navigation does not push to the top-level joint session
- * history. Falls back to assigning `iframe.src` when `contentWindow` is null or
- * throws.
+ * history. Before the frame has loaded a document (e.g. `about:blank` while
+ * `loading="lazy"` is deferred), or when `contentWindow` is null or throws,
+ * assigns `iframe.src` directly so the initial lazy load uses `url`.
  */
 export function navigateFrameReplace(
   iframe: HTMLIFrameElement,
@@ -165,7 +166,7 @@ export function navigateFrameReplace(
 ): void {
   try {
     const win = iframe.contentWindow;
-    if (win) {
+    if (win && win.location.pathname.startsWith("/")) {
       win.location.replace(url);
       return;
     }

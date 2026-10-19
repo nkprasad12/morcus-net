@@ -1,10 +1,26 @@
 import { html, raw, type SafeHtml } from "@/web/ui/core/dom/html.common";
 
+interface DialogFormOptions {
+  className?: string;
+  action: string;
+  method?: "GET" | "POST";
+}
+
 interface DialogOptions {
   id: string;
   title: string;
   bodyHtml: string;
   actionsHtml?: string;
+  /**
+   * Custom action control rendered in `.dialog-header` opposite the title, in place of the
+   * default `×` close button.
+   */
+  headerActionHtml?: string;
+  /**
+   * Wraps `.dialog-header`, `.dialog-body`, and `.dialog-actions` inside `.dialog-card` in a
+   * `<form>`, so a submit button in `headerActionHtml` belongs to the form natively without JS.
+   */
+  form?: DialogFormOptions;
   ariaDescribedBy?: string;
   customClass?: string;
   hideCloseButton?: boolean;
@@ -24,6 +40,8 @@ export function renderDialog(options: DialogOptions): SafeHtml {
     title,
     bodyHtml,
     actionsHtml,
+    headerActionHtml,
+    form,
     ariaDescribedBy,
     customClass = "",
     hideCloseButton = false,
@@ -35,33 +53,52 @@ export function renderDialog(options: DialogOptions): SafeHtml {
     ? html` aria-describedby="${ariaDescribedBy}"`
     : "";
 
-  const closeButtonHtml = hideCloseButton
-    ? ""
-    : html`<button
-        type="button"
-        class="dialog-close-btn"
-        aria-label="Close dialog"
-        data-dialog-close
-        ${jsOnlyCloseButton ? raw("data-js-only") : ""}>
-        <svg
-          class="dialog-close-icon"
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          aria-hidden="true"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>`;
+  const headerRightHtml =
+    headerActionHtml !== undefined
+      ? headerActionHtml
+      : hideCloseButton
+      ? ""
+      : html`<button
+          type="button"
+          class="dialog-close-btn"
+          aria-label="Close dialog"
+          data-dialog-close
+          ${jsOnlyCloseButton ? raw("data-js-only") : ""}>
+          <svg
+            class="dialog-close-icon"
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>`;
 
   const actionsContainerHtml = actionsHtml
     ? html`<div class="dialog-actions">${raw(actionsHtml)}</div>`
     : "";
+
+  const innerHtml = html`<div class="dialog-header">
+      <h2 id="${titleId}" class="dialog-title">${title}</h2>
+      ${raw(headerRightHtml)}
+    </div>
+    <div class="dialog-body">${raw(bodyHtml)}</div>
+    ${raw(actionsContainerHtml)}`;
+
+  const formClassAttr = form?.className
+    ? html` class="${form.className}"`
+    : "";
+  const cardInnerHtml = form
+    ? html`<form${raw(formClassAttr)} action="${form.action}" method="${
+        form.method ?? "GET"
+      }">${raw(innerHtml)}</form>`
+    : innerHtml;
 
   const classes = ["dialog", customClass].filter(Boolean).join(" ");
 
@@ -70,14 +107,7 @@ export function renderDialog(options: DialogOptions): SafeHtml {
     class="${classes}"
     aria-labelledby="${titleId}"
     ${raw(describedByAttr)}>
-    <div class="dialog-card">
-      <div class="dialog-header">
-        <h2 id="${titleId}" class="dialog-title">${title}</h2>
-        ${raw(closeButtonHtml)}
-      </div>
-      <div class="dialog-body">${raw(bodyHtml)}</div>
-      ${raw(actionsContainerHtml)}
-    </div>
+    <div class="dialog-card">${raw(cardInnerHtml)}</div>
   </dialog>`;
 }
 

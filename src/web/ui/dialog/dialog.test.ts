@@ -65,6 +65,27 @@ describe("dialog server utilities", () => {
 
       expect(html).not.toContain("dialog-close-btn");
     });
+
+    it("supports headerActionHtml and form wrapper", () => {
+      const html = renderDialog({
+        id: "form-dialog",
+        title: "Form Dialog",
+        headerActionHtml:
+          '<button type="submit" class="btn-done">Done</button>',
+        form: {
+          className: "custom-form",
+          action: "/submit",
+          method: "GET",
+        },
+        bodyHtml: '<input type="hidden" name="x" value="1" />',
+      });
+
+      expect(html).toContain(
+        '<form class="custom-form" action="/submit" method="GET">'
+      );
+      expect(html).toContain('<button type="submit" class="btn-done">Done</button>');
+      expect(html).not.toContain("dialog-close-btn");
+    });
   });
 
   describe("renderReportIssueDialog", () => {

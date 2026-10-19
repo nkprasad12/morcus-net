@@ -55,7 +55,12 @@ const WHOLE_SYSTEM_TESTS = [
 ];
 
 module.exports = {
-  collectCoverageFrom: ["src/**/*.ts", "src/**/*.tsx"],
+  collectCoverageFrom: [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "!src/integration/**",
+    ...ALL_TESTS.map((pattern) => `!${pattern}`),
+  ],
   projects: [
     {
       ...base,

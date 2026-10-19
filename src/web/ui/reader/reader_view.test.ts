@@ -224,7 +224,6 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     const pushStateSpy = jest.spyOn(window.history, "pushState");
     const el = createReaderView(passageHtml);
     const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-    const replaceSpy = jest.spyOn(iframe.contentWindow!.location, "replace");
     const musaWord = el.querySelector<HTMLElement>(".lat-word")!;
     expect(musaWord.textContent).toBe("Mu\u0304sa");
 
@@ -233,8 +232,8 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     // Word receives active highlight class
     expect(musaWord.classList.contains("word-active")).toBe(true);
 
-    // Dictionary iframe is navigated via location.replace without pushing ?q= to parent URL
-    expect(replaceSpy).toHaveBeenCalledWith(
+    // First lookup while iframe is still on about:blank sets iframe.src without pushing ?q= to parent URL
+    expect(iframe.getAttribute("src")).toBe(
       "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1&scale=100"
     );
     expect(currentIframeSrc(iframe)).toContain(
