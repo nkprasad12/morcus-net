@@ -140,10 +140,7 @@ class MorcusCorpusView extends BaseElement<"nav"> {
         (name) =>
           new URLSearchParams(window.location.search).get(name) ?? undefined
       );
-      if (
-        path === current ||
-        corpusUrl(params) === corpusUrl(currentParams)
-      ) {
+      if (path === current || corpusUrl(params) === corpusUrl(currentParams)) {
         this.#router?.replaceUrl(url);
       } else {
         this.#router?.pushUrl(url);

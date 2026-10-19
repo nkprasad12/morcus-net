@@ -255,30 +255,24 @@ function nudgeEditorAboveDrawers(
   doc: Document,
   win: Window
 ): void {
-  let visibleBottom = win.innerHeight;
-  for (const d of doc.querySelectorAll<HTMLElement>(".drawer")) {
-    if (d.hidden || d.contains(box)) continue;
-    const style = win.getComputedStyle(d);
-    if (
-      style.display === "none" ||
-      style.visibility === "hidden" ||
-      (style.position !== "fixed" && style.position !== "")
-    ) {
-      continue;
-    }
+  let bottom = win.innerHeight;
+  for (const d of doc.querySelectorAll<HTMLElement>(".drawer:not([hidden])")) {
+    const s = win.getComputedStyle(d);
     const r = d.getBoundingClientRect();
-    if (r.height > 0 && r.top > 0 && r.top < visibleBottom) {
-      visibleBottom = r.top;
+    if (
+      !d.contains(box) &&
+      s.display !== "none" &&
+      s.visibility !== "hidden" &&
+      (!s.position || s.position === "fixed") &&
+      r.height > 0 &&
+      r.top > 0 &&
+      r.top < bottom
+    ) {
+      bottom = r.top;
     }
   }
-  if (visibleBottom <= 0) return;
-  const boxRect = box.getBoundingClientRect();
-  if (boxRect.bottom > visibleBottom && typeof win.scrollBy === "function") {
-    win.scrollBy({
-      top: boxRect.bottom - visibleBottom,
-      behavior: "instant",
-    });
-  }
+  const top = box.getBoundingClientRect().bottom - bottom;
+  if (bottom > 0 && top > 0) win.scrollBy?.({ top, behavior: "instant" });
 }
 
 /**

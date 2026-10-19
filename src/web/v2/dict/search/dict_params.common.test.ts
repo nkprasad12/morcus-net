@@ -4,13 +4,15 @@ import {
   buildDictUrl,
   cleanDictQuery,
   dictUrlBuilder,
-  normalizeDictParams,
 } from "@/web/v2/dict/search/dict_params.common";
+import { normalizeDictParams } from "@/web/v2/dict/settings/dict_bitmask.common";
 
 describe("cleanDictQuery", () => {
   test.each([
     ["1 ab", "ab"],
     ["ab 1", "ab"],
+    ["ab, 1", "ab"],
+    ["1. ab", "ab"],
     ["  2   bellum  ", "bellum"],
     ["bellum 3", "bellum"],
     ["1", "1"],
@@ -25,16 +27,46 @@ describe("cleanDictQuery", () => {
 
 describe("normalizeDictParams", () => {
   test.each([
-    [{ o: "-1", d: "3" }, { o: "0", d: "3" }],
-    [{ o: "abc", d: "an" }, { o: "0", d: "an" }],
-    [{ o: "", d: "1" }, { o: "0", d: "1" }],
-    [{ o: "0", d: "1" }, { o: "0", d: "1" }],
-    [{ o: "1", d: "e7" }, { o: "1", d: "e7" }],
-    [{ o: "true", d: "AN" }, { o: "1", d: "an" }],
-    [{ o: "1", d: "0" }, { o: "1", d: undefined }],
-    [{ o: "1", d: "zzzz" }, { o: "1", d: undefined }],
-    [{ o: "1", d: "-1" }, { o: "1", d: undefined }],
-    [{ o: "1", d: "sg" }, { o: "1", d: undefined }],
+    [
+      { o: "-1", d: "3" },
+      { o: "0", d: "3" },
+    ],
+    [
+      { o: "abc", d: "an" },
+      { o: "0", d: "an" },
+    ],
+    [
+      { o: "", d: "1" },
+      { o: "0", d: "1" },
+    ],
+    [
+      { o: "0", d: "1" },
+      { o: "0", d: "1" },
+    ],
+    [
+      { o: "1", d: "e7" },
+      { o: "1", d: "e7" },
+    ],
+    [
+      { o: "true", d: "AN" },
+      { o: "1", d: "an" },
+    ],
+    [
+      { o: "1", d: "0" },
+      { o: "1", d: undefined },
+    ],
+    [
+      { o: "1", d: "zzzz" },
+      { o: "1", d: undefined },
+    ],
+    [
+      { o: "1", d: "-1" },
+      { o: "1", d: undefined },
+    ],
+    [
+      { o: "1", d: "sg" },
+      { o: "1", d: undefined },
+    ],
   ])("normalizes %o to %o", (input, expected) => {
     expect(normalizeDictParams(input)).toEqual(expected);
     const searchParams = new URLSearchParams();

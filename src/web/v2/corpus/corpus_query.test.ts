@@ -78,7 +78,9 @@ describe("parseCorpusParams", () => {
   });
 
   test("clamps malformed and boundary contextLen / pageSize values (CORP-05)", () => {
-    expect(parseCorpusParams({ contextLen: "abc", pageSize: "abc" })).toMatchObject({
+    expect(
+      parseCorpusParams({ contextLen: "abc", pageSize: "abc" })
+    ).toMatchObject({
       contextLen: CONTEXT_LEN.default,
       pageSize: PAGE_SIZE.default,
     });
@@ -86,19 +88,27 @@ describe("parseCorpusParams", () => {
       contextLen: CONTEXT_LEN.default,
       pageSize: PAGE_SIZE.default,
     });
-    expect(parseCorpusParams({ contextLen: "1e3", pageSize: "1e3" })).toMatchObject({
+    expect(
+      parseCorpusParams({ contextLen: "1e3", pageSize: "1e3" })
+    ).toMatchObject({
       contextLen: CONTEXT_LEN.default,
       pageSize: PAGE_SIZE.default,
     });
-    expect(parseCorpusParams({ contextLen: "12abc", pageSize: "12abc" })).toMatchObject({
+    expect(
+      parseCorpusParams({ contextLen: "12abc", pageSize: "12abc" })
+    ).toMatchObject({
       contextLen: CONTEXT_LEN.default,
       pageSize: PAGE_SIZE.default,
     });
-    expect(parseCorpusParams({ contextLen: " 7 ", pageSize: " 15 " })).toMatchObject({
+    expect(
+      parseCorpusParams({ contextLen: " 7 ", pageSize: " 15 " })
+    ).toMatchObject({
       contextLen: 7,
       pageSize: 15,
     });
-    expect(parseCorpusParams({ contextLen: "-5", pageSize: "-5" })).toMatchObject({
+    expect(
+      parseCorpusParams({ contextLen: "-5", pageSize: "-5" })
+    ).toMatchObject({
       contextLen: CONTEXT_LEN.min,
       pageSize: PAGE_SIZE.min,
     });
@@ -438,9 +448,17 @@ describe("renderCorpusPageHtml form attributes (CORP-02, CORP-04)", () => {
       CORPUS_TEST_AUTHORS
     );
     const html = renderCorpusPageHtml(view);
-    expect(html).toMatch(/<form\b[^>]*\bclass="search-form corpus-form"[^>]*\bnovalidate\b/);
-    expect(html).toMatch(/<input\b[^>]*\bname="contextLen"[^>]*\bautocomplete="off"/);
-    expect(html).toMatch(/<input\b[^>]*\bname="pageSize"[^>]*\bautocomplete="off"/);
-    expect(html).toMatch(/<input\b[^>]*\bname="strictMode"[^>]*\bautocomplete="off"/);
+    expect(html).toMatch(
+      /<form\b[^>]*\bclass="search-form corpus-form"[^>]*\bnovalidate\b/
+    );
+    expect(html).toMatch(
+      /<input\b[^>]*\bname="contextLen"[^>]*\bautocomplete="off"/
+    );
+    expect(html).toMatch(
+      /<input\b[^>]*\bname="pageSize"[^>]*\bautocomplete="off"/
+    );
+    expect(html).toMatch(
+      /<input\b[^>]*\bname="strictMode"[^>]*\bautocomplete="off"/
+    );
   });
 });

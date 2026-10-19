@@ -197,6 +197,14 @@ export class ReaderTocController extends BaseController {
     if (this.searchInput) {
       this.searchInput.value = "";
     }
+    const mutatedItems =
+      this.listContainer?.querySelectorAll<HTMLAnchorElement>(
+        '.reader-toc-item[href*="#"]'
+      ) ?? [];
+    for (const item of mutatedItems) {
+      const baseHref = (item.getAttribute("href") ?? "").split("#")[0];
+      if (baseHref) item.setAttribute("href", baseHref);
+    }
     this.applyFilter("");
   }
 
@@ -344,7 +352,8 @@ export class ReaderTocController extends BaseController {
       !queryLower || visibleCount === 0
         ? null
         : exactMatch ??
-          (visibleCount === 1 || visibleGroups.size === 1
+          (visibleCount === 1 ||
+          (visibleGroups.size === 1 && !visibleGroups.has(null))
             ? firstVisible
             : null);
     this.#setSelectedItem(autoSelected);

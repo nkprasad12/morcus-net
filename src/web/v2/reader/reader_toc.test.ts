@@ -721,7 +721,9 @@ describe("ReaderTocController", () => {
       const root = createComprehensiveTocFixture("14.1");
       const controller = connectController({ root });
       const list = controller.listContainer!;
-      const active = list.querySelector<HTMLElement>(".reader-toc-item.active")!;
+      const active = list.querySelector<HTMLElement>(
+        ".reader-toc-item.active"
+      )!;
 
       Object.defineProperty(list, "clientHeight", {
         value: 300,

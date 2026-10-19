@@ -79,11 +79,11 @@ export function installLayoutShims(): void {
       "contentWindow"
     );
     if (origContentWindowDesc?.get) {
-      const shimmedWindows = new WeakMap<HTMLIFrameElement, Window>();
+      const shimmedWindows = new WeakMap<HTMLIFrameElement, object>();
 
       Object.defineProperty(HTMLIFrameElement.prototype, "contentWindow", {
         configurable: true,
-        get(this: HTMLIFrameElement) {
+        get(this: HTMLIFrameElement): object | null {
           const rawWin: unknown = origContentWindowDesc.get?.call(this);
           if (typeof rawWin !== "object" || rawWin === null) return null;
 
@@ -115,8 +115,8 @@ export function installLayoutShims(): void {
               },
             };
 
-            shimmed = new Proxy(rawWin as Window, {
-              get(target, prop) {
+            shimmed = new Proxy(rawWin, {
+              get(target, prop): unknown {
                 if (prop === "location") return locShim;
                 const val: unknown = Reflect.get(target, prop, target);
                 return typeof val === "function" ? val.bind(target) : val;

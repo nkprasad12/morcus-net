@@ -803,79 +803,98 @@ describe("resolvePageInWork citation resolution and RDR-07 route handling", () =
     textParts: ["book", "poem", "line"],
     paginationDepth: 2,
     pages: [
-      { ...MOCK_CAESAR_WORK.pages[0], id: ["1", "1"], title: "Book 1, Elegy 1" },
-      { ...MOCK_CAESAR_WORK.pages[1], id: ["1", "5"], title: "Book 1, Elegy 5" },
-      { ...MOCK_CAESAR_WORK.pages[0], id: ["2", "1"], title: "Book 2, Elegy 1" },
-      { ...MOCK_CAESAR_WORK.pages[1], id: ["2", "3"], title: "Book 2, Elegy 3" },
+      {
+        ...MOCK_CAESAR_WORK.pages[0],
+        id: ["1", "1"],
+        title: "Book 1, Elegy 1",
+      },
+      {
+        ...MOCK_CAESAR_WORK.pages[1],
+        id: ["1", "5"],
+        title: "Book 1, Elegy 5",
+      },
+      {
+        ...MOCK_CAESAR_WORK.pages[0],
+        id: ["2", "1"],
+        title: "Book 2, Elegy 1",
+      },
+      {
+        ...MOCK_CAESAR_WORK.pages[1],
+        id: ["2", "3"],
+        title: "Book 2, Elegy 3",
+      },
     ],
   };
 
   test.each([
     ["production resolvePageInWork", realResolvePageInWork],
     ["mock resolvePageInWork", resolvePageInWork],
-  ])("%s distinguishes matched vs unmatched citations and enforces segment boundaries", (_, resolver) => {
-    // Bare URL resolves to first page with matched: true
-    expect(resolver(multiBookWork, undefined)).toEqual({
-      page: multiBookWork.pages[0],
-      index: 0,
-      pageIndex: 0,
-      matched: true,
-    });
-    expect(resolver(multiBookWork, "   ")).toEqual({
-      page: multiBookWork.pages[0],
-      index: 0,
-      pageIndex: 0,
-      matched: true,
-    });
+  ])(
+    "%s distinguishes matched vs unmatched citations and enforces segment boundaries",
+    (_, resolver) => {
+      // Bare URL resolves to first page with matched: true
+      expect(resolver(multiBookWork, undefined)).toEqual({
+        page: multiBookWork.pages[0],
+        index: 0,
+        pageIndex: 0,
+        matched: true,
+      });
+      expect(resolver(multiBookWork, "   ")).toEqual({
+        page: multiBookWork.pages[0],
+        index: 0,
+        pageIndex: 0,
+        matched: true,
+      });
 
-    // Exact match
-    expect(resolver(multiBookWork, "1.5")).toEqual({
-      page: multiBookWork.pages[1],
-      index: 1,
-      pageIndex: 1,
-      matched: true,
-    });
+      // Exact match
+      expect(resolver(multiBookWork, "1.5")).toEqual({
+        page: multiBookWork.pages[1],
+        index: 1,
+        pageIndex: 1,
+        matched: true,
+      });
 
-    // Sub-page citation (e.g. "1.5.10" -> "1.5")
-    expect(resolver(multiBookWork, "1.5.10")).toEqual({
-      page: multiBookWork.pages[1],
-      index: 1,
-      pageIndex: 1,
-      matched: true,
-    });
+      // Sub-page citation (e.g. "1.5.10" -> "1.5")
+      expect(resolver(multiBookWork, "1.5.10")).toEqual({
+        page: multiBookWork.pages[1],
+        index: 1,
+        pageIndex: 1,
+        matched: true,
+      });
 
-    // Book prefix citation (e.g. "2" -> "2.1")
-    expect(resolver(multiBookWork, "2")).toEqual({
-      page: multiBookWork.pages[2],
-      index: 2,
-      pageIndex: 2,
-      matched: true,
-    });
+      // Book prefix citation (e.g. "2" -> "2.1")
+      expect(resolver(multiBookWork, "2")).toEqual({
+        page: multiBookWork.pages[2],
+        index: 2,
+        pageIndex: 2,
+        matched: true,
+      });
 
-    // Leading label word stripped (e.g. "Book 2" -> "2" -> "2.1")
-    expect(resolver(multiBookWork, "Book 2")).toEqual({
-      page: multiBookWork.pages[2],
-      index: 2,
-      pageIndex: 2,
-      matched: true,
-    });
+      // Leading label word stripped (e.g. "Book 2" -> "2" -> "2.1")
+      expect(resolver(multiBookWork, "Book 2")).toEqual({
+        page: multiBookWork.pages[2],
+        index: 2,
+        pageIndex: 2,
+        matched: true,
+      });
 
-    // Non-segment prefix "1.55" must NEVER prefix-match "1.5"
-    expect(resolver(multiBookWork, "1.55")).toEqual({
-      page: multiBookWork.pages[0],
-      index: 0,
-      pageIndex: 0,
-      matched: false,
-    });
+      // Non-segment prefix "1.55" must NEVER prefix-match "1.5"
+      expect(resolver(multiBookWork, "1.55")).toEqual({
+        page: multiBookWork.pages[0],
+        index: 0,
+        pageIndex: 0,
+        matched: false,
+      });
 
-    // Unknown citation "999" returns matched: false
-    expect(resolver(multiBookWork, "999")).toEqual({
-      page: multiBookWork.pages[0],
-      index: 0,
-      pageIndex: 0,
-      matched: false,
-    });
-  });
+      // Unknown citation "999" returns matched: false
+      expect(resolver(multiBookWork, "999")).toEqual({
+        page: multiBookWork.pages[0],
+        index: 0,
+        pageIndex: 0,
+        matched: false,
+      });
+    }
+  );
 
   test("renderTocDrawer renders jumpMiss status banner and pre-fills search input when jumpMiss is provided", () => {
     const html = renderTocDrawer({
@@ -885,9 +904,7 @@ describe("resolvePageInWork citation resolution and RDR-07 route handling", () =
       jumpMiss: "999",
     });
 
-    expect(html).toContain(
-      'action="/work/caesar/de_bello_gallico/1.2"'
-    );
+    expect(html).toContain('action="/work/caesar/de_bello_gallico/1.2"');
     expect(html).toContain(
       '<p class="reader-toc-miss" role="status">No section &ldquo;999&rdquo; in this work.</p>'
     );
@@ -899,7 +916,9 @@ describe("resolvePageInWork citation resolution and RDR-07 route handling", () =
     app.use("/", createReaderRoutes());
 
     // 1. Direct path citation miss (full and partial) -> 404
-    const missFull = await request(app).get("/work/caesar/de_bello_gallico/999");
+    const missFull = await request(app).get(
+      "/work/caesar/de_bello_gallico/999"
+    );
     expect(missFull.status).toBe(404);
     expect(missFull.text).toContain("Classical Work Not Found");
     expect(missFull.text).toContain("caesar/de_bello_gallico/999");

@@ -305,7 +305,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       const el = this.#findWordElement(this.#currentQuery);
       if (el) {
         this.#setActiveWord(el);
-        if (!window.location.hash) {
+        if (
+          !window.location.hash &&
+          window.scrollY === 0 &&
+          !this.querySelector(".reader-match")
+        ) {
           this.#scrollTargetAboveDrawer(el, true);
         }
       }
@@ -781,8 +785,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // Reset drawer height and ARIA on mobile
     this.#drawerController.reset();
 
-    if (updateHistory) {
-      this.#router?.replace("");
+    if (updateHistory && this.#router?.get()) {
+      this.#router.replace("");
     }
   }
 
@@ -838,10 +842,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  #scrollTargetAboveDrawer(
-    targetEl: HTMLElement,
-    ensureVisible = false
-  ): void {
+  #scrollTargetAboveDrawer(targetEl: HTMLElement, ensureVisible = false): void {
     if (targetEl.closest(".reader-dict-panel")) {
       if (ensureVisible && typeof targetEl.scrollIntoView === "function") {
         targetEl.scrollIntoView({
@@ -858,7 +859,30 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         this.querySelector(".reader-sticky-bar")?.getBoundingClientRect()
           .bottom ?? 0;
       if (r.top < stickyBottom || (r.bottom ?? r.top) > window.innerHeight) {
-        scrollToElement(targetEl, "instant");
+        const textPanel = targetEl.closest<HTMLElement>(".reader-text-panel");
+        const panelOverflow = textPanel
+          ? window.getComputedStyle(textPanel).overflowY
+          : "";
+        if (
+          textPanel &&
+          (panelOverflow === "auto" || panelOverflow === "scroll")
+        ) {
+          const panelRect = textPanel.getBoundingClientRect();
+          const targetTop = Math.max(
+            0,
+            textPanel.scrollTop +
+              r.top -
+              panelRect.top -
+              textPanel.clientHeight / 3
+          );
+          if (typeof textPanel.scrollTo === "function") {
+            textPanel.scrollTo({ top: targetTop, behavior: "instant" });
+          } else {
+            textPanel.scrollTop = targetTop;
+          }
+        } else {
+          scrollToElement(targetEl, "instant");
+        }
       }
     }
     if (window.innerWidth <= 640) {
@@ -1329,9 +1353,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       let cleanUrl = pageUrl.split("?")[0].split("#")[0].replace(/\/$/, "");
       const parts = cleanUrl.split("/").filter(Boolean);
       if (parts.length === 3 && parts[0] === "work") {
-        cleanUrl = `${cleanUrl}/${
-          fallbackPageId || this.dataset.page || "1"
-        }`;
+        cleanUrl = `${cleanUrl}/${fallbackPageId || this.dataset.page || "1"}`;
       }
       const res = await fetch(withBuildVersion(`${cleanUrl}/translation`), {
         headers: { "X-Requested-With": "fetch" },
@@ -1484,9 +1506,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       }
     }
 
-    const isPageTurn = url.pathname !== window.location.pathname;
+    const isPageTurn = isPopState || url.pathname !== window.location.pathname;
     const isTransActive = this.#panelController?.activeTab === "translation";
-    if (isPageTurn) {
+    const clearPageTurnQuery =
+      isPageTurn && (!isPopState || !url.searchParams.has("q"));
+    if (clearPageTurnQuery) {
       if (!isTransActive) {
         this.minimizeDrawer();
       }
@@ -1536,7 +1560,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return false;
     }
 
-    if (isPageTurn) {
+    if (clearPageTurnQuery) {
       url.searchParams.delete("q");
       this.#currentQuery = "";
     } else {

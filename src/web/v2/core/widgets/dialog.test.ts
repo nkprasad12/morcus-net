@@ -167,6 +167,19 @@ describe("setupModalDialog client coordination", () => {
     );
     expect(dialog.close).not.toHaveBeenCalled();
 
+    // Keyboard/programmatic click on a child element (clientX: 0, clientY: 0, no mousedown)
+    // must not be treated as a backdrop click even though (0, 0) is outside rect
+    const header = dialog.querySelector("h2")!;
+    const childClick = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      clientX: 0,
+      clientY: 0,
+    });
+    header.dispatchEvent(childClick);
+    expect(dialog.close).not.toHaveBeenCalled();
+    expect(childClick.defaultPrevented).toBe(false);
+
     // Click outside rect on backdrop (50, 50)
     dialog.dispatchEvent(
       new MouseEvent("mousedown", { bubbles: true, clientX: 50, clientY: 50 })

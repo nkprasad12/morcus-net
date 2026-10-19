@@ -474,9 +474,7 @@ export function resolvePageInWork(
     //    never "1.55" -> "1.5")
     const startsWithIdx = work.pages.findIndex((p) => {
       const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
-      return (
-        needle.startsWith(pIdStr + ".") || pIdStr.startsWith(needle + ".")
-      );
+      return needle.startsWith(pIdStr + ".") || pIdStr.startsWith(needle + ".");
     });
     if (startsWithIdx !== -1) {
       return {
@@ -495,7 +493,7 @@ export function resolvePageInWork(
 
   // Strip optional leading label word (e.g. Zero-JS `?jump=Book+2` -> "2")
   const stripped = rawNeedle
-    .replace(/^(book|liber|chapter|caput|elegy|poem|carmen)\s+/i, "")
+    .replace(/^(book|liber|chapter|caput|section|elegy|poem|carmen)\s+/i, "")
     .trim();
   if (stripped && stripped !== rawNeedle) {
     const afterStrip = tryResolve(stripped);

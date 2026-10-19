@@ -5,7 +5,9 @@
    ========================================================================== */
 
 .reader-view {
-  --reader-sticky-offset: calc(var(--pill-height, 2.25rem) + 2 * var(--space-3) + var(--space-3));
+  --reader-sticky-offset: calc(
+    var(--pill-height, 2.25rem) + 2 * var(--space-3) + var(--space-3)
+  );
 }
 
 .reader-sticky-bar {

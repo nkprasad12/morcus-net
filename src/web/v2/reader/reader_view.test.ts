@@ -3182,9 +3182,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     expect(group1.open).toBe(false);
     expect(group2.open).toBe(true);
     expect(
-      tocDrawer
-        .querySelector('.reader-toc-search-form')
-        ?.getAttribute("action")
+      tocDrawer.querySelector(".reader-toc-search-form")?.getAttribute("action")
     ).toBe("/work/ovid/amores/2.1");
 
     // 2. Popstate back to bare work URL /work/ovid/amores resolves newPageId = "ep" (RDR-03)
@@ -3200,9 +3198,9 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       "/work/ovid/amores/ep/translation",
       expect.anything()
     );
-    expect(
-      el.querySelector("#panel-view-translation")?.textContent
-    ).toContain("We who just now were five little books of Naso");
+    expect(el.querySelector("#panel-view-translation")?.textContent).toContain(
+      "We who just now were five little books of Naso"
+    );
 
     const epItem = tocDrawer.querySelector<HTMLElement>(
       '.reader-toc-item[data-page-id="ep"]'

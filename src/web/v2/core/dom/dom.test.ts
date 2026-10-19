@@ -489,12 +489,17 @@ describe("core/dom.client", () => {
         y: 150,
         toJSON: () => ({}),
       });
-      const scrollToSpy = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+      const scrollToSpy = jest
+        .spyOn(window, "scrollTo")
+        .mockImplementation(() => {});
       const getComputedStyleSpy = jest
         .spyOn(window, "getComputedStyle")
         .mockReturnValue({ scrollMarginTop: "24px" } as CSSStyleDeclaration);
 
-      Object.defineProperty(window, "scrollY", { value: 100, configurable: true });
+      Object.defineProperty(window, "scrollY", {
+        value: 100,
+        configurable: true,
+      });
 
       scrollToElement(el, "smooth");
 
@@ -521,12 +526,17 @@ describe("core/dom.client", () => {
         y: 80,
         toJSON: () => ({}),
       });
-      const scrollToSpy = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+      const scrollToSpy = jest
+        .spyOn(window, "scrollTo")
+        .mockImplementation(() => {});
       const getComputedStyleSpy = jest
         .spyOn(window, "getComputedStyle")
         .mockReturnValue({ scrollMarginTop: "auto" } as CSSStyleDeclaration);
 
-      Object.defineProperty(window, "scrollY", { value: 50, configurable: true });
+      Object.defineProperty(window, "scrollY", {
+        value: 50,
+        configurable: true,
+      });
 
       scrollToElement(el);
 
@@ -553,12 +563,17 @@ describe("core/dom.client", () => {
         y: 10,
         toJSON: () => ({}),
       });
-      const scrollToSpy = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+      const scrollToSpy = jest
+        .spyOn(window, "scrollTo")
+        .mockImplementation(() => {});
       const getComputedStyleSpy = jest
         .spyOn(window, "getComputedStyle")
         .mockReturnValue({ scrollMarginTop: "100px" } as CSSStyleDeclaration);
 
-      Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
+      Object.defineProperty(window, "scrollY", {
+        value: 0,
+        configurable: true,
+      });
 
       scrollToElement(el);
 
@@ -588,7 +603,9 @@ describe("core/dom.client", () => {
 
       const mockWin = {
         scrollTo: jest.fn(),
-        getComputedStyle: jest.fn().mockReturnValue({ scrollMarginTop: "10px" }),
+        getComputedStyle: jest
+          .fn()
+          .mockReturnValue({ scrollMarginTop: "10px" }),
         scrollY: 20,
       } as unknown as Window;
 

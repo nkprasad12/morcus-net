@@ -1265,7 +1265,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       );
     });
 
-    test("clamps scale client-side to [50, 200] on connect and search", () => {
+    test("clamps scale client-side to [70, 140] on connect and search", () => {
       const replaceStateSpy = jest.spyOn(window.history, "replaceState");
 
       delete (window as any).location;
@@ -1278,11 +1278,11 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       );
       expect(
         document.documentElement.style.getPropertyValue("--dict-scale")
-      ).toBe("2.00");
+      ).toBe("1.40");
       expect(replaceStateSpy).toHaveBeenCalledWith(
         null,
         "",
-        "/dicts?q=arma&lang=La&o=1&embedded=1&scale=200"
+        "/dicts?q=arma&lang=La&o=1&embedded=1&scale=140"
       );
 
       replaceStateSpy.mockClear();
@@ -1296,11 +1296,11 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       );
       expect(
         document.documentElement.style.getPropertyValue("--dict-scale")
-      ).toBe("0.50");
+      ).toBe("0.70");
       expect(replaceStateSpy).toHaveBeenCalledWith(
         null,
         "",
-        "/dicts?q=arma&lang=La&o=1&embedded=1&scale=50"
+        "/dicts?q=arma&lang=La&o=1&embedded=1&scale=70"
       );
 
       replaceStateSpy.mockClear();
@@ -1308,7 +1308,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect(replaceStateSpy).toHaveBeenCalledWith(
         { q: "Gallia" },
         "",
-        "/dicts?q=Gallia&lang=La&o=1&embedded=1&scale=50&d=3"
+        "/dicts?q=Gallia&lang=La&o=1&embedded=1&scale=70&d=3"
       );
     });
   });
@@ -1915,9 +1915,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       const el = createDictSearch();
       const input = el.querySelector<HTMLInputElement>("input.input")!;
       const suggestions = el.querySelector("morcus-dict-suggestions")!;
-      const listbox = suggestions.querySelector<HTMLElement>(
-        'ul[role="listbox"]'
-      )!;
+      const listbox =
+        suggestions.querySelector<HTMLElement>('ul[role="listbox"]')!;
       const loadSpy = jest
         .spyOn(el.chunkCache, "load")
         .mockImplementation((key: string) => {

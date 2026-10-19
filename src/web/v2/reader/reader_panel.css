@@ -146,6 +146,11 @@
   overflow: hidden;
 }
 
+.reader-panel-views:not(:has(> .active))
+  > .reader-panel-card:is(:target, :has(:target)) {
+  overflow-y: auto;
+}
+
 .reader-panel-notes .reader-note.note-active,
 .reader-panel-translation .reader-note.note-active {
   background-color: var(--primary-light);

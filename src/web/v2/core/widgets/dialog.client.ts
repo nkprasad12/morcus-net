@@ -76,25 +76,16 @@ export function setupModalDialog(
   const handleBackdropClick = (e: MouseEvent) => {
     const downTarget = lastPointerDownTarget;
     lastPointerDownTarget = null;
-    if (downTarget !== null && downTarget !== dialog) {
-      return;
-    }
-
-    const rect = dialog.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      const outside =
-        e.clientY < rect.top ||
-        e.clientY > rect.top + rect.height ||
-        e.clientX < rect.left ||
-        e.clientX > rect.left + rect.width;
-      if (outside) {
-        closeDialog(e);
-      }
-      return;
-    }
-
-    if (e.target === dialog) {
-      // Fallback when layout metrics are 0x0 (e.g. JSDOM synthetic clicks).
+    if (e.target !== dialog || (downTarget && downTarget !== dialog)) return;
+    const r = dialog.getBoundingClientRect();
+    if (
+      !r.width ||
+      !r.height ||
+      e.clientY < r.top ||
+      e.clientY > r.top + r.height ||
+      e.clientX < r.left ||
+      e.clientX > r.left + r.width
+    ) {
       closeDialog(e);
     }
   };

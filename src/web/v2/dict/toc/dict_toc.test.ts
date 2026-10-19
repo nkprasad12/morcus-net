@@ -763,10 +763,7 @@ describe("dict_toc.server", () => {
   });
 
   describe("mobile bottom drawer CSS (dict_toc.css)", () => {
-    const css = fs.readFileSync(
-      path.join(__dirname, "dict_toc.css"),
-      "utf-8"
-    );
+    const css = fs.readFileSync(path.join(__dirname, "dict_toc.css"), "utf-8");
 
     test("uses 30svh default mobile drawer height and tracks open drawer height in .results-layout.has-toc padding", () => {
       expect(css).toContain("height: var(--drawer-height, 30svh);");

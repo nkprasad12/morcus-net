@@ -327,7 +327,11 @@ export class DrawerController extends BaseController {
       this.drawer.ownerDocument,
       "morcus:section-edit-open",
       (e: Event) => {
+        const pos =
+          this.drawer?.ownerDocument.defaultView?.getComputedStyle(this.drawer)
+            .position ?? "";
         if (
+          (!pos || pos === "fixed") &&
           !this.isMinimized() &&
           !(e.target instanceof Node && this.drawer?.contains(e.target))
         ) {

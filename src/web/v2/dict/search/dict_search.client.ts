@@ -19,6 +19,7 @@ import { buildWelcomeMessage } from "@/web/v2/dict/landing/dict_landing.common";
 import {
   DEFAULT_DICT_BITMASK,
   DEFAULT_DICT_KEYS,
+  normalizeDictParams,
 } from "@/web/v2/dict/settings/dict_bitmask.common";
 import { parseInflectionParam } from "@/web/v2/dict/settings/dict_selection.common";
 import { ownSettingsHref } from "@/web/v2/dict/settings/dict_settings_href.common";
@@ -27,7 +28,6 @@ import {
   applyUnscopedDictSearch,
   cleanDictQuery,
   dictUrlBuilder,
-  normalizeDictParams,
 } from "@/web/v2/dict/search/dict_params.common";
 import type { DictSettingsCommit } from "@/web/v2/dict/settings/dict_settings.client";
 import {
@@ -41,12 +41,12 @@ import {
 } from "@/web/v2/dict/search/search_bar.common";
 
 const SEARCH_FORM = "form.search-form";
-const MIN_DICT_SCALE = 50;
-const MAX_DICT_SCALE = 200;
+const MIN_DICT_SCALE = 70;
+const MAX_DICT_SCALE = 140;
 
 function clampScaleParam(params: URLSearchParams): number | undefined {
   if (!params.has("scale")) return undefined;
-  const raw = params.get("scale");
+  const raw = params.get("scale")?.trim() ?? "";
   const num = Number(raw);
   if (!raw || !Number.isFinite(num)) {
     params.delete("scale");
@@ -221,22 +221,25 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     if (currentParams.has("scale")) {
       const rawScale = currentParams.get("scale");
       const clampedScale = clampScaleParam(currentParams);
+      const hiddenScales = this.querySelectorAll<HTMLInputElement>(
+        'input[name="scale"]'
+      );
       if (clampedScale !== undefined) {
         document.documentElement.style.setProperty(
           "--dict-scale",
           (clampedScale / 100).toFixed(2)
         );
-        const hiddenScale = this.#searchForm?.querySelector<HTMLInputElement>(
-          'input[name="scale"]'
-        );
-        if (hiddenScale) {
-          hiddenScale.value = String(clampedScale);
+        for (const el of hiddenScales) {
+          el.value = String(clampedScale);
         }
         if (rawScale !== String(clampedScale)) {
           urlChanged = true;
         }
       } else {
         document.documentElement.style.removeProperty("--dict-scale");
+        for (const el of hiddenScales) {
+          el.remove();
+        }
         urlChanged = true;
       }
     }

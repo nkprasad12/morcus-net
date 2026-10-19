@@ -311,9 +311,7 @@ export function resolvePageInWork(
     //    never "1.55" -> "1.5")
     const startsWithIdx = work.pages.findIndex((p) => {
       const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
-      return (
-        needle.startsWith(pIdStr + ".") || pIdStr.startsWith(needle + ".")
-      );
+      return needle.startsWith(pIdStr + ".") || pIdStr.startsWith(needle + ".");
     });
     if (startsWithIdx !== -1) {
       return {

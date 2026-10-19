@@ -252,7 +252,9 @@ describe("POST /external and POST /externalReader (EXT-04)", () => {
 
       expect(res.status).toBe(400);
       expect(res.text).toContain("<!DOCTYPE html>");
-      expect(res.text).toContain('<morcus-external-loader class="external-landing"');
+      expect(res.text).toContain(
+        '<morcus-external-loader class="external-landing"'
+      );
       expect(res.text).toContain('role="alert"');
       expect(res.text).toContain("Unsupported input mode.");
       expect(res.text).not.toContain("Cannot POST");

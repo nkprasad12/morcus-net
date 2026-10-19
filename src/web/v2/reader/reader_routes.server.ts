@@ -42,7 +42,7 @@ function redirectReaderJump(
     ? resolved.page.id.join(".")
     : resolved.page.id;
   const cleanJump = jump
-    .replace(/^(book|liber|chapter|caput|elegy|poem|carmen)\s+/i, "")
+    .replace(/^(book|liber|chapter|caput|section|elegy|poem|carmen)\s+/i, "")
     .trim();
   const hash =
     cleanJump && cleanJump !== pageId && !pageId.startsWith(cleanJump + ".")

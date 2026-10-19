@@ -4,10 +4,6 @@
  */
 
 import { trimRawQuery } from "@/common/text_cleaning";
-import {
-  decodeDictBitmask,
-  encodeDictBitmask,
-} from "@/web/v2/dict/settings/dict_bitmask.common";
 
 /**
  * Normalizes a dictionary search query by stripping outer punctuation/whitespace
@@ -17,34 +13,8 @@ import {
  */
 export function cleanDictQuery(raw: string): string {
   const trimmed = trimRawQuery(raw);
-  const stripped = trimmed.replace(/^\d+\s+|\s+\d+$/g, "").trim();
+  const stripped = trimRawQuery(trimmed.replace(/^\d+[.,;:]?\s+|\s+\d+$/g, ""));
   return stripped || trimmed;
-}
-
-export interface NormalizedDictParams {
-  readonly o: "0" | "1";
-  readonly d: string | undefined;
-}
-
-/**
- * Normalizes raw `o` and `d` URL parameters:
- * - `o`: `"1"` only for `"1"` (or `"true"`), otherwise `"0"`.
- * - `d`: canonical base36 bitmask if it decodes to at least one known dictionary,
- *   otherwise `undefined` (fall back to saved cookie or default dictionaries).
- */
-export function normalizeDictParams(
-  params:
-    | URLSearchParams
-    | { readonly o?: string | null; readonly d?: string | null }
-): NormalizedDictParams {
-  const rawO =
-    params instanceof URLSearchParams ? params.get("o") : params.o ?? null;
-  const rawD =
-    params instanceof URLSearchParams ? params.get("d") : params.d ?? null;
-  const o: "0" | "1" = rawO === "1" || rawO === "true" ? "1" : "0";
-  const decodedKeys = decodeDictBitmask(rawD);
-  const d = decodedKeys ? encodeDictBitmask(decodedKeys) : undefined;
-  return { o, d };
 }
 
 interface DictSearch {
