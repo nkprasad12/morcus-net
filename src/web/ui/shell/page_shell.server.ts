@@ -30,6 +30,14 @@ const BUNDLE_ONERROR =
 
 const SITE_ORIGIN = "https://morcus.net";
 
+/**
+ * One `theme-color` per OS scheme, so the browser picks the right one before
+ * any script runs. `theme_toggle.client.ts` overrides both with a saved choice.
+ */
+const THEME_COLOR_META_HTML =
+  `\n  <meta name="theme-color" content="${THEME_COLOR.light}" media="(prefers-color-scheme: light)">` +
+  `\n  <meta name="theme-color" content="${THEME_COLOR.dark}" media="(prefers-color-scheme: dark)">`;
+
 interface PageShellBaseOptions {
   title: string;
   contentHtml: string;
@@ -280,7 +288,7 @@ export function renderPageShell(options: PageShellOptions): string {
   const pwaHeadHtml = isEmbedded
     ? ""
     : `\n  <link rel="manifest" href="/public/pwa.webmanifest">` +
-      `\n  <meta name="theme-color" content="${THEME_COLOR.light}">` +
+      THEME_COLOR_META_HTML +
       canonicalHeadHtml +
       `\n  <meta property="og:site_name" content="Morcus Latin Tools">` +
       `\n  <meta property="og:title" content="${titleEncoded}">` +

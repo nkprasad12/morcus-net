@@ -95,10 +95,16 @@ class MorcusThemeToggle extends BaseElement {
     if (this.#pathEl) {
       this.#pathEl.setAttribute("d", pathD);
     }
-    // The server renders the light colour; a dark page corrects it here.
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", THEME_COLOR[this.#isDark ? "dark" : "light"]);
+    // The server renders one tag per OS scheme (by `media`). A saved choice
+    // overrides the OS, so it sets both; without one, each keeps its own.
+    const saved = settingsStore.get().darkMode;
+    for (const meta of document.querySelectorAll<HTMLMetaElement>(
+      'meta[name="theme-color"]'
+    )) {
+      const media = meta.getAttribute("media") ?? "";
+      const dark = typeof saved === "boolean" ? saved : media.includes("dark");
+      meta.setAttribute("content", THEME_COLOR[dark ? "dark" : "light"]);
+    }
   }
 }
 

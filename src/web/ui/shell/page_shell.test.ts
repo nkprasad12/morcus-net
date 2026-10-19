@@ -128,7 +128,10 @@ describe("renderPageShell", () => {
       '<link rel="manifest" href="/public/pwa.webmanifest">'
     );
     expect(topLevel).toContain(
-      `<meta name="theme-color" content="${THEME_COLOR.light}">`
+      `<meta name="theme-color" content="${THEME_COLOR.light}" media="(prefers-color-scheme: light)">`
+    );
+    expect(topLevel).toContain(
+      `<meta name="theme-color" content="${THEME_COLOR.dark}" media="(prefers-color-scheme: dark)">`
     );
     expect(topLevel).toContain(
       '<link rel="canonical" href="https://morcus.net/dicts?q=Gallia&amp;o=1">'

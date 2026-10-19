@@ -1,5 +1,5 @@
 import { envVar } from "@/common/env_vars";
-import { THEME_COLOR } from "@/web/ui/shell/theme_color.common";
+import { MANIFEST_COLOR } from "@/web/ui/shell/theme_color.common";
 
 export const PWA_WEBMANIFEST = {
   name: "Morcus Latin Tools" + envVar("PWA_SHORT_NAME_SUFFIX"),
@@ -26,8 +26,8 @@ export const PWA_WEBMANIFEST = {
   start_url: "/",
   // Every page, so links between pages stay inside the installed app's window.
   scope: "/",
-  background_color: "#f2f3f2",
-  theme_color: THEME_COLOR.light,
+  background_color: MANIFEST_COLOR,
+  theme_color: MANIFEST_COLOR,
   display: "standalone",
   // Long-press / right-click entries on the app icon.
   shortcuts: [
