@@ -9,7 +9,7 @@ import { envVar } from "@/common/env_vars";
 import { safeParseInt } from "@/common/misc_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
-import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 
 import fs from "fs";
 

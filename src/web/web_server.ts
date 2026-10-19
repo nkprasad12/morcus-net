@@ -3,8 +3,8 @@ import express from "express";
 import path from "path";
 import fs from "fs/promises";
 import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
-import { getV2BuildDir } from "@/bundler/v2_build_contract";
-import { IMMUTABLE_CACHE_CONTROL } from "@/web/v2/core/server/build_version.server";
+import { getV2BuildDir } from "@/bundler/client_build_contract";
+import { IMMUTABLE_CACHE_CONTROL } from "@/web/ui/core/server/build_version.server";
 
 const DAYS_IN_YEAR = 365;
 const HOURS_IN_DAY = 24;
@@ -51,7 +51,7 @@ async function isFile(file: string): Promise<boolean> {
 }
 
 /**
- * Serves the `.br` / `.gz` siblings `v2.rsbuild.ts` writes next to UI V2's
+ * Serves the `.br` / `.gz` siblings `client.rsbuild.ts` writes next to UI V2's
  * hashed assets, when the client accepts
  * that encoding. Mounted on `/assets`, ahead of the V2 router's static handler.
  * Anything else falls through to the static handler, and `compression()`

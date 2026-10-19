@@ -14,7 +14,7 @@ import {
 } from "@/common/smith_and_hall/sh_display";
 import { getOutline } from "@/common/smith_and_hall/sh_outline";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
-import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 
 type ProcessState = "In Blurb" | "In Sense" | "None";
 

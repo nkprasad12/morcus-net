@@ -19,7 +19,7 @@ Morcus.net is an integrated digital platform and toolkit for Latin language stud
 graph TD
     Browser["Browser<br/>server-rendered HTML + progressive enhancement"]
     Server["Express Web Server<br/>src/web/web_server.ts"]
-    V2["UI V2 Router (pages, partials, JSON)<br/>src/web/v2/v2_router.server.ts"]
+    V2["UI V2 Router (pages, partials, JSON)<br/>src/web/ui/app_router.server.ts"]
 
     FusedDict["FusedDictionary<br/>src/common/dictionaries/"]
     SQLite["SQLite Dictionaries (*.db)<br/>build/dbs/"]
@@ -54,8 +54,8 @@ graph TD
 
 | Layer                 | Technology                                              | Key Locations                                                                 | Responsibility                                                                                     |
 | --------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Web UI (UI V2)**    | TypeScript, Light DOM custom elements, Rsbuild / Rspack | `src/web/v2/` (`*.client.ts`), `src/bundler/v2.rsbuild.ts`                    | Progressive enhancement of server-rendered pages: dictionary, reader, corpus, macronizer.          |
-| **Web Server**        | TypeScript, Node.js 22, Express, esbuild                | `src/start_server.ts`, `src/web/web_server.ts`, `src/web/v2/` (`*.server.ts`) | Server-side rendering, partials and JSON endpoints, precompressed static assets, telemetry.        |
+| **Web UI (UI V2)**    | TypeScript, Light DOM custom elements, Rsbuild / Rspack | `src/web/ui/` (`*.client.ts`), `src/bundler/client.rsbuild.ts`                | Progressive enhancement of server-rendered pages: dictionary, reader, corpus, macronizer.          |
+| **Web Server**        | TypeScript, Node.js 22, Express, esbuild                | `src/start_server.ts`, `src/web/web_server.ts`, `src/web/ui/` (`*.server.ts`) | Server-side rendering, partials and JSON endpoints, precompressed static assets, telemetry.        |
 | **Native Extensions** | Rust, `node-bindgen`, `better-sqlite3`                  | `lib.rs`, `corpus_rust/`, `morceus_rust/`, `Cargo.toml`                       | High-throughput corpus querying, bitmask operations, native morphological crunching.               |
 | **NLP & ML**          | Python 3.12, spaCy (LatinCy), Stanza, Alatius           | `src/py/`, `src/macronizer/`, `requirements.txt`                              | Latin syntax analysis, part-of-speech tagging, vowel length disambiguation.                        |
 | **Storage & Data**    | SQLite, JSON, localStorage / IndexedDB                  | `src/common/sqlite/`, `build/dbs/`, `build/library_processed/`                | Pre-built dictionary indices, preprocessed texts; browser preferences and External Reader imports. |
@@ -70,10 +70,10 @@ graph TD
 - **Server Entry Points**:
   - `src/start_server.ts`: Assembles the services (dictionaries, corpus handler, macronizer engine, telemetry), builds the UI V2 router with them, and starts the HTTP server.
   - `src/web/web_server.ts`: Express pipeline: build-time precompressed `/assets` (Brotli/Gzip), `compression()`, PWA files (`/public`, `/.well-known`, `/favicon.ico`, `/robots.txt`, `/serviceworker.js`), then the UI V2 router at `/`.
-- **UI V2 Router (`src/web/v2/v2_router.server.ts`)**: Mounts each slice's routes. Pages are full server-rendered documents; with JS, the same URLs return partials (`?format=partial` / `X-Requested-With: fetch`) for in-place swaps.
+- **UI V2 Router (`src/web/ui/app_router.server.ts`)**: Mounts each slice's routes. Pages are full server-rendered documents; with JS, the same URLs return partials (`?format=partial` / `X-Requested-With: fetch`) for in-place swaps.
   - Pages: `/dicts`, `/dicts/id/:id`, `/library`, `/work/:author/:name/:page?` (plus legacy `/work/:workId` and `/work?id=` redirects), `/corpus`, `/macronizer`, `/externalReader`, `/about`.
   - Fragments and JSON: `/work/:author/:name/:page/translation`, `/api/completions` (autocomplete chunks), `/api/corpus/lemmata/:letter`, `POST /api/report` (GitHub issues), `POST /macronizer` and `/macronizer/apply`.
-  - See [`src/web/v2/README.md`](src/web/v2/README.md) for the architecture and conventions.
+  - See [`src/web/ui/README.md`](src/web/ui/README.md) for the architecture and conventions.
 - **Shared plumbing (`src/web/utils/rpc/`)**: `parsing.ts` holds validator combinators (`isString`, `matchesObject`, `isArray`, `maybeUndefined`, ...) and `encodeMessage`/`decodeMessage`. `rpc.ts`/`server_rpc.ts` keep the `ServerMessage` envelope, in which build steps still write library works and corpus suggestion lists. (The V1 JSON-RPC layer is gone.)
 
 ### 3.2. Dictionary Subsystem (`src/common/dictionaries/` & `src/common/*`)
@@ -133,8 +133,8 @@ A specialized engine designed to query massive Latin textual corpora with comple
   - Raw sources: Perseus TEI XML, Hypotactic JSON, PHI (Packard Humanities Institute).
   - `process_library.ts`, `process_phi_json.ts`, `process_hypotactic.ts` normalize raw formats into `ProcessedWork2` structures (`library_types.ts`).
   - Hierarchical tree structure: works contain books, chapters, sections, and chunked paragraphs (`NavTreeNode`, `WorkPage`).
-  - Output lands in `build/library_processed/`; `src/common/library/v2/` preprocesses it further into the pages the reader serves.
-- **Reader UI (`src/web/v2/reader/`, `src/web/v2/library/`, `src/web/v2/external/`)**:
+  - Output lands in `build/library_processed/`; `src/common/library/preprocess/` preprocesses it further into the pages the reader serves.
+- **Reader UI (`src/web/ui/reader/`, `src/web/ui/library/`, `src/web/ui/external/`)**:
   - Server-rendered, citation-addressed pages with in-place page turns when JS is available.
   - Word click-through to the embedded dictionary panel.
   - Parallel English translations, notes, and the External Reader for pasted or scraped texts.
@@ -145,15 +145,15 @@ A specialized engine designed to query massive Latin textual corpora with comple
   1. Input text is tokenized into words and whitespace (`src/nlp/text_tokenization.ts`).
   2. For each word, Morceus retrieves all valid morphological analyses and possible vowel length variants (e.g. `venit` -> `vĕnit` [pres] vs `vēnit` [perf]).
   3. Machine learning models (spaCy with LatinCy pipeline, Stanza, or Alatius) predict the contextual Part-of-Speech and grammatical properties.
-  4. Best candidate is selected and rendered with options for manual user disambiguation in `src/web/v2/macronizer/`.
+  4. Best candidate is selected and rendered with options for manual user disambiguation in `src/web/ui/macronizer/`.
 
-### 3.7. UI V2 Architecture (`src/web/v2/`)
+### 3.7. UI V2 Architecture (`src/web/ui/`)
 
-- **Zero-JS baseline**: every page works as plain server-rendered HTML; client code only enhances it. See [`src/web/v2/README.md`](src/web/v2/README.md).
+- **Zero-JS baseline**: every page works as plain server-rendered HTML; client code only enhances it. See [`src/web/ui/README.md`](src/web/ui/README.md).
 - **Target suffixes**: `*.server.ts` runs in Node, `*.client.ts` in the browser, `*.common.ts` in both; ESLint enforces the boundaries.
 - **Vertical slices**: `dict/`, `reader/`, `library/`, `corpus/`, `macronizer/`, `external/`, `about/`, plus `shell/`, `dialog/` and `core/`.
-- **Client code**: Light DOM custom elements, bundled by Rsbuild into route-aligned chunks in `build/v2/` (hashed, immutable, precompressed).
-- **Testing**: [`src/web/v2/docs/TESTING.md`](src/web/v2/docs/TESTING.md) (Jest under jsdom, Playwright functional and visual suites).
+- **Client code**: Light DOM custom elements, bundled by Rsbuild into route-aligned chunks in `build/client/` (hashed, immutable, precompressed).
+- **Testing**: [`src/web/ui/docs/TESTING.md`](src/web/ui/docs/TESTING.md) (Jest under jsdom, Playwright functional and visual suites).
 
 ---
 
@@ -167,7 +167,7 @@ A specialized engine designed to query massive Latin textual corpora with comple
 # Start dev web server (builds the minified UI V2 assets and serves on $PORT)
 ./morcus.sh web
 
-# Build only the UI V2 assets into build/v2/ (-m: minified and precompressed)
+# Build only the UI V2 assets into build/client/ (-m: minified and precompressed)
 ./morcus.sh bundle -m
 
 # Build dictionary databases (run once or after editing dictionary sources)
@@ -184,7 +184,7 @@ A specialized engine designed to query massive Latin textual corpora with comple
 
 1. Compile Rust bindings (`setup-node-bindgen` via `cargo` and `nj-cli`).
 2. Download sources and build the dictionary databases, library, V2 library and corpus.
-3. Bundle the UI V2 assets with Rsbuild (`src/bundler/v2.rsbuild.ts`) into `build/v2/`, writing Brotli and Gzip siblings.
+3. Bundle the UI V2 assets with Rsbuild (`src/bundler/client.rsbuild.ts`) into `build/client/`, writing Brotli and Gzip siblings.
 4. Write `build/morcusnet.build.json` (build provenance).
 5. Bundle the server with esbuild (`src/bundler/server.esbuild.ts`) into `build/server.js`, type-checking the repo.
 
@@ -202,7 +202,7 @@ When editing or extending the codebase, adhere to the following principles:
 
 2. **Routes**:
 
-   - Add routes in the owning UI V2 slice (`createXRoutes` in a `*.server.ts`) and mount them in `v2_router.server.ts`.
+   - Add routes in the owning UI V2 slice (`createXRoutes` in a `*.server.ts`) and mount them in `app_router.server.ts`.
    - Register async handlers through `asyncHandler` / `createAsyncRegistrars` (`core/server/async_handler.server.ts`) so rejections reach Express; read query parameters with the helpers in `core/server/request_params.server.ts`.
 
 3. **Performance & Caching**:
@@ -214,7 +214,7 @@ When editing or extending the codebase, adhere to the following principles:
 
    - Unit tests are located alongside code with `.test.ts` extensions.
    - If a test requires browser DOM APIs, include `/** @jest-environment jsdom */` at the top of the test file.
-   - Run tests with `npm run ts-tests`, `npm run py-tests`, or `cargo test --package corpus`; UI V2 browser suites are described in `src/web/v2/docs/TESTING.md`.
+   - Run tests with `npm run ts-tests`, `npm run py-tests`, or `cargo test --package corpus`; UI V2 browser suites are described in `src/web/ui/docs/TESTING.md`.
 
 5. **Linting & Formatting**:
    - Run `npm run format` (ESLint + Prettier + Black) before concluding edits.

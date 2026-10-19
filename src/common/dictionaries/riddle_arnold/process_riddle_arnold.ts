@@ -7,7 +7,7 @@ import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import type { EntryOutline } from "@/common/dictionaries/dict_result";
-import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 
 function splitEntryParts(rawPart: string): XmlChild {
   // TODO: We first need to split on (A), (B), (C), etc...

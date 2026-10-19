@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "cssDuplicates": {
+    "patterns": {},
+    "allowlist": {}
+  },
+  "domMutationOutsideCore": {
+    "callsPerFile": {
+      "src/web/ui/corpus/corpus_autocomplete.client.ts": 1,
+      "src/web/ui/dict/search/dict_search.client.ts": 2,
+      "src/web/ui/dict/search/dict_suggestions.client.ts": 8,
+      "src/web/ui/external/external_loader.client.ts": 1,
+      "src/web/ui/library/library_view.client.ts": 3,
+      "src/web/ui/reader/reader_panel.client.ts": 3,
+      "src/web/ui/reader/reader_view.client.ts": 1
+    }
+  }
+}

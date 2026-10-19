@@ -19,7 +19,7 @@ import { MorceusTables } from "@/morceus/cruncher_tables";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { CruncherOptions } from "@/morceus/cruncher_types";
 import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
-import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 
 console.debug = jest.fn();
 

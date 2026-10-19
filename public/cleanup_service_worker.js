@@ -12,7 +12,7 @@
 // Served as-is (not bundled), so the names below are copied from the V1 code.
 // `externalContent.db` is deliberately kept: the V2 External Reader uses it.
 //
-// Temporary: removal is tracked in src/web/v2/docs/CODE_HEALTH.md.
+// Temporary: removal is tracked in src/web/ui/docs/CODE_HEALTH.md.
 
 "use strict";
 

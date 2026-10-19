@@ -13,11 +13,11 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { readFileSync } from "fs";
-import { createV2Router } from "@/web/v2/v2_router.server";
+import { createV2Router } from "@/web/ui/app_router.server";
 import {
   BUILD_ID_ENV,
   loadBuildId,
-} from "@/web/v2/core/server/build_version.server";
+} from "@/web/ui/core/server/build_version.server";
 import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { timed } from "@/common/timing/timed_invocation";
@@ -30,12 +30,12 @@ import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetchi
 import { getFormattedMemoryUsage, singletonOf } from "@/common/misc_utils";
 import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
-import { macronizerEngineFromEnv } from "@/web/v2/macronizer/macronizer_engine.server";
+import { macronizerEngineFromEnv } from "@/web/ui/macronizer/macronizer_engine.server";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
 import { ForcelliniDict } from "@/common/dictionaries/forcellini/forcellini_dict";
 import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
-import { openCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
+import { openCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;

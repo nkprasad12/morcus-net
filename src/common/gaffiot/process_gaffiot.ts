@@ -12,7 +12,7 @@ import {
   matchesObject,
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
-import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 import { readFileSync } from "fs";
 
 const OUTLINE_SKIPS = new Set<string>(["aut", "oeuv", "refch", "cl"]);

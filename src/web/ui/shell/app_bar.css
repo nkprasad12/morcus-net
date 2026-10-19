@@ -1,0 +1,305 @@
+/* App Bar Navigation */
+.app-bar {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* `.brand-group`, `.actions-group`, `.mobile-menu` and the narrow-screen
+   (max-width: 640px) grid layout of `.app-bar-inner` are defined only in
+   critical.css, which is inlined into every page before this sheet. */
+
+.brand-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  border-radius: var(--radius-xs);
+}
+
+.brand-logo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.nav-link,
+.nav-link:visited {
+  text-decoration: none;
+  color: var(--app-bar-nav-text);
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.nav-link:hover,
+.nav-link:visited:hover {
+  color: var(--app-bar-text);
+  background-color: var(--app-bar-nav-hover-bg);
+}
+
+.nav-link.active,
+.nav-link.active:visited {
+  color: var(--app-bar-nav-active-text);
+  background-color: var(--app-bar-nav-active-bg);
+  font-weight: 600;
+}
+
+/* Theme toggle icon button */
+.theme-toggle-btn,
+.mobile-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--app-bar-toggle-border);
+  color: var(--app-bar-text);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.theme-toggle-btn:hover,
+.mobile-menu-btn:hover {
+  background-color: var(--app-bar-nav-hover-bg);
+}
+
+/* Mobile Menu (<details>) */
+.app-bar:has(.mobile-menu[open]) {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-nav);
+}
+
+.mobile-menu summary {
+  list-style: none;
+}
+
+.mobile-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-menu .icon-close {
+  display: none;
+}
+
+.mobile-menu[open] .icon-menu {
+  display: none;
+}
+
+.mobile-menu[open] .icon-close {
+  display: block;
+}
+
+/* Chrome 131+ hides closed <details> via `::details-content { content-visibility: hidden }`,
+   which skips subtree style recalc while closed so child CSS animations only run on the
+   first open. Switching the closed slot to `display: none` restarts the slide-in every time. */
+.mobile-menu:not([open])::details-content {
+  content-visibility: visible;
+  display: none;
+}
+
+/* Dimmed scrim below the app bar; lives on <summary> so tapping the backdrop
+   toggles <details> closed even with JS disabled. */
+.mobile-menu[open] > summary::before {
+  content: "";
+  position: fixed;
+  inset: 65px 0 0;
+  background: var(--dropdown-backdrop);
+  z-index: var(--z-dropdown-backdrop);
+  cursor: default;
+  animation: mobileMenuBackdropFade 0.15s ease-out;
+}
+
+.mobile-menu-dropdown {
+  position: fixed;
+  top: 65px;
+  right: 0;
+  bottom: 0;
+  width: min(260px, 78vw);
+  background-color: var(--app-bar-bg);
+  border-left: 1px solid var(--app-bar-border);
+  box-shadow: -6px 0 20px rgba(0, 0, 0, 0.14), -1px 0 4px rgba(0, 0, 0, 0.06);
+  padding: var(--space-6) var(--space-5);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  z-index: var(--z-nav);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.mobile-menu[open] .mobile-menu-dropdown {
+  animation: mobileMenuSlideIn 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes mobileMenuSlideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes mobileMenuBackdropFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu[open] > summary::before,
+  .mobile-menu[open] .mobile-menu-dropdown {
+    animation: none;
+  }
+}
+
+.mobile-menu-dropdown .nav-link {
+  display: block;
+  font-size: 1.125rem;
+  padding: var(--space-6) var(--space-7);
+  border-radius: var(--radius-lg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Floating "Jump to top" button (Progressive Enhancement) */
+.back-to-top,
+.reader-dict-back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-fab);
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 0.2s ease, transform 0.2s ease,
+    background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+.back-to-top svg,
+.reader-dict-back-to-top svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  transition: transform 0.15s ease;
+}
+
+.back-to-top:hover,
+.reader-dict-back-to-top:hover {
+  opacity: 1;
+  color: var(--primary);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.back-to-top:hover svg,
+.reader-dict-back-to-top:hover svg {
+  transform: translateY(-1px);
+}
+
+.back-to-top:active,
+.reader-dict-back-to-top:active {
+  transform: translateY(0);
+}
+
+.back-to-top:focus-visible,
+.reader-dict-back-to-top:focus-visible {
+  opacity: 1;
+}
+
+/* `:not([data-upgraded])`: without JS (and before upgrade) the link works
+   natively, so keep it visible until back_to_top.client.ts takes over its
+   scroll-driven visibility. */
+.back-to-top.visible,
+.back-to-top:not([data-upgraded]),
+.reader-dict-back-to-top.visible {
+  opacity: 0.85;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .back-to-top {
+    right: 16px;
+  }
+}
+
+/* Float above bottom-docked drawers on mobile & tablet */
+@media (max-width: 1079.98px) {
+  body:has(.drawer:not(.reader-dict-panel)) .back-to-top {
+    bottom: calc(var(--drawer-height, 30svh) + 16px);
+    transition: opacity 0.2s ease, transform 0.2s ease,
+      background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  body:has(.drawer.drawer-minimized:not(.reader-dict-panel)) .back-to-top,
+  body:has(.toc-details:not([open])) .back-to-top {
+    bottom: calc(var(--drawer-min-height, 28px) + 16px);
+  }
+
+  body:has(.drawer:target:not(.reader-dict-panel)) .back-to-top {
+    bottom: calc(55svh + 16px);
+  }
+}
+
+@media (max-width: 640px) {
+  body:has(.reader-dict-panel) .back-to-top {
+    bottom: calc(var(--drawer-height, 48svh) + 16px);
+    transition: opacity 0.2s ease, transform 0.2s ease,
+      background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  body:has(.reader-layout-empty .reader-dict-panel) .back-to-top,
+  body:has(.reader-dict-panel.drawer-minimized) .back-to-top,
+  body:has(.reader-split-layout.reader-layout-empty) .back-to-top {
+    bottom: calc(var(--drawer-min-height, 54px) + 16px);
+  }
+
+  /* A target inside the drawer (a note, a companion tab) opens it only until
+     the reader upgrades; a note's hash stays in the URL after that. Gated on
+     morcus-reader-view:not([data-upgraded]) to avoid quadratic ancestor walks. */
+  /* stylelint-disable-next-line selector-max-compound-selectors */
+  body:has(
+      .reader-dict-panel:target,
+      morcus-reader-view:not([data-upgraded]) .reader-dict-panel :target
+    )
+    .back-to-top {
+    bottom: calc(55svh + 16px);
+  }
+
+  body:has(.drawer-dismissed) .back-to-top,
+  body:has(.reader-drawer-dismiss-target:target) .back-to-top {
+    bottom: 62px;
+  }
+}

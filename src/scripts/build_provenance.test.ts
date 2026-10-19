@@ -13,7 +13,7 @@ import {
   recordedBuildInputs,
   writeBuildProvenance,
 } from "@/scripts/build_provenance";
-import { loadBuildId } from "@/web/v2/core/server/build_version.server";
+import { loadBuildId } from "@/web/ui/core/server/build_version.server";
 
 function git(cwd: string, ...args: string[]): string {
   const result = spawnSync("git", args, { cwd });

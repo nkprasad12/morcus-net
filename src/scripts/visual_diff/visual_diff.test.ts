@@ -34,9 +34,9 @@ function makeTempDir(): string {
 describe("parseSnapshotName", () => {
   it("parses a baseline file name", () => {
     expect(
-      parseSnapshotName("v2-dicts-results-gladius-js-dark-chromium-linux.png")
+      parseSnapshotName("dicts-results-gladius-js-dark-chromium-linux.png")
     ).toEqual({
-      scenario: "v2-dicts-results-gladius",
+      scenario: "dicts-results-gladius",
       category: "Dictionary",
       mode: "js",
       theme: "dark",
@@ -47,32 +47,32 @@ describe("parseSnapshotName", () => {
 
   it("distinguishes FirefoxSmallScreen from firefox", () => {
     expect(
-      parseSnapshotName("v2-about-page-nojs-light-FirefoxSmallScreen-linux.png")
+      parseSnapshotName("about-page-nojs-light-FirefoxSmallScreen-linux.png")
         .browser
     ).toBe("FirefoxSmallScreen");
     expect(
-      parseSnapshotName("v2-about-page-nojs-light-FirefoxSmallScreen-linux.png")
+      parseSnapshotName("about-page-nojs-light-FirefoxSmallScreen-linux.png")
         .size
     ).toBe("small");
     expect(
-      parseSnapshotName("v2-reader-passage-nojs-light-firefox-darwin.png")
+      parseSnapshotName("reader-passage-nojs-light-firefox-darwin.png")
     ).toMatchObject({ browser: "firefox", size: "large", category: "Reader" });
   });
 
   it("parses corpus snapshots into the Corpus category", () => {
     expect(
-      parseSnapshotName("v2-corpus-landing-js-light-chromium-linux.png")
+      parseSnapshotName("corpus-landing-js-light-chromium-linux.png")
     ).toMatchObject({
-      scenario: "v2-corpus-landing",
+      scenario: "corpus-landing",
       category: "Corpus",
     });
   });
 
   it("uses the browser hint for Playwright result names", () => {
     expect(
-      parseSnapshotName("v2-library-landing-js-light.png", "MobileChrome")
+      parseSnapshotName("library-landing-js-light.png", "MobileChrome")
     ).toEqual({
-      scenario: "v2-library-landing",
+      scenario: "library-landing",
       category: "Library",
       mode: "js",
       theme: "light",
@@ -190,7 +190,7 @@ describe("buildMarkdownReport", () => {
         {
           id: "a",
           name: "a.png",
-          scenario: "v2-small",
+          scenario: "small",
           category: "Other",
           mode: "js",
           theme: "light",
@@ -205,7 +205,7 @@ describe("buildMarkdownReport", () => {
         {
           id: "b",
           name: "b.png",
-          scenario: "v2-new",
+          scenario: "new",
           category: "Other",
           mode: "js",
           theme: "light",
@@ -221,7 +221,7 @@ describe("buildMarkdownReport", () => {
     expect(md).toContain("4,200");
     expect(md).toContain("1280×720");
     expect(md).toContain("Visual Baseline Approval Rule");
-    expect(md.indexOf("v2-new")).toBeLessThan(md.indexOf("v2-small"));
+    expect(md.indexOf("new")).toBeLessThan(md.indexOf("small"));
   });
 });
 
@@ -233,16 +233,16 @@ describe("collectResultEntries", () => {
     const added = path.join(dir, "suite-bar-MobileChrome");
     for (const d of [first, retry, added]) fs.mkdirSync(d);
     for (const d of [first, retry]) {
-      fs.writeFileSync(path.join(d, "v2-foo-js-light-expected.png"), "");
-      fs.writeFileSync(path.join(d, "v2-foo-js-light-actual.png"), "");
+      fs.writeFileSync(path.join(d, "foo-js-light-expected.png"), "");
+      fs.writeFileSync(path.join(d, "foo-js-light-actual.png"), "");
     }
-    fs.writeFileSync(path.join(retry, "v2-foo-js-light-diff.png"), "");
-    fs.writeFileSync(path.join(added, "v2-bar-js-dark-actual.png"), "");
+    fs.writeFileSync(path.join(retry, "foo-js-light-diff.png"), "");
+    fs.writeFileSync(path.join(added, "bar-js-dark-actual.png"), "");
 
     const entries = collectResultEntries(dir);
     expect(entries.map((e) => [e.name, e.browserHint, e.status])).toEqual([
-      ["v2-bar-js-dark.png", "MobileChrome", "added"],
-      ["v2-foo-js-light.png", "chromium", "modified"],
+      ["bar-js-dark.png", "MobileChrome", "added"],
+      ["foo-js-light.png", "chromium", "modified"],
     ]);
     expect(entries[1].afterPath).toContain("retry1");
     expect(entries[1].fallbackDiffPath).toContain("retry1");
@@ -268,24 +268,24 @@ describe("git source (end to end)", () => {
     const snaps = path.join(repo, "snaps");
     fs.mkdirSync(snaps);
     fs.writeFileSync(
-      path.join(snaps, "v2-mod-js-light-chromium-linux.png"),
+      path.join(snaps, "mod-js-light-chromium-linux.png"),
       fakePng(10, 10)
     );
     fs.writeFileSync(
-      path.join(snaps, "v2-del-js-light-chromium-linux.png"),
+      path.join(snaps, "del-js-light-chromium-linux.png"),
       fakePng(10, 10)
     );
     fs.writeFileSync(
-      path.join(snaps, "v2-same-js-light-chromium-linux.png"),
+      path.join(snaps, "same-js-light-chromium-linux.png"),
       fakePng(10, 10)
     );
     run("add", ".");
     run("commit", "-q", "-m", "init");
     fs.writeFileSync(
-      path.join(snaps, "v2-mod-js-light-chromium-linux.png"),
+      path.join(snaps, "mod-js-light-chromium-linux.png"),
       fakePng(20, 10, 1)
     );
-    fs.rmSync(path.join(snaps, "v2-del-js-light-chromium-linux.png"));
+    fs.rmSync(path.join(snaps, "del-js-light-chromium-linux.png"));
     fs.writeFileSync(
       path.join(snaps, "v2-new-js-light-chromium-linux.png"),
       fakePng(10, 10)
@@ -300,8 +300,8 @@ describe("git source (end to end)", () => {
   it("finds modified, deleted, and untracked snapshots", () => {
     const entries = collectGitEntries(path.join(repo, "snaps"), "HEAD");
     expect(entries.map((e) => [e.name, e.status])).toEqual([
-      ["v2-del-js-light-chromium-linux.png", "deleted"],
-      ["v2-mod-js-light-chromium-linux.png", "modified"],
+      ["del-js-light-chromium-linux.png", "deleted"],
+      ["mod-js-light-chromium-linux.png", "modified"],
       ["v2-new-js-light-chromium-linux.png", "added"],
     ]);
   });
@@ -322,14 +322,14 @@ describe("git source (end to end)", () => {
     });
 
     const byName = new Map(result.manifest.items.map((i) => [i.scenario, i]));
-    expect(byName.get("v2-mod")).toMatchObject({
+    expect(byName.get("mod")).toMatchObject({
       status: "modified",
       before: { width: 10, height: 10 },
       after: { width: 20, height: 10 },
     });
-    expect(byName.get("v2-del")?.afterUrl).toBeUndefined();
-    expect(byName.get("v2-del")?.beforeUrl).toBeDefined();
-    expect(byName.get("v2-new")?.beforeUrl).toBeUndefined();
+    expect(byName.get("del")?.afterUrl).toBeUndefined();
+    expect(byName.get("del")?.beforeUrl).toBeDefined();
+    expect(byName.get("new")?.beforeUrl).toBeUndefined();
 
     const html = fs.readFileSync(path.join(outDir, "index.html"), "utf-8");
     expect(html).not.toContain("__VISUAL_DIFF_MANIFEST__");

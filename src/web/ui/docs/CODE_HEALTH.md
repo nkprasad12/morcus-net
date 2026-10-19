@@ -1,0 +1,43 @@
+# UI V2 Code Health Backlog
+
+Open code-quality and refactoring work for `src/web/ui/`. Cross-cutting gaps in `core/` primitives
+live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each slice's `TODOS.md`.
+
+**How to use this file**
+
+- Each item is scoped to be **one small, independently landable change**.
+- Sizes: 🟢 < 30 min · 🟡 an hour or two · 🔴 half a day+
+- When adding new debt, add it here rather than a TODO comment, so it stays reviewable.
+- When an item lands, **delete it**. Record what you learned as a comment at the code (or a lint
+  rule or test) where the mistake would be made. Only if it is likely to recur and nothing there
+  would catch it, add one or two sentences to [`DESIGN_TRAPS.md`](DESIGN_TRAPS.md).
+
+---
+
+## Waiting on a date
+
+- 🟢 **Remove the V1 service worker cleanup script** (not before a few months after V1 is
+  decommissioned). `/serviceworker.js` serves `public/cleanup_service_worker.js`, which removes the
+  retired V1 offline worker, and its caches and IndexedDB data, from browsers that still have it
+  registered. A browser only replaces the worker when its user visits, so it has to outlive V1.
+  Then delete `public/cleanup_service_worker.js`, `src/web/server/cleanup_service_worker.test.ts`,
+  the `/serviceworker.js` route in `src/web/web_server.ts` and its test, the `public/**/*.js` block
+  in `eslint.config.mjs`, and the `!public/*.js` exception in `.prettierignore` (restore
+  `public/`).
+
+## Open
+
+- 🟡 **Decompose `reader/reader_view.client.ts` (~1,525 lines) and `reader/reader_view.test.ts` (~3,576 lines).**
+  `MorcusReaderView` currently coordinates TOC active-page syncing, dictionary iframe URL/postMessage/prefetch lifecycle, passage word click/keyboard/highlight/section-edit delegation, and swipe/page-turn slot swapping in one file. Extract cohesive sub-controllers (`ReaderTocController.setActivePage`, `reader_dict_frame.client.ts`, `reader_passage.client.ts`) and split `reader_view.test.ts` to match.
+- 🟡 **Use the shared IndexedDB wrappers in the External Reader store.**
+  `external/external_storage.client.ts` opens IndexedDB by hand. `src/common/indexdb/wrappers.ts`
+  already wraps open/upgrade/transactions with promises and
+  is tested; switching would drop the hand-rolled request plumbing. Keep the V1 schema
+  (`externalContent.db` v1, store `savedContent`) so existing imports survive.
+- 🟢 **Stabilize the Firefox `v2-corpus-results` / `v2-corpus-zero-results` visual snapshots.**
+  `./morcus.sh e2e --visual --all` intermittently fails these on `firefox` and `FirefoxSmallScreen`
+  (a different subset each run), always with ~400 differing pixels confined to the `view works`
+  link in the results blurb (0.04–0.14% of the frame). Chromium and WebKit are stable, and CI does
+  not run the visual suite, so this only costs local verification time. Likely a `:visited` /
+  underline anti-aliasing race on that link; pin its state in the scenario (or mask the link) rather
+  than loosening `maxDiffPixelRatio`.

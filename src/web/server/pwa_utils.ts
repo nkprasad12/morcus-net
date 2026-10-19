@@ -1,5 +1,5 @@
 import { envVar } from "@/common/env_vars";
-import { THEME_COLOR } from "@/web/v2/shell/theme_color.common";
+import { THEME_COLOR } from "@/web/ui/shell/theme_color.common";
 
 export const PWA_WEBMANIFEST = {
   name: "Morcus Latin Tools" + envVar("PWA_SHORT_NAME_SUFFIX"),

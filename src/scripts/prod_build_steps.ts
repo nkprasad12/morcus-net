@@ -24,8 +24,8 @@ import { processGeorges } from "@/common/dictionaries/georges/process_georges";
 import { processPozo } from "@/common/dictionaries/pozo/process_pozo";
 import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
-import { buildV2Bundle } from "@/bundler/v2.rsbuild";
-import { buildCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
+import { buildV2Bundle } from "@/bundler/client.rsbuild";
+import { buildCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 

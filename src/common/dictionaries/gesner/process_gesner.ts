@@ -6,7 +6,7 @@ import { envVar } from "@/common/env_vars";
 import { singletonOf } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
-import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import {

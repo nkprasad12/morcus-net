@@ -24,15 +24,15 @@ import {
 import { processHypotactic } from "@/common/library/process_hypotactic";
 import { processPhiJson } from "@/common/library/process_phi_json";
 import { processTei2 } from "@/common/library/process_work";
-import { preprocessWorkToV2 } from "@/common/library/v2/v2_preprocessor";
-import type { V2PreprocessedWork } from "@/common/library/v2/v2_types";
+import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
+import type { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { CruncherOptions } from "@/morceus/cruncher_types";
 import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
-import { saveV2LibraryDb } from "@/web/v2/reader/reader_loader.server";
+import { saveV2LibraryDb } from "@/web/ui/reader/reader_loader.server";
 import fs from "fs";
 import path from "path";
 

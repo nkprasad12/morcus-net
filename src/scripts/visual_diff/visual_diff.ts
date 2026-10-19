@@ -32,7 +32,7 @@ import type {
 } from "@/scripts/visual_diff/visual_diff_types";
 
 const DEFAULT_SNAPSHOT_DIR =
-  "src/integration/screenshot/browser_v2_screenshot.test.ts-snapshots";
+  "src/integration/screenshot/browser_screenshot.test.ts-snapshots";
 const DEFAULT_RESULTS_DIR = "test-results";
 const DEFAULT_OUT_DIR = ".cache/visual-diff";
 const DEFAULT_PORT = 8899;

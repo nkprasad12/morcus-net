@@ -1,15 +1,15 @@
 {
   "plugins": [
     "stylelint-declaration-strict-value",
-    "./src/web/v2/tools/stylelint/max_file_lines.cjs",
-    "./src/web/v2/tools/stylelint/no_duplicate_declaration_blocks.cjs",
-    "./src/web/v2/tools/stylelint/no_ancestor_gate_in_has.cjs",
-    "./src/web/v2/tools/stylelint/no_unscoped_target.cjs"
+    "./src/web/ui/tools/stylelint/max_file_lines.cjs",
+    "./src/web/ui/tools/stylelint/no_duplicate_declaration_blocks.cjs",
+    "./src/web/ui/tools/stylelint/no_ancestor_gate_in_has.cjs",
+    "./src/web/ui/tools/stylelint/no_unscoped_target.cjs"
   ],
   "rules": {},
   "overrides": [
     {
-      "files": ["src/web/v2/**/*.css"],
+      "files": ["src/web/ui/**/*.css"],
       "rules": {
         "annotation-no-unknown": true,
         "at-rule-no-unknown": true,
@@ -85,7 +85,7 @@
       }
     },
     {
-      "files": ["src/web/v2/shell/**/*.css"],
+      "files": ["src/web/ui/shell/**/*.css"],
       "rules": {
         "selector-disallowed-list": null,
         "media-feature-name-disallowed-list": null

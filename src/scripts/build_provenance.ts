@@ -5,7 +5,7 @@
  * HEADs and clone repos at HEAD, so the same morcus-net commit can produce
  * different content on a rebuild. The build ID covers the commit *and* those
  * inputs, and is what `?v=` cache keys use in production (see
- * `getBuildVersion` in `web/v2/core/server/build_version.server.ts`).
+ * `getBuildVersion` in `web/ui/core/server/build_version.server.ts`).
  *
  * `script_utils.ts` records each input as the pipeline fetches it; the last
  * step of `prod_build_steps.ts` writes the result with
@@ -23,7 +23,7 @@ import { spawnSync } from "child_process";
 import {
   BUILD_PROVENANCE_FILE,
   type BuildProvenance,
-} from "@/web/v2/core/server/build_version.server";
+} from "@/web/ui/core/server/build_version.server";
 
 /** Hex characters of the build ID: 48 bits, plenty for a few builds a month. */
 const BUILD_ID_LENGTH = 12;

@@ -10,8 +10,8 @@ import {
   shellStep,
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
-import { DEV_SERVER_ENV } from "@/web/v2/core/server/build_version.server";
-import { buildCompletionsDb } from "@/web/v2/dict/search/completions_db.server";
+import { DEV_SERVER_ENV } from "@/web/ui/core/server/build_version.server";
+import { buildCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 import { ArgumentParser, type ArgumentOptions } from "argparse";
 import { ChildProcess, execFileSync, execSync, spawn } from "child_process";
 
@@ -169,7 +169,7 @@ function parseArguments() {
   addArguments(build, COMMON_BUILD_ARGS);
 
   const bundle = subparsers.add_parser(BUNDLE, {
-    help: "Builds the UI V2 client assets into build/v2/.",
+    help: "Builds the UI V2 client assets into build/client/.",
   });
   bundle.add_argument("-m", "--minify", {
     help: "Minifies (and precompresses) the assets, as production does.",
@@ -256,7 +256,7 @@ function parseArguments() {
     default: "",
   });
   e2e.add_argument("-vs", "--visual", {
-    help: "Runs UI V2 visual regression tests (src/integration/screenshot/browser_v2_screenshot.test.ts).",
+    help: "Runs UI V2 visual regression tests (src/integration/screenshot/browser_screenshot.test.ts).",
     action: "store_true",
   });
   e2e.add_argument("-a", "--all", {
@@ -299,7 +299,7 @@ function parseArguments() {
     default: "HEAD",
   });
   visualDiff.add_argument("-d", "--dir", {
-    help: "Snapshot directory for the git source (default: src/integration/screenshot/browser_v2_screenshot.test.ts-snapshots).",
+    help: "Snapshot directory for the git source (default: src/integration/screenshot/browser_screenshot.test.ts-snapshots).",
     default: "",
   });
   visualDiff.add_argument("--results-dir", {
@@ -363,7 +363,7 @@ function parseArguments() {
     help: "Runs the UI V2 cross-slice inventory and exact ratchet check.",
   });
   inventory.add_argument("-u", "--update", {
-    help: "Rewrites src/web/v2/inventory_ratchet.json from the current metrics.",
+    help: "Rewrites src/web/ui/inventory_ratchet.json from the current metrics.",
     action: "store_true",
   });
   inventory.add_argument("-r", "--report", {
@@ -512,7 +512,7 @@ function v2BundleConfig(
 ): StepConfig {
   const executor = args.bun ? ["bun"] : TS_NODE;
   const buildCommand = executor.concat([
-    "src/bundler/v2.rsbuild.ts",
+    "src/bundler/client.rsbuild.ts",
     ...(minify ? ["--minify"] : []),
   ]);
   return {
@@ -749,7 +749,7 @@ async function runE2eTests(args: any) {
   }
 
   const testPath = isVisual
-    ? "src/integration/screenshot/browser_v2_screenshot.test.ts"
+    ? "src/integration/screenshot/browser_screenshot.test.ts"
     : "src/integration/suites/";
   const command = ["npx playwright test", testPath];
 
@@ -899,7 +899,7 @@ async function runVisualDiff(args: any): Promise<boolean> {
 
 async function runInventory(args: any): Promise<boolean> {
   const { runInventoryCli } = await import(
-    "@/web/v2/tools/inventory/inventory"
+    "@/web/ui/tools/inventory/inventory"
   );
   return runInventoryCli({
     update: Boolean(args.update),

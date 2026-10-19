@@ -168,8 +168,8 @@ describe("pre-compressed V2 assets", () => {
     write("common.abcd1234.js.br", zlib.brotliCompressSync(JS));
     write("common.abcd1234.js.gz", zlib.gzipSync(JS));
     // gzip sibling only.
-    write("v2.abcd1234.css", CSS);
-    write("v2.abcd1234.css.gz", zlib.gzipSync(CSS));
+    write("app.abcd1234.css", CSS);
+    write("app.abcd1234.css.gz", zlib.gzipSync(CSS));
     // No siblings.
     write("dict.abcd1234.js", JS);
     // Not a hashed asset: siblings must be ignored.
@@ -233,7 +233,7 @@ describe("pre-compressed V2 assets", () => {
   });
 
   test("falls back to the next sibling when one is missing", async () => {
-    const res = await fetchRaw(server, "/assets/v2.abcd1234.css", {
+    const res = await fetchRaw(server, "/assets/app.abcd1234.css", {
       acceptEncoding: "br, gzip",
     });
     expect(res.headers["content-encoding"]).toBe("gzip");

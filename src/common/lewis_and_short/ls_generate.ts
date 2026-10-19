@@ -13,7 +13,7 @@ import { StoredEntryData } from "@/common/lewis_and_short/ls_dict";
 import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
-import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 
 function* extractEntryData(
   rawFile: string,

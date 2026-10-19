@@ -7,13 +7,13 @@ import type {
   ProcessedWork2,
   ProcessedWorkContentNodeType,
 } from "@/common/library/library_types";
-import { preprocessWorkToV2 } from "@/common/library/v2/v2_preprocessor";
+import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
 import { processTokens } from "@/common/text_cleaning";
 import { XmlNode } from "@/common/xml/xml_node";
 import {
   isLatinWord,
   tokenizeSubtree,
-} from "@/web/v2/core/text/tokenize.client";
+} from "@/web/ui/core/text/tokenize.client";
 
 type ContentNode = XmlNode<ProcessedWorkContentNodeType>;
 

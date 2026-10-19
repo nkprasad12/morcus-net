@@ -9,8 +9,8 @@ import {
   CORPUS_LEMMATA_DB,
   type CorpusIndexKeyTypes,
 } from "@/common/library/corpus/corpus_common";
-import { savePrecompressedJsonDb } from "@/web/v2/core/server/precompressed_json.server";
-import { buildLemmaShards } from "@/web/v2/corpus/corpus_lemmata.server";
+import { savePrecompressedJsonDb } from "@/web/ui/core/server/precompressed_json.server";
+import { buildLemmaShards } from "@/web/ui/corpus/corpus_lemmata.server";
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";

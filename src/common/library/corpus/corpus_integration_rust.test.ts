@@ -8,8 +8,8 @@ import {
   type PageData,
 } from "@/common/library/corpus/corpus_common";
 import { RustCorpusQueryEngine } from "@/common/library/corpus/corpus_rust";
-import { openCorpusLemmaStore } from "@/web/v2/corpus/corpus_lemmata.server";
-import { readCorpusSuggestionList } from "@/web/v2/corpus/corpus_query.server";
+import { openCorpusLemmaStore } from "@/web/ui/corpus/corpus_lemmata.server";
+import { readCorpusSuggestionList } from "@/web/ui/corpus/corpus_query.server";
 import fs from "fs";
 import zlib from "zlib";
 

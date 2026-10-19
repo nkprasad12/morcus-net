@@ -7,7 +7,7 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
 import type { IrregularForm, Lemma, Stem } from "@/morceus/stem_parsing";
-import { preRenderEntryHtml } from "@/web/v2/dict/entry/xml_to_html.server";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 
 const ROMAN_NUMERALS: [string, number][] = [
   ["M", 1000],

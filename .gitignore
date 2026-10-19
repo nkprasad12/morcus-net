@@ -155,5 +155,5 @@ e2e_metrics/*
 corpus_driver.js
 target/*
 
-# Local scratch space for investigations (see src/common/library/v2/docs/README.md)
+# Local scratch space for investigations (see src/common/library/preprocess/docs/README.md)
 .investigation/

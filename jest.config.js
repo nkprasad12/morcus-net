@@ -6,7 +6,7 @@ const base = {
     "^@/(.+)$": "<rootDir>/src/$1",
   },
   // Jest discovers tests from the repo root, so scratch files under `.investigation/`
-  // would otherwise be collected. See src/common/library/v2/docs/README.md.
+  // would otherwise be collected. See src/common/library/preprocess/docs/README.md.
   // src/integration holds Playwright suites, which Jest can't run.
   testPathIgnorePatterns: [
     "/node_modules/",
@@ -32,7 +32,7 @@ const base = {
       },
     ],
   },
-  setupFilesAfterEnv: ["<rootDir>/src/web/v2/testing/setup_tests.ts"],
+  setupFilesAfterEnv: ["<rootDir>/src/web/ui/testing/setup_tests.ts"],
 };
 
 // Jest's default `testMatch`.
@@ -44,7 +44,7 @@ const ALL_TESTS = [
 // Whole-system suites: they check invariants across the whole app (every SSR
 // fixture, every module, every stylesheet), so they depend on nearly
 // everything and are slow. They run once before each commit, not after every
-// edit; see `./morcus.sh test` and src/web/v2/docs/TESTING.md §3.
+// edit; see `./morcus.sh test` and src/web/ui/docs/TESTING.md §3.
 //
 // The split uses `testMatch` rather than `testPathIgnorePatterns` because a
 // `--testPathIgnorePatterns` CLI flag would replace the latter and put these

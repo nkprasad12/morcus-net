@@ -5,7 +5,7 @@ import {
   getV2LibrarySummaries,
   getV2Work,
   resolvePageInWork,
-} from "@/web/v2/reader/reader_loader.server";
+} from "@/web/ui/reader/reader_loader.server";
 import fs from "fs";
 
 console.debug = jest.fn();

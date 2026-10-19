@@ -33,10 +33,10 @@ const HE_ENCODE_SYNTAX = [
 ];
 
 // UI V2 uses ECMAScript `#private` members, not TypeScript's `private`
-// (src/web/v2/README.md, convention 10). Restated in every UI V2 block that
+// (src/web/ui/README.md, convention 10). Restated in every UI V2 block that
 // configures `no-restricted-syntax`, like HE_ENCODE_SYNTAX.
 const NO_TS_PRIVATE_MESSAGE =
-  "Use an ECMAScript #private member instead of TypeScript `private` (src/web/v2/README.md, convention 10).";
+  "Use an ECMAScript #private member instead of TypeScript `private` (src/web/ui/README.md, convention 10).";
 const NO_TS_PRIVATE_SYNTAX = [
   {
     selector:
@@ -62,7 +62,7 @@ const NO_RELATIVE_IMPORTS = {
   message: "Relative imports are not allowed.",
 };
 
-// UI V2 uses a target-suffix convention (see src/web/v2/README.md): `*.client.ts`
+// UI V2 uses a target-suffix convention (see src/web/ui/README.md): `*.client.ts`
 // runs in the browser, `*.server.ts` runs in Node, and `*.common.ts` must be safe
 // in both. Only the first two are self-evident from the filename at a call site,
 // so the boundary is enforced here rather than by review.
@@ -103,7 +103,7 @@ const NO_CLIENT_IMPORTS = {
 };
 
 // Keeps `<morcus-corpus-view>` and the corpus autocomplete decoupled (see
-// src/web/v2/corpus/README.md, "Autocomplete boundary"). Both now ship in the `corpus.js` route
+// src/web/ui/corpus/README.md, "Autocomplete boundary"). Both now ship in the `corpus.js` route
 // chunk, but the view reaches the autocomplete only through the DOM they
 // share and leaves the grammar tables to it, so the autocomplete could still
 // move into a lazy sub-chunk without touching the view.
@@ -118,7 +118,7 @@ const NO_CORPUS_AUTOCOMPLETE_IMPORTS = {
 // The bundler builds the client and hands the server a manifest; it must not
 // depend on either tier's code. Facts both sides need (chunk names, the
 // `dependOn` graph, the build directory) live in
-// src/bundler/v2_build_contract.ts, which the server imports instead.
+// src/bundler/client_build_contract.ts, which the server imports instead.
 // The only React (Preact) code left: two local developer tools. UI V2 has no
 // React, and react-hooks' use* naming heuristics would misfire on it.
 const PREACT_DEV_TOOLS = [
@@ -130,7 +130,7 @@ const NO_TIERED_IMPORTS_FROM_BUNDLER = {
   group: ["**/*.server", "**/*.client"],
   message:
     "src/bundler must not import *.server.ts or *.client.ts modules. Put " +
-    "shared build facts in src/bundler/v2_build_contract.ts and import that " +
+    "shared build facts in src/bundler/client_build_contract.ts and import that " +
     "from the server instead.",
 };
 
@@ -288,7 +288,7 @@ export default [
   // replaces rather than extends it, listing `.common.ts` in a client block and
   // again in a server block would leave it with only whichever came last.
   {
-    files: ["src/web/v2/**/*.client.ts"],
+    files: ["src/web/ui/**/*.client.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -299,7 +299,7 @@ export default [
   // Narrows the client block above for one file, so it re-states that block's
   // patterns (configuring the rule again replaces them). Must stay after it.
   {
-    files: ["src/web/v2/corpus/corpus_view.client.ts"],
+    files: ["src/web/ui/corpus/corpus_view.client.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -314,7 +314,7 @@ export default [
     },
   },
   {
-    files: ["src/web/v2/**/*.server.ts"],
+    files: ["src/web/ui/**/*.server.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -323,7 +323,7 @@ export default [
     },
   },
   {
-    files: ["src/web/v2/**/*.common.ts"],
+    files: ["src/web/ui/**/*.common.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -344,7 +344,7 @@ export default [
   // UI V2: they may exercise both tiers (e.g. under jsdom).
   {
     files: ["src/**/*.ts"],
-    ignores: ["src/web/v2/**", "src/bundler/**", "**/*.test.ts"],
+    ignores: ["src/web/ui/**", "src/bundler/**", "**/*.test.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -400,8 +400,8 @@ export default [
   // is the opposite call from the async block above, which includes tests
   // precisely because they had nothing to exempt.
   {
-    files: ["src/web/v2/**/*.ts"],
-    ignores: ["src/web/v2/**/*.test.ts"],
+    files: ["src/web/ui/**/*.ts"],
+    ignores: ["src/web/ui/**/*.test.ts"],
     plugins: { "no-unsanitized": nounsanitized },
     rules: {
       "no-unsanitized/method": "error",
@@ -417,7 +417,7 @@ export default [
   // still growing, and without these rules `any` and `!` accumulate silently.
   //
   // Tests are exempt, and the measured split is what justifies it -- against
-  // `src/web/v2` at the time this landed:
+  // `src/web/ui` at the time this landed:
   //
   //                              prod   test
   //   no-non-null-assertion        10    106
@@ -432,8 +432,8 @@ export default [
   // As with the async block above, this must not configure
   // `no-restricted-imports`.
   {
-    files: ["src/web/v2/**/*.ts"],
-    ignores: ["src/web/v2/**/*.test.ts"],
+    files: ["src/web/ui/**/*.ts"],
+    ignores: ["src/web/ui/**/*.test.ts"],
     rules: {
       "@typescript-eslint/no-unused-vars": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
@@ -449,7 +449,7 @@ export default [
   // target-suffix bans. Using no-restricted-properties and no-restricted-syntax avoids
   // this conflict entirely.
   {
-    files: ["src/web/v2/**/*.ts", "src/common/library/v2/**/*.ts"],
+    files: ["src/web/ui/**/*.ts", "src/common/library/preprocess/**/*.ts"],
     ignores: ["**/*.test.ts"],
     rules: {
       "no-restricted-properties": [
@@ -481,13 +481,13 @@ export default [
   //
   // NOTE: this block must not configure `no-restricted-imports`.
   {
-    files: ["src/web/v2/**/*.ts"],
-    ignores: ["src/web/v2/**/*.test.ts"],
+    files: ["src/web/ui/**/*.ts"],
+    ignores: ["src/web/ui/**/*.test.ts"],
     rules: {
       ...typescriptEslint.configs["recommended-type-checked-only"].rules,
     },
   },
-  // The activation gate (src/web/v2/README.md, "The activation gate") lives in
+  // The activation gate (src/web/ui/README.md, "The activation gate") lives in
   // LifetimeScope.listen(), so client code must listen through a scope. Raw
   // addEventListener and on* handler properties would bypass it.
   //
@@ -500,10 +500,10 @@ export default [
   // options for these files, so it repeats HE_ENCODE_SYNTAX and
   // NO_TS_PRIVATE_SYNTAX.
   {
-    files: ["src/web/v2/**/*.client.ts"],
+    files: ["src/web/ui/**/*.client.ts"],
     ignores: [
-      "src/web/v2/**/*.test.ts",
-      "src/web/v2/core/dom/lifetime_scope.client.ts",
+      "src/web/ui/**/*.test.ts",
+      "src/web/ui/core/dom/lifetime_scope.client.ts",
     ],
     rules: {
       "no-restricted-syntax": [
@@ -537,7 +537,7 @@ export default [
   // configures no-restricted-syntax for them, so this one only needs the
   // private-member entries.
   {
-    files: ["src/web/v2/**/*.test.ts"],
+    files: ["src/web/ui/**/*.test.ts"],
     rules: {
       "no-restricted-syntax": ["error", ...NO_TS_PRIVATE_SYNTAX],
     },

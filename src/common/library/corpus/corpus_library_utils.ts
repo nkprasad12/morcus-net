@@ -116,7 +116,7 @@ function assembleRowText(node: XmlNode | string): string {
 
 /**
  * Extracts the text of a row for corpus ingestion. Word boundaries must agree
- * with the V2 reader's (`v2_preprocessor.ts` + `tokenize.client.ts`), because
+ * with the V2 reader's (`work_preprocessor.ts` + `tokenize.client.ts`), because
  * corpus word offsets become reader `matchText` highlight ranges.
  *
  * Word-boundary rule. Editorial tags (`<add>`, `<corr>`, `<hi>`, ...) wrap
@@ -137,7 +137,7 @@ function assembleRowText(node: XmlNode | string): string {
  *
  * A review of every seam in the library where this rule changes the tokens
  * (9,661) found about 10 errors, all missing spaces in the source TEI. See
- * `src/web/v2/corpus/TODOS.md`, "Word-boundary rule".
+ * `src/web/ui/corpus/TODOS.md`, "Word-boundary rule".
  */
 export function extractRowText(node: XmlNode | string): string {
   return (
