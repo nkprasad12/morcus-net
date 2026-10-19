@@ -38,8 +38,26 @@ jobs:
           cache: npm
       - name: Installing npm dependencies
         run: npm ci
+      - name: Get rustc version
+        id: rustc
+        run: echo "version=$(rustc -V)" >> "$GITHUB_OUTPUT"
+      - name: Cache nj-cli and Rust dependencies
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.cargo/bin/nj-cli
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            target/
+          key: rust-${{ runner.os }}-${{ steps.rustc.outputs.version }}-${{ hashFiles('Cargo.lock', 'package.json') }}
       - name: Building Rust bindings
-        run: npm run setup-node-bindgen
+        env:
+          CARGO_INCREMENTAL: 0
+        run: |
+          cargo clean --release -p corpus -p morceus -p corpus_rust_wrapper 2>/dev/null || true
+          npm run setup-node-bindgen
       - name: Installing Python dependencies
         run: pip install -r requirements.txt
       - name: Running unit tests
