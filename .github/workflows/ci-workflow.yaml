@@ -78,6 +78,7 @@ jobs:
       - name: Build image
         run: |
           docker build . --tag $CANDIDATE \
+            --build-arg "SOURCE_VERSION=${{ github.sha }}" \
             --label "runnumber=${GITHUB_RUN_ID}" \
             --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
             --label "org.opencontainers.image.revision=${{ github.sha }}" \

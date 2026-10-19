@@ -11,6 +11,10 @@ RUN chown -R node:node /morcus
 
 USER node
 RUN npm ci
+# `.git` is excluded by `.dockerignore`, so `write_source_version.ts` reads
+# the commit hash from `SOURCE_VERSION` instead of running `git rev-parse`.
+ARG SOURCE_VERSION
+ENV SOURCE_VERSION=$SOURCE_VERSION
 RUN npm run build
 
 FROM node:22-trixie-slim
@@ -20,23 +24,34 @@ COPY --from=0 /morcus/build build
 COPY --from=0 /morcus/package.json package.json
 COPY --from=0 /morcus/morceus-data morceus-data
 COPY --from=0 /morcus/src/morceus src/morceus
-RUN mkdir /morcus_dbs && mv build/dbs/ /morcus_dbs/dbs/
+# Move each large generated data directory into its own tree under `/layers`,
+# laid out with its final path (e.g. `/layers/corpus/morcus/build/corpus`), so
+# that each can be copied into the final image as a separate layer.
+RUN for d in dbs corpus library_processed morceus; do \
+      mkdir -p "/layers/$d/morcus/build" && mv "build/$d" "/layers/$d/morcus/build/"; \
+    done
 RUN chown -R node:node /morcus
-RUN find /morcus_dbs/ -exec touch -amt 200001010000.00 {} +
+# Normalise mtimes (including on the `morcus` and `build` parent directories)
+# so that a layer's bytes depend only on the file contents.
+RUN find /layers/ -exec touch -h -amt 200001010000.00 {} +
 
 FROM node:22-trixie-slim
-# We have to do this elaborate dance because Docker annoyingly has
-# no way to copy the database files without invalidating the layer cache,
-# (even the the `.db` hash is exactly the same) except to the root directory.
-# Copying the `/morcus_dbs/` contents to `/` brings the `dbs` directory along
-# with its normalised mtime, so the layer is still byte-identical (and so
-# reused by the registry and on `docker pull`) whenever the databases are.
-COPY --chown=node:node --from=1 --link /morcus_dbs/ /
+# Each data directory gets its own layer. With `--link`, a layer doesn't depend
+# on the layers below it, and with normalised mtimes it's byte-identical (so
+# reused by the registry and on `docker pull`) whenever its contents are.
+# A typical code-only change then only re-downloads the small final layer.
+#
+# These are copied to `/` rather than to their final directories: copying into
+# a directory that doesn't exist yet makes Docker create it with a fresh mtime,
+# which changes the layer's digest on every build. Each tree already contains
+# its parent directories (with normalised mtimes) instead.
+COPY --chown=node:node --from=1 --link /layers/dbs/ /
+COPY --chown=node:node --from=1 --link /layers/corpus/ /
+COPY --chown=node:node --from=1 --link /layers/library_processed/ /
+COPY --chown=node:node --from=1 --link /layers/morceus/ /
+# Code, the client bundle, and the small per-build files (commit ID, build
+# provenance), which change on every build.
 COPY --chown=node:node --from=1 /morcus /morcus
-# The databases are read-only, so a symlink is enough to put them where the
-# server expects them. Moving them at runtime instead would copy all of them
-# into the container's writable layer on every container start.
-RUN ln -s /dbs /morcus/build/dbs
 WORKDIR /morcus
 ENV PORT=5757 NODE_ENV=production
 USER node
