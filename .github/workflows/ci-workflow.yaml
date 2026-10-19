@@ -66,7 +66,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Build image
-        run: docker build . --tag $CANDIDATE --label "runnumber=${GITHUB_RUN_ID}"
+        run: |
+          docker build . --tag $CANDIDATE \
+            --label "runnumber=${GITHUB_RUN_ID}" \
+            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
       - name: Push image
