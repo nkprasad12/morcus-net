@@ -30,10 +30,12 @@ jobs:
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
+          cache: pip
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version-file: package.json
+          cache: npm
       - name: Installing npm dependencies
         run: npm ci
       - name: Building Rust bindings
@@ -132,6 +134,7 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version-file: package.json
+          cache: npm
       - name: Installing npm dependencies
         run: npm ci
       - name: Installing browsers
@@ -161,6 +164,7 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version-file: package.json
+          cache: npm
       - name: Pulling docker images
         run: |
           docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}

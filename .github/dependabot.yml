@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: quarterly
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directory: /src/devops/reverse_proxy
+    schedule:
+      interval: quarterly
