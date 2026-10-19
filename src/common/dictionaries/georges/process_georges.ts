@@ -8,8 +8,8 @@ import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
 import { safeParseInt } from "@/common/misc_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 
 import fs from "fs";
 
@@ -143,7 +143,7 @@ function processRawEntry(root: XmlNode): RawDictEntry {
     id,
     keys,
     entry: JSON.stringify({
-      entry: XmlNodeSerialization.DEFAULT.serialize(formattedEntry),
+      entry: preRenderEntryHtml(formattedEntry),
       outline,
     }),
   };

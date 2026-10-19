@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 echo "Running eslint:"
-npx eslint .
+npx eslint --cache .
 echo "Running prettier:"
-npx prettier . --check
+npx prettier --cache . --check
 echo "Running Typescript unit tests:"
 npm run ts-tests
 echo "Checking TS types"

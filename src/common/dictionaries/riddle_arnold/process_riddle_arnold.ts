@@ -6,8 +6,8 @@ import { arrayMap } from "@/common/data_structures/collect_map";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import type { EntryOutline } from "@/common/dictionaries/dict_result";
+import { preRenderEntryHtml } from "@/web/ui/dict/entry/xml_to_html.server";
 
 function splitEntryParts(rawPart: string): XmlChild {
   // TODO: We first need to split on (A), (B), (C), etc...
@@ -91,13 +91,12 @@ export function processRiddleArnold() {
     assert(!usedIds.has(id), id);
     usedIds.add(id);
     const entry = formatEntry(id, entries, header);
-    const serializedEntry = XmlNodeSerialization.DEFAULT.serialize(entry);
     const outline: EntryOutline = {
       mainKey: keys[0],
       mainSection: { text: header, level: 0, ordinal: "0", sectionId: id },
     };
     const fullEntry = {
-      entry: serializedEntry,
+      entry: preRenderEntryHtml(entry),
       outline,
     };
     allEntries.push({

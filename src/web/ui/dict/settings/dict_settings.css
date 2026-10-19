@@ -1,0 +1,130 @@
+/* Dictionary settings dialog (highlight, inflections, dictionary selection) */
+
+/* The element only owns behaviour; the dialog lays itself out. */
+morcus-dict-settings {
+  display: contents;
+}
+
+.dict-settings-dialog {
+  width: calc(100vw - 48px);
+  max-width: 480px;
+  max-height: 80dvh;
+}
+
+.dict-settings-dialog > .dialog-card {
+  padding: var(--space-6) var(--space-7);
+}
+
+/* No-JS (and pre-upgrade): the tray link targets #dict-settings, which opens the
+   dialog as a full-screen overlay. Done submits; Back leaves. Once upgraded, the
+   element adopts the hash (see core/nav/reveal.client.ts) and uses showModal(). */
+.dict-settings-dialog:target:not([data-upgraded] *) {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: var(--space-8);
+  border: none;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+.dict-settings-dialog:target:not([data-upgraded] *) > .dialog-card {
+  width: 100%;
+  max-width: 480px;
+  max-height: 80dvh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card-bg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.dict-settings-form {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.dict-settings-dialog .dialog-header {
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.dict-settings-dialog .dialog-title {
+  font-size: 1.125rem;
+}
+
+.dict-settings-done {
+  padding: var(--space-2) var(--space-5);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.dict-settings-dialog .dialog-body {
+  margin-bottom: 0;
+}
+
+.dict-settings-dialog .settings-header {
+  margin-bottom: var(--space-2);
+}
+
+.dict-settings-dialog .settings-control-row {
+  margin-bottom: var(--space-3);
+}
+
+.dict-settings-dialog .settings-preview {
+  padding: var(--space-2) var(--space-4);
+}
+
+.dict-settings-dialog .settings-divider {
+  margin: var(--space-4) 0;
+}
+
+.dict-settings-dialog .settings-section-title {
+  margin-bottom: var(--space-2);
+}
+
+/* Dictionary Selection Section */
+.settings-inflected-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.dict-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-right: var(--space-1);
+}
+
+.dict-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
+  font-size: 0.78rem;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dict-name {
+  font-weight: 500;
+  flex: 1;
+}
+
+.dict-lang {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}

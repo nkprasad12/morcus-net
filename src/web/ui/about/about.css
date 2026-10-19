@@ -1,0 +1,40 @@
+/* About Page Layout & Sections */
+
+.about-article {
+  width: 100%;
+}
+
+.about-section {
+  margin-bottom: var(--space-9);
+}
+
+.about-section h2 {
+  font-size: 1.35rem;
+  margin: 0 0 var(--space-5) 0;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.about-section p {
+  margin: 0 0 var(--space-5) 0;
+  line-height: 1.6;
+}
+
+.about-section ul {
+  margin: 0 0 var(--space-6) 0;
+  padding-left: var(--space-8);
+}
+
+.about-section li {
+  margin-bottom: var(--space-4);
+  line-height: 1.5;
+}
+
+.about-section a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.about-section a:hover {
+  color: var(--link-hover);
+}

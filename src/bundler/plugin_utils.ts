@@ -13,10 +13,10 @@ import { arrayMapBy } from "@/common/data_structures/collect_map";
 export interface CommonPlugin {
   name: string;
   onBuildStart?: () => void;
-  onBuildEnd?: () => void;
+  onBuildEnd?: () => void | Promise<void>;
 }
 
-export interface TypeCheckOptions {
+interface TypeCheckOptions {
   watch: boolean;
 }
 
@@ -147,17 +147,16 @@ function formatCompressionResults(results: CompressedFileInfo[]) {
   console.log("");
 }
 
-export async function compressJsOutputs(outputs: string[]) {
+/** Writes `<file>.gz` and `<file>.br` next to each file, and prints sizes. */
+export async function compressOutputs(outputs: string[]) {
   const resultsPromise = Promise.all(
-    outputs
-      .filter((f) => f.endsWith(".js"))
-      .map(async (jsFile) => {
-        const raw = await fs.promises.readFile(jsFile);
-        return Promise.all([
-          compressFile(raw, jsFile, "gz"),
-          compressFile(raw, jsFile, "br"),
-        ]);
-      })
+    outputs.map(async (file) => {
+      const raw = await fs.promises.readFile(file);
+      return Promise.all([
+        compressFile(raw, file, "gz"),
+        compressFile(raw, file, "br"),
+      ]);
+    })
   );
   formatCompressionResults((await resultsPromise).flat());
 }

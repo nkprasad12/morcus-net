@@ -13,6 +13,13 @@ interface FusedRequest {
   dicts: string[];
 }
 
+function prefixExtras(
+  dictKey: string,
+  extras?: ServerExtras
+): ServerExtras | undefined {
+  return extras ? { log: (tag) => extras.log(`${dictKey}_${tag}`) } : undefined;
+}
+
 export class FusedDictionary {
   private readonly dictMap = new Map<string, Dictionary>();
 
@@ -52,15 +59,16 @@ export class FusedDictionary {
     extras?: ServerExtras
   ): Promise<DictsFusedResponse> {
     const callable = async (dict: Dictionary, query: string) => {
+      const dictExtras = prefixExtras(dict.info.key, extras);
       const mode = request.mode || 0;
       if (mode === 2) {
-        const result = await dict.getEntryById(request.query, extras);
+        const result = await dict.getEntryById(request.query, dictExtras);
         return result === undefined ? [] : [result];
       }
       return dict.getEntry(
         // TODO: We should have a more general list of things we remove at storage time.
         query.replaceAll("'", ""),
-        extras,
+        dictExtras,
         (request.mode || 0) === 0 ? undefined : { handleInflections: true }
       );
     };
@@ -72,7 +80,7 @@ export class FusedDictionary {
     extras?: ServerExtras
   ): Promise<CompletionsFusedResponse> {
     const callable = (dict: Dictionary, query: string) =>
-      dict.getCompletions(query, extras);
+      dict.getCompletions(query, prefixExtras(dict.info.key, extras));
     return this.collectResults(request, callable);
   }
 }

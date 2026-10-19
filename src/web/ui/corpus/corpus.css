@@ -1,0 +1,649 @@
+/* Corpus Search (/corpus): reuses dict/search/search.css and core/state/settings.css. */
+
+.corpus-page {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* --- Settings popover ---------------------------------------------------- */
+
+.corpus-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.corpus-number {
+  width: 5rem;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  color: var(--text);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border, var(--border));
+  border-radius: var(--radius-sm);
+}
+
+/* --- Autocomplete -------------------------------------------------------- */
+
+/* The listbox is `.suggestions` (dict/search/search.css); these are its rows, built
+ * by corpus_autocomplete.client.ts. The highlighted row is the one the input's
+ * `aria-activedescendant` points at. */
+.corpus-suggestion {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-5);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.corpus-suggestion:not(.is-status):hover,
+.corpus-suggestion[aria-selected="true"] {
+  background-color: var(--tag-bg);
+}
+
+.corpus-suggestion.is-status,
+.corpus-suggestion-prefix,
+.corpus-suggestion-help {
+  color: var(--text-muted);
+}
+
+.corpus-suggestion.is-status {
+  cursor: default;
+}
+.corpus-suggestion.is-error {
+  color: var(--danger);
+}
+
+.corpus-suggestion-text {
+  /* Completions carry meaningful spaces, e.g. ` and `. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.corpus-suggestion-option {
+  color: var(--primary);
+}
+
+.corpus-suggestion-help {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+/* --- Inflection notice --------------------------------------------------- */
+
+.corpus-inflection-notice {
+  margin-bottom: var(--space-4);
+  font-size: 0.8rem;
+  color: var(--text);
+  background-color: var(--disclaimer-bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--match-highlight-fg);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  line-height: 1.5;
+}
+
+.corpus-inflection-summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.corpus-inflection-body {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--disclaimer-border);
+}
+
+.corpus-inflection-body p {
+  margin: var(--space-1) 0;
+}
+
+.corpus-inflection-lead {
+  color: var(--text-muted);
+}
+
+.corpus-inflection-body code,
+.corpus-welcome-detail code,
+.guide-col-list code {
+  padding: 0.1rem 0.3rem;
+  border-radius: var(--radius-xs);
+  background-color: var(--tag-bg);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+/* --- Flat Panel Query Guide ---------------------------------------------- */
+
+.corpus-help-card {
+  margin-bottom: var(--space-5);
+  font-size: 0.8rem;
+  color: var(--text);
+  background-color: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.guide-summary,
+.guide-subaccordion-summary,
+.guide-categories-summary,
+.corpus-syntax-link {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.guide-summary::-webkit-details-marker,
+.guide-subaccordion-summary::-webkit-details-marker,
+.guide-categories-summary::-webkit-details-marker,
+.corpus-syntax-link::-webkit-details-marker {
+  display: none;
+}
+
+.guide-summary,
+.guide-subaccordion-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.guide-summary {
+  padding: var(--space-3) var(--space-5);
+  font-weight: normal;
+}
+
+.guide-summary:hover {
+  background-color: var(--tag-bg);
+}
+
+.guide-summary-left,
+.guide-subaccordion-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.guide-title,
+.guide-col-title,
+.guide-examples-title,
+.corpus-welcome-title {
+  font-weight: normal;
+  color: var(--text);
+}
+
+.guide-title {
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.guide-syntax-badge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.375rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--tag-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono, monospace);
+  flex-shrink: 0;
+}
+
+.guide-summary-right {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.guide-chevron,
+.guide-subaccordion-chevron,
+.guide-categories-chevron,
+.corpus-syntax-chevron {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.corpus-help-card[open] > .guide-summary .guide-chevron,
+.corpus-syntax-details[open] > .corpus-syntax-link .corpus-syntax-chevron {
+  transform: rotate(180deg);
+}
+
+.guide-subaccordion[open]
+  > .guide-subaccordion-summary
+  .guide-subaccordion-chevron,
+.guide-categories[open] > .guide-categories-summary .guide-categories-chevron {
+  transform: rotate(90deg);
+}
+
+.corpus-help-card[open] .help-action-closed,
+.corpus-help-card:not([open]) .help-action-open {
+  display: none;
+}
+
+.guide-inner {
+  border-top: 1px solid var(--border);
+  padding: var(--space-4) var(--space-5);
+  font-size: 0.75rem;
+  background-color: var(--bg);
+}
+
+/* Desktop 3-Column Split */
+.desktop-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.desktop-guide-grid > .guide-col:not(:first-child) {
+  border-left: 1px solid var(--border);
+  padding-left: var(--space-4);
+}
+
+.desktop-guide-grid > .guide-col:not(:last-child) {
+  padding-right: var(--space-4);
+}
+
+.guide-col,
+.guide-col-list,
+.mobile-guide-accordions,
+.guide-subaccordion-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-col,
+.guide-col-list,
+.guide-subaccordion-content {
+  gap: var(--space-2);
+}
+
+.guide-col-title {
+  font-size: 0.75rem;
+}
+
+.guide-col-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.guide-col-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.guide-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.guide-col-list code {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.guide-categories-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--corpus-citation-link);
+}
+
+.guide-categories-list {
+  margin-top: var(--space-2);
+  padding-left: var(--space-3);
+}
+
+.guide-item-combine,
+.guide-item-note {
+  padding-top: var(--space-1);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.guide-item-note {
+  font-style: italic;
+}
+
+/* Desktop Examples Table */
+.guide-examples-section {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.guide-examples-title {
+  font-size: 0.7rem;
+  margin-bottom: var(--space-2);
+}
+
+.guide-examples-subtitle {
+  font-weight: normal;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
+.guide-table-scroll {
+  overflow-x: auto;
+}
+.guide-examples-table {
+  width: 100%;
+  font-size: 0.7rem;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.guide-examples-table th,
+.guide-examples-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-examples-table th {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.guide-examples-table td {
+  vertical-align: baseline;
+}
+.guide-example-row:hover {
+  background-color: var(--tag-bg);
+}
+.guide-example-link {
+  font-family: var(--font-mono, monospace);
+  color: var(--link);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.guide-example-link:hover,
+.guide-categories-summary:hover,
+.corpus-scope-text a:hover,
+.corpus-syntax-link:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.guide-example-cell-sample {
+  color: var(--text-muted);
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
+/* Mobile Subaccordions */
+.guide-subaccordion {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-subaccordion:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.guide-subaccordion:first-child {
+  padding-top: 0;
+}
+
+.guide-subaccordion-summary {
+  padding: var(--space-2) 0;
+  font-size: 0.75rem;
+  font-weight: normal;
+}
+
+.guide-subaccordion-summary:hover {
+  color: var(--primary);
+}
+.guide-subaccordion-badge {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono, monospace);
+  font-weight: normal;
+  flex-shrink: 0;
+}
+
+.guide-subaccordion-content {
+  margin-top: var(--space-2);
+  padding-left: var(--space-5);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.guide-mobile-examples {
+  gap: var(--space-3);
+}
+.guide-mobile-example {
+  display: block;
+  text-decoration: none;
+}
+.guide-mobile-example-query {
+  font-family: var(--font-mono, monospace);
+  font-weight: normal;
+  color: var(--link);
+}
+
+.guide-mobile-example:hover .guide-mobile-example-query {
+  text-decoration: underline;
+}
+.guide-mobile-example-desc {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 0.125rem;
+}
+
+/* Responsive toggle between Desktop 3-Col & Mobile Subaccordions */
+.mobile-guide-container,
+.guide-action-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .desktop-guide-view,
+  .guide-syntax-badge,
+  .guide-action-desktop {
+    display: none;
+  }
+  .mobile-guide-container {
+    display: block;
+  }
+  .guide-action-mobile {
+    display: inline;
+  }
+}
+
+/* --- Summary ------------------------------------------------------------- */
+.corpus-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-5);
+}
+.corpus-summary:empty {
+  display: none;
+}
+.corpus-summary-headline {
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+.corpus-beta-chip {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: var(--beta-chip-bg);
+  border: 1px solid var(--beta-chip-border);
+  color: var(--beta-chip-text);
+  line-height: 1.2;
+  vertical-align: middle;
+  flex-shrink: 0;
+  margin-left: var(--space-2);
+}
+.corpus-summary-detail {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+.corpus-summary-dot {
+  color: var(--text-muted);
+  user-select: none;
+}
+/* The query time changes width with its digits ("8.123 ms" vs "12.345 ms"),
+   which shifted everything after it; visual tests mask the text, not the box. */
+.corpus-timing {
+  min-width: 12ch;
+  font-variant-numeric: tabular-nums;
+}
+/* `:visited` too: the global `a:visited` (0,1,1) ties `.corpus-scope-text a`
+   and would recolour `view works` once /library is in history. */
+.corpus-scope-text a,
+.corpus-scope-text a:visited,
+.corpus-syntax-link {
+  color: var(--corpus-citation-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.corpus-syntax-link {
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.corpus-syntax-details {
+  display: inline;
+}
+.corpus-syntax-chevron {
+  width: 0.8rem;
+  height: 0.8rem;
+  color: currentColor;
+}
+.corpus-syntax-details[open] {
+  display: block;
+  flex-basis: 100%;
+  width: 100%;
+  margin-top: var(--space-3);
+}
+.corpus-syntax-details .corpus-help-panel {
+  margin-top: var(--space-2);
+}
+.corpus-help-panel .guide-inner {
+  border-top: 0;
+}
+
+.corpus-query-echo {
+  font-family: inherit;
+  color: var(--match-highlight-fg);
+  font-weight: 700;
+}
+
+/* --- Welcome Card -------------------------------------------------------- */
+.corpus-welcome-card {
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background-color: var(--input-bg);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-4);
+}
+.corpus-welcome-title {
+  font-size: 0.875rem;
+  margin-bottom: var(--space-2);
+}
+.corpus-welcome-detail {
+  margin: 0;
+}
+
+/* --- Results ------------------------------------------------------------- */
+.corpus-results,
+.corpus-summary:focus {
+  outline: none;
+}
+.corpus-summary[aria-busy="true"],
+.corpus-results[aria-busy="true"],
+.corpus-pager[aria-busy="true"] {
+  opacity: 0.55;
+  transition: opacity 0.15s ease-in-out;
+}
+.corpus-error {
+  color: var(--danger);
+  padding: var(--space-4);
+  text-align: center;
+}
+.corpus-result-list {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding-left: 0;
+  border-top: 1px solid var(--border);
+}
+.corpus-result {
+  margin: 0;
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border);
+}
+.corpus-result-heading {
+  color: var(--corpus-citation-link);
+  text-decoration: none;
+  border-bottom: 1px solid var(--corpus-citation-link);
+}
+.corpus-result-heading:hover {
+  color: var(--corpus-citation-link-hover);
+  border-bottom-color: var(--corpus-citation-link-hover);
+}
+.corpus-snippet {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-serif);
+  line-height: 1.6;
+  text-align: justify;
+  white-space: pre-line;
+}
+.corpus-match {
+  background-color: transparent;
+  color: var(--match-highlight-fg);
+  font-weight: 700;
+}
+
+/* --- Pager --------------------------------------------------------------- */
+.corpus-pager {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-6);
+}
+.corpus-pager:not(:has(a)) {
+  display: none;
+}
+.corpus-next {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}

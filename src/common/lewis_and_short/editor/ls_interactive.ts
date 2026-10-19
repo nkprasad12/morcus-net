@@ -64,7 +64,7 @@ export async function startInteractiveEditor() {
   });
 
   await new Promise<void>((resolve) =>
-    server.listen(port, async () => {
+    server.listen(port, () => {
       console.log(
         `Interactive editor running! Go to http://localhost:${port}/ls_editor_index.html`
       );
@@ -73,4 +73,4 @@ export async function startInteractiveEditor() {
   );
 }
 
-startInteractiveEditor();
+void startInteractiveEditor();

@@ -1,25 +1,28 @@
 /* istanbul ignore file */
 
-import { CompletionsFusedApi, DictsFusedApi } from "@/web/api_routes";
-import { callApi } from "@/web/utils/rpc/client_rpc";
+/**
+ * Generates steady load against a morcus.net server, roughly like one busy
+ * dictionary user: a full page, a few in-page partial lookups, and
+ * autocomplete. Run with `npm run tsnp src/utils/load_test.ts`, pointing
+ * `BASE_URL` at the server (default: a local dev server).
+ */
 
-// @ts-expect-error
-global.location = {
-  origin: `https://dev-hz.morcus.net`,
-};
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:5757";
 
-async function generateLoad() {
-  await fetch("https://dev-hz.morcus.net/Root.X3PSYSMZ.js");
-  await callApi(DictsFusedApi, { query: "habeo", dicts: ["L&S", "S&H"] });
-  await Promise.allSettled([
-    callApi(DictsFusedApi, { query: "canaba", dicts: ["L&S", "S&H"] }),
-    callApi(DictsFusedApi, { query: "unda", dicts: ["L&S", "S&H"] }),
-  ]);
-  callApi(DictsFusedApi, { query: "canem", dicts: ["L&S", "S&H"], mode: 1 });
-  callApi(CompletionsFusedApi, {
-    query: "c",
-    dicts: ["S&H", "L&S"],
+function get(path: string): Promise<Response> {
+  return fetch(`${BASE_URL}${path}`, {
+    headers: { "accept-encoding": "gzip, br" },
   });
 }
 
-setInterval(generateLoad, 1000);
+async function generateLoad() {
+  await get("/dicts?q=habeo&dict=LnS,SnH");
+  await Promise.allSettled([
+    get("/dicts?q=canaba&dict=LnS,SnH&format=partial"),
+    get("/dicts?q=unda&dict=LnS,SnH&format=partial"),
+  ]);
+  void get("/dicts?q=canem&dict=LnS,SnH&o=1&format=partial");
+  void get("/api/completions?prefix=ca");
+}
+
+setInterval(() => void generateLoad(), 1000);

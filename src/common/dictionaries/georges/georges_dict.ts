@@ -3,7 +3,6 @@ import { StoredDict } from "@/common/dictionaries/dict_storage";
 import type { Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import type { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 function normalize(input: string): string {
@@ -20,11 +19,7 @@ export class GeorgesDict implements Dictionary {
   }
 
   private processRaw(input: string): EntryResult {
-    const parsed = JSON.parse(input);
-    return {
-      entry: XmlNodeSerialization.DEFAULT.deserialize(parsed.entry),
-      outline: parsed.outline,
-    };
+    return JSON.parse(input);
   }
 
   async getEntry(

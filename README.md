@@ -28,7 +28,6 @@ Common arguments for this script (run `./morcus.sh --help` for full options):
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--build_ls`       | This processes Lewis and Short for use by the server. This needs to be run the first time and whenever you modify the Lewis and Short raw XML file. This is slow.                              |
 | `--build_sh`       | This processes Smith and Hall for use by the server. This needs to be run the first time and whenever you modify the Smith and Hall raw text file or any of the processing code. This is slow. |
-| `--minify`         | Builds a minified client. This is used in production builds. This skips `React`'s `StrictMode` warnings as well.                                                                               |
 | `--transpile_only` | Skips `typescript` type checking. This is _faster_.                                                                                                                                            |
 
 ### Python Code (ML)
@@ -189,7 +188,7 @@ There is a Play Store app at https://play.google.com/store/apps/details?id=net.m
 
 Morcus Latin Tools is a web application (it is also available in the Play Store, but this is just a packaged PWA). There are four high level components to the code:
 
-1. A _client_, which is developed in `Typescript`. This is currently a single page application written using vanilla `React`.
+1. A _client_ (UI V2, `src/web/ui/`), developed in `Typescript`. The server renders every page as plain HTML, and small framework-free custom elements enhance it in the browser. See [`src/web/ui/README.md`](src/web/ui/README.md).
 2. A _backend_, which is also developed in `Typescript`. This is a `Node.js` based `HTTP` server that uses `Express`.
 3. _preprocessing_ code, which is also developed in `Typescript`. This is responsible for transforming raw files (often XML or plain text files) into structured data that can be served by the backend.
 4. _NLP_ code, which is developed in `Python`. This is currently used for the macronizer.

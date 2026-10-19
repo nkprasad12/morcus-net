@@ -2,12 +2,16 @@ import { assertType } from "@/common/assert";
 import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
 import { buildCorpus } from "@/common/library/corpus/build_corpus";
 import {
+  CORPUS_AUTHORS_LIST,
   CorpusQueryResult,
   type CorpusInputWork,
   type PageData,
 } from "@/common/library/corpus/corpus_common";
 import { RustCorpusQueryEngine } from "@/common/library/corpus/corpus_rust";
+import { openCorpusLemmaStore } from "@/web/ui/corpus/corpus_lemmata.server";
+import { readCorpusSuggestionList } from "@/web/ui/corpus/corpus_query.server";
 import fs from "fs";
+import zlib from "zlib";
 
 console.debug = jest.fn();
 
@@ -498,5 +502,35 @@ describe("Corpus Integration Test", () => {
     expect(match.metadata.workId).toBe("test_work_4");
     expect(match.metadata.leaders).toEqual([["1.1", 0, 2]]);
     expect(getMatchText(match)).toEqual(["Canis servum"]);
+  });
+
+  it("writes author suggestion list and pre-compressed lemma shards readable by V2", async () => {
+    const authors = await readCorpusSuggestionList(
+      CORPUS_AUTHORS_LIST,
+      TEST_CORPUS_DIR
+    );
+    expect(authors).toEqual(["Author1", "Author2", "Author4"]);
+
+    const lemmaStore = openCorpusLemmaStore(TEST_CORPUS_DIR);
+    expect(lemmaStore).toBeDefined();
+    try {
+      const aShard = lemmaStore!.get("a");
+      const gShard = lemmaStore!.get("g");
+      const sShard = lemmaStore!.get("s");
+      expect(aShard).toBeDefined();
+      expect(gShard).toBeDefined();
+      expect(sShard).toBeDefined();
+      expect(
+        JSON.parse(zlib.brotliDecompressSync(aShard!.br).toString("utf8"))
+      ).toEqual(["acclamo", "accognosco", "aio"]);
+      expect(
+        JSON.parse(zlib.gunzipSync(gShard!.gzip).toString("utf8"))
+      ).toEqual(["Gallus", "gallus"]);
+      expect(
+        JSON.parse(zlib.brotliDecompressSync(sShard!.br).toString("utf8"))
+      ).toEqual(expect.arrayContaining(["servus"]));
+    } finally {
+      lemmaStore?.close();
+    }
   });
 });

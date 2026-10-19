@@ -1,0 +1,166 @@
+/* Page Widths
+ *
+ * Draggable surfaces (reader, dict, library, corpus): the saved width is
+ * `--{surface}-page-max` on :root, put there before first paint by
+ * shell/critical_theme.client.ts (see core/widgets/page_width.client.ts). Each
+ * surface maps it onto `--page-max`, which its column and app bar row read
+ * and the handles are positioned from. Defaults live ONLY in the var()
+ * fallbacks: a default declared on body would shadow the :root value.
+ * "Full" is 100vw, which is never the binding constraint.
+ *
+ * The handles sit on the container edge: `--page-max` plus `--page-extra`,
+ * which is non-zero only on a dictionary entry with the contents rail, where
+ * the container widens to fit the rail beside the column (dict/toc/dict_toc.css).
+ * It is a separate addend (not a pre-summed width) so the inline
+ * `--page-max` written on <morcus-page-width> during a drag still moves the
+ * handles.
+ *
+ * During a drag (or key press) shell/page_width_handles.client.ts does not
+ * write `--page-max` on the column: it is inherited, so every element in the
+ * column would restyle per frame. It overrides the `max-width` rules of the
+ * column and the app bar row inline instead, with formulas that mirror them:
+ * `.container` gets `calc(<width> + var(--page-extra, 0px))` and
+ * `.app-bar-inner` gets `<width>`. Keep `--page-extra` equal to what
+ * dict/toc/dict_toc.css adds to the container, and change the max-width rules
+ * here, in reader/reader_layout.css and in dict/toc/dict_toc.css together with
+ * `setLive` / `liveContainerMaxWidth`.
+ *
+ * .body-dict is only set on standalone dictionary pages (never embedded), so
+ * the reader's dictionary iframe ignores the dictionary width.
+ */
+
+/* --- Draggable surfaces -------------------------------------------------- */
+
+.body-reader {
+  --page-max: var(--reader-page-max, 1400px);
+}
+
+.body-library {
+  --page-max: var(--library-page-max, 900px);
+}
+
+.body-corpus {
+  --page-max: var(--corpus-page-max, 900px);
+}
+
+/* The saved dictionary width is the reading column. The search bar is
+   capped so it does not move when the rail appears; the rail follows the
+   viewport, so it stays constant during a drag. The search cap is computed
+   here from the saved width, so it does not follow a live drag. */
+.body-dict {
+  --page-max: var(--dict-page-max, 900px);
+  --dict-search-max: min(calc(var(--page-max) - 32px), 1108px);
+  --dict-toc-w: clamp(240px, 18vw, 320px);
+}
+
+/* Must equal what `.container:has(.results-layout.has-toc)` adds to
+   `--page-max` (dict/toc/dict_toc.css): the live drag width reproduces that
+   rule as `<width> + var(--page-extra)`. */
+@media (min-width: 1080px) {
+  .body-dict:has(.results-layout.has-toc) {
+    --page-extra: calc(var(--dict-toc-w) + 40px);
+  }
+}
+
+.body-dict .search-form {
+  max-width: var(--dict-search-max);
+  margin-inline: auto;
+}
+
+/* Overridden inline during a drag (see the header): change together with
+   `setLive` in shell/page_width_handles.client.ts. */
+.body-dict .app-bar-inner,
+.body-dict .container,
+.body-library .app-bar-inner,
+.body-library .container,
+.body-corpus .app-bar-inner,
+.body-corpus .container {
+  max-width: var(--page-max);
+}
+
+/* --- Handles (shell/page_width_handles.client.ts) -------------------------
+   Fixed, so they work on scrolling pages too, and centered on the column
+   edge. 50% of a fixed box is half the viewport without the scrollbar,
+   matching how the column is centered. At full width they pin to the
+   window edge. The line, grip and hover/drag states come from
+   .resize-handle (core/widgets/resize_handle.css), shared with .reader-splitter;
+   this only sizes and places the handles. */
+
+.page-handle,
+.page-gutter-tint {
+  position: fixed;
+  top: 65px;
+  bottom: 0;
+}
+
+.page-handle {
+  --edge: max(
+    0px,
+    calc(50% - (var(--page-max) + var(--page-extra, 0px)) / 2 - 8px)
+  );
+
+  z-index: var(--z-raised);
+  width: 16px;
+  outline: none;
+}
+
+.page-handle[data-side="left"] {
+  left: var(--edge);
+}
+
+.page-handle[data-side="right"] {
+  right: var(--edge);
+}
+
+/* While dragging: tint the gutters and show the width next to the pointer. */
+.page-gutter-tint {
+  width: max(0px, calc(50% - (var(--page-max) + var(--page-extra, 0px)) / 2));
+  background-color: var(--primary-light);
+  pointer-events: none;
+}
+
+.page-gutter-tint[data-side="left"] {
+  left: 0;
+}
+
+.page-gutter-tint[data-side="right"] {
+  right: 0;
+}
+
+.page-width-readout {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-overlay);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: var(--text);
+  color: var(--bg);
+  font: 600 0.75rem/1 var(--font-sans);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.page-gutter-tint,
+.page-width-readout {
+  display: none;
+}
+
+/* No inherited `cursor` / `user-select` on `body.resizing-page`: toggling
+   them restyles the whole document. The captured `.resize-handle` supplies
+   the cursor and trackPointerDrag prevents text selection. */
+body.resizing-page iframe {
+  pointer-events: none;
+}
+
+body.resizing-page .page-gutter-tint,
+body.resizing-page .page-width-readout {
+  display: block;
+}
+
+/* Mobile layouts are already full width. */
+@media (max-width: 640px) {
+  morcus-page-width {
+    display: none;
+  }
+}

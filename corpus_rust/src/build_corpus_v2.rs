@@ -10,7 +10,7 @@ use morceus::{
 
 use crate::build_corpus_v2::{
     library_utils::{
-        CorpusInputWork, LIB_CORPUS_INPUT_DIR, LIB_INDEX_PATH, find_files_from_library_index,
+        CorpusInputWork, LIB_CORPUS_INPUT_DIR, load_works_from_corpus_input_dir,
     },
     string_processing::process_tokens,
 };
@@ -58,12 +58,7 @@ fn absorb_work<'a>(
 }
 
 pub fn build_corpus() -> Result<(), Box<dyn std::error::Error>> {
-    let corpus_files = find_files_from_library_index(LIB_INDEX_PATH, LIB_CORPUS_INPUT_DIR)?;
-    let mut works = vec![];
-    for file_path in &corpus_files {
-        let work = CorpusInputWork::from_file(file_path)?;
-        works.push(work);
-    }
+    let works = load_works_from_corpus_input_dir(LIB_CORPUS_INPUT_DIR)?;
 
     let tables = load_tables(TABLES_FILE)?;
     let crunch_options = CruncherOptions::default();

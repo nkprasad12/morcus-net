@@ -24,7 +24,7 @@ const worksList =
 const buildCorpus = process.env.BUILD_CORPUS === "1";
 process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
 
-processLibrary({
+void processLibrary({
   outputDir: LIB_DEFAULT_DIR,
   works: worksList,
   shouldBuildCorpus: buildCorpus,
