@@ -294,6 +294,61 @@ describe("setupAbbrPopover", () => {
     expect(popover.style.left).toBe("8px");
   });
 
+  test("resets left, top, and stale inline width before measuring offsetWidth (DICT-10)", () => {
+    document.body.innerHTML = `
+      <div id="abbr-popover"></div>
+      <span class="lsHover" id="first" title="verb [transitive]">v. a.</span>
+      <span class="lsHover" id="second" title="T. Maccius Plautus, writer of comedy. ob. B.C. 184">Plaut.</span>
+    `;
+    const popover = document.getElementById("abbr-popover") as HTMLElement;
+    const second = document.getElementById("second") as HTMLElement;
+
+    Object.defineProperty(window, "innerWidth", {
+      value: 393,
+      configurable: true,
+      writable: true,
+    });
+
+    second.getBoundingClientRect = () => ({
+      left: 197,
+      right: 240,
+      top: 100,
+      bottom: 120,
+      width: 43,
+      height: 20,
+      x: 197,
+      y: 100,
+      toJSON: () => {},
+    });
+
+    // Simulate a previous right-edge placement and stale inline width; if not
+    // reset to 0px before measuring, a real browser shrink-wraps offsetWidth.
+    popover.style.left = "132px";
+    popover.style.top = "240px";
+    popover.style.width = "37px";
+
+    let measuredAtLeft = "";
+    let measuredWithWidth = "";
+    Object.defineProperty(popover, "offsetWidth", {
+      configurable: true,
+      get() {
+        measuredAtLeft = popover.style.left;
+        measuredWithWidth = popover.style.width;
+        return popover.style.left === "0px" ? 361 : 345;
+      },
+    });
+
+    cleanup = setupAbbrPopover(document, window);
+    second.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true })
+    );
+
+    expect(measuredAtLeft).toBe("0px");
+    expect(measuredWithWidth).toBe("");
+    // 393 - 361 - 8 = 24px (clamped cleanly inside the 393px viewport)
+    expect(popover.style.left).toBe("24px");
+  });
+
   test("cleanup removes all document and window event listeners", () => {
     document.body.innerHTML = `
       <div id="abbr-popover"></div>

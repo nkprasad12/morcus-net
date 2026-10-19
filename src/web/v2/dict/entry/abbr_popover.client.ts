@@ -50,8 +50,16 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
           : abbrPopover.style.display === "block";
 
       const positionAbbrPopover = (target: HTMLElement) => {
-        // Page coordinates (`absolute` + scrollY), so window scrolling carries
-        // the popover along with its word without a scroll listener.
+        // Measure at an unconstrained origin so a previous right-edge `left`
+        // (or stale inline width) does not shrink-wrap the auto-width box
+        // before `offsetWidth` is read.
+        abbrPopover.style.position = "absolute";
+        abbrPopover.style.removeProperty("width");
+        abbrPopover.style.left = "0px";
+        abbrPopover.style.top = "0px";
+
+        // Page coordinates (`absolute` + scrollX/scrollY), so window scrolling
+        // carries the popover along with its word without a scroll listener.
         const { left, top } = computeAnchoredPlacement(
           target.getBoundingClientRect(),
           {
@@ -61,8 +69,7 @@ export const setupAbbrPopover: (doc?: Document, win?: Window) => CleanupFn =
           { width: win.innerWidth, height: win.innerHeight },
           { align: "center", side: "auto", gap: 6, margin: 8, caretInset: 0 }
         );
-        abbrPopover.style.position = "absolute";
-        abbrPopover.style.left = `${Math.round(left)}px`;
+        abbrPopover.style.left = `${Math.round(left + win.scrollX)}px`;
         abbrPopover.style.top = `${Math.round(top + win.scrollY)}px`;
       };
 
