@@ -238,3 +238,24 @@ describe("GET /externalReader", () => {
     expect(res.text).not.toContain("Ignored Title");
   });
 });
+
+describe("POST /external and POST /externalReader (EXT-04)", () => {
+  test.each([
+    ["/external", { mode: "" }],
+    ["/external", { mode: "foo" }],
+    ["/externalReader", { mode: "" }],
+    ["/externalReader", { mode: "foo" }],
+  ])(
+    "POST %s with %p returns 400 and a styled V2 error page",
+    async (path, body) => {
+      const res = await request(makeApp(jest.fn())).post(path).send(body);
+
+      expect(res.status).toBe(400);
+      expect(res.text).toContain("<!DOCTYPE html>");
+      expect(res.text).toContain('<morcus-external-loader class="external-landing"');
+      expect(res.text).toContain('role="alert"');
+      expect(res.text).toContain("Unsupported input mode.");
+      expect(res.text).not.toContain("Cannot POST");
+    }
+  );
+});

@@ -64,6 +64,24 @@ describe("GET /corpus", () => {
     ]);
   });
 
+  test("clamps malformed contextLen and pageSize to defaults with 200 OK (CORP-05)", async () => {
+    const engine = fakeCorpusEngine();
+    const res = await request(makeApp(engine)).get(
+      "/corpus?q=amor&contextLen=abc&pageSize=abc"
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('<span class="inflect-chip is-off">20</span>');
+    expect(res.text).toContain('<span class="inflect-chip is-off">50</span>');
+    expect(engine.requests).toEqual([
+      expect.objectContaining({
+        query: "amor",
+        contextLen: 20,
+        pageSize: 50,
+      }),
+    ]);
+  });
+
   test("a partial request gets only the slot templates", async () => {
     const res = await request(makeApp(fakeCorpusEngine()))
       .get("/corpus?q=omnis")

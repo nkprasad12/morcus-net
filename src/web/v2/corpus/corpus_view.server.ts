@@ -78,7 +78,7 @@ function renderSummary(view: CorpusSearchView): SafeHtml {
         results matching`;
 
   const items: SafeHtml[] = [];
-  if (estimatedTotal === 0) {
+  if (estimatedTotal === 0 || results.length === 0) {
     items.push(html`<span>Showing 0 results</span>`);
   } else {
     items.push(

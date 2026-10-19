@@ -19,6 +19,8 @@ import {
 
 /** The External Content Reader route path. */
 const ROUTE = "/externalReader";
+const LEGACY_POST_ROUTE = "/external";
+const UNSUPPORTED_MODE_ERROR = "Unsupported input mode.";
 
 interface ExternalRoutesOptions {
   /** Replaces the network scraper, for tests. */
@@ -99,6 +101,18 @@ export function createExternalRoutes(
         text,
         lines: params.lines ?? "keep",
         query: params.q ?? "",
+      })
+    );
+  });
+
+  router.use([ROUTE, LEGACY_POST_ROUTE], (req, res, next) => {
+    if (req.method !== "POST") {
+      next();
+      return;
+    }
+    res.status(400).send(
+      renderExternalLandingPageHtml({
+        error: UNSUPPORTED_MODE_ERROR,
       })
     );
   });

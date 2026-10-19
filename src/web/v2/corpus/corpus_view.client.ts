@@ -1,5 +1,6 @@
 import {
   BaseElement,
+  bindDismissable,
   isPlainLeftClick,
   registerElement,
   scrollToElement,
@@ -7,7 +8,10 @@ import {
   type QueryParamSync,
 } from "@/web/v2/core/index.client";
 import {
+  CONTEXT_LEN,
   CORPUS_PATH,
+  PAGE_SIZE,
+  corpusUrl,
   readCorpusParams,
   type CorpusParams,
 } from "@/web/v2/corpus/corpus_params.common";
@@ -40,16 +44,47 @@ class MorcusCorpusView extends BaseElement<"nav"> {
   #form: HTMLFormElement | null = null;
   #settings: HTMLDetailsElement | null = null;
   #router: QueryParamSync | null = null;
+  #appliedParams: CorpusParams = {
+    q: "",
+    pageSize: PAGE_SIZE.default,
+    contextLen: CONTEXT_LEN.default,
+    strictMode: false,
+  };
 
   protected override onConnect() {
     this.#settings = this.scope.$<HTMLDetailsElement>(
       "details.corpus-settings"
     );
     this.#form = this.hijackForm("form.corpus-form", (data) => {
+      this.#appliedParams = readCorpusParams((name) => data[name]);
       if (this.#settings) this.#settings.open = false;
       const url = `${CORPUS_PATH}?${new URLSearchParams(data).toString()}`;
       void this.#navigate(url, { push: true, scrollToResults: false });
     });
+    this.#appliedParams = this.#readInitialParams();
+
+    if (this.#settings) {
+      const settings = this.#settings;
+      const summary = settings.querySelector<HTMLElement>("summary");
+      this.scope.use(
+        bindDismissable({
+          container: settings,
+          triggerEl: summary,
+          isOpen: () => settings.open,
+          onDismiss: () => {
+            settings.open = false;
+            this.#syncSettingsControls(this.#appliedParams);
+          },
+          listenPointerDown: true,
+          doc: this.ownerDocument,
+        })
+      );
+      this.scope.listen(settings, "toggle", () => {
+        if (!settings.open) {
+          this.#syncSettingsControls(this.#appliedParams);
+        }
+      });
+    }
 
     this.scope.delegate<HTMLAnchorElement>(
       this,
@@ -59,6 +94,8 @@ class MorcusCorpusView extends BaseElement<"nav"> {
         if (!(e instanceof MouseEvent) || !isPlainLeftClick(e)) return;
         // Our nav links; navigate() swaps the result slots
         e.preventDefault();
+        link.closest("details")?.removeAttribute("open");
+        link.closest("details.corpus-help")?.removeAttribute("open");
         void this.#navigate(link.href, { push: true, scrollToResults: true });
       }
     );
@@ -99,7 +136,14 @@ class MorcusCorpusView extends BaseElement<"nav"> {
     );
     if (options.push) {
       const current = window.location.pathname + window.location.search;
-      if (path === current) {
+      const currentParams = readCorpusParams(
+        (name) =>
+          new URLSearchParams(window.location.search).get(name) ?? undefined
+      );
+      if (
+        path === current ||
+        corpusUrl(params) === corpusUrl(currentParams)
+      ) {
         this.#router?.replaceUrl(url);
       } else {
         this.#router?.pushUrl(url);
@@ -121,20 +165,53 @@ class MorcusCorpusView extends BaseElement<"nav"> {
     return true;
   }
 
+  #field(name: string): HTMLInputElement | null {
+    const el = this.#form?.elements.namedItem(name);
+    return el instanceof HTMLInputElement ? el : null;
+  }
+
+  #readInitialParams(): CorpusParams {
+    const search = new URLSearchParams(window.location.search);
+    return readCorpusParams((name) => {
+      const fromUrl = search.get(name);
+      if (fromUrl !== null) return fromUrl;
+      const el = this.#field(name);
+      if (!el) return undefined;
+      if (el.type === "checkbox") {
+        return el.defaultChecked ? el.value : undefined;
+      }
+      return el.defaultValue || undefined;
+    });
+  }
+
   /** Makes the form show what the page now shows (links and popstate). */
   #syncControls(params: CorpusParams) {
-    const field = (name: string) => {
-      const el = this.#form?.elements.namedItem(name);
-      return el instanceof HTMLInputElement ? el : null;
-    };
-    const q = field("q");
-    if (q) q.value = params.q;
-    const contextLen = field("contextLen");
-    if (contextLen) contextLen.value = String(params.contextLen);
-    const pageSize = field("pageSize");
-    if (pageSize) pageSize.value = String(params.pageSize);
-    const strictMode = field("strictMode");
-    if (strictMode) strictMode.checked = params.strictMode;
+    this.#appliedParams = params;
+    const q = this.#field("q");
+    if (q) {
+      q.value = params.q;
+      q.defaultValue = params.q;
+    }
+    this.#syncSettingsControls(params);
+  }
+
+  /** Restores the settings controls to the last applied parameters. */
+  #syncSettingsControls(params: CorpusParams) {
+    const contextLen = this.#field("contextLen");
+    if (contextLen) {
+      contextLen.value = String(params.contextLen);
+      contextLen.defaultValue = String(params.contextLen);
+    }
+    const pageSize = this.#field("pageSize");
+    if (pageSize) {
+      pageSize.value = String(params.pageSize);
+      pageSize.defaultValue = String(params.pageSize);
+    }
+    const strictMode = this.#field("strictMode");
+    if (strictMode) {
+      strictMode.checked = params.strictMode;
+      strictMode.defaultChecked = params.strictMode;
+    }
   }
 }
 

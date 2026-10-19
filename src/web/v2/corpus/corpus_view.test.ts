@@ -192,6 +192,21 @@ describe("corpus page", () => {
     expect(doc.querySelector(".corpus-next")).toBeNull();
   });
 
+  test("out-of-range cursor with 0 matches on page shows Showing 0 results instead of inverted range", async () => {
+    const doc = parse(
+      renderCorpusPageHtml(
+        await search(
+          { cursor: { resultId: 99, resultIndex: 500, candidateIndex: 0 } },
+          fakeCorpusEngine(() =>
+            fakeResult({ matches: [], resultStats: { estimatedResults: 120 } })
+          )
+        )
+      )
+    );
+    expect(text(doc, ".corpus-summary-detail")).toContain("Showing 0 results");
+    expect(text(doc, ".corpus-summary-detail")).not.toContain("501 to 500");
+  });
+
   test("errors render as an alert", async () => {
     const doc = parse(renderCorpusPageHtml(await search({ q: "#Nobody x" })));
     const alert = doc.querySelector("[role=alert]");

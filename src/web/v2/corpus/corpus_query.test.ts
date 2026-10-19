@@ -77,6 +77,33 @@ describe("parseCorpusParams", () => {
     expect(params.contextLen).toBe(CONTEXT_LEN.default);
   });
 
+  test("clamps malformed and boundary contextLen / pageSize values (CORP-05)", () => {
+    expect(parseCorpusParams({ contextLen: "abc", pageSize: "abc" })).toMatchObject({
+      contextLen: CONTEXT_LEN.default,
+      pageSize: PAGE_SIZE.default,
+    });
+    expect(parseCorpusParams({ contextLen: "", pageSize: "" })).toMatchObject({
+      contextLen: CONTEXT_LEN.default,
+      pageSize: PAGE_SIZE.default,
+    });
+    expect(parseCorpusParams({ contextLen: "1e3", pageSize: "1e3" })).toMatchObject({
+      contextLen: CONTEXT_LEN.default,
+      pageSize: PAGE_SIZE.default,
+    });
+    expect(parseCorpusParams({ contextLen: "12abc", pageSize: "12abc" })).toMatchObject({
+      contextLen: CONTEXT_LEN.default,
+      pageSize: PAGE_SIZE.default,
+    });
+    expect(parseCorpusParams({ contextLen: " 7 ", pageSize: " 15 " })).toMatchObject({
+      contextLen: 7,
+      pageSize: 15,
+    });
+    expect(parseCorpusParams({ contextLen: "-5", pageSize: "-5" })).toMatchObject({
+      contextLen: CONTEXT_LEN.min,
+      pageSize: PAGE_SIZE.min,
+    });
+  });
+
   test("uses the first of repeated parameters", () => {
     expect(parseCorpusParams({ q: ["a", "b"] }).q).toBe("a");
   });

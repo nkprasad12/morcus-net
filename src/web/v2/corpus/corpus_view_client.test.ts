@@ -269,4 +269,150 @@ describe("<morcus-corpus-view>", () => {
     await settle();
     expect(document.title).toBe("Corpus Query - Morcus Latin Tools");
   });
+
+  test("CORP-06: settings popover closes on Escape (focusing summary) and outside pointerdown, and restores uncommitted inputs without mutating tray chips on change", async () => {
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
+    serveSlots();
+    const settings = document.querySelector<HTMLDetailsElement>(
+      "details.corpus-settings"
+    )!;
+    const summary = settings.querySelector<HTMLElement>("summary")!;
+    const trayText = () =>
+      (
+        document.querySelector('[data-slot="settings-summary"]')?.textContent ??
+        ""
+      )
+        .replace(/\s+/g, " ")
+        .trim();
+
+    // Open settings and edit inputs without submitting.
+    settings.open = true;
+    input("contextLen").focus();
+    input("contextLen").value = "15";
+    input("contextLen").dispatchEvent(new Event("change", { bubbles: true }));
+    input("strictMode").checked = true;
+    input("strictMode").dispatchEvent(new Event("change", { bubbles: true }));
+
+    // Tray chips must not change before Apply/submit.
+    expect(trayText()).toBe("Context 20 • Page size 50 • Inflections Relaxed");
+
+    // Pressing Escape closes settings, focuses summary, and restores uncommitted inputs.
+    input("contextLen").dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      })
+    );
+    expect(settings.open).toBe(false);
+    expect(document.activeElement).toBe(summary);
+    expect(input("contextLen").value).toBe("20");
+    expect(input("strictMode").checked).toBe(false);
+
+    // Reopen, edit, and dismiss via outside pointerdown/mousedown.
+    settings.open = true;
+    input("pageSize").value = "10";
+    document.body.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, cancelable: true })
+    );
+    expect(settings.open).toBe(false);
+    expect(input("pageSize").value).toBe("50");
+    expect(trayText()).toBe("Context 20 • Page size 50 • Inflections Relaxed");
+  });
+
+  test("CORP-06: clicking Apply submits a dirty query even when settings numbers were not changed and closes settings", async () => {
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
+    const fetchMock = serveSlots();
+    const settings = document.querySelector<HTMLDetailsElement>(
+      "details.corpus-settings"
+    )!;
+    const applyBtn = settings.querySelector<HTMLButtonElement>(
+      ".settings-apply-btn"
+    )!;
+
+    input("q").value = "amoris";
+    settings.open = true;
+    click(applyBtn);
+    await settle();
+
+    const expected = "/corpus?q=amoris&contextLen=20&pageSize=50";
+    expect(settings.open).toBe(false);
+    expect(fetchMock).toHaveBeenCalledWith(expected, expect.anything());
+    expect(currentPath()).toBe(expected);
+    expect(input("q").value).toBe("amoris");
+  });
+
+  test("CORP-07: clicking a sample query card in the Syntax Guide closes the enclosing <details> before running the search", async () => {
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
+    serveSlots();
+
+    const inlineGuide = document.querySelector<HTMLDetailsElement>(
+      "details.corpus-syntax-details"
+    )!;
+    inlineGuide.open = true;
+    const mobileSubaccordion = inlineGuide.querySelector<HTMLDetailsElement>(
+      "details.guide-subaccordion:last-of-type"
+    )!;
+    mobileSubaccordion.open = true;
+
+    const card = mobileSubaccordion.querySelector<HTMLAnchorElement>(
+      "a.guide-mobile-example[data-corpus-nav]"
+    )!;
+    click(card);
+    expect(mobileSubaccordion.hasAttribute("open")).toBe(false);
+    expect(inlineGuide.hasAttribute("open")).toBe(false);
+    await settle();
+
+    expect(
+      document
+        .querySelector("details.corpus-syntax-details")
+        ?.hasAttribute("open")
+    ).toBe(false);
+  });
+
+  test("CORP-08: applying settings on Page 2+ resets cursor/pageStart to page 1, and Browser Back from Page 2 to Page 1 re-fetches Page 1", async () => {
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
+    const fetchMock = serveSlots();
+
+    // Navigate to Page 2 via Next link.
+    click(document.querySelector(".corpus-next"));
+    await settle();
+    expect(currentPath()).toBe(
+      "/corpus?q=omnis&contextLen=20&pageSize=50&cursor=1-50-0"
+    );
+    expect(
+      document.querySelector("ol.corpus-result-list")?.getAttribute("start")
+    ).toBe("51");
+
+    // Browser Back to Page 1 (where cursor is absent) re-fetches and renders Page 1.
+    window.history.pushState(
+      null,
+      "",
+      "/corpus?q=omnis&contextLen=20&pageSize=50"
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await settle();
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/corpus?q=omnis&contextLen=20&pageSize=50",
+      expect.anything()
+    );
+    expect(
+      document.querySelector("ol.corpus-result-list")?.getAttribute("start")
+    ).toBe("1");
+
+    // Navigate to Page 2 again, then click Apply in settings: resets to Page 1.
+    click(document.querySelector(".corpus-next"));
+    await settle();
+    expect(
+      document.querySelector("ol.corpus-result-list")?.getAttribute("start")
+    ).toBe("51");
+
+    input("contextLen").value = "10";
+    click(document.querySelector(".settings-apply-btn"));
+    await settle();
+    expect(currentPath()).toBe("/corpus?q=omnis&contextLen=10&pageSize=50");
+    expect(
+      document.querySelector("ol.corpus-result-list")?.getAttribute("start")
+    ).toBe("1");
+  });
 });
