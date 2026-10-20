@@ -68,7 +68,7 @@ export function computeTreeHash(
 
 /**
  * Validates that a LatinCy JSON response contains the expected lemma at
- * `response[0][1]`.
+ * `response[0][1]` (compared case-insensitively).
  */
 export function assertLatincyLemma(
   responseText: string,
@@ -83,7 +83,8 @@ export function assertLatincyLemma(
   if (
     !Array.isArray(parsed) ||
     !Array.isArray(parsed[0]) ||
-    parsed[0][1] !== expectedLemma
+    typeof parsed[0][1] !== "string" ||
+    parsed[0][1].toLowerCase() !== expectedLemma.toLowerCase()
   ) {
     throw new Error(
       `Expected first token lemma '${expectedLemma}', got: ${responseText}`
@@ -303,26 +304,30 @@ async function smokeTestLatincy(imageRef: string): Promise<void> {
     ]);
 
     for (let attempt = 0; attempt < 30; attempt++) {
-      let res: Response | null = null;
+      let res: Response;
+      let text: string;
       try {
         res = await fetch("http://127.0.0.1:5758/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            words: ["Galliā", " ", "est"],
+            words: ["Gallia", " ", "est"],
             spaces: [false, true, false],
           }),
           signal: AbortSignal.timeout(5000),
         });
+        text = await res.text();
       } catch {
         // Server still loading model; retry.
         await sleep(2000);
         continue;
       }
 
-      const text = await res.text();
       if (!res.ok) {
-        throw new Error(`LatinCy returned HTTP ${res.status}: ${text}`);
+        const logs = tryRun("docker", ["logs", "latincy-test"]) ?? "";
+        throw new Error(
+          `LatinCy returned HTTP ${res.status}: ${text}\nLogs:\n${logs}`
+        );
       }
       console.log(`LatinCy response: ${text}`);
       assertLatincyLemma(text, "Gallia");

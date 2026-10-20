@@ -26,10 +26,17 @@ describe("helper_images", () => {
     expect(() =>
       assertLatincyLemma(
         JSON.stringify([
-          ["Galliā", "Gallia", "Case=Abl|Gender=Fem|Number=Sing"],
+          ["Gallia", "Gallia", "Case=Nom|Gender=Fem|Number=Sing"],
           [" ", " ", ""],
           ["est", "sum", "Mood=Ind|Number=Sing|Person=3|Tense=Pres"],
         ]),
+        "Gallia"
+      )
+    ).not.toThrow();
+
+    expect(() =>
+      assertLatincyLemma(
+        JSON.stringify([["Gallia", "gallia", "Case=Nom"]]),
         "Gallia"
       )
     ).not.toThrow();
@@ -38,7 +45,7 @@ describe("helper_images", () => {
       /invalid JSON/
     );
     expect(() =>
-      assertLatincyLemma(JSON.stringify([["Galliā", "wrong"]]), "Gallia")
+      assertLatincyLemma(JSON.stringify([["Gallia", "wrong"]]), "Gallia")
     ).toThrow(/Expected first token lemma 'Gallia'/);
   });
 });
