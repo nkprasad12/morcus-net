@@ -3102,6 +3102,50 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     });
   });
 
+  test("page turn resets the desktop text panel scroller to the top, and popstate restores it (#597)", async () => {
+    const el = createNavigableReaderView({ pageId: "1" });
+    // On desktop the panel, not the window, scrolls the passage.
+    const textPanel = el.querySelector<HTMLElement>(".reader-text-panel")!;
+    const panelScrollTo = jest.fn((opts: ScrollToOptions) => {
+      textPanel.scrollTop = opts.top ?? 0;
+    });
+    textPanel.scrollTo = panelScrollTo as typeof textPanel.scrollTo;
+    textPanel.scrollTop = 640;
+
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2Response,
+    });
+    await el.swapPage("/work/caesar/de-bello-gallico/2");
+
+    expect(el.dataset.page).toBe("2");
+    expect(panelScrollTo).toHaveBeenLastCalledWith({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+    expect(textPanel.scrollTop).toBe(0);
+
+    // The page 1 entry saved the panel's offset, not `window.scrollY`.
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () =>
+        pageResponse(
+          `<div class="reader-text-card" data-slot="text"><article class="reader-passage" id="reader-passage"></article></div>`,
+          { pageId: "1", nextUrl: "/work/caesar/de-bello-gallico/2" }
+        ),
+    });
+    window.history.back();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(el.dataset.page).toBe("1");
+    expect(panelScrollTo).toHaveBeenLastCalledWith({
+      top: 640,
+      left: 0,
+      behavior: "instant",
+    });
+  });
+
   test("swapPage to bare work URL (/work/:author/:work) resolves newPageId from first TOC item and updates dataset.page, TOC active state, and Translation tab", async () => {
     const el = createNavigableReaderView({
       pageId: "1.1",

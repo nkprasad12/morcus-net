@@ -222,6 +222,9 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   get #passage() {
     return this.querySelector<HTMLElement>("#reader-passage");
   }
+  get #textPanel() {
+    return this.querySelector<HTMLElement>(".reader-text-panel");
+  }
 
   protected override onConnect() {
     if (typeof window !== "undefined" && window.history) {
@@ -1467,13 +1470,34 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           targetY = val;
         }
       }
-      window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
+      this.#setPageScroll(targetY);
     } else if (this.#scrollToFirstMatch(options.hash)) {
       // Centred on the matchText range.
     } else if (options.hash) {
       this.#scrollToHash(options.hash);
     } else {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      this.#setPageScroll(0);
+    }
+  }
+
+  // The passage scrolls in `.reader-text-panel` on desktop (≥ 641px, where
+  // the body is `overflow: hidden`) and in the window on mobile. Whichever one
+  // isn't scrolling stays at 0 and ignores scroll requests, so both are read
+  // and written without checking the layout. The panel sits outside the
+  // `text` slot, so it keeps its offset across page turns unless reset here.
+
+  /** The passage's scroll offset, saved in history for popstate. */
+  #getPageScroll(): number {
+    return Math.max(window.scrollY, this.#textPanel?.scrollTop ?? 0);
+  }
+
+  #setPageScroll(top: number): void {
+    window.scrollTo({ top, left: 0, behavior: "instant" });
+    const panel = this.#textPanel;
+    if (typeof panel?.scrollTo === "function") {
+      panel.scrollTo({ top, left: 0, behavior: "instant" });
+    } else if (panel) {
+      panel.scrollTop = top;
     }
   }
 
@@ -1489,15 +1513,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     if (push && typeof window !== "undefined" && window.history) {
       try {
-        const scrollState: Record<string, unknown> = {
-          scrollY: window.scrollY,
-        };
+        const scrollY = this.#getPageScroll();
+        const scrollState: Record<string, unknown> = { scrollY };
         if (
           typeof window.history.state === "object" &&
           window.history.state !== null
         ) {
           Object.assign(scrollState, window.history.state);
-          scrollState.scrollY = window.scrollY;
+          scrollState.scrollY = scrollY;
         }
         // Saves scrollY into its own history entry for popstate
         window.history.replaceState(scrollState, "", window.location.href);
