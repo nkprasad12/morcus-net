@@ -52,7 +52,7 @@ describe("MorcusDictSuggestions Web Component", () => {
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith(
       expect.objectContaining({
-        detail: { word: "habeo" },
+        detail: { word: "habeo", lang: "La" },
       })
     );
     expect(event.defaultPrevented).toBe(true);
@@ -82,7 +82,7 @@ describe("MorcusDictSuggestions Web Component", () => {
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith(
       expect.objectContaining({
-        detail: { word: "habeo" },
+        detail: { word: "habeo", lang: "La" },
       })
     );
   });

@@ -1,3 +1,4 @@
+import { type DictLang } from "@/common/dictionaries/dictionaries";
 import { removeDiacritics } from "@/common/text_cleaning";
 import {
   BaseController,
@@ -10,6 +11,7 @@ import {
   type DictChunksResponse,
 } from "@/web/ui/dict/search/dict_completions.common";
 import { filterAndClusterDictionaryChunks } from "@/web/ui/dict/search/dict_clustering.common";
+import { parseFocusLang } from "@/web/ui/dict/search/dict_params.common";
 import { createDictChunkCache } from "@/web/ui/dict/search/dict_chunk_cache.client";
 import {
   DEFAULT_DICT_KEYS,
@@ -21,8 +23,11 @@ import "@/web/ui/dict/search/dict_suggestions.client";
 interface DictAutocompleteOptions {
   /** Active dictionary keys currently selected for this view. */
   getActiveDictKeys: () => readonly string[];
-  /** Invoked when the user selects a suggestion from the dropdown. */
-  onSelectSuggestion: (word: string) => void;
+  /**
+   * Invoked when the user selects a suggestion from the dropdown. `lang` is the
+   * suggestion's source language (its chip), when it is a concrete one.
+   */
+  onSelectSuggestion: (word: string, lang: DictLang | undefined) => void;
 }
 
 /**
@@ -139,7 +144,10 @@ export class DictAutocompleteController extends BaseController<"completions"> {
               "word" in detail &&
               typeof detail.word === "string"
             ) {
-              this.#options.onSelectSuggestion(detail.word);
+              this.#options.onSelectSuggestion(
+                detail.word,
+                "lang" in detail ? parseFocusLang(detail.lang) : undefined
+              );
             }
           }
         }

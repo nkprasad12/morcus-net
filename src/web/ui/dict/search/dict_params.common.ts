@@ -3,7 +3,43 @@
  * the tests that need the URL the client actually shows.
  */
 
+import { type DictLang } from "@/common/dictionaries/dictionaries";
 import { trimRawQuery } from "@/common/text_cleaning";
+
+/**
+ * URL param naming the source language of an autocomplete suggestion the user
+ * picked (e.g. `focus=En` for the English "ago"). Presentation only: the
+ * results page lists that language's dictionaries first and collapses the rest.
+ * It never affects which dictionaries are queried, and the settings and
+ * persistence code ignores it. Only a suggestion pick adds it; every other
+ * search drops it.
+ */
+export const FOCUS_PARAM = "focus";
+
+/**
+ * The concrete source languages `focus` accepts (every `DictLang` but `*`).
+ * Listed here rather than imported, so this client-shared module doesn't pull
+ * `dictionaries.ts` into the bundle.
+ */
+const FOCUS_LANGS: ReadonlySet<string> = new Set<Exclude<DictLang, "*">>([
+  "La",
+  "En",
+  "Fr",
+  "De",
+  "Es",
+]);
+
+function isFocusLang(raw: string): raw is Exclude<DictLang, "*"> {
+  return FOCUS_LANGS.has(raw);
+}
+
+/**
+ * Parses a `focus` param value: a concrete source language (`La`, `En`, ...),
+ * or undefined for anything else (absent, repeated, `*`, unknown).
+ */
+export function parseFocusLang(raw: unknown): DictLang | undefined {
+  return typeof raw === "string" && isFocusLang(raw) ? raw : undefined;
+}
 
 /**
  * Normalizes a dictionary search query by stripping outer punctuation/whitespace
@@ -23,15 +59,26 @@ interface DictSearch {
   readonly d: string;
   /** Whether to search inflected forms (`o=1`). */
   readonly inflected: boolean;
+  /**
+   * The picked suggestion's source language (see {@link FOCUS_PARAM}). Absent
+   * for every search that isn't a suggestion pick, which drops any earlier one.
+   */
+  readonly focus?: DictLang;
+}
+
+/** Sets `focus` for a suggestion pick, or drops a stale one for any other search. */
+function applyFocus(params: URLSearchParams, focus: DictLang | undefined) {
+  if (focus) params.set(FOCUS_PARAM, focus);
+  else params.delete(FOCUS_PARAM);
 }
 
 /**
  * Writes a search into a dictionary URL's params in place: sets `q`, `d` and
- * `o`, and drops the legacy `dict` and `in` params. Every other param
- * (`embedded`, `scale`, `lang`) is left as it is. `lang` must stay: in a
- * `lang=` view `d` is the narrowed selection, and a `d` without the `lang` that
- * narrowed it would offer, and save, every dictionary as if it were the user's
- * whole selection.
+ * `o`, sets or drops `focus`, and drops the legacy `dict` and `in` params.
+ * Every other param (`embedded`, `scale`, `lang`) is left as it is. `lang` must
+ * stay: in a `lang=` view `d` is the narrowed selection, and a `d` without the
+ * `lang` that narrowed it would offer, and save, every dictionary as if it were
+ * the user's whole selection.
  */
 export function applyDictSearch(
   params: URLSearchParams,
@@ -40,16 +87,18 @@ export function applyDictSearch(
   params.set("q", search.q);
   params.set("d", search.d);
   params.set("o", search.inflected ? "1" : "0");
+  applyFocus(params, search.focus);
   params.delete("dict");
   params.delete("in");
 }
 
 /**
- * Writes a search that leaves the view's `lang=` scope: sets `q` and `o`, and
- * drops `lang` together with every dictionary param, so the server resolves the
- * user's saved dictionaries in full (cookie → default). A word typed into the
- * reader's dictionary may be English or German, so it must reach the
- * English → Latin and German → Latin lexica the reader's Latin scope leaves out.
+ * Writes a search that leaves the view's `lang=` scope: sets `q` and `o`, sets
+ * or drops `focus`, and drops `lang` together with every dictionary param, so
+ * the server resolves the user's saved dictionaries in full (cookie → default).
+ * A word typed into the reader's dictionary may be English or German, so it
+ * must reach the English → Latin and German → Latin lexica the reader's Latin
+ * scope leaves out.
  */
 export function applyUnscopedDictSearch(
   params: URLSearchParams,
@@ -57,6 +106,7 @@ export function applyUnscopedDictSearch(
 ): void {
   params.set("q", search.q);
   params.set("o", search.inflected ? "1" : "0");
+  applyFocus(params, search.focus);
   for (const name of ["d", "dict", "in", "lang"]) params.delete(name);
 }
 
