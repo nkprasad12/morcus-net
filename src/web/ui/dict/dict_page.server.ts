@@ -1,4 +1,7 @@
-import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
+import {
+  DictLang,
+  DictsFusedResponse,
+} from "@/common/dictionaries/dictionaries";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import { renderPageShell } from "@/web/ui/shell/page_shell.server";
 import { renderEntryResult } from "@/web/ui/dict/entry/entry_view.server";
@@ -34,6 +37,41 @@ interface DictResultsOptions {
    * scoped views (their inflection is the lookup's, never saved) and in guest mode.
    */
   canSaveInflection?: boolean;
+  /**
+   * The picked suggestion's source language (`focus=`, see `FOCUS_PARAM`): its
+   * dictionaries are listed first and every other card is rendered collapsed.
+   * Ignored when none of its dictionaries has results.
+   */
+  focusLang?: DictLang;
+}
+
+/**
+ * Applies `focus=` to the result order: dictionaries whose source language is
+ * `focusLang` move to the front, everything else keeps its relative order.
+ *
+ * Inactive (no reordering, nothing collapsed) unless one of `hitKeys` is in
+ * that language. In the app that is always the case, because suggestions come
+ * from the active dictionaries' own headwords. A hand-edited or stale URL
+ * could still pair `focus` with a query that has none, and collapsing every
+ * card would leave a page that looks empty.
+ */
+export function resolveResultFocus(
+  hitKeys: readonly string[],
+  focusLang: DictLang | undefined
+): {
+  isActive: boolean;
+  isFocused: (dictKey: string) => boolean;
+  order: (keys: readonly string[]) => string[];
+} {
+  const lang = focusLang?.toLowerCase();
+  const isFocused = (dictKey: string) =>
+    lang !== undefined && resolveDictLang(dictKey) === lang;
+  const isActive = hitKeys.some(isFocused);
+  const order = (keys: readonly string[]) =>
+    isActive
+      ? [...keys.filter(isFocused), ...keys.filter((k) => !isFocused(k))]
+      : [...keys];
+  return { isActive, isFocused, order };
 }
 
 /**
@@ -195,6 +233,11 @@ interface DictCardOptions {
   dictKey: string;
   entries: EntryResult[];
   isEmbedded?: boolean;
+  /**
+   * Renders the card's toggle closed (header only). Jump pills, TOC and `#`
+   * links into it still open it (`revealTarget`).
+   */
+  collapsed?: boolean;
 }
 
 /**
@@ -258,7 +301,7 @@ function renderDictSourceAttributionHtml(dictKey: string): string {
  * and rendered entry results.
  */
 export function renderDictCardHtml(options: DictCardOptions): string {
-  const { dictKey, entries, isEmbedded = false } = options;
+  const { dictKey, entries, isEmbedded = false, collapsed = false } = options;
   const shortName = resolveDictDisplayName(dictKey);
   const dictAcronym = resolveDictAcronym(dictKey);
   const dictLang = resolveDictLang(dictKey);
@@ -284,7 +327,7 @@ export function renderDictCardHtml(options: DictCardOptions): string {
         <section class="dict-card" id="${cardId}">
           <header class="dict-header dict-header-slim">
             <div class="dict-header-row">
-              <details class="dict-toggle" open>
+              <details class="dict-toggle"${collapsed ? "" : " open"}>
                 <summary class="dict-summary">
                   <span class="dict-toggle-icon" aria-hidden="true"></span>
                   <span class="dict-acronym">${he.escape(dictAcronym)}</span>
@@ -318,6 +361,7 @@ export function renderDictResultsHtml(
     isInflected = true,
     isEmbedded = false,
     canSaveInflection = false,
+    focusLang,
   } = options;
 
   if (!query.trim()) {
@@ -333,14 +377,19 @@ export function renderDictResultsHtml(
   }
 
   // Determine all dictionaries to represent in the jump bar / transparency status
-  const hitKeys = Object.keys(results).filter(
+  const unorderedHitKeys = Object.keys(results).filter(
     (key) => results[key] && results[key].length > 0
   );
 
   // If queriedDicts was provided, use that to preserve order and show 0-hit dictionaries;
   // otherwise fallback to hitKeys.
-  const allQueriedKeys =
-    queriedDicts && queriedDicts.length > 0 ? queriedDicts : hitKeys;
+  const unorderedQueriedKeys =
+    queriedDicts && queriedDicts.length > 0 ? queriedDicts : unorderedHitKeys;
+
+  // `focus=`: the picked suggestion's language first (cards, pills, TOC), the rest collapsed.
+  const focus = resolveResultFocus(unorderedHitKeys, focusLang);
+  const hitKeys = focus.order(unorderedHitKeys);
+  const allQueriedKeys = focus.order(unorderedQueriedKeys);
 
   if (hitKeys.length === 0) {
     return renderNoEntriesHtml({
@@ -364,6 +413,7 @@ export function renderDictResultsHtml(
         dictKey,
         entries: results[dictKey] || [],
         isEmbedded,
+        collapsed: focus.isActive && !focus.isFocused(dictKey),
       })
     )
     .join("\n");
@@ -414,6 +464,8 @@ interface DictPageOptions {
   scoped?: boolean;
   /** The request's `lang=` scope. See `SearchBarOptions.lang`. */
   lang?: string | string[];
+  /** The request's `focus=` language. See `DictResultsOptions.focusLang`. */
+  focusLang?: DictLang;
 }
 
 /**
@@ -435,6 +487,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
           isInflected,
           isEmbedded,
           canSaveInflection: !options.scoped && !options.guest,
+          focusLang: options.focusLang,
         }
   );
 

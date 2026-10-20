@@ -1536,3 +1536,108 @@ describe("dict_ssr", () => {
     });
   });
 });
+
+describe("focus= (picked suggestion's language)", () => {
+  function entry(word: string, sectionId: string): EntryResult {
+    return {
+      entry: `<span class="lsOrth">${word}</span>`,
+      outline: {
+        mainKey: word,
+        mainSection: { text: word, level: 0, ordinal: "", sectionId },
+        senses: [],
+      },
+    };
+  }
+
+  // Latin -> English first in the response, as the fused lookup returns them.
+  const results = {
+    "L&S": [entry("ago", "n1")],
+    GAF: [entry("ago", "g1")],
+    "S&H": [entry("ago", "s1")],
+  };
+  const queriedDicts = ["L&S", "GAF", "S&H"];
+
+  function cardOpenAttr(html: string, dictKey: string): boolean {
+    const card = html.indexOf(`id="${dictCardId(dictKey)}"`);
+    expect(card).toBeGreaterThan(-1);
+    const toggle = html
+      .slice(card)
+      .match(/<details class="dict-toggle"( open)?>/);
+    expect(toggle).not.toBeNull();
+    return toggle![1] !== undefined;
+  }
+
+  test("lists the focused language's dictionaries first and collapses the rest", () => {
+    const html = renderDictResultsHtml("ago", results, {
+      queriedDicts,
+      focusLang: "En",
+    });
+
+    const sh = html.indexOf(
+      `<section class="dict-card" id="${dictCardId("S&H")}"`
+    );
+    const ls = html.indexOf(
+      `<section class="dict-card" id="${dictCardId("L&S")}"`
+    );
+    const gaf = html.indexOf(
+      `<section class="dict-card" id="${dictCardId("GAF")}"`
+    );
+    expect(sh).toBeGreaterThan(-1);
+    expect(sh).toBeLessThan(ls);
+    // Everything else keeps its relative order.
+    expect(ls).toBeLessThan(gaf);
+
+    expect(cardOpenAttr(html, "S&H")).toBe(true);
+    expect(cardOpenAttr(html, "L&S")).toBe(false);
+    expect(cardOpenAttr(html, "GAF")).toBe(false);
+  });
+
+  test("orders the jump pills the same way", () => {
+    const html = renderDictResultsHtml("ago", results, {
+      queriedDicts,
+      focusLang: "En",
+    });
+    const shPill = html.indexOf(
+      `href="#${dictCardId("S&H")}" class="jump-pill"`
+    );
+    const lsPill = html.indexOf(
+      `href="#${dictCardId("L&S")}" class="jump-pill"`
+    );
+    expect(shPill).toBeGreaterThan(-1);
+    expect(shPill).toBeLessThan(lsPill);
+  });
+
+  test("without focus, nothing is reordered or collapsed", () => {
+    const html = renderDictResultsHtml("ago", results, { queriedDicts });
+    expect(html.indexOf(`id="${dictCardId("L&S")}"`)).toBeLessThan(
+      html.indexOf(`id="${dictCardId("S&H")}"`)
+    );
+    for (const key of queriedDicts) {
+      expect(cardOpenAttr(html, key)).toBe(true);
+    }
+  });
+
+  test("is ignored when no dictionary in the focused language has results", () => {
+    const html = renderDictResultsHtml("ago", results, {
+      queriedDicts,
+      focusLang: "De",
+    });
+    expect(html.indexOf(`id="${dictCardId("L&S")}"`)).toBeLessThan(
+      html.indexOf(`id="${dictCardId("S&H")}"`)
+    );
+    for (const key of queriedDicts) {
+      expect(cardOpenAttr(html, key)).toBe(true);
+    }
+  });
+
+  test("the full page passes focus through to the results", () => {
+    const html = renderDictPageHtml({
+      query: "ago",
+      results,
+      queriedDicts,
+      focusLang: "En",
+    });
+    expect(cardOpenAttr(html, "S&H")).toBe(true);
+    expect(cardOpenAttr(html, "L&S")).toBe(false);
+  });
+});

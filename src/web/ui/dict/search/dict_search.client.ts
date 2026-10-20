@@ -26,7 +26,10 @@ import {
   applyUnscopedDictSearch,
   cleanDictQuery,
   dictUrlBuilder,
+  FOCUS_PARAM,
+  parseFocusLang,
 } from "@/web/ui/dict/search/dict_params.common";
+import type { DictLang } from "@/common/dictionaries/dictionaries";
 import type { DictSettingsCommit } from "@/web/ui/dict/settings/dict_settings.client";
 import {
   bindEntryResultInteractions,
@@ -59,7 +62,8 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
   readonly #autocomplete = this.addController(
     new DictAutocompleteController(this, {
       getActiveDictKeys: () => this.#activeDictKeys,
-      onSelectSuggestion: (word) => this.#chooseSuggestion(word, true),
+      onSelectSuggestion: (word, lang) =>
+        this.#chooseSuggestion(word, true, lang),
     })
   );
 
@@ -389,8 +393,11 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
    * `typed`: the user typed (or picked from autocomplete) the query, rather than following a word
    * in the results. In a `lang=` view (the reader's dictionary) a typed word may be English or
    * German, so it leaves the scope; a followed word is Latin, so it stays.
+   *
+   * `focus`: the picked autocomplete suggestion's source language (see `FOCUS_PARAM`). Only a
+   * suggestion pick passes it; every other search drops it.
    */
-  #chooseSuggestion(suggestion: string, typed = false) {
+  #chooseSuggestion(suggestion: string, typed = false, focus?: DictLang) {
     const clean = cleanDictQuery(suggestion);
     if (this.#inputElement) {
       this.#inputElement.value = clean;
@@ -399,10 +406,10 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     this.scope.rAF(() => {
       this.#inputElement?.blur();
     });
-    void this.#searchQuery(clean, typed);
+    void this.#searchQuery(clean, typed, focus);
   }
 
-  async #searchQuery(query: string, typed = false) {
+  async #searchQuery(query: string, typed = false, focus?: DictLang) {
     const cleanQuery = cleanDictQuery(query);
     if (!cleanQuery) return;
     if (this.#inputElement) {
@@ -426,6 +433,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       applyUnscopedDictSearch(url.searchParams, {
         q: cleanQuery,
         inflected: this.#isInflected,
+        focus,
       });
       if (
         isEmbedded &&
@@ -443,6 +451,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       q: cleanQuery,
       d: this.#activeDictBitmask,
       inflected: this.#isInflected,
+      focus,
     });
 
     url.hash = "";
@@ -489,6 +498,9 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     fetchParams.set("format", "partial");
     if (isEmbedded) fetchParams.set("embedded", "1");
     if (langParam) fetchParams.set("lang", langParam);
+    // The page URL already carries the search's `focus` (or none): the results follow it.
+    const focus = parseFocusLang(currentParams.get(FOCUS_PARAM));
+    if (focus && !idMatch) fetchParams.set(FOCUS_PARAM, focus);
     fetchParams.set("d", this.#activeDictBitmask);
     fetchParams.set("o", this.#isInflected ? "1" : "0");
 

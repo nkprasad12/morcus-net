@@ -60,7 +60,7 @@ export class MorcusDictSuggestions extends BaseElement {
           box.replaceChildren(fragment);
         },
         onSelect: (item) => {
-          this.emit("suggestion-select", { word: item.word });
+          this.emit("suggestion-select", { word: item.word, lang: item.lang });
         },
       });
       this.addController(this.#combobox);

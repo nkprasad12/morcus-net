@@ -20,7 +20,11 @@ import {
   dictParamsFromQuery,
 } from "@/web/ui/dict/settings/dict_selection.server";
 import { hasGreek } from "@/web/ui/dict/search/dict_greek.common";
-import { cleanDictQuery } from "@/web/ui/dict/search/dict_params.common";
+import {
+  cleanDictQuery,
+  FOCUS_PARAM,
+  parseFocusLang,
+} from "@/web/ui/dict/search/dict_params.common";
 import {
   ownSettingsHref,
   planDictPersistence,
@@ -65,6 +69,9 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
     }
 
     const dictScale = parseDictScale(req.query.scale);
+    // Presentation only (result order and collapsed cards): never part of the dictionary
+    // selection, persistence or guest comparison below.
+    const focusLang = parseFocusLang(req.query[FOCUS_PARAM]);
 
     // Resolve dictionary selection based on precedence:
     // Query ('dict' checkboxes > 'd' bitmask > legacy 'in') > Cookie ('morcus_d')
@@ -210,6 +217,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
             isInflected,
             isEmbedded,
             canSaveInflection,
+            focusLang,
           })
         );
         return;
@@ -223,6 +231,7 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
           queriedDicts: dictKeys,
           isInflected,
           scale: dictScale,
+          focusLang,
           ...pagePersistence,
         })
       );

@@ -2107,4 +2107,76 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       rafSpy.mockRestore();
     });
   });
+
+  describe("focus= from autocomplete picks (#598)", () => {
+    function pick(el: MorcusDictSearch, detail: object) {
+      el.querySelector("morcus-dict-suggestions")!.dispatchEvent(
+        new CustomEvent("suggestion-select", { bubbles: true, detail })
+      );
+    }
+
+    test("picking an English suggestion adds focus=En to the URL and the results fetch", async () => {
+      const el = createDictSearch("", 'data-d="an" data-o="1"');
+
+      pick(el, { word: "ago", lang: "En" });
+      await Promise.resolve();
+
+      expect(new URLSearchParams(window.location.search).get("focus")).toBe(
+        "En"
+      );
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("focus=En"),
+        expect.anything()
+      );
+    });
+
+    test("a suggestion without a concrete language adds no focus", async () => {
+      const el = createDictSearch("", 'data-d="an" data-o="1"');
+
+      pick(el, { word: "ago", lang: "*" });
+      await Promise.resolve();
+
+      expect(window.location.search).not.toContain("focus=");
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        expect.stringContaining("focus="),
+        expect.anything()
+      );
+    });
+
+    test("a typed search drops an earlier pick's focus", async () => {
+      window.history.replaceState(null, "", "/dicts?q=ago&d=an&o=1&focus=En");
+      const el = createDictSearch("", 'data-d="an" data-o="1"');
+      const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+      el.querySelector<HTMLInputElement>("input.input")!.value = "amo";
+      (global.fetch as jest.Mock).mockClear();
+
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+      await Promise.resolve();
+
+      expect(window.location.search).not.toContain("focus=");
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/dicts?q=amo&format=partial"),
+        expect.anything()
+      );
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        expect.stringContaining("focus="),
+        expect.anything()
+      );
+    });
+
+    test("following a word in the results drops focus", () => {
+      window.history.replaceState(null, "", "/dicts?q=ago&d=an&o=1&focus=En");
+      const el = createDictSearch(
+        '<div class="entry-content"><span class="lsQuote">Gallia</span></div>',
+        'data-d="an" data-o="1"'
+      );
+      const word = el.querySelector<HTMLAnchorElement>(".lat-word")!;
+
+      word.click();
+      expect(window.location.search).toContain("q=Gallia");
+      expect(window.location.search).not.toContain("focus=");
+    });
+  });
 });

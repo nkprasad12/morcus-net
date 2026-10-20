@@ -4,6 +4,7 @@ import {
   buildDictUrl,
   cleanDictQuery,
   dictUrlBuilder,
+  parseFocusLang,
 } from "@/web/ui/dict/search/dict_params.common";
 
 describe("cleanDictQuery", () => {
@@ -34,6 +35,23 @@ describe("applyDictSearch", () => {
       "embedded=1&lang=La&q=amo&scale=120&d=an&o=0"
     );
   });
+
+  test("sets focus for a suggestion pick", () => {
+    const params = new URLSearchParams("q=old");
+    applyDictSearch(params, {
+      q: "ago",
+      d: "an",
+      inflected: true,
+      focus: "En",
+    });
+    expect(params.get("focus")).toBe("En");
+  });
+
+  test("drops a stale focus for any other search", () => {
+    const params = new URLSearchParams("q=ago&d=an&o=1&focus=En");
+    applyDictSearch(params, { q: "amo", d: "an", inflected: true });
+    expect(params.has("focus")).toBe(false);
+  });
 });
 
 describe("applyUnscopedDictSearch", () => {
@@ -43,6 +61,37 @@ describe("applyUnscopedDictSearch", () => {
     );
     applyUnscopedDictSearch(params, { q: "love", inflected: true });
     expect(params.toString()).toBe("q=love&o=1&embedded=1&scale=120");
+  });
+
+  test("sets focus for a suggestion pick, and drops a stale one otherwise", () => {
+    const picked = new URLSearchParams("q=arma&lang=La&o=1");
+    applyUnscopedDictSearch(picked, {
+      q: "love",
+      inflected: true,
+      focus: "En",
+    });
+    expect(picked.toString()).toBe("q=love&o=1&focus=En");
+
+    const typed = new URLSearchParams("q=love&o=1&focus=En");
+    applyUnscopedDictSearch(typed, { q: "amor", inflected: true });
+    expect(typed.has("focus")).toBe(false);
+  });
+});
+
+describe("parseFocusLang", () => {
+  test.each(["La", "En", "Fr", "De", "Es"])("accepts %j", (lang) => {
+    expect(parseFocusLang(lang)).toBe(lang);
+  });
+
+  test.each([
+    ["*", "*"],
+    ["unknown", "xx"],
+    ["lowercase", "en"],
+    ["empty", ""],
+    ["absent", undefined],
+    ["repeated", ["En", "La"]],
+  ])("rejects %s", (_name, raw) => {
+    expect(parseFocusLang(raw)).toBeUndefined();
   });
 });
 
