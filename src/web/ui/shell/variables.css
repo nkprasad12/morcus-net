@@ -46,6 +46,12 @@
     Consolas, "Liberation Mono", "Courier New", monospace;
   --card-bg: var(--bg);
   --text-muted: #6c757d;
+  /* Reading text (dictionary entries, reader passages) and its bold glosses
+     (.lsEmph). Same as the body text in light mode; dark mode softens the
+     reading text a little and lifts the glosses, which are usually the direct
+     English translations, so they stand out when scanning (#598). */
+  --reading-text: var(--text);
+  --emph-text: currentColor;
   --primary: #286e56;
   --primary-hover: #1d5441;
   --primary-light: rgba(40, 110, 86, 0.1);
@@ -135,6 +141,8 @@
   :root:not([data-theme="light"]) {
     --card-bg: #23272c;
     --text-muted: #9a9ea4;
+    --reading-text: #b4b9bf;
+    --emph-text: #eef0f2;
     --primary: #7cc4a6;
     --primary-hover: #9ad4bc;
     --primary-light: rgba(124, 196, 166, 0.14);
@@ -163,13 +171,16 @@
     --rgb-grammar: 245, 165, 35;
     --rgb-quote: 65, 145, 255;
     --rgb-bibl: 165, 105, 250;
-    --accent-orth: rgba(var(--rgb-orth), calc(0.25 * var(--highlight-scale)));
+    --accent-orth: rgba(var(--rgb-orth), calc(0.175 * var(--highlight-scale)));
     --accent-grammar: rgba(
       var(--rgb-grammar),
-      calc(0.24 * var(--highlight-scale))
+      calc(0.168 * var(--highlight-scale))
     );
-    --accent-quote: rgba(var(--rgb-quote), calc(0.23 * var(--highlight-scale)));
-    --accent-bibl: rgba(var(--rgb-bibl), calc(0.25 * var(--highlight-scale)));
+    --accent-quote: rgba(
+      var(--rgb-quote),
+      calc(0.161 * var(--highlight-scale))
+    );
+    --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
     --bullet-bg: rgba(255, 255, 255, 0.15);
     --tab-chip-bg: rgba(255, 255, 255, 0.08);
     --app-bar-nav-hover-bg: rgba(255, 255, 255, 0.08);
@@ -222,6 +233,8 @@
 [data-theme="dark"] {
   --card-bg: #23272c;
   --text-muted: #9a9ea4;
+  --reading-text: #b4b9bf;
+  --emph-text: #eef0f2;
   --primary: #7cc4a6;
   --primary-hover: #9ad4bc;
   --primary-light: rgba(124, 196, 166, 0.14);
@@ -250,13 +263,13 @@
   --rgb-grammar: 245, 165, 35;
   --rgb-quote: 65, 145, 255;
   --rgb-bibl: 165, 105, 250;
-  --accent-orth: rgba(var(--rgb-orth), calc(0.25 * var(--highlight-scale)));
+  --accent-orth: rgba(var(--rgb-orth), calc(0.175 * var(--highlight-scale)));
   --accent-grammar: rgba(
     var(--rgb-grammar),
-    calc(0.24 * var(--highlight-scale))
+    calc(0.168 * var(--highlight-scale))
   );
-  --accent-quote: rgba(var(--rgb-quote), calc(0.23 * var(--highlight-scale)));
-  --accent-bibl: rgba(var(--rgb-bibl), calc(0.25 * var(--highlight-scale)));
+  --accent-quote: rgba(var(--rgb-quote), calc(0.161 * var(--highlight-scale)));
+  --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
   --bullet-bg: rgba(255, 255, 255, 0.15);
   --tab-chip-bg: rgba(255, 255, 255, 0.08);
   --app-bar-nav-hover-bg: rgba(255, 255, 255, 0.08);

@@ -73,7 +73,7 @@
   font-family: var(--reader-font, var(--font-serif));
   font-size: calc(1.25rem * var(--reader-scale, 1));
   line-height: var(--reader-line-height, 1.65);
-  color: var(--text);
+  color: var(--reading-text);
 }
 
 .reader-paragraph {

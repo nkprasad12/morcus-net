@@ -68,6 +68,7 @@
 .lsEmph {
   font-weight: bold;
   font-style: italic;
+  color: var(--emph-text);
 }
 
 .lsTrans {

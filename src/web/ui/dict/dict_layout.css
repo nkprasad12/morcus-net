@@ -553,6 +553,7 @@
 
 .entry-content {
   font-size: calc(1.15rem * var(--dict-scale, 1));
+  color: var(--reading-text);
 }
 
 .entry-content ol,
