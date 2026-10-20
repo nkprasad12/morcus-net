@@ -3,6 +3,7 @@
  */
 import {
   DrawerController,
+  DRAWER_CLICK_GUARD_MS,
   DRAWER_DEFAULT_SVH,
   DRAWER_EXPANDED_SVH,
   DRAWER_FLOOR_SVH,
@@ -1168,6 +1169,171 @@ describe("DrawerController", () => {
         drawer.style.getPropertyValue("--drawer-height")
       );
       controller.dispose();
+    });
+  });
+
+  /**
+   * The click the browser sends after a drawer gesture's pointerup belongs to
+   * that gesture. Firefox for Android hit-tests it *after* `onEnd` has already
+   * resized the drawer, so it can land on whatever is now under the finger,
+   * such as a word link behind a just-collapsed drawer (#598).
+   */
+  describe("post-gesture click guard", () => {
+    let detailsDrawer: HTMLDetailsElement;
+    let summary: HTMLElement;
+    let behind: HTMLAnchorElement;
+    let inside: HTMLAnchorElement;
+    let followed: jest.Mock;
+
+    beforeEach(() => {
+      document.body.innerHTML = `
+        <a id="behind" href="#behind-target">ago</a>
+        <details id="drawer" class="drawer" open>
+          <summary id="handle" class="drawer-bar">Contents</summary>
+          <a id="inside" href="#inside-target">I. Lit.</a>
+        </details>
+      `;
+      detailsDrawer = document.querySelector<HTMLDetailsElement>("#drawer")!;
+      summary = document.getElementById("handle")!;
+      behind = document.querySelector<HTMLAnchorElement>("#behind")!;
+      inside = document.querySelector<HTMLAnchorElement>("#inside")!;
+      followed = jest.fn();
+      behind.addEventListener("click", followed);
+      inside.addEventListener("click", followed);
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    function connect(): DrawerController {
+      return connectController({ drawer: detailsDrawer, handle: summary });
+    }
+
+    function gesture(endY: number): void {
+      summary.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          bubbles: true,
+          clientX: 100,
+          clientY: 300,
+          pointerId: 1,
+        })
+      );
+      if (endY !== 300) {
+        summary.dispatchEvent(
+          new PointerEvent("pointermove", {
+            bubbles: true,
+            clientX: 100,
+            clientY: endY,
+            pointerId: 1,
+          })
+        );
+      }
+      summary.dispatchEvent(
+        new PointerEvent("pointerup", {
+          bubbles: true,
+          clientX: 100,
+          clientY: endY,
+          pointerId: 1,
+        })
+      );
+    }
+
+    function clickOn(el: HTMLElement): MouseEvent {
+      const click = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      });
+      el.dispatchEvent(click);
+      return click;
+    }
+
+    test("swallows the follow-up click of a tap when it lands on a link behind the drawer", () => {
+      const controller = connect();
+
+      gesture(300);
+      expect(controller.isMinimized()).toBe(true);
+
+      const click = clickOn(behind);
+      expect(click.defaultPrevented).toBe(true);
+      expect(followed).not.toHaveBeenCalled();
+      controller.dispose();
+    });
+
+    test("swallows the follow-up click of a drag when it lands on a link inside the drawer", () => {
+      const controller = connect();
+
+      gesture(200);
+
+      const click = clickOn(inside);
+      expect(click.defaultPrevented).toBe(true);
+      expect(followed).not.toHaveBeenCalled();
+      controller.dispose();
+    });
+
+    test("swallows only one click", () => {
+      const controller = connect();
+
+      gesture(300);
+      clickOn(behind);
+      const second = clickOn(behind);
+
+      expect(second.defaultPrevented).toBe(false);
+      expect(followed).toHaveBeenCalledTimes(1);
+      controller.dispose();
+    });
+
+    test("a new pointerdown elsewhere ends the guard, so that interaction's click goes through", () => {
+      const controller = connect();
+
+      gesture(300);
+      behind.dispatchEvent(
+        new PointerEvent("pointerdown", { button: 0, bubbles: true })
+      );
+      const click = clickOn(behind);
+
+      expect(click.defaultPrevented).toBe(false);
+      expect(followed).toHaveBeenCalledTimes(1);
+      controller.dispose();
+    });
+
+    test("the guard expires if no click follows the gesture", () => {
+      jest.useFakeTimers();
+      const controller = connect();
+
+      gesture(300);
+      jest.advanceTimersByTime(DRAWER_CLICK_GUARD_MS);
+      const click = clickOn(behind);
+
+      expect(click.defaultPrevented).toBe(false);
+      expect(followed).toHaveBeenCalledTimes(1);
+      controller.dispose();
+    });
+
+    test("after a gesture with no click, the next real <summary> click still toggles the drawer", () => {
+      jest.useFakeTimers();
+      const controller = connect();
+
+      gesture(300);
+      expect(detailsDrawer.open).toBe(false);
+      jest.advanceTimersByTime(DRAWER_CLICK_GUARD_MS);
+
+      // jsdom runs <summary>'s activation behaviour (toggling `open`) on click.
+      summary.click();
+      expect(detailsDrawer.open).toBe(true);
+      controller.dispose();
+    });
+
+    test("disposing the controller removes an armed guard", () => {
+      const controller = connect();
+
+      gesture(300);
+      controller.dispose();
+      const click = clickOn(behind);
+
+      expect(click.defaultPrevented).toBe(false);
+      expect(followed).toHaveBeenCalledTimes(1);
     });
   });
 });

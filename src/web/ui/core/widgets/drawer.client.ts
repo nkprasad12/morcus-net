@@ -6,6 +6,7 @@
  */
 
 import { BaseController } from "@/web/ui/core/dom/base_controller.client";
+import type { LifetimeScope } from "@/web/ui/core/dom/lifetime_scope.client";
 import { trackPointerDrag } from "@/web/ui/core/widgets/gesture.client";
 
 /**
@@ -33,6 +34,13 @@ export const DRAWER_SNAP = {
   /** Minimize when released below this height (px), whatever the floor svh. */
   minimizeBelowPx: 110,
 } as const;
+
+/**
+ * How long (ms) after a drawer gesture ends a click is treated as that
+ * gesture's own follow-up click and swallowed. Generous on purpose: the guard
+ * also ends on the next `pointerdown`, so a real click is never caught by it.
+ */
+export const DRAWER_CLICK_GUARD_MS = 500;
 
 export interface DrawerSnapInput {
   dy: number;
@@ -160,8 +168,6 @@ interface DrawerControllerOptions {
   detailsElement?: HTMLDetailsElement | null;
   /** Optional selector to resolve the <details> element from root on connect */
   detailsSelector?: string;
-  /** Optional <summary> element (for drag suppression). If omitted, inferred from handle or details. */
-  summaryElement?: HTMLElement | null;
   /** Optional guard callback; if it returns false, onConnect() skips binding listeners. */
   enabled?: () => boolean;
   /** Minimum height in pixels (peek / minimized height). Defaults to DRAWER_MIN_HEIGHT (54). */
@@ -195,7 +201,6 @@ export class DrawerController extends BaseController {
   public drawer: HTMLElement | null = null;
   public handle: HTMLElement | null = null;
   #details: HTMLDetailsElement | null = null;
-  #summary: HTMLElement | null = null;
   /** Cached `options.heightTargets`; see {@link #resolveTargets}. */
   #targets: HTMLElement[] = [];
 
@@ -284,14 +289,6 @@ export class DrawerController extends BaseController {
       this.#details = this.drawer;
     } else {
       this.#details = this.drawer?.querySelector("details") ?? null;
-    }
-
-    if (options.summaryElement !== undefined) {
-      this.#summary = options.summaryElement;
-    } else if (this.handle?.tagName.toLowerCase() === "summary") {
-      this.#summary = this.handle;
-    } else {
-      this.#summary = this.#details?.querySelector("summary") ?? null;
     }
 
     this.#resolveTargets();
@@ -435,9 +432,36 @@ export class DrawerController extends BaseController {
     let startHeight = 0;
     let winHeight = 800;
     let maxHeight = 800;
-    // Set once `onEnd` has applied the gesture itself, so the native `<summary>`
-    // click that follows pointerup must not toggle `<details>` again.
-    let suppressSummaryClick = false;
+    // Armed once `onEnd` has applied the gesture itself, to swallow the click
+    // the browser sends after pointerup. Without it, that click toggles
+    // `<details>` again, or (on Firefox for Android, which hit-tests the
+    // click after the drawer has already resized) lands on whatever is now
+    // under the finger, e.g. a word link behind a just-collapsed drawer.
+    let clickGuard: LifetimeScope | null = null;
+    const disarmClickGuard = () => {
+      clickGuard?.dispose();
+      clickGuard = null;
+    };
+    const armClickGuard = () => {
+      disarmClickGuard();
+      const doc = drawer.ownerDocument;
+      const guard = this.scope.createScope(doc);
+      clickGuard = guard;
+      // Capture on the document, so it runs before any listener on the
+      // click's target, wherever it lands. Through the scope like every
+      // listener, so the activation gate applies: a click landing in a
+      // component that isn't running keeps its native (No-JS) behaviour.
+      const swallow = (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        disarmClickGuard();
+      };
+      guard.listen(doc, "click", swallow, true);
+      // A new interaction, or no click at all (e.g. after `pointercancel`),
+      // means there is nothing left to swallow.
+      guard.listen(doc, "pointerdown", disarmClickGuard, true);
+      guard.timeout(disarmClickGuard, DRAWER_CLICK_GUARD_MS);
+    };
 
     this.scope.use(
       trackPointerDrag(handle, {
@@ -474,7 +498,7 @@ export class DrawerController extends BaseController {
             drawer.classList.remove("drawer-minimized");
           }
           this.#writeHeight(`${startHeight}px`);
-          suppressSummaryClick = false;
+          disarmClickGuard();
           this.#options.onDragStart?.();
         },
         onMove: ({ dy }) => {
@@ -506,11 +530,11 @@ export class DrawerController extends BaseController {
             floorSvh: this.#floorSvh,
             expandedSvh: this.#expandedSvh,
           });
-          suppressSummaryClick = true;
+          armClickGuard();
 
           if (decision.action === "tap") {
             // `onStart` already opened `<details>`, so the native click would
-            // close it again: toggle here instead.
+            // close it again (the click guard swallows it): toggle here instead.
             if (this.#details && !wasMinimized) {
               this.minimize();
             } else {
@@ -528,25 +552,6 @@ export class DrawerController extends BaseController {
         },
       })
     );
-
-    if (this.#summary) {
-      this.scope.listen(
-        this.#summary,
-        "click",
-        (e: MouseEvent) => {
-          if (suppressSummaryClick) {
-            // `onEnd` already applied this gesture; the native toggle would
-            // undo it
-            e.preventDefault();
-            // Swallow the post-gesture click so other listeners on this
-            // drawer's summary don't treat it as a second tap
-            e.stopImmediatePropagation();
-            suppressSummaryClick = false;
-          }
-        },
-        true
-      );
-    }
   }
 
   #initKeyboard(): void {
