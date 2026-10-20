@@ -5,9 +5,13 @@ on:
     types: [created]
 jobs:
   fast-forward:
+    # The action itself also checks that the commenter can push to the repo;
+    # this just avoids starting a runner for anyone else's comment.
     if: ${{ contains(github.event.comment.body, '/fast-forward')
-      && github.event.issue.pull_request }}
-    runs-on: ubuntu-latest
+      && github.event.issue.pull_request
+      && contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
 
     permissions:
       contents: write
@@ -16,7 +20,7 @@ jobs:
 
     steps:
       - name: Fast forwarding
-        uses: sequoia-pgp/fast-forward@v1
+        uses: sequoia-pgp/fast-forward@ea7628bedcb0b0b96e94383ada458d812fca4979 # v1.0.0
         with:
           github_token: ${{ secrets.FF_GH_TOKEN }}
           merge: true

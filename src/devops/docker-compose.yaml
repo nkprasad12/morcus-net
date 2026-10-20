@@ -1,3 +1,9 @@
+# COMPATIBILITY NOTE: deployments copy this file once and rarely update it,
+# while images are updated automatically. So:
+#   - Images must run correctly under the oldest version of this file in use.
+#     Never make an image depend on a setting newly added here.
+#   - Changes here should only add robustness (e.g. `init`, `restart`), and
+#     should also work with older images, so that rollbacks stay safe.
 services:
   proxy:
     image: "${CONTAINER_REGISTRY}morcus-proxy:latest"
@@ -53,6 +59,8 @@ services:
       MACRONIZER_ENGINE: latincy
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
+    # Reaps zombies and forwards SIGTERM / SIGINT to node for graceful shutdown.
+    init: true
     logging:
       driver: "json-file"
       options:
@@ -70,6 +78,8 @@ services:
       MACRONIZER_ENGINE: latincy
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
+    # Reaps zombies and forwards SIGTERM / SIGINT to node for graceful shutdown.
+    init: true
     logging:
       driver: "json-file"
       options:
@@ -78,6 +88,7 @@ services:
 
   watchtower:
     image: containrrr/watchtower
+    restart: unless-stopped
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:

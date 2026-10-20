@@ -3,7 +3,7 @@ import dataclasses
 import json
 import os
 import time
-from typing import Callable, Generic, Sequence, TypeVar
+from typing import Any, Callable, Generic, Sequence, TypeVar
 
 from src.py.nlp import tokenization
 from src.py.utils import data
@@ -12,9 +12,6 @@ from src.py.utils import strings
 
 I = TypeVar("I")
 O = TypeVar("O")
-
-U = TypeVar("U")
-V = TypeVar("V")
 
 
 class Process(Generic[I, O], abc.ABC):
@@ -35,8 +32,8 @@ class Process(Generic[I, O], abc.ABC):
 
     @classmethod
     def from_callable(cls, callable: Callable[[I], O]) -> "Process[I, O]":
-        class ProcessFromCallable(Process[U, V]):
-            def process(self, input: U) -> V:
+        class ProcessFromCallable(Process[Any, Any]):
+            def process(self, input: Any) -> Any:
                 return callable(input)
 
             def name(self) -> str:
@@ -96,6 +93,7 @@ def process_documents(
         total_time += document_result.runtime
         _print_with_banners(f"{processor} took {document_result.runtime:.3f} seconds.")
         safe_doc_name = "".join(c for c in document.name if c.isalnum())
+        assert document.outputs_dir is not None
         outfile = os.path.join(document.outputs_dir, f"{safe_doc_name}.{processor}.txt")
         os.makedirs(os.path.dirname(outfile), exist_ok=True)
         section_results = [
@@ -249,7 +247,7 @@ def evaluate_macronization(
         for process in processes:
             doc_count = doc_counts[process.name()]
             _print_accuracy(doc_count, total_words, process.name())
-            if ref_version is None:
+            if ref_version is None or ref_errors is None:
                 ref_version = process.name()
                 ref_errors = doc_count
             else:
