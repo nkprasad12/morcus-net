@@ -35,12 +35,33 @@ export interface NormalizedArticle {
   text: string[];
 }
 
+/** Punctuation that proofreader notes often confirm rather than add. */
+const CONFIRMABLE_PUNCTUATION = new Set([",", ".", ":", ";"]);
+
+/**
+ * Replacer for kept notes: returns the note's character, unless the
+ * character right before the note is the same punctuation mark. In that
+ * case the note only confirms punctuation already in the text (for example
+ * `rĕmŏveo,[**P2: ,]`), so inserting it would double it (see #553).
+ */
+function keptNoteReplacer(
+  match: string,
+  char: string,
+  offset: number,
+  whole: string
+): string {
+  if (CONFIRMABLE_PUNCTUATION.has(char) && whole[offset - 1] === char) {
+    return "";
+  }
+  return char;
+}
+
 export function handleEditorNotes(input: string): string {
   return (
     input
-      .replace(KEPT_EDITOR_NOTE, "$1")
-      .replace(KEPT_P2_NOTE, "$1")
-      .replace(MISSING_CHAR_NOTE, "$1")
+      .replace(KEPT_EDITOR_NOTE, keptNoteReplacer)
+      .replace(KEPT_P2_NOTE, keptNoteReplacer)
+      .replace(MISSING_CHAR_NOTE, keptNoteReplacer)
       .replace(",[**P2: : ?]", ":")
       .replace(".[**P2: : ?]", ":")
       .replace("[** ----]", "<b>----</b>")
