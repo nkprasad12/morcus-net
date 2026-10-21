@@ -65,7 +65,7 @@
 .mac-copybox-textarea {
   width: 100%;
   padding: var(--space-4) var(--space-5);
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   font-size: 1.05rem;
   line-height: 1.6;
   color: var(--text);
@@ -230,7 +230,7 @@
   background: var(--paper-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-xl);
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   font-size: 1.25rem;
   line-height: 1.95;
   white-space: pre-wrap;
@@ -368,7 +368,7 @@
   background: var(--card-header-bg);
   border-bottom: 1px solid var(--border);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   font-size: 1.05rem;
   list-style: none;
 }
@@ -444,7 +444,7 @@
 }
 
 .mac-opt-form {
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   font-size: 1.125rem;
   font-weight: 700;
 }
@@ -521,7 +521,7 @@
   align-items: center;
   gap: var(--space-1);
   margin-top: var(--space-3);
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   font-size: 1.15rem;
 }
 

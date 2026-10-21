@@ -139,8 +139,8 @@ export function renderReaderSettingsPopover(
               <div class="settings-row">
                 <span class="settings-label">Font Family</span>
                 <select id="font-select" class="settings-select" aria-label="Select font style">
-                  <option value="serif" selected>Classical Serif</option>
-                  <option value="sans">Modern Sans-Serif</option>
+                  <option value="sans" selected>Modern Sans-Serif</option>
+                  <option value="serif">Classical Serif</option>
                 </select>
               </div>
 

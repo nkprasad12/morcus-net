@@ -201,7 +201,7 @@ morcus-external-loader:has(.external-source-tab [value="url"]:checked)
 .external-textarea {
   min-height: 40svh;
   resize: vertical;
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   line-height: 1.5;
 }
 

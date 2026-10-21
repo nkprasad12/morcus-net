@@ -32,7 +32,7 @@ export const DEFAULT_READER_PREFS: ReaderPreferences = {
   dictScale: 100,
   showMacra: true,
   showGutter: true,
-  fontFamily: "serif",
+  fontFamily: "sans",
   lineHeight: "normal",
 };
 

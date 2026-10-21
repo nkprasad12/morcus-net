@@ -282,7 +282,7 @@ describe("MorcusReaderSettings custom element", () => {
     expect(dictSizeLabel.textContent).toBe("100%");
     expect(toggleMacra.checked).toBe(true);
     expect(toggleGutter.checked).toBe(true);
-    expect(fontSelect.value).toBe("serif");
+    expect(fontSelect.value).toBe("sans");
     expect(lineHeightSelect.value).toBe("normal");
   });
 
@@ -332,7 +332,7 @@ describe("MorcusReaderSettings custom element", () => {
 
     expect(readerSizeLabel.textContent).toBe("100%");
     expect(dictSizeLabel.textContent).toBe("130%");
-    expect(fontSelect.value).toBe("serif");
+    expect(fontSelect.value).toBe("sans");
     expect(lineHeightSelect.value).toBe("relaxed");
   });
 
@@ -441,7 +441,7 @@ describe("MorcusReaderSettings custom element", () => {
     resetBtn.click();
     expect(readerSizeLabel.textContent).toBe("100%");
     expect(dictSizeLabel.textContent).toBe("100%");
-    expect(fontSelect.value).toBe("serif");
+    expect(fontSelect.value).toBe("sans");
     expect(readerSettingsStore.get()).toEqual(DEFAULT_READER_PREFS);
   });
 

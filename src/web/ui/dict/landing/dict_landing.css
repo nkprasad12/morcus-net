@@ -67,7 +67,7 @@
   padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-4);
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   font-size: 0.92rem;
   line-height: 1.5;
 }
@@ -148,7 +148,7 @@
 }
 
 .legend-sample {
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   font-size: 0.9rem;
 }
 

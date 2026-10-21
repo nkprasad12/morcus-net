@@ -41,7 +41,11 @@
   --radius-2xl: 16px;
   --radius-full: 9999px;
 
-  --font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
+  --font-serif: Georgia, "Noto Serif", serif;
+  /* Reading text (dictionary entries, reader passages, corpus and macronizer
+     text). Sans by default; the text-font setting switches it to serif.
+     Headings, headwords and titles always use --font-serif. */
+  --font-text: var(--font-sans);
   --font-mono: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
     Consolas, "Liberation Mono", "Courier New", monospace;
   --card-bg: var(--bg);

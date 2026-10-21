@@ -1095,9 +1095,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         ? "1.85"
         : null
     );
+    // The text font is app-wide (dictionary, corpus and macronizer text follow
+    // it too), so it sets `--font-text` rather than a reader-only property.
     setPrepaint(
-      "--reader-font",
-      prefs.fontFamily === "sans" ? "var(--font-sans)" : null
+      "--font-text",
+      prefs.fontFamily === "serif" ? "var(--font-serif)" : null
     );
     setPrepaint("data-reader-hide-gutter", prefs.showGutter ? null : "");
     this.#applyMacra(prefs.showMacra);

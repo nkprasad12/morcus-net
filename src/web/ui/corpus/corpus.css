@@ -389,7 +389,7 @@
 
 .guide-example-cell-sample {
   color: var(--text-muted);
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   font-style: italic;
 }
 
@@ -622,7 +622,7 @@
 }
 .corpus-snippet {
   margin: var(--space-2) 0 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   line-height: 1.6;
   text-align: justify;
   white-space: pre-line;

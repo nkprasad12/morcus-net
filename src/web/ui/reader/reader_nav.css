@@ -411,7 +411,7 @@
   }
 
   .sticky-work-title {
-    font-family: Georgia, "Palatino Linotype", Palatino, var(--font-serif);
+    font-family: var(--font-serif);
     font-style: italic;
     font-weight: 400;
     font-size: 0.925rem;
@@ -429,7 +429,7 @@
     border: none;
     border-radius: var(--radius-sm);
     background: transparent;
-    font-family: Georgia, var(--font-serif);
+    font-family: var(--font-serif);
     font-style: italic;
     font-weight: 400;
     font-size: 0.875rem;
@@ -484,7 +484,7 @@
 
   .reader-settings-btn .settings-glyph {
     display: inline;
-    font-family: Georgia, "Palatino Linotype", Palatino, var(--font-serif);
+    font-family: var(--font-serif);
     font-size: 0.9rem;
     font-weight: 500;
     letter-spacing: -0.04em;

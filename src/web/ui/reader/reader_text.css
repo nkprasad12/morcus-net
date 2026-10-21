@@ -62,7 +62,7 @@
 
 .reader-passage-heading {
   margin: 0 0 var(--space-2);
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 600;
   text-align: center;
   color: var(--text);
@@ -70,8 +70,8 @@
 }
 
 .reader-passage {
-  font-family: var(--reader-font, var(--font-serif));
-  font-size: calc(1.25rem * var(--reader-scale, 1));
+  font-family: var(--font-text);
+  font-size: calc(1.2rem * var(--reader-scale, 1));
   line-height: var(--reader-line-height, 1.65);
   color: var(--reading-text);
 }
@@ -129,7 +129,7 @@
 }
 
 .continuation-kicker {
-  font-family: Georgia, var(--font-serif);
+  font-family: var(--font-serif);
   font-size: 0.8125rem;
   font-style: italic;
   font-weight: 400;
@@ -143,7 +143,7 @@
 }
 
 .continuation-title {
-  font-family: Georgia, var(--font-serif);
+  font-family: var(--font-serif);
   font-size: 1.05rem;
   font-style: italic;
   font-weight: 400;
@@ -470,7 +470,7 @@
   }
 
   .reader-passage {
-    font-size: calc(1.15rem * var(--reader-scale, 1));
+    font-size: calc(1.1rem * var(--reader-scale, 1));
     line-height: var(--reader-line-height, 1.65);
   }
 
@@ -542,8 +542,8 @@
   }
 
   .reader-passage-heading {
-    font-family: Georgia, "Palatino Linotype", Palatino, var(--font-serif);
-    font-size: 1.2rem;
+    font-family: var(--font-serif);
+    font-size: 1.15rem;
     font-weight: 400;
   }
 

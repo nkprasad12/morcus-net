@@ -26,8 +26,7 @@
   --space-8: 1.5rem;
   --space-9: 2rem;
 
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
+  --font-sans: Arial, Helvetica, sans-serif;
   --bg: #f2f3f2;
   --text: #212529;
   --app-bar-bg: #bfdecf;
