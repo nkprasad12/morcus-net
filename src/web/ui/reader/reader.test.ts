@@ -417,6 +417,10 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('class="reader-toc-item active"');
       expect(html).toContain('aria-current="page"');
       expect(html).toContain("Chapter 1");
+
+      // Footer library link
+      expect(html).toContain('class="reader-toc-footer"');
+      expect(html).toContain('href="/library" class="reader-library-link"');
     });
 
     test("renderTocItemsHtml marks selected index active and leaves other inactive", () => {
@@ -475,8 +479,12 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('id="reader-jump-form"');
       expect(html).toContain('class="sticky-center-group"');
       expect(html).not.toContain('id="sticky-expand-btn"');
+      expect(html).not.toContain('class="sticky-title-wrapper"');
       expect(html).toContain('id="reader-settings-btn"');
       expect(html).toContain('id="reader-toc-btn"');
+      expect(html).toMatch(
+        /id="reader-toc-btn"[\s\S]*?class="sticky-work-title"[\s\S]*?class="sticky-section-sep"[\s\S]*?data-slot="page-label"/
+      );
     });
 
     test("disables next button on last chapter", async () => {

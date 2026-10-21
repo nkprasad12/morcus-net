@@ -240,5 +240,8 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
             No matching sections &mdash; press Enter to jump
           </div>
         </div>
+        <div class="reader-toc-footer">
+          <a href="/library" class="reader-library-link">&larr; Return to Library Catalog</a>
+        </div>
       </div>`;
 }

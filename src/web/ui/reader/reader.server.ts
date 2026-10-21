@@ -205,14 +205,6 @@ ${renderReaderPagerLink(ctx, "prev")}
           <!-- Center: Running Author + Work Title + Section Jump Dropdown Trigger -->
           <div class="reader-sticky-form" id="reader-jump-form">
             <div class="sticky-center-group">
-              <div class="sticky-title-wrapper" title="${he.escape(
-                work.title
-              )}">
-                <span class="sticky-work-title">${he.escape(
-                  work.shortTitle || work.title
-                )}</span>
-              </div>
-
               <div class="sticky-jump-box">
                 <a href="#reader-toc-drawer"
                    class="reader-btn sticky-section-btn"
@@ -221,6 +213,10 @@ ${renderReaderPagerLink(ctx, "prev")}
                    aria-expanded="false"
                    aria-controls="reader-toc-drawer"
                    title="Contents & Sections (T)">
+                  <span class="sticky-work-title" title="${he.escape(
+                    work.title
+                  )}">${he.escape(work.shortTitle || work.title)}</span>
+                  <span class="sticky-section-sep" aria-hidden="true">&middot;</span>
                   <span class="jump-glyph" aria-hidden="true">&sect;</span>
                   ${renderReaderPageLabel(ctx)}
                   <svg class="jump-chevron" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
