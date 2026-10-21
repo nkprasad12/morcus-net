@@ -607,7 +607,6 @@
   border-top: 1px solid var(--border);
 }
 .corpus-result {
-  margin: 0;
   padding: var(--space-4) 0;
   border-bottom: 1px solid var(--border);
 }
@@ -623,6 +622,7 @@
 .corpus-snippet {
   margin: var(--space-2) 0 0;
   font-family: var(--font-text);
+  font-size: calc(1em * var(--text-scale, 1));
   line-height: calc(1.6 * var(--text-leading, 1));
   text-align: justify;
   white-space: pre-line;

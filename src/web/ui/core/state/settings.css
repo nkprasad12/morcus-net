@@ -65,7 +65,7 @@ morcus-reader-settings {
 }
 
 /* A modal <dialog> in the top layer. Undo the UA centring (inset/margin);
-   reader_anchored_dialog.client.ts sets top/left under the trigger on open. */
+   core/widgets/anchored_dialog.client.ts sets top/left under the trigger on open. */
 .reader-settings-popover {
   inset: auto;
   margin: 0;
@@ -188,6 +188,12 @@ morcus-reader-settings {
   margin-bottom: var(--space-4);
 }
 
+.settings-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .settings-value {
   font-size: 0.82rem;
   font-weight: 600;
@@ -200,6 +206,10 @@ morcus-reader-settings {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-5);
+}
+
+.settings-control-row {
+  margin-bottom: var(--space-5);
 }
 
 .settings-divider {

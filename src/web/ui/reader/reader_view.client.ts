@@ -21,11 +21,9 @@ import {
   setHtml,
   setPrepaint,
   scrollToElement,
-  settingsStore,
   showToast,
   swapSlots,
   withBuildVersion,
-  syncIframeTheme,
   syncWordGroupHover,
   tokenizeTargets,
   WakeLockController,
@@ -342,8 +340,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.#initBackToTop();
     this.#resetDictScroll();
     this.#initKeyboardShortcuts();
-    this.#initIframeThemeSync();
-
     const iframe = this.#dictFrame;
     if (iframe) {
       this.scope.listen(iframe, "load", () => {
@@ -357,26 +353,6 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         this.#applyScaleToIframeSrc(iframe);
       }
     }
-  }
-
-  #initIframeThemeSync() {
-    const iframe = this.#dictFrame;
-    if (!iframe) return;
-
-    const syncTheme = () => {
-      const savedDark = settingsStore.get().darkMode;
-      const savedTheme =
-        typeof savedDark === "boolean" ? (savedDark ? "dark" : "light") : null;
-      const explicitAttr = document.documentElement.getAttribute("data-theme");
-      const currentTheme = savedTheme ?? explicitAttr;
-      if (savedTheme !== null && explicitAttr !== savedTheme) {
-        setPrepaint("data-theme", savedTheme);
-      }
-      syncIframeTheme(iframe, currentTheme);
-    };
-
-    this.scope.listen(iframe, "load", syncTheme);
-    syncTheme();
   }
 
   readonly #handleClick = (e: MouseEvent) => {

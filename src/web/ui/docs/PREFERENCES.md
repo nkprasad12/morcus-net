@@ -56,13 +56,19 @@ The app-bar Appearance menu (`shell/appearance_menu.client.ts`) is the single ow
 presentation preferences shared by every page. They live in `GlobalSettings` and each maps to one
 pre-paint value; a default is stored as absent and removed from `<html>`, leaving the CSS fallback:
 
-| Setting             | Pre-paint           | Read by                                                             |
-| :------------------ | :------------------ | :------------------------------------------------------------------ |
-| `darkMode`          | `data-theme`        | every themed token (`variables.css`)                                |
-| `textFont`          | `--font-text`       | reading text: dictionary entries, reader, corpus, macronizer        |
-| `textScale`         | `--text-scale`      | reading-text sizes, as a multiplier on each surface's own base size |
-| `lineSpacing`       | `--text-leading`    | reading-text line heights, as a multiplier                          |
-| `highlightStrength` | `--highlight-scale` | dictionary highlight tints                                          |
+| Setting       | Pre-paint        | Read by                                                             |
+| :------------ | :--------------- | :------------------------------------------------------------------ |
+| `darkMode`    | `data-theme`     | every themed token (`variables.css`)                                |
+| `textFont`    | `--font-text`    | reading text: dictionary entries, reader, corpus, macronizer        |
+| `textScale`   | `--text-scale`   | reading-text sizes, as a multiplier on each surface's own base size |
+| `lineSpacing` | `--text-leading` | reading-text line heights, as a multiplier                          |
+
+Reading text is the text a page exists for you to read: dictionary entries, reader passages,
+translations and notes, corpus results, the macronizer's output, and the About page. Navigation,
+forms, landing blurbs and help are UI and keep their own fonts and sizes.
+
+Highlight strength (`highlightStrength` → `--highlight-scale`, the dictionary highlight tints) is
+dictionary-only, so the dictionary settings dialog owns it (`dict/settings/dict_settings.client.ts`).
 
 The reader and dictionary settings link to the menu rather than duplicating these controls. The
 reader keeps only reader-specific preferences (its side panel's size, macra, section numbers).

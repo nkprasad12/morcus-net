@@ -298,6 +298,35 @@ test.describe("UI V2 reader", () => {
     await expect(matches).toHaveCount(2);
     await expect(matches.first()).toBeInViewport();
   });
+
+  test("opening Appearance from the reader settings keeps the scroll position and opens on screen", async ({
+    page,
+  }, testInfo) => {
+    // On phones the app bar isn't sticky, so at the bottom of the page the
+    // Appearance button is far above the viewport.
+    test.skip(!testInfo.project.use.isMobile, "Mobile-only layout");
+    await page.goto(`${DBG}/1.1`);
+    await disableSmoothScroll(page);
+    await expect(passage(page)).toBeVisible();
+    await page.evaluate(() =>
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: "instant",
+      })
+    );
+    const before = await page.evaluate(() => window.scrollY);
+    expect(before).toBeGreaterThan(0);
+
+    await page.locator("#reader-settings-btn").click();
+    await expect(page.locator("#reader-settings-popover")).toBeVisible();
+    await page.locator("#reader-appearance-link").click();
+
+    const menu = page.locator("#appearance-popover");
+    await expect(menu).toBeVisible();
+    await expect(menu).toBeInViewport();
+    const after = await page.evaluate(() => window.scrollY);
+    expect(Math.abs(after - before)).toBeLessThanOrEqual(2);
+  });
 });
 
 test.describe("UI V2 dictionary autocomplete", () => {

@@ -2,6 +2,8 @@ import {
   BaseElement,
   registerElement,
   registerRevealer,
+  setPrepaint,
+  settingsStore,
   setupModalDialog,
   type ModalDialogHandle,
 } from "@/web/ui/core/index.client";
@@ -14,7 +16,12 @@ import {
   DICT_SETTINGS_DIALOG_ID,
   DICT_SETTINGS_TRIGGER_ID,
 } from "@/web/ui/dict/search/search_bar.common";
-import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
+import {
+  OPEN_APPEARANCE_EVENT,
+  type OpenAppearanceDetail,
+} from "@/web/ui/shell/appearance_events.common";
+
+const DEFAULT_STRENGTH = 50;
 
 /** Detail of `dict-settings-commit`: the committed dictionary content settings. */
 export interface DictSettingsCommit {
@@ -34,10 +41,12 @@ export interface DictSettingsCommit {
  *   backdrop), not on each tick, so the results don't shift behind the dialog. If anything
  *   changed, closing saves it and emits one `dict-settings-commit`. A scoped dialog (reader
  *   iframe, `lang=`) saves only the dictionaries it shows, and has no inflection to save.
- * - Highlight strength and text appearance are app-wide and live in the app-bar Appearance menu;
- *   the dialog only links to it.
+ * - Highlight strength is presentation only, so it stays live.
+ * - Reading text (font, size, spacing) and the theme are app-wide and live in the app-bar
+ *   Appearance menu; the dialog only links to it.
  */
 export class MorcusDictSettings extends BaseElement {
+  #strength: number = DEFAULT_STRENGTH;
   #committedDicts: Set<string> = new Set();
   #committedInflected: boolean = true;
 
@@ -46,7 +55,13 @@ export class MorcusDictSettings extends BaseElement {
   #triggerEl: HTMLElement | null = null;
   #modal: ModalDialogHandle | null = null;
 
+  // Read in more than one place; a getter re-queries rather than caches.
+  get #sliderEl() {
+    return this.scope.$<HTMLInputElement>(".settings-slider");
+  }
+
   protected override onConnect() {
+    this.#strength = this.#computeInitialStrength();
     this.#dialogEl = this.scope.$<HTMLDialogElement>(
       `#${DICT_SETTINGS_DIALOG_ID}`
     );
@@ -61,6 +76,7 @@ export class MorcusDictSettings extends BaseElement {
     // If it was closed again, No-JS semantics apply: closing without Done discards them.
     if (!this.#isHashTarget()) this.#resetControls();
     this.#syncDoneDisabled();
+    this.#syncStrengthUi(true);
 
     if (this.#dialogEl) {
       this.#modal = setupModalDialog(this.#dialogEl, {
@@ -102,13 +118,26 @@ export class MorcusDictSettings extends BaseElement {
       appearanceLink.hidden =
         this.ownerDocument.querySelector("morcus-appearance-menu") === null;
     }
-    this.scope.listen(appearanceLink, "click", (e: MouseEvent) => {
-      // Keep this click from reaching the menu's outside-click dismissal,
-      // which it registers on the document as it opens.
-      e.stopPropagation();
+    this.scope.listen(appearanceLink, "click", () => {
       // Closing applies any draft, as it always does.
       this.#modal?.close();
-      this.ownerDocument.dispatchEvent(new CustomEvent(OPEN_APPEARANCE_EVENT));
+      this.ownerDocument.dispatchEvent(
+        new CustomEvent<OpenAppearanceDetail>(OPEN_APPEARANCE_EVENT, {
+          detail: { anchor: this.#triggerEl },
+        })
+      );
+    });
+
+    const sliderEl = this.#sliderEl;
+    this.scope.listen(sliderEl, "input", (e: Event) => {
+      if (e.target instanceof HTMLInputElement) {
+        this.#updateStrength(Number(e.target.value), false);
+      }
+    });
+    this.scope.listen(sliderEl, "change", (e: Event) => {
+      if (e.target instanceof HTMLInputElement) {
+        this.#updateStrength(Number(e.target.value), true);
+      }
     });
   }
 
@@ -123,6 +152,14 @@ export class MorcusDictSettings extends BaseElement {
 
   #isHashTarget(): boolean {
     return window.location.hash === `#${DICT_SETTINGS_DIALOG_ID}`;
+  }
+
+  #computeInitialStrength(): number {
+    const settings = settingsStore.get();
+    if (typeof settings.highlightStrength === "number") {
+      return Math.max(0, Math.min(100, settings.highlightStrength));
+    }
+    return DEFAULT_STRENGTH;
   }
 
   #dictCheckboxes(): HTMLInputElement[] {
@@ -210,6 +247,44 @@ export class MorcusDictSettings extends BaseElement {
       bitmask: encodeDictBitmask(draftDicts),
       isInflected: draftInflected,
     });
+  }
+
+  /** `record`: also record the highlight scale for pre-paint (see applyScale). */
+  #syncStrengthUi(record: boolean) {
+    const sliderEl = this.#sliderEl;
+    if (sliderEl && Number(sliderEl.value) !== this.#strength) {
+      sliderEl.value = String(this.#strength);
+    }
+    const valueDisplayEl = this.scope.$(".settings-value");
+    if (valueDisplayEl) {
+      valueDisplayEl.textContent = `${this.#strength}%`;
+    }
+    this.#applyScale(this.#strength, record);
+  }
+
+  #updateStrength(newStrength: number, persist: boolean) {
+    this.#strength = newStrength;
+    this.#syncStrengthUi(persist);
+    if (persist) {
+      settingsStore.update({ highlightStrength: newStrength });
+    }
+  }
+
+  /**
+   * Applies the highlight scale to <html>. With `record`, it's also recorded
+   * for the critical script (on connect and when a change is committed, not
+   * on every slider tick). The default is removed, leaving `:root`'s
+   * `--highlight-scale: 1` in `variables.css`.
+   */
+  #applyScale(strength: number, record: boolean) {
+    const scale = strength === DEFAULT_STRENGTH ? null : String(strength / 50);
+    if (record) {
+      setPrepaint("--highlight-scale", scale);
+    } else if (scale === null) {
+      document.documentElement.style.removeProperty("--highlight-scale");
+    } else {
+      document.documentElement.style.setProperty("--highlight-scale", scale);
+    }
   }
 }
 

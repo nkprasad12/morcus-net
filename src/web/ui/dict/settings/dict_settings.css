@@ -75,12 +75,30 @@ morcus-dict-settings {
   margin-bottom: 0;
 }
 
+.dict-settings-dialog .settings-header {
+  margin-bottom: var(--space-2);
+}
+
+.dict-settings-dialog .settings-control-row {
+  margin-bottom: var(--space-3);
+}
+
+.dict-settings-dialog .settings-preview {
+  padding: var(--space-2) var(--space-4);
+}
+
 .dict-settings-dialog .settings-divider {
   margin: var(--space-4) 0;
 }
 
 .dict-settings-dialog .settings-section-title {
   margin-bottom: var(--space-2);
+}
+
+/* Last in the dialog, so spaced from the highlight preview above it instead
+   of from settings below (see appearance_menu.css). */
+.dict-settings-dialog .appearance-link {
+  margin: var(--space-5) 0 0;
 }
 
 /* Dictionary Selection Section */

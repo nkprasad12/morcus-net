@@ -341,6 +341,8 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       } else {
         url.searchParams.delete("q");
       }
+      // `focus` belongs to the suggestion pick that set the old `q`.
+      url.searchParams.delete(FOCUS_PARAM);
     }
     if (updates.d !== undefined) {
       if (updates.d) {

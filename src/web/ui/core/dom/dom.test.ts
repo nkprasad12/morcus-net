@@ -12,7 +12,6 @@ import {
   isShortcutBlocked,
   navigateFrameReplace,
   scrollToElement,
-  syncIframeTheme,
 } from "@/web/ui/core/dom/dom.client";
 import { detachedDomWrites } from "@/web/ui/core/dom/dom_invariants.client";
 import { swapElementContent } from "@/web/ui/core/nav/partial.client";
@@ -292,39 +291,6 @@ describe("core/dom.client", () => {
       expect(
         isPlainLeftClick(new MouseEvent("click", { button: 0, altKey: true }))
       ).toBe(false);
-    });
-  });
-
-  describe("syncIframeTheme", () => {
-    it("synchronizes data-theme to same-origin iframe contentDocument", () => {
-      const iframe = document.createElement("iframe");
-      document.body.appendChild(iframe);
-      iframe.contentDocument!.write("<html><body></body></html>");
-      iframe.contentDocument!.close();
-
-      syncIframeTheme(iframe, "dark");
-      expect(
-        iframe.contentDocument!.documentElement.getAttribute("data-theme")
-      ).toBe("dark");
-
-      syncIframeTheme(iframe, "light");
-      expect(
-        iframe.contentDocument!.documentElement.getAttribute("data-theme")
-      ).toBe("light");
-    });
-
-    it("safely ignores cross-origin access exceptions without throwing", () => {
-      const iframe = document.createElement("iframe");
-      Object.defineProperty(iframe, "contentDocument", {
-        get() {
-          throw new DOMException(
-            "Cross-origin security barrier",
-            "SecurityError"
-          );
-        },
-      });
-
-      expect(() => syncIframeTheme(iframe, "dark")).not.toThrow();
     });
   });
 

@@ -76,6 +76,7 @@ function clearCookies() {
 beforeEach(() => {
   localStorage.clear();
   clearCookies();
+  document.documentElement.style.removeProperty("--highlight-scale");
   document.body.innerHTML = "";
   window.history.replaceState(null, "", "/");
 });
@@ -87,12 +88,31 @@ afterEach(() => {
 });
 
 describe("MorcusDictSettings", () => {
-  test("renders with the dialog closed and no highlight-strength control", () => {
+  test("renders default state with 50% highlight strength, dialog closed", () => {
     const m = mount();
     expect(m.dialog.open).toBe(false);
-    expect(m.el.querySelector(".settings-slider")).toBeNull();
-    expect(m.trigger.getAttribute("aria-label")).toBe("Dictionary settings");
-    expect(m.trigger.getAttribute("title")).toBe("Dictionary settings");
+    expect(
+      m.el.querySelector<HTMLInputElement>(".settings-slider")?.value
+    ).toBe("50");
+    expect(m.el.querySelector(".settings-value")?.textContent).toBe("50%");
+    expect(
+      document.documentElement.style.getPropertyValue("--highlight-scale")
+    ).toBe("");
+  });
+
+  test("loads initial strength from localStorage if present", () => {
+    localStorage.setItem(
+      "GlobalSettings",
+      JSON.stringify({ highlightStrength: 20, darkMode: false })
+    );
+    const m = mount();
+    expect(
+      m.el.querySelector<HTMLInputElement>(".settings-slider")?.value
+    ).toBe("20");
+    expect(m.el.querySelector(".settings-value")?.textContent).toBe("20%");
+    expect(
+      document.documentElement.style.getPropertyValue("--highlight-scale")
+    ).toBe("0.4");
   });
 
   test("the trigger opens the dialog and tracks aria-expanded", () => {
@@ -104,6 +124,40 @@ describe("MorcusDictSettings", () => {
     clickDone(m);
     expect(m.dialog.open).toBe(false);
     expect(m.trigger.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  test("highlight strength is live: scale on input, persisted on change", () => {
+    const m = mount();
+    const slider = m.el.querySelector<HTMLInputElement>(".settings-slider")!;
+
+    slider.value = "80";
+    slider.dispatchEvent(new Event("input"));
+    expect(
+      document.documentElement.style.getPropertyValue("--highlight-scale")
+    ).toBe("1.6");
+    expect(m.el.querySelector(".settings-value")?.textContent).toBe("80%");
+    expect(localStorage.getItem("GlobalSettings")).toBeNull();
+    // Connect omitted the default scale from pre-paint; the input tick didn't record yet.
+    const prepaint = () =>
+      JSON.parse(localStorage.getItem("morcus_prepaint") ?? "{}");
+    expect(prepaint()["--highlight-scale"]).toBeUndefined();
+
+    slider.dispatchEvent(new Event("change"));
+    expect(JSON.parse(localStorage.getItem("GlobalSettings")!)).toEqual(
+      expect.objectContaining({ highlightStrength: 80 })
+    );
+    expect(prepaint()["--highlight-scale"]).toBe("1.6");
+
+    // Returning to the default (50%) removes the inline property and pre-paint entry.
+    slider.value = "50";
+    slider.dispatchEvent(new Event("input"));
+    expect(
+      document.documentElement.style.getPropertyValue("--highlight-scale")
+    ).toBe("");
+    slider.dispatchEvent(new Event("change"));
+    expect(prepaint()["--highlight-scale"]).toBeUndefined();
+    // Strength isn't a content setting.
+    expect(m.commits).toEqual([]);
   });
 
   test("content changes apply only when the dialog closes, once", () => {
@@ -306,14 +360,11 @@ describe("MorcusDictSettings", () => {
       addAppearanceMenu();
       const m = mount();
       const opened = jest.fn();
-      const docClick = jest.fn();
       document.addEventListener(OPEN_APPEARANCE_EVENT, opened);
-      document.addEventListener("click", docClick);
       try {
         m.trigger.click();
         expect(m.dialog.open).toBe(true);
         toggle(checkbox(m.el, "EGL"), true);
-        docClick.mockClear();
 
         link(m).click();
 
@@ -323,12 +374,9 @@ describe("MorcusDictSettings", () => {
         expect(m.commits[0].dictKeys).toContain("EGL");
         expect(opened).toHaveBeenCalledTimes(1);
         expect(opened.mock.calls[0][0]).toBeInstanceOf(CustomEvent);
-        // The click must not reach document-level outside-click handlers, or
-        // it would immediately dismiss the menu it just opened.
-        expect(docClick).not.toHaveBeenCalled();
+        expect(opened.mock.calls[0][0].detail.anchor).toBe(m.trigger);
       } finally {
         document.removeEventListener(OPEN_APPEARANCE_EVENT, opened);
-        document.removeEventListener("click", docClick);
       }
     });
   });
