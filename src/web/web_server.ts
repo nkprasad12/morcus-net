@@ -6,13 +6,18 @@ import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
 import { getV2BuildDir } from "@/bundler/client_build_contract";
 import { IMMUTABLE_CACHE_CONTROL } from "@/web/ui/core/server/build_version.server";
 
-const DAYS_IN_YEAR = 365;
-const HOURS_IN_DAY = 24;
-const SECONDS_IN_HOUR = 3600;
+const SECONDS_IN_DAY = 24 * 3600;
+const MS_PER_SECOND = 1000;
 
-const MAX_AGE = 10 * DAYS_IN_YEAR * HOURS_IN_DAY * SECONDS_IN_HOUR;
+// Brand images (`/favicon.ico`, `/public/logo*.png`) are unchanging; cache for
+// the HTTP spec maximum of 1 year (`express.static` / `sendFile` take ms).
+const IMAGE_MAX_AGE_MS = 365 * SECONDS_IN_DAY * MS_PER_SECOND;
 
-const STATIC_OPTIONS = { maxAge: MAX_AGE };
+// Unversioned metadata (`/robots.txt`, `/.well-known/assetlinks.json`) caches
+// for 7 days so updates propagate within a week.
+const METADATA_MAX_AGE_MS = 7 * SECONDS_IN_DAY * MS_PER_SECOND;
+
+const PWA_WEBMANIFEST_JSON = JSON.stringify(PWA_WEBMANIFEST);
 
 interface Encoding {
   encoding: string;
@@ -127,16 +132,23 @@ export function setupServer(params: WebServerParams): void {
   // Browsers request `/favicon.ico` on their own, so pages don't need a
   // `<link rel="icon">`.
   app.get("/favicon.ico", (_, res) => {
-    res.sendFile(path.resolve("public", "favicon.ico"), { maxAge: MAX_AGE });
+    res.sendFile(path.resolve("public", "favicon.ico"), {
+      maxAge: IMAGE_MAX_AGE_MS,
+    });
   });
   app.get("/robots.txt", (_, res) => {
-    res.sendFile(path.resolve("public", "robots.txt"), { maxAge: MAX_AGE });
+    res.sendFile(path.resolve("public", "robots.txt"), {
+      maxAge: METADATA_MAX_AGE_MS,
+    });
   });
   app.use("/public/pwa.webmanifest", (_, res) => {
-    res.type("application/manifest+json").send(PWA_WEBMANIFEST);
+    res.type("application/manifest+json").send(PWA_WEBMANIFEST_JSON);
     return;
   });
-  app.use("/public", express.static("public", STATIC_OPTIONS));
-  app.use("/.well-known", express.static("public", STATIC_OPTIONS));
+  app.use("/public", express.static("public", { maxAge: IMAGE_MAX_AGE_MS }));
+  app.use(
+    "/.well-known",
+    express.static("public", { maxAge: METADATA_MAX_AGE_MS })
+  );
   app.use("/", params.v2Router);
 }

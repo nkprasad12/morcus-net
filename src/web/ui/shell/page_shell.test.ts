@@ -54,6 +54,14 @@ describe("renderAppBar", () => {
       }
     }
   );
+
+  test("renders brand logo linking to /dicts with /favicon.ico", () => {
+    const container = document.createElement("div");
+    container.innerHTML = renderAppBar();
+    const logoImg = container.querySelector(".brand-logo");
+    expect(logoImg).not.toBeNull();
+    expect(logoImg!.getAttribute("src")).toBe("/favicon.ico");
+  });
 });
 
 describe("renderPageShell", () => {

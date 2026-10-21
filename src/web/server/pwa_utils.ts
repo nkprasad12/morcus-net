@@ -7,7 +7,7 @@ export const PWA_WEBMANIFEST = {
   description: "A collection of free tools for Latin learners, by Mórcus.",
   icons: [
     {
-      src: "/public/favicon.ico",
+      src: "/favicon.ico",
       type: "image/png",
       sizes: "48x48",
     },

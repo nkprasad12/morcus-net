@@ -122,7 +122,7 @@ export function renderAppBar(activePage?: V2ActivePage): string {
         <!-- Left on desktop / Center on mobile: Brand Logo & Desktop Nav -->
         <div class="brand-group">
           <a href="/dicts" class="brand-logo-link" aria-label="M&oacute;rcus Home">
-            <img src="/public/favicon.ico" alt="M&oacute;rcus Logo" class="brand-logo" width="48" height="48">
+            <img src="/favicon.ico" alt="M&oacute;rcus Logo" class="brand-logo" width="48" height="48">
           </a>
           <!-- Desktop Navigation Links -->
           <nav class="nav nav-desktop" aria-label="Main Navigation">

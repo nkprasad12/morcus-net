@@ -100,6 +100,11 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).not.toContain("text/html");
+    expect(response.headers["cache-control"]).toBe("public, max-age=31536000");
+
+    const logo = await request(app).get("/public/logo192.png");
+    expect(logo.status).toBe(200);
+    expect(logo.headers["cache-control"]).toBe("public, max-age=31536000");
   });
 
   test("serves robots.txt at the root ahead of the V2 router", async () => {
@@ -107,6 +112,7 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.type).toBe("text/plain");
+    expect(response.headers["cache-control"]).toBe("public, max-age=604800");
     expect(response.text).toContain("User-agent: *");
     expect(response.text).toContain("Disallow: /api/");
     expect(response.text).toContain("Disallow: /*?*format=partial");
@@ -117,10 +123,14 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.type).toBe("application/manifest+json");
-    expect(JSON.parse(response.text)).toMatchObject({
+    expect(response.headers["cache-control"]).toBeUndefined();
+    expect(response.headers["etag"]).toBeDefined();
+    const manifest = JSON.parse(response.text);
+    expect(manifest).toMatchObject({
       start_url: "/",
       scope: "/",
     });
+    expect(manifest.icons[0].src).toBe("/favicon.ico");
   });
 
   test("the V2 router serves root routes, and unknown routes are not found", async () => {
