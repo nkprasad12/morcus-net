@@ -234,7 +234,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     // First lookup while iframe is still on about:blank sets iframe.src without pushing ?q= to parent URL
     expect(iframe.getAttribute("src")).toBe(
-      "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1&scale=100"
+      "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1&scale=93"
     );
     expect(currentIframeSrc(iframe)).toContain(
       "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1"
@@ -259,11 +259,12 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     el.minimizeDrawer();
     musaWord.click();
     expect(innerReplaceSpy).toHaveBeenCalledWith(
-      "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1&scale=100"
+      "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1&scale=93"
     );
   });
 
   test("clicking a word reflects customized dictScale in iframe query param", () => {
+    // 120% of the 1.2rem reading text, in units of the dictionary's 1.1rem: 131.
     localStorage.setItem(
       READER_SETTINGS_KEY,
       JSON.stringify({ dictScale: 120 })
@@ -281,7 +282,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
     expect(currentIframeSrc(iframe)).toContain(
-      "/dicts?q=arma&lang=La&o=1&embedded=1&scale=120"
+      "/dicts?q=arma&lang=La&o=1&embedded=1&scale=131"
     );
     localStorage.removeItem(READER_SETTINGS_KEY);
   });
@@ -446,7 +447,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       iframe.contentDocument!.documentElement.style.getPropertyValue(
         "--dict-scale"
       )
-    ).toBe("1.10");
+    ).toBe("0.98"); // 90% × 1.2rem / 1.1rem
 
     // Re-trigger iframe load event to simulate navigation/reload
     iframe.dispatchEvent(new Event("load"));
@@ -455,7 +456,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       iframe.contentDocument!.documentElement.style.getPropertyValue(
         "--dict-scale"
       )
-    ).toBe("1.10");
+    ).toBe("0.98");
 
     const decBtn = el.querySelector<HTMLButtonElement>("#dict-size-dec")!;
     decBtn.click();
@@ -463,7 +464,72 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       iframe.contentDocument!.documentElement.style.getPropertyValue(
         "--dict-scale"
       )
-    ).toBe("1.00");
+    ).toBe("0.93");
+  });
+
+  describe("side-panel size at the phone breakpoint", () => {
+    const originalMatchMedia = window.matchMedia;
+    let phone: EventTarget & { matches: boolean; media: string };
+
+    beforeEach(() => {
+      phone = Object.assign(new EventTarget(), {
+        matches: true,
+        media: "(max-width: 640px)",
+      });
+      window.matchMedia = ((query: string) =>
+        query === phone.media
+          ? phone
+          : Object.assign(new EventTarget(), {
+              matches: false,
+              media: query,
+            })) as unknown as typeof window.matchMedia;
+    });
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    test("the dictionary gets the panel size as is on phones (both bases are 1.1rem), and follows breakpoint changes", () => {
+      const el = createReaderView("<p>Arma virumque cano.</p>");
+      const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+      el.querySelector<HTMLElement>(".lat-word")!.click();
+      expect(iframe.getAttribute("src")).toContain("&scale=85");
+
+      const frameDoc = document.implementation.createHTMLDocument("");
+      Object.defineProperty(iframe, "contentDocument", {
+        value: frameDoc,
+        configurable: true,
+      });
+      const dictScale = () =>
+        frameDoc.documentElement.style.getPropertyValue("--dict-scale");
+      iframe.dispatchEvent(new Event("load"));
+      expect(dictScale()).toBe("0.85");
+
+      phone.matches = false;
+      phone.dispatchEvent(new Event("change"));
+      expect(dictScale()).toBe("0.93");
+    });
+  });
+
+  test("keeps a server-rendered dictionary src that already has the right scale (no reload)", () => {
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    const src = "/dicts?q=arma&lang=La&o=1&embedded=1&scale=93";
+    el.innerHTML = renderReaderDictPanelHtml({
+      query: "arma",
+      dictIframeSrc: src,
+      closeHref: "/work",
+      companion: { notesHtml: "", aboutHtml: "", hasTranslation: false },
+    });
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const srcSetter = jest.fn();
+    Object.defineProperty(iframe, "src", {
+      configurable: true,
+      get: () => iframe.getAttribute("src"),
+      set: srcSetter,
+    });
+    document.body.appendChild(el);
+    expect(srcSetter).not.toHaveBeenCalled();
+    expect(iframe.getAttribute("src")).toBe(src);
   });
 
   describe("drawer behavior", () => {
@@ -855,10 +921,8 @@ describe("Reader preferences validation & hydration", () => {
     localStorage.setItem(
       READER_SETTINGS_KEY,
       JSON.stringify({
-        readerScale: "corrupt",
         dictScale: 120,
-        fontFamily: "papyrus",
-        lineHeight: "compact",
+        showGutter: "corrupt",
       })
     );
 
@@ -871,17 +935,7 @@ describe("Reader preferences validation & hydration", () => {
         <morcus-reader-settings>
           <div id="reader-settings-popover" hidden>
             <button id="reader-settings-btn"></button>
-            <span id="reader-size-label"></span>
             <span id="dict-size-label"></span>
-            <select id="font-select">
-              <option value="serif">Serif</option>
-              <option value="sans">Sans</option>
-            </select>
-            <select id="line-height-select">
-              <option value="compact">Compact</option>
-              <option value="normal">Normal</option>
-              <option value="relaxed">Relaxed</option>
-            </select>
             <input type="checkbox" id="toggle-macra" />
             <input type="checkbox" id="toggle-gutter" />
           </div>
@@ -890,82 +944,113 @@ describe("Reader preferences validation & hydration", () => {
     `;
     document.body.appendChild(el);
 
-    const fontSelect = el.querySelector<HTMLSelectElement>("#font-select")!;
-    const lineSelect = el.querySelector<HTMLSelectElement>(
-      "#line-height-select"
-    )!;
-    const readerLabel = el.querySelector<HTMLElement>("#reader-size-label")!;
     const dictLabel = el.querySelector<HTMLElement>("#dict-size-label")!;
+    const gutter = el.querySelector<HTMLInputElement>("#toggle-gutter")!;
 
-    // Corrupt readerScale dropped -> default 100%
-    expect(readerLabel.textContent).toBe("100%");
     // Valid dictScale kept -> 120%
     expect(dictLabel.textContent).toBe("120%");
-    // Corrupt fontFamily "papyrus" dropped -> default "sans"
-    expect(fontSelect.value).toBe("sans");
-    // Valid lineHeight "compact" kept
-    expect(lineSelect.value).toBe("compact");
+    // Corrupt showGutter dropped -> default (shown)
+    expect(gutter.checked).toBe(true);
     expect(
-      document.documentElement.style.getPropertyValue("--reader-line-height")
-    ).toBe("1.45");
+      document.documentElement.hasAttribute("data-reader-hide-gutter")
+    ).toBe(false);
   });
 
-  it("records reader typography and the gutter on <html> for pre-paint, removing defaults", () => {
+  it("records the side-panel size as --panel-scale for the panel's own tabs, removing the default", () => {
     const root = document.documentElement;
-    const lineHeight = () =>
-      root.style.getPropertyValue("--reader-line-height");
+    localStorage.setItem(
+      READER_SETTINGS_KEY,
+      JSON.stringify({ dictScale: 80 })
+    );
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    document.body.appendChild(el);
+    expect(root.style.getPropertyValue("--panel-scale")).toBe("0.80");
+    expect(JSON.parse(localStorage.getItem(PREPAINT_KEY) ?? "{}")).toEqual(
+      expect.objectContaining({ "--panel-scale": "0.80" })
+    );
+
+    el.dispatchEvent(
+      new CustomEvent("reader-settings-change", {
+        detail: { prefs: { ...DEFAULT_READER_PREFS } },
+        bubbles: true,
+      })
+    );
+    expect(root.style.getPropertyValue("--panel-scale")).toBe("");
+    expect(localStorage.getItem(PREPAINT_KEY)).not.toContain("--panel-scale");
+  });
+
+  it("records the gutter on <html> for pre-paint, removing defaults", () => {
+    const root = document.documentElement;
+    localStorage.setItem(
+      READER_SETTINGS_KEY,
+      JSON.stringify({ showGutter: false })
+    );
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    document.body.appendChild(el);
+    expect(root.hasAttribute("data-reader-hide-gutter")).toBe(true);
+    expect(JSON.parse(localStorage.getItem(PREPAINT_KEY) ?? "{}")).toEqual(
+      expect.objectContaining({ "data-reader-hide-gutter": "" })
+    );
+
+    el.dispatchEvent(
+      new CustomEvent("reader-settings-change", {
+        detail: { prefs: { ...DEFAULT_READER_PREFS } },
+        bubbles: true,
+      })
+    );
+    expect(root.hasAttribute("data-reader-hide-gutter")).toBe(false);
+    expect(localStorage.getItem(PREPAINT_KEY) ?? "").not.toContain(
+      "data-reader-hide-gutter"
+    );
+  });
+
+  it("leaves the text font, size and spacing to the app-wide Appearance menu", () => {
+    const root = document.documentElement;
+    const owned = ["--reader-scale", "--reader-line-height", "--font-text"];
+    // Legacy fields from before the Appearance menu owned these settings.
     localStorage.setItem(
       READER_SETTINGS_KEY,
       JSON.stringify({
-        lineHeight: "compact",
         readerScale: 125,
+        lineHeight: "compact",
         fontFamily: "serif",
         showGutter: false,
       })
     );
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     document.body.appendChild(el);
-    expect(lineHeight()).toBe("1.45");
+    el.dispatchEvent(
+      new CustomEvent("reader-settings-change", {
+        detail: { prefs: { ...DEFAULT_READER_PREFS, dictScale: 120 } },
+        bubbles: true,
+      })
+    );
+
+    for (const prop of owned) {
+      expect(root.style.getPropertyValue(prop)).toBe("");
+      expect(el.style.getPropertyValue(prop)).toBe("");
+      expect(localStorage.getItem(PREPAINT_KEY) ?? "").not.toContain(prop);
+    }
+  });
+
+  it("does not clear text properties set by the Appearance menu", () => {
+    const root = document.documentElement;
+    root.style.setProperty("--reader-scale", "1.25");
+    root.style.setProperty("--reader-line-height", "1.85");
+    root.style.setProperty("--font-text", "var(--font-serif)");
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    document.body.appendChild(el);
+    el.dispatchEvent(
+      new CustomEvent("reader-settings-change", {
+        detail: { prefs: { ...DEFAULT_READER_PREFS } },
+        bubbles: true,
+      })
+    );
     expect(root.style.getPropertyValue("--reader-scale")).toBe("1.25");
-    // The text font is app-wide, so it is `--font-text`, not a reader-only property.
+    expect(root.style.getPropertyValue("--reader-line-height")).toBe("1.85");
     expect(root.style.getPropertyValue("--font-text")).toBe(
       "var(--font-serif)"
     );
-    expect(root.hasAttribute("data-reader-hide-gutter")).toBe(true);
-    // One source: nothing is copied onto the element itself.
-    expect(el.style.getPropertyValue("--reader-line-height")).toBe("");
-    expect(JSON.parse(localStorage.getItem(PREPAINT_KEY) ?? "{}")).toEqual(
-      expect.objectContaining({
-        "--reader-line-height": "1.45",
-        "--reader-scale": "1.25",
-        "--font-text": "var(--font-serif)",
-        "data-reader-hide-gutter": "",
-      })
-    );
-
-    el.dispatchEvent(
-      new CustomEvent("reader-settings-change", {
-        detail: { prefs: { ...DEFAULT_READER_PREFS, lineHeight: "relaxed" } },
-        bubbles: true,
-      })
-    );
-    expect(lineHeight()).toBe("1.85");
-
-    el.dispatchEvent(
-      new CustomEvent("reader-settings-change", {
-        detail: { prefs: { ...DEFAULT_READER_PREFS, lineHeight: "normal" } },
-        bubbles: true,
-      })
-    );
-    // Defaults fall back to the `var(--reader-*, default)` CSS fallbacks.
-    expect(lineHeight()).toBe("");
-    expect(root.style.getPropertyValue("--reader-scale")).toBe("");
-    expect(root.style.getPropertyValue("--font-text")).toBe("");
-    expect(root.hasAttribute("data-reader-hide-gutter")).toBe(false);
-    expect(localStorage.getItem(PREPAINT_KEY)).not.toContain(
-      "--reader-line-height"
-    );
-    expect(localStorage.getItem(PREPAINT_KEY)).not.toContain("--reader-scale");
   });
 });
 
@@ -1934,7 +2019,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(marker.classList.contains("marker-active")).toBe(false);
   });
 
-  test("pressing '/' on desktop before any word click activates split layout and loads /dicts?embedded=1 when iframe is about:blank (RDR-12)", () => {
+  test("pressing '/' on desktop before any word click activates split layout and loads /dicts?embedded=1 (with the default scale) when iframe is about:blank (RDR-12)", () => {
     const el = createReaderView("<p>Gallia est omnis divisa.</p>");
     const split = el.querySelector<HTMLElement>(".reader-split-layout")!;
     const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
@@ -1951,7 +2036,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
 
     expect(split.classList.contains("reader-layout-active")).toBe(true);
     expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
-    expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1");
+    expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1&scale=93");
   });
 
   test("ignores window shortcuts when defaultPrevented or isComposing is true", () => {
@@ -2327,7 +2412,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
 
     expect(keyEv.defaultPrevented).toBe(true);
     expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
-    expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1&scale=120");
+    expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1&scale=131");
 
     frameDoc.body.innerHTML = '<input type="text" id="dict-q" value="" />';
     const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;

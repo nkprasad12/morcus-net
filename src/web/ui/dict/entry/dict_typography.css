@@ -4,7 +4,7 @@
   padding: var(--space-4) var(--space-5);
   background: var(--tag-bg);
   border-radius: var(--radius-md);
-  font-size: calc(0.95rem * var(--dict-scale, 1));
+  font-size: calc(0.95rem * var(--dict-scale, 1) * var(--text-scale, 1));
   font-family: var(--font-sans);
 }
 
@@ -17,7 +17,7 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 0;
-  font-size: calc(0.95rem * var(--dict-scale, 1));
+  font-size: calc(0.95rem * var(--dict-scale, 1) * var(--text-scale, 1));
 }
 
 .inflection-table th,
@@ -210,7 +210,7 @@ a.lsSenseBullet:visited {
   padding: var(--space-9) var(--space-6);
   text-align: center;
   color: var(--text-muted);
-  font-size: calc(1.1rem * var(--dict-scale, 1));
+  font-size: calc(1.1rem * var(--dict-scale, 1) * var(--text-scale, 1));
 }
 
 /* Latin word click-to-lookup link */

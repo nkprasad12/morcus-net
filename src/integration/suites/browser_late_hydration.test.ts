@@ -419,23 +419,24 @@ test.describe("UI V2 late hydration", () => {
     await page.addInitScript(() => {
       localStorage.setItem(
         "morcus_reader_settings",
-        JSON.stringify({
-          readerScale: 130,
-          fontFamily: "sans",
-          lineHeight: "relaxed",
-          showGutter: false,
-        })
+        JSON.stringify({ showGutter: false })
       );
+      // The reading-text font, size and spacing are app-wide (Appearance menu).
       localStorage.setItem(
         "GlobalSettings",
-        JSON.stringify({ readerWidth: 1680 })
+        JSON.stringify({
+          readerWidth: 1680,
+          textScale: 130,
+          textFont: "serif",
+          lineSpacing: "relaxed",
+        })
       );
       localStorage.setItem(
         "morcus_prepaint",
         JSON.stringify({
-          "--reader-scale": "1.30",
-          "--reader-font": "var(--font-sans)",
-          "--reader-line-height": "1.85",
+          "--text-scale": "1.30",
+          "--font-text": "var(--font-serif)",
+          "--text-leading": "1.12",
           "data-reader-hide-gutter": "",
           "--reader-page-max": "1680px",
         })
@@ -448,9 +449,7 @@ test.describe("UI V2 late hydration", () => {
         const passage = document.querySelector(".reader-passage")!;
         const style = getComputedStyle(passage);
         return {
-          scale: getComputedStyle(root)
-            .getPropertyValue("--reader-scale")
-            .trim(),
+          scale: getComputedStyle(root).getPropertyValue("--text-scale").trim(),
           width: root.style.getPropertyValue("--reader-page-max"),
           hideGutter: root.hasAttribute("data-reader-hide-gutter"),
           fontSize: style.fontSize,
@@ -463,14 +462,15 @@ test.describe("UI V2 late hydration", () => {
       });
 
     const before = await measure();
-    // The defaults would be 20px (1.25rem) serif.
+    // The defaults would be 1.2rem (1.1rem on phones) sans, line height 1.65.
     expect(before.scale).toBe("1.30");
     expect(before.width).toBe("1680px");
     expect(before.hideGutter).toBe(true);
-    expect(before.fontSize).not.toBe("20px");
+    expect(["24.96px", "22.88px"]).toContain(before.fontSize);
+    expect(before.fontFamily).toMatch(/Georgia/);
     expect(
       parseFloat(before.lineHeight) / parseFloat(before.fontSize)
-    ).toBeCloseTo(1.85, 2);
+    ).toBeCloseTo(1.65 * 1.12, 2);
 
     release();
     await expectUpgraded(page, "morcus-reader-view");

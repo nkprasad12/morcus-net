@@ -47,6 +47,7 @@ import {
   readerSettingsStore,
 } from "@/web/ui/reader/reader_settings.client";
 import { savedSpotsStore } from "@/web/ui/reader/saved_spots.client";
+import { dictScaleFor, PHONE_QUERY } from "@/web/ui/reader/reader_scale.common";
 import { ReaderTocController } from "@/web/ui/reader/reader_toc.client";
 import {
   ReaderPageNavController,
@@ -255,6 +256,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
     this.#saveCurrentSpot();
     this.#enhancePassage();
+    this.#initPhoneQuery();
     this.#applyPreferences(this.#currentPrefs);
     // Without a hash, the page loads at the top, so a non-zero scroll
     // means the reader scrolled before upgrade; leave them there. With a hash,
@@ -345,7 +347,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const iframe = this.#dictFrame;
     if (iframe) {
       this.scope.listen(iframe, "load", () => {
-        this.#applyDictScale(this.#currentPrefs.dictScale);
+        this.#applyDictScale();
         // Searches inside the dictionary iframe are activity too, but its
         // events never reach this document's listeners.
         this.#wakeLock.extend();
@@ -799,7 +801,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     const targetSrc = `/dicts?q=${encodeURIComponent(
       word
-    )}&lang=La&o=1&embedded=1&scale=${this.#currentPrefs.dictScale}`;
+    )}&lang=La&o=1&embedded=1&scale=${this.#dictScalePercent()}`;
     const iframe = this.#dictFrame;
     const iframeAtTarget =
       iframe !== null && currentIframeSrc(iframe) === targetSrc;
@@ -1057,8 +1059,32 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  #applyDictScale(scalePercent: number) {
-    const scale = (scalePercent / 100).toFixed(2);
+  /**
+   * The dictionary's `--dict-scale` for the side-panel size (see
+   * `reader_scale.common.ts`). The breakpoint is this document's: inside the
+   * narrow iframe a phone media query would match even on desktop.
+   */
+  #dictScalePercent(): number {
+    return dictScaleFor(
+      this.#currentPrefs.dictScale,
+      this.#phoneQuery?.matches ?? false
+    );
+  }
+
+  #phoneQuery: MediaQueryList | null = null;
+
+  #initPhoneQuery() {
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia(PHONE_QUERY);
+    if (!mq) return;
+    this.#phoneQuery = mq;
+    if (typeof mq.addEventListener === "function") {
+      this.scope.listen(mq, "change", () => this.#applyDictScale());
+    }
+  }
+
+  #applyDictScale() {
+    const scale = (this.#dictScalePercent() / 100).toFixed(2);
     const iframe = this.#dictFrame;
     try {
       if (iframe?.contentDocument?.documentElement) {
@@ -1076,30 +1102,19 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
    * Layout-affecting preferences live on <html>, recorded with `setPrepaint`
    * so the critical script applies them before first paint on the next load.
    * Called on every connect, which also heals a stale snapshot. Defaults are
-   * removed, leaving the `var(--reader-*, default)` fallbacks in the CSS.
+   * removed, leaving the CSS fallbacks. The reading-text font, size and
+   * spacing are app-wide and owned by the app-bar Appearance menu.
    */
   #applyPreferences(prefs: ReaderPreferences) {
     this.#currentPrefs = prefs;
+    this.#applyDictScale();
+    // The side-panel size covers every tab: the dictionary iframe gets it as
+    // `--dict-scale`; the translation and notes read `--panel-scale`.
     setPrepaint(
-      "--reader-scale",
-      prefs.readerScale === 100 ? null : (prefs.readerScale / 100).toFixed(2)
-    );
-
-    this.#applyDictScale(prefs.dictScale);
-
-    setPrepaint(
-      "--reader-line-height",
-      prefs.lineHeight === "compact"
-        ? "1.45"
-        : prefs.lineHeight === "relaxed"
-        ? "1.85"
-        : null
-    );
-    // The text font is app-wide (dictionary, corpus and macronizer text follow
-    // it too), so it sets `--font-text` rather than a reader-only property.
-    setPrepaint(
-      "--font-text",
-      prefs.fontFamily === "serif" ? "var(--font-serif)" : null
+      "--panel-scale",
+      prefs.dictScale === DEFAULT_READER_PREFS.dictScale
+        ? null
+        : (prefs.dictScale / 100).toFixed(2)
     );
     setPrepaint("data-reader-hide-gutter", prefs.showGutter ? null : "");
     this.#applyMacra(prefs.showMacra);
@@ -1181,20 +1196,25 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     input.select();
   }
 
+  /**
+   * Points the iframe at its URL with the current `scale=`, so it first
+   * paints at the right size (the load handler also sets `--dict-scale`).
+   * Reloads only when the URL actually changes.
+   */
   #applyScaleToIframeSrc(iframe: HTMLIFrameElement) {
     const rawSrc = iframe.getAttribute("src");
     const baseSrc =
       !rawSrc || rawSrc === "about:blank" ? "/dicts?embedded=1" : rawSrc;
-    if (this.#currentPrefs.dictScale === 100) {
-      if (rawSrc !== baseSrc) {
-        iframe.src = baseSrc;
-      }
-      return;
+    const url = new URL(baseSrc, window.location.origin);
+    const scale = this.#dictScalePercent();
+    if (scale === 100) {
+      url.searchParams.delete("scale");
+    } else {
+      url.searchParams.set("scale", String(scale));
     }
-    if (!baseSrc.includes("scale=")) {
-      iframe.src = `${baseSrc}${baseSrc.includes("?") ? "&" : "?"}scale=${
-        this.#currentPrefs.dictScale
-      }`;
+    const nextSrc = `${url.pathname}${url.search}${url.hash}`;
+    if (nextSrc !== rawSrc) {
+      iframe.src = nextSrc;
     }
   }
 

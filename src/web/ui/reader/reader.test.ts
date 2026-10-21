@@ -207,12 +207,12 @@ describe("reader_ssr", () => {
     expect(html).toContain("<morcus-reader-settings");
     expect(html).toContain('data-has-macra="false"');
     expect(html).toContain('id="reader-settings-popover"');
-    expect(html).toContain('id="reader-size-dec"');
-    expect(html).toContain('id="reader-size-inc"');
+    expect(html).toContain('id="dict-size-dec"');
+    expect(html).toContain('id="dict-size-inc"');
     expect(html).not.toContain('id="toggle-macra"');
     expect(html).not.toContain("Show Macra");
     expect(html).toContain('id="toggle-gutter"');
-    expect(html).toContain('id="font-select"');
+    expect(html).toContain('id="reader-appearance-link"');
   });
 
   test("renderReaderContentHtml renders multi-scheme works with arbitrary depth", async () => {
@@ -357,9 +357,11 @@ describe("decomposed_reader_renderers", () => {
       expect(html).not.toContain('data-has-macra="false"');
       expect(html).toContain('id="reader-settings-popover"');
       expect(html).toContain('id="reader-settings-close-btn"');
-      expect(html).toContain('id="reader-size-label"');
-      expect(html).toContain('id="reader-size-dec"');
-      expect(html).toContain('id="reader-size-inc"');
+      // Text size, font and spacing moved to the app-wide Appearance menu.
+      expect(html).not.toContain('id="reader-size-label"');
+      expect(html).not.toContain('id="reader-size-dec"');
+      expect(html).not.toContain('id="reader-size-inc"');
+      expect(html).toContain('id="reader-appearance-link"');
       expect(html).toContain('id="dict-size-label"');
       expect(html).toContain('id="dict-size-dec"');
       expect(html).toContain('id="dict-size-inc"');
@@ -367,8 +369,8 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain("Show Macra");
       expect(html).toContain('id="toggle-gutter"');
       expect(html).toContain('id="toggle-swipe-nav"');
-      expect(html).toContain('id="font-select"');
-      expect(html).toContain('id="line-height-select"');
+      expect(html).not.toContain('id="font-select"');
+      expect(html).not.toContain('id="line-height-select"');
       expect(html).toContain('id="reader-settings-reset-btn"');
       expect(html).not.toContain('id="reader-settings-done-btn"');
     });
@@ -647,7 +649,7 @@ describe("decomposed_reader_renderers", () => {
       expect(html).toContain('class="reader-sheet-close"');
       expect(html).not.toContain("data-dict-unarmed");
       expect(html).toContain(
-        'src="/dicts?q=omnis&amp;lang=La&amp;o=1&amp;embedded=1"'
+        'src="/dicts?q=omnis&amp;lang=La&amp;o=1&amp;embedded=1&amp;scale=93"'
       );
     });
   });
@@ -682,7 +684,9 @@ describe("decomposed_reader_renderers", () => {
       });
       expect(ctx.query).toBe("arma");
       expect(ctx.layoutStateClass).toBe("reader-layout-active");
-      expect(ctx.dictIframeSrc).toBe("/dicts?q=arma&lang=La&o=1&embedded=1");
+      expect(ctx.dictIframeSrc).toBe(
+        "/dicts?q=arma&lang=La&o=1&embedded=1&scale=93"
+      );
     });
 
     test("the dictionary iframe src never pins dictionaries (d=), so the saved morcus_d applies", () => {

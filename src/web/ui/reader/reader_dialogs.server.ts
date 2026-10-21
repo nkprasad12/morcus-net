@@ -1,5 +1,7 @@
 import { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_types";
 import * as he from "he";
+import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
+import { DEFAULT_PANEL_SCALE } from "@/web/ui/reader/reader_scale.common";
 
 /**
  * Returns the scholarly license and provenance notice for the classical work.
@@ -121,64 +123,40 @@ export function renderReaderSettingsPopover(
         <div class="reader-settings-popover"
              id="reader-settings-popover"
              role="dialog"
-             aria-label="Appearance &amp; Typography"
+             aria-label="Reader settings"
              hidden>
           <div class="settings-popover-header">
-            <h2 class="settings-popover-title">Appearance</h2>
+            <h2 class="settings-popover-title">Reader settings</h2>
             <button type="button"
                     class="settings-popover-close"
                     id="reader-settings-close-btn"
-                    aria-label="Close appearance settings">&times;</button>
+                    aria-label="Close reader settings">&times;</button>
           </div>
 
           <div class="settings-body">
             
-            <!-- Typography Style -->
+            <!-- App-wide text appearance lives in the app-bar Appearance menu. -->
+            <button type="button" class="appearance-link" id="reader-appearance-link">
+              <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, theme</span></span>
+              ${renderIconSvg("palette")}
+            </button>
+
+            <!-- Side panel size (reader only): every tab, relative to the global text size -->
             <div class="settings-group">
-              <h3 class="settings-group-title">Typography</h3>
+              <h3 class="settings-group-title">Side Panel</h3>
               <div class="settings-row">
-                <span class="settings-label">Font Family</span>
-                <select id="font-select" class="settings-select" aria-label="Select font style">
-                  <option value="sans" selected>Modern Sans-Serif</option>
-                  <option value="serif">Classical Serif</option>
-                </select>
-              </div>
-
-              <div class="settings-row">
-                <span class="settings-label">Line Spacing</span>
-                <select id="line-height-select" class="settings-select" aria-label="Select line spacing">
-                  <option value="compact">Compact</option>
-                  <option value="normal" selected>Normal</option>
-                  <option value="relaxed">Relaxed</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Font Size Scaling Group -->
-            <div class="settings-group">
-              <h3 class="settings-group-title">Text Size</h3>
-              <div class="settings-row">
-                <span class="settings-label">Reading Canvas</span>
+                <span class="settings-label">Text Size<span class="settings-hint">Relative to your text size</span></span>
                 <div class="stepper">
-                  <button type="button" class="stepper-btn" id="reader-size-dec" aria-label="Decrease reading text size">A&minus;</button>
-                  <span class="stepper-val" id="reader-size-label">100%</span>
-                  <button type="button" class="stepper-btn" id="reader-size-inc" aria-label="Increase reading text size">A+</button>
-                </div>
-              </div>
-
-              <div class="settings-row">
-                <span class="settings-label">Dictionary Sidebar</span>
-                <div class="stepper">
-                  <button type="button" class="stepper-btn" id="dict-size-dec" aria-label="Decrease dictionary text size">A&minus;</button>
-                  <span class="stepper-val" id="dict-size-label">100%</span>
-                  <button type="button" class="stepper-btn" id="dict-size-inc" aria-label="Increase dictionary text size">A+</button>
+                  <button type="button" class="stepper-btn" id="dict-size-dec" aria-label="Decrease side panel text size">A&minus;</button>
+                  <span class="stepper-val" id="dict-size-label">${DEFAULT_PANEL_SCALE}%</span>
+                  <button type="button" class="stepper-btn" id="dict-size-inc" aria-label="Increase side panel text size">A+</button>
                 </div>
               </div>
             </div>
 
-            <!-- Scholarly & Textual Aids -->
+            <!-- Textual Aids -->
             <div class="settings-group">
-              <h3 class="settings-group-title">Scholarly &amp; Textual Aids</h3>
+              <h3 class="settings-group-title">Textual Aids</h3>
               ${
                 hasMacra
                   ? `<label class="settings-toggle-row">

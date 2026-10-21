@@ -1139,34 +1139,34 @@ describe("dict_ssr", () => {
       "<style>:root { --dict-scale: 1.20; }</style>"
     );
 
-    // Clamping: max 140
+    // Clamping: max 150
     const maxClamped = renderDictPageHtml({
       query: "test",
       scale: 200,
     });
     expect(maxClamped).toContain(
-      "<style>:root { --dict-scale: 1.40; }</style>"
+      "<style>:root { --dict-scale: 1.50; }</style>"
     );
 
-    // Clamping: min 70
+    // Clamping: min 50
     const minClamped = renderDictPageHtml({
       query: "test",
       scale: 40,
     });
     expect(minClamped).toContain(
-      "<style>:root { --dict-scale: 0.70; }</style>"
+      "<style>:root { --dict-scale: 0.50; }</style>"
     );
   });
 
   describe("parseDictScale", () => {
-    test("returns parsed number clamped between 70 and 140", () => {
+    test("returns parsed number clamped between 50 and 150", () => {
       expect(parseDictScale(100)).toBe(100);
-      expect(parseDictScale(120)).toBe(120);
+      expect(parseDictScale(93)).toBe(93);
       expect(parseDictScale("130")).toBe(130);
-      expect(parseDictScale(60)).toBe(70);
-      expect(parseDictScale(200)).toBe(140);
-      expect(parseDictScale("50")).toBe(70);
-      expect(parseDictScale("150")).toBe(140);
+      expect(parseDictScale(40)).toBe(50);
+      expect(parseDictScale(200)).toBe(150);
+      expect(parseDictScale("45")).toBe(50);
+      expect(parseDictScale("160")).toBe(150);
     });
 
     test("returns undefined for invalid, empty, or undefined input", () => {

@@ -2,6 +2,7 @@
 
 @import "./shell/variables.css";
 @import "./shell/app_bar.css";
+@import "./shell/appearance_menu.css";
 @import "./core/widgets/toast.css";
 @import "./core/widgets/drawer.css";
 @import "./core/nav/components.css";

@@ -73,7 +73,7 @@ function describeTarget(target: EventTarget): string {
  * it that the element finds what it queries for and registers its listeners.
  */
 const FIXTURES: Record<string, string> = {
-  "morcus-theme-toggle": renderAppBar("dicts"),
+  "morcus-appearance-menu": renderAppBar("dicts"),
 
   "morcus-page-width": renderPageWidthHandles("reader"),
 

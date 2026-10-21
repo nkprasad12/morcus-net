@@ -198,4 +198,29 @@ test.describe("UI V2 Visual Regression Suite", () => {
     jsModes: ["js"],
     themes: ["dark"],
   });
+
+  // The app-bar Appearance menu, open over a dictionary result (JS-only).
+  v2VisualScenario("appearance-menu", {
+    path: "/dicts?q=gladius",
+    waitFor: ".dict-card",
+    action: async (page) => {
+      await page.locator("#appearance-btn").click();
+      await page.waitForSelector("#appearance-popover", { state: "visible" });
+    },
+    jsModes: ["js"],
+    themes: ["light", "dark"],
+  });
+
+  // The reader settings popover, with its "Text appearance" link (JS-only).
+  v2VisualScenario("reader-settings", {
+    path: "/work/caesar/de_bello_gallico/1.1",
+    waitFor: ".reader-passage",
+    action: async (page) => {
+      await page.locator("#reader-settings-btn").click();
+      await page.waitForSelector("#reader-settings-popover", {
+        state: "visible",
+      });
+    },
+    jsModes: ["js"],
+  });
 });

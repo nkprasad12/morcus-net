@@ -496,8 +496,8 @@
   scroll-margin-top: 16px;
   margin-bottom: var(--space-5);
   font-family: var(--font-text);
-  font-size: calc(1.1rem * var(--dict-scale, 1));
-  line-height: 1.6;
+  font-size: calc(1.1rem * var(--dict-scale, 1) * var(--text-scale, 1));
+  line-height: calc(1.6 * var(--text-leading, 1));
 }
 
 .entry [id] {
@@ -544,7 +544,7 @@
 
 .entry-headword-text {
   font-family: var(--font-serif);
-  font-size: calc(1.15rem * var(--dict-scale, 1));
+  font-size: calc(1.15rem * var(--dict-scale, 1) * var(--text-scale, 1));
   font-weight: 700;
   line-height: 1.25;
   color: var(--text);
@@ -552,7 +552,7 @@
 }
 
 .entry-content {
-  font-size: calc(1.1rem * var(--dict-scale, 1));
+  font-size: calc(1.1rem * var(--dict-scale, 1) * var(--text-scale, 1));
   color: var(--reading-text);
 }
 

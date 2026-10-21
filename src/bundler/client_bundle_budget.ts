@@ -49,8 +49,9 @@ export interface V2BundleBudget {
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
     "common.js": {
-      maxRawBytes: 60 * 1024,
-      maxGzipBytes: 20.5 * 1024,
+      // Raised from 60 / 20.5 for the app-wide Appearance menu (#598).
+      maxRawBytes: 61.5 * 1024,
+      maxGzipBytes: 21 * 1024,
     },
     "reader.js": {
       maxRawBytes: 50 * 1024,
@@ -74,12 +75,14 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     },
   },
   routes: {
-    about: { maxRawBytes: 60 * 1024, maxGzipBytes: 20.5 * 1024 },
+    // Raised for the Appearance menu in common.js (#598): about, corpus,
+    // library, external and macronizer.
+    about: { maxRawBytes: 61.5 * 1024, maxGzipBytes: 21 * 1024 },
     dicts: { maxRawBytes: 90 * 1024, maxGzipBytes: 30 * 1024 },
-    corpus: { maxRawBytes: 76 * 1024, maxGzipBytes: 26.5 * 1024 },
-    library: { maxRawBytes: 106 * 1024, maxGzipBytes: 34 * 1024 },
-    external: { maxRawBytes: 117 * 1024, maxGzipBytes: 38.2 * 1024 },
-    macronizer: { maxRawBytes: 75 * 1024, maxGzipBytes: 25.5 * 1024 },
+    corpus: { maxRawBytes: 77.5 * 1024, maxGzipBytes: 27 * 1024 },
+    library: { maxRawBytes: 106 * 1024, maxGzipBytes: 34.5 * 1024 },
+    external: { maxRawBytes: 117 * 1024, maxGzipBytes: 38.5 * 1024 },
+    macronizer: { maxRawBytes: 76.5 * 1024, maxGzipBytes: 26 * 1024 },
   },
   maxCssRawBytes: 144 * 1024,
   maxCssGzipBytes: 25 * 1024,
