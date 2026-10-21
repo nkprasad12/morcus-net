@@ -12,6 +12,13 @@
         <h1>Visual Diff Inspector</h1>
         <span class="chip" id="total-count"></span>
         <span class="chip muted" id="source-label"></span>
+        <span
+          class="progress"
+          id="confirm-progress"
+          title="Confirmed this session (in memory only)">
+          <span class="progress-bar"><span id="confirm-bar"></span></span>
+          <span id="confirm-count"></span>
+        </span>
       </div>
       <div class="segmented" role="group" aria-label="View mode">
         <button type="button" data-view="flip" title="Flip (Space)">
@@ -45,12 +52,26 @@
             <select id="browser-filter" aria-label="Browser">
               <option value="all">All browsers</option>
             </select>
+            <select id="group-by" aria-label="Group by">
+              <option value="none">No grouping</option>
+              <option value="test">Group: test case</option>
+              <option value="scenario">Group: scenario</option>
+              <option value="browser">Group: browser</option>
+              <option value="category">Group: page</option>
+              <option value="size">Group: size</option>
+              <option value="theme">Group: color</option>
+              <option value="mode">Group: scripting</option>
+            </select>
             <select id="sort-order" aria-label="Sort order">
               <option value="diffDesc">Diff ↓</option>
               <option value="diffAsc">Diff ↑</option>
               <option value="name">Name</option>
             </select>
           </div>
+          <label class="toggle">
+            <input type="checkbox" id="show-confirmed" />
+            Show confirmed <kbd>H</kbd>
+          </label>
         </div>
         <ul class="scenario-list" id="scenario-list"></ul>
         <div class="sidebar-footer">
@@ -97,6 +118,22 @@
             <div class="control-group">
               <button
                 type="button"
+                id="confirm"
+                class="confirm"
+                title="Confirm and go to the next (Y or Enter)">
+                ✓ Confirm <kbd>Y</kbd>
+              </button>
+              <button
+                type="button"
+                id="undo-confirm"
+                class="ghost"
+                title="Undo the last confirm (U)">
+                Undo <kbd>U</kbd>
+              </button>
+            </div>
+            <div class="control-group">
+              <button
+                type="button"
                 id="prev"
                 class="ghost"
                 title="Previous (K)">
@@ -139,6 +176,16 @@
           <dd>Side by side</dd>
           <dt><kbd>↓</kbd> <kbd>J</kbd> / <kbd>↑</kbd> <kbd>K</kbd></dt>
           <dd>Next / previous snapshot</dd>
+          <dt><kbd>Y</kbd> <kbd>Enter</kbd></dt>
+          <dd>Confirm the change (hides it) and go to the next</dd>
+          <dt><kbd>Shift</kbd>+<kbd>Y</kbd></dt>
+          <dd>Confirm every snapshot in the current group</dd>
+          <dt><kbd>U</kbd></dt>
+          <dd>Undo the last confirm</dd>
+          <dt><kbd>H</kbd></dt>
+          <dd>Show / hide confirmed snapshots</dd>
+          <dt><kbd>G</kbd></dt>
+          <dd>Cycle grouping</dd>
           <dt><kbd>/</kbd></dt>
           <dd>Focus search</dd>
           <dt><kbd>C</kbd></dt>

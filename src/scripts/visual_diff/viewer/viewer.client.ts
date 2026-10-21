@@ -72,6 +72,42 @@ const FACETS: FacetDef[] = [
 
 const ALL_VALUE = "all";
 
+/** What the snapshot list can be grouped by. */
+type GroupKey =
+  | "none"
+  | "test"
+  | "scenario"
+  | "browser"
+  | "category"
+  | "size"
+  | "theme"
+  | "mode";
+
+const GROUP_KEYS: GroupKey[] = [
+  "none",
+  "test",
+  "scenario",
+  "browser",
+  "category",
+  "size",
+  "theme",
+  "mode",
+];
+
+function isGroupKey(value: string | null): value is GroupKey {
+  return GROUP_KEYS.some((k) => k === value);
+}
+
+/** Playwright projects in `playwright.config.ts` order: desktop, then mobile. */
+const BROWSER_ORDER = [
+  "chromium",
+  "firefox",
+  "webkit",
+  "MobileChrome",
+  "FirefoxSmallScreen",
+  "MobileSafari",
+];
+
 interface State {
   filtered: SnapshotMeta[];
   index: number;
@@ -82,10 +118,18 @@ interface State {
   splitPct: number;
   maskOpacity: number;
   filters: Record<FacetKey, string>;
+  group: GroupKey;
+  /** Ids confirmed this session. In memory only: a reload starts over. */
+  confirmed: Set<string>;
+  /** Confirm batches, most recent last, for undo. */
+  confirmHistory: string[][];
+  showConfirmed: boolean;
 }
 
 const BLINK_INTERVAL_MS = 600;
 const VIEWPORT_PADDING = 32;
+/** Height of the label row above the image (`.stage-caption`). */
+const CAPTION_HEIGHT = 28;
 
 function byId<T extends HTMLElement>(
   id: string,
@@ -130,12 +174,23 @@ const state: State = {
     size: ALL_VALUE,
     mode: ALL_VALUE,
   },
+  group: "none",
+  confirmed: new Set(),
+  confirmHistory: [],
+  showConfirmed: false,
 };
 
 const els = {
   search: byId("search", HTMLInputElement),
   browser: byId("browser-filter", HTMLSelectElement),
   sort: byId("sort-order", HTMLSelectElement),
+  group: byId("group-by", HTMLSelectElement),
+  showConfirmed: byId("show-confirmed", HTMLInputElement),
+  confirm: byId("confirm", HTMLButtonElement),
+  undoConfirm: byId("undo-confirm", HTMLButtonElement),
+  confirmProgress: byId("confirm-progress", HTMLSpanElement),
+  confirmBar: byId("confirm-bar", HTMLSpanElement),
+  confirmCount: byId("confirm-count", HTMLSpanElement),
   facets: byId("facets", HTMLDivElement),
   clearFilters: byId("clear-filters", HTMLButtonElement),
   list: byId("scenario-list", HTMLUListElement),
@@ -209,6 +264,14 @@ function initFilters() {
   els.search.addEventListener("input", applyFilters);
   els.browser.addEventListener("change", applyFilters);
   els.sort.addEventListener("change", applyFilters);
+  els.group.addEventListener("change", () => {
+    state.group = isGroupKey(els.group.value) ? els.group.value : "none";
+    applyFilters();
+  });
+  els.showConfirmed.addEventListener("change", () => {
+    state.showConfirmed = els.showConfirmed.checked;
+    applyFilters();
+  });
   els.clearFilters.addEventListener("click", clearFilters);
 }
 
@@ -226,6 +289,7 @@ function optionsFor(facet: FacetDef): { value: string; label: string }[] {
 
 /** Whether `item` passes every filter except (optionally) one facet. */
 function matches(item: SnapshotMeta, ignore?: FacetKey): boolean {
+  if (!state.showConfirmed && state.confirmed.has(item.id)) return false;
   for (const facet of FACETS) {
     const wanted = state.filters[facet.key];
     if (
@@ -314,6 +378,9 @@ function readHash() {
   if (browser !== null) els.browser.value = browser;
   if (els.browser.value === "") els.browser.value = ALL_VALUE;
   els.search.value = params.get("q") ?? "";
+  const group = params.get("group");
+  if (isGroupKey(group)) state.group = group;
+  els.group.value = state.group;
 }
 
 function writeHash() {
@@ -324,6 +391,7 @@ function writeHash() {
   }
   if (els.browser.value !== ALL_VALUE) params.set("browser", els.browser.value);
   if (els.search.value !== "") params.set("q", els.search.value);
+  if (state.group !== "none") params.set("group", state.group);
   const hash = params.toString();
   window.history.replaceState(
     null,
@@ -336,15 +404,19 @@ function applyFilters() {
   const previous = current();
   const sort = els.sort.value;
 
-  state.filtered = ALL.filter((item) => matches(item)).sort((a, b) => {
+  const bySort = (a: SnapshotMeta, b: SnapshotMeta) => {
     if (sort === "diffAsc") return severity(a) - severity(b);
     if (sort === "name") return a.id.localeCompare(b.id);
     return severity(b) - severity(a);
-  });
+  };
+  state.filtered = ALL.filter((item) => matches(item)).sort(
+    (a, b) => compareGroups(a, b) || bySort(a, b)
+  );
 
   renderFacets();
   els.clearFilters.hidden = !hasActiveFilters();
   els.filteredCount.textContent = `Showing ${state.filtered.length} of ${ALL.length}`;
+  renderProgress();
   writeHash();
 
   const kept = previous === undefined ? -1 : state.filtered.indexOf(previous);
@@ -357,32 +429,108 @@ const SIZE_LABELS: Record<string, string> = {
   large: "desktop",
 };
 
-function renderList() {
-  els.list.replaceChildren(
-    ...state.filtered.map((item, i) => {
-      const button = h("button");
-      button.type = "button";
-      const text = h("div");
-      text.append(
-        h("div", "name", item.scenario),
-        h(
-          "div",
-          "meta",
-          [
-            item.browser,
-            SIZE_LABELS[item.size] ?? item.size,
-            item.mode,
-            item.theme,
-          ].join(" · ")
-        )
-      );
-      button.append(text, scoreBadge(item));
-      button.addEventListener("click", () => select(i));
-      const li = h("li");
-      li.append(button);
-      return li;
-    })
+/** The group an item belongs to, as a stable key and a display label. */
+function groupOf(item: SnapshotMeta): { key: string; label: string } {
+  switch (state.group) {
+    case "none":
+      return { key: "", label: "" };
+    case "test": {
+      const key = `${item.scenario} [${item.mode}] [${item.theme}]`;
+      return { key, label: key };
+    }
+    case "scenario":
+      return { key: item.scenario, label: item.scenario };
+    case "browser":
+      return { key: item.browser, label: item.browser };
+    default: {
+      const facet = FACETS.find((f) => f.key === state.group);
+      const value = String(item[state.group]);
+      const label =
+        facet?.options.find((o) => o.value === value)?.label ?? value;
+      return { key: value, label: `${facet?.label ?? ""}: ${label}` };
+    }
+  }
+}
+
+/** Position of an item's group, so groups come out in a sensible order. */
+function groupRank(item: SnapshotMeta): number {
+  if (state.group === "browser") {
+    const i = BROWSER_ORDER.indexOf(item.browser);
+    return i === -1 ? BROWSER_ORDER.length : i;
+  }
+  const facet = FACETS.find((f) => f.key === state.group);
+  if (facet === undefined) return 0;
+  const i = facet.options.findIndex((o) => o.value === String(item[facet.key]));
+  return i === -1 ? facet.options.length : i;
+}
+
+function compareGroups(a: SnapshotMeta, b: SnapshotMeta): number {
+  if (state.group === "none") return 0;
+  return (
+    groupRank(a) - groupRank(b) || groupOf(a).key.localeCompare(groupOf(b).key)
   );
+}
+
+function itemButtons(): NodeListOf<HTMLButtonElement> {
+  return els.list.querySelectorAll<HTMLButtonElement>("button.item");
+}
+
+function groupHeader(key: string, label: string): HTMLLIElement {
+  const members = state.filtered.filter((i) => groupOf(i).key === key);
+  const pending = members.filter((i) => !state.confirmed.has(i.id));
+  const li = h("li", "group-header");
+  const title = h("span", undefined, label);
+  title.append(h("span", "group-count", String(members.length)));
+  li.append(title);
+  if (pending.length > 0) {
+    const button = h("button", undefined, `✓ Confirm ${pending.length}`);
+    button.type = "button";
+    button.title = "Confirm every snapshot in this group (Shift+Y)";
+    button.addEventListener("click", () => confirmItems(pending));
+    li.append(button);
+  }
+  return li;
+}
+
+function renderList() {
+  const rows: HTMLLIElement[] = [];
+  let lastGroup: string | undefined = undefined;
+  state.filtered.forEach((item, i) => {
+    if (state.group !== "none") {
+      const { key, label } = groupOf(item);
+      if (key !== lastGroup) {
+        rows.push(groupHeader(key, label));
+        lastGroup = key;
+      }
+    }
+    rows.push(listRow(item, i));
+  });
+  els.list.replaceChildren(...rows);
+}
+
+function listRow(item: SnapshotMeta, i: number): HTMLLIElement {
+  const button = h("button", "item");
+  button.classList.toggle("confirmed", state.confirmed.has(item.id));
+  button.type = "button";
+  const text = h("div");
+  text.append(
+    h("div", "name", item.scenario),
+    h(
+      "div",
+      "meta",
+      [
+        item.browser,
+        SIZE_LABELS[item.size] ?? item.size,
+        item.mode,
+        item.theme,
+      ].join(" · ")
+    )
+  );
+  button.append(text, scoreBadge(item));
+  button.addEventListener("click", () => select(i));
+  const li = h("li");
+  li.append(button);
+  return li;
 }
 
 function select(index: number) {
@@ -392,7 +540,7 @@ function select(index: number) {
     return;
   }
   state.index = Math.min(Math.max(index, 0), state.filtered.length - 1);
-  els.list.querySelectorAll("button").forEach((button, i) => {
+  itemButtons().forEach((button, i) => {
     const selected = i === state.index;
     button.classList.toggle("selected", selected);
     if (selected) button.scrollIntoView({ block: "nearest" });
@@ -400,7 +548,96 @@ function select(index: number) {
   renderInfo();
   const item = current();
   state.showAfter = item?.status === "added";
+  renderConfirmButton();
   renderStage();
+}
+
+// ---------------------------------------------------------------------------
+// Confirming (in memory only)
+// ---------------------------------------------------------------------------
+
+function renderProgress() {
+  const done = ALL.filter((i) => state.confirmed.has(i.id)).length;
+  els.confirmCount.textContent = `${done} / ${ALL.length} confirmed`;
+  els.confirmBar.style.width =
+    ALL.length === 0 ? "0" : `${(done / ALL.length) * 100}%`;
+  els.confirmProgress.classList.toggle(
+    "complete",
+    ALL.length > 0 && done === ALL.length
+  );
+  els.undoConfirm.disabled = state.confirmHistory.length === 0;
+}
+
+function renderConfirmButton() {
+  const item = current();
+  const done = item !== undefined && state.confirmed.has(item.id);
+  els.confirm.disabled = item === undefined;
+  els.confirm.classList.toggle("done", done);
+  els.confirm.firstChild!.textContent = done ? "↺ Unconfirm " : "✓ Confirm ";
+}
+
+/**
+ * Confirms `items` and moves on. Hidden items drop out of the list, so the
+ * selection stays at the same index, which is now the next pending item.
+ */
+function confirmItems(items: SnapshotMeta[]) {
+  const fresh = items.filter((i) => !state.confirmed.has(i.id));
+  if (fresh.length === 0) return;
+  for (const item of fresh) state.confirmed.add(item.id);
+  state.confirmHistory.push(fresh.map((i) => i.id));
+  const index = state.index;
+  const cur = current();
+  applyFilters();
+  if (state.showConfirmed) {
+    // Nothing disappeared; step past the item that was just confirmed.
+    if (cur !== undefined && fresh.includes(cur)) select(index + 1);
+  } else {
+    select(Math.min(index, state.filtered.length - 1));
+  }
+}
+
+function toggleConfirmCurrent() {
+  const item = current();
+  if (item === undefined) return;
+  if (!state.confirmed.has(item.id)) {
+    confirmItems([item]);
+    return;
+  }
+  // Only reachable with "Show confirmed" on.
+  state.confirmed.delete(item.id);
+  state.confirmHistory = state.confirmHistory
+    .map((batch) => batch.filter((id) => id !== item.id))
+    .filter((batch) => batch.length > 0);
+  const index = state.index;
+  applyFilters();
+  select(index);
+}
+
+function confirmCurrentGroup() {
+  const item = current();
+  if (item === undefined) return;
+  if (state.group === "none") {
+    confirmItems([item]);
+    return;
+  }
+  const key = groupOf(item).key;
+  confirmItems(state.filtered.filter((i) => groupOf(i).key === key));
+}
+
+function undoConfirm() {
+  const batch = state.confirmHistory.pop();
+  if (batch === undefined) return;
+  for (const id of batch) state.confirmed.delete(id);
+  applyFilters();
+  const restored = state.filtered.findIndex((i) => i.id === batch[0]);
+  if (restored !== -1) select(restored);
+}
+
+function cycleGroup() {
+  const i = GROUP_KEYS.indexOf(state.group);
+  state.group = GROUP_KEYS[(i + 1) % GROUP_KEYS.length];
+  els.group.value = state.group;
+  applyFilters();
 }
 
 function navigate(delta: number) {
@@ -525,7 +762,7 @@ function layerEl(
 function computeScale(canvas: ImageDims): number {
   if (state.zoom !== "fit") return state.zoom;
   const width = els.viewport.clientWidth - VIEWPORT_PADDING;
-  const height = els.viewport.clientHeight - VIEWPORT_PADDING;
+  const height = els.viewport.clientHeight - VIEWPORT_PADDING - CAPTION_HEIGHT;
   return Math.max(
     0.05,
     Math.min(1, width / canvas.width, height / canvas.height)
@@ -539,14 +776,36 @@ function makeStage(canvas: ImageDims, scale: number, extraClass = "") {
   return stage;
 }
 
+/**
+ * Puts the before/after labels in a row *above* the stage, so they never
+ * cover the pixels being compared.
+ */
+function framed(stage: HTMLElement, ...labels: HTMLElement[]): HTMLElement {
+  const frame = h("div", "stage-frame");
+  frame.style.width = stage.style.width;
+  const caption = h("div", "stage-caption");
+  caption.append(...labels);
+  frame.append(caption, stage);
+  return frame;
+}
+
 function renderEmpty() {
+  const allConfirmed =
+    ALL.length > 0 && ALL.every((i) => state.confirmed.has(i.id));
   els.viewport.replaceChildren(
     h(
       "div",
       "empty",
-      ALL.length === 0 ? "No changed snapshots." : "No snapshots match filters."
+      ALL.length === 0
+        ? "No changed snapshots."
+        : allConfirmed
+        ? `All ${ALL.length} snapshots confirmed. Press U to undo, H to show them.`
+        : state.filtered.length === 0 && !hasActiveFilters()
+        ? "Everything left is confirmed."
+        : "No snapshots match filters."
     )
   );
+  renderConfirmButton();
 }
 
 function renderStage() {
@@ -566,8 +825,8 @@ function renderStage() {
     after.id = "flip-after";
     const label = h("div", "stage-label");
     label.id = "flip-label";
-    stage.append(layerEl(item, "before", scale), after, label);
-    els.viewport.replaceChildren(stage);
+    stage.append(layerEl(item, "before", scale), after);
+    els.viewport.replaceChildren(framed(stage, label));
     updateFlip();
   } else if (state.view === "split") {
     const stage = makeStage(canvas, scale, "split");
@@ -592,26 +851,24 @@ function renderStage() {
     stage.addEventListener("pointermove", (e) => {
       if (stage.hasPointerCapture(e.pointerId)) move(e);
     });
-    stage.append(
-      layerEl(item, "before", scale),
-      after,
-      handle,
-      h("div", "stage-label left", manifest.beforeLabel),
-      h("div", "stage-label after", manifest.afterLabel)
-    );
+    stage.append(layerEl(item, "before", scale), after, handle);
     apply();
-    els.viewport.replaceChildren(stage);
+    els.viewport.replaceChildren(
+      framed(
+        stage,
+        h("div", "stage-label", `← ${manifest.beforeLabel}`),
+        h("div", "stage-label after", `${manifest.afterLabel} →`)
+      )
+    );
   } else if (state.view === "diff") {
     const stage = makeStage(canvas, scale);
     const mask = layerEl(item, "diff", scale);
     mask.id = "diff-mask";
     mask.style.opacity = String(state.maskOpacity / 100);
-    stage.append(
-      layerEl(item, "before", scale),
-      mask,
-      h("div", "stage-label", "Diff mask")
+    stage.append(layerEl(item, "before", scale), mask);
+    els.viewport.replaceChildren(
+      framed(stage, h("div", "stage-label", "Diff mask"))
     );
-    els.viewport.replaceChildren(stage);
   } else {
     const grid = h("div", "side-by-side");
     const column = (layer: Layer, caption: string) => {
@@ -732,6 +989,8 @@ function bindControls() {
     const mask = document.getElementById("diff-mask");
     if (mask !== null) mask.style.opacity = String(state.maskOpacity / 100);
   });
+  els.confirm.addEventListener("click", toggleConfirmCurrent);
+  els.undoConfirm.addEventListener("click", undoConfirm);
   byId("prev", HTMLButtonElement).addEventListener("click", () => navigate(-1));
   byId("next", HTMLButtonElement).addEventListener("click", () => navigate(1));
   byId("help-button", HTMLButtonElement).addEventListener("click", () =>
@@ -763,7 +1022,21 @@ function bindKeyboard() {
       if (e.key === "Escape") target.blur();
       return;
     }
+    if (e.key === "Y") {
+      e.preventDefault();
+      confirmCurrentGroup();
+      return;
+    }
     const actions: Record<string, () => void> = {
+      y: toggleConfirmCurrent,
+      Enter: toggleConfirmCurrent,
+      u: undoConfirm,
+      h: () => {
+        state.showConfirmed = !state.showConfirmed;
+        els.showConfirmed.checked = state.showConfirmed;
+        applyFilters();
+      },
+      g: cycleGroup,
       " ": () => showAfter(!state.showAfter),
       x: () => showAfter(!state.showAfter),
       "1": () => showAfter(false),

@@ -403,10 +403,6 @@ button.link {
 }
 
 .stage-label {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 3;
   padding: 2px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -423,9 +419,19 @@ button.link {
   border-color: var(--primary-strong);
 }
 
-.stage-label.left {
-  right: auto;
-  left: 8px;
+/* Labels sit above the image, never on it. */
+.stage-frame {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.stage-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
 }
 
 .stage.split {
@@ -521,4 +527,99 @@ button.link {
 .shortcuts dd {
   margin: 0;
   color: var(--muted);
+}
+
+/* Grouping */
+
+.scenario-list .group-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.scenario-list .group-header .group-count {
+  margin-left: 6px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.scenario-list .group-header button {
+  width: auto;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--success);
+}
+
+/* Confirming */
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+button.confirm {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+button.confirm.done {
+  background: var(--success);
+  color: var(--bg);
+}
+
+.scenario-list button.item.confirmed {
+  opacity: 0.45;
+}
+
+.scenario-list button.item.confirmed .name::before {
+  content: "✓ ";
+  color: var(--success);
+}
+
+.progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.progress-bar {
+  width: 90px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+}
+
+.progress-bar > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--success);
+  transition: width 0.15s ease;
+}
+
+.progress.complete {
+  color: var(--success);
+}
+
+/* Keep the selected row clear of the sticky group header when scrolled to. */
+.scenario-list button.item {
+  scroll-margin-top: 32px;
 }
