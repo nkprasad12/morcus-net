@@ -177,8 +177,7 @@ describe("MorcusReaderSettings custom element", () => {
 
   function createSettingsElement(attrs: { workId?: string } = {}): {
     el: MorcusReaderSettings;
-    popover: HTMLElement;
-    backdrop: HTMLElement;
+    popover: HTMLDialogElement;
     closeBtn: HTMLButtonElement;
     triggerBtn: HTMLButtonElement;
     dictSizeDec: HTMLButtonElement;
@@ -192,10 +191,9 @@ describe("MorcusReaderSettings custom element", () => {
     const workAttr = attrs.workId ? ` data-work="${attrs.workId}"` : "";
     container.innerHTML = `
       <button type="button" id="reader-settings-btn" aria-expanded="false" aria-controls="reader-settings-popover">Settings</button>
-      <div id="reader-settings-backdrop" class="reader-settings-backdrop" hidden></div>
       <morcus-reader-settings${workAttr}>
-        <div class="reader-settings-popover" id="reader-settings-popover" role="dialog" hidden>
-          <button type="button" id="reader-settings-close-btn">&times;</button>
+        <dialog class="reader-settings-popover" id="reader-settings-popover">
+          <button type="button" id="reader-settings-close-btn" data-dialog-close>&times;</button>
           <button type="button" id="reader-appearance-link" class="appearance-link">Text appearance</button>
 
           <button type="button" id="dict-size-dec">-</button>
@@ -206,7 +204,7 @@ describe("MorcusReaderSettings custom element", () => {
           <input type="checkbox" id="toggle-gutter" checked />
 
           <button type="button" id="reader-settings-reset-btn">Reset</button>
-        </div>
+        </dialog>
       </morcus-reader-settings>
     `;
 
@@ -214,8 +212,7 @@ describe("MorcusReaderSettings custom element", () => {
       container.querySelector<T>(sel)!;
     return {
       el: $<MorcusReaderSettings>("morcus-reader-settings"),
-      popover: $("#reader-settings-popover"),
-      backdrop: $("#reader-settings-backdrop"),
+      popover: $<HTMLDialogElement>("#reader-settings-popover"),
       closeBtn: $<HTMLButtonElement>("#reader-settings-close-btn"),
       triggerBtn: $<HTMLButtonElement>("#reader-settings-btn"),
       dictSizeDec: $<HTMLButtonElement>("#dict-size-dec"),
@@ -356,12 +353,13 @@ describe("MorcusReaderSettings custom element", () => {
     expect(readerSettingsStore.get()).toEqual(DEFAULT_READER_PREFS);
   });
 
-  test("appearance link closes the popover and opens the Appearance menu", () => {
+  test("appearance link closes the dialog and opens the Appearance menu", () => {
     const { el, appearanceLink } = createSettingsElement();
-    const opened = jest.fn();
-    const docClick = jest.fn();
+    const opened = jest.fn((_e: Event) => {
+      // Closed first, so the two modal dialogs never overlap.
+      expect(el.isOpen()).toBe(false);
+    });
     document.addEventListener(OPEN_APPEARANCE_EVENT, opened);
-    document.addEventListener("click", docClick);
     try {
       el.open();
       expect(el.isOpen()).toBe(true);
@@ -371,12 +369,8 @@ describe("MorcusReaderSettings custom element", () => {
       expect(el.isOpen()).toBe(false);
       expect(opened).toHaveBeenCalledTimes(1);
       expect(opened.mock.calls[0][0]).toBeInstanceOf(CustomEvent);
-      // The click must not reach document-level outside-click handlers, or
-      // it would immediately dismiss the menu it just opened.
-      expect(docClick).not.toHaveBeenCalled();
     } finally {
       document.removeEventListener(OPEN_APPEARANCE_EVENT, opened);
-      document.removeEventListener("click", docClick);
     }
   });
 
@@ -391,62 +385,63 @@ describe("MorcusReaderSettings custom element", () => {
     expect(localStorage.getItem(READER_SETTINGS_KEY)).toBeNull();
   });
 
-  test("toggles popover open and closed on trigger button click", () => {
-    const { el, popover, backdrop, triggerBtn } = createSettingsElement();
+  test("trigger opens the modal dialog and syncs aria-expanded", () => {
+    const { el, popover, triggerBtn } = createSettingsElement();
 
     expect(el.isOpen()).toBe(false);
-    expect(popover.hasAttribute("hidden")).toBe(true);
-    expect(backdrop.hasAttribute("hidden")).toBe(true);
+    expect(popover.open).toBe(false);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
 
-    // Click trigger opens popover
     triggerBtn.click();
     expect(el.isOpen()).toBe(true);
-    expect(popover.hasAttribute("hidden")).toBe(false);
-    expect(backdrop.hasAttribute("hidden")).toBe(false);
+    // jsdom has no showModal(); setupModalDialog falls back to `open`.
+    expect(popover.open).toBe(true);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
 
-    // Click trigger again closes popover
-    triggerBtn.click();
+    el.close();
     expect(el.isOpen()).toBe(false);
-    expect(popover.hasAttribute("hidden")).toBe(true);
-    expect(backdrop.hasAttribute("hidden")).toBe(true);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
   });
 
-  test("dismisses popover via close button, backdrop, Escape key, and outside click", () => {
-    const { el, closeBtn, backdrop, triggerBtn } = createSettingsElement();
-
-    // 1. Close button dismisses and focuses trigger
-    el.open();
+  test("toggle() opens and closes (the A shortcut)", () => {
+    const { el } = createSettingsElement();
+    el.toggle();
     expect(el.isOpen()).toBe(true);
-    closeBtn.click();
-    expect(el.isOpen()).toBe(false);
-    expect(document.activeElement).toBe(triggerBtn);
-
-    // 2. Backdrop click dismisses
-    el.open();
-    expect(el.isOpen()).toBe(true);
-    backdrop.click();
-    expect(el.isOpen()).toBe(false);
-
-    // 3. Escape key dismisses and focuses trigger
-    el.open();
-    expect(el.isOpen()).toBe(true);
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    expect(el.isOpen()).toBe(false);
-    expect(document.activeElement).toBe(triggerBtn);
-
-    // 4. Outside document click dismisses
-    el.open();
-    expect(el.isOpen()).toBe(true);
-    document.body.dispatchEvent(
-      new MouseEvent("click", { bubbles: true, cancelable: true })
-    );
+    el.toggle();
     expect(el.isOpen()).toBe(false);
   });
 
-  test("anchors popover and computes --caret-left offset in updatePosition", () => {
+  test("closes via the close button, a backdrop click, and a native close (Escape)", () => {
+    const { el, popover, closeBtn, triggerBtn } = createSettingsElement();
+    popover.getBoundingClientRect = () =>
+      ({ top: 60, left: 500, width: 320, height: 300 } as DOMRect);
+
+    // 1. Close button
+    el.open();
+    closeBtn.click();
+    expect(el.isOpen()).toBe(false);
+
+    // 2. A click on the ::backdrop targets the dialog, outside its box; one
+    // inside it doesn't close.
+    el.open();
+    popover.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, clientX: 600, clientY: 100 })
+    );
+    expect(el.isOpen()).toBe(true);
+    popover.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, clientX: 10, clientY: 10 })
+    );
+    expect(el.isOpen()).toBe(false);
+
+    // 3. Escape: the browser closes the dialog and fires `close`.
+    el.open();
+    popover.removeAttribute("open");
+    popover.dispatchEvent(new Event("close"));
+    expect(el.isOpen()).toBe(false);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  test("positions the dialog under its trigger with right edges aligned, and a caret", () => {
     const { el, popover, triggerBtn } = createSettingsElement();
 
     triggerBtn.getBoundingClientRect = () =>
@@ -466,92 +461,36 @@ describe("MorcusReaderSettings custom element", () => {
 
     el.open();
 
-    expect(popover.style.position).toBe("fixed");
     expect(popover.style.top).toBe("58px"); // bottom (50) + 8
-    expect(popover.style.getPropertyValue("--caret-left")).toBeTruthy();
+    expect(popover.style.left).toBe("520px"); // right (840) - 320
+    expect(popover.style.getPropertyValue("--caret-left")).toBe("300px");
   });
 
-  test("cycles keyboard focus with Tab and Shift+Tab within popover and moves initial focus to close button", () => {
-    const { el, closeBtn, resetBtn, triggerBtn } = createSettingsElement();
+  test("follows its trigger on resize while open, and stops once closed", () => {
+    const { el, popover, triggerBtn } = createSettingsElement();
+    let bottom = 50;
+    triggerBtn.getBoundingClientRect = () =>
+      ({ top: 20, bottom, left: 800, right: 840, width: 40 } as DOMRect);
+
     el.open();
+    expect(popover.style.top).toBe("58px");
 
-    // Initial focus lands on closeBtn
-    expect(document.activeElement).toBe(closeBtn);
+    bottom = 100;
+    window.dispatchEvent(new Event("resize"));
+    expect(popover.style.top).toBe("108px");
 
-    // If focus is outside popover (e.g. On triggerBtn), pressing forward Tab wraps to first focusable
-    triggerBtn.focus();
-    expect(document.activeElement).toBe(triggerBtn);
-    const outsideTab = new KeyboardEvent("keydown", {
-      key: "Tab",
-      bubbles: true,
-      cancelable: true,
-    });
-    document.dispatchEvent(outsideTab);
-    expect(document.activeElement).toBe(closeBtn);
-
-    // Focus last focusable (resetBtn) and press Tab -> should wrap to first (closeBtn)
-    resetBtn.focus();
-    expect(document.activeElement).toBe(resetBtn);
-
-    const tabEvent = new KeyboardEvent("keydown", {
-      key: "Tab",
-      bubbles: true,
-      cancelable: true,
-    });
-    document.dispatchEvent(tabEvent);
-    expect(document.activeElement).toBe(closeBtn);
-
-    // Focus first focusable (closeBtn) and press Shift+Tab -> should wrap to last (resetBtn)
-    closeBtn.focus();
-    const shiftTabEvent = new KeyboardEvent("keydown", {
-      key: "Tab",
-      shiftKey: true,
-      bubbles: true,
-      cancelable: true,
-    });
-    document.dispatchEvent(shiftTabEvent);
-    expect(document.activeElement).toBe(resetBtn);
+    el.close();
+    bottom = 200;
+    window.dispatchEvent(new Event("resize"));
+    expect(popover.style.top).toBe("108px");
   });
 
-  test("enforces bidirectional mutual exclusion with ReaderTocController via reader-chrome popover group", () => {
-    const { el } = createSettingsElement();
-    const tocDrawer = document.createElement("div");
-    tocDrawer.id = "reader-toc-drawer";
-    tocDrawer.setAttribute("hidden", "");
-    const tocBackdrop = document.createElement("div");
-    tocBackdrop.id = "reader-toc-backdrop";
-    tocBackdrop.setAttribute("hidden", "");
-    const tocBtn = document.createElement("button");
-    tocBtn.id = "reader-toc-btn";
-    tocBtn.setAttribute("aria-expanded", "false");
-    container.appendChild(tocDrawer);
-    container.appendChild(tocBackdrop);
-    container.appendChild(tocBtn);
-
-    const { ReaderTocController } = jest.requireActual<
-      typeof import("@/web/ui/reader/reader_toc.client")
-    >("@/web/ui/reader/reader_toc.client");
-    const toc = new ReaderTocController({ root: container });
-    toc.connect();
-
-    // 1. Open TOC drawer -> TOC is open
-    toc.open();
-    expect(toc.isOpen()).toBe(true);
-    expect(tocDrawer.hasAttribute("hidden")).toBe(false);
-
-    // 2. Opening settings closes TOC via morcus:popover-will-open ("reader-chrome")
+  test("closes the dialog when disconnected", () => {
+    const { el, popover, triggerBtn } = createSettingsElement();
     el.open();
-    expect(el.isOpen()).toBe(true);
-    expect(toc.isOpen()).toBe(false);
-    expect(tocDrawer.hasAttribute("hidden")).toBe(true);
-    expect(tocBtn.getAttribute("aria-expanded")).toBe("false");
-
-    // 3. Re-opening TOC closes settings via morcus:popover-will-open ("reader-chrome")
-    toc.open();
-    expect(toc.isOpen()).toBe(true);
-    expect(el.isOpen()).toBe(false);
-
-    toc.dispose();
+    el.remove();
+    expect(popover.open).toBe(false);
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
   });
 
   test("scopes macra toggle to workId and persists to macronButton-${workId}", () => {
@@ -595,9 +534,9 @@ describe("MorcusReaderSettings custom element", () => {
     container.innerHTML = `
       <morcus-reader-view data-work="parent-work">
         <morcus-reader-settings>
-          <div id="reader-settings-popover" hidden>
+          <dialog id="reader-settings-popover">
             <input type="checkbox" id="toggle-macra" checked />
-          </div>
+          </dialog>
         </morcus-reader-settings>
       </morcus-reader-view>
     `;
@@ -613,13 +552,13 @@ describe("MorcusReaderSettings custom element", () => {
       container.innerHTML = `
         <button type="button" id="reader-settings-btn">Settings</button>
         <morcus-reader-settings data-work="caesar_dbg">
-          <div id="reader-settings-popover" hidden>
+          <dialog id="reader-settings-popover">
             <button type="button" id="dict-size-dec">-</button>
             <span id="dict-size-label">100%</span>
             <button type="button" id="dict-size-inc">+</button>
             <input type="checkbox" id="toggle-gutter" checked />
             <button type="button" id="reader-settings-reset-btn">Reset</button>
-          </div>
+          </dialog>
         </morcus-reader-settings>
       `;
 
@@ -649,10 +588,10 @@ describe("MorcusReaderSettings swipe navigation toggle", () => {
   function create() {
     document.body.innerHTML = `
       <morcus-reader-settings>
-        <div id="reader-settings-popover" hidden>
+        <dialog id="reader-settings-popover">
           <input type="checkbox" id="toggle-swipe-nav" checked />
           <button type="button" id="reader-settings-reset-btn">Reset</button>
-        </div>
+        </dialog>
       </morcus-reader-settings>`;
     const $ = <T extends HTMLElement>(sel: string) =>
       document.querySelector<T>(sel)!;

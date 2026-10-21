@@ -101,7 +101,7 @@ function createReaderView(
       </section>
       ${dictPanelHtml(options)}
       <morcus-reader-settings>
-        <div id="reader-settings-popover" hidden>
+        <dialog id="reader-settings-popover">
           ${
             hasMacra
               ? '<input type="checkbox" id="toggle-macra" checked />'
@@ -110,7 +110,7 @@ function createReaderView(
           <button id="dict-size-dec">-</button>
           <span id="dict-size-label">100%</span>
           <button id="dict-size-inc">+</button>
-        </div>
+        </dialog>
       </morcus-reader-settings>
     </div>
   `;
@@ -933,12 +933,12 @@ describe("Reader preferences validation & hydration", () => {
           <article class="reader-passage"></article>
         </section>
         <morcus-reader-settings>
-          <div id="reader-settings-popover" hidden>
+          <dialog id="reader-settings-popover">
             <button id="reader-settings-btn"></button>
             <span id="dict-size-label"></span>
             <input type="checkbox" id="toggle-macra" />
             <input type="checkbox" id="toggle-gutter" />
-          </div>
+          </dialog>
         </morcus-reader-settings>
       </div>
     `;
@@ -1192,19 +1192,20 @@ describe("MorcusReaderView desktop splitter drag", () => {
       <div class="sticky-primary-row">
         <button type="button" id="reader-toc-btn" aria-expanded="false">Contents</button>
       </div>
-      <div id="reader-toc-drawer" class="reader-toc-drawer" hidden>
+      <dialog id="reader-toc-drawer" class="reader-toc-drawer">
         <button type="button" id="reader-toc-close-btn">&times;</button>
         <div id="reader-toc-list">
           <a class="reader-toc-item" href="#">Item 1</a>
         </div>
-      </div>
+      </dialog>
     `;
     document.body.appendChild(el);
 
     const drawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
     const button = el.querySelector<HTMLElement>("#reader-toc-btn")!;
     const tocOpen = () =>
-      !drawer.hidden && button.getAttribute("aria-expanded") === "true";
+      drawer.hasAttribute("open") &&
+      button.getAttribute("aria-expanded") === "true";
     const press = (key: string) =>
       window.dispatchEvent(new KeyboardEvent("keydown", { key }));
     expect(tocOpen()).toBe(false);
@@ -1227,21 +1228,20 @@ describe("MorcusReaderView desktop splitter drag", () => {
     expect(tocOpen()).toBe(true);
   });
 
-  test("closes settings popover when Table of Contents opens", () => {
+  test("the open settings dialog blocks the T shortcut (modal: one dialog at a time)", () => {
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     el.innerHTML = `
       <div class="sticky-primary-row">
         <button type="button" id="reader-toc-btn" aria-expanded="false">Contents</button>
         <button type="button" id="reader-settings-btn" aria-expanded="false">Aa</button>
       </div>
-      <div id="reader-toc-drawer" class="reader-toc-drawer" hidden>
+      <dialog id="reader-toc-drawer" class="reader-toc-drawer">
         <button type="button" id="reader-toc-close-btn">&times;</button>
-      </div>
-      <div id="reader-settings-backdrop" hidden></div>
+      </dialog>
       <morcus-reader-settings>
-        <div id="reader-settings-popover" class="reader-settings-popover" role="dialog" hidden>
+        <dialog id="reader-settings-popover" class="reader-settings-popover">
           <button id="reader-settings-close-btn">&times;</button>
-        </div>
+        </dialog>
       </morcus-reader-settings>
     `;
     document.body.appendChild(el);
@@ -1251,14 +1251,17 @@ describe("MorcusReaderView desktop splitter drag", () => {
     const tocDrawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
     expect(settings).not.toBeNull();
 
-    // Open settings popover
     settings?.open();
     expect(settings?.isOpen()).toBe(true);
 
-    // Opening TOC closes settings
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
+    expect(tocDrawer.hasAttribute("open")).toBe(false);
+    expect(settings?.isOpen()).toBe(true);
+
+    // Closed, the shortcut and the trigger work again.
+    settings?.close();
     tocBtn.click();
-    expect(tocDrawer.hasAttribute("hidden")).toBe(false);
-    expect(settings?.isOpen()).toBe(false);
+    expect(tocDrawer.hasAttribute("open")).toBe(true);
 
     el.remove();
   });
@@ -1269,11 +1272,10 @@ describe("MorcusReaderView desktop splitter drag", () => {
       <div class="sticky-primary-row">
         <button type="button" id="reader-settings-btn" aria-expanded="false">Aa</button>
       </div>
-      <div id="reader-settings-backdrop" hidden></div>
       <morcus-reader-settings>
-        <div id="reader-settings-popover" class="reader-settings-popover" role="dialog" hidden>
+        <dialog id="reader-settings-popover" class="reader-settings-popover">
           <button id="reader-settings-close-btn">&times;</button>
-        </div>
+        </dialog>
       </morcus-reader-settings>
     `;
     document.body.appendChild(el);
@@ -1290,8 +1292,8 @@ describe("MorcusReaderView desktop splitter drag", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "A" }));
     expect(settings?.isOpen()).toBe(false);
 
-    // Pressing 'a' focuses #reader-settings-close-btn inside role="dialog";
-    // dispatching 'a' from document.activeElement still closes the popover.
+    // Opening focuses #reader-settings-close-btn inside the <dialog>; 'a'
+    // from there still closes it, though open dialogs block other shortcuts.
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
     expect(settings?.isOpen()).toBe(true);
     expect(document.activeElement?.id).toBe("reader-settings-close-btn");
@@ -2563,8 +2565,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
         </div>
         </div>
 
-      <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
-      <aside id="reader-toc-drawer" class="reader-toc-drawer" hidden>
+      <dialog id="reader-toc-drawer" class="reader-toc-drawer">
         <button id="reader-toc-close-btn">&times;</button>
         <div class="reader-toc-content">
           <details open>
@@ -2579,7 +2580,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
             </ul>
           </details>
         </div>
-      </aside>
+      </dialog>
 
       <div class="reader-split-layout reader-layout-empty">
         <section class="reader-text-panel">
@@ -2758,7 +2759,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     });
 
     tocBtn.click();
-    expect(tocDrawer.hasAttribute("hidden")).toBe(false);
+    expect(tocDrawer.hasAttribute("open")).toBe(true);
 
     const tocItem2 = el.querySelector<HTMLAnchorElement>(
       '.reader-toc-item[data-page-id="2"]'
@@ -2767,7 +2768,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
 
     await new Promise((r) => setTimeout(r, 20));
 
-    expect(tocDrawer.hasAttribute("hidden")).toBe(true);
+    expect(tocDrawer.hasAttribute("open")).toBe(false);
     expect(el.dataset.page).toBe("2");
   });
 
@@ -2853,12 +2854,12 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       expect(el.querySelectorAll(".word-active")).toHaveLength(1);
       el.querySelector<HTMLElement>("#reader-toc-btn")!.click();
       const tocDrawer = el.querySelector<HTMLElement>("#reader-toc-drawer")!;
-      expect(tocDrawer.hasAttribute("hidden")).toBe(false);
+      expect(tocDrawer.hasAttribute("open")).toBe(true);
 
       swipe(el, -200);
       await flush();
 
-      expect(tocDrawer.hasAttribute("hidden")).toBe(true);
+      expect(tocDrawer.hasAttribute("open")).toBe(false);
       expect(window.fetch).toHaveBeenCalledWith(
         "http://localhost/work/caesar/de-bello-gallico/2",
         expect.anything()

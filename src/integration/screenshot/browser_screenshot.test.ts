@@ -211,7 +211,7 @@ test.describe("UI V2 Visual Regression Suite", () => {
     themes: ["light", "dark"],
   });
 
-  // The reader settings popover, with its "Text appearance" link (JS-only).
+  // The reader settings dialog, with its "Text appearance" link (JS-only).
   v2VisualScenario("reader-settings", {
     path: "/work/caesar/de_bello_gallico/1.1",
     waitFor: ".reader-passage",

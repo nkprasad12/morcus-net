@@ -5,8 +5,10 @@ import {
   registerElement,
   storage,
 } from "@/web/ui/core/index.client";
-// Not in the core barrel: only the reader uses it, so it ships in reader.js.
-import { AnchoredPopoverController } from "@/web/ui/core/widgets/popover.client";
+import {
+  type AnchoredDialog,
+  setupAnchoredDialog,
+} from "@/web/ui/reader/reader_anchored_dialog.client";
 import { isBoolean, isNumber } from "@/web/utils/rpc/parsing";
 import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
 import { DEFAULT_PANEL_SCALE } from "@/web/ui/reader/reader_scale.common";
@@ -121,9 +123,10 @@ export interface ReaderSettingsChangeEventDetail {
 }
 
 /**
- * Progressively enhanced reader settings popover (Light DOM mode).
+ * Progressively enhanced reader settings dialog (Light DOM mode).
  *
- * Coordinates the anchored popover, the dictionary panel's text-size stepper,
+ * Coordinates the anchored modal dialog (`reader_anchored_dialog.client.ts`),
+ * the side panel's text-size stepper,
  * the scholarly aids and swipe toggles, and persistence to localStorage. The
  * reading-text font, size and spacing are app-wide: the "Text appearance" link
  * opens the app-bar Appearance menu for them. When preferences are updated,
@@ -131,23 +134,7 @@ export interface ReaderSettingsChangeEventDetail {
  */
 export class MorcusReaderSettings extends BaseElement {
   #currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
-  readonly #popoverController = this.addController(
-    new AnchoredPopoverController({
-      root: this,
-      group: "reader-chrome",
-      align: "end",
-      defaultWidth: 320,
-      getPanel: () => this.scope.$<HTMLElement>("#reader-settings-popover"),
-      getTrigger: () =>
-        this.scope.$<HTMLButtonElement>("#reader-settings-btn") ??
-        this.ownerDocument.getElementById("reader-settings-btn"),
-      getBackdrop: () =>
-        this.scope.$<HTMLElement>("#reader-settings-backdrop") ??
-        this.ownerDocument.getElementById("reader-settings-backdrop"),
-      getCloseBtn: () =>
-        this.scope.$<HTMLButtonElement>("#reader-settings-close-btn"),
-    })
-  );
+  #dialog: AnchoredDialog | null = null;
 
   // Controls read in more than one place. Getters, not cached fields: each
   // read hits the live DOM, so no reference can outlive a markup swap.
@@ -171,26 +158,41 @@ export class MorcusReaderSettings extends BaseElement {
   }
 
   public isOpen(): boolean {
-    return this.#popoverController.isOpen;
+    return this.#dialog?.isOpen() ?? false;
   }
 
   public open(): void {
-    this.#popoverController.open();
+    this.#dialog?.open();
   }
 
   public close(): void {
-    this.#popoverController.close();
+    this.#dialog?.close();
   }
 
   public toggle(): void {
-    this.#popoverController.toggle();
+    this.#dialog?.toggle();
   }
 
   public updatePosition(): void {
-    this.#popoverController.updatePosition();
+    this.#dialog?.updatePosition();
   }
 
   protected override onConnect() {
+    const dialog = this.scope.$<HTMLDialogElement>("#reader-settings-popover");
+    this.#dialog = dialog
+      ? setupAnchoredDialog(this.scope, {
+          dialog,
+          // In the sticky bar, outside this element.
+          trigger:
+            this.scope.$<HTMLButtonElement>("#reader-settings-btn") ??
+            this.ownerDocument.getElementById("reader-settings-btn"),
+          align: "end",
+          defaultWidth: 320,
+          getInitialFocus: () =>
+            this.scope.$<HTMLButtonElement>("#reader-settings-close-btn"),
+        })
+      : null;
+
     this.#currentPrefs = readerSettingsStore.get();
     const workId = this.getWorkId();
     if (workId) {
@@ -250,10 +252,7 @@ export class MorcusReaderSettings extends BaseElement {
     const appearanceLink = this.scope.$<HTMLButtonElement>(
       "#reader-appearance-link"
     );
-    this.scope.listen(appearanceLink, "click", (e: MouseEvent) => {
-      // Keep this click from reaching the menu's outside-click dismissal,
-      // which it registers on the document as it opens.
-      e.stopPropagation();
+    this.scope.listen(appearanceLink, "click", () => {
       this.close();
       this.ownerDocument.dispatchEvent(new CustomEvent(OPEN_APPEARANCE_EVENT));
     });

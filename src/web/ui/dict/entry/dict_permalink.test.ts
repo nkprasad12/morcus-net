@@ -266,22 +266,6 @@ describe("handleDictPermalinkClick", () => {
       expect((menu() as HTMLElement).style.top).toBe("228px");
     });
 
-    test("closes when another reader-chrome popover opens, and announces itself", () => {
-      const announced = jest.fn();
-      document.addEventListener("morcus:popover-will-open", announced);
-      clickOn(SENSE);
-      document.removeEventListener("morcus:popover-will-open", announced);
-      expect(announced).toHaveBeenCalledTimes(1);
-
-      document.dispatchEvent(
-        new CustomEvent("morcus:popover-will-open", {
-          detail: { source: {}, group: "reader-chrome" },
-        })
-      );
-
-      expect(menu()).toBeNull();
-    });
-
     test("is a manual popover, so native light-dismiss can't fight the toggle", () => {
       clickOn(SENSE);
       expect(menu()!.getAttribute("popover")).toBe("manual");

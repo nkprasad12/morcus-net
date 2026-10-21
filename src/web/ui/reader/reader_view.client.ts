@@ -1125,7 +1125,15 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
   #initKeyboardShortcuts() {
     this.scope.listen(window, "keydown", (e: KeyboardEvent) => {
-      if (isShortcutBlocked(e)) return;
+      // Open dialogs block shortcuts, except that `t` and `a` close their own.
+      const key = e.key.toLowerCase();
+      const ownDialog =
+        key === "t"
+          ? this.#tocController.drawer
+          : key === "a"
+          ? this.querySelector("#reader-settings-popover")
+          : null;
+      if (isShortcutBlocked(e, ownDialog)) return;
 
       if (e.key === "[" || e.key === "]") {
         const dir: PageDir = e.key === "[" ? "prev" : "next";
@@ -1159,7 +1167,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       } else if (e.key === "a" || e.key === "A") {
         const settings = this.getSettingsElement();
         if (settings) {
-          // Global shortcut toggles its settings popover (same chunk)
+          // Global shortcut toggles its settings dialog (same chunk)
           e.preventDefault();
           settings.toggle();
         }

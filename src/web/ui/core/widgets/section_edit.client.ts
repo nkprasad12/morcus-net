@@ -4,7 +4,6 @@ import { bindDismissable } from "@/web/ui/core/widgets/dismissable.client";
 import { setHtml } from "@/web/ui/core/dom/dom.client";
 import { html, joinHtml } from "@/web/ui/core/dom/html.common";
 import { ICON_EDIT, ICON_LINK } from "@/web/ui/core/widgets/icons.common";
-import type { PopoverWillOpenDetail } from "@/web/ui/core/widgets/popover.client";
 import { showToast } from "@/web/ui/core/widgets/toast.client";
 
 interface SectionActionOptions {
@@ -36,8 +35,6 @@ let menuScope: LifetimeScope | null = null;
 let activeEditor: ActiveEditorState | null = null;
 
 const DIRTY_EDIT_TOAST = "Submit or cancel your current edit first";
-/** Mutual-exclusion group shared with the reader's Settings and TOC popovers. */
-const READER_CHROME_GROUP = "reader-chrome";
 
 const normText = (s: string | null | undefined) =>
   (s ?? "").replace(/\s+/g, " ").trim();
@@ -95,9 +92,11 @@ const renderMenuItem = (action: string, icon: string, label: string) =>
  * for a reader section or dictionary sense anchor.
  *
  * One menu serves every anchor on the page and lives only while open, so it
- * manages its own while-open scope instead of using the one-to-one
- * `AnchoredPopoverController`. It closes on an outside tap, Escape, Tab, any
- * scroll that moves its anchor, or another `reader-chrome` popover opening.
+ * manages its own while-open scope. It closes on an outside tap, Escape, Tab,
+ * or any scroll that moves its anchor. The reader's settings and contents
+ * dialogs are modal, so they can't open while it is open: the tap that opens
+ * one closes the menu, and the menu blocks their shortcuts
+ * (`isShortcutBlocked`).
  */
 export function openSectionActionMenu(options: SectionActionOptions): void {
   if (activeEditor) {
@@ -197,18 +196,6 @@ export function openSectionActionMenu(options: SectionActionOptions): void {
     menu.style.top = `${Math.round(top)}px`;
     menu.style.setProperty("--caret-left", `${Math.round(caretLeft)}px`);
   };
-
-  // Settings / TOC popovers and this menu close each other.
-  doc.dispatchEvent(
-    new CustomEvent<PopoverWillOpenDetail>("morcus:popover-will-open", {
-      detail: { source: menu, group: READER_CHROME_GROUP },
-    })
-  );
-  scope.listen<PopoverWillOpenDetail>(doc, "morcus:popover-will-open", (e) => {
-    if (e.detail?.group === READER_CHROME_GROUP && e.detail.source !== menu) {
-      closeMenu();
-    }
-  });
 
   if (typeof menu.showPopover === "function") menu.showPopover();
   position();

@@ -1,21 +1,22 @@
 /**
  * UI V2 Reader Table of Contents (TOC) Controller
  *
- * Progressively enhances the reader's Table of Contents drawer.
- * Coordinates drawer open/close state, trigger buttons (including sticky header
- * and breadcrumb triggers), live section search/filtering, outside-click
- * dismissal, and keyboard accessibility (Escape to close).
+ * Progressively enhances the reader's Table of Contents: a modal `<dialog>`
+ * centred under its sticky-bar trigger (`reader_anchored_dialog.client.ts`),
+ * which also handles Escape and backdrop clicks. Adds live section
+ * search/filtering and the hash handover from the No-JS `:target` drawer.
  */
 
 import { BaseController } from "@/web/ui/core/dom/base_controller.client";
-import { AnchoredPopoverController } from "@/web/ui/core/widgets/popover.client";
 import { registerRevealer } from "@/web/ui/core/nav/reveal.client";
+import {
+  type AnchoredDialog,
+  setupAnchoredDialog,
+} from "@/web/ui/reader/reader_anchored_dialog.client";
 
 interface ReaderTocElements {
-  /** The slide-in drawer element (#reader-toc-drawer) */
+  /** The contents dialog (#reader-toc-drawer) */
   drawer: HTMLElement | null;
-  /** Full-viewport dismissal backdrop (#reader-toc-backdrop) */
-  backdrop?: HTMLElement | null;
   /** Primary trigger button in sticky header (#reader-toc-btn) */
   triggerBtn?: HTMLElement | null;
   /** Close '×' button in drawer header (#reader-toc-close-btn) */
@@ -41,7 +42,6 @@ interface ReaderTocOptions {
 
 export class ReaderTocController extends BaseController {
   public drawer: HTMLElement | null = null;
-  public backdrop: HTMLElement | null = null;
   public triggerBtn: HTMLElement | null = null;
   public closeBtn: HTMLElement | null = null;
   public listContainer: HTMLElement | null = null;
@@ -49,52 +49,52 @@ export class ReaderTocController extends BaseController {
   public emptyState: HTMLElement | null = null;
   #selectedItem: HTMLAnchorElement | null = null;
   readonly #opts: ReaderTocOptions;
-  readonly #popover: AnchoredPopoverController;
+  #dialog: AnchoredDialog | null = null;
 
   constructor(options: ReaderTocOptions = {}) {
-    const root = options.root ?? document;
-    super(root);
+    super(options.root ?? document);
     this.#opts = options;
-    this.#popover = this.addController(
-      new AnchoredPopoverController({
-        root,
-        group: "reader-chrome",
-        align: "center",
-        defaultWidth: 360,
-        getPanel: () => this.drawer,
-        getTrigger: () => this.triggerBtn,
-        getBackdrop: () => this.backdrop,
-        getCloseBtn: () => this.closeBtn,
-        getInitialFocus: (drawer) => {
-          const active = drawer.querySelector<HTMLElement>(
-            ".reader-toc-item.active"
-          );
-          const isCoarsePointer =
-            typeof window !== "undefined" &&
-            window.matchMedia?.("(pointer: coarse)").matches;
-          return (
-            (!isCoarsePointer && this.searchInput) || active || this.closeBtn
-          );
-        },
-        onOpen: () => {
-          this.resetFilter();
-          this.#scrollActiveItemIntoCenter();
-          this.#opts.onOpen?.();
-        },
-        onClose: () => {
-          this.resetFilter();
-          this.#opts.onClose?.();
-        },
-      })
-    );
   }
 
   protected override onConnect(): void {
     this.#resolveElements();
     this.#bindFilterEvents();
+    const drawer = this.drawer;
+    this.#dialog =
+      drawer instanceof HTMLDialogElement
+        ? setupAnchoredDialog(this.scope, {
+            dialog: drawer,
+            trigger: this.triggerBtn,
+            align: "center",
+            defaultWidth: 360,
+            getInitialFocus: () => {
+              const active = drawer.querySelector<HTMLElement>(
+                ".reader-toc-item.active"
+              );
+              // Touch: don't raise the keyboard; start at the current section.
+              const isCoarsePointer =
+                typeof window !== "undefined" &&
+                window.matchMedia?.("(pointer: coarse)").matches;
+              return (
+                (!isCoarsePointer && this.searchInput) ||
+                active ||
+                this.closeBtn
+              );
+            },
+            onOpen: () => {
+              this.resetFilter();
+              this.#scrollActiveItemIntoCenter();
+              this.#opts.onOpen?.();
+            },
+            onClose: () => {
+              this.resetFilter();
+              this.#opts.onClose?.();
+            },
+          })
+        : null;
     // `#reader-toc-btn` is `<a href="#reader-toc-drawer">`, so before
     // upgrade the drawer opens via `:target`. Adopt that on connect (and on
-    // later hash navigation) so the popover's own state agrees.
+    // later hash navigation) so the dialog's own state agrees.
     if (this.drawer) {
       this.scope.use(
         registerRevealer(
@@ -114,11 +114,6 @@ export class ReaderTocController extends BaseController {
       overrides?.drawer !== undefined
         ? overrides.drawer
         : this.scope.$("#reader-toc-drawer");
-    this.backdrop =
-      overrides?.backdrop !== undefined
-        ? overrides.backdrop
-        : this.scope.$("#reader-toc-backdrop") ??
-          this.ownerDocument.querySelector<HTMLElement>("#reader-toc-backdrop");
     this.triggerBtn =
       overrides?.triggerBtn !== undefined
         ? overrides.triggerBtn
@@ -444,22 +439,22 @@ export class ReaderTocController extends BaseController {
   }
 
   public updatePosition(): void {
-    this.#popover.updatePosition();
+    this.#dialog?.updatePosition();
   }
 
   public open(): void {
-    this.#popover.open();
+    this.#dialog?.open();
   }
 
   public close(): void {
-    this.#popover.close();
+    this.#dialog?.close();
   }
 
   public toggle(): void {
-    this.#popover.toggle();
+    this.#dialog?.toggle();
   }
 
   public isOpen(): boolean {
-    return this.#popover.isOpen;
+    return this.#dialog?.isOpen() ?? false;
   }
 }

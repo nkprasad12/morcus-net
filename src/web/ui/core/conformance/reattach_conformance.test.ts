@@ -182,13 +182,12 @@ const FIXTURES: Record<string, string> = {
 
   "morcus-reader-view": `
     <morcus-reader-view class="reader-view">
-      <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
-      <div id="reader-toc-drawer" class="reader-toc-drawer" role="dialog" hidden>
+      <dialog id="reader-toc-drawer" class="reader-toc-drawer">
         <button type="button" id="reader-toc-close-btn">&times;</button>
         <div id="reader-toc-list" class="reader-toc-list">
           <a href="#sec-1" class="reader-toc-item">Section 1</a>
         </div>
-      </div>
+      </dialog>
       <div class="reader-sticky-bar">
         <button type="button" id="reader-toc-btn" aria-expanded="false">Contents</button>
       </div>
@@ -214,17 +213,16 @@ const FIXTURES: Record<string, string> = {
           </div>
           <button type="button" class="reader-dict-back-to-top" data-js-only></button>
         </aside>
-        <div id="reader-settings-popover" hidden>
+        <dialog id="reader-settings-popover">
           <input type="checkbox" id="toggle-macra" checked />
-        </div>
+        </dialog>
       </div>
     </morcus-reader-view>`,
 
   "morcus-reader-settings": `
     <morcus-reader-settings>
       <button id="reader-settings-btn"></button>
-      <div id="reader-settings-backdrop" hidden></div>
-      <div class="reader-settings-popover" id="reader-settings-popover" role="dialog" hidden>
+      <dialog class="reader-settings-popover" id="reader-settings-popover">
         <button id="reader-size-dec">-</button>
         <span id="reader-size-label">100%</span>
         <button id="reader-size-inc">+</button>
@@ -244,7 +242,7 @@ const FIXTURES: Record<string, string> = {
         </select>
         <button id="reader-settings-reset-btn">Reset</button>
         <button id="reader-settings-close-btn">&times;</button>
-      </div>
+      </dialog>
     </morcus-reader-settings>`,
 
   "morcus-macronizer-view": `
@@ -500,13 +498,13 @@ describe("open-state popovers survive being moved in the DOM", () => {
     const opened = record(() => settingsEl.open());
     expect(opened.added.length).toBeGreaterThan(0);
     expect(settingsEl.isOpen()).toBe(true);
-    expect(popoverEl.hasAttribute("hidden")).toBe(false);
+    expect(popoverEl.hasAttribute("open")).toBe(true);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
 
     // Move in DOM (disconnect then reconnect)
     const disconnected = record(() => settingsEl.remove());
     expect(settingsEl.isOpen()).toBe(false);
-    expect(popoverEl.hasAttribute("hidden")).toBe(true);
+    expect(popoverEl.hasAttribute("open")).toBe(false);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
 
     // Every listener added by open() must be removed on disconnect
@@ -520,13 +518,13 @@ describe("open-state popovers survive being moved in the DOM", () => {
 
     document.body.appendChild(settingsEl);
     expect(settingsEl.isOpen()).toBe(false);
-    expect(popoverEl.hasAttribute("hidden")).toBe(true);
+    expect(popoverEl.hasAttribute("open")).toBe(false);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
 
     // Re-trigger opens popover cleanly
     triggerBtn.click();
     expect(settingsEl.isOpen()).toBe(true);
-    expect(popoverEl.hasAttribute("hidden")).toBe(false);
+    expect(popoverEl.hasAttribute("open")).toBe(true);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
   });
 
@@ -620,12 +618,12 @@ describe("open-state popovers survive being moved in the DOM", () => {
     const opened = record(() => tocBtn.click());
     expect(opened.added.length).toBeGreaterThan(0);
 
-    expect(tocDrawer.hasAttribute("hidden")).toBe(false);
+    expect(tocDrawer.hasAttribute("open")).toBe(true);
     expect(tocBtn.getAttribute("aria-expanded")).toBe("true");
 
     // Move in DOM (disconnect then reconnect)
     const disconnected = record(() => readerView.remove());
-    expect(tocDrawer.hasAttribute("hidden")).toBe(true);
+    expect(tocDrawer.hasAttribute("open")).toBe(false);
     expect(tocBtn.getAttribute("aria-expanded")).toBe("false");
 
     const leakedOpenListeners = opened.added.filter(
@@ -637,12 +635,12 @@ describe("open-state popovers survive being moved in the DOM", () => {
     expect(leakedOpenListeners).toEqual([]);
 
     document.body.appendChild(readerView);
-    expect(tocDrawer.hasAttribute("hidden")).toBe(true);
+    expect(tocDrawer.hasAttribute("open")).toBe(false);
     expect(tocBtn.getAttribute("aria-expanded")).toBe("false");
 
     // Re-trigger opens drawer cleanly
     tocBtn.click();
-    expect(tocDrawer.hasAttribute("hidden")).toBe(false);
+    expect(tocDrawer.hasAttribute("open")).toBe(true);
     expect(tocBtn.getAttribute("aria-expanded")).toBe("true");
   });
 });

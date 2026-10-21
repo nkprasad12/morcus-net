@@ -175,7 +175,9 @@ interface ReaderTocDrawerOptions {
 }
 
 /**
- * Renders the contained Table of Contents (TOC) drawer dialog.
+ * Renders the Table of Contents (TOC) dialog. Without JS, the trigger links
+ * to `#reader-toc-drawer` and `:target` CSS shows it; the close link goes to
+ * `#`. With JS, `ReaderTocController` opens it with `showModal()`.
  */
 export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
   const { work, activePageIndex, query, jumpMiss } = options;
@@ -203,12 +205,10 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
       )}&rdquo; in this work.</p>`
     : "";
 
-  return `      <!-- Contained Table of Contents (TOC) Drawer -->
-      <div id="reader-toc-drawer"
-           class="reader-toc-drawer"
-           role="dialog"
-           aria-label="Table of Contents"
-           hidden>
+  return `      <!-- Table of Contents (TOC) Dialog -->
+      <dialog id="reader-toc-drawer"
+              class="anchored-popover reader-toc-drawer"
+              aria-label="Table of Contents">
         <div class="reader-toc-header">
           <form class="reader-toc-search-form"
                 action="${formAction}"
@@ -231,6 +231,7 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
              class="reader-toc-close-btn"
              id="reader-toc-close-btn"
              role="button"
+             data-dialog-close
              aria-label="Close table of contents">&times;</a>
         </div>${missBannerHtml}
 
@@ -243,5 +244,5 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
         <div class="reader-toc-footer">
           <a href="/library" class="reader-library-link">&larr; Return to Library Catalog</a>
         </div>
-      </div>`;
+      </dialog>`;
 }

@@ -17,8 +17,8 @@ The reader interface is organized along an explicit architectural division:
 
 ```
 CHROME (fixed, single primary row)   PANEL (scalable, tabbed companion)
-├─ Navigate   §  TOC drawer          ├─ Dictionary       (default lookup)
-└─ Display    Aa typography popover  ├─ Notes            (critical apparatus)
+├─ Navigate   §  TOC dialog          ├─ Dictionary       (default lookup)
+└─ Display    Aa settings dialog     ├─ Notes            (critical apparatus)
                                      ├─ Translation      (on-demand parallel text)
                                      └─ About this text  (scholarly provenance)
 ```
@@ -26,11 +26,11 @@ CHROME (fixed, single primary row)   PANEL (scalable, tabbed companion)
 ### Core Surface Rules
 
 1. **Fixed Top Bar, Scalable Companion Panel**:
-   - The top sticky bar is deliberately compact and fixed to preserve vertical reading canvas. It contains only direct passage controls: TOC drawer trigger (`#reader-toc-btn`), pager arrows (`#pager-prev`, `#pager-next`), and the anchored typography popover (`#reader-settings-btn`).
+   - The top sticky bar is deliberately compact and fixed to preserve vertical reading canvas. It contains only direct passage controls: TOC dialog trigger (`#reader-toc-btn`), pager arrows (`#pager-prev`, `#pager-next`), and the reader settings dialog trigger (`#reader-settings-btn`). Both dialogs are modal `<dialog>`s anchored under their triggers (`reader_anchored_dialog.client.ts`): the browser handles Escape, focus, the inert page and one-at-a-time; a backdrop click closes them without reaching the page.
    - The companion panel is the scalable extension point: auxiliary content lives in dedicated tabs (`Dictionary`, `Notes`, `Translation`, `About`) inside the desktop split-pane (`ReaderLayoutController`) or mobile draggable bottom sheet (`DrawerController`).
-2. **Single Anchored Typography Popover**:
-   - All display preferences (text size, font family, line spacing, section gutter numbers, macra, and dictionary text scale) live together in `#reader-settings-popover` (`<morcus-reader-settings>`).
-   - Preferences are never split across multiple surfaces; the reading canvas remains undimmed and unblurred during adjustments with live preview.
+2. **Single Anchored Reader Settings Dialog**:
+   - Reader-only preferences (side panel text size, section gutter numbers, macra, swipe page turns) live together in `#reader-settings-popover` (`<morcus-reader-settings>`). App-wide text appearance (font, size, spacing, theme) lives in the app-bar Appearance menu, which the dialog links to.
+   - The dialog's `::backdrop` is transparent, so the reading canvas remains undimmed and unblurred during adjustments with live preview.
 3. **Decision Procedure for New Controls**:
    - _Mutates the primary text rendering?_ $\rightarrow$ Top bar chrome.
    - _Content you consult while reading?_ $\rightarrow$ Companion panel tab.
@@ -83,16 +83,17 @@ sequenceDiagram
 
 - `reader_routes.server.ts`: Registers `/work/:author/:name/:page?`, `/work/:author/:name/:page/translation`, and the legacy `/work/:workId` entry point, handles jump/legacy redirects to canonical URLs, and serves full pages or partials depending on `isPartialRequest`.
 - `reader_loader.server.ts`: Reads preprocessed works and pages from `build/library_processed/library.db`, caching work headers, slug→id mappings, and library summaries in memory while lazily reading page HTML on demand. Also resolves a citation string to a concrete page.
-- `reader.server.ts`: Renders the page shell — primary sticky navigation bar (TOC drawer launcher, pager controls, and anchored `Aa` typography launcher), passage text with citation gutters, the companion panel, and the passage footer with continuation cards.
+- `reader.server.ts`: Renders the page shell — primary sticky navigation bar (TOC dialog launcher, pager controls, and the `Aa` reader settings launcher), passage text with citation gutters, the companion panel, and the passage footer with continuation cards.
 - `reader_toc.server.ts`: Renders the table of contents, including its `:target`-addressable No-JS fallback.
-- `reader_dialogs.server.ts`: Renders the scholarly `About` section (`#reader-work-about`) and the anchored reader settings typography popover.
+- `reader_dialogs.server.ts`: Renders the scholarly `About` section (`#reader-work-about`) and the reader settings `<dialog>`.
 - `reader_types.server.ts`: Citation hierarchy types and helpers (`CitationId`, `citationToString`, `parseCitationString`, `getDifferentialCitationLabel`) supporting works of arbitrary citation depth.
 
 ### Client
 
 - `reader_view.client.ts`: The main controller — partial navigation, section anchors, word lookup into the dictionary panel, dialog wiring, and keyboard shortcuts.
-- `reader_toc.client.ts`: `ReaderTocController` — opens/closes the TOC drawer and applies the live filter.
-- `reader_settings.client.ts`: `MorcusReaderSettings` — the anchored typography popover, persisting to `morcus_reader_settings` in `localStorage`.
+- `reader_anchored_dialog.client.ts`: `setupAnchoredDialog` — a modal `<dialog>` (via `setupModalDialog`) positioned under its sticky-bar trigger, shared by the TOC and settings.
+- `reader_toc.client.ts`: `ReaderTocController` — opens/closes the TOC dialog, adopts its No-JS `#reader-toc-drawer` hash, and applies the live filter.
+- `reader_settings.client.ts`: `MorcusReaderSettings` — the reader settings dialog, persisting to `morcus_reader_settings` in `localStorage`.
 - `reader_layout.client.ts`: `ReaderLayoutController` — the desktop resizable splitter and the mobile bottom drawer hosting the embedded dictionary.
 - `reader_panel.client.ts`: `ReaderPanelController` — adds behaviour to the server-rendered companion panel (`Dictionary`, `Notes`, `Translation`, `About`): tab roles and arbitration, hash reveals, the `notes` page-turn slot, and lazy translation loading.
 - `reader_page_nav.client.ts`: `ReaderPageNavController` — swipe page turns on touch devices (V1's side-tap is deliberately not ported; see [below](#deliberately-not-ported-from-v1)). Owns gesture policy and the passage slide only; the turn itself goes through the view's `turnPage` (shared with `[` / `]`), so history, TOC, and notes handling stay in one swap path.
