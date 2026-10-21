@@ -1,12 +1,9 @@
-/* Contained Table of Contents (TOC) Dropdown */
+/* Table of Contents (TOC) dialog */
 
-/* Table of Contents (TOC) Click-Dismissal Backdrop */
-.reader-toc-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-dropdown-backdrop);
-  background: var(--dropdown-backdrop);
-  cursor: default;
+/* Dims the page while the modal dialog is open. Older browsers don't pass
+   custom properties to ::backdrop; they get the light-mode tint. */
+.reader-toc-drawer::backdrop {
+  background: var(--dropdown-backdrop, rgba(0, 0, 0, 0.22));
   animation: tocBackdropFade 0.15s ease-out forwards;
 }
 
@@ -20,16 +17,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reader-toc-backdrop {
+  .reader-toc-drawer::backdrop {
     animation: none;
   }
 }
 
-.reader-toc-backdrop[hidden] {
-  display: none;
-}
-
+/* Undo the UA <dialog> centring and padding; in the top layer when modal. */
 .reader-toc-drawer {
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  color: var(--text);
   top: 132px; /* Baseline fallback; dynamically set below #reader-toc-btn on open */
   left: 50%;
   transform: translateX(-50%);
@@ -44,14 +42,16 @@
   background: var(--card-header-bg, var(--bg));
 }
 
-/* No-JS (and pre-upgrade): open via :target. Once upgraded, the TOC
-   controller adopts the hash (see core/nav/reveal.client.ts) and owns the state. */
+/* No-JS (and pre-upgrade): open via :target, without showModal(). Once
+   upgraded, the TOC controller adopts the hash (see core/nav/reveal.client.ts)
+   and owns the state. */
 .reader-toc-drawer:target:not([data-upgraded] *) {
   /* stylelint-disable-next-line declaration-no-important */
   display: flex !important;
 }
 
-.reader-toc-drawer[hidden]:not(:target:not([data-upgraded] *)) {
+/* .anchored-popover sets display: flex, which would override the UA's hiding. */
+.reader-toc-drawer:not([open]) {
   display: none;
 }
 

@@ -111,25 +111,25 @@ interface ReaderSettingsPopoverOptions {
 }
 
 /**
- * Renders the reader typography and display settings popover, hydrated by <morcus-reader-settings>.
+ * Renders the reader display settings: a modal `<dialog>` (JS-only, like its
+ * trigger) anchored under the trigger by <morcus-reader-settings>.
  * When hasMacra is false (e.g. for unmacronized editions), the macra toggle is omitted from the DOM.
  */
 export function renderReaderSettingsPopover(
   options: ReaderSettingsPopoverOptions = {}
 ): string {
   const hasMacra = options.hasMacra ?? true;
-  return `      <!-- Reader Appearance & Typography Popover -->
+  return `      <!-- Reader Settings Dialog -->
       <morcus-reader-settings>
-        <div class="reader-settings-popover"
-             id="reader-settings-popover"
-             role="dialog"
-             aria-label="Reader settings"
-             hidden>
+        <dialog class="anchored-popover reader-settings-popover"
+                id="reader-settings-popover"
+                aria-label="Reader settings">
           <div class="settings-popover-header">
             <h2 class="settings-popover-title">Reader settings</h2>
             <button type="button"
                     class="settings-popover-close"
                     id="reader-settings-close-btn"
+                    data-dialog-close
                     aria-label="Close reader settings">&times;</button>
           </div>
 
@@ -186,6 +186,6 @@ export function renderReaderSettingsPopover(
           <div class="settings-popover-footer">
             <button type="button" class="btn btn-secondary settings-reset-btn" id="reader-settings-reset-btn">Reset Defaults</button>
           </div>
-        </div>
+        </dialog>
       </morcus-reader-settings>`;
 }

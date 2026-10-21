@@ -50,9 +50,8 @@ a:hover {
   color: var(--link-hover);
 }
 
-/* W3C HTML5 standard UA reset: ensures [hidden] attribute wins over author display: flex/grid.
-   Exception: before upgrade the reader TOC drawer opens via `:target`. */
-[hidden]:not(.reader-toc-drawer:target:not([data-upgraded] *)) {
+/* W3C HTML5 standard UA reset: ensures [hidden] attribute wins over author display: flex/grid. */
+[hidden] {
   /* stylelint-disable-next-line declaration-no-important */
   display: none !important;
 }

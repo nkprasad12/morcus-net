@@ -244,7 +244,6 @@ describe("reader control", () => {
   function mountReaderSettings() {
     const container = mount(`
       <button type="button" id="reader-settings-btn">Settings</button>
-      <div id="reader-settings-backdrop" hidden></div>
       ${renderReaderSettingsPopover()}
     `);
     return {

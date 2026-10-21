@@ -64,21 +64,12 @@ morcus-reader-settings {
   display: contents;
 }
 
-/* Transparent click-catcher backdrop (catches outside clicks over embedded dict iframe) */
-.reader-settings-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-dropdown-backdrop);
-  background: transparent;
-  backdrop-filter: none;
-  cursor: default;
-}
-
-.reader-settings-backdrop[hidden] {
-  display: none;
-}
-
+/* A modal <dialog> in the top layer. Undo the UA centring (inset/margin);
+   reader_anchored_dialog.client.ts sets top/left under the trigger on open. */
 .reader-settings-popover {
+  inset: auto;
+  margin: 0;
+  color: var(--text);
   width: 320px;
   max-width: calc(100vw - 16px);
   min-width: min(310px, calc(100vw - 16px));
@@ -88,8 +79,14 @@ morcus-reader-settings {
   padding: var(--space-4) var(--space-5);
 }
 
-.reader-settings-popover[hidden] {
+/* .anchored-popover sets display: flex, which would override the UA's hiding. */
+.reader-settings-popover:not([open]) {
   display: none;
+}
+
+/* Transparent: it only takes outside clicks; the page stays visible behind. */
+.reader-settings-popover::backdrop {
+  background: transparent;
 }
 
 .reader-settings-popover::before {

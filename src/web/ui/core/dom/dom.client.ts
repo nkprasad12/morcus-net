@@ -178,10 +178,8 @@ export function navigateFrameReplace(
 
 /**
  * Targets where single-key shortcuts must not fire: native and ARIA text /
- * selection controls, contenteditable regions, and overlays. In the reader,
- * the TOC / Appearance popovers are `<div role="dialog">` rather than
- * `<dialog>` or `[popover]`, so `t` and `a` can still close them while their
- * close button or a TOC link holds focus.
+ * selection controls, contenteditable regions, and overlays. A caller can
+ * exempt its own open overlay (see {@link isShortcutBlocked}).
  */
 const SHORTCUT_BLOCKED_TARGET =
   'input, textarea, select, [contenteditable]:not([contenteditable="false"]), ' +
@@ -197,16 +195,27 @@ const SHORTCUT_BLOCKED_OPEN_OVERLAY =
  * was already handled, is part of IME composition, uses a modifier key
  * (`Ctrl`, `Meta`, `Alt`), originates in an editable or overlay target, or an
  * overlay is currently open.
+ *
+ * `ownOverlay` doesn't count as an overlay (its controls still do), so the
+ * key that opened it can close it again: the reader's `t` and `a` dialogs.
  */
-export function isShortcutBlocked(e: KeyboardEvent): boolean {
+export function isShortcutBlocked(
+  e: KeyboardEvent,
+  ownOverlay: Element | null = null
+): boolean {
   if (e.defaultPrevented || e.isComposing) return true;
   if (e.ctrlKey || e.metaKey || e.altKey) return true;
 
   const target =
     e.target instanceof Element ? e.target : document.activeElement;
   if (target instanceof HTMLElement && target.isContentEditable) return true;
-  if (target?.closest(SHORTCUT_BLOCKED_TARGET)) return true;
-  if (document.querySelector(SHORTCUT_BLOCKED_OPEN_OVERLAY)) return true;
+  const blocker = target?.closest(SHORTCUT_BLOCKED_TARGET);
+  if (blocker && blocker !== ownOverlay) return true;
+  for (const overlay of document.querySelectorAll(
+    SHORTCUT_BLOCKED_OPEN_OVERLAY
+  )) {
+    if (overlay !== ownOverlay) return true;
+  }
 
   return false;
 }

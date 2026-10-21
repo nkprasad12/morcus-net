@@ -229,6 +229,7 @@ ${renderReaderPagerLink(ctx, "prev")}
                    class="reader-btn sticky-section-btn"
                    id="reader-toc-btn"
                    role="button"
+                   aria-haspopup="dialog"
                    aria-expanded="false"
                    aria-controls="reader-toc-drawer"
                    title="Contents & Sections (T)">
@@ -257,7 +258,7 @@ ${renderReaderSettingsButtonHtml()}
 }
 
 /**
- * The `Aa` trigger for the typography popover. `MorcusReaderSettings` finds it
+ * The `Aa` trigger for the reader settings dialog. `MorcusReaderSettings` finds it
  * by id, so every reader bar must render this exact button.
  */
 export function renderReaderSettingsButtonHtml(): string {
@@ -265,6 +266,7 @@ export function renderReaderSettingsButtonHtml(): string {
                     class="reader-btn reader-settings-btn"
                     id="reader-settings-btn"
                     data-js-only
+                    aria-haspopup="dialog"
                     aria-expanded="false"
                     aria-controls="reader-settings-popover"
                     aria-label="Appearance &amp; Typography"
@@ -616,8 +618,8 @@ interface ReaderFrameOptions {
 
 /**
  * The `<morcus-reader-view>` frame shared by every reading surface: the
- * popover backdrops, the No-JS drawer dismiss target, the split layout, and
- * the typography popover. Callers supply the work-specific parts.
+ * contents dialog, the No-JS drawer dismiss target, the split layout, and
+ * the reader settings dialog. Callers supply the work-specific parts.
  */
 export function renderReaderFrameHtml(options: ReaderFrameOptions): string {
   const dataAttrs = Object.entries(options.dataAttrs)
@@ -626,13 +628,7 @@ export function renderReaderFrameHtml(options: ReaderFrameOptions): string {
   return `
     <morcus-reader-view class="reader-view"${dataAttrs}>
 
-      <!-- Backdrop overlay for Table of Contents (TOC) dropdown dismissal -->
-      <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
-
-      <!-- Backdrop overlay for Reader Settings popover dismissal -->
-      <div id="reader-settings-backdrop" class="reader-settings-backdrop" hidden></div>
-
-      <!-- Contained Table of Contents (TOC) Dropdown -->
+      <!-- Table of Contents (TOC) Dialog -->
       ${options.tocHtml}
 
       <span id="reader-dict-dismissed" class="reader-drawer-dismiss-target" aria-hidden="true"></span>

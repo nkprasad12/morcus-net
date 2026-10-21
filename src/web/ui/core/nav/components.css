@@ -327,9 +327,7 @@ body.body-embedded {
    7. Anchored Popover Shell (.anchored-popover)
    ========================================================================== */
 
-.anchored-popover,
-.reader-settings-popover,
-.reader-toc-drawer {
+.anchored-popover {
   position: fixed;
   z-index: var(--z-dropdown);
   max-width: calc(100vw - 24px);
@@ -349,9 +347,7 @@ body.body-embedded {
 }
 
 /* Caret indicator pointing at trigger button */
-.anchored-popover::before,
-.reader-settings-popover::before,
-.reader-toc-drawer::before {
+.anchored-popover::before {
   content: "";
   position: absolute;
   top: -6px;

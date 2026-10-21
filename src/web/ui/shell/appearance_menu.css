@@ -49,9 +49,8 @@ morcus-appearance-menu {
   overscroll-behavior: contain;
 }
 
+/* Flex column from .settings-group (core/state/settings.css). */
 .appearance-popover .settings-group {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-3);
 }
 
@@ -148,7 +147,7 @@ morcus-appearance-menu {
   cursor: pointer;
 }
 
-/* The reader popover's body already has a flex gap of --space-4. */
+/* The reader settings dialog's body already has a flex gap of --space-4. */
 .reader-settings-popover .appearance-link {
   margin-bottom: var(--space-4);
 }

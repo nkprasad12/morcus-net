@@ -155,7 +155,7 @@ describe("reader_ssr", () => {
 
     // Table of Contents drawer
     expect(html).toContain('id="reader-toc-drawer"');
-    expect(html).toContain('class="reader-toc-drawer"');
+    expect(html).toContain('class="anchored-popover reader-toc-drawer"');
     expect(html).toContain('id="reader-toc-close-btn"');
     expect(html).toContain('class="reader-toc-item active"');
 
@@ -199,11 +199,13 @@ describe("reader_ssr", () => {
     expect(html).not.toContain('class="reader-view-toggle"');
     expect(html).not.toContain('id="reader-info-btn"');
 
-    // Dismissal backdrops
-    expect(html).toContain('id="reader-toc-backdrop"');
-    expect(html).toContain('id="reader-settings-backdrop"');
+    // The dialogs bring their own ::backdrop: no backdrop elements
+    expect(html).not.toContain("-backdrop");
+    expect(html).toMatch(
+      /id="reader-settings-btn"[^>]*aria-haspopup="dialog"|aria-haspopup="dialog"[^>]*id="reader-settings-btn"/
+    );
 
-    // Settings popover (Caesar dbgWork has hasMacra: false, so toggle-macra is omitted)
+    // Settings dialog (Caesar dbgWork has hasMacra: false, so toggle-macra is omitted)
     expect(html).toContain("<morcus-reader-settings");
     expect(html).toContain('data-has-macra="false"');
     expect(html).toContain('id="reader-settings-popover"');
@@ -398,11 +400,12 @@ describe("decomposed_reader_renderers", () => {
         activePageIndex: 0,
       });
 
-      expect(html).toContain('id="reader-toc-drawer"');
-      expect(html).toContain('role="dialog"');
+      expect(html).toMatch(/<dialog id="reader-toc-drawer"/);
+      // Closed until `:target` (No-JS) or showModal() opens it.
+      expect(html).not.toMatch(/<dialog[^>]*\sopen/);
       expect(html).not.toContain('aria-modal="true"');
-      expect(html).toContain("hidden");
       expect(html).toContain('id="reader-toc-close-btn"');
+      expect(html).toMatch(/<a href="#"[^>]*data-dialog-close/);
       expect(html).toContain('id="reader-toc-search-input"');
       expect(html).toContain('id="reader-toc-list"');
       expect(html).toContain('id="reader-toc-empty"');

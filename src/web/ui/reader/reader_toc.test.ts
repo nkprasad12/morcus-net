@@ -11,17 +11,16 @@ describe("ReaderTocController", () => {
   function createTocFixture(): HTMLDivElement {
     const div = document.createElement("div");
     div.innerHTML = `
-      <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
       <div class="sticky-primary-row">
         <button type="button" id="reader-toc-btn" aria-expanded="false" aria-controls="reader-toc-drawer">
           Contents
         </button>
       </div>
 
-      <div id="reader-toc-drawer" class="reader-toc-drawer" role="dialog" aria-label="Table of Contents" hidden>
+      <dialog id="reader-toc-drawer" class="reader-toc-drawer" aria-label="Table of Contents">
         <div class="reader-toc-header">
           <span class="reader-toc-title">Table of Contents</span>
-          <button type="button" id="reader-toc-close-btn" class="reader-toc-close-btn">&times;</button>
+          <button type="button" id="reader-toc-close-btn" class="reader-toc-close-btn" data-dialog-close>&times;</button>
         </div>
 
         <div class="reader-toc-list" id="reader-toc-list">
@@ -38,7 +37,7 @@ describe("ReaderTocController", () => {
             <span class="reader-toc-item-id">&sect; 6.1</span>
           </a>
         </div>
-      </div>
+      </dialog>
     `;
     document.body.appendChild(div);
     return div;
@@ -113,7 +112,7 @@ describe("ReaderTocController", () => {
     controller.dispose();
   });
 
-  test("onConnect() resolves elements before child popover connects, binding trigger and panel without getPanel workaround", () => {
+  test("onConnect() resolves elements before wiring the dialog to its trigger", () => {
     const controller = new ReaderTocController({ root: container });
     expect(controller.drawer).toBeNull();
     expect(controller.triggerBtn).toBeNull();
@@ -123,7 +122,6 @@ describe("ReaderTocController", () => {
     expect(controller.drawer).not.toBeNull();
     expect(controller.triggerBtn).not.toBeNull();
 
-    // Child popover wired trigger successfully because elements were resolved before child connected
     const triggerBtn = container.querySelector<HTMLElement>("#reader-toc-btn")!;
     triggerBtn.click();
     expect(controller.isOpen()).toBe(true);
@@ -134,7 +132,7 @@ describe("ReaderTocController", () => {
     controller.dispose();
   });
 
-  test("open() removes hidden, updates aria-expanded, focuses active item, and triggers onOpen callback", () => {
+  test("open() opens the dialog, updates aria-expanded, focuses active item, and triggers onOpen callback", () => {
     const onOpen = jest.fn();
     const controller = connectController({ root: container, onOpen });
     const drawer = controller.drawer!;
@@ -143,14 +141,14 @@ describe("ReaderTocController", () => {
       ".reader-toc-item.active"
     )!;
 
-    expect(drawer.hasAttribute("hidden")).toBe(true);
+    expect(drawer.hasAttribute("open")).toBe(false);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
 
     const focusSpy = jest.spyOn(activeItem, "focus");
 
     controller.open();
 
-    expect(drawer.hasAttribute("hidden")).toBe(false);
+    expect(drawer.hasAttribute("open")).toBe(true);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
     expect(controller.isOpen()).toBe(true);
     expect(focusSpy).toHaveBeenCalled();
@@ -177,7 +175,7 @@ describe("ReaderTocController", () => {
     controller.dispose();
   });
 
-  test("close() adds hidden, updates aria-expanded, and triggers onClose callback", () => {
+  test("close() closes the dialog, updates aria-expanded, and triggers onClose callback", () => {
     const onClose = jest.fn();
     const controller = connectController({ root: container, onClose });
     const drawer = controller.drawer!;
@@ -188,7 +186,7 @@ describe("ReaderTocController", () => {
 
     controller.close();
 
-    expect(drawer.hasAttribute("hidden")).toBe(true);
+    expect(drawer.hasAttribute("open")).toBe(false);
     expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
     expect(controller.isOpen()).toBe(false);
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -210,17 +208,21 @@ describe("ReaderTocController", () => {
     controller.dispose();
   });
 
-  test("clicking trigger button toggles drawer", () => {
+  test("clicking the trigger opens the drawer in place of its hash link", () => {
     const controller = connectController({ root: container });
     const triggerBtn = controller.triggerBtn!;
 
     expect(controller.isOpen()).toBe(false);
 
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+    triggerBtn.dispatchEvent(click);
+    expect(controller.isOpen()).toBe(true);
+    expect(click.defaultPrevented).toBe(true);
+
+    // Modal: the trigger is inert while open, so a second click can't arrive;
+    // a stray one leaves the dialog open rather than toggling it.
     triggerBtn.click();
     expect(controller.isOpen()).toBe(true);
-
-    triggerBtn.click();
-    expect(controller.isOpen()).toBe(false);
 
     controller.dispose();
   });
@@ -238,55 +240,54 @@ describe("ReaderTocController", () => {
     controller.dispose();
   });
 
-  test("dismisses drawer on click outside", () => {
+  test("closes on a backdrop click, not on clicks inside the dialog", () => {
     const controller = connectController({ root: container });
+    const drawer = controller.drawer!;
+    drawer.getBoundingClientRect = () =>
+      ({ top: 100, left: 100, width: 200, height: 200 } as DOMRect);
 
     controller.open();
     expect(controller.isOpen()).toBe(true);
 
-    // Click inside drawer does NOT dismiss
-    controller.drawer!.dispatchEvent(
-      new MouseEvent("click", { bubbles: true })
-    );
+    // A click on an item inside the dialog does not close it
+    drawer
+      .querySelector(".reader-toc-list")!
+      .dispatchEvent(
+        new MouseEvent("click", { bubbles: true, clientX: 150, clientY: 150 })
+      );
     expect(controller.isOpen()).toBe(true);
 
-    // Click outside on document dismisses
-    document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    // A click on the ::backdrop targets the dialog, outside its box
+    drawer.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, clientX: 10, clientY: 10 })
+    );
     expect(controller.isOpen()).toBe(false);
 
     controller.dispose();
   });
 
-  test("synchronizes backdrop visibility and dismisses on backdrop click", () => {
-    const controller = connectController({ root: container });
-    expect(controller.backdrop).not.toBeNull();
-    expect(controller.backdrop?.hasAttribute("hidden")).toBe(true);
-
-    controller.open();
-    expect(controller.backdrop?.hasAttribute("hidden")).toBe(false);
-
-    // Clicking backdrop closes drawer and re-hides backdrop
-    controller.backdrop?.dispatchEvent(
-      new MouseEvent("click", { bubbles: true })
-    );
-    expect(controller.isOpen()).toBe(false);
-    expect(controller.backdrop?.hasAttribute("hidden")).toBe(true);
-
-    controller.dispose();
-  });
-
-  test("closes on Escape key and returns focus to trigger button", () => {
-    const controller = connectController({ root: container });
+  test("follows a native close (Escape): resets aria-expanded, the filter and onClose", () => {
+    const onClose = jest.fn();
+    const controller = connectController({ root: container, onClose });
+    const drawer = controller.drawer!;
     const triggerBtn = controller.triggerBtn!;
-    const focusSpy = jest.spyOn(triggerBtn, "focus");
 
     controller.open();
-    expect(controller.isOpen()).toBe(true);
+    controller.applyFilter("2");
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("true");
 
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    // jsdom has no native Escape handling: do what the browser does.
+    drawer.removeAttribute("open");
+    drawer.dispatchEvent(new Event("close"));
 
     expect(controller.isOpen()).toBe(false);
-    expect(focusSpy).toHaveBeenCalled();
+    expect(triggerBtn.getAttribute("aria-expanded")).toBe("false");
+    expect(
+      Array.from(drawer.querySelectorAll<HTMLElement>(".reader-toc-item")).some(
+        (item) => item.hidden
+      )
+    ).toBe(false);
+    expect(onClose).toHaveBeenCalledTimes(1);
 
     controller.dispose();
   });
@@ -379,24 +380,23 @@ describe("ReaderTocController", () => {
         .join("\n");
 
       div.innerHTML = `
-        <div id="reader-toc-backdrop" class="reader-toc-backdrop" hidden></div>
-        <div class="sticky-primary-row">
+          <div class="sticky-primary-row">
           <button type="button" id="reader-toc-btn" aria-expanded="false" aria-controls="reader-toc-drawer">
             &sect; ${activePageId}
           </button>
         </div>
-        <div id="reader-toc-drawer" class="reader-toc-drawer" role="dialog" aria-label="Table of Contents" hidden>
+        <dialog id="reader-toc-drawer" class="reader-toc-drawer" aria-label="Table of Contents">
           <div class="reader-toc-header">
             <form id="reader-toc-search-form" class="reader-toc-search-form" action="/work/author/work" method="GET">
               <input type="text" name="jump" id="reader-toc-search-input" class="reader-toc-search-input" />
             </form>
-            <button type="button" id="reader-toc-close-btn" class="reader-toc-close-btn">&times;</button>
+            <button type="button" id="reader-toc-close-btn" class="reader-toc-close-btn" data-dialog-close>&times;</button>
           </div>
           <div class="reader-toc-list" id="reader-toc-list">
             ${groupsHtml}
             <div id="reader-toc-empty" class="reader-toc-empty" hidden>No matching sections</div>
           </div>
-        </div>
+        </dialog>
       `;
       document.body.appendChild(div);
       return div;
