@@ -266,6 +266,7 @@ function isRejectedElement(
   return (
     tag === "a" ||
     tag === "button" ||
+    tag === "summary" ||
     tag === "script" ||
     tag === "style" ||
     node.getAttribute("lang") === "el" ||

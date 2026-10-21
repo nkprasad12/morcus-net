@@ -14,7 +14,7 @@ import { handleDictPermalinkClick } from "@/web/ui/dict/entry/dict_permalink.cli
  * substrings of `className` (so `lsOrth` also covers `lsOrthSub` etc.).
  */
 const NO_WORD_LINK_CLASSES =
-  /lsOrth|lsEmph|lsHover|lsSenseBullet|section-anchor|toc|dLink/;
+  /lsOrth|lsEmph|lsHover|lsSenseBullet|section-anchor|toc|dLink|action-btn|mateo-embed-pane/;
 
 /**
  * Tokenizes `.entry-content` (and `[data-tokenize-target='true']`) inside

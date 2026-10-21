@@ -75,7 +75,8 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       expect(html).toContain("<morcus-greek-embed");
       expect(html).toContain('class="greek-details"');
       expect(html).toContain('class="action-btn greek-toggle-btn"');
-      expect(html).toContain("Open Logeion Embed");
+      expect(html).toContain("Logeion Embed");
+      expect(html).not.toContain("Open Logeion Embed");
       expect(html).toContain("<iframe");
       expect(html).toContain('loading="lazy"');
       expect(html).toContain('class="greek-frame"');
@@ -113,7 +114,7 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       const details =
         embedEl?.querySelector<HTMLDetailsElement>(".greek-details");
       const toggleText =
-        embedEl?.querySelector<HTMLElement>(".greek-toggle-text");
+        embedEl?.querySelector<HTMLElement>(".action-btn-text");
       const checkbox = embedEl?.querySelector<HTMLInputElement>(
         ".greek-auto-open-checkbox"
       );
@@ -121,7 +122,7 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       expect(embedEl).not.toBeNull();
       expect(details?.open).toBe(false);
       expect(checkbox?.checked).toBe(false);
-      expect(toggleText?.textContent).toBe("Open Logeion Embed");
+      expect(toggleText?.textContent).toBe("Logeion Embed");
     });
 
     test("auto-opens embed when localStorage preference is set", () => {
@@ -131,15 +132,12 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       const embedEl = document.querySelector("morcus-greek-embed");
       const details =
         embedEl?.querySelector<HTMLDetailsElement>(".greek-details");
-      const toggleText =
-        embedEl?.querySelector<HTMLElement>(".greek-toggle-text");
       const checkbox = embedEl?.querySelector<HTMLInputElement>(
         ".greek-auto-open-checkbox"
       );
 
       expect(details?.open).toBe(true);
       expect(checkbox?.checked).toBe(true);
-      expect(toggleText?.textContent).toBe("Close Logeion Embed");
     });
 
     test("auto-opens embed when GlobalSettings autoOpenLogeion is true", () => {
@@ -166,8 +164,6 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       const checkbox = embedEl.querySelector<HTMLInputElement>(
         ".greek-auto-open-checkbox"
       )!;
-      const toggleText =
-        embedEl.querySelector<HTMLElement>(".greek-toggle-text")!;
 
       expect(details.open).toBe(false);
 
@@ -177,27 +173,6 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       expect(localStorage.getItem(EMBEDDED_LOGEION_SETTING_KEY)).toBe("true");
       expect(settingsStore.get().autoOpenLogeion).toBe(true);
       expect(details.open).toBe(true);
-      expect(toggleText.textContent).toBe("Close Logeion Embed");
-    });
-
-    test("toggling details updates button text and icon", () => {
-      document.body.innerHTML = renderGreekFallbackHtml("λόγος");
-
-      const embedEl = document.querySelector("morcus-greek-embed")!;
-      const details =
-        embedEl.querySelector<HTMLDetailsElement>(".greek-details")!;
-      const toggleText =
-        embedEl.querySelector<HTMLElement>(".greek-toggle-text")!;
-
-      expect(toggleText.textContent).toBe("Open Logeion Embed");
-
-      details.open = true;
-      details.dispatchEvent(new Event("toggle"));
-      expect(toggleText.textContent).toBe("Close Logeion Embed");
-
-      details.open = false;
-      details.dispatchEvent(new Event("toggle"));
-      expect(toggleText.textContent).toBe("Open Logeion Embed");
     });
 
     test("adopts pre-hydration opened details without auto-open setting", () => {
@@ -211,25 +186,13 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       const embedEl = document.querySelector("morcus-greek-embed")!;
       const details =
         embedEl.querySelector<HTMLDetailsElement>(".greek-details")!;
-      const toggleText =
-        embedEl.querySelector<HTMLElement>(".greek-toggle-text")!;
-      const toggleIcon =
-        embedEl.querySelector<HTMLElement>(".greek-toggle-icon")!;
       const checkbox = embedEl.querySelector<HTMLInputElement>(
         ".greek-auto-open-checkbox"
       )!;
 
-      // Assert pre-hydration open state is preserved and reflected in controls
+      // Assert pre-hydration open state is preserved
       expect(details.open).toBe(true);
-      expect(toggleText.textContent).toBe("Close Logeion Embed");
-      expect(toggleIcon.textContent).toBe("▾");
       expect(checkbox.checked).toBe(false);
-
-      // Toggling after adoption updates button text and icon back to closed
-      details.open = false;
-      details.dispatchEvent(new Event("toggle"));
-      expect(toggleText.textContent).toBe("Open Logeion Embed");
-      expect(toggleIcon.textContent).toBe("▸");
     });
   });
 });

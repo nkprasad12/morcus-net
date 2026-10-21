@@ -24,7 +24,7 @@ export function renderGreekFallbackHtml(query: string): string {
           <details class="greek-details">
             <summary class="action-btn greek-toggle-btn" role="button" title="Toggle embedded Logeion viewer">
               <span class="greek-toggle-icon" aria-hidden="true">&#x25B8;</span>
-              <span class="greek-toggle-text">Open Logeion Embed</span>
+              <span class="action-btn-text">Logeion Embed</span>
             </summary>
             <div class="greek-frame-wrapper">
               <iframe

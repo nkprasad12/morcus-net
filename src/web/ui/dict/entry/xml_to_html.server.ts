@@ -173,7 +173,7 @@ export function xmlNodeToHtml(
     attrsMap.set("title", "Open full entry on lexica.linguax.com in new tab");
   }
 
-  // Transform Mateo (Univ. of Mannheim) plate links into external links
+  // Transform Mateo (Univ. of Mannheim) page scan links into external links
   const currentHref = attrsMap.get("href");
   const isMateoLink =
     tagName === "a" &&
@@ -181,7 +181,7 @@ export function xmlNodeToHtml(
   if (isMateoLink) {
     attrsMap.set("target", "_blank");
     attrsMap.set("rel", "noopener noreferrer");
-    attrsMap.set("title", "View plate on mateo.uni-mannheim.de");
+    attrsMap.set("title", "View scanned page on mateo.uni-mannheim.de");
   }
 
   // Rewrite relative internal links to dictionary searches
@@ -292,17 +292,17 @@ export function xmlNodeToHtml(
     // time the containing `<details>` is opened.
     //
     // Consequently the pane is `data-js-only`: without JS, the disclosure is hidden
-    // and the plain "view plate" link immediately above it remains the entry point.
+    // and the plain "view scanned page" link immediately above it remains the entry point.
     return `
       <span class="mateo-wrapper">
         ${baseHtml}
         <details class="mateo-embed-pane" data-js-only>
-          <summary class="action-btn mateo-toggle-btn" role="button" title="Toggle embedded facsimile viewer">
+          <summary class="action-btn mateo-toggle-btn" role="button" title="Toggle embedded page scan">
             <span class="action-btn-icon" aria-hidden="true">&#x1F5C1;</span>
-            <span class="action-btn-text">Plate Embed</span>
+            <span class="action-btn-text">Page Scan</span>
           </summary>
           <span class="mateo-frame-wrapper">
-            <iframe data-deferred-src="${encodedHref}" class="mateo-frame" referrerpolicy="no-referrer" title="Facsimile plate from mateo.uni-mannheim.de"></iframe>
+            <iframe data-deferred-src="${encodedHref}" class="mateo-frame" referrerpolicy="no-referrer" title="Scanned page from mateo.uni-mannheim.de"></iframe>
           </span>
         </details>
       </span>

@@ -873,7 +873,7 @@ describe("dict_ssr", () => {
     );
   });
 
-  test("xmlNodeToHtml renders Mateo plate link with toggleable inline iframe embed", () => {
+  test("xmlNodeToHtml renders Mateo page scan link with toggleable inline iframe embed", () => {
     const node = new XmlNode(
       "a",
       [
@@ -889,14 +889,18 @@ describe("dict_ssr", () => {
     expect(html).toContain('class="mateo-wrapper"');
     expect(html).toContain('target="_blank"');
     expect(html).toContain('rel="noopener noreferrer"');
-    expect(html).toContain('title="View plate on mateo.uni-mannheim.de"');
+    expect(html).toContain(
+      'title="View scanned page on mateo.uni-mannheim.de"'
+    );
     expect(html).toContain('class="mateo-embed-pane" data-js-only');
     expect(html).toContain('class="action-btn mateo-toggle-btn"');
-    expect(html).toContain("Plate Embed");
+    expect(html).toContain('title="Toggle embedded page scan"');
+    expect(html).toContain("Page Scan");
     expect(html).toContain(
       'data-deferred-src="https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v1/jpg/s0665.html"'
     );
     expect(html).toContain('class="mateo-frame"');
+    expect(html).toContain('title="Scanned page from mateo.uni-mannheim.de"');
     expect(html).toContain('referrerpolicy="no-referrer"');
   });
 

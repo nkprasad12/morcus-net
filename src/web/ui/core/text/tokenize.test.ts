@@ -314,11 +314,12 @@ describe("tokenizeSubtree", () => {
     expect(div.querySelectorAll(".lat-word")).toHaveLength(3);
   });
 
-  it("rejects standard exclusion elements (a, button, script, style, lang=el, data-no-tokenize)", () => {
+  it("rejects standard exclusion elements (a, button, summary, script, style, lang=el, data-no-tokenize)", () => {
     const div = document.createElement("div");
     div.innerHTML = `
       <p>Before <a href="#">link word</a> middle</p>
       <button>Button Text</button>
+      <details><summary><span class="action-btn-text">Page Scan</span></summary></details>
       <script>const x = "code";</script>
       <style>.class { color: red; }</style>
       <span lang="el">\u03bb\u03cc\u03b3\u03bf\u03c2</span>

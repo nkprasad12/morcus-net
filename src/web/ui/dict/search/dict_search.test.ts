@@ -136,6 +136,40 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(dLinkEl.querySelector(".lat-word")).toBeNull();
   });
 
+  test("does not tokenize Mateo embed toggle text and clicking it does not trigger word lookup", () => {
+    const resultsHtml = `
+      <article class="entry">
+        <div class="entry-content">
+          <p>
+            Proprie Pars aquae
+            <span class="mateo-wrapper">
+              <a href="https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v4/jpg/s1077.html" target="_blank" rel="noopener noreferrer">[…]</a>
+              <details class="mateo-embed-pane" data-js-only>
+                <summary class="action-btn mateo-toggle-btn" role="button" title="Toggle embedded page scan">
+                  <span class="action-btn-icon" aria-hidden="true">&#x1F5C1;</span>
+                  <span class="action-btn-text">Page Scan</span>
+                </summary>
+                <span class="mateo-frame-wrapper">
+                  <iframe data-deferred-src="https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v4/jpg/s1077.html" class="mateo-frame"></iframe>
+                </span>
+              </details>
+            </span>
+          </p>
+        </div>
+      </article>
+    `;
+
+    const el = createDictSearch(resultsHtml);
+    const summaryText = el.querySelector<HTMLElement>(
+      ".mateo-toggle-btn .action-btn-text"
+    )!;
+    expect(summaryText).not.toBeNull();
+    expect(summaryText.querySelector(".lat-word")).toBeNull();
+
+    summaryText.click();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   test("handles words with macra and cleans data-word attribute", () => {
     const resultsHtml = `
       <article class="entry">

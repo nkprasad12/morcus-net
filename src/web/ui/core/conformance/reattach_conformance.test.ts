@@ -108,8 +108,8 @@ const FIXTURES: Record<string, string> = {
     <morcus-greek-embed>
       <details class="greek-details">
         <summary>
-          <span class="greek-toggle-text">Show</span>
-          <span class="greek-toggle-icon"></span>
+          <span class="greek-toggle-icon" aria-hidden="true">&#x25B8;</span>
+          <span class="action-btn-text">Logeion Embed</span>
         </summary>
         <input type="checkbox" class="greek-auto-open-checkbox" />
       </details>
