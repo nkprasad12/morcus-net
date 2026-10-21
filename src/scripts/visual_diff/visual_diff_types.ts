@@ -64,4 +64,9 @@ export interface VisualDiffManifest {
   /** Human readable label for the new images, e.g. `Working copy`. */
   afterLabel: string;
   items: SnapshotMeta[];
+  /**
+   * `results` source only: failed tests with no screenshot to compare (e.g.
+   * timeouts). Listed separately because there is no image to show.
+   */
+  failuresWithoutSnapshot?: { dir: string; project?: string }[];
 }

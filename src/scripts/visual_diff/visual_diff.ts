@@ -437,6 +437,64 @@ export function collectResultEntries(resultsDir: string): RawEntry[] {
   return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/** A failed test in `test-results/` that never got as far as a screenshot comparison. */
+export interface FailureWithoutSnapshot {
+  /** The `test-results` directory name (Playwright's slug of the test title). */
+  dir: string;
+  /** The Playwright project, when the directory name encodes one. */
+  project?: string;
+}
+
+/**
+ * Lists failed tests that left no `*-actual.png`: they failed before comparing
+ * (a timeout, a crash, a missing element), so {@link collectResultEntries}
+ * has nothing to show for them. Without this they vanish from the inspector,
+ * and its count silently disagrees with Playwright's.
+ *
+ * A failure is a directory holding Playwright's failure artifacts
+ * (`test-failed-*.png` or `error-context.md`). With retries, only the latest
+ * attempt of each test counts, so a retry that reached the comparison wins.
+ */
+export function collectFailuresWithoutSnapshot(
+  resultsDir: string
+): FailureWithoutSnapshot[] {
+  const absDir = path.resolve(resultsDir);
+  if (!fs.existsSync(absDir)) {
+    return [];
+  }
+  // Later retries overwrite earlier attempts of the same test.
+  const latest = new Map<string, string>();
+  const dirs = fs
+    .readdirSync(absDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .sort();
+  for (const dirName of dirs) {
+    latest.set(dirName.replace(/-retry\d+$/, ""), dirName);
+  }
+  const out: FailureWithoutSnapshot[] = [];
+  for (const dirName of latest.values()) {
+    const files = fs.readdirSync(path.join(absDir, dirName));
+    const failed = files.some(
+      (f) => /^test-failed-\d+\.png$/.test(f) || f === "error-context.md"
+    );
+    const compared = files.some((f) => f.endsWith("-actual.png"));
+    if (failed && !compared) {
+      out.push({ dir: dirName, project: projectFromResultsDir(dirName) });
+    }
+  }
+  return out.sort((a, b) => a.dir.localeCompare(b.dir));
+}
+
+function failuresWithoutSnapshotWarning(
+  failures: readonly FailureWithoutSnapshot[]
+): string[] {
+  return [
+    `⚠ ${failures.length} failed without a screenshot (not shown):`,
+    ...failures.map((f) => `  - ${f.dir}${f.project ? ` [${f.project}]` : ""}`),
+  ];
+}
+
 // ---------------------------------------------------------------------------
 // Generation
 // ---------------------------------------------------------------------------
@@ -560,9 +618,21 @@ export function buildMarkdownReport(manifest: VisualDiffManifest): string {
     `**Compared**: ${manifest.afterLabel}  `,
     `**Changed snapshots**: ${manifest.items.length}`,
     "",
-    "| Scenario | Browser | Size | Mode | Theme | Diff | Diff pixels | Before | After |",
-    "| :--- | :--- | :--- | :--- | :--- | ---: | ---: | :--- | :--- |",
   ];
+  const unrendered = manifest.failuresWithoutSnapshot ?? [];
+  if (unrendered.length > 0) {
+    lines.push(
+      "> [!WARNING]",
+      ...failuresWithoutSnapshotWarning(unrendered).map((l) => `> ${l}`),
+      ">",
+      "> These tests failed before taking a screenshot, so they are not in the table below.",
+      ""
+    );
+  }
+  lines.push(
+    "| Scenario | Browser | Size | Mode | Theme | Diff | Diff pixels | Before | After |",
+    "| :--- | :--- | :--- | :--- | :--- | ---: | ---: | :--- | :--- |"
+  );
   const sorted = [...manifest.items].sort((a, b) => severity(b) - severity(a));
   for (const it of sorted) {
     lines.push(
@@ -721,7 +791,12 @@ function selectEntries(options: VisualDiffOptions): {
   const git = fromGit();
   if (git.entries.length > 0) return git;
   const results = fromResults();
-  return results.entries.length > 0 ? results : git;
+  // Failures without a screenshot also count: they must not be reported as
+  // "no changes" just because there is no image to show.
+  return results.entries.length > 0 ||
+    collectFailuresWithoutSnapshot(resultsDir).length > 0
+    ? results
+    : git;
 }
 
 export async function runVisualDiffInspector(
@@ -747,8 +822,28 @@ export async function runVisualDiffInspector(
     afterLabel,
     items: [],
   };
+  const failuresWithoutSnapshot =
+    source === "results"
+      ? collectFailuresWithoutSnapshot(
+          options.resultsDir ?? DEFAULT_RESULTS_DIR
+        )
+      : [];
+  if (failuresWithoutSnapshot.length > 0) {
+    manifest.failuresWithoutSnapshot = failuresWithoutSnapshot;
+  }
+  const warnFailuresWithoutSnapshot = () => {
+    if (failuresWithoutSnapshot.length === 0) return;
+    console.warn(
+      `\n${failuresWithoutSnapshotWarning(failuresWithoutSnapshot).join("\n")}`
+    );
+  };
   if (entries.length === 0) {
-    console.log(`\n✅ No changed snapshots found.`);
+    if (failuresWithoutSnapshot.length > 0) {
+      warnFailuresWithoutSnapshot();
+      console.log(`\nNo screenshot diffs to show.`);
+    } else {
+      console.log(`\n✅ No changed snapshots found.`);
+    }
     return { manifest, reportMarkdown: "", outDir };
   }
 
@@ -778,6 +873,8 @@ export async function runVisualDiffInspector(
   }
 
   printSummary(manifest);
+  // After the table, so it is the last thing in view, not scrolled away.
+  warnFailuresWithoutSnapshot();
   console.log(
     "\n⚠️  Do not commit updated baselines without explicit human approval (AGENTS.md)."
   );

@@ -4,6 +4,7 @@ import os from "os";
 import path from "path";
 import {
   buildMarkdownReport,
+  collectFailuresWithoutSnapshot,
   collectGitEntries,
   collectResultEntries,
   jsonForScriptTag,
@@ -250,6 +251,67 @@ describe("collectResultEntries", () => {
 
   it("returns nothing when the directory is missing", () => {
     expect(collectResultEntries("/nonexistent/visual-diff-dir")).toEqual([]);
+  });
+});
+
+describe("collectFailuresWithoutSnapshot", () => {
+  it("lists failures that never reached a screenshot comparison", () => {
+    const dir = makeTempDir();
+    const timedOut = path.join(dir, "suite-notes-nojs-light--MobileSafari");
+    const compared = path.join(dir, "suite-foo-js-light--chromium");
+    const crashed = path.join(dir, "suite-bar-js-dark--firefox");
+    for (const d of [timedOut, compared, crashed]) fs.mkdirSync(d);
+    fs.writeFileSync(path.join(timedOut, "test-failed-1.png"), "");
+    fs.writeFileSync(path.join(timedOut, "error-context.md"), "");
+    fs.writeFileSync(path.join(compared, "test-failed-1.png"), "");
+    fs.writeFileSync(path.join(compared, "foo-js-light-actual.png"), "");
+    fs.writeFileSync(path.join(crashed, "error-context.md"), "");
+
+    expect(collectFailuresWithoutSnapshot(dir)).toEqual([
+      { dir: "suite-bar-js-dark--firefox", project: "firefox" },
+      { dir: "suite-notes-nojs-light--MobileSafari", project: "MobileSafari" },
+    ]);
+  });
+
+  it("counts only the latest retry of a test", () => {
+    const dir = makeTempDir();
+    const first = path.join(dir, "suite-foo-chromium");
+    const retry = path.join(dir, "suite-foo-chromium-retry1");
+    for (const d of [first, retry]) fs.mkdirSync(d);
+    fs.writeFileSync(path.join(first, "error-context.md"), "");
+    fs.writeFileSync(path.join(retry, "test-failed-1.png"), "");
+    fs.writeFileSync(path.join(retry, "foo-js-light-actual.png"), "");
+
+    expect(collectFailuresWithoutSnapshot(dir)).toEqual([]);
+  });
+
+  it("ignores directories without failure artifacts, and a missing directory", () => {
+    const dir = makeTempDir();
+    fs.mkdirSync(path.join(dir, "suite-trace-chromium"));
+    fs.writeFileSync(path.join(dir, "suite-trace-chromium", "trace.zip"), "");
+    expect(collectFailuresWithoutSnapshot(dir)).toEqual([]);
+    expect(
+      collectFailuresWithoutSnapshot("/nonexistent/visual-diff-dir")
+    ).toEqual([]);
+  });
+
+  it("is called out at the top of the report", () => {
+    const md = buildMarkdownReport({
+      source: "results",
+      beforeLabel: "Expected",
+      afterLabel: "Actual",
+      items: [],
+      failuresWithoutSnapshot: [
+        {
+          dir: "suite-notes-nojs-light--MobileSafari",
+          project: "MobileSafari",
+        },
+      ],
+    });
+    expect(md).toContain("[!WARNING]");
+    expect(md).toContain("1 failed without a screenshot (not shown)");
+    expect(md).toContain("suite-notes-nojs-light--MobileSafari [MobileSafari]");
+    expect(md.indexOf("[!WARNING]")).toBeLessThan(md.indexOf("| Scenario"));
   });
 });
 

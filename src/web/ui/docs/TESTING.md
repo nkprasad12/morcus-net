@@ -139,7 +139,7 @@ Verifies pixel-perfect UI fidelity across the V2 views and every browser project
 
 An interactive viewer for screenshot changes. It reads from one of two sources:
 
-- **`results`**: Playwright's failure output in `test-results/` (expected vs actual). Use this to review a failing run _before_ asking for approval.
+- **`results`**: Playwright's failure output in `test-results/` (expected vs actual). Use this to review a failing run _before_ asking for approval. Tests that failed _before_ taking a screenshot (a timeout, a crash, a missing element) have no image to show, so they are listed separately as "⚠ N failed without a screenshot", in the console and at the top of `report.md`. Resolve those before asking for approval: their baselines were never compared.
 - **`git`**: baseline PNGs in the working tree vs a git ref. Use this to review baselines after `--update`.
 
 ```bash
