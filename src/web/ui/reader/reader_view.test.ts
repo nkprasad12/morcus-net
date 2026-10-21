@@ -2386,6 +2386,9 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     expect(keyEv.defaultPrevented).toBe(true);
     expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
     expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1&scale=131");
+    // If it stayed lazy, WebKit would load it a second time once it shows,
+    // wiping the focus and pre-fill below.
+    expect(iframe.getAttribute("loading")).toBe("eager");
 
     frameDoc.body.innerHTML = '<input type="text" id="dict-q" value="" />';
     const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
@@ -3193,8 +3196,18 @@ describe("MorcusReaderView client-side partial page navigation", () => {
           { pageId: "1", nextUrl: "/work/caesar/de-bello-gallico/2" }
         ),
     });
+    // jsdom fires `popstate` from a queued task, and the swap it starts then
+    // awaits the fetch; wait on both rather than a fixed delay, which a loaded
+    // CI runner can outlast.
+    const swapSpy = jest.spyOn(el, "swapPage");
+    const popped = new Promise((r) =>
+      window.addEventListener("popstate", r, { once: true })
+    );
     window.history.back();
-    await new Promise((r) => setTimeout(r, 50));
+    await popped;
+    expect(swapSpy).toHaveBeenCalledTimes(1);
+    await expect(swapSpy.mock.results[0].value).resolves.toBe(true);
+    swapSpy.mockRestore();
 
     expect(el.dataset.page).toBe("1");
     expect(panelScrollTo).toHaveBeenLastCalledWith({
