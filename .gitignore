@@ -157,3 +157,6 @@ target/*
 
 # Local scratch space for investigations (see src/common/library/preprocess/docs/README.md)
 .investigation/
+
+# Local screenshot baselines (see src/scripts/visual_diff/local_baselines.ts)
+.visual-baselines/

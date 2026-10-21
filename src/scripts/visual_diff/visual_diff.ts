@@ -4,12 +4,15 @@
  * Visual Diff Inspector: collects changed screenshot baselines, renders
  * before / after / diff images, and serves an interactive viewer for them.
  *
- * Two sources are supported:
+ * Three sources are supported:
  * - `git`: compares snapshot PNGs in the working tree against a git ref. This
- *   is what you want after `e2e --visual --update`.
+ *   is what you want when reviewing a checkpoint (committed baselines).
  * - `results`: reads Playwright's failure output (`*-expected.png`,
  *   `*-actual.png`, `*-diff.png`) from `test-results/`. This is what you want
  *   after a failing `e2e --visual` run, *before* deciding to update baselines.
+ * - `local`: compares the gitignored local baselines (`local_baselines.ts`)
+ *   against the committed checkpoint. This is what you want after
+ *   `e2e --visual --update`, which writes to the local store.
  *
  * External tools: `git` (required for the `git` source) and ImageMagick
  * (optional; used for pixel counts and diff masks).
@@ -30,6 +33,11 @@ import type {
   VisualDiffManifest,
   VisualDiffSource,
 } from "@/scripts/visual_diff/visual_diff_types";
+import {
+  type BaselinePaths,
+  defaultPaths,
+  resolveLocal,
+} from "@/scripts/visual_diff/local_baselines";
 
 const DEFAULT_SNAPSHOT_DIR =
   "src/integration/screenshot/browser_screenshot.test.ts-snapshots";
@@ -71,7 +79,10 @@ export function sizeForProject(project: string): SnapshotSize {
 }
 
 export interface VisualDiffOptions {
-  /** Where to look for changes. `auto` tries `git` first, then `results`. */
+  /**
+   * Where to look for changes. `auto` tries `git`, then `results`, then
+   * `local`.
+   */
   source?: VisualDiffSource | "auto";
   /** Snapshot directory for the `git` source. */
   snapshotDir?: string;
@@ -79,6 +90,8 @@ export interface VisualDiffOptions {
   ref?: string;
   /** Playwright output directory for the `results` source. */
   resultsDir?: string;
+  /** Checkpoint and store locations for the `local` source. */
+  localPaths?: BaselinePaths;
   outDir?: string;
   startServer?: boolean;
   port?: number;
@@ -396,6 +409,32 @@ export function collectGitEntries(
   return entries.sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/**
+ * Local baselines (see `local_baselines.ts`) against the checkpoint they
+ * override: before = committed checkpoint, after = local store. Only valid
+ * entries are shown; stale ones are returned separately.
+ */
+export function collectLocalEntries(paths: BaselinePaths): {
+  entries: RawEntry[];
+  stale: string[];
+} {
+  const { valid, stale } = resolveLocal(paths);
+  const entries: RawEntry[] = valid.map((name) => {
+    const checkpointPath = path.join(paths.snapshotDir, name);
+    const hasCheckpoint = fs.existsSync(checkpointPath);
+    return {
+      id: safeId(name.replace(/\.png$/, "")),
+      name,
+      status: hasCheckpoint ? "modified" : "added",
+      afterPath: path.join(paths.storeDir, name),
+      writeBefore: hasCheckpoint
+        ? (dest) => fs.copyFileSync(checkpointPath, dest)
+        : undefined,
+    };
+  });
+  return { entries, stale };
+}
+
 export function collectResultEntries(resultsDir: string): RawEntry[] {
   const absDir = path.resolve(resultsDir);
   if (!fs.existsSync(absDir)) {
@@ -629,6 +668,15 @@ export function buildMarkdownReport(manifest: VisualDiffManifest): string {
       ""
     );
   }
+  const stale = manifest.staleLocalBaselines ?? [];
+  if (stale.length > 0) {
+    lines.push(
+      "> [!WARNING]",
+      `> ${stale.length} stale local baseline(s) ignored: the checkpoint changed after they were accepted.`,
+      ...stale.map((n) => `> - \`${n}\``),
+      ""
+    );
+  }
   lines.push(
     "| Scenario | Browser | Size | Mode | Theme | Diff | Diff pixels | Before | After |",
     "| :--- | :--- | :--- | :--- | :--- | ---: | ---: | :--- | :--- |"
@@ -647,7 +695,7 @@ export function buildMarkdownReport(manifest: VisualDiffManifest): string {
     "",
     "> [!IMPORTANT]",
     "> Per the Visual Baseline Approval Rule in `AGENTS.md`, updated baselines",
-    "> must not be committed without explicit human approval.",
+    "> must not be checkpointed or committed without explicit human approval.",
     ""
   );
   return lines.join("\n");
@@ -767,6 +815,7 @@ function selectEntries(options: VisualDiffOptions): {
   entries: RawEntry[];
   beforeLabel: string;
   afterLabel: string;
+  staleLocal?: string[];
 } {
   const source = options.source ?? "auto";
   const ref = options.ref ?? "HEAD";
@@ -785,25 +834,43 @@ function selectEntries(options: VisualDiffOptions): {
     beforeLabel: "Expected",
     afterLabel: "Actual",
   });
+  const fromLocal = () => {
+    const { entries, stale } = collectLocalEntries(
+      options.localPaths ?? defaultPaths()
+    );
+    return {
+      source: "local" as const,
+      entries,
+      beforeLabel: "Checkpoint",
+      afterLabel: "Local baseline",
+      staleLocal: stale,
+    };
+  };
 
   if (source === "git") return fromGit();
   if (source === "results") return fromResults();
+  if (source === "local") return fromLocal();
   const git = fromGit();
   if (git.entries.length > 0) return git;
   const results = fromResults();
   // Failures without a screenshot also count: they must not be reported as
   // "no changes" just because there is no image to show.
-  return results.entries.length > 0 ||
+  if (
+    results.entries.length > 0 ||
     collectFailuresWithoutSnapshot(resultsDir).length > 0
-    ? results
-    : git;
+  ) {
+    return results;
+  }
+  const local = fromLocal();
+  return local.entries.length > 0 || local.staleLocal.length > 0 ? local : git;
 }
 
 export async function runVisualDiffInspector(
   options: VisualDiffOptions = {}
 ): Promise<VisualDiffResult> {
   const outDir = path.resolve(options.outDir ?? DEFAULT_OUT_DIR);
-  const { source, entries, beforeLabel, afterLabel } = selectEntries(options);
+  const { source, entries, beforeLabel, afterLabel, staleLocal } =
+    selectEntries(options);
 
   console.log(`\n🔍 Visual Diff Inspector`);
   console.log(
@@ -811,6 +878,8 @@ export async function runVisualDiffInspector(
       ? `Comparing ${
           options.snapshotDir ?? DEFAULT_SNAPSHOT_DIR
         } against ${beforeLabel}`
+      : source === "local"
+      ? `Comparing local baselines against the committed checkpoint`
       : `Reading Playwright failures from ${
           options.resultsDir ?? DEFAULT_RESULTS_DIR
         }`
@@ -822,6 +891,14 @@ export async function runVisualDiffInspector(
     afterLabel,
     items: [],
   };
+  if (staleLocal !== undefined && staleLocal.length > 0) {
+    manifest.staleLocalBaselines = staleLocal;
+    console.warn(
+      `\n⚠ ${staleLocal.length} stale local baseline(s) ignored (the checkpoint changed since):\n` +
+        staleLocal.map((n) => `  - ${n}`).join("\n") +
+        "\n  Discard them with `./morcus.sh visual-baselines drop --stale`."
+    );
+  }
   const failuresWithoutSnapshot =
     source === "results"
       ? collectFailuresWithoutSnapshot(

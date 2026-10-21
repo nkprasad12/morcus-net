@@ -13,16 +13,17 @@ In this repository, operational tasks—such as starting development servers, bu
 
 ### Core Subcommands
 
-| Command       | Description                                                 | Common Usage                                                        |
-| ------------- | ----------------------------------------------------------- | ------------------------------------------------------------------- |
-| `web`         | Builds artifacts & starts the web server                    | `./morcus.sh web` (dev server)<br>`./morcus.sh web --build_all`     |
-| `build`       | Builds dictionary/corpus artifacts without starting server  | `./morcus.sh build --build_all`<br>`./morcus.sh build -b_ls -b_grg` |
-| `bundle`      | Builds the web client JS/CSS into `build/client/`           | `./morcus.sh bundle -m` (minify and precompress)                    |
-| `e2e`         | Runs E2E integration test pipelines                         | `./morcus.sh e2e` (local dev server)<br>`./morcus.sh e2e --docker`  |
-| `worker`      | Starts background cruncher/NLP workers                      | `./morcus.sh worker -wt ls`                                         |
-| `corpus`      | Corpus processing utilities and Rust CLI                    | `./morcus.sh corpus -r`                                             |
-| `visual-diff` | Interactive viewer for screenshot diffs (`TESTING.md` §2.F) | `./morcus.sh visual-diff --source results`                          |
-| `test`        | Jest: unit tests related to your changes, or a whole tier   | `./morcus.sh test`<br>`./morcus.sh test --whole-system`             |
+| Command            | Description                                                 | Common Usage                                                        |
+| ------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| `web`              | Builds artifacts & starts the web server                    | `./morcus.sh web` (dev server)<br>`./morcus.sh web --build_all`     |
+| `build`            | Builds dictionary/corpus artifacts without starting server  | `./morcus.sh build --build_all`<br>`./morcus.sh build -b_ls -b_grg` |
+| `bundle`           | Builds the web client JS/CSS into `build/client/`           | `./morcus.sh bundle -m` (minify and precompress)                    |
+| `e2e`              | Runs E2E integration test pipelines                         | `./morcus.sh e2e` (local dev server)<br>`./morcus.sh e2e --docker`  |
+| `worker`           | Starts background cruncher/NLP workers                      | `./morcus.sh worker -wt ls`                                         |
+| `corpus`           | Corpus processing utilities and Rust CLI                    | `./morcus.sh corpus -r`                                             |
+| `visual-diff`      | Interactive viewer for screenshot diffs (`TESTING.md` §2.F) | `./morcus.sh visual-diff --source results`                          |
+| `visual-baselines` | Local (gitignored) screenshot baselines and checkpoints     | `./morcus.sh visual-baselines status`                               |
+| `test`             | Jest: unit tests related to your changes, or a whole tier   | `./morcus.sh test`<br>`./morcus.sh test --whole-system`             |
 
 > [!TIP]
 > Run `./morcus.sh --help` or `./morcus.sh <command> --help` to inspect available flags and options.
@@ -67,18 +68,21 @@ Testing only what changed since `HEAD` is safe because every commit is expected 
 
 ### ⛔ Visual Baseline Approval Rule
 
-**NEVER commit updated screenshot baselines without explicit human approval.**
+**NEVER checkpoint or commit updated screenshot baselines without explicit human approval.**
 
-A baseline update (`--update`) rewrites the definition of "correct" for the UI. An agent that both changes the pixels and re-blesses them has removed the only check on its own visual judgement, so this decision belongs to the user every time.
+A baseline update rewrites the definition of "correct" for the UI. An agent that both changes the pixels and re-blesses them has removed the only check on its own visual judgement, so this decision belongs to the user every time.
+
+Baselines have two tiers ([`src/web/ui/docs/TESTING.md` §2.F](src/web/ui/docs/TESTING.md#baselines-committed-checkpoint--local-overlay)): the committed **checkpoint** (`*-snapshots/`) and gitignored **local baselines** (`.visual-baselines/local/`). `./morcus.sh e2e --visual --all --update` writes only to the local tier. That's reversible and never committed, so agents may run it without asking, but the diffs must still be shown to the user.
 
 When a change causes pixel diffs:
 
 1. Run the visual suite **without** `--update` first, to see exactly what moved: `./morcus.sh e2e --visual --all`.
 2. Report which snapshots differ and why, using the Visual Diff Inspector ([`src/web/ui/docs/TESTING.md` §2.F](src/web/ui/docs/TESTING.md#option-f-visual-regression-tests--the-visual-diff-inspector)):
-   - Start it in the background with `./morcus.sh visual-diff --source results` and give the user the `Network:` URL it prints, so they can flip through before/after themselves.
+   - Start it in the background with `./morcus.sh visual-diff --source results` (or `--source local` after `--update`) and give the user the `Network:` URL it prints, so they can flip through before/after themselves.
    - To inspect the diffs yourself, read `.cache/visual-diff/report.md` and the `images/*.{before,after,diff}.png` files next to it.
-3. **Wait for approval.** Do not run `--update`, and do not `git add` anything under `*-snapshots/`, until the user has said yes.
-4. Only then update, re-check the new baselines against `HEAD` with `./morcus.sh visual-diff --source git`, and commit, listing the affected files.
+3. You may accept the new screenshots locally with `--update`. Don't call the UI change done until the user has seen the diffs.
+4. **Wait for approval before checkpointing.** Do not run `./morcus.sh visual-baselines checkpoint`, write to `*-snapshots/` any other way, or `git add` anything under `*-snapshots/`, until the user has said yes.
+5. Only then checkpoint, re-check the checkpoint against `HEAD` with `./morcus.sh visual-diff --source git`, and commit, listing the affected files.
 
 This applies to amending or fixing up an earlier baseline commit too.
 

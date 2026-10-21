@@ -55,7 +55,7 @@ export interface SnapshotMeta {
   diffUrl?: string;
 }
 
-export type VisualDiffSource = "git" | "results";
+export type VisualDiffSource = "git" | "results" | "local";
 
 export interface VisualDiffManifest {
   source: VisualDiffSource;
@@ -69,4 +69,9 @@ export interface VisualDiffManifest {
    * timeouts). Listed separately because there is no image to show.
    */
   failuresWithoutSnapshot?: { dir: string; project?: string }[];
+  /**
+   * `local` source only: local baselines ignored because the checkpoint
+   * changed after they were accepted.
+   */
+  staleLocalBaselines?: string[];
 }

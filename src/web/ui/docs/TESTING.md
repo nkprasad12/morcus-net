@@ -130,24 +130,53 @@ Verifies pixel-perfect UI fidelity across the V2 views and every browser project
 # (expected vs actual; baselines are NOT modified):
 ./morcus.sh e2e --visual --all --diff
 
-# Update visual baseline snapshots — requires explicit human approval first,
-# see the Visual Baseline Approval Rule in AGENTS.md:
+# Accept the new screenshots as *local* baselines (gitignored; nothing to
+# commit). Show the user the diffs afterwards, see below:
 ./morcus.sh e2e --visual --all --update
 ```
 
-#### Visual Diff Inspector (`src/scripts/visual_diff/`)
+#### Baselines: committed checkpoint + local overlay
 
-An interactive viewer for screenshot changes. It reads from one of two sources:
+Baselines live in two places, so day-to-day UI work doesn't add a new set of PNGs to git history every time:
 
-- **`results`**: Playwright's failure output in `test-results/` (expected vs actual). Use this to review a failing run _before_ asking for approval. Tests that failed _before_ taking a screenshot (a timeout, a crash, a missing element) have no image to show, so they are listed separately as "⚠ N failed without a screenshot", in the console and at the top of `report.md`. Resolve those before asking for approval: their baselines were never compared.
-- **`git`**: baseline PNGs in the working tree vs a git ref. Use this to review baselines after `--update`.
+- **Checkpoint** (committed): `src/integration/screenshot/browser_screenshot.test.ts-snapshots/`. Refreshed every so often, with explicit human approval.
+- **Local baselines** (gitignored): `.visual-baselines/local/`, plus a `manifest.json`. `e2e --visual --update` writes changed screenshots here, never to the checkpoint.
+
+Before each visual run, `run_morcus` merges the two into `.cache/visual-baselines/effective/` and points Playwright at it (`MORCUS_VISUAL_BASELINES`, read by `playwright.config.ts`). A local baseline is used while the checkpoint file it was accepted against is unchanged. If the checkpoint changes afterwards (a pull, a rebase, or a new checkpoint), the checkpoint wins and the local baseline is reported as **stale**. The comparison uses file content (git blob ids), not mtimes, so checkouts and rebases don't confuse it. Plain `npx playwright test` (and CI) ignores the local store.
 
 ```bash
-# Auto-detect the source (git changes first, then Playwright failures):
+# What's in the local store, and what's stale:
+./morcus.sh visual-baselines status
+
+# Review local baselines against the checkpoint:
+./morcus.sh visual-diff --source local
+
+# Checkpoint (needs explicit human approval): copy the active local baselines
+# into the committed directory and clear them from the store. Nothing is staged;
+# review with `visual-diff --source git`, then commit.
+./morcus.sh visual-baselines checkpoint            # or name specific files
+
+# Discard local baselines:
+./morcus.sh visual-baselines drop --stale          # or: drop <names...>, drop --all
+```
+
+`.visual-baselines/` is deliberately outside `.cache/`, so clearing the cache doesn't lose accepted baselines. The store doesn't track deleted scenarios: remove their PNGs from the checkpoint by hand.
+
+#### Visual Diff Inspector (`src/scripts/visual_diff/`)
+
+An interactive viewer for screenshot changes. It reads from one of three sources:
+
+- **`results`**: Playwright's failure output in `test-results/` (expected vs actual). Use this to review a failing run _before_ asking for approval. Tests that failed _before_ taking a screenshot (a timeout, a crash, a missing element) have no image to show, so they are listed separately as "⚠ N failed without a screenshot", in the console and at the top of `report.md`. Resolve those before asking for approval: their baselines were never compared.
+- **`local`**: local baselines vs the committed checkpoint. Use this to review baselines after `--update`. Stale local baselines are listed separately.
+- **`git`**: checkpoint PNGs in the working tree vs a git ref. Use this to review a checkpoint before committing it.
+
+```bash
+# Auto-detect the source (git changes first, then Playwright failures, then local baselines):
 ./morcus.sh visual-diff        # or: ./morcus.sh diff, npm run visual-diff
 
 # Pick a source explicitly:
 ./morcus.sh visual-diff --source results
+./morcus.sh visual-diff --source local
 ./morcus.sh visual-diff --source git --ref HEAD~1
 
 # Write the viewer and a markdown report to .cache/visual-diff/ without a server:
@@ -288,7 +317,11 @@ Checks that span the whole app rather than one page stay in `core/`:
     # Opens the Visual Diff Inspector on Playwright's failures (expected vs actual):
     ./morcus.sh e2e --visual --all --diff
 
-    # Only after explicit approval: update, then re-review the new baselines vs HEAD:
+    # Accept them locally (gitignored), and show the user the result:
     ./morcus.sh e2e --visual --all --update
+    ./morcus.sh visual-diff --source local
+
+    # Only after explicit approval: checkpoint, re-review vs HEAD, and commit:
+    ./morcus.sh visual-baselines checkpoint
     ./morcus.sh visual-diff --source git
     ```
