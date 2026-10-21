@@ -36,7 +36,7 @@
     "smithandhall": {
       "repo": "https://github.com/nkprasad12/smithandhall.git",
       "branch": "v1edits",
-      "commit": "c82e6954f000fb68f5c423f665c832aee909a3b5",
+      "commit": "34548d81a54dc6f4f74a4f7a81e3e311a7e1bcbf",
       "env": "SH_RAW_PATH",
       "file": "sh_F2_latest.txt"
     },
