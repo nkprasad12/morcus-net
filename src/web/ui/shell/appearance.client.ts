@@ -1,6 +1,6 @@
 /**
- * Owner of the app-wide appearance preferences: theme, reading-text font,
- * size and line spacing, and dictionary highlight strength. They live in
+ * Owner of the app-wide appearance preferences: theme and the reading text's
+ * font, size and line spacing. They live in
  * `GlobalSettings` and are presentation only, so each maps to one pre-paint
  * value on <html> (see docs/PREFERENCES.md):
  *
@@ -10,7 +10,6 @@
  * | `textFont`          | `--font-text`      | sans (`variables.css`)   |
  * | `textScale`         | `--text-scale`     | 1                        |
  * | `lineSpacing`       | `--text-leading`   | 1                        |
- * | `highlightStrength` | `--highlight-scale`| 1 (strength 50)          |
  *
  * Reading-text CSS multiplies its own base size and line height by
  * `--text-scale` and `--text-leading`, so every surface keeps its proportions.
@@ -30,7 +29,6 @@ import {
 export type ThemeChoice = "system" | "light" | "dark";
 
 export const TEXT_SCALE = { min: 70, max: 160, step: 5, default: 100 };
-export const HIGHLIGHT_STRENGTH = { min: 0, max: 100, step: 10, default: 50 };
 export const DEFAULT_TEXT_FONT: TextFont = "sans";
 export const DEFAULT_LINE_SPACING: LineSpacing = "normal";
 
@@ -47,7 +45,6 @@ export interface Appearance {
   textFont: TextFont;
   textScale: number;
   lineSpacing: LineSpacing;
-  highlightStrength: number;
 }
 
 function clamp(n: number, min: number, max: number): number {
@@ -70,11 +67,6 @@ export function resolveAppearance(settings: GlobalSettings): Appearance {
       TEXT_SCALE.max
     ),
     lineSpacing: settings.lineSpacing ?? DEFAULT_LINE_SPACING,
-    highlightStrength: clamp(
-      settings.highlightStrength ?? HIGHLIGHT_STRENGTH.default,
-      HIGHLIGHT_STRENGTH.min,
-      HIGHLIGHT_STRENGTH.max
-    ),
   };
 }
 
@@ -97,10 +89,6 @@ export function appearanceToSettings(
       appearance.lineSpacing === DEFAULT_LINE_SPACING
         ? undefined
         : appearance.lineSpacing,
-    highlightStrength:
-      appearance.highlightStrength === HIGHLIGHT_STRENGTH.default
-        ? undefined
-        : appearance.highlightStrength,
   };
 }
 
@@ -129,12 +117,6 @@ export function appearancePrepaint(
         ? null
         : String(LEADING[appearance.lineSpacing]),
     ],
-    [
-      "--highlight-scale",
-      appearance.highlightStrength === HIGHLIGHT_STRENGTH.default
-        ? null
-        : String(appearance.highlightStrength / 50),
-    ],
   ];
 }
 
@@ -143,13 +125,10 @@ export function appearancePrepaint(
  * mirrors it into same-origin iframes (the reader's and macronizer's
  * dictionary), which only read the snapshot when they load.
  */
-export function applyAppearance(
-  appearance: Appearance,
-  doc: Document = document
-): void {
+export function applyAppearance(appearance: Appearance): void {
   const entries = appearancePrepaint(appearance);
   for (const [name, value] of entries) setPrepaint(name, value);
-  for (const iframe of doc.querySelectorAll<HTMLIFrameElement>("iframe")) {
+  for (const iframe of document.querySelectorAll<HTMLIFrameElement>("iframe")) {
     try {
       const root = iframe.contentDocument?.documentElement;
       if (root) applyTo(root, entries);

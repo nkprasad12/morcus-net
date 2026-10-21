@@ -8,9 +8,12 @@ import {
 import {
   type AnchoredDialog,
   setupAnchoredDialog,
-} from "@/web/ui/reader/reader_anchored_dialog.client";
+} from "@/web/ui/core/widgets/anchored_dialog.client";
 import { isBoolean, isNumber } from "@/web/utils/rpc/parsing";
-import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
+import {
+  OPEN_APPEARANCE_EVENT,
+  type OpenAppearanceDetail,
+} from "@/web/ui/shell/appearance_events.common";
 import { DEFAULT_PANEL_SCALE } from "@/web/ui/reader/reader_scale.common";
 
 /**
@@ -125,7 +128,7 @@ export interface ReaderSettingsChangeEventDetail {
 /**
  * Progressively enhanced reader settings dialog (Light DOM mode).
  *
- * Coordinates the anchored modal dialog (`reader_anchored_dialog.client.ts`),
+ * Coordinates the anchored modal dialog (`core/widgets/anchored_dialog.client.ts`),
  * the side panel's text-size stepper,
  * the scholarly aids and swipe toggles, and persistence to localStorage. The
  * reading-text font, size and spacing are app-wide: the "Text appearance" link
@@ -135,6 +138,7 @@ export interface ReaderSettingsChangeEventDetail {
 export class MorcusReaderSettings extends BaseElement {
   #currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
   #dialog: AnchoredDialog | null = null;
+  #trigger: HTMLElement | null = null;
 
   // Controls read in more than one place. Getters, not cached fields: each
   // read hits the live DOM, so no reference can outlive a markup swap.
@@ -179,13 +183,14 @@ export class MorcusReaderSettings extends BaseElement {
 
   protected override onConnect() {
     const dialog = this.scope.$<HTMLDialogElement>("#reader-settings-popover");
+    // In the sticky bar, outside this element.
+    this.#trigger =
+      this.scope.$<HTMLButtonElement>("#reader-settings-btn") ??
+      this.ownerDocument.getElementById("reader-settings-btn");
     this.#dialog = dialog
       ? setupAnchoredDialog(this.scope, {
           dialog,
-          // In the sticky bar, outside this element.
-          trigger:
-            this.scope.$<HTMLButtonElement>("#reader-settings-btn") ??
-            this.ownerDocument.getElementById("reader-settings-btn"),
+          trigger: this.#trigger,
           align: "end",
           defaultWidth: 320,
           getInitialFocus: () =>
@@ -254,7 +259,13 @@ export class MorcusReaderSettings extends BaseElement {
     );
     this.scope.listen(appearanceLink, "click", () => {
       this.close();
-      this.ownerDocument.dispatchEvent(new CustomEvent(OPEN_APPEARANCE_EVENT));
+      // Anchored to this dialog's trigger in the sticky bar: on a phone the
+      // app bar has usually scrolled out of view.
+      this.ownerDocument.dispatchEvent(
+        new CustomEvent<OpenAppearanceDetail>(OPEN_APPEARANCE_EVENT, {
+          detail: { anchor: this.#trigger },
+        })
+      );
     });
 
     // The swipe toggle is read by the page-nav controller at gesture time, so

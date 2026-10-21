@@ -5,12 +5,12 @@ interface Choice {
   label: string;
   /** Extra class for the option's label (e.g. to show it in its own font). */
   labelClass?: string;
-  iconHtml?: string;
 }
 
+/** `name` is a radio group name; `labelAttr` its `aria-label(ledby)` attribute. */
 function renderSegmented(
   name: string,
-  label: string,
+  labelAttr: string,
   choices: Choice[],
   checked: string
 ): string {
@@ -22,21 +22,26 @@ function renderSegmented(
       } />
             <span class="segmented-label${
               c.labelClass ? ` ${c.labelClass}` : ""
-            }">${c.iconHtml ?? ""}${c.label}</span>
+            }">${c.label}</span>
           </label>`
     )
     .join("\n          ");
-  return `<div class="segmented" role="radiogroup" aria-label="${label}">
+  return `<div class="segmented" role="radiogroup" ${labelAttr}>
           ${options}
         </div>`;
 }
 
-const icon = (name: "monitor" | "sun" | "moon") =>
-  renderIconSvg(name, { className: "segmented-icon" });
+/** One compact settings row: the label beside its control. */
+function row(key: string, label: string, controlHtml: string): string {
+  return `<div class="appearance-row">
+            <span class="appearance-row-label" id="appearance-${key}-label">${label}</span>
+            ${controlHtml}
+          </div>`;
+}
 
 /**
- * The app-bar Appearance menu: theme, reading-text font, size and line
- * spacing, and dictionary highlight strength, all app-wide (see
+ * The app-bar Appearance menu: the theme and the reading text's font, size
+ * and line spacing, all app-wide (see
  * `appearance.client.ts`). JS-only like every setting in it: they live in
  * localStorage, so without JS the icon is hidden and the defaults apply.
  *
@@ -76,82 +81,72 @@ export function renderAppearanceMenu(): string {
           >&times;</button>
         </div>
         <div class="settings-body">
-          <div class="settings-group">
-            <h3 class="settings-group-title">Theme</h3>
-            ${renderSegmented(
+          ${row(
+            "theme",
+            "Theme",
+            renderSegmented(
               "appearance-theme",
-              "Theme",
+              'aria-labelledby="appearance-theme-label"',
               [
-                { value: "system", label: "System", iconHtml: icon("monitor") },
-                { value: "light", label: "Light", iconHtml: icon("sun") },
-                { value: "dark", label: "Dark", iconHtml: icon("moon") },
+                { value: "system", label: "System" },
+                { value: "light", label: "Light" },
+                { value: "dark", label: "Dark" },
               ],
               "system"
+            )
+          )}
+          <div class="settings-group">
+            <h3 class="settings-group-title">Reading text</h3>
+            <p class="settings-caption appearance-scope">Dictionary entries, texts in the reader, and other pages you read.</p>
+            <!-- Styled by the same custom properties as reading text, so it
+                 previews every change live with no script. -->
+            <p class="appearance-sample" lang="la">Gallia est omnis dīvīsa in partēs trēs, quārum ūnam incolunt Belgae.</p>
+            ${row(
+              "font",
+              "Font",
+              renderSegmented(
+                "appearance-font",
+                'aria-labelledby="appearance-font-label"',
+                [
+                  {
+                    value: "sans",
+                    label: "Sans",
+                    labelClass: "font-sans-preview",
+                  },
+                  {
+                    value: "serif",
+                    label: "Serif",
+                    labelClass: "font-serif-preview",
+                  },
+                ],
+                "sans"
+              )
             )}
-          </div>
-          <div class="settings-group">
-            <h3 class="settings-group-title">Text font</h3>
-            ${renderSegmented(
-              "appearance-font",
-              "Text font",
-              [
-                {
-                  value: "sans",
-                  label: "Sans",
-                  labelClass: "font-sans-preview",
-                },
-                {
-                  value: "serif",
-                  label: "Serif",
-                  labelClass: "font-serif-preview",
-                },
-              ],
-              "sans"
+            ${row(
+              // Not "size": `#appearance-size-label` is the stepper's value.
+              "size-row",
+              "Size",
+              `<div class="stepper appearance-stepper" role="group" aria-labelledby="appearance-size-row-label">
+                <button type="button" class="stepper-btn" id="appearance-size-dec" aria-label="Decrease text size">A&minus;</button>
+                <span class="stepper-val" id="appearance-size-label" aria-live="polite">100%</span>
+                <button type="button" class="stepper-btn" id="appearance-size-inc" aria-label="Increase text size">A+</button>
+              </div>`
             )}
-          </div>
-          <div class="settings-group">
-            <h3 class="settings-group-title">Text size</h3>
-            <div class="stepper appearance-stepper">
-              <button type="button" class="stepper-btn" id="appearance-size-dec" aria-label="Decrease text size">A&minus;</button>
-              <span class="stepper-val" id="appearance-size-label" aria-live="polite">100%</span>
-              <button type="button" class="stepper-btn" id="appearance-size-inc" aria-label="Increase text size">A+</button>
-            </div>
-          </div>
-          <div class="settings-group">
-            <h3 class="settings-group-title">Line spacing</h3>
-            ${renderSegmented(
-              "appearance-spacing",
-              "Line spacing",
-              [
-                { value: "compact", label: "Compact" },
-                { value: "normal", label: "Normal" },
-                { value: "relaxed", label: "Relaxed" },
-              ],
-              "normal"
+            ${row(
+              "spacing",
+              "Spacing",
+              renderSegmented(
+                "appearance-spacing",
+                // The row says "Spacing" to fit; the group gets the full name.
+                'aria-label="Line spacing"',
+                [
+                  { value: "compact", label: "Compact" },
+                  { value: "normal", label: "Normal" },
+                  { value: "relaxed", label: "Relaxed" },
+                ],
+                "normal"
+              )
             )}
-          </div>
-          <div class="settings-group">
-            <div class="settings-header">
-              <h3 class="settings-group-title">Highlight strength</h3>
-              <span class="settings-value" id="appearance-highlight-value">50%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="10"
-              value="50"
-              class="settings-slider"
-              id="appearance-highlight"
-              aria-label="Highlight strength"
-            />
-            <div class="settings-preview" aria-hidden="true">
-              <span class="lsOrth">Caesar</span>
-              <span class="lsGrammar">noun</span>
-              <span class="lsBibl">Gall. 1.1</span>
-              <span class="lsQuote">omnia</span>
-            </div>
-            <p class="settings-caption">Dictionary entry coloring. Turn it down if highlighted text is hard to read.</p>
           </div>
         </div>
         <div class="settings-popover-footer">

@@ -54,14 +54,41 @@ morcus-appearance-menu {
   gap: var(--space-3);
 }
 
-.appearance-popover .settings-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+.appearance-popover .settings-caption.appearance-scope {
+  margin: 0;
+}
+
+/* A live preview: the same custom properties as reading text, at the base
+   size of a dictionary entry. */
+.appearance-sample {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--paper-bg);
+  border: 1px solid var(--card-border);
+  font-family: var(--font-text);
+  font-size: calc(1rem * var(--text-scale, 1));
+  line-height: calc(1.6 * var(--text-leading, 1));
+  color: var(--reading-text);
+}
+
+/* A compact row: the label in a fixed column, the control filling the rest,
+   so the controls line up down the panel. */
+.appearance-row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.appearance-row-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .appearance-stepper {
-  align-self: flex-start;
+  justify-self: start;
 }
 
 /* Segmented control: a radio group drawn as one pill with sliding options. */
@@ -107,13 +134,6 @@ morcus-appearance-menu {
 
 .font-serif-preview {
   font-family: var(--font-serif);
-}
-
-.segmented-icon {
-  width: 15px;
-  height: 15px;
-  fill: currentColor;
-  flex-shrink: 0;
 }
 
 .segmented-option input:checked + .segmented-label {

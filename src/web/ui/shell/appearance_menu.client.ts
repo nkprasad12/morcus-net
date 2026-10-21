@@ -1,9 +1,8 @@
+import { BaseElement, registerElement } from "@/web/ui/core/index.client";
 import {
-  BaseElement,
-  registerElement,
-  setupModalDialog,
-  type ModalDialogHandle,
-} from "@/web/ui/core/index.client";
+  type AnchoredDialog,
+  setupAnchoredDialog,
+} from "@/web/ui/core/widgets/anchored_dialog.client";
 import {
   applyAppearance,
   appearanceStore,
@@ -15,15 +14,17 @@ import {
 } from "@/web/ui/shell/appearance.client";
 import { isLineSpacing, isTextFont } from "@/web/ui/core/state/settings.client";
 import { THEME_COLOR } from "@/web/ui/shell/theme_color.common";
-import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
+import {
+  OPEN_APPEARANCE_EVENT,
+  type OpenAppearanceDetail,
+} from "@/web/ui/shell/appearance_events.common";
 
 function isThemeChoice(x: unknown): x is ThemeChoice {
   return x === "system" || x === "light" || x === "dark";
 }
 
-/** The panel's width (px), as in `appearance_menu.css`, and its minimum gap to the viewport edge. */
+/** The panel's width (px), as in `appearance_menu.css`. */
 const PANEL_WIDTH = 300;
-const EDGE = 8;
 
 /**
  * The app-bar Appearance menu (`appearance_menu.server.ts`): owner of the
@@ -31,12 +32,11 @@ const EDGE = 8;
  * replaces the old one-button theme toggle.
  *
  * On every connect it re-applies the saved appearance, which also heals a
- * stale pre-paint snapshot. Every change applies live and is saved at once,
- * except the highlight slider, which is saved when released.
+ * stale pre-paint snapshot. Every change applies live and is saved at once.
  */
 class MorcusAppearanceMenu extends BaseElement {
   #appearance: Appearance = resolveAppearance({});
-  #modal: ModalDialogHandle | null = null;
+  #dialog: AnchoredDialog | null = null;
 
   get #panel() {
     return this.scope.$<HTMLDialogElement>("#appearance-popover");
@@ -46,32 +46,13 @@ class MorcusAppearanceMenu extends BaseElement {
     return this.#panel?.open ?? false;
   }
 
-  public open(): void {
-    if (!this.isOpen()) this.#modal?.open();
+  /** Opens under `anchor` if it's on screen, else under the app-bar button. */
+  public open(anchor?: HTMLElement | null): void {
+    this.#dialog?.open(anchor);
   }
 
   public close(): void {
-    if (this.isOpen()) this.#modal?.close();
-  }
-
-  /**
-   * Places the panel under its trigger, right edges aligned, kept inside the
-   * viewport. On phones the trigger sits at the left of the app bar, so the
-   * clamp is what keeps the panel on screen there.
-   */
-  #position() {
-    const panel = this.#panel;
-    const trigger = this.scope.$<HTMLElement>("#appearance-btn");
-    if (!panel || !trigger) return;
-    const rect = trigger.getBoundingClientRect();
-    const viewport = this.ownerDocument.documentElement.clientWidth;
-    const width = Math.min(PANEL_WIDTH, viewport - 2 * EDGE);
-    const left = Math.min(
-      Math.max(EDGE, rect.right - width),
-      viewport - width - EDGE
-    );
-    panel.style.top = `${Math.round(rect.bottom + 8)}px`;
-    panel.style.left = `${Math.round(left)}px`;
+    this.#dialog?.close();
   }
 
   protected override onConnect() {
@@ -80,17 +61,26 @@ class MorcusAppearanceMenu extends BaseElement {
     this.#syncControls();
     this.#syncThemeColor();
 
-    // Trigger, close button, backdrop clicks and Escape (setupModalDialog).
+    // Trigger, close button, backdrop clicks, Escape, and following the
+    // anchor on resize and scroll (setupAnchoredDialog). On phones the button
+    // sits at the left of the app bar, so the viewport clamp keeps the panel
+    // on screen there.
     const panel = this.#panel;
-    if (panel) {
-      this.#modal = setupModalDialog(panel, {
-        trigger: this.scope.$<HTMLButtonElement>("#appearance-btn"),
-        onOpen: () => this.#position(),
-      });
-      this.scope.use(this.#modal);
-    }
-    this.scope.listen<Event>(this.ownerDocument, OPEN_APPEARANCE_EVENT, () =>
-      this.open()
+    this.#dialog = panel
+      ? setupAnchoredDialog(this.scope, {
+          dialog: panel,
+          trigger: this.scope.$<HTMLButtonElement>("#appearance-btn"),
+          align: "end",
+          defaultWidth: PANEL_WIDTH,
+          margin: 8,
+        })
+      : null;
+    // The settings dialogs' "Text appearance" links pass their own trigger:
+    // on a phone the app bar may have scrolled out of view.
+    this.scope.listen<OpenAppearanceDetail | null>(
+      this.ownerDocument,
+      OPEN_APPEARANCE_EVENT,
+      (e) => this.open(e.detail?.anchor)
     );
 
     for (const [name, key] of [
@@ -123,15 +113,6 @@ class MorcusAppearanceMenu extends BaseElement {
       });
     }
 
-    const slider = this.scope.$<HTMLInputElement>("#appearance-highlight");
-    this.scope.listen(slider, "input", () => {
-      if (slider)
-        this.#update({ highlightStrength: Number(slider.value) }, false);
-    });
-    this.scope.listen(slider, "change", () => {
-      if (slider) this.#update({ highlightStrength: Number(slider.value) });
-    });
-
     const reset = this.scope.$<HTMLButtonElement>("#appearance-reset-btn");
     this.scope.listen(reset, "click", () => {
       this.#update(resolveAppearance({}));
@@ -147,13 +128,13 @@ class MorcusAppearanceMenu extends BaseElement {
     }
   }
 
-  /** Applies `patch` live; with `persist` (the default) also saves it. */
-  #update(patch: Partial<Appearance>, persist = true) {
+  /** Saves `patch` and applies it live. */
+  #update(patch: Partial<Appearance>) {
     // A round trip through the stored form clamps out-of-range sizes.
     const next = resolveAppearance(
       appearanceToSettings({ ...this.#appearance, ...patch })
     );
-    this.#appearance = persist ? appearanceStore.set(next) : next;
+    this.#appearance = appearanceStore.set(next);
     applyAppearance(this.#appearance);
     this.#syncControls();
     if ("theme" in patch) this.#syncThemeColor();
@@ -180,13 +161,6 @@ class MorcusAppearanceMenu extends BaseElement {
     const inc = this.scope.$<HTMLButtonElement>("#appearance-size-inc");
     if (dec) dec.disabled = a.textScale <= TEXT_SCALE.min;
     if (inc) inc.disabled = a.textScale >= TEXT_SCALE.max;
-
-    const slider = this.scope.$<HTMLInputElement>("#appearance-highlight");
-    if (slider && Number(slider.value) !== a.highlightStrength) {
-      slider.value = String(a.highlightStrength);
-    }
-    const value = this.scope.$("#appearance-highlight-value");
-    if (value) value.textContent = `${a.highlightStrength}%`;
   }
 
   /**

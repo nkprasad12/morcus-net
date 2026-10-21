@@ -26,7 +26,7 @@ CHROME (fixed, single primary row)   PANEL (scalable, tabbed companion)
 ### Core Surface Rules
 
 1. **Fixed Top Bar, Scalable Companion Panel**:
-   - The top sticky bar is deliberately compact and fixed to preserve vertical reading canvas. It contains only direct passage controls: TOC dialog trigger (`#reader-toc-btn`), pager arrows (`#pager-prev`, `#pager-next`), and the reader settings dialog trigger (`#reader-settings-btn`). Both dialogs are modal `<dialog>`s anchored under their triggers (`reader_anchored_dialog.client.ts`): the browser handles Escape, focus, the inert page and one-at-a-time; a backdrop click closes them without reaching the page.
+   - The top sticky bar is deliberately compact and fixed to preserve vertical reading canvas. It contains only direct passage controls: TOC dialog trigger (`#reader-toc-btn`), pager arrows (`#pager-prev`, `#pager-next`), and the reader settings dialog trigger (`#reader-settings-btn`). Both dialogs are modal `<dialog>`s anchored under their triggers (`core/widgets/anchored_dialog.client.ts`): the browser handles Escape, focus, the inert page and one-at-a-time; a backdrop click closes them without reaching the page.
    - The companion panel is the scalable extension point: auxiliary content lives in dedicated tabs (`Dictionary`, `Notes`, `Translation`, `About`) inside the desktop split-pane (`ReaderLayoutController`) or mobile draggable bottom sheet (`DrawerController`).
 2. **Single Anchored Reader Settings Dialog**:
    - Reader-only preferences (side panel text size, section gutter numbers, macra, swipe page turns) live together in `#reader-settings-popover` (`<morcus-reader-settings>`). App-wide text appearance (font, size, spacing, theme) lives in the app-bar Appearance menu, which the dialog links to.
@@ -91,7 +91,7 @@ sequenceDiagram
 ### Client
 
 - `reader_view.client.ts`: The main controller — partial navigation, section anchors, word lookup into the dictionary panel, dialog wiring, and keyboard shortcuts.
-- `reader_anchored_dialog.client.ts`: `setupAnchoredDialog` — a modal `<dialog>` (via `setupModalDialog`) positioned under its sticky-bar trigger, shared by the TOC and settings.
+- `core/widgets/anchored_dialog.client.ts` (not in this directory): `setupAnchoredDialog` — a modal `<dialog>` (via `setupModalDialog`) positioned under its trigger, shared by the TOC, the reader settings and the app-bar Appearance menu.
 - `reader_toc.client.ts`: `ReaderTocController` — opens/closes the TOC dialog, adopts its No-JS `#reader-toc-drawer` hash, and applies the live filter.
 - `reader_settings.client.ts`: `MorcusReaderSettings` — the reader settings dialog, persisting to `morcus_reader_settings` in `localStorage`.
 - `reader_layout.client.ts`: `ReaderLayoutController` — the desktop resizable splitter and the mobile bottom drawer hosting the embedded dictionary.

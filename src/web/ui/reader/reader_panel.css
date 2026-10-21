@@ -208,7 +208,7 @@
   font-family: inherit;
   font-size: 1em;
   line-height: inherit;
-  color: var(--text);
+  color: var(--reading-text);
 }
 
 .reader-translation-loading,

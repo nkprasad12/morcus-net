@@ -26,11 +26,13 @@ describe("appearance settings mapping", () => {
       textFont: "sans",
       textScale: 100,
       lineSpacing: "normal",
-      highlightStrength: 50,
     });
-    expect(
-      resolveAppearance({ textScale: 400, highlightStrength: -5 })
-    ).toMatchObject({ textScale: 160, highlightStrength: 0 });
+    expect(resolveAppearance({ textScale: 400 })).toMatchObject({
+      textScale: 160,
+    });
+    expect(resolveAppearance({ textScale: 10 })).toMatchObject({
+      textScale: 70,
+    });
   });
 
   test("stores defaults as absent, so they never pin a value", () => {
@@ -39,7 +41,6 @@ describe("appearance settings mapping", () => {
       textFont: undefined,
       textScale: undefined,
       lineSpacing: undefined,
-      highlightStrength: undefined,
     });
   });
 
@@ -49,7 +50,6 @@ describe("appearance settings mapping", () => {
       ["--font-text", null],
       ["--text-scale", null],
       ["--text-leading", null],
-      ["--highlight-scale", null],
     ]);
     expect(
       appearancePrepaint(
@@ -58,7 +58,6 @@ describe("appearance settings mapping", () => {
           textFont: "serif",
           textScale: 120,
           lineSpacing: "relaxed",
-          highlightStrength: 30,
         })
       )
     ).toEqual([
@@ -66,7 +65,6 @@ describe("appearance settings mapping", () => {
       ["--font-text", "var(--font-serif)"],
       ["--text-scale", "1.20"],
       ["--text-leading", "1.12"],
-      ["--highlight-scale", "0.6"],
     ]);
   });
 });
@@ -103,10 +101,22 @@ describe("MorcusAppearanceMenu", () => {
 
   const isOpen = () => panel().hasAttribute("open");
 
+  /** A 40px-square box whose right edge is at `right` and bottom at `bottom`. */
+  function fakeBox(el: Element, right: number, bottom: number) {
+    el.getBoundingClientRect = () =>
+      ({
+        top: bottom - 40,
+        bottom,
+        left: right - 40,
+        right,
+        width: 40,
+        height: 40,
+      } as DOMRect);
+  }
+
   /** Fakes the trigger's box and the viewport width, for the placement tests. */
   function layout(triggerRight: number, viewport: number): () => void {
-    q<HTMLElement>("#appearance-btn").getBoundingClientRect = () =>
-      ({ right: triggerRight, bottom: 60 } as DOMRect);
+    fakeBox(q("#appearance-btn"), triggerRight, 60);
     Object.defineProperty(document.documentElement, "clientWidth", {
       configurable: true,
       value: viewport,
@@ -154,13 +164,94 @@ describe("MorcusAppearanceMenu", () => {
     }
   });
 
+  test("opens under the anchor a settings link passes", () => {
+    mountMenu();
+    const restore = layout(900, 1000);
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    fakeBox(anchor, 700, 300);
+    try {
+      document.dispatchEvent(
+        new CustomEvent(OPEN_APPEARANCE_EVENT, { detail: { anchor } })
+      );
+      expect(panel().style.top).toBe("308px");
+      expect(panel().style.left).toBe("400px");
+    } finally {
+      restore();
+    }
+  });
+
+  test("falls back to its trigger when the anchor is off screen", () => {
+    mountMenu();
+    const restore = layout(900, 1000);
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    // Scrolled far above the viewport.
+    fakeBox(anchor, 700, -2000);
+    try {
+      document.dispatchEvent(
+        new CustomEvent(OPEN_APPEARANCE_EVENT, { detail: { anchor } })
+      );
+      expect(panel().style.top).toBe("68px");
+      expect(panel().style.left).toBe("600px");
+    } finally {
+      restore();
+    }
+  });
+
+  test("never opens off screen, even with the app bar scrolled away (phones)", () => {
+    mountMenu();
+    const restore = layout(50, 360);
+    // The app-bar button has scrolled out of view; so has the anchor.
+    fakeBox(q("#appearance-btn"), 50, -3000);
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    fakeBox(anchor, 340, -2000);
+    try {
+      document.dispatchEvent(
+        new CustomEvent(OPEN_APPEARANCE_EVENT, { detail: { anchor } })
+      );
+      expect(parseInt(panel().style.top, 10)).toBeGreaterThan(0);
+      const left = parseInt(panel().style.left, 10);
+      expect(left).toBeGreaterThanOrEqual(8);
+      expect(left + 300).toBeLessThanOrEqual(360 - 8);
+    } finally {
+      restore();
+    }
+  });
+
+  test("follows its trigger when the viewport resizes while open", () => {
+    mountMenu();
+    const restore = layout(900, 1000);
+    try {
+      q<HTMLButtonElement>("#appearance-btn").click();
+      expect(panel().style.left).toBe("600px");
+      restore();
+      layout(500, 600);
+      window.dispatchEvent(new Event("resize"));
+      expect(panel().style.left).toBe("200px");
+    } finally {
+      restore();
+    }
+  });
+
+  test("closes and resets its trigger when disconnected", () => {
+    const el = mountMenu();
+    q<HTMLButtonElement>("#appearance-btn").click();
+    const btn = q("#appearance-btn");
+    const dialog = panel();
+    expect(dialog.hasAttribute("open")).toBe(true);
+    el.remove();
+    expect(dialog.hasAttribute("open")).toBe(false);
+    expect(btn.getAttribute("aria-expanded")).toBe("false");
+  });
+
   test("adopts saved settings into the controls on connect", () => {
     settingsStore.update({
       darkMode: false,
       textFont: "serif",
       textScale: 130,
       lineSpacing: "compact",
-      highlightStrength: 20,
     });
     mountMenu();
     const checked = (name: string) =>
@@ -169,8 +260,20 @@ describe("MorcusAppearanceMenu", () => {
     expect(checked("appearance-font")).toBe("serif");
     expect(checked("appearance-spacing")).toBe("compact");
     expect(q("#appearance-size-label").textContent).toBe("130%");
-    expect(q<HTMLInputElement>("#appearance-highlight").value).toBe("20");
-    expect(q("#appearance-highlight-value").textContent).toBe("20%");
+  });
+
+  test("has no highlight-strength control (it lives in the dictionary settings)", () => {
+    mountMenu();
+    expect(
+      document.querySelector("#appearance-popover input[type=range]")
+    ).toBeNull();
+  });
+
+  test("leaves the dictionary's highlight strength alone, even on reset", () => {
+    settingsStore.update({ highlightStrength: 20, textScale: 120 });
+    mountMenu();
+    q<HTMLButtonElement>("#appearance-reset-btn").click();
+    expect(settingsStore.get()).toEqual({ highlightStrength: 20 });
   });
 
   test("each control applies live, saves, and records pre-paint", () => {
@@ -207,19 +310,6 @@ describe("MorcusAppearanceMenu", () => {
     expect(inc.disabled).toBe(true);
     inc.click();
     expect(settingsStore.get().textScale).toBe(160);
-  });
-
-  test("the highlight slider applies while dragging and saves on release", () => {
-    mountMenu();
-    const slider = q<HTMLInputElement>("#appearance-highlight");
-    slider.value = "30";
-    slider.dispatchEvent(new Event("input"));
-    expect(prop("--highlight-scale")).toBe("0.6");
-    expect(settingsStore.get().highlightStrength).toBeUndefined();
-
-    slider.dispatchEvent(new Event("change"));
-    expect(settingsStore.get().highlightStrength).toBe(30);
-    expect(prepaintSnapshot()["--highlight-scale"]).toBe("0.6");
   });
 
   test("reset restores every default and clears the pre-paint values", () => {

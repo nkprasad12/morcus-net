@@ -1049,11 +1049,11 @@ test.describe("UI V2 dictionary", () => {
     expect(await readDictCookie()).toBe("1");
   });
 
-  test("adjusts highlight strength from the Appearance menu and persists it", async ({
+  test("adjusts highlight strength via quick menu and persists to localStorage", async ({
     page,
   }) => {
     await page.goto("/dicts?q=habeo");
-    await expect(page.locator("#appearance-btn")).toBeVisible();
+    await expect(page.locator("#dict-settings-btn")).toBeVisible();
 
     // Verify initial scale is 1
     const initialScale = await page.evaluate(() =>
@@ -1061,21 +1061,24 @@ test.describe("UI V2 dictionary", () => {
     );
     expect(initialScale === "1" || initialScale === "").toBe(true);
 
-    await page.locator("#appearance-btn").click();
-    const popover = page.locator("#appearance-popover");
-    await expect(popover).toBeVisible();
+    // Open the settings dialog
+    await page.locator("#dict-settings-btn").click();
+    const dialog = page.locator("dialog#dict-settings");
+    await expect(dialog).toBeVisible();
 
-    // Adjust slider to 80%: live while dragging, saved on release.
-    const slider = popover.locator("#appearance-highlight");
+    // Adjust slider to 80%; strength stays live while the dialog is open.
+    const slider = dialog.locator(".settings-slider");
     await slider.fill("80");
     await slider.dispatchEvent("input");
     await slider.dispatchEvent("change");
 
+    // Verify CSS scale updated on documentElement
     const vividScale = await page.evaluate(() =>
       document.documentElement.style.getPropertyValue("--highlight-scale")
     );
     expect(vividScale).toBe("1.6");
 
+    // Verify persistence in localStorage
     const stored = await page.evaluate(() =>
       JSON.parse(localStorage.getItem("GlobalSettings") || "{}")
     );
@@ -1083,7 +1086,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Close on Escape
     await page.keyboard.press("Escape");
-    await expect(popover).not.toBeVisible();
+    await expect(dialog).not.toBeVisible();
   });
 
   test("supports reader sidebar dictionary search in the embedded frame", async ({

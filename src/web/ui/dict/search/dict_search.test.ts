@@ -2178,5 +2178,33 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect(window.location.search).toContain("q=Gallia");
       expect(window.location.search).not.toContain("focus=");
     });
+
+    test("a settings commit with an edited, unsubmitted query drops focus", () => {
+      window.history.replaceState(null, "", "/dicts?q=ago&d=an&o=1&focus=En");
+      const el = createDictSearch("", 'data-d="an" data-o="1"');
+      el.querySelector<HTMLInputElement>("input.input")!.value = "amo";
+      (global.fetch as jest.Mock).mockClear();
+
+      commitSettings(el, ["GAF"], true);
+
+      expect(window.location.search).toContain("q=amo");
+      expect(window.location.search).not.toContain("focus=");
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        expect.stringContaining("focus="),
+        expect.anything()
+      );
+    });
+
+    test("a settings commit for the same query keeps its focus", () => {
+      window.history.replaceState(null, "", "/dicts?q=ago&d=an&o=1&focus=En");
+      const el = createDictSearch("", 'data-d="an" data-o="1"');
+      el.querySelector<HTMLInputElement>("input.input")!.value = "ago";
+
+      commitSettings(el, ["GAF"], true);
+
+      expect(new URLSearchParams(window.location.search).get("focus")).toBe(
+        "En"
+      );
+    });
   });
 });

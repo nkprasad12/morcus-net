@@ -49,14 +49,16 @@ export interface V2BundleBudget {
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
     "common.js": {
-      // Raised from 60 / 20.5 for the app-wide Appearance menu (#598).
-      maxRawBytes: 61.5 * 1024,
-      maxGzipBytes: 21 * 1024,
+      // Raised from 60 / 20.5 for the app-wide Appearance menu (#598), then
+      // from 61.5 / 21 when it took over the anchored dialog from reader.js.
+      maxRawBytes: 62.5 * 1024,
+      maxGzipBytes: 21.5 * 1024,
     },
     "reader.js": {
-      // Lowered from 50 / 14 when the reader dialogs moved to native <dialog>.
-      maxRawBytes: 46 * 1024,
-      maxGzipBytes: 13.5 * 1024,
+      // Lowered from 50 / 14 when the reader dialogs moved to native <dialog>,
+      // then from 46 / 13.5 when the anchored dialog moved to common.js.
+      maxRawBytes: 44 * 1024,
+      maxGzipBytes: 13 * 1024,
     },
     "dict.js": {
       maxRawBytes: 32 * 1024,
@@ -78,15 +80,18 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   routes: {
     // Raised for the Appearance menu in common.js (#598): about, corpus and
     // macronizer. Library and external were lowered again (below their
-    // originals) when the reader dialogs moved to native <dialog>.
-    about: { maxRawBytes: 61.5 * 1024, maxGzipBytes: 21 * 1024 },
-    dicts: { maxRawBytes: 90 * 1024, maxGzipBytes: 30 * 1024 },
+    // originals) when the reader dialogs moved to native <dialog>. About and
+    // dicts were raised again when the anchored dialog moved to common.js and
+    // the highlight slider returned to the dictionary settings.
+    about: { maxRawBytes: 62.5 * 1024, maxGzipBytes: 21.5 * 1024 },
+    dicts: { maxRawBytes: 90 * 1024, maxGzipBytes: 30.5 * 1024 },
     corpus: { maxRawBytes: 77.5 * 1024, maxGzipBytes: 27 * 1024 },
     library: { maxRawBytes: 104 * 1024, maxGzipBytes: 34 * 1024 },
     external: { maxRawBytes: 114 * 1024, maxGzipBytes: 38 * 1024 },
     macronizer: { maxRawBytes: 76.5 * 1024, maxGzipBytes: 26 * 1024 },
   },
-  maxCssRawBytes: 144 * 1024,
+  // Raised from 144 for the reading-text audit (#598).
+  maxCssRawBytes: 145 * 1024,
   maxCssGzipBytes: 25 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a

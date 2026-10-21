@@ -33,7 +33,7 @@ const SITE_ORIGIN = "https://morcus.net";
 
 /**
  * One `theme-color` per OS scheme, so the browser picks the right one before
- * any script runs. `theme_toggle.client.ts` overrides both with a saved choice.
+ * any script runs. `appearance_menu.client.ts` overrides both with a saved choice.
  */
 const THEME_COLOR_META_HTML =
   `\n  <meta name="theme-color" content="${THEME_COLOR.light}" media="(prefers-color-scheme: light)">` +

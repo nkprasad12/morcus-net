@@ -2,7 +2,7 @@
  * UI V2 Reader Table of Contents (TOC) Controller
  *
  * Progressively enhances the reader's Table of Contents: a modal `<dialog>`
- * centred under its sticky-bar trigger (`reader_anchored_dialog.client.ts`),
+ * centred under its sticky-bar trigger (`core/widgets/anchored_dialog.client.ts`),
  * which also handles Escape and backdrop clicks. Adds live section
  * search/filtering and the hash handover from the No-JS `:target` drawer.
  */
@@ -12,7 +12,7 @@ import { registerRevealer } from "@/web/ui/core/nav/reveal.client";
 import {
   type AnchoredDialog,
   setupAnchoredDialog,
-} from "@/web/ui/reader/reader_anchored_dialog.client";
+} from "@/web/ui/core/widgets/anchored_dialog.client";
 
 interface ReaderTocElements {
   /** The contents dialog (#reader-toc-drawer) */

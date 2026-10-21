@@ -395,35 +395,6 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(words[0].hasAttribute("data-original-text")).toBe(false);
   });
 
-  test("synchronizes reader data-theme to dictionary iframe on connect and on iframe load", () => {
-    document.documentElement.setAttribute("data-theme", "dark");
-
-    const passageHtml = `
-      <div class="reader-section" id="sec-1.1">
-        <div class="reader-passage">
-          <span class="reader-line">Arma virumque cano.</span>
-        </div>
-      </div>
-    `;
-
-    const el = createReaderView(passageHtml);
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-
-    // Populate iframe contentDocument with a basic HTML document
-    iframe.contentDocument!.write("<html><head></head><body></body></html>");
-    iframe.contentDocument!.close();
-
-    // Trigger iframe load event to simulate navigation/reload
-    iframe.dispatchEvent(new Event("load"));
-
-    expect(
-      iframe.contentDocument!.documentElement.getAttribute("data-theme")
-    ).toBe("dark");
-
-    // Clean up
-    document.documentElement.removeAttribute("data-theme");
-  });
-
   test("syncs --dict-scale to iframe on stepper change and iframe reload", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.1">
@@ -1006,7 +977,7 @@ describe("Reader preferences validation & hydration", () => {
 
   it("leaves the text font, size and spacing to the app-wide Appearance menu", () => {
     const root = document.documentElement;
-    const owned = ["--reader-scale", "--reader-line-height", "--font-text"];
+    const owned = ["--text-scale", "--text-leading", "--font-text"];
     // Legacy fields from before the Appearance menu owned these settings.
     localStorage.setItem(
       READER_SETTINGS_KEY,
@@ -1035,8 +1006,8 @@ describe("Reader preferences validation & hydration", () => {
 
   it("does not clear text properties set by the Appearance menu", () => {
     const root = document.documentElement;
-    root.style.setProperty("--reader-scale", "1.25");
-    root.style.setProperty("--reader-line-height", "1.85");
+    root.style.setProperty("--text-scale", "1.25");
+    root.style.setProperty("--text-leading", "1.85");
     root.style.setProperty("--font-text", "var(--font-serif)");
     const el = document.createElement("morcus-reader-view") as MorcusReaderView;
     document.body.appendChild(el);
@@ -1046,8 +1017,8 @@ describe("Reader preferences validation & hydration", () => {
         bubbles: true,
       })
     );
-    expect(root.style.getPropertyValue("--reader-scale")).toBe("1.25");
-    expect(root.style.getPropertyValue("--reader-line-height")).toBe("1.85");
+    expect(root.style.getPropertyValue("--text-scale")).toBe("1.25");
+    expect(root.style.getPropertyValue("--text-leading")).toBe("1.85");
     expect(root.style.getPropertyValue("--font-text")).toBe(
       "var(--font-serif)"
     );
@@ -4024,80 +3995,5 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
         configurable: true,
       });
     }
-  });
-});
-
-describe("MorcusReaderView dictionary iframe theme synchronization", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    document.documentElement.removeAttribute("data-theme");
-    document.body.innerHTML = "";
-  });
-
-  afterEach(() => {
-    document.documentElement.removeAttribute("data-theme");
-    document.body.innerHTML = "";
-  });
-
-  test("leaves iframe data-theme unset when neither parent data-theme nor saved darkMode exists", () => {
-    // Even if unrelated GlobalSettings exist, darkMode is undefined
-    localStorage.setItem(
-      "GlobalSettings",
-      JSON.stringify({ highlightStrength: 50 })
-    );
-
-    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-    iframe.contentDocument!.write(
-      '<html data-theme="light"><head></head><body></body></html>'
-    );
-    iframe.contentDocument!.close();
-
-    iframe.dispatchEvent(new Event("load"));
-
-    expect(
-      iframe.contentDocument!.documentElement.getAttribute("data-theme")
-    ).toBeNull();
-  });
-
-  test("syncs explicit saved darkMode or parent data-theme to the dictionary iframe on load", () => {
-    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: true }));
-
-    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-    iframe.contentDocument!.write("<html><head></head><body></body></html>");
-    iframe.contentDocument!.close();
-
-    iframe.dispatchEvent(new Event("load"));
-    expect(
-      iframe.contentDocument!.documentElement.getAttribute("data-theme")
-    ).toBe("dark");
-
-    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: false }));
-    iframe.dispatchEvent(new Event("load"));
-    expect(
-      iframe.contentDocument!.documentElement.getAttribute("data-theme")
-    ).toBe("light");
-  });
-
-  test("prefers settingsStore.darkMode and heals stale parent data-theme on iframe load (CORE-04)", () => {
-    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: true }));
-    document.documentElement.setAttribute("data-theme", "light");
-
-    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-    iframe.contentDocument!.write("<html><head></head><body></body></html>");
-    iframe.contentDocument!.close();
-
-    // Simulate rapid double-toggle where settingsStore has darkMode: false
-    // while documentElement temporarily had "dark", then iframe finishes loading
-    localStorage.setItem("GlobalSettings", JSON.stringify({ darkMode: false }));
-    document.documentElement.setAttribute("data-theme", "dark");
-
-    iframe.dispatchEvent(new Event("load"));
-    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
-    expect(
-      iframe.contentDocument!.documentElement.getAttribute("data-theme")
-    ).toBe("light");
   });
 });

@@ -234,7 +234,7 @@
   font-size: calc(1.25rem * var(--text-scale, 1));
   line-height: calc(1.95 * var(--text-leading, 1));
   white-space: pre-wrap;
-  color: var(--text);
+  color: var(--reading-text);
 }
 
 .mac-word {
@@ -590,7 +590,7 @@
 
   .mac-passage {
     padding: var(--space-5);
-    font-size: 1.125rem;
+    font-size: calc(1.125rem * var(--text-scale, 1));
   }
 
   .mac-sheet-peek {
