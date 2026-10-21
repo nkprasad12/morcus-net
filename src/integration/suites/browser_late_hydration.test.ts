@@ -466,7 +466,12 @@ test.describe("UI V2 late hydration", () => {
     expect(before.scale).toBe("1.30");
     expect(before.width).toBe("1680px");
     expect(before.hideGutter).toBe(true);
-    expect(["24.96px", "22.88px"]).toContain(before.fontSize);
+    // Compared numerically: WebKit reports e.g. `24.959999px` for 1.2rem × 1.3.
+    const fontPx = parseFloat(before.fontSize);
+    expect(
+      [24.96, 22.88].some((px) => Math.abs(px - fontPx) < 0.01),
+      `font size ${before.fontSize}`
+    ).toBe(true);
     expect(before.fontFamily).toMatch(/Georgia/);
     expect(
       parseFloat(before.lineHeight) / parseFloat(before.fontSize)
