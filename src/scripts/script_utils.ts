@@ -5,7 +5,6 @@ import { spawn } from "child_process";
 import { assert, assertEqual } from "@/common/assert";
 import { rm } from "fs/promises";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import { recordClone, recordDownload } from "@/scripts/build_provenance";
 
 export const TS_NODE: ReadonlyArray<string> = [
   "node",
@@ -26,7 +25,8 @@ export interface DownloadConfig {
 }
 
 interface RepoConfig {
-  repoUrls: string[];
+  /** Each repo is checked out at `commit`, not at its default branch HEAD. */
+  repos: { repo: string; commit: string }[];
 }
 
 export interface StepConfig {
@@ -105,7 +105,6 @@ async function downloadAll(configs: DownloadConfig[]): Promise<boolean> {
   for (const dlInfo of configs) {
     try {
       await download(dlInfo.url, dlInfo.path);
-      await recordDownload(dlInfo.url, dlInfo.path);
     } catch (err) {
       success = false;
       await cleanupDownloads(configs);
@@ -124,16 +123,24 @@ function getRepoNameFromUrl(url: string): string {
   return nameWithExt;
 }
 
-async function cloneRepo(repoUrl: string): Promise<string | undefined> {
+async function cloneRepo(
+  repoUrl: string,
+  commit: string
+): Promise<string | undefined> {
   const cloneDir = getRepoNameFromUrl(repoUrl);
   try {
-    await shellStep(`git clone ${repoUrl} ${cloneDir}`);
-    recordClone(repoUrl, cloneDir);
-    console.log(chalk.blue(`Cloned ${repoUrl} into ${cloneDir}`));
+    // A shallow fetch of just the pinned commit, rather than a full clone.
+    await shellStep(`git init -q ${cloneDir}`);
+    await shellStep(
+      `git -C ${cloneDir} fetch -q --depth 1 ${repoUrl} ${commit}`
+    );
+    await shellStep(`git -C ${cloneDir} checkout -q FETCH_HEAD`);
+    console.log(chalk.blue(`Cloned ${repoUrl}@${commit} into ${cloneDir}`));
     return cloneDir;
   } catch (error) {
-    console.log(chalk.red(`Failed to clone ${repoUrl}`));
+    console.log(chalk.red(`Failed to clone ${repoUrl}@${commit}`));
     console.log(chalk.red(error));
+    await rm(cloneDir, { recursive: true, force: true });
     return undefined;
   }
 }
@@ -141,7 +148,7 @@ async function cloneRepo(repoUrl: string): Promise<string | undefined> {
 async function cloneAllRepos(
   config: RepoConfig
 ): Promise<(string | undefined)[]> {
-  const promises = config.repoUrls.map((url) => cloneRepo(url));
+  const promises = config.repos.map((r) => cloneRepo(r.repo, r.commit));
   return Promise.all(promises);
 }
 
@@ -163,7 +170,8 @@ async function runStep(config: StepConfig): Promise<boolean> {
   let repoDirs: (string | undefined)[] = [];
   if (config.repoInfo !== undefined) {
     repoDirs = await cloneAllRepos(config.repoInfo);
-    if (repoDirs.every((r) => r === undefined)) {
+    // The step needs every repo, so fail (and clean up) if any clone failed.
+    if (repoDirs.some((r) => r === undefined)) {
       await cleanupRepoDirs(repoDirs);
       return false;
     }

@@ -97,6 +97,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      # Seconds, versus minutes for a Docker build that can't fetch a pin.
+      - name: Verify upstream data pins
+        run: node src/scripts/upstream/verify_pins.mjs
       - name: Build image
         run: |
           docker build . --tag $CANDIDATE \

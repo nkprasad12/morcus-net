@@ -14,10 +14,6 @@ import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { readFileSync } from "fs";
 import { createV2Router } from "@/web/ui/app_router.server";
-import {
-  BUILD_ID_ENV,
-  loadBuildId,
-} from "@/web/ui/core/server/build_version.server";
 import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { timed } from "@/common/timing/timed_invocation";
@@ -88,12 +84,6 @@ function startMorcusServer(): Promise<http.Server> {
   process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt")
     .toString()
     .trim();
-  // Production builds also record their upstream inputs; dev builds don't.
-  const buildId = loadBuildId(process.env.COMMIT_ID || undefined);
-  if (buildId !== undefined) {
-    process.env[BUILD_ID_ENV] = buildId;
-    log(`Build ID: ${buildId}`);
-  }
 
   const app = express();
   const server = http.createServer(app);

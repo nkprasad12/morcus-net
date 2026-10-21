@@ -32,19 +32,21 @@ APP_NAME="Morcus Latin Tools"
 PORT="5757"
 ENV_PATH="$MORCUS_NET_DIR/.env"
 
-declare -A RESOURCES=(
-  ["LS_PATH"]="lexica https://github.com/nkprasad12/lexica.git CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml"
-  ["RA_PATH"]="riddle-arnold https://github.com/nkprasad12/riddle-arnold.git riddle-arnold.tsv"
-  ["GESNER_RAW_PATH"]="gesner https://github.com/nkprasad12/gesner.git gesner.json"
-  ["FORC_RAW_PATH"]="forcellini-words https://github.com/nkprasad12/forcellini-words.git forcellini.txt"
-  ["SH_RAW_PATH"]="smithandhall https://github.com/nkprasad12/smithandhall.git sh_F2_latest.txt v1edits"
-  ["GEORGES_RAW_PATH"]="Georges1910 https://github.com/nkprasad12/Georges1910.git Georges1910-ger-lat.xml morcus-net-branch"
-  ["POZO_RAW_PATH"]="latin-dictionary https://github.com/nkprasad12/latin-dictionary.git LopezPozo1997/diccionario.txt morcus"
-  ["LIB_XML_ROOT"]="canonical-latinlit https://github.com/nkprasad12/canonical-latinlit.git"
-  ["HYPOTACTIC_ROOT"]="hypotactic https://github.com/nkprasad12/hypotactic.git"
-  ["PHI_JSON_ROOT"]="phi-public-domain-json https://github.com/nkprasad12/phi-public-domain-json.git"
-  ["GAFFIOT_RAW_PATH"]="gaffiot.js https://raw.githubusercontent.com/nkprasad12/gaffiot/refs/heads/main/gaffiot.js"
-)
+LOCK_PATH="$MORCUS_NET_DIR/upstream_sources.lock.json"
+
+# Prints "<source> <env var> <file or -> <repo>" for each upstream data source
+# in the lock file, which pins each repo to a commit. Each source is cloned
+# into "$MORCUS_DIR/<source>", and its env var points at <file> in the clone
+# (or at the clone itself). `./morcus.sh upstream sync` then checks out the
+# pinned commits, leaving any local work alone.
+function list_sources {
+  node -e '
+    const { sources } = require(process.argv[1]);
+    for (const [name, s] of Object.entries(sources)) {
+      console.log([name, s.env, s.file || "-", s.repo].join(" "));
+    }
+  ' "$LOCK_PATH"
+}
 
 function ensure_env {
   if [ ! -f "$ENV_PATH" ]; then
@@ -62,70 +64,28 @@ function set_env_var {
   echo "$1=$2" >> "$ENV_PATH"
 }
 
+function replace_env_var {
+  local tmp
+  tmp="$(mktemp)"
+  grep -v "^$1=" "$ENV_PATH" > "$tmp" || true
+  echo "$1=$2" >> "$tmp"
+  # Rewrite in place, keeping the file's permissions.
+  cat "$tmp" > "$ENV_PATH"
+  rm "$tmp"
+}
+
 function clone_repo {
   local dir=$1
   local url=$2
-  local branch=$3
   if [ ! -d "$dir" ]; then
     echo -e "${COLOR_INFO}Cloning repo '$dir' from $url...${COLOR_RESET}"
     git clone "$url" "$dir"
-    if [ -n "$branch" ]; then
-      cd "$dir"
-      echo -e "${INDENT}${COLOR_INFO}Checking out branch '$branch' in '$dir'...${COLOR_RESET}"
-      git checkout "$branch"
-      cd ..
-    fi
     echo -e "${COLOR_INFO}Repo '$dir' cloned.${COLOR_RESET}"
-  fi
-}
-
-function download_file {
-  local url=$1
-  local out=$2
-  if [ ! -f "$out" ]; then
-    echo -e "${COLOR_INFO}Downloading file '$out' from $url...${COLOR_RESET}"
-    curl -L "$url" -o "$out"
-    echo -e "${COLOR_INFO}File '$out' downloaded.${COLOR_RESET}"
   fi
 }
 
 function get_env_var {
   grep "^$1=" "$ENV_PATH" | cut -d'=' -f2-
-}
-
-function check_and_pull_repo {
-  local dir=$1
-  local expected_branch=$2
-  if [ -d "$dir" ]; then
-    echo -e "${COLOR_INFO}Found existing repo '$dir', checking if it is up to date...${COLOR_RESET}"
-    cd "$dir"
-    if [ -n "$expected_branch" ]; then
-      current_branch=$(git rev-parse --abbrev-ref HEAD)
-      if [ "$current_branch" != "$expected_branch" ]; then
-        # Check for pending changes
-        if [ -z "$(git status --porcelain)" ]; then
-          echo -e "${COLOR_WARN}Repo '$dir' is on branch '$current_branch', expected '$expected_branch'.${COLOR_RESET}"
-          read -p "${INDENT}No pending changes detected. Switch to branch '$expected_branch'? [y/N]: " yn
-          if [[ "$yn" =~ ^[Yy]$ ]]; then
-            echo -e "${INDENT}${COLOR_INFO}Switching '$dir' to branch '$expected_branch'...${COLOR_RESET}"
-            git checkout "$expected_branch"
-            echo -e "${INDENT}${COLOR_INFO}Switched '$dir' to branch '$expected_branch'.${COLOR_RESET}"
-          else
-            echo -e "${COLOR_ERR}Aborting setup. Please switch branch manually.${COLOR_RESET}"
-            exit 1
-          fi
-        else
-          echo -e "${COLOR_ERR}ERROR: '$dir' is on branch '$current_branch', expected '$expected_branch', and has pending changes.${COLOR_RESET}"
-          echo -e "${INDENT}${COLOR_ERR}Please commit or stash your changes and switch branch manually.${COLOR_RESET}"
-          exit 1
-        fi
-      fi
-    fi
-    echo -e "${INDENT}${COLOR_INFO}Pulling changes from repo '$dir'...${COLOR_RESET}"
-    git pull
-    echo -e "${INDENT}${COLOR_INFO}Repo '$dir' is up to date.${COLOR_RESET}"
-    cd "$MORCUS_DIR"
-  fi
 }
 
 function ensure_rust_and_cargo {
@@ -300,45 +260,41 @@ cd "$MORCUS_DIR"
 
 ensure_env
 
-for VAR in "${!RESOURCES[@]}"; do
-  IFS=' ' read -r DIR URL FILE BRANCH <<< "${RESOURCES[$VAR]}"
-  if env_has_var "$VAR"; then
-    if [[ "$URL" == *.git ]]; then
-      check_and_pull_repo "$DIR" "$BRANCH"
-    fi
-    continue
+SOURCES="$(list_sources)"
+
+# Older versions of this script downloaded gaffiot.js on its own rather than
+# cloning its repo. Switch those setups to a clone, which `./morcus.sh
+# upstream` can check and keep at the pinned commit.
+LEGACY_GAFFIOT="$MORCUS_DIR/gaffiot.js"
+if [ "$(get_env_var GAFFIOT_RAW_PATH)" == "$LEGACY_GAFFIOT" ]; then
+  echo -e "${COLOR_INFO}Switching Gaffiot from a downloaded file to a clone of its repo...${COLOR_RESET}"
+  clone_repo gaffiot "$(echo "$SOURCES" | awk '$1 == "gaffiot" { print $4 }')"
+  if [ -f "$LEGACY_GAFFIOT" ] && ! cmp -s "$LEGACY_GAFFIOT" "gaffiot/gaffiot.js"; then
+    echo -e "${INDENT}${COLOR_WARN}Note: $LEGACY_GAFFIOT differs from the cloned gaffiot.js.${COLOR_RESET}"
   fi
-  if [[ "$URL" == *.git ]]; then
-    clone_repo "$DIR" "$URL" "$BRANCH"
-    # Compose path for env variable
-    if [ "$VAR" == "LS_PATH" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-    elif [ "$VAR" == "RA_PATH" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-    elif [ "$VAR" == "GESNER_RAW_PATH" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-    elif [ "$VAR" == "FORC_RAW_PATH" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-    elif [ "$VAR" == "SH_RAW_PATH" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-    elif [ "$VAR" == "GEORGES_RAW_PATH" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-    elif [ "$VAR" == "POZO_RAW_PATH" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-    elif [ "$VAR" == "LIB_XML_ROOT" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR"
-    elif [ "$VAR" == "HYPOTACTIC_ROOT" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR"
-    elif [ "$VAR" == "PHI_JSON_ROOT" ]; then
-      set_env_var "$VAR" "$MORCUS_DIR/$DIR"
+  replace_env_var GAFFIOT_RAW_PATH "$MORCUS_DIR/gaffiot/gaffiot.js"
+  echo -e "${INDENT}${COLOR_INFO}$LEGACY_GAFFIOT is no longer used; delete it whenever you like.${COLOR_RESET}"
+fi
+
+while read -r SOURCE VAR FILE URL; do
+  # An env var that's already set may point at a clone somewhere else, which
+  # this script leaves alone.
+  if ! env_has_var "$VAR"; then
+    clone_repo "$SOURCE" "$URL"
+    if [ "$FILE" == "-" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$SOURCE"
+    else
+      set_env_var "$VAR" "$MORCUS_DIR/$SOURCE/$FILE"
     fi
-  else
-    download_file "$URL" "$DIR"
-    set_env_var "$VAR" "$MORCUS_DIR/$DIR"
   fi
-done
+done <<< "$SOURCES"
 
 cd "$MORCUS_NET_DIR"
+
+echo -e "${COLOR_INFO}Checking out the pinned upstream data commits...${COLOR_RESET}"
+if ! ./morcus.sh upstream sync --node; then
+  echo -e "${COLOR_WARN}Some upstream data clones couldn't be synced; see above.${COLOR_RESET}"
+fi
 
 if ensure_rust_and_cargo; then
   echo -e "${COLOR_INFO}Rust and Cargo detected. Building Rust bindings...${COLOR_RESET}"

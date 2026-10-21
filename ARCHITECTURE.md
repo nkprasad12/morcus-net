@@ -183,10 +183,9 @@ A specialized engine designed to query massive Latin textual corpora with comple
 ### 4.2. Production Build Pipeline (`src/scripts/prod_build_steps.ts`)
 
 1. Compile Rust bindings (`setup-node-bindgen` via `cargo` and `nj-cli`).
-2. Download sources and build the dictionary databases, library, V2 library and corpus.
+2. Download sources at the commits pinned in `upstream_sources.lock.json`, and build the dictionary databases, library, V2 library and corpus. Pins change only through `./morcus.sh upstream pin`; see [`src/scripts/upstream/README.md`](src/scripts/upstream/README.md).
 3. Bundle the UI V2 assets with Rsbuild (`src/bundler/client.rsbuild.ts`) into `build/client/`, writing Brotli and Gzip siblings.
-4. Write `build/morcusnet.build.json` (build provenance).
-5. Bundle the server with esbuild (`src/bundler/server.esbuild.ts`) into `build/server.js`, type-checking the repo.
+4. Bundle the server with esbuild (`src/bundler/server.esbuild.ts`) into `build/server.js`, type-checking the repo.
 
 ---
 

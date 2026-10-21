@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import {
-  BUILD_ID_ENV,
   DEV_SERVER_ENV,
   IMMUTABLE_CACHE_CONTROL,
   getBuildVersion,
@@ -19,31 +18,10 @@ function restoreEnv(name: string, saved: string | undefined): void {
 describe("getBuildVersion", () => {
   const savedCommit = process.env.COMMIT_ID;
   const savedDev = process.env[DEV_SERVER_ENV];
-  const savedBuildId = process.env[BUILD_ID_ENV];
-
-  beforeEach(() => {
-    delete process.env[BUILD_ID_ENV];
-  });
 
   afterEach(() => {
     restoreEnv("COMMIT_ID", savedCommit);
     restoreEnv(DEV_SERVER_ENV, savedDev);
-    restoreEnv(BUILD_ID_ENV, savedBuildId);
-  });
-
-  test("prefers the build ID, leaving the commit for display", () => {
-    delete process.env[DEV_SERVER_ENV];
-    process.env.COMMIT_ID = "abc123";
-    process.env[BUILD_ID_ENV] = "0123456789ab";
-    expect(getBuildVersion()).toBe("0123456789ab");
-    expect(getCommitId()).toBe("abc123");
-  });
-
-  test("a dev server adds its nonce to the build ID too", () => {
-    process.env.COMMIT_ID = "abc123";
-    process.env[BUILD_ID_ENV] = "0123456789ab";
-    process.env[DEV_SERVER_ENV] = "1";
-    expect(getBuildVersion()).toMatch(/^0123456789ab-dev\.[0-9a-z]+$/);
   });
 
   test("reads COMMIT_ID", () => {

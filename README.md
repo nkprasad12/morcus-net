@@ -15,7 +15,7 @@ Before you get started, install `git`.
 ### Typescript and Rust Code (Client, Server, Workers)
 
 To start, download and run the setup script. This will clone this (the `morcus-net`) repository, and several
-repositories with raw data that is processed and served by the web server. It will also prompt you to install Rust and Node, if you do not already have these on your machine.
+repositories with raw data that is processed and served by the web server (checked out at the commits pinned in [`upstream_sources.lock.json`](upstream_sources.lock.json); see [below](#raw-data-repositories)). It will also prompt you to install Rust and Node, if you do not already have these on your machine.
 
 ```
 curl https://raw.githubusercontent.com/nkprasad12/morcus-net/dev/set_up_or_update.sh | bash
@@ -29,6 +29,16 @@ Common arguments for this script (run `./morcus.sh --help` for full options):
 | `--build_ls`       | This processes Lewis and Short for use by the server. This needs to be run the first time and whenever you modify the Lewis and Short raw XML file. This is slow.                              |
 | `--build_sh`       | This processes Smith and Hall for use by the server. This needs to be run the first time and whenever you modify the Smith and Hall raw text file or any of the processing code. This is slow. |
 | `--transpile_only` | Skips `typescript` type checking. This is _faster_.                                                                                                                                            |
+
+### Raw data repositories
+
+The dictionaries and library are built from separate data repositories (`lexica`, `smithandhall`, `canonical-latinlit`, ...), cloned next to `morcus-net`. [`upstream_sources.lock.json`](upstream_sources.lock.json) pins each one to a commit. Production builds use exactly those commits. Local builds use whatever is checked out, and warn when that differs from the pins.
+
+- **After pulling `morcus-net`**, run `./morcus.sh upstream sync` to move your data clones to any updated pins. It never touches clones with local work: your own branches, uncommitted changes, or unpushed commits.
+- **To check your clones**, run `./morcus.sh upstream status`.
+- **To fix data**, branch from the pin in the data repository, commit, push, then run `./morcus.sh upstream pin <source>@<branch>` and commit the updated lock file.
+
+See [`src/scripts/upstream/README.md`](src/scripts/upstream/README.md) for the full workflow, including fixes waiting on upstream review.
 
 ### Python Code (ML)
 
@@ -177,7 +187,7 @@ Morcus Latin Tools is a web application (it is also available in the Play Store,
 
 1. A _client_ (UI V2, `src/web/ui/`), developed in `Typescript`. The server renders every page as plain HTML, and small framework-free custom elements enhance it in the browser. See [`src/web/ui/README.md`](src/web/ui/README.md).
 2. A _backend_, which is also developed in `Typescript`. This is a `Node.js` based `HTTP` server that uses `Express`.
-3. _preprocessing_ code, which is also developed in `Typescript`. This is responsible for transforming raw files (often XML or plain text files) into structured data that can be served by the backend.
+3. _preprocessing_ code, which is also developed in `Typescript`. This is responsible for transforming raw files (often XML or plain text files, from the [raw data repositories](#raw-data-repositories)) into structured data that can be served by the backend.
 4. _NLP_ code, which is developed in `Python`. This is currently used for the macronizer.
 
 TODO: add subsections for all of these, and explain the build step.

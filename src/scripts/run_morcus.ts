@@ -10,6 +10,8 @@ import {
   shellStep,
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
+import { warnOnUpstreamDrift } from "@/scripts/upstream/clones";
+import { UPSTREAM_ACTIONS, runUpstreamCli } from "@/scripts/upstream/cli";
 import { DEV_SERVER_ENV } from "@/web/ui/core/server/build_version.server";
 import { buildCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 import { ArgumentParser, type ArgumentOptions } from "argparse";
@@ -27,6 +29,7 @@ const VISUAL_DIFF = "visual-diff";
 const VISUAL_BASELINES = "visual-baselines";
 const INVENTORY = "inventory";
 const TEST = "test";
+const UPSTREAM = "upstream";
 
 const cleanupOperations: (() => unknown)[] = [];
 
@@ -58,6 +61,10 @@ if (args.command === WEB_SERVER) {
   });
 } else if (args.command === TEST) {
   void runTests(args).then((ok) => {
+    if (!ok) process.exit(1);
+  });
+} else if (args.command === UPSTREAM) {
+  void runUpstream(args).then((ok) => {
     if (!ok) process.exit(1);
   });
 }
@@ -427,6 +434,41 @@ function parseArguments() {
     action: "store_true",
   });
 
+  const upstream = subparsers.add_parser(UPSTREAM, {
+    help:
+      "Manages the pinned upstream data repos (upstream_sources.lock.json) " +
+      "and their local clones. See src/scripts/upstream/README.md.",
+  });
+  upstream.add_argument("action", {
+    help:
+      "'status': how each local clone compares to its pin (offline). " +
+      "'sync': move clones to their pins, leaving any local work alone. " +
+      "'pin': re-pin sources, as `<source>[@<branch|tag|sha>]` (default: the tracked branch). " +
+      "'tag': push missing morcus-pin/<sha> tags for the current pins. " +
+      "'verify': check every pin is tagged on its repo (what CI runs).",
+    choices: UPSTREAM_ACTIONS,
+  });
+  upstream.add_argument("targets", {
+    help: "Sources to act on (default: all, except for 'pin').",
+    nargs: "*",
+  });
+  upstream.add_argument("--allow-drop", {
+    help: "With pin: allow a new pin that lacks changes the current pin has.",
+    action: "store_true",
+  });
+  upstream.add_argument("-y", "--yes", {
+    help: "With pin: don't ask before pinning more than a few new commits.",
+    action: "store_true",
+  });
+  upstream.add_argument("--dry-run", {
+    help: "With pin or tag: check everything, but push nothing and leave the lock file alone.",
+    action: "store_true",
+  });
+  upstream.add_argument("--all", {
+    help: "With pin: pin every source to its tracked branch.",
+    action: "store_true",
+  });
+
   for (const subcommand of [
     editor,
     worker,
@@ -439,6 +481,7 @@ function parseArguments() {
     visualBaselines,
     inventory,
     test,
+    upstream,
   ]) {
     subcommand.add_argument("--bun", {
       help: "Runs supported commands with bun.",
@@ -676,6 +719,20 @@ function artifactConfig(args: any): StepConfig[] {
       label: "Building dictionary completions DB",
       priority: 3,
     });
+  }
+  const DATA_FLAGS = [
+    "build_sh",
+    "build_ra",
+    "build_georges",
+    "build_pozo",
+    "build_gesner",
+    "build_forcellini",
+    "build_ls",
+    "build_gaffiot",
+    "build_latin_library",
+  ];
+  if (DATA_FLAGS.some((flag) => args[flag] === true)) {
+    warnOnUpstreamDrift();
   }
   if (args.build_latin_library === true) {
     if (args.build_corpus === true) {
@@ -1100,4 +1157,15 @@ async function runTests(args: any): Promise<boolean> {
     );
   }
   return passed;
+}
+
+function runUpstream(args: any): Promise<boolean> {
+  return runUpstreamCli({
+    action: args.action,
+    targets: args.targets ?? [],
+    allowDrop: Boolean(args.allow_drop),
+    yes: Boolean(args.yes),
+    dryRun: Boolean(args.dry_run),
+    all: Boolean(args.all),
+  });
 }

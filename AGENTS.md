@@ -13,17 +13,18 @@ In this repository, operational tasks—such as starting development servers, bu
 
 ### Core Subcommands
 
-| Command            | Description                                                 | Common Usage                                                        |
-| ------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------- |
-| `web`              | Builds artifacts & starts the web server                    | `./morcus.sh web` (dev server)<br>`./morcus.sh web --build_all`     |
-| `build`            | Builds dictionary/corpus artifacts without starting server  | `./morcus.sh build --build_all`<br>`./morcus.sh build -b_ls -b_grg` |
-| `bundle`           | Builds the web client JS/CSS into `build/client/`           | `./morcus.sh bundle -m` (minify and precompress)                    |
-| `e2e`              | Runs E2E integration test pipelines                         | `./morcus.sh e2e` (local dev server)<br>`./morcus.sh e2e --docker`  |
-| `worker`           | Starts background cruncher/NLP workers                      | `./morcus.sh worker -wt ls`                                         |
-| `corpus`           | Corpus processing utilities and Rust CLI                    | `./morcus.sh corpus -r`                                             |
-| `visual-diff`      | Interactive viewer for screenshot diffs (`TESTING.md` §2.F) | `./morcus.sh visual-diff --source results`                          |
-| `visual-baselines` | Local (gitignored) screenshot baselines and checkpoints     | `./morcus.sh visual-baselines status`                               |
-| `test`             | Jest: unit tests related to your changes, or a whole tier   | `./morcus.sh test`<br>`./morcus.sh test --whole-system`             |
+| Command            | Description                                                 | Common Usage                                                           |
+| ------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `web`              | Builds artifacts & starts the web server                    | `./morcus.sh web` (dev server)<br>`./morcus.sh web --build_all`        |
+| `build`            | Builds dictionary/corpus artifacts without starting server  | `./morcus.sh build --build_all`<br>`./morcus.sh build -b_ls -b_grg`    |
+| `bundle`           | Builds the web client JS/CSS into `build/client/`           | `./morcus.sh bundle -m` (minify and precompress)                       |
+| `e2e`              | Runs E2E integration test pipelines                         | `./morcus.sh e2e` (local dev server)<br>`./morcus.sh e2e --docker`     |
+| `worker`           | Starts background cruncher/NLP workers                      | `./morcus.sh worker -wt ls`                                            |
+| `corpus`           | Corpus processing utilities and Rust CLI                    | `./morcus.sh corpus -r`                                                |
+| `visual-diff`      | Interactive viewer for screenshot diffs (`TESTING.md` §2.F) | `./morcus.sh visual-diff --source results`                             |
+| `visual-baselines` | Local (gitignored) screenshot baselines and checkpoints     | `./morcus.sh visual-baselines status`                                  |
+| `test`             | Jest: unit tests related to your changes, or a whole tier   | `./morcus.sh test`<br>`./morcus.sh test --whole-system`                |
+| `upstream`         | Pinned upstream data repos and their local clones           | `./morcus.sh upstream status`<br>`./morcus.sh upstream pin gesner@fix` |
 
 > [!TIP]
 > Run `./morcus.sh --help` or `./morcus.sh <command> --help` to inspect available flags and options.

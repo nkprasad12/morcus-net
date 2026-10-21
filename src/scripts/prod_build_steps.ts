@@ -3,11 +3,9 @@
 import chalk from "chalk";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 import { assert } from "@/common/assert";
-import { envVar } from "@/common/env_vars";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
-import { writeBuildProvenance } from "@/scripts/build_provenance";
 import {
   DownloadConfig,
   StepConfig,
@@ -26,20 +24,19 @@ import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
 import { buildV2Bundle } from "@/bundler/client.rsbuild";
 import { buildCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
+import {
+  pinnedDownload,
+  pinnedFileUrl,
+  upstreamSource,
+} from "@/scripts/upstream/lock";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 
-const PERSEUS_CLL_TAG = "master";
-const PERSEUS_CLL_ROOT =
-  "https://raw.githubusercontent.com/nkprasad12/canonical-latinLit";
+// Every upstream input is pinned to a commit in `upstream_sources.lock.json`.
 const PERSEUS_DOWNLOADS = ALL_SUPPORTED_WORKS.map(perseusDownloadConfig);
 
-function perseusUrl(resource: string): string {
-  return `${PERSEUS_CLL_ROOT}/${PERSEUS_CLL_TAG}/${resource}`;
-}
-
 function perseusDownloadConfig(resource: string): DownloadConfig {
-  const url = perseusUrl(resource);
+  const url = pinnedFileUrl("canonical-latinlit", resource);
   const name = url.split("/").slice(-1)[0];
   return { url, path: `${RAW_LAT_LIB_DIR}/${name}` };
 }
@@ -60,66 +57,42 @@ const SAVE_TABLES: StepConfig = {
 const MAKE_LS: StepConfig = {
   operation: GenerateLs.saveArtifacts,
   label: "Lewis and Short DB creation",
-  dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/lexica/master/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml",
-    path: envVar("LS_PATH"),
-  },
+  dlInfo: pinnedDownload("lexica"),
 };
 const MAKE_GAF: StepConfig = {
   operation: generateGaffiotArtifacts,
   label: "Gaffiot DB creation",
-  dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/gaffiot/refs/heads/main/gaffiot.js",
-    path: envVar("GAFFIOT_RAW_PATH"),
-  },
+  dlInfo: pinnedDownload("gaffiot"),
 };
 const MAKE_RA: StepConfig = {
   operation: processRiddleArnold,
   label: "Riddle and Arnold DB creation",
-  dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/riddle-arnold/refs/heads/main/riddle-arnold.tsv",
-    path: envVar("RA_PATH"),
-  },
+  dlInfo: pinnedDownload("riddle-arnold"),
 };
 const MAKE_SH: StepConfig = {
   operation: generateShArtifacts,
   label: "Smith and Hall DB creation",
-  dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/smithandhall/v1edits/sh_F2_latest.txt",
-    path: envVar("SH_RAW_PATH"),
-  },
+  dlInfo: pinnedDownload("smithandhall"),
 };
 const MAKE_GEORGES: StepConfig = {
   operation: processGeorges,
   label: "Georges DB creation",
-  dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/Georges1910/refs/heads/morcus-net-branch/Georges1910-ger-lat.xml",
-    path: envVar("GEORGES_RAW_PATH"),
-  },
+  dlInfo: pinnedDownload("Georges1910"),
 };
 const MAKE_POZO: StepConfig = {
   operation: processPozo,
   label: "Pozo DB creation",
-  dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/latin-dictionary/refs/heads/morcus/LopezPozo1997/diccionario.txt",
-    path: envVar("POZO_RAW_PATH"),
-  },
+  dlInfo: pinnedDownload("latin-dictionary"),
 };
 const MAKE_GESNER: StepConfig = {
   operation: processGesner,
   label: "Gesner DB creation",
-  dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/gesner/refs/heads/master/gesner.json",
-    path: envVar("GESNER_RAW_PATH"),
-  },
+  dlInfo: pinnedDownload("gesner"),
 };
 const MAKE_FORCELLINI: StepConfig = {
   operation: processForcellini,
   label: "Forcellini DB creation",
-  dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/forcellini-words/refs/heads/master/forcellini.txt",
-    path: envVar("FORC_RAW_PATH"),
-  },
+  dlInfo: pinnedDownload("forcellini-words"),
 };
 const MAKE_COMPLETIONS_DB: StepConfig = {
   operation: () => buildCompletionsDb(),
@@ -135,9 +108,9 @@ const PROCESS_LAT_LIB: StepConfig = {
   label: "Latin library processing",
   dlInfo: PERSEUS_DOWNLOADS,
   repoInfo: {
-    repoUrls: [
-      "https://github.com/nkprasad12/hypotactic.git",
-      "https://github.com/nkprasad12/phi-public-domain-json.git",
+    repos: [
+      upstreamSource("hypotactic"),
+      upstreamSource("phi-public-domain-json"),
     ],
   },
 };
@@ -148,13 +121,6 @@ const MAKE_V2_BUNDLE: StepConfig = {
 const WRITE_COMMIT_ID: StepConfig = {
   operation: writeCommitId,
   label: "Writing commit hash",
-};
-// Last: it needs every input the earlier steps fetched.
-const WRITE_BUILD_PROVENANCE: StepConfig = {
-  operation: async () => {
-    await writeBuildProvenance();
-  },
-  label: "Writing build provenance",
 };
 const ALL_STEPS = [
   SETUP_DIRS,
@@ -171,7 +137,6 @@ const ALL_STEPS = [
   MAKE_FORCELLINI,
   MAKE_COMPLETIONS_DB,
   PROCESS_LAT_LIB,
-  WRITE_BUILD_PROVENANCE,
 ];
 
 export async function prodBuildSteps(): Promise<boolean> {

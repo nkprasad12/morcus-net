@@ -49,8 +49,8 @@ COPY --chown=node:node --from=1 --link /layers/dbs/ /
 COPY --chown=node:node --from=1 --link /layers/corpus/ /
 COPY --chown=node:node --from=1 --link /layers/library_processed/ /
 COPY --chown=node:node --from=1 --link /layers/morceus/ /
-# Code, the client bundle, and the small per-build files (commit ID, build
-# provenance), which change on every build.
+# Code, the client bundle, and the small per-build files (e.g. the commit ID),
+# which change on every build.
 COPY --chown=node:node --from=1 /morcus /morcus
 WORKDIR /morcus
 ENV PORT=5757 NODE_ENV=production
