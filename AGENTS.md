@@ -63,9 +63,9 @@ The Visual Diff Inspector (`./morcus.sh visual-diff`) is exempt: it launches no 
 Jest tests are split into two projects in [`jest.config.js`](jest.config.js), by what they check rather than where they live:
 
 - **`unit`**: ordinary tests. After an edit, run only the ones related to what you changed: `./morcus.sh test`. It runs the `unit` tests that import any file changed since `HEAD` (including uncommitted and untracked files). Pass paths (`./morcus.sh test src/foo.ts`) to pick the scope yourself.
-- **`whole-system`**: `*_conformance.test.ts` and `inventory_ratchet.test.ts`. They sweep every SSR fixture, module and stylesheet, so they depend on almost everything and take most of the suite's time. **Don't run them after every edit.** Run them once before each commit: `./morcus.sh test --whole-system`.
+- **`whole-system`**: `*_conformance.test.ts` and `inventory_ratchet.test.ts`. They sweep every SSR fixture, module and stylesheet, so they depend on almost everything and take most of the suite's time. **Don't run them after every edit.** Run them once before each commit that touches `src/web/` or `src/common/`: `./morcus.sh test --whole-system`.
 
-Testing only what changed since `HEAD` is safe because every commit is expected to pass both tiers, so the pre-commit `--whole-system` run is **required**. Related-test selection only follows `import`s: a change to a file that tests read from disk (CSS, JSON) is only caught by the whole-system tier.
+Testing only what changed since `HEAD` is safe because every commit is expected to pass both tiers, so the pre-commit `--whole-system` run is **required** for any commit touching `src/web/` or `src/common/`. These tests live in `src/web/ui/` and also import shared dictionary and XML modules from `src/common/`. A commit touching neither (a lock file bump, docs, `src/scripts/`) can't affect them, so skip it there; the pre-push hook still runs every test. Related-test selection only follows `import`s: a change to a file that tests read from disk (CSS, JSON) is only caught by the whole-system tier.
 
 ### ⛔ Visual Baseline Approval Rule
 
@@ -94,7 +94,7 @@ For full command flags, debugging modes, and the complete Pre-Commit / Pre-Push 
 | Task                            | Command                                                                  |
 | ------------------------------- | ------------------------------------------------------------------------ |
 | **Unit tests for your changes** | `./morcus.sh test` (or `./morcus.sh test path/to/file.ts`)               |
-| **Whole-system tests**          | `./morcus.sh test --whole-system` (once, before committing)              |
+| **Whole-system tests**          | `./morcus.sh test --whole-system` (pre-commit; see above)                |
 | **All TypeScript tests**        | `./morcus.sh test --all` (CI runs them via `npm run coverage`)           |
 | **Lint & style checks**         | `npx eslint --cache src/web/ui && npm run lint:css && npx tsc --noEmit`  |
 | **Start dev server**            | `PORT=5757 ./morcus.sh web`                                              |
