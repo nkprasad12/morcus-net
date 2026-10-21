@@ -54,10 +54,6 @@ morcus-appearance-menu {
   gap: var(--space-3);
 }
 
-.appearance-popover .settings-caption.appearance-scope {
-  margin: 0;
-}
-
 /* A live preview: the same custom properties as reading text, at the base
    size of a dictionary entry. */
 .appearance-sample {

@@ -97,10 +97,6 @@ export function renderAppearanceMenu(): string {
           )}
           <div class="settings-group">
             <h3 class="settings-group-title">Reading text</h3>
-            <p class="settings-caption appearance-scope">Dictionary entries, texts in the reader, and other pages you read.</p>
-            <!-- Styled by the same custom properties as reading text, so it
-                 previews every change live with no script. -->
-            <p class="appearance-sample" lang="la">Gallia est omnis dīvīsa in partēs trēs, quārum ūnam incolunt Belgae.</p>
             ${row(
               "font",
               "Font",
@@ -147,6 +143,10 @@ export function renderAppearanceMenu(): string {
                 "normal"
               )
             )}
+            <!-- Styled by the same custom properties as reading text, so it
+                 previews every change live with no script. Last, so the
+                 controls above it don't move as it grows. -->
+            <p class="appearance-sample" lang="la">Gallia est omnis dīvīsa in partēs trēs, quārum ūnam incolunt Belgae.</p>
           </div>
         </div>
         <div class="settings-popover-footer">
