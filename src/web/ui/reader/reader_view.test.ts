@@ -901,8 +901,8 @@ describe("Reader preferences validation & hydration", () => {
     expect(readerLabel.textContent).toBe("100%");
     // Valid dictScale kept -> 120%
     expect(dictLabel.textContent).toBe("120%");
-    // Corrupt fontFamily "papyrus" dropped -> default "serif"
-    expect(fontSelect.value).toBe("serif");
+    // Corrupt fontFamily "papyrus" dropped -> default "sans"
+    expect(fontSelect.value).toBe("sans");
     // Valid lineHeight "compact" kept
     expect(lineSelect.value).toBe("compact");
     expect(
@@ -919,7 +919,7 @@ describe("Reader preferences validation & hydration", () => {
       JSON.stringify({
         lineHeight: "compact",
         readerScale: 125,
-        fontFamily: "sans",
+        fontFamily: "serif",
         showGutter: false,
       })
     );
@@ -927,8 +927,9 @@ describe("Reader preferences validation & hydration", () => {
     document.body.appendChild(el);
     expect(lineHeight()).toBe("1.45");
     expect(root.style.getPropertyValue("--reader-scale")).toBe("1.25");
-    expect(root.style.getPropertyValue("--reader-font")).toBe(
-      "var(--font-sans)"
+    // The text font is app-wide, so it is `--font-text`, not a reader-only property.
+    expect(root.style.getPropertyValue("--font-text")).toBe(
+      "var(--font-serif)"
     );
     expect(root.hasAttribute("data-reader-hide-gutter")).toBe(true);
     // One source: nothing is copied onto the element itself.
@@ -937,7 +938,7 @@ describe("Reader preferences validation & hydration", () => {
       expect.objectContaining({
         "--reader-line-height": "1.45",
         "--reader-scale": "1.25",
-        "--reader-font": "var(--font-sans)",
+        "--font-text": "var(--font-serif)",
         "data-reader-hide-gutter": "",
       })
     );
@@ -959,7 +960,7 @@ describe("Reader preferences validation & hydration", () => {
     // Defaults fall back to the `var(--reader-*, default)` CSS fallbacks.
     expect(lineHeight()).toBe("");
     expect(root.style.getPropertyValue("--reader-scale")).toBe("");
-    expect(root.style.getPropertyValue("--reader-font")).toBe("");
+    expect(root.style.getPropertyValue("--font-text")).toBe("");
     expect(root.hasAttribute("data-reader-hide-gutter")).toBe(false);
     expect(localStorage.getItem(PREPAINT_KEY)).not.toContain(
       "--reader-line-height"

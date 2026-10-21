@@ -49,7 +49,18 @@ test.describe("UI V2 Visual Regression Suite", () => {
     path: "/work/cicero/cum_populo_gratias_egi",
     waitFor: ".reader-passage",
     action: async (page) => {
-      await page.locator("a.reader-note-ref").first().click();
+      const ref = page.locator("a.reader-note-ref").first();
+      // On short viewports (MobileSafari) the first marker can sit under the
+      // fixed bottom companion bar, which would take a coordinate click and
+      // time the test out. Only then, dispatch the click on the link itself:
+      // following it is the same (`:target` without JS, the panel with it).
+      // Elsewhere keep the real click, whose hover state is in the baselines.
+      const clickable = await ref
+        .click({ trial: true, timeout: 2000 })
+        .then(() => true)
+        .catch(() => false);
+      if (clickable) await ref.click();
+      else await ref.dispatchEvent("click");
       await page.waitForSelector("#note-n1", { state: "visible" });
     },
   });

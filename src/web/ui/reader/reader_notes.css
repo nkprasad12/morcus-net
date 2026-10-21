@@ -77,7 +77,7 @@ a.reader-note-ref:target {
 
 .reader-notes {
   color: var(--text-muted);
-  font-family: var(--font-serif);
+  font-family: var(--font-text);
   font-size: 0.875rem;
   line-height: 1.6;
 }

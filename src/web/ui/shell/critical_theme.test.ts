@@ -40,7 +40,7 @@ describe("critical_theme pre-paint applier", () => {
       PREPAINT_KEY,
       JSON.stringify({
         "--reader-scale": "1.25",
-        "--reader-font": "var(--font-sans)",
+        "--font-text": "var(--font-serif)",
         "--dict-width": "512px",
         "--reader-page-max": "1234px",
         "data-dict-width": "wide",
@@ -51,8 +51,8 @@ describe("critical_theme pre-paint applier", () => {
     await runCriticalScript();
 
     expect(root.style.getPropertyValue("--reader-scale")).toBe("1.25");
-    expect(root.style.getPropertyValue("--reader-font")).toBe(
-      "var(--font-sans)"
+    expect(root.style.getPropertyValue("--font-text")).toBe(
+      "var(--font-serif)"
     );
     expect(root.style.getPropertyValue("--dict-width")).toBe("512px");
     expect(root.style.getPropertyValue("--reader-page-max")).toBe("1234px");
