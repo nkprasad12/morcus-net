@@ -177,6 +177,7 @@ function renderReaderPagerLink(
              title="Previous ([)"
              ${slotAttr("pager-prev")}>
             <span class="pager-arrow" aria-hidden="true">&larr;</span>
+            <svg class="pager-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
             <span class="pager-label">${he.escape(label)}</span>
           </a>`;
   }
@@ -189,6 +190,7 @@ function renderReaderPagerLink(
                ${slotAttr("pager-next")}>
               <span class="pager-label">${he.escape(label)}</span>
               <span class="pager-arrow" aria-hidden="true">&rarr;</span>
+              <svg class="pager-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
             </a>`;
 }
 

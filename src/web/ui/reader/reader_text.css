@@ -53,7 +53,8 @@
 
 .reader-work-tag {
   font-weight: 400;
-  text-transform: none;
+  /* Title case, like the work title in the sticky bar. */
+  text-transform: capitalize;
   font-style: italic;
   font-family: var(--font-serif);
   font-size: 0.8125rem;

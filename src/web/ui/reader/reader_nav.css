@@ -86,8 +86,11 @@
   text-align: center;
 }
 
+/* The work title is a book title: serif italic at every width. */
 .sticky-work-title {
-  font-weight: 500;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
   text-transform: capitalize;
   color: var(--text);
   min-width: 0;
@@ -253,6 +256,12 @@
   line-height: 1;
 }
 
+/* Mobile only; desktop keeps the text arrow next to its label. */
+.pager-chevron {
+  display: none;
+  flex-shrink: 0;
+}
+
 /* ==========================================================================
    2. Quick Jump Glyph
    ========================================================================== */
@@ -353,8 +362,16 @@
     padding: 0;
   }
 
+  /* Alone in a square button, a text arrow sits low and reads like a
+     keyboard key; show the same stroked chevron as the section pill. */
   .pager-arrow {
-    font-size: 0.95rem;
+    display: none;
+  }
+
+  .pager-chevron {
+    display: block;
+    width: 16px;
+    height: 16px;
   }
 
   .reader-settings-btn .settings-glyph {
@@ -411,12 +428,7 @@
   }
 
   .sticky-work-title {
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-weight: 400;
     font-size: 0.925rem;
-    text-transform: none;
-    color: var(--text);
   }
 
   .sticky-primary-row .reader-nav-arrow,
