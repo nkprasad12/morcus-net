@@ -181,8 +181,10 @@
   margin-bottom: var(--space-4);
   gap: var(--space-3);
   font-family: var(--font-text);
-  font-size: calc(0.95rem * var(--reader-scale, 1));
-  line-height: var(--reader-line-height, 1.65);
+  font-size: calc(
+    var(--reader-base, 1.2rem) * var(--text-scale, 1) * var(--panel-scale, 0.85)
+  );
+  line-height: calc(1.65 * var(--text-leading, 1));
 }
 
 .reader-translation-gutter {

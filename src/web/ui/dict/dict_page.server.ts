@@ -435,7 +435,8 @@ export function renderDictResultsHtml(
 }
 
 /**
- * Parses and clamps an optional dictionary font scale percentage between 70% and 140%.
+ * Parses and clamps an optional dictionary font scale percentage between 50% and 150%
+ * (the reader's side-panel range, rescaled to the dictionary's base size).
  * Returns undefined if raw is null/undefined, NaN, or non-numeric.
  */
 export function parseDictScale(raw: unknown): number | undefined {
@@ -447,7 +448,7 @@ export function parseDictScale(raw: unknown): number | undefined {
       ? Number.parseInt(raw, 10)
       : NaN;
   if (!Number.isFinite(num)) return undefined;
-  return Math.min(140, Math.max(70, num));
+  return Math.min(150, Math.max(50, num));
 }
 
 interface DictPageOptions {

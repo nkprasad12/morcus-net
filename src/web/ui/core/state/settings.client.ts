@@ -19,12 +19,28 @@ export const isDraggedPageWidth: Validator<DraggedPageWidth> = (
 export interface GlobalSettings {
   darkMode?: boolean;
   highlightStrength?: number;
+  /** Reading-text font (`--font-text`); absent means the sans default. */
+  textFont?: TextFont;
+  /** Reading-text size in percent (`--text-scale`); absent means 100. */
+  textScale?: number;
+  /** Reading-text line spacing (`--text-leading`); absent means normal. */
+  lineSpacing?: LineSpacing;
   autoOpenLogeion?: boolean;
   readerWidth?: DraggedPageWidth;
   libraryWidth?: DraggedPageWidth;
   corpusWidth?: DraggedPageWidth;
   dictWidth?: DraggedPageWidth;
 }
+
+export type TextFont = "sans" | "serif";
+export type LineSpacing = "compact" | "normal" | "relaxed";
+
+export const isTextFont: Validator<TextFont> = (x: unknown): x is TextFont =>
+  x === "sans" || x === "serif";
+
+export const isLineSpacing: Validator<LineSpacing> = (
+  x: unknown
+): x is LineSpacing => x === "compact" || x === "normal" || x === "relaxed";
 
 export const GLOBAL_SETTINGS_KEY = "GlobalSettings";
 
@@ -63,6 +79,9 @@ export function pickValid<T extends object>(
 const GLOBAL_SETTINGS_CHECKERS: FieldCheckers<GlobalSettings> = {
   darkMode: isBoolean,
   highlightStrength: isNumber,
+  textFont: isTextFont,
+  textScale: isNumber,
+  lineSpacing: isLineSpacing,
   autoOpenLogeion: isBoolean,
   readerWidth: isDraggedPageWidth,
   libraryWidth: isDraggedPageWidth,

@@ -623,7 +623,7 @@
 .corpus-snippet {
   margin: var(--space-2) 0 0;
   font-family: var(--font-text);
-  line-height: 1.6;
+  line-height: calc(1.6 * var(--text-leading, 1));
   text-align: justify;
   white-space: pre-line;
 }

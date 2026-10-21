@@ -14,6 +14,7 @@ import { getBuildVersion } from "@/web/ui/core/server/build_version.server";
 import { ICON_PATHS } from "@/web/ui/core/widgets/icons.common";
 import type { WidthSurface } from "@/web/ui/core/widgets/page_width.common";
 import { renderPageWidthHandles } from "@/web/ui/shell/page_width.server";
+import { renderAppearanceMenu } from "@/web/ui/shell/appearance_menu.server";
 import { THEME_COLOR } from "@/web/ui/shell/theme_color.common";
 
 export type V2ActivePage = "dicts" | "about" | "library" | "corpus";
@@ -157,20 +158,9 @@ export function renderAppBar(activePage?: V2ActivePage): string {
           </nav>
         </div>
 
-        <!-- Right on desktop / Left on mobile: Dark/Light Mode & Report Dialog -->
+        <!-- Right on desktop / Left on mobile: Appearance menu & Report Dialog -->
         <div class="actions-group">
-          <morcus-theme-toggle data-js-only>
-            <button
-              type="button"
-              class="theme-toggle-btn"
-              aria-label="Switch to dark mode"
-              title="Switch to dark mode"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="${ICON_PATHS.moon}"></path>
-              </svg>
-            </button>
-          </morcus-theme-toggle>
+          ${renderAppearanceMenu()}
           <morcus-report-dialog data-js-only>
             <button
               type="button"

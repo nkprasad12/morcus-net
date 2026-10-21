@@ -75,18 +75,6 @@ morcus-dict-settings {
   margin-bottom: 0;
 }
 
-.dict-settings-dialog .settings-header {
-  margin-bottom: var(--space-2);
-}
-
-.dict-settings-dialog .settings-control-row {
-  margin-bottom: var(--space-3);
-}
-
-.dict-settings-dialog .settings-preview {
-  padding: var(--space-2) var(--space-4);
-}
-
 .dict-settings-dialog .settings-divider {
   margin: var(--space-4) 0;
 }

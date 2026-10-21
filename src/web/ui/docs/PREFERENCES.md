@@ -46,9 +46,31 @@ Highlight strength sits below the bar (`--highlight-scale` only multiplies alpha
 the rule and costs no critical bytes, so it stays. Apply the rule to new additions.
 
 Owners call `setPrepaint` on every connect with their current value, not only on change, so a stale
-snapshot heals after one load. Theme is an ordinary snapshot entry too: `theme_toggle.client.ts`
+snapshot heals after one load. Theme is an ordinary snapshot entry too: the Appearance menu (`shell/appearance.client.ts`)
 owns `data-theme` (cleared when there is no saved choice, so the OS scheme applies), and the
 critical script makes no direct reads.
+
+### App-wide appearance
+
+The app-bar Appearance menu (`shell/appearance_menu.client.ts`) is the single owner of the
+presentation preferences shared by every page. They live in `GlobalSettings` and each maps to one
+pre-paint value; a default is stored as absent and removed from `<html>`, leaving the CSS fallback:
+
+| Setting             | Pre-paint           | Read by                                                             |
+| :------------------ | :------------------ | :------------------------------------------------------------------ |
+| `darkMode`          | `data-theme`        | every themed token (`variables.css`)                                |
+| `textFont`          | `--font-text`       | reading text: dictionary entries, reader, corpus, macronizer        |
+| `textScale`         | `--text-scale`      | reading-text sizes, as a multiplier on each surface's own base size |
+| `lineSpacing`       | `--text-leading`    | reading-text line heights, as a multiplier                          |
+| `highlightStrength` | `--highlight-scale` | dictionary highlight tints                                          |
+
+The reader and dictionary settings link to the menu rather than duplicating these controls. The
+reader keeps only reader-specific preferences (its side panel's size, macra, section numbers).
+
+The side panel's size (`dictScale`, default 85%) is relative to the main reading text, so it
+multiplies `--text-scale` rather than replacing it. The translation and notes read it as
+`--panel-scale`; the dictionary iframe gets it rescaled to its own base size, as `--dict-scale`
+and the `scale` URL param (`reader/reader_scale.common.ts`).
 
 An owner that already paints the live value inline on a narrower element (the reader splitter puts
 `--dict-width` on `.reader-dict-panel`) calls `recordPrepaint` instead: it updates the snapshot but

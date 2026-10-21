@@ -51,7 +51,7 @@ describe("about_ssr", () => {
     expect(pageHtml).toContain('aria-current="page"');
     expect(pageHtml).toContain('href="/dicts"');
     expect(pageHtml.indexOf('<nav class="nav"')).toBeLessThan(
-      pageHtml.indexOf("morcus-theme-toggle")
+      pageHtml.indexOf("morcus-appearance-menu")
     );
     expect(pageHtml).toContain("morcus-report-dialog");
     expect(pageHtml).toContain('class="theme-toggle-btn report-btn"');

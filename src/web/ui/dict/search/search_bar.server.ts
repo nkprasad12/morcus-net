@@ -11,7 +11,7 @@ import {
 } from "@/web/ui/dict/settings/dict_selection.common";
 import { cleanDictQuery } from "@/web/ui/dict/search/dict_params.common";
 import { escapeHtml } from "@/web/ui/core/dom/html.common";
-import { ICON_PATHS } from "@/web/ui/core/widgets/icons.common";
+import { ICON_PATHS, renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import { renderDialog } from "@/web/ui/dialog/dialog.server";
 
 import {
@@ -183,8 +183,8 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
             aria-haspopup="dialog"
             aria-controls="${DICT_SETTINGS_DIALOG_ID}"
             aria-expanded="false"
-            aria-label="Dictionary and highlight settings"
-            title="Dictionary and highlight settings"
+            aria-label="Dictionary settings"
+            title="Dictionary settings"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="${TUNE_PATH}"></path>
@@ -327,33 +327,13 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
           ? `<p class="settings-guest-note">Using this link's settings (read-only). ${input.returnLinkHtml} to change them.</p>`
           : ""
       }
-      <div class="settings-slider-section" data-js-only>
-        <div class="settings-header">
-          <span class="settings-title">Highlight Strength</span>
-          <span class="settings-value">50%</span>
-        </div>
-
-        <div class="settings-control-row">
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="10"
-            value="50"
-            class="settings-slider"
-            aria-label="Highlight strength"
-          />
-        </div>
-
-        <div class="settings-preview" aria-hidden="true">
-          <span class="lsOrth">Caesar</span>
-          <span class="lsGrammar">noun</span>
-          <span class="lsBibl">Gall. 1.1</span>
-          <span class="lsQuote">omnia</span>
-        </div>
-
-        <div class="settings-divider" role="separator"></div>
-      </div>
+      <!-- Text appearance and highlight strength are app-wide: the app-bar
+           Appearance menu owns them (JS-only, like the menu). Hidden in embedded
+           views, which have no app bar (see dict_settings.client.ts). -->
+      <button type="button" class="appearance-link" id="dict-appearance-link" data-js-only>
+        <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, highlights, theme</span></span>
+        ${renderIconSvg("palette")}
+      </button>
 
       ${inflectedSectionHtml}
 

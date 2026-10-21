@@ -3,7 +3,7 @@
 import "@/web/ui/core/index.client";
 
 // Shell elements present on every page.
-import "@/web/ui/shell/theme_toggle.client";
+import "@/web/ui/shell/appearance_menu.client";
 import "@/web/ui/dialog/report_dialog.client";
 import "@/web/ui/shell/page_width_handles.client";
 

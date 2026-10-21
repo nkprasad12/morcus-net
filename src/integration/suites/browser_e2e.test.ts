@@ -243,7 +243,7 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator('input[name="q"]')).toBeVisible();
   });
 
-  test("hides theme toggle button when JavaScript is disabled", async ({
+  test("hides the Appearance menu button when JavaScript is disabled", async ({
     browser,
   }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
@@ -251,62 +251,81 @@ test.describe("UI V2 dictionary", () => {
 
     await page.goto("/dicts");
     await expect(page.locator("header.app-bar")).toBeVisible();
-    await expect(
-      page.locator("morcus-theme-toggle .theme-toggle-btn")
-    ).not.toBeVisible();
+    await expect(page.locator("#appearance-btn")).not.toBeVisible();
 
     await context.close();
   });
 
-  test("toggles theme and persists preference with JavaScript enabled", async ({
+  test("sets the theme from the Appearance menu and persists it", async ({
     page,
   }) => {
     await page.goto("/dicts");
-    const toggleBtn = page.locator("morcus-theme-toggle .theme-toggle-btn");
-    await expect(toggleBtn).toBeVisible();
+    const menuBtn = page.locator("#appearance-btn");
+    await expect(menuBtn).toBeVisible();
 
-    // Click theme toggle button
-    await toggleBtn.click();
+    await menuBtn.click();
+    await expect(page.locator("#appearance-popover")).toBeVisible();
 
-    // Verify data-theme is set on html element
-    const theme1 = await page.evaluate(() =>
-      document.documentElement.getAttribute("data-theme")
-    );
-    expect(theme1).toMatch(/^(dark|light)$/);
+    await page
+      .locator('label:has(input[name="appearance-theme"][value="dark"])')
+      .click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
-    // Click again to toggle to opposite theme
-    await toggleBtn.click();
-    const theme2 = await page.evaluate(() =>
-      document.documentElement.getAttribute("data-theme")
-    );
-    expect(theme2).toMatch(/^(dark|light)$/);
-    expect(theme2).not.toEqual(theme1);
+    await page
+      .locator('label:has(input[name="appearance-theme"][value="light"])')
+      .click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
-    // Verify localStorage has persisted darkMode setting
     const stored = await page.evaluate(() =>
       localStorage.getItem("GlobalSettings")
     );
-    expect(stored).toBeTruthy();
-    expect(stored).toContain("darkMode");
+    expect(stored).toContain('"darkMode":false');
+
+    // System clears the saved choice, so the OS scheme applies again.
+    await page
+      .locator('label:has(input[name="appearance-theme"][value="system"])')
+      .click();
+    await expect(page.locator("html")).not.toHaveAttribute("data-theme", /.+/);
+
+    // The choice survives a reload (pre-paint snapshot and settings).
+    await page
+      .locator('label:has(input[name="appearance-theme"][value="dark"])')
+      .click();
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   });
 
-  test("toggles theme without clearing active dictionary entry", async ({
+  test("changing appearance keeps the active dictionary entry", async ({
     page,
   }) => {
     await page.goto("/dicts?q=habeo");
     await expect(page.locator(".dict-card").first()).toBeVisible();
 
-    const toggleBtn = page.locator("morcus-theme-toggle .theme-toggle-btn");
-    await expect(toggleBtn).toBeVisible();
+    await page.locator("#appearance-btn").click();
+    await page
+      .locator('label:has(input[name="appearance-font"][value="serif"])')
+      .click();
+    await page.locator("#appearance-size-inc").click();
 
-    // Click theme toggle button
-    await toggleBtn.click();
-
-    // Verify URL, search input, and dictionary entry remain active and are not cleared
     await expect(page).toHaveURL(/\/dicts\?q=habeo/);
     await expect(page.locator("#dict-q")).toHaveValue("habeo");
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
+    const fontFamily = await page
+      .locator(".entry")
+      .first()
+      .evaluate((el) => getComputedStyle(el).fontFamily);
+    expect(fontFamily).toContain("Georgia");
+  });
+
+  test("the dictionary settings link opens the Appearance menu", async ({
+    page,
+  }) => {
+    await page.goto("/dicts?q=habeo");
+    await page.locator("#dict-settings-btn").click();
+    await page.locator("#dict-appearance-link").click();
+    await expect(page.locator("#appearance-popover")).toBeVisible();
+    await expect(page.locator("dialog#dict-settings")).not.toBeVisible();
   });
 
   test("loads entries by ID directly via /dicts/id/:id", async ({ page }) => {
@@ -1030,11 +1049,11 @@ test.describe("UI V2 dictionary", () => {
     expect(await readDictCookie()).toBe("1");
   });
 
-  test("adjusts highlight strength via quick menu and persists to localStorage", async ({
+  test("adjusts highlight strength from the Appearance menu and persists it", async ({
     page,
   }) => {
     await page.goto("/dicts?q=habeo");
-    await expect(page.locator("#dict-settings-btn")).toBeVisible();
+    await expect(page.locator("#appearance-btn")).toBeVisible();
 
     // Verify initial scale is 1
     const initialScale = await page.evaluate(() =>
@@ -1042,24 +1061,21 @@ test.describe("UI V2 dictionary", () => {
     );
     expect(initialScale === "1" || initialScale === "").toBe(true);
 
-    // Open the settings dialog
-    await page.locator("#dict-settings-btn").click();
-    const dialog = page.locator("dialog#dict-settings");
-    await expect(dialog).toBeVisible();
+    await page.locator("#appearance-btn").click();
+    const popover = page.locator("#appearance-popover");
+    await expect(popover).toBeVisible();
 
-    // Adjust slider to 80%; strength stays live while the dialog is open.
-    const slider = dialog.locator(".settings-slider");
+    // Adjust slider to 80%: live while dragging, saved on release.
+    const slider = popover.locator("#appearance-highlight");
     await slider.fill("80");
     await slider.dispatchEvent("input");
     await slider.dispatchEvent("change");
 
-    // Verify CSS scale updated on documentElement
     const vividScale = await page.evaluate(() =>
       document.documentElement.style.getPropertyValue("--highlight-scale")
     );
     expect(vividScale).toBe("1.6");
 
-    // Verify persistence in localStorage
     const stored = await page.evaluate(() =>
       JSON.parse(localStorage.getItem("GlobalSettings") || "{}")
     );
@@ -1067,7 +1083,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Close on Escape
     await page.keyboard.press("Escape");
-    await expect(dialog).not.toBeVisible();
+    await expect(popover).not.toBeVisible();
   });
 
   test("supports reader sidebar dictionary search in the embedded frame", async ({

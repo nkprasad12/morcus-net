@@ -824,7 +824,7 @@ describe("app_router integration", () => {
 
   test("GET /assets/<chunk>.js serves all 6 built client chunks", async () => {
     const chunks = [
-      { asset: "common.js" as const, expectedSymbol: "morcus-theme-toggle" },
+      { asset: "common.js" as const, expectedSymbol: "morcus-appearance-menu" },
       { asset: "dict.js" as const, expectedSymbol: "morcus-dict-search" },
       { asset: "reader.js" as const, expectedSymbol: "morcus-reader-view" },
       {
@@ -1053,12 +1053,12 @@ describe("app_router integration", () => {
 
       const maxRes = await request(app).get("/dicts?q=Gallia&scale=200");
       expect(maxRes.text).toContain(
-        "<style>:root { --dict-scale: 1.40; }</style>"
+        "<style>:root { --dict-scale: 1.50; }</style>"
       );
 
       const minRes = await request(app).get("/dicts?q=Gallia&scale=40");
       expect(minRes.text).toContain(
-        "<style>:root { --dict-scale: 0.70; }</style>"
+        "<style>:root { --dict-scale: 0.50; }</style>"
       );
 
       const invalidRes = await request(app).get("/dicts?q=Gallia&scale=abc");

@@ -7,59 +7,45 @@ import {
 } from "@/web/ui/core/index.client";
 // Not in the core barrel: only the reader uses it, so it ships in reader.js.
 import { AnchoredPopoverController } from "@/web/ui/core/widgets/popover.client";
-import {
-  isBoolean,
-  isLiteral,
-  isNumber,
-  isOneOf,
-  Validator,
-} from "@/web/utils/rpc/parsing";
+import { isBoolean, isNumber } from "@/web/utils/rpc/parsing";
+import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
+import { DEFAULT_PANEL_SCALE } from "@/web/ui/reader/reader_scale.common";
 
-type ReaderFontFamily = "serif" | "sans";
-type ReaderLineHeight = "compact" | "normal" | "relaxed";
-
+/**
+ * Reader-only preferences. The reading-text font, size and line spacing are
+ * app-wide and live in the app-bar Appearance menu (`appearance.client.ts`).
+ */
 export interface ReaderPreferences {
-  readerScale: number;
+  /**
+   * The side panel's text size (dictionary, translation, notes), in percent
+   * of the main reading text. The name predates the translation and notes.
+   */
   dictScale: number;
   showMacra: boolean;
   showGutter: boolean;
-  fontFamily: ReaderFontFamily;
-  lineHeight: ReaderLineHeight;
 }
 
 export const DEFAULT_READER_PREFS: ReaderPreferences = {
-  readerScale: 100,
-  dictScale: 100,
+  dictScale: DEFAULT_PANEL_SCALE,
   showMacra: true,
   showGutter: true,
-  fontFamily: "sans",
-  lineHeight: "normal",
 };
 
-export const MIN_READER_SCALE = 70;
-export const MAX_READER_SCALE = 160;
-export const MIN_DICT_SCALE = 70;
-export const MAX_DICT_SCALE = 140;
-const SCALE_STEP = 10;
+export const MIN_DICT_SCALE = 60;
+export const MAX_DICT_SCALE = 130;
+const SCALE_STEP = 5;
 
-const isReaderFontFamily: Validator<ReaderFontFamily> = isOneOf(
-  isLiteral("serif"),
-  isLiteral("sans")
-);
-
-const isReaderLineHeight: Validator<ReaderLineHeight> = isOneOf(
-  isLiteral("compact"),
-  isOneOf(isLiteral("normal"), isLiteral("relaxed"))
-);
+/** Clamps to the stepper's range and snaps to its steps. */
+function clampDictScale(value: number): number {
+  const snapped = Math.round(value / SCALE_STEP) * SCALE_STEP;
+  return Math.min(MAX_DICT_SCALE, Math.max(MIN_DICT_SCALE, snapped));
+}
 
 type PersistedReaderPreferences = Omit<ReaderPreferences, "showMacra">;
 
 const READER_PREFS_CHECKERS: FieldCheckers<PersistedReaderPreferences> = {
-  readerScale: isNumber,
   dictScale: isNumber,
   showGutter: isBoolean,
-  fontFamily: isReaderFontFamily,
-  lineHeight: isReaderLineHeight,
 };
 
 export const READER_SETTINGS_KEY = "morcus_reader_settings";
@@ -98,10 +84,12 @@ export function parseReaderPreferences(raw: string | null): ReaderPreferences {
   if (!raw) return { ...DEFAULT_READER_PREFS };
   try {
     const parsed: unknown = JSON.parse(raw);
-    return {
+    const prefs = {
       ...DEFAULT_READER_PREFS,
       ...pickValid<PersistedReaderPreferences>(parsed, READER_PREFS_CHECKERS),
     };
+    prefs.dictScale = clampDictScale(prefs.dictScale);
+    return prefs;
   } catch {
     return { ...DEFAULT_READER_PREFS };
   }
@@ -114,11 +102,8 @@ export const readerSettingsStore = {
 
   set(prefs: ReaderPreferences): void {
     const persisted: PersistedReaderPreferences = {
-      readerScale: prefs.readerScale,
       dictScale: prefs.dictScale,
       showGutter: prefs.showGutter,
-      fontFamily: prefs.fontFamily,
-      lineHeight: prefs.lineHeight,
     };
     storage.setJson(READER_SETTINGS_KEY, persisted);
   },
@@ -136,12 +121,13 @@ export interface ReaderSettingsChangeEventDetail {
 }
 
 /**
- * Progressively enhanced Reader Appearance & Typography popover component (Light DOM mode).
+ * Progressively enhanced reader settings popover (Light DOM mode).
  *
- * Coordinates the anchored settings popover, font scaling steppers, typography
- * selects, scholarly aids toggles, and persistence to localStorage. When
- * preferences are updated, dispatches a bubbling `reader-settings-change`
- * custom event.
+ * Coordinates the anchored popover, the dictionary panel's text-size stepper,
+ * the scholarly aids and swipe toggles, and persistence to localStorage. The
+ * reading-text font, size and spacing are app-wide: the "Text appearance" link
+ * opens the app-bar Appearance menu for them. When preferences are updated,
+ * dispatches a bubbling `reader-settings-change` custom event.
  */
 export class MorcusReaderSettings extends BaseElement {
   #currentPrefs: ReaderPreferences = { ...DEFAULT_READER_PREFS };
@@ -170,12 +156,6 @@ export class MorcusReaderSettings extends BaseElement {
   }
   get #toggleGutter() {
     return this.scope.$<HTMLInputElement>("#toggle-gutter");
-  }
-  get #fontSelect() {
-    return this.scope.$<HTMLSelectElement>("#font-select");
-  }
-  get #lineHeightSelect() {
-    return this.scope.$<HTMLSelectElement>("#line-height-select");
   }
 
   public getPreferences(): ReaderPreferences {
@@ -220,42 +200,17 @@ export class MorcusReaderSettings extends BaseElement {
     const resetBtn = this.scope.$<HTMLButtonElement>(
       "#reader-settings-reset-btn"
     );
-    const readerSizeDec = this.scope.$<HTMLButtonElement>("#reader-size-dec");
-    const readerSizeInc = this.scope.$<HTMLButtonElement>("#reader-size-inc");
     const dictSizeDec = this.scope.$<HTMLButtonElement>("#dict-size-dec");
     const dictSizeInc = this.scope.$<HTMLButtonElement>("#dict-size-inc");
     const toggleMacra = this.#toggleMacra;
     const toggleGutter = this.#toggleGutter;
-    const fontSelect = this.#fontSelect;
-    const lineHeightSelect = this.#lineHeightSelect;
 
     this.#syncUiWithPrefs(this.#currentPrefs);
 
     // Stepper bindings
-    if (readerSizeDec) {
-      this.scope.listen(readerSizeDec, "click", () => {
-        this.#currentPrefs.readerScale = Math.max(
-          MIN_READER_SCALE,
-          this.#currentPrefs.readerScale - SCALE_STEP
-        );
-        this.#saveAndEmit();
-      });
-    }
-
-    if (readerSizeInc) {
-      this.scope.listen(readerSizeInc, "click", () => {
-        this.#currentPrefs.readerScale = Math.min(
-          MAX_READER_SCALE,
-          this.#currentPrefs.readerScale + SCALE_STEP
-        );
-        this.#saveAndEmit();
-      });
-    }
-
     if (dictSizeDec) {
       this.scope.listen(dictSizeDec, "click", () => {
-        this.#currentPrefs.dictScale = Math.max(
-          MIN_DICT_SCALE,
+        this.#currentPrefs.dictScale = clampDictScale(
           this.#currentPrefs.dictScale - SCALE_STEP
         );
         this.#saveAndEmit();
@@ -264,8 +219,7 @@ export class MorcusReaderSettings extends BaseElement {
 
     if (dictSizeInc) {
       this.scope.listen(dictSizeInc, "click", () => {
-        this.#currentPrefs.dictScale = Math.min(
-          MAX_DICT_SCALE,
+        this.#currentPrefs.dictScale = clampDictScale(
           this.#currentPrefs.dictScale + SCALE_STEP
         );
         this.#saveAndEmit();
@@ -291,23 +245,18 @@ export class MorcusReaderSettings extends BaseElement {
       });
     }
 
-    // Select bindings
-    if (fontSelect) {
-      this.scope.listen(fontSelect, "change", () => {
-        this.#currentPrefs.fontFamily =
-          fontSelect.value === "sans" ? "sans" : "serif";
-        this.#saveAndEmit();
-      });
-    }
-
-    if (lineHeightSelect) {
-      this.scope.listen(lineHeightSelect, "change", () => {
-        const val = lineHeightSelect.value;
-        this.#currentPrefs.lineHeight =
-          val === "compact" || val === "relaxed" ? val : "normal";
-        this.#saveAndEmit();
-      });
-    }
+    // The text font, size and spacing are app-wide: this link opens the
+    // app-bar Appearance menu instead of duplicating its controls.
+    const appearanceLink = this.scope.$<HTMLButtonElement>(
+      "#reader-appearance-link"
+    );
+    this.scope.listen(appearanceLink, "click", (e: MouseEvent) => {
+      // Keep this click from reaching the menu's outside-click dismissal,
+      // which it registers on the document as it opens.
+      e.stopPropagation();
+      this.close();
+      this.ownerDocument.dispatchEvent(new CustomEvent(OPEN_APPEARANCE_EVENT));
+    });
 
     // The swipe toggle is read by the page-nav controller at gesture time, so
     // writing storage is all a change needs.
@@ -335,30 +284,22 @@ export class MorcusReaderSettings extends BaseElement {
   }
 
   #syncUiWithPrefs(prefs: ReaderPreferences) {
-    const readerSizeLabel = this.scope.$<HTMLElement>("#reader-size-label");
     const dictSizeLabel = this.scope.$<HTMLElement>("#dict-size-label");
     const toggleMacra = this.#toggleMacra;
     const toggleGutter = this.#toggleGutter;
-    const fontSelect = this.#fontSelect;
-    const lineHeightSelect = this.#lineHeightSelect;
 
-    if (readerSizeLabel) {
-      readerSizeLabel.textContent = `${prefs.readerScale}%`;
-    }
     if (dictSizeLabel) {
       dictSizeLabel.textContent = `${prefs.dictScale}%`;
     }
+    const dec = this.scope.$<HTMLButtonElement>("#dict-size-dec");
+    const inc = this.scope.$<HTMLButtonElement>("#dict-size-inc");
+    if (dec) dec.disabled = prefs.dictScale <= MIN_DICT_SCALE;
+    if (inc) inc.disabled = prefs.dictScale >= MAX_DICT_SCALE;
     if (toggleMacra) {
       toggleMacra.checked = prefs.showMacra;
     }
     if (toggleGutter) {
       toggleGutter.checked = prefs.showGutter;
-    }
-    if (fontSelect) {
-      fontSelect.value = prefs.fontFamily;
-    }
-    if (lineHeightSelect) {
-      lineHeightSelect.value = prefs.lineHeight;
     }
   }
 

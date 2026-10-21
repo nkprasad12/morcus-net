@@ -78,7 +78,12 @@ a.reader-note-ref:target {
 .reader-notes {
   color: var(--text-muted);
   font-family: var(--font-text);
-  font-size: 0.875rem;
+  /* Smaller than the translation (secondary text); at the default panel size
+     this is about 0.875rem on desktop and 0.8rem on phones. */
+  font-size: calc(
+    0.86 * var(--reader-base, 1.2rem) * var(--text-scale, 1) *
+      var(--panel-scale, 0.85)
+  );
   line-height: 1.6;
 }
 
@@ -153,10 +158,6 @@ a.reader-note-ref:target {
 }
 
 @media (max-width: 640px) {
-  .reader-notes {
-    font-size: 0.8125rem;
-  }
-
   /* Not narrowed below the desktop width: the bracketed label has to fit, and
      mobile is where the tap target matters most. */
   .reader-note {

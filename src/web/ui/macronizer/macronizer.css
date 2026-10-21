@@ -231,8 +231,8 @@
   border: 1px solid var(--card-border);
   border-radius: var(--radius-xl);
   font-family: var(--font-text);
-  font-size: 1.25rem;
-  line-height: 1.95;
+  font-size: calc(1.25rem * var(--text-scale, 1));
+  line-height: calc(1.95 * var(--text-leading, 1));
   white-space: pre-wrap;
   color: var(--text);
 }

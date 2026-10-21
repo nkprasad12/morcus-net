@@ -1,0 +1,172 @@
+/* App-bar Appearance menu (shell/appearance_menu.server.ts). The panel reuses
+   the shared popover shell (.anchored-popover, core/nav/components.css) and
+   settings controls (core/state/settings.css). */
+
+morcus-appearance-menu {
+  display: contents;
+}
+
+.appearance-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* A modal <dialog> in the top layer. Undo the UA centring (inset/margin);
+   appearance_menu.client.ts sets top/left under the trigger on open. */
+.appearance-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 72px);
+  padding: var(--space-4) var(--space-5);
+  color: var(--text);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* .anchored-popover sets display: flex, which would override the UA's hiding. */
+.appearance-popover:not([open]) {
+  display: none;
+}
+
+/* Transparent: it only takes outside clicks; the page stays visible behind. */
+.appearance-popover::backdrop {
+  background: transparent;
+}
+
+/* No caret: the panel is positioned by its edges, not centred on the trigger. */
+.appearance-popover::before {
+  display: none;
+}
+
+.appearance-popover .settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-4) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.appearance-popover .settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.appearance-popover .settings-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.appearance-stepper {
+  align-self: flex-start;
+}
+
+/* Segmented control: a radio group drawn as one pill with sliding options. */
+.segmented {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--tag-bg);
+}
+
+.segmented-option {
+  flex: 1;
+  position: relative;
+}
+
+/* Visually hidden but focusable and announced. */
+.segmented-option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* The text-font options are shown in their own font. */
+.font-sans-preview {
+  font-family: var(--font-sans);
+}
+
+.font-serif-preview {
+  font-family: var(--font-serif);
+}
+
+.segmented-icon {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.segmented-option input:checked + .segmented-label {
+  background: var(--card-bg);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.segmented-option input:focus-visible + .segmented-label {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+/* "Text appearance →" links in the reader and dictionary settings. */
+.appearance-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  /* Set apart from the settings below it (1rem in both settings dialogs). */
+  margin-bottom: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--tag-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The reader popover's body already has a flex gap of --space-4. */
+.reader-settings-popover .appearance-link {
+  margin-bottom: var(--space-4);
+}
+
+.appearance-link:hover {
+  border-color: var(--border-strong);
+}
+
+.appearance-link-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.appearance-link svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  flex-shrink: 0;
+}

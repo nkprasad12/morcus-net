@@ -69,10 +69,18 @@
   font-family: var(--font-serif);
 }
 
+/* The reading-text base size, before the app-wide text scale. The side panel
+   (translation, notes, and the dictionary iframe) sizes itself relative to
+   it. Keep both values in step with `READER_BASE_REM` in
+   `reader_scale.common.ts`. */
+.reader-view {
+  --reader-base: 1.2rem;
+}
+
 .reader-passage {
   font-family: var(--font-text);
-  font-size: calc(1.2rem * var(--reader-scale, 1));
-  line-height: var(--reader-line-height, 1.65);
+  font-size: calc(var(--reader-base) * var(--text-scale, 1));
+  line-height: calc(1.65 * var(--text-leading, 1));
   color: var(--reading-text);
 }
 
@@ -469,9 +477,8 @@
     background: transparent;
   }
 
-  .reader-passage {
-    font-size: calc(1.1rem * var(--reader-scale, 1));
-    line-height: var(--reader-line-height, 1.65);
+  .reader-view {
+    --reader-base: 1.1rem;
   }
 
   .reader-section {

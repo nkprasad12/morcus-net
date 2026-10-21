@@ -4,9 +4,7 @@
 import {
   DEFAULT_READER_PREFS,
   MAX_DICT_SCALE,
-  MAX_READER_SCALE,
   MIN_DICT_SCALE,
-  MIN_READER_SCALE,
   MorcusReaderSettings,
   READER_SETTINGS_KEY,
   getWorkMacra,
@@ -17,6 +15,7 @@ import {
   setWorkMacra,
   SWIPE_NAV_KEY,
 } from "@/web/ui/reader/reader_settings.client";
+import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
 
 describe("Reader preferences validation & schema", () => {
   beforeEach(() => {
@@ -47,13 +46,7 @@ describe("Reader preferences validation & schema", () => {
   });
 
   it("parses valid preferences completely", () => {
-    const valid = {
-      readerScale: 120,
-      dictScale: 90,
-      showGutter: false,
-      fontFamily: "sans" as const,
-      lineHeight: "compact" as const,
-    };
+    const valid = { dictScale: 90, showGutter: false };
     expect(parseReaderPreferences(JSON.stringify(valid))).toEqual({
       ...valid,
       showMacra: DEFAULT_READER_PREFS.showMacra,
@@ -61,43 +54,59 @@ describe("Reader preferences validation & schema", () => {
   });
 
   it("ignores showMacra in global settings JSON because macra is scoped per work", () => {
-    const raw = JSON.stringify({
-      readerScale: 110,
-      showMacra: false,
-    });
+    const raw = JSON.stringify({ dictScale: 110, showMacra: false });
     expect(parseReaderPreferences(raw).showMacra).toBe(true);
   });
 
-  it("strips showMacra when persisting readerSettingsStore to localStorage", () => {
+  it("drops legacy typography fields now owned by the Appearance menu", () => {
+    const legacy = {
+      readerScale: 120,
+      fontFamily: "serif",
+      lineHeight: "compact",
+      dictScale: 90,
+    };
+    expect(parseReaderPreferences(JSON.stringify(legacy))).toEqual({
+      ...DEFAULT_READER_PREFS,
+      dictScale: 90,
+    });
+  });
+
+  it("persists only dictScale and showGutter to localStorage", () => {
     readerSettingsStore.set({
       ...DEFAULT_READER_PREFS,
       showMacra: false,
+      dictScale: 120,
     });
     const stored = JSON.parse(localStorage.getItem(READER_SETTINGS_KEY)!);
-    expect(stored.showMacra).toBeUndefined();
-    expect(stored.readerScale).toBe(100);
+    expect(stored).toEqual({ dictScale: 120, showGutter: true });
+  });
+
+  it("update merges a patch into the stored preferences", () => {
+    readerSettingsStore.set({ ...DEFAULT_READER_PREFS, dictScale: 80 });
+    expect(readerSettingsStore.update({ showGutter: false })).toEqual({
+      ...DEFAULT_READER_PREFS,
+      dictScale: 80,
+      showGutter: false,
+    });
+    expect(readerSettingsStore.get()).toEqual({
+      ...DEFAULT_READER_PREFS,
+      dictScale: 80,
+      showGutter: false,
+    });
   });
 
   it("partially parses valid fields and falls back to defaults for missing ones", () => {
-    const partial = {
-      readerScale: 80,
-      fontFamily: "sans" as const,
-    };
-    expect(parseReaderPreferences(JSON.stringify(partial))).toEqual({
+    expect(parseReaderPreferences(JSON.stringify({ dictScale: 80 }))).toEqual({
       ...DEFAULT_READER_PREFS,
-      readerScale: 80,
-      fontFamily: "sans",
+      dictScale: 80,
     });
   });
 
-  it("drops corrupt or invalid union/numeric values and preserves defaults", () => {
+  it("drops corrupt or invalid values and preserves defaults", () => {
     const corrupt = {
-      readerScale: "invalid_string",
       dictScale: null,
       showMacra: "not_a_boolean",
       showGutter: 123,
-      fontFamily: "comic-sans",
-      lineHeight: "huge",
       extraField: "ignored",
     };
     expect(parseReaderPreferences(JSON.stringify(corrupt))).toEqual(
@@ -106,16 +115,10 @@ describe("Reader preferences validation & schema", () => {
   });
 
   it("preserves valid fields even when sibling fields are corrupt", () => {
-    const mixed = {
-      readerScale: 110,
-      dictScale: "bad",
-      fontFamily: "sans" as const,
-      lineHeight: "super_relaxed",
-    };
+    const mixed = { dictScale: "bad", showGutter: false };
     expect(parseReaderPreferences(JSON.stringify(mixed))).toEqual({
       ...DEFAULT_READER_PREFS,
-      readerScale: 110,
-      fontFamily: "sans",
+      showGutter: false,
     });
   });
 });
@@ -175,20 +178,15 @@ describe("MorcusReaderSettings custom element", () => {
   function createSettingsElement(attrs: { workId?: string } = {}): {
     el: MorcusReaderSettings;
     popover: HTMLElement;
-    dialog: HTMLElement;
     backdrop: HTMLElement;
     closeBtn: HTMLButtonElement;
     triggerBtn: HTMLButtonElement;
-    readerSizeDec: HTMLButtonElement;
-    readerSizeInc: HTMLButtonElement;
-    readerSizeLabel: HTMLElement;
     dictSizeDec: HTMLButtonElement;
     dictSizeInc: HTMLButtonElement;
     dictSizeLabel: HTMLElement;
     toggleMacra: HTMLInputElement;
     toggleGutter: HTMLInputElement;
-    fontSelect: HTMLSelectElement;
-    lineHeightSelect: HTMLSelectElement;
+    appearanceLink: HTMLButtonElement;
     resetBtn: HTMLButtonElement;
   } {
     const workAttr = attrs.workId ? ` data-work="${attrs.workId}"` : "";
@@ -198,9 +196,7 @@ describe("MorcusReaderSettings custom element", () => {
       <morcus-reader-settings${workAttr}>
         <div class="reader-settings-popover" id="reader-settings-popover" role="dialog" hidden>
           <button type="button" id="reader-settings-close-btn">&times;</button>
-          <button type="button" id="reader-size-dec">-</button>
-          <span id="reader-size-label">100%</span>
-          <button type="button" id="reader-size-inc">+</button>
+          <button type="button" id="reader-appearance-link" class="appearance-link">Text appearance</button>
 
           <button type="button" id="dict-size-dec">-</button>
           <span id="dict-size-label">100%</span>
@@ -209,135 +205,93 @@ describe("MorcusReaderSettings custom element", () => {
           <input type="checkbox" id="toggle-macra" checked />
           <input type="checkbox" id="toggle-gutter" checked />
 
-          <select id="font-select">
-            <option value="serif">Serif</option>
-            <option value="sans">Sans</option>
-          </select>
-
-          <select id="line-height-select">
-            <option value="compact">Compact</option>
-            <option value="normal">Normal</option>
-            <option value="relaxed">Relaxed</option>
-          </select>
-
           <button type="button" id="reader-settings-reset-btn">Reset</button>
         </div>
       </morcus-reader-settings>
     `;
 
-    const el = container.querySelector<MorcusReaderSettings>(
-      "morcus-reader-settings"
-    )!;
-    const popover = container.querySelector<HTMLElement>(
-      "#reader-settings-popover"
-    )!;
+    const $ = <T extends HTMLElement>(sel: string) =>
+      container.querySelector<T>(sel)!;
     return {
-      el,
-      popover,
-      dialog: popover,
-      backdrop: container.querySelector<HTMLElement>(
-        "#reader-settings-backdrop"
-      )!,
-      closeBtn: container.querySelector<HTMLButtonElement>(
-        "#reader-settings-close-btn"
-      )!,
-      triggerBtn: container.querySelector<HTMLButtonElement>(
-        "#reader-settings-btn"
-      )!,
-      readerSizeDec:
-        container.querySelector<HTMLButtonElement>("#reader-size-dec")!,
-      readerSizeInc:
-        container.querySelector<HTMLButtonElement>("#reader-size-inc")!,
-      readerSizeLabel:
-        container.querySelector<HTMLElement>("#reader-size-label")!,
-      dictSizeDec:
-        container.querySelector<HTMLButtonElement>("#dict-size-dec")!,
-      dictSizeInc:
-        container.querySelector<HTMLButtonElement>("#dict-size-inc")!,
-      dictSizeLabel: container.querySelector<HTMLElement>("#dict-size-label")!,
-      toggleMacra: container.querySelector<HTMLInputElement>("#toggle-macra")!,
-      toggleGutter:
-        container.querySelector<HTMLInputElement>("#toggle-gutter")!,
-      fontSelect: container.querySelector<HTMLSelectElement>("#font-select")!,
-      lineHeightSelect: container.querySelector<HTMLSelectElement>(
-        "#line-height-select"
-      )!,
-      resetBtn: container.querySelector<HTMLButtonElement>(
-        "#reader-settings-reset-btn"
-      )!,
+      el: $<MorcusReaderSettings>("morcus-reader-settings"),
+      popover: $("#reader-settings-popover"),
+      backdrop: $("#reader-settings-backdrop"),
+      closeBtn: $<HTMLButtonElement>("#reader-settings-close-btn"),
+      triggerBtn: $<HTMLButtonElement>("#reader-settings-btn"),
+      dictSizeDec: $<HTMLButtonElement>("#dict-size-dec"),
+      dictSizeInc: $<HTMLButtonElement>("#dict-size-inc"),
+      dictSizeLabel: $("#dict-size-label"),
+      toggleMacra: $<HTMLInputElement>("#toggle-macra"),
+      toggleGutter: $<HTMLInputElement>("#toggle-gutter"),
+      appearanceLink: $<HTMLButtonElement>("#reader-appearance-link"),
+      resetBtn: $<HTMLButtonElement>("#reader-settings-reset-btn"),
     };
   }
 
   test("hydrates UI with defaults when localStorage is empty", () => {
-    const {
-      readerSizeLabel,
-      dictSizeLabel,
-      toggleMacra,
-      toggleGutter,
-      fontSelect,
-      lineHeightSelect,
-    } = createSettingsElement();
+    const { dictSizeLabel, toggleMacra, toggleGutter } =
+      createSettingsElement();
 
-    expect(readerSizeLabel.textContent).toBe("100%");
-    expect(dictSizeLabel.textContent).toBe("100%");
+    expect(dictSizeLabel.textContent).toBe("85%");
     expect(toggleMacra.checked).toBe(true);
     expect(toggleGutter.checked).toBe(true);
-    expect(fontSelect.value).toBe("sans");
-    expect(lineHeightSelect.value).toBe("normal");
   });
 
   test("hydrates UI with saved settings from localStorage", () => {
     localStorage.setItem(
       READER_SETTINGS_KEY,
-      JSON.stringify({
-        readerScale: 120,
-        dictScale: 90,
-        showGutter: false,
-        fontFamily: "sans",
-        lineHeight: "compact",
-      })
+      JSON.stringify({ dictScale: 90, showGutter: false })
     );
     setWorkMacra("phi0690", false);
 
-    const {
-      readerSizeLabel,
-      dictSizeLabel,
-      toggleMacra,
-      toggleGutter,
-      fontSelect,
-      lineHeightSelect,
-    } = createSettingsElement({ workId: "phi0690" });
+    const { dictSizeLabel, toggleMacra, toggleGutter } = createSettingsElement({
+      workId: "phi0690",
+    });
 
-    expect(readerSizeLabel.textContent).toBe("120%");
     expect(dictSizeLabel.textContent).toBe("90%");
     expect(toggleMacra.checked).toBe(false);
     expect(toggleGutter.checked).toBe(false);
-    expect(fontSelect.value).toBe("sans");
-    expect(lineHeightSelect.value).toBe("compact");
   });
 
   test("hydrates safely when localStorage contains corrupt data", () => {
     localStorage.setItem(
       READER_SETTINGS_KEY,
-      JSON.stringify({
-        readerScale: "invalid",
-        dictScale: 130,
-        fontFamily: "comic-sans",
-        lineHeight: "relaxed",
-      })
+      JSON.stringify({ dictScale: 130, showGutter: "corrupt" })
     );
 
-    const { readerSizeLabel, dictSizeLabel, fontSelect, lineHeightSelect } =
-      createSettingsElement();
+    const { dictSizeLabel, toggleGutter } = createSettingsElement();
 
-    expect(readerSizeLabel.textContent).toBe("100%");
     expect(dictSizeLabel.textContent).toBe("130%");
-    expect(fontSelect.value).toBe("sans");
-    expect(lineHeightSelect.value).toBe("relaxed");
+    expect(toggleGutter.checked).toBe(true);
   });
 
-  test("stepper dec/inc adjusts reader text size within bounds and dispatches event", () => {
-    const { el, readerSizeDec, readerSizeInc, readerSizeLabel } =
+  test("clamps and snaps a saved size to the stepper's range and steps", () => {
+    for (const [saved, shown] of [
+      [500, "130%"],
+      [10, "60%"],
+      [87, "85%"],
+    ] as const) {
+      localStorage.setItem(
+        READER_SETTINGS_KEY,
+        JSON.stringify({ dictScale: saved })
+      );
+      expect(readerSettingsStore.get().dictScale).toBe(parseInt(shown));
+      const { dictSizeLabel } = createSettingsElement();
+      expect(dictSizeLabel.textContent).toBe(shown);
+    }
+  });
+
+  test("hydrates safely when localStorage is not JSON", () => {
+    localStorage.setItem(READER_SETTINGS_KEY, "{not json");
+
+    const { el, dictSizeLabel } = createSettingsElement();
+
+    expect(dictSizeLabel.textContent).toBe("85%");
+    expect(el.getPreferences()).toEqual(DEFAULT_READER_PREFS);
+  });
+
+  test("stepper dec/inc adjusts the side panel size in 5% steps within [60, 130]", () => {
+    const { el, dictSizeDec, dictSizeInc, dictSizeLabel } =
       createSettingsElement();
 
     const changeEvents: unknown[] = [];
@@ -345,52 +299,25 @@ describe("MorcusReaderSettings custom element", () => {
       changeEvents.push((e as CustomEvent).detail);
     });
 
-    // Dec from 100 -> 90
-    readerSizeDec.click();
-    expect(readerSizeLabel.textContent).toBe("90%");
-    expect(readerSettingsStore.get().readerScale).toBe(90);
-    expect(changeEvents).toHaveLength(1);
-    expect(changeEvents[0]).toEqual({
-      prefs: expect.objectContaining({ readerScale: 90 }),
-    });
-
-    // Inc back to 100 -> 110
-    readerSizeInc.click();
-    readerSizeInc.click();
-    expect(readerSizeLabel.textContent).toBe("110%");
-    expect(readerSettingsStore.get().readerScale).toBe(110);
-
-    // Test minimum bound clamping (70)
-    for (let i = 0; i < 15; i++) {
-      readerSizeDec.click();
-    }
-    expect(readerSizeLabel.textContent).toBe(`${MIN_READER_SCALE}%`);
-    expect(readerSettingsStore.get().readerScale).toBe(MIN_READER_SCALE);
-
-    // Test maximum bound clamping (160)
-    for (let i = 0; i < 20; i++) {
-      readerSizeInc.click();
-    }
-    expect(readerSizeLabel.textContent).toBe(`${MAX_READER_SCALE}%`);
-    expect(readerSettingsStore.get().readerScale).toBe(MAX_READER_SCALE);
-  });
-
-  test("stepper dec/inc adjusts dict text size within bounds [70, 140]", () => {
-    const { dictSizeDec, dictSizeInc, dictSizeLabel } = createSettingsElement();
-
     dictSizeDec.click();
-    expect(dictSizeLabel.textContent).toBe("90%");
-    expect(readerSettingsStore.get().dictScale).toBe(90);
+    expect(dictSizeLabel.textContent).toBe("80%");
+    expect(readerSettingsStore.get().dictScale).toBe(80);
+    expect(changeEvents).toEqual([
+      { prefs: expect.objectContaining({ dictScale: 80 }) },
+    ]);
 
-    // Clamp min
+    // Clamp min, where the decrease button is disabled
     for (let i = 0; i < 10; i++) dictSizeDec.click();
     expect(dictSizeLabel.textContent).toBe(`${MIN_DICT_SCALE}%`);
     expect(readerSettingsStore.get().dictScale).toBe(MIN_DICT_SCALE);
+    expect(dictSizeDec.disabled).toBe(true);
+    expect(dictSizeInc.disabled).toBe(false);
 
     // Clamp max
     for (let i = 0; i < 20; i++) dictSizeInc.click();
     expect(dictSizeLabel.textContent).toBe(`${MAX_DICT_SCALE}%`);
     expect(readerSettingsStore.get().dictScale).toBe(MAX_DICT_SCALE);
+    expect(dictSizeInc.disabled).toBe(true);
   });
 
   test("toggles macra and gutter update store and dispatch events", () => {
@@ -414,35 +341,54 @@ describe("MorcusReaderSettings custom element", () => {
     expect(changeEvents).toHaveLength(2);
   });
 
-  test("dropdown changes update fontFamily and lineHeight in store", () => {
-    const { fontSelect, lineHeightSelect } = createSettingsElement();
-
-    fontSelect.value = "sans";
-    fontSelect.dispatchEvent(new Event("change"));
-    expect(readerSettingsStore.get().fontFamily).toBe("sans");
-
-    lineHeightSelect.value = "relaxed";
-    lineHeightSelect.dispatchEvent(new Event("change"));
-    expect(readerSettingsStore.get().lineHeight).toBe("relaxed");
-  });
-
   test("reset button restores defaults", () => {
-    const {
-      resetBtn,
-      readerSizeLabel,
-      dictSizeLabel,
-      fontSelect,
-      readerSizeInc,
-    } = createSettingsElement();
+    const { resetBtn, dictSizeLabel, dictSizeInc, toggleGutter } =
+      createSettingsElement();
 
-    readerSizeInc.click();
-    expect(readerSizeLabel.textContent).toBe("110%");
+    dictSizeInc.click();
+    toggleGutter.checked = false;
+    toggleGutter.dispatchEvent(new Event("change"));
+    expect(dictSizeLabel.textContent).toBe("90%");
 
     resetBtn.click();
-    expect(readerSizeLabel.textContent).toBe("100%");
-    expect(dictSizeLabel.textContent).toBe("100%");
-    expect(fontSelect.value).toBe("sans");
+    expect(dictSizeLabel.textContent).toBe("85%");
+    expect(toggleGutter.checked).toBe(true);
     expect(readerSettingsStore.get()).toEqual(DEFAULT_READER_PREFS);
+  });
+
+  test("appearance link closes the popover and opens the Appearance menu", () => {
+    const { el, appearanceLink } = createSettingsElement();
+    const opened = jest.fn();
+    const docClick = jest.fn();
+    document.addEventListener(OPEN_APPEARANCE_EVENT, opened);
+    document.addEventListener("click", docClick);
+    try {
+      el.open();
+      expect(el.isOpen()).toBe(true);
+
+      appearanceLink.click();
+
+      expect(el.isOpen()).toBe(false);
+      expect(opened).toHaveBeenCalledTimes(1);
+      expect(opened.mock.calls[0][0]).toBeInstanceOf(CustomEvent);
+      // The click must not reach document-level outside-click handlers, or
+      // it would immediately dismiss the menu it just opened.
+      expect(docClick).not.toHaveBeenCalled();
+    } finally {
+      document.removeEventListener(OPEN_APPEARANCE_EVENT, opened);
+      document.removeEventListener("click", docClick);
+    }
+  });
+
+  test("appearance link does not change reader preferences", () => {
+    const { el, appearanceLink } = createSettingsElement();
+    const changes = jest.fn();
+    el.addEventListener("reader-settings-change", changes);
+
+    appearanceLink.click();
+
+    expect(changes).not.toHaveBeenCalled();
+    expect(localStorage.getItem(READER_SETTINGS_KEY)).toBeNull();
   });
 
   test("toggles popover open and closed on trigger button click", () => {
@@ -668,9 +614,9 @@ describe("MorcusReaderSettings custom element", () => {
         <button type="button" id="reader-settings-btn">Settings</button>
         <morcus-reader-settings data-work="caesar_dbg">
           <div id="reader-settings-popover" hidden>
-            <button type="button" id="reader-size-dec">-</button>
-            <span id="reader-size-label">100%</span>
-            <button type="button" id="reader-size-inc">+</button>
+            <button type="button" id="dict-size-dec">-</button>
+            <span id="dict-size-label">100%</span>
+            <button type="button" id="dict-size-inc">+</button>
             <input type="checkbox" id="toggle-gutter" checked />
             <button type="button" id="reader-settings-reset-btn">Reset</button>
           </div>
@@ -683,16 +629,18 @@ describe("MorcusReaderSettings custom element", () => {
       const resetBtn = container.querySelector<HTMLButtonElement>(
         "#reader-settings-reset-btn"
       )!;
-      const readerSizeInc =
-        container.querySelector<HTMLButtonElement>("#reader-size-inc")!;
+      const dictSizeInc =
+        container.querySelector<HTMLButtonElement>("#dict-size-inc")!;
 
       // Interactions on other controls work normally
-      readerSizeInc.click();
-      expect(el.getPreferences().readerScale).toBe(110);
+      dictSizeInc.click();
+      expect(el.getPreferences().dictScale).toBe(90);
 
       // Reset works cleanly
       resetBtn.click();
-      expect(el.getPreferences().readerScale).toBe(100);
+      expect(el.getPreferences().dictScale).toBe(
+        DEFAULT_READER_PREFS.dictScale
+      );
     });
   });
 });

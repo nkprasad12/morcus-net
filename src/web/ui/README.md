@@ -20,7 +20,7 @@ UI V2 is structured by **topic (domain vertical slices)** rather than technical 
 ```
 src/web/ui/
 ├── core/                 # Shared primitives: BaseElement, LifetimeScope, html, partial swap, drawer, popover, components.css
-├── shell/                # Document skeleton, app bar, theme & global design tokens
+├── shell/                # Document skeleton, app bar, Appearance menu & global design tokens
 ├── dict/                 # Dictionary search, entry rendering, inflections & settings
 ├── reader/               # Parallel two-column reader
 ├── library/              # Work catalog & filtering
@@ -219,8 +219,8 @@ UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
 ## Theme Switching Model
 
-- **No-JS**: Media query `@media (prefers-color-scheme: dark)` adapts colors automatically based on the user's OS preference. Interactive custom elements (`morcus-theme-toggle` and `morcus-report-dialog`) carry `data-js-only`, so no dead controls are shown to users without JavaScript (or before upgrade).
-- **With JS**: `<morcus-theme-toggle>` and `<morcus-report-dialog>` initialize and display buttons in the app bar. Theme selection toggles `[data-theme="dark"]` / `[data-theme="light"]` on `document.documentElement` (via `setPrepaint`), persists the choice to `localStorage.getItem("GlobalSettings")`, and updates `<meta name="theme-color">` (server-rendered as one tag per OS colour scheme) to match the app bar. Feedback reporting opens via native `<dialog>` modal and submits via AJAX.
+- **No-JS**: Media query `@media (prefers-color-scheme: dark)` adapts colors automatically based on the user's OS preference. Interactive custom elements (`morcus-appearance-menu` and `morcus-report-dialog`) carry `data-js-only`, so no dead controls are shown to users without JavaScript (or before upgrade).
+- **With JS**: `<morcus-appearance-menu>` and `<morcus-report-dialog>` initialize and display buttons in the app bar. The Appearance menu (palette icon) holds the theme (System / Light / Dark), the reading-text font, size and line spacing, and dictionary highlight strength (`shell/appearance.client.ts`). A Light/Dark choice sets `[data-theme]` on `document.documentElement` (via `setPrepaint`; System removes it so the OS scheme applies), persists to `localStorage.getItem("GlobalSettings")`, and updates `<meta name="theme-color">` (server-rendered as one tag per OS colour scheme) to match the app bar. Feedback reporting opens via native `<dialog>` modal and submits via AJAX.
 - **Zero Flicker**: The critical `<head>` script restores `data-theme` from the pre-paint snapshot before the first paint (see [`docs/PREFERENCES.md`](docs/PREFERENCES.md)).
 
 ---

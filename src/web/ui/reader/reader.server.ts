@@ -1,6 +1,10 @@
 import { renderPageShell } from "@/web/ui/shell/page_shell.server";
 import { buildDictUrl } from "@/web/ui/dict/search/dict_params.common";
 import {
+  DEFAULT_PANEL_SCALE,
+  dictScaleFor,
+} from "@/web/ui/reader/reader_scale.common";
+import {
   V2PreprocessedPage,
   V2PreprocessedWork,
 } from "@/common/library/preprocess/preprocessed_types";
@@ -59,11 +63,18 @@ interface ReaderRenderContext {
 /**
  * The embedded dictionary's src for a reader lookup. Lookups from Latin text
  * force inflected search (`o=1`) and start in the Latin lexica (`lang=La`).
+ * It carries the default side-panel size at the desktop breakpoint; the
+ * client corrects `scale=` for a saved size or a phone (`reader_view.client.ts`).
  */
 export function buildReaderDictIframeSrc(query: string): string {
-  return query
-    ? buildDictUrl({ q: query, inflected: true, lang: "La", embedded: "1" })
-    : "/dicts?embedded=1";
+  if (!query) return "/dicts?embedded=1";
+  const url = buildDictUrl({
+    q: query,
+    inflected: true,
+    lang: "La",
+    embedded: "1",
+  });
+  return `${url}&scale=${dictScaleFor(DEFAULT_PANEL_SCALE, false)}`;
 }
 
 /** The split layout opens the dictionary only when a lookup is active. */
