@@ -237,7 +237,7 @@ Jest tests are split into two projects in [`jest.config.js`](../../../../jest.co
 - **`unit`**: ordinary tests of routers, SSR renderers, client components and utilities.
 - **`whole-system`**: `*_conformance.test.ts` and `tools/inventory/inventory_ratchet.test.ts`. They check invariants across the whole app (every SSR fixture, every module, every stylesheet), so they depend on almost everything and take most of the suite's time.
 
-Test what you changed, then run the whole-system tier once before committing. This is required when the commit touches `src/web/` or `src/common/`, and skippable otherwise (e.g. a lock file bump or docs), since the whole-system tests only exercise the web UI and the shared modules it imports:
+Test what you changed, then run the whole-system tier once before committing anything that touches the UI or something adjacent to it. The whole-system tests only exercise the web UI and the shared modules it imports, so this is required when the commit touches `src/web/` or `src/common/` code the UI imports for display (dictionary entry XML and rendering, shared result types, display helpers). It's skippable for backend-only changes (dictionary storage and lookup logic, server wiring, Morceus, build scripts), docs, and lock file bumps:
 
 ```bash
 # After an edit: `unit` tests that import any file changed since HEAD
@@ -247,7 +247,7 @@ Test what you changed, then run the whole-system tier once before committing. Th
 # The same, for files you name
 ./morcus.sh test src/web/ui/dict/dict_page.server.ts
 
-# Once before each commit touching src/web/ or src/common/ (required)
+# Once before each commit touching the UI or what it renders (required)
 ./morcus.sh test --whole-system
 
 # Everything: both projects (CI runs them via `npm run coverage`)

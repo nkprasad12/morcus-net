@@ -453,7 +453,8 @@ function parseArguments() {
     help:
       "Runs TypeScript unit tests. By default, runs the `unit` tests related to " +
       "files changed since HEAD (including uncommitted and untracked files), " +
-      "skipping the slow whole-system suites. Run `--whole-system` once before committing.",
+      "skipping the slow whole-system suites. Run `--whole-system` once before " +
+      "committing changes that touch the UI or what it renders.",
   });
   test.add_argument("paths", {
     help: "Runs the `unit` tests related to these files instead of to the changes since HEAD.",
@@ -1244,8 +1245,8 @@ async function runTests(args: any): Promise<boolean> {
   const passed = exitCode === 0;
   if (passed && related) {
     console.log(
-      "\nRelated unit tests passed. Before committing, also run " +
-        "`./morcus.sh test --whole-system`."
+      "\nRelated unit tests passed. If this change touches the UI or what " +
+        "it renders, also run `./morcus.sh test --whole-system` before committing."
     );
   }
   return passed;

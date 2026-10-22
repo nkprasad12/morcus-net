@@ -58,14 +58,19 @@ It is CI's entry point: without `REUSE_DEV_SERVER` it starts a Docker image name
 Related unit tests (`./morcus.sh test`) may be run when verifying logic, but multi-browser E2E and visual diff tests require a running server, consume significant resources, and should only be run when requested or during final pre-commit verification.
 The Visual Diff Inspector (`./morcus.sh visual-diff`) is exempt: it launches no browsers and only reads existing screenshots, so start it whenever there are diffs to show.
 
-### ⛔ Unit Tests: Test What You Changed, Then the Whole System Before Committing
+### ⛔ Unit Tests: Test What You Changed, Then the Whole System Before Committing UI Changes
 
 Jest tests are split into two projects in [`jest.config.js`](jest.config.js), by what they check rather than where they live:
 
 - **`unit`**: ordinary tests. After an edit, run only the ones related to what you changed: `./morcus.sh test`. It runs the `unit` tests that import any file changed since `HEAD` (including uncommitted and untracked files). Pass paths (`./morcus.sh test src/foo.ts`) to pick the scope yourself.
-- **`whole-system`**: `*_conformance.test.ts` and `inventory_ratchet.test.ts`. They sweep every SSR fixture, module and stylesheet, so they depend on almost everything and take most of the suite's time. **Don't run them after every edit.** Run them once before each commit that touches `src/web/` or `src/common/`: `./morcus.sh test --whole-system`.
+- **`whole-system`**: `*_conformance.test.ts` and `inventory_ratchet.test.ts`. They sweep every SSR fixture, module and stylesheet, so they depend on almost everything and take most of the suite's time. **Don't run them after every edit.** Run them once before each commit that touches the UI or something adjacent to it: `./morcus.sh test --whole-system`.
 
-Testing only what changed since `HEAD` is safe because every commit is expected to pass both tiers, so the pre-commit `--whole-system` run is **required** for any commit touching `src/web/` or `src/common/`. These tests live in `src/web/ui/` and also import shared dictionary and XML modules from `src/common/`. A commit touching neither (a lock file bump, docs, `src/scripts/`) can't affect them, so skip it there; the pre-push hook still runs every test. Related-test selection only follows `import`s: a change to a file that tests read from disk (CSS, JSON) is only caught by the whole-system tier.
+Testing only what changed since `HEAD` is safe because every commit is expected to pass both tiers. The whole-system tests only exercise the web UI, so the pre-commit `--whole-system` run is **required** only for commits that touch the UI or what it renders:
+
+- anything under `src/web/`, and
+- `src/common/` code the UI imports for display (e.g. dictionary entry XML and its rendering, shared result types, display helpers). If unsure, check whether the file is imported, directly or transitively, from `src/web/ui/`.
+
+Backend-only commits can't affect them, so skip the tier there: dictionary storage and lookup logic, server wiring, Morceus, build and processing scripts, `src/scripts/`, docs, lock files. The pre-push hook still runs every test. Related-test selection only follows `import`s: a change to a file that tests read from disk (CSS, JSON) is only caught by the whole-system tier.
 
 ### ⛔ Visual Baseline Approval Rule
 
@@ -96,7 +101,7 @@ For full command flags, debugging modes, and the complete Pre-Commit / Pre-Push 
 | Task                            | Command                                                                  |
 | ------------------------------- | ------------------------------------------------------------------------ |
 | **Unit tests for your changes** | `./morcus.sh test` (or `./morcus.sh test path/to/file.ts`)               |
-| **Whole-system tests**          | `./morcus.sh test --whole-system` (pre-commit; see above)                |
+| **Whole-system tests**          | `./morcus.sh test --whole-system` (pre-commit for UI changes; see above) |
 | **All TypeScript tests**        | `./morcus.sh test --all` (CI runs them via `npm run coverage`)           |
 | **Lint & style checks**         | `npx eslint --cache src/web/ui && npm run lint:css && npx tsc --noEmit`  |
 | **Start dev server**            | `PORT=5757 ./morcus.sh web`                                              |
