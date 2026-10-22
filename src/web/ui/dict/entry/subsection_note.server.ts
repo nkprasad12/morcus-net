@@ -2,11 +2,7 @@ import {
   DictSubsectionResult,
   InflectionData,
 } from "@/common/dictionaries/dict_result";
-import {
-  dedupeInflections,
-  renderInflectionInline,
-  renderInflectionTable,
-} from "@/web/ui/dict/entry/inflection_table.server";
+import { renderInflections } from "@/web/ui/dict/entry/inflection_table.server";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import * as he from "he";
 
@@ -201,25 +197,6 @@ function renderGroupLabel(group: SubsectionGroup): string {
   return `${name}${chips}`;
 }
 
-function renderInflections(group: SubsectionGroup): string {
-  const inflections = dedupeInflections(group.inflections);
-  if (inflections.length === 0) {
-    return "";
-  }
-  if (inflections.length === 1) {
-    return renderInflectionInline(inflections[0]);
-  }
-  return `
-      <details class="subsection-details">
-        <summary class="tab-pill">Inflections of ${he.escape(group.name)} (${
-    inflections.length
-  })</summary>
-        <div class="tool-body inflections-body">${renderInflectionTable(
-          inflections
-        )}</div>
-      </details>`;
-}
-
 /**
  * Renders the banner shown when a query matched inside an entry rather than
  * its headword, telling the reader what matched and where it is.
@@ -242,7 +219,9 @@ export function renderSubsectionNote(
     labels.length === 1
       ? labels[0]
       : `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
-  const inflections = relevant.map(renderInflections).join("");
+  const inflections = renderInflections(
+    relevant.flatMap((group) => group.inflections)
+  );
 
   return `
     <aside class="subsection-note" aria-label="Matched sections in this entry">

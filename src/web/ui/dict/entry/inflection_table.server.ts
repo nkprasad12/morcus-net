@@ -40,42 +40,39 @@ export function dedupeInflections(
   return result;
 }
 
-function usageNoteHtml(inflection: InflectionData): string {
-  return inflection.usageNote
+function formatAnalysis(inflection: InflectionData): string {
+  const note = inflection.usageNote
     ? ` <span class="usage-note">(${he.escape(inflection.usageNote)})</span>`
     : "";
-}
-
-/** Renders analyses as a two column table. */
-export function renderInflectionTable(inflections: InflectionData[]): string {
-  const rows = inflections
-    .map(
-      (inflection) => `
-            <tr>
-              <td>${he.escape(formatInflectionForm(inflection.form))}</td>
-              <td>${he.escape(inflection.data)}${usageNoteHtml(inflection)}</td>
-            </tr>`
-    )
-    .join("");
-  return `
-            <div class="table-scroller">
-              <table class="inflection-table">
-                <thead>
-                  <tr><th>Form</th><th>Analysis</th></tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>
-            </div>`;
+  return `${he.escape(inflection.data)}${note}`;
 }
 
 /**
- * Renders a single analysis as one line of prose.
- *
- * A table costs far more vertical space than a lone analysis justifies, which
- * matters most in the embedded reader panel where subsection matches are common.
+ * Renders inflection analyses grouped by macronized form, one line per form,
+ * with multiple analyses of the same form joined by ` · `.
  */
-export function renderInflectionInline(inflection: InflectionData): string {
-  return `<p class="subsection-inline-inf"><b>${he.escape(
-    formatInflectionForm(inflection.form)
-  )}</b> — ${he.escape(inflection.data)}${usageNoteHtml(inflection)}</p>`;
+export function renderInflections(inflections: InflectionData[]): string {
+  const deduped = dedupeInflections(inflections);
+  if (deduped.length === 0) {
+    return "";
+  }
+  const byForm = new Map<string, string[]>();
+  for (const inflection of deduped) {
+    const form = formatInflectionForm(inflection.form);
+    const analysis = formatAnalysis(inflection);
+    const existing = byForm.get(form);
+    if (existing === undefined) {
+      byForm.set(form, [analysis]);
+    } else if (!existing.includes(analysis)) {
+      existing.push(analysis);
+    }
+  }
+  const lines = Array.from(
+    byForm.entries(),
+    ([form, analyses]) =>
+      `<p class="inflection-line"><b>${he.escape(form)}</b>: ${analyses.join(
+        " · "
+      )}</p>`
+  ).join("");
+  return `<div class="entry-inflections">${lines}</div>`;
 }

@@ -1,8 +1,5 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
-import {
-  dedupeInflections,
-  renderInflectionTable,
-} from "@/web/ui/dict/entry/inflection_table.server";
+import { renderInflections } from "@/web/ui/dict/entry/inflection_table.server";
 import {
   collectHtmlIds,
   dedupeSubsections,
@@ -69,7 +66,7 @@ export function renderEntryResult(
 
   // The headword itself is inert text. The permalink lives in its own pill so
   // that every entry gets an identical header composition, whether or not it
-  // has Outline / Inflections panes beside it.
+  // has an Outline pane beside it.
   const headwordHtml = headword
     ? `
       <span class="entry-headword">
@@ -132,16 +129,7 @@ export function renderEntryResult(
     `
     : "";
 
-  const inflectionsPanelHtml = inflections
-    ? `
-      <details class="tool-pane" name="${groupName}">
-        <summary class="tab-pill">Inflections</summary>
-        <div class="tool-body inflections-body">${renderInflectionTable(
-          dedupeInflections(inflections)
-        )}</div>
-      </details>
-    `
-    : "";
+  const inflectionsHtml = inflections ? renderInflections(inflections) : "";
 
   const dictLang = options?.dictLang;
   const safeLang = dictLang && /^[a-z]{2,5}$/.test(dictLang) ? dictLang : "la";
@@ -162,13 +150,11 @@ export function renderEntryResult(
   // since the parent dictionary card header is minimized into a hairline divider.
   // The empty-string guard leaves a malformed outline degrading to no header at all
   // rather than to an empty one.
-  const hasHeader = Boolean(
+  const hasSegmentedBar = Boolean(
     headword || (options?.isEmbedded && options.dictAcronym)
   );
-  const topBarHtml = hasHeader
+  const segmentedBarHtml = hasSegmentedBar
     ? `
-      <header class="entry-header has-tools">
-        <div class="entry-tools">
           <div class="segmented-bar${
             options?.isEmbedded && options.dictAcronym ? " has-badge" : ""
           }">
@@ -176,8 +162,18 @@ export function renderEntryResult(
             ${headwordHtml}
             ${copyPillHtml}
             ${outlinePanelHtml}
-            ${inflectionsPanelHtml}
           </div>
+      `
+    : "";
+
+  const hasHeader = Boolean(
+    segmentedBarHtml || inflectionsHtml || subsectionNoteHtml
+  );
+  const topBarHtml = hasHeader
+    ? `
+      <header class="entry-header has-tools">
+        <div class="entry-tools">
+          ${segmentedBarHtml}${inflectionsHtml}${subsectionNoteHtml}
         </div>
       </header>
     `
@@ -190,7 +186,7 @@ export function renderEntryResult(
 
   return `
     <article class="entry ${hasTools ? "has-tools" : ""}" id="${entryAnchorId}">
-      ${topBarHtml}${subsectionNoteHtml}
+      ${topBarHtml}
       <div class="entry-content" data-tokenize-target="true">
         ${entryHtml}
       </div>

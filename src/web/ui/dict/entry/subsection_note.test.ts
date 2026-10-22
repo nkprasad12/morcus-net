@@ -263,7 +263,7 @@ describe("renderSubsectionNote", () => {
     expect(html).toBe("");
   });
 
-  it("renders a lone analysis inline rather than as a table", () => {
+  it("renders a lone analysis inline with entry-inflections", () => {
     const html = renderSubsectionNote(
       groupsFor([
         {
@@ -275,13 +275,15 @@ describe("renderSubsectionNote", () => {
         },
       ])
     );
-    expect(html).toContain("subsection-inline-inf");
+    expect(html).toContain("entry-inflections");
+    expect(html).toContain("inflection-line");
     expect(html).not.toContain("<table");
     // Morpheus diacritics are decoded.
-    expect(html).toContain("proxi\u0306mus".normalize("NFC"));
+    const expectedForm = "proxi\u0306mus".normalize("NFC");
+    expect(html).toContain(`<b>${expectedForm}</b>: masc nom sg`);
   });
 
-  it("collapses multiple analyses into a closed details pane", () => {
+  it("groups multiple analyses by form without a collapsible details pane", () => {
     const html = renderSubsectionNote(
       groupsFor([
         {
@@ -290,13 +292,19 @@ describe("renderSubsectionNote", () => {
           inflections: [
             { form: "proximus", lemma: "propior", data: "masc nom sg" },
             { form: "proximum", lemma: "propior", data: "neut acc sg" },
+            { form: "proximum", lemma: "propior", data: "masc acc sg" },
           ],
         },
       ])
     );
-    expect(html).toContain("<details");
-    expect(html).not.toContain("<details open");
-    expect(html).toContain("Inflections of proximus (2)");
+    expect(html).not.toContain("<details");
+    expect(html).not.toContain("<table");
+    expect(html).toContain(
+      '<p class="inflection-line"><b>proximus</b>: masc nom sg</p>'
+    );
+    expect(html).toContain(
+      '<p class="inflection-line"><b>proximum</b>: neut acc sg · masc acc sg</p>'
+    );
   });
 
   it("escapes names", () => {

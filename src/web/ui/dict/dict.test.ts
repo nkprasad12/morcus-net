@@ -181,7 +181,7 @@ describe("dict_ssr", () => {
     expect(formatInflectionForm("poe+ta")).toBe("poëta");
   });
 
-  test("renderEntryResult formats entry and inflections without Lemma/Notes columns and without bold Form", () => {
+  test("renderEntryResult formats entry and inflections as always-visible grouped lines inside entry-header", () => {
     const entryResult: EntryResult = {
       entry: '<span class="lsOrth">amo</span>',
       outline: {
@@ -196,22 +196,37 @@ describe("dict_ssr", () => {
           data: "3rd pl perf act ind",
           usageNote: "poetic",
         },
+        {
+          form: "a^ma_ve_re",
+          lemma: "amo",
+          data: "2nd sg fut perf pass ind",
+        },
+        {
+          form: "a^ma_ve^ris",
+          lemma: "amo",
+          data: "2nd sg fut perf act ind",
+        },
       ],
     };
 
     const rendered = renderEntryResult(entryResult);
     expect(rendered).toContain('<span class="lsOrth">amo</span>');
-    expect(rendered).toContain("Inflections");
-    expect(rendered).toContain("<th>Form</th><th>Analysis</th>");
-    expect(rendered).not.toContain("<th>Lemma</th>");
-    expect(rendered).not.toContain("<th>Notes</th>");
-    // Form is not wrapped in <strong>
-    expect(rendered).toContain("<td>ămāvēre</td>");
-    expect(rendered).not.toContain("<strong>ămāvēre</strong>");
-    // Usage note is displayed inline in analysis
+    expect(rendered).toContain('class="entry-inflections"');
+    expect(rendered).not.toContain("<table");
+    expect(rendered).not.toContain("Inflections");
+    // Same-form analyses are grouped onto a single line separated by " · "
     expect(rendered).toContain(
-      '<td>3rd pl perf act ind <span class="usage-note">(poetic)</span></td>'
+      '<p class="inflection-line"><b>ămāvēre</b>: 3rd pl perf act ind <span class="usage-note">(poetic)</span> · 2nd sg fut perf pass ind</p>'
     );
+    // Distinct macronized forms render on separate lines
+    expect(rendered).toContain(
+      '<p class="inflection-line"><b>ămāvĕris</b>: 2nd sg fut perf act ind</p>'
+    );
+    // Inflections render inside <header class="entry-header ..."> before </header>
+    const headerEnd = rendered.indexOf("</header>");
+    const inflectionsPos = rendered.indexOf('class="entry-inflections"');
+    expect(inflectionsPos).toBeGreaterThan(0);
+    expect(inflectionsPos).toBeLessThan(headerEnd);
   });
 
   test("renderDictResultsHtml handles empty query with landing view", () => {
@@ -686,7 +701,7 @@ describe("dict_ssr", () => {
     expect(html).toContain('class="entry-header has-tools"');
     expect(html).toContain('href="/dicts/id/n0"');
     expect(html).not.toContain("Outline");
-    expect(html).not.toContain("Inflections");
+    expect(html).not.toContain('class="entry-inflections"');
   });
 
   test("renderEntryResult renders prominent headword heading and avoids duplicate root id", () => {

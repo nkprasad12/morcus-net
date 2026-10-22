@@ -4,18 +4,21 @@
 
 /* Top Unified Segmented Tab Bar */
 .entry-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px dashed var(--border);
 }
 
 .segmented-bar {
   display: grid;
-  /* headword | copy pill | Outline | Inflections | filler */
-  grid-template-columns: auto auto auto auto 1fr;
+  /* headword | copy pill | Outline | filler */
+  grid-template-columns: auto auto auto 1fr;
   align-items: center;
   gap: var(--space-3) var(--space-4);
   width: 100%;
-  padding-bottom: var(--space-3);
-  border-bottom: 1px dashed var(--border);
   background-color: transparent;
   font-family: var(--font-sans);
   font-size: calc(0.95rem * var(--dict-scale, 1));
@@ -23,8 +26,8 @@
 
 .segmented-bar.has-badge,
 .segmented-bar:has(.dict-badge) {
-  /* badge | headword | copy pill | Outline | Inflections | filler */
-  grid-template-columns: auto auto auto auto auto 1fr;
+  /* badge | headword | copy pill | Outline | filler */
+  grid-template-columns: auto auto auto auto 1fr;
 }
 
 /* Inline Lexicon Badge for Entry Toolbar (Embedded Mode) */
@@ -207,13 +210,23 @@
   line-height: 1.45;
 }
 
-.table-scroller {
-  overflow-x: auto;
-  max-width: 100%;
+.entry-inflections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
-.inflections-body {
-  padding: var(--space-4) var(--space-5) var(--space-5) var(--space-5);
+.inflection-line {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: calc(0.8rem * var(--dict-scale, 1));
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.inflection-line b {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .usage-note {

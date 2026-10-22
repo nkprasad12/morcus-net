@@ -11,7 +11,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin: 0 0 var(--space-4);
+  margin: 0;
   padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-md);
   background-color: var(--tag-bg);
@@ -94,29 +94,6 @@
 .subsection-namelink:hover {
   color: var(--link);
   border-bottom-color: var(--link);
-}
-
-/* A lone analysis is shown inline: a table costs far more vertical space than
-   one fact justifies, which matters most in the narrow reader panel. */
-.subsection-inline-inf {
-  margin: 0;
-  font-size: calc(0.8rem * var(--dict-scale, 1));
-  line-height: 1.5;
-  color: var(--text-muted);
-}
-
-.subsection-inline-inf b {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.subsection-details {
-  margin: 0;
-}
-
-.subsection-note .tool-body {
-  margin-top: var(--space-3);
-  max-height: 220px;
 }
 
 /* Persistent marker on the matched element within the entry body.
