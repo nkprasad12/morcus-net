@@ -337,11 +337,35 @@
   opacity: 1;
 }
 
-/* Native CSS Fragment Highlighting (:target) */
-.reader-section:target,
-.reader-section.target-highlight {
-  background-color: var(--primary-light);
+/* Native CSS Fragment Highlighting (:target). A link to a section flashes a
+   tint that fades, and keeps a left bar for as long as the hash targets it, so
+   whoever opens a permalink can still see which section was meant. In-reader
+   jumps use `pushState`, which doesn't update `:target`, so JS adds
+   `.target-highlight` for 3 s instead (`#revealSection`). A section with no
+   citable (`[id]`) sibling is the whole page, so neither applies to it: the
+   two selectors match a section with one before it or one after it. */
+@keyframes section-flash {
+  0%,
+  35% {
+    background-color: var(--primary-light);
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+
+.reader-section[id] ~ .reader-section:is(:target, .target-highlight),
+.reader-section:is(:target, .target-highlight):has(~ .reader-section[id]) {
   box-shadow: inset 3px 0 0 var(--primary);
+  animation: section-flash 3s var(--flash-ease, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+/* Without motion, the tint holds for the 3 s, then goes. */
+@media (prefers-reduced-motion: reduce) {
+  .reader-section {
+    --flash-ease: step-end;
+  }
 }
 
 /* Hide Gutter Toggle Rule. The reader view records the preference on

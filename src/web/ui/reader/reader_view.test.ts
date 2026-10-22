@@ -1,6 +1,8 @@
 /**
  * @jest-environment jsdom
  */
+import fs from "fs";
+import path from "path";
 import "@/web/ui/reader/reader_view.client";
 import type { MorcusReaderView } from "@/web/ui/reader/reader_view.client";
 import {
@@ -4037,5 +4039,171 @@ describe("MorcusReaderView passage range highlighting (matchText)", () => {
         configurable: true,
       });
     }
+  });
+});
+
+describe("section jump highlighting", () => {
+  const twoSections = `
+    <div class="reader-section" id="sec-1.1">
+      <div class="reader-gutter"><a href="#sec-1.1" class="section-anchor">1.1</a></div>
+      <div class="reader-passage"><p class="reader-paragraph">Gallia est omnis divisa.</p></div>
+    </div>
+    <div class="reader-section" id="sec-1.2">
+      <div class="reader-gutter"><a href="#sec-1.2" class="section-anchor">1.2</a></div>
+      <div class="reader-passage"><p class="reader-paragraph">Hi omnes lingua differunt.</p></div>
+    </div>
+  `;
+  // A heading row (no id) plus the page's one citable section.
+  const oneSection = `
+    <div class="reader-section"><div class="reader-gutter"></div><div class="reader-passage"><p>Caput II</p></div></div>
+    <div class="reader-section" id="sec-2">
+      <div class="reader-gutter"><a href="#sec-2" class="section-anchor">2</a></div>
+      <div class="reader-passage"><p class="reader-paragraph">Nam de perduellionis iudicio.</p></div>
+    </div>
+  `;
+
+  let scrollSpy: jest.Mock;
+  beforeEach(() => {
+    document.body.innerHTML = "";
+    scrollSpy = jest.fn();
+    HTMLElement.prototype.scrollIntoView = scrollSpy;
+  });
+
+  afterEach(() => {
+    window.history.replaceState({}, "", "/");
+    jest.useRealTimers();
+  });
+
+  /** Clicks an in-passage link (not a gutter anchor) to `href`. */
+  function clickLink(el: MorcusReaderView, href: string): void {
+    const link = document.createElement("a");
+    link.href = href;
+    link.setAttribute("href", href);
+    el.querySelector(".reader-section .reader-passage")!.appendChild(link);
+    link.click();
+  }
+
+  test("an in-reader section link scrolls the section to its top and flashes it for 3 s", () => {
+    jest.useFakeTimers();
+    const el = createReaderView(twoSections);
+    clickLink(el, "#sec-1.2");
+    const sec = document.getElementById("sec-1.2")!;
+    expect(scrollSpy).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "start",
+      inline: "nearest",
+    });
+    expect(scrollSpy.mock.contexts[0]).toBe(sec);
+    expect(sec.classList.contains("target-highlight")).toBe(true);
+    jest.advanceTimersByTime(3000);
+    expect(sec.classList.contains("target-highlight")).toBe(false);
+  });
+
+  test("a link to the passage's only section scrolls but doesn't highlight", () => {
+    const el = createReaderView(oneSection);
+    clickLink(el, "#sec-2");
+    const sec = document.getElementById("sec-2")!;
+    expect(scrollSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ block: "start" })
+    );
+    expect(scrollSpy.mock.contexts[0]).toBe(sec);
+    expect(sec.classList.contains("target-highlight")).toBe(false);
+  });
+
+  test("copying a permalink highlights only in a multi-section passage", () => {
+    let el = createReaderView(twoSections);
+    delete el.dataset.work;
+    el.querySelector<HTMLAnchorElement>('a[href="#sec-1.1"]')!.click();
+    expect(scrollSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({ block: "start" })
+    );
+    expect(
+      document.getElementById("sec-1.1")!.classList.contains("target-highlight")
+    ).toBe(true);
+
+    document.body.innerHTML = "";
+    el = createReaderView(oneSection);
+    delete el.dataset.work;
+    el.querySelector<HTMLAnchorElement>('a[href="#sec-2"]')!.click();
+    expect(
+      document.getElementById("sec-2")!.classList.contains("target-highlight")
+    ).toBe(false);
+  });
+
+  test("flashing another section moves the highlight, and a re-flash keeps it for a full 3 s", () => {
+    jest.useFakeTimers();
+    const el = createReaderView(twoSections);
+    delete el.dataset.work;
+    const first = document.getElementById("sec-1.1")!;
+    const second = document.getElementById("sec-1.2")!;
+    el.querySelector<HTMLAnchorElement>('a[href="#sec-1.1"]')!.click();
+    jest.advanceTimersByTime(2000);
+    el.querySelector<HTMLAnchorElement>('a[href="#sec-1.2"]')!.click();
+    expect(first.classList.contains("target-highlight")).toBe(false);
+    expect(second.classList.contains("target-highlight")).toBe(true);
+    jest.advanceTimersByTime(2000);
+    el.querySelector<HTMLAnchorElement>('a[href="#sec-1.2"]')!.click();
+    jest.advanceTimersByTime(2000);
+    expect(second.classList.contains("target-highlight")).toBe(true);
+    jest.advanceTimersByTime(1000);
+    expect(second.classList.contains("target-highlight")).toBe(false);
+  });
+
+  test("a same-page link to a non-section target is still centred", () => {
+    window.history.replaceState({}, "", "/work/caesar/dbg/1");
+    const el = createReaderView(`
+      <div class="reader-section" id="sec-1.1">
+        <div class="reader-passage"><p>Gallia<a href="#note-n1" class="reader-note-ref" id="noteref-n1">[1]</a></p></div>
+      </div>
+    `);
+    el.dataset.author = "caesar";
+    el.dataset.name = "dbg";
+    clickLink(el, "/work/caesar/dbg/1#noteref-n1");
+    expect(scrollSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ block: "center" })
+    );
+    expect(scrollSpy.mock.contexts[0]).toBe(
+      document.getElementById("noteref-n1")
+    );
+  });
+
+  describe("reader_text.css", () => {
+    const css = fs
+      .readFileSync(path.join(__dirname, "reader_text.css"), "utf-8")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    /** The declarations of the first rule whose selector list starts with `selector`. */
+    function ruleBody(selector: string): string {
+      const start = css.indexOf(`\n${selector}`);
+      expect(start).toBeGreaterThan(-1);
+      return css.slice(css.indexOf("{", start) + 1, css.indexOf("}", start));
+    }
+
+    test(":target fades the tint by animation and keeps the left bar", () => {
+      const body = ruleBody(
+        ".reader-section[id] ~ .reader-section:is(:target, .target-highlight)"
+      );
+      expect(body).toContain("box-shadow: inset 3px 0 0 var(--primary)");
+      expect(body).toMatch(/animation: section-flash 3s/);
+      expect(body).not.toContain("background-color");
+      expect(css).toMatch(
+        /@keyframes section-flash \{[^}]*background-color: var\(--primary-light\)[^}]*\}\s*100% \{\s*background-color: transparent/
+      );
+    });
+
+    test("a section with no citable sibling gets neither tint nor bar", () => {
+      // Every rule painting a targeted section requires an `[id]` sibling.
+      const painting = css.match(/[^{}]*:target[^{}]*\{[^}]*\}/g) ?? [];
+      for (const rule of painting) {
+        if (!/box-shadow|background-color|animation/.test(rule)) continue;
+        const selectors = rule
+          .slice(0, rule.indexOf("{"))
+          .split(/,(?![^(]*\))/);
+        for (const sel of selectors) {
+          expect(sel).toMatch(
+            /\.reader-section\[id\] ~|:has\(~ \.reader-section\[id\]\)/
+          );
+        }
+      }
+    });
   });
 });

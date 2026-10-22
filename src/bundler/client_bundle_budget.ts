@@ -92,8 +92,10 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     external: { maxRawBytes: 114 * 1024, maxGzipBytes: 38 * 1024 },
     macronizer: { maxRawBytes: 76.5 * 1024, maxGzipBytes: 26 * 1024 },
   },
-  // Raised from 144 for the reading-text audit (#598).
-  maxCssRawBytes: 145 * 1024,
+  // Raised from 144 for the reading-text audit (#598), then from 145 for the
+  // fading section highlight (#602): the minifier splits its `:has()` selector
+  // list into two rules so browsers without `:has()` keep the first.
+  maxCssRawBytes: 145.5 * 1024,
   maxCssGzipBytes: 25 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a

@@ -65,6 +65,16 @@ import {
 const READER_DRAWER_MIN_HEIGHT = 40;
 
 /**
+ * Whether `section` is the only citable section in its passage, so that it is
+ * the whole page. Heading rows are `.reader-section`s too, but carry no id.
+ */
+function isOnlySection(section: HTMLElement): boolean {
+  const passage = section.parentElement;
+  if (!passage) return true;
+  return passage.querySelectorAll(":scope > .reader-section[id]").length < 2;
+}
+
+/**
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
  *
  * Without JS:
@@ -96,6 +106,8 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   };
   #currentQuery: string = "";
   #lastActiveWordEl: HTMLElement | null = null;
+  /** The section `#revealSection` last flashed, and its cleanup timer. */
+  #flashedSection: { el: HTMLElement; timer: number } | undefined;
   #preferredDrawerSvh: number = DRAWER_DEFAULT_SVH;
   readonly #tocController = this.addController(
     new ReaderTocController({ root: this })
@@ -398,20 +410,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
         secAnchor.closest<HTMLElement>(".reader-section");
       const copyPermalink = () => {
         void copyText(fullUrl);
-        if (secEl) {
-          if (typeof secEl.scrollIntoView === "function") {
-            secEl.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-              inline: "nearest",
-            });
-          }
-          secEl.classList.add("target-highlight");
-          this.scope.timeout(
-            () => secEl.classList.remove("target-highlight"),
-            3000
-          );
-        }
+        if (secEl) this.#revealSection(secEl);
         this.#saveCurrentSpot(secId);
         showToast(`Copied permalink: § ${secId}`);
       };
@@ -1285,22 +1284,53 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     const targetId = hash.replace(/^#/, "");
     if (!targetId) return;
     const targetEl = document.getElementById(targetId);
-    if (targetEl) {
-      if (typeof targetEl.scrollIntoView === "function") {
-        targetEl.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-          inline: "nearest",
-        });
-      }
-      if (targetId.startsWith("sec-")) {
-        targetEl.classList.add("target-highlight");
-        this.scope.timeout(
-          () => targetEl.classList.remove("target-highlight"),
-          3000
-        );
-      }
+    if (!targetEl) return;
+    if (targetId.startsWith("sec-")) {
+      this.#revealSection(targetEl);
+    } else if (typeof targetEl.scrollIntoView === "function") {
+      targetEl.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
     }
+  }
+
+  /**
+   * Scrolls a section's top to just below the sticky bar (its
+   * `scroll-margin-top`, where the no-JS hash jump lands too) and flashes it.
+   * A section that is the passage's only one is the whole page, so it gets no
+   * highlight; the `:target` rule in reader_text.css skips it the same way.
+   */
+  #revealSection(section: HTMLElement): void {
+    if (typeof section.scrollIntoView === "function") {
+      section.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+        inline: "nearest",
+      });
+    }
+    const previous = this.#flashedSection;
+    if (previous) {
+      if (previous.el.isConnected) {
+        previous.el.classList.remove("target-highlight");
+      }
+      this.scope.clearTimeout(previous.timer);
+      this.#flashedSection = undefined;
+    }
+    if (isOnlySection(section)) return;
+    // Restart the flash even when the section already animates (it is also
+    // `:target`, or is flashed again within 3 s): both rules use the same
+    // animation, so toggling the class alone would not restart it.
+    section.style.animationName = "none";
+    void section.offsetWidth;
+    section.style.animationName = "";
+    section.classList.add("target-highlight");
+    const timer = this.scope.timeout(() => {
+      section.classList.remove("target-highlight");
+      this.#flashedSection = undefined;
+    }, 3000);
+    this.#flashedSection = { el: section, timer };
   }
 
   /**
