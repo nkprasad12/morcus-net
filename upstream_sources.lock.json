@@ -57,7 +57,7 @@
     "canonical-latinlit": {
       "repo": "https://github.com/nkprasad12/canonical-latinlit.git",
       "branch": "master",
-      "commit": "b2a135df22f812afc622e7e14d30889718c252ee",
+      "commit": "379331f1d2c24c3b5fde440cc46beae4d045fa27",
       "env": "LIB_XML_ROOT"
     },
     "hypotactic": {
