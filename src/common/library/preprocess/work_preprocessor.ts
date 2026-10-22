@@ -1,3 +1,4 @@
+import { assert } from "@/common/assert";
 import type {
   LibraryWorkMetadata,
   ProcessedWork2,
@@ -475,9 +476,16 @@ export function preprocessWorkToV2(
     : undefined;
 
   const v2Pages: V2PreprocessedPage[] = [];
+  const seenPageIds = new Set<string>();
 
   for (const page of work.pages) {
     const pageId = page.id;
+    const dotPageId = pageId.join(".");
+    assert(
+      !seenPageIds.has(dotPageId),
+      `Duplicate page id ${dotPageId} in ${work.info.workId}`
+    );
+    seenPageIds.add(dotPageId);
     const pageTitle = formatPageTitle(pageId, textParts);
     const [startIdx, endIdx] = page.rows;
 

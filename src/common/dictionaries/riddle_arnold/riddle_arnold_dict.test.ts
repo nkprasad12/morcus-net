@@ -75,6 +75,8 @@ describe("RiddleArnold dict", () => {
 
     const result = await dict.getEntryById("ra_hello");
     expect(result?.entry.toString()).toContain("a greeting");
+    expect(result?.outline.mainKey).toBe("hello");
+    expect(result?.outline.mainLabel).toBe("HELLO");
   });
 
   test("getEntry returns expected completions", async () => {

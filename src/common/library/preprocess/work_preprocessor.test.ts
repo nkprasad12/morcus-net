@@ -711,4 +711,21 @@ describe("preprocessWorkToV2 poetry line labels", () => {
     const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
     expect(html).not.toContain("section-anchor latent");
   });
+
+  it("throws when a work contains duplicate page ids", () => {
+    const work = makeWork({
+      rows: [
+        [["1", "7", "1"], span([], "Prima.")],
+        [["1", "7", "2"], span([], "Secunda.")],
+      ],
+      pages: [
+        { id: ["1", "7"], rows: [0, 1] },
+        { id: ["1", "7"], rows: [1, 2] },
+      ],
+    });
+
+    expect(() => preprocessWorkToV2(work, METADATA)).toThrow(
+      "Duplicate page id 1.7 in ovid.amores"
+    );
+  });
 });

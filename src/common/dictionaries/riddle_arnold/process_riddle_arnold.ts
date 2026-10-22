@@ -93,6 +93,7 @@ export function processRiddleArnold() {
     const entry = formatEntry(id, entries, header);
     const outline: EntryOutline = {
       mainKey: keys[0],
+      mainLabel: header,
       mainSection: { text: header, level: 0, ordinal: "0", sectionId: id },
     };
     const fullEntry = {
