@@ -1,6 +1,9 @@
 import { InflectionData } from "@/common/dictionaries/dict_result";
 import * as he from "he";
 
+const INFLECTION_PROVENANCE_NOTE =
+  "Automated morphological analysis (not from dictionary!)";
+
 /**
  * Decodes Morpheus diacritic markings (^ for breve, _ for macron, + for diaeresis)
  * into standard Unicode characters with canonical NFC normalization.
@@ -74,5 +77,6 @@ export function renderInflections(inflections: InflectionData[]): string {
         " · "
       )}</p>`
   ).join("");
-  return `<div class="entry-inflections">${lines}</div>`;
+  const infoIcon = `<span class="inflection-info lsHover" tabindex="0" role="button" aria-label="${INFLECTION_PROVENANCE_NOTE}" title="${INFLECTION_PROVENANCE_NOTE}">ⓘ</span>`;
+  return `<div class="entry-inflections">${infoIcon}<div class="inflection-lines">${lines}</div></div>`;
 }

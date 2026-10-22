@@ -212,6 +212,10 @@ describe("dict_ssr", () => {
     const rendered = renderEntryResult(entryResult);
     expect(rendered).toContain('<span class="lsOrth">amo</span>');
     expect(rendered).toContain('class="entry-inflections"');
+    expect(rendered).toContain('class="inflection-info lsHover"');
+    expect(rendered).toContain(
+      'title="Automated morphological analysis (not from dictionary!)"'
+    );
     expect(rendered).not.toContain("<table");
     expect(rendered).not.toContain("Inflections");
     // Same-form analyses are grouped onto a single line separated by " · "

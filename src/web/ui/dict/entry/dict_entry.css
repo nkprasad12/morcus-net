@@ -211,6 +211,28 @@
 }
 
 .entry-inflections {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.inflection-info.lsHover {
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: calc(0.8rem * var(--dict-scale, 1));
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.inflection-info.lsHover:hover,
+.inflection-info.lsHover:focus-visible {
+  color: var(--primary);
+  background-color: transparent;
+}
+
+.inflection-lines {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
