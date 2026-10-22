@@ -18,5 +18,4 @@ export const V2_BROWSERSLIST: readonly string[] = [
   "ios_saf >= 16.4",
   "samsung >= 23",
   "opera >= 96",
-  "op_mob >= 73",
 ] as const;

@@ -35,15 +35,15 @@
 @import "./macronizer/macronizer.css";
 @import "./shell/page_width.css";
 
-/* Base link styling */
-a {
+/* Base link styling. Wrapped in :where() for (0,0,0) specificity so any
+   component class (.btn-*, .nav-link, .toc-*, etc.) overrides link color and
+   underline without needing a matching :visited branch. Note: universal
+   `box-sizing: border-box` is provided by `critical.css`, which
+   `page_shell.server.ts` inlines on every V2 page. */
+:where(a) {
   color: var(--link);
   text-decoration: underline;
   text-underline-offset: 2px;
-}
-
-a:visited {
-  color: var(--link);
 }
 
 a:hover {

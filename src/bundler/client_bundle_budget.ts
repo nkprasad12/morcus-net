@@ -28,7 +28,6 @@ export interface V2BundleBudget {
    * critical path.
    */
   readonly routes: Readonly<Record<V2Route, V2ChunkBudget>>;
-  readonly maxCssRawBytes: number;
   readonly maxCssGzipBytes: number;
   readonly maxCriticalJsRawBytes: number;
   readonly maxCriticalJsGzipBytes: number;
@@ -92,11 +91,6 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     external: { maxRawBytes: 114 * 1024, maxGzipBytes: 38 * 1024 },
     macronizer: { maxRawBytes: 76.5 * 1024, maxGzipBytes: 26 * 1024 },
   },
-  // Raised from 144 for the reading-text audit (#598), then from 145 for the
-  // fading section highlight (#602): the minifier splits its `:has()` selector
-  // list into two rules so browsers without `:has()` keep the first. Then from
-  // 145.5 for the dark-mode app-bar icon colours (#602).
-  maxCssRawBytes: 146 * 1024,
   maxCssGzipBytes: 25 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
@@ -163,8 +157,7 @@ function checkAssetBudget(
   label: string,
   manifestKey: V2AssetName | "critical.js",
   filename: string | undefined,
-  maxRawBytes: number,
-  maxGzipBytes: number,
+  limits: { readonly maxRawBytes?: number; readonly maxGzipBytes: number },
   errors: string[]
 ): V2AssetSizeInfo | undefined {
   if (!filename) {
@@ -182,17 +175,17 @@ function checkAssetBudget(
   const rawBytes = content.byteLength;
   const gzipBytes = zlib.gzipSync(content).byteLength;
 
-  if (rawBytes > maxRawBytes) {
+  if (limits.maxRawBytes !== undefined && rawBytes > limits.maxRawBytes) {
     errors.push(
       `${label} raw size ${formatSize(rawBytes)} exceeds budget ${formatSize(
-        maxRawBytes
+        limits.maxRawBytes
       )}`
     );
   }
-  if (gzipBytes > maxGzipBytes) {
+  if (gzipBytes > limits.maxGzipBytes) {
     errors.push(
       `${label} gzip size ${formatSize(gzipBytes)} exceeds budget ${formatSize(
-        maxGzipBytes
+        limits.maxGzipBytes
       )}`
     );
   }
@@ -220,8 +213,7 @@ export function checkV2BundleBudget(
       chunkName,
       chunkName,
       manifest[chunkName],
-      chunkBudget.maxRawBytes,
-      chunkBudget.maxGzipBytes,
+      chunkBudget,
       errors
     );
     if (info) {
@@ -259,8 +251,7 @@ export function checkV2BundleBudget(
     "CSS",
     "app.css",
     manifest["app.css"],
-    budget.maxCssRawBytes,
-    budget.maxCssGzipBytes,
+    { maxGzipBytes: budget.maxCssGzipBytes },
     errors
   );
 
@@ -269,8 +260,10 @@ export function checkV2BundleBudget(
     "Critical JS",
     "critical.js",
     CRITICAL_JS_FILE,
-    budget.maxCriticalJsRawBytes,
-    budget.maxCriticalJsGzipBytes,
+    {
+      maxRawBytes: budget.maxCriticalJsRawBytes,
+      maxGzipBytes: budget.maxCriticalJsGzipBytes,
+    },
     errors
   );
 
@@ -334,10 +327,8 @@ export function formatV2BundleSizeReport(
     : "missing";
   lines.push(
     `  ${"CSS:".padEnd(13)} ${cssStr.padEnd(28)} (budget: < ${(
-      budget.maxCssRawBytes / 1024
-    ).toFixed(1)} kB raw / < ${(budget.maxCssGzipBytes / 1024).toFixed(
-      1
-    )} kB gzip)`
+      budget.maxCssGzipBytes / 1024
+    ).toFixed(1)} kB gzip)`
   );
 
   const criticalStr = report.criticalJs

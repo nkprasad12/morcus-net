@@ -186,8 +186,7 @@
 }
 
 /* Tree Leaf Item (<a>) */
-.reader-toc-item,
-.reader-toc-item:visited {
+.reader-toc-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -201,16 +200,13 @@
   transition: background-color 0.12s ease, color 0.12s ease;
 }
 
-.reader-toc-item:hover,
-.reader-toc-item:visited:hover {
+.reader-toc-item:hover {
   background-color: var(--tag-bg);
   color: var(--text);
 }
 
 .reader-toc-item.active,
-.reader-toc-item.active:visited,
-.reader-toc-item.is-filter-selected,
-.reader-toc-item.is-filter-selected:visited {
+.reader-toc-item.is-filter-selected {
   background-color: var(--primary-light);
   color: var(--primary);
   font-weight: 600;

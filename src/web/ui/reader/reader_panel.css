@@ -132,12 +132,12 @@
  */
 .reader-panel-card {
   background-color: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border: none;
+  border-radius: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: var(--space-5) var(--space-6);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: var(--space-4) var(--space-5) var(--space-8);
+  box-shadow: none;
   /* Undone for the shown view (above). */
   content-visibility: hidden;
 }
@@ -248,14 +248,14 @@ a.reader-note-ref.marker-active {
   border-radius: var(--radius-sm);
 }
 
+.has-companion-tabs .reader-sheet-label {
+  display: none;
+}
+
 @media (max-width: 640px) {
   .has-companion-tabs .reader-sheet-teaser {
     justify-content: flex-start;
     padding-right: var(--space-8);
-  }
-
-  .has-companion-tabs .reader-sheet-label {
-    display: none;
   }
 
   /* Each tab is its own chip (no shared segmented-control track): inactive
@@ -322,21 +322,7 @@ a.reader-note-ref.marker-active {
     display: none;
   }
 
-  .reader-panel-notes,
-  .reader-panel-about,
-  .reader-panel-translation {
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-    padding: var(--space-4) var(--space-5) var(--space-8);
-  }
-
-  .reader-translation-section {
-    gap: var(--space-3);
-  }
-
   .reader-translation-gutter {
-    flex: 0 0 auto;
     min-width: 1.35rem;
   }
 }
@@ -370,22 +356,12 @@ a.reader-note-ref.marker-active {
     min-height: 0;
   }
 
-  .has-companion-tabs .reader-sheet-label {
-    display: none;
-  }
-
   .has-companion-tabs .reader-panel-tabs {
-    display: flex;
     margin-bottom: var(--space-2);
-    border-bottom: 1px solid var(--border);
-    padding-bottom: var(--space-2);
   }
 
   .reader-panel-card {
     background-color: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
     padding: var(--space-2) 0 var(--space-8);
   }
 }

@@ -5,9 +5,7 @@
    ========================================================================== */
 
 .reader-view {
-  --reader-sticky-offset: calc(
-    var(--pill-height, 2.25rem) + 2 * var(--space-3) + var(--space-3)
-  );
+  --reader-sticky-offset: calc(1.75rem + 2 * var(--space-1) + var(--space-3));
 }
 
 .reader-sticky-bar {
@@ -18,8 +16,8 @@
   flex-direction: column;
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--space-6);
+  border-radius: 0;
+  margin-bottom: var(--space-3);
   font-size: 0.875rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(8px);
@@ -31,13 +29,12 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-1) var(--space-3);
   width: 100%;
 }
 
 /* Ensure all interactive buttons in the primary row share a uniform height and vertical alignment */
 .sticky-primary-row .reader-btn {
-  box-sizing: border-box;
   height: var(--pill-height);
   padding-top: 0;
   padding-bottom: 0;
@@ -111,16 +108,13 @@
 }
 
 /* Section Dropdown Trigger Button */
-.sticky-section-btn,
-.sticky-section-btn:visited {
+.sticky-section-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
   max-width: 100%;
-  padding: 0 var(--space-3);
   font-family: inherit;
-  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text);
   background: var(--tag-bg);
@@ -183,8 +177,7 @@
 }
 
 .sticky-primary-row .reader-nav-arrow,
-.reader-nav-arrow,
-.reader-nav-arrow:visited {
+.reader-nav-arrow {
   width: var(--pill-height);
   min-width: var(--pill-height);
   padding: 0;
@@ -195,11 +188,9 @@
 }
 
 /* Reader Settings (Aa) Trigger Button */
-.reader-settings-btn,
-.reader-settings-btn:visited {
+.reader-settings-btn {
   width: var(--pill-height);
   min-width: var(--pill-height);
-  padding: 0;
   justify-content: center;
   font-weight: 600;
   color: var(--text-muted);
@@ -209,14 +200,17 @@
 
 .reader-settings-btn .settings-glyph {
   font-family: var(--font-serif);
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.05em;
 }
 
-.reader-btn,
-.reader-btn:visited {
+/* Shared button primitive for `.sticky-section-btn`, `.reader-nav-arrow` and
+   `.reader-settings-btn`. Intentionally follows the modifiers above so its
+   desktop `padding` and `font-size` apply unless overridden by `(0,2,0)`
+   `.sticky-primary-row .reader-nav-arrow` or the `<= 640px` mobile rules. */
+.reader-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -232,8 +226,7 @@
   transition: all 0.15s ease;
 }
 
-.reader-btn:hover,
-.reader-btn:visited:hover {
+.reader-btn:hover {
   color: var(--text);
   border-color: var(--app-bar-toggle-border);
   background: var(--card-bg);
@@ -241,10 +234,7 @@
 
 .reader-btn.disabled,
 .reader-btn:disabled,
-.reader-btn[aria-disabled="true"],
-.reader-btn.disabled:visited,
-.reader-btn:disabled:visited,
-.reader-btn[aria-disabled="true"]:visited {
+.reader-btn[aria-disabled="true"] {
   opacity: 0.4;
   cursor: not-allowed;
   pointer-events: none;
@@ -287,51 +277,29 @@
    ========================================================================== */
 
 @media (max-width: 640px) {
-  .reader-view {
-    --reader-sticky-offset: calc(1.75rem + 2 * var(--space-1) + var(--space-3));
-  }
-
   .reader-sticky-bar {
     --pill-height: 1.75rem;
     max-width: 100%;
-    margin-bottom: var(--space-3);
-    border-radius: 0;
     border-top: none;
     border-left: none;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    box-sizing: border-box;
     overflow-x: clip;
   }
 
   .sticky-primary-row {
-    padding: var(--space-1) var(--space-3);
     gap: var(--space-2);
     min-width: 0;
     max-width: 100%;
-    box-sizing: border-box;
-  }
-
-  .reader-sticky-form {
-    min-width: 0;
-    flex: 1 1 auto;
-    justify-content: center;
   }
 
   .sticky-center-group {
     gap: var(--space-2);
-    min-width: 0;
-    max-width: 100%;
-    justify-content: center;
   }
 
   .sticky-title-wrapper {
-    min-width: 0;
     flex: 0 1 auto;
-    justify-content: center;
-    overflow: hidden;
     gap: var(--space-1);
-    text-align: center;
   }
 
   .sticky-work-title {
@@ -346,7 +314,6 @@
 
   .sticky-section-btn {
     padding: 0 var(--space-3);
-    font-size: 0.8125rem;
     gap: var(--space-1);
   }
 
@@ -355,10 +322,7 @@
     height: 13px;
   }
 
-  .reader-nav-arrow,
   .reader-settings-btn {
-    width: var(--pill-height);
-    min-width: var(--pill-height);
     padding: 0;
   }
 
@@ -372,10 +336,6 @@
     display: block;
     width: 16px;
     height: 16px;
-  }
-
-  .reader-settings-btn .settings-glyph {
-    font-size: 0.875rem;
   }
 }
 
@@ -400,7 +360,6 @@
     background: var(--paper-bg);
     border: none;
     border-bottom: 3px double var(--border-mid);
-    border-radius: 0;
     box-shadow: none;
     backdrop-filter: none;
     margin: 0 var(--space-7);
@@ -411,14 +370,7 @@
   .sticky-primary-row {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
-    align-items: center;
     padding: 0;
-    gap: var(--space-4);
-  }
-
-  .sticky-center-group {
-    align-items: center;
-    gap: var(--space-3);
   }
 
   .sticky-title-wrapper {
@@ -432,8 +384,7 @@
   }
 
   .sticky-primary-row .reader-nav-arrow,
-  .reader-nav-arrow,
-  .reader-nav-arrow:visited {
+  .reader-nav-arrow {
     width: auto;
     min-width: 0;
     height: 26px;
@@ -481,8 +432,7 @@
   }
 
   .sticky-primary-row .reader-settings-btn,
-  .reader-settings-btn,
-  .reader-settings-btn:visited {
+  .reader-settings-btn {
     width: auto;
     min-width: 0;
     height: 26px;
@@ -496,14 +446,12 @@
 
   .reader-settings-btn .settings-glyph {
     display: inline;
-    font-family: var(--font-serif);
     font-size: 0.9rem;
     font-weight: 500;
     letter-spacing: -0.04em;
   }
 
   .reader-nav-arrow:hover,
-  .reader-nav-arrow:visited:hover,
   .reader-settings-btn:hover,
   .reader-settings-btn[aria-expanded="true"] {
     color: var(--text);

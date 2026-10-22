@@ -3,7 +3,6 @@
 .corpus-page {
   display: block;
   width: 100%;
-  box-sizing: border-box;
 }
 
 /* --- Settings popover ---------------------------------------------------- */
@@ -522,10 +521,7 @@
   min-width: 12ch;
   font-variant-numeric: tabular-nums;
 }
-/* `:visited` too: the global `a:visited` (0,1,1) ties `.corpus-scope-text a`
-   and would recolour `view works` once /library is in history. */
 .corpus-scope-text a,
-.corpus-scope-text a:visited,
 .corpus-syntax-link {
   color: var(--corpus-citation-link);
   text-decoration: underline;

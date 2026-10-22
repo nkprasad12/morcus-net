@@ -108,8 +108,7 @@
   margin-bottom: var(--space-8);
 }
 
-.reader-continuation-card,
-.reader-continuation-card:visited {
+.reader-continuation-card {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -121,7 +120,6 @@
   color: var(--text);
   transition: background 0.15s ease, border-color 0.15s ease,
     box-shadow 0.15s ease, transform 0.15s ease;
-  box-sizing: border-box;
   min-width: 0;
 }
 
@@ -168,21 +166,18 @@
   font-weight: 600;
 }
 
-.reader-continuation-card:hover,
-.reader-continuation-card:visited:hover {
+.reader-continuation-card:hover {
   border-color: var(--primary);
   background: var(--tag-bg);
   box-shadow: var(--card-shadow);
   transform: translateY(-1px);
 }
 
-.reader-continuation-card:hover .continuation-kicker,
-.reader-continuation-card:visited:hover .continuation-kicker {
+.reader-continuation-card:hover .continuation-kicker {
   color: var(--primary);
 }
 
-.reader-continuation-card.next-card:hover .continuation-title,
-.reader-continuation-card.next-card:visited:hover .continuation-title {
+.reader-continuation-card.next-card:hover .continuation-title {
   color: var(--primary);
 }
 
@@ -218,10 +213,6 @@
   font-weight: inherit;
   transition: background-color 0.12s ease;
   display: inline;
-}
-
-.reader-passage a:visited {
-  color: inherit;
 }
 
 .reader-passage a:hover,
@@ -302,8 +293,7 @@
   user-select: none;
 }
 
-.reader-gutter .section-anchor,
-.reader-gutter .section-anchor:visited {
+.reader-gutter .section-anchor {
   color: var(--text-muted);
   text-decoration: none;
   display: block;
@@ -313,7 +303,6 @@
 }
 
 .reader-gutter .section-anchor:hover,
-.reader-gutter .section-anchor:visited:hover,
 .reader-gutter .section-anchor:focus-visible,
 .reader-gutter .section-anchor[aria-expanded="true"] {
   color: var(--text);
@@ -331,7 +320,6 @@
 }
 
 .reader-gutter .section-anchor.latent:hover,
-.reader-gutter .section-anchor.latent:visited:hover,
 .reader-gutter .section-anchor.latent:focus-visible,
 .reader-gutter .section-anchor.latent[aria-expanded="true"] {
   opacity: 1;
@@ -489,7 +477,6 @@
   .reader-text-panel {
     width: 100%;
     max-width: 100%;
-    box-sizing: border-box;
     overflow-x: clip;
     overflow-y: visible;
     padding: var(--space-4) var(--space-5) calc(66svh + 36px);
@@ -497,9 +484,6 @@
 
   .reader-text-card {
     padding: var(--space-2) 0 var(--space-6);
-    box-shadow: none;
-    border: none;
-    background: transparent;
   }
 
   .reader-view {
@@ -564,27 +548,15 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding: var(--space-5) var(--space-7) var(--space-9);
-    scrollbar-width: thin;
   }
 
   .reader-text-card-header {
-    border-bottom: 1px solid var(--border);
     padding-bottom: var(--space-4);
     margin-bottom: var(--space-6);
   }
 
   .reader-passage-heading {
-    font-family: var(--font-serif);
     font-size: 1.15rem;
     font-weight: 400;
-  }
-
-  /* Unboxed flat canvas inside the paper sheet on desktop */
-  .reader-text-card {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 0;
-    box-shadow: none;
   }
 }

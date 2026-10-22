@@ -190,10 +190,15 @@ describe("UI V2 Bundle Budget", () => {
     ).toBe(true);
   });
 
-  test("fails when CSS gzip size exceeds budget", () => {
+  test("fails when CSS gzip size exceeds budget, but allows large raw CSS when gzip is within budget", () => {
     const manifest = writeAllChunks("console.log(1);");
-    const cssContent = ".cls { color: red; }\n".repeat(500);
-    fs.writeFileSync(path.join(tmpDir, "app.css"), cssContent);
+    // 200 kB of repetitive CSS compresses to well under 25 kB gzip.
+    const largeCompressibleCss = ".cls { color: red; }\n".repeat(10_000);
+    fs.writeFileSync(path.join(tmpDir, "app.css"), largeCompressibleCss);
+
+    const passReport = checkV2BundleBudget(tmpDir, manifest, V2_BUNDLE_BUDGET);
+    expect(passReport.exceeded).toBe(false);
+    expect(passReport.css?.rawBytes).toBeGreaterThan(150 * 1024);
 
     const tightBudget: V2BundleBudget = {
       ...V2_BUNDLE_BUDGET,
@@ -335,6 +340,11 @@ describe("UI V2 Bundle Budget", () => {
       expect(formatted).toContain(`${route}:`);
     }
     expect(formatted).toContain("CSS:");
+    expect(formatted).toContain(
+      `(budget: < ${(V2_BUNDLE_BUDGET.maxCssGzipBytes / 1024).toFixed(
+        1
+      )} kB gzip)`
+    );
   });
 
   describe("checkV2ChunkDuplication", () => {

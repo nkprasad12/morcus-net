@@ -56,4 +56,4 @@ Morceus looks words up with diacritics removed, and a known word is shown with M
 
 **Status:** generous ceilings set in [`src/bundler/client_bundle_budget.ts`](../../../bundler/client_bundle_budget.ts) during initial implementation.
 
-- Tighten `V2_BUNDLE_BUDGET.chunks["macronizer.js"]`, `V2_BUNDLE_BUDGET.routes.macronizer`, and `maxCssRawBytes` / `maxCssGzipBytes` to about 15% above the measured production sizes once visual polish settles.
+- Tighten `V2_BUNDLE_BUDGET.chunks["macronizer.js"]`, `V2_BUNDLE_BUDGET.routes.macronizer`, and `maxCssGzipBytes` to about 15% above the measured production sizes once visual polish settles.

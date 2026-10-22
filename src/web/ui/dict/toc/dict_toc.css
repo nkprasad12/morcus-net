@@ -146,8 +146,7 @@
   align-items: center;
 }
 
-.toc-dict-link,
-.toc-dict-link:visited {
+.toc-dict-link {
   display: inline-flex;
   align-items: center;
   gap: var(--space-3);
@@ -194,8 +193,7 @@
   font-size: 0.85rem;
 }
 
-.toc-entry-link,
-.toc-entry-link:visited {
+.toc-entry-link {
   display: inline-flex;
   align-items: center;
   gap: var(--space-3);
@@ -217,8 +215,7 @@
   margin-bottom: var(--space-2);
 }
 
-.toc-link,
-.toc-link:visited {
+.toc-link {
   display: inline;
   color: var(--text);
   text-decoration: none;
@@ -300,12 +297,13 @@
     margin-bottom: 0;
   }
 
+  /* `border-bottom: 1px solid var(--border)` comes from `.drawer-bar`
+     (`core/widgets/drawer.css`) on `<summary class="drawer-bar toc-bar">`. */
   .drawer-toc .toc-bar {
     padding: var(--space-4) var(--space-5);
     min-height: var(--drawer-min-height, 28px);
     display: flex;
     justify-content: center;
-    border-bottom: 1px solid var(--border);
     cursor: grab;
   }
 
@@ -323,7 +321,6 @@
     max-height: calc(
       var(--drawer-height, 30svh) - var(--drawer-min-height, 28px)
     );
-    overflow-y: auto;
   }
 
   .drawer-toc .toc-entries-groups {
@@ -410,12 +407,11 @@
     display: none;
   }
 
-  /* Header in Desktop Left Rail */
+  /* Header in Desktop Left Rail (`border-bottom` comes from `.drawer-bar`). */
   .drawer-toc .toc-bar {
     cursor: default;
     pointer-events: none; /* Desktop TOC rail is permanently open */
     padding: var(--space-4) var(--space-5) var(--space-4);
-    border-bottom: 1px solid var(--border);
     border-top-left-radius: 7px;
     border-top-right-radius: 7px;
     background-color: var(--dict-toc-header-bg);
@@ -440,7 +436,6 @@
   /* Desktop scrollable body */
   .drawer-toc .toc-body {
     max-height: calc(100dvh - 44px);
-    overflow-y: auto;
     padding: var(--space-4) var(--space-5) var(--space-5);
     font-size: 0.82rem;
     scrollbar-width: thin;

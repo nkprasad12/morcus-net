@@ -71,7 +71,6 @@
   height: calc(1.65rem * var(--dict-scale, 1));
   min-height: calc(1.65rem * var(--dict-scale, 1));
   padding: 0 calc(0.65rem * var(--dict-scale, 1));
-  box-sizing: border-box;
   font-size: calc(0.76rem * var(--dict-scale, 1));
   font-weight: 500;
   line-height: 1;
@@ -126,6 +125,7 @@
    is an action rather than a disclosure. */
 .copy-pill {
   text-decoration: none;
+  color: var(--text);
 }
 
 .copy-pill::after {
@@ -133,15 +133,7 @@
   content: none;
 }
 
-/* Beats the global `a:visited` rule (0,1,1), which would otherwise tint the
-   pill primary-blue once the no-JS path has been followed even once. */
-.copy-pill,
-.copy-pill:visited {
-  color: var(--text);
-}
-
-.copy-pill:hover,
-.copy-pill:hover:visited {
+.copy-pill:hover {
   color: var(--primary);
 }
 
@@ -189,7 +181,6 @@
   grid-row: 2;
   grid-column: 1 / -1;
   width: 100%;
-  box-sizing: border-box;
   margin-top: var(--space-2);
   padding: var(--space-5) var(--space-6);
   background-color: var(--card-bg);
@@ -300,7 +291,6 @@
     display: inline;
   }
   .tool-body {
-    width: 100%;
     order: 10;
     margin-top: var(--space-3);
   }

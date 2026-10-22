@@ -23,8 +23,7 @@
   image-rendering: crisp-edges;
 }
 
-.nav-link,
-.nav-link:visited {
+.nav-link {
   text-decoration: none;
   color: var(--app-bar-nav-text);
   font-weight: 500;
@@ -34,14 +33,12 @@
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
-.nav-link:hover,
-.nav-link:visited:hover {
+.nav-link:hover {
   color: var(--app-bar-text);
   background-color: var(--app-bar-nav-hover-bg);
 }
 
-.nav-link.active,
-.nav-link.active:visited {
+.nav-link.active {
   color: var(--app-bar-nav-active-text);
   background-color: var(--app-bar-nav-active-bg);
   font-weight: 600;
@@ -263,9 +260,6 @@
 @media (max-width: 1079.98px) {
   body:has(.drawer:not(.reader-dict-panel)) .back-to-top {
     bottom: calc(var(--drawer-height, 30svh) + 16px);
-    transition: opacity 0.2s ease, transform 0.2s ease,
-      background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
-      box-shadow 0.15s ease;
   }
 
   body:has(.drawer.drawer-minimized:not(.reader-dict-panel)) .back-to-top,
@@ -281,9 +275,6 @@
 @media (max-width: 640px) {
   body:has(.reader-dict-panel) .back-to-top {
     bottom: calc(var(--drawer-height, 48svh) + 16px);
-    transition: opacity 0.2s ease, transform 0.2s ease,
-      background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
-      box-shadow 0.15s ease;
   }
 
   body:has(.reader-layout-empty .reader-dict-panel) .back-to-top,

@@ -25,8 +25,7 @@
    AA floor for body text, and the same shortfall the citation gutter already
    carries. Dark mode is 6.42:1. If that floor ever needs to be met, darken
    --text-muted globally rather than giving the marker a bespoke colour. */
-a.reader-note-ref,
-a.reader-note-ref:visited {
+a.reader-note-ref {
   position: relative;
   color: var(--text-muted);
   text-decoration: none;
@@ -132,8 +131,7 @@ a.reader-note-ref:target {
    the way of reading: the whole block is already de-emphasised, the note
    bodies are themselves --text-muted, and this column is the one interactive
    thing in it, so muting it too would erase the distinction. */
-.reader-note-backref,
-.reader-note-backref:visited {
+.reader-note-backref {
   color: var(--link);
   text-align: right;
   text-decoration: none;

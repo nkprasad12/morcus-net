@@ -78,7 +78,6 @@ body {
   .app-bar-inner {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
-    align-items: center;
   }
 
   .actions-group {

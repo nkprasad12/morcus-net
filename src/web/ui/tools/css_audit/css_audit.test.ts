@@ -371,6 +371,72 @@ describe("findShadowedDeclarations", () => {
     });
     expect(a.key).toBe(b.key);
   });
+
+  it("flags an unwrapped base declaration overridden in both branches of a complementary @media pair", () => {
+    const [f] = dead({
+      "a.css": `
+        .x { display: grid; }
+        @media (max-width: 640px) { .x { display: block; } }
+        @media (min-width: 641px) { .x { display: flex; } }
+      `,
+    });
+    expect(f).toMatchObject({
+      kind: "dead",
+      context: "",
+      selectors: [".x"],
+      earlier: { file: "v2/a.css", prop: "display", value: "grid" },
+      key: "v2/a.css||.x|display",
+    });
+    expect(f.laterSites).toHaveLength(2);
+    // Shorthand in both branches overrides longhand base, but longhand does not override shorthand.
+    expect(
+      dead({
+        "a.css": `
+          .x { padding-top: 4px; }
+          @media (max-width: 640px) { .x { padding: 0; } }
+          @media (min-width: 641px) { .x { padding: 8px; } }
+        `,
+      })
+    ).toHaveLength(1);
+    expect(
+      dead({
+        "a.css": `
+          .x { padding: 4px; }
+          @media (max-width: 640px) { .x { padding-top: 0; } }
+          @media (min-width: 641px) { .x { padding-top: 8px; } }
+        `,
+      })
+    ).toHaveLength(0);
+    // Only one branch overridden: base declaration is still live.
+    expect(
+      dead({
+        "a.css": `
+          .x { display: grid; }
+          @media (max-width: 640px) { .x { display: block; } }
+        `,
+      })
+    ).toHaveLength(0);
+    // Importance mismatch does not shadow.
+    expect(
+      dead({
+        "a.css": `
+          .x { display: grid !important; }
+          @media (max-width: 640px) { .x { display: block; } }
+          @media (min-width: 641px) { .x { display: flex; } }
+        `,
+      })
+    ).toHaveLength(0);
+    // Multi-branch selector where only one branch is overridden in both halves -> partial.
+    const [partial] = shadowed({
+      "a.css": `
+        .x, .y { display: grid; }
+        @media (max-width: 640px) { .x { display: block; } }
+        @media (min-width: 641px) { .x { display: flex; } }
+      `,
+    });
+    expect(partial.kind).toBe("partial");
+    expect(partial.selectors).toEqual([".x"]);
+  });
 });
 
 describe("scanSourceReferences", () => {

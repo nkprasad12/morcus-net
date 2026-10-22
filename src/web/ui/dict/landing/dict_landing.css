@@ -276,9 +276,6 @@
     font-size: 0.75rem;
     margin-bottom: var(--space-2);
   }
-  .lexicon-list {
-    gap: var(--space-2);
-  }
   .lexicon-list li {
     font-size: 0.8rem;
   }
@@ -290,7 +287,6 @@
   .card-settings-note,
   .legend-settings-tip {
     margin-top: var(--space-4);
-    padding-top: var(--space-4);
   }
   .legend-list li {
     grid-template-columns: 80px 1fr;

@@ -197,7 +197,7 @@ Two consequences worth knowing before you "clean up" such a module:
 
 ### Browser Support & Compatibility Target
 
-UI V2 targets **Baseline 2023 + Extended Mobile** (`chrome >= 111`, `firefox >= 121`, `safari >= 16.4`, `ios_saf >= 16.4`, `and_chr >= 111`, `and_ff >= 121`, `samsung >= 23`, `opera >= 96`, `op_mob >= 73`), codified in [browser_targets.common.ts](browser_targets.common.ts).
+UI V2 targets **Baseline 2023 + Extended Mobile** (`chrome >= 111`, `edge >= 111`, `firefox >= 121`, `safari >= 16.4`, `ios_saf >= 16.4`, `and_chr >= 111`, `and_ff >= 121`, `samsung >= 23`, `opera >= 96`), codified in [browser_targets.common.ts](browser_targets.common.ts).
 
 On browsers meeting this standard, all client modules and modern CSS features are active. Browsers below this floor are not supported: `:has()`-dependent layout rules and client modules will not work on them, though server-rendered HTML and text remain readable.
 

@@ -144,7 +144,6 @@
 .report-reporter,
 .report-textarea {
   width: 100%;
-  box-sizing: border-box;
   font-family: inherit;
   font-size: 0.95rem;
   line-height: 1.45;

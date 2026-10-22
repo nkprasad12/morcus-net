@@ -29,6 +29,8 @@ import {
 } from "@/web/ui/tools/css_audit/css_audit_cascade";
 import { resetsProperty } from "@/web/ui/tools/css_audit/css_audit_shorthands";
 
+type SelectorBranch = DeclarationEntry["branches"][number];
+
 interface DeclarationSite {
   readonly file: string;
   readonly line: number;
@@ -38,7 +40,7 @@ interface DeclarationSite {
 
 export interface ShadowFinding {
   readonly kind: "dead" | "partial";
-  /** Normalized at-rule context shared by both declarations. */
+  /** Normalized at-rule context of `earlier`. */
   readonly context: string;
   /** Branches of the earlier rule that are shadowed. */
   readonly selectors: readonly string[];
@@ -77,22 +79,64 @@ function siteKey(site: DeclarationSite): string {
 }
 
 /**
+ * Explicit complementary viewport breakpoint pairs used across UI V2.
+ *
+ * Matching compares the normalized at-rule context strings produced by
+ * `css_audit_cascade.ts` (e.g. `@media (max-width: 640px)`). Unrecognized
+ * forms such as `screen and (...)` or `@media (max-width:640px)` without a
+ * space after `:` are skipped conservatively.
+ *
+ * For any single property, an unwrapped base declaration overridden by later
+ * rules on the same selector in both branches of a pair is dead (save for a
+ * sub-pixel fractional DPR viewport in the gap between `max-width` and
+ * `min-width`, where the third value is a latent bug rather than intended).
+ *
+ * TODO: Migrate UI V2 viewport media queries to Media Queries Level 4 range
+ * syntax (`@media (width <= 640px)` / `@media (width > 640px)`, supported by
+ * all `V2_BROWSERSLIST` targets) so complementary pairs partition all real
+ * viewport widths with zero fractional-DPR gap.
+ */
+export const COMPLEMENTARY_MEDIA_PAIRS: readonly (readonly [string, string])[] =
+  [
+    ["@media (max-width: 640px)", "@media (min-width: 641px)"],
+    ["@media (max-width: 860px)", "@media (min-width: 861px)"],
+    ["@media (max-width: 1079.98px)", "@media (min-width: 1080px)"],
+  ];
+
+/**
  * Finds shadowed declarations in a cascade. `entries` must be in cascade
  * order (as produced by `collectDeclarations`).
+ *
+ * Checks two provably sound dominance conditions on identical flattened
+ * selector branches:
+ * 1. Same-context shadowing: an earlier declaration is overwritten by a later
+ *    declaration in the same at-rule context with `>=` specificity.
+ * 2. Complementary `@media` shadowing: an unwrapped base declaration is
+ *    overwritten by later declarations with `>=` specificity in both branches
+ *    of a `COMPLEMENTARY_MEDIA_PAIRS` pair.
+ *
+ * Because both checks only flag an earlier declaration when later declaration(s)
+ * on the exact same selector and `>=` specificity cover every applicable
+ * viewport, deleting the flagged declaration cannot change the cascade winner
+ * even when an element also matches other selectors in between.
  */
 export function findShadowedDeclarations(
   entries: readonly DeclarationEntry[]
 ): ShadowFinding[] {
   // (context, important, selector) -> indices of entries with that branch.
   const byBranch = new Map<string, number[]>();
-  const branchKey = (entry: DeclarationEntry, selector: string): string =>
-    `${entry.context}\u0000${entry.important ? "!" : ""}\u0000${selector}`;
+  const branchKey = (
+    context: string,
+    important: boolean,
+    selector: string
+  ): string => `${context}\u0000${important ? "!" : ""}\u0000${selector}`;
+
   entries.forEach((entry, index) => {
     for (const branch of entry.branches) {
-      const key = branchKey(entry, branch.selector);
-      const list = byBranch.get(key);
-      if (list) list.push(index);
-      else byBranch.set(key, [index]);
+      const bKey = branchKey(entry.context, entry.important, branch.selector);
+      const bList = byBranch.get(bKey);
+      if (bList) bList.push(index);
+      else byBranch.set(bKey, [index]);
     }
   });
 
@@ -101,25 +145,65 @@ export function findShadowedDeclarations(
     if (entry.branches.length === 0) return;
     const shadowed: string[] = [];
     const laterSites = new Map<string, DeclarationSite>();
+
+    const shadowedByLater = (
+      candIdx: number,
+      branch: SelectorBranch
+    ): boolean => {
+      if (candIdx <= index) return false;
+      const later = entries[candIdx];
+      if (later.ruleId === entry.ruleId) return false;
+      if (!resetsProperty(later.prop, entry.prop)) return false;
+      const laterBranch = later.branches.find(
+        (b) => b.selector === branch.selector
+      );
+      return (
+        laterBranch !== undefined &&
+        compareSpecificity(laterBranch.specificity, branch.specificity) >= 0
+      );
+    };
+
     for (const branch of entry.branches) {
-      const candidates = byBranch.get(branchKey(entry, branch.selector)) ?? [];
-      const hit = candidates.find((j) => {
-        if (j <= index) return false;
-        const later = entries[j];
-        if (later.ruleId === entry.ruleId) return false;
-        if (!resetsProperty(later.prop, entry.prop)) return false;
-        const laterBranch = later.branches.find(
-          (b) => b.selector === branch.selector
-        );
-        return (
-          laterBranch !== undefined &&
-          compareSpecificity(laterBranch.specificity, branch.specificity) >= 0
-        );
-      });
-      if (hit === undefined) continue;
-      if (!shadowed.includes(branch.selector)) shadowed.push(branch.selector);
-      const site = siteOf(entries[hit]);
-      laterSites.set(siteKey(site), site);
+      // 1. Same-context shadowing.
+      const candidates =
+        byBranch.get(
+          branchKey(entry.context, entry.important, branch.selector)
+        ) ?? [];
+      const sameCtxHit = candidates.find((j) => shadowedByLater(j, branch));
+      if (sameCtxHit !== undefined) {
+        if (!shadowed.includes(branch.selector)) shadowed.push(branch.selector);
+        const site = siteOf(entries[sameCtxHit]);
+        laterSites.set(siteKey(site), site);
+        continue;
+      }
+
+      // 2. Unwrapped base declaration overridden by later declarations in both
+      // branches of a complementary @media pair.
+      if (entry.context === "") {
+        let pairSites: [DeclarationSite, DeclarationSite] | undefined;
+        for (const [ctxA, ctxB] of COMPLEMENTARY_MEDIA_PAIRS) {
+          const hitA = (
+            byBranch.get(branchKey(ctxA, entry.important, branch.selector)) ??
+            []
+          ).find((j) => shadowedByLater(j, branch));
+          if (hitA === undefined) continue;
+          const hitB = (
+            byBranch.get(branchKey(ctxB, entry.important, branch.selector)) ??
+            []
+          ).find((j) => shadowedByLater(j, branch));
+          if (hitB !== undefined) {
+            pairSites = [siteOf(entries[hitA]), siteOf(entries[hitB])];
+            break;
+          }
+        }
+        if (pairSites !== undefined) {
+          if (!shadowed.includes(branch.selector))
+            shadowed.push(branch.selector);
+          laterSites.set(siteKey(pairSites[0]), pairSites[0]);
+          laterSites.set(siteKey(pairSites[1]), pairSites[1]);
+          continue;
+        }
+      }
     }
     if (shadowed.length === 0) return;
     const distinct = new Set(entry.branches.map((b) => b.selector));

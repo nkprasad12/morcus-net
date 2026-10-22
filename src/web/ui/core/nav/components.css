@@ -21,6 +21,7 @@
 
 .card-interactive:hover,
 .work-card-item:hover > .work-card {
+  color: inherit;
   transform: translateY(-2px);
   border-color: var(--primary);
   box-shadow: var(--card-shadow-hover);
@@ -53,6 +54,7 @@
 
 .btn-primary:hover:not(:disabled) {
   background-color: var(--primary-hover);
+  color: var(--on-accent);
 }
 
 .btn-primary:disabled {
@@ -68,6 +70,7 @@
 
 .btn-secondary:hover {
   background-color: var(--tag-bg);
+  color: var(--text);
 }
 
 .btn-sm {
@@ -337,7 +340,6 @@ body.body-embedded {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-sizing: border-box;
 }
 
 /* Dims the page while an anchored dialog (or the centred Appearance menu,
@@ -510,7 +512,6 @@ html[data-scroll-lock="gutter"] {
 
 .section-edit-input {
   width: 100%;
-  box-sizing: border-box;
   font: inherit;
   line-height: inherit;
   background: var(--input-bg);

@@ -90,8 +90,7 @@
   font-weight: 600;
 }
 
-a.lsSenseBullet,
-a.lsSenseBullet:visited {
+a.lsSenseBullet {
   color: var(--text);
   text-decoration: none;
 }
@@ -122,7 +121,6 @@ a.lsSenseBullet:visited {
   width: max-content;
   min-width: min(calc(100vw - 32px), 200px);
   max-width: min(calc(100vw - 32px), 32rem);
-  box-sizing: border-box;
   background-color: var(--toast-bg);
   color: var(--toast-text);
   border: 1px solid var(--toast-border);
@@ -162,7 +160,6 @@ a.lsSenseBullet:visited {
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
   width: max-content;
   max-width: min(calc(100vw - 32px), 32rem);
-  box-sizing: border-box;
   position: absolute;
   inset: unset;
   overflow: visible;
@@ -214,16 +211,14 @@ a.lsSenseBullet:visited {
 }
 
 /* Latin word click-to-lookup link */
-.lat-word,
-.lat-word:visited {
+.lat-word {
   color: inherit;
   text-decoration: none;
   border-radius: var(--radius-xs);
   cursor: pointer;
 }
 
-.lat-word:hover,
-.lat-word:visited:hover {
+.lat-word:hover {
   color: var(--link);
   text-decoration: underline;
   text-decoration-style: solid;
@@ -232,8 +227,7 @@ a.lsSenseBullet:visited {
 }
 
 /* Section anchor bullets */
-.lsSenseBullet.section-anchor,
-.lsSenseBullet.section-anchor:visited {
+.lsSenseBullet.section-anchor {
   text-decoration: none;
   color: var(--text);
   cursor: pointer;

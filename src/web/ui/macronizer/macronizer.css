@@ -247,6 +247,7 @@
 
 .mac-word:hover {
   background: var(--word-hover-bg);
+  color: inherit;
 }
 
 /* Tier 1: Unresolved — shaded pill + solid underline */

@@ -35,7 +35,6 @@ morcus-dict-settings {
   border-radius: 0;
   background: rgba(0, 0, 0, 0.55);
   box-shadow: none;
-  box-sizing: border-box;
 }
 
 .dict-settings-dialog:target:not([data-upgraded] *) > .dialog-card {
@@ -43,7 +42,6 @@ morcus-dict-settings {
   max-width: 480px;
   max-height: 80dvh;
   overflow-y: auto;
-  box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   background: var(--card-bg);

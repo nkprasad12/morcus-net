@@ -11,11 +11,11 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
 .dict-iframe {
@@ -121,9 +121,6 @@ body.resizing-panels .dict-iframe,
   .dict-iframe-container {
     padding: var(--space-1) var(--space-4) 0;
     background-color: var(--bg);
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
   }
 
   /* Mobile Drawer Top Bar & Handle (balanced) */
@@ -139,12 +136,10 @@ body.resizing-panels .dict-iframe,
   }
 
   .reader-sheet-teaser {
-    min-height: 24px;
     font-size: 0.84rem;
   }
 
-  a.reader-sheet-close,
-  a.reader-sheet-close:visited {
+  a.reader-sheet-close {
     padding: 0 var(--space-2);
     font-size: 1rem;
   }
@@ -183,15 +178,6 @@ body.resizing-panels .dict-iframe,
     box-shadow: none;
     transition: none;
     z-index: auto;
-    scrollbar-width: thin;
-  }
-
-  /* Unboxed flat canvas for dictionary pane on desktop */
-  .dict-iframe-container {
-    background-color: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
   }
 
   /* While the splitter is dragged the dictionary document would relayout on
@@ -204,7 +190,6 @@ body.resizing-panels .dict-iframe,
 
   /* Position button inside the dictionary right column */
   .reader-dict-back-to-top {
-    position: fixed;
     bottom: 24px;
     right: 28px;
   }

@@ -64,7 +64,6 @@
   width: 2rem;
   height: 2rem;
   margin: -1rem 0 0 -1rem;
-  box-sizing: border-box;
   /* App-bar colors: a themed disc that stays legible over (dimmed) text in
    * light and dark mode. The ring extends the disc past the spinning arc. */
   border: 3px solid transparent;

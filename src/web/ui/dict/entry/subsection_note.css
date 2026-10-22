@@ -44,15 +44,13 @@
   padding: 0;
 }
 
-.subsection-chip,
-.subsection-chip:visited {
+.subsection-chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   min-height: calc(1.55rem * var(--dict-scale, 1));
   margin-left: var(--space-2);
   padding: var(--space-1) var(--space-4) var(--space-1) var(--space-3);
-  box-sizing: border-box;
   border-radius: var(--radius-full);
   background-color: var(--card-bg);
   border: 1px solid var(--border);
@@ -84,8 +82,7 @@
 }
 
 /* With a single match the headword itself is the link. */
-.subsection-namelink,
-.subsection-namelink:visited {
+.subsection-namelink {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);

@@ -41,7 +41,6 @@
 /* Same field treatment as the dictionary search box (search.css). */
 .external-input {
   width: 100%;
-  box-sizing: border-box;
   padding: var(--space-3) var(--space-4);
   font: inherit;
   font-size: 1rem;

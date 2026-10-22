@@ -54,7 +54,6 @@
   user-select: none;
   cursor: grab;
   touch-action: none;
-  box-sizing: border-box;
 }
 
 /* The drag cursor lives on the (pointer-captured) handle, never on <body>:
@@ -113,10 +112,8 @@
 
 /* Close / Action Button inside Teaser */
 a.drawer-close,
-a.drawer-close:visited,
 button.drawer-close,
-a.reader-sheet-close,
-a.reader-sheet-close:visited {
+a.reader-sheet-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -138,12 +135,10 @@ a.reader-sheet-close:visited {
 }
 
 a.drawer-close:hover,
-a.drawer-close:visited:hover,
 a.drawer-close:active,
 button.drawer-close:hover,
 button.drawer-close:active,
 a.reader-sheet-close:hover,
-a.reader-sheet-close:visited:hover,
 a.reader-sheet-close:active {
   background: transparent;
   color: var(--text);

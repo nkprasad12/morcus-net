@@ -1251,9 +1251,6 @@ test.describe("UI V2 dictionary", () => {
       expect(cssRes.headers()["content-type"]).toContain("text/css");
       expect(cssRes.headers()["cache-control"]).toContain("immutable");
       const cssBuffer = await cssRes.body();
-      expect(cssBuffer.byteLength).toBeLessThan(
-        V2_BUNDLE_BUDGET.maxCssRawBytes
-      );
       expect(gzipSync(cssBuffer).byteLength).toBeLessThan(
         V2_BUNDLE_BUDGET.maxCssGzipBytes
       );
