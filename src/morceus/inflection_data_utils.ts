@@ -1,5 +1,5 @@
 import { assertEqual, checkSatisfies } from "@/common/assert";
-import { exhaustiveGuard } from "@/common/misc_utils";
+import { exhaustiveGuard, type DeepReadonly } from "@/common/misc_utils";
 import {
   LatinCase,
   LatinDegree,
@@ -460,14 +460,19 @@ export function mergeInflectionData(
   };
 }
 
-function coerceToArray<T>(input: T | T[] | undefined): T[] {
+function coerceToArray<T>(input: T | readonly T[] | undefined): readonly T[] {
   if (input === undefined) {
     return [];
   }
-  if (Array.isArray(input)) {
+  if (isArray(input)) {
     return input;
   }
   return [input];
+}
+
+// `Array.isArray` doesn't narrow out readonly arrays.
+function isArray<T>(input: T | readonly T[]): input is readonly T[] {
+  return Array.isArray(input);
 }
 
 function toMorpheusGender(data: LatinGender): string {
@@ -851,7 +856,9 @@ export function convertUpos(upos: string): WordInflectionData {
   return result;
 }
 
-export function wordInflectionDataToArray(data: WordInflectionData): string[] {
+export function wordInflectionDataToArray(
+  data: DeepReadonly<WordInflectionData>
+): string[] {
   return [
     coerceToArray(data.tense).map(toMorpheusTense),
     coerceToArray(data.mood).map(toMorpheusMood),

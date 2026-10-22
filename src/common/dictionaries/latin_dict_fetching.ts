@@ -9,6 +9,7 @@ import type {
   StoredEntryAndMetadata,
 } from "@/common/dictionaries/dict_storage";
 import type { DictOptions } from "@/common/dictionaries/dictionaries";
+import type { DeepReadonly } from "@/common/misc_utils";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { type LatinWordAnalysis } from "@/morceus/cruncher_types";
 import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
@@ -22,10 +23,17 @@ const REPLACED_CHARS = new Map<string, string>([
   ["Œ", "Oe"],
 ]);
 
-/** Finds analyses for the diacritic-free input. */
+/**
+ * Finds analyses for the diacritic-free input.
+ *
+ * Results may be shared between callers (for example, if the provider is
+ * memoized), so they are readonly.
+ */
 export type InflectionProvider = (
   cleanInput: string
-) => LatinWordAnalysis[] | Promise<LatinWordAnalysis[]>;
+) =>
+  | DeepReadonly<LatinWordAnalysis[]>
+  | Promise<DeepReadonly<LatinWordAnalysis[]>>;
 
 export interface FindEntriesForQueryArgs<T extends EntryResult = EntryResult> {
   extras?: ServerExtras;

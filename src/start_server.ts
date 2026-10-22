@@ -23,7 +23,11 @@ import { NumeralDict } from "@/common/dictionaries/numeral/numeral_dict";
 import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arnold_dict";
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
-import { getFormattedMemoryUsage, singletonOf } from "@/common/misc_utils";
+import {
+  getFormattedMemoryUsage,
+  lruMemoize,
+  singletonOf,
+} from "@/common/misc_utils";
 import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
 import { macronizerEngineFromEnv } from "@/web/ui/macronizer/macronizer_engine.server";
@@ -76,7 +80,10 @@ const INFLECTION_PROVIDER = singletonOf<InflectionProvider>(() => {
     "Create Morpheus tables"
   );
   const cruncher = MorceusCruncher.make(tables);
-  return (word) => cruncher(word, CruncherOptions.DEFAULT);
+  // Each lookup fans out to every Latin dictionary, and they all ask for the
+  // analyses of the same word, so share the result instead of re-running
+  // Morceus for each one.
+  return lruMemoize((word) => cruncher(word, CruncherOptions.DEFAULT), 32);
 });
 
 function startMorcusServer(): Promise<http.Server> {
