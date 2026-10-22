@@ -1013,11 +1013,74 @@ export function buildNavTree(pages: WorkPage[]): NavTreeNode {
 }
 
 /** Returns the processed content of a TEI XML file. */
+/** Subtrees of a Beta Code `foreign` node whose text should not be converted. */
+const BETA_CODE_SKIP_NODES = new Set(["note", "pb", "milestone"]);
+
+/**
+ * Beta Code marks capitals with `*` (`*si/bulla`), but some texts just use an
+ * uppercase letter (`Si/bulla`), which the converter would make lowercase.
+ * `J` and `V` are not Beta Code letters, so they are left alone.
+ */
+function markBetaCodeCapitals(text: string): string {
+  return text.replace(
+    /(?<!\*)([A-IK-UW-Z])/g,
+    (letter: string) => `*${letter.toLowerCase()}`
+  );
+}
+
+function convertBetaCodeStrings(node: XmlNode): void {
+  node.children.forEach((child, i) => {
+    if (typeof child === "string") {
+      node.children[i] = betaCodeToGreek(markBetaCodeCapitals(child))
+        // A lone sigma (e.g. a manuscript siglum) shouldn't be final-form.
+        .replace(/(?<!\p{L})ς(?!\p{L})/gu, "σ");
+    } else if (!BETA_CODE_SKIP_NODES.has(child.name)) {
+      convertBetaCodeStrings(child);
+    }
+  });
+}
+
+function betaCodeCandidateText(node: XmlNode): string {
+  return node.children
+    .map((child) =>
+      typeof child === "string"
+        ? child
+        : BETA_CODE_SKIP_NODES.has(child.name)
+        ? ""
+        : betaCodeCandidateText(child)
+    )
+    .join("");
+}
+
+/**
+ * Converts Greek written in Beta Code inside `<foreign xml:lang="grc">` to
+ * Unicode, modifying `root` in place.
+ *
+ * Most `grc` text is already Unicode, but some works (e.g. Petronius, Seneca
+ * the Elder, some Cicero) write it in Beta Code (`Si/bulla, ti/ qe/leis;`).
+ * A `grc` node is treated as Beta Code only if its text is entirely ASCII and
+ * contains at least one letter, so Unicode Greek is never touched.
+ * (`xml:lang="greek"` is always Beta Code; see `transformContentNode`.)
+ */
+export function convertGrcBetaCode(root: XmlNode): void {
+  for (const node of root.findDescendants("foreign")) {
+    if (node.getAttr("xml:lang") !== "grc") {
+      continue;
+    }
+    const text = betaCodeCandidateText(node);
+    // eslint-disable-next-line no-control-regex
+    if (/^[\x00-\x7F]*$/.test(text) && /[a-zA-Z]/.test(text)) {
+      convertBetaCodeStrings(node);
+    }
+  }
+}
+
 export function processTei2(
   xmlRoot: XmlNode,
   metadata: { workId: string; translationId?: string },
   options?: ProcessTeiOptions
 ): ProcessedWork2 {
+  convertGrcBetaCode(xmlRoot);
   let textParts = getTextparts(xmlRoot, metadata.workId);
   const processOptions: ProcessForDisplayOptions = {
     debug: options?.sideChannel,

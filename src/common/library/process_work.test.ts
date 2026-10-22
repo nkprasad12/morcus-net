@@ -393,6 +393,53 @@ describe("processTei2", () => {
     expect(out).not.toContain(betacode);
   });
 
+  it("converts beta-code in foreign xml:lang=grc to unicode", () => {
+    const body = `<div n="1" type="textpart" subtype="book">dicebant: <foreign xml:lang="grc">Si/bulla, ti/ qe/leis; *promhqeu= DAMAS</foreign></div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    const out = work.rows[0][1].toString();
+    expect(out).toContain("Σίβυλλα, τί θέλεις; Προμηθεῦ ΔΑΜΑΣ");
+    expect(out).toContain("dicebant: ");
+  });
+
+  it("converts beta-code inside child nodes of foreign xml:lang=grc", () => {
+    const body = `<div n="1" type="textpart" subtype="book"><foreign xml:lang="grc">to\\n a)/ndra <add>ei)</add> gege/nnhtai</foreign></div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    const out = work.rows[0][1].toString();
+    expect(out).toContain("τὸν ἄνδρα");
+    expect(out).toContain("εἰ");
+    expect(out).toContain("γεγέννηται");
+  });
+
+  it("uses a medial sigma for a lone beta-code sigma", () => {
+    const body = `<div n="1" type="textpart" subtype="book">H<foreign xml:lang="grc">s</foreign> et <foreign xml:lang="grc">lo/gos</foreign></div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    const out = work.rows[0][1].toString();
+    expect(out).toContain("σ");
+    expect(out).toContain("λόγος");
+  });
+
+  it("leaves unicode text in foreign xml:lang=grc unchanged", () => {
+    const body = `<div n="1" type="textpart" subtype="book"><foreign xml:lang="grc">κέρας ʼαμαλθείας, a)</foreign></div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    expect(work.rows[0][1].toString()).toContain("κέρας ʼαμαλθείας, a)");
+  });
+
+  it("leaves non-letter ascii in foreign xml:lang=grc unchanged", () => {
+    const body = `<div n="1" type="textpart" subtype="book"><foreign xml:lang="grc">2, 3</foreign></div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    expect(work.rows[0][1].toString()).toContain("2, 3");
+  });
+
   it("processes list nodes with label", () => {
     const xml = `<div n="1" type="textpart" subtype="book">
                    <list type="simple">
