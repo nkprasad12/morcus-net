@@ -70,9 +70,19 @@
   gap: var(--space-7);
 }
 
+/* The grid item: the card link, plus (with a saved spot) the corner tag laid
+   over it as a sibling, since its clear button can't go inside the link. */
+.work-card-item {
+  position: relative;
+  display: grid;
+}
+
+.work-card-item[hidden] {
+  display: none;
+}
+
 /* Work Card (Fully Clickable Card) */
 .work-card {
-  position: relative;
   padding: var(--space-6) var(--space-7);
   display: flex;
   flex-direction: column;
@@ -81,11 +91,7 @@
   color: inherit;
 }
 
-.work-card[hidden] {
-  display: none;
-}
-
-.work-card:hover .work-card-title {
+.work-card-item:hover .work-card-title {
   color: var(--primary);
 }
 
@@ -133,11 +139,29 @@
   position: absolute;
   top: var(--space-4);
   right: var(--space-5);
+  /* Clicks on the badge reach the card link beneath; only its clear button
+     takes them. */
   pointer-events: none;
+  transition: transform 0.15s ease;
 }
 
-.work-card:has(.work-card-corner-tag) .work-card-content {
-  padding-right: 4.5rem;
+/* Lift with the card (.work-card-item:hover in components.css: the card
+   itself isn't :hover while the pointer is over the tag). */
+.work-card-item:hover > .work-card-corner-tag {
+  transform: translateY(-2px);
+}
+
+/* The shared close-button look (components.css), inside the badge and
+   clickable through the tag. */
+.work-card-clear-spot {
+  pointer-events: auto;
+  padding: 0 2px;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.work-card-item:has(.work-card-corner-tag) .work-card-content {
+  padding-right: 6rem;
 }
 
 @media (max-width: 640px) {

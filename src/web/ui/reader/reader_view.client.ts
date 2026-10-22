@@ -609,6 +609,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   };
 
+  /** The work's first page: the first entry in the contents. */
+  #firstPageId(): string | undefined {
+    return this.querySelector<HTMLElement>(
+      ".reader-toc-drawer .reader-toc-item[data-page-id]"
+    )?.dataset.pageId;
+  }
+
   #saveCurrentSpot(explicitSecId?: string): void {
     const workId = this.dataset.work;
     if (!workId) return;
@@ -628,7 +635,14 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     if (secId) {
-      savedSpotsStore.set(workId, secId);
+      // The first page is where the work opens anyway: forget the spot
+      // rather than save one, so just opening a work leaves no badge in the
+      // library, and coming back to the start clears it.
+      if (secId === this.#firstPageId()) {
+        savedSpotsStore.remove(workId);
+      } else {
+        savedSpotsStore.set(workId, secId);
+      }
     }
   }
 
@@ -1565,12 +1579,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     };
 
     const pathParts = url.pathname.split("/").filter(Boolean);
-    const newPageId =
-      pathParts.slice(3).join(".") ||
-      this.querySelector<HTMLElement>(
-        ".reader-toc-drawer .reader-toc-item[data-page-id]"
-      )?.dataset.pageId ||
-      "";
+    const newPageId = pathParts.slice(3).join(".") || this.#firstPageId() || "";
 
     let success = false;
     let transHtml: string | null = null;

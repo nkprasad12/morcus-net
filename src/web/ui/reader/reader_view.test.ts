@@ -1335,6 +1335,35 @@ describe("MorcusReaderView desktop splitter drag", () => {
     window.location.hash = "";
   });
 
+  /** A reader on `page` whose contents start at page "1.1". */
+  function readerWithToc(page: string): MorcusReaderView {
+    const el = document.createElement("morcus-reader-view") as MorcusReaderView;
+    el.dataset.work = "phi0448.phi001.perseus-lat2";
+    el.dataset.page = page;
+    el.innerHTML = `
+      <dialog class="reader-toc-drawer">
+        <a class="reader-toc-item" href="#" data-page-id="1.1">1.1</a>
+        <a class="reader-toc-item" href="#" data-page-id="1.2">1.2</a>
+      </dialog>`;
+    return el;
+  }
+
+  test("doesn't save a spot on the first page, where the work opens anyway", () => {
+    document.body.appendChild(readerWithToc("1.1"));
+    expect(savedSpotsStore.get("phi0448.phi001.perseus-lat2")).toBeUndefined();
+  });
+
+  test("coming back to the first page clears a saved spot", () => {
+    savedSpotsStore.set("phi0448.phi001.perseus-lat2", "1.2");
+    document.body.appendChild(readerWithToc("1.1"));
+    expect(savedSpotsStore.get("phi0448.phi001.perseus-lat2")).toBeUndefined();
+  });
+
+  test("still saves a later page when the contents are present", () => {
+    document.body.appendChild(readerWithToc("1.2"));
+    expect(savedSpotsStore.get("phi0448.phi001.perseus-lat2")).toBe("1.2");
+  });
+
   test("opens section action menu when section anchor is clicked and updates saved spot on Copy permalink", () => {
     const passageHtml = `
       <div class="reader-section" id="sec-1.5">

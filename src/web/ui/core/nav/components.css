@@ -20,7 +20,7 @@
 }
 
 .card-interactive:hover,
-.work-card:hover {
+.work-card-item:hover > .work-card {
   transform: translateY(-2px);
   border-color: var(--primary);
   box-shadow: var(--card-shadow-hover);
@@ -111,6 +111,7 @@
 .reader-dict-back-to-top:focus-visible,
 .reader-drawer-fab:focus-visible,
 .dialog-close-btn:focus-visible,
+.work-card-clear-spot:focus-visible,
 .tab-pill:focus-visible,
 .jump-pill:focus-visible,
 .dict-summary:focus-visible,
@@ -409,7 +410,8 @@ html[data-scroll-lock="gutter"] {
 }
 
 .settings-popover-close,
-.reader-toc-close-btn {
+.reader-toc-close-btn,
+.work-card-clear-spot {
   background: none;
   border: none;
   line-height: 1;
@@ -425,7 +427,8 @@ html[data-scroll-lock="gutter"] {
 
 .settings-popover-close:hover,
 .reader-toc-close-btn:hover,
-.dialog-close-btn:hover {
+.dialog-close-btn:hover,
+.work-card-clear-spot:hover {
   color: var(--text);
   background: var(--tag-bg);
 }

@@ -61,6 +61,8 @@ describe("library SSR & client hydration", () => {
       expect(html).toContain('data-work-id="phi0472.phi001.perseus-lat2"');
       expect(html).toContain('data-reader-url="/work/catullus/carmina"');
       expect(html).toContain('href="/work/caesar/de_bello_gallico"');
+      expect(html).toContain('data-first-page="1.1"');
+      expect(html).toContain('class="work-card-item"');
     });
   });
 
@@ -82,10 +84,12 @@ describe("library SSR & client hydration", () => {
         <div id="library-empty-state" hidden></div>
         <main class="library-main">
           <div class="library-grid">
+            <div class="work-card-item">
             <a href="/work/caesar/de_bello_gallico"
                class="card card-interactive work-card"
                data-work-id="phi0448.phi001.perseus-lat2"
                data-reader-url="/work/caesar/de_bello_gallico"
+               data-first-page="1.1"
                data-author="gaius julius caesar"
                data-title="de bello gallico"
                data-tags="all macra">
@@ -97,10 +101,13 @@ describe("library SSR & client hydration", () => {
                 </div>
               </div>
             </a>
+            </div>
+            <div class="work-card-item">
             <a href="/work/catullus/carmina"
                class="card card-interactive work-card"
                data-work-id="phi0472.phi001.perseus-lat2"
                data-reader-url="/work/catullus/carmina"
+               data-first-page="1"
                data-author="gaius valerius catullus"
                data-title="carmina"
                data-tags="all">
@@ -110,6 +117,7 @@ describe("library SSR & client hydration", () => {
                 <div class="work-card-badges"></div>
               </div>
             </a>
+            </div>
           </div>
         </main>
       `;
@@ -117,6 +125,14 @@ describe("library SSR & client hydration", () => {
       document.body.appendChild(el);
       return el;
     }
+
+    const CAESAR = '[data-work-id="phi0448.phi001.perseus-lat2"]';
+    const CATULLUS = '[data-work-id="phi0472.phi001.perseus-lat2"]';
+    /** The grid item (wrapper) around the card matching `sel`. */
+    const item = (el: Element, sel: string) =>
+      el
+        .querySelector<HTMLElement>(sel)!
+        .closest<HTMLElement>(".work-card-item")!;
 
     it("leaves cards un-modified when no saved spots exist", () => {
       const el = setupLibraryDOM();
@@ -127,7 +143,9 @@ describe("library SSR & client hydration", () => {
       expect(caesarCard.getAttribute("href")).toBe(
         "/work/caesar/de_bello_gallico"
       );
-      expect(caesarCard.querySelector(".work-card-corner-tag")).toBeNull();
+      expect(
+        item(el, CAESAR).querySelector(".work-card-corner-tag")
+      ).toBeNull();
     });
 
     it("hydrates card with corner tag and resume jump URL when saved spot exists", () => {
@@ -145,7 +163,9 @@ describe("library SSR & client hydration", () => {
       expect(caesarCard.getAttribute("href")).toBe(
         "/work/caesar/de_bello_gallico?jump=1.4#sec-1.4"
       );
-      const cornerTag = caesarCard.querySelector<HTMLElement>(
+      // Beside the link, not in it: it holds a button.
+      expect(caesarCard.querySelector(".work-card-corner-tag")).toBeNull();
+      const cornerTag = item(el, CAESAR).querySelector<HTMLElement>(
         ".work-card-corner-tag"
       );
       expect(cornerTag).not.toBeNull();
@@ -155,7 +175,52 @@ describe("library SSR & client hydration", () => {
 
       // Catullus has no saved spot and remains clean
       expect(catullusCard.getAttribute("href")).toBe("/work/catullus/carmina");
-      expect(catullusCard.querySelector(".work-card-corner-tag")).toBeNull();
+      expect(
+        item(el, CATULLUS).querySelector(".work-card-corner-tag")
+      ).toBeNull();
+    });
+
+    it("shows no badge for a spot on the first page, where the card already goes", () => {
+      savedSpotsStore.set("phi0448.phi001.perseus-lat2", "1.1");
+
+      const el = setupLibraryDOM();
+
+      expect(el.querySelector(CAESAR)!.getAttribute("href")).toBe(
+        "/work/caesar/de_bello_gallico"
+      );
+      expect(
+        item(el, CAESAR).querySelector(".work-card-corner-tag")
+      ).toBeNull();
+    });
+
+    it("the clear button forgets the spot and restores the card", () => {
+      savedSpotsStore.set("phi0448.phi001.perseus-lat2", "1.4");
+      savedSpotsStore.set("phi0472.phi001.perseus-lat2", "5");
+
+      const el = setupLibraryDOM();
+      const caesarCard = el.querySelector<HTMLAnchorElement>(CAESAR)!;
+      const clear = item(el, CAESAR).querySelector<HTMLButtonElement>(
+        ".work-card-clear-spot"
+      )!;
+      expect(clear.getAttribute("aria-label")).toBe("Clear saved spot (§ 1.4)");
+
+      clear.click();
+
+      expect(
+        savedSpotsStore.get("phi0448.phi001.perseus-lat2")
+      ).toBeUndefined();
+      expect(caesarCard.getAttribute("href")).toBe(
+        "/work/caesar/de_bello_gallico"
+      );
+      expect(
+        item(el, CAESAR).querySelector(".work-card-corner-tag")
+      ).toBeNull();
+      expect(document.activeElement).toBe(caesarCard);
+      // Other works keep theirs.
+      expect(savedSpotsStore.get("phi0472.phi001.perseus-lat2")).toBe("5");
+      expect(
+        item(el, CATULLUS).querySelector(".work-card-corner-tag")
+      ).not.toBeNull();
     });
 
     it("filters works correctly with query and tags", () => {
@@ -163,19 +228,12 @@ describe("library SSR & client hydration", () => {
       const input = el.querySelector<HTMLInputElement>(
         "#library-search-input"
       )!;
-      const caesarCard = el.querySelector<HTMLElement>(
-        '[data-work-id="phi0448.phi001.perseus-lat2"]'
-      )!;
-      const catullusCard = el.querySelector<HTMLElement>(
-        '[data-work-id="phi0472.phi001.perseus-lat2"]'
-      )!;
-
       // Type "Catullus"
       input.value = "Catullus";
       input.dispatchEvent(new Event("input"));
 
-      expect(caesarCard.hidden).toBe(true);
-      expect(catullusCard.hidden).toBe(false);
+      expect(item(el, CAESAR).hidden).toBe(true);
+      expect(item(el, CATULLUS).hidden).toBe(false);
 
       // Reset
       const resetBtn = el.querySelector<HTMLButtonElement>(
@@ -183,8 +241,8 @@ describe("library SSR & client hydration", () => {
       )!;
       resetBtn.click();
 
-      expect(caesarCard.hidden).toBe(false);
-      expect(catullusCard.hidden).toBe(false);
+      expect(item(el, CAESAR).hidden).toBe(false);
+      expect(item(el, CATULLUS).hidden).toBe(false);
     });
 
     it("applies a query typed before upgrade", () => {
@@ -193,16 +251,8 @@ describe("library SSR & client hydration", () => {
           "Catullus";
       });
 
-      expect(
-        el.querySelector<HTMLElement>(
-          '[data-work-id="phi0448.phi001.perseus-lat2"]'
-        )!.hidden
-      ).toBe(true);
-      expect(
-        el.querySelector<HTMLElement>(
-          '[data-work-id="phi0472.phi001.perseus-lat2"]'
-        )!.hidden
-      ).toBe(false);
+      expect(item(el, CAESAR).hidden).toBe(true);
+      expect(item(el, CATULLUS).hidden).toBe(false);
     });
   });
 });

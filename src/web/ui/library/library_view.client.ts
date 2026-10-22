@@ -88,7 +88,8 @@ export class MorcusLibraryView extends BaseElement {
         tokens.every((tok) => author.includes(tok) || title.includes(tok));
 
       const isVisible = matchesTag && matchesQuery;
-      card.hidden = !isVisible;
+      // The card's wrapper is the grid item (see library.server.ts).
+      (card.parentElement ?? card).hidden = !isVisible;
       if (isVisible) visibleCount++;
     }
 
@@ -107,6 +108,9 @@ export class MorcusLibraryView extends BaseElement {
       if (!spot || !spot.sectionId) continue;
 
       const secId = spot.sectionId;
+      // A spot on the first page links where the card already goes.
+      if (secId === card.dataset.firstPage) continue;
+
       const baseUrl =
         card.dataset.readerUrl ||
         card.getAttribute("data-reader-url") ||
@@ -121,22 +125,40 @@ export class MorcusLibraryView extends BaseElement {
 
       // Built on demand for the few cards with a saved spot in localStorage
       // rather than pre-rendered hidden on all 126 cards (no server state to
-      // drift from).
-      let tag = card.querySelector<HTMLElement>(".work-card-corner-tag");
+      // drift from). It sits beside the link in the card's wrapper, since its
+      // clear button can't go inside the link.
+      const host = card.parentElement ?? card;
+      let tag = host.querySelector<HTMLElement>(".work-card-corner-tag");
       if (!tag) {
         tag = document.createElement("div");
         tag.className = "work-card-corner-tag";
-        card.prepend(tag);
+        host.append(tag);
       }
+      // No title on the badge: it lets clicks through to the card (CSS), so it
+      // never gets hovered, and its clear button would inherit it.
       setHtml(
         tag,
-        html`<span
-          class="badge badge-resume"
-          title="Resume at section ${secId}">
-          &sect;&nbsp;${secId}
-          <span class="resume-label">saved</span>
-        </span>`
+        html`<span class="badge badge-resume"
+          >&sect;&nbsp;${secId} <span class="resume-label">saved</span
+          ><button
+            type="button"
+            class="work-card-clear-spot"
+            aria-label="Clear saved spot (§ ${secId})"
+            title="Clear saved spot">
+            &times;
+          </button></span
+        >`
       );
+      const clear = tag.querySelector<HTMLButtonElement>(
+        ".work-card-clear-spot"
+      );
+      this.scope.listen(clear, "click", () => {
+        savedSpotsStore.remove(workId);
+        card.setAttribute("href", baseUrl);
+        tag.remove();
+        // The button is gone; keep keyboard focus on the card.
+        card.focus();
+      });
     }
   }
 }

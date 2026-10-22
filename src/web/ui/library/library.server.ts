@@ -53,11 +53,16 @@ export async function renderLibraryPageHtml(): Promise<string> {
           ? `<div class="work-card-badges">${badges.join(" ")}</div>`
           : "";
 
+      // The wrapper is the grid item: a saved spot's badge and its clear
+      // button (library_view.client.ts) sit beside the link, since a button
+      // can't go inside one.
       return `
+        <div class="work-card-item">
         <a href="${readerUrl}"
            class="card card-interactive work-card"
            data-work-id="${he.escape(w.id)}"
            data-reader-url="${readerUrl}"
+           data-first-page="${he.escape(w.firstPageId.join("."))}"
            data-author="${he.escape((w.author || "").toLowerCase())}"
            data-title="${he.escape((w.title || "").toLowerCase())}"
            data-tags="${tags.join(" ")}"
@@ -73,6 +78,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
             ${badgesHtml}
           </div>
         </a>
+        </div>
       `;
     })
     .join("\n");
