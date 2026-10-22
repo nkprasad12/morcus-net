@@ -53,9 +53,48 @@ export interface SnapshotMeta {
   beforeUrl?: string;
   afterUrl?: string;
   diffUrl?: string;
+  /**
+   * The baseline file this snapshot belongs to, as used by
+   * `visual-baselines accept` and `checkpoint`. Missing for `results` items
+   * whose Playwright project couldn't be determined.
+   */
+  snapshotName?: string;
 }
 
 export type VisualDiffSource = "git" | "results" | "local";
+
+/**
+ * What the viewer may write, and whether it currently can. Present only when
+ * the Inspector serves the viewer with write endpoints (`results` and
+ * `local` sources).
+ */
+export interface ViewerActions {
+  /** `results`: accept, then checkpoint. `local`: checkpoint only. */
+  flow: "accept-then-checkpoint" | "checkpoint";
+  /** Why actions are unavailable, if they are. */
+  disabledReason?: string;
+}
+
+/** Results of the write endpoints, shared by the server and the viewer. */
+export interface AcceptResponse {
+  added: string[];
+  updated: string[];
+  reverted: string[];
+  unchanged: string[];
+  /** Local vs checkpoint, for the accepted names that are now local baselines. */
+  items: SnapshotMeta[];
+}
+
+export interface CheckpointResponse {
+  promoted: string[];
+  skippedStale: string[];
+  /** Files written, relative to the repository root. */
+  files: string[];
+}
+
+export interface ApiError {
+  error: string;
+}
 
 export interface VisualDiffManifest {
   source: VisualDiffSource;
@@ -74,4 +113,11 @@ export interface VisualDiffManifest {
    * changed after they were accepted.
    */
   staleLocalBaselines?: string[];
+  /**
+   * Identifies what is being reviewed (the run marker for `results`, the
+   * local store contents for `local`), so review verdicts kept in the
+   * browser's `sessionStorage` don't carry over to different screenshots.
+   */
+  reviewKey?: string;
+  actions?: ViewerActions;
 }

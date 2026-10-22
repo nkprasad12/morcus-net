@@ -16,12 +16,18 @@
  * or a new checkpoint), the checked-in file wins and the entry is "stale".
  * This is content-based rather than mtime-based, because checkouts and rebases
  * rewrite mtimes.
+ *
+ * Entries are added by `e2e --visual --update` ({@link acceptFromEffective})
+ * or straight from a failed run's actuals ({@link acceptFromActuals}, used by
+ * `visual-baselines accept` and the Visual Diff Inspector).
  */
 
 import { execFileSync } from "child_process";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { scanResultActuals } from "@/scripts/visual_diff/playwright_results";
+import { checkRunMarker } from "@/scripts/visual_diff/run_marker";
 
 export const DEFAULT_SNAPSHOT_DIR =
   "src/integration/screenshot/browser_screenshot.test.ts-snapshots";
@@ -271,6 +277,118 @@ export function acceptFromEffective(
     }
     const hash = sha256(content);
     if (existing !== undefined && valid.has(name) && existing.sha256 === hash) {
+      continue;
+    }
+    fs.mkdirSync(paths.storeDir, { recursive: true });
+    fs.writeFileSync(path.join(paths.storeDir, name), content);
+    manifest.entries[name] = {
+      sha256: hash,
+      acceptedAt: now.toISOString(),
+      ...(commit === undefined ? {} : { acceptedAtCommit: commit }),
+      checkpointBlob: checkpoint === undefined ? null : gitBlobId(checkpoint),
+    };
+    (existing === undefined ? result.added : result.updated).push(name);
+  }
+  writeManifest(paths, manifest);
+  return result;
+}
+
+export interface ActualsAcceptResult extends AcceptResult {
+  /** Already accepted with the same image, or identical to the checkpoint. */
+  unchanged: string[];
+}
+
+export interface AcceptFromActualsOptions {
+  now?: Date;
+  /** Accept even if the run marker is missing or the code changed since. */
+  force?: boolean;
+  /** Repository to compare against the run marker (default: the cwd). */
+  repoRoot?: string;
+  /** Snapshot suffix used to map actuals to baseline names (default: this OS). */
+  platform?: string;
+}
+
+/** Thrown when `accept` refuses to run, with the reason as the message. */
+export class AcceptRefusedError extends Error {}
+
+/**
+ * Accepts the named snapshots straight from Playwright's `*-actual.png` files
+ * in `resultsDir`, as left by a failing `e2e --visual` run, without running
+ * the suite again.
+ *
+ * Names are baseline file names (`<scenario>-<js>-<theme>-<project>-<os>.png`).
+ * There is no "accept everything": a flaky failure must never be accepted
+ * just because it happened to be in `test-results/`.
+ *
+ * Unless `force` is set, refuses if the run marker (`run_marker.ts`) is
+ * missing or the code changed since the run.
+ *
+ * Like {@link acceptFromEffective}, an actual identical to the checkpoint
+ * removes the local entry instead ("reverted"). Unlike it, a stale entry is
+ * always replaced or reverted: the image was picked explicitly.
+ */
+export function acceptFromActuals(
+  paths: BaselinePaths,
+  resultsDir: string,
+  names: readonly string[],
+  options: AcceptFromActualsOptions = {}
+): ActualsAcceptResult {
+  if (names.length === 0) {
+    throw new AcceptRefusedError(
+      "accept needs snapshot names (or --from-report); it never accepts everything in test-results/."
+    );
+  }
+  if (!options.force) {
+    const check = checkRunMarker(resultsDir, options.repoRoot ?? process.cwd());
+    if (!check.ok) {
+      throw new AcceptRefusedError(`Refusing to accept: ${check.reason}`);
+    }
+  }
+  const actuals = new Map<string, string>();
+  for (const a of scanResultActuals(resultsDir, options.platform)) {
+    if (a.snapshotName !== undefined) {
+      actuals.set(a.snapshotName, a.actualPath);
+    }
+  }
+  const wanted = [...new Set(names)].sort();
+  const unknown = wanted.filter((n) => !actuals.has(n));
+  if (unknown.length > 0) {
+    throw new AcceptRefusedError(
+      `No actual screenshot in ${
+        path.relative(process.cwd(), resultsDir) || resultsDir
+      } for: ${unknown.join(", ")}`
+    );
+  }
+
+  const now = options.now ?? new Date();
+  const manifest = readManifest(paths);
+  const valid = new Set(resolveLocal(paths, manifest).valid);
+  const commit = currentCommit(
+    options.repoRoot ?? path.dirname(paths.snapshotDir)
+  );
+  const result: ActualsAcceptResult = {
+    added: [],
+    updated: [],
+    reverted: [],
+    unchanged: [],
+  };
+  for (const name of wanted) {
+    const content = fs.readFileSync(actuals.get(name)!);
+    const checkpoint = readIfExists(path.join(paths.snapshotDir, name));
+    const existing = manifest.entries[name];
+    if (checkpoint !== undefined && checkpoint.equals(content)) {
+      if (existing === undefined) {
+        result.unchanged.push(name);
+      } else {
+        delete manifest.entries[name];
+        fs.rmSync(path.join(paths.storeDir, name), { force: true });
+        result.reverted.push(name);
+      }
+      continue;
+    }
+    const hash = sha256(content);
+    if (existing !== undefined && valid.has(name) && existing.sha256 === hash) {
+      result.unchanged.push(name);
       continue;
     }
     fs.mkdirSync(paths.storeDir, { recursive: true });

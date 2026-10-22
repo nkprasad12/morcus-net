@@ -73,15 +73,17 @@ Testing only what changed since `HEAD` is safe because every commit is expected 
 
 A baseline update rewrites the definition of "correct" for the UI. An agent that both changes the pixels and re-blesses them has removed the only check on its own visual judgement, so this decision belongs to the user every time.
 
-Baselines have two tiers ([`src/web/ui/docs/TESTING.md` §2.F](src/web/ui/docs/TESTING.md#baselines-committed-checkpoint--local-overlay)): the committed **checkpoint** (`*-snapshots/`) and gitignored **local baselines** (`.visual-baselines/local/`). `./morcus.sh e2e --visual --all --update` writes only to the local tier. That's reversible and never committed, so agents may run it without asking, but the diffs must still be shown to the user.
+Baselines have two tiers ([`src/web/ui/docs/TESTING.md` §2.F](src/web/ui/docs/TESTING.md#baselines-committed-checkpoint--local-overlay)): the committed **checkpoint** (`*-snapshots/`) and gitignored **local baselines** (`.visual-baselines/local/`). `./morcus.sh e2e --visual --all --update` writes only to the local tier. That's reversible and never committed, so agents may run it without asking, but the diffs must still be shown to the user. The same goes for `./morcus.sh visual-baselines accept <names...>`, which accepts named failures from the last run into the local tier without re-running it: agents may run it with explicit names, after showing the user the diffs.
+
+The Visual Diff Inspector also has **Accept locally** and **Checkpoint** buttons (and the `POST /api/accept` and `/api/checkpoint` endpoints behind them). They are for the human reviewing the diffs. Agents must **never** call those endpoints or click those buttons, even though the token is in the URL the Inspector prints.
 
 When a change causes pixel diffs:
 
 1. Run the visual suite **without** `--update` first, to see exactly what moved: `./morcus.sh e2e --visual --all`.
 2. Report which snapshots differ and why, using the Visual Diff Inspector ([`src/web/ui/docs/TESTING.md` §2.F](src/web/ui/docs/TESTING.md#option-f-visual-regression-tests--the-visual-diff-inspector)):
-   - Start it in the background with `./morcus.sh visual-diff --source results` (or `--source local` after `--update`) and give the user the `Network:` URL it prints, so they can flip through before/after themselves.
+   - Start it in the background with `./morcus.sh visual-diff --source results` (or `--source local` after `--update`) and give the user the `Network:` URL it prints (including its `#token=…`), so they can flip through before/after and approve or reject themselves.
    - To inspect the diffs yourself, read `.cache/visual-diff/report.md` and the `images/*.{before,after,diff}.png` files next to it.
-3. You may accept the new screenshots locally with `--update`. Don't call the UI change done until the user has seen the diffs.
+3. You may accept the new screenshots locally with `--update`, or with `visual-baselines accept <names...>` for the specific failures the user has seen. Don't call the UI change done until the user has seen the diffs.
 4. **Wait for approval before checkpointing.** Do not run `./morcus.sh visual-baselines checkpoint`, write to `*-snapshots/` any other way, or `git add` anything under `*-snapshots/`, until the user has said yes.
 5. Only then checkpoint, re-check the checkpoint against `HEAD` with `./morcus.sh visual-diff --source git`, and commit, listing the affected files.
 

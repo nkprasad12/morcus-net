@@ -3,7 +3,9 @@ import os from "os";
 import path from "path";
 import { execFileSync } from "child_process";
 import {
+  AcceptRefusedError,
   type BaselinePaths,
+  acceptFromActuals,
   acceptFromEffective,
   checkpoint,
   drop,
@@ -14,6 +16,13 @@ import {
   resolveLocal,
   statusReport,
 } from "@/scripts/visual_diff/local_baselines";
+import {
+  RUN_MARKER_FILE,
+  checkRunMarker,
+  computeTreeState,
+  readRunMarker,
+  writeRunMarker,
+} from "@/scripts/visual_diff/run_marker";
 import { collectLocalEntries } from "@/scripts/visual_diff/visual_diff";
 
 /** Distinct fake PNG content; the store never decodes images. */
@@ -335,5 +344,255 @@ describe("collectLocalEntries", () => {
     expect(fs.readFileSync(dest)).toEqual(png("a0"));
     expect(entries[0].afterPath).toBe(path.join(paths.storeDir, "a.png"));
     expect(entries[1].writeBefore).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Accepting from Playwright's actuals
+// ---------------------------------------------------------------------------
+
+const A = "a-js-light-chromium-linux.png";
+const NEW = "n-js-dark-MobileSafari-linux.png";
+
+/** Simulates a failed comparison: Playwright's files in `test-results/`. */
+function playwrightFails(
+  resultsDir: string,
+  stem: string,
+  project: string,
+  actual: Buffer,
+  expected?: Buffer
+) {
+  const dir = path.join(
+    resultsDir,
+    `screenshot-browser_screens-1a2b3-${stem}--${project}`
+  );
+  write(dir, `${stem}-actual.png`, actual);
+  if (expected !== undefined) write(dir, `${stem}-expected.png`, expected);
+}
+
+describe("acceptFromActuals", () => {
+  let results: string;
+  const accept = (names: string[], now?: Date) =>
+    acceptFromActuals(paths, results, names, {
+      force: true,
+      platform: "linux",
+      now,
+    });
+
+  beforeEach(() => {
+    results = path.join(root, "test-results");
+    write(paths.snapshotDir, A, png("a0"));
+  });
+
+  it("adds changed and new snapshots, and leaves the checkpoint alone", () => {
+    playwrightFails(results, "a-js-light", "chromium", png("a1"), png("a0"));
+    playwrightFails(results, "n-js-dark", "MobileSafari", png("n1"));
+
+    const result = accept([A, NEW], new Date("2026-01-02T03:04:05Z"));
+
+    expect(result).toEqual({
+      added: [A, NEW],
+      updated: [],
+      reverted: [],
+      unchanged: [],
+    });
+    expect(read(paths.storeDir, A)).toEqual(png("a1"));
+    expect(read(paths.storeDir, NEW)).toEqual(png("n1"));
+    expect(read(paths.snapshotDir, A)).toEqual(png("a0"));
+    const manifest = readManifest(paths);
+    expect(manifest.entries[A]).toMatchObject({
+      acceptedAt: "2026-01-02T03:04:05.000Z",
+      checkpointBlob: gitBlobId(png("a0")),
+    });
+    expect(manifest.entries[NEW].checkpointBlob).toBeNull();
+    expect(resolveLocal(paths).valid).toEqual([A, NEW]);
+  });
+
+  it("accepts only the named snapshots", () => {
+    playwrightFails(results, "a-js-light", "chromium", png("a1"), png("a0"));
+    playwrightFails(results, "n-js-dark", "MobileSafari", png("n1"));
+
+    expect(accept([NEW]).added).toEqual([NEW]);
+    expect(Object.keys(readManifest(paths).entries)).toEqual([NEW]);
+  });
+
+  it("updates an existing local baseline", () => {
+    playwrightFails(results, "a-js-light", "chromium", png("a1"));
+    accept([A]);
+    playwrightFails(results, "a-js-light", "chromium", png("a2"));
+
+    expect(accept([A]).updated).toEqual([A]);
+    expect(read(paths.storeDir, A)).toEqual(png("a2"));
+  });
+
+  it("reverts to the checkpoint when the actual matches it", () => {
+    playwrightFails(results, "a-js-light", "chromium", png("a1"));
+    accept([A]);
+    playwrightFails(results, "a-js-light", "chromium", png("a0"));
+
+    expect(accept([A]).reverted).toEqual([A]);
+    expect(readManifest(paths).entries).toEqual({});
+    expect(fs.existsSync(path.join(paths.storeDir, A))).toBe(false);
+  });
+
+  it("reports images that are already accepted, or match the checkpoint, as unchanged", () => {
+    playwrightFails(results, "a-js-light", "chromium", png("a1"));
+    accept([A]);
+    const before = readManifest(paths);
+    expect(accept([A], new Date(0)).unchanged).toEqual([A]);
+    expect(readManifest(paths)).toEqual(before);
+
+    drop(paths, { all: true });
+    playwrightFails(results, "a-js-light", "chromium", png("a0"));
+    expect(accept([A]).unchanged).toEqual([A]);
+    expect(readManifest(paths).entries).toEqual({});
+  });
+
+  it("replaces a stale entry", () => {
+    playwrightFails(results, "a-js-light", "chromium", png("a1"));
+    accept([A]);
+    write(paths.snapshotDir, A, png("a-upstream"));
+    expect(resolveLocal(paths).stale).toEqual([A]);
+
+    expect(accept([A]).updated).toEqual([A]);
+    expect(resolveLocal(paths).valid).toEqual([A]);
+  });
+
+  it("rejects names with no actual, and writes nothing", () => {
+    playwrightFails(results, "a-js-light", "chromium", png("a1"));
+    expect(() => accept([A, "nope-js-light-chromium-linux.png"])).toThrow(
+      /nope-js-light-chromium-linux\.png/
+    );
+    // A baseline name for another platform doesn't match either.
+    expect(() => accept(["a-js-light-chromium-darwin.png"])).toThrow(
+      AcceptRefusedError
+    );
+    expect(readManifest(paths).entries).toEqual({});
+  });
+
+  it("refuses to accept without names", () => {
+    playwrightFails(results, "a-js-light", "chromium", png("a1"));
+    expect(() => accept([])).toThrow(/needs snapshot names/);
+  });
+
+  it("uses the latest retry", () => {
+    playwrightFails(results, "a-js-light", "chromium", png("a1"));
+    write(
+      path.join(
+        results,
+        "screenshot-browser_screens-1a2b3-a-js-light--chromium-retry1"
+      ),
+      "a-js-light-actual.png",
+      png("a-retry")
+    );
+    accept([A]);
+    expect(read(paths.storeDir, A)).toEqual(png("a-retry"));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Run marker
+// ---------------------------------------------------------------------------
+
+describe("run marker guard", () => {
+  let repo: string;
+  let results: string;
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: repo, stdio: "ignore" });
+
+  beforeEach(() => {
+    repo = path.join(root, "repo");
+    results = path.join(repo, "test-results");
+    fs.mkdirSync(repo);
+    git("init", "-q");
+    git("config", "user.email", "test@example.com");
+    git("config", "user.name", "Test");
+    fs.writeFileSync(path.join(repo, ".gitignore"), "/test-results/\n");
+    write(path.join(repo, "src"), "app.ts", Buffer.from("v1"));
+    write(repo, "README.md", Buffer.from("readme"));
+    git("add", ".");
+    git("commit", "-q", "-m", "init");
+    // Paths inside the repo, like the real layout.
+    paths = {
+      snapshotDir: path.join(repo, "src", "snaps"),
+      storeDir: path.join(repo, ".visual-baselines", "local"),
+      effectiveDir: path.join(repo, ".cache", "effective"),
+    };
+    write(paths.snapshotDir, A, png("a0"));
+    git("add", ".");
+    git("commit", "-q", "-m", "snaps");
+    playwrightFails(results, "a-js-light", "chromium", png("a1"), png("a0"));
+  });
+
+  const markRun = () =>
+    writeRunMarker(
+      results,
+      computeTreeState(repo),
+      new Date("2026-01-02T03:04:05Z")
+    );
+  const accept = (force = false) =>
+    acceptFromActuals(paths, results, [A], {
+      repoRoot: repo,
+      platform: "linux",
+      force,
+    });
+
+  it("accepts when the code is unchanged since the run", () => {
+    markRun();
+    expect(checkRunMarker(results, repo).ok).toBe(true);
+    expect(accept().added).toEqual([A]);
+  });
+
+  it("refuses without a marker, unless forced", () => {
+    const check = checkRunMarker(results, repo);
+    expect(check.ok).toBe(false);
+    expect(!check.ok && check.reason).toMatch(/No run marker/);
+    expect(() => accept()).toThrow(AcceptRefusedError);
+    expect(() => accept()).toThrow(/No run marker/);
+    expect(readManifest(paths).entries).toEqual({});
+    expect(accept(true).added).toEqual([A]);
+  });
+
+  it("refuses after an uncommitted change under src/", () => {
+    markRun();
+    write(path.join(repo, "src"), "app.ts", Buffer.from("v2"));
+    expect(() => accept()).toThrow(/Uncommitted changes/);
+    expect(accept(true).added).toEqual([A]);
+  });
+
+  it("refuses after a new untracked file under src/", () => {
+    markRun();
+    write(path.join(repo, "src"), "new.ts", Buffer.from("new"));
+    expect(() => accept()).toThrow(/Uncommitted changes/);
+  });
+
+  it("refuses after HEAD moves", () => {
+    markRun();
+    write(repo, "README.md", Buffer.from("readme 2"));
+    git("commit", "-q", "-am", "next");
+    expect(() => accept()).toThrow(/HEAD moved/);
+  });
+
+  it("refuses if the code changed during the run", () => {
+    const start = computeTreeState(repo);
+    write(path.join(repo, "src"), "app.ts", Buffer.from("v2"));
+    writeRunMarker(results, start, new Date(), computeTreeState(repo));
+    write(path.join(repo, "src"), "app.ts", Buffer.from("v1"));
+    expect(readRunMarker(results)?.changedDuringRun).toBe(true);
+    expect(() => accept()).toThrow(/changed while the run/);
+  });
+
+  it("ignores changes outside src/, and staging", () => {
+    write(path.join(repo, "src"), "app.ts", Buffer.from("dirty"));
+    markRun();
+    write(repo, "README.md", Buffer.from("edited docs"));
+    git("add", "src/app.ts");
+    expect(checkRunMarker(results, repo).ok).toBe(true);
+  });
+
+  it("treats a malformed marker as missing", () => {
+    write(results, RUN_MARKER_FILE, Buffer.from("{not json"));
+    expect(readRunMarker(results)).toBeUndefined();
+    expect(() => accept()).toThrow(/No run marker/);
   });
 });

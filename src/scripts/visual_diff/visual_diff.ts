@@ -14,30 +14,54 @@
  *   against the committed checkpoint. This is what you want after
  *   `e2e --visual --update`, which writes to the local store.
  *
+ * For the `results` and `local` sources, the served viewer can also accept
+ * approved screenshots into the local store and then checkpoint them, through
+ * POST endpoints that need a random per-session token (see
+ * {@link handleApiRequest}). The `git` source is read-only.
+ *
  * External tools: `git` (required for the `git` source) and ImageMagick
  * (optional; used for pixel counts and diff masks).
  */
 
 import { execFileSync, spawn, spawnSync } from "child_process";
+import crypto from "crypto";
 import esbuild from "esbuild";
 import fs from "fs";
 import http from "http";
 import os from "os";
 import path from "path";
 import type {
+  AcceptResponse,
+  ApiError,
+  CheckpointResponse,
   ImageDims,
   SnapshotCategory,
   SnapshotMeta,
-  SnapshotSize,
   SnapshotStatus,
+  ViewerActions,
   VisualDiffManifest,
   VisualDiffSource,
 } from "@/scripts/visual_diff/visual_diff_types";
 import {
+  AcceptRefusedError,
   type BaselinePaths,
+  acceptFromActuals,
+  checkpoint,
   defaultPaths,
+  readManifest,
   resolveLocal,
 } from "@/scripts/visual_diff/local_baselines";
+import {
+  KNOWN_PROJECTS,
+  projectFromResultsDir,
+  safeId,
+  scanResultActuals,
+  sizeForProject,
+} from "@/scripts/visual_diff/playwright_results";
+import {
+  checkRunMarker,
+  readRunMarker,
+} from "@/scripts/visual_diff/run_marker";
 
 const DEFAULT_SNAPSHOT_DIR =
   "src/integration/screenshot/browser_screenshot.test.ts-snapshots";
@@ -47,36 +71,19 @@ const DEFAULT_PORT = 8899;
 /**
  * All interfaces, matching the dev server (`start_server.ts`), so the viewer is
  * reachable from another machine (e.g. when running on a remote workstation).
- * The content is low-risk: read-only screenshots of the dev UI. Pass
- * `--host 127.0.0.1` to restrict it to this machine.
+ * The content is low-risk: screenshots of the dev UI. The only write
+ * endpoints (accept / checkpoint) need the per-session token printed in the
+ * terminal. Pass `--host 127.0.0.1` to restrict it to this machine.
  */
 const DEFAULT_HOST = "0.0.0.0";
 
 const VIEWER_DIR = path.join(__dirname, "viewer");
 const IMAGES_SUBDIR = "images";
 const MANIFEST_PLACEHOLDER = "__VISUAL_DIFF_MANIFEST__";
+/** The manifest as JSON, next to `report.md`; read by `accept --from-report`. */
+export const MANIFEST_FILE = "manifest.json";
 
-/**
- * Playwright project names from `playwright.config.ts`, and the form factor
- * each one renders at.
- */
-const PROJECT_SIZES: Record<string, SnapshotSize> = {
-  chromium: "large",
-  firefox: "large",
-  webkit: "large",
-  MobileChrome: "small",
-  FirefoxSmallScreen: "small",
-  MobileSafari: "small",
-};
-
-/** Longest first, so `FirefoxSmallScreen` wins over `firefox`. */
-const KNOWN_PROJECTS = Object.keys(PROJECT_SIZES).sort(
-  (a, b) => b.length - a.length
-);
-
-export function sizeForProject(project: string): SnapshotSize {
-  return PROJECT_SIZES[project] ?? "unknown";
-}
+export { projectFromResultsDir, sizeForProject };
 
 export interface VisualDiffOptions {
   /**
@@ -98,6 +105,15 @@ export interface VisualDiffOptions {
   host?: string;
   openBrowser?: boolean;
   reportPath?: string;
+  /**
+   * Serve accept/checkpoint endpoints for the `results` and `local` sources
+   * (default: true). They need the per-session token either way.
+   */
+  actions?: boolean;
+  /** Fixed session token; tests only. Generated randomly by default. */
+  token?: string;
+  /** Repository checked against the run marker (default: the cwd). */
+  repoRoot?: string;
 }
 
 export interface VisualDiffResult {
@@ -206,14 +222,6 @@ export function parseSnapshotName(
   };
 }
 
-/** Returns the Playwright project encoded in a `test-results` directory name. */
-export function projectFromResultsDir(dirName: string): string | undefined {
-  const withoutRetry = dirName.replace(/-retry\d+$/, "");
-  return KNOWN_PROJECTS.find((p) =>
-    withoutRetry.toLowerCase().endsWith(`-${p.toLowerCase()}`)
-  );
-}
-
 /**
  * Parses the pixel count from ImageMagick `compare -metric AE` output.
  *
@@ -226,10 +234,6 @@ export function parseCompareOutput(stderr: string): number | undefined {
     return undefined;
   }
   return Math.round(parseFloat(match[1]));
-}
-
-function safeId(raw: string): string {
-  return raw.replace(/[^A-Za-z0-9._-]+/g, "_");
 }
 
 // ---------------------------------------------------------------------------
@@ -323,6 +327,8 @@ interface RawEntry {
   afterPath?: string;
   /** Absolute path of a pre-computed diff mask (Playwright's), if any. */
   fallbackDiffPath?: string;
+  /** See {@link SnapshotMeta.snapshotName}. */
+  snapshotName?: string;
 }
 
 function git(args: string[], cwd: string): string {
@@ -390,6 +396,7 @@ export function collectGitEntries(
     entries.push({
       id: safeId(path.relative(relDir, relPath).replace(/\.png$/, "")),
       name: path.basename(relPath),
+      snapshotName: path.basename(relPath),
       status,
       afterPath: status === "deleted" ? undefined : absPath,
       writeBefore:
@@ -425,6 +432,7 @@ export function collectLocalEntries(paths: BaselinePaths): {
     return {
       id: safeId(name.replace(/\.png$/, "")),
       name,
+      snapshotName: name,
       status: hasCheckpoint ? "modified" : "added",
       afterPath: path.join(paths.storeDir, name),
       writeBefore: hasCheckpoint
@@ -436,44 +444,22 @@ export function collectLocalEntries(paths: BaselinePaths): {
 }
 
 export function collectResultEntries(resultsDir: string): RawEntry[] {
-  const absDir = path.resolve(resultsDir);
-  if (!fs.existsSync(absDir)) {
-    return [];
-  }
-  // Later retries overwrite earlier attempts of the same snapshot.
-  const byId = new Map<string, RawEntry>();
-  const dirs = fs
-    .readdirSync(absDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name)
-    .sort();
-  for (const dirName of dirs) {
-    const dir = path.join(absDir, dirName);
-    const browserHint = projectFromResultsDir(dirName);
-    for (const file of fs.readdirSync(dir)) {
-      const match = file.match(/^(.*)-actual\.png$/);
-      if (match === null) {
-        continue;
-      }
-      const stem = match[1];
-      const expected = path.join(dir, `${stem}-expected.png`);
-      const diff = path.join(dir, `${stem}-diff.png`);
-      const hasExpected = fs.existsSync(expected);
-      const id = safeId(`${stem}-${browserHint ?? dirName}`);
-      byId.set(id, {
-        id,
-        name: `${stem}.png`,
-        browserHint,
-        status: hasExpected ? "modified" : "added",
-        afterPath: path.join(dir, file),
-        writeBefore: hasExpected
+  return scanResultActuals(resultsDir).map((a) => {
+    const expected = a.expectedPath;
+    return {
+      id: a.id,
+      name: `${a.stem}.png`,
+      browserHint: a.project,
+      status: expected !== undefined ? "modified" : "added",
+      afterPath: a.actualPath,
+      writeBefore:
+        expected !== undefined
           ? (dest) => fs.copyFileSync(expected, dest)
           : undefined,
-        fallbackDiffPath: fs.existsSync(diff) ? diff : undefined,
-      });
-    }
-  }
-  return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
+      fallbackDiffPath: a.diffPath,
+      snapshotName: a.snapshotName,
+    };
+  });
 }
 
 /** A failed test in `test-results/` that never got as far as a screenshot comparison. */
@@ -548,6 +534,9 @@ function materialize(
     name: entry.name,
     ...parseSnapshotName(entry.name, entry.browserHint),
     status: entry.status,
+    ...(entry.snapshotName === undefined
+      ? {}
+      : { snapshotName: entry.snapshotName }),
   };
 
   if (entry.writeBefore !== undefined) {
@@ -619,6 +608,10 @@ function writeViewer(outDir: string, manifest: VisualDiffManifest) {
   fs.writeFileSync(
     path.join(outDir, "index.html"),
     template.replace(MANIFEST_PLACEHOLDER, () => jsonForScriptTag(manifest))
+  );
+  fs.writeFileSync(
+    path.join(outDir, MANIFEST_FILE),
+    JSON.stringify(manifest, null, 2) + "\n"
   );
   fs.copyFileSync(
     path.join(VIEWER_DIR, "viewer.css"),
@@ -754,16 +747,29 @@ export function resolveServedPath(
 }
 
 /**
- * Starts a static file server for `outDir`. If `port` is taken, tries the
- * next few ports.
+ * Starts a static file server for `outDir`, plus the write endpoints under
+ * `/api/` if `session` is given. If `port` is taken, tries the next few ports.
  */
 function startViewerServer(
   outDir: string,
   port: number,
-  host: string
+  host: string,
+  session?: ActionSession
 ): Promise<{ server: http.Server; port: number }> {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
+    if (url.pathname.startsWith("/api/")) {
+      if (session === undefined) {
+        sendJson(res, 404, { error: "This Inspector is read-only." });
+      } else {
+        handleApiRequest(session, req, res).catch((err: unknown) =>
+          sendJson(res, 500, {
+            error: err instanceof Error ? err.message : String(err),
+          })
+        );
+      }
+      return;
+    }
     const filePath = resolveServedPath(outDir, url.pathname);
     if (
       filePath === undefined ||
@@ -799,11 +805,373 @@ function startViewerServer(
       server.once("error", onError);
       server.listen(candidate, host, () => {
         server.off("error", onError);
-        resolve({ server, port: candidate });
+        const address = server.address();
+        resolve({
+          server,
+          port:
+            typeof address === "object" && address !== null
+              ? address.port
+              : candidate,
+        });
       });
     };
     tryListen();
   });
+}
+
+// ---------------------------------------------------------------------------
+// Write endpoints: accept and checkpoint from the viewer
+// ---------------------------------------------------------------------------
+
+/** Request header carrying the per-session token. */
+export const TOKEN_HEADER = "x-visual-diff-token";
+/** What the user must type to checkpoint from the viewer. */
+export const CHECKPOINT_CONFIRMATION = "checkpoint";
+const MAX_BODY_BYTES = 1024 * 1024;
+
+/**
+ * State behind the write endpoints. The Inspector listens on the network,
+ * so every write needs the random token printed in the terminal, and may only
+ * touch the snapshots this session is showing.
+ */
+export interface ActionSession {
+  token: string;
+  source: "results" | "local";
+  paths: BaselinePaths;
+  resultsDir: string;
+  repoRoot: string;
+  outDir: string;
+  /** Snapshot names shown in this session; the only names the endpoints accept. */
+  names: ReadonlySet<string>;
+  /** `results`: names accepted this session; the only names it may checkpoint. */
+  accepted: Set<string>;
+  /** Why actions are off regardless of the run marker (e.g. missing images). */
+  staticDisabledReason?: string;
+  im?: ImageMagick;
+}
+
+export function newSessionToken(): string {
+  return crypto.randomBytes(24).toString("base64url");
+}
+
+/** Constant-time token comparison (hashing first hides the length, too). */
+export function tokenMatches(
+  expected: string,
+  given: string | string[] | undefined
+): boolean {
+  if (typeof given !== "string" || expected.length === 0) return false;
+  const digest = (s: string) => crypto.createHash("sha256").update(s).digest();
+  return crypto.timingSafeEqual(digest(expected), digest(given));
+}
+
+/** Whether `Origin` is present and names the host the request was sent to. */
+export function isSameOrigin(headers: http.IncomingHttpHeaders): boolean {
+  const { origin, host } = headers;
+  if (typeof origin !== "string" || typeof host !== "string") return false;
+  try {
+    const url = new URL(origin);
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      url.host === host
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Snapshots whose images are too incomplete to judge, with the reason. */
+export function incompleteItems(
+  items: readonly SnapshotMeta[],
+  source: VisualDiffSource
+): string[] {
+  const problems: string[] = [];
+  for (const item of items) {
+    const label = item.snapshotName ?? `${item.name} [${item.browser}]`;
+    if (item.snapshotName === undefined) {
+      problems.push(`${label}: unknown Playwright project`);
+    } else if (item.status === "deleted") {
+      problems.push(`${label}: deleted`);
+    } else if (item.afterUrl === undefined || item.after === undefined) {
+      problems.push(`${label}: new image missing or unreadable`);
+    } else if (
+      item.status === "modified" &&
+      (item.beforeUrl === undefined || item.before === undefined)
+    ) {
+      problems.push(`${label}: baseline image missing or unreadable`);
+    } else if (
+      source === "results" &&
+      item.status === "modified" &&
+      item.diffUrl === undefined
+    ) {
+      problems.push(
+        `${label}: no diff (ImageMagick missing, no Playwright diff)`
+      );
+    }
+  }
+  return problems;
+}
+
+function disabledReason(session: ActionSession): string | undefined {
+  if (session.staticDisabledReason !== undefined) {
+    return session.staticDisabledReason;
+  }
+  if (session.source === "results") {
+    const check = checkRunMarker(session.resultsDir, session.repoRoot);
+    if (!check.ok) return check.reason;
+  }
+  return undefined;
+}
+
+function sendJson(
+  res: http.ServerResponse,
+  status: number,
+  body: AcceptResponse | CheckpointResponse | ApiError
+) {
+  res.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+  });
+  res.end(JSON.stringify(body));
+}
+
+function readBody(req: http.IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    req.on("data", (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > MAX_BODY_BYTES) {
+        reject(new Error("Request body too large."));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    req.on("error", reject);
+  });
+}
+
+class HttpError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+  }
+}
+
+function parseRequest(raw: string): { names: string[]; confirm?: string } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new HttpError(400, "Body must be JSON.");
+  }
+  if (typeof parsed !== "object" || parsed === null) {
+    throw new HttpError(400, "Body must be a JSON object.");
+  }
+  const names = "names" in parsed ? parsed.names : undefined;
+  if (
+    !Array.isArray(names) ||
+    names.length === 0 ||
+    !names.every((n): n is string => typeof n === "string")
+  ) {
+    throw new HttpError(400, "`names` must be a non-empty list of strings.");
+  }
+  const confirm = "confirm" in parsed ? parsed.confirm : undefined;
+  return {
+    names: [...new Set(names)].sort(),
+    confirm: typeof confirm === "string" ? confirm : undefined,
+  };
+}
+
+/** Local vs checkpoint images for `names`, for the second review step. */
+function localReviewItems(
+  session: ActionSession,
+  names: ReadonlySet<string>
+): SnapshotMeta[] {
+  const imagesDir = path.join(session.outDir, IMAGES_SUBDIR);
+  fs.mkdirSync(imagesDir, { recursive: true });
+  return collectLocalEntries(session.paths)
+    .entries.filter((e) => names.has(e.name))
+    .map((e) =>
+      materialize({ ...e, id: `local-${e.id}` }, imagesDir, session.im)
+    );
+}
+
+/**
+ * Handles `POST /api/accept` and `POST /api/checkpoint`. Exported for tests;
+ * the Inspector routes every `/api/` request here.
+ */
+export async function handleApiRequest(
+  session: ActionSession,
+  req: http.IncomingMessage,
+  res: http.ServerResponse
+): Promise<void> {
+  try {
+    if (req.method !== "POST") {
+      throw new HttpError(405, "Write endpoints accept POST only.");
+    }
+    if (!isSameOrigin(req.headers)) {
+      throw new HttpError(403, "Cross-origin request refused.");
+    }
+    if (!tokenMatches(session.token, req.headers[TOKEN_HEADER])) {
+      throw new HttpError(
+        403,
+        "Missing or wrong session token. Open the URL the Inspector printed (it ends in #token=…)."
+      );
+    }
+    const contentType = req.headers["content-type"] ?? "";
+    if (!contentType.startsWith("application/json")) {
+      throw new HttpError(415, "Content-Type must be application/json.");
+    }
+    const { names, confirm } = parseRequest(await readBody(req));
+    const foreign = names.filter((n) => !session.names.has(n));
+    if (foreign.length > 0) {
+      throw new HttpError(
+        400,
+        `Not in this review session: ${foreign.join(", ")}`
+      );
+    }
+    const url = new URL(req.url ?? "/", "http://localhost");
+    if (url.pathname === "/api/accept") {
+      sendJson(res, 200, apiAccept(session, names));
+    } else if (url.pathname === "/api/checkpoint") {
+      sendJson(res, 200, apiCheckpoint(session, names, confirm));
+    } else {
+      throw new HttpError(404, `No endpoint ${url.pathname}.`);
+    }
+  } catch (err) {
+    if (err instanceof HttpError) {
+      sendJson(res, err.status, { error: err.message });
+    } else if (err instanceof AcceptRefusedError) {
+      sendJson(res, 409, { error: err.message });
+    } else {
+      throw err;
+    }
+  }
+}
+
+function apiAccept(session: ActionSession, names: string[]): AcceptResponse {
+  if (session.source !== "results") {
+    throw new HttpError(400, "Accept is only available for --source results.");
+  }
+  const reason = disabledReason(session);
+  if (reason !== undefined) {
+    throw new HttpError(409, reason);
+  }
+  // The run marker was just checked; acceptFromActuals checks it again.
+  const result = acceptFromActuals(session.paths, session.resultsDir, names, {
+    repoRoot: session.repoRoot,
+  });
+  const valid = new Set(resolveLocal(session.paths).valid);
+  const local = new Set(names.filter((n) => valid.has(n)));
+  for (const n of local) session.accepted.add(n);
+  return { ...result, items: localReviewItems(session, local) };
+}
+
+function apiCheckpoint(
+  session: ActionSession,
+  names: string[],
+  confirm: string | undefined
+): CheckpointResponse {
+  if (confirm !== CHECKPOINT_CONFIRMATION) {
+    throw new HttpError(
+      400,
+      `Checkpoint needs the typed confirmation "${CHECKPOINT_CONFIRMATION}".`
+    );
+  }
+  if (session.staticDisabledReason !== undefined) {
+    throw new HttpError(409, session.staticDisabledReason);
+  }
+  if (session.source === "results") {
+    const notAccepted = names.filter((n) => !session.accepted.has(n));
+    if (notAccepted.length > 0) {
+      throw new HttpError(
+        400,
+        `Accept and review these locally first: ${notAccepted.join(", ")}`
+      );
+    }
+  }
+  let result: { promoted: string[]; skippedStale: string[] };
+  try {
+    result = checkpoint(session.paths, names);
+  } catch (err) {
+    throw new HttpError(400, err instanceof Error ? err.message : String(err));
+  }
+  for (const n of result.promoted) session.accepted.delete(n);
+  return {
+    ...result,
+    files: result.promoted.map((n) => {
+      const abs = path.join(session.paths.snapshotDir, n);
+      const rel = path.relative(session.repoRoot, abs);
+      return rel.startsWith("..") ? abs : rel;
+    }),
+  };
+}
+
+/** Identifies the screenshots under review; see `VisualDiffManifest.reviewKey`. */
+function reviewKeyFor(
+  source: VisualDiffSource,
+  options: VisualDiffOptions,
+  items: readonly SnapshotMeta[]
+): string {
+  const hash = (s: string) =>
+    crypto.createHash("sha256").update(s).digest("hex").slice(0, 16);
+  if (source === "results") {
+    const marker = readRunMarker(options.resultsDir ?? DEFAULT_RESULTS_DIR);
+    return marker !== undefined
+      ? `results:${marker.id}`
+      : `results:nomarker:${hash(items.map((i) => i.id).join("\0"))}`;
+  }
+  if (source === "local") {
+    const manifest = readManifest(options.localPaths ?? defaultPaths());
+    return `local:${hash(JSON.stringify(manifest.entries))}`;
+  }
+  return `git:${options.ref ?? "HEAD"}:${hash(
+    items.map((i) => i.id).join("\0")
+  )}`;
+}
+
+/**
+ * The snapshot names in the last `results` report (`<outDir>/manifest.json`),
+ * for `visual-baselines accept --from-report`. Refuses a report of a
+ * different run than the one in `resultsDir`.
+ */
+export function namesFromReport(
+  outDir: string = DEFAULT_OUT_DIR,
+  resultsDir: string = DEFAULT_RESULTS_DIR
+): string[] {
+  const file = path.resolve(outDir, MANIFEST_FILE);
+  if (!fs.existsSync(file)) {
+    throw new AcceptRefusedError(
+      `No report at ${file}. Run \`./morcus.sh visual-diff --source results\` first.`
+    );
+  }
+  const manifest: VisualDiffManifest = JSON.parse(
+    fs.readFileSync(file, "utf-8")
+  );
+  if (manifest.source !== "results") {
+    throw new AcceptRefusedError(
+      `The last report is of the ${manifest.source} source; --from-report needs a \`--source results\` report.`
+    );
+  }
+  const marker = readRunMarker(resultsDir);
+  if (marker === undefined || manifest.reviewKey !== `results:${marker.id}`) {
+    throw new AcceptRefusedError(
+      "The last report doesn't belong to the run in test-results/ (or that run has no marker). " +
+        "Re-run `./morcus.sh visual-diff --source results` and review it first."
+    );
+  }
+  const unnamed = manifest.items.filter((i) => i.snapshotName === undefined);
+  if (unnamed.length > 0) {
+    throw new AcceptRefusedError(
+      `Can't map ${
+        unnamed.length
+      } reported snapshot(s) to a baseline name: ${unnamed
+        .map((i) => i.id)
+        .join(", ")}`
+    );
+  }
+  return manifest.items.map((i) => i.snapshotName!).sort();
 }
 
 // ---------------------------------------------------------------------------
@@ -941,6 +1309,43 @@ export async function runVisualDiffInspector(
     );
   }
   manifest.items = entries.map((e) => materialize(e, imagesDir, im));
+  manifest.reviewKey = reviewKeyFor(source, options, manifest.items);
+
+  // Write endpoints, for the `results` and `local` sources when serving.
+  const serving = options.startServer !== false;
+  let session: ActionSession | undefined = undefined;
+  if (serving && options.actions !== false && source !== "git") {
+    const incomplete = incompleteItems(manifest.items, source);
+    session = {
+      token: options.token ?? newSessionToken(),
+      source,
+      paths: options.localPaths ?? defaultPaths(),
+      resultsDir: path.resolve(options.resultsDir ?? DEFAULT_RESULTS_DIR),
+      repoRoot: path.resolve(options.repoRoot ?? process.cwd()),
+      outDir,
+      names: new Set(
+        manifest.items.flatMap((i) =>
+          i.snapshotName === undefined ? [] : [i.snapshotName]
+        )
+      ),
+      accepted: new Set(),
+      staticDisabledReason:
+        incomplete.length === 0
+          ? undefined
+          : `${
+              incomplete.length
+            } snapshot(s) can't be judged from the images here: ${incomplete
+              .slice(0, 5)
+              .join("; ")}${incomplete.length > 5 ? "; …" : ""}`,
+      im,
+    };
+    const actions: ViewerActions = {
+      flow: source === "results" ? "accept-then-checkpoint" : "checkpoint",
+    };
+    const reason = disabledReason(session);
+    if (reason !== undefined) actions.disabledReason = reason;
+    manifest.actions = actions;
+  }
 
   writeViewer(outDir, manifest);
   const reportMarkdown = buildMarkdownReport(manifest);
@@ -965,13 +1370,28 @@ export async function runVisualDiffInspector(
   const started = await startViewerServer(
     outDir,
     options.port ?? DEFAULT_PORT,
-    host
+    host,
+    session
   );
   const isWildcard = host === "0.0.0.0" || host === "::";
-  const localUrl = `http://${isWildcard ? "localhost" : host}:${started.port}/`;
+  // The token rides in the fragment, which browsers never send to the server.
+  const fragment = session === undefined ? "" : `#token=${session.token}`;
+  const localUrl = `http://${isWildcard ? "localhost" : host}:${
+    started.port
+  }/${fragment}`;
   console.log(`\n🚀 Visual Diff Inspector running at ${localUrl}`);
   if (isWildcard) {
-    console.log(`   Network: http://${os.hostname()}:${started.port}/`);
+    console.log(
+      `   Network: http://${os.hostname()}:${started.port}/${fragment}`
+    );
+  }
+  if (session !== undefined) {
+    console.log(
+      "   The #token=… part enables accept/checkpoint in the viewer; without it, the viewer is read-only."
+    );
+    if (manifest.actions?.disabledReason !== undefined) {
+      console.warn(`   Actions disabled: ${manifest.actions.disabledReason}`);
+    }
   }
   console.log("   Press ? in the viewer for shortcuts, Ctrl+C to stop.\n");
 

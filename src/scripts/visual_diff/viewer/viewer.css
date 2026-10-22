@@ -561,7 +561,7 @@ button.link {
   color: var(--success);
 }
 
-/* Confirming */
+/* Review verdicts */
 
 .toggle {
   display: flex;
@@ -571,23 +571,129 @@ button.link {
   font-size: 11px;
 }
 
-button.confirm {
+button.verdict-button.approve {
   border-color: var(--success);
   color: var(--success);
 }
 
-button.confirm.done {
+button.verdict-button.reject {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+button.verdict-button.approve.done {
   background: var(--success);
   color: var(--bg);
 }
 
-.scenario-list button.item.confirmed {
+button.verdict-button.reject.done {
+  background: var(--danger);
+  color: var(--bg);
+}
+
+.scenario-list button.item.approved,
+.scenario-list button.item.rejected {
   opacity: 0.45;
 }
 
-.scenario-list button.item.confirmed .name::before {
-  content: "✓ ";
+.scenario-list .verdict {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.scenario-list .verdict.approved {
   color: var(--success);
+}
+
+.scenario-list .verdict.rejected {
+  color: var(--danger);
+}
+
+/* Accept / checkpoint */
+
+.actions-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--panel-2);
+  max-height: 45%;
+  overflow-y: auto;
+}
+
+.actions-panel[hidden] {
+  display: none;
+}
+
+.actions-panel h3 {
+  margin: 0;
+  font-size: 12px;
+}
+
+.note {
+  margin: 0;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.note.muted {
+  color: var(--muted);
+}
+
+.note.warn {
+  color: var(--warning);
+}
+
+.note.error {
+  color: var(--danger);
+}
+
+.note[hidden] {
+  display: none;
+}
+
+button.primary {
+  background: var(--primary-strong);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.file-list {
+  margin: 0;
+  padding-left: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 11px;
+}
+
+.modal.checkpoint {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(560px, 92vw);
+}
+
+.modal.checkpoint p {
+  margin: 0;
+}
+
+.modal.checkpoint input {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .progress {

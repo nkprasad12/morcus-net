@@ -9,6 +9,9 @@
  */
 
 import type {
+  AcceptResponse,
+  ApiError,
+  CheckpointResponse,
   ImageDims,
   SnapshotMeta,
   VisualDiffManifest,
@@ -108,6 +111,15 @@ const BROWSER_ORDER = [
   "MobileSafari",
 ];
 
+type Verdict = "approved" | "rejected";
+
+/**
+ * Where the review is. `review`: the snapshots the Inspector was started
+ * with. `local`: after accepting from `results`, the accepted local baselines
+ * against the checkpoint. `done`: after a checkpoint.
+ */
+type Phase = "review" | "local" | "done";
+
 interface State {
   filtered: SnapshotMeta[];
   index: number;
@@ -119,11 +131,18 @@ interface State {
   maskOpacity: number;
   filters: Record<FacetKey, string>;
   group: GroupKey;
-  /** Ids confirmed this session. In memory only: a reload starts over. */
-  confirmed: Set<string>;
-  /** Confirm batches, most recent last, for undo. */
-  confirmHistory: string[][];
-  showConfirmed: boolean;
+  /** Verdicts for the current phase, by item id. */
+  verdicts: Map<string, Verdict>;
+  /** Verdict batches, most recent last, for undo: each id's previous verdict. */
+  verdictHistory: { id: string; previous?: Verdict }[][];
+  showReviewed: boolean;
+  phase: Phase;
+  /** Summary of the accept that started the `local` phase. */
+  accepted?: Omit<AcceptResponse, "items">;
+  checkpointed?: CheckpointResponse;
+  /** A write request is in flight. */
+  busy: boolean;
+  actionError?: string;
 }
 
 const BLINK_INTERVAL_MS = 600;
@@ -156,7 +175,9 @@ function h<K extends keyof HTMLElementTagNameMap>(
 const manifest: VisualDiffManifest = JSON.parse(
   byId("manifest-data", HTMLScriptElement).textContent ?? "{}"
 );
-const ALL = manifest.items;
+/** The snapshots under review; replaced when the `local` phase starts. */
+let ALL = manifest.items;
+const labels = { before: manifest.beforeLabel, after: manifest.afterLabel };
 
 const state: State = {
   // Populated by the first applyFilters(); starting empty means nothing is
@@ -175,9 +196,11 @@ const state: State = {
     mode: ALL_VALUE,
   },
   group: "none",
-  confirmed: new Set(),
-  confirmHistory: [],
-  showConfirmed: false,
+  verdicts: new Map(),
+  verdictHistory: [],
+  showReviewed: false,
+  phase: "review",
+  busy: false,
 };
 
 const els = {
@@ -185,16 +208,18 @@ const els = {
   browser: byId("browser-filter", HTMLSelectElement),
   sort: byId("sort-order", HTMLSelectElement),
   group: byId("group-by", HTMLSelectElement),
-  showConfirmed: byId("show-confirmed", HTMLInputElement),
-  confirm: byId("confirm", HTMLButtonElement),
-  undoConfirm: byId("undo-confirm", HTMLButtonElement),
-  confirmProgress: byId("confirm-progress", HTMLSpanElement),
-  confirmBar: byId("confirm-bar", HTMLSpanElement),
-  confirmCount: byId("confirm-count", HTMLSpanElement),
+  showReviewed: byId("show-reviewed", HTMLInputElement),
+  approve: byId("approve", HTMLButtonElement),
+  reject: byId("reject", HTMLButtonElement),
+  undoVerdict: byId("undo-verdict", HTMLButtonElement),
+  reviewProgress: byId("review-progress", HTMLSpanElement),
+  reviewBar: byId("review-bar", HTMLSpanElement),
+  reviewCount: byId("review-count", HTMLSpanElement),
   facets: byId("facets", HTMLDivElement),
   clearFilters: byId("clear-filters", HTMLButtonElement),
   list: byId("scenario-list", HTMLUListElement),
   filteredCount: byId("filtered-count", HTMLSpanElement),
+  actionsPanel: byId("actions-panel", HTMLDivElement),
   viewport: byId("viewport", HTMLDivElement),
   flipControls: byId("flip-controls", HTMLDivElement),
   diffControls: byId("diff-controls", HTMLLabelElement),
@@ -204,6 +229,14 @@ const els = {
   peek: byId("peek", HTMLButtonElement),
   blink: byId("blink", HTMLButtonElement),
   helpModal: byId("help-modal", HTMLDivElement),
+  checkpointModal: byId("checkpoint-modal", HTMLDivElement),
+  checkpointForm: byId("checkpoint-form", HTMLFormElement),
+  checkpointSummary: byId("checkpoint-summary", HTMLParagraphElement),
+  checkpointNames: byId("checkpoint-names", HTMLUListElement),
+  checkpointInput: byId("checkpoint-input", HTMLInputElement),
+  checkpointSubmit: byId("checkpoint-submit", HTMLButtonElement),
+  checkpointCancel: byId("checkpoint-cancel", HTMLButtonElement),
+  checkpointError: byId("checkpoint-error", HTMLParagraphElement),
 };
 
 function current(): SnapshotMeta | undefined {
@@ -244,22 +277,29 @@ function canvasOf(item: SnapshotMeta): ImageDims {
 // Sidebar
 // ---------------------------------------------------------------------------
 
-function initFilters() {
+/** Header labels and browser options, which change with the phase. */
+function renderSourceInfo() {
   byId("total-count", HTMLSpanElement).textContent = `${ALL.length} changed`;
   byId(
     "source-label",
     HTMLSpanElement
-  ).textContent = `${manifest.beforeLabel} → ${manifest.afterLabel}`;
-  byId("before-button-label", HTMLSpanElement).textContent =
-    manifest.beforeLabel;
-  byId("after-button-label", HTMLSpanElement).textContent = manifest.afterLabel;
+  ).textContent = `${labels.before} → ${labels.after}`;
+  byId("before-button-label", HTMLSpanElement).textContent = labels.before;
+  byId("after-button-label", HTMLSpanElement).textContent = labels.after;
 
+  const selected = els.browser.value;
+  els.browser.replaceChildren(els.browser.options[0]);
   for (const browser of [...new Set(ALL.map((i) => i.browser))].sort()) {
     const option = h("option", undefined, browser);
     option.value = browser;
     els.browser.append(option);
   }
+  els.browser.value = selected;
+  if (els.browser.value === "") els.browser.value = ALL_VALUE;
+}
 
+function initFilters() {
+  renderSourceInfo();
   readHash();
   els.search.addEventListener("input", applyFilters);
   els.browser.addEventListener("change", applyFilters);
@@ -268,8 +308,8 @@ function initFilters() {
     state.group = isGroupKey(els.group.value) ? els.group.value : "none";
     applyFilters();
   });
-  els.showConfirmed.addEventListener("change", () => {
-    state.showConfirmed = els.showConfirmed.checked;
+  els.showReviewed.addEventListener("change", () => {
+    state.showReviewed = els.showReviewed.checked;
     applyFilters();
   });
   els.clearFilters.addEventListener("click", clearFilters);
@@ -289,7 +329,7 @@ function optionsFor(facet: FacetDef): { value: string; label: string }[] {
 
 /** Whether `item` passes every filter except (optionally) one facet. */
 function matches(item: SnapshotMeta, ignore?: FacetKey): boolean {
-  if (!state.showConfirmed && state.confirmed.has(item.id)) return false;
+  if (!state.showReviewed && state.verdicts.has(item.id)) return false;
   for (const facet of FACETS) {
     const wanted = state.filters[facet.key];
     if (
@@ -477,16 +517,16 @@ function itemButtons(): NodeListOf<HTMLButtonElement> {
 
 function groupHeader(key: string, label: string): HTMLLIElement {
   const members = state.filtered.filter((i) => groupOf(i).key === key);
-  const pending = members.filter((i) => !state.confirmed.has(i.id));
+  const pending = members.filter((i) => !state.verdicts.has(i.id));
   const li = h("li", "group-header");
   const title = h("span", undefined, label);
   title.append(h("span", "group-count", String(members.length)));
   li.append(title);
   if (pending.length > 0) {
-    const button = h("button", undefined, `✓ Confirm ${pending.length}`);
+    const button = h("button", undefined, `✓ Approve ${pending.length}`);
     button.type = "button";
-    button.title = "Confirm every snapshot in this group (Shift+Y)";
-    button.addEventListener("click", () => confirmItems(pending));
+    button.title = "Approve every unreviewed snapshot in this group (Shift+A)";
+    button.addEventListener("click", () => setVerdict(pending, "approved"));
     li.append(button);
   }
   return li;
@@ -510,7 +550,9 @@ function renderList() {
 
 function listRow(item: SnapshotMeta, i: number): HTMLLIElement {
   const button = h("button", "item");
-  button.classList.toggle("confirmed", state.confirmed.has(item.id));
+  const verdict = state.verdicts.get(item.id);
+  button.classList.toggle("approved", verdict === "approved");
+  button.classList.toggle("rejected", verdict === "rejected");
   button.type = "button";
   const text = h("div");
   text.append(
@@ -527,6 +569,15 @@ function listRow(item: SnapshotMeta, i: number): HTMLLIElement {
     )
   );
   button.append(text, scoreBadge(item));
+  if (verdict !== undefined) {
+    const mark = h(
+      "span",
+      `verdict ${verdict}`,
+      verdict === "approved" ? "✓" : "✗"
+    );
+    mark.title = verdict;
+    button.append(mark);
+  }
   button.addEventListener("click", () => select(i));
   const li = h("li");
   li.append(button);
@@ -548,89 +599,450 @@ function select(index: number) {
   renderInfo();
   const item = current();
   state.showAfter = item?.status === "added";
-  renderConfirmButton();
+  renderVerdictButtons();
   renderStage();
 }
 
 // ---------------------------------------------------------------------------
-// Confirming (in memory only)
+// Review verdicts (kept in sessionStorage, keyed by what is being reviewed)
 // ---------------------------------------------------------------------------
 
-function renderProgress() {
-  const done = ALL.filter((i) => state.confirmed.has(i.id)).length;
-  els.confirmCount.textContent = `${done} / ${ALL.length} confirmed`;
-  els.confirmBar.style.width =
-    ALL.length === 0 ? "0" : `${(done / ALL.length) * 100}%`;
-  els.confirmProgress.classList.toggle(
-    "complete",
-    ALL.length > 0 && done === ALL.length
-  );
-  els.undoConfirm.disabled = state.confirmHistory.length === 0;
+function verdictCounts(): {
+  unreviewed: number;
+  approved: number;
+  rejected: number;
+} {
+  let approved = 0;
+  let rejected = 0;
+  for (const item of ALL) {
+    const v = state.verdicts.get(item.id);
+    if (v === "approved") approved++;
+    else if (v === "rejected") rejected++;
+  }
+  return { unreviewed: ALL.length - approved - rejected, approved, rejected };
 }
 
-function renderConfirmButton() {
+function renderProgress() {
+  const { unreviewed, approved, rejected } = verdictCounts();
+  const done = approved + rejected;
+  els.reviewCount.textContent = `${unreviewed} unreviewed · ${approved} approved · ${rejected} rejected`;
+  els.reviewBar.style.width =
+    ALL.length === 0 ? "0" : `${(done / ALL.length) * 100}%`;
+  els.reviewProgress.classList.toggle(
+    "complete",
+    ALL.length > 0 && unreviewed === 0
+  );
+  els.undoVerdict.disabled = state.verdictHistory.length === 0;
+  renderActions();
+}
+
+function renderVerdictButtons() {
   const item = current();
-  const done = item !== undefined && state.confirmed.has(item.id);
-  els.confirm.disabled = item === undefined;
-  els.confirm.classList.toggle("done", done);
-  els.confirm.firstChild!.textContent = done ? "↺ Unconfirm " : "✓ Confirm ";
+  const verdict = item === undefined ? undefined : state.verdicts.get(item.id);
+  els.approve.disabled = item === undefined;
+  els.reject.disabled = item === undefined;
+  els.approve.classList.toggle("done", verdict === "approved");
+  els.reject.classList.toggle("done", verdict === "rejected");
+  byId("approve-label", HTMLSpanElement).textContent =
+    verdict === "approved" ? "↺ Unapprove" : "✓ Approve";
+  byId("reject-label", HTMLSpanElement).textContent =
+    verdict === "rejected" ? "↺ Unreject" : "✗ Reject";
 }
 
 /**
- * Confirms `items` and moves on. Hidden items drop out of the list, so the
+ * Gives `items` a verdict (or clears it, with `undefined`) and moves on.
+ * Reviewed items drop out of the list unless "Show reviewed" is on, so the
  * selection stays at the same index, which is now the next pending item.
  */
-function confirmItems(items: SnapshotMeta[]) {
-  const fresh = items.filter((i) => !state.confirmed.has(i.id));
-  if (fresh.length === 0) return;
-  for (const item of fresh) state.confirmed.add(item.id);
-  state.confirmHistory.push(fresh.map((i) => i.id));
+function setVerdict(items: SnapshotMeta[], verdict: Verdict | undefined) {
+  const changed = items.filter((i) => state.verdicts.get(i.id) !== verdict);
+  if (changed.length === 0) return;
+  state.verdictHistory.push(
+    changed.map((i) => ({ id: i.id, previous: state.verdicts.get(i.id) }))
+  );
+  for (const item of changed) {
+    if (verdict === undefined) state.verdicts.delete(item.id);
+    else state.verdicts.set(item.id, verdict);
+  }
+  saveSession();
   const index = state.index;
   const cur = current();
   applyFilters();
-  if (state.showConfirmed) {
-    // Nothing disappeared; step past the item that was just confirmed.
-    if (cur !== undefined && fresh.includes(cur)) select(index + 1);
+  if (verdict === undefined) {
+    select(index);
+  } else if (state.showReviewed) {
+    // Nothing disappeared; step past the item that was just reviewed.
+    if (cur !== undefined && changed.includes(cur)) select(index + 1);
   } else {
     select(Math.min(index, state.filtered.length - 1));
   }
 }
 
-function toggleConfirmCurrent() {
+/** Sets the current item's verdict, or clears it if it already has it. */
+function toggleVerdictCurrent(verdict: Verdict) {
   const item = current();
   if (item === undefined) return;
-  if (!state.confirmed.has(item.id)) {
-    confirmItems([item]);
-    return;
-  }
-  // Only reachable with "Show confirmed" on.
-  state.confirmed.delete(item.id);
-  state.confirmHistory = state.confirmHistory
-    .map((batch) => batch.filter((id) => id !== item.id))
-    .filter((batch) => batch.length > 0);
-  const index = state.index;
-  applyFilters();
-  select(index);
+  setVerdict(
+    [item],
+    state.verdicts.get(item.id) === verdict ? undefined : verdict
+  );
 }
 
-function confirmCurrentGroup() {
+/** Gives every unreviewed item in the current group (or just the current item) a verdict. */
+function verdictCurrentGroup(verdict: Verdict) {
   const item = current();
   if (item === undefined) return;
   if (state.group === "none") {
-    confirmItems([item]);
+    setVerdict([item], verdict);
     return;
   }
   const key = groupOf(item).key;
-  confirmItems(state.filtered.filter((i) => groupOf(i).key === key));
+  setVerdict(
+    state.filtered.filter(
+      (i) => groupOf(i).key === key && !state.verdicts.has(i.id)
+    ),
+    verdict
+  );
 }
 
-function undoConfirm() {
-  const batch = state.confirmHistory.pop();
+function undoVerdict() {
+  const batch = state.verdictHistory.pop();
   if (batch === undefined) return;
-  for (const id of batch) state.confirmed.delete(id);
+  for (const { id, previous } of batch) {
+    if (previous === undefined) state.verdicts.delete(id);
+    else state.verdicts.set(id, previous);
+  }
+  saveSession();
   applyFilters();
-  const restored = state.filtered.findIndex((i) => i.id === batch[0]);
+  const restored = state.filtered.findIndex((i) => i.id === batch[0].id);
   if (restored !== -1) select(restored);
+}
+
+const STORAGE_PREFIX = "visual-diff:review:";
+const TOKEN_KEY = "visual-diff:token";
+const storageKey = `${STORAGE_PREFIX}${
+  manifest.reviewKey ?? `${manifest.source}:unkeyed`
+}`;
+
+interface SavedSession {
+  phase: Phase;
+  /** Verdicts from the `review` phase. */
+  review: [string, Verdict][];
+  /** Verdicts from the `local` phase. */
+  local: [string, Verdict][];
+  localItems?: SnapshotMeta[];
+  accepted?: Omit<AcceptResponse, "items">;
+  checkpointed?: CheckpointResponse;
+}
+
+/** Review-phase verdicts, kept once the `local` phase has replaced them. */
+let reviewVerdicts: [string, Verdict][] = [];
+let localItems: SnapshotMeta[] | undefined = undefined;
+
+function saveSession() {
+  const data: SavedSession = {
+    phase: state.phase,
+    review: state.phase === "review" ? [...state.verdicts] : reviewVerdicts,
+    local: state.phase === "review" ? [] : [...state.verdicts],
+    localItems,
+    accepted: state.accepted,
+    checkpointed: state.checkpointed,
+  };
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify(data));
+  } catch {
+    // Storage full or disabled: verdicts just won't survive a reload.
+  }
+}
+
+function isVerdictEntry(x: unknown): x is [string, Verdict] {
+  return (
+    Array.isArray(x) &&
+    typeof x[0] === "string" &&
+    (x[1] === "approved" || x[1] === "rejected")
+  );
+}
+
+function restoreSession() {
+  let data: Partial<SavedSession>;
+  try {
+    data = JSON.parse(sessionStorage.getItem(storageKey) ?? "{}");
+  } catch {
+    return;
+  }
+  const review = Array.isArray(data.review)
+    ? data.review.filter(isVerdictEntry)
+    : [];
+  const local = Array.isArray(data.local)
+    ? data.local.filter(isVerdictEntry)
+    : [];
+  const ids = new Set(ALL.map((i) => i.id));
+  state.verdicts = new Map(review.filter(([id]) => ids.has(id)));
+  state.accepted = data.accepted;
+  state.checkpointed = data.checkpointed;
+  if (
+    (data.phase === "local" || data.phase === "done") &&
+    Array.isArray(data.localItems)
+  ) {
+    reviewVerdicts = review;
+    enterLocalPhase(data.localItems, new Map(local));
+  }
+  if (data.phase === "done") state.phase = "done";
+}
+
+/** Switches to reviewing local baselines against the checkpoint. */
+function enterLocalPhase(
+  items: SnapshotMeta[],
+  verdicts: Map<string, Verdict>
+) {
+  state.phase = "local";
+  localItems = items;
+  ALL = items;
+  labels.before = "Checkpoint";
+  labels.after = "Local baseline";
+  state.verdicts = verdicts;
+  state.verdictHistory = [];
+  state.showReviewed = false;
+  els.showReviewed.checked = false;
+  renderSourceInfo();
+}
+
+// ---------------------------------------------------------------------------
+// Accept and checkpoint (needs the per-session token from the terminal URL)
+// ---------------------------------------------------------------------------
+
+function readToken(): string | undefined {
+  const fromHash = new URLSearchParams(window.location.hash.slice(1)).get(
+    "token"
+  );
+  try {
+    if (fromHash) {
+      // writeHash() drops it from the address bar; keep it for reloads.
+      sessionStorage.setItem(TOKEN_KEY, fromHash);
+      return fromHash;
+    }
+    return sessionStorage.getItem(TOKEN_KEY) ?? undefined;
+  } catch {
+    return fromHash ?? undefined;
+  }
+}
+
+const token = manifest.actions === undefined ? undefined : readToken();
+
+async function post<T>(endpoint: string, body: object): Promise<T> {
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Visual-Diff-Token": token ?? "",
+    },
+    body: JSON.stringify(body),
+  });
+  let data: T & Partial<ApiError>;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`${res.status} ${res.statusText}: not a JSON response`);
+  }
+  if (!res.ok) {
+    throw new Error(data.error ?? `${res.status} ${res.statusText}`);
+  }
+  return data;
+}
+
+function approvedNames(): string[] {
+  return ALL.filter((i) => state.verdicts.get(i.id) === "approved")
+    .flatMap((i) => (i.snapshotName === undefined ? [] : [i.snapshotName]))
+    .sort();
+}
+
+function acceptSummary(a: Omit<AcceptResponse, "items">): string {
+  return (
+    `Accepted locally: ${a.added.length} added, ${a.updated.length} updated, ` +
+    `${a.reverted.length} reverted to the checkpoint, ${a.unchanged.length} unchanged.`
+  );
+}
+
+async function acceptApproved() {
+  const names = approvedNames();
+  if (names.length === 0 || state.busy) return;
+  state.busy = true;
+  state.actionError = undefined;
+  renderActions();
+  try {
+    const { items, ...summary } = await post<AcceptResponse>("/api/accept", {
+      names,
+    });
+    reviewVerdicts = [...state.verdicts];
+    state.accepted = summary;
+    if (items.length === 0) {
+      state.phase = "done";
+    } else {
+      enterLocalPhase(items, new Map());
+    }
+  } catch (err) {
+    state.actionError = err instanceof Error ? err.message : String(err);
+  } finally {
+    state.busy = false;
+    saveSession();
+    applyFilters();
+  }
+}
+
+function openCheckpoint() {
+  const names = approvedNames();
+  if (names.length === 0) return;
+  els.checkpointSummary.textContent =
+    `Copy ${names.length} local baseline(s) into the checkpoint (the committed ` +
+    "snapshot directory), and remove them from the local store. Files are written " +
+    "to the working tree; nothing is staged or committed.";
+  els.checkpointNames.replaceChildren(
+    ...names.map((n) => {
+      const li = h("li");
+      li.append(h("code", undefined, n));
+      return li;
+    })
+  );
+  els.checkpointInput.value = "";
+  els.checkpointSubmit.disabled = true;
+  els.checkpointError.hidden = true;
+  els.checkpointModal.hidden = false;
+  els.checkpointInput.focus();
+}
+
+function closeCheckpoint() {
+  els.checkpointModal.hidden = true;
+}
+
+async function submitCheckpoint() {
+  const names = approvedNames();
+  const confirm = els.checkpointInput.value.trim();
+  if (names.length === 0 || confirm !== "checkpoint" || state.busy) return;
+  state.busy = true;
+  els.checkpointSubmit.disabled = true;
+  els.checkpointError.hidden = true;
+  try {
+    state.checkpointed = await post<CheckpointResponse>("/api/checkpoint", {
+      names,
+      confirm,
+    });
+    state.phase = "done";
+    closeCheckpoint();
+  } catch (err) {
+    els.checkpointError.textContent =
+      err instanceof Error ? err.message : String(err);
+    els.checkpointError.hidden = false;
+  } finally {
+    state.busy = false;
+    els.checkpointSubmit.disabled =
+      els.checkpointInput.value.trim() !== "checkpoint";
+    saveSession();
+    renderActions();
+  }
+}
+
+function renderActions() {
+  const actions = manifest.actions;
+  if (actions === undefined) {
+    els.actionsPanel.hidden = true;
+    return;
+  }
+  const twoStep = actions.flow === "accept-then-checkpoint";
+  const { unreviewed, approved } = verdictCounts();
+  const parts: HTMLElement[] = [];
+  const note = (cls: string, text: string) =>
+    parts.push(h("p", `note ${cls}`.trim(), text));
+
+  if (state.phase === "done") {
+    const c = state.checkpointed;
+    if (c === undefined) {
+      parts.push(h("h3", undefined, "Accepted locally"));
+      if (state.accepted !== undefined) note("", acceptSummary(state.accepted));
+      note(
+        "muted",
+        "Nothing left to checkpoint: the accepted screenshots match the checkpoint."
+      );
+    } else {
+      parts.push(h("h3", undefined, `Checkpointed ${c.promoted.length}`));
+      if (c.files.length > 0) {
+        note("", "Files written:");
+        const list = h("ul", "file-list");
+        for (const f of c.files) {
+          const li = h("li");
+          li.append(h("code", undefined, f));
+          list.append(li);
+        }
+        parts.push(list);
+      }
+      if (c.skippedStale.length > 0) {
+        note(
+          "warn",
+          `Skipped ${c.skippedStale.length} stale local baseline(s); see ./morcus.sh visual-baselines status.`
+        );
+      }
+      note(
+        "warn",
+        "Nothing was staged or committed. Review with ./morcus.sh visual-diff --source git, " +
+          "and commit only with explicit human approval."
+      );
+    }
+  } else {
+    const isAccept = twoStep && state.phase === "review";
+    parts.push(
+      h(
+        "h3",
+        undefined,
+        !twoStep
+          ? "Checkpoint"
+          : isAccept
+          ? "Step 1 of 2 · Accept locally"
+          : "Step 2 of 2 · Checkpoint"
+      )
+    );
+    note(
+      "muted",
+      isAccept
+        ? "Approve or reject every snapshot. Approved ones are saved as local " +
+            "baselines (gitignored; undo with visual-baselines drop). Rejected ones are left alone."
+        : twoStep
+        ? "The accepted local baselines against the checkpoint: what a checkpoint " +
+          "would change, including older local overrides you may not have seen. " +
+          "Review them again to checkpoint."
+        : "Approve or reject every local baseline. Approved ones are copied into " +
+          "the checkpoint (the committed snapshot directory); nothing is staged or committed."
+    );
+    if (state.phase === "local" && state.accepted !== undefined) {
+      note("", acceptSummary(state.accepted));
+    }
+    if (actions.disabledReason !== undefined) {
+      note("warn", `Actions disabled: ${actions.disabledReason}`);
+    } else if (token === undefined) {
+      note(
+        "warn",
+        "Read-only: open the URL printed in the terminal (ending in #token=…) to accept or checkpoint."
+      );
+    } else {
+      const button = h(
+        "button",
+        "primary",
+        isAccept ? `Accept ${approved} locally` : `Checkpoint ${approved}…`
+      );
+      button.type = "button";
+      button.disabled = state.busy || unreviewed > 0 || approved === 0;
+      button.addEventListener("click", () => {
+        if (isAccept) void acceptApproved();
+        else openCheckpoint();
+      });
+      parts.push(button);
+      if (state.busy) note("muted", "Working…");
+      else if (unreviewed > 0)
+        note("muted", `Review the remaining ${unreviewed} first.`);
+      else if (approved === 0) note("muted", "Nothing approved.");
+    }
+  }
+  if (state.actionError !== undefined) note("error", state.actionError);
+  els.actionsPanel.replaceChildren(...parts);
+  els.actionsPanel.hidden = false;
 }
 
 function cycleGroup() {
@@ -790,22 +1202,24 @@ function framed(stage: HTMLElement, ...labels: HTMLElement[]): HTMLElement {
 }
 
 function renderEmpty() {
-  const allConfirmed =
-    ALL.length > 0 && ALL.every((i) => state.confirmed.has(i.id));
+  const allReviewed =
+    ALL.length > 0 && ALL.every((i) => state.verdicts.has(i.id));
+  const next =
+    manifest.actions === undefined ? "" : " Next step: the panel on the left.";
   els.viewport.replaceChildren(
     h(
       "div",
       "empty",
       ALL.length === 0
         ? "No changed snapshots."
-        : allConfirmed
-        ? `All ${ALL.length} snapshots confirmed. Press U to undo, H to show them.`
+        : allReviewed
+        ? `All ${ALL.length} snapshots reviewed. Press U to undo, H to show them.${next}`
         : state.filtered.length === 0 && !hasActiveFilters()
-        ? "Everything left is confirmed."
+        ? "Everything left is reviewed."
         : "No snapshots match filters."
     )
   );
-  renderConfirmButton();
+  renderVerdictButtons();
 }
 
 function renderStage() {
@@ -856,8 +1270,8 @@ function renderStage() {
     els.viewport.replaceChildren(
       framed(
         stage,
-        h("div", "stage-label", `← ${manifest.beforeLabel}`),
-        h("div", "stage-label after", `${manifest.afterLabel} →`)
+        h("div", "stage-label", `← ${labels.before}`),
+        h("div", "stage-label after", `${labels.after} →`)
       )
     );
   } else if (state.view === "diff") {
@@ -880,8 +1294,8 @@ function renderStage() {
       return figure;
     };
     grid.append(
-      column("before", manifest.beforeLabel),
-      column("after", manifest.afterLabel),
+      column("before", labels.before),
+      column("after", labels.after),
       column("diff", "Diff mask")
     );
     els.viewport.replaceChildren(grid);
@@ -893,9 +1307,7 @@ function updateFlip() {
   const label = document.getElementById("flip-label");
   if (after !== null) after.classList.toggle("hidden", !state.showAfter);
   if (label !== null) {
-    label.textContent = state.showAfter
-      ? manifest.afterLabel
-      : manifest.beforeLabel;
+    label.textContent = state.showAfter ? labels.after : labels.before;
     label.classList.toggle("after", state.showAfter);
   }
   renderControls();
@@ -989,8 +1401,18 @@ function bindControls() {
     const mask = document.getElementById("diff-mask");
     if (mask !== null) mask.style.opacity = String(state.maskOpacity / 100);
   });
-  els.confirm.addEventListener("click", toggleConfirmCurrent);
-  els.undoConfirm.addEventListener("click", undoConfirm);
+  els.approve.addEventListener("click", () => toggleVerdictCurrent("approved"));
+  els.reject.addEventListener("click", () => toggleVerdictCurrent("rejected"));
+  els.undoVerdict.addEventListener("click", undoVerdict);
+  els.checkpointInput.addEventListener("input", () => {
+    els.checkpointSubmit.disabled =
+      state.busy || els.checkpointInput.value.trim() !== "checkpoint";
+  });
+  els.checkpointForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    void submitCheckpoint();
+  });
+  els.checkpointCancel.addEventListener("click", closeCheckpoint);
   byId("prev", HTMLButtonElement).addEventListener("click", () => navigate(-1));
   byId("next", HTMLButtonElement).addEventListener("click", () => navigate(1));
   byId("help-button", HTMLButtonElement).addEventListener("click", () =>
@@ -1014,6 +1436,14 @@ function bindControls() {
 function bindKeyboard() {
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!els.checkpointModal.hidden) {
+      // No review shortcuts behind the confirmation dialog.
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeCheckpoint();
+      }
+      return;
+    }
     const target = e.target;
     if (
       target instanceof HTMLInputElement ||
@@ -1022,18 +1452,25 @@ function bindKeyboard() {
       if (e.key === "Escape") target.blur();
       return;
     }
-    if (e.key === "Y") {
+    if (e.key === "A" || e.key === "Y") {
       e.preventDefault();
-      confirmCurrentGroup();
+      verdictCurrentGroup("approved");
+      return;
+    }
+    if (e.key === "R") {
+      e.preventDefault();
+      verdictCurrentGroup("rejected");
       return;
     }
     const actions: Record<string, () => void> = {
-      y: toggleConfirmCurrent,
-      Enter: toggleConfirmCurrent,
-      u: undoConfirm,
+      a: () => toggleVerdictCurrent("approved"),
+      y: () => toggleVerdictCurrent("approved"),
+      Enter: () => toggleVerdictCurrent("approved"),
+      r: () => toggleVerdictCurrent("rejected"),
+      u: undoVerdict,
       h: () => {
-        state.showConfirmed = !state.showConfirmed;
-        els.showConfirmed.checked = state.showConfirmed;
+        state.showReviewed = !state.showReviewed;
+        els.showReviewed.checked = state.showReviewed;
         applyFilters();
       },
       g: cycleGroup,
@@ -1066,6 +1503,7 @@ function bindKeyboard() {
   });
 }
 
+restoreSession();
 initFilters();
 bindControls();
 bindKeyboard();

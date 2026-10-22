@@ -14,10 +14,10 @@
         <span class="chip muted" id="source-label"></span>
         <span
           class="progress"
-          id="confirm-progress"
-          title="Confirmed this session (in memory only)">
-          <span class="progress-bar"><span id="confirm-bar"></span></span>
-          <span id="confirm-count"></span>
+          id="review-progress"
+          title="Review verdicts (kept for this browser tab)">
+          <span class="progress-bar"><span id="review-bar"></span></span>
+          <span id="review-count"></span>
         </span>
       </div>
       <div class="segmented" role="group" aria-label="View mode">
@@ -69,11 +69,12 @@
             </select>
           </div>
           <label class="toggle">
-            <input type="checkbox" id="show-confirmed" />
-            Show confirmed <kbd>H</kbd>
+            <input type="checkbox" id="show-reviewed" />
+            Show reviewed <kbd>H</kbd>
           </label>
         </div>
         <ul class="scenario-list" id="scenario-list"></ul>
+        <div class="actions-panel" id="actions-panel" hidden></div>
         <div class="sidebar-footer">
           <span id="filtered-count"></span>
           <button type="button" id="clear-filters" class="link" hidden>
@@ -118,16 +119,23 @@
             <div class="control-group">
               <button
                 type="button"
-                id="confirm"
-                class="confirm"
-                title="Confirm and go to the next (Y or Enter)">
-                ✓ Confirm <kbd>Y</kbd>
+                id="approve"
+                class="verdict-button approve"
+                title="Approve and go to the next (A, Y or Enter)">
+                <span id="approve-label">✓ Approve</span> <kbd>A</kbd>
               </button>
               <button
                 type="button"
-                id="undo-confirm"
+                id="reject"
+                class="verdict-button reject"
+                title="Reject and go to the next (R)">
+                <span id="reject-label">✗ Reject</span> <kbd>R</kbd>
+              </button>
+              <button
+                type="button"
+                id="undo-verdict"
                 class="ghost"
-                title="Undo the last confirm (U)">
+                title="Undo the last verdict (U)">
                 Undo <kbd>U</kbd>
               </button>
             </div>
@@ -176,14 +184,18 @@
           <dd>Side by side</dd>
           <dt><kbd>↓</kbd> <kbd>J</kbd> / <kbd>↑</kbd> <kbd>K</kbd></dt>
           <dd>Next / previous snapshot</dd>
-          <dt><kbd>Y</kbd> <kbd>Enter</kbd></dt>
-          <dd>Confirm the change (hides it) and go to the next</dd>
-          <dt><kbd>Shift</kbd>+<kbd>Y</kbd></dt>
-          <dd>Confirm every snapshot in the current group</dd>
+          <dt><kbd>A</kbd> <kbd>Y</kbd> <kbd>Enter</kbd></dt>
+          <dd>Approve the change (hides it) and go to the next</dd>
+          <dt><kbd>R</kbd></dt>
+          <dd>Reject the change (hides it) and go to the next</dd>
+          <dt><kbd>Shift</kbd>+<kbd>A</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd></dt>
+          <dd>
+            Approve / reject every unreviewed snapshot in the current group
+          </dd>
           <dt><kbd>U</kbd></dt>
-          <dd>Undo the last confirm</dd>
+          <dd>Undo the last verdict</dd>
           <dt><kbd>H</kbd></dt>
-          <dd>Show / hide confirmed snapshots</dd>
+          <dd>Show / hide reviewed snapshots</dd>
           <dt><kbd>G</kbd></dt>
           <dd>Cycle grouping</dd>
           <dt><kbd>/</kbd></dt>
@@ -195,6 +207,35 @@
         </dl>
         <button type="button" id="help-close">Close</button>
       </div>
+    </div>
+
+    <div class="modal-backdrop" id="checkpoint-modal" hidden>
+      <form
+        class="modal checkpoint"
+        id="checkpoint-form"
+        role="dialog"
+        aria-labelledby="checkpoint-title">
+        <h2 id="checkpoint-title">Checkpoint</h2>
+        <p id="checkpoint-summary"></p>
+        <ul class="file-list" id="checkpoint-names"></ul>
+        <label for="checkpoint-input">
+          Type <code>checkpoint</code> to confirm:
+        </label>
+        <input
+          type="text"
+          id="checkpoint-input"
+          autocomplete="off"
+          spellcheck="false" />
+        <p class="note error" id="checkpoint-error" hidden></p>
+        <div class="modal-buttons">
+          <button type="button" id="checkpoint-cancel" class="ghost">
+            Cancel <kbd>Esc</kbd>
+          </button>
+          <button type="submit" id="checkpoint-submit" class="primary">
+            Checkpoint
+          </button>
+        </div>
+      </form>
     </div>
 
     <!-- Filled in by writeViewer() in visual_diff.ts. -->

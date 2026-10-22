@@ -1,13 +1,29 @@
 import { execFileSync } from "child_process";
 import fs from "fs";
+import http from "http";
 import os from "os";
 import path from "path";
 import {
+  type BaselinePaths,
+  readManifest,
+} from "@/scripts/visual_diff/local_baselines";
+import {
+  computeTreeState,
+  readRunMarker,
+  writeRunMarker,
+} from "@/scripts/visual_diff/run_marker";
+import {
+  CHECKPOINT_CONFIRMATION,
+  MANIFEST_FILE,
   buildMarkdownReport,
   collectFailuresWithoutSnapshot,
   collectGitEntries,
   collectResultEntries,
+  incompleteItems,
+  isSameOrigin,
   jsonForScriptTag,
+  namesFromReport,
+  newSessionToken,
   parseCompareOutput,
   parseNameStatus,
   parseSnapshotName,
@@ -16,8 +32,12 @@ import {
   resolveServedPath,
   runVisualDiffInspector,
   sizeForProject,
+  tokenMatches,
 } from "@/scripts/visual_diff/visual_diff";
-import type { VisualDiffManifest } from "@/scripts/visual_diff/visual_diff_types";
+import type {
+  SnapshotMeta,
+  VisualDiffManifest,
+} from "@/scripts/visual_diff/visual_diff_types";
 
 /** Minimal header-only PNG; enough for `readPngDimensions`. */
 function fakePng(width: number, height: number, fill = 0): Buffer {
@@ -245,6 +265,10 @@ describe("collectResultEntries", () => {
       ["bar-js-dark.png", "MobileChrome", "added"],
       ["foo-js-light.png", "chromium", "modified"],
     ]);
+    expect(entries.map((e) => e.snapshotName)).toEqual([
+      `bar-js-dark-MobileChrome-${process.platform}.png`,
+      `foo-js-light-chromium-${process.platform}.png`,
+    ]);
     expect(entries[1].afterPath).toContain("retry1");
     expect(entries[1].fallbackDiffPath).toContain("retry1");
   });
@@ -399,5 +423,417 @@ describe("git source (end to end)", () => {
     expect(fs.existsSync(path.join(outDir, "viewer.js"))).toBe(true);
     expect(fs.existsSync(path.join(outDir, "viewer.css"))).toBe(true);
     expect(fs.existsSync(path.join(outDir, "report.md"))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Accept / checkpoint from the viewer
+// ---------------------------------------------------------------------------
+
+describe("tokenMatches", () => {
+  it("accepts only the exact token", () => {
+    expect(tokenMatches("s3cret", "s3cret")).toBe(true);
+    expect(tokenMatches("s3cret", "s3cre")).toBe(false);
+    expect(tokenMatches("s3cret", "s3cretX")).toBe(false);
+    expect(tokenMatches("s3cret", "")).toBe(false);
+    expect(tokenMatches("s3cret", undefined)).toBe(false);
+    expect(tokenMatches("s3cret", ["s3cret"])).toBe(false);
+    expect(tokenMatches("", "")).toBe(false);
+  });
+
+  it("generates long random tokens", () => {
+    const a = newSessionToken();
+    expect(a.length).toBeGreaterThanOrEqual(32);
+    expect(newSessionToken()).not.toBe(a);
+  });
+});
+
+describe("isSameOrigin", () => {
+  it("requires an Origin that names the Host", () => {
+    expect(isSameOrigin({ host: "box:8899", origin: "http://box:8899" })).toBe(
+      true
+    );
+    expect(isSameOrigin({ host: "box:8899" })).toBe(false);
+    expect(
+      isSameOrigin({ host: "box:8899", origin: "http://evil.example" })
+    ).toBe(false);
+    expect(isSameOrigin({ host: "box:8899", origin: "null" })).toBe(false);
+  });
+});
+
+describe("incompleteItems", () => {
+  const base = {
+    scenario: "s",
+    category: "Other" as const,
+    mode: "js" as const,
+    theme: "light" as const,
+    size: "large" as const,
+    browser: "chromium",
+  };
+  it("flags snapshots that can't be judged or mapped to a baseline", () => {
+    expect(
+      incompleteItems(
+        [
+          {
+            ...base,
+            id: "ok",
+            name: "ok.png",
+            snapshotName: "ok-chromium-linux.png",
+            status: "modified",
+            before: { width: 1, height: 1 },
+            after: { width: 1, height: 1 },
+            beforeUrl: "b",
+            afterUrl: "a",
+            diffUrl: "d",
+          },
+          { ...base, id: "x", name: "x.png", status: "added" },
+          {
+            ...base,
+            id: "nodiff",
+            name: "nodiff.png",
+            snapshotName: "nodiff-chromium-linux.png",
+            status: "modified",
+            before: { width: 1, height: 1 },
+            after: { width: 1, height: 1 },
+            beforeUrl: "b",
+            afterUrl: "a",
+          },
+        ],
+        "results"
+      )
+    ).toEqual([
+      "x.png [chromium]: unknown Playwright project",
+      "nodiff-chromium-linux.png: no diff (ImageMagick missing, no Playwright diff)",
+    ]);
+  });
+});
+
+/** Minimal HTTP client that sets exactly the headers given. */
+function request(
+  port: number,
+  pathName: string,
+  options: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: unknown;
+  } = {}
+): Promise<{ status: number; body: any }> {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      {
+        host: "127.0.0.1",
+        port,
+        path: pathName,
+        method: options.method ?? "POST",
+        headers: options.headers,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (c: Buffer) => chunks.push(c));
+        res.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf-8");
+          let body: unknown = text;
+          try {
+            body = JSON.parse(text);
+          } catch {
+            // Not JSON (static files).
+          }
+          resolve({ status: res.statusCode ?? 0, body });
+        });
+      }
+    );
+    req.on("error", reject);
+    if (options.body !== undefined) req.write(JSON.stringify(options.body));
+    req.end();
+  });
+}
+
+describe("viewer write endpoints (end to end)", () => {
+  const TOKEN = "test-token-0123456789";
+  const PLATFORM = process.platform;
+  const A = `a-js-light-chromium-${PLATFORM}.png`;
+  const B = `b-js-dark-MobileChrome-${PLATFORM}.png`;
+  const NEW = `n-nojs-light-webkit-${PLATFORM}.png`;
+  let repo: string;
+  let results: string;
+  let localPaths: BaselinePaths;
+  let server: http.Server | undefined;
+  let port: number;
+  const git = (...args: string[]) =>
+    execFileSync("git", args, { cwd: repo, stdio: "ignore" });
+
+  function fail(
+    stem: string,
+    project: string,
+    actual: Buffer,
+    expected?: Buffer
+  ) {
+    const dir = path.join(
+      results,
+      `screenshot-browser_screens-1a2b3-${stem}--${project}`
+    );
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, `${stem}-actual.png`), actual);
+    if (expected !== undefined) {
+      fs.writeFileSync(path.join(dir, `${stem}-expected.png`), expected);
+      fs.writeFileSync(path.join(dir, `${stem}-diff.png`), fakePng(10, 10, 9));
+    }
+  }
+
+  const headers = (extra: Record<string, string> = {}) => ({
+    "Content-Type": "application/json",
+    Origin: `http://127.0.0.1:${port}`,
+    "X-Visual-Diff-Token": TOKEN,
+    ...extra,
+  });
+
+  async function start(source: "results" | "local" | "git") {
+    const result = await runVisualDiffInspector({
+      source,
+      resultsDir: results,
+      snapshotDir: localPaths.snapshotDir,
+      localPaths,
+      outDir: path.join(repo, ".cache", "visual-diff"),
+      host: "127.0.0.1",
+      port: 0,
+      token: TOKEN,
+      repoRoot: repo,
+    });
+    server = result.server;
+    const address = server?.address();
+    port = typeof address === "object" && address !== null ? address.port : 0;
+    return result;
+  }
+
+  beforeEach(() => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockImplementation(() => {});
+    repo = makeTempDir();
+    results = path.join(repo, "test-results");
+    git("init", "-q");
+    git("config", "user.email", "test@example.com");
+    git("config", "user.name", "Test");
+    fs.writeFileSync(
+      path.join(repo, ".gitignore"),
+      "/test-results/\n/.cache/\n/.visual-baselines/\n"
+    );
+    localPaths = {
+      snapshotDir: path.join(repo, "src", "snaps"),
+      storeDir: path.join(repo, ".visual-baselines", "local"),
+      effectiveDir: path.join(repo, ".cache", "effective"),
+    };
+    fs.mkdirSync(localPaths.snapshotDir, { recursive: true });
+    fs.writeFileSync(path.join(localPaths.snapshotDir, A), fakePng(10, 10, 0));
+    fs.writeFileSync(path.join(localPaths.snapshotDir, B), fakePng(10, 10, 0));
+    git("add", ".");
+    git("commit", "-q", "-m", "init");
+
+    fail("a-js-light", "chromium", fakePng(10, 10, 1), fakePng(10, 10, 0));
+    fail("b-js-dark", "MobileChrome", fakePng(10, 10, 2), fakePng(10, 10, 0));
+    fail("n-nojs-light", "webkit", fakePng(10, 10, 3));
+    writeRunMarker(results, computeTreeState(repo), new Date());
+  });
+
+  afterEach(async () => {
+    jest.restoreAllMocks();
+    await new Promise((resolve) =>
+      server === undefined ? resolve(undefined) : server.close(resolve)
+    );
+    server = undefined;
+    fs.rmSync(repo, { recursive: true, force: true });
+  });
+
+  it("maps results to baseline names and keeps the token out of the page", async () => {
+    const { manifest, viewerUrl, outDir } = await start("results");
+    expect(manifest.items.map((i) => i.snapshotName).sort()).toEqual(
+      [A, B, NEW].sort()
+    );
+    expect(manifest.actions).toEqual({ flow: "accept-then-checkpoint" });
+    expect(manifest.reviewKey).toBe(`results:${readRunMarker(results)!.id}`);
+    expect(viewerUrl).toContain(`#token=${TOKEN}`);
+    for (const file of ["index.html", MANIFEST_FILE]) {
+      expect(fs.readFileSync(path.join(outDir, file), "utf-8")).not.toContain(
+        TOKEN
+      );
+    }
+    const page = await request(port, "/", { method: "GET" });
+    expect(page.status).toBe(200);
+    expect(page.body).not.toContain(TOKEN);
+  });
+
+  it("rejects requests without the token, from another origin, or not POST", async () => {
+    await start("results");
+    const body = { names: [A] };
+    const noToken = await request(port, "/api/accept", {
+      headers: headers({ "X-Visual-Diff-Token": "" }),
+      body,
+    });
+    expect(noToken.status).toBe(403);
+    const wrongToken = await request(port, "/api/accept", {
+      headers: headers({ "X-Visual-Diff-Token": "nope" }),
+      body,
+    });
+    expect(wrongToken.status).toBe(403);
+    const crossOrigin = await request(port, "/api/accept", {
+      headers: headers({ Origin: "http://evil.example" }),
+      body,
+    });
+    expect(crossOrigin.status).toBe(403);
+    const noOrigin = await request(port, "/api/accept", {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Visual-Diff-Token": TOKEN,
+      },
+      body,
+    });
+    expect(noOrigin.status).toBe(403);
+    const get = await request(port, "/api/accept", {
+      method: "GET",
+      headers: headers(),
+    });
+    expect(get.status).toBe(405);
+    const form = await request(port, "/api/accept", {
+      headers: headers({ "Content-Type": "text/plain" }),
+      body,
+    });
+    expect(form.status).toBe(415);
+    expect(fs.existsSync(localPaths.storeDir)).toBe(false);
+  });
+
+  it("only accepts names from this session", async () => {
+    await start("results");
+    const res = await request(port, "/api/accept", {
+      headers: headers(),
+      body: { names: [A, "../../etc/passwd"] },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Not in this review session/);
+    expect(fs.existsSync(localPaths.storeDir)).toBe(false);
+  });
+
+  it("accepts approved names, then checkpoints only reviewed local baselines", async () => {
+    await start("results");
+    const accepted = await request(port, "/api/accept", {
+      headers: headers(),
+      body: { names: [A, NEW] },
+    });
+    expect(accepted.status).toBe(200);
+    expect(accepted.body).toMatchObject({
+      added: [A, NEW],
+      updated: [],
+      reverted: [],
+      unchanged: [],
+    });
+    // The second review step: local vs checkpoint, for just those names.
+    expect(
+      accepted.body.items.map((i: SnapshotMeta) => [i.snapshotName, i.status])
+    ).toEqual([
+      [A, "modified"],
+      [NEW, "added"],
+    ]);
+    expect(readManifest(localPaths).entries[B]).toBeUndefined();
+
+    const noConfirm = await request(port, "/api/checkpoint", {
+      headers: headers(),
+      body: { names: [A] },
+    });
+    expect(noConfirm.status).toBe(400);
+    const notAccepted = await request(port, "/api/checkpoint", {
+      headers: headers(),
+      body: { names: [B], confirm: CHECKPOINT_CONFIRMATION },
+    });
+    expect(notAccepted.status).toBe(400);
+    expect(notAccepted.body.error).toMatch(/Accept and review/);
+
+    const done = await request(port, "/api/checkpoint", {
+      headers: headers(),
+      body: { names: [A], confirm: CHECKPOINT_CONFIRMATION },
+    });
+    expect(done.status).toBe(200);
+    expect(done.body).toEqual({
+      promoted: [A],
+      skippedStale: [],
+      files: [path.join("src", "snaps", A)],
+    });
+    expect(fs.readFileSync(path.join(localPaths.snapshotDir, A))).toEqual(
+      fakePng(10, 10, 1)
+    );
+    expect(Object.keys(readManifest(localPaths).entries)).toEqual([NEW]);
+  });
+
+  it("refuses to accept once the code has changed since the run", async () => {
+    await start("results");
+    fs.writeFileSync(path.join(repo, "src", "app.ts"), "changed");
+    const res = await request(port, "/api/accept", {
+      headers: headers(),
+      body: { names: [A] },
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/Uncommitted changes/);
+    expect(fs.existsSync(localPaths.storeDir)).toBe(false);
+  });
+
+  it("disables actions in the page when there is no run marker", async () => {
+    fs.rmSync(path.join(results, ".visual-run.json"));
+    const { manifest } = await start("results");
+    expect(manifest.actions?.disabledReason).toMatch(/No run marker/);
+  });
+
+  it("goes straight to checkpoint for the local source", async () => {
+    await start("results");
+    await request(port, "/api/accept", {
+      headers: headers(),
+      body: { names: [A, B] },
+    });
+    server?.close();
+    const { manifest } = await start("local");
+    expect(manifest.actions).toEqual({ flow: "checkpoint" });
+    const accept = await request(port, "/api/accept", {
+      headers: headers(),
+      body: { names: [A] },
+    });
+    expect(accept.status).toBe(400);
+    const done = await request(port, "/api/checkpoint", {
+      headers: headers(),
+      body: { names: [B], confirm: CHECKPOINT_CONFIRMATION },
+    });
+    expect(done.status).toBe(200);
+    expect(done.body.promoted).toEqual([B]);
+    expect(Object.keys(readManifest(localPaths).entries)).toEqual([A]);
+  });
+
+  it("is read-only for the git source", async () => {
+    fs.writeFileSync(path.join(localPaths.snapshotDir, A), fakePng(20, 10, 1));
+    const { manifest, viewerUrl } = await start("git");
+    expect(manifest.actions).toBeUndefined();
+    expect(viewerUrl).not.toContain("#token=");
+    const res = await request(port, "/api/checkpoint", {
+      headers: headers(),
+      body: { names: [A], confirm: CHECKPOINT_CONFIRMATION },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("lists the reported names for accept --from-report", async () => {
+    const outDir = path.join(repo, ".cache", "visual-diff");
+    await runVisualDiffInspector({
+      source: "results",
+      resultsDir: results,
+      localPaths,
+      outDir,
+      startServer: false,
+      repoRoot: repo,
+    });
+    expect(namesFromReport(outDir, results)).toEqual([A, B, NEW].sort());
+
+    // A newer run makes the report out of date.
+    writeRunMarker(
+      results,
+      computeTreeState(repo),
+      new Date(Date.now() + 1000)
+    );
+    expect(() => namesFromReport(outDir, results)).toThrow(
+      /doesn't belong to the run/
+    );
   });
 });
