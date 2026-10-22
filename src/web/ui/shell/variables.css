@@ -148,7 +148,7 @@
     --card-bg: #23272c;
     --text-muted: #9a9ea4;
     --reading-text: #b4b9bf;
-    --emph-text: #eef0f2;
+    --emph-text: var(--text);
     --primary: #7cc4a6;
     --primary-hover: #9ad4bc;
     --primary-light: rgba(124, 196, 166, 0.14);
@@ -241,7 +241,7 @@
   --card-bg: #23272c;
   --text-muted: #9a9ea4;
   --reading-text: #b4b9bf;
-  --emph-text: #eef0f2;
+  --emph-text: var(--text);
   --primary: #7cc4a6;
   --primary-hover: #9ad4bc;
   --primary-light: rgba(124, 196, 166, 0.14);

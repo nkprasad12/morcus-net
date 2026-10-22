@@ -220,7 +220,7 @@
 .inflection-info.lsHover {
   padding: 0;
   font-family: var(--font-sans);
-  font-size: calc(0.8rem * var(--dict-scale, 1));
+  font-size: calc(0.85rem * var(--dict-scale, 1));
   line-height: 1.5;
   color: var(--text-muted);
   text-decoration: none;
@@ -241,7 +241,7 @@
 .inflection-line {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: calc(0.8rem * var(--dict-scale, 1));
+  font-size: calc(0.85rem * var(--dict-scale, 1));
   line-height: 1.5;
   color: var(--text-muted);
 }
