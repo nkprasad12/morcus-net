@@ -501,6 +501,43 @@ describe("core/dom.client", () => {
       getComputedStyleSpy.mockRestore();
     });
 
+    it("advances past top padding when scrollMarginTop is negative", () => {
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+      jest.spyOn(el, "getBoundingClientRect").mockReturnValue({
+        top: 150,
+        bottom: 200,
+        left: 0,
+        right: 100,
+        width: 100,
+        height: 50,
+        x: 0,
+        y: 150,
+        toJSON: () => ({}),
+      });
+      const scrollToSpy = jest
+        .spyOn(window, "scrollTo")
+        .mockImplementation(() => {});
+      const getComputedStyleSpy = jest
+        .spyOn(window, "getComputedStyle")
+        .mockReturnValue({ scrollMarginTop: "-8px" } as CSSStyleDeclaration);
+
+      Object.defineProperty(window, "scrollY", {
+        value: 100,
+        configurable: true,
+      });
+
+      scrollToElement(el, "instant");
+
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 258,
+        behavior: "instant",
+      });
+
+      scrollToSpy.mockRestore();
+      getComputedStyleSpy.mockRestore();
+    });
+
     it("falls back to 0 margin when scrollMarginTop is empty or non-numeric", () => {
       const el = document.createElement("div");
       document.body.appendChild(el);

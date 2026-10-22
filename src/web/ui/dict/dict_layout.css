@@ -13,6 +13,10 @@
   scroll-margin-top: 8px;
 }
 
+.container-embedded .results {
+  scroll-margin-top: 0;
+}
+
 .results > .dict-card + .dict-card {
   margin-top: var(--space-6);
 }
@@ -172,7 +176,7 @@
 }
 
 .dict-card {
-  scroll-margin-top: 20px;
+  scroll-margin-top: 0;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -489,7 +493,7 @@
 }
 
 .entry {
-  scroll-margin-top: 16px;
+  scroll-margin-top: var(--space-2);
   margin-bottom: var(--space-5);
   font-family: var(--font-text);
   font-size: calc(1.1rem * var(--dict-scale, 1) * var(--text-scale, 1));
@@ -497,7 +501,7 @@
 }
 
 .entry [id] {
-  scroll-margin-top: 16px;
+  scroll-margin-top: var(--space-2);
 }
 
 .entry:last-child {
@@ -506,6 +510,7 @@
 
 /* Demarcation divider between multiple entries in the same dictionary */
 .entry + .entry {
+  scroll-margin-top: calc(-1 * var(--space-5) + var(--space-2));
   margin-top: var(--space-6);
   padding-top: var(--space-5);
   border-top: 1px dashed var(--border);
@@ -587,7 +592,6 @@
    core's flashElement(), so it is self-scoping and stays global. */
 .dict-card :target,
 .target-active {
-  scroll-margin-top: 20px;
   border-radius: var(--radius-sm);
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;

@@ -5,7 +5,7 @@
    ========================================================================== */
 
 .reader-view {
-  --reader-sticky-offset: calc(1.75rem + 2 * var(--space-1) + var(--space-3));
+  --reader-sticky-offset: calc(1.75rem + 2 * var(--space-1) + 2px);
 }
 
 .reader-sticky-bar {
@@ -350,7 +350,7 @@
 
 @media (width > 640px) {
   .reader-view {
-    --reader-sticky-offset: var(--space-4);
+    --reader-sticky-offset: var(--space-1);
   }
 
   .reader-sticky-bar {
