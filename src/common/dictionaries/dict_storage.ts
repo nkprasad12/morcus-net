@@ -31,11 +31,15 @@ export class StoredDict {
    * @param input the query to search against keys.
    * @param lang the language of the input.
    * @param extras any server extras to pass to the function.
+   * @param entryCache optional per-query cache of `id -> raw entry` to avoid
+   *   fetching the same parent entry XML twice when a query matches both a
+   *   main entry and one of its sub-entries or variant headwords.
    */
   async getRawEntry(
     input: string,
     lang: DictLang = "La",
-    extras?: ServerExtras
+    extras?: ServerExtras,
+    entryCache?: Map<string, string>
   ): Promise<StoredEntryAndMetadata[]> {
     const request = removeDiacritics(input)
       .replaceAll("\u0304", "")
@@ -54,7 +58,7 @@ export class StoredDict {
     }
 
     const allIds = Array.from(new Set(candidates.map(({ id }) => id)));
-    const entryStrings = await this.backing.entriesForIds(allIds);
+    const entryStrings = await this.entriesForIds(allIds, entryCache);
     // TODO: Re-enable this if we run into performance issues.
     // extras?.log(`${request}_entriesFetched`);
     const results: StoredEntryAndMetadata[] = [];
@@ -80,6 +84,31 @@ export class StoredDict {
       results.push(result);
     }
     return results;
+  }
+
+  /**
+   * Fetches the raw entries for `ids`, reading from and populating
+   * `entryCache` if provided. Results are in the order of `ids`, skipping
+   * any that don't exist.
+   */
+  private async entriesForIds(
+    ids: string[],
+    entryCache?: Map<string, string>
+  ): Promise<{ id: string; entry: string }[]> {
+    if (entryCache === undefined) {
+      return this.backing.entriesForIds(ids);
+    }
+    const missingIds = ids.filter((id) => !entryCache.has(id));
+    if (missingIds.length > 0) {
+      const fetched = await this.backing.entriesForIds(missingIds);
+      for (const { id, entry } of fetched) {
+        entryCache.set(id, entry);
+      }
+    }
+    return ids.flatMap((id) => {
+      const entry = entryCache.get(id);
+      return entry === undefined ? [] : [{ id, entry }];
+    });
   }
 
   /** Returns the entry with the given ID, if present. */

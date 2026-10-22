@@ -186,6 +186,65 @@ describe("StoredDict", () => {
     ]);
   });
 
+  test("getRawEntry with entryCache fetches each entry once", async () => {
+    SqliteDict.save(FAKE_DICT, TEMP_FILE);
+    const backing = sqliteBacking(TEMP_FILE);
+    const entriesForIds = jest.spyOn(backing, "entriesForIds");
+    const dict = new StoredDict(backing);
+    const entryCache = new Map<string, string>();
+
+    // `Julianus` is a sub-entry of `Julius`, so both resolve to `n1`.
+    const julius = await dict.getRawEntry(
+      "Julius",
+      "La",
+      undefined,
+      entryCache
+    );
+    const julianus = await dict.getRawEntry(
+      "Julianus",
+      "La",
+      undefined,
+      entryCache
+    );
+    // `Naso` resolves to `n2` and `n3`; `Publius` to `n2` (already cached).
+    const naso = await dict.getRawEntry("Naso", "La", undefined, entryCache);
+    const publius = await dict.getRawEntry(
+      "Publius",
+      "La",
+      undefined,
+      entryCache
+    );
+
+    expect(entriesForIds.mock.calls).toEqual([[["n1"]], [["n2", "n3"]]]);
+    expectEntriesWithIds(julius, ["Julius"]);
+    expectEntriesWithIds(naso, ["Publius", "Naso"]);
+    expectEntriesWithIds(publius, ["Publius"]);
+    // Metadata is still computed per query, not taken from the cache.
+    expect(julius[0].includeMain).toBe(true);
+    expect(julius[0].subsections).toBeUndefined();
+    expect(julianus).toEqual([
+      {
+        id: "n1",
+        entry: julius[0].entry,
+        includeMain: false,
+        subsections: [{ id: "n1.1", name: "Julianus" }],
+      },
+    ]);
+  });
+
+  test("getRawEntry with entryCache matches uncached results", async () => {
+    SqliteDict.save(FAKE_DICT, TEMP_FILE);
+    const dict = storedDict();
+    const entryCache = new Map<string, string>();
+    const queries = ["Julius", "Julianus", "Naso", "quis", "quĭs", "Foo"];
+
+    for (const query of queries) {
+      expect(
+        await dict.getRawEntry(query, "La", undefined, entryCache)
+      ).toEqual(await dict.getRawEntry(query));
+    }
+  });
+
   test("getCompletions returns expected results", async () => {
     const inputKeys = ["aba", "abbas", "abas", "abat", "abbat", "abatta"];
     SqliteDict.save(toDictData(inputKeys), TEMP_FILE);

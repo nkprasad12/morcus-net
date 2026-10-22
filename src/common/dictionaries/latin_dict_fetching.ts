@@ -46,10 +46,31 @@ export async function findEntriesForQuery<T extends EntryResult>(
     .split("")
     .map((c) => REPLACED_CHARS.get(c) || c)
     .join("");
-  // Sub-entries have the same dictionary data as an entry,
-  // so ensure we're not doing the same work twice. This is still suboptimal
-  // because it requires reading the same potentially long data twice for
-  // multiple entries in the database, but we can live with this for now.
+  // Sub-entries, case-variant lemmas (e.g. `varius`/`Varius`), and homonym
+  // analyses (e.g. `qui#1`/`qui#2`, or an input that is itself a lemma like
+  // `ut`) can request the same raw lemma or entry ID multiple times within a
+  // single query. Cache raw SQLite lookups (by case-folded query string), raw
+  // entry blobs (by entry ID across sub-entries), and decoded XML trees (by
+  // entry ID) across the query.
+  const rawEntryBlobCache = new Map<string, string>();
+  const rawEntryCache = new Map<string, Promise<StoredEntryAndMetadata[]>>();
+  const getRawCached = (
+    queryKey: string
+  ): Promise<StoredEntryAndMetadata[]> => {
+    const cacheKey = queryKey.toLowerCase();
+    const cached = rawEntryCache.get(cacheKey);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const pending = storage.getRawEntry(
+      queryKey,
+      "La",
+      extras,
+      rawEntryBlobCache
+    );
+    rawEntryCache.set(cacheKey, pending);
+    return pending;
+  };
   const decodedEntries = new Map<string, T>();
   const decodeStored = (data: StoredEntryAndMetadata): Readonly<T> => {
     const cached = decodedEntries.get(data.id);
@@ -65,7 +86,7 @@ export async function findEntriesForQuery<T extends EntryResult>(
     Pick<EntryResult, "inflections"> &
     Pick<EntryResult, "subsections">;
 
-  const rawEntries = await storage.getRawEntry(input, "La", extras);
+  const rawEntries = await getRawCached(input);
   const exactMatches: DecodedStoredEntryAndMetadata[] = rawEntries.map(
     (entryAndMetadata) => ({
       ...entryAndMetadata,
@@ -102,7 +123,7 @@ export async function findEntriesForQuery<T extends EntryResult>(
     const lemmaChunks = analysis.lemma.split("#");
     const lemmaBase = lemmaChunks[0];
 
-    const results = (await storage.getRawEntry(lemmaBase, "La", extras))
+    const results = (await getRawCached(lemmaBase))
       .map((entryAndMetadata) => ({
         ...entryAndMetadata,
         ...decodeStored(entryAndMetadata),
