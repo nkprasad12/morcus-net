@@ -75,7 +75,7 @@ A baseline update rewrites the definition of "correct" for the UI. An agent that
 
 Baselines have two tiers ([`src/web/ui/docs/TESTING.md` §2.F](src/web/ui/docs/TESTING.md#baselines-committed-checkpoint--local-overlay)): the committed **checkpoint** (`*-snapshots/`) and gitignored **local baselines** (`.visual-baselines/local/`). `./morcus.sh e2e --visual --all --update` writes only to the local tier. That's reversible and never committed, so agents may run it without asking, but the diffs must still be shown to the user. The same goes for `./morcus.sh visual-baselines accept <names...>`, which accepts named failures from the last run into the local tier without re-running it: agents may run it with explicit names, after showing the user the diffs.
 
-The Visual Diff Inspector also has **Accept locally** and **Checkpoint** buttons (and the `POST /api/accept` and `/api/checkpoint` endpoints behind them). They are for the human reviewing the diffs. Agents must **never** call those endpoints or click those buttons, even though the token is in the URL the Inspector prints.
+The Visual Diff Inspector also has **Accept locally**, **Undo accept**, **Drop** and **Checkpoint** buttons (and the `POST /api/accept`, `/api/drop` and `/api/checkpoint` endpoints behind them). They are for the human reviewing the diffs. Agents must **never** call those endpoints or click those buttons, even though the token is in the URL the Inspector prints.
 
 When a change causes pixel diffs:
 

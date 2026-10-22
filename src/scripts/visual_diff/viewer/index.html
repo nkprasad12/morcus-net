@@ -19,6 +19,12 @@
           <span class="progress-bar"><span id="review-bar"></span></span>
           <span id="review-count"></span>
         </span>
+        <button
+          type="button"
+          id="local-link"
+          class="link header-link"
+          title="Local baselines"
+          hidden></button>
       </div>
       <div class="segmented" role="group" aria-label="View mode">
         <button type="button" data-view="flip" title="Flip (Space)">
@@ -68,6 +74,10 @@
               <option value="name">Name</option>
             </select>
           </div>
+          <label class="toggle" id="accepted-before-row" hidden>
+            Accepted before
+            <input type="date" id="accepted-before" />
+          </label>
           <label class="toggle">
             <input type="checkbox" id="show-reviewed" />
             Show reviewed <kbd>H</kbd>
@@ -206,6 +216,16 @@
           <dd>Close this dialog / leave search</dd>
         </dl>
         <button type="button" id="help-close">Close</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="local-modal" hidden>
+      <div class="modal" role="dialog" aria-labelledby="local-title">
+        <h2 id="local-title">Local baselines</h2>
+        <p id="local-modal-text"></p>
+        <pre
+          class="command"><code>./morcus.sh visual-diff --source local</code></pre>
+        <button type="button" id="local-modal-close">Close</button>
       </div>
     </div>
 

@@ -59,6 +59,8 @@ export interface SnapshotMeta {
    * whose Playwright project couldn't be determined.
    */
   snapshotName?: string;
+  /** `local` source only: when the local baseline was accepted (ISO). */
+  acceptedAt?: string;
 }
 
 export type VisualDiffSource = "git" | "results" | "local";
@@ -69,10 +71,26 @@ export type VisualDiffSource = "git" | "results" | "local";
  * `local` sources).
  */
 export interface ViewerActions {
-  /** `results`: accept, then checkpoint. `local`: checkpoint only. */
-  flow: "accept-then-checkpoint" | "checkpoint";
+  /**
+   * `accept`: the everyday `results` mode; accepting locally ends the flow.
+   * `checkpoint`: the deliberate `local` mode; checkpoint or drop local
+   * baselines.
+   */
+  mode: "accept" | "checkpoint";
   /** Why actions are unavailable, if they are. */
   disabledReason?: string;
+}
+
+/** The local baseline store at a glance, for hints in the viewer. */
+export interface StoreSummary {
+  /** Valid local baselines: accepted, not checkpointed. */
+  active: number;
+  /** Local baselines whose checkpoint changed since; they no longer apply. */
+  stale: string[];
+  /** Disk size of the stored PNGs. */
+  bytes: number;
+  /** Oldest `acceptedAt` among the active ones. */
+  oldestAcceptedAt?: string;
 }
 
 /** Results of the write endpoints, shared by the server and the viewer. */
@@ -81,8 +99,15 @@ export interface AcceptResponse {
   updated: string[];
   reverted: string[];
   unchanged: string[];
-  /** Local vs checkpoint, for the accepted names that are now local baselines. */
-  items: SnapshotMeta[];
+  store: StoreSummary;
+}
+
+export interface DropResponse {
+  /** Local baselines removed. */
+  dropped: string[];
+  /** `results` undo only: earlier local baselines put back. */
+  restored: string[];
+  store: StoreSummary;
 }
 
 export interface CheckpointResponse {
@@ -90,6 +115,7 @@ export interface CheckpointResponse {
   skippedStale: string[];
   /** Files written, relative to the repository root. */
   files: string[];
+  store: StoreSummary;
 }
 
 export interface ApiError {
@@ -120,4 +146,6 @@ export interface VisualDiffManifest {
    */
   reviewKey?: string;
   actions?: ViewerActions;
+  /** The local store when the viewer was generated (`results` and `local`). */
+  localStore?: StoreSummary;
 }

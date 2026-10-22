@@ -28,6 +28,7 @@ import fs from "fs";
 import path from "path";
 import { scanResultActuals } from "@/scripts/visual_diff/playwright_results";
 import { checkRunMarker } from "@/scripts/visual_diff/run_marker";
+import type { StoreSummary } from "@/scripts/visual_diff/visual_diff_types";
 
 export const DEFAULT_SNAPSHOT_DIR =
   "src/integration/screenshot/browser_screenshot.test.ts-snapshots";
@@ -465,26 +466,86 @@ export function drop(
   return [...targets].sort();
 }
 
+/** A local entry and its image, saved so an accept can be undone. */
+export interface SavedEntry {
+  entry: LocalEntry;
+  png: Buffer;
+}
+
+/** The current local entry for `name` (with its image), or null if none. */
+export function saveEntry(
+  paths: BaselinePaths,
+  name: string
+): SavedEntry | null {
+  const entry = readManifest(paths).entries[name];
+  const png = readIfExists(path.join(paths.storeDir, name));
+  return entry === undefined || png === undefined ? null : { entry, png };
+}
+
+/** Puts back an entry saved by {@link saveEntry}. */
+export function restoreEntry(
+  paths: BaselinePaths,
+  name: string,
+  saved: SavedEntry
+) {
+  const manifest = readManifest(paths);
+  fs.mkdirSync(paths.storeDir, { recursive: true });
+  fs.writeFileSync(path.join(paths.storeDir, name), saved.png);
+  manifest.entries[name] = saved.entry;
+  writeManifest(paths, manifest);
+}
+
 // ---------------------------------------------------------------------------
 // Reporting
 // ---------------------------------------------------------------------------
 
-function formatBytes(bytes: number): string {
+export function formatBytes(bytes: number): string {
   return bytes < 1024 * 1024
     ? `${(bytes / 1024).toFixed(0)} KiB`
     : `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 }
 
+export function storeSummary(paths: BaselinePaths): StoreSummary {
+  const manifest = readManifest(paths);
+  const { valid, stale } = resolveLocal(paths, manifest);
+  const bytes = valid
+    .concat(stale)
+    .reduce((n, f) => n + fs.statSync(path.join(paths.storeDir, f)).size, 0);
+  const oldest: string | undefined = valid
+    .map((n) => manifest.entries[n].acceptedAt)
+    .sort()[0];
+  return {
+    active: valid.length,
+    stale,
+    bytes,
+    ...(oldest === undefined ? {} : { oldestAcceptedAt: oldest }),
+  };
+}
+
+/** The one-line stale warning, or undefined if nothing is stale. */
+export function staleHint(stale: number): string | undefined {
+  return stale === 0
+    ? undefined
+    : `⚠ ${stale} stale: they no longer apply; \`./morcus.sh visual-baselines drop --stale\``;
+}
+
 export function statusReport(paths: BaselinePaths): string {
   const manifest = readManifest(paths);
   const { valid, stale, missing } = resolveLocal(paths, manifest);
-  const size = valid
-    .concat(stale)
-    .reduce((n, f) => n + fs.statSync(path.join(paths.storeDir, f)).size, 0);
+  const summary = storeSummary(paths);
   const lines = [
     `Local visual baselines (${path.relative(process.cwd(), paths.storeDir)})`,
-    `  ${valid.length} active, ${stale.length} stale, ${formatBytes(size)}`,
+    `  ${valid.length} active, ${stale.length} stale, ${formatBytes(
+      summary.bytes
+    )}`,
   ];
+  if (summary.oldestAcceptedAt !== undefined) {
+    lines.push(
+      `  ${valid.length} not checkpointed · oldest accepted ${summary.oldestAcceptedAt}`
+    );
+  }
+  const hint = staleHint(stale.length);
+  if (hint !== undefined) lines.push(`  ${hint}`);
   const section = (title: string, names: string[], note: string) => {
     if (names.length === 0) return;
     lines.push("", `${title} (${note}):`);

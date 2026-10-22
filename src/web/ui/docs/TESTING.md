@@ -215,21 +215,18 @@ The viewer offers before/after flip (<kbd>Space</kbd>, hold-to-peek, auto-blink 
 
 Give each snapshot a verdict: **approve** (<kbd>A</kbd>, or <kbd>Y</kbd>/<kbd>Enter</kbd>) or **reject** (<kbd>R</kbd>); <kbd>Shift</kbd> applies it to the whole group, <kbd>U</kbd> undoes. The header counts "N unreviewed · M approved · K rejected". Verdicts are kept in the tab's `sessionStorage`, keyed by the run marker (or the local store's contents), so a reload keeps them and a new run starts fresh.
 
-For the `results` and `local` sources, a panel under the list then offers the next step, once nothing is unreviewed:
+The viewer has two modes with write actions, in a panel under the list. Most of the time you only need the first: checkpointing is deliberately occasional, to keep PNGs out of git history.
 
-1. **`results`: "Accept M locally"** accepts exactly the approved snapshots (the same as `visual-baselines accept <names>`, run-marker guard included). Rejected ones are left alone.
-2. The viewer then switches to the accepted local baselines **against the checkpoint**, for just those names. This is a second review, not a formality: step 1 compared against the _effective_ baselines, which can hide an older local override you never saw against the checkpoint.
-3. Once that review is done, **"Checkpoint M…"** asks you to type `checkpoint`, then promotes exactly the approved local baselines and lists the files written. Nothing is staged or committed: review with `visual-diff --source git`, then commit.
+- **Everyday: `--source results` → accept.** Once nothing is unreviewed, **"Accept M locally"** accepts exactly the approved snapshots (the same as `visual-baselines accept <names>`, run-marker guard included). Rejected ones are left alone and keep failing. That's the end of the flow: the panel shows "✓ Accepted M locally · K rejected (still failing)", the local store's size and oldest entry, and a stale warning if there is one. Its only action is **Undo accept**, which puts back exactly what this accept changed (dropping new local baselines, restoring ones it replaced). There is no checkpoint here. The header's quiet "Local baselines (N) →" link only says how to open local mode.
+- **Occasional: `--source local` → checkpoint.** Reviews every local baseline against the committed checkpoint, with stale ones listed separately. **"Checkpoint N…"** applies to the snapshots matching the current filters (page, color, size, scripting, browser, name, and "Accepted before" a date), so you can checkpoint a subset. It appears only once every one of them is approved, asks you to type `checkpoint`, and then lists the files written. Nothing is staged or committed: review with `visual-diff --source git`, then commit. **"Drop this local baseline…"** (and "Drop N stale…") discard local baselines after a confirmation.
 
-With `--source local`, the review already compares against the checkpoint, so it goes straight to step 3. `--source git` is read-only.
+`--source git` is read-only. The buttons are disabled, with the reason, if the run marker check fails (`results`) or a snapshot's images are incomplete (a missing or unreadable image, an unknown Playwright project, or, for `results`, no diff at all). `./morcus.sh visual-baselines status` shows the same hints: how many local baselines aren't checkpointed, their size, the oldest, and a one-line warning when some are stale.
 
-The buttons are disabled, with the reason, if the run marker check fails or a snapshot's images are incomplete (a missing or unreadable image, an unknown Playwright project, or, for `results`, no diff at all).
-
-Because the viewer listens on the network, the write endpoints (`POST /api/accept`, `POST /api/checkpoint`) need a random token generated at startup. It's in the URLs the Inspector prints (`…/#token=…`; the fragment never reaches the server); the viewer sends it as a header. Without it, or from another origin, requests are refused, and the endpoints only take snapshot names shown in the current session. To try the flow without touching the real stores, point the Inspector at copies: `--results-dir`, `--dir` (checkpoint) and `--store-dir` (local store).
+Because the viewer listens on the network, the write endpoints (`POST /api/accept`, `/api/drop` and `/api/checkpoint`) need a random token generated at startup. It's in the URLs the Inspector prints (`…/#token=…`; the fragment never reaches the server); the viewer sends it as a header. Without it, or from another origin, requests are refused. The endpoints only take snapshot names shown in the current session; a `results` session can only accept, and undo its own accepts, while only a `local` session can checkpoint or drop. To try the flow without touching the real stores, point the Inspector at copies: `--results-dir`, `--dir` (checkpoint) and `--store-dir` (local store).
 
 > [!IMPORTANT]
 >
-> **For agents:** never call the Inspector's accept or checkpoint endpoints, or click those buttons. They're for the human reviewing the diffs. See the Visual Baseline Approval Rule in `AGENTS.md`.
+> **For agents:** never call the Inspector's accept, drop or checkpoint endpoints, or click those buttons. They're for the human reviewing the diffs. See the Visual Baseline Approval Rule in `AGENTS.md`.
 
 ---
 

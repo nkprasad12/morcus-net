@@ -14,10 +14,11 @@
  *   against the committed checkpoint. This is what you want after
  *   `e2e --visual --update`, which writes to the local store.
  *
- * For the `results` and `local` sources, the served viewer can also accept
- * approved screenshots into the local store and then checkpoint them, through
- * POST endpoints that need a random per-session token (see
- * {@link handleApiRequest}). The `git` source is read-only.
+ * The served viewer can also write, through POST endpoints that need a
+ * random per-session token (see {@link handleApiRequest}): for `results`,
+ * accept approved screenshots into the local store (and undo that); for
+ * `local`, checkpoint a reviewed subset or drop local baselines. The `git`
+ * source is read-only.
  *
  * External tools: `git` (required for the `git` source) and ImageMagick
  * (optional; used for pixel counts and diff masks).
@@ -34,6 +35,7 @@ import type {
   AcceptResponse,
   ApiError,
   CheckpointResponse,
+  DropResponse,
   ImageDims,
   SnapshotCategory,
   SnapshotMeta,
@@ -46,10 +48,15 @@ import {
   AcceptRefusedError,
   type BaselinePaths,
   acceptFromActuals,
+  type SavedEntry,
   checkpoint,
   defaultPaths,
+  drop,
   readManifest,
   resolveLocal,
+  restoreEntry,
+  saveEntry,
+  storeSummary,
 } from "@/scripts/visual_diff/local_baselines";
 import {
   KNOWN_PROJECTS,
@@ -329,6 +336,8 @@ interface RawEntry {
   fallbackDiffPath?: string;
   /** See {@link SnapshotMeta.snapshotName}. */
   snapshotName?: string;
+  /** See {@link SnapshotMeta.acceptedAt}. */
+  acceptedAt?: string;
 }
 
 function git(args: string[], cwd: string): string {
@@ -425,7 +434,8 @@ export function collectLocalEntries(paths: BaselinePaths): {
   entries: RawEntry[];
   stale: string[];
 } {
-  const { valid, stale } = resolveLocal(paths);
+  const manifest = readManifest(paths);
+  const { valid, stale } = resolveLocal(paths, manifest);
   const entries: RawEntry[] = valid.map((name) => {
     const checkpointPath = path.join(paths.snapshotDir, name);
     const hasCheckpoint = fs.existsSync(checkpointPath);
@@ -433,6 +443,7 @@ export function collectLocalEntries(paths: BaselinePaths): {
       id: safeId(name.replace(/\.png$/, "")),
       name,
       snapshotName: name,
+      acceptedAt: manifest.entries[name].acceptedAt,
       status: hasCheckpoint ? "modified" : "added",
       afterPath: path.join(paths.storeDir, name),
       writeBefore: hasCheckpoint
@@ -537,6 +548,7 @@ function materialize(
     ...(entry.snapshotName === undefined
       ? {}
       : { snapshotName: entry.snapshotName }),
+    ...(entry.acceptedAt === undefined ? {} : { acceptedAt: entry.acceptedAt }),
   };
 
   if (entry.writeBefore !== undefined) {
@@ -841,13 +853,18 @@ export interface ActionSession {
   resultsDir: string;
   repoRoot: string;
   outDir: string;
-  /** Snapshot names shown in this session; the only names the endpoints accept. */
-  names: ReadonlySet<string>;
-  /** `results`: names accepted this session; the only names it may checkpoint. */
-  accepted: Set<string>;
+  /**
+   * Snapshot names shown in this session (for `local`, stale ones too); the
+   * only names the endpoints accept.
+   */
+  names: Set<string>;
+  /**
+   * `results`: names changed by an accept in this session, with their local
+   * entry from before (null if there was none). The only names undo takes.
+   */
+  acceptedBefore: Map<string, SavedEntry | null>;
   /** Why actions are off regardless of the run marker (e.g. missing images). */
   staticDisabledReason?: string;
-  im?: ImageMagick;
 }
 
 export function newSessionToken(): string {
@@ -925,7 +942,7 @@ function disabledReason(session: ActionSession): string | undefined {
 function sendJson(
   res: http.ServerResponse,
   status: number,
-  body: AcceptResponse | CheckpointResponse | ApiError
+  body: AcceptResponse | CheckpointResponse | DropResponse | ApiError
 ) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -983,23 +1000,14 @@ function parseRequest(raw: string): { names: string[]; confirm?: string } {
   };
 }
 
-/** Local vs checkpoint images for `names`, for the second review step. */
-function localReviewItems(
-  session: ActionSession,
-  names: ReadonlySet<string>
-): SnapshotMeta[] {
-  const imagesDir = path.join(session.outDir, IMAGES_SUBDIR);
-  fs.mkdirSync(imagesDir, { recursive: true });
-  return collectLocalEntries(session.paths)
-    .entries.filter((e) => names.has(e.name))
-    .map((e) =>
-      materialize({ ...e, id: `local-${e.id}` }, imagesDir, session.im)
-    );
-}
-
 /**
- * Handles `POST /api/accept` and `POST /api/checkpoint`. Exported for tests;
- * the Inspector routes every `/api/` request here.
+ * Handles `POST /api/accept`, `/api/drop` and `/api/checkpoint`. Exported for
+ * tests; the Inspector routes every `/api/` request here.
+ *
+ * - `results` (the everyday mode): accept, and drop only to undo this
+ *   session's accepts. No checkpoint.
+ * - `local` (the deliberate mode): checkpoint and drop, for names shown in
+ *   the session (including stale ones, for drop).
  */
 export async function handleApiRequest(
   session: ActionSession,
@@ -1034,6 +1042,8 @@ export async function handleApiRequest(
     const url = new URL(req.url ?? "/", "http://localhost");
     if (url.pathname === "/api/accept") {
       sendJson(res, 200, apiAccept(session, names));
+    } else if (url.pathname === "/api/drop") {
+      sendJson(res, 200, apiDrop(session, names));
     } else if (url.pathname === "/api/checkpoint") {
       sendJson(res, 200, apiCheckpoint(session, names, confirm));
     } else {
@@ -1058,14 +1068,66 @@ function apiAccept(session: ActionSession, names: string[]): AcceptResponse {
   if (reason !== undefined) {
     throw new HttpError(409, reason);
   }
+  // What each name looked like before this session first changed it, so
+  // "Undo accept" can put it back.
+  const before = new Map(
+    names
+      .filter((n) => !session.acceptedBefore.has(n))
+      .map((n) => [n, saveEntry(session.paths, n)] as const)
+  );
   // The run marker was just checked; acceptFromActuals checks it again.
   const result = acceptFromActuals(session.paths, session.resultsDir, names, {
     repoRoot: session.repoRoot,
   });
-  const valid = new Set(resolveLocal(session.paths).valid);
-  const local = new Set(names.filter((n) => valid.has(n)));
-  for (const n of local) session.accepted.add(n);
-  return { ...result, items: localReviewItems(session, local) };
+  for (const n of [...result.added, ...result.updated, ...result.reverted]) {
+    if (before.has(n)) session.acceptedBefore.set(n, before.get(n) ?? null);
+  }
+  return { ...result, store: storeSummary(session.paths) };
+}
+
+function apiDrop(session: ActionSession, names: string[]): DropResponse {
+  if (session.staticDisabledReason !== undefined) {
+    throw new HttpError(409, session.staticDisabledReason);
+  }
+  if (session.source === "local") {
+    let dropped: string[];
+    try {
+      dropped = drop(session.paths, { names });
+    } catch (err) {
+      throw new HttpError(
+        400,
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+    for (const n of dropped) session.names.delete(n);
+    return { dropped, restored: [], store: storeSummary(session.paths) };
+  }
+  // `results`: only to undo this session's accepts.
+  const notAccepted = names.filter((n) => !session.acceptedBefore.has(n));
+  if (notAccepted.length > 0) {
+    throw new HttpError(
+      400,
+      `Only snapshots accepted in this session can be undone here: ${notAccepted.join(
+        ", "
+      )}. Use --source local to drop other local baselines.`
+    );
+  }
+  const toDrop: string[] = [];
+  const restored: string[] = [];
+  const known = new Set(Object.keys(readManifest(session.paths).entries));
+  for (const n of names) {
+    const saved = session.acceptedBefore.get(n) ?? null;
+    if (saved === null) {
+      if (known.has(n)) toDrop.push(n);
+    } else {
+      restoreEntry(session.paths, n, saved);
+      restored.push(n);
+    }
+    session.acceptedBefore.delete(n);
+  }
+  const dropped =
+    toDrop.length === 0 ? [] : drop(session.paths, { names: toDrop });
+  return { dropped, restored, store: storeSummary(session.paths) };
 }
 
 function apiCheckpoint(
@@ -1073,6 +1135,12 @@ function apiCheckpoint(
   names: string[],
   confirm: string | undefined
 ): CheckpointResponse {
+  if (session.source !== "local") {
+    throw new HttpError(
+      400,
+      "Checkpoint is only available in local mode: `./morcus.sh visual-diff --source local`."
+    );
+  }
   if (confirm !== CHECKPOINT_CONFIRMATION) {
     throw new HttpError(
       400,
@@ -1082,22 +1150,13 @@ function apiCheckpoint(
   if (session.staticDisabledReason !== undefined) {
     throw new HttpError(409, session.staticDisabledReason);
   }
-  if (session.source === "results") {
-    const notAccepted = names.filter((n) => !session.accepted.has(n));
-    if (notAccepted.length > 0) {
-      throw new HttpError(
-        400,
-        `Accept and review these locally first: ${notAccepted.join(", ")}`
-      );
-    }
-  }
   let result: { promoted: string[]; skippedStale: string[] };
   try {
     result = checkpoint(session.paths, names);
   } catch (err) {
     throw new HttpError(400, err instanceof Error ? err.message : String(err));
   }
-  for (const n of result.promoted) session.accepted.delete(n);
+  for (const n of result.promoted) session.names.delete(n);
   return {
     ...result,
     files: result.promoted.map((n) => {
@@ -1105,6 +1164,7 @@ function apiCheckpoint(
       const rel = path.relative(session.repoRoot, abs);
       return rel.startsWith("..") ? abs : rel;
     }),
+    store: storeSummary(session.paths),
   };
 }
 
@@ -1310,6 +1370,9 @@ export async function runVisualDiffInspector(
   }
   manifest.items = entries.map((e) => materialize(e, imagesDir, im));
   manifest.reviewKey = reviewKeyFor(source, options, manifest.items);
+  if (source !== "git") {
+    manifest.localStore = storeSummary(options.localPaths ?? defaultPaths());
+  }
 
   // Write endpoints, for the `results` and `local` sources when serving.
   const serving = options.startServer !== false;
@@ -1323,12 +1386,13 @@ export async function runVisualDiffInspector(
       resultsDir: path.resolve(options.resultsDir ?? DEFAULT_RESULTS_DIR),
       repoRoot: path.resolve(options.repoRoot ?? process.cwd()),
       outDir,
-      names: new Set(
-        manifest.items.flatMap((i) =>
+      names: new Set([
+        ...manifest.items.flatMap((i) =>
           i.snapshotName === undefined ? [] : [i.snapshotName]
-        )
-      ),
-      accepted: new Set(),
+        ),
+        ...(staleLocal ?? []),
+      ]),
+      acceptedBefore: new Map(),
       staticDisabledReason:
         incomplete.length === 0
           ? undefined
@@ -1337,10 +1401,9 @@ export async function runVisualDiffInspector(
             } snapshot(s) can't be judged from the images here: ${incomplete
               .slice(0, 5)
               .join("; ")}${incomplete.length > 5 ? "; …" : ""}`,
-      im,
     };
     const actions: ViewerActions = {
-      flow: source === "results" ? "accept-then-checkpoint" : "checkpoint",
+      mode: source === "results" ? "accept" : "checkpoint",
     };
     const reason = disabledReason(session);
     if (reason !== undefined) actions.disabledReason = reason;

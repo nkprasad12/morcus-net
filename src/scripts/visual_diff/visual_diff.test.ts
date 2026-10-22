@@ -34,10 +34,7 @@ import {
   sizeForProject,
   tokenMatches,
 } from "@/scripts/visual_diff/visual_diff";
-import type {
-  SnapshotMeta,
-  VisualDiffManifest,
-} from "@/scripts/visual_diff/visual_diff_types";
+import type { VisualDiffManifest } from "@/scripts/visual_diff/visual_diff_types";
 
 /** Minimal header-only PNG; enough for `readPngDimensions`. */
 function fakePng(width: number, height: number, fill = 0): Buffer {
@@ -648,7 +645,8 @@ describe("viewer write endpoints (end to end)", () => {
     expect(manifest.items.map((i) => i.snapshotName).sort()).toEqual(
       [A, B, NEW].sort()
     );
-    expect(manifest.actions).toEqual({ flow: "accept-then-checkpoint" });
+    expect(manifest.actions).toEqual({ mode: "accept" });
+    expect(manifest.localStore).toEqual({ active: 0, stale: [], bytes: 0 });
     expect(manifest.reviewKey).toBe(`results:${readRunMarker(results)!.id}`);
     expect(viewerUrl).toContain(`#token=${TOKEN}`);
     for (const file of ["index.html", MANIFEST_FILE]) {
@@ -711,7 +709,7 @@ describe("viewer write endpoints (end to end)", () => {
     expect(fs.existsSync(localPaths.storeDir)).toBe(false);
   });
 
-  it("accepts approved names, then checkpoints only reviewed local baselines", async () => {
+  it("accepts approved names, and never checkpoints from a results session", async () => {
     await start("results");
     const accepted = await request(port, "/api/accept", {
       headers: headers(),
@@ -723,42 +721,64 @@ describe("viewer write endpoints (end to end)", () => {
       updated: [],
       reverted: [],
       unchanged: [],
+      store: { active: 2, stale: [] },
     });
-    // The second review step: local vs checkpoint, for just those names.
-    expect(
-      accepted.body.items.map((i: SnapshotMeta) => [i.snapshotName, i.status])
-    ).toEqual([
-      [A, "modified"],
-      [NEW, "added"],
-    ]);
+    expect(accepted.body.store.oldestAcceptedAt).toBeDefined();
     expect(readManifest(localPaths).entries[B]).toBeUndefined();
 
-    const noConfirm = await request(port, "/api/checkpoint", {
-      headers: headers(),
-      body: { names: [A] },
-    });
-    expect(noConfirm.status).toBe(400);
-    const notAccepted = await request(port, "/api/checkpoint", {
-      headers: headers(),
-      body: { names: [B], confirm: CHECKPOINT_CONFIRMATION },
-    });
-    expect(notAccepted.status).toBe(400);
-    expect(notAccepted.body.error).toMatch(/Accept and review/);
-
-    const done = await request(port, "/api/checkpoint", {
+    const checkpointed = await request(port, "/api/checkpoint", {
       headers: headers(),
       body: { names: [A], confirm: CHECKPOINT_CONFIRMATION },
     });
-    expect(done.status).toBe(200);
-    expect(done.body).toEqual({
-      promoted: [A],
-      skippedStale: [],
-      files: [path.join("src", "snaps", A)],
-    });
+    expect(checkpointed.status).toBe(400);
+    expect(checkpointed.body.error).toMatch(/only available in local mode/);
     expect(fs.readFileSync(path.join(localPaths.snapshotDir, A))).toEqual(
-      fakePng(10, 10, 1)
+      fakePng(10, 10, 0)
     );
-    expect(Object.keys(readManifest(localPaths).entries)).toEqual([NEW]);
+  });
+
+  it("undoes only this session's accepts, restoring earlier local baselines", async () => {
+    // An earlier local baseline for B, from before this session.
+    await start("results");
+    await request(port, "/api/accept", {
+      headers: headers(),
+      body: { names: [B] },
+    });
+    const earlier = fs.readFileSync(path.join(localPaths.storeDir, B));
+    server?.close();
+    fail("b-js-dark", "MobileChrome", fakePng(10, 10, 7), fakePng(10, 10, 0));
+    writeRunMarker(results, computeTreeState(repo), new Date());
+
+    await start("results");
+    await request(port, "/api/accept", {
+      headers: headers(),
+      body: { names: [A, B] },
+    });
+    const notAccepted = await request(port, "/api/drop", {
+      headers: headers(),
+      body: { names: [NEW] },
+    });
+    expect(notAccepted.status).toBe(400);
+    expect(notAccepted.body.error).toMatch(/accepted in this session/);
+
+    const undone = await request(port, "/api/drop", {
+      headers: headers(),
+      body: { names: [A, B] },
+    });
+    expect(undone.status).toBe(200);
+    expect(undone.body).toMatchObject({
+      dropped: [A],
+      restored: [B],
+      store: { active: 1 },
+    });
+    expect(Object.keys(readManifest(localPaths).entries)).toEqual([B]);
+    expect(fs.readFileSync(path.join(localPaths.storeDir, B))).toEqual(earlier);
+    // Undone once; a second undo of the same names is refused.
+    const again = await request(port, "/api/drop", {
+      headers: headers(),
+      body: { names: [A] },
+    });
+    expect(again.status).toBe(400);
   });
 
   it("refuses to accept once the code has changed since the run", async () => {
@@ -779,27 +799,76 @@ describe("viewer write endpoints (end to end)", () => {
     expect(manifest.actions?.disabledReason).toMatch(/No run marker/);
   });
 
-  it("goes straight to checkpoint for the local source", async () => {
+  it("checkpoints a subset and drops local baselines in local mode", async () => {
     await start("results");
     await request(port, "/api/accept", {
       headers: headers(),
-      body: { names: [A, B] },
+      body: { names: [A, B, NEW] },
     });
     server?.close();
+    // Make A stale: its checkpoint changes after it was accepted.
+    fs.writeFileSync(path.join(localPaths.snapshotDir, A), fakePng(10, 10, 5));
     const { manifest } = await start("local");
-    expect(manifest.actions).toEqual({ flow: "checkpoint" });
+    expect(manifest.actions).toEqual({ mode: "checkpoint" });
+    expect(manifest.items.map((i) => i.snapshotName).sort()).toEqual(
+      [B, NEW].sort()
+    );
+    expect(manifest.items.every((i) => i.acceptedAt !== undefined)).toBe(true);
+    expect(manifest.staleLocalBaselines).toEqual([A]);
+    expect(manifest.localStore?.stale).toEqual([A]);
+
     const accept = await request(port, "/api/accept", {
       headers: headers(),
-      body: { names: [A] },
+      body: { names: [B] },
     });
     expect(accept.status).toBe(400);
+
+    // Only the selected (filtered, approved) names are promoted.
     const done = await request(port, "/api/checkpoint", {
       headers: headers(),
       body: { names: [B], confirm: CHECKPOINT_CONFIRMATION },
     });
     expect(done.status).toBe(200);
-    expect(done.body.promoted).toEqual([B]);
-    expect(Object.keys(readManifest(localPaths).entries)).toEqual([A]);
+    expect(done.body).toMatchObject({
+      promoted: [B],
+      files: [path.join("src", "snaps", B)],
+      store: { active: 1, stale: [A] },
+    });
+    expect(fs.readFileSync(path.join(localPaths.snapshotDir, B))).toEqual(
+      fakePng(10, 10, 2)
+    );
+    expect(Object.keys(readManifest(localPaths).entries).sort()).toEqual(
+      [A, NEW].sort()
+    );
+    // Promoted names leave the session.
+    const twice = await request(port, "/api/checkpoint", {
+      headers: headers(),
+      body: { names: [B], confirm: CHECKPOINT_CONFIRMATION },
+    });
+    expect(twice.status).toBe(400);
+
+    const foreign = await request(port, "/api/drop", {
+      headers: headers(),
+      body: { names: ["other-js-light-chromium-linux.png"] },
+    });
+    expect(foreign.status).toBe(400);
+    const noToken = await request(port, "/api/drop", {
+      headers: headers({ "X-Visual-Diff-Token": "" }),
+      body: { names: [NEW] },
+    });
+    expect(noToken.status).toBe(403);
+
+    const dropped = await request(port, "/api/drop", {
+      headers: headers(),
+      body: { names: [NEW, A] },
+    });
+    expect(dropped.status).toBe(200);
+    expect(dropped.body).toMatchObject({
+      dropped: [A, NEW],
+      restored: [],
+      store: { active: 0, stale: [] },
+    });
+    expect(readManifest(localPaths).entries).toEqual({});
   });
 
   it("is read-only for the git source", async () => {

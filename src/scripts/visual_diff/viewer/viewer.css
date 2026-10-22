@@ -690,6 +690,52 @@ button:disabled {
   background: var(--bg);
 }
 
+.toggle[hidden] {
+  display: none;
+}
+
+button.header-link {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+button.header-link:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+button.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.actions-panel h3.done {
+  color: var(--success);
+}
+
+.stale-list summary {
+  cursor: pointer;
+  color: var(--warning);
+  font-size: 11px;
+}
+
+.toggle input[type="date"] {
+  padding: 1px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+pre.command {
+  margin: 10px 0 14px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  user-select: all;
+}
+
 .modal-buttons {
   display: flex;
   justify-content: flex-end;

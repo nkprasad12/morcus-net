@@ -14,7 +14,11 @@ import {
   readManifest,
   resolutionSummary,
   resolveLocal,
+  restoreEntry,
+  saveEntry,
+  staleHint,
   statusReport,
+  storeSummary,
 } from "@/scripts/visual_diff/local_baselines";
 import {
   RUN_MARKER_FILE,
@@ -594,5 +598,58 @@ describe("run marker guard", () => {
     write(results, RUN_MARKER_FILE, Buffer.from("{not json"));
     expect(readRunMarker(results)).toBeUndefined();
     expect(() => accept()).toThrow(/No run marker/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Store hints and undo support
+// ---------------------------------------------------------------------------
+
+describe("store hints", () => {
+  beforeEach(() => {
+    materializeEffective(paths);
+    playwrightWrites("a.png", png("a1"));
+    acceptFromEffective(paths, new Date("2026-01-01T00:00:00Z"));
+    materializeEffective(paths);
+    playwrightWrites("b.png", png("b1"));
+    acceptFromEffective(paths, new Date("2026-02-01T00:00:00Z"));
+  });
+
+  it("summarizes count, size, oldest and stale entries", () => {
+    expect(storeSummary(paths)).toEqual({
+      active: 2,
+      stale: [],
+      bytes: png("a1").length + png("b1").length,
+      oldestAcceptedAt: "2026-01-01T00:00:00.000Z",
+    });
+    write(paths.snapshotDir, "a.png", png("a-upstream"));
+    expect(storeSummary(paths)).toMatchObject({
+      active: 1,
+      stale: ["a.png"],
+      oldestAcceptedAt: "2026-02-01T00:00:00.000Z",
+    });
+  });
+
+  it("shows the oldest entry, and a one-line stale warning, in status", () => {
+    expect(statusReport(paths)).toContain(
+      "2 not checkpointed · oldest accepted 2026-01-01T00:00:00.000Z"
+    );
+    expect(statusReport(paths)).not.toContain("no longer apply");
+    write(paths.snapshotDir, "a.png", png("a-upstream"));
+    expect(statusReport(paths)).toContain(
+      "⚠ 1 stale: they no longer apply; `./morcus.sh visual-baselines drop --stale`"
+    );
+    expect(staleHint(0)).toBeUndefined();
+  });
+
+  it("saves and restores an entry", () => {
+    const saved = saveEntry(paths, "a.png");
+    expect(saved?.png).toEqual(png("a1"));
+    expect(saveEntry(paths, "nope.png")).toBeNull();
+    drop(paths, { names: ["a.png"] });
+    restoreEntry(paths, "a.png", saved!);
+    expect(read(paths.storeDir, "a.png")).toEqual(png("a1"));
+    expect(readManifest(paths).entries["a.png"]).toEqual(saved?.entry);
+    expect(resolveLocal(paths).valid).toEqual(["a.png", "b.png"]);
   });
 });

@@ -12,8 +12,10 @@ import type {
   AcceptResponse,
   ApiError,
   CheckpointResponse,
+  DropResponse,
   ImageDims,
   SnapshotMeta,
+  StoreSummary,
   VisualDiffManifest,
 } from "@/scripts/visual_diff/visual_diff_types";
 
@@ -113,12 +115,11 @@ const BROWSER_ORDER = [
 
 type Verdict = "approved" | "rejected";
 
-/**
- * Where the review is. `review`: the snapshots the Inspector was started
- * with. `local`: after accepting from `results`, the accepted local baselines
- * against the checkpoint. `done`: after a checkpoint.
- */
-type Phase = "review" | "local" | "done";
+/** The last accept in `results` mode, which ends that flow. */
+interface AcceptedState extends AcceptResponse {
+  /** Rejected when accepting: still failing. */
+  rejectedCount: number;
+}
 
 interface State {
   filtered: SnapshotMeta[];
@@ -131,18 +132,26 @@ interface State {
   maskOpacity: number;
   filters: Record<FacetKey, string>;
   group: GroupKey;
-  /** Verdicts for the current phase, by item id. */
+  /** `local` mode: only show baselines accepted before this day (YYYY-MM-DD). */
+  acceptedBefore: string;
+  /** Verdicts by item id. */
   verdicts: Map<string, Verdict>;
   /** Verdict batches, most recent last, for undo: each id's previous verdict. */
   verdictHistory: { id: string; previous?: Verdict }[][];
   showReviewed: boolean;
-  phase: Phase;
-  /** Summary of the accept that started the `local` phase. */
-  accepted?: Omit<AcceptResponse, "items">;
+  /** `results` mode: set once accepted; the flow ends there. */
+  accepted?: AcceptedState;
+  /** `local` mode: the last checkpoint. */
   checkpointed?: CheckpointResponse;
+  /** `local` mode: ids checkpointed or dropped this session. */
+  removed: Set<string>;
+  /** The local store, as of the last write. */
+  store?: StoreSummary;
   /** A write request is in flight. */
   busy: boolean;
   actionError?: string;
+  /** A one-off message, e.g. after an undo. */
+  notice?: string;
 }
 
 const BLINK_INTERVAL_MS = 600;
@@ -175,7 +184,7 @@ function h<K extends keyof HTMLElementTagNameMap>(
 const manifest: VisualDiffManifest = JSON.parse(
   byId("manifest-data", HTMLScriptElement).textContent ?? "{}"
 );
-/** The snapshots under review; replaced when the `local` phase starts. */
+/** The snapshots under review; `local` mode drops checkpointed ones. */
 let ALL = manifest.items;
 const labels = { before: manifest.beforeLabel, after: manifest.afterLabel };
 
@@ -198,8 +207,10 @@ const state: State = {
   group: "none",
   verdicts: new Map(),
   verdictHistory: [],
+  acceptedBefore: "",
   showReviewed: false,
-  phase: "review",
+  removed: new Set(),
+  store: manifest.localStore,
   busy: false,
 };
 
@@ -229,6 +240,12 @@ const els = {
   peek: byId("peek", HTMLButtonElement),
   blink: byId("blink", HTMLButtonElement),
   helpModal: byId("help-modal", HTMLDivElement),
+  acceptedBefore: byId("accepted-before", HTMLInputElement),
+  acceptedBeforeRow: byId("accepted-before-row", HTMLLabelElement),
+  localLink: byId("local-link", HTMLButtonElement),
+  localModal: byId("local-modal", HTMLDivElement),
+  localModalText: byId("local-modal-text", HTMLParagraphElement),
+  localModalClose: byId("local-modal-close", HTMLButtonElement),
   checkpointModal: byId("checkpoint-modal", HTMLDivElement),
   checkpointForm: byId("checkpoint-form", HTMLFormElement),
   checkpointSummary: byId("checkpoint-summary", HTMLParagraphElement),
@@ -277,7 +294,7 @@ function canvasOf(item: SnapshotMeta): ImageDims {
 // Sidebar
 // ---------------------------------------------------------------------------
 
-/** Header labels and browser options, which change with the phase. */
+/** Header labels and browser options (which change as items are removed). */
 function renderSourceInfo() {
   byId("total-count", HTMLSpanElement).textContent = `${ALL.length} changed`;
   byId(
@@ -313,6 +330,13 @@ function initFilters() {
     applyFilters();
   });
   els.clearFilters.addEventListener("click", clearFilters);
+  // Only local baselines have an accepted date.
+  els.acceptedBeforeRow.hidden = manifest.source !== "local";
+  els.acceptedBefore.value = state.acceptedBefore;
+  els.acceptedBefore.addEventListener("change", () => {
+    state.acceptedBefore = els.acceptedBefore.value;
+    applyFilters();
+  });
 }
 
 /** Options for a facet: the known ones in order, then any unexpected values. */
@@ -327,9 +351,25 @@ function optionsFor(facet: FacetDef): { value: string; label: string }[] {
   return [...known, ...extra];
 }
 
-/** Whether `item` passes every filter except (optionally) one facet. */
-function matches(item: SnapshotMeta, ignore?: FacetKey): boolean {
-  if (!state.showReviewed && state.verdicts.has(item.id)) return false;
+/**
+ * Whether `item` passes every filter except (optionally) one facet. Reviewed
+ * items are hidden unless "Show reviewed" is on or `includeReviewed` is set.
+ */
+function matches(
+  item: SnapshotMeta,
+  ignore?: FacetKey,
+  includeReviewed = false
+): boolean {
+  if (!includeReviewed && !state.showReviewed && state.verdicts.has(item.id)) {
+    return false;
+  }
+  if (
+    state.acceptedBefore !== "" &&
+    (item.acceptedAt === undefined ||
+      item.acceptedAt.slice(0, 10) >= state.acceptedBefore)
+  ) {
+    return false;
+  }
   for (const facet of FACETS) {
     const wanted = state.filters[facet.key];
     if (
@@ -359,7 +399,8 @@ function hasActiveFilters(): boolean {
   return (
     FACETS.some((f) => state.filters[f.key] !== ALL_VALUE) ||
     els.browser.value !== ALL_VALUE ||
-    els.search.value !== ""
+    els.search.value !== "" ||
+    state.acceptedBefore !== ""
   );
 }
 
@@ -367,6 +408,8 @@ function clearFilters() {
   for (const facet of FACETS) state.filters[facet.key] = ALL_VALUE;
   els.browser.value = ALL_VALUE;
   els.search.value = "";
+  state.acceptedBefore = "";
+  els.acceptedBefore.value = "";
   applyFilters();
 }
 
@@ -421,6 +464,10 @@ function readHash() {
   const group = params.get("group");
   if (isGroupKey(group)) state.group = group;
   els.group.value = state.group;
+  const before = params.get("before");
+  if (before !== null && /^\d{4}-\d{2}-\d{2}$/.test(before)) {
+    state.acceptedBefore = before;
+  }
 }
 
 function writeHash() {
@@ -432,6 +479,7 @@ function writeHash() {
   if (els.browser.value !== ALL_VALUE) params.set("browser", els.browser.value);
   if (els.search.value !== "") params.set("q", els.search.value);
   if (state.group !== "none") params.set("group", state.group);
+  if (state.acceptedBefore !== "") params.set("before", state.acceptedBefore);
   const hash = params.toString();
   window.history.replaceState(
     null,
@@ -725,28 +773,20 @@ const storageKey = `${STORAGE_PREFIX}${
 }`;
 
 interface SavedSession {
-  phase: Phase;
-  /** Verdicts from the `review` phase. */
-  review: [string, Verdict][];
-  /** Verdicts from the `local` phase. */
-  local: [string, Verdict][];
-  localItems?: SnapshotMeta[];
-  accepted?: Omit<AcceptResponse, "items">;
+  verdicts: [string, Verdict][];
+  accepted?: AcceptedState;
   checkpointed?: CheckpointResponse;
+  removed: string[];
+  store?: StoreSummary;
 }
-
-/** Review-phase verdicts, kept once the `local` phase has replaced them. */
-let reviewVerdicts: [string, Verdict][] = [];
-let localItems: SnapshotMeta[] | undefined = undefined;
 
 function saveSession() {
   const data: SavedSession = {
-    phase: state.phase,
-    review: state.phase === "review" ? [...state.verdicts] : reviewVerdicts,
-    local: state.phase === "review" ? [] : [...state.verdicts],
-    localItems,
+    verdicts: [...state.verdicts],
     accepted: state.accepted,
     checkpointed: state.checkpointed,
+    removed: [...state.removed],
+    store: state.store,
   };
   try {
     sessionStorage.setItem(storageKey, JSON.stringify(data));
@@ -770,45 +810,24 @@ function restoreSession() {
   } catch {
     return;
   }
-  const review = Array.isArray(data.review)
-    ? data.review.filter(isVerdictEntry)
-    : [];
-  const local = Array.isArray(data.local)
-    ? data.local.filter(isVerdictEntry)
-    : [];
+  if (Array.isArray(data.removed)) {
+    state.removed = new Set(
+      data.removed.filter((x): x is string => typeof x === "string")
+    );
+    ALL = ALL.filter((i) => !state.removed.has(i.id));
+  }
   const ids = new Set(ALL.map((i) => i.id));
-  state.verdicts = new Map(review.filter(([id]) => ids.has(id)));
+  const verdicts = Array.isArray(data.verdicts)
+    ? data.verdicts.filter(isVerdictEntry)
+    : [];
+  state.verdicts = new Map(verdicts.filter(([id]) => ids.has(id)));
   state.accepted = data.accepted;
   state.checkpointed = data.checkpointed;
-  if (
-    (data.phase === "local" || data.phase === "done") &&
-    Array.isArray(data.localItems)
-  ) {
-    reviewVerdicts = review;
-    enterLocalPhase(data.localItems, new Map(local));
-  }
-  if (data.phase === "done") state.phase = "done";
-}
-
-/** Switches to reviewing local baselines against the checkpoint. */
-function enterLocalPhase(
-  items: SnapshotMeta[],
-  verdicts: Map<string, Verdict>
-) {
-  state.phase = "local";
-  localItems = items;
-  ALL = items;
-  labels.before = "Checkpoint";
-  labels.after = "Local baseline";
-  state.verdicts = verdicts;
-  state.verdictHistory = [];
-  state.showReviewed = false;
-  els.showReviewed.checked = false;
-  renderSourceInfo();
+  if (data.store !== undefined) state.store = data.store;
 }
 
 // ---------------------------------------------------------------------------
-// Accept and checkpoint (needs the per-session token from the terminal URL)
+// Accept, undo, drop and checkpoint (need the per-session token)
 // ---------------------------------------------------------------------------
 
 function readToken(): string | undefined {
@@ -850,36 +869,15 @@ async function post<T>(endpoint: string, body: object): Promise<T> {
   return data;
 }
 
-function approvedNames(): string[] {
-  return ALL.filter((i) => state.verdicts.get(i.id) === "approved")
-    .flatMap((i) => (i.snapshotName === undefined ? [] : [i.snapshotName]))
-    .sort();
-}
-
-function acceptSummary(a: Omit<AcceptResponse, "items">): string {
-  return (
-    `Accepted locally: ${a.added.length} added, ${a.updated.length} updated, ` +
-    `${a.reverted.length} reverted to the checkpoint, ${a.unchanged.length} unchanged.`
-  );
-}
-
-async function acceptApproved() {
-  const names = approvedNames();
-  if (names.length === 0 || state.busy) return;
+/** Runs a write request, with the busy state and error reporting. */
+async function write(action: () => Promise<void>) {
+  if (state.busy) return;
   state.busy = true;
   state.actionError = undefined;
+  state.notice = undefined;
   renderActions();
   try {
-    const { items, ...summary } = await post<AcceptResponse>("/api/accept", {
-      names,
-    });
-    reviewVerdicts = [...state.verdicts];
-    state.accepted = summary;
-    if (items.length === 0) {
-      state.phase = "done";
-    } else {
-      enterLocalPhase(items, new Map());
-    }
+    await action();
   } catch (err) {
     state.actionError = err instanceof Error ? err.message : String(err);
   } finally {
@@ -889,13 +887,111 @@ async function acceptApproved() {
   }
 }
 
+function namesOf(items: SnapshotMeta[]): string[] {
+  return items
+    .flatMap((i) => (i.snapshotName === undefined ? [] : [i.snapshotName]))
+    .sort();
+}
+
+function approvedItems(): SnapshotMeta[] {
+  return ALL.filter((i) => state.verdicts.get(i.id) === "approved");
+}
+
+function formatBytes(bytes: number): string {
+  return bytes < 1024 * 1024
+    ? `${(bytes / 1024).toFixed(0)} KiB`
+    : `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
+}
+
+function storeLine(store: StoreSummary): string {
+  const oldest =
+    store.oldestAcceptedAt === undefined
+      ? ""
+      : ` · oldest ${store.oldestAcceptedAt.slice(0, 10)}`;
+  return `Local baselines: ${store.active} not checkpointed (${formatBytes(
+    store.bytes
+  )})${oldest}`;
+}
+
+function staleLine(store: StoreSummary): string | undefined {
+  return store.stale.length === 0
+    ? undefined
+    : `${store.stale.length} stale: they no longer apply; ./morcus.sh visual-baselines drop --stale`;
+}
+
+/** Removes checkpointed or dropped local baselines from the list. */
+function removeNames(names: readonly string[]) {
+  const gone = new Set(names);
+  for (const item of ALL) {
+    if (item.snapshotName !== undefined && gone.has(item.snapshotName)) {
+      state.removed.add(item.id);
+      state.verdicts.delete(item.id);
+    }
+  }
+  ALL = ALL.filter((i) => !state.removed.has(i.id));
+  state.verdictHistory = [];
+  renderSourceInfo();
+}
+
+function acceptApproved() {
+  const names = namesOf(approvedItems());
+  if (names.length === 0) return;
+  const rejectedCount = ALL.filter(
+    (i) => state.verdicts.get(i.id) === "rejected"
+  ).length;
+  void write(async () => {
+    const res = await post<AcceptResponse>("/api/accept", { names });
+    state.accepted = { ...res, rejectedCount };
+    state.store = res.store;
+  });
+}
+
+function undoAccept() {
+  const a = state.accepted;
+  if (a === undefined) return;
+  // Only what the accept changed; "unchanged" names were left alone.
+  const names = [...a.added, ...a.updated, ...a.reverted].sort();
+  void write(async () => {
+    if (names.length > 0) {
+      const res = await post<DropResponse>("/api/drop", { names });
+      state.store = res.store;
+      state.notice =
+        `Undid accept: ${res.dropped.length} dropped, ` +
+        `${res.restored.length} earlier local baseline(s) restored.`;
+    } else {
+      state.notice = "Undid accept: nothing had changed.";
+    }
+    state.accepted = undefined;
+  });
+}
+
+function dropNames(names: string[], what: string) {
+  if (names.length === 0) return;
+  const ok = window.confirm(
+    `Drop ${what}?\n\n${names.join("\n")}\n\n` +
+      "The checkpoint applies again for these. This can't be undone from the viewer."
+  );
+  if (!ok) return;
+  void write(async () => {
+    const res = await post<DropResponse>("/api/drop", { names });
+    state.store = res.store;
+    removeNames(res.dropped);
+    state.notice = `Dropped ${res.dropped.length} local baseline(s).`;
+  });
+}
+
+/** `local` mode: the items a checkpoint applies to (the current filters). */
+function selection(): SnapshotMeta[] {
+  return ALL.filter((i) => matches(i, undefined, true));
+}
+
 function openCheckpoint() {
-  const names = approvedNames();
+  const names = namesOf(selection());
   if (names.length === 0) return;
   els.checkpointSummary.textContent =
-    `Copy ${names.length} local baseline(s) into the checkpoint (the committed ` +
-    "snapshot directory), and remove them from the local store. Files are written " +
-    "to the working tree; nothing is staged or committed.";
+    `Copy these ${names.length} local baseline(s) into the checkpoint (the ` +
+    "committed snapshot directory), and remove them from the local store. " +
+    "Files are written to the working tree; nothing is staged or committed.";
   els.checkpointNames.replaceChildren(
     ...names.map((n) => {
       const li = h("li");
@@ -915,18 +1011,20 @@ function closeCheckpoint() {
 }
 
 async function submitCheckpoint() {
-  const names = approvedNames();
+  const names = namesOf(selection());
   const confirm = els.checkpointInput.value.trim();
   if (names.length === 0 || confirm !== "checkpoint" || state.busy) return;
   state.busy = true;
   els.checkpointSubmit.disabled = true;
   els.checkpointError.hidden = true;
   try {
-    state.checkpointed = await post<CheckpointResponse>("/api/checkpoint", {
+    const res = await post<CheckpointResponse>("/api/checkpoint", {
       names,
       confirm,
     });
-    state.phase = "done";
+    state.checkpointed = res;
+    state.store = res.store;
+    removeNames(res.promoted);
     closeCheckpoint();
   } catch (err) {
     els.checkpointError.textContent =
@@ -937,109 +1035,177 @@ async function submitCheckpoint() {
     els.checkpointSubmit.disabled =
       els.checkpointInput.value.trim() !== "checkpoint";
     saveSession();
-    renderActions();
+    applyFilters();
   }
 }
 
+function openLocalHint() {
+  els.localModalText.textContent =
+    "To review local baselines against the checkpoint, checkpoint a subset, " +
+    "or drop some, open local mode in another terminal:";
+  els.localModal.hidden = false;
+}
+
+function renderLocalLink() {
+  const store = state.store;
+  if (manifest.source !== "results" || store === undefined) {
+    els.localLink.hidden = true;
+    return;
+  }
+  els.localLink.hidden = false;
+  els.localLink.textContent = `Local baselines (${store.active}) →`;
+  els.localLink.title = storeLine(store);
+}
+
 function renderActions() {
+  renderLocalLink();
   const actions = manifest.actions;
   if (actions === undefined) {
     els.actionsPanel.hidden = true;
     return;
   }
-  const twoStep = actions.flow === "accept-then-checkpoint";
-  const { unreviewed, approved } = verdictCounts();
   const parts: HTMLElement[] = [];
   const note = (cls: string, text: string) =>
     parts.push(h("p", `note ${cls}`.trim(), text));
+  const button = (label: string, cls: string, onClick: () => void) => {
+    const b = h("button", cls, label);
+    b.type = "button";
+    b.disabled = state.busy;
+    b.addEventListener("click", onClick);
+    parts.push(b);
+    return b;
+  };
+  const blocked =
+    actions.disabledReason !== undefined
+      ? `Actions disabled: ${actions.disabledReason}`
+      : token === undefined
+      ? "Read-only: open the URL printed in the terminal (ending in #token=…) to make changes."
+      : undefined;
+  const storeHints = () => {
+    if (state.store === undefined) return;
+    note("muted", storeLine(state.store));
+    const stale = staleLine(state.store);
+    if (stale !== undefined) note("warn", `⚠ ${stale}`);
+  };
 
-  if (state.phase === "done") {
-    const c = state.checkpointed;
-    if (c === undefined) {
-      parts.push(h("h3", undefined, "Accepted locally"));
-      if (state.accepted !== undefined) note("", acceptSummary(state.accepted));
+  if (actions.mode === "accept") {
+    const a = state.accepted;
+    if (a !== undefined) {
+      const count = a.added.length + a.updated.length + a.unchanged.length;
+      parts.push(
+        h(
+          "h3",
+          "done",
+          `✓ Accepted ${count} locally · ${a.rejectedCount} rejected (still failing)`
+        )
+      );
       note(
         "muted",
-        "Nothing left to checkpoint: the accepted screenshots match the checkpoint."
+        `${a.added.length} added, ${a.updated.length} updated, ` +
+          `${a.reverted.length} back to the checkpoint, ${a.unchanged.length} unchanged.`
       );
+      storeHints();
+      if (blocked === undefined) button("Undo accept", "ghost", undoAccept);
     } else {
-      parts.push(h("h3", undefined, `Checkpointed ${c.promoted.length}`));
-      if (c.files.length > 0) {
-        note("", "Files written:");
-        const list = h("ul", "file-list");
-        for (const f of c.files) {
-          const li = h("li");
-          li.append(h("code", undefined, f));
-          list.append(li);
-        }
-        parts.push(list);
-      }
-      if (c.skippedStale.length > 0) {
-        note(
-          "warn",
-          `Skipped ${c.skippedStale.length} stale local baseline(s); see ./morcus.sh visual-baselines status.`
-        );
-      }
+      const { unreviewed, approved } = verdictCounts();
+      parts.push(h("h3", undefined, "Accept locally"));
       note(
-        "warn",
-        "Nothing was staged or committed. Review with ./morcus.sh visual-diff --source git, " +
-          "and commit only with explicit human approval."
+        "muted",
+        "Approve or reject every snapshot. Approved ones become local " +
+          "baselines (gitignored, nothing to commit). Rejected ones stay failing."
       );
+      if (blocked !== undefined) {
+        note("warn", blocked);
+      } else {
+        const b = button(
+          `Accept ${approved} locally`,
+          "primary",
+          acceptApproved
+        );
+        b.disabled = state.busy || unreviewed > 0 || approved === 0;
+        if (unreviewed > 0) {
+          note("muted", `Review the remaining ${unreviewed} first.`);
+        } else if (approved === 0) {
+          note("muted", "Nothing approved.");
+        }
+      }
     }
   } else {
-    const isAccept = twoStep && state.phase === "review";
-    parts.push(
-      h(
-        "h3",
-        undefined,
-        !twoStep
-          ? "Checkpoint"
-          : isAccept
-          ? "Step 1 of 2 · Accept locally"
-          : "Step 2 of 2 · Checkpoint"
-      )
-    );
-    note(
-      "muted",
-      isAccept
-        ? "Approve or reject every snapshot. Approved ones are saved as local " +
-            "baselines (gitignored; undo with visual-baselines drop). Rejected ones are left alone."
-        : twoStep
-        ? "The accepted local baselines against the checkpoint: what a checkpoint " +
-          "would change, including older local overrides you may not have seen. " +
-          "Review them again to checkpoint."
-        : "Approve or reject every local baseline. Approved ones are copied into " +
-          "the checkpoint (the committed snapshot directory); nothing is staged or committed."
-    );
-    if (state.phase === "local" && state.accepted !== undefined) {
-      note("", acceptSummary(state.accepted));
-    }
-    if (actions.disabledReason !== undefined) {
-      note("warn", `Actions disabled: ${actions.disabledReason}`);
-    } else if (token === undefined) {
+    parts.push(h("h3", undefined, "Local baselines"));
+    storeHints();
+    const c = state.checkpointed;
+    if (c !== undefined) {
+      note("", `Last checkpoint: ${c.promoted.length} file(s) written:`);
+      const list = h("ul", "file-list");
+      for (const f of c.files) {
+        const li = h("li");
+        li.append(h("code", undefined, f));
+        list.append(li);
+      }
+      parts.push(list);
+      if (c.skippedStale.length > 0) {
+        note("warn", `Skipped ${c.skippedStale.length} stale.`);
+      }
       note(
         "warn",
-        "Read-only: open the URL printed in the terminal (ending in #token=…) to accept or checkpoint."
+        "Nothing was staged or committed. Review with ./morcus.sh visual-diff " +
+          "--source git, and commit only with explicit human approval."
       );
+    }
+    if (blocked !== undefined) {
+      note("warn", blocked);
     } else {
-      const button = h(
-        "button",
-        "primary",
-        isAccept ? `Accept ${approved} locally` : `Checkpoint ${approved}…`
-      );
-      button.type = "button";
-      button.disabled = state.busy || unreviewed > 0 || approved === 0;
-      button.addEventListener("click", () => {
-        if (isAccept) void acceptApproved();
-        else openCheckpoint();
-      });
-      parts.push(button);
-      if (state.busy) note("muted", "Working…");
-      else if (unreviewed > 0)
-        note("muted", `Review the remaining ${unreviewed} first.`);
-      else if (approved === 0) note("muted", "Nothing approved.");
+      const sel = selection();
+      const approvedInSel = sel.filter(
+        (i) => state.verdicts.get(i.id) === "approved"
+      ).length;
+      const rejectedInSel = sel.filter(
+        (i) => state.verdicts.get(i.id) === "rejected"
+      ).length;
+      const scope = hasActiveFilters()
+        ? `the ${sel.length} matching the current filters`
+        : `all ${sel.length}`;
+      if (sel.length === 0) {
+        note("muted", "No local baselines match the filters.");
+      } else if (approvedInSel === sel.length) {
+        note("muted", `Checkpoint applies to ${scope}.`);
+        button(`Checkpoint ${sel.length}…`, "primary", openCheckpoint);
+      } else {
+        note(
+          "muted",
+          `Checkpoint applies to ${scope}; approve all of them first ` +
+            `(${sel.length - approvedInSel - rejectedInSel} unreviewed, ` +
+            `${rejectedInSel} rejected). Narrow the filters to checkpoint a subset.`
+        );
+      }
+      const item = current();
+      if (item?.snapshotName !== undefined) {
+        const name = item.snapshotName;
+        button("Drop this local baseline…", "ghost danger", () =>
+          dropNames([name], "this local baseline")
+        );
+      }
+      const stale = state.store?.stale ?? [];
+      if (stale.length > 0) {
+        const details = h("details", "stale-list");
+        details.append(
+          h("summary", undefined, `${stale.length} stale (no longer apply)`)
+        );
+        const list = h("ul", "file-list");
+        for (const n of stale) {
+          const li = h("li");
+          li.append(h("code", undefined, n));
+          list.append(li);
+        }
+        details.append(list);
+        parts.push(details);
+        button(`Drop ${stale.length} stale…`, "ghost danger", () =>
+          dropNames(stale, `${stale.length} stale local baseline(s)`)
+        );
+      }
     }
   }
+  if (state.notice !== undefined) note("", state.notice);
   if (state.actionError !== undefined) note("error", state.actionError);
   els.actionsPanel.replaceChildren(...parts);
   els.actionsPanel.hidden = false;
@@ -1413,6 +1579,13 @@ function bindControls() {
     void submitCheckpoint();
   });
   els.checkpointCancel.addEventListener("click", closeCheckpoint);
+  els.localLink.addEventListener("click", openLocalHint);
+  els.localModalClose.addEventListener("click", () => {
+    els.localModal.hidden = true;
+  });
+  els.localModal.addEventListener("click", (e) => {
+    if (e.target === els.localModal) els.localModal.hidden = true;
+  });
   byId("prev", HTMLButtonElement).addEventListener("click", () => navigate(-1));
   byId("next", HTMLButtonElement).addEventListener("click", () => navigate(1));
   byId("help-button", HTMLButtonElement).addEventListener("click", () =>
@@ -1492,7 +1665,10 @@ function bindKeyboard() {
       "/": () => els.search.focus(),
       "?": () => toggleHelp(true),
       c: clearFilters,
-      Escape: () => toggleHelp(false),
+      Escape: () => {
+        toggleHelp(false);
+        els.localModal.hidden = true;
+      },
     };
     const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const action = actions[key];
