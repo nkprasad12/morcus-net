@@ -8,7 +8,7 @@
     "lexica": {
       "repo": "https://github.com/nkprasad12/lexica.git",
       "branch": "master",
-      "commit": "934b055f530b5fd945e3344c2a9fe03c0d023dda",
+      "commit": "a05b816746ec7518c06b4233cf9efbb4d9c4bffd",
       "env": "LS_PATH",
       "file": "CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml"
     },
