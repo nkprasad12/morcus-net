@@ -94,8 +94,9 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   },
   // Raised from 144 for the reading-text audit (#598), then from 145 for the
   // fading section highlight (#602): the minifier splits its `:has()` selector
-  // list into two rules so browsers without `:has()` keep the first.
-  maxCssRawBytes: 145.5 * 1024,
+  // list into two rules so browsers without `:has()` keep the first. Then from
+  // 145.5 for the dark-mode app-bar icon colours (#602).
+  maxCssRawBytes: 146 * 1024,
   maxCssGzipBytes: 25 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a

@@ -99,4 +99,32 @@ describe("UI V2 Design Token Parity (variables.css & critical_variables.css)", (
     expect(blocks.light?.get("--app-bar-bg")).toBe(THEME_COLOR.light);
     expect(blocks.explicitDark?.get("--app-bar-bg")).toBe(THEME_COLOR.dark);
   });
+
+  test("dark mode mutes the app-bar icons and the active nav pill; light mode keeps them", () => {
+    const css = fs.readFileSync(path.join(SHELL_DIR, "variables.css"), "utf8");
+    const blocks = extractThemeBlocks(css);
+
+    expect(blocks.light?.get("--app-bar-icon")).toBe("var(--app-bar-text)");
+    expect(blocks.light?.get("--app-bar-nav-active-text")).toBe("#0d2820");
+    for (const dark of [blocks.mediaDark, blocks.explicitDark]) {
+      expect(dark?.get("--app-bar-icon")).toBe("#a3c4b6");
+      expect(dark?.get("--app-bar-nav-active-text")).toBe("#e2ece7");
+      expect(dark?.get("--app-bar-nav-active-bg")).toBe(
+        "rgba(124, 196, 166, 0.14)"
+      );
+    }
+
+    const appBar = fs
+      .readFileSync(path.join(SHELL_DIR, "app_bar.css"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(appBar).toMatch(
+      /\.theme-toggle-btn,\s*\.mobile-menu-btn \{[^}]*color: var\(--app-bar-icon\)/
+    );
+    expect(appBar).toMatch(
+      /\.mobile-menu-btn:hover \{[^}]*color: var\(--app-bar-text\)/
+    );
+    expect(appBar).toMatch(
+      /\.theme-toggle-btn\[aria-expanded="true"\],\s*\.mobile-menu\[open\] > \.mobile-menu-btn \{\s*color: var\(--app-bar-text\)/
+    );
+  });
 });

@@ -55,7 +55,7 @@
   justify-content: center;
   background: transparent;
   border: 1px solid var(--app-bar-toggle-border);
-  color: var(--app-bar-text);
+  color: var(--app-bar-icon);
   border-radius: var(--radius-md);
   padding: var(--space-3);
   cursor: pointer;
@@ -66,6 +66,12 @@
 .theme-toggle-btn:hover,
 .mobile-menu-btn:hover {
   background-color: var(--app-bar-nav-hover-bg);
+  color: var(--app-bar-text);
+}
+
+.theme-toggle-btn[aria-expanded="true"],
+.mobile-menu[open] > .mobile-menu-btn {
+  color: var(--app-bar-text);
 }
 
 /* Mobile Menu (<details>) */
