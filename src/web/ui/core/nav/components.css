@@ -339,6 +339,43 @@ body.body-embedded {
   box-sizing: border-box;
 }
 
+/* Dims the page while an anchored dialog (or the centred Appearance menu,
+   which shares this shell) is open; they're modal, so the page is inert. Only
+   dimmed, not blurred, so live changes from the Appearance menu and reader
+   settings stay readable behind it. Older browsers don't pass custom
+   properties to ::backdrop; they get the light-mode tint. */
+.anchored-popover::backdrop {
+  background: var(--dropdown-backdrop, rgba(0, 0, 0, 0.22));
+  animation: anchoredBackdropFade 0.15s ease-out forwards;
+}
+
+@keyframes anchoredBackdropFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anchored-popover::backdrop {
+    animation: none;
+  }
+}
+
+/* Set while an anchored dialog is open (anchored_dialog.client.ts): the page
+   doesn't scroll, since that would carry the anchor off screen. "gutter"
+   means the page had a classic scrollbar, whose space is kept so the page
+   doesn't shift sideways. */
+html[data-scroll-lock] {
+  overflow: hidden;
+}
+
+html[data-scroll-lock="gutter"] {
+  scrollbar-gutter: stable;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .report-submit-spinner,
   .loading-spinner {

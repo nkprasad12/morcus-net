@@ -1,26 +1,7 @@
 /* Table of Contents (TOC) dialog */
 
-/* Dims the page while the modal dialog is open. Older browsers don't pass
-   custom properties to ::backdrop; they get the light-mode tint. */
-.reader-toc-drawer::backdrop {
-  background: var(--dropdown-backdrop, rgba(0, 0, 0, 0.22));
-  animation: tocBackdropFade 0.15s ease-out forwards;
-}
-
-@keyframes tocBackdropFade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reader-toc-drawer::backdrop {
-    animation: none;
-  }
-}
+/* The backdrop dim and scroll lock are shared by all anchored dialogs
+   (.anchored-popover, core/nav/components.css). */
 
 /* Undo the UA <dialog> centring and padding; in the top layer when modal. */
 .reader-toc-drawer {

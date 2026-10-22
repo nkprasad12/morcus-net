@@ -1,8 +1,8 @@
 import { BaseElement, registerElement } from "@/web/ui/core/index.client";
 import {
-  type AnchoredDialog,
-  setupAnchoredDialog,
-} from "@/web/ui/core/widgets/anchored_dialog.client";
+  type ModalDialogHandle,
+  setupModalDialog,
+} from "@/web/ui/core/widgets/dialog.client";
 import {
   applyAppearance,
   appearanceStore,
@@ -14,17 +14,11 @@ import {
 } from "@/web/ui/shell/appearance.client";
 import { isLineSpacing, isTextFont } from "@/web/ui/core/state/settings.client";
 import { THEME_COLOR } from "@/web/ui/shell/theme_color.common";
-import {
-  OPEN_APPEARANCE_EVENT,
-  type OpenAppearanceDetail,
-} from "@/web/ui/shell/appearance_events.common";
+import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
 
 function isThemeChoice(x: unknown): x is ThemeChoice {
   return x === "system" || x === "light" || x === "dark";
 }
-
-/** The panel's width (px), as in `appearance_menu.css`. */
-const PANEL_WIDTH = 300;
 
 /**
  * The app-bar Appearance menu (`appearance_menu.server.ts`): owner of the
@@ -36,7 +30,7 @@ const PANEL_WIDTH = 300;
  */
 class MorcusAppearanceMenu extends BaseElement {
   #appearance: Appearance = resolveAppearance({});
-  #dialog: AnchoredDialog | null = null;
+  #modal: ModalDialogHandle | null = null;
 
   get #panel() {
     return this.scope.$<HTMLDialogElement>("#appearance-popover");
@@ -46,13 +40,12 @@ class MorcusAppearanceMenu extends BaseElement {
     return this.#panel?.open ?? false;
   }
 
-  /** Opens under `anchor` if it's on screen, else under the app-bar button. */
-  public open(anchor?: HTMLElement | null): void {
-    this.#dialog?.open(anchor);
+  public open(): void {
+    if (this.#panel && !this.#panel.open) this.#modal?.open();
   }
 
   public close(): void {
-    this.#dialog?.close();
+    if (this.#panel?.open) this.#modal?.close();
   }
 
   protected override onConnect() {
@@ -61,26 +54,26 @@ class MorcusAppearanceMenu extends BaseElement {
     this.#syncControls();
     this.#syncThemeColor();
 
-    // Trigger, close button, backdrop clicks, Escape, and following the
-    // anchor on resize and scroll (setupAnchoredDialog). On phones the button
-    // sits at the left of the app bar, so the viewport clamp keeps the panel
-    // on screen there.
+    // Trigger, close button, backdrop clicks and Escape (setupModalDialog).
+    // The panel is centred in the viewport rather than anchored to its
+    // trigger: it also opens from the settings dialogs' "Text appearance"
+    // links, and on phones the app bar may have scrolled out of view. The
+    // page keeps scrolling under it, which a centred panel doesn't mind.
     const panel = this.#panel;
-    this.#dialog = panel
-      ? setupAnchoredDialog(this.scope, {
-          dialog: panel,
-          trigger: this.scope.$<HTMLButtonElement>("#appearance-btn"),
-          align: "end",
-          defaultWidth: PANEL_WIDTH,
-          margin: 8,
-        })
-      : null;
-    // The settings dialogs' "Text appearance" links pass their own trigger:
-    // on a phone the app bar may have scrolled out of view.
-    this.scope.listen<OpenAppearanceDetail | null>(
-      this.ownerDocument,
-      OPEN_APPEARANCE_EVENT,
-      (e) => this.open(e.detail?.anchor)
+    const trigger = this.scope.$<HTMLButtonElement>("#appearance-btn");
+    if (panel) {
+      const modal = setupModalDialog(panel, { trigger });
+      this.#modal = modal;
+      this.scope.use(() => {
+        // The native `close` event is async, so reset the trigger here.
+        this.close();
+        trigger?.setAttribute("aria-expanded", "false");
+        modal.dispose();
+        this.#modal = null;
+      });
+    }
+    this.scope.listen(this.ownerDocument, OPEN_APPEARANCE_EVENT, () =>
+      this.open()
     );
 
     for (const [name, key] of [

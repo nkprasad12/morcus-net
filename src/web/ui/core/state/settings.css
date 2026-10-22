@@ -84,11 +84,6 @@ morcus-reader-settings {
   display: none;
 }
 
-/* Transparent: it only takes outside clicks; the page stays visible behind. */
-.reader-settings-popover::backdrop {
-  background: transparent;
-}
-
 .reader-settings-popover::before {
   left: var(--caret-left, 85%);
 }

@@ -15,10 +15,7 @@ import {
   setWorkMacra,
   SWIPE_NAV_KEY,
 } from "@/web/ui/reader/reader_settings.client";
-import {
-  OPEN_APPEARANCE_EVENT,
-  type OpenAppearanceDetail,
-} from "@/web/ui/shell/appearance_events.common";
+import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
 
 describe("Reader preferences validation & schema", () => {
   beforeEach(() => {
@@ -371,12 +368,7 @@ describe("MorcusReaderSettings custom element", () => {
 
       expect(el.isOpen()).toBe(false);
       expect(opened).toHaveBeenCalledTimes(1);
-      const event = opened.mock.calls[0][0];
-      expect(event).toBeInstanceOf(CustomEvent);
-      // Anchored to the sticky-bar trigger, which stays on screen on phones.
-      expect((event as CustomEvent<OpenAppearanceDetail>).detail.anchor).toBe(
-        document.getElementById("reader-settings-btn")
-      );
+      expect(opened.mock.calls[0][0]).toBeInstanceOf(CustomEvent);
     } finally {
       document.removeEventListener(OPEN_APPEARANCE_EVENT, opened);
     }

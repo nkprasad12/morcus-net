@@ -101,31 +101,6 @@ describe("MorcusAppearanceMenu", () => {
 
   const isOpen = () => panel().hasAttribute("open");
 
-  /** A 40px-square box whose right edge is at `right` and bottom at `bottom`. */
-  function fakeBox(el: Element, right: number, bottom: number) {
-    el.getBoundingClientRect = () =>
-      ({
-        top: bottom - 40,
-        bottom,
-        left: right - 40,
-        right,
-        width: 40,
-        height: 40,
-      } as DOMRect);
-  }
-
-  /** Fakes the trigger's box and the viewport width, for the placement tests. */
-  function layout(triggerRight: number, viewport: number): () => void {
-    fakeBox(q("#appearance-btn"), triggerRight, 60);
-    Object.defineProperty(document.documentElement, "clientWidth", {
-      configurable: true,
-      value: viewport,
-    });
-    return () => {
-      delete (document.documentElement as { clientWidth?: number }).clientWidth;
-    };
-  }
-
   test("is a modal dialog that the trigger opens and the close button closes", () => {
     mountMenu();
     expect(panel().tagName).toBe("DIALOG");
@@ -140,99 +115,21 @@ describe("MorcusAppearanceMenu", () => {
     expect(q("#appearance-btn").getAttribute("aria-expanded")).toBe("false");
   });
 
-  test("opens on the document event the settings links dispatch, placed under its trigger", () => {
+  test("opens centred on the document event the settings links dispatch", () => {
     mountMenu();
-    const restore = layout(900, 1000);
-    try {
-      document.dispatchEvent(new CustomEvent(OPEN_APPEARANCE_EVENT));
-      expect(isOpen()).toBe(true);
-      expect(panel().style.top).toBe("68px");
-      expect(panel().style.left).toBe("600px");
-    } finally {
-      restore();
-    }
+    document.dispatchEvent(new CustomEvent(OPEN_APPEARANCE_EVENT));
+    expect(isOpen()).toBe(true);
+    expect(q("#appearance-btn").getAttribute("aria-expanded")).toBe("true");
+    // The UA styles centre a modal dialog; nothing is placed inline.
+    expect(panel().style.top).toBe("");
+    expect(panel().style.left).toBe("");
   });
 
-  test("stays inside a narrow viewport when the trigger is at the left (phones)", () => {
+  test("doesn't lock the page's scrolling (it isn't anchored to anything)", () => {
     mountMenu();
-    const restore = layout(50, 360);
-    try {
-      document.dispatchEvent(new CustomEvent(OPEN_APPEARANCE_EVENT));
-      expect(panel().style.left).toBe("8px");
-    } finally {
-      restore();
-    }
-  });
-
-  test("opens under the anchor a settings link passes", () => {
-    mountMenu();
-    const restore = layout(900, 1000);
-    const anchor = document.createElement("button");
-    document.body.appendChild(anchor);
-    fakeBox(anchor, 700, 300);
-    try {
-      document.dispatchEvent(
-        new CustomEvent(OPEN_APPEARANCE_EVENT, { detail: { anchor } })
-      );
-      expect(panel().style.top).toBe("308px");
-      expect(panel().style.left).toBe("400px");
-    } finally {
-      restore();
-    }
-  });
-
-  test("falls back to its trigger when the anchor is off screen", () => {
-    mountMenu();
-    const restore = layout(900, 1000);
-    const anchor = document.createElement("button");
-    document.body.appendChild(anchor);
-    // Scrolled far above the viewport.
-    fakeBox(anchor, 700, -2000);
-    try {
-      document.dispatchEvent(
-        new CustomEvent(OPEN_APPEARANCE_EVENT, { detail: { anchor } })
-      );
-      expect(panel().style.top).toBe("68px");
-      expect(panel().style.left).toBe("600px");
-    } finally {
-      restore();
-    }
-  });
-
-  test("never opens off screen, even with the app bar scrolled away (phones)", () => {
-    mountMenu();
-    const restore = layout(50, 360);
-    // The app-bar button has scrolled out of view; so has the anchor.
-    fakeBox(q("#appearance-btn"), 50, -3000);
-    const anchor = document.createElement("button");
-    document.body.appendChild(anchor);
-    fakeBox(anchor, 340, -2000);
-    try {
-      document.dispatchEvent(
-        new CustomEvent(OPEN_APPEARANCE_EVENT, { detail: { anchor } })
-      );
-      expect(parseInt(panel().style.top, 10)).toBeGreaterThan(0);
-      const left = parseInt(panel().style.left, 10);
-      expect(left).toBeGreaterThanOrEqual(8);
-      expect(left + 300).toBeLessThanOrEqual(360 - 8);
-    } finally {
-      restore();
-    }
-  });
-
-  test("follows its trigger when the viewport resizes while open", () => {
-    mountMenu();
-    const restore = layout(900, 1000);
-    try {
-      q<HTMLButtonElement>("#appearance-btn").click();
-      expect(panel().style.left).toBe("600px");
-      restore();
-      layout(500, 600);
-      window.dispatchEvent(new Event("resize"));
-      expect(panel().style.left).toBe("200px");
-    } finally {
-      restore();
-    }
+    q<HTMLButtonElement>("#appearance-btn").click();
+    expect(isOpen()).toBe(true);
+    expect(root().dataset.scrollLock).toBeUndefined();
   });
 
   test("closes and resets its trigger when disconnected", () => {

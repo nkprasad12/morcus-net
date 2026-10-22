@@ -11,15 +11,12 @@ morcus-appearance-menu {
   height: 20px;
 }
 
-/* A modal <dialog> in the top layer. Undo the UA centring (inset/margin);
-   appearance_menu.client.ts sets top/left under the trigger on open. */
+/* A modal <dialog> in the top layer, centred in the viewport by the UA styles
+   (inset: 0; margin: auto). */
 .appearance-popover {
-  position: fixed;
-  inset: auto;
-  margin: 0;
   width: 300px;
   max-width: calc(100vw - 16px);
-  max-height: calc(100vh - 72px);
+  max-height: calc(100dvh - 32px);
   padding: var(--space-4) var(--space-5);
   color: var(--text);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
@@ -30,12 +27,7 @@ morcus-appearance-menu {
   display: none;
 }
 
-/* Transparent: it only takes outside clicks; the page stays visible behind. */
-.appearance-popover::backdrop {
-  background: transparent;
-}
-
-/* No caret: the panel is positioned by its edges, not centred on the trigger. */
+/* No caret: the panel is centred, not anchored to its trigger. */
 .appearance-popover::before {
   display: none;
 }

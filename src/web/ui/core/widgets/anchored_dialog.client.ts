@@ -38,12 +38,14 @@ export interface AnchoredDialog {
 type AnchorRect = Pick<DOMRect, "top" | "bottom" | "left" | "right" | "width">;
 
 /**
- * A dialog anchored under its trigger (the reader's settings and contents,
- * the app-bar Appearance menu): a modal `<dialog>` via `setupModalDialog`.
+ * A dialog anchored under its trigger (the reader's settings and contents):
+ * a modal `<dialog>` via `setupModalDialog`.
  * The browser handles Escape, focus containment, the top layer and the inert
  * page (so an iframe can't take clicks), and only one can be open. A backdrop
- * click closes it without reaching the page. While open, it follows its
- * anchor on resize and scroll.
+ * click closes it without reaching the page. While open, the page doesn't
+ * scroll (scrolling would carry the anchor off screen), and the dialog follows
+ * its anchor on resize. CSS dims the page behind it (`.anchored-popover`,
+ * core/nav/components.css).
  *
  * Everything is released with `scope`; disposing closes an open dialog.
  */
@@ -122,6 +124,22 @@ export function setupAnchoredDialog(
   };
 
   /**
+   * Stops the page scrolling while open; returns the undo. A classic
+   * scrollbar's width is kept as a gutter so the page doesn't shift sideways.
+   * Measured, because many pages have no page scrollbar to keep (the desktop
+   * reader and dictionary scroll inner panels; phones overlay theirs). The
+   * styles are `html[data-scroll-lock]` in core/nav/components.css.
+   */
+  const lockScroll = (): CleanupFn => {
+    const root = doc.documentElement;
+    const hasScrollbar = win.innerWidth - root.clientWidth > 0;
+    root.dataset.scrollLock = hasScrollbar ? "gutter" : "";
+    return () => {
+      delete root.dataset.scrollLock;
+    };
+  };
+
+  /**
    * Undoes everything `onOpen` set up. Runs from the native `close` event and,
    * because that event is async in browsers (a task queued by `close()`), from
    * `dispose` too, which removes the listener before it would fire. The
@@ -149,7 +167,10 @@ export function setupAnchoredDialog(
       trigger?.setAttribute("aria-expanded", "true");
       updatePosition();
       openScope = own.createScope();
+      openScope.use(lockScroll());
       openScope.listen(win, "resize", updatePosition);
+      // Scrolling is locked, but a scroll can still land (e.g. a phone's
+      // keyboard or address bar); stay under the anchor.
       openScope.listen(win, "scroll", updatePosition, { passive: true });
       options.onOpen?.();
     },

@@ -10,10 +10,7 @@ import {
   setupAnchoredDialog,
 } from "@/web/ui/core/widgets/anchored_dialog.client";
 import { isBoolean, isNumber } from "@/web/utils/rpc/parsing";
-import {
-  OPEN_APPEARANCE_EVENT,
-  type OpenAppearanceDetail,
-} from "@/web/ui/shell/appearance_events.common";
+import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
 import { DEFAULT_PANEL_SCALE } from "@/web/ui/reader/reader_scale.common";
 
 /**
@@ -259,13 +256,7 @@ export class MorcusReaderSettings extends BaseElement {
     );
     this.scope.listen(appearanceLink, "click", () => {
       this.close();
-      // Anchored to this dialog's trigger in the sticky bar: on a phone the
-      // app bar has usually scrolled out of view.
-      this.ownerDocument.dispatchEvent(
-        new CustomEvent<OpenAppearanceDetail>(OPEN_APPEARANCE_EVENT, {
-          detail: { anchor: this.#trigger },
-        })
-      );
+      this.ownerDocument.dispatchEvent(new CustomEvent(OPEN_APPEARANCE_EVENT));
     });
 
     // The swipe toggle is read by the page-nav controller at gesture time, so

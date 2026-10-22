@@ -16,10 +16,7 @@ import {
   DICT_SETTINGS_DIALOG_ID,
   DICT_SETTINGS_TRIGGER_ID,
 } from "@/web/ui/dict/search/search_bar.common";
-import {
-  OPEN_APPEARANCE_EVENT,
-  type OpenAppearanceDetail,
-} from "@/web/ui/shell/appearance_events.common";
+import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
 
 const DEFAULT_STRENGTH = 50;
 
@@ -121,11 +118,7 @@ export class MorcusDictSettings extends BaseElement {
     this.scope.listen(appearanceLink, "click", () => {
       // Closing applies any draft, as it always does.
       this.#modal?.close();
-      this.ownerDocument.dispatchEvent(
-        new CustomEvent<OpenAppearanceDetail>(OPEN_APPEARANCE_EVENT, {
-          detail: { anchor: this.#triggerEl },
-        })
-      );
+      this.ownerDocument.dispatchEvent(new CustomEvent(OPEN_APPEARANCE_EVENT));
     });
 
     const sliderEl = this.#sliderEl;

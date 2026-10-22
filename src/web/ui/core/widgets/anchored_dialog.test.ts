@@ -82,3 +82,58 @@ describe("setupAnchoredDialog", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 });
+
+describe("setupAnchoredDialog scroll lock", () => {
+  const root = () => document.documentElement;
+  const lock = () => root().dataset.scrollLock;
+
+  /** Fakes a page scrollbar `width` px wide (0: none, or an overlay one). */
+  function scrollbar(width: number): () => void {
+    Object.defineProperty(root(), "clientWidth", {
+      configurable: true,
+      value: window.innerWidth - width,
+    });
+    return () => {
+      delete (root() as { clientWidth?: number }).clientWidth;
+    };
+  }
+
+  test("stops the page scrolling while open, and releases it on close", async () => {
+    const { dialog, handle } = mount();
+    const flush = withAsyncClose(dialog);
+
+    handle.open();
+    expect(lock()).toBeDefined();
+
+    handle.close();
+    await flush();
+    expect(lock()).toBeUndefined();
+  });
+
+  test("keeps a classic scrollbar's space, so the page doesn't shift", () => {
+    const restore = scrollbar(15);
+    try {
+      mount().handle.open();
+      expect(lock()).toBe("gutter");
+    } finally {
+      restore();
+    }
+  });
+
+  test("reserves no gutter when the page has no scrollbar to keep", () => {
+    const restore = scrollbar(0);
+    try {
+      mount().handle.open();
+      expect(lock()).toBe("");
+    } finally {
+      restore();
+    }
+  });
+
+  test("disposing an open dialog releases the lock", () => {
+    const { scope, handle } = mount();
+    handle.open();
+    scope.dispose();
+    expect(lock()).toBeUndefined();
+  });
+});

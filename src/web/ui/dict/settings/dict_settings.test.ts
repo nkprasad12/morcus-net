@@ -374,7 +374,6 @@ describe("MorcusDictSettings", () => {
         expect(m.commits[0].dictKeys).toContain("EGL");
         expect(opened).toHaveBeenCalledTimes(1);
         expect(opened.mock.calls[0][0]).toBeInstanceOf(CustomEvent);
-        expect(opened.mock.calls[0][0].detail.anchor).toBe(m.trigger);
       } finally {
         document.removeEventListener(OPEN_APPEARANCE_EVENT, opened);
       }
