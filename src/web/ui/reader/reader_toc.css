@@ -244,7 +244,7 @@
 }
 
 /* Mobile responsive dropdown sizing */
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .reader-toc-drawer {
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);

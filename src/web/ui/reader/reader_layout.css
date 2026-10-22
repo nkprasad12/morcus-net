@@ -15,7 +15,7 @@
    Responsive Breakpoints: Mobile (<= 640px)
    ========================================================================== */
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   body.body-reader {
     height: auto;
     min-height: 100vh;
@@ -173,10 +173,10 @@
 }
 
 /* ==========================================================================
-   Responsive Breakpoints: Desktop (>= 641px)
+   Responsive Breakpoints: Desktop (> 640px)
    ========================================================================== */
 
-@media (min-width: 641px) {
+@media (width > 640px) {
   body.body-reader {
     height: 100vh;
     overflow: hidden;

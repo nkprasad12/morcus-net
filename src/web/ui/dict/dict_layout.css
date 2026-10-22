@@ -140,7 +140,7 @@
   margin-top: var(--space-3);
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .results-nav {
     display: block;
     padding-bottom: 0;
@@ -478,7 +478,7 @@
 }
 
 /* Declutter standalone desktop navigation when left TOC rail is active */
-@media (min-width: 1080px) {
+@media (width >= 1080px) {
   .has-toc .entry-nav {
     display: none;
   }

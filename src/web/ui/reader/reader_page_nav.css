@@ -85,7 +85,7 @@
 }
 
 /* Desktop: centered in the column, which is the viewport-height scroll frame. */
-@media (min-width: 641px) {
+@media (width > 640px) {
   .reader-main-column {
     position: relative;
   }

@@ -4,7 +4,7 @@
 }
 
 /* `.brand-group`, `.actions-group`, `.mobile-menu` and the narrow-screen
-   (max-width: 640px) grid layout of `.app-bar-inner` are defined only in
+   (width <= 640px) grid layout of `.app-bar-inner` are defined only in
    critical.css, which is inlined into every page before this sheet. */
 
 .brand-logo-link {
@@ -250,14 +250,14 @@
   transform: translateY(0);
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .back-to-top {
     right: 16px;
   }
 }
 
 /* Float above bottom-docked drawers on mobile & tablet */
-@media (max-width: 1079.98px) {
+@media (width < 1080px) {
   body:has(.drawer:not(.reader-dict-panel)) .back-to-top {
     bottom: calc(var(--drawer-height, 30svh) + 16px);
   }
@@ -272,7 +272,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   body:has(.reader-dict-panel) .back-to-top {
     bottom: calc(var(--drawer-height, 48svh) + 16px);
   }

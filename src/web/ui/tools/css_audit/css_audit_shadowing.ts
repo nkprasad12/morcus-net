@@ -82,25 +82,20 @@ function siteKey(site: DeclarationSite): string {
  * Explicit complementary viewport breakpoint pairs used across UI V2.
  *
  * Matching compares the normalized at-rule context strings produced by
- * `css_audit_cascade.ts` (e.g. `@media (max-width: 640px)`). Unrecognized
- * forms such as `screen and (...)` or `@media (max-width:640px)` without a
- * space after `:` are skipped conservatively.
+ * `css_audit_cascade.ts` (e.g. `@media (width <= 640px)`). Unrecognized
+ * forms such as `screen and (...)` or unspaced operators are skipped
+ * conservatively.
  *
- * For any single property, an unwrapped base declaration overridden by later
- * rules on the same selector in both branches of a pair is dead (save for a
- * sub-pixel fractional DPR viewport in the gap between `max-width` and
- * `min-width`, where the third value is a latent bug rather than intended).
- *
- * TODO: Migrate UI V2 viewport media queries to Media Queries Level 4 range
- * syntax (`@media (width <= 640px)` / `@media (width > 640px)`, supported by
- * all `V2_BROWSERSLIST` targets) so complementary pairs partition all real
- * viewport widths with zero fractional-DPR gap.
+ * Because each pair uses Media Queries Level 4 range syntax (`<= X` / `> X`
+ * or `< X` / `>= X`), the two branches partition all viewport widths with no
+ * fractional-DPR gap, so an unwrapped base declaration overridden by later
+ * rules on the same selector in both branches can never apply.
  */
 export const COMPLEMENTARY_MEDIA_PAIRS: readonly (readonly [string, string])[] =
   [
-    ["@media (max-width: 640px)", "@media (min-width: 641px)"],
-    ["@media (max-width: 860px)", "@media (min-width: 861px)"],
-    ["@media (max-width: 1079.98px)", "@media (min-width: 1080px)"],
+    ["@media (width <= 640px)", "@media (width > 640px)"],
+    ["@media (width <= 860px)", "@media (width > 860px)"],
+    ["@media (width < 1080px)", "@media (width >= 1080px)"],
   ];
 
 /**

@@ -14,7 +14,7 @@ export const DEFAULT_PANEL_SCALE = 85;
 export const READER_BASE_REM = { desktop: 1.2, phone: 1.1 } as const;
 
 /** The breakpoint at which `--reader-base` switches to the phone value. */
-export const PHONE_QUERY = "(max-width: 640px)";
+export const PHONE_QUERY = "(width <= 640px)";
 
 /** The base size of the dictionary's entry text. */
 const DICT_BASE_REM = 1.1;

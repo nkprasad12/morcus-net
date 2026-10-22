@@ -44,6 +44,7 @@
         "media-feature-name-disallowed-list": ["prefers-color-scheme"],
         "media-feature-name-no-unknown": true,
         "media-feature-name-value-no-unknown": true,
+        "media-feature-range-notation": "context",
         "media-query-no-invalid": true,
         "morcus/max-file-lines": 650,
         "morcus/no-duplicate-declaration-blocks": [

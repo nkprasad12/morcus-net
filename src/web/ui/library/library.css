@@ -164,7 +164,7 @@
   padding-right: 6rem;
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .library-header {
     margin-bottom: var(--space-5);
   }

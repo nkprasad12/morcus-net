@@ -376,8 +376,8 @@ describe("findShadowedDeclarations", () => {
     const [f] = dead({
       "a.css": `
         .x { display: grid; }
-        @media (max-width: 640px) { .x { display: block; } }
-        @media (min-width: 641px) { .x { display: flex; } }
+        @media (width <= 640px) { .x { display: block; } }
+        @media (width > 640px) { .x { display: flex; } }
       `,
     });
     expect(f).toMatchObject({
@@ -393,8 +393,8 @@ describe("findShadowedDeclarations", () => {
       dead({
         "a.css": `
           .x { padding-top: 4px; }
-          @media (max-width: 640px) { .x { padding: 0; } }
-          @media (min-width: 641px) { .x { padding: 8px; } }
+          @media (width <= 640px) { .x { padding: 0; } }
+          @media (width > 640px) { .x { padding: 8px; } }
         `,
       })
     ).toHaveLength(1);
@@ -402,8 +402,8 @@ describe("findShadowedDeclarations", () => {
       dead({
         "a.css": `
           .x { padding: 4px; }
-          @media (max-width: 640px) { .x { padding-top: 0; } }
-          @media (min-width: 641px) { .x { padding-top: 8px; } }
+          @media (width <= 640px) { .x { padding-top: 0; } }
+          @media (width > 640px) { .x { padding-top: 8px; } }
         `,
       })
     ).toHaveLength(0);
@@ -412,7 +412,7 @@ describe("findShadowedDeclarations", () => {
       dead({
         "a.css": `
           .x { display: grid; }
-          @media (max-width: 640px) { .x { display: block; } }
+          @media (width <= 640px) { .x { display: block; } }
         `,
       })
     ).toHaveLength(0);
@@ -421,8 +421,8 @@ describe("findShadowedDeclarations", () => {
       dead({
         "a.css": `
           .x { display: grid !important; }
-          @media (max-width: 640px) { .x { display: block; } }
-          @media (min-width: 641px) { .x { display: flex; } }
+          @media (width <= 640px) { .x { display: block; } }
+          @media (width > 640px) { .x { display: flex; } }
         `,
       })
     ).toHaveLength(0);
@@ -430,8 +430,8 @@ describe("findShadowedDeclarations", () => {
     const [partial] = shadowed({
       "a.css": `
         .x, .y { display: grid; }
-        @media (max-width: 640px) { .x { display: block; } }
-        @media (min-width: 641px) { .x { display: flex; } }
+        @media (width <= 640px) { .x { display: block; } }
+        @media (width > 640px) { .x { display: flex; } }
       `,
     });
     expect(partial.kind).toBe("partial");

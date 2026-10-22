@@ -465,10 +465,10 @@
 }
 
 /* ==========================================================================
-   6. Responsive Overrides: Mobile (<= 640px) & Desktop (>= 641px)
+   6. Responsive Overrides: Mobile (<= 640px) & Desktop (> 640px)
    ========================================================================== */
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   /* Top Column: Latin Reading Passage (Flows naturally down the page).
      This is the only rule that sets the panel's padding on mobile: the bottom
      value is a static scroll cushion sized to drawer clearance so the end of
@@ -539,7 +539,7 @@
   }
 }
 
-@media (min-width: 641px) {
+@media (width > 640px) {
   .reader-text-panel {
     height: 100%;
     min-height: 0;

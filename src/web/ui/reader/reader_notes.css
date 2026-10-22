@@ -155,7 +155,7 @@ a.reader-note-ref:target {
   min-width: 0;
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   /* Not narrowed below the desktop width: the bracketed label has to fit, and
      mobile is where the tap target matters most. */
   .reader-note {

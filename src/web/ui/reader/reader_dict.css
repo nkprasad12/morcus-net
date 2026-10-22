@@ -101,7 +101,7 @@ body.resizing-panels .dict-iframe,
    Responsive Breakpoints: Mobile (<= 640px)
    ========================================================================== */
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .reader-dict-verb-desktop,
   .reader-dict-landing-shortcut {
     display: none;
@@ -146,10 +146,10 @@ body.resizing-panels .dict-iframe,
 }
 
 /* ==========================================================================
-   Responsive Breakpoints: Desktop (>= 641px)
+   Responsive Breakpoints: Desktop (> 640px)
    ========================================================================== */
 
-@media (min-width: 641px) {
+@media (width > 640px) {
   .drawer.drawer-minimized.reader-dict-panel,
   .drawer.reader-dict-panel,
   .reader-dict-panel {

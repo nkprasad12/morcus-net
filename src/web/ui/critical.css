@@ -74,7 +74,7 @@ body {
   padding: var(--space-3) var(--space-5);
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .app-bar-inner {
     display: grid;
     grid-template-columns: 1fr auto 1fr;

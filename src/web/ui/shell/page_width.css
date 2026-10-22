@@ -56,7 +56,7 @@
 /* Must equal what `.container:has(.results-layout.has-toc)` adds to
    `--page-max` (dict/toc/dict_toc.css): the live drag width reproduces that
    rule as `<width> + var(--page-extra)`. */
-@media (min-width: 1080px) {
+@media (width >= 1080px) {
   .body-dict:has(.results-layout.has-toc) {
     --page-extra: calc(var(--dict-toc-w) + 40px);
   }
@@ -159,7 +159,7 @@ body.resizing-page .page-width-readout {
 }
 
 /* Mobile layouts are already full width. */
-@media (max-width: 640px) {
+@media (width <= 640px) {
   morcus-page-width {
     display: none;
   }

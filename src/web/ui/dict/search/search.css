@@ -257,7 +257,7 @@
   text-decoration: underline;
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .search-tray-left {
     gap: var(--space-2);
   }

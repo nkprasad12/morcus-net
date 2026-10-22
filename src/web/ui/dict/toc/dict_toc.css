@@ -248,7 +248,7 @@
 /* --------------------------------------------------------------------------
    Mobile & Tablet (< 1080px): Bottom Drawer Mode
    -------------------------------------------------------------------------- */
-@media (max-width: 1079.98px) {
+@media (width < 1080px) {
   /* Add bottom padding to results when TOC bottom drawer is present so
      the lowest content isn't obscured by the drawer or its minimized bar */
   .results-layout.has-toc {
@@ -358,7 +358,7 @@
 /* --------------------------------------------------------------------------
    Desktop (>= 1080px): Left Rail Sidebar Mode
    -------------------------------------------------------------------------- */
-@media (min-width: 1080px) {
+@media (width >= 1080px) {
   /* Expand container to fit the TOC rail beside the reading column, which
      keeps its width. Widths come from the dragged page width
      (shell/page_width.css); the fallbacks (1180px container, 240px rail)

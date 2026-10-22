@@ -257,7 +257,7 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .landing-container {
     gap: var(--space-6);
   }

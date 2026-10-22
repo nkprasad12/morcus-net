@@ -11,10 +11,10 @@
    supplies the cursor, and trackPointerDrag prevents text selection. */
 
 /* ==========================================================================
-   Desktop Resizable Splitter Gutter (>= 641px)
+   Desktop Resizable Splitter Gutter (> 640px)
    ========================================================================== */
 
-@media (min-width: 641px) {
+@media (width > 640px) {
   /* The line, grip and hover/drag states come from .resize-handle
      (core/widgets/resize_handle.css); this only sizes and places the splitter. */
   .reader-splitter {

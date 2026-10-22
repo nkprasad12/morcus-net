@@ -276,7 +276,7 @@
    3. Responsive Breakpoint: Mobile Sticky Navigation Overrides (<= 640px)
    ========================================================================== */
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .reader-sticky-bar {
     --pill-height: 1.75rem;
     max-width: 100%;
@@ -348,7 +348,7 @@
   display: none;
 }
 
-@media (min-width: 641px) {
+@media (width > 640px) {
   .reader-view {
     --reader-sticky-offset: var(--space-4);
   }

@@ -447,7 +447,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     beforeEach(() => {
       phone = Object.assign(new EventTarget(), {
         matches: true,
-        media: "(max-width: 640px)",
+        media: "(width <= 640px)",
       });
       window.matchMedia = ((query: string) =>
         query === phone.media

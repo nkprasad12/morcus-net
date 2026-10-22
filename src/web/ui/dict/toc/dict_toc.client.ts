@@ -46,7 +46,7 @@ export class MorcusDictToc extends BaseElement {
 
   protected override onConnect() {
     if (typeof window.matchMedia === "function") {
-      this.#mediaQuery = window.matchMedia("(max-width: 1079.98px)");
+      this.#mediaQuery = window.matchMedia("(width < 1080px)");
     }
     this.scope.listen(this.#mediaQuery, "change", this.#onMediaChange);
     if (!this.#isMobileViewport()) {

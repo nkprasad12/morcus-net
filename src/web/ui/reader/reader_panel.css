@@ -252,7 +252,7 @@ a.reader-note-ref.marker-active {
   display: none;
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .has-companion-tabs .reader-sheet-teaser {
     justify-content: flex-start;
     padding-right: var(--space-8);
@@ -327,7 +327,7 @@ a.reader-note-ref.marker-active {
   }
 }
 
-@media (min-width: 641px) {
+@media (width > 640px) {
   .has-companion-tabs .reader-sheet-bar {
     display: block;
     background: transparent;
