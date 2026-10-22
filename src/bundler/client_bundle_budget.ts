@@ -56,9 +56,11 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     },
     "reader.js": {
       // Lowered from 50 / 14 when the reader dialogs moved to native <dialog>,
-      // then from 46 / 13.5 when the anchored dialog moved to common.js.
+      // then from 46 / 13.5 when the anchored dialog moved to common.js. Gzip
+      // raised back to 13.5 for the library's saved-spot controls and "In
+      // progress" filter (the library view ships in this chunk).
       maxRawBytes: 44 * 1024,
-      maxGzipBytes: 13 * 1024,
+      maxGzipBytes: 13.5 * 1024,
     },
     "dict.js": {
       maxRawBytes: 32 * 1024,

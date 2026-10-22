@@ -109,6 +109,8 @@ export async function renderLibraryPageHtml(): Promise<string> {
               <button type="button" class="filter-pill active" data-filter="all">All</button>
               <button type="button" class="filter-pill" data-filter="macra">Macronized</button>
               <button type="button" class="filter-pill" data-filter="translation">Translated</button>
+              <!-- Works with a saved spot (localStorage); shown once there are any. -->
+              <button type="button" class="filter-pill" data-filter="progress" hidden>In progress</button>
             </div>
           </div>
         </div>

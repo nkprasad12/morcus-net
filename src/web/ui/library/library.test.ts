@@ -79,6 +79,7 @@ describe("library SSR & client hydration", () => {
           <div class="library-filter-pills">
             <button type="button" class="filter-pill active" data-filter="all">All</button>
             <button type="button" class="filter-pill" data-filter="macra">Macronized</button>
+            <button type="button" class="filter-pill" data-filter="progress" hidden>In progress</button>
           </div>
         </header>
         <div id="library-empty-state" hidden></div>
@@ -221,6 +222,48 @@ describe("library SSR & client hydration", () => {
       expect(
         item(el, CATULLUS).querySelector(".work-card-corner-tag")
       ).not.toBeNull();
+    });
+
+    const progressPill = (el: Element) =>
+      el.querySelector<HTMLButtonElement>('[data-filter="progress"]')!;
+
+    it("shows the In progress pill only when a work has a saved spot", () => {
+      expect(progressPill(setupLibraryDOM()).hidden).toBe(true);
+
+      document.body.innerHTML = "";
+      savedSpotsStore.set("phi0448.phi001.perseus-lat2", "1.4");
+      expect(progressPill(setupLibraryDOM()).hidden).toBe(false);
+    });
+
+    it("the In progress filter shows only works with a saved spot", () => {
+      savedSpotsStore.set("phi0448.phi001.perseus-lat2", "1.4");
+      // On the first page: no badge, so not in progress.
+      savedSpotsStore.set("phi0472.phi001.perseus-lat2", "1");
+      const el = setupLibraryDOM();
+
+      progressPill(el).click();
+
+      expect(progressPill(el).classList.contains("active")).toBe(true);
+      expect(item(el, CAESAR).hidden).toBe(false);
+      expect(item(el, CATULLUS).hidden).toBe(true);
+    });
+
+    it("clearing the last saved spot hides the pill and goes back to All", () => {
+      savedSpotsStore.set("phi0448.phi001.perseus-lat2", "1.4");
+      const el = setupLibraryDOM();
+      progressPill(el).click();
+      expect(item(el, CATULLUS).hidden).toBe(true);
+
+      item(el, CAESAR)
+        .querySelector<HTMLButtonElement>(".work-card-clear-spot")!
+        .click();
+
+      expect(progressPill(el).hidden).toBe(true);
+      expect(
+        el.querySelector('[data-filter="all"]')!.classList.contains("active")
+      ).toBe(true);
+      expect(item(el, CAESAR).hidden).toBe(false);
+      expect(item(el, CATULLUS).hidden).toBe(false);
     });
 
     it("filters works correctly with query and tags", () => {

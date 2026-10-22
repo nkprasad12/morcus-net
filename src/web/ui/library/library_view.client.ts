@@ -98,6 +98,19 @@ export class MorcusLibraryView extends BaseElement {
     }
   }
 
+  /**
+   * Shows the "In progress" pill while any card has a saved spot (its
+   * `progress` tag); with none left, leaves that filter for "All".
+   */
+  #syncProgressPill(): void {
+    const pill = this.scope.$<HTMLElement>('[data-filter="progress"]');
+    const any = this.#workCards.some((c) =>
+      c.dataset.tags?.includes("progress")
+    );
+    if (pill) pill.hidden = !any;
+    if (!any && this.#currentFilter === "progress") this.#setFilter("all");
+  }
+
   #hydrateSavedSpots(): void {
     const spots = savedSpotsStore.getAll();
     const cards = this.#workCards;
@@ -122,6 +135,7 @@ export class MorcusLibraryView extends BaseElement {
         secId
       )}#sec-${secId}`;
       card.setAttribute("href", jumpUrl);
+      card.dataset.tags += " progress";
 
       // Built on demand for the few cards with a saved spot in localStorage
       // rather than pre-rendered hidden on all 126 cards (no server state to
@@ -155,11 +169,15 @@ export class MorcusLibraryView extends BaseElement {
       this.scope.listen(clear, "click", () => {
         savedSpotsStore.remove(workId);
         card.setAttribute("href", baseUrl);
+        card.dataset.tags = card.dataset.tags?.replace(" progress", "");
         tag.remove();
+        this.#syncProgressPill();
+        this.#applyFilter();
         // The button is gone; keep keyboard focus on the card.
         card.focus();
       });
     }
+    this.#syncProgressPill();
   }
 }
 
