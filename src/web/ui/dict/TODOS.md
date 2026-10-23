@@ -130,78 +130,7 @@ runtime stripping in `sh_dict.ts` has been removed.
 
 ---
 
-## 4. Riddle & Arnold headword casing mismatch (`dog` vs `DOG`)
-
-**Status:** not started.
-
-### Bug Description
-
-In Riddle & Arnold entries such as `ra_dog` (reachable at `/v2/dicts/id/ra_dog`), the header renders in lowercase `dog` while the entry body immediately underneath begins with uppercase `DOG`:
-
-```
-dog   [🔗 Copy link]
-• DOG
-1. s. canis...
-```
-
-### Cause
-
-1. `process_riddle_arnold.ts` ([`src/common/dictionaries/riddle_arnold/process_riddle_arnold.ts`](../../../common/dictionaries/riddle_arnold/process_riddle_arnold.ts)) formats R&A entries from tab-separated lines where `header` is uppercase (`"DOG"`). When creating the outline:
-   ```ts
-   const outline: EntryOutline = {
-     mainKey: keys[0], // keys = header.split(",").map(k => k.trim().toLowerCase()) -> "dog"
-     mainSection: { text: header, level: 0, ordinal: "0", sectionId: id }, // "DOG"
-   };
-   ```
-2. In `renderEntryResult` ([`entry/entry_view.server.ts`](entry/entry_view.server.ts)), the headword resolution hierarchy is:
-   ```ts
-   const headword =
-     result.outline?.mainLabel?.trim() ||
-     result.outline?.mainKey?.trim() ||
-     result.outline?.mainSection?.text?.trim() ||
-     ...
-   ```
-   Since `mainKey` (`"dog"`) is checked before `mainSection.text` (`"DOG"`), the lowercase search key wins and is displayed as the editorial headword.
-
-### Proposed Solutions
-
-- **Option A (Outline generation)**: Store the formatted display title in `outline.mainLabel` (e.g. `mainLabel: header`) during R&A processing, matching dictionaries like Forcellini.
-- **Option B (Headword resolution)**: Prefer `mainSection.text` when it represents an explicit title, or adjust the precedence in `entry_view.server.ts` when `mainKey` is merely a normalized lowercase index key.
-
----
-
-## 5. Pre-compute and statically serve 2-letter autocomplete chunks
-
-**Status:** not started. Benchmarked and designed; see `completion_chunk_cache_implementation_plan.md`.
-
-### Motivation
-
-Currently, `/v2/api/completions?prefix=am` queries the SQLite databases dynamically per request. While fast (~5–10 ms), Latin headword data is completely static and only changes when rebuilding the corpus.
-
-Benchmarking across the entire corpus reveals:
-
-- Exactly **371 non-empty 2-letter combinations** exist across all active dictionaries.
-- When stored as a dictionary map (`{ "L&S": string[], "GAF": string[], ... }`), the **total compressed size for all 371 files across the entire website is only ~550 KB** (median file is ~1.2 KB Brotli).
-- Grouping all dictionaries into a single payload yields **45% better compression** than separate per-dictionary files because Brotli deduplicates shared Latin stems across lexicons.
-
-### Proposed Architecture
-
-1. **Build Step (`./morcus.sh build`)**:
-   - Query all dictionary SQLite tables once at build time.
-   - For each 2-letter prefix, write `build/completions/:commitId/:prefix.json`.
-   - Pre-compress each file to `.json.br` (q=11) and `.json.gz` (level 9).
-2. **Server Serving**:
-   - Serve directly from disk via static middleware (`sendfile` / `express.static`) with:
-     ```http
-     Cache-Control: public, max-age=31536000, immutable
-     ```
-   - Zero SQLite queries, zero Node event-loop blocking, zero CPU compression overhead.
-3. **Client**:
-   - Consumes the pre-computed static files directly without code changes, since the client already expects `Record<string, string[]>`.
-
----
-
-## 6. Per-entry collapsible headers
+## 4. Per-entry collapsible headers
 
 **Status:** not started. Ergonomic enhancement (not a V1 parity issue).
 
@@ -214,7 +143,7 @@ Make individual entry headers/headwords collapsible via the decoupled `<details 
 
 ---
 
-## 7. Table of Contents scroll tracking (Scroll-Spy)
+## 5. Table of Contents scroll tracking (Scroll-Spy)
 
 **Status:** not started. Natural follow-up to the Table of Contents layout and drawer enhancements.
 
@@ -239,7 +168,7 @@ Scroll tracking provides live visual feedback indicating which sense, subsection
 
 ---
 
-## 8. Shared links overwrite the recipient's dictionary preferences
+## 6. Shared links overwrite the recipient's dictionary preferences
 
 **Status:** done. The model is described in
 [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md#saving-content-preferences).
@@ -263,7 +192,7 @@ couldn't tell "the user just ticked boxes" from "someone pasted a URL".
 
 ---
 
-## 9. Finish the preferences model
+## 7. Finish the preferences model
 
 **Status:** done. The target model is in [`../docs/PREFERENCES.md`](../docs/PREFERENCES.md); the
 defect analysis behind it (findings F1–F9) is archived in
@@ -285,7 +214,7 @@ defect analysis behind it (findings F1–F9) is archived in
 
 ---
 
-## 10. Every word in an entry is a link (screen readers)
+## 8. Every word in an entry is a link (screen readers)
 
 **Status:** done.
 
@@ -336,7 +265,7 @@ User-visible differences, for the record:
 
 ---
 
-## 11. Time-slice word tokenization
+## 9. Time-slice word tokenization
 
 **Status:** potential; not planned. Only worth doing if the post-paint block below becomes a
 problem in practice.
@@ -361,7 +290,7 @@ Shape, if it's needed:
 
 ---
 
-## 12. Session persistence of mobile TOC drawer state across lookups
+## 10. Session persistence of mobile TOC drawer state across lookups
 
 **Status:** potential; deferred.
 
@@ -369,7 +298,7 @@ Shape, if it's needed:
 
 ---
 
-## 13. Mark provenance of inflection analysis data
+## 11. Mark provenance of inflection analysis data
 
 **Status:** done. [`entry/inflection_table.server.ts`](entry/inflection_table.server.ts) now renders a leading `ⓘ` provenance icon (`.inflection-info.lsHover`) alongside `.inflection-lines`, wired to the shared `#abbr-popover` (with zero-JS `:focus::after` fallback) displaying `"Automated morphological analysis (not from dictionary!)"`.
 

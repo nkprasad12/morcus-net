@@ -103,7 +103,7 @@ web app manifest.
 
 ## 8. Ovid _Tristia_: section content under the wrong id
 
-**Status:** root-caused and fixed upstream; local artifacts need a rebuild. Not a V2 bug.
+**Status:** done. Not a V2 bug.
 
 In the V2 artifact for `hypotactic_Tristia_Ovid`, `sec-1.7.x` held the text of poem 1.8
 (e.g. `sec-1.7.1` read "in caput alta suum…", which is 1.8.1; the corpus has "si quis habes
@@ -115,12 +115,9 @@ already had two `1.7` pages and 40 duplicate row ids; V2 and the corpus merely i
 same defect affected Horace _Epodes_ (`16, 16`, no 15) and Martial _De Spectaculis_ (the "b" poems
 labelled `5, 15, 20, 24`).
 
-**Done:** corrected the data in the `hypotactic` repo (commit `28bd282`: Tristia 1.8–1.11, Epode 15,
-Spectacula 6b/16b/21b/25b) and added `assertUniqueIds` to `process_hypotactic.ts` so a future data
-refresh fails the build instead of shipping colliding ids.
-
-**Remaining:** push the `hypotactic` commit, then rebuild the processed library, the V2 artifacts
-and the corpus (its `rowIds` carry the old numbering). Separately, `resolvePageInWork` in
-`reader_loader.server.ts` picks the first page by `findIndex`, so a duplicated page id would be
-unreachable by deep link; a defensive uniqueness check in `preprocessWorkToV2` would make that
-failure loud if some other source ever produces one.
+**Done:** corrected the data in the `hypotactic` repo (commit `28bd282765adf7aa317c67e728cc747f9d52803a`:
+Tristia 1.8–1.11, Epode 15, Spectacula 6b/16b/21b/25b), pushed and pinned it in
+`upstream_sources.lock.json`, rebuilt the library and corpus artifacts, and added uniqueness assertions
+to both `process_hypotactic.ts` (`assertUniqueIds`) and `preprocessWorkToV2`
+([`src/common/library/preprocess/work_preprocessor.ts`](../../../common/library/preprocess/work_preprocessor.ts))
+so duplicate page IDs from any source fail loudly at build time.

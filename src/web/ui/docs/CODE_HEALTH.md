@@ -34,5 +34,3 @@ live in [`FRAMEWORK_GAPS.md`](FRAMEWORK_GAPS.md); feature work lives in each sli
   already wraps open/upgrade/transactions with promises and
   is tested; switching would drop the hand-rolled request plumbing. Keep the V1 schema
   (`externalContent.db` v1, store `savedContent`) so existing imports survive.
-- 🟢 **Clarify and expand the External Reader callout copy on `/library`.**
-  `library/library.server.ts` currently renders `"Or read your own text from any web page."` below `"Welcome to the library!"`. "From any web page" is slightly confusing because `/external` actually accepts pasted Latin text or uploaded files rather than fetching arbitrary URLs; expand and clarify this copy so users understand what the External Reader does.
