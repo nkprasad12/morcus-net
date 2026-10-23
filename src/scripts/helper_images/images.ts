@@ -10,8 +10,10 @@
  */
 
 import { copyRepoDir } from "@/scripts/helper_images/context";
+import { preparePrunerContext } from "@/scripts/helper_images/pruner_context";
 import { smokeTestLatincy } from "@/scripts/helper_images/smoke_tests/latincy";
 import { smokeTestProxy } from "@/scripts/helper_images/smoke_tests/proxy";
+import { smokeTestPruner } from "@/scripts/helper_images/smoke_tests/pruner";
 
 const DIR = "src/scripts/helper_images";
 const DOCKER_HELPERS = `${DIR}/docker.ts`;
@@ -34,6 +36,11 @@ export const HELPER_IMAGES = {
     prepareContext: (outDir) => copyRepoDir("src/py/latincy/image", outDir),
     smokeTestInputs: [`${DIR}/smoke_tests/latincy.ts`, DOCKER_HELPERS],
     smokeTest: smokeTestLatincy,
+  },
+  "morcus-pruner": {
+    prepareContext: preparePrunerContext,
+    smokeTestInputs: [`${DIR}/smoke_tests/pruner.ts`, DOCKER_HELPERS],
+    smokeTest: smokeTestPruner,
   },
 } satisfies Record<string, HelperImage>;
 

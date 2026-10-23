@@ -86,6 +86,33 @@ services:
         max-size: "5m"
         max-file: "2"
 
+  pruner:
+    image: "${CONTAINER_REGISTRY}morcus-pruner:latest"
+    environment:
+      MONGODB_URI: "${MONGODB_URI}"
+      TELEMETRY_RETENTION_DAYS: "${TELEMETRY_RETENTION_DAYS:-100}"
+      TELEMETRY_MAX_MB: "${TELEMETRY_MAX_MB:-400}"
+      PRUNE_BACKUP_URI: "${PRUNE_BACKUP_URI:-}"
+      PRUNE_ARCHIVE_PREFIX: "${PRUNE_ARCHIVE_PREFIX:-}"
+    # Local backups (`PRUNE_BACKUP_URI=/morcus/logs/archives`) must be on a
+    # mounted volume; the pruner refuses unmounted paths at startup.
+    volumes:
+      - "${LOGS_DIR:?err}:/morcus/logs:rw"
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
+    # Exits 0 immediately when MONGODB_URI is empty, so `on-failure` leaves it
+    # stopped. Exits 143 on SIGTERM in daemon mode, so `on-failure` restarts
+    # it after host reboots, docker restarts, or crashes.
+    restart: on-failure
+    init: true
+    stop_grace_period: 30s
+    mem_limit: 256m
+    cpus: "0.5"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
   watchtower:
     image: containrrr/watchtower
     restart: unless-stopped

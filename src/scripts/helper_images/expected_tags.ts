@@ -27,4 +27,8 @@ export const EXPECTED_IMAGES: Readonly<Record<HelperImageName, ExpectedImage>> =
       files: ["Dockerfile", "__init__.py", "latincy_server.py"],
       tag: "tree-715469217e9a37f4d4a24159b8f602c54a98d659",
     },
+    "morcus-pruner": {
+      files: ["Dockerfile", "pruner.js"],
+      tag: "tree-8e923dad3ab8a54ebbea08cb95b23ba5520593cd",
+    },
   };
