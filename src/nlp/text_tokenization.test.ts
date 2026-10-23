@@ -104,6 +104,15 @@ describe("preprocessText", () => {
       " ",
       "Panthia",
     ]);
-    expect(spaces).toEqual([false, true, false, false, true, false, true, false]);
+    expect(spaces).toEqual([
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+    ]);
   });
 });

@@ -136,6 +136,7 @@
   border-radius: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: var(--space-4) var(--space-5) var(--space-8);
   box-shadow: none;
   /* Undone for the shown view (above). */

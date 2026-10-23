@@ -121,3 +121,36 @@ Tristia 1.8–1.11, Epode 15, Spectacula 6b/16b/21b/25b), pushed and pinned it i
 to both `process_hypotactic.ts` (`assertUniqueIds`) and `preprocessWorkToV2`
 ([`src/common/library/preprocess/work_preprocessor.ts`](../../../common/library/preprocess/work_preprocessor.ts))
 so duplicate page IDs from any source fail loudly at build time.
+
+---
+
+## 9. iOS Safari: momentum scroll capture over the bottom drawer (#603)
+
+**Status:** deferred edge case (waiting on further iPhone testing).
+
+When a user flicks the mobile reading passage (`body.body-reader`) and, while the document is still
+gliding with momentum, swipes inside the fixed bottom drawer (`.drawer`), iOS Safari routes that
+first swipe to the decelerating document rather than the drawer's inner scroller. Once the document
+comes to rest (or after a single tap in the drawer stops the glide), the drawer scrolls normally.
+
+- **Root Cause**: In WebKit2 on iOS, while the root document scroller (`WKScrollView` in Safari's
+  UIProcess) has `isDecelerating == true`, UIKit intercepts the next touch anywhere in the viewport
+  at the native OS layer to "catch" the moving page before DOM `pointerdown` / `touchstart` events
+  can redirect the gesture.
+- **Shipped Mitigation**: Added `overscroll-behavior: contain` to `.drawer`, `.reader-panel-card`,
+  `.reader-toc-list`, and the embedded dictionary root (`html:has(> body.body-embedded)`,
+  `body.body-embedded`) so boundary scroll chaining at the top/bottom of drawer views no longer leaks
+  to the host passage across browsers.
+- **Verified on iPhone (`debug-repro` harness)**:
+  - Synchronous JS momentum halts on `pointerdown` / `touchstart` (`window.scrollTo(0, scrollY)`,
+    `±1px` scrollTo nudge, and synchronous `overflow: hidden` + reflow) do not preempt UIKit's native
+    gesture capture while `document.scrollingElement` is decelerating.
+  - Scrolling the passage inside `.reader-main-column` (`layout=pane`, with `body.body-reader` set to
+    `height: 100dvh; overflow: hidden` and `.app-bar` scrolling inside `.reader-main-column`) fixes
+    the glide capture completely, because the decelerating scroller is a child `WKChildScrollView`
+    sibling of `.drawer` rather than the root `WKScrollView`. However, because `document` no longer
+    scrolls, Safari's URL bar (~8–10% of screen height) stays visible instead of auto-collapsing.
+- **Next to investigate with an iPhone in hand**:
+  - Verify whether `layout=doc&drawer=iframe` (isolated `<iframe>` scroller inside a document-scrolling
+    page) avoids momentum capture on iOS Safari; if so, evaluate whether hosting companion views in a
+    same-origin iframe is worth the client plumbing, or whether `layout=pane` / status quo is preferred.

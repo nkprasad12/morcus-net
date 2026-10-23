@@ -2,6 +2,12 @@
   --dict-scale: 1;
 }
 
+/* Stop scroll chaining from the embedded dictionary iframe to the host reader page. */
+html:has(> body.body-embedded),
+body.body-embedded {
+  overscroll-behavior: contain;
+}
+
 .container.container-embedded {
   max-width: 100%;
   padding: var(--space-2) 0 var(--space-8);
