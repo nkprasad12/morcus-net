@@ -183,8 +183,9 @@ function startMorcusServer(): Promise<http.Server> {
   const mongodbUriEmpty = mongodbUri === undefined || mongodbUri.length === 0;
   if (mongodbUriEmpty && consoleTelemetry) {
     log("No `MONGODB_URI` environment variable set. Logging to console.");
-  }
-  if (!mongodbUriEmpty && consoleTelemetry) {
+  } else if (mongodbUriEmpty) {
+    log("No `MONGODB_URI` environment variable set. Telemetry disabled.");
+  } else if (consoleTelemetry) {
     log("`MONGODB_URI` set but logging to console due to `CONSOLE_TELEMETRY`.");
   }
   const telemetry: Promise<TelemetryLogger> =
