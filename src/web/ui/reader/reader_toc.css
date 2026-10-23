@@ -15,7 +15,7 @@
   width: 360px;
   max-height: min(72vh, 540px);
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .reader-toc-drawer::before {
@@ -102,7 +102,7 @@
 }
 
 .reader-toc-list {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;

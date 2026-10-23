@@ -1,5 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
 
+export type VisualBrowserProject =
+  | "chromium"
+  | "firefox"
+  | "webkit"
+  | "MobileChrome"
+  | "FirefoxSmallScreen"
+  | "MobileSafari";
+
 interface V2VisualScenarioOptions {
   /** Relative URL path to test, e.g. "/dicts" */
   path: string;
@@ -9,6 +17,8 @@ interface V2VisualScenarioOptions {
   jsModes?: ("js" | "nojs")[];
   /** Themes to test. Defaults to ["light"] */
   themes?: ("light" | "dark")[];
+  /** Optional subset of Playwright browser projects to run this scenario on (defaults to all) */
+  projects?: VisualBrowserProject[];
   /** Optional selectors of dynamic elements to mask during snapshot */
   mask?: string[];
   /** Optional custom interaction (e.g. opening a drawer or clicking a toggle) before screenshot */
@@ -42,10 +52,16 @@ export function v2VisualScenario(
 
   for (const js of jsModes) {
     for (const theme of themes) {
-      test(`${scenarioName} [${js}] [${theme}]`, async ({
-        browser,
-        baseURL,
-      }) => {
+      test(`${scenarioName} [${js}] [${theme}]`, async (
+        { browser, baseURL },
+        testInfo
+      ) => {
+        if (
+          options.projects &&
+          !options.projects.some((p) => p === testInfo.project.name)
+        ) {
+          test.skip();
+        }
         const isDark = theme === "dark";
         const context = await browser.newContext({
           javaScriptEnabled: js === "js",
