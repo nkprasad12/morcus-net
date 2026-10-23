@@ -126,7 +126,7 @@ so duplicate page IDs from any source fail loudly at build time.
 
 ## 9. iOS Safari: momentum scroll capture over the bottom drawer (#603)
 
-**Status:** deferred edge case (waiting on further iPhone testing).
+**Status:** deferred edge case (accepted iOS platform limitation for now).
 
 When a user flicks the mobile reading passage (`body.body-reader`) and, while the document is still
 gliding with momentum, swipes inside the fixed bottom drawer (`.drawer`), iOS Safari routes that
@@ -150,7 +150,9 @@ comes to rest (or after a single tap in the drawer stops the glide), the drawer 
     the glide capture completely, because the decelerating scroller is a child `WKChildScrollView`
     sibling of `.drawer` rather than the root `WKScrollView`. However, because `document` no longer
     scrolls, Safari's URL bar (~8–10% of screen height) stays visible instead of auto-collapsing.
-- **Next to investigate with an iPhone in hand**:
-  - Verify whether `layout=doc&drawer=iframe` (isolated `<iframe>` scroller inside a document-scrolling
-    page) avoids momentum capture on iOS Safari; if so, evaluate whether hosting companion views in a
-    same-origin iframe is worth the client plumbing, or whether `layout=pane` / status quo is preferred.
+  - Hosting the drawer content in an `<iframe>` (`layout=doc&drawer=iframe`) does **not** help: the
+    swipe is still captured by the gliding document (confirmed on iPadOS Safari, which reproduces the
+    bug identically and is a valid stand-in for iPhone testing).
+- **Remaining decision**: every document-scrolling variant tested (CSS, JS halts, iframe) is captured,
+  so the only known fix is `layout=pane`, which costs the collapsing URL bar. Revisit if a future
+  WebKit changes this behaviour, or if the trade-off is judged worth it (an iPad can be used to test).
