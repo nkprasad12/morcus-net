@@ -130,29 +130,56 @@ so duplicate page IDs from any source fail loudly at build time.
 
 When a user flicks the mobile reading passage (`body.body-reader`) and, while the document is still
 gliding with momentum, swipes inside the fixed bottom drawer (`.drawer`), iOS Safari routes that
-first swipe to the decelerating document rather than the drawer's inner scroller. Once the document
-comes to rest (or after a single tap in the drawer stops the glide), the drawer scrolls normally.
+swipe to the decelerating document rather than the drawer's inner scroller. Because the captured
+swipe releases with fresh momentum, repeated swipes in the drawer keep re-accelerating the main
+passage in a loop until the user either waits for the glide to finish or taps once without dragging.
 
-- **Root Cause**: In WebKit2 on iOS, while the root document scroller (`WKScrollView` in Safari's
-  UIProcess) has `isDecelerating == true`, UIKit intercepts the next touch anywhere in the viewport
-  at the native OS layer to "catch" the moving page before DOM `pointerdown` / `touchstart` events
-  can redirect the gesture.
+- **Root Cause**: In WebKit2 on iOS/iPadOS, while the root document scroller (`WKScrollView` in
+  Safari's UIProcess) has `isDecelerating == true`, UIKit intercepts any new touch anywhere in the
+  viewport at the native OS layer to catch or continue the moving page. During this capture, WebKit
+  suppresses DOM `pointerdown` and `touchstart` events across the entire window (verified via raw
+  window-level capture counters on iPadOS Safari), so the page gets neither an event target nor
+  touch coordinates for the captured gesture.
 - **Shipped Mitigation**: Added `overscroll-behavior: contain` to `.drawer`, `.reader-panel-card`,
   `.reader-toc-list`, and the embedded dictionary root (`html:has(> body.body-embedded)`,
   `body.body-embedded`) so boundary scroll chaining at the top/bottom of drawer views no longer leaks
   to the host passage across browsers.
-- **Verified on iPhone (`debug-repro` harness)**:
-  - Synchronous JS momentum halts on `pointerdown` / `touchstart` (`window.scrollTo(0, scrollY)`,
-    `±1px` scrollTo nudge, and synchronous `overflow: hidden` + reflow) do not preempt UIKit's native
-    gesture capture while `document.scrollingElement` is decelerating.
-  - Scrolling the passage inside `.reader-main-column` (`layout=pane`, with `body.body-reader` set to
-    `height: 100dvh; overflow: hidden` and `.app-bar` scrolling inside `.reader-main-column`) fixes
-    the glide capture completely, because the decelerating scroller is a child `WKChildScrollView`
-    sibling of `.drawer` rather than the root `WKScrollView`. However, because `document` no longer
-    scrolls, Safari's URL bar (~8–10% of screen height) stays visible instead of auto-collapsing.
-  - Hosting the drawer content in an `<iframe>` (`layout=doc&drawer=iframe`) does **not** help: the
-    swipe is still captured by the gliding document (confirmed on iPadOS Safari, which reproduces the
-    bug identically and is a valid stand-in for iPhone testing).
-- **Remaining decision**: every document-scrolling variant tested (CSS, JS halts, iframe) is captured,
-  so the only known fix is `layout=pane`, which costs the collapsing URL bar. Revisit if a future
-  WebKit changes this behaviour, or if the trade-off is judged worth it (an iPad can be used to test).
+- **Verified on iPhone and iPad (`debug-repro` harness; iPadOS Safari reproduces identically)**:
+  - **Drawer `pointerdown` / `touchstart` halts do not fire**: Because UIKit suppresses DOM touch
+    events while `document.scrollingElement` is decelerating, handlers attached to `pointerdown` or
+    `touchstart` never run on a captured swipe.
+  - **`<iframe>` isolation does not help**: Hosting the drawer content in a same-origin `<iframe>`
+    (`layout=doc&drawer=iframe`) is still captured by the gliding root document.
+  - **`layout=pane` fixes the capture completely, but loses URL-bar collapse**: Scrolling the passage
+    inside `.reader-main-column` (with `body.body-reader` set to `height: 100dvh; overflow: hidden`
+    and `.app-bar` scrolling inside `.reader-main-column`) eliminates the bug because the decelerating
+    scroller is a child `WKChildScrollView` sibling of `.drawer` rather than the root `WKScrollView`.
+    However, because `document` no longer scrolls, Safari's URL bar (~8–10% of screen height on
+    iPhone) never auto-collapses, which is too steep a UX cost for all mobile reading sessions.
+  - **Origin-touch coast tracking can detect and break the loop**: The initial flick on the passage
+    _does_ fire `touchstart` and `touchend`, and `window` `scroll` events continue firing every frame
+    during the coast and during any captured swipe. By tracking `scroll` deltas while no finger is
+    reported down (`after touchend`), a captured swipe is visible as a post-coast direction reversal,
+    pause-then-move, or re-acceleration (`accel`), and locking `overflow: hidden` (or pinning
+    `window.scrollTo(0, y)`) for ~`180–220ms` inside the `scroll` handler breaks the momentum loop so
+    the next swipe reaches the drawer.
+  - **False-positive constraints on `accel` detection**: Because iOS hides touch coordinates during a
+    coast, a mid-coast `accel` on the drawer looks identical in `scroll` events to (a) a user's finger
+    briefly skimming off and back onto the glass at the tail of a single long swipe, or (b) an
+    intentional double-flick on the main passage to scroll faster. Unconditionally freezing scroll on
+    `accel` would therefore interrupt intentional fast scrolling of the main passage while the drawer
+    is open.
+- **Future Options if Re-opened**:
+  1. **User-education tooltip / toast (lowest risk)**: Instead of freezing scroll on `accel`, use
+     origin-touch coast tracking to detect when a user is caught by the bug and show a one-time
+     (or `localStorage`-capped) toast above the drawer (_"Tip: tap once to stop the passage before
+     scrolling the panel"_). To avoid false positives on `Main Swipe → Intended Main Accel Swipe →
+Drawer Swipe`, gate the toast on a coast that saw `> 180ms` post-`touchend` re-acceleration or
+     reversal _and_ ended either via an abrupt tap-halt (velocity dropping from mid-speed to `0`
+     without normal exponential decay) or multiple consecutive mid-coast accelerations followed
+     immediately (`< 250ms`) by a `touchstart` inside `.drawer`.
+  2. **Selective coast-breaker**: Only trigger the `200ms` scroll lock after `2+` consecutive
+     mid-coast re-accelerations (or direction reversal) with a `> 180ms` post-`touchend` cooldown
+     and significant prior decay (`speed < 0.65 × peakSpeed`), so a single long swipe or a single
+     follow-up flick on the passage is never interrupted, while repeated frustrated swipes in the
+     drawer break out of the loop automatically.
