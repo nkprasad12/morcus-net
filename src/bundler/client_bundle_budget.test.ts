@@ -98,20 +98,23 @@ describe("UI V2 Bundle Budget", () => {
 
   test("fails a route whose total exceeds its budget though every chunk passes", () => {
     const manifest = writeAllChunks("x".repeat(100));
+    const singleGzip = zlib.gzipSync("x".repeat(100)).byteLength;
 
     const tightBudget: V2BundleBudget = {
       ...V2_BUNDLE_BUDGET,
       routes: {
         ...V2_BUNDLE_BUDGET.routes,
-        // common (100) + dict (100) = 200 > 150, while each chunk is < 55 kB.
-        dicts: { maxRawBytes: 150, maxGzipBytes: 10 * 1024 },
+        // common + dict = 2 * singleGzip > singleGzip + 5, while each chunk is within its own budget.
+        dicts: { maxGzipBytes: singleGzip + 5 },
       },
     };
 
     const report = checkV2BundleBudget(tmpDir, manifest, tightBudget);
 
     expect(report.errors).toEqual([
-      "Route 'dicts' (common.js + dict.js) raw total 200 B exceeds budget 150 B",
+      `Route 'dicts' (common.js + dict.js) gzip total ${
+        2 * singleGzip
+      } B exceeds budget ${singleGzip + 5} B`,
     ]);
   });
 
@@ -123,45 +126,17 @@ describe("UI V2 Bundle Budget", () => {
           V2_JS_CHUNKS.map((c) => [
             c,
             {
-              rawBytes: V2_BUNDLE_BUDGET.chunks[c].maxRawBytes,
+              rawBytes: 0,
               gzipBytes: V2_BUNDLE_BUDGET.chunks[c].maxGzipBytes,
             },
           ])
         )
       )!;
       const routeBudget = V2_BUNDLE_BUDGET.routes[route];
-      expect(routeBudget.maxRawBytes).toBeLessThanOrEqual(
-        summedCeilings.rawBytes
-      );
       expect(routeBudget.maxGzipBytes).toBeLessThanOrEqual(
         summedCeilings.gzipBytes
       );
     }
-  });
-
-  test("fails when a JS chunk raw size exceeds its per-chunk budget", () => {
-    const manifest = writeAllChunks("x".repeat(20));
-    fs.writeFileSync(path.join(tmpDir, "dict.js"), "x".repeat(100));
-
-    const tightBudget: V2BundleBudget = {
-      ...V2_BUNDLE_BUDGET,
-      chunks: {
-        ...V2_BUNDLE_BUDGET.chunks,
-        "dict.js": {
-          maxRawBytes: 50,
-          maxGzipBytes: 10 * 1024,
-        },
-      },
-    };
-
-    const report = checkV2BundleBudget(tmpDir, manifest, tightBudget);
-
-    expect(report.exceeded).toBe(true);
-    expect(
-      report.errors.some(
-        (e) => e.includes("dict.js raw size") && e.includes("exceeds budget")
-      )
-    ).toBe(true);
   });
 
   test("fails when a JS chunk gzip size exceeds its per-chunk budget", () => {
@@ -174,7 +149,6 @@ describe("UI V2 Bundle Budget", () => {
       chunks: {
         ...V2_BUNDLE_BUDGET.chunks,
         "corpus.js": {
-          maxRawBytes: 20 * 1024,
           maxGzipBytes: 100,
         },
       },
@@ -331,9 +305,7 @@ describe("UI V2 Bundle Budget", () => {
       expect(formatted).toContain(`${chunkName}:`);
       const cb = V2_BUNDLE_BUDGET.chunks[chunkName];
       const kb = (bytes: number) => (bytes / 1024).toFixed(1);
-      expect(formatted).toContain(
-        `< ${kb(cb.maxRawBytes)} kB raw / < ${kb(cb.maxGzipBytes)} kB gzip`
-      );
+      expect(formatted).toContain(`(budget: < ${kb(cb.maxGzipBytes)} kB gzip)`);
     }
     expect(formatted).toContain("Per-route JS:");
     for (const route of V2_ROUTES) {

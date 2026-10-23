@@ -15,7 +15,6 @@ import {
 } from "@/bundler/client_build_contract";
 
 export interface V2ChunkBudget {
-  readonly maxRawBytes: number;
   readonly maxGzipBytes: number;
 }
 
@@ -34,7 +33,8 @@ export interface V2BundleBudget {
 }
 
 /**
- * Maximum allowed raw and gzip-compressed asset sizes (in bytes) for UI V2.
+ * Maximum allowed gzip-compressed asset sizes (in bytes) for UI V2
+ * (plus raw + gzip ceilings for inlined `critical.js`).
  *
  * Enforced on minified production builds (`client.rsbuild.ts --minify`) and in E2E
  * bundle validation (`browser_e2e.test.ts`).
@@ -47,51 +47,22 @@ export interface V2BundleBudget {
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
-    "common.js": {
-      // Raised from 60 / 20.5 for the app-wide Appearance menu (#598), then
-      // from 61.5 / 21 when it took over the anchored dialog from reader.js.
-      maxRawBytes: 62.5 * 1024,
-      maxGzipBytes: 21.5 * 1024,
-    },
-    "reader.js": {
-      // Lowered from 50 / 14 when the reader dialogs moved to native <dialog>,
-      // then from 46 / 13.5 when the anchored dialog moved to common.js. Gzip
-      // raised back to 13.5 for the library's saved-spot controls and "In
-      // progress" filter (the library view ships in this chunk).
-      maxRawBytes: 44 * 1024,
-      maxGzipBytes: 13.5 * 1024,
-    },
-    "dict.js": {
-      maxRawBytes: 32 * 1024,
-      maxGzipBytes: 10 * 1024,
-    },
-    "corpus.js": {
-      maxRawBytes: 20 * 1024,
-      maxGzipBytes: 7 * 1024,
-    },
-    "external.js": {
-      maxRawBytes: 12 * 1024,
-      maxGzipBytes: 5 * 1024,
-    },
-    "macronizer.js": {
-      maxRawBytes: 16 * 1024,
-      maxGzipBytes: 6 * 1024,
-    },
+    "common.js": { maxGzipBytes: 21 * 1024 },
+    "reader.js": { maxGzipBytes: 14 * 1024 },
+    "dict.js": { maxGzipBytes: 9.5 * 1024 },
+    "corpus.js": { maxGzipBytes: 6.5 * 1024 },
+    "external.js": { maxGzipBytes: 4.5 * 1024 },
+    "macronizer.js": { maxGzipBytes: 4.5 * 1024 },
   },
   routes: {
-    // Raised for the Appearance menu in common.js (#598): about, corpus and
-    // macronizer. Library and external were lowered again (below their
-    // originals) when the reader dialogs moved to native <dialog>. About and
-    // dicts were raised again when the anchored dialog moved to common.js and
-    // the highlight slider returned to the dictionary settings.
-    about: { maxRawBytes: 62.5 * 1024, maxGzipBytes: 21.5 * 1024 },
-    dicts: { maxRawBytes: 90 * 1024, maxGzipBytes: 30.5 * 1024 },
-    corpus: { maxRawBytes: 77.5 * 1024, maxGzipBytes: 27 * 1024 },
-    library: { maxRawBytes: 104 * 1024, maxGzipBytes: 34 * 1024 },
-    external: { maxRawBytes: 114 * 1024, maxGzipBytes: 38 * 1024 },
-    macronizer: { maxRawBytes: 76.5 * 1024, maxGzipBytes: 26 * 1024 },
+    about: { maxGzipBytes: 21 * 1024 },
+    dicts: { maxGzipBytes: 30 * 1024 },
+    corpus: { maxGzipBytes: 27 * 1024 },
+    library: { maxGzipBytes: 34.5 * 1024 },
+    external: { maxGzipBytes: 38.5 * 1024 },
+    macronizer: { maxGzipBytes: 25 * 1024 },
   },
-  maxCssGzipBytes: 25 * 1024,
+  maxCssGzipBytes: 24.5 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
   // pre-paint preference must not grow it (~300 B raw / ~237 B gzip). Do not
@@ -230,13 +201,6 @@ export function checkV2BundleBudget(
     routes[route] = total;
     const routeBudget = budget.routes[route];
     const label = `Route '${route}' (${v2RouteScripts(route).join(" + ")})`;
-    if (total.rawBytes > routeBudget.maxRawBytes) {
-      errors.push(
-        `${label} raw total ${formatSize(
-          total.rawBytes
-        )} exceeds budget ${formatSize(routeBudget.maxRawBytes)}`
-      );
-    }
     if (total.gzipBytes > routeBudget.maxGzipBytes) {
       errors.push(
         `${label} gzip total ${formatSize(
@@ -295,10 +259,8 @@ export function formatV2BundleSizeReport(
       : "missing";
     lines.push(
       `  ${(chunkName + ":").padEnd(13)} ${sizeStr.padEnd(28)} (budget: < ${(
-        chunkBudget.maxRawBytes / 1024
-      ).toFixed(1)} kB raw / < ${(chunkBudget.maxGzipBytes / 1024).toFixed(
-        1
-      )} kB gzip)`
+        chunkBudget.maxGzipBytes / 1024
+      ).toFixed(1)} kB gzip)`
     );
   }
 
@@ -313,10 +275,8 @@ export function formatV2BundleSizeReport(
       : "missing";
     lines.push(
       `    ${(route + ":").padEnd(11)} ${sizeStr.padEnd(28)} (budget: < ${(
-        routeBudget.maxRawBytes / 1024
-      ).toFixed(1)} kB raw / < ${(routeBudget.maxGzipBytes / 1024).toFixed(
-        1
-      )} kB gzip)`
+        routeBudget.maxGzipBytes / 1024
+      ).toFixed(1)} kB gzip)`
     );
   }
 

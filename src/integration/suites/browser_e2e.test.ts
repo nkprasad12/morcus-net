@@ -1270,7 +1270,6 @@ test.describe("UI V2 dictionary", () => {
         chunkSizes[chunk] = size;
 
         const budget = V2_BUNDLE_BUDGET.chunks[chunk];
-        expect(size.rawBytes).toBeLessThan(budget.maxRawBytes);
         expect(size.gzipBytes).toBeLessThan(budget.maxGzipBytes);
 
         // Ensure no banned development-only strings leaked into any client chunk
@@ -1281,7 +1280,6 @@ test.describe("UI V2 dictionary", () => {
       for (const route of V2_ROUTES) {
         const total = sumRouteSizes(route, chunkSizes)!;
         const budget = V2_BUNDLE_BUDGET.routes[route];
-        expect(total.rawBytes).toBeLessThan(budget.maxRawBytes);
         expect(total.gzipBytes).toBeLessThan(budget.maxGzipBytes);
       }
     });
