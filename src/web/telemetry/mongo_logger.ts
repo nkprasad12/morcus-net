@@ -4,10 +4,12 @@ import {
   TelemetryEvent,
   TelemetryLogger,
 } from "@/web/telemetry/telemetry";
+import { isCrawler } from "@/web/telemetry/crawlers";
 import { assert, checkPresent } from "@/common/assert";
 
 const API_CALL_COLLECTION = "ApiCalls";
 const SERVER_HEALTH_COLLECTION = "ServerHealth";
+const ERROR_LOG_INTERVAL_MS = 60_000;
 
 const CLIENT_OPTIONS: MongoClientOptions = {
   serverApi: {
@@ -16,39 +18,6 @@ const CLIENT_OPTIONS: MongoClientOptions = {
     deprecationErrors: true,
   },
 };
-
-// Crawler list is available from:
-// https://raw.githubusercontent.com/monperrus/crawler-user-agents/master/crawler-user-agents.json
-// For now, we will only check a few.
-const USER_AGENTS = new Set<string>([
-  "Googlebot",
-  "AdsBot-Google",
-  "Slurp",
-  "msnbot",
-  "yandex.com/bots",
-  "Baiduspider",
-  "DuckDuckBot",
-  "bingbot",
-  "GPTBot",
-  "ClaudeBot",
-  "claudebot",
-]);
-const LOWER_USER_AGENTS = new Set<string>(
-  Array.from(USER_AGENTS).map((agent) => agent.toLowerCase())
-);
-
-function isCrawler(userAgent?: string): boolean {
-  if (userAgent === undefined) {
-    return false;
-  }
-  const lowerUserAgent = userAgent.toLowerCase();
-  for (const agent of LOWER_USER_AGENTS) {
-    if (lowerUserAgent.includes(agent)) {
-      return true;
-    }
-  }
-  return false;
-}
 
 export class MongoLogger implements TelemetryLogger {
   static async create(
@@ -62,6 +31,8 @@ export class MongoLogger implements TelemetryLogger {
   }
 
   private initialized: boolean = false;
+  private lastErrorLogTime: number = 0;
+  private suppressedErrorCount: number = 0;
 
   private constructor(
     private readonly client: Readonly<MongoClient>,
@@ -75,9 +46,12 @@ export class MongoLogger implements TelemetryLogger {
   }
 
   async teardown(): Promise<void> {
-    await this.client.close();
-    this.initialized = false;
-    console.log("Closed MongoLogger");
+    try {
+      await this.client.close();
+      console.log("Closed MongoLogger");
+    } finally {
+      this.initialized = false;
+    }
   }
 
   async logApiCall(data: Readonly<ApiCallData>): Promise<void> {
@@ -100,7 +74,28 @@ export class MongoLogger implements TelemetryLogger {
       source: this.source,
     };
 
-    const collection = this.client.db().collection(collectionName);
-    await collection.insertOne(event);
+    try {
+      const collection = this.client.db().collection(collectionName);
+      await collection.insertOne(event);
+    } catch (err) {
+      const now = Date.now();
+      if (
+        this.lastErrorLogTime === 0 ||
+        now - this.lastErrorLogTime >= ERROR_LOG_INTERVAL_MS
+      ) {
+        const suppressed =
+          this.suppressedErrorCount > 0
+            ? ` (${this.suppressedErrorCount} similar errors suppressed)`
+            : "";
+        console.error(
+          `[MongoLogger] Failed to write to ${collectionName}${suppressed}:`,
+          err
+        );
+        this.lastErrorLogTime = now;
+        this.suppressedErrorCount = 0;
+      } else {
+        this.suppressedErrorCount++;
+      }
+    }
   }
 }

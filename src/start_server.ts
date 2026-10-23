@@ -187,9 +187,14 @@ function startMorcusServer(): Promise<http.Server> {
   if (!mongodbUriEmpty && consoleTelemetry) {
     log("`MONGODB_URI` set but logging to console due to `CONSOLE_TELEMETRY`.");
   }
-  const telemetry =
+  const telemetry: Promise<TelemetryLogger> =
     !mongodbUriEmpty && !consoleTelemetry
-      ? MongoLogger.create(mongodbUri, envVar("DB_SOURCE"))
+      ? MongoLogger.create(mongodbUri, envVar("DB_SOURCE")).catch(
+          (err: unknown) => {
+            logTelemetryError(err);
+            return TelemetryLogger.NoOp;
+          }
+        )
       : consoleTelemetry
       ? Promise.resolve(TelemetryLogger.ConsoleLogger)
       : Promise.resolve(TelemetryLogger.NoOp);

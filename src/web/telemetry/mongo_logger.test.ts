@@ -76,14 +76,21 @@ describe("MongoLogger", () => {
     expect(loggedEvent.timestamp).toBeDefined();
   });
 
-  it("skips log on logApiCall from Bot", async () => {
+  it.each([
+    "Googlebot Hello Hi",
+    "Mozilla/5.0 (compatible; Bytespider; spider-feedback@bytedance.com)",
+    "Mozilla/5.0 (compatible; PerplexityBot/1.0)",
+    "Mozilla/5.0 (compatible; SemrushBot/7~bl)",
+    "curl/8.5.0",
+    "Mozilla/5.0 (compatible; MysterySuperBot/1.0)",
+  ])("skips log on logApiCall from Bot (%s)", async (userAgent) => {
     const logger = await MongoLogger.create("foo", "bar");
 
     await logger.logApiCall({
       name: "lsDict",
       status: 200,
       latencyMs: 4,
-      userAgent: "Googlebot Hello Hi",
+      userAgent,
     });
 
     expect(mockInsertOne).not.toHaveBeenCalled();
@@ -100,5 +107,49 @@ describe("MongoLogger", () => {
     const loggedEvent: any = mockInsertOne.mock.lastCall!.at(0)!;
     expect(loggedEvent.rss).toBe(input.rss);
     expect(loggedEvent.timestamp).toBeDefined();
+  });
+
+  it("swallows and rate-limits insertOne errors without rejecting", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const nowSpy = jest.spyOn(Date, "now");
+    try {
+      nowSpy.mockReturnValue(1_000_000);
+      mockInsertOne.mockRejectedValue(new Error("over 512MB quota"));
+
+      const logger = await MongoLogger.create("foo", "bar");
+
+      // First failure logs immediately.
+      await expect(
+        logger.logApiCall({ name: "/dicts", status: 200, latencyMs: 5 })
+      ).resolves.toBeUndefined();
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(errorSpy.mock.calls[0][0]).toContain(
+        "[MongoLogger] Failed to write to ApiCalls:"
+      );
+
+      // Subsequent failures within 60s are suppressed.
+      nowSpy.mockReturnValue(1_010_000);
+      await expect(
+        logger.logApiCall({ name: "/dicts", status: 200, latencyMs: 5 })
+      ).resolves.toBeUndefined();
+      await expect(
+        logger.logServerHealth(process.memoryUsage())
+      ).resolves.toBeUndefined();
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+
+      // Once 60s have elapsed, the next failure logs along with the suppressed count.
+      nowSpy.mockReturnValue(1_061_000);
+      await expect(
+        logger.logApiCall({ name: "/dicts", status: 200, latencyMs: 5 })
+      ).resolves.toBeUndefined();
+      expect(errorSpy).toHaveBeenCalledTimes(2);
+      expect(errorSpy.mock.calls[1][0]).toContain(
+        "(2 similar errors suppressed)"
+      );
+    } finally {
+      mockInsertOne.mockImplementation(() => Promise.resolve());
+      nowSpy.mockRestore();
+      errorSpy.mockRestore();
+    }
   });
 });
