@@ -1,7 +1,11 @@
-To build the image:
+The image is built from `image/` only (its `Dockerfile` and `latincy_server.py`);
+this README and the tests stay outside it, so editing them doesn't change the
+image or redeploy it.
+
+To build the image (from this directory):
 
 ```
-docker build . --tag ghcr.io/nkprasad12/morcus-latincy
+docker build image --tag ghcr.io/nkprasad12/morcus-latincy
 ```
 
 To run it locally:

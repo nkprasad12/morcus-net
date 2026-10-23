@@ -245,7 +245,31 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
       - name: Build and smoke-test ${{ matrix.name }} (PR)
         if: github.event_name != 'push'
-        run: npm run tsnp src/scripts/helper_images.ts -- build-and-test ${{ matrix.name }}
+        run: npm run tsnp src/scripts/helper_images/cli.ts -- build-and-test ${{ matrix.name }}
       - name: Build, smoke-test, and push ${{ matrix.name }} (dev)
         if: github.event_name == 'push'
-        run: npm run tsnp src/scripts/helper_images.ts -- build-and-push ${{ matrix.name }}
+        run: npm run tsnp src/scripts/helper_images/cli.ts -- build-and-push ${{ matrix.name }}
+
+  preview-helper-image-promotion:
+    # Checks that every helper image for this commit is built and tested, and
+    # reports which ones the next `main` release would promote (and so
+    # redeploy). Changes nothing in the registry.
+    if: github.event_name == 'push'
+    needs: build-helper-images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: package.json
+          cache: npm
+      - name: Installing npm dependencies
+        run: npm ci
+      - name: Setting up .env
+        run: touch .env
+      - name: Preview helper image promotion
+        run: npm run tsnp src/scripts/helper_images/cli.ts -- promote --dry-run

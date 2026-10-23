@@ -44,7 +44,10 @@ jobs:
 
   promote-helper-images:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    # Longer than other jobs: the `helper_images/cli.ts promote` command waits
+    # up to 10 minutes in total for the images' `tested-` tags, which the same
+    # commit's `dev` CI run may still be creating.
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -61,5 +64,5 @@ jobs:
         run: touch .env
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-      - name: Promote helper images (morcus-proxy, morcus-latincy)
-        run: npm run tsnp src/scripts/helper_images.ts -- promote
+      - name: Promote helper images
+        run: npm run tsnp src/scripts/helper_images/cli.ts -- promote
