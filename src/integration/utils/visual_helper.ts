@@ -52,10 +52,10 @@ export function v2VisualScenario(
 
   for (const js of jsModes) {
     for (const theme of themes) {
-      test(`${scenarioName} [${js}] [${theme}]`, async (
-        { browser, baseURL },
-        testInfo
-      ) => {
+      test(`${scenarioName} [${js}] [${theme}]`, async ({
+        browser,
+        baseURL,
+      }, testInfo) => {
         if (
           options.projects &&
           !options.projects.some((p) => p === testInfo.project.name)
