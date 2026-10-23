@@ -82,12 +82,23 @@ describe("macronizeInput", () => {
     ]);
   });
 
-  it("should preserve case of all-caps word", async () => {
-    const input = "EOS";
-    mockLatincyAnalysis.mockResolvedValue([["EOS", "Eos", "Gender=Fem"]]);
+  it("should preserve case of all-caps word, send lowercase to tagger, and match proper-noun lemmas case-insensitively", async () => {
+    const input = "EOS ACCLINATQUE";
+    // When sent lowercase "eos", LatinCy may return lowercase lemma "eos"
+    // while Morceus's proper-noun lemma is "Eos".
+    mockLatincyAnalysis.mockResolvedValue([
+      ["eos", "eos", "Gender=Fem"],
+      [" ", "", ""],
+      ["acclinat", "acclino", "Tense=Pres"],
+      ["que", "que", ""],
+    ]);
 
     const result = await macronizeInput(input);
-    expect(result).toHaveLength(1);
+    expect(mockLatincyAnalysis).toHaveBeenCalledWith(
+      ["eos", " ", "acclinat", "que"],
+      [false, true, false, false]
+    );
+    expect(result).toHaveLength(3);
 
     const eos = result[0] as MacronizedWord;
     expect(eos.word).toBe("EOS");
@@ -97,6 +108,56 @@ describe("macronizeInput", () => {
         options: [{ lemma: "Eos", morph: ["fem nom sg"] }],
       },
       { form: "EO\u0304S", options: [{ lemma: "is", morph: ["masc acc pl"] }] },
+    ]);
+    expect(eos.suggested).toBe(0);
+    expect(eos.confidence).toBe("confident");
+
+    const acclinatque = result[2] as MacronizedWord;
+    expect(acclinatque.word).toBe("ACCLINATQUE");
+    expect(acclinatque.options).toEqual([
+      {
+        form: "ACCLI\u0304NATQUE",
+        options: [{ lemma: "acclino", morph: ["pres ind act 3rd sg"] }],
+      },
+    ]);
+  });
+
+  it("keeps lemma matching case-sensitive for non-all-caps words", async () => {
+    // Non-all-caps "Eos" should NOT match lowercase tagger lemma "eos" in Pass 1.
+    const result = await macronizeInput("Eos", async () => [
+      ["Eos", "eos", "Gender=Fem|Case=Nom|Number=Sing"],
+    ]);
+    const eos = result[0] as MacronizedWord;
+    expect(eos.suggested).toBe(0);
+    expect(eos.confidence).toBe("weak");
+  });
+
+  it("handles mixed-case and 1-letter-stem enclitic words without alignment errors", async () => {
+    const seenWords: string[] = [];
+    const result = await macronizeInput(
+      "ACCLINATque AcclinatQUE IQUE",
+      async (words) => {
+        seenWords.push(...words);
+        return words.map((w): [string, string, string] => [w, "", ""]);
+      }
+    );
+    expect(seenWords).toEqual([
+      "ACCLINAT",
+      "que",
+      " ",
+      "Acclinat",
+      "que",
+      " ",
+      "i",
+      "que",
+    ]);
+    const words = result.filter(
+      (t): t is MacronizedWord => typeof t !== "string"
+    );
+    expect(words.map((w) => w.word)).toEqual([
+      "ACCLINATque",
+      "AcclinatQUE",
+      "IQUE",
     ]);
   });
 

@@ -4,17 +4,7 @@ Known follow-up work and optimization candidates for the UI V2 Macronizer slice.
 
 ---
 
-## 1. Lowercase all-caps tokens before sending them to LatinCy
-
-**Status:** open.
-
-All-caps input wrecks tags for the whole sentence (e.g. `DA`/`MIHI` tagged NUM, lemmas like `iMMORTALES`), while the same sentence lowercased tags correctly. Lowercase all-caps tokens before sending them to LatinCy.
-
-Side note: sentence-initial `I` always shows the "possible Roman numeral" flag now; that's noisy but honest.
-
----
-
-## 2. Known words lose user-typed long marks
+## 1. Known words lose user-typed long marks
 
 **Status:** open question.
 
@@ -22,7 +12,7 @@ Morceus looks words up with diacritics removed, and a known word is shown with M
 
 ---
 
-## 3. Fake tagger can't express perfect and future perfect
+## 2. Fake tagger can't express perfect and future perfect
 
 **Status:** minor, affects the `fake-latincy` engine only.
 
@@ -30,7 +20,7 @@ Morceus looks words up with diacritics removed, and a known word is shown with M
 
 ---
 
-## 4. SSR HTML payload size for long passages
+## 3. SSR HTML payload size for long passages
 
 **Status:** measured 2026-10-02 at the 10,000-character limit, with the `fake-latincy` engine and the real Morceus tables.
 
@@ -52,7 +42,7 @@ Morceus looks words up with diacritics removed, and a known word is shown with M
 
 ---
 
-## 5. Tighten bundle size budgets once stabilized
+## 4. Tighten bundle size budgets once stabilized
 
 **Status:** generous ceilings set in [`src/bundler/client_bundle_budget.ts`](../../../bundler/client_bundle_budget.ts) during initial implementation.
 

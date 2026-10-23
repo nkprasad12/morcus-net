@@ -28,6 +28,28 @@ export interface TokenResult extends DiacriticStripped {
 const HAS_LETTER_RE = /\p{L}/u;
 const FORMAT_CHAR_RE = /\p{Cf}/gu;
 
+export function isAllCapsLetters(word: string): boolean {
+  return (
+    word.length > 0 &&
+    word === word.toUpperCase() &&
+    word !== word.toLowerCase()
+  );
+}
+
+/**
+ * Whether `word` is lowercased before being sent to the POS tagger: multi-letter
+ * all-caps words are lowercased (since LatinCy mis-tags them as NUM and mangles
+ * lemma casing), while Title Case and single-letter tokens (such as
+ * sentence-initial `A`/`O` or praenomina `C.`/`M.`) are kept intact.
+ */
+export function isLowercasedForTagger(word: string): boolean {
+  return word.length > 1 && isAllCapsLetters(word);
+}
+
+export function toTaggerWord(word: string): string {
+  return isLowercasedForTagger(word) ? word.toLowerCase() : word;
+}
+
 export function preprocessText(
   input: string
 ): [(string | TokenResult)[], string[], boolean[]] {
@@ -58,17 +80,19 @@ export function preprocessText(
     };
     processed.push(currentProcessed);
     spaces.push(false);
+    const lowerForTagger = isLowercasedForTagger(stripped.word);
     const formsWithEnclitics = crunch.filter((c) => c.enclitic !== undefined);
     if (formsWithEnclitics.length === crunch.length && crunch.length > 0) {
       const firstEnclitic = checkPresent(formsWithEnclitics[0].enclitic);
       currentProcessed.nlpEnclitic = firstEnclitic;
       const baseLength = stripped.word.length - firstEnclitic.length;
-      words.push(stripped.word.substring(0, baseLength));
-      words.push(stripped.word.substring(baseLength));
+      const stem = stripped.word.substring(0, baseLength);
+      words.push(lowerForTagger ? stem.toLowerCase() : stem);
+      words.push(firstEnclitic);
       spaces.push(false);
       continue;
     }
-    words.push(stripped.word);
+    words.push(lowerForTagger ? stripped.word.toLowerCase() : stripped.word);
   }
   return [processed, words, spaces];
 }

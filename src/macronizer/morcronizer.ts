@@ -18,7 +18,13 @@ import {
   wordInflectionDataToArray,
 } from "@/morceus/inflection_data_utils";
 import type { WordInflectionData } from "@/morceus/types";
-import { preprocessText, type TokenResult } from "@/nlp/text_tokenization";
+import {
+  isAllCapsLetters,
+  isLowercasedForTagger,
+  preprocessText,
+  toTaggerWord,
+  type TokenResult,
+} from "@/nlp/text_tokenization";
 import type {
   MacronizedConfidence,
   MacronizedResult,
@@ -158,7 +164,8 @@ interface BestMatch {
 
 function findBestMatch(
   crunched: OptionsForForm[],
-  nlp: LatinToken
+  nlp: LatinToken,
+  ignoreLemmaCase = false
 ): BestMatch | undefined {
   const nlpInflection = safeConvertUpos(nlp[2]);
   if (nlpInflection === undefined) {
@@ -178,7 +185,10 @@ function findBestMatch(
     let formMatched = false;
     for (const option of options) {
       const lemma = option.lemma.split("#")[0];
-      if (lemma !== nlp[1]) {
+      const lemmaMatches = ignoreLemmaCase
+        ? lemma.toLowerCase() === nlp[1].toLowerCase()
+        : lemma === nlp[1];
+      if (!lemmaMatches) {
         continue;
       }
       for (const morph of option.morph) {
@@ -246,14 +256,6 @@ function vowelsMatches(
     }
   }
   return longMatches;
-}
-
-function isAllCapsLetters(word: string): boolean {
-  return (
-    word.length > 0 &&
-    word === word.toUpperCase() &&
-    word !== word.toLowerCase()
-  );
 }
 
 function isAbbreviationBeforePeriod(
@@ -408,7 +410,7 @@ function attachGuesses(
     const strippedWord = raw.strippedWord ?? raw.word;
     const nlpToken = nlpResult[j];
     j++;
-    assert(strippedWord.startsWith(nlpToken[0]));
+    assert(toTaggerWord(strippedWord).startsWith(nlpToken[0]));
     if (raw.nlpEnclitic !== undefined) {
       assertEqual(raw.nlpEnclitic, nlpResult[j][0]);
       j++;
@@ -433,7 +435,11 @@ function attachGuesses(
       continue;
     }
 
-    const bestMatch = findBestMatch(optionsByForm, nlpToken);
+    const bestMatch = findBestMatch(
+      optionsByForm,
+      nlpToken,
+      isLowercasedForTagger(strippedWord)
+    );
     if (bestMatch !== undefined) {
       macronized.suggested = bestMatch.index;
       macronized.confidence = bestMatch.confidence;
