@@ -1,4 +1,4 @@
-import { assertEqual } from "@/common/assert";
+import { assert, assertEqual } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { buildCorpus } from "@/common/library/corpus/build_corpus";
 import {
@@ -94,11 +94,60 @@ const NAME_TO_URL_LOOKUP = new Map<string, string>([
   ["Pro C. Rabirio Postumo", "pro_rabirio_postumo"],
 ]);
 
-const PERSEUS_LAT_LIT_DECLARATION = `<!DOCTYPE TEI.2 PUBLIC "-//TEI P4//DTD Main DTD Driver File//EN" "http://www.tei-c.org/Guidelines/DTD/tei2.dtd" [
-<!ENTITY % TEI.XML "INCLUDE">
-<!ENTITY % PersProse PUBLIC "-//Perseus P4//DTD Perseus Prose//EN" "http://www.perseus.tufts.edu/DTD/1.0/PersProse.dtd" >
-%PersProse;
-]>`;
+/** Index just past the `<!DOCTYPE ...>` that starts at `start`. */
+function endOfDoctype(xml: string, start: number): number {
+  let inSubset = false;
+  let quote: string | undefined = undefined;
+  for (let i = start + "<!DOCTYPE".length; i < xml.length; i++) {
+    const c = xml[i];
+    if (quote !== undefined) {
+      if (c === quote) quote = undefined;
+    } else if (c === '"' || c === "'") {
+      quote = c;
+    } else if (inSubset && xml.startsWith("<!--", i)) {
+      const close = xml.indexOf("-->", i + 4);
+      assert(close >= 0, "Unterminated comment in DOCTYPE");
+      i = close + 2;
+    } else if (c === "[") {
+      inSubset = true;
+    } else if (c === "]") {
+      inSubset = false;
+    } else if (c === ">" && !inSubset) {
+      return i + 1;
+    }
+  }
+  throw new Error("Unterminated DOCTYPE");
+}
+
+/**
+ * Removes the XML prolog: everything before the root element. That is the
+ * XML declaration, processing instructions (upstream Perseus files carry one
+ * or two `<?xml-model ...?>`), comments, and a `<!DOCTYPE>` with or without an
+ * internal subset (the TEI P4 one that remains in some files declares
+ * parameter entities, which the XML parser cannot handle). The parser expects
+ * exactly one top-level element, so none of these may reach it.
+ *
+ * Exported for testing.
+ */
+export function stripXmlProlog(xml: string): string {
+  let i = xml.charCodeAt(0) === 0xfeff ? 1 : 0;
+  for (;;) {
+    while (i < xml.length && /\s/.test(xml[i])) i++;
+    if (xml.startsWith("<?", i)) {
+      const close = xml.indexOf("?>", i + 2);
+      assert(close >= 0, "Unterminated processing instruction");
+      i = close + 2;
+    } else if (xml.startsWith("<!--", i)) {
+      const close = xml.indexOf("-->", i + 4);
+      assert(close >= 0, "Unterminated comment");
+      i = close + 3;
+    } else if (xml.startsWith("<!DOCTYPE", i)) {
+      i = endOfDoctype(xml, i);
+    } else {
+      return xml.slice(i);
+    }
+  }
+}
 
 function urlify(input: string, customs: Map<string, string>) {
   const custom = customs.get(input);
@@ -224,13 +273,9 @@ export function preprocessPerseusWorks(
     const workId = pathToId(workPath);
     try {
       const rawXml = parseRawXml(
-        fs
-          .readFileSync(workPath)
-          .toString()
-          // This is a complete hack to skip the declaration.
-          // the fast-xml-parser library has a config option to skip the declaration, but it
-          // doesn't actually work.
-          .replace(PERSEUS_LAT_LIT_DECLARATION, ""),
+        // fast-xml-parser has an option to skip the DOCTYPE, but it doesn't
+        // work, so the prolog is removed before parsing.
+        stripXmlProlog(fs.readFileSync(workPath).toString()),
         {
           keepWhitespace: true,
         }

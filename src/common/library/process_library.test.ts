@@ -1,5 +1,9 @@
 import { setupFakeHypotacticData } from "@/common/library/hypotactic_test_helper";
-import { processLibrary } from "@/common/library/process_library";
+import {
+  processLibrary,
+  stripXmlProlog,
+} from "@/common/library/process_library";
+import { parseRawXml } from "@/common/xml/xml_utils";
 import { replaceEnvVar } from "@/common/test_helpers";
 import {
   getV2LibrarySummaries,
@@ -90,5 +94,61 @@ describe("Library Processing", () => {
       "hypotactic_Heroides_Ovid",
       "hypotactic_Metamorphoses_Ovid",
     ]);
+  });
+});
+
+describe("stripXmlProlog", () => {
+  const ROOT = `<TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>Gallia</body></text></TEI>`;
+  // The prologs found in canonical-latinLit, verbatim.
+  const P4_DOCTYPE = `<!DOCTYPE TEI.2 PUBLIC "-//TEI P4//DTD Main DTD Driver File//EN" "http://www.tei-c.org/Guidelines/DTD/tei2.dtd" [
+<!ENTITY % TEI.XML "INCLUDE">
+<!ENTITY % PersProse PUBLIC "-//Perseus P4//DTD Perseus Prose//EN" "http://www.perseus.tufts.edu/DTD/1.0/PersProse.dtd" >
+%PersProse;
+]>`;
+  const P4_DOCTYPE_TIGHT = `<!DOCTYPE TEI.2 PUBLIC "-//TEI P4//DTD Main DTD Driver File//EN" "http://www.tei-c.org/Guidelines/DTD/tei2.dtd"[
+<!ENTITY % TEI.XML "INCLUDE">
+<!ENTITY % PersProse PUBLIC "-//Perseus P4//DTD Perseus Prose//EN" "http://www.perseus.tufts.edu/DTD/1.0/PersProse.dtd">
+%PersProse;
+]>`;
+  const XML_MODEL = `<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://www.stoa.org/epidoc/schema/latest/tei-epidoc.rng"
+  schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="http://www.stoa.org/epidoc/schema/latest/tei-epidoc.rng"
+  schematypens="http://purl.oclc.org/dsdl/schematron"?>`;
+
+  it.each([
+    ["no prolog", ""],
+    ["an XML declaration", `<?xml version='1.0' encoding='UTF-8'?>\n`],
+    ["xml-model instructions", `${XML_MODEL}\n`],
+    [
+      "xml-model instructions and a comment",
+      `${XML_MODEL}\n<!-- https://epidoc.stoa.org/schema/latest/tei-epidoc.rng -->\n`,
+    ],
+    ["a P4 DOCTYPE with an internal subset", `${P4_DOCTYPE}\n`],
+    ["a P4 DOCTYPE with no space before its subset", `${P4_DOCTYPE_TIGHT}\n`],
+    [
+      "a declaration and a P4 DOCTYPE",
+      `<?xml version="1.0"?>\n${P4_DOCTYPE}\n`,
+    ],
+    ["a byte order mark", `\uFEFF<?xml version="1.0"?>\n`],
+    ["a DOCTYPE without a subset", `<!DOCTYPE TEI SYSTEM "tei.dtd">\n`],
+    [
+      "a subset with a comment and a quoted ]>",
+      `<!DOCTYPE TEI [ <!-- ]> --> <!ENTITY x "]>"> ]>\n`,
+    ],
+  ])("removes %s", (_, prolog) => {
+    const stripped = stripXmlProlog(prolog + ROOT);
+
+    expect(stripped).toBe(ROOT);
+    expect(parseRawXml(stripped).name).toBe("TEI");
+  });
+
+  it("leaves the body alone", () => {
+    const body = `<TEI><text><!-- c --><?pi x?><body>a</body></text></TEI>`;
+    expect(stripXmlProlog(`<?xml version="1.0"?>${body}`)).toBe(body);
+  });
+
+  it("throws on an unterminated DOCTYPE", () => {
+    expect(() => stripXmlProlog(`<!DOCTYPE TEI [ <!ENTITY x "y">`)).toThrow();
   });
 });
