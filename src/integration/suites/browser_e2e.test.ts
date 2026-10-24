@@ -330,7 +330,7 @@ test.describe("UI V2 dictionary", () => {
 
   test("loads entries by ID directly via /dicts/id/:id", async ({ page }) => {
     await page.goto("/dicts/id/n20077");
-    await expect(page).toHaveTitle(/ID n20077/);
+    await expect(page).toHaveTitle(/hăbĕo \| Lewis & Short/);
     await expect(page.locator(".dict-card").first()).toBeVisible();
     await expect(page.locator(".dict-title").first()).toContainText("Lewis");
     await expect(
@@ -1370,7 +1370,7 @@ test.describe("UI V2 corpus", () => {
     await page.keyboard.press("Enter");
 
     await expect(page).toHaveURL(/\/corpus\?q=Roma/);
-    await expect(page).toHaveTitle(/Corpus: Roma/);
+    await expect(page).toHaveTitle(/Corpus \| Morcus Latin Tools/);
     await expect(page.locator(".corpus-result-list")).toBeVisible();
     await expect(page.locator(".corpus-beta-chip")).toBeVisible();
   });

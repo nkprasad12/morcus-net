@@ -13,8 +13,10 @@ const DICT_ID_PATH = "/dicts/id/";
  */
 export function dictPageTitle(query: string, isIdSearch = false): string {
   const cleaned = isIdSearch ? query : cleanDictQuery(query);
-  if (!cleaned) return "Morcus Dictionary";
-  return `${isIdSearch ? `ID ${cleaned}` : cleaned} - Morcus Dictionary`;
+  if (!cleaned) return "Dictionaries | Morcus Latin Tools";
+  return `${
+    isIdSearch ? `ID ${cleaned}` : cleaned
+  } | Dictionaries | Morcus Latin Tools`;
 }
 
 /**

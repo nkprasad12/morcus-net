@@ -740,12 +740,15 @@ export async function renderReaderPageHtml(
     workTag: ctx.work.title,
     heading: ctx.activePage.title,
   });
+  const description =
+    "Read with instant click-to-lookup across multiple lexica.";
   const canonicalPath = buildReaderPageUrl(ctx.work, ctx.activePage);
 
   const contentHtml = renderReaderContentHtmlFromContext(ctx);
 
   return renderPageShell({
     title,
+    description,
     canonicalPath,
     activePage: "library",
     isReader: true,

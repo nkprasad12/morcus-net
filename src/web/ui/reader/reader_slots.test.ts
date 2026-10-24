@@ -66,16 +66,17 @@ describe("formatReaderPageTitle", () => {
         workTag: "De Bello Gallico",
         heading: "Book 1, Chapter 1",
       })
-    ).toBe("De Bello Gallico: Book 1, Chapter 1 - Morcus Latin Tools");
+    ).toBe("De Bello Gallico: Book 1, Chapter 1 | Morcus Latin Tools");
     expect(
       formatReaderPageTitle({
         workTag: "Saved text",
         heading: "Saved text",
       })
-    ).toBe("Saved text - Morcus Latin Tools");
+    ).toBe("Saved text | Morcus Latin Tools");
     expect(formatReaderPageTitle({ heading: "Read your own text" })).toBe(
-      "Read your own text - Morcus Latin Tools"
+      "Read your own text | Morcus Latin Tools"
     );
     expect(formatReaderPageTitle({})).toBe("Morcus Latin Tools");
   });
 });
+

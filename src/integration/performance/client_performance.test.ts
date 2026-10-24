@@ -144,7 +144,7 @@ test.describe("Client Performance Tests", () => {
 
   repeatedTest("metrics for dict landing", N, async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveTitle(/^Morcus /);
+    await expect(page).toHaveTitle(/Morcus Latin Tools/);
     await collectMetrics(page, "dicts-landing");
   });
 

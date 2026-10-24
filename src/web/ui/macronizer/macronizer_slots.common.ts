@@ -16,5 +16,5 @@ export const MACRONIZER_MAX_CHARS = 10000;
 export function formatMacronizerPageTitle(hasResult: boolean): string {
   return hasResult
     ? "Macronizer Results | Morcus Latin Tools"
-    : "Latin Macronizer | Morcus Latin Tools";
+    : "Macronizer | Morcus Latin Tools";
 }

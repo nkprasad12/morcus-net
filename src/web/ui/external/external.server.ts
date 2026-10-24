@@ -197,7 +197,9 @@ export function renderExternalLandingPageHtml(
   options: ExternalLandingOptions = {}
 ): string {
   return renderPageShell({
-    title: formatReaderPageTitle({ heading: "Read your own text" }),
+    title: "Read Your Own Text",
+    description:
+      "Import or paste Latin text from the web with instant click-to-lookup across multiple lexica.",
     canonicalPath: EXTERNAL_READER_PATH,
     activePage: "library",
     isExternal: true,

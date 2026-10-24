@@ -124,7 +124,7 @@ describe("GET /externalReader", () => {
     expect(res.text).toContain('id="reader-settings-btn"');
     // Title from the first words, tagged with the source; source attributed.
     expect(res.text).toContain(
-      "<title>example.com: Quo usque tandem abutere Catilina - Morcus Latin Tools</title>"
+      "<title>example.com: Quo usque tandem abutere Catilina | Morcus Latin Tools</title>"
     );
     expect(res.text).toContain("example.com");
     expect(res.text).toContain("Not part of the Morcus library");
@@ -137,7 +137,7 @@ describe("GET /externalReader", () => {
 
     expect(res.status).toBe(200);
     expect(res.text).toContain(
-      "<title>example.com: Quo usque tandem abutere Catilina - Morcus Latin Tools</title>"
+      "<title>example.com: Quo usque tandem abutere Catilina | Morcus Latin Tools</title>"
     );
     expect(res.text).toContain("reader-layout-active");
     expect(res.text).toContain("/dicts?q=tandem&amp;lang=La&amp;o=1");

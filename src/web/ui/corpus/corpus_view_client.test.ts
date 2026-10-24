@@ -117,7 +117,6 @@ describe("<morcus-corpus-view>", () => {
     expect(fetchMock).toHaveBeenCalledWith(expected, expect.anything());
     expect(currentPath()).toBe(expected);
     expect(window.history.length).toBe(historyLength + 1);
-    expect(document.title).toBe("Corpus: omnis - Morcus Latin Tools");
     expect(document.querySelector(".corpus-result")).not.toBeNull();
     expect(document.querySelector(".inflect-chip.is-on")?.textContent).toBe(
       "Strict"
@@ -234,7 +233,6 @@ describe("<morcus-corpus-view>", () => {
     expect(input("q").value).toBe(exampleQuery);
     // The example link carries no settings, so the defaults apply.
     expect(input("contextLen").value).toBe("20");
-    expect(document.title).toBe(`Corpus: ${exampleQuery} - Morcus Latin Tools`);
   });
 
   test("back/forward re-swaps and resyncs the form", async () => {
@@ -251,23 +249,7 @@ describe("<morcus-corpus-view>", () => {
     expect(input("contextLen").value).toBe("5");
     expect(input("pageSize").value).toBe("10");
     expect(input("strictMode").checked).toBe(true);
-    expect(document.title).toBe("Corpus: amoris - Morcus Latin Tools");
     expect(currentPath()).toBe(target);
-  });
-
-  test("the title reads q the way the server does, trimmed", async () => {
-    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
-    serveSlots();
-
-    window.history.pushState(null, "", "/corpus?q=++amoris+");
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    await settle();
-    expect(document.title).toBe("Corpus: amoris - Morcus Latin Tools");
-
-    window.history.pushState(null, "", "/corpus?q=+++");
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    await settle();
-    expect(document.title).toBe("Corpus Query - Morcus Latin Tools");
   });
 
   test("CORP-06: settings popover closes on Escape (focusing summary) and outside pointerdown, and restores uncommitted inputs without mutating tray chips on change", async () => {

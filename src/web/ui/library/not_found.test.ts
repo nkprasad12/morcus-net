@@ -86,7 +86,7 @@ describe("library not_found SSR", () => {
 
       expect(pageHtml).toContain("<!DOCTYPE html>");
       expect(pageHtml).toContain(
-        "<title>Work Not Found - Morcus Latin Tools</title>"
+        "<title>Work Not Found | Morcus Latin Tools</title>"
       );
       expect(pageHtml).toContain('<header class="app-bar">');
       expect(pageHtml).toContain('href="/library"');

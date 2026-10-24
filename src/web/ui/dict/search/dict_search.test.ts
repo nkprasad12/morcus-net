@@ -861,13 +861,15 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   test("on an entry page, a settings commit keeps the server's ID title", () => {
     delete (window as any).location;
     (window as any).location = new URL("http://localhost/dicts/id/n20077");
-    document.title = "ID n20077 - Morcus Dictionary";
+    document.title = "ID n20077 | Dictionaries | Morcus Latin Tools";
 
     const el = createDictSearch();
     el.querySelector<HTMLInputElement>("input.input")!.value = "";
     commitSettings(el, ["L&S", "GAF"], false);
 
-    expect(document.title).toBe("ID n20077 - Morcus Dictionary");
+    expect(document.title).toBe(
+      "ID n20077 | Dictionaries | Morcus Latin Tools"
+    );
   });
 
   test("Back to an entry page restores its ID title", () => {
@@ -878,7 +880,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     (window as any).location = new URL("http://localhost/dicts/id/n20077");
     window.dispatchEvent(new PopStateEvent("popstate"));
 
-    expect(document.title).toBe("ID n20077 - Morcus Dictionary");
+    expect(document.title).toBe(
+      "ID n20077 | Dictionaries | Morcus Latin Tools"
+    );
   });
 
   test("dict-settings-commit updates the search form's hidden d/o and dataset, and keeps lang in the URL", () => {
@@ -1098,7 +1102,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(pushStateSpy).toHaveBeenCalledTimes(1);
     expect(replaceStateSpy).not.toHaveBeenCalled();
     expect(new URLSearchParams(window.location.search).get("q")).toBe("qui");
-    expect(document.title).toBe("qui - Morcus Dictionary");
+    expect(document.title).toBe("qui | Dictionaries | Morcus Latin Tools");
     expect(
       settingsForm.querySelector<HTMLInputElement>('input[name="q"]')!.value
     ).toBe("qui");
@@ -1203,7 +1207,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     window.dispatchEvent(new PopStateEvent("popstate"));
 
     expect(input.value).toBe("amo");
-    expect(document.title).toBe("amo - Morcus Dictionary");
+    expect(document.title).toBe("amo | Dictionaries | Morcus Latin Tools");
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/dicts?q=amo&format=partial&d=an&o=1"),
       expect.anything()
@@ -1330,7 +1334,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       "",
       expect.stringContaining("o=1")
     );
-    expect(document.title).toBe("equus - Morcus Dictionary");
+    expect(document.title).toBe("equus | Dictionaries | Morcus Latin Tools");
 
     pushStateSpy.mockRestore();
   });

@@ -65,7 +65,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
     // The same URL answers with a full page or a partial.
     const isPartial = isPartialRequest(req, res);
     if (options.engine === undefined) {
-      res.status(503).send(renderCorpusUnavailableHtml(params.q));
+      res.status(503).send(renderCorpusUnavailableHtml());
       return;
     }
     try {
@@ -83,7 +83,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
     } catch (err: unknown) {
       if (err instanceof CorpusUnavailableError) {
         console.warn("Corpus engine unavailable:", err.message);
-        res.status(503).send(renderCorpusUnavailableHtml(params.q));
+        res.status(503).send(renderCorpusUnavailableHtml());
         return;
       }
       console.error("Error running corpus search:", err);

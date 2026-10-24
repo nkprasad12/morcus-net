@@ -502,16 +502,53 @@ describe("dict_ssr", () => {
       query: "n20077",
       isIdSearch: true,
     });
-    expect(pageHtml).toContain("<title>ID n20077 - Morcus Dictionary</title>");
+    expect(pageHtml).toContain(
+      "<title>ID n20077 | Dictionaries | Morcus Latin Tools</title>"
+    );
     // Search input should have empty value for ID search so user can type a fresh search
     expect(pageHtml).toContain('value=""');
+  });
+
+  test("renderDictPageHtml formats title and og tags from entry results for ID search", () => {
+    const pageHtml = renderDictPageHtml({
+      query: "n20077",
+      isIdSearch: true,
+      results: {
+        "L&S": [
+          {
+            entry: '<span class="lsOrth">hăbĕo</span>',
+            outline: {
+              mainKey: "hăbĕo",
+              mainSection: {
+                text: "hăbĕo",
+                level: 0,
+                ordinal: "",
+                sectionId: "n20077",
+              },
+              senses: [],
+            },
+          },
+        ],
+      },
+    });
+    expect(pageHtml).toContain(
+      "<title>hăbĕo | Lewis &amp; Short | Morcus Latin Tools</title>"
+    );
+    expect(pageHtml).toContain(
+      '<meta property="og:title" content="hăbĕo | Lewis &amp; Short">'
+    );
+    expect(pageHtml).toContain(
+      '<meta name="description" content="Dictionary entry, citations, and inflection analyses for &#x27;hăbĕo&#x27;.">'
+    );
   });
 
   test("renderDictPageHtml preserves macra and breves in title and search input", () => {
     const pageHtml = renderDictPageHtml({
       query: "hăbēna",
     });
-    expect(pageHtml).toContain("<title>hăbēna - Morcus Dictionary</title>");
+    expect(pageHtml).toContain(
+      "<title>hăbēna | Dictionaries | Morcus Latin Tools</title>"
+    );
     expect(pageHtml).not.toContain("&#x103;");
     expect(pageHtml).not.toContain("&#x113;");
     expect(pageHtml).toContain('value="hăbēna"');

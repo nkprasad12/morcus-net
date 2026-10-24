@@ -79,7 +79,9 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
 export function renderAboutPageHtml(options: AboutPageOptions = {}): string {
   const contentHtml = renderAboutContentHtml(options);
   return renderPageShell({
-    title: "About - Morcus Latin Tools",
+    title: "About",
+    description:
+      "Free, open-source Latin study tools: multi-lexicon dictionary search, literature reading with click-to-lookup, corpus search, and more.",
     canonicalPath: "/about",
     activePage: "about",
     contentHtml,

@@ -591,6 +591,8 @@ export function renderMacronizerPage(
   const hasResult = options.document !== undefined;
   return renderPageShell({
     title: formatMacronizerPageTitle(hasResult),
+    description:
+      "Automatically add macrons to Latin text, with an interactive workspace to review and resolve ambiguous words.",
     canonicalPath: hasResult ? undefined : "/macronizer",
     route: "macronizer",
     contentHtml: String(renderMacronizerContentHtml(options)),

@@ -73,7 +73,7 @@ describe("renderPageShell", () => {
     });
 
     expect(html).toContain("<!DOCTYPE html>");
-    expect(html).toContain("<title>Corpus Search</title>");
+    expect(html).toContain("<title>Corpus Search | Morcus Latin Tools</title>");
     expect(html).toContain("<div id='content'>Content</div>");
     expect(html).toContain('href="/corpus"');
     expect(html).toContain('class="nav-link active"');
@@ -168,6 +168,41 @@ describe("renderPageShell", () => {
     expect(embedded).not.toContain('name="theme-color"');
     expect(embedded).not.toContain('rel="canonical"');
     expect(embedded).not.toContain('property="og:');
+  });
+
+  test("appends brand suffix to base title for <title> while keeping base title for og:title", () => {
+    const html = renderPageShell({
+      title: "Library",
+      description: "A description of this page.",
+      activePage: "library",
+      contentHtml: "<div></div>",
+    });
+
+    expect(html).toContain("<title>Library | Morcus Latin Tools</title>");
+    expect(html).toContain('<meta property="og:title" content="Library">');
+    expect(html).toContain(
+      '<meta name="description" content="A description of this page.">'
+    );
+    expect(html).toContain(
+      '<meta property="og:description" content="A description of this page.">'
+    );
+  });
+
+  test("normalizes pre-suffixed title without doubling brand suffix and omits description when absent", () => {
+    const html = renderPageShell({
+      title: "amo | Dictionaries | Morcus Latin Tools",
+      activePage: "dicts",
+      contentHtml: "<div></div>",
+    });
+
+    expect(html).toContain(
+      "<title>amo | Dictionaries | Morcus Latin Tools</title>"
+    );
+    expect(html).toContain(
+      '<meta property="og:title" content="amo | Dictionaries">'
+    );
+    expect(html).not.toContain('name="description"');
+    expect(html).not.toContain('property="og:description"');
   });
 
   test("emits route-specific scripts in dependency order and dict.js prefetch on reader pages", () => {

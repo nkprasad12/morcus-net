@@ -632,7 +632,7 @@ describe("Route-to-Bundle Conformance Harness", () => {
       {
         name: "/corpus (503 unavailable)",
         url: "/corpus?q=amo",
-        fullHtml: renderCorpusUnavailableHtml("amo"),
+        fullHtml: renderCorpusUnavailableHtml(),
       },
       {
         name: "/macronizer (landing + results + slot partials)",

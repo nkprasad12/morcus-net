@@ -33,7 +33,6 @@ import {
 } from "@/web/ui/corpus/corpus_query.server";
 import {
   CORPUS_SLOTS,
-  corpusPageTitle,
   type CorpusSlot,
 } from "@/web/ui/corpus/corpus_slots.common";
 import { renderPageShell } from "@/web/ui/shell/page_shell.server";
@@ -388,12 +387,16 @@ export function renderCorpusContentHtml(view: CorpusSearchView): SafeHtml {
   </morcus-corpus-view>`;
 }
 
+const CORPUS_PAGE_TITLE = "Corpus";
+
 export function renderCorpusPageHtml(view: CorpusSearchView): string {
   const canonicalPath = view.params.q
     ? `${CORPUS_PATH}?${new URLSearchParams({ q: view.params.q }).toString()}`
     : CORPUS_PATH;
   return renderPageShell({
-    title: corpusPageTitle(view.params.q),
+    title: CORPUS_PAGE_TITLE,
+    description:
+      "Search a Latin corpus by inflected form, word proximity, and flexible query combinations.",
     canonicalPath,
     activePage: "corpus",
     widthSurface: "corpus",
@@ -409,9 +412,9 @@ export function renderCorpusPartialHtml(view: CorpusSearchView): SafeHtml {
 }
 
 /** A full page for when the corpus engine can't run at all (503). */
-export function renderCorpusUnavailableHtml(query: string): string {
+export function renderCorpusUnavailableHtml(): string {
   return renderPageShell({
-    title: corpusPageTitle(query),
+    title: CORPUS_PAGE_TITLE,
     activePage: "corpus",
     contentHtml: html`<div class="not-found-state">
       <h1>Corpus unavailable</h1>

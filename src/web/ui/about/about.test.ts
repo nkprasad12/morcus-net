@@ -44,7 +44,7 @@ describe("about_ssr", () => {
   test("renderAboutPageHtml generates complete HTML document with app bar", () => {
     const pageHtml = renderAboutPageHtml();
     expect(pageHtml).toContain("<!DOCTYPE html>");
-    expect(pageHtml).toContain("<title>About - Morcus Latin Tools</title>");
+    expect(pageHtml).toContain("<title>About | Morcus Latin Tools</title>");
     expect(pageHtml).toContain('<header class="app-bar">');
     expect(pageHtml).toContain('href="/about"');
     expect(pageHtml).toContain('class="nav-link active"');

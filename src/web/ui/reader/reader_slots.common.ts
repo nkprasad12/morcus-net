@@ -38,5 +38,5 @@ export function formatReaderPageTitle(options: {
     workTag && heading && heading !== workTag
       ? `${workTag}: ${heading}`
       : workTag || heading;
-  return lead ? `${lead} - ${READER_TITLE_SUFFIX}` : READER_TITLE_SUFFIX;
+  return lead ? `${lead} | ${READER_TITLE_SUFFIX}` : READER_TITLE_SUFFIX;
 }

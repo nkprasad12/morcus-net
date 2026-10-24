@@ -30,6 +30,7 @@ const BUNDLE_ONERROR =
   "document.documentElement.setAttribute('data-js-failed','')";
 
 const SITE_ORIGIN = "https://morcus.net";
+const BRAND_SUFFIX = " | Morcus Latin Tools";
 
 /**
  * One `theme-color` per OS scheme, so the browser picks the right one before
@@ -41,6 +42,11 @@ const THEME_COLOR_META_HTML =
 
 interface PageShellBaseOptions {
   title: string;
+  /**
+   * Page description emitted as `<meta name="description">` and
+   * `<meta property="og:description">` on top-level pages.
+   */
+  description?: string;
   contentHtml: string;
   /**
    * The page's canonical path (and canonical query, if any), starting with `/`.
@@ -226,7 +232,20 @@ export function renderAppBar(activePage?: V2ActivePage): string {
  * Wraps content in the full document skeleton with App Bar, container, and script tags.
  */
 export function renderPageShell(options: PageShellOptions): string {
-  const titleEncoded = he.escape(options.title);
+  const ogTitleRaw = options.title.replace(/ \| Morcus Latin Tools$/, "");
+  const fullTitle =
+    ogTitleRaw && ogTitleRaw !== "Morcus Latin Tools"
+      ? `${ogTitleRaw}${BRAND_SUFFIX}`
+      : "Morcus Latin Tools";
+  const titleEncoded = he.escape(fullTitle);
+  const ogTitleEncoded = he.escape(ogTitleRaw);
+  const descriptionEncoded = options.description
+    ? he.escape(options.description)
+    : "";
+  const descriptionHeadHtml = descriptionEncoded
+    ? `\n  <meta name="description" content="${descriptionEncoded}">` +
+      `\n  <meta property="og:description" content="${descriptionEncoded}">`
+    : "";
   const appBarHtml = options.hideAppBar ? "" : renderAppBar(options.activePage);
   const isReader = options.isReader ?? false;
   const isEmbedded = options.hideAppBar ?? false;
@@ -280,8 +299,9 @@ export function renderPageShell(options: PageShellOptions): string {
     : `\n  <link rel="manifest" href="/public/pwa.webmanifest">` +
       THEME_COLOR_META_HTML +
       canonicalHeadHtml +
+      descriptionHeadHtml +
       `\n  <meta property="og:site_name" content="Morcus Latin Tools">` +
-      `\n  <meta property="og:title" content="${titleEncoded}">` +
+      `\n  <meta property="og:title" content="${ogTitleEncoded}">` +
       `\n  <meta property="og:type" content="website">` +
       `\n  <meta property="og:image" content="${SITE_ORIGIN}/public/logo512.png">`;
   const extraHeadHtml = options.extraHeadHtml

@@ -66,7 +66,7 @@ describe("corpus page", () => {
   test("landing: form, open help, welcome, no results or pager", async () => {
     const doc = parse(renderCorpusPageHtml(await search({ q: "" })));
 
-    expect(doc.title).toBe("Corpus Query - Morcus Latin Tools");
+    expect(doc.title).toBe("Corpus | Morcus Latin Tools");
     const form = doc.querySelector("form.corpus-form");
     expect(form?.getAttribute("action")).toBe("/corpus");
     expect(form?.getAttribute("method")).toBe("GET");
@@ -102,7 +102,7 @@ describe("corpus page", () => {
   test("results: summary, snippet highlighting, and reader links", async () => {
     const doc = parse(renderCorpusPageHtml(await search()));
 
-    expect(doc.title).toBe("Corpus: omnis - Morcus Latin Tools");
+    expect(doc.title).toBe("Corpus | Morcus Latin Tools");
     expect(
       doc.querySelector("details.corpus-syntax-details")?.hasAttribute("open")
     ).toBe(false);
@@ -287,7 +287,7 @@ describe("corpus page", () => {
   });
 
   test("unavailable page", () => {
-    const doc = parse(renderCorpusUnavailableHtml("amoris"));
+    const doc = parse(renderCorpusUnavailableHtml());
     expect(text(doc, "h1")).toBe("Corpus unavailable");
   });
 });

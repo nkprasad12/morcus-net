@@ -260,7 +260,16 @@ describe("reader_ssr", () => {
 
     expect(pageHtml).toContain("<!DOCTYPE html>");
     expect(pageHtml).toContain(
-      "<title>De bello Gallico: Book 1, Chapter 1 - Morcus Latin Tools</title>"
+      "<title>De bello Gallico: Book 1, Chapter 1 | Morcus Latin Tools</title>"
+    );
+    expect(pageHtml).toContain(
+      '<meta property="og:title" content="De bello Gallico: Book 1, Chapter 1">'
+    );
+    expect(pageHtml).toContain(
+      '<meta name="description" content="Read with instant click-to-lookup across multiple lexica.">'
+    );
+    expect(pageHtml).toContain(
+      '<meta property="og:description" content="Read with instant click-to-lookup across multiple lexica.">'
     );
     expect(pageHtml).toContain(
       '<link rel="canonical" href="https://morcus.net/work/caesar/de_bello_gallico/1.1">'

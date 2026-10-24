@@ -15,10 +15,7 @@ import {
   readCorpusParams,
   type CorpusParams,
 } from "@/web/ui/corpus/corpus_params.common";
-import {
-  CORPUS_SLOTS,
-  corpusPageTitle,
-} from "@/web/ui/corpus/corpus_slots.common";
+import { CORPUS_SLOTS } from "@/web/ui/corpus/corpus_slots.common";
 
 interface NavOptions {
   /** Add a history entry once the swap succeeds (false on popstate). */
@@ -109,10 +106,6 @@ class MorcusCorpusView extends BaseElement<"nav"> {
     this.#router = this.syncQueryParam("q", {
       onChange: onPopState,
       onNavigate: onPopState,
-      title: (_q, url) =>
-        corpusPageTitle(
-          readCorpusParams((name) => url.searchParams.get(name) ?? undefined).q
-        ),
     });
   }
 

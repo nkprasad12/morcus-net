@@ -451,6 +451,30 @@ export function parseDictScale(raw: unknown): number | undefined {
   return Math.min(150, Math.max(50, num));
 }
 
+const DICT_LANDING_DESCRIPTION =
+  "Search across multiple lexica with full inflection matching, integrated with a Latin reading environment and corpus search tool.";
+
+function resolveIdEntryMeta(
+  results?: DictsFusedResponse
+): { headword: string; lexicon: string } | undefined {
+  if (!results) return undefined;
+  const hitKey = Object.keys(results).find(
+    (key) => results[key] && results[key].length > 0
+  );
+  if (!hitKey) return undefined;
+  const entry = results[hitKey]?.[0];
+  if (!entry) return undefined;
+  const rawHeadword =
+    entry.outline?.mainLabel?.trim() ||
+    entry.outline?.mainKey?.trim() ||
+    entry.outline?.mainSection?.text?.trim() ||
+    "";
+  const headword = rawHeadword.replace(/<[^>]+>/g, "").trim();
+  const lexicon = resolveDictDisplayName(hitKey);
+  if (!headword || !lexicon) return undefined;
+  return { headword, lexicon };
+}
+
 interface DictPageOptions {
   query: string;
   results?: DictsFusedResponse;
@@ -530,8 +554,21 @@ export function renderDictPageHtml(options: DictPageOptions): string {
     ? `/dicts?${new URLSearchParams({ q: query }).toString()}`
     : "/dicts";
 
+  const idMeta = options.isIdSearch
+    ? resolveIdEntryMeta(options.results)
+    : undefined;
+  const title = idMeta
+    ? `${idMeta.headword} | ${idMeta.lexicon}`
+    : dictPageTitle(query, options.isIdSearch);
+  const description = idMeta
+    ? `Dictionary entry, citations, and inflection analyses for '${idMeta.headword}'.`
+    : !query || options.isIdSearch
+    ? DICT_LANDING_DESCRIPTION
+    : `Definitions and inflection analyses for '${query}'.`;
+
   return renderPageShell({
-    title: dictPageTitle(query, options.isIdSearch),
+    title,
+    description,
     canonicalPath,
     activePage: "dicts",
     contentHtml,

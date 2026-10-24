@@ -178,7 +178,9 @@ describe("app_router integration", () => {
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.headers["vary"]).toContain("X-Requested-With");
     expect(res.text).toContain("<!DOCTYPE html>");
-    expect(res.text).toContain("ID n20077 - Morcus Dictionary");
+    expect(res.text).toContain(
+      "<title>amo | LS | Morcus Latin Tools</title>"
+    );
     expect(res.text).toContain(
       '<link rel="canonical" href="https://morcus.net/dicts/id/n20077">'
     );

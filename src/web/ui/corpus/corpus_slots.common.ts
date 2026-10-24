@@ -18,10 +18,3 @@ export const CORPUS_SLOTS = [
 
 export type CorpusSlot = (typeof CORPUS_SLOTS)[number];
 
-/** The document title for a corpus page, set by the server and the client. */
-export function corpusPageTitle(query: string): string {
-  const suffix = "Morcus Latin Tools";
-  return query.length > 0
-    ? `Corpus: ${query} - ${suffix}`
-    : `Corpus Query - ${suffix}`;
-}

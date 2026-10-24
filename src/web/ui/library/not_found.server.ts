@@ -40,7 +40,7 @@ export function renderNotFoundContentHtml(
 export function renderNotFoundPageHtml(options: NotFoundOptions = {}): string {
   const contentHtml = renderNotFoundContentHtml(options);
   return renderPageShell({
-    title: "Work Not Found - Morcus Latin Tools",
+    title: "Work Not Found",
     activePage: "library",
     contentHtml,
   });
