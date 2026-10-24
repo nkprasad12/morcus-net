@@ -26,7 +26,11 @@ import { processWords } from "@/common/text_cleaning";
 import { extractInfo, findCtsEncoding } from "@/common/xml/tei_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
-import { isHandledRend, isKnownRend } from "@/common/library/perseus_rends";
+import {
+  canonicalRend,
+  isHandledRend,
+  isKnownRend,
+} from "@/common/library/perseus_rends";
 
 const IGNORE_SUBTYPES = new Map<string, Set<string>>([
   [LatinWorks.CATULLUS, new Set(["Lyrics", "longpoems", "Elegies", "book"])],
@@ -717,7 +721,7 @@ export function transformContentNode(
     if (node.name === "emph") {
       assertEqual(rend, "italic");
     }
-    const finalRend = rend === "ital" || rend === "italics" ? "italic" : rend;
+    const finalRend = canonicalRend(rend);
     attrs.push(["rend", finalRend], ["rendParent", node.name]);
   }
   if (node.name === "title") {

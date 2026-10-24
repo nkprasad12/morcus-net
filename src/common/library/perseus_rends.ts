@@ -8,6 +8,21 @@ const HANDLED_REND = new Set<string>([
   "smallcaps",
   "7",
   "overline",
+  // Upstream spellings of the renditions above; see `canonicalRend`.
+  "align(indent)",
+  "align(blockquote)",
+]);
+
+/**
+ * Renditions that upstream spells more than one way, mapped to the rendition
+ * the pipeline emits. canonical-latinLit is migrating `rend="indent"` to
+ * `rend="align(indent)"` (and `blockquote` likewise); both must render alike.
+ */
+const REND_ALIASES = new Map<string, string>([
+  ["ital", "italic"],
+  ["italics", "italic"],
+  ["align(indent)", "indent"],
+  ["align(blockquote)", "blockquote"],
 ]);
 // `merge` occurs infrequently, when we have a continued quote:
 // <l>blah blah <q>blah </q></l>
@@ -20,13 +35,11 @@ const KNOWN_REND = new Set([
   "bold",
   "sup",
   "merge",
-  "align(indent)",
   "merge;double",
   "double",
   "double; merge",
   "single",
   "single; merge",
-  "align(blockquote)",
 ]);
 
 function isVisualGap(rend: string): boolean {
@@ -43,4 +56,9 @@ export function isKnownRend(rend: string | undefined): boolean {
 
 export function isHandledRend(rend: string | undefined): boolean {
   return HANDLED_REND.has(rend ?? "");
+}
+
+/** The rendition to emit for a handled `rend`, folding upstream aliases. */
+export function canonicalRend(rend: string): string {
+  return REND_ALIASES.get(rend) ?? rend;
 }

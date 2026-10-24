@@ -8,6 +8,7 @@ import type {
   ProcessedWorkContentNodeType,
 } from "@/common/library/library_types";
 import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
+import { transformContentNode } from "@/common/library/process_work";
 import { processTokens } from "@/common/text_cleaning";
 import { XmlNode } from "@/common/xml/xml_node";
 import {
@@ -139,6 +140,22 @@ describe("extractRowText", () => {
       span([...LINE, ["rend", "indent"]], " pentameter ")
     );
     expect(extractRowText(row)).toBe("Hexameter\n    pentameter");
+  });
+
+  it("indents upstream's align(indent) spelling like indent", () => {
+    const tei = (rend: string) =>
+      transformContentNode(
+        new XmlNode("l", [["rend", rend]], [" pentameter "]),
+        [" pentameter "]
+      );
+    const row = (rend: string) => span([], span(LINE, "Hexameter"), tei(rend));
+
+    expect(extractRowText(row("align(indent)"))).toBe(
+      "Hexameter\n    pentameter"
+    );
+    expect(extractRowText(row("align(indent)"))).toBe(
+      extractRowText(row("indent"))
+    );
   });
 
   it("breaks words at markers that contribute no text", () => {
