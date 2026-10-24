@@ -8,6 +8,7 @@ import {
   getSectionId,
   patchText,
   processTei2,
+  transformNoteNode,
   type DebugSideChannel,
   type MarkupTextOptions,
 } from "@/common/library/process_work";
@@ -928,5 +929,29 @@ describe("getSectionId", () => {
     const nodes = toNodes([book("2"), [], chapter("1"), []]);
 
     expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], false]);
+  });
+});
+
+describe("transformNoteNode renditions", () => {
+  function noteRend(name: string, rend?: string) {
+    const attrs: [string, string][] =
+      rend === undefined ? [] : [["rend", rend]];
+    return transformNoteNode(new XmlNode(name, attrs, ["Bouhier"]));
+  }
+
+  it("keeps single-token renditions as before", () => {
+    expect(noteRend("hi", "italics").getAttr("rend")).toBe("italic");
+    expect(noteRend("hi", "sup").getAttr("rend")).toBe("sup");
+    expect(noteRend("hi").getAttr("rend")).toBeUndefined();
+  });
+
+  it("accepts upstream's quotation renditions in notes", () => {
+    expect(noteRend("hi", "single").getAttr("rend")).toBeUndefined();
+    expect(noteRend("hi", "single; italic").getAttr("rend")).toBe("italic");
+  });
+
+  it("rejects unknown note renditions", () => {
+    expect(() => noteRend("hi", "spacing")).toThrow();
+    expect(() => noteRend("hi", "")).toThrow();
   });
 });

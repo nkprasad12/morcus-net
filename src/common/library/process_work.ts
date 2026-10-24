@@ -27,10 +27,13 @@ import { extractInfo, findCtsEncoding } from "@/common/xml/tei_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 import {
+  allRendTokensIn,
   canonicalRend,
   isFullyHandledRend,
   isHandledRend,
   isKnownRend,
+  QUOTE_RENDS,
+  rendTokens,
 } from "@/common/library/perseus_rends";
 
 const IGNORE_SUBTYPES = new Map<string, Set<string>>([
@@ -146,9 +149,11 @@ export const HANDLED_NOTE_REND = new Set<string | undefined>([
   "blockquote",
   "bold",
 ]);
+/** Rendition tokens allowed in notes; see `allRendTokensIn`. */
 export const KNOWN_NOTE_REND = new Set<string | undefined>([
   undefined,
   ...HANDLED_NOTE_REND,
+  ...QUOTE_RENDS,
 ]);
 export const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "xml:lang",
@@ -672,10 +677,12 @@ export function transformNoteNode(node: XmlNode): XmlNode {
     attrs.push(["rend", "smallcaps"]);
   }
   const rend = node.getAttr("rend");
-  assert(KNOWN_NOTE_REND.has(rend), rend);
-  if (HANDLED_NOTE_REND.has(rend)) {
-    const finalRend = rend === "italics" ? "italic" : rend;
-    attrs.push(["rend", checkPresent(finalRend)]);
+  assert(allRendTokensIn(rend, KNOWN_NOTE_REND), rend);
+  const handledRends = rendTokens(rend ?? "")
+    .filter((token) => HANDLED_NOTE_REND.has(token))
+    .map((token) => (token === "italics" ? "italic" : token));
+  if (handledRends.length > 0) {
+    attrs.push(["rend", Array.from(new Set(handledRends)).join(" ")]);
   }
   if (QUOTE_NODES.has(node.name)) {
     attrs.push(["rend", "italic"]);
