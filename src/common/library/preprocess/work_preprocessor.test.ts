@@ -108,6 +108,26 @@ describe("preprocessWorkToV2 renditions", () => {
     expect(html).toContain('class="indent indent-para"');
   });
 
+  it("renders every token of a compound rendition", () => {
+    const work = makeWork({
+      textParts: ["book", "chapter", "section"],
+      rows: [
+        [
+          ["1", "1", "1"],
+          span(
+            [["block", "1"]],
+            span([["rend", "overline smallcaps"]], "xviri"),
+            " vendent"
+          ),
+        ],
+      ],
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+
+    expect(html).toContain('<span class="smallcaps overline">xviri</span>');
+  });
+
   it("carries the renditions V1 supported", () => {
     const work = makeWork({
       textParts: ["book", "chapter", "section"],

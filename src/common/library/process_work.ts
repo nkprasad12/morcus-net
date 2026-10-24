@@ -28,6 +28,7 @@ import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 import {
   canonicalRend,
+  isFullyHandledRend,
   isHandledRend,
   isKnownRend,
 } from "@/common/library/perseus_rends";
@@ -719,7 +720,8 @@ export function transformContentNode(
   assert(isKnownRend(rend), rend);
   if (rend !== undefined && isHandledRend(rend)) {
     if (node.name === "emph") {
-      assertEqual(rend, "italic");
+      // Emphasis is italic, or (upstream 2026) small caps: never ignored.
+      assert(isFullyHandledRend(rend), rend);
     }
     const finalRend = canonicalRend(rend);
     attrs.push(["rend", finalRend], ["rendParent", node.name]);

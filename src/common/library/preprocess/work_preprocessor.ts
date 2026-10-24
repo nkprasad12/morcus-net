@@ -128,6 +128,15 @@ function renderNoteMarker(
   return `<a class="reader-note-ref" id="${refId}" href="#${bodyId}" role="doc-noteref" aria-label="Note ${label}"><sup>[${label}]</sup></a>`;
 }
 
+/**
+ * The renditions on a content node. `process_work` emits one or more
+ * space-separated canonical tokens (see `canonicalRend`), e.g. `smallcaps` or
+ * `overline smallcaps`.
+ */
+function rendClasses(node: XmlNode): Set<string> {
+  return new Set(node.getAttr("rend")?.split(" "));
+}
+
 /** Elements rendered as markers with no text of their own (rule 4). */
 const MARKER_TAGS = new Set(["br", "space", "gap", "note"]);
 
@@ -136,7 +145,7 @@ const MARKER_TAGS = new Set(["br", "space", "gap", "note"]);
  * block, heading or list element, which break words on their own.
  */
 function isInlineTextElement(node: XmlNode): boolean {
-  const rend = node.getAttr("rend");
+  const rends = rendClasses(node);
   return !(
     MARKER_TAGS.has(node.name) ||
     node.name === "head" ||
@@ -145,8 +154,8 @@ function isInlineTextElement(node: XmlNode): boolean {
     node.getAttr("l") !== undefined ||
     node.getAttr("block") !== undefined ||
     node.getAttr("sectionHead") !== undefined ||
-    rend === "blockquote" ||
-    rend === "indent"
+    rends.has("blockquote") ||
+    rends.has("indent")
   );
 }
 
@@ -196,7 +205,7 @@ function renderXmlNodeCleanHtml(
   }
 
   const tag = node.name;
-  const rend = node.getAttr("rend");
+  const rends = rendClasses(node);
   const isLine = node.getAttr("l") === "1";
   const isBlock = node.getAttr("block") === "1";
   const isSectionHead = node.getAttr("sectionHead") === "1";
@@ -244,16 +253,18 @@ function renderXmlNodeCleanHtml(
   const classes: string[] = [];
   if (isLine) classes.push("reader-line");
   if (isBlock) classes.push("reader-block");
-  if (rend === "italic") classes.push("italic");
-  if (rend === "bold") classes.push("bold");
-  if (rend === "blockquote") classes.push("blockquote");
-  if (rend === "sup" || rend === "superscript") classes.push("superscript");
+  if (rends.has("italic")) classes.push("italic");
+  if (rends.has("bold")) classes.push("bold");
+  if (rends.has("blockquote")) classes.push("blockquote");
+  if (rends.has("sup") || rends.has("superscript")) {
+    classes.push("superscript");
+  }
   // Perseus marks the inscriptional and legal quotations that other editions
   // set in small caps with a bare `rend="7"`.
-  if (rend === "smallcaps" || rend === "7") classes.push("smallcaps");
-  if (rend === "uppercase") classes.push("uppercase");
-  if (rend === "overline") classes.push("overline");
-  if (rend === "indent") {
+  if (rends.has("smallcaps") || rends.has("7")) classes.push("smallcaps");
+  if (rends.has("uppercase")) classes.push("uppercase");
+  if (rends.has("overline")) classes.push("overline");
+  if (rends.has("indent")) {
     classes.push("indent");
     // Inside a paragraph an indent opens the paragraph, so only the first line
     // moves; anywhere else (verse, above all) the whole block shifts. Mirrors
