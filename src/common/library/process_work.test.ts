@@ -274,6 +274,14 @@ describe("processTei2", () => {
     expect(work.textParts).toStrictEqual(["book", "chapter", "section"]);
   });
 
+  it("renders supplied text in angle brackets", () => {
+    const body = `<div n="1" type="textpart" subtype="book">Do <supplied reason="omitted">not</supplied> go</div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    expect(work.rows[0][1].toString()).toContain("⟨not⟩");
+  });
+
   it("ignores upstream's citeStructure refsDecl when finding text parts", () => {
     // Upstream canonical-latinLit (2026) adds this alongside the old two.
     const citeStructure = `

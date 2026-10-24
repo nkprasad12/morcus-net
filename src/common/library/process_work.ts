@@ -86,6 +86,7 @@ export const SWITCH_CONTENT_NODES = new Set<string>([
   "expan",
   "ex",
   "del",
+  "supplied",
 ]);
 
 /**
@@ -882,6 +883,9 @@ export function transformContentNode(
       return new XmlNode("span", attrs, children);
     case "del":
       return new XmlNode("span", attrs, ["[", ...children, "]"]);
+    case "supplied":
+      // Text the editor supplied, in Leiden angle brackets.
+      return new XmlNode("span", attrs, ["⟨", ...children, "⟩"]);
   }
   throw new Error(`Unknown node: ${node.name}`);
 }
