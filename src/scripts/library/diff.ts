@@ -9,6 +9,7 @@
 import fs from "fs";
 import path from "path";
 
+import { WORK_ID_ALIASES } from "@/common/library/library_constants";
 import {
   mergeDelta,
   summarizePageDiff,
@@ -64,7 +65,16 @@ export interface FragmentChange {
 
 export interface WorkDiff {
   id: string;
-  status: "same" | "changed" | "added" | "removed" | "failed" | "fixed";
+  status:
+    | "same"
+    | "changed"
+    | "renamed"
+    | "added"
+    | "removed"
+    | "failed"
+    | "fixed";
+  /** The work's id in `from`, if it was renamed (via `WORK_ID_ALIASES`). */
+  renamedFrom?: string;
   /** Failure message on the side(s) where the work failed. */
   failure?: { from?: string; to?: string };
   fields: FieldChange[];
@@ -178,7 +188,7 @@ export function diffWork(
   a: RenderedWork,
   b: RenderedWork
 ): WorkDiff {
-  const diff = emptyWorkDiff(a.id, "same");
+  const diff = emptyWorkDiff(b.id, "same");
   diff.fields = fieldChanges(a, b, WORK_FIELDS);
   if (a.tocHtmlHash !== b.tocHtmlHash) {
     addSummary(
@@ -243,14 +253,49 @@ function meta(index: RenderIndex): DiffReport["fromMeta"] {
   return rest;
 }
 
-/** Compares two render directories. */
+/**
+ * Re-keys `a`'s works and failures under their new ids, for each alias
+ * `old → new` where `old` is only in `a` and `new` only in `b`.
+ */
+function applyAliases(
+  a: RenderIndex,
+  b: RenderIndex,
+  aliases: Readonly<Record<string, string>>
+): Map<string, string> {
+  const renamedFrom = new Map<string, string>();
+  const inA = (id: string) => id in a.works || id in a.failures;
+  const inB = (id: string) => id in b.works || id in b.failures;
+  for (const [oldId, newId] of Object.entries(aliases)) {
+    if (!inA(oldId) || inB(oldId) || inA(newId) || !inB(newId)) {
+      continue;
+    }
+    renamedFrom.set(newId, oldId);
+    if (oldId in a.works) {
+      a.works[newId] = a.works[oldId];
+      delete a.works[oldId];
+    }
+    if (oldId in a.failures) {
+      a.failures[newId] = a.failures[oldId];
+      delete a.failures[oldId];
+    }
+  }
+  return renamedFrom;
+}
+
+/**
+ * Compares two render directories. Works renamed between them (per
+ * `aliases`, old id → new id; default `WORK_ID_ALIASES`) are compared with
+ * each other and reported as renamed.
+ */
 export function diffRenders(
   fromDir: string,
   toDir: string,
-  labels?: { from: string; to: string }
+  labels?: { from: string; to: string },
+  aliases: Readonly<Record<string, string>> = WORK_ID_ALIASES
 ): DiffReport {
   const a = readRenderIndex(fromDir);
   const b = readRenderIndex(toDir);
+  const renamedFrom = applyAliases(a, b, aliases);
   const ids = [
     ...new Set([
       ...Object.keys(a.works),
@@ -307,6 +352,13 @@ export function diffRenders(
     } else {
       diff = emptyWorkDiff(id, "removed");
       diff.removedPages = wa!.pages.map((p) => p.id);
+    }
+    const oldId = renamedFrom.get(id);
+    if (oldId !== undefined) {
+      diff.renamedFrom = oldId;
+      if (diff.status === "same") {
+        diff.status = "renamed";
+      }
     }
     if (diff.status !== "same") {
       report.totals.worksDiffering++;
@@ -428,6 +480,9 @@ export function formatReport(
     lines.push("");
     lines.push(`## \`${w.id}\` — ${w.status}`);
     lines.push("");
+    if (w.renamedFrom !== undefined) {
+      lines.push(`- renamed from \`${w.renamedFrom}\``);
+    }
     if (w.failure !== undefined) {
       if (w.failure.from !== undefined) {
         lines.push(`- failed in from: ${inlineCode(w.failure.from)}`);

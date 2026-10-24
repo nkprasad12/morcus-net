@@ -8,7 +8,9 @@
  * attributes are sorted by name, `class` tokens are sorted, whitespace inside
  * tags is collapsed and character references are decoded. Two pages are
  * "the same" when their normal forms are equal, so attribute reordering or
- * `&#39;` vs `'` is not reported as a change.
+ * `&#39;` vs `'` is not reported as a change. Whitespace runs are collapsed to
+ * one space (the reader renders them that way), so re-indented source is
+ * cosmetic too; whitespace appearing or disappearing is still a change.
  */
 
 import { diffArrays } from "diff";
@@ -72,7 +74,10 @@ export function tokenizeHtml(html: string): HtmlToken[] {
     } else if (raw.length > 1 && raw.startsWith("<")) {
       tokens.push(parseTag(raw));
     } else {
-      tokens.push({ kind: "text", norm: he.decode(raw) });
+      // The reader never sets `white-space: pre*`, so a whitespace run renders
+      // as one space whatever its characters.
+      const isSpace = raw.trim().length === 0;
+      tokens.push({ kind: "text", norm: isSpace ? " " : he.decode(raw) });
     }
   }
   return tokens;

@@ -125,4 +125,24 @@ describe("diffRenders", () => {
     expect(md).toContain("| `w` | changed | 1 | 1 | 1 | 0 |");
     expect(md).toContain("[1 html] <p>{+<em>+}a{+</em>+}</p>");
   });
+
+  it("pairs works renamed via aliases", () => {
+    const a = writeRender(tmp, "a", { old: { "1": "<p>a</p>" } });
+    const b = writeRender(tmp, "b", { new: { "1": "<p>a</p>" } });
+    const report = diffRenders(a, b, undefined, { old: "new" });
+    expect(report.works).toHaveLength(1);
+    expect(report.works[0]).toMatchObject({
+      id: "new",
+      status: "renamed",
+      renamedFrom: "old",
+    });
+    expect(report.totals.pagesCompared).toBe(1);
+    expect(formatReport(report)).toContain("- renamed from `old`");
+    // Without the alias they are an unrelated removal and addition.
+    const plain = diffRenders(a, b, undefined, {});
+    expect(plain.works.map((w) => w.status).sort()).toEqual([
+      "added",
+      "removed",
+    ]);
+  });
 });

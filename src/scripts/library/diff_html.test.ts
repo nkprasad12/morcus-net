@@ -18,6 +18,12 @@ describe("normalizeHtml", () => {
     ).toEqual(normalizeHtml(`<a title="'x'">it's &amp; </a>`));
   });
 
+  it("collapses whitespace runs", () => {
+    expect(normalizeHtml("<p>a\n\t\tb</p>")).toEqual(
+      normalizeHtml("<p>a b</p>")
+    );
+  });
+
   it("keeps whitespace in text significant", () => {
     expect(normalizeHtml("<p>ab</p>")).not.toEqual(normalizeHtml("<p>a b</p>"));
   });
