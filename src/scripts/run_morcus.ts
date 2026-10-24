@@ -12,6 +12,10 @@ import {
 import { writeCommitId } from "@/scripts/write_source_version";
 import { warnOnUpstreamDrift } from "@/scripts/upstream/clones";
 import { UPSTREAM_ACTIONS, runUpstreamCli } from "@/scripts/upstream/cli";
+import {
+  configureLibraryParser,
+  runLibraryCli,
+} from "@/scripts/library/library_cli";
 import { DEV_SERVER_ENV } from "@/web/ui/core/server/build_version.server";
 import { buildCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 import { ArgumentParser, type ArgumentOptions } from "argparse";
@@ -30,6 +34,7 @@ const VISUAL_BASELINES = "visual-baselines";
 const INVENTORY = "inventory";
 const TEST = "test";
 const UPSTREAM = "upstream";
+const LIBRARY = "library";
 
 const cleanupOperations: (() => unknown)[] = [];
 
@@ -65,6 +70,10 @@ if (args.command === WEB_SERVER) {
   });
 } else if (args.command === UPSTREAM) {
   void runUpstream(args).then((ok) => {
+    if (!ok) process.exit(1);
+  });
+} else if (args.command === LIBRARY) {
+  void runLibraryCli(args).then((ok) => {
     if (!ok) process.exit(1);
   });
 }
@@ -503,6 +512,22 @@ function parseArguments() {
   upstream.add_argument("--all", {
     help: "With pin: pin every source to its tracked branch.",
     action: "store_true",
+  });
+
+  const library = subparsers.add_parser(LIBRARY, {
+    help:
+      "Tools for the library (reader) pipeline and its TEI corpus. " +
+      "See src/scripts/library/library_cli.ts.",
+  });
+  configureLibraryParser(library, (action) => {
+    action.add_argument("--bun", {
+      help: "Runs supported commands with bun.",
+      action: "store_true",
+    });
+    action.add_argument("--node", {
+      help: "Runs supported commands with node.",
+      action: "store_true",
+    });
   });
 
   for (const subcommand of [
