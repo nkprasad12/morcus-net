@@ -2,7 +2,7 @@
   "schema": 1,
   "source": {
     "repo": "canonical-latinLit",
-    "commit": "452d09058af7304a03487bb7aa491214bdf684cf",
+    "commit": "47c90661d778250c0b0541ff5a2dc4071d3f0aed",
     "dirty": false
   },
   "works": {
@@ -569,7 +569,7 @@
       "nodes": {
         "gap": 9,
         "head": 3,
-        "span": 3289,
+        "span": 3293,
         "span@blockquote": 47,
         "span@indent": 18,
         "span@smallcaps": 12
