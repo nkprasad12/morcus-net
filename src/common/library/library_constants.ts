@@ -36,30 +36,30 @@ export const LatinWorks = {
   CICERO_PRO_Q_LIGARIO: "phi0474.phi033.perseus-lat2",
   CICERO_PRO_REGE_DEIOTARO: "phi0474.phi034.perseus-lat2",
   CICERO_PHILLIPPICAE: "phi0474.phi035.perseus-lat2",
-  CICERO_DE_INVENTIONE: "phi0474.phi036.perseus-lat1",
-  CICERO_DE_ORATORE: "phi0474.phi037.perseus-lat1",
-  CICERO_DE_PARTITIONE_ORATORIA: "phi0474.phi038.perseus-lat1",
-  CICERO_BRUTUS: "phi0474.phi039.perseus-lat1",
-  CICERO_ORATOR: "phi0474.phi040.perseus-lat1",
-  CICERO_DE_OPTIMO_GENERE_ORATORUM: "phi0474.phi041.perseus-lat1",
+  CICERO_DE_INVENTIONE: "phi0474.phi036.perseus-lat2",
+  CICERO_DE_ORATORE: "phi0474.phi037.perseus-lat2",
+  CICERO_DE_PARTITIONE_ORATORIA: "phi0474.phi038.perseus-lat2",
+  CICERO_BRUTUS: "phi0474.phi039.perseus-lat2",
+  CICERO_ORATOR: "phi0474.phi040.perseus-lat2",
+  CICERO_DE_OPTIMO_GENERE_ORATORUM: "phi0474.phi041.perseus-lat2",
   // Skipped 42 b/c it had a textpart without an n
-  CICERO_DE_RE_PUBLICA: "phi0474.phi043.perseus-lat1",
+  CICERO_DE_RE_PUBLICA: "phi0474.phi043.perseus-lat2",
   // 44 is missing?
-  // CICERO_ACADEMICA: "phi0474.phi045.perseus-lat1", // Has <note> that is meant to be inline
-  CICERO_LUCULLUS: "phi0474.phi046.perseus-lat1",
-  CICERO_DE_FINIBUS: "phi0474.phi048.perseus-lat1",
-  CICERO_DE_SENECTUTE: "phi0474.phi051.perseus-lat1",
+  // CICERO_ACADEMICA: "phi0474.phi045.perseus-lat2", // Has <note> that is meant to be inline
+  CICERO_LUCULLUS: "phi0474.phi046.perseus-lat2",
+  CICERO_DE_FINIBUS: "phi0474.phi048.perseus-lat2",
+  CICERO_DE_SENECTUTE: "phi0474.phi051.perseus-lat2",
   CICERO_DE_AMICITIA: "phi0474.phi052.perseus-lat2",
-  CICERO_DE_FATO: "phi0474.phi054.perseus-lat1",
-  CICERO_DE_OFFICIIS: "phi0474.phi055.perseus-lat1",
-  CICERO_TIMAEUS: "phi0474.phi072.perseus-lat1",
+  CICERO_DE_FATO: "phi0474.phi054.perseus-lat2",
+  CICERO_DE_OFFICIIS: "phi0474.phi055.perseus-lat2",
+  CICERO_TIMAEUS: "phi0474.phi072.perseus-lat2",
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",
   OVID_AMORES: "phi0959.phi001.perseus-lat2",
   OVID_EPISTULAE: "phi0959.phi002.perseus-lat2",
   OVID_MEDICAMINA: "phi0959.phi003.perseus-lat2",
   OVID_ARS_AMATORIA: "phi0959.phi004.perseus-lat2",
-  TACITUS_AGRICOLA: "phi1351.phi001.perseus-lat1",
+  TACITUS_AGRICOLA: "phi1351.phi001.perseus-lat2",
   TACITUS_GERMANIA: "phi1351.phi002.perseus-lat1",
   TACITUS_DIALOGUS: "phi1351.phi003.perseus-lat1",
   JUVENAL_SATURAE: "phi1276.phi001.perseus-lat2",
@@ -118,6 +118,39 @@ export const EnglishTranslations: Record<string, string> = {
   [LatinWorks.CICERO_PRO_RABIRIO]: "phi0474.phi012.perseus-eng3",
   [LatinWorks.CICERO_DE_AMICITIA]: "phi0474.phi052.perseus-eng2",
 } satisfies { [K in keyof typeof LatinWorks]?: string };
+
+/**
+ * Retired work ids, mapped to the id of the work that replaces them.
+ *
+ * Perseus occasionally re-editions a file under a new id (bumping
+ * `-lat1` to `-lat2` when the text is re-encoded from the same edition).
+ * Reader URLs and saved spots can name a work by its id, so the reader resolves
+ * these old ids to their successors. Add an entry here whenever an onboarded id
+ * changes in an upstream sync; never remove one.
+ */
+export const WORK_ID_ALIASES: Readonly<Record<string, string>> = {
+  // canonical-latinLit 0700a6b7 (2026-10): Cicero's rhetorica and philosophica
+  // and Tacitus' Agricola re-encoded as `-lat2` from the same editions.
+  "phi0474.phi036.perseus-lat1": LatinWorks.CICERO_DE_INVENTIONE,
+  "phi0474.phi037.perseus-lat1": LatinWorks.CICERO_DE_ORATORE,
+  "phi0474.phi038.perseus-lat1": LatinWorks.CICERO_DE_PARTITIONE_ORATORIA,
+  "phi0474.phi039.perseus-lat1": LatinWorks.CICERO_BRUTUS,
+  "phi0474.phi040.perseus-lat1": LatinWorks.CICERO_ORATOR,
+  "phi0474.phi041.perseus-lat1": LatinWorks.CICERO_DE_OPTIMO_GENERE_ORATORUM,
+  "phi0474.phi043.perseus-lat1": LatinWorks.CICERO_DE_RE_PUBLICA,
+  "phi0474.phi046.perseus-lat1": LatinWorks.CICERO_LUCULLUS,
+  "phi0474.phi048.perseus-lat1": LatinWorks.CICERO_DE_FINIBUS,
+  "phi0474.phi051.perseus-lat1": LatinWorks.CICERO_DE_SENECTUTE,
+  "phi0474.phi054.perseus-lat1": LatinWorks.CICERO_DE_FATO,
+  "phi0474.phi055.perseus-lat1": LatinWorks.CICERO_DE_OFFICIIS,
+  "phi0474.phi072.perseus-lat1": LatinWorks.CICERO_TIMAEUS,
+  "phi1351.phi001.perseus-lat1": LatinWorks.TACITUS_AGRICOLA,
+};
+
+/** Returns the current id for `workId`, following `WORK_ID_ALIASES`. */
+export function resolveWorkIdAlias(workId: string): string {
+  return WORK_ID_ALIASES[workId] ?? workId;
+}
 
 function toPerseusPath(workId: string): string {
   const parts = workId.split(".");

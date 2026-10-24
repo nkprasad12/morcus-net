@@ -1,3 +1,4 @@
+import { WORK_ID_ALIASES } from "@/common/library/library_constants";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import {
   LIBRARY_DB,
@@ -177,6 +178,12 @@ function openLibraryStore(resultDir: string): LibraryStore | undefined {
       slugToWorkId.set(`${item.urlAuthor}/${item.urlName}`, item.id);
       slugToWorkId.set(item.urlName, item.id);
       slugToWorkId.set(item.id, item.id);
+    }
+    // Retired ids (old URLs, saved spots) resolve to their successors.
+    for (const [oldId, newId] of Object.entries(WORK_ID_ALIASES)) {
+      if (slugToWorkId.has(newId) && !slugToWorkId.has(oldId)) {
+        slugToWorkId.set(oldId, newId);
+      }
     }
 
     let lastPassageWorkId = "";
