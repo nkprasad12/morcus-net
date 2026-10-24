@@ -499,6 +499,9 @@ is trusted in a builder.
 
 ## 11. Open decisions
 
+> [!IMPORTANT] > **Superseded by [PLAN.md §5.2](PLAN.md#52-citestructure-is-the-design-input-phase-2-was-missing) and [§6](PLAN.md#6-decisions) (Oct 2026).**
+> Upstream Perseus's adoption of `<citeStructure>` ([UPSTREAM.md §2](UPSTREAM.md#2-citestructure-adoption-and-the-19-match-patterns)) resolves scheme derivation (D4) and distinguishes primary point levels from secondary milestone axes (D6). The corpus-wide survey and relation distributions requested in §12 below have been run over all 398 files and are recorded in [CORPUS_SURVEY.md §6](CORPUS_SURVEY.md#6-axis-relation-and-spine-distributions); the active decisions and phased roadmap now live in [PLAN.md](PLAN.md).
+
 |        | Decision                                                                                                                         | Recommendation                                                                                         |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | **D1** | Pipeline shape (§7): pre-rendered page HTML, or request-time rendering from one structured artifact?                             | Two stages + LRU cache. Blocks §7–§9.                                                                  |
@@ -511,6 +514,9 @@ is trusted in a builder.
 ---
 
 ## 12. Picking this up later
+
+> [!NOTE] > **Superseded by [PLAN.md §5.2](PLAN.md#52-citestructure-is-the-design-input-phase-2-was-missing) and [§7](PLAN.md#7-phased-plan) (Oct 2026).**
+> The corpus-wide relation/diagnostic distributions below are now measured in [CORPUS_SURVEY.md](CORPUS_SURVEY.md), and the execution plan is underway in [PLAN.md](PLAN.md).
 
 **State of play.** Everything in this document is a proposal. Nothing in `src/` has changed — no
 type, no builder, no renderer. What exists is: this document, the conceptual grounding in

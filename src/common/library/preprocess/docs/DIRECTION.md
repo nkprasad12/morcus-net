@@ -171,6 +171,9 @@ concatenation.
 
 ## 4. Scheme derivation
 
+> [!IMPORTANT] > **Superseded by [PLAN.md §5.2](PLAN.md#52-citestructure-is-the-design-input-phase-2-was-missing) (Oct 2026).**
+> Upstream Perseus has since added `<refsDecl xml:id="CTS">` with nested `<citeStructure>` declarations to 326 of 334 Latin files (see [UPSTREAM.md §2](UPSTREAM.md#2-citestructure-adoption-and-the-19-match-patterns)), declaring both container (`div`, `div1`…`div3`, `seg`, `l`) and point (`milestone`, `lb`, `pb`) citation levels directly. Phase 2 reads `<citeStructure>` as the primary scheme definition and retains the right-aligned tree derivation below only as a fallback (for the 8 files without `<citeStructure`) and a build-time cross-check.
+
 Depth comes from the spine. Names come from the header, **right-aligned** onto observed levels,
 with a fallback chain and **no failure mode**:
 
