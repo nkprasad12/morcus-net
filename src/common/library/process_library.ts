@@ -14,6 +14,7 @@ import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import {
   loadPatches,
   type LibraryPatch,
+  type LibraryPatchMap,
 } from "@/common/library/library_patches";
 import {
   LibraryWorkMetadata,
@@ -188,6 +189,95 @@ function extractWorkMetadata(
   };
 }
 
+export interface PreprocessPerseusOptions {
+  patches: LibraryPatchMap;
+  /** Called after `processTei2` succeeds for each file (incl. translations). */
+  onProcessed?: (work: ProcessedWork2, isTranslation: boolean) => void;
+  /** Called with each non-translation work's V2 output. */
+  onV2Work: (v2: V2PreprocessedWork, work: ProcessedWork2) => void;
+  /** If set, a throwing work is reported here and skipped; else it throws. */
+  onError?: (workId: string, error: unknown) => void;
+}
+
+/**
+ * Runs the Perseus TEI files at `workPaths` through the reader pipeline:
+ * parse → `processTei2` (with patches) → `preprocessWorkToV2`, attaching each
+ * work's English translation. Translations are processed first so they can be
+ * attached; they produce no V2 work of their own. Returns the ids of the files
+ * that processed. Shared by `processLibrary` and `./morcus.sh library render`.
+ */
+export function preprocessPerseusWorks(
+  workPaths: string[],
+  options: PreprocessPerseusOptions
+): string[] {
+  const { patches, onProcessed, onV2Work, onError } = options;
+  const workIds: string[] = [];
+  const sortedWorks = workPaths
+    .map((p) => [p, pathToId(p)])
+    .sort((a) => (isTranslationId(a[1]) ? -1 : 1))
+    .map((a) => a[0]);
+  const translationDataById = new Map<string, TranslationInfo>();
+  const translationWorksById = new Map<string, ProcessedWork2>();
+
+  for (const workPath of sortedWorks) {
+    // We should use the Perseus URN instead.
+    const workId = pathToId(workPath);
+    try {
+      const rawXml = parseRawXml(
+        fs
+          .readFileSync(workPath)
+          .toString()
+          // This is a complete hack to skip the declaration.
+          // the fast-xml-parser library has a config option to skip the declaration, but it
+          // doesn't actually work.
+          .replace(PERSEUS_LAT_LIT_DECLARATION, ""),
+        {
+          keepWhitespace: true,
+        }
+      );
+      const translationId = EnglishTranslations[workId];
+      const result = processTeiCts2(
+        rawXml,
+        workId,
+        patches.get(workId),
+        translationId
+      );
+      const isTranslation = isTranslationId(workId);
+      result.info.isTranslation = isTranslation;
+      result.info.translationInfo = translationDataById.get(translationId);
+      result.info = decorateDocumentInfo(result.info);
+      workIds.push(workId);
+      onProcessed?.(result, isTranslation);
+
+      if (isTranslation) {
+        translationDataById.set(workId, {
+          id: workId,
+          translator: result.info.translator,
+          title: result.info.title,
+        });
+        translationWorksById.set(workId, result);
+        continue;
+      }
+
+      const metadata = extractWorkMetadata(workId, result.info, {
+        isTranslation,
+        translationId,
+      });
+      const translationWork = translationId
+        ? translationWorksById.get(translationId)
+        : undefined;
+      onV2Work(preprocessWorkToV2(result, metadata, translationWork), result);
+    } catch (e) {
+      if (onError === undefined) {
+        throw e;
+      }
+      onError(workId, e);
+    }
+  }
+  translationWorksById.clear();
+  return workIds;
+}
+
 export async function processLibrary({
   outputDir = LIB_DEFAULT_DIR,
   works = LOCAL_REPO_WORK_PATHS,
@@ -204,12 +294,6 @@ export async function processLibrary({
   const patches = loadPatches();
   const allWorkIds: string[] = [];
   const v2Works: V2PreprocessedWork[] = [];
-  const sortedWorks = works
-    .map((p) => [p, pathToId(p)])
-    .sort((a) => (isTranslationId(a[1]) ? -1 : 1))
-    .map((a) => a[0]);
-  const translationDataById = new Map<string, TranslationInfo>();
-  const translationWorksById = new Map<string, ProcessedWork2>();
 
   function processGenericWork(work: ProcessedWork2) {
     const workId = work.info.workId;
@@ -223,54 +307,17 @@ export async function processLibrary({
   processPhiJson().forEach(processGenericWork);
   processHypotactic().forEach(processGenericWork);
 
-  for (const workPath of sortedWorks) {
-    // We should use the Perseus URN instead.
-    const workId = pathToId(workPath);
-    const rawXml = parseRawXml(
-      fs
-        .readFileSync(workPath)
-        .toString()
-        // This is a complete hack to skip the declaration.
-        // the fast-xml-parser library has a config option to skip the declaration, but it
-        // doesn't actually work.
-        .replace(PERSEUS_LAT_LIT_DECLARATION, ""),
-      {
-        keepWhitespace: true,
-      }
-    );
-    const translationId = EnglishTranslations[workId];
-    const result = processTeiCts2(
-      rawXml,
-      workId,
-      patches.get(workId),
-      translationId
-    );
-    const isTranslation = isTranslationId(workId);
-    result.info.isTranslation = isTranslation;
-    result.info.translationInfo = translationDataById.get(translationId);
-    result.info = decorateDocumentInfo(result.info);
-    allWorkIds.push(workId);
-
-    if (isTranslation) {
-      translationDataById.set(workId, {
-        id: workId,
-        translator: result.info.translator,
-        title: result.info.title,
-      });
-      translationWorksById.set(workId, result);
-      continue;
-    }
-
-    saveAsCorpusInputWork(result, corpusInputDir);
-    const metadata = extractWorkMetadata(workId, result.info, {
-      isTranslation,
-      translationId,
-    });
-    const translationWork = translationId
-      ? translationWorksById.get(translationId)
-      : undefined;
-    v2Works.push(preprocessWorkToV2(result, metadata, translationWork));
-  }
+  allWorkIds.push(
+    ...preprocessPerseusWorks(works, {
+      patches,
+      onProcessed: (work, isTranslation) => {
+        if (!isTranslation) {
+          saveAsCorpusInputWork(work, corpusInputDir);
+        }
+      },
+      onV2Work: (v2) => v2Works.push(v2),
+    })
+  );
   const duplicateIds = allWorkIds.filter((id, i, arr) => arr.indexOf(id) !== i);
   assertEqual(
     duplicateIds.length,
@@ -280,7 +327,6 @@ export async function processLibrary({
   saveV2LibraryDb(outputDir, v2Works);
   console.log(`Preprocessed ${v2Works.length} V2 works into ${outputDir}`);
   v2Works.length = 0;
-  translationWorksById.clear();
   if (shouldBuildCorpus) {
     await buildCorpus(latinWorksFromLibrary(corpusInputDir));
   }
