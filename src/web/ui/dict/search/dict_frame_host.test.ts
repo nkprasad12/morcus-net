@@ -99,13 +99,11 @@ describe("lookupInDictFrame", () => {
     }> = [
       {
         name: "stub returns 'declined'",
-        setup: (doc) =>
-          attachDictSearchStub(doc, { impl: () => "declined" }),
+        setup: (doc) => attachDictSearchStub(doc, { impl: () => "declined" }),
       },
       {
         name: "stub returns unknown value",
-        setup: (doc) =>
-          attachDictSearchStub(doc, { impl: () => "unexpected" }),
+        setup: (doc) => attachDictSearchStub(doc, { impl: () => "unexpected" }),
       },
       {
         name: "stub throws",

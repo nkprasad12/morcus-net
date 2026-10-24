@@ -2244,8 +2244,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   });
 
   describe("lookupEmbeddedWord, #leaving, and scroll policy", () => {
-    const EMBEDDED_LA_URL =
-      "/dicts?q=arma&lang=La&o=1&embedded=1&scale=93&d=3";
+    const EMBEDDED_LA_URL = "/dicts?q=arma&lang=La&o=1&embedded=1&scale=93&d=3";
 
     function controllableFetch() {
       const pending: {
@@ -2353,7 +2352,10 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     test("concurrency: A shown -> B starts -> A again returns 'swapped', aborts B, and renders A", async () => {
       const pending = controllableFetch();
       window.history.replaceState(null, "", EMBEDDED_LA_URL);
-      const el = createDictSearch("<div>arma initial</div>", 'data-d="3" data-o="1"');
+      const el = createDictSearch(
+        "<div>arma initial</div>",
+        'data-d="3" data-o="1"'
+      );
       const results = el.querySelector<HTMLElement>("#dict-results")!;
 
       // Start B ("virumque") while A ("arma") is shown
@@ -2575,7 +2577,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         ).toBe("unchanged");
 
         // Not set by modified click (Ctrl+click) on a.guest-return
-        const guestLink = el.querySelector<HTMLAnchorElement>("a.guest-return")!;
+        const guestLink =
+          el.querySelector<HTMLAnchorElement>("a.guest-return")!;
         guestLink.dispatchEvent(
           new MouseEvent("click", {
             bubbles: true,

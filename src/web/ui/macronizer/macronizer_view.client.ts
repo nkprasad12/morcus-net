@@ -730,11 +730,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       lang: "La",
       embedded: "1",
     });
-    lookupInDictFrame(
-      iframe,
-      { q: trimmed, lang: "La", inflected },
-      targetSrc
-    );
+    lookupInDictFrame(iframe, { q: trimmed, lang: "La", inflected }, targetSrc);
   }
 
   async #handleCopyPassage(): Promise<void> {
