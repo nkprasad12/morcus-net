@@ -51,6 +51,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
   #selectedWordIndex: number | null = null;
   #selectedBucketId: 1 | 2 | 3 | null = null;
   #selectedWordEl: HTMLElement | null = null;
+  #pointerDownWordEl: HTMLElement | null = null;
 
   readonly #drawerController = this.addController(
     new DrawerController({
@@ -78,6 +79,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
     this.#selectedWordIndex = null;
     this.#selectedBucketId = null;
     this.#selectedWordEl = null;
+    this.#pointerDownWordEl = null;
     this.#drawerController.dispose();
     this.#drawerController.connect();
     document.title = formatMacronizerPageTitle(this.#passage !== null);
@@ -106,12 +108,28 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       }
     );
 
-    // 3. Word click in #mac-passage (ambiguous, unknown, and plain words)
+    // 3. Word pointer/click in #mac-passage (ambiguous, unknown, and plain words).
+    // Chromium/Firefox focus `<a href>` on mousedown (after pointerup on touch)
+    // before click fires; tracking pointerdown lets focusin skip the redundant
+    // lookup that click is about to run with `{ restoreDrawer: true }`.
+    this.scope.delegate<HTMLElement>(
+      this,
+      "pointerdown",
+      "#mac-passage a.mac-word",
+      (_e, wordEl) => {
+        this.#pointerDownWordEl = wordEl;
+      }
+    );
+    this.scope.listen(this, "pointercancel", () => {
+      this.#pointerDownWordEl = null;
+    });
+
     this.scope.delegate<HTMLElement>(
       this,
       "click",
       "#mac-passage a.mac-word",
       (e, wordEl) => {
+        this.#pointerDownWordEl = null;
         // Let modified clicks open a plain word's dictionary link in a new tab.
         if (
           e instanceof MouseEvent &&
@@ -120,8 +138,8 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
           return;
         }
         e.preventDefault();
-        wordEl.focus({ preventScroll: true });
         this.#selectWordElement(wordEl, { restoreDrawer: true });
+        wordEl.focus({ preventScroll: true });
       }
     );
 
@@ -131,6 +149,10 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       "focusin",
       "#mac-passage a.mac-ambig, #mac-passage a.mac-unknown",
       (_e, wordEl) => {
+        if (this.#pointerDownWordEl === wordEl) {
+          this.#pointerDownWordEl = null;
+          return;
+        }
         if (this.#selectedWordEl !== wordEl) {
           this.#selectWordElement(wordEl, { restoreDrawer: false });
         }
@@ -205,6 +227,7 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
 
     // 11. Keyboard shortcuts (Enter, ArrowDown, Escape)
     this.scope.listen(this, "keydown", (e: Event) => {
+      this.#pointerDownWordEl = null;
       if (e instanceof KeyboardEvent) {
         this.#handleKeydown(e);
       }

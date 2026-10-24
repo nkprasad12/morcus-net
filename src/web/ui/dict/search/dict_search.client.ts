@@ -6,6 +6,7 @@ import {
   isPlainLeftClick,
   isShortcutBlocked,
   KeyedFetchCache,
+  prefersReducedMotion,
   registerElement,
   replaceWithHtml,
   scrollToElement,
@@ -48,9 +49,6 @@ import type {
 } from "@/web/ui/dict/search/dict_frame_host.client";
 
 const SEARCH_FORM = "form.search-form";
-
-const prefersReducedMotion = (): boolean =>
-  !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.

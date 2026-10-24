@@ -218,3 +218,8 @@ export function scrollToElement(
   );
   win.scrollTo({ top, behavior });
 }
+
+/** Whether the OS / browser asks for reduced motion (`prefers-reduced-motion: reduce`). */
+export function prefersReducedMotion(): boolean {
+  return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
