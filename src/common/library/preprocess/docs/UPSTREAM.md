@@ -1,9 +1,10 @@
 # Upstream Perseus (`canonical-latinLit`): Changes & Policy
 
-**Measured:** 2026-10-24
-**Merge base:** `b2a135df22f812afc622e7e14d30889718c252ee` (2026-04-22)
-**Our fork (`morcus-user-typos`):** `379331f1d2c24c3b5fde440cc46beae4d045fa27` (3 local typo commits ahead of merge base)
+**Measured & synced:** 2026-10-24
+**Pre-sync merge base:** `b2a135df22f812afc622e7e14d30889718c252ee` (2026-04-22)
+**Pre-sync fork (`morcus-user-typos`):** `379331f1d2c24c3b5fde440cc46beae4d045fa27` (3 local typo commits ahead of merge base; 1 commit `d6a51562` `phi052 osse→esse` dropped as already fixed upstream)
 **Upstream HEAD (`PerseusDL/canonical-latinLit@master`):** `0700a6b7e010707367502a83e08e99ebbbb3666c` (2026-10-20, **202 commits ahead** of merge base)
+**Post-sync fork (`morcus-upstream-sync`):** `452d0905` (`upstream/master@0700a6b7` + 5 PR-ready fix branches; see [§8](#8-phase-0-sync-execution--post-sync-diff-summary))
 **Context:** see [PLAN.md §5](PLAN.md#5-upstream-perseus-what-changed-and-what-it-means) and [CORPUS_SURVEY.md](CORPUS_SURVEY.md).
 
 ---
@@ -219,3 +220,43 @@ git ls-tree -r --name-only upstream/master data/ | grep -E 'perseus-lat[0-9]*\.x
   git show "upstream/master:$f" | grep -oE '<citeStructure[^>]*match="[^"]*"'
 done | sed -E 's/.*match="([^"]*)".*/\1/; s/'\''[^'\'']*'\''/'\''X'\''/g' | sort | uniq -c | sort -nr
 ```
+
+---
+
+## 8. Phase 0 sync execution & post-sync diff summary
+
+In Phase 0, the shared `canonical-latinLit` clone was synced to branch `morcus-upstream-sync` (`452d0905`), which sits on `PerseusDL/canonical-latinLit@0700a6b7` plus **5 PR-ready fix branches** (the earlier local commit `d6a51562` fixing `osse` → `esse` in `phi0474.phi052` was dropped because upstream fixed it independently):
+
+| PR-ready branch on `canonical-latinLit`      | What it fixes                                                                                                                                                                     |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fix-typos-petronius-livy-apuleius-amicitia` | Rebased typo fixes in Petronius, Livy, Apuleius, and Cicero _De Amicitia_                                                                                                         |
+| `fix-typo-petronius-69`                      | Rebased typo fix in Petronius _Satyricon_ 69 (`done` → `dono`)                                                                                                                    |
+| `fix-phi011-speech-subtype`                  | Restores `subtype="speech"` on Cicero _De Lege Agraria_ (`phi0474.phi011`) speeches 2–3, which the upstream review pass accidentally dropped (breaking its own `<citeStructure>`) |
+| `fix-phi048-notation-gap`                    | Replaces `<gap reason="illegible"/>` with literal `<c>notation</c>` in a Cicero _De Finibus_ (`phi0474.phi048`) 5.69 note                                                         |
+| `fix-phi1276-licence`                        | Fixes a stray `<licence>Test</licence>` placeholder in Juvenal (`phi1276.phi001.perseus-lat2`)                                                                                    |
+
+### 8.1 Compatibility fixes landed in `morcus-net` (`bf93b913`..`ced79d26`)
+
+| Commit     | Change                                                                                                                                                                                                                                                                                  |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bf93b913` | Updated the 15 re-editioned Perseus works in [`library_constants.ts`](../../library_constants.ts) to `-lat2`, added `WORK_ID_ALIASES`, and hooked alias resolution into `reader_loader.server.ts`                                                                                       |
+| `66c7898b` | Added `canonicalRend` in [`perseus_rends.ts`](../../perseus_rends.ts) so `rend="align(indent)"` renders like `indent` and `align(blockquote)` renders like `blockquote`                                                                                                                 |
+| `a3a9d3df` | Replaced the exact-string `<!DOCTYPE>` `.replace()` in [`process_library.ts`](../../process_library.ts) with general `stripXmlProlog` handling `<?xml-model …?>` and `<!DOCTYPE … [...]>`                                                                                               |
+| `923dceb9` | Updated `getTextparts` in [`process_work.ts`](../../process_work.ts) to ignore `<refsDecl xml:id="CTS">` (`<citeStructure>`) when filtering for non-CTS `refsDecl` blocks                                                                                                               |
+| `70028867` | Tokenised compound `rend` values on `;` (e.g. `q@"single; merge"`, `quote@"single; smallcaps"`, `num@"overline; smallcaps"`, `emph@"smallcaps"`, `align(center)`, `align(right)`, `spacing`) and updated [`work_preprocessor.ts`](../work_preprocessor.ts) to map CSS classes per token |
+| `d8e9d04b` | Applied `;`-tokenised `rend` checking to note renditions (`KNOWN_NOTE_REND`) and allowed quotation styles (`single`, `double`) inside notes                                                                                                                                             |
+| `c1a0edc4` | Rendered `<supplied>` (newly used in `phi0914.phi001.perseus-eng3`) in Leiden angle brackets (`⟨…⟩`) in [`process_work.ts`](../../process_work.ts)                                                                                                                                      |
+| `e4defc40` | Read Perseus licence text from `<availability><licence>` in the TEI header instead of hardcoding `"CC BY-SA 3.0"`                                                                                                                                                                       |
+| `ced79d26` | Pinned reader URL slugs (`urlName`) and `shortTitle` by work ID across upstream's 12 display-title renamings (e.g. _Agricola_ → _Vita Agricolae_, _De Senectute_ → _Cato Maior De Senectute_) so reader URLs do not move                                                                |
+
+### 8.2 Post-sync render diff (`baseline-379331f1` → `post-sync-452d0905`)
+
+Running `./morcus.sh library diff --from=baseline-379331f1 --to=post-sync-452d0905` (with `WORK_ID_ALIASES` pairing and whitespace-run normalisation from `473260c6`; full report in `.cache/library-render/diffs/baseline-379331f1__post-sync-452d0905/report.md`):
+
+- **Build health:** **99 / 99** works render with **0 failures**; total pages **7,525 → 7,542** (+33 added, −16 removed; 2,416 pages changed).
+- **Metadata-only works:** 54 of the 99 works have **zero page HTML changes** and differ only in work metadata (`licence` ×99, `editor` ×23, `title` ×14, `translator` ×2, `toc`/`navTree` ×6).
+- **Livy translation expansion:** `phi0914.phi001.perseus-eng3` expanded upstream from Books 1–10 to Books 1–45, increasing translated pages in Livy from **524 → 1,757 of 1,765** (+1,233 pages / +14,290 translated sections).
+- **Paragraph indents restored:** `+1,898` `indent indent-para` spans across ~35 Cicero, Tacitus, and Minucius Felix works (`De Officiis` +474, `De Finibus` +337, `De Inventione` +193, `De Re Publica` +159) where upstream converted `rend="indent"` or added `rend="align(indent)"`.
+- **Inline typography & text cleanups:** `+306` `smallcaps` spans (`num`/`label`/`quote@smallcaps`, replacing `hi@7`); `+219` `<strong>` spans emboldening speaker names in dialogues (`Partitiones Oratoriae` +109, `De Re Publica` +77, `Pro Flacco` +15, `De Senectute` +8, `De Officiis` +6, `Lucullus` +4); line-break hyphenation removed (`Brutus` 57 → 0, `Lucullus` 15 → 0); Beta Code Greek converted to Unicode.
+- **Structural page additions/removals:** _De Finibus_ loses its spurious `index` page (−1); _Pro Flacco_ consolidates `frBob1`–`9` / `frMed` (15 pages) into one `fragments` page; _De Fato_ gains `arg` and fragment pages; _Partitiones Oratoriae_, _Brutus_, and _Lucullus_ gain `sigla` and previously missing section pages (_Brutus_ +23 pages, _Lucullus_ +1 page / section 136).
+- **Census & ratchet state at `452d0905` (`8e9e574c`, `2bc70835`):** **334 `perseus-lat*` files** (341 total surveyed), **136 / 334** Latin V1-OK (**143 / 341** total, **105 / 105** onboarded), **266 / 334** Latin works with 0 markup violations (273 / 341 total), and only **68 non-onboarded works** in `NOT_YET_ONBOARDED` (down from 130 pre-sync).

@@ -1,17 +1,17 @@
 # Library Expansion Plan
 
-**Status:** in progress — Phase 0
+**Status:** Phase 0 complete (pending user `git push` of `morcus-upstream-sync` to `origin` to finalize [`upstream_sources.lock.json`](../../../../../upstream_sources.lock.json))
 **Goal:** onboard every distinct Perseus Latin work into the V2 library with an enumerated, tested guarantee that we are not misrendering the editor's intended formatting.
-**Sources:** the Sep-2026 study ([README.md](README.md), [V1_PREPROCESSING.md](V1_PREPROCESSING.md), [DIRECTION.md](DIRECTION.md), [OUTPUT_MODEL.md](OUTPUT_MODEL.md)); the Oct-2026 corpus survey over all 398 `perseus-lat*` files ([CORPUS_SURVEY.md](CORPUS_SURVEY.md)); and the diff of our fork against `PerseusDL/canonical-latinLit@master` ([UPSTREAM.md](UPSTREAM.md)).
+**Sources:** the Sep-2026 study ([README.md](README.md), [V1_PREPROCESSING.md](V1_PREPROCESSING.md), [DIRECTION.md](DIRECTION.md), [OUTPUT_MODEL.md](OUTPUT_MODEL.md)); the Oct-2026 corpus survey over all 398 pre-sync / 334 post-sync `perseus-lat*` files ([CORPUS_SURVEY.md](CORPUS_SURVEY.md)); and the diff and Phase 0 sync of our fork against `PerseusDL/canonical-latinLit@master` ([UPSTREAM.md](UPSTREAM.md)).
 
-| Phase | Scope                                                        | Status          | Target onboarded |
-| ----- | ------------------------------------------------------------ | --------------- | ---------------: |
-| **0** | Instrumentation, baseline, and upstream sync                 | **In progress** |               98 |
-| **1** | Free wins (Cluster A) and markup / silent-drop bug fixes     | Not started     |             ≈115 |
-| **2** | `citeStructure`-driven structural builder and unified markup | Not started     |             ≈250 |
-| **3** | Speakers, stage directions, and verse-in-prose               | Not started     |             ≈290 |
-| **4** | Secondary milestone axes and explicit pagination depth       | Not started     |             ≈290 |
-| **5** | Long tail, multi-edition selection, and upstream PRs         | Not started     |             ≈300 |
+| Phase | Scope                                                        | Status                                                        | Target onboarded |
+| ----- | ------------------------------------------------------------ | ------------------------------------------------------------- | ---------------: |
+| **0** | Instrumentation, baseline, and upstream sync                 | **Complete** (pending `git push origin morcus-upstream-sync`) |               98 |
+| **1** | Free wins (Cluster A) and markup / silent-drop bug fixes     | Not started                                                   |             ≈115 |
+| **2** | `citeStructure`-driven structural builder and unified markup | Not started                                                   |             ≈250 |
+| **3** | Speakers, stage directions, and verse-in-prose               | Not started                                                   |             ≈290 |
+| **4** | Secondary milestone axes and explicit pagination depth       | Not started                                                   |             ≈290 |
+| **5** | Long tail, multi-edition selection, and upstream PRs         | Not started                                                   |             ≈300 |
 
 ---
 
@@ -31,17 +31,19 @@
 
 Full details in [CORPUS_SURVEY.md](CORPUS_SURVEY.md) and [UPSTREAM.md](UPSTREAM.md).
 
-| Measure                                        |            Our clone |            Upstream HEAD |
-| ---------------------------------------------- | -------------------: | -----------------------: |
-| `perseus-lat*` files                           |                  398 |                  **334** |
-| Distinct `textgroup.work` with a Latin edition |                  370 |                     ~318 |
-| Works with >1 Perseus Latin edition            |                   29 |                      ~16 |
-| Livy per-book / periochae / fragment slices    |                   47 | **0** (deleted upstream) |
-| **Effective target (distinct, non-redundant)** |                 ≈320 |                 **≈300** |
-| Onboarded today (`LatinWorks`)                 |                   98 |    98 (15 files renamed) |
-| V1 passes today, as shipped                    | 137 (133 in scratch) |                        — |
-| …of which not in the allowlist                 |   39 (36 in scratch) |                        — |
-| Body text in V1-passing works                  | 48.7% of 44.2M chars |                        — |
+| Measure                                        | Pre-sync clone (`379331f1`) | Post-sync (`452d0905` / `0700a6b7`) |
+| ---------------------------------------------- | --------------------------: | ----------------------------------: |
+| `perseus-lat*` files (total surveyed)          |             398 (405 total) |                       **334** (341) |
+| Distinct `textgroup.work` with a Latin edition |                         370 |                                ~318 |
+| Works with >1 Perseus Latin edition            |                          29 |                                 ~16 |
+| Livy per-book / periochae / fragment slices    |                          47 |            **0** (deleted upstream) |
+| **Effective target (distinct, non-redundant)** |                        ≈320 |                            **≈300** |
+| Onboarded today (`LatinWorks`)                 |              98 (105 total) |     98 (15 re-editioned; 105 total) |
+| V1 passes as shipped (`perseus-lat*` / all)    |  137 / 144 (133 in scratch) |                   **136** / **143** |
+| …of which not in the allowlist                 |          39 (36 in scratch) |                              **38** |
+| Works with 0 markup violations (Latin / all)   |                   268 / 275 |                   **266** / **273** |
+| Works in `NOT_YET_ONBOARDED` ratchet list      |                         130 |                              **68** |
+| Body text in V1-passing works                  |        48.7% of 44.2M chars |                                   — |
 
 Of the 39 works that pass V1 today but are not onboarded (36 in the initial scratch script, plus 3 `div1` works that pass with 0 citable rows once DOCTYPE internal subsets are stripped; see [CORPUS_SURVEY.md §1](CORPUS_SURVEY.md#1-corpus-recount-files-vs-distinct-works)): ~20 are verse works currently shipped from **Hypotactic** instead (_Aeneid_, _Metamorphoses_, _Fasti_, Horace, …). Per [Decision 2](#6-decisions), those stay Hypotactic for now and will carry both editions long-term. The remaining ~16 are immediate free wins: **Gellius, ten Suetonius lives, Apuleius _Apologia_ / _Florida_, three pseudo-Caesar wars, Propertius, Martial, Silius Italicus, Valerius Flaccus, Ovid _Ex Ponto_.**
 
@@ -111,6 +113,7 @@ Pillar 4's "full pages" rule applies to any _passage_ using speaker, split-line,
 The corpus pipeline's dependency on the library is narrow and well-defined. [`saveAsCorpusInputWork`](../../corpus/corpus_library_utils.ts) writes one JSON per work with `{ id, workName, shortTitle, author, authorCode, rows: string[], rowIds: string[][], sectionDepth }`, read by both the TS and Rust builders ([`library_utils.rs`](../../../../../corpus_rust/src/build_corpus_v2/library_utils.rs)). Two invariants matter:
 
 1. **`extractRowText`'s word-boundary rule must agree with the reader's** (`needsWordBreak` in [`work_preprocessor.ts`](../work_preprocessor.ts)) because corpus word offsets become reader highlight ranges. Today that agreement is maintained by two parallel implementations. The new design should compute row text and row HTML **from one tokenised intermediate**, so the agreement is structural rather than by convention — and add a test that asserts parity over the whole library.
+   - **Phase 0 whole-library parity sweep result ([`corpus_parity.test.ts`](../../audit/corpus_parity.test.ts)):** Across all **125 built works / 146,666 rows**, there are **0 word-boundary or `wordIndex` offset mismatches** (`[wordIndex, word.toLowerCase()]` matches 100%). The only difference is **32 case-only rows across 8 works** (`phi0474.phi020`, `phi021`, `phi022`, `phi023`, `phi026`, `phi030`, `phi055`, `phi0660.phi001`), where `extractRowText` ([`corpus_library_utils.ts`](../../corpus/corpus_library_utils.ts#L105-L107)) applies `.toUpperCase()` on `rend="uppercase"` / `"smallcaps"` (and `"7"`), whereas `work_preprocessor.ts` emits `<span class="smallcaps">` / `<span class="uppercase">` and relies on CSS.
 2. `rowIds`/`sectionDepth` drive citation display in corpus results. Under the new model `rowIds` = the default-scheme citation and `sectionDepth` = its depth; non-citable rows (headings) need either an empty id or to be filtered — decide once, assert in the ratchet.
 
 Nothing else in the corpus reads `ProcessedWork2`, so **the library output type is free to change** as long as `CorpusInputWork` is still emitted. The `SKIPS`/`AUTHOR_CODE_MAP` tables in [`corpus_library_utils.ts`](../../corpus/corpus_library_utils.ts) will need entries for new authors; worth deriving `authorCode` from `__cts__.xml` instead of hand-mapping.
@@ -221,16 +224,16 @@ Deep-review throughput in 2026: Jan 5 · Mar 11 · Jun 35 · Jul 10 · Aug 7 · 
 
 ## 7. Phased plan
 
-### Phase 0 — Instrumentation, then sync (small)
+### Phase 0 — Instrumentation, then sync (complete)
 
-1. Promote the survey into `./morcus.sh library survey`: per-work V1 status, census, assertions, fingerprint manifest; runs against `$LIB_XML_ROOT` or an override path.
-2. HTML-render cache + diff tool (`./morcus.sh library render` / `./morcus.sh library diff`); **baseline today's 98 works at the pre-sync pin**.
-3. Corpus-census ratchet test with an explicit "not yet onboarded" exclusion list.
-4. Corpus-pipeline parity test: `extractRowText` word boundaries == reader tokenisation, over the whole library.
-5. **Pin to upstream HEAD.** Fix what the tools report: 15 re-editioned IDs (+ alias table), `align(indent)`, licence from `<licence>`, prolog handling, `FORCE_CTS_WORKS` entries for renamed files. Prepare our 3 typo commits as upstream PRs.
-6. Update the docs in `src/common/library/preprocess/docs/` with the fresh survey numbers and upstream findings.
+1. ✅ Promote the survey into `./morcus.sh library survey`: per-work V1 status, census, assertions, fingerprint manifest; runs against `$LIB_XML_ROOT` or an override path (`3ff5953e`, `257c6493`, `0650b229`, `8e9e574c`).
+2. ✅ HTML-render cache + diff tool (`./morcus.sh library render` / `./morcus.sh library diff`); baselined all 99 onboarded Latin works at the pre-sync pin (`340b3578`, `e13e604d`) and diffed against post-sync `452d0905` (see [UPSTREAM.md §8](UPSTREAM.md#8-phase-0-sync-execution--post-sync-diff-summary)).
+3. ✅ Corpus-census ratchet test ([`markup_ratchet.test.ts`](../../audit/markup_ratchet.test.ts)) with an explicit `NOT_YET_ONBOARDED` exclusion list (shrunk from 130 works pre-sync to **68** post-sync; **266 / 334** Latin works have 0 markup violations; `473260c6`, `2bc70835`).
+4. ✅ Corpus-pipeline parity test ([`corpus_parity.test.ts`](../../audit/corpus_parity.test.ts)): `extractRowText` word boundaries == reader tokenisation (`4f31fe87`, `d3eb6d4d`, `b769d5a6`). Whole-library sweep across 125 works / 146,666 rows confirmed **0 word-boundary / `wordIndex` mismatches** (and 32 case-only rows in 8 works from CSS vs `.toUpperCase()` on `smallcaps`/`uppercase`).
+5. ✅ **Synced to upstream HEAD** (`morcus-upstream-sync` `452d0905` = `PerseusDL/canonical-latinLit@0700a6b7` + 2 local typo commits, plus 5 PR-ready fix branches). Landed compatibility fixes (`bf93b913`..`ced79d26`): 15 re-editioned IDs + `WORK_ID_ALIASES` + slug pins for 12 retitled works, `;`-tokenised `rend`, `align(indent)` handled, `<supplied>` → `⟨…⟩`, `<licence>` from header, `getTextparts` `xml:id="CTS"` filter, and general XML prolog stripping.
+6. ✅ Updated the docs in `src/common/library/preprocess/docs/` with the pre- and post-sync survey numbers, parity results, and upstream findings.
 
-**Exit:** on upstream HEAD, every shipped page is diff-identical to the baseline or its diff is reviewed; the ratchet is green; a new upstream element cannot enter silently.
+**Exit:** met on `library-expansion` (pending user `git push origin morcus-upstream-sync` to finalize `upstream_sources.lock.json`). Every shipped page has been diffed against the pre-sync baseline ([UPSTREAM.md §8.2](UPSTREAM.md#82-post-sync-render-diff-baseline-379331f1--post-sync-452d0905)); the ratchet is green; a new upstream element cannot enter silently.
 
 ### Phase 1 — Free wins and bug fixes (small, high value)
 

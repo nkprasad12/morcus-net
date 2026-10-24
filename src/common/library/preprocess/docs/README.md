@@ -22,11 +22,14 @@ flowchart LR
 
 Stage B — the V1 layer — is the bottleneck. It works hard to coerce arbitrary TEI into one clean,
 uniformly-nested tree, and sources that don't fit that shape need bespoke code, hand-written
-patches, or stay unavailable. **137 of the 398 Latin files in our Perseus clone currently process
-through `processTei2`** (133 in the raw scratch survey before fixing its DOCTYPE regex, and 129 with
-≥1 citable row; 98 Latin works are onboarded today out of ≈320 distinct works in the clone, or
-**334 files / ≈300 distinct works** at upstream `HEAD` where the Livy slices have been removed —
-see [CORPUS_SURVEY.md](CORPUS_SURVEY.md) and [UPSTREAM.md](UPSTREAM.md)).
+patches, or stay unavailable. **At the pre-sync clone (`379331f1`), 137 of the 398 Latin files
+processed through `processTei2`** (133 in the initial scratch survey before fixing its DOCTYPE
+regex, 129 with ≥1 citable row, and 130 works in `NOT_YET_ONBOARDED`). **After the Phase 0 upstream
+sync (`452d0905`), 136 of the 334 Latin files (143 of 341 total surveyed) process through
+`processTei2`, 266 of 334 have zero markup violations against the closed markup policy table, and
+only 68 works remain in `NOT_YET_ONBOARDED`** (98 Perseus Latin works are onboarded today out of
+≈300 distinct works post-sync / ≈320 pre-sync — see [CORPUS_SURVEY.md](CORPUS_SURVEY.md) and
+[UPSTREAM.md](UPSTREAM.md)).
 
 Two distinct kinds of strictness are tangled together in that layer, and they deserve opposite
 treatment:
