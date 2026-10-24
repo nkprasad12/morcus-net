@@ -51,17 +51,13 @@
   flex-shrink: 0;
 }
 
-.filter-pill:hover {
+.filter-pill:not(.active):hover {
   border-color: var(--border-strong);
   color: var(--text);
 }
 
-.filter-pill.active {
-  background-color: var(--primary);
-  border-color: var(--primary);
-  color: var(--on-accent);
-  font-weight: 600;
-}
+/* .filter-pill.active shares the filled look of .btn-primary
+   (core/nav/components.css). */
 
 /* Continuous Works Grid */
 .library-grid {

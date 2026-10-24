@@ -46,7 +46,7 @@
 
 /* Solid and full strength only while actually dragging. */
 .resize-handle.is-resizing::before {
-  background: var(--primary);
+  background: var(--primary-fill);
   opacity: 1;
 }
 

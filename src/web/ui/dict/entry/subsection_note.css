@@ -120,7 +120,7 @@
   bottom: 0;
   width: 3px;
   border-radius: var(--radius-xs);
-  background-color: var(--primary);
+  background-color: var(--primary-fill);
 }
 
 @media (width <= 640px) {

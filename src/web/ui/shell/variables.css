@@ -59,6 +59,8 @@
   --primary: #286e56;
   --primary-hover: #1d5441;
   --primary-light: rgba(40, 110, 86, 0.1);
+  /* Filled "selected" states (chips, toggles); toned down in dark mode. */
+  --primary-fill: var(--primary);
   --link: #0066cc;
   --link-hover: #0052a3;
   --border: #dfe3e1;
@@ -152,6 +154,7 @@
     --primary: #7cc4a6;
     --primary-hover: #9ad4bc;
     --primary-light: rgba(124, 196, 166, 0.14);
+    --primary-fill: #5e9c84;
     --link: #8ab4f8;
     --link-hover: #aecbfa;
     --border: #363a42;
@@ -245,6 +248,7 @@
   --primary: #7cc4a6;
   --primary-hover: #9ad4bc;
   --primary-light: rgba(124, 196, 166, 0.14);
+  --primary-fill: #5e9c84;
   --link: #8ab4f8;
   --link-hover: #aecbfa;
   --border: #363a42;

@@ -192,7 +192,7 @@
 }
 
 .inflect-chip.is-on {
-  background-color: var(--primary);
+  background-color: var(--primary-fill);
   color: var(--on-accent);
 }
 
@@ -231,7 +231,7 @@
 
 .search-tray .settings-btn[aria-expanded="true"] {
   color: var(--on-accent);
-  background-color: var(--primary);
+  background-color: var(--primary-fill);
   border-color: transparent;
 }
 

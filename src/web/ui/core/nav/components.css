@@ -46,10 +46,13 @@
     color 0.15s ease-in-out, opacity 0.15s ease-in-out;
 }
 
-.btn-primary {
-  background-color: var(--primary);
+/* Filled "selected" look, shared by primary buttons and selected filter
+   pills (library). */
+.btn-primary,
+.filter-pill.active {
+  background-color: var(--primary-fill);
   color: var(--on-accent);
-  border-color: var(--primary);
+  border-color: var(--primary-fill);
 }
 
 .btn-primary:hover:not(:disabled) {

@@ -274,7 +274,7 @@ morcus-reader-settings {
 
 .settings-slider {
   width: 100%;
-  accent-color: var(--primary);
+  accent-color: var(--primary-fill);
   cursor: pointer;
   margin: 0;
 }
@@ -303,12 +303,12 @@ morcus-reader-settings {
   width: 1.15rem;
   height: 1.15rem;
   cursor: pointer;
-  accent-color: var(--primary);
+  accent-color: var(--primary-fill);
 }
 
 .dict-checkbox,
 .inflected-checkbox {
-  accent-color: var(--primary);
+  accent-color: var(--primary-fill);
   cursor: pointer;
   margin: 0;
   width: 14px;

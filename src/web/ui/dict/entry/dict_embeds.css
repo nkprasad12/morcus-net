@@ -146,7 +146,7 @@
 
 .greek-auto-open-checkbox {
   cursor: pointer;
-  accent-color: var(--primary);
+  accent-color: var(--primary-fill);
 }
 
 .greek-auto-open-text {
