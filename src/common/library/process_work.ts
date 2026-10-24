@@ -40,9 +40,68 @@ const SKIP_NODES = new Set(["#comment", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
 
 const TABLE_ITEM_CHILDREN = new Set<string>(["date"]);
+
+/** Elements handled by the `switch` in `transformContentNode`. */
+export const SWITCH_CONTENT_NODES = new Set<string>([
+  "lb",
+  "head",
+  "gap",
+  "label",
+  "w",
+  "l",
+  "hi",
+  "add",
+  "sic",
+  "said",
+  "emph",
+  "placeName",
+  "date",
+  "surname",
+  "persName",
+  "name",
+  "num",
+  "orig",
+  "seg",
+  "foreign",
+  "div",
+  "div2",
+  "div1",
+  "ab",
+  "lg",
+  "body",
+  "p",
+  "title",
+  "bibl",
+  "cit",
+  "corr",
+  "abbr",
+  "expan",
+  "ex",
+  "del",
+]);
+
+/**
+ * All content (non-note) element names accepted by the V1 TEI pipeline across
+ * `preprocessTree`, `processRowContent`, `processListNode`, and
+ * `transformContentNode`.
+ */
+export const CONTENT_ELEMENT_ALLOWLIST: ReadonlySet<string> = new Set<string>([
+  ...SWITCH_CONTENT_NODES,
+  "choice",
+  "reg",
+  "note",
+  ...QUOTE_NODES,
+  "list",
+  "headLabel",
+  "item",
+  ...TABLE_ITEM_CHILDREN,
+  "milestone",
+  ...SKIP_NODES,
+]);
+
 // For `note` nodes. These should be separate since they're
 // rendered in a tooltip.
-const NOTE_NODES = new Set([
+export const NOTE_NODES = new Set([
   "note",
   "hi",
   "emph",
@@ -70,7 +129,8 @@ const NOTE_NODES = new Set([
   "num",
   "gloss",
 ]);
-const HANDLED_NOTE_REND = new Set<string | undefined>([
+export const NOTE_ELEMENT_ALLOWLIST: ReadonlySet<string> = NOTE_NODES;
+export const HANDLED_NOTE_REND = new Set<string | undefined>([
   "italic",
   "italics",
   "sup",
@@ -81,11 +141,11 @@ const HANDLED_NOTE_REND = new Set<string | undefined>([
   "blockquote",
   "bold",
 ]);
-const KNOWN_NOTE_REND = new Set<string | undefined>([
+export const KNOWN_NOTE_REND = new Set<string | undefined>([
   undefined,
   ...HANDLED_NOTE_REND,
 ]);
-const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
+export const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "xml:lang",
   "anchored",
   "type",
@@ -590,7 +650,8 @@ function convertToRows(
   return results;
 }
 
-function transformNoteNode(node: XmlNode): XmlNode {
+/** Exported for unit testing. */
+export function transformNoteNode(node: XmlNode): XmlNode {
   assert(NOTE_NODES.has(node.name), node.name);
   if (node.name === "lb") {
     return new XmlNode("br", [], []);
@@ -643,7 +704,8 @@ function transformNoteNode(node: XmlNode): XmlNode {
   return new XmlNode("span", attrs, children);
 }
 
-function transformContentNode(
+/** Exported for unit testing. */
+export function transformContentNode(
   node: XmlNode,
   children: XmlChild<ProcessedWorkContentNodeType>[],
   parent?: XmlNode
@@ -744,6 +806,9 @@ function transformContentNode(
       const child = assertType(node.children[0], isString);
       return new XmlNode("span", [], [betaCodeToGreek(child)]);
     }
+  }
+  if (!SWITCH_CONTENT_NODES.has(node.name)) {
+    throw new Error(`Unknown node: ${node.name}`);
   }
   switch (node.name) {
     case "lb":
@@ -871,7 +936,8 @@ function processListNode(root: XmlNode): XmlNode<ProcessedWorkContentNodeType> {
   );
 }
 
-function processRowContent(
+/** Exported for unit testing. */
+export function processRowContent(
   root: XmlNode,
   parent?: XmlNode
 ): XmlNode<ProcessedWorkContentNodeType> {
