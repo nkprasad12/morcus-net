@@ -10,11 +10,7 @@ import {
   EnglishTranslations,
   LOCAL_REPO_WORKS,
 } from "@/common/library/library_constants";
-import {
-  LIBRARY_INDEX,
-  LIB_DEFAULT_DIR,
-  LibraryIndex,
-} from "@/common/library/library_lookup";
+import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import {
   loadPatches,
   type LibraryPatch,
@@ -28,18 +24,17 @@ import {
 import { processHypotactic } from "@/common/library/process_hypotactic";
 import { processPhiJson } from "@/common/library/process_phi_json";
 import { processTei2 } from "@/common/library/process_work";
+import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
+import type { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_types";
 import { XmlNode } from "@/common/xml/xml_node";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { CruncherOptions } from "@/morceus/cruncher_types";
 import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
-import { encodeMessage } from "@/web/utils/rpc/parsing";
-import { serverMessage } from "@/web/utils/rpc/server_rpc";
+import { saveV2LibraryDb } from "@/web/ui/reader/reader_loader.server";
 import fs from "fs";
 import path from "path";
-import zlib from "zlib";
 
 // TODO: We should just crawl some root.
 const LOCAL_REPO_ROOT = "texts/latin/perseus";
@@ -165,26 +160,6 @@ function isTranslationId(workId: string): boolean {
   );
 }
 
-function writeWorkFile(
-  work: ProcessedWork2,
-  outputDir: string,
-  workId: string,
-  corpusInputDir: string
-): string {
-  const encoded = encodeMessage(serverMessage(work), [
-    XmlNodeSerialization.DEFAULT,
-  ]);
-  const outputPath = `${outputDir}/${workId}`;
-  // gzip at max compression level and write binary file
-  const compressed = zlib.gzipSync(Buffer.from(encoded, "utf8"), {
-    level: 9,
-  });
-  fs.writeFileSync(outputPath, compressed);
-  saveAsCorpusInputWork(work, corpusInputDir);
-  console.log("Wrote processed file to %s", outputPath);
-  return outputPath;
-}
-
 function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
   const rawTitle = info.title;
   const shortName = NAME_TO_DISPLAY_NAME.get(rawTitle);
@@ -224,21 +199,25 @@ export async function processLibrary({
   shouldBuildCorpus?: boolean;
   corpusInputDir?: string;
 } = {}) {
+  fs.rmSync(corpusInputDir, { recursive: true, force: true });
   fs.mkdirSync(corpusInputDir, { recursive: true });
   const patches = loadPatches();
-  const index: LibraryIndex = {};
+  const allWorkIds: string[] = [];
+  const v2Works: V2PreprocessedWork[] = [];
   const sortedWorks = works
     .map((p) => [p, pathToId(p)])
     .sort((a) => (isTranslationId(a[1]) ? -1 : 1))
     .map((a) => a[0]);
   const translationDataById = new Map<string, TranslationInfo>();
+  const translationWorksById = new Map<string, ProcessedWork2>();
 
   function processGenericWork(work: ProcessedWork2) {
     const workId = work.info.workId;
     work.info = decorateDocumentInfo(work.info);
-    const outputPath = writeWorkFile(work, outputDir, workId, corpusInputDir);
+    saveAsCorpusInputWork(work, corpusInputDir);
     const metadata = extractWorkMetadata(workId, work.info);
-    index[workId] = [outputPath, metadata];
+    allWorkIds.push(workId);
+    v2Works.push(preprocessWorkToV2(work, metadata));
   }
 
   processPhiJson().forEach(processGenericWork);
@@ -269,6 +248,8 @@ export async function processLibrary({
     const isTranslation = isTranslationId(workId);
     result.info.isTranslation = isTranslation;
     result.info.translationInfo = translationDataById.get(translationId);
+    result.info = decorateDocumentInfo(result.info);
+    allWorkIds.push(workId);
 
     if (isTranslation) {
       translationDataById.set(workId, {
@@ -276,24 +257,30 @@ export async function processLibrary({
         translator: result.info.translator,
         title: result.info.title,
       });
+      translationWorksById.set(workId, result);
+      continue;
     }
-    result.info = decorateDocumentInfo(result.info);
-    const outputPath = writeWorkFile(result, outputDir, workId, corpusInputDir);
+
+    saveAsCorpusInputWork(result, corpusInputDir);
     const metadata = extractWorkMetadata(workId, result.info, {
       isTranslation,
       translationId,
     });
-    index[workId] = [outputPath, metadata];
+    const translationWork = translationId
+      ? translationWorksById.get(translationId)
+      : undefined;
+    v2Works.push(preprocessWorkToV2(result, metadata, translationWork));
   }
-  const duplicateIds = Object.entries(index)
-    .map(([id]) => id)
-    .filter((id, i, arr) => arr.indexOf(id) !== i);
+  const duplicateIds = allWorkIds.filter((id, i, arr) => arr.indexOf(id) !== i);
   assertEqual(
     duplicateIds.length,
     0,
     "Duplicate work IDs found in library index"
   );
-  fs.writeFileSync(`${outputDir}/${LIBRARY_INDEX}`, JSON.stringify(index));
+  saveV2LibraryDb(outputDir, v2Works);
+  console.log(`Preprocessed ${v2Works.length} V2 works into ${outputDir}`);
+  v2Works.length = 0;
+  translationWorksById.clear();
   if (shouldBuildCorpus) {
     await buildCorpus(latinWorksFromLibrary(corpusInputDir));
   }

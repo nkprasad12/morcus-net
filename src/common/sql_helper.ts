@@ -82,11 +82,6 @@ export namespace ReadOnlyDb {
         index.forEach((i) =>
           assert(columnNames.includes(i), `Invalid index column: ${i}`)
         );
-        db.exec(
-          `CREATE INDEX ${index.join("_")} ON ${tableName}(${index.join(
-            ", "
-          )});`
-        );
       }
       const insert = db.prepare(
         `INSERT INTO ${tableName} (${columnNames.join(
@@ -108,6 +103,13 @@ export namespace ReadOnlyDb {
         });
       });
       insertAll();
+      for (const index of indices ?? []) {
+        db.exec(
+          `CREATE INDEX ${index.join("_")} ON ${tableName}(${index.join(
+            ", "
+          )});`
+        );
+      }
       console.debug(
         `Saved ${
           records.length

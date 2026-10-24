@@ -47,6 +47,51 @@ export function singletonOf<T>(initializer: () => T): {
   };
 }
 
+/** Recursively marks all properties and array elements of `T` as readonly. */
+export type DeepReadonly<T> = T extends (...args: any[]) => unknown
+  ? T
+  : T extends readonly (infer U)[]
+  ? readonly DeepReadonly<U>[]
+  : T extends object
+  ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+  : T;
+
+/**
+ * Wraps `fn` with a cache of its results for the `capacity` most recently used
+ * keys. Cached results are shared between callers. If `fn` returns a promise
+ * that rejects, the rejection is not cached.
+ */
+export function lruMemoize<V>(
+  fn: (key: string) => V,
+  capacity: number
+): (key: string) => V {
+  assert(capacity >= 1, "capacity must be at least 1");
+  const cache = new Map<string, V>();
+  return (key) => {
+    if (cache.has(key)) {
+      const cached = cache.get(key)!;
+      // Re-insert to mark this as the most recently used key.
+      cache.delete(key);
+      cache.set(key, cached);
+      return cached;
+    }
+    const result = fn(key);
+    cache.set(key, result);
+    if (result instanceof Promise) {
+      result.catch(() => {
+        if (cache.get(key) === result) {
+          cache.delete(key);
+        }
+      });
+    }
+    if (cache.size > capacity) {
+      // Maps iterate in insertion order, so the first key is the oldest.
+      cache.delete(cache.keys().next().value!);
+    }
+    return result;
+  };
+}
+
 export function safeParseInt(input: string | undefined): number | undefined {
   if (input === undefined || !/^(?:-)?\d+$/.test(input)) {
     return undefined;

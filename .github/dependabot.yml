@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: quarterly
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directory: /src/devops/reverse_proxy
+    schedule:
+      interval: quarterly
+
+  # The server and pruner images pin the same `node` base by digest (see the
+  # comment at the top of /Dockerfile); bump them together. A pruner base bump
+  # also changes its tag in src/scripts/helper_images/expected_tags.ts.
+  # src/py/latincy/image is left out on purpose: it pins our own archived image.
+  - package-ecosystem: docker
+    directories:
+      - /
+      - /src/devops/pruner
+    schedule:
+      interval: quarterly
+    groups:
+      node-base:
+        patterns:
+          - "node"

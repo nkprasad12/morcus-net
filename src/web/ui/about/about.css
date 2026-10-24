@@ -1,0 +1,47 @@
+/* About Page Layout & Sections */
+
+/* Reading text: the About page exists to be read, so it follows the
+   Appearance menu's font, size and spacing (see docs/PREFERENCES.md). */
+.about-article {
+  width: 100%;
+  font-family: var(--font-text);
+  font-size: calc(1rem * var(--text-scale, 1));
+  color: var(--reading-text);
+}
+
+.about-section {
+  margin-bottom: var(--space-9);
+}
+
+.about-section h2 {
+  /* em, so headings scale with the text. */
+  font-size: 1.35em;
+  color: var(--text);
+  margin: 0 0 var(--space-5) 0;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.about-section p {
+  margin: 0 0 var(--space-5) 0;
+  line-height: calc(1.6 * var(--text-leading, 1));
+}
+
+.about-section ul {
+  margin: 0 0 var(--space-6) 0;
+  padding-left: var(--space-8);
+}
+
+.about-section li {
+  margin-bottom: var(--space-4);
+  line-height: calc(1.5 * var(--text-leading, 1));
+}
+
+.about-section a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.about-section a:hover {
+  color: var(--link-hover);
+}

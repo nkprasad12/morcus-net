@@ -1,5 +1,5 @@
 import { GitHub } from "@/web/utils/github";
-import type { ReportApiRequest } from "@/web/api_routes";
+import type { ReportApiRequest } from "@/web/utils/github";
 
 const fetch = jest.fn();
 global.fetch = fetch;

@@ -1,0 +1,83 @@
+{
+  "//": [
+    "Pinned commits of the upstream data repos. Prod builds fetch exactly these commits; local builds use whatever is checked out at each `env` path.",
+    "Change pins only with `./morcus.sh upstream pin <source>[@<ref>]`. See src/scripts/upstream/README.md.",
+    "`env`/`file`: the env var set_up_or_update.sh points at the clone (or at `file` inside it)."
+  ],
+  "sources": {
+    "lexica": {
+      "repo": "https://github.com/nkprasad12/lexica.git",
+      "branch": "master",
+      "commit": "a05b816746ec7518c06b4233cf9efbb4d9c4bffd",
+      "env": "LS_PATH",
+      "file": "CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml"
+    },
+    "riddle-arnold": {
+      "repo": "https://github.com/nkprasad12/riddle-arnold.git",
+      "branch": "main",
+      "commit": "26da0948fb88d19faf64c0868249990e80a9aa16",
+      "env": "RA_PATH",
+      "file": "riddle-arnold.tsv"
+    },
+    "gesner": {
+      "repo": "https://github.com/nkprasad12/gesner.git",
+      "branch": "master",
+      "commit": "4edbfb421f7ecc9eefa2150b5700db2d92537df1",
+      "env": "GESNER_RAW_PATH",
+      "file": "gesner.json"
+    },
+    "forcellini-words": {
+      "repo": "https://github.com/nkprasad12/forcellini-words.git",
+      "branch": "master",
+      "commit": "e8dd96ad990a23f7f08fd964af97f38345d47c36",
+      "env": "FORC_RAW_PATH",
+      "file": "forcellini.txt"
+    },
+    "smithandhall": {
+      "repo": "https://github.com/nkprasad12/smithandhall.git",
+      "branch": "v1edits",
+      "commit": "34548d81a54dc6f4f74a4f7a81e3e311a7e1bcbf",
+      "env": "SH_RAW_PATH",
+      "file": "sh_F2_latest.txt"
+    },
+    "Georges1910": {
+      "repo": "https://github.com/nkprasad12/Georges1910.git",
+      "branch": "morcus-net-branch",
+      "commit": "3cdcead6bb04e1266c8ee49d55e5940eb1cffbac",
+      "env": "GEORGES_RAW_PATH",
+      "file": "Georges1910-ger-lat.xml"
+    },
+    "latin-dictionary": {
+      "repo": "https://github.com/nkprasad12/latin-dictionary.git",
+      "branch": "morcus",
+      "commit": "7133d4081461e051a66c6320b5085e4ec7bf7687",
+      "env": "POZO_RAW_PATH",
+      "file": "LopezPozo1997/diccionario.txt"
+    },
+    "canonical-latinlit": {
+      "repo": "https://github.com/nkprasad12/canonical-latinlit.git",
+      "branch": "master",
+      "commit": "379331f1d2c24c3b5fde440cc46beae4d045fa27",
+      "env": "LIB_XML_ROOT"
+    },
+    "hypotactic": {
+      "repo": "https://github.com/nkprasad12/hypotactic.git",
+      "branch": "main",
+      "commit": "28bd282765adf7aa317c67e728cc747f9d52803a",
+      "env": "HYPOTACTIC_ROOT"
+    },
+    "phi-public-domain-json": {
+      "repo": "https://github.com/nkprasad12/phi-public-domain-json.git",
+      "branch": "main",
+      "commit": "6ce6d3e4e7f45c1257b7938f2a2204c971dda530",
+      "env": "PHI_JSON_ROOT"
+    },
+    "gaffiot": {
+      "repo": "https://github.com/nkprasad12/gaffiot.git",
+      "branch": "main",
+      "commit": "6bccf36d525655c00f7a760dffdee3d4fabdcfc7",
+      "env": "GAFFIOT_RAW_PATH",
+      "file": "gaffiot.js"
+    }
+  }
+}

@@ -1,0 +1,54 @@
+/* Desktop Split-Pane Resizer Gutter, Handle, and Drag States */
+
+/* Mobile: Splitter Bar is completely hidden */
+.reader-splitter {
+  display: none;
+}
+
+/* `body.resizing-panels` (set during a drag) deliberately carries no
+   `cursor` / `user-select`: both are inherited, so toggling them on <body>
+   restyles the whole document. The captured handle (`.resize-handle`)
+   supplies the cursor, and trackPointerDrag prevents text selection. */
+
+/* ==========================================================================
+   Desktop Resizable Splitter Gutter (> 640px)
+   ========================================================================== */
+
+@media (width > 640px) {
+  /* The line, grip and hover/drag states come from .resize-handle
+     (core/widgets/resize_handle.css); this only sizes and places the splitter. */
+  .reader-splitter {
+    display: flex;
+    width: 16px;
+    flex: 0 0 16px;
+    margin: 0;
+    z-index: var(--z-raised);
+    position: relative;
+  }
+
+  /* No-JS, or a reader whose JS failed: the splitter is an inert dividing
+     seam (its drag handle is `data-js-only`), drawn as a plain solid line.
+     Appearance only, so this keys on `(scripting)` rather than on upgrade:
+     with JS on, the splitter looks draggable from first paint. */
+  @media (scripting: none) {
+    .reader-splitter {
+      cursor: default;
+    }
+
+    .reader-splitter::before,
+    .reader-splitter:hover::before {
+      background: var(--border);
+      opacity: 1;
+    }
+  }
+
+  [data-js-failed] .reader-splitter {
+    cursor: default;
+  }
+
+  [data-js-failed] .reader-splitter::before,
+  [data-js-failed] .reader-splitter:hover::before {
+    background: var(--border);
+    opacity: 1;
+  }
+}

@@ -35,8 +35,38 @@ describe("handleEditorNotes", () => {
     const input =
       "Fr. 2,[**P2: ,] 10, <i>med.</i>: <i>to try to provoke a l.</i>, r.[** r unclear]";
     const expected =
-      "Fr. 2,, 10, <i>med.</i>: <i>to try to provoke a l.</i>, r.";
+      "Fr. 2, 10, <i>med.</i>: <i>to try to provoke a l.</i>, r.";
     expect(handleEditorNotes(input)).toBe(expected);
+  });
+
+  test("drops P2 notes confirming the preceding punctuation", () => {
+    const input = "rĕmŏveo,[**P2: ,] mōvi, mōtum, 2: <i>sleep</i>,[**P2: ,] r.";
+    const expected = "rĕmŏveo, mōvi, mōtum, 2: <i>sleep</i>, r.";
+    expect(handleEditorNotes(input)).toBe(expected);
+  });
+
+  test("drops kept notes confirming the preceding punctuation", () => {
+    expect(handleEditorNotes("Cic.[** .] Liv.")).toBe("Cic. Liv.");
+    expect(handleEditorNotes("Cic.[**.] Liv.")).toBe("Cic. Liv.");
+    expect(handleEditorNotes("Cic.;[** ;] Liv.")).toBe("Cic.; Liv.");
+  });
+
+  test("drops missing notes confirming the preceding punctuation", () => {
+    const input = "Hor. Od. 1, 3:[**P1: missing :] <i>to sail";
+    const expected = "Hor. Od. 1, 3: <i>to sail";
+    expect(handleEditorNotes(input)).toBe(expected);
+  });
+
+  test("keeps notes after different punctuation", () => {
+    expect(handleEditorNotes("Cic.[** :] Liv.")).toBe("Cic.: Liv.");
+    expect(handleEditorNotes("objective.[** ,] Liv.")).toBe("objective., Liv.");
+    expect(handleEditorNotes("Cic.[**P1: missing ,] Liv.")).toBe("Cic., Liv.");
+  });
+
+  test("keeps notes not preceded by punctuation", () => {
+    expect(handleEditorNotes("Cic[**P2: .] Liv")).toBe("Cic. Liv");
+    expect(handleEditorNotes("<i>sleep</i>[** ,] r.")).toBe("<i>sleep</i>, r.");
+    expect(handleEditorNotes("3[**P1: missing :] to")).toBe("3: to");
   });
 
   test("Removes multiple editor notes in one line edge case", () => {

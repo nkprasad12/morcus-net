@@ -1,5 +1,18 @@
 import { diffWordsWithSpace } from "diff";
-import type { ReportApiRequest } from "@/web/api_routes";
+
+/** An issue or edit report submitted from the site (`POST /api/report`). */
+export interface ReportApiRequest {
+  reportText?: string;
+  editedText?: {
+    original: string;
+    edited: string;
+    sectionId: string;
+  };
+  commit: string;
+  url?: string;
+  userAgent?: string;
+  tags?: string[];
+}
 
 const GITHUB_ISSUES_API =
   "https://api.github.com/repos/nkprasad12/morcus-net/issues";

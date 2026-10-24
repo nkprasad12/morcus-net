@@ -1,3 +1,8 @@
+/**
+ * Kept for a future offline mode. Its only runtime user was UI V1's
+ * offline dictionaries, removed in GRADUATION.md §4.
+ */
+
 import type {
   EntriesTableRow,
   RawDictEntry,
@@ -5,8 +10,8 @@ import type {
   StoredOrthsTableRow,
 } from "@/common/dictionaries/stored_dict_interface";
 import { removeDiacritics } from "@/common/text_cleaning";
-import type { DbConfig, Store } from "@/web/client/utils/indexdb/types";
-import { deleteDb, wrappedIndexDb } from "@/web/client/utils/indexdb/wrappers";
+import type { DbConfig, Store } from "@/common/indexdb/types";
+import { deleteDb, wrappedIndexDb } from "@/common/indexdb/wrappers";
 import {
   isString,
   matchesObject,

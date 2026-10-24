@@ -1,12 +1,10 @@
 import {
-  Serialization,
-  decodeMessage,
-  encodeMessage,
   instanceOf,
   isAny,
   isArray,
   isBoolean,
   isBoth,
+  isLiteral,
   isNumber,
   isOneOf,
   isPair,
@@ -15,20 +13,11 @@ import {
   isTriplet,
   matchesObject,
   maybeUndefined,
-  parseMessage,
-  stringifyMessage,
   typeOf,
 } from "@/web/utils/rpc/parsing";
 
 class StringWrapper {
   constructor(readonly prop: string) {}
-
-  static SERIALIZATION: Serialization<StringWrapper> = {
-    name: "StringWrapper",
-    validator: (t): t is StringWrapper => t instanceof StringWrapper,
-    serialize: (t) => t.prop,
-    deserialize: (t) => new StringWrapper(t),
-  };
 }
 
 describe("instanceOf", () => {
@@ -200,85 +189,36 @@ describe("isStringRecord", () => {
   });
 });
 
-describe("encode and decode", () => {
-  it("handles string input", () => {
-    const input = "hello";
-
-    const encoded = encodeMessage(input);
-    const result = decodeMessage(encoded, isString);
-
-    expect(result).toStrictEqual(input);
+describe("isLiteral", () => {
+  it("validates string literals", () => {
+    const isSerif = isLiteral("serif");
+    expect(isSerif("serif")).toBe(true);
+    expect(isSerif("sans")).toBe(false);
+    expect(isSerif(123)).toBe(false);
+    expect(isSerif(null)).toBe(false);
+    expect(isSerif(undefined)).toBe(false);
   });
 
-  it("handles string input with special characters", () => {
-    const input = "hello?there";
-
-    const encoded = encodeMessage(input, undefined, true);
-    const result = decodeMessage(encoded, isString, undefined, true);
-
-    expect(result).toStrictEqual(input);
+  it("validates number and boolean literals", () => {
+    expect(isLiteral(42)(42)).toBe(true);
+    expect(isLiteral(42)(43)).toBe(false);
+    expect(isLiteral(true)(true)).toBe(true);
+    expect(isLiteral(true)(false)).toBe(false);
   });
 
-  it("handles simple registry input", () => {
-    const input = new StringWrapper("foo");
+  it("composes with isOneOf for literal unions", () => {
+    const isFontFamily = isOneOf(isLiteral("serif"), isLiteral("sans"));
+    expect(isFontFamily("serif")).toBe(true);
+    expect(isFontFamily("sans")).toBe(true);
+    expect(isFontFamily("monospace")).toBe(false);
 
-    const encoded = encodeMessage(input, [StringWrapper.SERIALIZATION]);
-    const result = decodeMessage(
-      encoded,
-      StringWrapper.SERIALIZATION.validator,
-      [StringWrapper.SERIALIZATION]
+    const isLineHeight = isOneOf(
+      isLiteral("compact"),
+      isOneOf(isLiteral("normal"), isLiteral("relaxed"))
     );
-
-    expect(result).toStrictEqual<StringWrapper>(input);
-  });
-
-  it("handles array registry input", () => {
-    const input = [new StringWrapper("foo")];
-
-    const encoded = encodeMessage(input, [StringWrapper.SERIALIZATION]);
-    const result = decodeMessage(
-      encoded,
-      isArray(StringWrapper.SERIALIZATION.validator),
-      [StringWrapper.SERIALIZATION]
-    );
-
-    expect(result).toStrictEqual<StringWrapper[]>(input);
-  });
-});
-
-describe("stringifyMessage and parseMessage", () => {
-  it("handles string input", () => {
-    const input = "hello";
-
-    const encoded = stringifyMessage(input);
-    const result = parseMessage(encoded, isString);
-
-    expect(result).toStrictEqual(input);
-  });
-
-  it("handles simple registry input", () => {
-    const input = new StringWrapper("foo");
-
-    const encoded = stringifyMessage(input, [StringWrapper.SERIALIZATION]);
-    const result = parseMessage(
-      encoded,
-      StringWrapper.SERIALIZATION.validator,
-      [StringWrapper.SERIALIZATION]
-    );
-
-    expect(result).toStrictEqual<StringWrapper>(input);
-  });
-
-  it("handles array registry input", () => {
-    const input = [new StringWrapper("foo")];
-
-    const encoded = stringifyMessage(input, [StringWrapper.SERIALIZATION]);
-    const result = parseMessage(
-      encoded,
-      isArray(StringWrapper.SERIALIZATION.validator),
-      [StringWrapper.SERIALIZATION]
-    );
-
-    expect(result).toStrictEqual<StringWrapper[]>(input);
+    expect(isLineHeight("compact")).toBe(true);
+    expect(isLineHeight("normal")).toBe(true);
+    expect(isLineHeight("relaxed")).toBe(true);
+    expect(isLineHeight("wide")).toBe(false);
   });
 });

@@ -87,6 +87,15 @@ describe("SqliteDict", () => {
       reverseCleanOrth: "suilbup",
       senseId: null,
     });
+
+    const indices = db
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'orths'"
+      )
+      .all()
+      .map((row: unknown) => (row as { name: string }).name);
+    expect(indices).toContain("cleanOrth");
+    expect(indices).toContain("reverseCleanOrth");
   });
 
   test("reverse suffix lookups", async () => {
@@ -104,9 +113,9 @@ describe("SqliteDict", () => {
     const backing = sqliteBacking(TEMP_FILE);
 
     expect(backing.entryNamesBySuffix("us")).toEqual([
+      "Publius",
       "Julius",
       "Julianus",
-      "Publius",
     ]);
     expect(backing.entryNamesBySuffix("nus")).toEqual(["Julianus"]);
   });

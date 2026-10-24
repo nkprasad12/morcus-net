@@ -20,25 +20,34 @@ const isLatinToken = isTriplet<string, string, string>(
 
 const isLatincyResponse = isArray(isLatinToken);
 
+/** How long to wait for the LatinCy server before giving up. */
+const LATINCY_TIMEOUT_MS = 15_000;
+
 /**
  * Analyze Latin text using the LatinCy server
  * @param words The Latin text to analyze
  * @param spaces An array of booleans indicating whether each token is a non-work character.
+ * @param address The server address; defaults to `LATINCY_SERVER_ADDRESS`.
  *
  * @returns A promise resolving to an array of analyzed tokens
- * @throws Error if the server request fails
+ * @throws Error if the server request fails, times out or returns a non-2xx
+ * status or a malformed body.
  */
 export async function latincyAnalysis(
   words: string[],
-  spaces: boolean[]
+  spaces: boolean[],
+  address: string = envVar("LATINCY_SERVER_ADDRESS")
 ): Promise<LatinToken[]> {
-  const address = envVar("LATINCY_SERVER_ADDRESS");
   const request: RequestInit = {
     method: "POST",
     body: JSON.stringify({ words, spaces }),
     headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(LATINCY_TIMEOUT_MS),
   };
   const response = await fetch(address, request);
+  if (!response.ok) {
+    throw new Error(`LatinCy server returned HTTP ${response.status}.`);
+  }
   const responseJson = await response.json();
   assertType(responseJson, isLatincyResponse);
   return responseJson;

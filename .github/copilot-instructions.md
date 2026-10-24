@@ -11,20 +11,23 @@ Morcus.net is a collection of digital tools for Latin language, including:
 
 ## Architecture
 
+> For comprehensive subsystem breakdowns, data flow diagrams, and deep dives across TypeScript, Rust, and Python components, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ### Components
 
-- **Web Client**: React/Preact-based SPA in TypeScript (`src/web/client/`)
-- **Web Server**: Express.js server (`src/web/server/`, `src/web/web_server.ts`)
-- **Morceus**: Latin morphological analyzer (`src/morceus/`)
-- **Dictionary**: Lewis & Short, Smith & Hall dictionary handling (`src/web/storage/`)
-- **Python NLP**: Latin processing tools (`src/py/latincy/`, `src/macronizer/`)
+- **Web UI (UI V2)**: Server-rendered pages enhanced by Light DOM custom elements (`src/web/ui/`), client code bundled with Rsbuild. See `src/web/ui/README.md`.
+- **Web Server**: Express.js server (`src/start_server.ts`, `src/web/web_server.ts`, and the UI V2 router `src/web/ui/app_router.server.ts`) built with esbuild.
+- **Morceus**: Latin morphological analyzer (`src/morceus/` in TS and `morceus_rust/` in Rust).
+- **Dictionary**: Fused multi-dictionary engine (`src/common/dictionaries/`) supporting Lewis & Short, Smith & Hall, Gaffiot, Georges, Pozo, Gesner, Forcellini, Riddle & Arnold, and Numerals backed by SQLite.
+- **Corpus Query Engine**: High-performance Rust query engine (`corpus_rust/`) exposed via native Node bindings (`lib.rs`).
+- **Python NLP**: Latin processing tools (`src/py/latincy/`, `src/py/stanza/`, `src/macronizer/`).
 
 ### Data Flow
 
-1. Client requests Latin texts and lookups via APIs
-2. Server processes requests using the dictionary/morphological databases
-3. Preprocessing creates optimized databases from raw Latin texts
-4. Client displays content with features like pagination and word lookups
+1. The browser requests pages (`/dicts`, `/work/...`, `/corpus`, ...); with JS, the same URLs also return partials for in-place updates.
+2. Server renders them using fused dictionary engines, the Morceus cruncher, or the Rust corpus query engine.
+3. Preprocessing pipelines normalize raw texts (Perseus, Hypotactic, PHI) and lexica into optimized SQLite and JSON databases.
+4. Client code enhances the reader, dictionary, macronizer and corpus pages; every page also works without JS.
 
 ## Development Workflow
 
@@ -32,13 +35,10 @@ Morcus.net is a collection of digital tools for Latin language, including:
 
 ```bash
 # First-time setup
-./set_up_or_update.sh.sh
+./set_up_or_update.sh
 
-# Start server with dev build
+# Build the UI V2 assets and start the server
 ./morcus.sh web
-
-# Build with minification (production)
-./morcus.sh web --minify
 
 # Process dictionaries (first time or after changes)
 ./morcus.sh web --build_ls --build_sh
@@ -59,8 +59,8 @@ npm run py-tests
 # Run all tests
 npm run test
 
-# Run integration tests
-npm run integration-tests
+# Run integration tests (against a running dev server; --docker for a built image)
+./morcus.sh e2e
 ```
 
 ## Project Patterns
@@ -70,7 +70,7 @@ npm run integration-tests
 The codebase uses validation functions in `src/web/utils/rpc/parsing.ts` for type checking:
 
 ```typescript
-// Example: Validating API responses
+// Example: validating stored or fetched data
 const isApiResponse = matchesObject<ApiResponse>({
   data: isArray(isString),
   count: isNumber,
@@ -81,7 +81,7 @@ const isApiResponse = matchesObject<ApiResponse>({
 
 - Texts are stored in `ProcessedWork2` format (`src/common/library/library_types.ts`)
 - Navigation uses sectioning based on `textParts`
-- Pagination logic handles sections based on word counts (`src/web/client/pages/library/reader/library_reader/`)
+- UI V2 serves preprocessed pages from `src/common/library/preprocess/` (see `src/web/ui/reader/README.md`)
 
 ### Database Pattern
 
@@ -92,7 +92,7 @@ const isApiResponse = matchesObject<ApiResponse>({
 ## Key Files
 
 - `src/web/web_server.ts`: Main server setup
-- `src/web/client/root.tsx`: Main client entry point
+- `src/web/ui/app_router.server.ts`: UI V2 routes
 - `src/morceus/crunch.ts`: Core morphological analysis
 - `src/common/library/library_types.ts`: Text data structure definitions
 - `package.json`: NPM scripts for common operations
@@ -101,12 +101,12 @@ const isApiResponse = matchesObject<ApiResponse>({
 
 - Use TypeScript for all new code
   - Always use absolute imports for Typescript code. For example, the module
-    - `src/web/client/pages/library/reader/library_reader.tsx` should be imported as
-      `@/web/client/pages/library/reader/library_reader`.
-- Tests should be named `*.test.ts` or `*.test.tsx`
+    - `src/web/ui/reader/reader_view.client.ts` should be imported as
+      `@/web/ui/reader/reader_view.client`.
+- Tests should be named `*.test.ts`
   - Tests that require DOM should include `@jest-environment jsdom` at the top
-  - Client side unit tests that need to mock backend server APIs should use `jest.mock("@/web/utils/rpc/client_rpc");`
-  - Matches like `toBeInTheDocument()` are not available; find alternatives.
+  - Matchers like `toBeInTheDocument()` are not available; find alternatives.
+- UI V2 conventions (target suffixes, zero-JS baseline, testing) are in `src/web/ui/README.md` and `src/web/ui/docs/TESTING.md`.
 - Follow ESLint/Prettier formatting (run `npm run format` before committing)
 - Python code should use black formatting
 - Use strict validation for API request/response data

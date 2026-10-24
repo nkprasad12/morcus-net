@@ -11,4 +11,4 @@ global.location = {
 
 const benchmarkPromise = runBenchmarks(sqlDictBenchmarkConfig(), 100);
 
-benchmarkPromise.then(() => console.log("\n\nBenchmark complete."));
+void benchmarkPromise.then(() => console.log("\n\nBenchmark complete."));

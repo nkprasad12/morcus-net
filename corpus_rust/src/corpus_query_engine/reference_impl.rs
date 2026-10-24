@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::env::set_current_dir;
 
 use crate::api::{PageData, QueryGlobalInfo, QueryOptions};
@@ -52,7 +52,11 @@ fn check_results_equal(
     prod: &CorpusQueryResult<'_>,
     reference: &CorpusQueryResult<'_>,
 ) -> Result<(), String> {
-    if prod.next_page != reference.next_page {
+    // `candidate_index` is an implementation detail of the production engine's
+    // candidate set (it counts candidates that were later rejected), so the
+    // reference can't reproduce it. Compare only the user-visible cursor fields.
+    let cursor = |p: &Option<PageData>| p.as_ref().map(|p| (p.result_index, p.result_id));
+    if cursor(&prod.next_page) != cursor(&reference.next_page) {
         return Err(format!(
             "Different `next_page`s\n  Prod: {:?}\n  Ref: {:?}",
             prod.next_page, reference.next_page
@@ -156,10 +160,23 @@ impl CorpusQueryEngine {
             v.sort_by_key(|k| k.0);
             v
         };
+        let metadata = self.corpus.resolve_match_token(
+            sorted_ranges
+                .iter()
+                // Ranges are inclusive: (first token, last token).
+                .map(|&(id, end)| (id, (end - id + 1) as usize))
+                .collect(),
+        )?;
+        // Context never crosses the boundaries of the matched work.
+        let work_start = metadata.work_start_token;
+        let work_last = metadata.work_end_token - 1;
         // (ID, should_use_token, is_match_text_start)
         let mut id_chunks = vec![];
         id_chunks.push((
-            sorted_ranges[0].0.saturating_sub(context_len as u32),
+            max(
+                sorted_ranges[0].0.saturating_sub(context_len as u32),
+                work_start,
+            ),
             true,
             false,
         ));
@@ -174,7 +191,7 @@ impl CorpusQueryEngine {
         id_chunks.push((
             min(
                 id_chunks.last().unwrap().0 + context_len as u32,
-                self.corpus.num_tokens - 1,
+                min(work_last, self.corpus.num_tokens - 1),
             ),
             false,
             false,
@@ -194,26 +211,24 @@ impl CorpusQueryEngine {
             } else {
                 self.starts.break_start(end_id)?
             };
+            if start == end && !is_match_start {
+                // Context clipped away entirely at a work boundary.
+                continue;
+            }
             text.push((self.text.slice(start, end), is_match_start));
         }
 
-        Ok(CorpusQueryMatch {
-            metadata: self.corpus.resolve_match_token(
-                sorted_ranges
-                    .iter()
-                    .map(|&(id, end)| (id, (end - id) as usize))
-                    .collect(),
-            )?,
-            text,
-        })
+        Ok(CorpusQueryMatch { metadata, text })
     }
 
+    /// Returns the author's token range as `[start, end)`.
     fn resolve_author_data(&self, name: Option<&String>) -> Option<(u32, u32)> {
         let name = name?;
+        // `author_lookup` holds an inclusive range of work indices.
         let (start, end) = self.corpus.author_lookup.get(name)?;
-        let start_work = self.corpus.work_lookup[*start].rows.first()?.1;
-        let end_work = self.corpus.work_lookup[*end - 1].rows.last()?.1;
-        Some((start_work, end_work))
+        let start_token = self.corpus.work_lookup[*start].rows.first()?.1;
+        let end_token = self.corpus.work_lookup[*end].rows.last()?.2;
+        Some((start_token, end_token))
     }
 
     fn query_corpus_ref_impl(
@@ -277,7 +292,7 @@ impl CorpusQueryEngine {
                     // -2 because we only care about breaks between tokens, not after the last token.
                     .filter(|x| !arr_has_any_in_range(&hard_breaks, &(**x, **x + span_length - 2)));
                 let ids: Vec<u32> = if let Some(author_data) = author_data {
-                    ids.filter(|x| **x >= author_data.0 && **x + span_length - 1 <= author_data.1)
+                    ids.filter(|x| **x >= author_data.0 && **x + span_length - 1 < author_data.1)
                         .copied()
                         .collect()
                 } else {
@@ -318,9 +333,10 @@ impl CorpusQueryEngine {
             .map(|(_i, x)| self.resolve_match_ref_impl(x, context_len).unwrap())
             .collect::<Vec<_>>();
         let next_page = page_match_ids.get(page_size).map(|(i, ranges)| PageData {
-            result_index: *i as u32 + page_data.result_index,
+            result_index: page_data.result_index + page_size as u32,
             result_id: ranges[0].0,
-            candidate_index: *i as u32 + page_data.result_index,
+            // Not comparable with prod (see `check_results_equal`).
+            candidate_index: *i as u32,
         });
         let result = CorpusQueryResult {
             result_stats: QueryGlobalInfo {
@@ -334,12 +350,14 @@ impl CorpusQueryEngine {
         Ok(result)
     }
 
+    /// Compares one page against the reference and returns the production
+    /// engine's cursor for the next page (if any), so callers can walk pages.
     pub(super) fn compare_ref_impl_results(
         &self,
         query: &str,
         page_data: &PageData,
         options: &QueryOptions,
-    ) {
+    ) -> Option<PageData> {
         let page_size = options.page_size;
         let context_len = options.context_len;
         println!(
@@ -377,5 +395,6 @@ impl CorpusQueryEngine {
             println!("Second error | use_index_for_page=false: {}", errors[1]);
             panic!("Reference implementation failed for both methods");
         }
+        result_prod.next_page
     }
 }

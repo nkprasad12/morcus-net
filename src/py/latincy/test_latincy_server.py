@@ -7,7 +7,7 @@ import unittest
 import urllib.request
 from unittest.mock import Mock, ANY
 
-from src.py.latincy import latincy_server
+from src.py.latincy.image import latincy_server
 
 
 def _find_free_port():

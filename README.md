@@ -15,7 +15,7 @@ Before you get started, install `git`.
 ### Typescript and Rust Code (Client, Server, Workers)
 
 To start, download and run the setup script. This will clone this (the `morcus-net`) repository, and several
-repositories with raw data that is processed and served by the web server. It will also prompt you to install Rust and Node, if you do not already have these on your machine.
+repositories with raw data that is processed and served by the web server (checked out at the commits pinned in [`upstream_sources.lock.json`](upstream_sources.lock.json); see [below](#raw-data-repositories)). It will also prompt you to install Rust and Node, if you do not already have these on your machine.
 
 ```
 curl https://raw.githubusercontent.com/nkprasad12/morcus-net/dev/set_up_or_update.sh | bash
@@ -28,8 +28,17 @@ Common arguments for this script (run `./morcus.sh --help` for full options):
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--build_ls`       | This processes Lewis and Short for use by the server. This needs to be run the first time and whenever you modify the Lewis and Short raw XML file. This is slow.                              |
 | `--build_sh`       | This processes Smith and Hall for use by the server. This needs to be run the first time and whenever you modify the Smith and Hall raw text file or any of the processing code. This is slow. |
-| `--minify`         | Builds a minified client. This is used in production builds. This skips `React`'s `StrictMode` warnings as well.                                                                               |
 | `--transpile_only` | Skips `typescript` type checking. This is _faster_.                                                                                                                                            |
+
+### Raw data repositories
+
+The dictionaries and library are built from separate data repositories (`lexica`, `smithandhall`, `canonical-latinlit`, ...), cloned next to `morcus-net`. [`upstream_sources.lock.json`](upstream_sources.lock.json) pins each one to a commit. Production builds use exactly those commits. Local builds use whatever is checked out, and warn when that differs from the pins.
+
+- **After pulling `morcus-net`**, run `./morcus.sh upstream sync` to move your data clones to any updated pins. It never touches clones with local work: your own branches, uncommitted changes, or unpushed commits.
+- **To check your clones**, run `./morcus.sh upstream status`.
+- **To fix data**, branch from the pin in the data repository, commit, push, then run `./morcus.sh upstream pin <source>@<branch>` and commit the updated lock file.
+
+See [`src/scripts/upstream/README.md`](src/scripts/upstream/README.md) for the full workflow, including fixes waiting on upstream review.
 
 ### Python Code (ML)
 
@@ -80,16 +89,6 @@ warnings within VSCode for any ESLint errors in the code.
 ---
 
 ## Deployment
-
-### Heroku
-
-There is a `Procfile` in the root directory for use with Heroku. There are some environment variables that can be set, but all are optional.
-
-1. `MONGODB_URI` - The URI to a MongoDB database. If set, system health and usage metrics will be written to this database. Otherwise, they will be logged locally.
-2. `DB_SOURCE` - Only used if `MONGODB_URI` is present. If set, this will be used to disambiguate records from different deployments (e.g. use `dev` for staging).
-3. `GITHUB_TOKEN` - A GitHub token with Issue creation permissions. If set, issue reports will be written to GitHub Issues. Otherwise, they will be logged locally.
-4. `APPNAME` - set to `Dev` for a staging / dev deployment.
-5. `NPM_CONFIG_OMIT` - set to `optional` as an optimization to avoid installing integration test dependencies.
 
 ### Docker Images
 
@@ -153,12 +152,14 @@ in your hosts file:
 127.0.0.1 foo.morcus.net
 ```
 
-#### Updating the Reverse Proxy image
+#### Helper Images
 
-This is updated so infrequently that doing it as part of the CI workflow (where it would rebuild with every commit) was not really worth it. In order to update:
+The helper images that run alongside the server (listed in `src/scripts/helper_images/images.ts`, e.g. `morcus-proxy` from `src/devops/reverse_proxy` and `morcus-latincy` from `src/py/latincy/image`) are built (`linux/amd64`) and smoke-tested automatically in CI (`build-helper-images` in `.github/workflows/ci-workflow.yaml`).
 
-1. `cd src/devops/reverse_proxy`
-2. `docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/nkprasad12/morcus-proxy:latest --push .`
+- **Tags**: each image is tagged `:tree-<hash>`, a hash of exactly the files in its Docker build context plus the shared `docker build` step (`src/scripts/helper_images/build.ts`). Editing anything else (smoke tests, docs, tests next to the image, other images) doesn't change the tag, so CI skips the build and nothing is redeployed.
+- **Explicit changes**: each image's context files and tag are checked in to `src/scripts/helper_images/expected_tags.ts`. If an image's context changes, CI and the unit tests fail and print the new values; updating that file is the explicit decision to change (and redeploy) the image. Note that `morcus-pruner`'s context is an esbuild bundle, so a version bump of `mongodb`, `bson` or `esbuild` (e.g. from Dependabot) changes its tag too and needs the same update.
+- **Testing**: a `:tested-<hash>` tag records that the image passed its current smoke test. If only a smoke test changes, CI re-tests the existing image instead of rebuilding it.
+- **Promotion**: when `main` is updated, `.github/workflows/promote-image.yaml` points `:latest` at each image's tree tag (backing up the old `:latest` to `:previous`), but only once its `:tested-` tag exists. Watchtower then redeploys images whose `:latest` changed. Pushes to `dev` run `promote --dry-run`, which reports which images the next `main` release would redeploy.
 
 #### New VM Checklist
 
@@ -189,9 +190,9 @@ There is a Play Store app at https://play.google.com/store/apps/details?id=net.m
 
 Morcus Latin Tools is a web application (it is also available in the Play Store, but this is just a packaged PWA). There are four high level components to the code:
 
-1. A _client_, which is developed in `Typescript`. This is currently a single page application written using vanilla `React`.
+1. A _client_ (UI V2, `src/web/ui/`), developed in `Typescript`. The server renders every page as plain HTML, and small framework-free custom elements enhance it in the browser. See [`src/web/ui/README.md`](src/web/ui/README.md).
 2. A _backend_, which is also developed in `Typescript`. This is a `Node.js` based `HTTP` server that uses `Express`.
-3. _preprocessing_ code, which is also developed in `Typescript`. This is responsible for transforming raw files (often XML or plain text files) into structured data that can be served by the backend.
+3. _preprocessing_ code, which is also developed in `Typescript`. This is responsible for transforming raw files (often XML or plain text files, from the [raw data repositories](#raw-data-repositories)) into structured data that can be served by the backend.
 4. _NLP_ code, which is developed in `Python`. This is currently used for the macronizer.
 
 TODO: add subsections for all of these, and explain the build step.
@@ -262,9 +263,8 @@ The following should be done at regular intervals:
   - Check the `package.json`
   - Update the version used in the CI workflows
   - Update the version used in the `Dockerfile`
-- Update the `nginx` version, (currently `1.28.0`). Due _before_ it goes EOL in `2026/03`ish.
-  - Update the `nginx` version in `src/devops/reverse-proxy/Dockerfile`
-  - Follow the build and push instructions [above](#updating-the-reverse-proxy-image)
+- Update the `nginx` version, (currently `1.30.4-alpine-slim`). Due _before_ it goes EOL in `2027/04`ish.
+  - Update the `nginx` version in `src/devops/reverse_proxy/Dockerfile` (Dependabot also opens a quarterly PR for this; CI builds and promotes `morcus-proxy` automatically).
 
 ### Following a reboot
 

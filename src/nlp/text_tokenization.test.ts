@@ -77,4 +77,42 @@ describe("preprocessText", () => {
     expect(words).toEqual(["acclinat"]);
     expect(spaces).toEqual([false]);
   });
+
+  it("lowercases multi-letter all-caps words for the tagger while keeping single-letter tokens, raw token casing, and Title Case", () => {
+    const input = "C. ACCLINATQUE EOS Panthia";
+
+    const [processed, words, spaces] = preprocessText(input);
+    const c = processed[0] as TokenResult;
+    const acclinatque = processed[2] as TokenResult;
+    const eos = processed[4] as TokenResult;
+    const panthia = processed[6] as TokenResult;
+
+    expect(c.word).toBe("C");
+    expect(acclinatque.word).toBe("ACCLINATQUE");
+    expect(acclinatque.strippedWord).toBe("ACCLINATQUE");
+    expect(eos.word).toBe("EOS");
+    expect(eos.strippedWord).toBe("EOS");
+    expect(panthia.word).toBe("Panthia");
+
+    expect(words).toEqual([
+      "C",
+      ". ",
+      "acclinat",
+      "que",
+      " ",
+      "eos",
+      " ",
+      "Panthia",
+    ]);
+    expect(spaces).toEqual([
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+    ]);
+  });
 });

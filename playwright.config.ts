@@ -9,12 +9,24 @@ const BASE_URL = `http://localhost:${PORT}`;
 process.env.BASE_URL = BASE_URL;
 const MOBILE_TEMPLATE = devices["Pixel 5"];
 const FUNCTIONAL_CI = process.env.CI && !process.env.PERF_TEST;
+/**
+ * Set by `./morcus.sh e2e --visual` to the effective baseline directory (the
+ * committed checkpoint overlaid with local baselines; see
+ * `src/scripts/visual_diff/local_baselines.ts`). Unset, Playwright uses its
+ * default `*-snapshots/` directory next to the test file.
+ */
+const VISUAL_BASELINES = process.env.MORCUS_VISUAL_BASELINES;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
   testDir: "./src/integration",
+  ...(VISUAL_BASELINES
+    ? {
+        snapshotPathTemplate: `${VISUAL_BASELINES}/{arg}{-projectName}{-snapshotSuffix}{ext}`,
+      }
+    : {}),
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */

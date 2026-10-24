@@ -28,7 +28,7 @@ async function expectEntriesWithIds(
   expected: string[]
 ) {
   const results = await promise;
-  const ids = results.map((r) => r.entry.getAttr("id"));
+  const ids = results.map((r) => r.outline.mainSection.sectionId);
   expect(ids).toStrictEqual(expected);
 }
 
@@ -75,6 +75,8 @@ describe("RiddleArnold dict", () => {
 
     const result = await dict.getEntryById("ra_hello");
     expect(result?.entry.toString()).toContain("a greeting");
+    expect(result?.outline.mainKey).toBe("hello");
+    expect(result?.outline.mainLabel).toBe("HELLO");
   });
 
   test("getEntry returns expected completions", async () => {

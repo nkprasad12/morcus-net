@@ -1,0 +1,174 @@
+/**
+ * CRITICAL CSS (INLINED IN <head>)
+ *
+ * IMPORTANT CONSTRAINTS:
+ * 1. Purpose: This file is inlined directly into a <style> tag in the HTML <head>
+ *    of every SSR page response to provide instant first paint and prevent
+ *    Flash of Unstyled Content (FOUC) or layout shifts (CLS).
+ * 2. Performance Budget: Keep this file minimal (< 2-3 KB). Do NOT import
+ *    full component stylesheets or non-critical styling here.
+ * 3. Scope: Strictly reserve for above-the-fold layout skeletons:
+ *    - Core box-sizing and body background/text/font resets.
+ *    - Header/App Bar persistent navigation bar layout (desktop + mobile).
+ *    - Content container max-width alignment to prevent horizontal layout snap.
+ *    - The JS gate (`data-js-only` / `data-nojs-only`), so JS-dependent UI is
+ *      correct from first paint.
+ *
+ * All other component styles must go in individual stylesheets imported via app.css.
+ */
+
+@import "./shell/critical_variables.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+.app-bar {
+  min-height: 57px;
+  background-color: var(--app-bar-bg);
+  border-bottom: 1px solid var(--app-bar-border);
+}
+
+.app-bar-inner {
+  max-width: 900px;
+  min-height: 64px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.actions-group,
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.mobile-menu {
+  position: relative;
+  display: none;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--app-bar-nav-text);
+  padding: var(--space-3) var(--space-5);
+}
+
+@media (width <= 640px) {
+  .app-bar-inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .actions-group {
+    order: 1;
+    justify-self: start;
+  }
+
+  .brand-group {
+    order: 2;
+    justify-self: center;
+    gap: 0;
+  }
+
+  .nav-desktop {
+    display: none;
+  }
+
+  .mobile-menu {
+    order: 3;
+    justify-self: end;
+    display: block;
+  }
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6) max(var(--space-9), 24px);
+}
+
+/*
+ * THE JS GATE. This is the only way V2 shows or hides UI based on whether
+ * JavaScript is running; see "JS-only and No-JS-only UI" in README.md.
+ *
+ * Before upgrade, a page LOOKS like the JS page but BEHAVES like the No-JS
+ * page; the upgrade then adopts whatever the user did in the meantime. Two
+ * separate facts decide two separate things:
+ *
+ * - PAINT, from `@media (scripting)`, known before first paint. With
+ *   scripting on, `data-nojs-only` fallbacks are never painted (so they
+ *   can't flash); with it off, `data-js-only` controls are never painted.
+ * - BEHAVIOUR, from `data-upgraded`, which the owner sets once its
+ *   behaviour is attached (`BaseElement` does this for every custom element
+ *   after `onConnect()`). Until then `data-js-only` controls keep their box
+ *   but are invisible, unfocusable and hidden from assistive tech, so nothing
+ *   shifts when they appear. UI under a not-yet-registered custom element
+ *   stays gated too, so lazily-loaded components wait for their chunk.
+ *
+ * `data-js-failed` (set by `BaseElement` when `onConnect()` throws, or on
+ * <html> when `v2.js` fails to load) drops the JS-only controls in its subtree and
+ * brings the No-JS fallbacks back.
+ */
+
+/* PAINT: known before first paint. */
+@media (scripting: enabled) {
+  [data-nojs-only]:not([data-js-failed], [data-js-failed] *) {
+    /* Must beat any component `display` rule on the gated element. */
+    /* stylelint-disable-next-line declaration-no-important */
+    display: none !important;
+  }
+}
+
+@media (scripting: none) {
+  [data-js-only] {
+    /* stylelint-disable-next-line declaration-no-important */
+    display: none !important;
+  }
+}
+
+/* BEHAVIOUR: known at upgrade. */
+[data-js-only]:not([data-upgraded], [data-upgraded] *),
+:not(:defined) [data-js-only] {
+  /* stylelint-disable-next-line declaration-no-important */
+  visibility: hidden !important;
+}
+
+/* A component whose onConnect() threw, or a bundle that failed to load. */
+[data-js-failed] [data-js-only],
+[data-js-only][data-js-failed] {
+  /* stylelint-disable-next-line declaration-no-important */
+  display: none !important;
+}
+
+/* Browsers without (scripting) (Chrome 111-119, Safari 16.4-16.x, still in
+   V2_BROWSERSLIST) fall back to hiding fallbacks at upgrade. Harmless where
+   (scripting) is supported. The `[data-js-failed] *` exclusion keeps a failed
+   child's fallbacks under an upgraded parent. */
+/* The exclusions inside :not() are what push this over the limit. */
+/* stylelint-disable-next-line selector-max-compound-selectors */
+[data-upgraded] [data-nojs-only]:not(:not(:defined) *, [data-js-failed] *),
+[data-nojs-only][data-upgraded] {
+  /* stylelint-disable-next-line declaration-no-important */
+  display: none !important;
+}

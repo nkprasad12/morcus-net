@@ -2,7 +2,6 @@ import {
   NumeralDict,
   buildEntryFor,
 } from "@/common/dictionaries/numeral/numeral_dict";
-import { XmlNode } from "@/common/xml/xml_node";
 import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
 
 setupMorceusWithFakeData();
@@ -34,6 +33,11 @@ describe("NumeralDict", () => {
       const result = await numeralDict.getEntry("not a numeral");
       expect(result).toHaveLength(0);
     });
+
+    it("should not treat Latin words made of numeral letters as numerals", async () => {
+      expect(await numeralDict.getEntry("id")).toHaveLength(0);
+      expect(await numeralDict.getEntry("dixi")).toHaveLength(0);
+    });
   });
 
   describe("getEntryById", () => {
@@ -61,27 +65,18 @@ describe("NumeralDict", () => {
       const result = buildEntryFor(1);
       expect(result.outline.mainKey).toBe("1");
       expect(result.outline.mainSection.sectionId).toBe("num1");
-      expect(result.entry).toBeInstanceOf(XmlNode);
-      expect(result.entry.name).toBe("div");
-      expect(result.entry.getAttr("id")).toBe("num1");
+      expect(typeof result.entry).toBe("string");
+      expect(result.entry).toContain('<table class="numeralTable">');
     });
 
     it("should include numeral data in the entry content", () => {
       const result = buildEntryFor(1);
-      const table = result.entry.children[0] as XmlNode;
-      expect(table.name).toBe("table");
-
-      const arabicRow = table.children[0] as XmlNode;
-      const arabicCells = arabicRow.children;
-      expect(XmlNode.assertIsNode(arabicCells[0]).children[0]).toBe("Arabic");
-      expect(XmlNode.assertIsNode(arabicCells[1]).children[0]).toBe("1");
-
-      const cardinalRow = table.children[1] as XmlNode;
-      const cardinalCells = cardinalRow.children;
-      expect(XmlNode.assertIsNode(cardinalCells[0]).children[0]).toBe(
-        "Cardinal"
+      expect(result.entry).toContain(
+        '<tr><td class="text md light">Arabic</td><td>1</td></tr>'
       );
-      expect(XmlNode.assertIsNode(cardinalCells[1]).children[0]).toBe("unus");
+      expect(result.entry).toContain(
+        '<tr><td class="text md light">Cardinal</td><td>unus</td></tr>'
+      );
     });
   });
 });

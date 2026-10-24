@@ -335,4 +335,4 @@ export async function flagSecondAuthorInBibl() {
   console.log(multipleAuthors);
 }
 
-flagSecondAuthorInBibl();
+void flagSecondAuthorInBibl();

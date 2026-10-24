@@ -1,0 +1,460 @@
+/**
+ * UI V2 Reader Table of Contents (TOC) Controller
+ *
+ * Progressively enhances the reader's Table of Contents: a modal `<dialog>`
+ * centred under its sticky-bar trigger (`core/widgets/anchored_dialog.client.ts`),
+ * which also handles Escape and backdrop clicks. Adds live section
+ * search/filtering and the hash handover from the No-JS `:target` drawer.
+ */
+
+import { BaseController } from "@/web/ui/core/dom/base_controller.client";
+import { registerRevealer } from "@/web/ui/core/nav/reveal.client";
+import {
+  type AnchoredDialog,
+  setupAnchoredDialog,
+} from "@/web/ui/core/widgets/anchored_dialog.client";
+
+interface ReaderTocElements {
+  /** The contents dialog (#reader-toc-drawer) */
+  drawer: HTMLElement | null;
+  /** Primary trigger button in sticky header (#reader-toc-btn) */
+  triggerBtn?: HTMLElement | null;
+  /** Close '×' button in drawer header (#reader-toc-close-btn) */
+  closeBtn?: HTMLElement | null;
+  /** Container holding the list of TOC items (#reader-toc-list) */
+  listContainer?: HTMLElement | null;
+  /** Auto-focused section filter/jump input (#reader-toc-search-input) */
+  searchInput?: HTMLInputElement | null;
+  /** Empty state message (#reader-toc-empty) */
+  emptyState?: HTMLElement | null;
+}
+
+interface ReaderTocOptions {
+  /** Root container (defaults to document) used to query elements */
+  root?: ParentNode;
+  /** Explicit element overrides */
+  elements?: Partial<ReaderTocElements>;
+  /** Optional callback fired when the drawer opens */
+  onOpen?: () => void;
+  /** Optional callback fired when the drawer closes */
+  onClose?: () => void;
+}
+
+export class ReaderTocController extends BaseController {
+  public drawer: HTMLElement | null = null;
+  public triggerBtn: HTMLElement | null = null;
+  public closeBtn: HTMLElement | null = null;
+  public listContainer: HTMLElement | null = null;
+  public searchInput: HTMLInputElement | null = null;
+  public emptyState: HTMLElement | null = null;
+  #selectedItem: HTMLAnchorElement | null = null;
+  readonly #opts: ReaderTocOptions;
+  #dialog: AnchoredDialog | null = null;
+
+  constructor(options: ReaderTocOptions = {}) {
+    super(options.root ?? document);
+    this.#opts = options;
+  }
+
+  protected override onConnect(): void {
+    this.#resolveElements();
+    this.#bindFilterEvents();
+    const drawer = this.drawer;
+    this.#dialog =
+      drawer instanceof HTMLDialogElement
+        ? setupAnchoredDialog(this.scope, {
+            dialog: drawer,
+            trigger: this.triggerBtn,
+            align: "center",
+            defaultWidth: 360,
+            getInitialFocus: () => {
+              const active = drawer.querySelector<HTMLElement>(
+                ".reader-toc-item.active"
+              );
+              // Touch: don't raise the keyboard; start at the current section.
+              const isCoarsePointer =
+                typeof window !== "undefined" &&
+                window.matchMedia?.("(pointer: coarse)").matches;
+              return (
+                (!isCoarsePointer && this.searchInput) ||
+                active ||
+                this.closeBtn
+              );
+            },
+            onOpen: () => {
+              this.resetFilter();
+              this.#scrollActiveItemIntoCenter();
+              this.#opts.onOpen?.();
+            },
+            onClose: () => {
+              this.resetFilter();
+              this.#opts.onClose?.();
+            },
+          })
+        : null;
+    // `#reader-toc-btn` is `<a href="#reader-toc-drawer">`, so before
+    // upgrade the drawer opens via `:target`. Adopt that on connect (and on
+    // later hash navigation) so the dialog's own state agrees.
+    if (this.drawer) {
+      this.scope.use(
+        registerRevealer(
+          this.drawer,
+          () => {
+            if (!this.isOpen()) this.open();
+          },
+          { ownsHash: true }
+        )
+      );
+    }
+  }
+
+  #resolveElements(): void {
+    const overrides = this.#opts.elements;
+    this.drawer =
+      overrides?.drawer !== undefined
+        ? overrides.drawer
+        : this.scope.$("#reader-toc-drawer");
+    this.triggerBtn =
+      overrides?.triggerBtn !== undefined
+        ? overrides.triggerBtn
+        : this.scope.$("#reader-toc-btn");
+    this.closeBtn =
+      overrides?.closeBtn !== undefined
+        ? overrides.closeBtn
+        : this.drawer?.querySelector<HTMLElement>("#reader-toc-close-btn") ??
+          this.scope.$("#reader-toc-close-btn");
+    this.listContainer =
+      overrides?.listContainer !== undefined
+        ? overrides.listContainer
+        : this.drawer?.querySelector<HTMLElement>("#reader-toc-list") ??
+          this.scope.$("#reader-toc-list");
+    this.searchInput =
+      overrides?.searchInput !== undefined
+        ? overrides.searchInput
+        : this.drawer?.querySelector<HTMLInputElement>(
+            "#reader-toc-search-input"
+          ) ?? this.scope.$<HTMLInputElement>("#reader-toc-search-input");
+    this.emptyState =
+      overrides?.emptyState !== undefined
+        ? overrides.emptyState
+        : this.drawer?.querySelector<HTMLElement>("#reader-toc-empty") ??
+          this.scope.$("#reader-toc-empty");
+  }
+
+  #bindFilterEvents(): void {
+    if (!this.searchInput) return;
+
+    this.scope.listen(this.searchInput, "input", () => {
+      this.applyFilter(this.searchInput?.value ?? "");
+    });
+
+    this.scope.listen(this.searchInput, "keydown", (event: KeyboardEvent) => {
+      if (event.isComposing) return;
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        // Arrows in its own search input move the list selection
+        event.preventDefault();
+        this.#moveSelection(event.key === "ArrowDown" ? 1 : -1);
+      } else if (event.key === "Enter") {
+        // Enter in its own search input opens the selection
+        event.preventDefault();
+        this.#executeSelectedOrJump();
+      }
+    });
+
+    const form = this.searchInput.form;
+    if (form) {
+      this.scope.listen(form, "submit", (event: SubmitEvent) => {
+        // Intercepts its own TOC jump form submission in JS mode
+        event.preventDefault();
+        this.#executeSelectedOrJump();
+      });
+    }
+  }
+
+  #scrollActiveItemIntoCenter(): void {
+    const list = this.listContainer;
+    const active = list?.querySelector<HTMLElement>(".reader-toc-item.active");
+    if (!list || !active) return;
+
+    const top =
+      active.getBoundingClientRect().top -
+      list.getBoundingClientRect().top +
+      list.scrollTop;
+    const targetTop = Math.max(0, top - list.clientHeight / 2);
+    if (typeof list.scrollTo === "function") {
+      list.scrollTo({ top: targetTop, behavior: "instant" });
+    } else {
+      list.scrollTop = targetTop;
+    }
+  }
+
+  public resetFilter(): void {
+    if (this.searchInput) {
+      this.searchInput.value = "";
+    }
+    const mutatedItems =
+      this.listContainer?.querySelectorAll<HTMLAnchorElement>(
+        '.reader-toc-item[href*="#"]'
+      ) ?? [];
+    for (const item of mutatedItems) {
+      const baseHref = (item.getAttribute("href") ?? "").split("#")[0];
+      if (baseHref) item.setAttribute("href", baseHref);
+    }
+    this.applyFilter("");
+  }
+
+  #normalizeCitationInput(raw: string): string {
+    const cleaned = raw
+      .replace(/^[§\s]+/, "")
+      .trim()
+      .replace(/:+/g, ".");
+    if (!cleaned) return "";
+
+    if (cleaned.startsWith(".")) {
+      const activeItem = this.listContainer?.querySelector<HTMLElement>(
+        ".reader-toc-item.active"
+      );
+      const activePageId = activeItem?.dataset.pageId ?? "";
+      if (activePageId) {
+        return `${activePageId}${cleaned}`;
+      }
+    }
+    return cleaned;
+  }
+
+  public applyFilter(rawQuery: string): void {
+    if (!this.listContainer) return;
+
+    const query = this.#normalizeCitationInput(rawQuery);
+    const queryLower = query.toLowerCase();
+    const isAlphaQuery = /^[a-z]+$/.test(queryLower);
+
+    const items = Array.from(
+      this.listContainer.querySelectorAll<HTMLAnchorElement>(".reader-toc-item")
+    );
+    const groups = Array.from(
+      this.listContainer.querySelectorAll<HTMLDetailsElement>(
+        ".reader-toc-group"
+      )
+    );
+    const activeItem = this.listContainer.querySelector<HTMLElement>(
+      ".reader-toc-item.active"
+    );
+
+    const matchesPageId = (pageIdLower: string): boolean =>
+      !queryLower ||
+      pageIdLower.startsWith(queryLower) ||
+      (isAlphaQuery &&
+        pageIdLower
+          .split(".")
+          .some((segment) => segment.startsWith(queryLower)));
+
+    const hasLetters = /[a-z]/.test(queryLower);
+    const textPattern =
+      queryLower && hasLetters
+        ? new RegExp(
+            queryLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+              (/\d$/.test(queryLower) ? "(?!\\d)" : "")
+          )
+        : null;
+    const matchesText = (text: string): boolean =>
+      Boolean(textPattern && textPattern.test(text.toLowerCase()));
+
+    const matchingGroups = new Set<HTMLDetailsElement>();
+    if (textPattern) {
+      for (const group of groups) {
+        const labelText =
+          group.querySelector<HTMLElement>(
+            ":scope > summary .reader-toc-group-label"
+          )?.textContent ??
+          group.querySelector<HTMLElement>(":scope > summary")?.textContent ??
+          "";
+        if (matchesText(labelText.trim())) {
+          matchingGroups.add(group);
+        }
+      }
+    }
+
+    const itemMatchesDirectly = (item: HTMLAnchorElement): boolean => {
+      const pageIdLower = (item.dataset.pageId ?? "").toLowerCase();
+      if (matchesPageId(pageIdLower)) return true;
+      if (!textPattern) return false;
+      const titleText =
+        item.querySelector<HTMLElement>(".reader-toc-item-title")
+          ?.textContent ?? "";
+      if (matchesText(titleText.trim())) return true;
+      for (const group of matchingGroups) {
+        if (group.contains(item)) return true;
+      }
+      return false;
+    };
+
+    // If no TOC item directly matches, check if query is a deep sub-page
+    // citation (e.g. "1.2.3" belonging to page "1.2").
+    let deepParentId = "";
+    if (queryLower && !items.some((item) => itemMatchesDirectly(item))) {
+      for (const item of items) {
+        const pageId = item.dataset.pageId ?? "";
+        if (
+          pageId &&
+          queryLower.startsWith(pageId.toLowerCase() + ".") &&
+          pageId.length > deepParentId.length
+        ) {
+          deepParentId = pageId;
+        }
+      }
+    }
+
+    let exactMatch: HTMLAnchorElement | null = null;
+    let firstVisible: HTMLAnchorElement | null = null;
+    let visibleCount = 0;
+    const visibleGroups = new Set<HTMLDetailsElement | null>();
+
+    for (const item of items) {
+      const pageId = item.dataset.pageId ?? "";
+      const pageIdLower = pageId.toLowerCase();
+      const isVisible =
+        itemMatchesDirectly(item) ||
+        Boolean(deepParentId && pageId === deepParentId);
+
+      item.hidden = !isVisible;
+      if (isVisible) {
+        visibleCount++;
+        if (!firstVisible) firstVisible = item;
+        if (pageIdLower === queryLower && !exactMatch) {
+          exactMatch = item;
+        }
+        visibleGroups.add(
+          item.closest<HTMLDetailsElement>(".reader-toc-group")
+        );
+      }
+    }
+
+    for (const group of groups) {
+      if (!queryLower) {
+        group.hidden = false;
+        group.open = Boolean(activeItem && group.contains(activeItem));
+      } else {
+        const hasVisibleChild = Array.from(
+          group.querySelectorAll<HTMLElement>(".reader-toc-item")
+        ).some((child) => !child.hidden);
+        group.hidden = !hasVisibleChild;
+        if (hasVisibleChild) group.open = true;
+      }
+    }
+
+    const autoSelected =
+      !queryLower || visibleCount === 0
+        ? null
+        : exactMatch ??
+          (visibleCount === 1 ||
+          (visibleGroups.size === 1 && !visibleGroups.has(null))
+            ? firstVisible
+            : null);
+    this.#setSelectedItem(autoSelected);
+    if (this.emptyState) {
+      this.emptyState.hidden = !queryLower || visibleCount > 0;
+    }
+  }
+
+  #getVisibleItems(): HTMLAnchorElement[] {
+    if (!this.listContainer) return [];
+    return Array.from(
+      this.listContainer.querySelectorAll<HTMLAnchorElement>(".reader-toc-item")
+    ).filter(
+      (item) =>
+        !item.hidden &&
+        !item.closest<HTMLDetailsElement>(".reader-toc-group")?.hidden
+    );
+  }
+
+  #setSelectedItem(target: HTMLAnchorElement | null): void {
+    if (this.#selectedItem) {
+      this.#selectedItem.classList.remove("is-filter-selected");
+      this.#selectedItem.removeAttribute("aria-selected");
+    }
+    this.#selectedItem = target;
+    if (target) {
+      target.classList.add("is-filter-selected");
+      target.setAttribute("aria-selected", "true");
+      target.scrollIntoView?.({ block: "nearest" });
+    }
+  }
+
+  #moveSelection(delta: number): void {
+    const visibleItems = this.#getVisibleItems();
+    if (!visibleItems.length) return;
+
+    const currentIndex = this.#selectedItem
+      ? visibleItems.indexOf(this.#selectedItem)
+      : -1;
+    const activeIndex = visibleItems.findIndex((el) =>
+      el.classList.contains("active")
+    );
+    const baseIndex =
+      currentIndex !== -1
+        ? currentIndex
+        : activeIndex !== -1
+        ? activeIndex
+        : delta > 0
+        ? -1
+        : visibleItems.length;
+
+    const nextIndex = Math.max(
+      0,
+      Math.min(visibleItems.length - 1, baseIndex + delta)
+    );
+    const nextItem = visibleItems[nextIndex];
+    const parentGroup =
+      nextItem.closest<HTMLDetailsElement>(".reader-toc-group");
+    if (parentGroup) parentGroup.open = true;
+    this.#setSelectedItem(nextItem);
+  }
+
+  #executeSelectedOrJump(): void {
+    if (!this.listContainer) return;
+
+    const query = this.#normalizeCitationInput(this.searchInput?.value ?? "");
+    const targetItem =
+      this.#selectedItem && !this.#selectedItem.hidden
+        ? this.#selectedItem
+        : !query
+        ? this.listContainer.querySelector<HTMLAnchorElement>(
+            ".reader-toc-item.active"
+          )
+        : null;
+
+    if (targetItem) {
+      const pageId = targetItem.dataset.pageId ?? "";
+      const baseHref = (targetItem.getAttribute("href") ?? "#").split("#")[0];
+      const isSubPageJump =
+        Boolean(pageId) &&
+        query.toLowerCase().startsWith(pageId.toLowerCase() + ".");
+      targetItem.setAttribute(
+        "href",
+        isSubPageJump ? `${baseHref}#sec-${query}` : baseHref
+      );
+      targetItem.click();
+    }
+  }
+
+  public updatePosition(): void {
+    this.#dialog?.updatePosition();
+  }
+
+  public open(): void {
+    this.#dialog?.open();
+  }
+
+  public close(): void {
+    this.#dialog?.close();
+  }
+
+  public toggle(): void {
+    this.#dialog?.toggle();
+  }
+
+  public isOpen(): boolean {
+    return this.#dialog?.isOpen() ?? false;
+  }
+}

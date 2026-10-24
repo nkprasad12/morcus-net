@@ -1,0 +1,57 @@
+/* Standalone CSS for UI V2 Dictionary Views */
+
+@import "./shell/variables.css";
+@import "./shell/app_bar.css";
+@import "./shell/appearance_menu.css";
+@import "./core/widgets/toast.css";
+@import "./core/widgets/drawer.css";
+@import "./core/nav/components.css";
+@import "./core/state/settings.css";
+@import "./core/widgets/resize_handle.css";
+@import "./dict/search/search.css";
+@import "./dict/settings/dict_settings.css";
+@import "./dict/dict_layout.css";
+@import "./dict/entry/dict_entry.css";
+@import "./dict/entry/subsection_note.css";
+@import "./dict/entry/dict_typography.css";
+@import "./dict/entry/dict_embeds.css";
+@import "./dict/landing/dict_landing.css";
+@import "./dict/toc/dict_toc.css";
+@import "./reader/reader_layout.css";
+@import "./reader/reader_splitter.css";
+@import "./reader/reader_nav.css";
+@import "./reader/reader_text.css";
+@import "./reader/reader_notes.css";
+@import "./reader/reader_dict.css";
+@import "./reader/reader_panel.css";
+@import "./reader/reader_toc.css";
+@import "./reader/reader_dialogs.css";
+@import "./reader/reader_page_nav.css";
+@import "./dialog/dialog.css";
+@import "./about/about.css";
+@import "./library/library.css";
+@import "./corpus/corpus.css";
+@import "./external/external.css";
+@import "./macronizer/macronizer.css";
+@import "./shell/page_width.css";
+
+/* Base link styling. Wrapped in :where() for (0,0,0) specificity so any
+   component class (.btn-*, .nav-link, .toc-*, etc.) overrides link color and
+   underline without needing a matching :visited branch. Note: universal
+   `box-sizing: border-box` is provided by `critical.css`, which
+   `page_shell.server.ts` inlines on every V2 page. */
+:where(a) {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--link-hover);
+}
+
+/* W3C HTML5 standard UA reset: ensures [hidden] attribute wins over author display: flex/grid. */
+[hidden] {
+  /* stylelint-disable-next-line declaration-no-important */
+  display: none !important;
+}

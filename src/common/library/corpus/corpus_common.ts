@@ -18,6 +18,15 @@ import {
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
+/** A corpus query, as the server-side engine takes it. */
+export interface CorpusQueryRequest {
+  query: string;
+  pageData?: PageData;
+  pageSize?: number;
+  contextLen?: number;
+  strictMode?: boolean;
+}
+
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `latin_corpus.json`;
 export const CORPUS_RAW_TEXT = `latin_corpus_raw.txt`;
@@ -27,15 +36,15 @@ export const CORPUS_INFLECTIONS_RAW_DATA =
   "latin_corpus_inflections_raw_data.bin";
 export const CORPUS_INFLECTIONS_OFFSETS =
   "latin_corpus_inflections_offsets.bin";
-export const CORPUS_SUGGESTION_PREFIX = "latin_corpus_suggestions";
+const CORPUS_SUGGESTION_PREFIX = "latin_corpus_suggestions";
 export const CORPUS_AUTHORS_LIST = `${CORPUS_SUGGESTION_PREFIX}_authors.json`;
-export const CORPUS_LEMMATA_LIST = `${CORPUS_SUGGESTION_PREFIX}_lemmata.json`;
+export const CORPUS_LEMMATA_DB = `${CORPUS_SUGGESTION_PREFIX}_lemmata.db`;
 
 // // // // // // // // // //
 // Corpus Result Types   //
 // // // // // // // // // //
 
-export interface CorpusQueryMatchMetadata {
+interface CorpusQueryMatchMetadata {
   workId: string;
   workName: string;
   author: string;
@@ -54,12 +63,10 @@ export interface CorpusQueryMatch {
   text: [content: string, isMatchText: boolean][];
 }
 
-export namespace CorpusQueryMatch {
-  export const isMatch = matchesObject<CorpusQueryMatch>({
-    metadata: isCorpusQueryMatchMetadata,
-    text: isArray(isPair(isString, isBoolean)),
-  });
-}
+const isCorpusQueryMatch = matchesObject<CorpusQueryMatch>({
+  metadata: isCorpusQueryMatchMetadata,
+  text: isArray(isPair(isString, isBoolean)),
+});
 
 export interface PageData {
   resultIndex: number;
@@ -67,13 +74,13 @@ export interface PageData {
   candidateIndex: number;
 }
 
-export const isPageData = matchesObject<PageData>({
+const isPageData = matchesObject<PageData>({
   resultIndex: isNumber,
   resultId: isNumber,
   candidateIndex: isNumber,
 });
 
-export interface QueryGlobalInfo {
+interface QueryGlobalInfo {
   estimatedResults: number;
 }
 
@@ -81,7 +88,6 @@ const isQueryGlobalInfo = matchesObject<QueryGlobalInfo>({
   estimatedResults: isNumber,
 });
 
-// Replaced: CorpusQueryResult now matches Rust shape (omitting timing)
 export interface CorpusQueryResult {
   matches: CorpusQueryMatch[];
   resultStats: QueryGlobalInfo;
@@ -91,7 +97,7 @@ export interface CorpusQueryResult {
 
 export namespace CorpusQueryResult {
   export const isMatch = matchesObject<CorpusQueryResult>({
-    matches: isArray(CorpusQueryMatch.isMatch),
+    matches: isArray(isCorpusQueryMatch),
     resultStats: isQueryGlobalInfo,
     nextPage: maybeUndefined(isPageData),
     timing: maybeUndefined(isArray(isPair(isString, isNumber))),
@@ -108,6 +114,8 @@ export interface CorpusInputWork {
   id: string;
   /** The name of the work. */
   workName: string;
+  /** Optional short display title used for deterministic ordering. */
+  shortTitle?: string;
   /** The author of the work. */
   author: string;
   /** A short and single-word code for the author. */
@@ -120,14 +128,14 @@ export interface CorpusInputWork {
   sectionDepth: number;
 }
 
-export interface CorpusStats {
+interface CorpusStats {
   totalWords: number;
   totalWorks: number;
   uniqueWords: number;
   uniqueLemmata: number;
 }
 
-export interface LatinInflectionTypes {
+interface LatinInflectionTypes {
   case: LatinCase;
   number: LatinNumber;
   gender: LatinGender;
@@ -150,7 +158,7 @@ interface WorkData {
   name: string;
 }
 
-interface CoreCorpusIndex {
+export interface InProgressLatinCorpus {
   /** Data about each work in the corpus. */
   workLookup: [
     id: string,
@@ -173,18 +181,6 @@ interface CoreCorpusIndex {
   inflectionsRawBufferPath: string;
   /** The offsets for the encoded inflection options for each word in the corpus. */
   inflectionsOffsetsPath: string;
-}
-
-export interface LatinCorpusIndex extends CoreCorpusIndex {
-  indices: {
-    [K in keyof CorpusIndexKeyTypes]: Map<
-      CorpusIndexKeyTypes[K],
-      PackedIndexData
-    >;
-  };
-}
-
-export type InProgressLatinCorpus = CoreCorpusIndex & {
   indices: {
     [K in keyof CorpusIndexKeyTypes]: number[][];
   };
@@ -192,7 +188,7 @@ export type InProgressLatinCorpus = CoreCorpusIndex & {
     [K in keyof CorpusStringKeyIndexTypes]: Map<string, number>;
   };
   numTokens: number;
-};
+}
 
 export function createEmptyCorpusIndex(): InProgressLatinCorpus {
   return {
@@ -230,15 +226,3 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
     },
   };
 }
-
-// // // // // // // // // // //
-// Corpus Serialization Types //
-// // // // // // // // // // //
-
-export type PackedNumbers = Readonly<Uint8Array>;
-export interface BitMask {
-  format: "bitmask";
-  data: Readonly<Uint32Array>;
-  numSet?: number;
-}
-export type PackedIndexData = PackedNumbers | BitMask;

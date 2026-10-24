@@ -58,7 +58,7 @@ async function countLines() {
   for await (const file of walk(ROOT)) {
     const contents = await fs.promises.readFile(file);
     const lines = contents.toString().split("\n").length - 1;
-    const isClient = file.startsWith("src/web/client");
+    const isClient = file.startsWith("src/web/ui");
     const isMorceus = file.startsWith("src/morceus");
     if (file.endsWith(".test.tsx") || file.endsWith(".test.ts")) {
       tsTest.push(lines);
@@ -92,10 +92,10 @@ async function countLines() {
   };
   const cells = [
     row("TypeScript source", tsSource),
-    row(" - client source", tsClientSource),
+    row(" - UI V2 source", tsClientSource),
     row(" - Morceus source", morceusSource),
     row("TypeScript tests", tsTest),
-    row(" - client tests", tsClientTest),
+    row(" - UI V2 tests", tsClientTest),
     row(" - Morceus tests", morceusTest),
     row("Python source", pySource),
     row("Python tests", pyTest),

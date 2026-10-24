@@ -1,3 +1,9 @@
+# COMPATIBILITY NOTE: deployments copy this file once and rarely update it,
+# while images are updated automatically. So:
+#   - Images must run correctly under the oldest version of this file in use.
+#     Never make an image depend on a setting newly added here.
+#   - Changes here should only add robustness (e.g. `init`, `restart`), and
+#     should also work with older images, so that rollbacks stay safe.
 services:
   proxy:
     image: "${CONTAINER_REGISTRY}morcus-proxy:latest"
@@ -50,8 +56,11 @@ services:
       MONGODB_URI: "${MONGODB_URI}"
       PWA_SHORT_NAME_SUFFIX: " D"
       LATINCY_SERVER_ADDRESS: "http://latincy:8000"
+      MACRONIZER_ENGINE: latincy
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
+    # Reaps zombies and forwards SIGTERM / SIGINT to node for graceful shutdown.
+    init: true
     logging:
       driver: "json-file"
       options:
@@ -66,8 +75,44 @@ services:
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
       LATINCY_SERVER_ADDRESS: "http://latincy:8000"
+      MACRONIZER_ENGINE: latincy
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
+    # Reaps zombies and forwards SIGTERM / SIGINT to node for graceful shutdown.
+    init: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  pruner:
+    image: "${CONTAINER_REGISTRY}morcus-pruner:latest"
+    environment:
+      MONGODB_URI: "${MONGODB_URI}"
+      TELEMETRY_RETENTION_DAYS: "${TELEMETRY_RETENTION_DAYS:-100}"
+      TELEMETRY_MAX_MB: "${TELEMETRY_MAX_MB:-400}"
+      PRUNE_BACKUP_URI: "${PRUNE_BACKUP_URI:-}"
+      PRUNE_ARCHIVE_PREFIX: "${PRUNE_ARCHIVE_PREFIX:-}"
+    # Blank `PRUNE_BACKUP_URI` means the pruner backs each week up to
+    # /morcus/logs/archives (`$LOGS_DIR/archives` on the host, which must be
+    # owned by UID 1000; `vm_setup.sh` creates it) before deleting it. Local
+    # backups must be on a mounted volume; the pruner refuses unmounted paths
+    # at startup.
+    volumes:
+      - "${LOGS_DIR:?err}:/morcus/logs:rw"
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
+    # Exits 0 immediately when MONGODB_URI is empty, so `on-failure` leaves it
+    # stopped. Exits 143 on SIGTERM in daemon mode, so `on-failure` restarts
+    # it after host reboots, docker restarts, or crashes.
+    restart: on-failure
+    init: true
+    # Longer than the 60s archive upload timeout, so a stop during an upload
+    # lets the week finish instead of SIGKILLing it (recovery is idempotent
+    # either way).
+    stop_grace_period: 90s
+    mem_limit: 256m
+    cpus: "0.5"
     logging:
       driver: "json-file"
       options:
@@ -76,6 +121,7 @@ services:
 
   watchtower:
     image: containrrr/watchtower
+    restart: unless-stopped
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:

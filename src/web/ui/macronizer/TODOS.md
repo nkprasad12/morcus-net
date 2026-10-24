@@ -1,0 +1,41 @@
+# Macronizer TODOs (`src/web/ui/macronizer/`)
+
+Known follow-up work and optimization candidates for the UI V2 Macronizer slice. See [`README.md`](README.md) for current architecture details and [`MACRONIZER_IMPLEMENTATION_PLAN.md`](../docs/archive/MACRONIZER_IMPLEMENTATION_PLAN.md) _(archived)_ for initial design context.
+
+---
+
+## 1. Known words lose user-typed long marks
+
+**Status:** open question.
+
+Morceus looks words up with diacritics removed, and a known word is shown with Morceus's forms, so anything the user typed is dropped: `Ōthō` comes back as `Othō` when Morceus marks only the final vowel, and `poëtae` loses its diaeresis. Unknown words keep the typed spelling. Options: prefer forms whose long vowels include the typed ones, or treat typed macrons as an edit.
+
+---
+
+## 2. Fake tagger can't express perfect and future perfect
+
+**Status:** minor, affects the `fake-latincy` engine only.
+
+`wordInflectionDataToUd` serializes Morceus inflections to UD features for the fake tagger, but `convertUpos` reads `Tense=Past|Aspect=Perf` as pluperfect, so perfect and future perfect forms are serialized as `Aspect=Perf` alone. Their simulated suggestions are weaker than they should be.
+
+---
+
+## 3. SSR HTML payload size for long passages
+
+**Status:** measured 2026-10-02 at the 10,000-character limit, with the `fake-latincy` engine and the real Morceus tables.
+
+| Passage (10k chars)                           | Words (plain / other) |   Raw HTML | Gzipped (level 9) | Indentation share |
+| :-------------------------------------------- | :-------------------- | ---------: | ----------------: | ----------------: |
+| Realistic (`dcc_dbg` golden, macrons removed) | 1,408 (1,211 / 197)   | 1,020.2 KB |           72.1 KB |             18.5% |
+| Stress (ambiguous words only, repeated)       | 1,619 (1 / 1,618)     | 6,287.5 KB |          251.8 KB |             24.6% |
+
+### Findings
+
+- Most of the raw weight is the per-word `<details class="mac-card" id="wN">` inspector cards for non-plain words, particularly the per-vowel checkbox pills. The tier-0 plain words are a small share.
+- Template indentation is roughly a fifth of the raw bytes; it compresses well but still costs parse time.
+
+### Potential optimizations
+
+- Strip template indentation from the card markup.
+- Lazy-render the `<details class="mac-edit">` vowel-override strip in JS while keeping it server-rendered for No-JS, or only for tiers 1–3 and 5.
+- Consider omitting `open` on tier-4 cards in No-JS so long passages scan as one-line summaries.

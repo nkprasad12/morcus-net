@@ -1,4 +1,5 @@
 import { envVar } from "@/common/env_vars";
+import { MANIFEST_COLOR } from "@/web/ui/shell/theme_color.common";
 
 export const PWA_WEBMANIFEST = {
   name: "Morcus Latin Tools" + envVar("PWA_SHORT_NAME_SUFFIX"),
@@ -6,7 +7,7 @@ export const PWA_WEBMANIFEST = {
   description: "A collection of free tools for Latin learners, by Mórcus.",
   icons: [
     {
-      src: "/public/favicon.ico",
+      src: "/favicon.ico",
       type: "image/png",
       sizes: "48x48",
     },
@@ -23,9 +24,18 @@ export const PWA_WEBMANIFEST = {
   ],
   id: "/",
   start_url: "/",
-  background_color: "#f2f3f2",
-  theme_color: "#bfdecf",
+  // Every page, so links between pages stay inside the installed app's window.
+  scope: "/",
+  background_color: MANIFEST_COLOR,
+  theme_color: MANIFEST_COLOR,
   display: "standalone",
+  // Long-press / right-click entries on the app icon.
+  shortcuts: [
+    { name: "Dictionary", url: "/dicts" },
+    { name: "Library", url: "/library" },
+    { name: "Corpus", url: "/corpus" },
+    { name: "Macronizer", url: "/macronizer" },
+  ],
   related_applications: [
     {
       platform: "webapp",

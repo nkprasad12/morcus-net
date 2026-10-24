@@ -1,16 +1,17 @@
 """Utilities for tokenization and token conversion logic."""
 
+# `macronizer_modified` is an optional dependency, imported in a `try` below.
+# pyright: reportMissingImports=false, reportPossiblyUnboundVariable=false
+
 import dataclasses
 import enum
 
-# pytype: disable=import-error
 try:
     from src.libs.latin_macronizer import macronizer_modified
 except:
     print(
         "Failed to load `macronizer_modified`. Use `npm run setup-alatius` to load it."
     )
-# pytype: enable=import-error
 
 _PUNCTUATION = ".!?‘’”“—,'\"-;:[]()"
 _SENTENCE_ENDS = ".;:?!"

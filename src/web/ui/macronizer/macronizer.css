@@ -1,0 +1,649 @@
+/* UI V2 Macronizer Styles */
+
+.mac-root {
+  display: block;
+}
+
+/* Landing view */
+.mac-landing {
+  max-width: 720px;
+  margin: var(--space-6) auto;
+}
+
+.mac-landing-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-7);
+  box-shadow: var(--card-shadow);
+}
+
+.mac-landing-title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.625rem;
+  color: var(--dict-title);
+}
+
+.mac-landing-sub {
+  margin: 0 0 var(--space-5);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.mac-error-banner {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--disclaimer-bg);
+  border: 1px solid var(--disclaimer-border);
+  border-radius: var(--radius-md);
+  color: var(--danger);
+  font-size: 0.925rem;
+}
+
+/* Input form */
+.mac-form-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+
+.mac-form-label {
+  font-weight: 600;
+  font-size: 0.925rem;
+}
+
+.mac-char-limit,
+.mac-char-counter {
+  font-weight: 400;
+  font-size: 0.825rem;
+  color: var(--text-muted);
+}
+
+.mac-textarea,
+.mac-copybox-textarea {
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  font-family: var(--font-text);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--input-shadow);
+  resize: vertical;
+}
+
+.mac-textarea:focus,
+.mac-copybox-textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--focus-ring);
+}
+
+.mac-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}
+
+/* Wide split-pane layout (> 860px) */
+@media (width > 860px) {
+  .container:has(.mac-workspace-result) {
+    max-width: 1440px;
+    padding: 0;
+  }
+
+  .mac-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    height: calc(100dvh - 65px);
+    overflow: hidden;
+  }
+
+  .mac-left {
+    overflow-y: auto;
+    padding: var(--space-5) var(--space-7) var(--space-9);
+  }
+
+  .mac-right {
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border);
+    background: var(--card-surface-bg);
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .mac-sheet-peek,
+  .mac-right .drawer-handle {
+    display: none;
+  }
+}
+
+/* Collapsible input details on result page */
+.mac-input-details {
+  margin-bottom: var(--space-4);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+}
+
+.mac-input-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.mac-input-summary-hint {
+  font-weight: 400;
+  color: var(--primary);
+}
+
+.mac-input-details-body {
+  padding: 0 var(--space-5) var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+/* Sticky action toolbar */
+.mac-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  margin-bottom: var(--space-5);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+}
+
+.mac-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+}
+
+.mac-stat-unresolved b {
+  color: var(--match-highlight-fg);
+}
+
+.mac-stat-check b {
+  color: var(--primary);
+}
+
+.mac-stat-unknown b {
+  color: var(--danger);
+}
+
+.mac-stat-sep {
+  color: var(--text-muted);
+}
+
+.mac-simulated-note {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--tag-bg);
+  border: 1px dashed var(--border-mid);
+  border-radius: var(--radius-md);
+}
+
+.mac-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.mac-btn-next kbd,
+.mac-keep-btn kbd,
+.mac-legend-item kbd,
+.mac-inspector-empty kbd,
+.mac-copybox-label kbd {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--tag-bg);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-xs);
+}
+
+/* Passage & word attention tiers */
+.mac-passage {
+  padding: var(--space-6) var(--space-7);
+  background: var(--paper-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  font-family: var(--font-text);
+  font-size: calc(1.25rem * var(--text-scale, 1));
+  line-height: calc(1.95 * var(--text-leading, 1));
+  white-space: pre-wrap;
+  color: var(--reading-text);
+}
+
+.mac-word {
+  scroll-margin-top: 3.5rem;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-xs);
+  padding: 1px 2px;
+  cursor: pointer;
+}
+.mac-word:hover {
+  background: var(--word-hover-bg);
+  color: inherit;
+}
+
+/* Tier 1: Unresolved — shaded pill + solid underline */
+.mac-ambig[data-tier="1"] {
+  background: var(--badge-resume-bg);
+  border-bottom: 2px solid var(--match-highlight-fg);
+}
+
+/* Tiers 2-4: suggestion, dashed underline. One style until benchmarks show
+   the tagger's confidence (weak, tied, confident) is worth telling apart. */
+.mac-ambig[data-tier="2"],
+.mac-ambig[data-tier="3"],
+.mac-ambig[data-tier="4"] {
+  border-bottom: 1.5px dashed var(--primary);
+}
+
+/* Tier 5: Unknown word — danger dotted underline */
+.mac-unknown {
+  border-bottom: 2px dotted var(--danger);
+}
+
+/* Reviewed / user-chosen state overrides tier highlight */
+.mac-word.mac-chosen {
+  background: transparent;
+  border-bottom: 1px solid var(--primary);
+}
+
+/* Active selection in JS mode or :target in No-JS mode */
+.mac-passage .mac-word.mac-selected,
+.mac-word:target {
+  background: var(--primary-light);
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+/* Legend */
+.mac-legend {
+  margin-top: var(--space-4);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.mac-legend-summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.mac-legend-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* No-JS editable copybox */
+.mac-copybox {
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+}
+
+.mac-copybox-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.mac-copybox-label {
+  font-size: 0.875rem;
+}
+
+/* Right pane: Inspector + Dictionary iframe */
+.mac-inspector {
+  flex: 0 0 auto;
+  max-height: 46%;
+  overflow-y: auto;
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.mac-inspector-empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.mac-inspector:has(.mac-card.current, .mac-card:target) .mac-inspector-empty {
+  display: none;
+}
+
+/* Inspector word cards: hidden unless .current (JS) or :target (No-JS) */
+.mac-card {
+  display: none;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+}
+
+.mac-card.current,
+.mac-card:target {
+  display: block;
+}
+
+.mac-card-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--card-header-bg);
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  font-family: var(--font-text);
+  font-size: 1.05rem;
+  list-style: none;
+}
+
+.mac-card-orig {
+  color: var(--text-muted);
+}
+
+.mac-card-shown {
+  font-weight: 700;
+}
+
+.mac-tag {
+  margin-left: auto;
+  padding: 2px var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  background: var(--tag-bg);
+}
+
+.mac-tag-unresolved {
+  background: var(--badge-resume-bg);
+  color: var(--badge-resume-text);
+}
+
+.mac-tag-auto {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.mac-tag-chosen {
+  background: var(--badge-macra-bg);
+  color: var(--badge-macra-text);
+}
+
+.mac-tag-unknown {
+  background: var(--disclaimer-bg);
+  color: var(--danger);
+}
+
+.mac-card-body {
+  padding: var(--space-4);
+}
+
+.mac-options {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mac-opt {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card-surface-bg);
+}
+
+.mac-opt[data-shown="1"] {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.mac-opt-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.mac-opt-form {
+  font-family: var(--font-text);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.mac-badge-sug,
+.mac-badge-shown {
+  padding: 1px var(--space-2);
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.mac-badge-sug {
+  background: var(--beta-chip-bg);
+  color: var(--beta-chip-text);
+}
+
+.mac-badge-shown {
+  display: none;
+  margin-left: auto;
+  background: var(--tag-bg);
+  color: var(--text-muted);
+}
+
+.mac-opt[data-shown="1"] .mac-badge-shown {
+  display: inline-block;
+}
+
+.mac-opt-lemmas {
+  margin-top: var(--space-2);
+  padding-left: var(--space-6);
+  font-size: 0.85rem;
+}
+
+.mac-lemma-group {
+  margin-top: var(--space-1);
+}
+
+.mac-lemma-link {
+  font-weight: 600;
+}
+
+.mac-morph-list {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+  color: var(--text-muted);
+}
+
+.mac-numeral-note,
+.mac-unknown-note,
+.mac-plain-morph {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Edit macrons vowel toggles */
+.mac-edit {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.mac-edit-toggle {
+  cursor: pointer;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.mac-vowels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  font-family: var(--font-text);
+  font-size: 1.15rem;
+}
+
+.mac-char {
+  padding: 0 2px;
+}
+
+.mac-vowel {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  cursor: pointer;
+  user-select: none;
+}
+
+.mac-vowel:has(input:checked) {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  font-weight: 700;
+}
+
+.mac-edit-hint {
+  margin: var(--space-2) 0 0;
+  font-size: 0.775rem;
+  color: var(--text-muted);
+}
+
+.mac-unknown-lookup {
+  margin-top: var(--space-3);
+  font-size: 0.85rem;
+}
+
+.mac-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.mac-dict-wrap {
+  flex: 1 1 auto;
+  min-height: 240px;
+  display: flex;
+}
+
+.mac-dict-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--bg);
+}
+
+/* Narrow / mobile layout (<= 860px) */
+@media (width <= 860px) {
+  .mac-split {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .mac-passage {
+    padding: var(--space-5);
+    font-size: calc(1.125rem * var(--text-scale, 1));
+  }
+
+  .mac-sheet-peek {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--z-raised);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-5);
+    background: var(--card-bg);
+    border: 0;
+    border-top: 1px solid var(--border);
+    box-shadow: var(--drawer-shadow);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .mac-sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--border-mid);
+  }
+
+  .mac-sheet-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .mac-right.drawer-minimized {
+    display: none;
+  }
+}
+
+@media (width <= 860px) and (scripting: enabled) {
+  .mac-right:not([data-js-failed] *) {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: var(--z-drawer);
+    height: var(--drawer-height, 48svh);
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--drawer-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}

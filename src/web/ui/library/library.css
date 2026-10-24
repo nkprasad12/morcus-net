@@ -1,0 +1,175 @@
+/* Classical Library Catalog Styling (UI V2) */
+
+.library-view {
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.library-header {
+  margin-bottom: var(--space-7);
+}
+
+.library-own-text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* Search Bar & Filter Pills (matches Dictionary design) */
+.library-search-form {
+  margin-bottom: var(--space-5);
+}
+
+.library-search-form .search-tray {
+  justify-content: flex-start;
+  padding: var(--space-3) var(--space-5);
+  overflow-x: auto;
+}
+
+.library-filter-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: nowrap;
+}
+
+.filter-pill {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background-color: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.3;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-pill:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.filter-pill.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-accent);
+  font-weight: 600;
+}
+
+/* Continuous Works Grid */
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-7);
+}
+
+/* The grid item: the card link, plus (with a saved spot) the corner tag laid
+   over it as a sibling, since its clear button can't go inside the link. */
+.work-card-item {
+  position: relative;
+  display: grid;
+}
+
+.work-card-item[hidden] {
+  display: none;
+}
+
+/* Work Card (Fully Clickable Card) */
+.work-card {
+  padding: var(--space-6) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.work-card-item:hover .work-card-title {
+  color: var(--primary);
+}
+
+.work-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  width: 100%;
+}
+
+.work-card-author {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.work-card-title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: break-word;
+  transition: color 0.15s ease;
+}
+
+.work-card-meta {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.work-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.work-card-corner-tag {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-5);
+  /* Clicks on the badge reach the card link beneath; only its clear button
+     takes them. */
+  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+
+/* Lift with the card (.work-card-item:hover in components.css: the card
+   itself isn't :hover while the pointer is over the tag). */
+.work-card-item:hover > .work-card-corner-tag {
+  transform: translateY(-2px);
+}
+
+/* The shared close-button look (components.css), inside the badge and
+   clickable through the tag. */
+.work-card-clear-spot {
+  pointer-events: auto;
+  padding: 0 2px;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.work-card-item:has(.work-card-corner-tag) .work-card-content {
+  padding-right: 6rem;
+}
+
+@media (width <= 640px) {
+  .library-header {
+    margin-bottom: var(--space-5);
+  }
+  .library-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}

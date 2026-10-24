@@ -1,7 +1,6 @@
 import { removeDiacritics } from "@/common/text_cleaning";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { Vowels } from "@/common/character_utils";
-import { setMap } from "@/common/data_structures/collect_map";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
 import type { DictLang } from "@/common/dictionaries/dictionaries";
 
@@ -23,21 +22,7 @@ export interface StoredEntryAndMetadata {
 
 /** A generic stored dictionary. */
 export class StoredDict {
-  private readonly table: Promise<Map<string, string[]>> | undefined;
-
-  constructor(private readonly backing: StoredDictBacking<any>) {
-    this.table = this.backing.lowMemory
-      ? undefined
-      : Promise.resolve(this.backing.allEntryNames()).then((entries) => {
-          const lookup = setMap<string, string>();
-          entries.forEach(({ orth, cleanOrth }) =>
-            lookup.add(cleanOrth[0].toLowerCase(), orth)
-          );
-          return new Map(
-            [...lookup.map.entries()].map((e) => [e[0], [...e[1]]])
-          );
-        });
-  }
+  constructor(private readonly backing: StoredDictBacking<any>) {}
 
   /**
    * Returns the raw (serialized) entries for the given input
@@ -46,11 +31,15 @@ export class StoredDict {
    * @param input the query to search against keys.
    * @param lang the language of the input.
    * @param extras any server extras to pass to the function.
+   * @param entryCache optional per-query cache of `id -> raw entry` to avoid
+   *   fetching the same parent entry XML twice when a query matches both a
+   *   main entry and one of its sub-entries or variant headwords.
    */
   async getRawEntry(
     input: string,
     lang: DictLang = "La",
-    extras?: ServerExtras
+    extras?: ServerExtras,
+    entryCache?: Map<string, string>
   ): Promise<StoredEntryAndMetadata[]> {
     const request = removeDiacritics(input)
       .replaceAll("\u0304", "")
@@ -69,7 +58,7 @@ export class StoredDict {
     }
 
     const allIds = Array.from(new Set(candidates.map(({ id }) => id)));
-    const entryStrings = await this.backing.entriesForIds(allIds);
+    const entryStrings = await this.entriesForIds(allIds, entryCache);
     // TODO: Re-enable this if we run into performance issues.
     // extras?.log(`${request}_entriesFetched`);
     const results: StoredEntryAndMetadata[] = [];
@@ -97,6 +86,31 @@ export class StoredDict {
     return results;
   }
 
+  /**
+   * Fetches the raw entries for `ids`, reading from and populating
+   * `entryCache` if provided. Results are in the order of `ids`, skipping
+   * any that don't exist.
+   */
+  private async entriesForIds(
+    ids: string[],
+    entryCache?: Map<string, string>
+  ): Promise<{ id: string; entry: string }[]> {
+    if (entryCache === undefined) {
+      return this.backing.entriesForIds(ids);
+    }
+    const missingIds = ids.filter((id) => !entryCache.has(id));
+    if (missingIds.length > 0) {
+      const fetched = await this.backing.entriesForIds(missingIds);
+      for (const { id, entry } of fetched) {
+        entryCache.set(id, entry);
+      }
+    }
+    return ids.flatMap((id) => {
+      const entry = entryCache.get(id);
+      return entry === undefined ? [] : [{ id, entry }];
+    });
+  }
+
   /** Returns the entry with the given ID, if present. */
   async getById(id: string): Promise<string | undefined> {
     const result = await this.backing.entriesForIds([id]);
@@ -120,10 +134,6 @@ export class StoredDict {
   /** Returns the possible completions for the given prefix. */
   async getPrefixCompletions(input: string): Promise<string[]> {
     const prefix = removeDiacritics(input).toLowerCase();
-    const precomputed = (await this.table)?.get(prefix);
-    if (precomputed !== undefined) {
-      return precomputed;
-    }
     return this.backing.entryNamesByPrefix(prefix);
   }
 }

@@ -171,4 +171,4 @@ const SAMPLE_TEXT = `
 Gallia est omnis divisa in partes tres, quarum unam incolunt Belgae, aliam Aquitani, tertiam qui ipsorum lingua Celtae, nostra Galli appellantur.
 Hi omnes lingua, institutis, legibus inter se differunt. Gallos ab Aquitanis Garumna flumen, a Belgis Matrona et Sequana dividit.`;
 
-findBestInflections(tokenizeText(SAMPLE_TEXT), true);
+void findBestInflections(tokenizeText(SAMPLE_TEXT), true);

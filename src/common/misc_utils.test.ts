@@ -7,6 +7,7 @@ import {
   safeParseInt,
   singletonOf,
   estimateObjectSize,
+  lruMemoize,
 } from "@/common/misc_utils";
 
 describe("exhaustiveGuard", () => {
@@ -57,6 +58,59 @@ describe("singleton helper", () => {
     mockObject.get();
 
     expect(mockInitializer).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("lruMemoize", () => {
+  it("returns cached results for repeated keys", () => {
+    const fn = jest.fn((key: string) => ({ key }));
+    const memoized = lruMemoize(fn, 4);
+
+    const first = memoized("amo");
+    const second = memoized("amo");
+
+    expect(second).toBe(first);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("caches undefined results", () => {
+    const fn = jest.fn((_key: string) => undefined);
+    const memoized = lruMemoize(fn, 4);
+
+    memoized("amo");
+    memoized("amo");
+
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("evicts the least recently used key past capacity", () => {
+    const fn = jest.fn((key: string) => key);
+    const memoized = lruMemoize(fn, 2);
+
+    memoized("a");
+    memoized("b");
+    memoized("a"); // `b` is now the least recently used.
+    memoized("c"); // Evicts `b`.
+    memoized("a");
+    expect(fn).toHaveBeenCalledTimes(3);
+    memoized("b");
+    expect(fn).toHaveBeenCalledTimes(4);
+  });
+
+  it("does not cache rejected promises", async () => {
+    const fn = jest
+      .fn<Promise<string>, [string]>()
+      .mockReturnValueOnce(Promise.reject(new Error("transient")))
+      .mockReturnValueOnce(Promise.resolve("ok"));
+    const memoized = lruMemoize(fn, 4);
+
+    await expect(memoized("amo")).rejects.toThrow("transient");
+    await expect(memoized("amo")).resolves.toBe("ok");
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects a capacity below 1", () => {
+    expect(() => lruMemoize((key) => key, 0)).toThrow();
   });
 });
 

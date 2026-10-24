@@ -1,0 +1,30 @@
+// Entry for `common.js`, which every UI V2 page loads first. Everything else
+// `dependOn`s it, so shared `core/` code imported here ships exactly once.
+import "@/web/ui/core/index.client";
+
+// Shell elements present on every page.
+import "@/web/ui/shell/appearance_menu.client";
+import "@/web/ui/dialog/report_dialog.client";
+import "@/web/ui/shell/page_width_handles.client";
+
+import { setupAnchorScroll } from "@/web/ui/core/nav/anchor_scroll.client";
+import { setupBackToTop } from "@/web/ui/core/widgets/back_to_top.client";
+import { setupDeferredIframes } from "@/web/ui/core/widgets/deferred_iframe.client";
+import { onPageReady } from "@/web/ui/core/dom/page_ready.client";
+import { setupMobileMenu } from "@/web/ui/shell/mobile_menu.client";
+
+// Global shell and interactive behaviours. They run once every chunk on the
+// page has executed, not when `common.js` does: until the route chunk has
+// upgraded its components, the page must behave like the No-JS page
+// (docs/archive/CHUNK_ORDERING_ADR.md). Entries are the only modules allowed side effects
+// beyond `registerElement` (boot_conformance.test.ts).
+onPageReady(() => {
+  setupAnchorScroll();
+  setupBackToTop();
+  setupMobileMenu();
+  setupDeferredIframes();
+});
+
+// There is deliberately no global "JS is on" flag (the old `.has-js`): each
+// component reveals its own `data-js-only` UI once upgraded. See the JS gate
+// in critical.css.
