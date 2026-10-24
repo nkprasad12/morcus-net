@@ -273,6 +273,29 @@ describe("processTei2", () => {
     expect(work.textParts).toStrictEqual(["book", "chapter", "section"]);
   });
 
+  it("ignores upstream's citeStructure refsDecl when finding text parts", () => {
+    // Upstream canonical-latinLit (2026) adds this alongside the old two.
+    const citeStructure = `
+    <refsDecl xml:id="CTS">
+      <citeStructure match="/TEI/text/body" use="@xml:base">
+        <citeStructure unit="book" match="div/div[@subtype='book']" use="@n">
+          <citeStructure unit="chapter" delim="." match="div[@subtype='chapter']" use="@n"/>
+        </citeStructure>
+      </citeStructure>
+    </refsDecl>
+  </encodingDesc>`;
+    const encodingDesc = ENCODING_DESC.replace(
+      "</encodingDesc>",
+      citeStructure
+    );
+
+    const work = processTei2(testRoot(BODY_WITH_BOOK_ONLY, encodingDesc), {
+      workId: WORK_ID,
+    });
+
+    expect(work.textParts).toStrictEqual(["book", "chapter", "section"]);
+  });
+
   it("handles elements with choice and reg", () => {
     const work = processTei2(testRoot(BODY_WITH_CHOICE), {
       workId: WORK_ID,

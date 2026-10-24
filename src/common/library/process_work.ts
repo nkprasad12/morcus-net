@@ -1006,7 +1006,11 @@ export function processWorkBody(
 
 function getTextparts(root: XmlNode, workId: string) {
   const refsDecls = root.findDescendants("refsDecl");
-  const nonCts = refsDecls.filter((node) => node.getAttr("n") !== "CTS");
+  // Upstream's `<refsDecl xml:id="CTS">` declares the scheme as nested
+  // `citeStructure`s, which this pipeline does not read yet.
+  const nonCts = refsDecls.filter(
+    (node) => node.getAttr("n") !== "CTS" && node.getAttr("xml:id") !== "CTS"
+  );
   if (FORCE_CTS_WORKS.has(workId) || nonCts.length === 0) {
     return findCtsEncoding(root)
       .sort((a, b) => a.idSize - b.idSize)
