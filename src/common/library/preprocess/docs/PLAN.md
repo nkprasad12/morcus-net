@@ -39,17 +39,17 @@ Full details in [CORPUS_SURVEY.md](CORPUS_SURVEY.md) and [UPSTREAM.md](UPSTREAM.
 | Livy per-book / periochae / fragment slices    |                   47 | **0** (deleted upstream) |
 | **Effective target (distinct, non-redundant)** |                 ≈320 |                 **≈300** |
 | Onboarded today (`LatinWorks`)                 |                   98 |    98 (15 files renamed) |
-| V1 passes today, as shipped                    |                  133 |                        — |
-| …of which not in the allowlist                 |                   36 |                        — |
+| V1 passes today, as shipped                    | 137 (133 in scratch) |                        — |
+| …of which not in the allowlist                 |   39 (36 in scratch) |                        — |
 | Body text in V1-passing works                  | 48.7% of 44.2M chars |                        — |
 
-Of the 36 works that pass V1 today but are not onboarded: ~20 are verse works currently shipped from **Hypotactic** instead (_Aeneid_, _Metamorphoses_, _Fasti_, Horace, …). Per [Decision 2](#6-decisions), those stay Hypotactic for now and will carry both editions long-term. The remaining ~16 are immediate free wins: **Gellius, ten Suetonius lives, Apuleius _Apologia_ / _Florida_, three pseudo-Caesar wars, Propertius, Martial, Silius Italicus, Valerius Flaccus, Ovid _Ex Ponto_.**
+Of the 39 works that pass V1 today but are not onboarded (36 in the initial scratch script, plus 3 `div1` works that pass with 0 citable rows once DOCTYPE internal subsets are stripped; see [CORPUS_SURVEY.md §1](CORPUS_SURVEY.md#1-corpus-recount-files-vs-distinct-works)): ~20 are verse works currently shipped from **Hypotactic** instead (_Aeneid_, _Metamorphoses_, _Fasti_, Horace, …). Per [Decision 2](#6-decisions), those stay Hypotactic for now and will carry both editions long-term. The remaining ~16 are immediate free wins: **Gellius, ten Suetonius lives, Apuleius _Apologia_ / _Florida_, three pseudo-Caesar wars, Propertius, Martial, Silius Italicus, Valerius Flaccus, Ovid _Ex Ponto_.**
 
 ---
 
 ## 3. What blocks the rest, by cluster
 
-First-error buckets on our clone (sums to 398): OK 133 · header/tree nesting mismatch 132 · `<forename>` 34 · `refsDecl` ambiguous 28 · `rend=""` 17 · no `<author>` 16 · note contents 13 · `<speaker>` 8 · long tail 17. Of the 132 mismatches, **74 are `Expected "card"`** — the TEI.2 header declares Perseus's old chunking unit, which has no body representation. The header is stale; the tree is clean.
+First-error buckets on our clone (sums to 398): OK 137 (133 in raw scratch) · header/tree nesting mismatch 132 · `<forename>` 34 · `refsDecl` ambiguous 28 · `rend=""` 17 · note contents 13 · no `<author>` 12 (16 in raw scratch) · `<speaker>` 8 · long tail 17. Of the 132 mismatches, **74 are `Expected "card"`** — the TEI.2 header declares Perseus's old chunking unit, which has no body representation. The header is stale; the tree is clean.
 
 | #   | Cluster                                                                                                                           | Works | Blocker today                                                                                             | What it needs                                                                               |
 | --- | --------------------------------------------------------------------------------------------------------------------------------- | ----: | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
