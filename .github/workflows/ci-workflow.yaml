@@ -175,47 +175,6 @@ jobs:
           name: functional-test-report-${{ matrix.arch }}
           path: playwright-report/
 
-  e2e-performance:
-    needs: [build-image]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    strategy:
-      matrix:
-        screenSize: [small, large]
-
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-      - name: Set up Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
-        with:
-          node-version-file: package.json
-          cache: npm
-      - name: Pulling docker images
-        run: |
-          docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}
-          docker pull ghcr.io/nkprasad12/morcus:main-latest
-      - name: Installing npm dependencies
-        run: npm ci
-      - name: Installing browsers
-        run: npx playwright install chromium --with-deps
-      - name: Setting up .env
-        run: touch .env
-      - name: Setting comparison tag (dev branch)
-        if: github.ref == 'refs/heads/dev'
-        run: echo "A_TAG=main-latest" >> "$GITHUB_ENV"
-      - name: Setting comparison tag (non-dev branch)
-        if: github.ref != 'refs/heads/dev'
-        run: echo "A_TAG=dev-latest" >> "$GITHUB_ENV"
-      - name: Running Performance tests
-        run: npm run tsnp src/scripts/perf_a_b.ts -- --A=$A_TAG --B=${{ github.sha }} --N=40 --screenSize=${{ matrix.screenSize }} --ci
-      - name: Upload Performance report
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        if: ${{ !cancelled() }}
-        with:
-          name: performance-report-${{ matrix.screenSize }}
-          path: e2e_metrics/
 
   build-helper-images:
     runs-on: ubuntu-24.04

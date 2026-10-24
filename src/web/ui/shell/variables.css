@@ -193,7 +193,7 @@
     --app-bar-nav-active-bg: rgba(124, 196, 166, 0.14);
     --app-bar-nav-active-text: #e2ece7;
     --app-bar-toggle-border: #43695a;
-    --app-bar-icon: #a3c4b6;
+    --app-bar-icon: var(--app-bar-nav-text);
     --toast-bg: #f4f5f7;
     --toast-text: #14171a;
     --toast-border: rgba(0, 0, 0, 0.15);
@@ -283,7 +283,7 @@
   --app-bar-nav-active-bg: rgba(124, 196, 166, 0.14);
   --app-bar-nav-active-text: #e2ece7;
   --app-bar-toggle-border: #43695a;
-  --app-bar-icon: #a3c4b6;
+  --app-bar-icon: var(--app-bar-nav-text);
   --toast-bg: #f4f5f7;
   --toast-text: #14171a;
   --toast-border: rgba(0, 0, 0, 0.15);

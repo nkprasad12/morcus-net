@@ -107,7 +107,7 @@ describe("UI V2 Design Token Parity (variables.css & critical_variables.css)", (
     expect(blocks.light?.get("--app-bar-icon")).toBe("var(--app-bar-text)");
     expect(blocks.light?.get("--app-bar-nav-active-text")).toBe("#0d2820");
     for (const dark of [blocks.mediaDark, blocks.explicitDark]) {
-      expect(dark?.get("--app-bar-icon")).toBe("#a3c4b6");
+      expect(dark?.get("--app-bar-icon")).toBe("var(--app-bar-nav-text)");
       expect(dark?.get("--app-bar-nav-active-text")).toBe("#e2ece7");
       expect(dark?.get("--app-bar-nav-active-bg")).toBe(
         "rgba(124, 196, 166, 0.14)"
