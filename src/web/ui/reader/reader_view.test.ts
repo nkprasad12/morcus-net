@@ -3844,6 +3844,209 @@ describe("MorcusReaderView screen wake lock", () => {
     expect(requests).toHaveLength(2);
     expect(requests[1].released).toBe(false);
   });
+
+  test("an in-place dictionary swap extends the wake lock and leaves iframe.src alone", async () => {
+    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const initialSrc = "/dicts?q=Gallia&lang=La&o=1&embedded=1&scale=93";
+    iframe.setAttribute("src", initialSrc);
+
+    const frameDoc = document.implementation.createHTMLDocument("");
+    const dictSearch = frameDoc.createElement("morcus-dict-search");
+    dictSearch.setAttribute("data-upgraded", "");
+    const lookupSpy = jest.fn().mockReturnValue("swapped");
+    (
+      dictSearch as unknown as { lookupEmbeddedWord: jest.Mock }
+    ).lookupEmbeddedWord = lookupSpy;
+    frameDoc.body.appendChild(dictSearch);
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
+
+    await flush();
+    jest.advanceTimersByTime(WAKE_LOCK_IDLE_MS);
+    expect(requests[0].released).toBe(true);
+
+    const words = el.querySelectorAll<HTMLElement>(".lat-word");
+    words[1].click(); // "est"
+    await flush();
+
+    expect(lookupSpy).toHaveBeenCalledWith({
+      q: "est",
+      lang: "La",
+      inflected: true,
+    });
+    expect(iframe.getAttribute("src")).toBe(initialSrc);
+    expect(requests).toHaveLength(2);
+    expect(requests[1].released).toBe(false);
+  });
+
+  test("re-clicking the same word with a minimized drawer restores the drawer, asks the frame, and does not navigate when the frame answers 'unchanged'", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+    const galliaWord = el.querySelector<HTMLElement>(".lat-word")!;
+
+    // First click loads "Gallia"
+    galliaWord.click();
+
+    // Attach upgraded <morcus-dict-search> stub that answers "unchanged",
+    // even if the iframe's current URL differs in `d=` or `scale=` after an in-frame click.
+    const frameDoc = document.implementation.createHTMLDocument("");
+    const dictSearch = frameDoc.createElement("morcus-dict-search");
+    dictSearch.setAttribute("data-upgraded", "");
+    const lookupSpy = jest.fn().mockReturnValue("unchanged");
+    (
+      dictSearch as unknown as { lookupEmbeddedWord: jest.Mock }
+    ).lookupEmbeddedWord = lookupSpy;
+    frameDoc.body.appendChild(dictSearch);
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
+    const replaceSpy = jest.fn();
+    Object.defineProperty(iframe, "contentWindow", {
+      value: {
+        location: {
+          pathname: "/dicts",
+          search: "?q=Gallia&lang=La&o=1&embedded=1&d=3",
+          hash: "",
+          replace: replaceSpy,
+        },
+      },
+      configurable: true,
+    });
+
+    el.minimizeDrawer();
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+
+    galliaWord.click();
+
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    expect(lookupSpy).toHaveBeenCalledWith({
+      q: "Gallia",
+      lang: "La",
+      inflected: true,
+    });
+    expect(replaceSpy).not.toHaveBeenCalled();
+  });
+
+  test("re-clicking the same word with a minimized drawer when the frame has moved on brings the frame back", () => {
+    const el = createReaderView("<p>Gallia est omnis divisa.</p>");
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+    const galliaWord = el.querySelector<HTMLElement>(".lat-word")!;
+
+    galliaWord.click();
+
+    // User moved the frame to another Latin word inside the iframe; stub swaps back
+    const frameDoc = document.implementation.createHTMLDocument("");
+    const dictSearch = frameDoc.createElement("morcus-dict-search");
+    dictSearch.setAttribute("data-upgraded", "");
+    const lookupSpy = jest.fn().mockReturnValue("swapped");
+    (
+      dictSearch as unknown as { lookupEmbeddedWord: jest.Mock }
+    ).lookupEmbeddedWord = lookupSpy;
+    frameDoc.body.appendChild(dictSearch);
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
+
+    el.minimizeDrawer();
+    galliaWord.click();
+
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    expect(lookupSpy).toHaveBeenCalledWith({
+      q: "Gallia",
+      lang: "La",
+      inflected: true,
+    });
+  });
+
+  test("re-clicking the same word after opening a note and minimizing the drawer switches back to the Dictionary tab and re-highlights the word", () => {
+    const el = createReaderView(
+      `<div class="reader-section" id="sec-1.1">
+        <div class="reader-passage">
+          <span class="reader-line">Gallia <span class="lat-word" data-word="divisa">divisa</span> in partes tres.
+            <a class="reader-note-ref" id="noteref-n1" href="#note-n1" role="doc-noteref" aria-label="Note 1"><sup>[1]</sup></a>
+          </span>
+        </div>
+      </div>`,
+      {
+        notesHtml: `<aside class="reader-notes" role="doc-endnotes" aria-labelledby="reader-notes-heading">
+          <h2 class="reader-notes-heading" id="reader-notes-heading">Notes</h2>
+          <ol class="reader-notes-list">
+            <li class="reader-note" id="note-n1">
+              <a class="reader-note-backref" href="#noteref-n1" role="doc-backlink" aria-label="Back to note 1 in the text">[1]</a>
+              <div class="reader-note-body">First apparatus critical note on divisa.</div>
+            </li>
+          </ol>
+        </aside>`,
+      }
+    );
+    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+    const panelController = el.getPanelController()!;
+    const firstWord = el.querySelector<HTMLElement>(
+      '.lat-word[data-word="divisa"]'
+    )!;
+    const wordText = firstWord.dataset.word || firstWord.textContent!.trim();
+    const noteRef = el.querySelector<HTMLAnchorElement>("#noteref-n1")!;
+
+    // 1. Click word W -> highlights W on Dictionary tab
+    firstWord.click();
+    expect(panelController.activeTab).toBe("dict");
+    expect(firstWord.classList.contains("word-active")).toBe(true);
+
+    // Attach upgraded <morcus-dict-search> stub that answers "unchanged"
+    const frameDoc = document.implementation.createHTMLDocument("");
+    const dictSearch = frameDoc.createElement("morcus-dict-search");
+    dictSearch.setAttribute("data-upgraded", "");
+    const lookupSpy = jest.fn().mockReturnValue("unchanged");
+    (
+      dictSearch as unknown as { lookupEmbeddedWord: jest.Mock }
+    ).lookupEmbeddedWord = lookupSpy;
+    frameDoc.body.appendChild(dictSearch);
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
+    const replaceSpy = jest.fn();
+    Object.defineProperty(iframe, "contentWindow", {
+      value: {
+        location: {
+          pathname: "/dicts",
+          search: `?q=${encodeURIComponent(wordText)}&lang=La&o=1&embedded=1`,
+          hash: "",
+          replace: replaceSpy,
+        },
+      },
+      configurable: true,
+    });
+
+    // 2. Open a note -> switches to Notes tab and clears word highlight while keeping #currentQuery
+    noteRef.click();
+    expect(panelController.activeTab).toBe("notes");
+    expect(firstWord.classList.contains("word-active")).toBe(false);
+
+    // 3. Minimize drawer, then click W again -> must restore on Dictionary tab and re-highlight W
+    el.minimizeDrawer();
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+
+    firstWord.click();
+
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    expect(panelController.activeTab).toBe("dict");
+    expect(firstWord.classList.contains("word-active")).toBe(true);
+    expect(lookupSpy).toHaveBeenCalledWith({
+      q: wordText,
+      lang: "La",
+      inflected: true,
+    });
+    expect(replaceSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe("MorcusReaderView passage range highlighting (matchText)", () => {

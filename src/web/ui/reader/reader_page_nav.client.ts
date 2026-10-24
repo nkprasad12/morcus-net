@@ -19,6 +19,7 @@
 
 import {
   BaseController,
+  prefersReducedMotion,
   trackHorizontalSwipe,
 } from "@/web/ui/core/index.client";
 import { isSwipeNavOn } from "@/web/ui/reader/reader_settings.client";
@@ -44,7 +45,6 @@ interface ReaderPageNavOptions {
   turn: (dir: PageDir) => Promise<boolean>;
 }
 
-const matches = (query: string) => !!window.matchMedia?.(query).matches;
 const dirOf = (dx: number): PageDir => (dx < 0 ? "next" : "prev");
 const commitPx = () =>
   COMMIT_RATIO * Math.min(window.innerWidth, window.innerHeight);
@@ -127,7 +127,7 @@ export class ReaderPageNavController extends BaseController {
 
   #animate(panel: HTMLElement, x: number, fade: number): Promise<void> {
     this.#place(panel, "anim", x, fade);
-    const ms = matches("(prefers-reduced-motion: reduce)") ? 0 : SLIDE_MS;
+    const ms = prefersReducedMotion() ? 0 : SLIDE_MS;
     return new Promise((resolve) => this.scope.timeout(() => resolve(), ms));
   }
 

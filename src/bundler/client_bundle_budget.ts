@@ -56,7 +56,8 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   },
   routes: {
     about: { maxGzipBytes: 21 * 1024 },
-    dicts: { maxGzipBytes: 30 * 1024 },
+    // Raised by 0.5 KiB for in-place embedded dictionary lookups (+439 B gzip across common.js + dict.js).
+    dicts: { maxGzipBytes: 30.5 * 1024 },
     corpus: { maxGzipBytes: 27 * 1024 },
     library: { maxGzipBytes: 34.5 * 1024 },
     external: { maxGzipBytes: 38.5 * 1024 },

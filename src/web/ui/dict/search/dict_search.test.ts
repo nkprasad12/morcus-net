@@ -6,6 +6,7 @@ import "@/web/ui/dict/search/dict_suggestions.client";
 import "@/web/ui/dict/search/dict_search.client";
 import { enhanceEntryWords } from "@/web/ui/dict/entry/entry_links.client";
 import { MorcusDictSearch } from "@/web/ui/dict/search/dict_search.client";
+import { DICT_SETTINGS_DIALOG_ID } from "@/web/ui/dict/search/search_bar.common";
 import {
   DEFAULT_DICT_KEYS,
   encodeDictBitmask,
@@ -2239,6 +2240,573 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect(new URLSearchParams(window.location.search).get("focus")).toBe(
         "En"
       );
+    });
+  });
+
+  describe("lookupEmbeddedWord, #leaving, and scroll policy", () => {
+    const EMBEDDED_LA_URL = "/dicts?q=arma&lang=La&o=1&embedded=1&scale=93&d=3";
+
+    function controllableFetch() {
+      const pending: {
+        url: string;
+        signal?: AbortSignal;
+        respond: (html: string, ok?: boolean) => void;
+        fail: (err: Error) => void;
+      }[] = [];
+      global.fetch = jest
+        .fn()
+        .mockImplementation((url: string, init?: RequestInit) => {
+          return new Promise((resolve, reject) => {
+            const signal = init?.signal ?? undefined;
+            signal?.addEventListener("abort", () => {
+              const error = new Error("The operation was aborted.");
+              error.name = "AbortError";
+              reject(error);
+            });
+            pending.push({
+              url,
+              signal,
+              respond: (html: string, ok = true) =>
+                resolve({
+                  ok,
+                  status: ok ? 200 : 500,
+                  text: () => Promise.resolve(html),
+                  json: () => Promise.resolve([]),
+                } as unknown as Response),
+              fail: (err: Error) => reject(err),
+            });
+          });
+        });
+      return pending;
+    }
+
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    test("lookupEmbeddedWord swaps in place: returns 'swapped', replaces URL without push, fetches partial with embedded=1&lang=La&d=…&o=1, and clears autocomplete", async () => {
+      window.history.replaceState(null, "", EMBEDDED_LA_URL);
+      const pushStateSpy = jest.spyOn(window.history, "pushState");
+      const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+
+      const el = createDictSearch("", 'data-d="3" data-o="1"');
+      const input = el.querySelector<HTMLInputElement>("input.input")!;
+      const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
+      const listbox = suggestionsEl.querySelector("ul") as HTMLUListElement;
+
+      // Open autocomplete suggestions first
+      el.chunkCache.set("am", { "L&S": ["amo", "amor"] });
+      input.focus();
+      input.value = "am";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      expect(listbox.hidden).toBe(false);
+
+      pushStateSpy.mockClear();
+      replaceStateSpy.mockClear();
+      (global.fetch as jest.Mock).mockClear();
+
+      const res = el.lookupEmbeddedWord({
+        q: "virumque",
+        lang: "La",
+        inflected: true,
+      });
+
+      expect(res).toBe("swapped");
+      expect(listbox.hidden).toBe(true);
+      expect(suggestionsEl.items).toEqual([]);
+      expect(input.value).toBe("virumque");
+      expect(pushStateSpy).not.toHaveBeenCalled();
+      expect(replaceStateSpy).toHaveBeenCalledWith(
+        { q: "virumque" },
+        "",
+        "/dicts?q=virumque&lang=La&o=1&embedded=1&scale=93&d=3"
+      );
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/dicts?q=virumque&format=partial&embedded=1&lang=La&d=3&o=1",
+        expect.anything()
+      );
+    });
+
+    test("lookupEmbeddedWord returns 'unchanged' for the shown query and for a query still in flight, with no new fetch", () => {
+      const pending = controllableFetch();
+      window.history.replaceState(null, "", EMBEDDED_LA_URL);
+      const el = createDictSearch("", 'data-d="3" data-o="1"');
+
+      // 1. Seeded from initial URL (?q=arma) -> unchanged
+      expect(
+        el.lookupEmbeddedWord({ q: "arma", lang: "La", inflected: true })
+      ).toBe("unchanged");
+      expect(pending).toHaveLength(0);
+
+      // 2. Start in-flight lookup for "cano", then re-request "cano" while still in flight -> unchanged
+      expect(
+        el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+      ).toBe("swapped");
+      expect(pending).toHaveLength(1);
+
+      expect(
+        el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+      ).toBe("unchanged");
+      expect(pending).toHaveLength(1);
+    });
+
+    test("concurrency: A shown -> B starts -> A again returns 'swapped', aborts B, and renders A", async () => {
+      const pending = controllableFetch();
+      window.history.replaceState(null, "", EMBEDDED_LA_URL);
+      const el = createDictSearch(
+        "<div>arma initial</div>",
+        'data-d="3" data-o="1"'
+      );
+      const results = el.querySelector<HTMLElement>("#dict-results")!;
+
+      // Start B ("virumque") while A ("arma") is shown
+      expect(
+        el.lookupEmbeddedWord({ q: "virumque", lang: "La", inflected: true })
+      ).toBe("swapped");
+      expect(pending).toHaveLength(1);
+      expect(pending[0].url).toContain("q=virumque");
+      expect(pending[0].signal?.aborted).toBe(false);
+
+      // Click A ("arma") again before B finishes -> must swap back to A and abort B
+      expect(
+        el.lookupEmbeddedWord({ q: "arma", lang: "La", inflected: true })
+      ).toBe("swapped");
+      expect(pending).toHaveLength(2);
+      expect(pending[0].signal?.aborted).toBe(true);
+      expect(pending[1].url).toContain("q=arma");
+
+      pending[1].respond('<div class="results">arma fresh</div>');
+      await flush();
+      expect(results.textContent).toContain("arma fresh");
+    });
+
+    test("concurrency: B's aborted completion after C does not clear #shownQuery", async () => {
+      // Custom fetch that resolves with ok:false even after abort, exercising the
+      // `!success && !signal.aborted` guard when a superseded fetch settles late.
+      let resolveB!: (r: Response) => void;
+      let resolveC!: (r: Response) => void;
+      global.fetch = jest
+        .fn()
+        .mockImplementationOnce(
+          () =>
+            new Promise<Response>((res) => {
+              resolveB = res;
+            })
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise<Response>((res) => {
+              resolveC = res;
+            })
+        );
+
+      window.history.replaceState(null, "", EMBEDDED_LA_URL);
+      const el = createDictSearch("", 'data-d="3" data-o="1"');
+
+      expect(
+        el.lookupEmbeddedWord({ q: "virumque", lang: "La", inflected: true })
+      ).toBe("swapped");
+      expect(
+        el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+      ).toBe("swapped");
+
+      // B resolves late after C has already aborted B's signal
+      resolveB({
+        ok: true,
+        text: () => Promise.resolve("<div>virumque</div>"),
+      } as unknown as Response);
+      await flush();
+
+      // #shownQuery is still "cano", so re-requesting "cano" is "unchanged"
+      expect(
+        el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+      ).toBe("unchanged");
+
+      resolveC({
+        ok: true,
+        text: () => Promise.resolve("<div>cano</div>"),
+      } as unknown as Response);
+      await flush();
+    });
+
+    test("concurrency: after a real failure, the same word returns 'swapped' (a retry)", async () => {
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      try {
+        const pending = controllableFetch();
+        window.history.replaceState(null, "", EMBEDDED_LA_URL);
+        const el = createDictSearch("", 'data-d="3" data-o="1"');
+
+        expect(
+          el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+        ).toBe("swapped");
+        expect(pending).toHaveLength(1);
+
+        // Fail with non-abort HTTP 500
+        pending[0].respond("Server error", false);
+        await flush();
+
+        // Retry the same word -> must return "swapped" and issue a new fetch
+        expect(
+          el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+        ).toBe("swapped");
+        expect(pending).toHaveLength(2);
+      } finally {
+        errorSpy.mockRestore();
+      }
+    });
+
+    test("lookupEmbeddedWord returns 'declined' with no state change and no fetch when preconditions fail", () => {
+      const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+      const pushStateSpy = jest.spyOn(window.history, "pushState");
+
+      // 1. lang missing
+      window.history.replaceState(null, "", "/dicts?q=love&o=1&embedded=1");
+      let el = createDictSearch("", 'data-d="3" data-o="1"');
+      (global.fetch as jest.Mock).mockClear();
+      replaceStateSpy.mockClear();
+      expect(
+        el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+      ).toBe("declined");
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(replaceStateSpy).not.toHaveBeenCalled();
+      expect(pushStateSpy).not.toHaveBeenCalled();
+
+      // 2. inflection mismatch
+      document.body.innerHTML = "";
+      window.history.replaceState(
+        null,
+        "",
+        "/dicts?q=arma&lang=La&o=0&embedded=1"
+      );
+      replaceStateSpy.mockClear();
+      el = createDictSearch("", 'data-d="3" data-o="0"');
+      expect(
+        el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+      ).toBe("declined");
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(replaceStateSpy).not.toHaveBeenCalled();
+
+      // 3. /dicts/id/… pathname
+      document.body.innerHTML = "";
+      window.history.replaceState(
+        null,
+        "",
+        "/dicts/id/n20077?lang=La&o=1&embedded=1"
+      );
+      replaceStateSpy.mockClear();
+      el = createDictSearch("", 'data-d="3" data-o="1"');
+      expect(
+        el.lookupEmbeddedWord({ q: "arma", lang: "La", inflected: true })
+      ).toBe("declined");
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(replaceStateSpy).not.toHaveBeenCalled();
+
+      // 4. settings dialog open
+      document.body.innerHTML = "";
+      window.history.replaceState(null, "", EMBEDDED_LA_URL);
+      replaceStateSpy.mockClear();
+      el = createDictSearch("", 'data-d="3" data-o="1"');
+      const dialog = document.createElement("dialog");
+      dialog.id = DICT_SETTINGS_DIALOG_ID;
+      dialog.setAttribute("open", "");
+      el.appendChild(dialog);
+      expect(
+        el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+      ).toBe("declined");
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(replaceStateSpy).not.toHaveBeenCalled();
+      dialog.remove();
+
+      // 5. empty query (after cleaning)
+      expect(
+        el.lookupEmbeddedWord({ q: "  ...  ", lang: "La", inflected: true })
+      ).toBe("declined");
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(replaceStateSpy).not.toHaveBeenCalled();
+
+      replaceStateSpy.mockRestore();
+      pushStateSpy.mockRestore();
+    });
+
+    test("#leaving: set by out-of-scope typed search and plain click on a.guest-return; not set by intercepted entry-link, target=_blank, hash link, or modified click; cleared by persisted pageshow", () => {
+      delete (window as any).location;
+      const replaceMock = jest.fn();
+      (window as any).location = Object.assign(
+        new URL("http://localhost" + EMBEDDED_LA_URL),
+        { replace: replaceMock, assign: jest.fn() }
+      );
+
+      const el = createDictSearch(
+        `
+          <div class="entry-content">
+            <span class="lsQuote">Gallia</span>
+            <a id="blank-link" href="/dicts?q=amor" target="_blank">blank</a>
+            <a id="hash-link" href="#sense-1">hash</a>
+            <a id="same-doc-hash" href="/dicts?q=arma&lang=La&o=1&embedded=1&scale=93&d=3#sense-2">same doc hash</a>
+            <a id="mailto-link" href="mailto:test@example.com">mailto</a>
+          </div>
+          <a class="guest-return" href="/dicts?q=arma&o=1&embedded=1">Return</a>
+        `,
+        'data-d="3" data-o="1"'
+      );
+
+      // Prevent jsdom's default link navigation after bubble listeners run
+      const preventNav = (e: MouseEvent) => e.preventDefault();
+      window.addEventListener("click", preventNav);
+
+      try {
+        // Not set by intercepted entry word click
+        el.querySelector<HTMLElement>(".lat-word")!.click();
+        expect(
+          el.lookupEmbeddedWord({ q: "Gallia", lang: "La", inflected: true })
+        ).toBe("unchanged");
+
+        // Not set by target="_blank" link
+        el.querySelector<HTMLAnchorElement>("#blank-link")!.click();
+        expect(
+          el.lookupEmbeddedWord({ q: "Gallia", lang: "La", inflected: true })
+        ).toBe("unchanged");
+
+        // Not set by hash link, same-document hash URL, or non-http(s) protocol link
+        el.querySelector<HTMLAnchorElement>("#hash-link")!.click();
+        el.querySelector<HTMLAnchorElement>("#same-doc-hash")!.click();
+        el.querySelector<HTMLAnchorElement>("#mailto-link")!.click();
+        expect(
+          el.lookupEmbeddedWord({ q: "Gallia", lang: "La", inflected: true })
+        ).toBe("unchanged");
+
+        // Not set by modified click (Ctrl+click) on a.guest-return
+        const guestLink =
+          el.querySelector<HTMLAnchorElement>("a.guest-return")!;
+        guestLink.dispatchEvent(
+          new MouseEvent("click", {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+            ctrlKey: true,
+          })
+        );
+        expect(
+          el.lookupEmbeddedWord({ q: "Gallia", lang: "La", inflected: true })
+        ).toBe("unchanged");
+
+        // Set by plain, non-prevented click on a.guest-return
+        guestLink.dispatchEvent(
+          new MouseEvent("click", {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+          })
+        );
+        expect(
+          el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+        ).toBe("declined");
+
+        // Non-persisted pageshow does NOT clear #leaving
+        const nonPersisted = Object.assign(new Event("pageshow"), {
+          persisted: false,
+        });
+        window.dispatchEvent(nonPersisted);
+        expect(
+          el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+        ).toBe("declined");
+
+        // Persisted pageshow (bfcache restore) clears #leaving
+        const persisted = Object.assign(new Event("pageshow"), {
+          persisted: true,
+        });
+        window.dispatchEvent(persisted);
+        expect(
+          el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+        ).toBe("swapped");
+
+        // Set by out-of-scope typed search
+        const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+        el.querySelector<HTMLInputElement>("input.input")!.value = "love";
+        form.dispatchEvent(
+          new Event("submit", { bubbles: true, cancelable: true })
+        );
+        expect(replaceMock).toHaveBeenCalled();
+        expect(
+          el.lookupEmbeddedWord({ q: "virumque", lang: "La", inflected: true })
+        ).toBe("declined");
+      } finally {
+        window.removeEventListener("click", preventNav);
+      }
+    });
+
+    test("scroll policy: clicked word and lookupEmbeddedWord scroll instantly before and after the fetch", async () => {
+      const pending = controllableFetch();
+      window.history.replaceState(null, "", EMBEDDED_LA_URL);
+      const scrollMock = jest.fn();
+      window.scrollTo = scrollMock;
+
+      let rafCallbacks: FrameRequestCallback[] = [];
+      const rafSpy = jest
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation((cb) => {
+          rafCallbacks.push(cb);
+          return rafCallbacks.length;
+        });
+
+      const runRaf = () => {
+        const cbs = rafCallbacks;
+        rafCallbacks = [];
+        cbs.forEach((cb) => cb(16));
+      };
+
+      try {
+        const el = createDictSearch(
+          '<div class="entry-content"><span class="lsQuote">Gallia</span></div>',
+          'data-d="3" data-o="1"'
+        );
+        runRaf();
+        scrollMock.mockClear();
+
+        // 1. Clicked word inside entry
+        el.querySelector<HTMLElement>(".lat-word")!.click();
+
+        // Instant scroll BEFORE the fetch resolves
+        expect(scrollMock).toHaveBeenCalledTimes(1);
+        expect(scrollMock).toHaveBeenLastCalledWith({
+          top: expect.any(Number),
+          behavior: "instant",
+        });
+
+        pending[0].respond('<div class="entry-content">Gallia entry</div>');
+        await flush();
+        runRaf();
+
+        // Instant scroll again AFTER the swap
+        expect(scrollMock).toHaveBeenCalledTimes(2);
+        expect(scrollMock).toHaveBeenLastCalledWith({
+          top: expect.any(Number),
+          behavior: "instant",
+        });
+
+        scrollMock.mockClear();
+
+        // 2. lookupEmbeddedWord from host
+        expect(
+          el.lookupEmbeddedWord({ q: "cano", lang: "La", inflected: true })
+        ).toBe("swapped");
+        expect(scrollMock).toHaveBeenCalledTimes(1);
+        expect(scrollMock).toHaveBeenLastCalledWith({
+          top: expect.any(Number),
+          behavior: "instant",
+        });
+
+        pending[1].respond('<div class="entry-content">cano entry</div>');
+        await flush();
+        runRaf();
+
+        expect(scrollMock).toHaveBeenCalledTimes(2);
+        expect(scrollMock).toHaveBeenLastCalledWith({
+          top: expect.any(Number),
+          behavior: "instant",
+        });
+      } finally {
+        rafSpy.mockRestore();
+      }
+    });
+
+    test("scroll policy: typed search and autocomplete pick scroll smoothly after the fetch only, or instantly with prefers-reduced-motion: reduce", async () => {
+      const pending = controllableFetch();
+      window.history.replaceState(null, "", "/dicts?q=arma&d=3&o=1");
+      const scrollMock = jest.fn();
+      window.scrollTo = scrollMock;
+      const origMatchMedia = window.matchMedia;
+
+      let reducedMotion = false;
+      window.matchMedia = ((query: string) => ({
+        matches:
+          query === "(prefers-reduced-motion: reduce)" ? reducedMotion : false,
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+      })) as unknown as typeof window.matchMedia;
+
+      let rafCallbacks: FrameRequestCallback[] = [];
+      const rafSpy = jest
+        .spyOn(window, "requestAnimationFrame")
+        .mockImplementation((cb) => {
+          rafCallbacks.push(cb);
+          return rafCallbacks.length;
+        });
+
+      const runRaf = () => {
+        const cbs = rafCallbacks;
+        rafCallbacks = [];
+        cbs.forEach((cb) => cb(16));
+      };
+
+      try {
+        const el = createDictSearch("", 'data-d="3" data-o="1"');
+        runRaf();
+        scrollMock.mockClear();
+
+        // 1. Typed search (normal motion): no scroll before fetch, smooth scroll after
+        const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+        el.querySelector<HTMLInputElement>("input.input")!.value = "bellum";
+        form.dispatchEvent(
+          new Event("submit", { bubbles: true, cancelable: true })
+        );
+
+        expect(scrollMock).not.toHaveBeenCalled();
+
+        pending[0].respond("<div>bellum</div>");
+        await flush();
+        runRaf();
+
+        expect(scrollMock).toHaveBeenCalledTimes(1);
+        expect(scrollMock).toHaveBeenLastCalledWith({
+          top: expect.any(Number),
+          behavior: "smooth",
+        });
+
+        // 2. Autocomplete pick (normal motion): no scroll before fetch, smooth scroll after
+        scrollMock.mockClear();
+        el.querySelector("morcus-dict-suggestions")!.dispatchEvent(
+          new CustomEvent("suggestion-select", {
+            bubbles: true,
+            detail: { word: "pax" },
+          })
+        );
+        expect(scrollMock).not.toHaveBeenCalled();
+
+        pending[1].respond("<div>pax</div>");
+        await flush();
+        runRaf();
+
+        expect(scrollMock).toHaveBeenCalledTimes(1);
+        expect(scrollMock).toHaveBeenLastCalledWith({
+          top: expect.any(Number),
+          behavior: "smooth",
+        });
+
+        // 3. Typed search with prefers-reduced-motion: reduce -> instant scroll after
+        scrollMock.mockClear();
+        reducedMotion = true;
+        el.querySelector<HTMLInputElement>("input.input")!.value = "virtus";
+        form.dispatchEvent(
+          new Event("submit", { bubbles: true, cancelable: true })
+        );
+        expect(scrollMock).not.toHaveBeenCalled();
+
+        pending[2].respond("<div>virtus</div>");
+        await flush();
+        runRaf();
+
+        expect(scrollMock).toHaveBeenCalledTimes(1);
+        expect(scrollMock).toHaveBeenLastCalledWith({
+          top: expect.any(Number),
+          behavior: "instant",
+        });
+      } finally {
+        window.matchMedia = origMatchMedia;
+        rafSpy.mockRestore();
+      }
     });
   });
 });

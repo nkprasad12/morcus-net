@@ -1610,3 +1610,127 @@ test.describe("UI V2 corpus", () => {
     );
   });
 });
+
+test.describe("UI V2 macronizer", () => {
+  test("swaps dictionary results in place on word clicks, skips duplicate clicks, and preserves history.length across fallback navigations", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(
+      isMobile || (page.viewportSize()?.width ?? 1280) <= 860,
+      "On narrow viewports (<= 860px) the fixed 48svh drawer overlays a short passage; in-place dictionary swap is viewport-independent."
+    );
+    await page.goto("/macronizer");
+    await disableSmoothScroll(page);
+
+    await page
+      .locator("#mac-text")
+      .fill("Gallia est omnis divisa in partes tres.");
+    await page.locator("#mac-submit-btn").click();
+
+    const macPassage = page.locator("#mac-passage");
+    await expect(macPassage).toBeVisible();
+
+    const frame = page.frameLocator("#mac-dict-frame");
+    await expect(
+      frame.locator("morcus-dict-search[data-upgraded]")
+    ).toBeAttached();
+
+    const initialHistoryLength = await page.evaluate(() => history.length);
+
+    const wordA = macPassage.locator('a.mac-word[data-w="3"]');
+    const wordB = macPassage.locator('a.mac-word[data-w="2"]');
+    const wordC = macPassage.locator('a.mac-word[data-w="5"]');
+    const wordAText = ((await wordA.textContent()) ?? "").trim();
+    const wordBText = ((await wordB.textContent()) ?? "").trim();
+    const wordCText = ((await wordC.textContent()) ?? "").trim();
+
+    // 1. Click word A ("divisa" / "dīvīsa"): initial /dicts?embedded=1 has no lang=La,
+    // so lookup declines and falls back to navigateFrameReplace without adding a history entry.
+    await wordA.click();
+    await expect(
+      frame.getByText("To force asunder", { exact: true })
+    ).toBeVisible();
+    await expect(
+      frame.locator("morcus-dict-search[data-upgraded]")
+    ).toBeAttached();
+    expect(await page.evaluate(() => history.length)).toBe(
+      initialHistoryLength
+    );
+
+    const dictDocRequests: string[] = [];
+    const dictAllRequests: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/dicts")) {
+        dictAllRequests.push(req.url());
+        if (req.resourceType() === "document") {
+          dictDocRequests.push(req.url());
+        }
+      }
+    });
+
+    // 2. Click word B ("omnis") -> in-place partial swap, no document request in frame.
+    await wordB.click();
+    await expect(frame.locator("#dict-q")).toHaveValue(wordBText);
+    await expect(frame.locator("#dict-results")).toContainText("omnis");
+    expect(dictDocRequests).toEqual([]);
+    expect(
+      dictAllRequests.some(
+        (u) =>
+          u.includes(`q=${encodeURIComponent(wordBText)}`) &&
+          u.includes("format=partial")
+      )
+    ).toBe(true);
+    expect(await page.evaluate(() => history.length)).toBe(
+      initialHistoryLength
+    );
+
+    // 3. Re-click word B, then click word C ("partes" / "partēs") to flush the request pipeline:
+    // no request is made for the re-click on B.
+    dictAllRequests.length = 0;
+    await wordB.click();
+    await wordC.click();
+    await expect(frame.locator("#dict-q")).toHaveValue(wordCText);
+    await expect(frame.locator("#dict-results")).toContainText("pars");
+    expect(dictDocRequests).toEqual([]);
+    expect(
+      dictAllRequests.some((u) =>
+        u.includes(`q=${encodeURIComponent(wordBText)}`)
+      )
+    ).toBe(false);
+    expect(
+      dictAllRequests.some(
+        (u) =>
+          u.includes(`q=${encodeURIComponent(wordCText)}`) &&
+          u.includes("format=partial")
+      )
+    ).toBe(true);
+
+    // 4. Leave lang=La via a typed search in the iframe, then click word A again ->
+    // falls back to a full navigation via navigateFrameReplace and keeps top-level history.length unchanged.
+    const dictInput = frame.locator("#dict-q");
+    await dictInput.fill("love");
+    await dictInput.press("Enter");
+    await expect(frame.locator("#dict-results")).toContainText("love");
+    await expect(
+      frame.locator("morcus-dict-search[data-upgraded]")
+    ).toBeAttached();
+
+    dictDocRequests.length = 0;
+    await wordA.click();
+    await expect(frame.locator("#dict-q")).toHaveValue(wordAText);
+    await expect(
+      frame.getByText("To force asunder", { exact: true })
+    ).toBeVisible();
+    expect(
+      dictDocRequests.some(
+        (u) =>
+          u.includes(`q=${encodeURIComponent(wordAText)}`) &&
+          u.includes("lang=La")
+      )
+    ).toBe(true);
+    expect(await page.evaluate(() => history.length)).toBe(
+      initialHistoryLength
+    );
+  });
+});

@@ -11,6 +11,7 @@ import {
   flashElement,
   isShortcutBlocked,
   navigateFrameReplace,
+  prefersReducedMotion,
   scrollToElement,
 } from "@/web/ui/core/dom/dom.client";
 import { detachedDomWrites } from "@/web/ui/core/dom/dom_invariants.client";
@@ -641,6 +642,43 @@ describe("core/dom.client", () => {
         top: 70,
         behavior: "smooth",
       });
+    });
+  });
+
+  describe("prefersReducedMotion", () => {
+    const origMatchMedia = window.matchMedia;
+
+    afterEach(() => {
+      Object.defineProperty(window, "matchMedia", {
+        value: origMatchMedia,
+        configurable: true,
+        writable: true,
+      });
+    });
+
+    it("returns true only when (prefers-reduced-motion: reduce) matches", () => {
+      Object.defineProperty(window, "matchMedia", {
+        value: jest.fn((query: string) => ({
+          matches: query === "(prefers-reduced-motion: reduce)",
+        })),
+        configurable: true,
+        writable: true,
+      });
+      expect(prefersReducedMotion()).toBe(true);
+
+      Object.defineProperty(window, "matchMedia", {
+        value: jest.fn(() => ({ matches: false })),
+        configurable: true,
+        writable: true,
+      });
+      expect(prefersReducedMotion()).toBe(false);
+
+      Object.defineProperty(window, "matchMedia", {
+        value: undefined,
+        configurable: true,
+        writable: true,
+      });
+      expect(prefersReducedMotion()).toBe(false);
     });
   });
 });

@@ -18,6 +18,10 @@ describe("MorcusMacronizerView interactive contracts", () => {
     window.history.replaceState(null, "", "/macronizer");
   });
 
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
   function mountResultsFixture(): HTMLElement {
     const fixture = buildMacronizerFixtures().find(
       (f) => f.name === "macronizer-results"
@@ -275,5 +279,258 @@ describe("MorcusMacronizerView interactive contracts", () => {
     } finally {
       submitSpy.mockRestore();
     }
+  });
+
+  test("word lookup swaps in place when #mac-dict-frame has an upgraded <morcus-dict-search> that accepts", () => {
+    const view = mountResultsFixture();
+    const iframe = view.querySelector<HTMLIFrameElement>("#mac-dict-frame")!;
+    const word1 = view.querySelector<HTMLElement>("#t1")!;
+    const word2 = view.querySelector<HTMLElement>("#t2")!;
+
+    const frameDoc = document.implementation.createHTMLDocument("");
+    const dictSearch = frameDoc.createElement("morcus-dict-search");
+    dictSearch.setAttribute("data-upgraded", "");
+    let shown = "";
+    const lookupSpy = jest.fn((req: { q: string }) => {
+      if (req.q === shown) return "unchanged";
+      shown = req.q;
+      return "swapped";
+    });
+    (
+      dictSearch as unknown as { lookupEmbeddedWord: jest.Mock }
+    ).lookupEmbeddedWord = lookupSpy;
+    frameDoc.body.appendChild(dictSearch);
+    Object.defineProperty(iframe, "contentDocument", {
+      configurable: true,
+      value: frameDoc,
+    });
+    const replaceSpy = jest.fn();
+    Object.defineProperty(iframe, "contentWindow", {
+      configurable: true,
+      value: {
+        location: {
+          pathname: "/dicts",
+          search: "?q=acclinat&lang=La&o=1&embedded=1",
+          hash: "",
+          replace: replaceSpy,
+        },
+      },
+    });
+    const srcSpy = jest.spyOn(iframe, "src", "set");
+
+    word1.click();
+    expect(lookupSpy).toHaveBeenCalledTimes(1);
+    expect(lookupSpy).toHaveBeenCalledWith({
+      q: "malum",
+      lang: "La",
+      inflected: true,
+    });
+
+    word2.click();
+    expect(lookupSpy).toHaveBeenCalledTimes(2);
+    expect(lookupSpy).toHaveBeenCalledWith({
+      q: "V\u012A",
+      lang: "La",
+      inflected: true,
+    });
+
+    expect(replaceSpy).not.toHaveBeenCalled();
+    expect(srcSpy).not.toHaveBeenCalled();
+  });
+
+  test("ambiguous word clicks invoke lookup once across mouse, touch, and WebKit event orders, and re-clicking the selected word looks it up again", () => {
+    const view = mountResultsFixture();
+    const iframe = view.querySelector<HTMLIFrameElement>("#mac-dict-frame")!;
+    const drawer = view.querySelector<HTMLElement>("#mac-drawer")!;
+    const word1 = view.querySelector<HTMLElement>("#t1")!;
+    const word2 = view.querySelector<HTMLElement>("#t2")!;
+    const word6 = view.querySelector<HTMLElement>("#t6")!;
+
+    const frameDoc = document.implementation.createHTMLDocument("");
+    const dictSearch = frameDoc.createElement("morcus-dict-search");
+    dictSearch.setAttribute("data-upgraded", "");
+    const lookupSpy = jest.fn().mockReturnValue("swapped");
+    (
+      dictSearch as unknown as { lookupEmbeddedWord: jest.Mock }
+    ).lookupEmbeddedWord = lookupSpy;
+    frameDoc.body.appendChild(dictSearch);
+    Object.defineProperty(iframe, "contentDocument", {
+      configurable: true,
+      value: frameDoc,
+    });
+
+    // 1. Mouse order (Chromium / Firefox): pointerdown -> focusin -> pointerup -> click
+    drawer.classList.add("drawer-minimized");
+    word1.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    word1.focus();
+    expect(lookupSpy).not.toHaveBeenCalled();
+    word1.dispatchEvent(new Event("pointerup", { bubbles: true }));
+    word1.click();
+    expect(lookupSpy).toHaveBeenCalledTimes(1);
+    expect(lookupSpy).toHaveBeenLastCalledWith({
+      q: "malum",
+      lang: "La",
+      inflected: true,
+    });
+    expect(drawer.classList.contains("drawer-minimized")).toBe(false);
+
+    // 2. Touch order (mobile compatibility mouse events): pointerdown -> pointerup -> focusin -> click
+    drawer.classList.add("drawer-minimized");
+    word2.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    word2.dispatchEvent(new Event("pointerup", { bubbles: true }));
+    word2.focus();
+    expect(lookupSpy).toHaveBeenCalledTimes(1);
+    word2.click();
+    expect(lookupSpy).toHaveBeenCalledTimes(2);
+    expect(lookupSpy).toHaveBeenLastCalledWith({
+      q: "V\u012A",
+      lang: "La",
+      inflected: true,
+    });
+    expect(drawer.classList.contains("drawer-minimized")).toBe(false);
+
+    // 3. WebKit order: pointerdown -> pointerup -> click (which calls wordEl.focus() internally)
+    drawer.classList.add("drawer-minimized");
+    word6.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    word6.dispatchEvent(new Event("pointerup", { bubbles: true }));
+    word6.click();
+    expect(lookupSpy).toHaveBeenCalledTimes(3);
+    expect(lookupSpy).toHaveBeenLastCalledWith({
+      q: "Brundisium",
+      lang: "La",
+      inflected: true,
+    });
+    expect(document.activeElement).toBe(word6);
+    expect(drawer.classList.contains("drawer-minimized")).toBe(false);
+
+    // 4. Clicking the already-selected word again still runs its lookup once
+    word6.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    word6.focus();
+    word6.dispatchEvent(new Event("pointerup", { bubbles: true }));
+    word6.click();
+    expect(lookupSpy).toHaveBeenCalledTimes(4);
+    expect(lookupSpy).toHaveBeenLastCalledWith({
+      q: "Brundisium",
+      lang: "La",
+      inflected: true,
+    });
+  });
+
+  test("keyboard Tab focus (focusin) on an ambiguous or unknown word looks it up once without restoring a minimized drawer, even after pointercancel or pointerdown-then-drag", () => {
+    const view = mountResultsFixture();
+    const iframe = view.querySelector<HTMLIFrameElement>("#mac-dict-frame")!;
+    const drawer = view.querySelector<HTMLElement>("#mac-drawer")!;
+    const word1 = view.querySelector<HTMLElement>("#t1")!;
+    const word2 = view.querySelector<HTMLElement>("#t2")!;
+    const word6 = view.querySelector<HTMLElement>("#t6")!;
+
+    const frameDoc = document.implementation.createHTMLDocument("");
+    const dictSearch = frameDoc.createElement("morcus-dict-search");
+    dictSearch.setAttribute("data-upgraded", "");
+    const lookupSpy = jest.fn().mockReturnValue("swapped");
+    (
+      dictSearch as unknown as { lookupEmbeddedWord: jest.Mock }
+    ).lookupEmbeddedWord = lookupSpy;
+    frameDoc.body.appendChild(dictSearch);
+    Object.defineProperty(iframe, "contentDocument", {
+      configurable: true,
+      value: frameDoc,
+    });
+
+    // Minimize drawer
+    drawer.classList.add("drawer-minimized");
+
+    // Simulate Tab focus onto ambiguous word #t1
+    word1.focus();
+    expect(word1.classList.contains("mac-selected")).toBe(true);
+    expect(lookupSpy).toHaveBeenCalledTimes(1);
+    expect(lookupSpy).toHaveBeenLastCalledWith({
+      q: "malum",
+      lang: "La",
+      inflected: true,
+    });
+    expect(drawer.classList.contains("drawer-minimized")).toBe(true);
+
+    // pointerdown followed by pointercancel must not swallow a later Tab focus
+    word2.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    word2.dispatchEvent(new Event("pointercancel", { bubbles: true }));
+    word2.focus();
+    expect(word2.classList.contains("mac-selected")).toBe(true);
+    expect(lookupSpy).toHaveBeenCalledTimes(2);
+    expect(lookupSpy).toHaveBeenLastCalledWith({
+      q: "V\u012A",
+      lang: "La",
+      inflected: true,
+    });
+    expect(drawer.classList.contains("drawer-minimized")).toBe(true);
+
+    // pointerdown-then-drag-away (no click) followed by keydown (Tab) must not swallow focusin
+    word6.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    view.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Tab", bubbles: true })
+    );
+    word6.focus();
+    expect(word6.classList.contains("mac-selected")).toBe(true);
+    expect(lookupSpy).toHaveBeenCalledTimes(3);
+    expect(lookupSpy).toHaveBeenLastCalledWith({
+      q: "Brundisium",
+      lang: "La",
+      inflected: true,
+    });
+    expect(drawer.classList.contains("drawer-minimized")).toBe(true);
+  });
+
+  test("word lookup fallback uses navigateFrameReplace (location.replace) when in-place swap declines, and skips navigation when already at targetSrc", () => {
+    const view = mountResultsFixture();
+    const iframe = view.querySelector<HTMLIFrameElement>("#mac-dict-frame")!;
+    const word1 = view.querySelector<HTMLElement>("#t1")!;
+
+    const frameDoc = document.implementation.createHTMLDocument("");
+    const dictSearch = frameDoc.createElement("morcus-dict-search");
+    dictSearch.setAttribute("data-upgraded", "");
+    const lookupSpy = jest.fn().mockReturnValue("declined");
+    (
+      dictSearch as unknown as { lookupEmbeddedWord: jest.Mock }
+    ).lookupEmbeddedWord = lookupSpy;
+    frameDoc.body.appendChild(dictSearch);
+    Object.defineProperty(iframe, "contentDocument", {
+      configurable: true,
+      value: frameDoc,
+    });
+
+    const loc = {
+      pathname: "/dicts",
+      search: "?embedded=1",
+      hash: "",
+      replace: jest.fn((url: string) => {
+        const [p, s] = url.split("?");
+        loc.pathname = p;
+        loc.search = s ? `?${s}` : "";
+      }),
+    };
+    Object.defineProperty(iframe, "contentWindow", {
+      configurable: true,
+      value: { location: loc },
+    });
+    const srcSpy = jest.spyOn(iframe, "src", "set");
+
+    // First click declines (e.g. initial /dicts?embedded=1 without lang=La) -> navigates via location.replace
+    word1.click();
+    expect(lookupSpy).toHaveBeenCalledWith({
+      q: "malum",
+      lang: "La",
+      inflected: true,
+    });
+    expect(loc.replace).toHaveBeenCalledTimes(1);
+    expect(loc.replace).toHaveBeenCalledWith(
+      "/dicts?q=malum&lang=La&o=1&embedded=1"
+    );
+    expect(srcSpy).not.toHaveBeenCalled();
+
+    // Clicking the same word while already at targetSrc and still declining is a no-op ("none")
+    loc.replace.mockClear();
+    word1.click();
+    expect(loc.replace).not.toHaveBeenCalled();
+    expect(srcSpy).not.toHaveBeenCalled();
   });
 });
