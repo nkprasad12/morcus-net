@@ -2,7 +2,7 @@
   "schema": 1,
   "source": {
     "repo": "canonical-latinLit",
-    "commit": "379331f1d2c24c3b5fde440cc46beae4d045fa27",
+    "commit": "452d09058af7304a03487bb7aa491214bdf684cf",
     "dirty": false
   },
   "works": {
@@ -29,6 +29,7 @@
       "rends": ["sp@align(indent)"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -71,6 +72,7 @@
       "rends": ["gap@ * * * ", "gap@*"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -113,6 +115,7 @@
       "rends": ["gap@ * * ", "gap@ * * * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -155,6 +158,7 @@
       "rends": ["gap@*"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -198,6 +202,7 @@
       "rends": ["gap@*"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -249,6 +254,7 @@
       ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -290,6 +296,7 @@
       "rends": ["gap@ * ", "gap@ * * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -330,6 +337,7 @@
       "rends": ["gap@ * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -371,6 +379,7 @@
       "rends": ["gap@ * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -412,6 +421,7 @@
       "rends": ["gap@ * ", "gap@ *      * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -452,6 +462,7 @@
       "rends": ["del@merge", "q@single", "q@single; merge"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "del@rend",
         "div@n",
         "div@subtype",
@@ -494,6 +505,7 @@
       "rends": ["gap@ * ", "gap@ * * ", "q@double", "q@double; merge"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -538,6 +550,7 @@
       "rends": ["gap@ * ", "gap@ * * ", "gap@space"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -580,6 +593,7 @@
       "rends": ["gap@ * ", "gap@ * * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -625,6 +639,7 @@
       "rends": ["gap@ * ", "gap@ * * ", "gap@ . . . . "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -669,6 +684,7 @@
       "rends": ["gap@ * ", "gap@ * * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -707,6 +723,7 @@
       "rends": ["gap@ * ", "gap@ * * ", "gap@ ** "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -748,6 +765,7 @@
       "rends": ["gap@ * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -791,6 +809,7 @@
       "rends": ["gap@ * * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -834,6 +853,7 @@
       "rends": ["gap@ * ", "gap@ * * "],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -876,6 +896,7 @@
       "rends": ["q@double", "q@double; merge", "q@single", "q@single; merge"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -920,6 +941,7 @@
       "rends": ["l@bulletted", "q@double", "q@double; merge", "q@single"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -966,6 +988,7 @@
       "rends": ["foreign@double", "l@bulletted", "q@double", "q@double; merge"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1013,6 +1036,7 @@
       "rends": ["l@bulletted", "q@double", "q@double; merge", "q@single"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1061,6 +1085,7 @@
       ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1107,6 +1132,7 @@
       "rends": ["l@bulletted", "q@double", "q@double; merge"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1135,6 +1161,7 @@
       "rends": ["p@align(indent)", "q@single"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1154,6 +1181,7 @@
       "rends": ["p@align(indent)", "q@single"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1173,6 +1201,7 @@
       "rends": ["p@align(indent)", "q@single"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1192,6 +1221,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1220,6 +1250,7 @@
       "rends": ["q@merge"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1237,6 +1268,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1278,6 +1310,7 @@
       ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -1317,20 +1350,34 @@
         "reg"
       ],
       "noteElements": [],
-      "rends": ["gap@* * * *", "gap@...", "p@indent", "q@merge"],
+      "rends": [
+        "gap@* * * *",
+        "gap@...",
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@merge",
+        "q@single",
+        "quote@smallcaps"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
         "gap@rend",
+        "head@rend",
         "milestone@n",
         "milestone@unit",
         "num@n",
+        "num@rend",
         "p@rend",
-        "q@rend"
+        "q@rend",
+        "quote@rend"
       ],
       "noteAttrs": []
     },
@@ -1350,23 +1397,39 @@
         "milestone",
         "note",
         "p",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": ["app", "foreign", "hi", "lem", "note", "q", "reg"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
+      "rends": [
+        "desc@align(center)",
+        "gap@ * * * * * * ",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)"
+      ],
+      "noteRends": ["hi@italic", "q@single"],
       "attrs": [
+        "body@xml:base",
+        "desc@rend",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
+        "gap@rend",
+        "head@rend",
         "milestone@n",
         "milestone@unit",
-        "note@anchored"
+        "note@anchored",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend"]
     },
     "phi0474.phi003.perseus-lat2": {
       "path": "data/phi0474/phi003/phi0474.phi003.perseus-lat2.xml",
@@ -1380,38 +1443,76 @@
         "milestone",
         "num",
         "p",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": [],
-      "rends": [],
+      "rends": [
+        "gap@ * * * * * * * * * ",
+        "gap@. . . .",
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@smallcaps"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
+        "gap@rend",
+        "head@rend",
         "milestone@n",
         "milestone@unit",
-        "num@n"
+        "num@n",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
       "noteAttrs": []
     },
     "phi0474.phi004.perseus-lat2": {
       "path": "data/phi0474/phi004/phi0474.phi004.perseus-lat2.xml",
       "onboarded": true,
-      "elements": ["body", "div", "head", "milestone", "note", "p", "reg"],
+      "elements": [
+        "body",
+        "div",
+        "head",
+        "milestone",
+        "note",
+        "num",
+        "p",
+        "q",
+        "reg"
+      ],
       "noteElements": ["add", "app", "del", "foreign", "hi", "lem"],
-      "rends": [],
+      "rends": [
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single"
+      ],
       "noteRends": ["hi@italic", "hi@overline"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "num@rend",
+        "p@rend",
+        "q@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend"]
     },
@@ -1422,11 +1523,17 @@
         "body",
         "del",
         "div",
+        "emph",
         "foreign",
         "head",
+        "hi",
+        "label",
         "milestone",
         "note",
+        "num",
         "p",
+        "q",
+        "quote",
         "ref",
         "reg"
       ],
@@ -1438,20 +1545,56 @@
         "hi",
         "lem",
         "note",
+        "num",
+        "q",
         "reg"
       ],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
+      "rends": [
+        "emph@italic",
+        "emph@smallcaps",
+        "head@align(center)",
+        "hi@overline",
+        "num@overline; smallcaps",
+        "num@smallcaps",
+        "num@smallcaps; overline",
+        "p@align(indent)",
+        "q@double",
+        "q@single",
+        "q@single; merge",
+        "q@single; smallcaps",
+        "quote@align(blockquote); smallcaps",
+        "quote@single; smallcaps",
+        "quote@smallcaos",
+        "quote@smallcaps"
+      ],
+      "noteRends": [
+        "hi@italic",
+        "hi@overline",
+        "num@overline; smallcaps",
+        "num@smallcaps",
+        "q@double",
+        "q@single"
+      ],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "emph@rend",
         "foreign@xml:lang",
+        "head@rend",
+        "hi@rend",
+        "label@place",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "num@rend", "q@rend"]
     },
     "phi0474.phi006.perseus-lat2": {
       "path": "data/phi0474/phi006/phi0474.phi006.perseus-lat2.xml",
@@ -1467,25 +1610,44 @@
         "note",
         "num",
         "p",
+        "q",
         "quote",
         "reg"
       ],
-      "noteElements": ["#comment", "app", "hi", "lem"],
-      "rends": [],
-      "noteRends": ["hi@italic"],
+      "noteElements": ["#comment", "app", "hi", "lem", "q"],
+      "rends": [
+        "gap@ . . . ",
+        "gap@ . . . . ",
+        "gap@ . . . . . ",
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@smallcaps",
+        "quote@smallcaps; single"
+      ],
+      "noteRends": ["hi@italic", "q@italic; single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@extent",
         "gap@quantity",
         "gap@reason",
+        "gap@rend",
         "gap@unit",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["hi@rend"]
+      "noteAttrs": ["hi@rend", "q@rend"]
     },
     "phi0474.phi007.perseus-lat2": {
       "path": "data/phi0474/phi007/phi0474.phi007.perseus-lat2.xml",
@@ -1499,20 +1661,34 @@
         "milestone",
         "note",
         "p",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": ["app", "foreign", "hi", "lem"],
-      "rends": [],
+      "rends": [
+        "gap@ . . . ",
+        "head@align(indent)",
+        "p@align(indent)",
+        "q@single",
+        "quote@smallcaps"
+      ],
       "noteRends": ["hi@italic"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
+        "gap@rend",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend"]
     },
@@ -1527,20 +1703,34 @@
         "milestone",
         "num",
         "p",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": [],
-      "rends": [],
+      "rends": [
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "q@single; merge",
+        "quote@single; smallcaps",
+        "quote@smallcaps"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
         "milestone@unit",
-        "num@n"
+        "num@n",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
       "noteAttrs": []
     },
@@ -1558,18 +1748,24 @@
         "milestone",
         "note",
         "p",
+        "q",
         "reg"
       ],
       "noteElements": ["app", "foreign", "hi", "lem"],
-      "rends": [],
+      "rends": ["head@align(indent)", "p@align(indent)", "q@single"],
       "noteRends": ["hi@italic"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "p@rend",
+        "q@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend"]
     },
@@ -1584,28 +1780,55 @@
         "ex",
         "expan",
         "head",
-        "hi",
         "milestone",
         "note",
         "num",
         "p",
+        "q",
         "quote",
         "reg"
       ],
-      "noteElements": ["app", "foreign", "gap", "hi", "lem", "num"],
-      "rends": ["hi@overline"],
-      "noteRends": ["hi@italic", "hi@overline"],
+      "noteElements": ["app", "foreign", "hi", "lem", "num", "q"],
+      "rends": [
+        "head@align(center)",
+        "num@overline; smallcaps",
+        "num@smallcaps",
+        "num@smallcaps; overline",
+        "p@align(indent)",
+        "q@single",
+        "quote@single; smallcaps",
+        "quote@smallcaps"
+      ],
+      "noteRends": [
+        "hi@italic",
+        "num@overline; smallcaps",
+        "num@smallcaps",
+        "num@smallcaps; overline",
+        "q@single"
+      ],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
-        "hi@rend",
+        "head@rend",
         "milestone@n",
         "milestone@unit",
-        "num@n"
+        "num@n",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "gap@reason", "hi@rend", "num@n"]
+      "noteAttrs": [
+        "foreign@xml:lang",
+        "hi@rend",
+        "num@n",
+        "num@rend",
+        "q@rend"
+      ]
     },
     "phi0474.phi011.perseus-eng2": {
       "path": "data/phi0474/phi011/phi0474.phi011.perseus-eng2.xml",
@@ -1636,6 +1859,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@resp",
         "div@subtype",
@@ -1663,23 +1887,42 @@
         "add",
         "body",
         "div",
+        "gap",
         "head",
         "milestone",
         "num",
         "p",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": [],
-      "rends": [],
+      "rends": [
+        "gap@ * * * ",
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@single; smallcaps",
+        "quote@smallcaps"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
       "noteAttrs": []
     },
@@ -1704,6 +1947,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@resp",
         "div@subtype",
@@ -1732,20 +1976,38 @@
         "note",
         "num",
         "p",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": [],
-      "rends": [],
+      "rends": [
+        "gap@ * * * ",
+        "gap@ . . . . . . ",
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@single; smallcaps",
+        "quote@smallcaps; single"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
+        "gap@rend",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
       "noteAttrs": []
     },
@@ -1766,18 +2028,31 @@
         "note",
         "num",
         "p",
+        "q",
         "reg"
       ],
       "noteElements": ["app", "foreign", "hi", "lem", "rdg"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
+      "rends": [
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "q@single; merge"
+      ],
+      "noteRends": ["hi@italic"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "num@rend",
+        "p@rend",
+        "q@rend"
       ],
       "noteAttrs": ["app@type", "foreign@xml:lang", "hi@rend", "rdg@source"]
     },
@@ -1791,26 +2066,42 @@
         "div",
         "ex",
         "expan",
+        "gap",
         "head",
         "milestone",
         "note",
-        "num",
         "p",
+        "q",
         "quote",
         "reg"
       ],
-      "noteElements": ["app", "del", "foreign", "hi", "lem"],
-      "rends": [],
-      "noteRends": ["hi@italic"],
+      "noteElements": ["app", "del", "foreign", "hi", "lem", "q"],
+      "rends": [
+        "gap@ * * * ",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@smallcaps",
+        "quote@smallcaps; single"
+      ],
+      "noteRends": ["hi@italic", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend"]
     },
     "phi0474.phi015.perseus-lat2": {
       "path": "data/phi0474/phi015/phi0474.phi015.perseus-lat2.xml",
@@ -1823,18 +2114,24 @@
         "milestone",
         "note",
         "p",
+        "q",
         "reg"
       ],
       "noteElements": ["app", "foreign", "hi", "lem"],
-      "rends": [],
+      "rends": ["head@align(center)", "p@align(indent)", "q@single"],
       "noteRends": ["hi@italic"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "p@rend",
+        "q@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend"]
     },
@@ -1849,19 +2146,31 @@
         "milestone",
         "note",
         "p",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": ["app", "foreign", "hi", "lem"],
-      "rends": [],
+      "rends": [
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@smallcaps"
+      ],
       "noteRends": ["hi@italic"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend"]
     },
@@ -1874,28 +2183,50 @@
         "div",
         "gap",
         "head",
-        "hi",
+        "label",
+        "lb",
         "milestone",
-        "note",
         "num",
         "p",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": [],
-      "rends": ["hi@overline"],
+      "rends": [
+        "gap@ . . . ",
+        "gap@* * *",
+        "gap@***",
+        "gap@. .",
+        "gap@. . .",
+        "head@align(center)",
+        "label@align(center)",
+        "num@overline; smallcaps",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@smallcaps",
+        "quote@smallcaps; single"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
-        "hi@rend",
+        "gap@rend",
+        "head@rend",
+        "label@rend",
         "milestone@n",
         "milestone@unit",
-        "note@place",
-        "num@n"
+        "num@n",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
       "noteAttrs": []
     },
@@ -1912,18 +2243,22 @@
         "p",
         "reg"
       ],
-      "noteElements": ["app", "foreign", "hi", "lem"],
-      "rends": [],
-      "noteRends": ["hi@italic"],
+      "noteElements": ["app", "foreign", "hi", "lem", "q"],
+      "rends": ["head@align(center)", "p@align(indent)"],
+      "noteRends": ["hi@italic", "q@single; italic"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "p@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend"]
     },
     "phi0474.phi019.perseus-lat2": {
       "path": "data/phi0474/phi019/phi0474.phi019.perseus-lat2.xml",
@@ -1939,18 +2274,22 @@
         "p",
         "reg"
       ],
-      "noteElements": ["app", "del", "foreign", "hi", "lem"],
-      "rends": [],
-      "noteRends": ["hi@italic"],
+      "noteElements": ["app", "del", "foreign", "hi", "lem", "q"],
+      "rends": ["head@align(center)", "p@align(indent)"],
+      "noteRends": ["hi@italic", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "p@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend"]
     },
     "phi0474.phi020.perseus-lat2": {
       "path": "data/phi0474/phi020/phi0474.phi020.perseus-lat2.xml",
@@ -1960,9 +2299,9 @@
         "body",
         "del",
         "div",
+        "emph",
         "gap",
         "head",
-        "hi",
         "milestone",
         "note",
         "num",
@@ -1971,22 +2310,38 @@
         "quote",
         "reg"
       ],
-      "noteElements": ["foreign", "hi", "quote", "w"],
-      "rends": ["hi@smallcaps", "p@indent"],
-      "noteRends": ["hi@italic", "hi@superscript"],
+      "noteElements": ["foreign", "hi", "q", "w"],
+      "rends": [
+        "emph@smallcaps",
+        "gap@ * * * ",
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@single; smallcaps",
+        "quote@smallcaps"
+      ],
+      "noteRends": ["hi@italic", "hi@superscript", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "emph@rend",
         "gap@reason",
-        "hi@rend",
+        "gap@rend",
+        "head@rend",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
-        "p@rend"
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend", "w@type"]
     },
     "phi0474.phi021.perseus-lat2": {
       "path": "data/phi0474/phi021/phi0474.phi021.perseus-lat2.xml",
@@ -1998,7 +2353,6 @@
         "div",
         "gap",
         "head",
-        "hi",
         "milestone",
         "note",
         "p",
@@ -2006,22 +2360,33 @@
         "quote",
         "reg"
       ],
-      "noteElements": ["foreign", "hi", "quote", "w"],
-      "rends": ["hi@smallcaps", "p@indent"],
-      "noteRends": ["hi@italic", "hi@superscript"],
+      "noteElements": ["foreign", "hi", "q", "w"],
+      "rends": [
+        "gap@ . . . ",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@smallcaps"
+      ],
+      "noteRends": ["hi@italic", "hi@superscript", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
-        "hi@rend",
+        "gap@rend",
+        "head@rend",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
-        "p@rend"
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend", "w@type"]
     },
     "phi0474.phi022.perseus-lat2": {
       "path": "data/phi0474/phi022/phi0474.phi022.perseus-lat2.xml",
@@ -2039,31 +2404,36 @@
         "p",
         "q",
         "quote",
-        "reg",
-        "title"
+        "reg"
       ],
-      "noteElements": ["del", "foreign", "hi", "quote", "w"],
+      "noteElements": ["del", "foreign", "hi", "q", "w"],
       "rends": [
-        "p@indent",
-        "quote@blockquote",
-        "quote@smallcaps",
-        "title@smallcaps"
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)",
+        "quote@smallcaps"
       ],
-      "noteRends": ["hi@italic", "hi@superscript"],
+      "noteRends": ["hi@italic", "hi@superscript", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "l@part",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
+        "num@rend",
         "p@rend",
-        "quote@rend",
-        "title@rend"
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend", "w@type"]
     },
     "phi0474.phi023.perseus-lat2": {
       "path": "data/phi0474/phi023/phi0474.phi023.perseus-lat2.xml",
@@ -2077,26 +2447,37 @@
         "milestone",
         "note",
         "p",
+        "q",
         "quote",
         "reg"
       ],
-      "noteElements": ["foreign", "hi", "quote", "w"],
-      "rends": ["gap@. . .", "p@indent", "quote@smallcaps"],
-      "noteRends": ["hi@italic", "hi@superscript"],
+      "noteElements": ["foreign", "hi", "q", "w"],
+      "rends": [
+        "gap@. . .",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@smallcaps"
+      ],
+      "noteRends": ["hi@italic", "hi@superscript", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
         "gap@rend",
+        "head@rend",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
         "p@rend",
+        "q@rend",
         "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend", "w@type"]
     },
     "phi0474.phi024.perseus-lat2": {
       "path": "data/phi0474/phi024/phi0474.phi024.perseus-lat2.xml",
@@ -2111,24 +2492,41 @@
         "expan",
         "head",
         "l",
+        "lb",
         "milestone",
         "note",
         "p",
+        "q",
         "quote",
         "reg"
       ],
-      "noteElements": ["app", "foreign", "gap", "hi", "lem"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
+      "noteElements": ["app", "foreign", "hi", "lem"],
+      "rends": [
+        "head@align(center)",
+        "lb@align(indent)",
+        "p@align(indent)",
+        "q@single",
+        "q@single; merge",
+        "quote@align(blockquote)",
+        "quote@smallcaps"
+      ],
+      "noteRends": ["hi@italic"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
+        "lb@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "gap@reason", "hi@rend"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
     },
     "phi0474.phi025.perseus-lat2": {
       "path": "data/phi0474/phi025/phi0474.phi025.perseus-lat2.xml",
@@ -2146,17 +2544,21 @@
         "reg"
       ],
       "noteElements": ["foreign", "hi", "w"],
-      "rends": ["p@indent"],
+      "rends": ["head@align(center)", "p@align(indent)", "q@single"],
       "noteRends": ["hi@italic", "hi@superscript"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
-        "p@rend"
+        "p@rend",
+        "q@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
     },
@@ -2178,24 +2580,35 @@
         "quote",
         "reg"
       ],
-      "noteElements": ["del", "foreign", "hi", "quote", "w"],
-      "rends": ["gap@. . .", "p@indent", "quote@blockquote", "quote@smallcaps"],
-      "noteRends": ["hi@italic", "hi@superscript"],
+      "noteElements": ["del", "foreign", "hi", "q", "w"],
+      "rends": [
+        "gap@. . .",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)",
+        "quote@smallcaps"
+      ],
+      "noteRends": ["hi@italic", "hi@superscript", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
         "gap@rend",
+        "head@rend",
         "l@part",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
         "p@rend",
+        "q@rend",
         "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend", "w@type"]
     },
     "phi0474.phi027.perseus-lat2": {
       "path": "data/phi0474/phi027/phi0474.phi027.perseus-lat2.xml",
@@ -2219,26 +2632,34 @@
       "noteElements": [],
       "rends": [
         "gap@ . . . . . . . . . ",
+        "head@align(center)",
         "l@indent",
-        "p@inddent",
+        "num@smallcaps",
+        "p@align(indent)",
         "p@indent",
-        "q@merge",
-        "quote@blockquote",
-        "quote@uppercase"
+        "q@single",
+        "q@single; merge",
+        "quote@align(blockquote)",
+        "quote@align(blockquote); single",
+        "quote@smallcaps"
       ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "foreign@xml:lang",
         "gap@reason",
         "gap@rend",
+        "head@rend",
         "l@rend",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
+        "num@rend",
         "p@rend",
         "q@rend",
         "quote@rend"
@@ -2263,18 +2684,29 @@
         "reg"
       ],
       "noteElements": ["foreign", "hi", "w"],
-      "rends": ["p@indent", "quote@blockquote"],
-      "noteRends": ["hi@italics", "hi@superscript"],
+      "rends": [
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)"
+      ],
+      "noteRends": ["hi@italic", "hi@superscript"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "l@part",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
+        "num@rend",
         "p@rend",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
@@ -2296,17 +2728,29 @@
         "reg"
       ],
       "noteElements": ["foreign", "hi", "quote", "w"],
-      "rends": ["gap@. . .", "gap@. . . .", "p@indent", "quote@blockquote"],
+      "rends": [
+        "gap@ . . . ",
+        "gap@. . .",
+        "gap@. . . .",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)"
+      ],
       "noteRends": ["hi@italic", "quote@smallcaps"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
         "gap@rend",
+        "head@rend",
         "l@part",
         "p@rend",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend", "quote@rend", "w@type"]
@@ -2329,20 +2773,32 @@
         "sic"
       ],
       "noteElements": [],
-      "rends": ["gap@***", "p@indent", "quote@blockquote", "quote@smallcaps"],
+      "rends": [
+        "gap@***",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote); single",
+        "quote@smallcaps",
+        "quote@smallcaps; single"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
         "gap@rend",
+        "head@rend",
         "l@part",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
         "p@rend",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": []
@@ -2363,62 +2819,79 @@
         "num",
         "p",
         "q",
-        "quote",
         "reg"
       ],
       "noteElements": ["del", "foreign", "hi", "q", "w"],
-      "rends": ["p@indent", "q@merge"],
-      "noteRends": ["hi@italic"],
+      "rends": [
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@merge; single",
+        "q@single"
+      ],
+      "noteRends": ["hi@italic", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
+        "milestone@n",
+        "milestone@resp",
+        "milestone@unit",
+        "num@rend",
+        "p@rend",
+        "q@rend"
+      ],
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend", "w@type"]
+    },
+    "phi0474.phi032.perseus-lat2": {
+      "path": "data/phi0474/phi032/phi0474.phi032.perseus-lat2.xml",
+      "onboarded": true,
+      "elements": ["body", "div", "head", "milestone", "note", "p", "q", "reg"],
+      "noteElements": ["foreign", "hi", "q", "w"],
+      "rends": ["head@align(center)", "p@align(indent)", "q@single"],
+      "noteRends": ["hi@italic", "q@single"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "head@rend",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
         "p@rend",
         "q@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
-    },
-    "phi0474.phi032.perseus-lat2": {
-      "path": "data/phi0474/phi032/phi0474.phi032.perseus-lat2.xml",
-      "onboarded": true,
-      "elements": ["body", "div", "head", "milestone", "note", "p", "q", "reg"],
-      "noteElements": ["foreign", "hi", "quote", "w"],
-      "rends": ["p@indent"],
-      "noteRends": ["hi@italic"],
-      "attrs": [
-        "div@n",
-        "div@subtype",
-        "div@type",
-        "div@xml:lang",
-        "milestone@n",
-        "milestone@resp",
-        "milestone@unit",
-        "p@rend"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend", "w@type"]
     },
     "phi0474.phi033.perseus-lat2": {
       "path": "data/phi0474/phi033/phi0474.phi033.perseus-lat2.xml",
       "onboarded": true,
       "elements": ["body", "div", "head", "milestone", "note", "p", "q", "reg"],
-      "noteElements": ["foreign", "hi", "quote", "w"],
-      "rends": ["p@indent"],
-      "noteRends": ["hi@italic", "hi@superscript"],
+      "noteElements": ["foreign", "hi", "q", "w"],
+      "rends": ["head@align(center)", "p@align(indent)", "q@single"],
+      "noteRends": ["hi@italic", "hi@superscript", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
-        "p@rend"
+        "p@rend",
+        "q@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend", "w@type"]
     },
     "phi0474.phi034.perseus-lat2": {
       "path": "data/phi0474/phi034/phi0474.phi034.perseus-lat2.xml",
@@ -2437,17 +2910,26 @@
         "reg"
       ],
       "noteElements": ["del", "foreign", "hi", "w"],
-      "rends": ["p@indent", "quote@blockquote"],
+      "rends": [
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)"
+      ],
       "noteRends": ["hi@italic", "hi@superscript"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
         "milestone@resp",
         "milestone@unit",
         "p@rend",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
@@ -2464,25 +2946,42 @@
         "note",
         "num",
         "p",
+        "q",
         "quote",
         "reg"
       ],
-      "noteElements": ["foreign", "hi", "w"],
-      "rends": ["p@indent"],
-      "noteRends": ["hi@italic"],
+      "noteElements": ["foreign", "hi", "q", "w"],
+      "rends": [
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@merge; single",
+        "q@single",
+        "q@single; merge",
+        "quote@single; smallcaps",
+        "quote@smallcaps",
+        "quote@smallcaps; single"
+      ],
+      "noteRends": ["hi@italic", "q@single"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "milestone@n",
         "milestone@unit",
-        "p@rend"
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend", "w@type"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend", "w@type"]
     },
-    "phi0474.phi036.perseus-lat1": {
-      "path": "data/phi0474/phi036/phi0474.phi036.perseus-lat1.xml",
+    "phi0474.phi036.perseus-lat2": {
+      "path": "data/phi0474/phi036/phi0474.phi036.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "add",
@@ -2491,7 +2990,6 @@
         "div",
         "gap",
         "head",
-        "hi",
         "lb",
         "p",
         "pb",
@@ -2499,21 +2997,34 @@
         "quote"
       ],
       "noteElements": [],
-      "rends": ["hi@7", "quote@blockquote"],
+      "rends": [
+        "gap@. . .",
+        "gap@. . . .",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "q@single; merge",
+        "quote@align(blockquote)",
+        "quote@smallcaps"
+      ],
       "noteRends": [],
       "attrs": [
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "gap@reason",
-        "hi@rend",
+        "gap@rend",
+        "head@rend",
+        "p@rend",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": []
     },
-    "phi0474.phi037.perseus-lat1": {
-      "path": "data/phi0474/phi037/phi0474.phi037.perseus-lat1.xml",
+    "phi0474.phi037.perseus-lat2": {
+      "path": "data/phi0474/phi037/phi0474.phi037.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "abbr",
@@ -2526,39 +3037,63 @@
         "foreign",
         "gap",
         "head",
-        "hi",
         "l",
+        "num",
         "p",
+        "q",
         "quote"
       ],
       "noteElements": [],
-      "rends": ["hi@7", "quote@blockquote"],
+      "rends": [
+        "gap@ . . . ",
+        "gap@ . . . .",
+        "gap@ . . . . ",
+        "head@align(center)",
+        "l@align(center)",
+        "l@align(right)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@double",
+        "q@double; merge",
+        "q@single",
+        "q@single; merge",
+        "quote@align(blockquote)",
+        "quote@align(blockquote); single",
+        "quote@smallcaps"
+      ],
       "noteRends": [],
       "attrs": [
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
-        "expan@xmlns",
         "foreign@xml:lang",
         "gap@reason",
-        "hi@rend",
+        "gap@rend",
+        "head@rend",
+        "l@rend",
+        "num@rend",
+        "p@rend",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": []
     },
-    "phi0474.phi038.perseus-lat1": {
-      "path": "data/phi0474/phi038/phi0474.phi038.perseus-lat1.xml",
+    "phi0474.phi038.perseus-lat2": {
+      "path": "data/phi0474/phi038/phi0474.phi038.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "abbr",
         "body",
         "del",
         "div",
+        "emph",
         "ex",
         "expan",
         "head",
         "hi",
+        "label",
         "milestone",
         "note",
         "p",
@@ -2566,31 +3101,45 @@
         "reg"
       ],
       "noteElements": ["foreign", "hi"],
-      "rends": ["hi@italics"],
-      "noteRends": ["hi@italics"],
+      "rends": [
+        "emph@italic",
+        "head@align(center)",
+        "hi@italic",
+        "label@smallcaps",
+        "p@align(indent)"
+      ],
+      "noteRends": ["hi@italic"],
       "attrs": [
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
-        "expan@xmlns",
+        "emph@rend",
+        "head@rend",
         "hi@rend",
+        "label@n",
+        "label@rend",
+        "label@type",
         "milestone@n",
         "milestone@unit",
+        "p@rend",
         "pb@n"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend"]
     },
-    "phi0474.phi039.perseus-lat1": {
-      "path": "data/phi0474/phi039/phi0474.phi039.perseus-lat1.xml",
+    "phi0474.phi039.perseus-lat2": {
+      "path": "data/phi0474/phi039/phi0474.phi039.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "abbr",
         "body",
         "div",
+        "emph",
         "ex",
         "expan",
         "foreign",
+        "gap",
         "head",
         "hi",
         "l",
@@ -2599,104 +3148,146 @@
         "num",
         "p",
         "pb",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": ["foreign", "hi", "num"],
-      "rends": ["hi@italics", "quote@blockquote"],
-      "noteRends": ["hi@italics"],
+      "rends": [
+        "emph@italic",
+        "gap@ . . . ",
+        "gap@ . . . . ",
+        "head@align(center)",
+        "hi@italic",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)",
+        "quote@smallcaps"
+      ],
+      "noteRends": ["hi@italic", "num@smallcaps"],
       "attrs": [
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
-        "expan@xmlns",
+        "emph@rend",
         "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
         "hi@rend",
         "l@part",
         "milestone@n",
         "milestone@unit",
+        "num@rend",
+        "p@rend",
         "pb@n",
+        "q@rend",
         "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "num@rend"]
     },
-    "phi0474.phi040.perseus-lat1": {
-      "path": "data/phi0474/phi040/phi0474.phi040.perseus-lat1.xml",
+    "phi0474.phi040.perseus-lat2": {
+      "path": "data/phi0474/phi040/phi0474.phi040.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "body",
         "del",
         "div",
+        "emph",
         "foreign",
         "head",
-        "hi",
         "l",
         "milestone",
         "note",
         "p",
         "pb",
+        "q",
         "quote",
         "reg"
       ],
-      "noteElements": ["del", "foreign", "hi"],
-      "rends": ["hi@italics", "quote@blockquote"],
-      "noteRends": ["hi@italics"],
+      "noteElements": ["del", "emph", "foreign", "hi", "q"],
+      "rends": [
+        "emph@italic",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)",
+        "quote@smallcaps"
+      ],
+      "noteRends": ["hi@italic", "q@single"],
       "attrs": [
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "emph@rend",
         "foreign@xml:lang",
-        "hi@rend",
+        "head@rend",
         "l@part",
         "milestone@n",
         "milestone@unit",
+        "p@rend",
         "pb@n",
+        "q@rend",
         "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend"]
     },
-    "phi0474.phi041.perseus-lat1": {
-      "path": "data/phi0474/phi041/phi0474.phi041.perseus-lat1.xml",
+    "phi0474.phi041.perseus-lat2": {
+      "path": "data/phi0474/phi041/phi0474.phi041.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "abbr",
         "body",
         "del",
         "div",
+        "emph",
         "ex",
         "expan",
         "head",
-        "hi",
         "l",
         "milestone",
         "note",
         "p",
         "pb",
+        "q",
         "quote",
         "reg"
       ],
       "noteElements": ["foreign", "hi"],
-      "rends": ["hi@italics", "quote@blockquote"],
-      "noteRends": ["hi@italics"],
+      "rends": [
+        "emph@italic",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)",
+        "quote@smallcaps"
+      ],
+      "noteRends": ["hi@italic"],
       "attrs": [
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
-        "expan@xmlns",
-        "hi@rend",
+        "emph@rend",
+        "head@rend",
         "l@part",
         "milestone@n",
         "milestone@unit",
+        "p@rend",
         "pb@n",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": ["foreign@xml:lang", "hi@rend"]
     },
-    "phi0474.phi042.perseus-lat1": {
-      "path": "data/phi0474/phi042/phi0474.phi042.perseus-lat1.xml",
+    "phi0474.phi042.perseus-lat2": {
+      "path": "data/phi0474/phi042/phi0474.phi042.perseus-lat2.xml",
       "onboarded": false,
       "elements": [
         "abbr",
@@ -2706,36 +3297,431 @@
         "ex",
         "expan",
         "foreign",
+        "gap",
+        "head",
+        "hi",
+        "l",
+        "milestone",
+        "note",
+        "p",
+        "pb",
+        "q",
+        "quote",
+        "reg"
+      ],
+      "noteElements": ["foreign", "hi", "q"],
+      "rends": [
+        "gap@ . . .",
+        "head@align(center)",
+        "hi@italic",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)",
+        "quote@smallcaps"
+      ],
+      "noteRends": ["hi@italic", "q@single"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
+        "hi@rend",
+        "milestone@n",
+        "milestone@unit",
+        "p@rend",
+        "pb@n",
+        "q@rend",
+        "quote@rend"
+      ],
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend"]
+    },
+    "phi0474.phi043.perseus-lat2": {
+      "path": "data/phi0474/phi043/phi0474.phi043.perseus-lat2.xml",
+      "onboarded": true,
+      "elements": [
+        "add",
+        "bibl",
+        "body",
+        "cit",
+        "del",
+        "div",
+        "emph",
+        "foreign",
+        "gap",
+        "head",
+        "l",
+        "label",
+        "lb",
+        "milestone",
+        "note",
+        "num",
+        "p",
+        "pb",
+        "q",
+        "quote"
+      ],
+      "noteElements": [],
+      "rends": [
+        "div@. . . .",
+        "emph@italic",
+        "gap@. .",
+        "gap@. . .",
+        "gap@. . . .",
+        "gap@. . . . .",
+        "gap@. . . . . . .",
+        "gap@. . . . . . . . . . . . . . . . . . . .",
+        "head@align(center)",
+        "label@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single; merge",
+        "quote@align(blockquote)"
+      ],
+      "noteRends": [],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@rend",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "emph@rend",
+        "foreign@xml:lang",
+        "gap@extent",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
+        "l@part",
+        "label@rend",
+        "label@type",
+        "milestone@n",
+        "milestone@unit",
+        "num@rend",
+        "p@rend",
+        "pb@n",
+        "q@rend",
+        "quote@rend"
+      ],
+      "noteAttrs": []
+    },
+    "phi0474.phi045.perseus-lat2": {
+      "path": "data/phi0474/phi045/phi0474.phi045.perseus-lat2.xml",
+      "onboarded": false,
+      "elements": [
+        "add",
+        "body",
+        "del",
+        "div",
+        "emph",
+        "foreign",
+        "gap",
+        "head",
+        "label",
+        "milestone",
+        "note",
+        "p",
+        "pb",
+        "q"
+      ],
+      "noteElements": ["add", "emph", "foreign", "hi", "lb", "q", "w"],
+      "rends": [
+        "emph@italic",
+        "gap@*",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@merge; single",
+        "q@single"
+      ],
+      "noteRends": ["emph@italic", "hi@italic", "hi@sub", "hi@sup", "q@single"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "emph@rend",
+        "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
+        "label@type",
+        "milestone@n",
+        "milestone@unit",
+        "p@rend",
+        "pb@n",
+        "q@rend"
+      ],
+      "noteAttrs": ["emph@rend", "foreign@xml:lang", "hi@rend", "q@rend"]
+    },
+    "phi0474.phi046.perseus-lat2": {
+      "path": "data/phi0474/phi046/phi0474.phi046.perseus-lat2.xml",
+      "onboarded": true,
+      "elements": [
+        "add",
+        "body",
+        "del",
+        "div",
+        "foreign",
+        "l",
+        "label",
+        "milestone",
+        "note",
+        "p",
+        "pb",
+        "q",
+        "quote"
+      ],
+      "noteElements": ["add", "del", "foreign", "hi", "q", "w"],
+      "rends": [
+        "p@align(indent)",
+        "q@double",
+        "q@single",
+        "q@single; merge",
+        "quote@align(blockquote); single"
+      ],
+      "noteRends": ["hi@italic", "hi@sup", "q@single"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "foreign@xml:lang",
+        "l@part",
+        "label@type",
+        "milestone@n",
+        "milestone@unit",
+        "p@rend",
+        "pb@n",
+        "q@rend",
+        "quote@rend"
+      ],
+      "noteAttrs": ["foreign@xml:lang", "hi@rend", "q@rend"]
+    },
+    "phi0474.phi047.perseus-lat2": {
+      "path": "data/phi0474/phi047/phi0474.phi047.perseus-lat2.xml",
+      "onboarded": false,
+      "elements": [
+        "add",
+        "body",
+        "del",
+        "div",
+        "emph",
+        "foreign",
+        "gap",
+        "head",
+        "milestone",
+        "p",
+        "pb",
+        "q"
+      ],
+      "noteElements": [],
+      "rends": [
+        "emph@italic",
+        "gap@ * * * ",
+        "head@align(center)",
+        "head@align(indent)",
+        "p@align(indent)",
+        "q@single"
+      ],
+      "noteRends": [],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "emph@rend",
+        "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
+        "head@type",
+        "head@xml:lang",
+        "milestone@n",
+        "milestone@unit",
+        "p@rend",
+        "pb@n",
+        "q@rend"
+      ],
+      "noteAttrs": []
+    },
+    "phi0474.phi048.perseus-lat2": {
+      "path": "data/phi0474/phi048/phi0474.phi048.perseus-lat2.xml",
+      "onboarded": true,
+      "elements": [
+        "add",
+        "body",
+        "del",
+        "div",
+        "emph",
+        "foreign",
+        "gap",
         "head",
         "l",
         "milestone",
         "note",
         "p",
         "pb",
-        "quote",
-        "reg"
+        "q",
+        "quote"
       ],
-      "noteElements": ["foreign", "hi"],
-      "rends": ["quote@blockquote"],
-      "noteRends": ["hi@italics"],
+      "noteElements": [
+        "add",
+        "del",
+        "foreign",
+        "gap",
+        "hi",
+        "note",
+        "q",
+        "quote",
+        "w"
+      ],
+      "rends": [
+        "emph@smallcaps",
+        "gap@ * * ",
+        "gap@...",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "q@single; spacing",
+        "quote@align(blockquote)",
+        "quote@single",
+        "quote@smallcaps",
+        "quote@smallcaps; single"
+      ],
+      "noteRends": [
+        "hi@italic",
+        "hi@overline",
+        "hi@sup",
+        "hi@superscript",
+        "q@single",
+        "quote@smallcaps"
+      ],
       "attrs": [
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
-        "expan@xmlns",
+        "emph@rend",
         "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
         "milestone@n",
         "milestone@unit",
+        "p@rend",
         "pb@n",
+        "q@rend",
         "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
+      "noteAttrs": [
+        "foreign@xml:lang",
+        "gap@reason",
+        "hi@rend",
+        "q@rend",
+        "quote@rend"
+      ]
     },
-    "phi0474.phi043.perseus-lat1": {
-      "path": "data/phi0474/phi043/phi0474.phi043.perseus-lat1.xml",
-      "onboarded": true,
+    "phi0474.phi049.perseus-lat2": {
+      "path": "data/phi0474/phi049/phi0474.phi049.perseus-lat2.xml",
+      "onboarded": false,
       "elements": [
+        "add",
+        "body",
+        "del",
+        "div",
+        "foreign",
+        "gap",
+        "l",
+        "label",
+        "note",
+        "num",
+        "p",
+        "pb",
+        "q",
+        "quote"
+      ],
+      "noteElements": [
+        "add",
+        "del",
+        "figure",
+        "foreign",
+        "gap",
+        "hi",
+        "note",
+        "q",
+        "w"
+      ],
+      "rends": [
+        "gap@ * * *",
+        "gap@ . . . ",
+        "gap@ . . . . . . . .",
+        "gap@ . . . . . . . . . . . . . . . . . . . . ",
+        "gap@. .",
+        "gap@. . .",
+        "l@align(right)",
+        "num@smallcaps",
+        "q@double; merge",
+        "q@single",
+        "q@single; merge",
+        "quote@aign(blockquote); single; merge",
+        "quote@align(blockquote)",
+        "quote@align(blockquote); single",
+        "quote@align(blockquote); single; merge",
+        "quote@align(blockquote); spacing",
+        "quote@spacing"
+      ],
+      "noteRends": [
+        "gap@. . .",
+        "hi@italic",
+        "hi@overline",
+        "hi@sup",
+        "q@italic; single",
+        "q@single"
+      ],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "l@part",
+        "l@rend",
+        "label@n",
+        "num@rend",
+        "pb@n",
+        "q@rend",
+        "quote@rend"
+      ],
+      "noteAttrs": [
+        "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "hi@rend",
+        "q@rend"
+      ]
+    },
+    "phi0474.phi050.perseus-lat2": {
+      "path": "data/phi0474/phi050/phi0474.phi050.perseus-lat2.xml",
+      "onboarded": false,
+      "elements": [
+        "#comment",
         "add",
         "bibl",
         "body",
@@ -2747,300 +3733,101 @@
         "head",
         "hi",
         "l",
-        "milestone",
-        "note",
-        "num",
-        "p",
-        "pb",
-        "quote"
-      ],
-      "noteElements": [],
-      "rends": ["hi@italic", "quote@blockquote"],
-      "noteRends": [],
-      "attrs": [
-        "div@n",
-        "div@subtype",
-        "div@type",
-        "div@xml:lang",
-        "foreign@xml:lang",
-        "gap@extent",
-        "gap@reason",
-        "gap@xmlns",
-        "hi@rend",
-        "l@part",
-        "milestone@n",
-        "milestone@unit",
-        "note@place",
-        "note@type",
-        "pb@n",
-        "quote@rend"
-      ],
-      "noteAttrs": []
-    },
-    "phi0474.phi045.perseus-lat1": {
-      "path": "data/phi0474/phi045/phi0474.phi045.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "add",
-        "body",
-        "del",
-        "div",
-        "foreign",
-        "gap",
-        "head",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "quote"
-      ],
-      "noteElements": ["add", "foreign", "hi", "p", "w"],
-      "rends": ["hi@italics", "quote@blockquote"],
-      "noteRends": ["hi@italics", "hi@sub", "hi@sup"],
-      "attrs": [
-        "div@n",
-        "div@subtype",
-        "div@type",
-        "div@xml:lang",
-        "foreign@xml:lang",
-        "gap@reason",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@place",
-        "note@type",
-        "pb@n",
-        "quote@rend"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0474.phi046.perseus-lat1": {
-      "path": "data/phi0474/phi046/phi0474.phi046.perseus-lat1.xml",
-      "onboarded": true,
-      "elements": [
-        "add",
-        "body",
-        "del",
-        "div",
-        "foreign",
-        "hi",
-        "l",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "quote"
-      ],
-      "noteElements": ["add", "del", "foreign", "hi", "w"],
-      "rends": ["hi@italics", "quote@blockquote"],
-      "noteRends": ["hi@italics", "hi@sup"],
-      "attrs": [
-        "div@n",
-        "div@subtype",
-        "div@type",
-        "div@xml:lang",
-        "foreign@xml:lang",
-        "hi@rend",
-        "l@part",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "quote@rend"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0474.phi047.perseus-lat1": {
-      "path": "data/phi0474/phi047/phi0474.phi047.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "add",
-        "body",
-        "del",
-        "div",
-        "foreign",
-        "head",
-        "hi",
-        "milestone",
-        "p",
-        "pb",
-        "quote"
-      ],
-      "noteElements": [],
-      "rends": ["hi@italics", "quote@blockquote"],
-      "noteRends": [],
-      "attrs": [
-        "div@n",
-        "div@subtype",
-        "div@type",
-        "div@xml:lang",
-        "foreign@xml:lang",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "quote@rend",
-        "quote@xml:lang"
-      ],
-      "noteAttrs": []
-    },
-    "phi0474.phi048.perseus-lat1": {
-      "path": "data/phi0474/phi048/phi0474.phi048.perseus-lat1.xml",
-      "onboarded": true,
-      "elements": [
-        "add",
-        "body",
-        "del",
-        "div",
-        "foreign",
-        "gap",
-        "head",
-        "hi",
-        "l",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "quote"
-      ],
-      "noteElements": ["add", "del", "foreign", "gap", "hi", "note", "w"],
-      "rends": ["hi@7", "hi@italics", "quote@blockquote"],
-      "noteRends": ["hi@italics", "hi@overline", "hi@sup"],
-      "attrs": [
-        "div@n",
-        "div@subtype",
-        "div@type",
-        "div@xml:lang",
-        "foreign@xml:lang",
-        "gap@reason",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "quote@rend"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "gap@reason", "hi@rend"]
-    },
-    "phi0474.phi049.perseus-lat1": {
-      "path": "data/phi0474/phi049/phi0474.phi049.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "add",
-        "body",
-        "del",
-        "div",
-        "figure",
-        "foreign",
-        "gap",
-        "head",
-        "hi",
-        "l",
-        "note",
-        "p",
-        "pb",
-        "quote"
-      ],
-      "noteElements": [
-        "add",
-        "del",
-        "figure",
-        "foreign",
-        "gap",
-        "hi",
-        "note",
-        "p",
-        "w"
-      ],
-      "rends": [
-        "hi@7",
-        "hi@bold",
-        "hi@italics",
-        "hi@overline",
-        "hi@sup",
-        "quote@blockquote",
-        "quote@bockquote"
-      ],
-      "noteRends": ["hi@italics", "hi@overline", "hi@sup"],
-      "attrs": [
-        "div@n",
-        "div@subtype",
-        "div@type",
-        "div@xml:lang",
-        "foreign@xml:lang",
-        "gap@reason",
-        "hi@rend",
-        "l@part",
-        "note@type",
-        "pb@n",
-        "quote@rend"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "gap@reason", "hi@rend"]
-    },
-    "phi0474.phi050.perseus-lat1": {
-      "path": "data/phi0474/phi050/phi0474.phi050.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "add",
-        "body",
-        "del",
-        "div",
-        "foreign",
-        "gap",
-        "head",
-        "hi",
-        "l",
+        "label",
+        "lb",
         "lg",
-        "note",
         "p",
         "pb",
+        "q",
         "quote"
       ],
-      "noteElements": ["add", "bibl", "cit", "del", "p", "quote"],
-      "rends": ["hi@7", "quote@blockquote"],
+      "noteElements": [],
+      "rends": [
+        "gap@ * ",
+        "gap@ * * ",
+        "head@align(center)",
+        "hi@7",
+        "hi@italic",
+        "l@align(indent)",
+        "p@align(indent)",
+        "q@single",
+        "q@single; merge",
+        "quote@align(blockquote); single",
+        "quote@italic",
+        "quote@italic; spacing"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "foreign@xml:lang",
         "gap@reason",
+        "gap@rend",
+        "head@rend",
         "hi@rend",
         "l@part",
+        "l@rend",
+        "label@resp",
+        "label@xml:lang",
         "lg@type",
+        "p@rend",
         "pb@n",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": []
     },
-    "phi0474.phi051.perseus-lat1": {
-      "path": "data/phi0474/phi051/phi0474.phi051.perseus-lat1.xml",
+    "phi0474.phi051.perseus-lat2": {
+      "path": "data/phi0474/phi051/phi0474.phi051.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "body",
         "div",
         "head",
         "l",
+        "label",
         "milestone",
         "note",
         "p",
         "pb",
+        "q",
         "quote",
-        "reg"
+        "reg",
+        "said"
       ],
       "noteElements": ["hi"],
-      "rends": ["quote@blockquote"],
-      "noteRends": ["hi@italics"],
+      "rends": [
+        "head@align(center)",
+        "label@smallcaps",
+        "p@align(indent)",
+        "q@double",
+        "q@double; merge",
+        "quote@align(blockquote)",
+        "said@merge"
+      ],
+      "noteRends": ["hi@italic"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "head@rend",
         "l@part",
+        "label@rend",
         "milestone@n",
         "milestone@unit",
+        "p@rend",
         "pb@n",
-        "quote@rend"
+        "q@rend",
+        "quote@rend",
+        "said@rend",
+        "said@who"
       ],
       "noteAttrs": ["hi@rend"]
     },
@@ -3083,6 +3870,7 @@
         "title@italic"
       ],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3134,18 +3922,23 @@
       "noteElements": ["emph"],
       "rends": [
         "emph@italic",
+        "head@align(center)",
+        "p@align(indent)",
         "p@indent",
         "p@merge",
-        "quote@blockquote",
+        "quote@align(blockquote)",
         "said@merge"
       ],
       "noteRends": ["emph@italic"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "emph@rend",
+        "head@rend",
         "milestone@n",
         "milestone@unit",
         "p@rend",
@@ -3156,11 +3949,79 @@
       ],
       "noteAttrs": ["emph@rend"]
     },
-    "phi0474.phi053.perseus-lat1": {
-      "path": "data/phi0474/phi053/phi0474.phi053.perseus-lat1.xml",
+    "phi0474.phi053.perseus-lat3": {
+      "path": "data/phi0474/phi053/phi0474.phi053.perseus-lat3.xml",
       "onboarded": false,
       "elements": [
         "add",
+        "body",
+        "del",
+        "div",
+        "emph",
+        "foreign",
+        "gap",
+        "head",
+        "l",
+        "label",
+        "milestone",
+        "num",
+        "p",
+        "pb",
+        "q",
+        "quote"
+      ],
+      "noteElements": [],
+      "rends": [
+        "emph@smallcaps",
+        "gap@ . . .",
+        "gap@ . . . ",
+        "gap@ . . . .",
+        "gap@ . . . . ",
+        "gap@. . . ",
+        "head@align(center)",
+        "l@align(right)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "q@single; merge",
+        "q@single; smallcaps",
+        "q@single; smallcaps; merge",
+        "q@single; spacing",
+        "q@single; spacing; merge",
+        "q@smallcaps",
+        "quote@align(blockquote)",
+        "quote@align(blockquote); merge"
+      ],
+      "noteRends": [],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "emph@rend",
+        "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
+        "l@rend",
+        "label@n",
+        "milestone@n",
+        "milestone@unit",
+        "num@rend",
+        "p@rend",
+        "pb@n",
+        "q@rend",
+        "quote@rend"
+      ],
+      "noteAttrs": []
+    },
+    "phi0474.phi053.perseus-lat4": {
+      "path": "data/phi0474/phi053/phi0474.phi053.perseus-lat4.xml",
+      "onboarded": false,
+      "elements": [
+        "#comment",
         "body",
         "del",
         "div",
@@ -3173,74 +4034,50 @@
         "note",
         "p",
         "pb",
-        "quote",
-        "sp",
-        "speaker"
-      ],
-      "noteElements": [],
-      "rends": ["hi@7", "quote@blockquote"],
-      "noteRends": [],
-      "attrs": [
-        "div@n",
-        "div@subtype",
-        "div@type",
-        "div@xml:lang",
-        "foreign@xml:lang",
-        "gap@reason",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@place",
-        "note@type",
-        "pb@n",
-        "quote@rend",
-        "quote@xml:lang"
-      ],
-      "noteAttrs": []
-    },
-    "phi0474.phi053.perseus-lat2": {
-      "path": "data/phi0474/phi053/phi0474.phi053.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "del",
-        "div1",
-        "div2",
-        "foreign",
-        "gap",
-        "head",
-        "hi",
-        "l",
-        "milestone",
-        "note",
-        "p",
-        "pb",
+        "q",
         "quote",
         "reg",
         "sp",
         "speaker"
       ],
-      "noteElements": ["gap", "hi", "quote", "reg"],
-      "rends": ["hi@italics", "quote@blockquote"],
-      "noteRends": ["hi@italics"],
+      "noteElements": ["gap", "hi", "q", "reg"],
+      "rends": [
+        "gap@ . . . ",
+        "head@align(center)",
+        "hi@italic",
+        "q@double",
+        "q@double; merge",
+        "q@single",
+        "q@single; merge",
+        "quote@align(blockquote)",
+        "quote@blockquote",
+        "quote@blockquote; merge"
+      ],
+      "noteRends": ["gap@ . . . ", "hi@italic", "q@double"],
       "attrs": [
-        "div1@n",
-        "div1@type",
-        "div2@n",
-        "div2@type",
-        "foreign@lang",
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
         "hi@rend",
         "l@part",
         "milestone@n",
         "milestone@unit",
-        "pb@id",
+        "pb@n",
+        "q@rend",
         "quote@rend",
         "quote@type"
       ],
-      "noteAttrs": ["hi@rend"]
+      "noteAttrs": ["gap@reason", "gap@rend", "hi@rend", "q@rend"]
     },
-    "phi0474.phi054.perseus-lat1": {
-      "path": "data/phi0474/phi054/phi0474.phi054.perseus-lat1.xml",
+    "phi0474.phi054.perseus-lat2": {
+      "path": "data/phi0474/phi054/phi0474.phi054.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "add",
@@ -3251,69 +4088,106 @@
         "div",
         "foreign",
         "gap",
+        "head",
         "l",
+        "label",
         "milestone",
         "p",
         "pb",
+        "q",
         "quote",
         "w"
       ],
       "noteElements": [],
-      "rends": ["quote@blockquote"],
+      "rends": [
+        "gap@ . . . ",
+        "gap@ . . . . ",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@double",
+        "q@single",
+        "q@single; spacing",
+        "quote@align(blockquote); spacing",
+        "quote@italic",
+        "quote@single; spacing"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "foreign@xml:lang",
         "gap@reason",
+        "gap@rend",
+        "head@rend",
         "l@part",
         "milestone@n",
         "milestone@unit",
+        "p@rend",
         "pb@n",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": []
     },
-    "phi0474.phi055.perseus-lat1": {
-      "path": "data/phi0474/phi055/phi0474.phi055.perseus-lat1.xml",
+    "phi0474.phi055.perseus-lat2": {
+      "path": "data/phi0474/phi055/phi0474.phi055.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "body",
         "del",
         "div",
+        "emph",
         "foreign",
         "gap",
         "head",
-        "hi",
         "l",
+        "label",
         "milestone",
         "p",
         "pb",
+        "q",
         "quote"
       ],
       "noteElements": [],
-      "rends": ["hi@italics", "quote@blockquote", "quote@smallcaps"],
+      "rends": [
+        "emph@italic",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@double",
+        "q@double; merge",
+        "q@single",
+        "quote@align(blockquote)",
+        "quote@double",
+        "quote@smallcaps"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "emph@rend",
         "foreign@xml:lang",
         "gap@reason",
-        "hi@rend",
+        "head@rend",
         "l@part",
         "milestone@n",
         "milestone@unit",
+        "p@rend",
         "pb@n",
+        "q@rend",
         "quote@rend"
       ],
       "noteAttrs": []
     },
-    "phi0474.phi056.perseus-lat1": {
-      "path": "data/phi0474/phi056/phi0474.phi056.perseus-lat1.xml",
+    "phi0474.phi056.perseus-lat2": {
+      "path": "data/phi0474/phi056/phi0474.phi056.perseus-lat2.xml",
       "onboarded": false,
       "elements": [
         "add",
@@ -3327,11 +4201,11 @@
         "head",
         "l",
         "label",
-        "milestone",
         "num",
         "p",
         "pb",
         "placeName",
+        "q",
         "quote",
         "reg",
         "seg",
@@ -3339,27 +4213,53 @@
         "title"
       ],
       "noteElements": [],
-      "rends": ["emph@salute", "label@opener", "seg@dateline", "seg@salute"],
+      "rends": [
+        "emph@salute",
+        "gap@ . . . ",
+        "gap@ . . . . ",
+        "head@align(center)",
+        "label@opener",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@double",
+        "q@double; merge",
+        "q@single",
+        "q@single; smallcaps",
+        "quote@align(blockquote)",
+        "quote@align(blockquote); single",
+        "quote@italic",
+        "quote@merge; italic",
+        "seg@dateline",
+        "seg@salute"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "date@when",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "emph@rend",
         "foreign@xml:lang",
         "gap@reason",
+        "gap@rend",
+        "head@rend",
         "label@rend",
-        "milestone@unit",
+        "label@type",
         "num@n",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend",
         "quote@xml:lang",
         "seg@rend"
       ],
       "noteAttrs": []
     },
-    "phi0474.phi057.perseus-lat1": {
-      "path": "data/phi0474/phi057/phi0474.phi057.perseus-lat1.xml",
+    "phi0474.phi057.perseus-lat2": {
+      "path": "data/phi0474/phi057/phi0474.phi057.perseus-lat2.xml",
       "onboarded": false,
       "elements": [
         "abbr",
@@ -3367,55 +4267,80 @@
         "date",
         "del",
         "div",
+        "emph",
         "ex",
         "expan",
         "foreign",
         "gap",
-        "hi",
         "l",
         "label",
+        "lb",
         "milestone",
         "num",
         "p",
         "pb",
         "placeName",
+        "q",
         "quote",
         "reg",
         "seg"
       ],
       "noteElements": [],
       "rends": [
-        "hi@caps",
-        "hi@italic",
+        "emph@italic",
+        "foreign@smallcaps",
+        "gap@ * * * ",
+        "gap@ . . . ",
+        "gap@ . . . . ",
+        "l@align(indent)",
         "label@opener",
+        "num@smallcaps",
+        "p@align(center)",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote)",
+        "quote@single",
+        "quote@single; merge",
+        "quote@smallcaps",
         "seg@dateline",
         "seg@salute"
       ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "date@when",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "emph@rend",
+        "foreign@rend",
         "foreign@xml:lang",
         "gap@reason",
-        "hi@rend",
+        "gap@rend",
         "l@part",
+        "l@rend",
+        "l@xml:lang",
         "label@rend",
-        "milestone@ed",
         "milestone@n",
         "milestone@unit",
         "num@n",
+        "num@rend",
         "num@type",
+        "num@xml:lang",
+        "p@rend",
         "pb@n",
+        "q@rend",
+        "q@xml:lang",
+        "quote@rend",
         "quote@xml:lang",
         "seg@rend"
       ],
       "noteAttrs": []
     },
-    "phi0474.phi058.perseus-lat1": {
-      "path": "data/phi0474/phi058/phi0474.phi058.perseus-lat1.xml",
+    "phi0474.phi058.perseus-lat2": {
+      "path": "data/phi0474/phi058/phi0474.phi058.perseus-lat2.xml",
       "onboarded": false,
       "elements": [
         "add",
@@ -3431,30 +4356,52 @@
         "note",
         "num",
         "p",
+        "q",
         "quote",
         "reg",
         "seg"
       ],
       "noteElements": [],
-      "rends": ["label@opener", "seg@dateline", "seg@salute"],
+      "rends": [
+        "foreign@smallcaps",
+        "head@align(center)",
+        "label@opener",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "quote@align(blockquote",
+        "seg@dateline",
+        "seg@salute"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "date@when",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
+        "foreign@rend",
         "foreign@xml:lang",
+        "head@rend",
+        "l@part",
         "label@rend",
         "milestone@n",
         "milestone@unit",
+        "num@n",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "q@xml:lang",
+        "quote@rend",
         "quote@xml:lang",
         "seg@rend"
       ],
       "noteAttrs": []
     },
-    "phi0474.phi059.perseus-lat1": {
-      "path": "data/phi0474/phi059/phi0474.phi059.perseus-lat1.xml",
+    "phi0474.phi059.perseus-lat2": {
+      "path": "data/phi0474/phi059/phi0474.phi059.perseus-lat2.xml",
       "onboarded": false,
       "elements": [
         "add",
@@ -3463,10 +4410,10 @@
         "del",
         "div",
         "foreign",
+        "gap",
         "head",
         "l",
         "label",
-        "milestone",
         "num",
         "p",
         "pb",
@@ -3476,23 +4423,46 @@
         "seg"
       ],
       "noteElements": [],
-      "rends": ["label@opener", "seg@dateline", "seg@salute"],
+      "rends": [
+        "gap@ . . . ",
+        "gap@* *",
+        "gap@* * *",
+        "head@align(center)",
+        "label@opener",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "q@single; smallcaps",
+        "quote@single",
+        "quote@single; align(blockquote)",
+        "seg@dateline",
+        "seg@salute"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "date@when",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
         "label@rend",
-        "milestone@unit",
+        "num@n",
+        "num@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend",
         "seg@rend"
       ],
       "noteAttrs": []
     },
-    "phi0474.phi072.perseus-lat1": {
-      "path": "data/phi0474/phi072/phi0474.phi072.perseus-lat1.xml",
+    "phi0474.phi072.perseus-lat2": {
+      "path": "data/phi0474/phi072/phi0474.phi072.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "add",
@@ -3500,21 +4470,36 @@
         "del",
         "div",
         "foreign",
+        "gap",
+        "lb",
         "milestone",
         "p",
-        "pb"
+        "pb",
+        "quote"
       ],
       "noteElements": [],
-      "rends": [],
+      "rends": [
+        "gap@ * * * ",
+        "gap@ . . . ",
+        "p@align(indent)",
+        "quote@single",
+        "quote@single; merge"
+      ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
         "milestone@n",
-        "milestone@unit"
+        "milestone@unit",
+        "p@rend",
+        "quote@rend"
       ],
       "noteAttrs": []
     },
@@ -3539,7 +4524,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@subtype",
         "div@type",
         "div@xml:lang",
@@ -3572,6 +4557,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3591,6 +4577,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3608,6 +4595,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3625,6 +4613,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3642,6 +4631,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3659,6 +4649,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3677,6 +4668,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3695,6 +4687,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3712,6 +4705,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3729,6 +4723,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3747,6 +4742,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3765,6 +4761,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3782,6 +4779,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3799,6 +4797,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3816,6 +4815,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3833,6 +4833,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3850,6 +4851,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3867,6 +4869,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3884,6 +4887,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3902,6 +4906,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3919,6 +4924,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3936,6 +4942,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3953,6 +4960,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3970,6 +4978,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -3997,6 +5006,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4025,6 +5035,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4043,6 +5054,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4088,6 +5100,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "date@when",
         "div@n",
         "div@subtype",
@@ -4116,6 +5129,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4133,7 +5147,13 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div@n", "div@subtype", "div@type", "div@xml:lang"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:lang"
+      ],
       "noteAttrs": []
     },
     "phi0631.phi002.perseus-lat3": {
@@ -4144,6 +5164,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4162,6 +5183,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4189,6 +5211,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4207,6 +5230,7 @@
       "rends": ["hi@uppercase"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4224,7 +5248,14 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div@n", "div@subtype", "div@type", "div@xml:lang", "l@n"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:lang",
+        "l@n"
+      ],
       "noteAttrs": []
     },
     "phi0690.phi001.perseus-lat2": {
@@ -4245,6 +5276,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4263,6 +5295,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4295,6 +5328,7 @@
       "rends": ["hi@italic", "l@indent", "q@italic", "q@merge"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4322,7 +5356,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["lb@n"],
+      "attrs": ["body@xml:base", "lb@n"],
       "noteAttrs": []
     },
     "phi0692.phi002.perseus-lat1": {
@@ -4332,7 +5366,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["lb@n", "milestone@n", "milestone@unit"],
+      "attrs": ["body@xml:base", "lb@n", "milestone@n", "milestone@unit"],
       "noteAttrs": []
     },
     "phi0692.phi003.perseus-lat1": {
@@ -4342,7 +5376,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["lb@n"],
+      "attrs": ["body@xml:base", "lb@n"],
       "noteAttrs": []
     },
     "phi0692.phi005.perseus-lat1": {
@@ -4352,7 +5386,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["lb@n"],
+      "attrs": ["body@xml:base", "lb@n"],
       "noteAttrs": []
     },
     "phi0692.phi006.perseus-lat1": {
@@ -4362,7 +5396,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["lb@n", "note@n"],
+      "attrs": ["body@xml:base", "lb@n", "note@n"],
       "noteAttrs": []
     },
     "phi0692.phi007.perseus-lat1": {
@@ -4372,7 +5406,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["lb@n", "note@n"],
+      "attrs": ["body@xml:base", "lb@n", "note@n"],
       "noteAttrs": []
     },
     "phi0692.phi008.perseus-lat1": {
@@ -4382,7 +5416,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div1@n", "div1@type", "lb@n"],
+      "attrs": ["body@xml:base", "div1@n", "div1@type", "lb@n"],
       "noteAttrs": []
     },
     "phi0692.phi009.perseus-lat1": {
@@ -4392,7 +5426,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div1@n", "div1@type", "lb@n"],
+      "attrs": ["body@xml:base", "div1@n", "div1@type", "lb@n"],
       "noteAttrs": []
     },
     "phi0692.phi011.perseus-lat1": {
@@ -4402,7 +5436,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["lb@n"],
+      "attrs": ["body@xml:base", "lb@n"],
       "noteAttrs": []
     },
     "phi0692.phi012.perseus-lat1": {
@@ -4412,7 +5446,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["lb@n"],
+      "attrs": ["body@xml:base", "lb@n"],
       "noteAttrs": []
     },
     "phi0692.phi013.perseus-lat1": {
@@ -4422,7 +5456,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["lb@n"],
+      "attrs": ["body@xml:base", "lb@n"],
       "noteAttrs": []
     },
     "phi0836.phi002.perseus-lat4": {
@@ -4433,6 +5467,7 @@
       "rends": ["hi@ital"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4475,6 +5510,7 @@
       "rends": ["hi@italics"],
       "noteRends": ["hi@italics", "hi@sup"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4518,6 +5554,7 @@
       "rends": ["hi@7"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4552,6 +5589,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4584,6 +5622,7 @@
       "rends": ["q@double", "q@double; merge", "q@single"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4604,6 +5643,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@met",
         "div@n",
         "div@subtype",
@@ -4622,6 +5662,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4638,7 +5679,14 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div@n", "div@subtype", "div@type", "div@xml:lang", "l@n"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:lang",
+        "l@n"
+      ],
       "noteAttrs": []
     },
     "phi0893.phi004.perseus-lat2": {
@@ -4649,6 +5697,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4668,6 +5717,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -4685,7 +5735,13 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div@n", "div@type", "div@xml:lang", "l@n", "note@resp"],
+      "attrs": [
+        "body@xml:base",
+        "div@type",
+        "div@xml:lang",
+        "l@n",
+        "note@resp"
+      ],
       "noteAttrs": []
     },
     "phi0914.phi001.perseus-eng3": {
@@ -4698,26 +5754,34 @@
         "emph",
         "foreign",
         "head",
+        "l",
         "note",
         "p",
-        "placeName"
+        "placeName",
+        "quote",
+        "supplied"
       ],
       "noteElements": ["bibl", "date", "emph", "foreign", "placeName"],
-      "rends": [],
+      "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "date@when",
         "div@n",
+        "div@source",
         "div@subtype",
         "div@type",
         "div@xml:lang",
         "foreign@xml:lang",
+        "l@part",
         "note@anchored",
         "note@n",
         "note@place",
         "note@resp",
         "note@type",
-        "placeName@key"
+        "placeName@key",
+        "quote@rend",
+        "supplied@reason"
       ],
       "noteAttrs": ["date@when", "foreign@xml:lang", "placeName@key"]
     },
@@ -4733,36 +5797,110 @@
         "gap",
         "head",
         "hi",
+        "milestone",
         "name",
         "p",
         "pb",
+        "reg",
         "sic"
       ],
       "noteElements": [],
-      "rends": ["hi@italics"],
+      "rends": ["hi@italics", "hi@overline"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
         "div@xml:lang",
         "gap@reason",
         "hi@rend",
+        "milestone@n",
+        "milestone@unit",
         "pb@n"
       ],
       "noteAttrs": []
     },
-    "phi0914.phi0011.perseus-lat2": {
-      "path": "data/phi0914/phi0011/phi0914.phi0011.perseus-lat2.xml",
+    "phi0914.phi001.perseus-lat3": {
+      "path": "data/phi0914/phi001/phi0914.phi001.perseus-lat3.xml",
+      "onboarded": false,
+      "elements": [
+        "addName",
+        "body",
+        "choice",
+        "corr",
+        "div",
+        "forename",
+        "genName",
+        "head",
+        "hi",
+        "name",
+        "note",
+        "p",
+        "pb",
+        "persName",
+        "quote",
+        "reg",
+        "sic",
+        "surname"
+      ],
+      "noteElements": [
+        "choice",
+        "corr",
+        "foreign",
+        "hi",
+        "milestone",
+        "name",
+        "quote",
+        "reg",
+        "sic"
+      ],
+      "rends": ["hi@italics"],
+      "noteRends": [
+        "hi@italics",
+        "hi@overline",
+        "hi@subscript",
+        "hi@superscript"
+      ],
+      "attrs": [
+        "addName@full",
+        "addName@n",
+        "body@xml:base",
+        "div@n",
+        "div@source",
+        "div@subtype",
+        "div@type",
+        "div@xml:lang",
+        "forename@full",
+        "genName@full",
+        "genName@n",
+        "hi@rend",
+        "note@anchored",
+        "note@place",
+        "note@type",
+        "pb@n",
+        "pb@xml:id",
+        "persName@n",
+        "surname@full"
+      ],
+      "noteAttrs": [
+        "foreign@xml:lang",
+        "hi@rend",
+        "milestone@n",
+        "milestone@unit"
+      ]
+    },
+    "phi0914.phi001.perseus-lat4": {
+      "path": "data/phi0914/phi001/phi0914.phi001.perseus-lat4.xml",
       "onboarded": false,
       "elements": [
         "body",
         "choice",
         "corr",
         "div",
+        "gap",
         "head",
         "hi",
-        "milestone",
         "name",
         "note",
         "p",
@@ -4776,1173 +5914,14 @@
         "corr",
         "foreign",
         "hi",
+        "milestone",
         "name",
+        "note",
         "quote",
         "reg",
         "sic"
       ],
-      "rends": ["hi@italics"],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi0011.perseus-lat3": {
-      "path": "data/phi0914/phi0011/phi0914.phi0011.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00110.perseus-lat2": {
-      "path": "data/phi0914/phi00110/phi0914.phi00110.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00110.perseus-lat3": {
-      "path": "data/phi0914/phi00110/phi0914.phi00110.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["foreign", "hi", "name", "reg"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi00111s.perseus-lat2": {
-      "path": "data/phi0914/phi00111s/phi0914.phi00111s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "div",
-        "head",
-        "hi",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "reg"
-      ],
-      "noteElements": ["hi", "name", "reg"],
-      "rends": ["hi@overline"],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "note@anchored",
-        "note@place",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00112s.perseus-lat2": {
-      "path": "data/phi0914/phi00112s/phi0914.phi00112s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": ["body", "div", "head", "name", "note", "p", "reg"],
-      "noteElements": ["hi"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "note@anchored",
-        "note@place"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00113s.perseus-lat2": {
-      "path": "data/phi0914/phi00113s/phi0914.phi00113s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": ["body", "div", "head", "name", "note", "p", "pb", "reg"],
-      "noteElements": ["hi"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "note@anchored",
-        "note@place",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00114s.perseus-lat2": {
-      "path": "data/phi0914/phi00114s/phi0914.phi00114s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "div",
-        "head",
-        "hi",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "reg"
-      ],
-      "noteElements": ["hi", "name"],
-      "rends": ["hi@overline"],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "note@anchored",
-        "note@place",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00115s.perseus-lat2": {
-      "path": "data/phi0914/phi00115s/phi0914.phi00115s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": ["body", "div", "head", "name", "note", "p", "reg"],
-      "noteElements": ["hi", "name"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "note@anchored",
-        "note@place"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00116s.perseus-lat2": {
-      "path": "data/phi0914/phi00116s/phi0914.phi00116s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "div",
-        "head",
-        "hi",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "reg"
-      ],
-      "noteElements": ["hi", "name"],
-      "rends": ["hi@overline"],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "note@anchored",
-        "note@place",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00117s.perseus-lat2": {
-      "path": "data/phi0914/phi00117s/phi0914.phi00117s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": ["body", "div", "head", "name", "note", "p", "reg"],
-      "noteElements": ["hi"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "note@anchored",
-        "note@place"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00118s.perseus-lat2": {
-      "path": "data/phi0914/phi00118s/phi0914.phi00118s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "div",
-        "head",
-        "hi",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "reg"
-      ],
-      "noteElements": ["hi", "name"],
-      "rends": ["hi@overline"],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "note@anchored",
-        "note@place",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00119s.perseus-lat2": {
-      "path": "data/phi0914/phi00119s/phi0914.phi00119s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "div",
-        "head",
-        "hi",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "reg"
-      ],
-      "noteElements": ["hi"],
-      "rends": ["hi@overline"],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "note@anchored",
-        "note@place",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi0012.perseus-lat2": {
-      "path": "data/phi0914/phi0012/phi0914.phi0012.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["foreign", "hi", "name", "reg"],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi0012.perseus-lat3": {
-      "path": "data/phi0914/phi0012/phi0914.phi0012.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00120s.perseus-lat2": {
-      "path": "data/phi0914/phi00120s/phi0914.phi00120s.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "div",
-        "head",
-        "hi",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "reg"
-      ],
-      "noteElements": ["hi", "name", "reg"],
-      "rends": ["hi@overline"],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "note@anchored",
-        "note@place",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00121.perseus-lat1": {
-      "path": "data/phi0914/phi00121/phi0914.phi00121.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["choice", "corr", "foreign", "hi", "name", "reg", "sic"],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi00121.perseus-lat2": {
-      "path": "data/phi0914/phi00121/phi0914.phi00121.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00122.perseus-lat1": {
-      "path": "data/phi0914/phi00122/phi0914.phi00122.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "hi",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["foreign", "hi", "name", "quote", "reg"],
-      "rends": ["hi@italics"],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi00122.perseus-lat2": {
-      "path": "data/phi0914/phi00122/phi0914.phi00122.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00123.perseus-lat1": {
-      "path": "data/phi0914/phi00123/phi0914.phi00123.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00123.perseus-lat3": {
-      "path": "data/phi0914/phi00123/phi0914.phi00123.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["hi", "name", "note", "reg"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend", "note@anchored", "note@place"]
-    },
-    "phi0914.phi00124.perseus-lat1": {
-      "path": "data/phi0914/phi00124/phi0914.phi00124.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00124.perseus-lat3": {
-      "path": "data/phi0914/phi00124/phi0914.phi00124.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["choice", "corr", "hi", "name", "reg", "sic"],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00125.perseus-lat1": {
-      "path": "data/phi0914/phi00125/phi0914.phi00125.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00125.perseus-lat3": {
-      "path": "data/phi0914/phi00125/phi0914.phi00125.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["hi", "name", "reg"],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00126.perseus-lat2": {
-      "path": "data/phi0914/phi00126/phi0914.phi00126.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["hi", "name", "reg"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00126.perseus-lat3": {
-      "path": "data/phi0914/phi00126/phi0914.phi00126.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00127.perseus-lat2": {
-      "path": "data/phi0914/phi00127/phi0914.phi00127.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["hi", "name", "reg"],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00127.perseus-lat3": {
-      "path": "data/phi0914/phi00127/phi0914.phi00127.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00128.perseus-lat2": {
-      "path": "data/phi0914/phi00128/phi0914.phi00128.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00128.perseus-lat3": {
-      "path": "data/phi0914/phi00128/phi0914.phi00128.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["choice", "corr", "hi", "name", "reg", "sic"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00129.perseus-lat2": {
-      "path": "data/phi0914/phi00129/phi0914.phi00129.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00129.perseus-lat3": {
-      "path": "data/phi0914/phi00129/phi0914.phi00129.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["choice", "corr", "hi", "name", "reg", "sic"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi0013.perseus-lat2": {
-      "path": "data/phi0914/phi0013/phi0914.phi0013.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi0013.perseus-lat3": {
-      "path": "data/phi0914/phi0013/phi0914.phi0013.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "hi",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["foreign", "hi", "name", "reg"],
-      "rends": ["hi@italics"],
+      "rends": ["hi@italics", "hi@overline"],
       "noteRends": [
         "hi@italics",
         "hi@overline",
@@ -5950,313 +5929,30 @@
         "hi@superscript"
       ],
       "attrs": [
+        "body@xml:base",
         "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
+        "div@source",
+        "div@subtype",
         "div@type",
+        "div@xml:lang",
+        "gap@reason",
         "hi@rend",
-        "milestone@n",
-        "milestone@unit",
         "note@anchored",
         "note@place",
         "note@type",
         "pb@n"
       ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi00130.perseus-lat2": {
-      "path": "data/phi0914/phi00130/phi0914.phi00130.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00130.perseus-lat3": {
-      "path": "data/phi0914/phi00130/phi0914.phi00130.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["foreign", "hi", "name", "quote", "reg"],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi00131.perseus-lat1": {
-      "path": "data/phi0914/phi00131/phi0914.phi00131.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "forename",
-        "genName",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "sic",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
+      "noteAttrs": [
+        "foreign@xml:lang",
         "hi@rend",
         "milestone@n",
         "milestone@unit",
         "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
+        "note@place"
+      ]
     },
-    "phi0914.phi00132.perseus-lat1": {
-      "path": "data/phi0914/phi00132/phi0914.phi00132.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "gap",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00133.perseus-lat1": {
-      "path": "data/phi0914/phi00133/phi0914.phi00133.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "gap",
-        "genName",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00134.perseus-lat1": {
-      "path": "data/phi0914/phi00134/phi0914.phi00134.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "forename",
-        "gap",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "sic",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00135.perseus-lat1": {
-      "path": "data/phi0914/phi00135/phi0914.phi00135.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "gap",
-        "genName",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "sic",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00136.perseus-lat1": {
-      "path": "data/phi0914/phi00136/phi0914.phi00136.perseus-lat1.xml",
+    "phi0914.phi001.perseus-lat5": {
+      "path": "data/phi0914/phi001/phi0914.phi001.perseus-lat5.xml",
       "onboarded": false,
       "elements": [
         "addName",
@@ -6268,350 +5964,6 @@
         "gap",
         "genName",
         "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "sic",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00137.perseus-lat1": {
-      "path": "data/phi0914/phi00137/phi0914.phi00137.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "gap",
-        "genName",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00138.perseus-lat1": {
-      "path": "data/phi0914/phi00138/phi0914.phi00138.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "gap",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00139.perseus-lat1": {
-      "path": "data/phi0914/phi00139/phi0914.phi00139.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "forename",
-        "gap",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "sic",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi0014.perseus-lat2": {
-      "path": "data/phi0914/phi0014/phi0914.phi0014.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi0014.perseus-lat3": {
-      "path": "data/phi0914/phi0014/phi0914.phi0014.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["choice", "corr", "foreign", "hi", "name", "reg", "sic"],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi00140.perseus-lat1": {
-      "path": "data/phi0914/phi00140/phi0914.phi00140.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "forename",
-        "gap",
-        "genName",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "sic",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00141.perseus-lat1": {
-      "path": "data/phi0914/phi00141/phi0914.phi00141.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "forename",
-        "gap",
-        "genName",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "sic",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00142.perseus-lat1": {
-      "path": "data/phi0914/phi00142/phi0914.phi00142.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "forename",
-        "gap",
-        "hi",
-        "milestone",
         "note",
         "num",
         "p",
@@ -6626,587 +5978,25 @@
       "attrs": [
         "addName@full",
         "addName@n",
+        "body@xml:base",
         "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
+        "div@source",
+        "div@subtype",
         "div@type",
+        "div@xml:lang",
         "forename@full",
+        "gap@reason",
+        "genName@full",
+        "genName@n",
         "hi@rend",
-        "milestone@n",
-        "milestone@unit",
         "note@anchored",
         "note@place",
         "num@value",
         "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00143.perseus-lat1": {
-      "path": "data/phi0914/phi00143/phi0914.phi00143.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "forename",
-        "gap",
-        "genName",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "sic",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00143.perseus-lat3": {
-      "path": "data/phi0914/phi00143/phi0914.phi00143.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "gap",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["choice", "corr", "hi", "name", "quote", "reg", "sic"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00144.perseus-lat1": {
-      "path": "data/phi0914/phi00144/phi0914.phi00144.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "forename",
-        "gap",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "sic",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00144.perseus-lat3": {
-      "path": "data/phi0914/phi00144/phi0914.phi00144.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "gap",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["choice", "corr", "hi", "name", "quote", "reg", "sic"],
-      "rends": [],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi00145.perseus-lat1": {
-      "path": "data/phi0914/phi00145/phi0914.phi00145.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": [
-        "#comment",
-        "addName",
-        "body",
-        "forename",
-        "gap",
-        "hi",
-        "milestone",
-        "note",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": ["date"],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "addName@n",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
         "pb@type",
-        "persName@n"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi00145.perseus-lat3": {
-      "path": "data/phi0914/phi00145/phi0914.phi00145.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["choice", "corr", "hi", "name", "quote", "reg", "sic"],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["hi@rend"]
-    },
-    "phi0914.phi0015.perseus-lat2": {
-      "path": "data/phi0914/phi0015/phi0914.phi0015.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
         "pb@xml:id",
         "persName@n",
         "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi0015.perseus-lat3": {
-      "path": "data/phi0914/phi0015/phi0914.phi0015.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": [
-        "choice",
-        "corr",
-        "foreign",
-        "hi",
-        "milestone",
-        "name",
-        "reg",
-        "sic"
-      ],
-      "rends": [],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": [
-        "foreign@xml:lang",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit"
-      ]
-    },
-    "phi0914.phi0016.perseus-lat3": {
-      "path": "data/phi0914/phi0016/phi0914.phi0016.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi0017.perseus-lat3": {
-      "path": "data/phi0914/phi0017/phi0914.phi0017.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi0018.perseus-lat2": {
-      "path": "data/phi0914/phi0018/phi0914.phi0018.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi0018.perseus-lat3": {
-      "path": "data/phi0914/phi0018/phi0914.phi0018.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "hi",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": [
-        "choice",
-        "corr",
-        "foreign",
-        "hi",
-        "name",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "rends": ["hi@italics"],
-      "noteRends": ["hi@italics", "hi@overline"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi0019.perseus-lat2": {
-      "path": "data/phi0914/phi0019/phi0914.phi0019.perseus-lat2.xml",
-      "onboarded": false,
-      "elements": [
-        "addName",
-        "body",
-        "div",
-        "forename",
-        "genName",
-        "milestone",
-        "p",
-        "pb",
-        "persName",
-        "surname"
-      ],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": [
-        "addName@full",
-        "addName@n",
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "forename@full",
-        "genName@full",
-        "genName@n",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n",
-        "pb@xml:id",
-        "persName@n",
-        "surname@full"
-      ],
-      "noteAttrs": []
-    },
-    "phi0914.phi0019.perseus-lat3": {
-      "path": "data/phi0914/phi0019/phi0914.phi0019.perseus-lat3.xml",
-      "onboarded": false,
-      "elements": [
-        "body",
-        "choice",
-        "corr",
-        "div",
-        "head",
-        "hi",
-        "milestone",
-        "name",
-        "note",
-        "p",
-        "pb",
-        "quote",
-        "reg",
-        "sic"
-      ],
-      "noteElements": ["foreign", "hi", "name", "quote", "reg"],
-      "rends": ["hi@italics"],
-      "noteRends": ["hi@italics"],
-      "attrs": [
-        "div@n",
-        "div@org",
-        "div@part",
-        "div@sample",
-        "div@type",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "note@anchored",
-        "note@place",
-        "note@type",
-        "pb@n"
-      ],
-      "noteAttrs": ["foreign@xml:lang", "hi@rend"]
-    },
-    "phi0914.phi001fr.perseus-lat1": {
-      "path": "data/phi0914/phi001fr/phi0914.phi001fr.perseus-lat1.xml",
-      "onboarded": false,
-      "elements": ["body", "div", "gap", "head", "hi", "milestone", "p", "pb"],
-      "noteElements": [],
-      "rends": ["hi@italics"],
-      "noteRends": [],
-      "attrs": [
-        "div@n",
-        "div@type",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "pb@n"
       ],
       "noteAttrs": []
     },
@@ -7228,6 +6018,7 @@
       "noteRends": [],
       "attrs": [
         "bibl@n",
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7247,6 +6038,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7267,6 +6059,7 @@
       "rends": ["l@indent"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7284,6 +6077,7 @@
       "rends": ["l@indent", "milestone@indent"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7307,6 +6101,7 @@
       "rends": ["l@indent", "milestone@indent"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7328,6 +6123,7 @@
       "rends": ["l@indent", "milestone@indent"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7350,7 +6146,7 @@
       "rends": ["l@indent", "milestone@indent"],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "l@n",
@@ -7370,6 +6166,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7390,6 +6187,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7408,6 +6206,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7427,6 +6226,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7446,7 +6246,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "l@n",
@@ -7473,6 +6273,7 @@
       "rends": ["l@indent", "l@merge", "q@merge"],
       "noteRends": ["hi@superscript"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7514,6 +6315,7 @@
       "rends": ["hi@italics", "quote@blockquote"],
       "noteRends": ["hi@italics"],
       "attrs": [
+        "body@xml:base",
         "foreign@xml:lang",
         "hi@rend",
         "l@part",
@@ -7548,6 +6350,7 @@
       "rends": ["hi@italics"],
       "noteRends": ["hi@italics"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7586,6 +6389,7 @@
       "rends": ["hi@italics", "hi@super", "quote@blockquote"],
       "noteRends": ["hi@italics", "quote@blockquote"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@type",
         "hi@rend",
@@ -7604,6 +6408,7 @@
       "rends": ["hi@italics", "quote@blockquote"],
       "noteRends": ["hi@italics"],
       "attrs": [
+        "body@xml:base",
         "hi@rend",
         "l@part",
         "milestone@n",
@@ -7621,6 +6426,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7665,6 +6471,7 @@
         "hi@sup"
       ],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7714,6 +6521,7 @@
       "rends": ["hi@italic", "hi@italics", "quote@blockquote"],
       "noteRends": ["hi@italic", "hi@italics"],
       "attrs": [
+        "body@xml:base",
         "del@status",
         "div@n",
         "div@subtype",
@@ -7763,6 +6571,7 @@
       "noteRends": [],
       "attrs": [
         "bibl@n",
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7800,6 +6609,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7838,6 +6648,7 @@
       "noteRends": [],
       "attrs": [
         "bibl@n",
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -7862,7 +6673,14 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div@n", "div@subtype", "div@type", "div@xml:lang", "pb@n"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:lang",
+        "pb@n"
+      ],
       "noteAttrs": []
     },
     "phi1017.phi001.perseus-lat2": {
@@ -7884,7 +6702,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "gap@reason",
@@ -7917,7 +6735,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "gap@reason",
@@ -7949,7 +6767,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "gap@reason",
@@ -7980,7 +6798,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "gap@reason",
@@ -8011,7 +6829,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "gap@reason",
@@ -8044,7 +6862,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "gap@reason",
@@ -8075,7 +6893,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "gap@reason",
@@ -8106,7 +6924,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "l@n",
@@ -8137,7 +6955,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "gap@reason",
@@ -8168,7 +6986,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
-        "div@n",
+        "body@xml:base",
         "div@type",
         "div@xml:lang",
         "gap@reason",
@@ -8200,6 +7018,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": ["hi@italics"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8230,6 +7049,7 @@
       "rends": ["l@F", "quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8264,6 +7084,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8281,6 +7102,7 @@
       "path": "data/phi1017/phi015/phi1017.phi015.perseus-lat2.xml",
       "onboarded": false,
       "elements": [
+        "add",
         "body",
         "choice",
         "corr",
@@ -8298,7 +7120,7 @@
         "quote",
         "sic"
       ],
-      "noteElements": ["foreign", "gap", "q"],
+      "noteElements": ["foreign", "gap", "hi", "q"],
       "rends": [
         "gap@ . . . ",
         "gap@ . . . . . . . ",
@@ -8312,8 +7134,16 @@
         "quote@align(blockquote)",
         "quote@double"
       ],
-      "noteRends": ["gap@ . . . ", "q@double", "q@single"],
+      "noteRends": [
+        "gap@ . . . ",
+        "hi@align(lowered)",
+        "hi@align(raised)",
+        "q@double",
+        "q@single"
+      ],
       "attrs": [
+        "add@resp",
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8329,7 +7159,6 @@
         "l@rend",
         "milestone@n",
         "milestone@unit",
-        "note@n",
         "note@resp",
         "note@xml:id",
         "note@xml:lang",
@@ -8338,7 +7167,13 @@
         "q@rend",
         "quote@rend"
       ],
-      "noteAttrs": ["foreign@xml:lang", "gap@reason", "gap@rend", "q@rend"]
+      "noteAttrs": [
+        "foreign@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "hi@rend",
+        "q@rend"
+      ]
     },
     "phi1020.phi001.perseus-lat2": {
       "path": "data/phi1020/phi001/phi1020.phi001.perseus-lat2.xml",
@@ -8348,6 +7183,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8369,6 +7205,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8389,6 +7226,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8423,6 +7261,7 @@
       "rends": [],
       "noteRends": ["hi@italics", "hi@sup", "quote@blockquote"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8457,6 +7296,7 @@
       "rends": ["hi@7"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8467,8 +7307,8 @@
       ],
       "noteAttrs": []
     },
-    "phi1056.phi001.perseus-lat1": {
-      "path": "data/phi1056/phi001/phi1056.phi001.perseus-lat1.xml",
+    "phi1056.phi001.perseus-lat2": {
+      "path": "data/phi1056/phi001/phi1056.phi001.perseus-lat2.xml",
       "onboarded": false,
       "elements": [
         "#comment",
@@ -8486,20 +7326,27 @@
         "quote"
       ],
       "noteElements": ["foreign"],
-      "rends": ["hi@scp"],
+      "rends": [
+        "del@merge",
+        "gap@* * * * ",
+        "head@align(indent)",
+        "hi@smallcaps"
+      ],
       "noteRends": [],
       "attrs": [
+        "del@rend",
         "div@n",
         "div@subtype",
         "div@type",
+        "div@xml:base",
         "div@xml:lang",
         "foreign@xml:lang",
         "gap@reason",
+        "gap@rend",
+        "head@rend",
         "hi@rend",
         "note@anchored",
-        "note@place",
         "note@resp",
-        "note@type",
         "note@xml:lang"
       ],
       "noteAttrs": ["foreign@xml:lang"]
@@ -8524,6 +7371,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8543,6 +7391,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8573,6 +7422,7 @@
       "rends": ["gap@* * *", "p@indent", "quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8605,6 +7455,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8651,6 +7502,7 @@
       ],
       "noteRends": ["hi@italic", "hi@sup"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8689,6 +7541,7 @@
       "rends": ["q@merge"],
       "noteRends": ["hi@italic"],
       "attrs": [
+        "body@xml:base",
         "div@met",
         "div@n",
         "div@org",
@@ -8711,6 +7564,7 @@
       "rends": ["hi@7"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8743,6 +7597,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8776,6 +7631,7 @@
       "rends": ["hi@7"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8832,6 +7688,7 @@
       ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8874,6 +7731,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8903,6 +7761,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8932,6 +7791,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8959,6 +7819,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -8991,6 +7852,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9012,6 +7874,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9029,6 +7892,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9045,6 +7909,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9073,6 +7938,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9090,7 +7956,13 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div@n", "div@subtype", "div@type", "div@xml:lang"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:lang"
+      ],
       "noteAttrs": []
     },
     "phi1348.abo022.perseus-lat2": {
@@ -9114,6 +7986,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9124,14 +7997,35 @@
       ],
       "noteAttrs": []
     },
-    "phi1351.phi001.perseus-lat1": {
-      "path": "data/phi1351/phi001/phi1351.phi001.perseus-lat1.xml",
+    "phi1351.phi001.perseus-lat2": {
+      "path": "data/phi1351/phi001/phi1351.phi001.perseus-lat2.xml",
       "onboarded": true,
-      "elements": ["#comment", "body", "div", "head", "p"],
+      "elements": ["add", "body", "del", "div", "gap", "head", "p", "q"],
       "noteElements": [],
-      "rends": [],
+      "rends": [
+        "gap@ * * ",
+        "gap@ * * * ",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@double",
+        "q@single",
+        "q@single; merge"
+      ],
       "noteRends": [],
-      "attrs": ["div@n", "div@subtype", "div@type", "div@xml:lang"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
+        "p@rend",
+        "q@rend",
+        "q@type"
+      ],
       "noteAttrs": []
     },
     "phi1351.phi002.perseus-lat1": {
@@ -9141,7 +8035,13 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div@n", "div@subtype", "div@type", "div@xml:lang"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:lang"
+      ],
       "noteAttrs": []
     },
     "phi1351.phi003.perseus-lat1": {
@@ -9151,7 +8051,7 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div1@n", "div1@type", "div2@n", "div2@type"],
+      "attrs": ["body@xml:base", "div1@n", "div1@type", "div2@n", "div2@type"],
       "noteAttrs": []
     },
     "phi1351.phi004.perseus-lat2": {
@@ -9164,6 +8064,7 @@
       "attrs": [
         "add@instant",
         "add@status",
+        "body@xml:base",
         "del@instant",
         "del@status",
         "div@n",
@@ -9195,6 +8096,7 @@
       "rends": ["hi@7"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div1@n",
         "div1@type",
         "hi@rend",
@@ -9222,6 +8124,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div1@n",
         "div1@type",
         "div2@n",
@@ -9239,6 +8142,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9260,6 +8164,7 @@
       "rends": ["label@opener"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9281,6 +8186,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9301,6 +8207,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9322,6 +8229,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9342,6 +8250,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9362,6 +8271,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9382,6 +8292,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9403,6 +8314,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9424,6 +8336,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9445,6 +8358,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9465,6 +8379,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9485,6 +8400,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9505,6 +8421,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9525,6 +8442,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9545,6 +8463,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9565,6 +8484,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9595,6 +8515,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9627,6 +8548,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9649,6 +8571,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9669,6 +8592,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9689,6 +8613,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9721,6 +8646,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9743,6 +8669,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9763,6 +8690,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9792,6 +8720,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9812,6 +8741,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9832,6 +8762,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9863,6 +8794,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9885,6 +8817,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9921,6 +8854,7 @@
       "rends": ["p@indent", "q@merge", "quote@blockquote"],
       "noteRends": ["gap@. . . .", "hi@overline", "hi@sup"],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -9954,6 +8888,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "date@n",
         "div1@n",
         "div1@type",
@@ -9985,6 +8920,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "date@n",
         "div1@n",
         "div1@type",
@@ -10003,6 +8939,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10023,6 +8960,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10053,6 +8991,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10076,6 +9015,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10095,6 +9035,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10113,6 +9054,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10144,6 +9086,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10164,6 +9107,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10183,6 +9127,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10202,6 +9147,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10236,6 +9182,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10258,6 +9205,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10277,6 +9225,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10293,7 +9242,14 @@
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div@n", "div@subtype", "div@type", "div@xml:lang", "pb@n"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:lang",
+        "pb@n"
+      ],
       "noteAttrs": []
     },
     "stoa0045.stoa015.perseus-lat2": {
@@ -10315,6 +9271,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10346,6 +9303,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10366,6 +9324,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10383,6 +9342,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10412,6 +9372,7 @@
       "rends": ["label@opener"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10432,6 +9393,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10450,6 +9412,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10470,6 +9433,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10489,6 +9453,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10508,6 +9473,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10527,6 +9493,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10559,6 +9526,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10632,6 +9600,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10654,6 +9623,7 @@
       "rends": ["q@undirect"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10674,6 +9644,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10702,6 +9673,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10733,6 +9705,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10754,6 +9727,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10783,6 +9757,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div1@n",
         "div1@type",
         "milestone@n",
@@ -10799,6 +9774,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10817,6 +9793,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10838,6 +9815,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10856,6 +9834,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10877,6 +9856,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "del@status",
         "div@n",
         "div@subtype",
@@ -10897,6 +9877,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10916,6 +9897,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10935,6 +9917,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10955,6 +9938,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10974,6 +9958,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -10992,6 +9977,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11012,6 +9998,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11031,6 +10018,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11049,6 +10037,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11078,6 +10067,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11104,6 +10094,7 @@
       ],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11126,6 +10117,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11144,6 +10136,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11161,6 +10154,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11178,6 +10172,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11195,6 +10190,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11212,6 +10208,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11229,6 +10226,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11247,6 +10245,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11264,6 +10263,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11281,6 +10281,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11298,6 +10299,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11327,6 +10329,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11348,7 +10351,14 @@
       "noteElements": ["gap"],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div@n", "div@subtype", "div@type", "div@xml:lang", "pb@n"],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:lang",
+        "pb@n"
+      ],
       "noteAttrs": ["gap@reason"]
     },
     "stoa0255.stoa009.perseus-lat2": {
@@ -11359,6 +10369,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11387,6 +10398,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11420,6 +10432,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11444,6 +10457,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11461,6 +10475,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11489,6 +10504,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11500,18 +10516,26 @@
       ],
       "noteAttrs": []
     },
-    "stoa0261.stoa0001.perseus-lat1": {
-      "path": "data/stoa0261/stoa0001/stoa0261.stoa0001.perseus-lat1.xml",
+    "stoa0261.stoa001.perseus-lat1": {
+      "path": "data/stoa0261/stoa001/stoa0261.stoa001.perseus-lat1.xml",
       "onboarded": false,
       "elements": ["body", "div1", "div2", "head", "l", "p", "pb", "q"],
       "noteElements": [],
       "rends": [],
       "noteRends": [],
-      "attrs": ["div1@n", "div1@type", "div2@n", "div2@type", "l@n", "pb@id"],
+      "attrs": [
+        "body@xml:base",
+        "div1@n",
+        "div1@type",
+        "div2@n",
+        "div2@type",
+        "l@n",
+        "pb@id"
+      ],
       "noteAttrs": []
     },
-    "stoa0261.stoa0002.perseus-lat1": {
-      "path": "data/stoa0261/stoa0002/stoa0261.stoa0002.perseus-lat1.xml",
+    "stoa0261.stoa002.perseus-lat1": {
+      "path": "data/stoa0261/stoa002/stoa0261.stoa002.perseus-lat1.xml",
       "onboarded": false,
       "elements": [
         "add",
@@ -11532,6 +10556,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div1@n",
         "div1@type",
         "div2@n",
@@ -11546,8 +10571,8 @@
       ],
       "noteAttrs": []
     },
-    "stoa0261.stoa0002.perseus-lat2": {
-      "path": "data/stoa0261/stoa0002/stoa0261.stoa0002.perseus-lat2.xml",
+    "stoa0261.stoa002.perseus-lat2": {
+      "path": "data/stoa0261/stoa002/stoa0261.stoa002.perseus-lat2.xml",
       "onboarded": false,
       "elements": [
         "add",
@@ -11566,6 +10591,7 @@
       "rends": ["quote@blockquote"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div1@n",
         "div1@type",
         "div2@n",
@@ -11585,6 +10611,7 @@
       "rends": ["l@align(right)"],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11603,6 +10630,7 @@
       "rends": [],
       "noteRends": [],
       "attrs": [
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
@@ -11623,6 +10651,7 @@
       "noteRends": [],
       "attrs": [
         "bibl@n",
+        "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
