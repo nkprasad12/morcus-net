@@ -63,6 +63,80 @@ export const LIBRARY_ACTIONS: LibraryAction[] = [
       });
     },
   },
+  {
+    name: "render",
+    help:
+      "Renders every onboarded Perseus work through the reader pipeline and " +
+      "writes each page's HTML to .cache/library-render/<label>/.",
+    configure: (parser) => {
+      parser.add_argument("--label", {
+        help: "Output label (default: <latinLit short sha>-<morcus-net short sha>).",
+      });
+      parser.add_argument("--works", {
+        help: "Comma-separated work ids to (re-)render into the label (default: all).",
+      });
+      parser.add_argument("--root", {
+        help: "The canonical-latinLit checkout to render (default: $LIB_XML_ROOT).",
+      });
+      parser.add_argument("--out", {
+        help: "Output directory root (default: .cache/library-render).",
+      });
+    },
+    run: async (args) => {
+      const { runRenderCli, parseWorkList } = await import(
+        "@/scripts/library/render"
+      );
+      return runRenderCli({
+        label: optString(args.label),
+        works: parseWorkList(optString(args.works)),
+        root: optString(args.root),
+        out: optString(args.out),
+      });
+    },
+  },
+  {
+    name: "diff",
+    help:
+      "Compares two renders (library render labels): pages added, removed and " +
+      "changed, with an HTML-aware summary. Exits non-zero if they differ.",
+    configure: (parser) => {
+      parser.add_argument("--from", {
+        help: "Baseline label.",
+        required: true,
+      });
+      parser.add_argument("--to", {
+        help: "Label to compare.",
+        required: true,
+      });
+      parser.add_argument("--out", {
+        help: "Render root (default: .cache/library-render).",
+      });
+      parser.add_argument("--allow-diff", {
+        help: "Exit 0 even if the renders differ.",
+        action: "store_true",
+      });
+      parser.add_argument("--quiet", {
+        help: "Print only the summary, not the whole report.",
+        action: "store_true",
+      });
+    },
+    run: async (args) => {
+      const { runDiffCli } = await import("@/scripts/library/diff");
+      const from = optString(args.from);
+      const to = optString(args.to);
+      if (from === undefined || to === undefined) {
+        console.error("--from and --to are required");
+        return false;
+      }
+      return runDiffCli({
+        from,
+        to,
+        out: optString(args.out),
+        allowDiff: Boolean(args.allow_diff),
+        quiet: Boolean(args.quiet),
+      });
+    },
+  },
 ];
 
 /** Name of the parsed-args key that holds the chosen library action. */
