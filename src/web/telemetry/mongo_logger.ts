@@ -62,9 +62,14 @@ export class MongoLogger implements TelemetryLogger {
     uri: string = checkPresent(process.env.MONGODB_URI, "No MongoDB URI set."),
     source: string = checkPresent(process.env.DB_SOURCE, "No source id set.")
   ): Promise<MongoLogger> {
+    // The constructor parses (and rejects a malformed) URI synchronously; the
+    // driver connects lazily on the first insert and retries server selection
+    // itself. Connecting eagerly here would turn a transient outage during
+    // startup into a server lifetime with no telemetry.
     const client = new MongoClient(uri, CLIENT_OPTIONS);
     const logger = new MongoLogger(client, source);
-    await logger.initialize();
+    logger.initialized = true;
+    console.log("Initialized MongoLogger");
     return logger;
   }
 
@@ -77,12 +82,6 @@ export class MongoLogger implements TelemetryLogger {
     private readonly client: Readonly<MongoClient>,
     private readonly source: string
   ) {}
-
-  private async initialize(): Promise<void> {
-    await this.client.connect();
-    this.initialized = true;
-    console.log("Initialized MongoLogger");
-  }
 
   async teardown(): Promise<void> {
     try {
@@ -106,24 +105,40 @@ export class MongoLogger implements TelemetryLogger {
     }
     this.traffic.humanRequests += 1;
     this.traffic.humanLatencyMs += data.latencyMs;
-    return this.log(data, API_CALL_COLLECTION);
+    await this.log(data, API_CALL_COLLECTION);
   }
 
   async logServerHealth(data: NodeJS.MemoryUsage): Promise<void> {
     assert(this.initialized, "MongoLogger was not initialized.");
+    const window = this.traffic;
     const snapshot: TrafficWindowCounters = {
-      humanRequests: this.traffic.humanRequests,
-      humanLatencyMs: roundMs(this.traffic.humanLatencyMs),
-      botRequests: this.traffic.botRequests,
-      botLatencyMs: roundMs(this.traffic.botLatencyMs),
-      botHeavyRequests: this.traffic.botHeavyRequests,
-      botHeavyLatencyMs: roundMs(this.traffic.botHeavyLatencyMs),
+      humanRequests: window.humanRequests,
+      humanLatencyMs: roundMs(window.humanLatencyMs),
+      botRequests: window.botRequests,
+      botLatencyMs: roundMs(window.botLatencyMs),
+      botHeavyRequests: window.botHeavyRequests,
+      botHeavyLatencyMs: roundMs(window.botHeavyLatencyMs),
     };
+    // Start the next window now, so requests during the write land in it.
     this.traffic = emptyTrafficCounters();
-    return this.log({ ...data, ...snapshot }, SERVER_HEALTH_COLLECTION);
+    const written = await this.log(
+      { ...data, ...snapshot },
+      SERVER_HEALTH_COLLECTION
+    );
+    if (!written) {
+      // Carry the unreported window into the next one rather than losing it.
+      const next = this.traffic;
+      next.humanRequests += window.humanRequests;
+      next.humanLatencyMs += window.humanLatencyMs;
+      next.botRequests += window.botRequests;
+      next.botLatencyMs += window.botLatencyMs;
+      next.botHeavyRequests += window.botHeavyRequests;
+      next.botHeavyLatencyMs += window.botHeavyLatencyMs;
+    }
   }
 
-  private async log(data: object, collectionName: string): Promise<void> {
+  /** Returns whether the insert succeeded; failures are logged, never thrown. */
+  private async log(data: object, collectionName: string): Promise<boolean> {
     const event: TelemetryEvent = {
       ...data,
       timestamp: Date.now(),
@@ -133,6 +148,7 @@ export class MongoLogger implements TelemetryLogger {
     try {
       const collection = this.client.db().collection(collectionName);
       await collection.insertOne(event);
+      return true;
     } catch (err) {
       const now = Date.now();
       if (
@@ -152,6 +168,7 @@ export class MongoLogger implements TelemetryLogger {
       } else {
         this.suppressedErrorCount++;
       }
+      return false;
     }
   }
 }

@@ -20,6 +20,7 @@ import {
 } from "@/devops/pruner/pruner";
 import {
   LocalFileBackupSink,
+  NO_BACKUP_VALUE,
   parseBackupUri,
   S3BackupSink,
 } from "@/devops/pruner/s3_client";
@@ -59,9 +60,14 @@ async function main(): Promise<number> {
     );
   }
   const maxBytes = maxMb * 1024 * 1024;
-  const sink = parseBackupUri(process.env.PRUNE_BACKUP_URI);
+  const rawBackupUri = process.env.PRUNE_BACKUP_URI?.trim() ?? "";
+  const sink = parseBackupUri(rawBackupUri);
+  const dryRun =
+    process.argv.includes("--dry-run") || process.env.PRUNE_DRY_RUN === "1";
   const runOnce =
-    process.argv.includes("--once") || process.env.PRUNE_RUN_ONCE === "1";
+    dryRun ||
+    process.argv.includes("--once") ||
+    process.env.PRUNE_RUN_ONCE === "1";
 
   // Constructing the client parses the URI but doesn't connect; the driver
   // connects on the first operation. `strict: false` because `dbStats`
@@ -79,10 +85,12 @@ async function main(): Promise<number> {
     process.env.PRUNE_ARCHIVE_PREFIX
   );
 
-  const settings = `retention=${retentionDays}d, max=${maxMb}MB`;
+  const settings = `retention=${retentionDays}d, max=${maxMb}MB${
+    dryRun ? ", DRY RUN: nothing will be written or deleted" : ""
+  }`;
   if (sink === null) {
     log(
-      `Starting in prune-only mode (${settings}); expired weeks are deleted WITHOUT backup.`
+      `Starting in prune-only mode (PRUNE_BACKUP_URI=${NO_BACKUP_VALUE}; ${settings}); expired weeks are deleted WITHOUT backup.`
     );
   } else if (sink instanceof S3BackupSink) {
     log(
@@ -90,13 +98,19 @@ async function main(): Promise<number> {
     );
   } else if (sink instanceof LocalFileBackupSink) {
     log(
-      `Starting with local backup to ${sink.baseDir}/${namespace}/ (${settings}).`
+      `Starting with local backup to ${sink.baseDir}/${namespace}/${
+        rawBackupUri.length === 0 ? " (default; PRUNE_BACKUP_URI is unset)" : ""
+      } (${settings}).`
     );
     // A local destination that isn't mounted or writable is a configuration
     // error, so fail fast before any MongoDB traffic. Remote (S3/R2) problems
     // may be transient; `runPrunePass` checks those every pass and reports
     // them via the health check instead of crash-looping the container.
-    await sink.ensureReady();
+    // A dry run checks (without writing) inside the pass instead, so it can
+    // be run before the archive directory exists.
+    if (!dryRun) {
+      await sink.ensureReady();
+    }
   }
 
   const stop = new StopController();
@@ -117,6 +131,7 @@ async function main(): Promise<number> {
           sink,
           namespace,
           shouldStop: stop.shouldStop,
+          dryRun,
         }),
       markHealthy: () =>
         writeFile(HEALTH_FILE, new Date().toISOString()).catch((err) =>

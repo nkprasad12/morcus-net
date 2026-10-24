@@ -1,6 +1,12 @@
 import { createHash, createHmac } from "node:crypto";
-import { createReadStream, Dirent, existsSync } from "node:fs";
 import {
+  constants as fsConstants,
+  createReadStream,
+  Dirent,
+  existsSync,
+} from "node:fs";
+import {
+  access,
   link,
   mkdir,
   open,
@@ -17,6 +23,14 @@ import { pipeline } from "node:stream/promises";
 import { createGunzip } from "node:zlib";
 
 export const DEFAULT_S3_BUCKET = "morcus-telemetry";
+/**
+ * Where archives go when `PRUNE_BACKUP_URI` is blank: `$LOGS_DIR/archives` on
+ * the host (see `src/devops/docker-compose.yaml`). The same default applies
+ * under `docker run` and in the smoke test, so the three never disagree.
+ */
+export const DEFAULT_BACKUP_DIR = "/morcus/logs/archives";
+/** The only value of `PRUNE_BACKUP_URI` that means "delete without backup". */
+export const NO_BACKUP_VALUE = "none";
 
 /** Host command printed when the pruner (UID 1000) can't write locally. */
 export const LOCAL_SINK_SETUP_COMMAND =
@@ -24,6 +38,13 @@ export const LOCAL_SINK_SETUP_COMMAND =
 
 const TMP_FILE_PREFIX = ".tmp-";
 const WRITE_PROBE_NAME = ".write-probe";
+/**
+ * `.tmp-*` files younger than this are left alone: they may belong to another
+ * pruner instance that is still writing (e.g. `docker compose run --rm pruner
+ * --once` next to the daemon). A single week never takes anywhere near this
+ * long to write.
+ */
+export const STALE_TMP_FILE_AGE_MS = 60 * 60 * 1000;
 
 function log(msg: string): void {
   console.log(`[pruner] ${msg}`);
@@ -31,6 +52,8 @@ function log(msg: string): void {
 
 export interface ArchiveMeta {
   readonly docCount: number;
+  /** Hex `_id` of the last (greatest) document in the archive. */
+  readonly lastId: string;
   readonly weekStart: string;
   readonly weekEnd: string;
 }
@@ -38,19 +61,31 @@ export interface ArchiveMeta {
 /** What a sink can report about an archive that already exists. */
 export interface ArchiveInfo {
   readonly docCount: number;
+  /**
+   * Hex `_id` of the last document in the archive, when the sink can tell
+   * (archives written before this field existed have none).
+   */
+  readonly lastId?: string;
 }
 
 export interface BackupSink {
   /**
    * Validates that the destination is usable (bucket exists / directory is
    * persistent and writable). Throws with an actionable message otherwise.
+   * May create the destination (default bucket, local directory).
    */
   ensureReady(): Promise<void>;
   /**
-   * Returns the document count of an already-backed-up week if it exists, or
-   * `null` if no archive exists for `key`. Throws if an archive exists but is
-   * unreadable, empty, or otherwise can't be trusted; callers must treat that
-   * as "refuse to overwrite or delete".
+   * Like `ensureReady`, but changes nothing: no bucket creation, no
+   * `mkdir`, no write probe, no temp-file cleanup. Used by `--dry-run` to
+   * report whether the destination is ready without touching it.
+   */
+  checkReady(): Promise<void>;
+  /**
+   * Returns the document count (and, if known, last `_id`) of an already-
+   * backed-up week if it exists, or `null` if no archive exists for `key`.
+   * Throws if an archive exists but is unreadable, empty, or otherwise can't
+   * be trusted; callers must treat that as "refuse to overwrite or delete".
    */
   headWeek(key: string): Promise<ArchiveInfo | null>;
   /**
@@ -66,6 +101,13 @@ export interface S3SinkConfig {
   readonly accessKeyId: string;
   readonly secretAccessKey: string;
   readonly region?: string;
+  /**
+   * Whether `ensureReady` may create the bucket if it doesn't exist. Only
+   * the default bucket (`DEFAULT_S3_BUCKET`) is auto-created: a bucket named
+   * explicitly in `PRUNE_BACKUP_URI` must already exist, so a typo can't
+   * quietly send archives to a fresh bucket.
+   */
+  readonly autoCreateBucket?: boolean;
 }
 
 function sha256Hex(data: Buffer | string): string {
@@ -186,6 +228,7 @@ export function signS3Request(params: {
 export class S3BackupSink implements BackupSink {
   readonly endpoint: string;
   readonly bucket: string;
+  readonly autoCreateBucket: boolean;
   private readonly accessKeyId: string;
   private readonly secretAccessKey: string;
   private readonly region: string;
@@ -193,12 +236,17 @@ export class S3BackupSink implements BackupSink {
   constructor(config: S3SinkConfig) {
     this.endpoint = config.endpoint.replace(/\/+$/, "");
     this.bucket = config.bucket;
+    this.autoCreateBucket = config.autoCreateBucket ?? false;
     this.accessKeyId = config.accessKeyId;
     this.secretAccessKey = config.secretAccessKey;
     this.region = config.region ?? "auto";
   }
 
-  async ensureReady(): Promise<void> {
+  /**
+   * HEADs the bucket. Returns `"ok"` if it exists (or the token can't HEAD
+   * buckets), `"missing"` on 404, and throws on anything else.
+   */
+  private async headBucket(): Promise<"ok" | "missing"> {
     const headSigned = signS3Request({
       method: "HEAD",
       endpoint: this.endpoint,
@@ -213,7 +261,7 @@ export class S3BackupSink implements BackupSink {
       signal: AbortSignal.timeout(15_000),
     });
     if (headRes.ok) {
-      return;
+      return "ok";
     }
     if (headRes.status === 403) {
       // Object-scoped tokens (e.g. R2 tokens limited to one bucket) may not
@@ -222,12 +270,34 @@ export class S3BackupSink implements BackupSink {
       log(
         `HEAD bucket '${this.bucket}' returned 403; assuming an object-scoped token and continuing.`
       );
+      return "ok";
+    }
+    if (headRes.status === 404) {
+      return "missing";
+    }
+    throw new Error(
+      `S3 HEAD bucket '${this.bucket}' failed with HTTP ${headRes.status}`
+    );
+  }
+
+  private missingBucketError(): Error {
+    return new Error(
+      `S3 bucket '${this.bucket}' does not exist at ${this.endpoint}. Create it, or omit the bucket from PRUNE_BACKUP_URI to use '${DEFAULT_S3_BUCKET}' (created automatically).`
+    );
+  }
+
+  async checkReady(): Promise<void> {
+    if ((await this.headBucket()) === "missing" && !this.autoCreateBucket) {
+      throw this.missingBucketError();
+    }
+  }
+
+  async ensureReady(): Promise<void> {
+    if ((await this.headBucket()) === "ok") {
       return;
     }
-    if (headRes.status !== 404) {
-      throw new Error(
-        `S3 HEAD bucket '${this.bucket}' failed with HTTP ${headRes.status}`
-      );
+    if (!this.autoCreateBucket) {
+      throw this.missingBucketError();
     }
 
     const putSigned = signS3Request({
@@ -288,7 +358,10 @@ export class S3BackupSink implements BackupSink {
         `S3 archive '${cleanKey}' exists but has no valid x-amz-meta-doc-count ('${docCountStr}'); refusing to trust it.`
       );
     }
-    return { docCount: Number(docCountStr) };
+    const lastId = res.headers.get("x-amz-meta-last-id");
+    return lastId !== null && /^[0-9a-f]{24}$/.test(lastId)
+      ? { docCount: Number(docCountStr), lastId }
+      : { docCount: Number(docCountStr) };
   }
 
   async putWeek(key: string, gzData: Buffer, meta: ArchiveMeta): Promise<void> {
@@ -302,10 +375,12 @@ export class S3BackupSink implements BackupSink {
       region: this.region,
       body: gzData,
       extraHeaders: {
-        "content-type": "application/x-ndjson",
-        "content-encoding": "gzip",
-        "content-length": String(gzData.byteLength),
+        // The object *is* a gzip file, so no `content-encoding`: that would
+        // make browsers and `fetch` transparently gunzip a `.jsonl.gz`
+        // download. `fetch` sets `content-length` itself.
+        "content-type": "application/gzip",
         "x-amz-meta-doc-count": String(meta.docCount),
+        "x-amz-meta-last-id": meta.lastId,
         "x-amz-meta-week-start": meta.weekStart,
         "x-amz-meta-week-end": meta.weekEnd,
         // Never overwrite an existing archive (supported by S3 and R2).
@@ -413,25 +488,63 @@ async function fsyncDir(dirPath: string): Promise<void> {
   }
 }
 
-/** Counts `\n`-terminated lines in a gzip file without buffering it. */
-async function countGzipLines(path: string): Promise<number> {
-  let count = 0;
+interface GzipArchiveSummary {
+  readonly docCount: number;
+  /** The last `\n`-terminated line, or `null` if there were none. */
+  readonly lastLine: string | null;
+}
+
+/**
+ * Counts `\n`-terminated lines in a gzip file and keeps the last complete
+ * one, without buffering the file.
+ */
+async function summarizeGzipLines(path: string): Promise<GzipArchiveSummary> {
+  const state: { count: number; lastLine: Buffer | null; pending: Buffer } = {
+    count: 0,
+    lastLine: null,
+    // Bytes after the last newline seen so far (the start of the next line).
+    pending: Buffer.alloc(0),
+  };
   await pipeline(
     createReadStream(path),
     createGunzip(),
     async (source: AsyncIterable<Buffer>) => {
       for await (const chunk of source) {
+        const lastNl = chunk.lastIndexOf(10);
+        if (lastNl === -1) {
+          state.pending = Buffer.concat([state.pending, chunk]);
+          continue;
+        }
         for (
           let i = chunk.indexOf(10);
           i !== -1;
           i = chunk.indexOf(10, i + 1)
         ) {
-          count++;
+          state.count++;
         }
+        const prevNl = chunk.lastIndexOf(10, lastNl - 1);
+        state.lastLine =
+          prevNl === -1
+            ? Buffer.concat([state.pending, chunk.subarray(0, lastNl)])
+            : chunk.subarray(prevNl + 1, lastNl);
+        state.pending = chunk.subarray(lastNl + 1);
       }
     }
   );
-  return count;
+  return {
+    docCount: state.count,
+    lastLine: state.lastLine === null ? null : state.lastLine.toString("utf8"),
+  };
+}
+
+/** The hex `_id` of an archived document line, or `undefined` if it has none. */
+function parseArchivedId(line: string): string | undefined {
+  const doc: unknown = JSON.parse(line);
+  if (typeof doc !== "object" || doc === null || !("_id" in doc)) {
+    return undefined;
+  }
+  const id = doc._id;
+  return typeof id === "string" && /^[0-9a-f]{24}$/.test(id) ? id : undefined;
 }
 
 export interface LocalSinkOptions {
@@ -503,10 +616,12 @@ export class LocalFileBackupSink implements BackupSink {
   }
 
   /**
-   * Removes `.tmp-*` files left by hard kills. Temp files only ever live next
-   * to archives (`<namespace>/<collection>/<year>/`), so this walks at most
-   * that deep and skips directories it can't read (e.g. `lost+found` at the
-   * root of a dedicated ext4 volume).
+   * Removes `.tmp-*` files left by hard kills (older than
+   * `STALE_TMP_FILE_AGE_MS`, so another running instance's file is left
+   * alone). Temp files only ever live next to archives
+   * (`<namespace>/<collection>/<year>/`), so this walks at most that deep and
+   * skips directories it can't read (e.g. `lost+found` at the root of a
+   * dedicated ext4 volume).
    */
   private async removeStaleTmpFiles(
     dir: string = this.baseDir,
@@ -522,6 +637,7 @@ export class LocalFileBackupSink implements BackupSink {
       }
       throw err;
     }
+    const staleBefore = Date.now() - STALE_TMP_FILE_AGE_MS;
     for (const entry of entries) {
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory()) {
@@ -530,6 +646,10 @@ export class LocalFileBackupSink implements BackupSink {
         }
       } else if (entry.name.startsWith(TMP_FILE_PREFIX)) {
         try {
+          const tmpStat = await stat(fullPath);
+          if (tmpStat.mtimeMs > staleBefore) {
+            continue;
+          }
           await unlink(fullPath);
           log(`Removed stale temp file ${fullPath}.`);
         } catch (err) {
@@ -538,6 +658,25 @@ export class LocalFileBackupSink implements BackupSink {
           );
         }
       }
+    }
+  }
+
+  async checkReady(): Promise<void> {
+    if (this.requireMount) {
+      await this.assertOnPersistentMount();
+    }
+    // Writable without writing: check the nearest directory that exists.
+    let probeDir = this.baseDir;
+    while (!existsSync(probeDir) && dirname(probeDir) !== probeDir) {
+      probeDir = dirname(probeDir);
+    }
+    try {
+      await access(probeDir, fsConstants.W_OK | fsConstants.X_OK);
+    } catch (err) {
+      throw this.permissionError(
+        probeDir === this.baseDir ? "write to" : "create",
+        err
+      );
     }
   }
 
@@ -583,9 +722,9 @@ export class LocalFileBackupSink implements BackupSink {
       throw err;
     }
 
-    let docCount: number;
+    let summary: GzipArchiveSummary;
     try {
-      docCount = await countGzipLines(filePath);
+      summary = await summarizeGzipLines(filePath);
     } catch (err) {
       throw new Error(
         `Local archive ${filePath} is unreadable or corrupt (${errorMessage(
@@ -593,12 +732,24 @@ export class LocalFileBackupSink implements BackupSink {
         )}); refusing to overwrite it or delete this week from MongoDB.`
       );
     }
-    if (docCount === 0) {
+    if (summary.docCount === 0 || summary.lastLine === null) {
       throw new Error(
         `Local archive ${filePath} contains no documents; refusing to overwrite it or delete this week from MongoDB.`
       );
     }
-    return { docCount };
+    let lastId: string | undefined;
+    try {
+      lastId = parseArchivedId(summary.lastLine);
+    } catch (err) {
+      throw new Error(
+        `Local archive ${filePath} ends in an unparseable line (${errorMessage(
+          err
+        )}); refusing to overwrite it or delete this week from MongoDB.`
+      );
+    }
+    return lastId === undefined
+      ? { docCount: summary.docCount }
+      : { docCount: summary.docCount, lastId };
   }
 
   /** Publishes `tmpPath` at `filePath`, failing if `filePath` exists. */
@@ -685,18 +836,20 @@ function localSinkFor(
 
 /**
  * Parses `PRUNE_BACKUP_URI` into a `BackupSink`, or returns `null` for
- * prune-only mode when `rawUri` is unset or empty.
+ * prune-only mode when `rawUri` is exactly `none`.
  *
  * Supported formats:
- * - Empty / unset: `null` (prune-only mode)
+ * - Empty / unset: local backup to `DEFAULT_BACKUP_DIR` (the safe default)
+ * - `none`: `null` (prune-only mode: expired weeks are deleted WITHOUT backup)
  * - `https://<accessKeyId>:<secretAccessKey>@<host>[:port][/<bucket>][?region=auto]`
  *   (or `http://...` for local S3 endpoints); `<bucket>` defaults to
- *   `morcus-telemetry` when omitted. Credentials must be percent-encoded.
+ *   `morcus-telemetry` when omitted, and only that default bucket is created
+ *   automatically. Credentials must be percent-encoded.
  * - `file:///absolute/path` or `/absolute/path`
  *
- * Anything else (relative paths like `none` or `backups`, `file://host/...`,
+ * Anything else (relative paths like `off` or `backups`, `file://host/...`,
  * `/`, other schemes) throws, so a typo never silently writes archives to an
- * unexpected place.
+ * unexpected place or disables backups.
  */
 export function parseBackupUri(
   rawUri?: string,
@@ -704,6 +857,9 @@ export function parseBackupUri(
 ): BackupSink | null {
   const trimmed = rawUri?.trim() ?? "";
   if (trimmed.length === 0) {
+    return localSinkFor(DEFAULT_BACKUP_DIR, localOptions);
+  }
+  if (trimmed === NO_BACKUP_VALUE) {
     return null;
   }
 
@@ -735,11 +891,12 @@ export function parseBackupUri(
         `Invalid PRUNE_BACKUP_URI: bucket path '${pathBucket}' must be a single bucket name`
       );
     }
-    const bucket = pathBucket.length > 0 ? pathBucket : DEFAULT_S3_BUCKET;
+    const explicitBucket = pathBucket.length > 0;
     const region = parsed.searchParams.get("region") ?? "auto";
     return new S3BackupSink({
       endpoint: parsed.origin,
-      bucket,
+      bucket: explicitBucket ? pathBucket : DEFAULT_S3_BUCKET,
+      autoCreateBucket: !explicitBucket,
       accessKeyId,
       secretAccessKey,
       region,
@@ -769,7 +926,7 @@ export function parseBackupUri(
 
   if (!trimmed.startsWith("/")) {
     throw new Error(
-      `Invalid PRUNE_BACKUP_URI '${trimmed}': local backup paths must be absolute (e.g. /morcus/logs/archives). Leave PRUNE_BACKUP_URI empty for prune-only mode.`
+      `Invalid PRUNE_BACKUP_URI '${trimmed}': local backup paths must be absolute (e.g. ${DEFAULT_BACKUP_DIR}). Leave PRUNE_BACKUP_URI empty for the default local backup, or set it to '${NO_BACKUP_VALUE}' to delete without backup.`
     );
   }
   return localSinkFor(trimmed, localOptions);

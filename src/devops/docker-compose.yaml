@@ -94,8 +94,11 @@ services:
       TELEMETRY_MAX_MB: "${TELEMETRY_MAX_MB:-400}"
       PRUNE_BACKUP_URI: "${PRUNE_BACKUP_URI:-}"
       PRUNE_ARCHIVE_PREFIX: "${PRUNE_ARCHIVE_PREFIX:-}"
-    # Local backups (`PRUNE_BACKUP_URI=/morcus/logs/archives`) must be on a
-    # mounted volume; the pruner refuses unmounted paths at startup.
+    # Blank `PRUNE_BACKUP_URI` means the pruner backs each week up to
+    # /morcus/logs/archives (`$LOGS_DIR/archives` on the host, which must be
+    # owned by UID 1000; `vm_setup.sh` creates it) before deleting it. Local
+    # backups must be on a mounted volume; the pruner refuses unmounted paths
+    # at startup.
     volumes:
       - "${LOGS_DIR:?err}:/morcus/logs:rw"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
@@ -104,7 +107,10 @@ services:
     # it after host reboots, docker restarts, or crashes.
     restart: on-failure
     init: true
-    stop_grace_period: 30s
+    # Longer than the 60s archive upload timeout, so a stop during an upload
+    # lets the week finish instead of SIGKILLing it (recovery is idempotent
+    # either way).
+    stop_grace_period: 90s
     mem_limit: 256m
     cpus: "0.5"
     logging:

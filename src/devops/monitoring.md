@@ -37,17 +37,25 @@ Then we can read the result using `top` or a different util.
 
 When `MONGODB_URI` is set in `.env`, the `pruner` service (`morcus-pruner`) runs a pass at startup and then every 24h (± 15m) to keep the MongoDB Atlas `M0` cluster (512 MB cap) within budget:
 
-1. **Age-based pruning**: deletes completed UTC ISO weeks (`YYYY-Www`) older than `TELEMETRY_RETENTION_DAYS` (default `100`) from `ApiCalls`, `ServerHealth` and `ClientEvents`.
-2. **Quota safety valve**: if `db.stats()` (`dataSize + indexSize`, for the database in `MONGODB_URI` only) exceeds `TELEMETRY_MAX_MB` (default `400`), deletes the oldest `ApiCalls` weeks until under the cap. It never deletes the current week or the two most recent completed weeks; if that isn't enough, it logs a warning to check other collections or databases on the cluster.
+1. **Age-based pruning**: archives and then deletes completed UTC ISO weeks (`YYYY-Www`) older than `TELEMETRY_RETENTION_DAYS` (default `100`) from `ApiCalls`, `ServerHealth` and `ClientEvents` (legacy, pre-#592 client events).
+2. **Quota safety valve**: if `db.stats()` (`dataSize + indexSize`, for the database in `MONGODB_URI` only) exceeds `TELEMETRY_MAX_MB` (default `400`), archives and deletes the oldest `ApiCalls` weeks until under the cap. It never deletes the current week or the two most recent completed weeks; if that isn't enough, it logs a warning to check other collections or databases on the cluster.
 
 If `MONGODB_URI` is unset or empty, `morcus-pruner` logs a message and exits `0`, so no container stays resident.
 
-## Configuring Cold Backups (`PRUNE_BACKUP_URI`)
+## Backups (`PRUNE_BACKUP_URI`)
 
-> [!WARNING]
-> If `PRUNE_BACKUP_URI` is unset or empty, `morcus-pruner` runs in **prune-only** mode and deletes expired weeks **without any backup**, starting on its first run. Set `PRUNE_BACKUP_URI` before starting the service if you want archives of older data.
+Each week is archived **before** it is deleted from MongoDB, to `<namespace>/<collection>/<isoYear>/<collection>-<isoYear>-W<ww>.jsonl.gz`, and the archive is verified (document count, and last `_id`) before the delete. `<namespace>` is `<cluster host>-<database>` (e.g. `cluster0.abc.mongodb.net-test`), or `PRUNE_ARCHIVE_PREFIX` if set. Existing archives are never overwritten. Archives are small: a week of human-only `ApiCalls` is typically a few MB gzipped.
 
-With a backup destination, each week is written to `<namespace>/<collection>/<isoYear>/<collection>-<isoYear>-W<ww>.jsonl.gz` and verified before it's deleted from MongoDB. `<namespace>` is `<cluster host>-<database>` (e.g. `cluster0.abc.mongodb.net-test`), or `PRUNE_ARCHIVE_PREFIX` if set. Existing archives are never overwritten.
+- **Default (blank): local disk.** Archives go to `/morcus/logs/archives` in the container, which is `$LOGS_DIR/archives` on the host. The pruner runs as UID 1000, so that directory must be owned by UID 1000; `vm_setup.sh` creates it, or do it once by hand:
+
+  ```bash
+  sudo install -d -o 1000 -g 1000 "$LOGS_DIR/archives"
+  ```
+
+  If the directory is missing or not writable, the pruner exits with that command in its error message and deletes nothing (`docker compose ps` shows it restarting).
+
+  > [!WARNING]
+  > Once a week is deleted from MongoDB, the file under `$LOGS_DIR/archives` is its **only copy**. Nothing rotates, prunes, or copies these archives anywhere else. If that matters, use S3/R2 below, or sync the directory off the VM yourself.
 
 - **S3 / Cloudflare R2**:
 
@@ -55,25 +63,36 @@ With a backup destination, each week is written to `<namespace>/<collection>/<is
   # Default bucket (`morcus-telemetry`, created if missing):
   PRUNE_BACKUP_URI="https://<access_key_id>:<secret_access_key>@<account_id>.r2.cloudflarestorage.com"
 
-  # Explicit bucket name and region (region defaults to `auto`, which is right for R2):
+  # Explicit bucket name and region (region defaults to `auto`, which is right for R2).
+  # A bucket you name explicitly must already exist; only the default one is auto-created.
   PRUNE_BACKUP_URI="https://<access_key_id>:<secret_access_key>@s3.us-east-1.amazonaws.com/my-bucket?region=us-east-1"
   ```
 
   Percent-encode special characters in the keys (`/` → `%2F`, `+` → `%2B`).
 
-- **Local directory**: `$LOGS_DIR` is mounted at `/morcus/logs`. The pruner runs as UID 1000, so create the archive directory once on the host:
+- **Another local directory**: an absolute path inside the container (`file:///...` also works). Relative paths, `/`, and paths that aren't on a mounted volume are rejected at startup.
 
-  ```bash
-  sudo install -d -o 1000 -g 1000 "$LOGS_DIR/archives"
-  ```
+- **No backup at all**: `PRUNE_BACKUP_URI=none`. This is the only value that deletes without archiving; anything else that isn't a recognised destination is rejected, so a typo can never silently disable backups.
 
-  ```dotenv
-  PRUNE_BACKUP_URI="/morcus/logs/archives"
-  ```
+Each line of an archive is one document as plain JSON; `_id` is the 24-character hex string. To load an archive back with `mongoimport`, convert `_id` to an `ObjectId` first (e.g. `jq -c '._id |= {"$oid": .}'`), or use `new ObjectId(doc._id)` in a script.
 
-  Relative paths, `/`, and paths that aren't on a mounted volume are rejected at startup.
+## Upgrading an existing VM
 
-Each line of an archive is one document as plain JSON; `_id` is the 24-character hex string (`new ObjectId(doc._id)` restores it).
+The first `docker compose up -d` after pulling the pruner starts it immediately, and its first pass archives and deletes everything older than `TELEMETRY_RETENTION_DAYS`. On a VM that predates the pruner:
+
+```bash
+# 1. Create the archive directory (UID 1000) that the default local backup needs.
+sudo install -d -o 1000 -g 1000 "$LOGS_DIR/archives"
+
+# 2. Pull the image and preview the first pass. This connects to MongoDB read-only, lists
+#    each week it would archive and delete (document count and gzipped size), and reports
+#    whether the backup destination is ready. It changes nothing.
+docker compose pull pruner
+docker compose run --rm pruner --dry-run
+
+# 3. Start it for real.
+docker compose up -d
+```
 
 ## Operations & Troubleshooting
 
@@ -84,7 +103,13 @@ Each line of an archive is one document as plain JSON; `_id` is the 24-character
   docker compose logs -f pruner
   ```
 
-- **Run a one-shot prune pass manually** (exits non-zero if any errors occurred):
+- **Preview the next pass without changing anything** (exits non-zero if the backup destination isn't ready or a week can't be read):
+
+  ```bash
+  docker compose run --rm pruner --dry-run
+  ```
+
+- **Run a one-shot prune pass manually** (exits non-zero if any errors occurred). Running it next to the daemon is safe: archives can't be overwritten (`If-None-Match` on S3, `link()` locally), each instance deletes only up to its own last exported `_id`, and temp files younger than an hour are left alone.
 
   ```bash
   docker compose run --rm pruner --once

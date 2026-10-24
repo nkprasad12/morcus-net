@@ -253,7 +253,9 @@ jobs:
   preview-helper-image-promotion:
     # Checks that every helper image for this commit is built and tested, and
     # reports which ones the next `main` release would promote (and so
-    # redeploy). Changes nothing in the registry.
+    # redeploy). Changes nothing in the registry. It doesn't log in to GHCR:
+    # the helper image packages are public, so `imagetools inspect` works
+    # anonymously (and there is nothing here that needs write access).
     if: github.event_name == 'push'
     needs: build-helper-images
     runs-on: ubuntu-24.04

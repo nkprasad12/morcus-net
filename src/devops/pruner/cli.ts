@@ -5,7 +5,8 @@ export const EXIT_ERROR = 1;
 export const EXIT_SIGINT = 130;
 export const EXIT_SIGTERM = 143;
 
-export const MIN_RETENTION_DAYS = 7;
+/** A floor against typos (`TELEMETRY_RETENTION_DAYS=1`), not a policy. */
+export const MIN_RETENTION_DAYS = 30;
 export const MIN_MAX_MB = 50;
 export const WARN_MAX_MB = 500;
 
@@ -86,7 +87,8 @@ export interface PruneLoopDeps {
 }
 
 function describePass(result: PrunePassResult): string {
-  return `pruned ${result.prunedWeeks.length} week(s), ${
+  const verb = result.dryRun ? "would prune" : "pruned";
+  return `${verb} ${result.prunedWeeks.length} week(s), ${
     result.errors.length
   } error(s)${result.stoppedEarly ? " (stopped early on signal)" : ""}`;
 }
@@ -94,8 +96,8 @@ function describePass(result: PrunePassResult): string {
 /**
  * Runs one pass (`runOnce`) or the daemon loop, and returns the process exit
  * code:
- * - `--once`: `0` if the pass had no errors, `1` if it did or threw, or the
- *   signal code if it was interrupted.
+ * - `--once` / `--dry-run`: `0` if the pass had no errors, `1` if it did or
+ *   threw, or the signal code if it was interrupted.
  * - Daemon: runs until stopped, then returns `143` (SIGTERM) / `130` (SIGINT)
  *   so `restart: on-failure` brings the container back after a clean host
  *   reboot or docker restart. The health file is written only after a fully
@@ -109,7 +111,11 @@ export async function runPruneLoop(
   if (runOnce) {
     try {
       const result = await deps.runPass();
-      deps.log(`Completed single pass: ${describePass(result)}.`);
+      deps.log(
+        `Completed single ${
+          result.dryRun ? "dry-run " : ""
+        }pass: ${describePass(result)}.`
+      );
       if (stop.exitCode !== null) {
         return stop.exitCode;
       }

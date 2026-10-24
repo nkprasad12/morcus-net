@@ -21,6 +21,8 @@ export const MIN_QUOTA_RETENTION_DAYS = 14;
 export const TELEMETRY_COLLECTIONS = [
   "ApiCalls",
   "ServerHealth",
+  // Legacy: written by the pre-#592 (Preact) client; nothing writes it now,
+  // but old deployments still hold documents in it.
   "ClientEvents",
 ] as const;
 
@@ -145,6 +147,13 @@ async function compressDocsToGzip(cursor: AsyncIterable<Document>): Promise<{
     gzip.on("end", () => resolve(Buffer.concat(chunks)));
     gzip.on("error", reject);
   });
+  // Waiting for `drain` alone would hang if gzip errored instead; racing
+  // against `finished` surfaces the error.
+  const drained = () =>
+    Promise.race([
+      new Promise<void>((resolve) => gzip.once("drain", resolve)),
+      finished.then(() => undefined),
+    ]);
 
   let docCount = 0;
   let lastExportedId: ObjectId | null = null;
@@ -155,7 +164,7 @@ async function compressDocsToGzip(cursor: AsyncIterable<Document>): Promise<{
     }
     const canContinue = gzip.write(`${JSON.stringify(doc)}\n`);
     if (!canContinue) {
-      await new Promise<void>((resolve) => gzip.once("drain", resolve));
+      await drained();
     }
   }
   gzip.end();
@@ -168,7 +177,11 @@ export interface PrunedWeekSummary {
   readonly week: string;
   readonly backedUpDocs: number;
   readonly deletedDocs: number;
+  /** Gzipped archive size; `0` when the week was not exported. */
+  readonly gzipBytes: number;
   readonly reason: "age" | "quota";
+  /** True if nothing was written or deleted (see `PrunePassOptions.dryRun`). */
+  readonly dryRun: boolean;
 }
 
 /**
@@ -177,11 +190,21 @@ export interface PrunedWeekSummary {
  *
  * With a sink:
  * - An existing archive is never overwritten. If it holds at least as many
- *   docs as Mongo still has for the week (a previous run was interrupted
+ *   docs as Mongo still has for the week, and its last `_id` (when known) is
+ *   at least Mongo's last `_id` for the week (a previous run was interrupted
  *   mid-`deleteMany`), it is kept and the delete is finished. If it holds
- *   fewer, or can't be read, this throws and nothing is deleted.
+ *   fewer, ends earlier, or can't be read, this throws and nothing is deleted.
  * - The delete is bounded by the last exported `_id`, so nothing newer than
  *   what was exported is deleted.
+ *
+ * Invariant this relies on: `_id`s are `ObjectId`s assigned by the driver at
+ * insert time, and nothing inserts into or backfills a past week. A count
+ * plus last-`_id` check can't detect a document that was added to an old
+ * week after it was archived; if that ever becomes possible, the "existing
+ * archive is a superset" rule above is no longer safe.
+ *
+ * With `dryRun`, the week is exported (to measure it) but nothing is uploaded
+ * or deleted, and the existing-archive check is skipped.
  */
 export async function pruneWeek(
   collection: Collection<Document>,
@@ -189,18 +212,21 @@ export async function pruneWeek(
   namespace: string,
   week: IsoWeek,
   sink: BackupSink | null,
-  reason: "age" | "quota"
+  reason: "age" | "quota",
+  dryRun: boolean = false
 ): Promise<PrunedWeekSummary> {
   const weekFilter = weekIdFilter(week);
 
-  if (sink === null) {
+  if (sink === null && !dryRun) {
     const deleteRes = await collection.deleteMany(weekFilter);
     return {
       collection: collectionName,
       week: week.label,
       backedUpDocs: 0,
       deletedDocs: deleteRes.deletedCount ?? 0,
+      gzipBytes: 0,
       reason,
+      dryRun,
     };
   }
 
@@ -214,20 +240,52 @@ export async function pruneWeek(
       week: week.label,
       backedUpDocs: 0,
       deletedDocs: 0,
+      gzipBytes: 0,
       reason,
+      dryRun,
     };
   }
 
   const key = weekArchiveKey(namespace, collectionName, week);
+  if (dryRun || sink === null) {
+    // `sink === null && !dryRun` returned above, so this is the dry run.
+    console.log(
+      `[pruner] DRY RUN: would ${
+        sink === null ? "delete WITHOUT backup" : `archive to ${key} and delete`
+      } ${collectionName} ${week.label} (${docCount} docs, ${
+        gzBuffer.byteLength
+      } gzipped bytes; reason: ${reason}).`
+    );
+    return {
+      collection: collectionName,
+      week: week.label,
+      backedUpDocs: 0,
+      deletedDocs: 0,
+      gzipBytes: gzBuffer.byteLength,
+      reason,
+      dryRun,
+    };
+  }
+  const lastExportedHex = lastExportedId.toHexString();
   const existing = await sink.headWeek(key);
   if (existing !== null && existing.docCount < docCount) {
     throw new Error(
       `Existing archive ${key} has fewer docs (${existing.docCount}) than Mongo (${docCount}); refusing to overwrite or delete.`
     );
   }
+  if (
+    existing !== null &&
+    existing.lastId !== undefined &&
+    existing.lastId < lastExportedHex
+  ) {
+    throw new Error(
+      `Existing archive ${key} ends at _id ${existing.lastId}, before Mongo's last _id ${lastExportedHex} for the week; refusing to overwrite or delete.`
+    );
+  }
   if (existing === null) {
     await sink.putWeek(key, gzBuffer, {
       docCount,
+      lastId: lastExportedHex,
       weekStart: new Date(week.startMs).toISOString(),
       weekEnd: new Date(week.endMs).toISOString(),
     });
@@ -255,7 +313,9 @@ export async function pruneWeek(
     week: week.label,
     backedUpDocs: docCount,
     deletedDocs,
+    gzipBytes: gzBuffer.byteLength,
     reason,
+    dryRun,
   };
 }
 
@@ -293,6 +353,13 @@ export interface PrunePassOptions {
   readonly now?: Date;
   readonly shouldStop?: () => boolean;
   readonly collections?: readonly string[];
+  /**
+   * Report what the pass would archive and delete (per week: doc count and
+   * gzipped size) without writing to the sink or deleting from MongoDB. The
+   * sink's readiness is checked read-only (`checkReady`) and reported as an
+   * error rather than aborting the report.
+   */
+  readonly dryRun?: boolean;
 }
 
 export interface PrunePassResult {
@@ -300,6 +367,7 @@ export interface PrunePassResult {
   /** Errors that were isolated during the pass. Empty on a healthy pass. */
   readonly errors: string[];
   readonly stoppedEarly: boolean;
+  readonly dryRun: boolean;
 }
 
 function describeError(err: unknown): string {
@@ -329,6 +397,7 @@ export async function runPrunePass(
   const now = options.now ?? new Date();
   const shouldStop = options.shouldStop ?? (() => false);
   const collections = options.collections ?? TELEMETRY_COLLECTIONS;
+  const dryRun = options.dryRun ?? false;
 
   const prunedWeeks: PrunedWeekSummary[] = [];
   const errors: string[] = [];
@@ -337,15 +406,32 @@ export async function runPrunePass(
     console.error(`[pruner] ${message}`);
     errors.push(message);
   };
+  const result = (stoppedEarly: boolean): PrunePassResult => ({
+    prunedWeeks,
+    errors,
+    stoppedEarly,
+    dryRun,
+  });
 
   if (sink !== null) {
-    try {
-      await sink.ensureReady();
-    } catch (err) {
-      // Without a working sink nothing can be backed up, so nothing can be
-      // deleted. Skip the pass rather than failing every week individually.
-      recordError("Backup sink is not ready", err);
-      return { prunedWeeks, errors, stoppedEarly: false };
+    if (dryRun) {
+      try {
+        await sink.checkReady();
+        console.log("[pruner] DRY RUN: backup destination is ready.");
+      } catch (err) {
+        // Keep going: the point of a dry run is the report. The error still
+        // makes the run exit non-zero.
+        recordError("DRY RUN: backup destination is not ready", err);
+      }
+    } else {
+      try {
+        await sink.ensureReady();
+      } catch (err) {
+        // Without a working sink nothing can be backed up, so nothing can be
+        // deleted. Skip the pass rather than failing every week individually.
+        recordError("Backup sink is not ready", err);
+        return result(false);
+      }
     }
   }
 
@@ -356,10 +442,11 @@ export async function runPrunePass(
   // Phase 1: Age-based pruning across all collections. A week that fails
   // (refused by the never-overwrite rule, unreadable archive, upload error,
   // or leftovers after its delete) is recorded and skipped via `afterId`, so
-  // newer expired weeks in the same collection are still pruned.
+  // newer expired weeks in the same collection are still pruned. A dry run
+  // deletes nothing, so it always advances `afterId`.
   for (const colName of collections) {
     if (shouldStop()) {
-      return { prunedWeeks, errors, stoppedEarly: true };
+      return result(true);
     }
     const collection = db.collection(colName);
     let afterId: ObjectId | undefined = undefined;
@@ -390,9 +477,14 @@ export async function runPrunePass(
             namespace,
             week,
             sink,
-            "age"
+            "age",
+            dryRun
           );
-          if (summary.deletedDocs > 0 || summary.backedUpDocs > 0) {
+          if (
+            summary.deletedDocs > 0 ||
+            summary.backedUpDocs > 0 ||
+            (dryRun && summary.gzipBytes > 0)
+          ) {
             prunedWeeks.push(summary);
           }
         } catch (err) {
@@ -400,6 +492,9 @@ export async function runPrunePass(
             `Age-based pruning of ${colName} ${week.label} failed; skipping that week`,
             err
           );
+          afterId = idAtMs(week.endMs);
+        }
+        if (dryRun) {
           afterId = idAtMs(week.endMs);
         }
       }
@@ -437,6 +532,27 @@ export async function runPrunePass(
         );
         break;
       }
+      if (dryRun) {
+        // Nothing is deleted in a dry run, so the size never drops: report
+        // the first week quota pruning would take (age-pruned weeks above
+        // still count towards `usedBytes` here) and stop.
+        console.log(
+          `[pruner] DRY RUN: DB size (${usedBytes} B) exceeds cap (${maxBytes} B) before any deletes; quota pruning would start with ApiCalls week ${oldestWeek.label} and continue week by week until under the cap.`
+        );
+        const summary = await pruneWeek(
+          apiCalls,
+          "ApiCalls",
+          namespace,
+          oldestWeek,
+          sink,
+          "quota",
+          true
+        );
+        if (summary.gzipBytes > 0) {
+          prunedWeeks.push(summary);
+        }
+        break;
+      }
       console.warn(
         `[pruner] DB size (${usedBytes} B) exceeds cap (${maxBytes} B); quota-pruning ApiCalls week ${oldestWeek.label}.`
       );
@@ -465,5 +581,5 @@ export async function runPrunePass(
     recordError("Quota check failed", err);
   }
 
-  return { prunedWeeks, errors, stoppedEarly: shouldStop() };
+  return result(shouldStop());
 }

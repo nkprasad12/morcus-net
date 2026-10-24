@@ -7,36 +7,59 @@ import {
   readdir,
   realpath,
   rm,
+  utimes,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  DEFAULT_BACKUP_DIR,
   DEFAULT_S3_BUCKET,
   findMountForPath,
   LocalFileBackupSink,
   parseBackupUri,
   S3BackupSink,
   signS3Request,
+  STALE_TMP_FILE_AGE_MS,
 } from "@/devops/pruner/s3_client";
 
 const META = {
   docCount: 0,
+  lastId: "65b0000000000000000000ff",
   weekStart: "2026-01-26T00:00:00.000Z",
   weekEnd: "2026-02-02T00:00:00.000Z",
 };
 
+/** Hex `_id` for line `i` of `gzLines`, increasing with `i`. */
+function lineId(i: number): string {
+  return `65b00000${i.toString(16).padStart(16, "0")}`;
+}
+
 function gzLines(n: number): Buffer {
-  const lines = Array.from({ length: n }, (_, i) => `{"i":${i}}\n`).join("");
+  const lines = Array.from(
+    { length: n },
+    (_, i) => `{"_id":"${lineId(i)}","i":${i}}\n`
+  ).join("");
   return gzipSync(Buffer.from(lines));
 }
 
 describe("s3_client", () => {
   describe("parseBackupUri", () => {
-    it("returns null when unset or whitespace", () => {
-      expect(parseBackupUri(undefined)).toBeNull();
-      expect(parseBackupUri("")).toBeNull();
-      expect(parseBackupUri("   ")).toBeNull();
+    it("defaults to the local archive directory when unset or whitespace", () => {
+      for (const raw of [undefined, "", "   "]) {
+        const sink = parseBackupUri(raw);
+        expect(sink).toBeInstanceOf(LocalFileBackupSink);
+        expect((sink as LocalFileBackupSink).baseDir).toBe(DEFAULT_BACKUP_DIR);
+      }
+      expect(DEFAULT_BACKUP_DIR).toBe("/morcus/logs/archives");
+    });
+
+    it("returns null (prune-only) only for the literal `none`", () => {
+      expect(parseBackupUri("none")).toBeNull();
+      expect(parseBackupUri(" none ")).toBeNull();
+      for (const notNone of ["None", "NONE", "off", "false", "0", "null"]) {
+        expect(() => parseBackupUri(notNone)).toThrow(/must be absolute/);
+      }
     });
 
     it("parses S3/R2 URI with default bucket morcus-telemetry", () => {
@@ -47,6 +70,7 @@ describe("s3_client", () => {
       const s3 = sink as S3BackupSink;
       expect(s3.endpoint).toBe("https://acct123.r2.cloudflarestorage.com");
       expect(s3.bucket).toBe(DEFAULT_S3_BUCKET);
+      expect(s3.autoCreateBucket).toBe(true);
     });
 
     it("parses S3/R2 URI with explicit bucket name", () => {
@@ -56,6 +80,7 @@ describe("s3_client", () => {
       expect(sink).toBeInstanceOf(S3BackupSink);
       const s3 = sink as S3BackupSink;
       expect(s3.bucket).toBe("custom-bucket");
+      expect(s3.autoCreateBucket).toBe(false);
     });
 
     it("rejects S3/R2 URI missing credentials or with nested bucket path, without echoing secrets", () => {
@@ -96,7 +121,7 @@ describe("s3_client", () => {
     });
 
     it("rejects relative paths, file:// URLs with a host, and /", () => {
-      for (const bad of ["none", "false", "backups", "./archives"]) {
+      for (const bad of ["false", "backups", "./archives"]) {
         expect(() => parseBackupUri(bad)).toThrow(/must be absolute/);
       }
       expect(() => parseBackupUri("file://backups")).toThrow(/empty host/);
@@ -172,7 +197,7 @@ describe("s3_client", () => {
       await rm(tmpDir, { recursive: true, force: true });
     });
 
-    it("stores a single file per week and reads its doc count back by streaming gunzip", async () => {
+    it("stores a single file per week and reads its doc count and last _id back by streaming gunzip", async () => {
       const sink = new LocalFileBackupSink(tmpDir, { requireMount: false });
       await sink.ensureReady();
 
@@ -181,7 +206,10 @@ describe("s3_client", () => {
 
       await sink.putWeek(key, gzLines(123), { ...META, docCount: 123 });
 
-      expect(await sink.headWeek(key)).toEqual({ docCount: 123 });
+      expect(await sink.headWeek(key)).toEqual({
+        docCount: 123,
+        lastId: lineId(122),
+      });
       expect(await readdir(join(tmpDir, "ns/ApiCalls/2026"))).toEqual([
         "ApiCalls-2026-W05.jsonl.gz",
       ]);
@@ -195,7 +223,10 @@ describe("s3_client", () => {
       await expect(
         sink.putWeek(key, gzLines(5), { ...META, docCount: 5 })
       ).rejects.toThrow(/already exists/);
-      expect(await sink.headWeek(key)).toEqual({ docCount: 3 });
+      expect(await sink.headWeek(key)).toEqual({
+        docCount: 3,
+        lastId: lineId(2),
+      });
       // No temp files left behind.
       expect(await readdir(join(tmpDir, "ns/ApiCalls/2026"))).toEqual([
         "ApiCalls-2026-W05.jsonl.gz",
@@ -224,12 +255,52 @@ describe("s3_client", () => {
       await expect(sink.headWeek("ns/empty.jsonl.gz")).rejects.toThrow(
         /contains no documents/
       );
+
+      await writeFile(
+        join(tmpDir, "ns/badline.jsonl.gz"),
+        gzipSync('{"_id":"65b000000000000000000000"}\n{not json\n')
+      );
+      await expect(sink.headWeek("ns/badline.jsonl.gz")).rejects.toThrow(
+        /unparseable line/
+      );
     });
 
-    it("removes stale temp files on ensureReady", async () => {
+    it("reports no lastId for archives whose documents have no hex _id", async () => {
+      const sink = new LocalFileBackupSink(tmpDir, { requireMount: false });
+      await mkdir(join(tmpDir, "ns"), { recursive: true });
+      await writeFile(
+        join(tmpDir, "ns/legacy.jsonl.gz"),
+        gzipSync('{"_id":"custom-1"}\n{"_id":"custom-2"}\n')
+      );
+      expect(await sink.headWeek("ns/legacy.jsonl.gz")).toEqual({
+        docCount: 2,
+      });
+    });
+
+    it("finds the last line across gunzip chunk boundaries", async () => {
+      const sink = new LocalFileBackupSink(tmpDir, { requireMount: false });
+      await mkdir(join(tmpDir, "ns"), { recursive: true });
+      // Large enough that gunzip yields many chunks, with a long final line.
+      const n = 50_000;
+      const lines = Array.from(
+        { length: n },
+        (_, i) => `{"_id":"${lineId(i)}","pad":"${"x".repeat(i % 97)}"}\n`
+      ).join("");
+      await writeFile(join(tmpDir, "ns/big.jsonl.gz"), gzipSync(lines));
+      expect(await sink.headWeek("ns/big.jsonl.gz")).toEqual({
+        docCount: n,
+        lastId: lineId(n - 1),
+      });
+    });
+
+    it("removes stale temp files on ensureReady, but not ones another instance may still be writing", async () => {
       await mkdir(join(tmpDir, "ns/ApiCalls/2026"), { recursive: true });
       const stale = join(tmpDir, "ns/ApiCalls/2026/.tmp-1-2-abc");
+      const fresh = join(tmpDir, "ns/ApiCalls/2026/.tmp-3-4-def");
       await writeFile(stale, "partial");
+      await writeFile(fresh, "in progress");
+      const staleTime = new Date(Date.now() - STALE_TMP_FILE_AGE_MS - 60_000);
+      await utimes(stale, staleTime, staleTime);
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       try {
         await new LocalFileBackupSink(tmpDir, {
@@ -238,7 +309,36 @@ describe("s3_client", () => {
       } finally {
         log.mockRestore();
       }
-      expect(await readdir(join(tmpDir, "ns/ApiCalls/2026"))).toEqual([]);
+      expect(await readdir(join(tmpDir, "ns/ApiCalls/2026"))).toEqual([
+        ".tmp-3-4-def",
+      ]);
+    });
+
+    it("checkReady reports readiness without creating or writing anything", async () => {
+      const archiveDir = join(tmpDir, "not/yet/created");
+      const sink = new LocalFileBackupSink(archiveDir, { requireMount: false });
+      await expect(sink.checkReady()).resolves.toBeUndefined();
+      expect(await readdir(tmpDir)).toEqual([]);
+
+      if (process.getuid?.() !== 0) {
+        await chmod(tmpDir, 0o555);
+        await expect(sink.checkReady()).rejects.toThrow(
+          /EACCES.*sudo install -d -o 1000 -g 1000/
+        );
+        await chmod(tmpDir, 0o755);
+      }
+
+      const mountInfoPath = join(tmpDir, "mountinfo");
+      await writeFile(
+        mountInfoPath,
+        "1 0 0:1 / / rw - overlay overlay rw\n2 1 0:2 / /proc rw - proc proc rw\n"
+      );
+      await expect(
+        new LocalFileBackupSink(archiveDir, {
+          requireMount: true,
+          mountInfoPath,
+        }).checkReady()
+      ).rejects.toThrow(/not on a persistent mounted volume/);
     });
 
     it("refuses directories that are not on a persistent mounted volume", async () => {
@@ -299,7 +399,10 @@ describe("s3_client", () => {
       await mkdir(lostFound);
       await chmod(lostFound, 0o000);
       await mkdir(join(tmpDir, "ns/ApiCalls/2026"), { recursive: true });
-      await writeFile(join(tmpDir, "ns/ApiCalls/2026/.tmp-9-9-x"), "partial");
+      const stale = join(tmpDir, "ns/ApiCalls/2026/.tmp-9-9-x");
+      await writeFile(stale, "partial");
+      const staleTime = new Date(Date.now() - STALE_TMP_FILE_AGE_MS - 60_000);
+      await utimes(stale, staleTime, staleTime);
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       try {
         await expect(
@@ -450,8 +553,38 @@ describe("s3_client", () => {
       const body = Buffer.from("compressed-payload");
       await sink.putWeek(key, body, { ...META, docCount: 77 });
 
-      expect(await sink.headWeek(key)).toEqual({ docCount: 77 });
-      expect(objects.get(`${DEFAULT_S3_BUCKET}/${key}`)?.body).toEqual(body);
+      expect(await sink.headWeek(key)).toEqual({
+        docCount: 77,
+        lastId: META.lastId,
+      });
+      const stored = objects.get(`${DEFAULT_S3_BUCKET}/${key}`);
+      expect(stored?.body).toEqual(body);
+      // A gzip file, not a gzip-encoded JSONL body (which clients would
+      // transparently decompress on download).
+      expect(stored?.headers["content-type"]).toBe("application/gzip");
+      expect(stored?.headers["content-encoding"]).toBeUndefined();
+      expect(stored?.headers["if-none-match"]).toBe("*");
+    });
+
+    it("does not create an explicitly named bucket", async () => {
+      const sink = parseBackupUri(`${baseUrl}/my-bucket`)!;
+      await expect(sink.ensureReady()).rejects.toThrow(
+        /bucket 'my-bucket' does not exist/
+      );
+      await expect(sink.checkReady()).rejects.toThrow(
+        /bucket 'my-bucket' does not exist/
+      );
+      expect(buckets.size).toBe(0);
+
+      buckets.add("my-bucket");
+      await expect(sink.ensureReady()).resolves.toBeUndefined();
+      await expect(sink.checkReady()).resolves.toBeUndefined();
+    });
+
+    it("checkReady never creates the default bucket", async () => {
+      const sink = parseBackupUri(baseUrl)!;
+      await expect(sink.checkReady()).resolves.toBeUndefined();
+      expect(buckets.size).toBe(0);
     });
 
     it("never overwrites an existing object", async () => {
@@ -461,7 +594,19 @@ describe("s3_client", () => {
       await expect(
         sink.putWeek(key, Buffer.from("second"), { ...META, docCount: 5 })
       ).rejects.toThrow(/HTTP 412/);
-      expect(await sink.headWeek(key)).toEqual({ docCount: 3 });
+      expect(await sink.headWeek(key)).toEqual({
+        docCount: 3,
+        lastId: META.lastId,
+      });
+    });
+
+    it("omits lastId for archives written without the header", async () => {
+      const sink = parseBackupUri(baseUrl)!;
+      objects.set(`${DEFAULT_S3_BUCKET}/ns/old.jsonl.gz`, {
+        body: Buffer.from("x"),
+        headers: { "x-amz-meta-doc-count": "9" },
+      });
+      expect(await sink.headWeek("ns/old.jsonl.gz")).toEqual({ docCount: 9 });
     });
 
     it("refuses to trust objects without a valid doc count", async () => {

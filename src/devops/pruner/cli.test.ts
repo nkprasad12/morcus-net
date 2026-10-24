@@ -14,11 +14,13 @@ const CLEAN: PrunePassResult = {
   prunedWeeks: [],
   errors: [],
   stoppedEarly: false,
+  dryRun: false,
 };
 const WITH_ERRORS: PrunePassResult = {
   prunedWeeks: [],
   errors: ["boom"],
   stoppedEarly: false,
+  dryRun: false,
 };
 
 function makeDeps(

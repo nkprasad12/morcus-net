@@ -135,25 +135,43 @@ class FakeMongoDb {
   }
 }
 
-/** In-memory `BackupSink` that records archive doc counts by key. */
+/** In-memory `BackupSink` that records archive doc counts (and last ids) by key. */
 class MemorySink implements BackupSink {
-  readonly archives = new Map<string, number>();
+  readonly archives = new Map<string, ArchiveInfo>();
   readonly putKeys: string[] = [];
+  readonly putBytes = new Map<string, number>();
   onPut: (key: string) => void = () => {};
+  checkReadyCalls = 0;
 
   async ensureReady(): Promise<void> {}
 
-  async headWeek(key: string): Promise<ArchiveInfo | null> {
-    const docCount = this.archives.get(key);
-    return docCount === undefined ? null : { docCount };
+  async checkReady(): Promise<void> {
+    this.checkReadyCalls++;
   }
 
-  async putWeek(key: string, _gz: Buffer, meta: ArchiveMeta): Promise<void> {
+  /** Records an archive as a previous run would have left it. */
+  preset(key: string, docCount: number, lastId?: string): void {
+    this.archives.set(
+      key,
+      lastId === undefined ? { docCount } : { docCount, lastId }
+    );
+  }
+
+  docCount(key: string): number | undefined {
+    return this.archives.get(key)?.docCount;
+  }
+
+  async headWeek(key: string): Promise<ArchiveInfo | null> {
+    return this.archives.get(key) ?? null;
+  }
+
+  async putWeek(key: string, gz: Buffer, meta: ArchiveMeta): Promise<void> {
     if (this.archives.has(key)) {
       throw new Error(`exists: ${key}`);
     }
     this.putKeys.push(key);
-    this.archives.set(key, meta.docCount);
+    this.putBytes.set(key, gz.byteLength);
+    this.archives.set(key, { docCount: meta.docCount, lastId: meta.lastId });
     this.onPut(key);
   }
 }
@@ -289,7 +307,9 @@ describe("pruner", () => {
           week: "2026-W23",
           backedUpDocs: 0,
           deletedDocs: 2,
+          gzipBytes: 0,
           reason: "age",
+          dryRun: false,
         },
       ]);
       expect(fakeDb.names("ApiCalls")).toEqual([
@@ -359,7 +379,9 @@ describe("pruner", () => {
           backedUpDocs: 2,
           deletedDocs: 2,
           reason: "age",
+          dryRun: false,
         });
+        expect(res.prunedWeeks[0]?.gzipBytes).toBeGreaterThan(0);
 
         const gzPath = join(
           tmpDir,
@@ -382,15 +404,21 @@ describe("pruner", () => {
 
     it("keeps an existing fuller archive on crash recovery and finishes the delete", async () => {
       const sink = new MemorySink();
-      // A previous run archived all 5 docs of W23, then was killed
-      // mid-deleteMany with 2 docs remaining in Mongo.
-      sink.archives.set("testns/ApiCalls/2026/ApiCalls-2026-W23.jsonl.gz", 5);
-
-      const fakeDb = new FakeMongoDb();
-      fakeDb.seed("ApiCalls", [
+      // A previous run archived all 5 docs of W23 (ending at the last
+      // remaining doc), then was killed mid-deleteMany with 2 docs remaining
+      // in Mongo.
+      const remaining = [
         makeDoc(OLD_WEEK_DATE, "/dicts-rem-1"),
         makeDoc("2026-06-04T10:00:00.000Z", "/dicts-rem-2"),
-      ]);
+      ];
+      sink.preset(
+        "testns/ApiCalls/2026/ApiCalls-2026-W23.jsonl.gz",
+        5,
+        (remaining[1]._id as ObjectId).toHexString()
+      );
+
+      const fakeDb = new FakeMongoDb();
+      fakeDb.seed("ApiCalls", remaining);
 
       const res = await runPrunePass(fakeDb.asDb(), {
         now: NOW,
@@ -404,9 +432,53 @@ describe("pruner", () => {
       expect(fakeDb.getDocs("ApiCalls")).toHaveLength(0);
     });
 
+    it("also accepts an existing fuller archive that predates the last-id header", async () => {
+      const sink = new MemorySink();
+      sink.preset("testns/ApiCalls/2026/ApiCalls-2026-W23.jsonl.gz", 5);
+      const fakeDb = new FakeMongoDb();
+      fakeDb.seed("ApiCalls", [makeDoc(OLD_WEEK_DATE, "/dicts-rem-1")]);
+
+      const res = await runPrunePass(fakeDb.asDb(), {
+        now: NOW,
+        sink,
+        namespace: NS,
+      });
+
+      expect(res.errors).toEqual([]);
+      expect(sink.putKeys).toEqual([]);
+      expect(fakeDb.getDocs("ApiCalls")).toHaveLength(0);
+    });
+
+    it("refuses to delete when an existing archive ends before Mongo's last _id for the week", async () => {
+      const sink = new MemorySink();
+      const docs = [
+        makeDoc(OLD_WEEK_DATE, "/a1"),
+        makeDoc("2026-06-04T10:00:00.000Z", "/a2"),
+      ];
+      // Same count as Mongo, but its last document is older than Mongo's.
+      sink.preset(
+        "testns/ApiCalls/2026/ApiCalls-2026-W23.jsonl.gz",
+        2,
+        (docs[0]._id as ObjectId).toHexString()
+      );
+      const fakeDb = new FakeMongoDb();
+      fakeDb.seed("ApiCalls", docs);
+
+      const res = await runPrunePass(fakeDb.asDb(), {
+        now: NOW,
+        sink,
+        namespace: NS,
+      });
+
+      expect(res.errors).toHaveLength(1);
+      expect(res.errors[0]).toMatch(/ends at _id .* before Mongo's last _id/);
+      expect(sink.putKeys).toEqual([]);
+      expect(fakeDb.names("ApiCalls")).toEqual(["/a1", "/a2"]);
+    });
+
     it("refuses to overwrite or delete when an existing archive has fewer docs, but continues with other collections", async () => {
       const sink = new MemorySink();
-      sink.archives.set("testns/ApiCalls/2026/ApiCalls-2026-W23.jsonl.gz", 1);
+      sink.preset("testns/ApiCalls/2026/ApiCalls-2026-W23.jsonl.gz", 1);
 
       const fakeDb = new FakeMongoDb();
       fakeDb.seed("ApiCalls", [
@@ -424,7 +496,7 @@ describe("pruner", () => {
       expect(res.errors).toHaveLength(1);
       expect(res.errors[0]).toMatch(/ApiCalls.*fewer docs \(1\).*\(2\)/);
       expect(
-        sink.archives.get("testns/ApiCalls/2026/ApiCalls-2026-W23.jsonl.gz")
+        sink.docCount("testns/ApiCalls/2026/ApiCalls-2026-W23.jsonl.gz")
       ).toBe(1);
       expect(fakeDb.names("ApiCalls")).toEqual(["/a1", "/a2"]);
       // ServerHealth was still pruned.
@@ -437,6 +509,7 @@ describe("pruner", () => {
     it("does not delete from Mongo if the backup upload fails", async () => {
       const failingSink: BackupSink = {
         ensureReady: async () => {},
+        checkReady: async () => {},
         headWeek: async () => null,
         putWeek: async () => {
           throw new Error("S3 503 SlowDown");
@@ -506,7 +579,7 @@ describe("pruner", () => {
     it("skips a refused week in age-based pruning and still prunes newer expired weeks", async () => {
       const sink = new MemorySink();
       // W21 has 2 docs in Mongo but a 1-doc archive: refused.
-      sink.archives.set("testns/ApiCalls/2026/ApiCalls-2026-W21.jsonl.gz", 1);
+      sink.preset("testns/ApiCalls/2026/ApiCalls-2026-W21.jsonl.gz", 1);
       const fakeDb = new FakeMongoDb();
       fakeDb.seed("ApiCalls", [
         makeDoc("2026-05-20T10:00:00.000Z", "/w21-a"),
@@ -552,7 +625,9 @@ describe("pruner", () => {
             week: "2026-W38",
             backedUpDocs: 0,
             deletedDocs: 1,
+            gzipBytes: 0,
             reason: "quota",
+            dryRun: false,
           },
         ]);
         expect(fakeDb.names("ApiCalls")).toEqual(["/last-week", "/current"]);
@@ -567,7 +642,7 @@ describe("pruner", () => {
     it("skips a refused ApiCalls week in the quota phase and keeps relieving pressure", async () => {
       const sink = new MemorySink();
       // W38 has 2 docs in Mongo but a 1-doc archive: refused.
-      sink.archives.set("testns/ApiCalls/2026/ApiCalls-2026-W38.jsonl.gz", 1);
+      sink.preset("testns/ApiCalls/2026/ApiCalls-2026-W38.jsonl.gz", 1);
       const fakeDb = new FakeMongoDb();
       fakeDb.bytesPerDoc = 1000;
       fakeDb.seed("ApiCalls", [
@@ -599,6 +674,123 @@ describe("pruner", () => {
         warn.mockRestore();
         error.mockRestore();
       }
+    });
+
+    describe("dryRun", () => {
+      it("reports every expired week with sizes, writes nothing, and deletes nothing", async () => {
+        const sink = new MemorySink();
+        const fakeDb = new FakeMongoDb();
+        fakeDb.seed("ApiCalls", [
+          makeDoc("2026-05-20T10:00:00.000Z", "/w21"),
+          makeDoc(OLD_WEEK_DATE, "/w23-1"),
+          makeDoc("2026-06-04T10:00:00.000Z", "/w23-2"),
+          makeDoc(RECENT_WEEK_DATE, "/recent"),
+        ]);
+        fakeDb.seed("ServerHealth", [makeDoc(OLD_WEEK_DATE, "/health")]);
+        const log = jest.spyOn(console, "log").mockImplementation(() => {});
+        try {
+          const res = await runPrunePass(fakeDb.asDb(), {
+            now: NOW,
+            sink,
+            namespace: NS,
+            dryRun: true,
+          });
+
+          expect(res.dryRun).toBe(true);
+          expect(res.errors).toEqual([]);
+          expect(sink.checkReadyCalls).toBe(1);
+          expect(sink.putKeys).toEqual([]);
+          expect(fakeDb.deleteManyCalls).toEqual([]);
+          expect(fakeDb.getDocs("ApiCalls")).toHaveLength(4);
+          expect(fakeDb.getDocs("ServerHealth")).toHaveLength(1);
+
+          expect(
+            res.prunedWeeks.map((w) => [w.collection, w.week, w.backedUpDocs])
+          ).toEqual([
+            ["ApiCalls", "2026-W21", 0],
+            ["ApiCalls", "2026-W23", 0],
+            ["ServerHealth", "2026-W23", 0],
+          ]);
+          for (const week of res.prunedWeeks) {
+            expect(week.dryRun).toBe(true);
+            expect(week.deletedDocs).toBe(0);
+            expect(week.gzipBytes).toBeGreaterThan(0);
+          }
+          expect(log).toHaveBeenCalledWith(
+            expect.stringMatching(
+              /DRY RUN: would archive to testns\/ApiCalls\/2026\/ApiCalls-2026-W23\.jsonl\.gz and delete ApiCalls 2026-W23 \(2 docs, \d+ gzipped bytes; reason: age\)/
+            )
+          );
+        } finally {
+          log.mockRestore();
+        }
+      });
+
+      it("reports a destination that is not ready as an error but still lists the weeks", async () => {
+        const sink = new MemorySink();
+        sink.checkReady = async () => {
+          throw new Error("EACCES: /morcus/logs/archives");
+        };
+        const fakeDb = new FakeMongoDb();
+        fakeDb.seed("ApiCalls", [makeDoc(OLD_WEEK_DATE, "/old")]);
+        const log = jest.spyOn(console, "log").mockImplementation(() => {});
+        const error = jest.spyOn(console, "error").mockImplementation(() => {});
+        try {
+          const res = await runPrunePass(fakeDb.asDb(), {
+            now: NOW,
+            sink,
+            namespace: NS,
+            dryRun: true,
+          });
+          expect(res.errors).toEqual([
+            "DRY RUN: backup destination is not ready: EACCES: /morcus/logs/archives",
+          ]);
+          expect(res.prunedWeeks.map((w) => w.week)).toEqual(["2026-W23"]);
+          expect(fakeDb.getDocs("ApiCalls")).toHaveLength(1);
+        } finally {
+          log.mockRestore();
+          error.mockRestore();
+        }
+      });
+
+      it("in prune-only mode says so, and reports the first week the quota valve would take", async () => {
+        const fakeDb = new FakeMongoDb();
+        fakeDb.seed("ApiCalls", [
+          makeDoc(OLD_WEEK_DATE, "/old"),
+          makeDoc(RECENT_WEEK_DATE, "/recent"),
+          makeDoc(LAST_WEEK_DATE, "/last-week"),
+          makeDoc(CURRENT_WEEK_DATE, "/current"),
+        ]);
+        fakeDb.bytesPerDoc = 200;
+        const log = jest.spyOn(console, "log").mockImplementation(() => {});
+        try {
+          const res = await runPrunePass(fakeDb.asDb(), {
+            now: NOW,
+            maxBytes: 500,
+            sink: null,
+            dryRun: true,
+          });
+          expect(res.errors).toEqual([]);
+          expect(res.prunedWeeks.map((w) => [w.week, w.reason])).toEqual([
+            ["2026-W23", "age"],
+            // Age pruning deleted nothing, so the oldest week is still W23.
+            ["2026-W23", "quota"],
+          ]);
+          expect(fakeDb.getDocs("ApiCalls")).toHaveLength(4);
+          expect(log).toHaveBeenCalledWith(
+            expect.stringMatching(
+              /would delete WITHOUT backup ApiCalls 2026-W23/
+            )
+          );
+          expect(log).toHaveBeenCalledWith(
+            expect.stringMatching(
+              /quota pruning would start with ApiCalls week 2026-W23/
+            )
+          );
+        } finally {
+          log.mockRestore();
+        }
+      });
     });
 
     it("stops cleanly between weeks when shouldStop() returns true", async () => {

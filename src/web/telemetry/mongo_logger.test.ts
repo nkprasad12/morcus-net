@@ -37,9 +37,9 @@ beforeEach(() => {
 });
 
 describe("MongoLogger", () => {
-  it("connects on create", async () => {
+  it("does not connect eagerly on create (the driver connects on first write)", async () => {
     await MongoLogger.create("foo", "bar");
-    expect(mockConnect).toHaveBeenCalledTimes(1);
+    expect(mockConnect).not.toHaveBeenCalled();
   });
 
   it("disconnects on teardown", async () => {
@@ -203,6 +203,48 @@ describe("MongoLogger", () => {
       botHeavyRequests: 0,
       botHeavyLatencyMs: 0,
     });
+  });
+
+  it("carries an unreported traffic window into the next one when the health write fails", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const logger = await MongoLogger.create("foo", "bar");
+      await logger.logApiCall({
+        name: "/dicts",
+        status: 200,
+        latencyMs: 10,
+        userAgent: "Mozilla/5.0 Chrome/128.0.0.0 Safari/537.36",
+      });
+      await logger.logApiCall({
+        name: "/dicts",
+        status: 200,
+        latencyMs: 4,
+        userAgent: "Googlebot/2.1",
+      });
+
+      mockInsertOne.mockRejectedValueOnce(new Error("down"));
+      await logger.logServerHealth(process.memoryUsage());
+
+      await logger.logApiCall({
+        name: "/dicts",
+        status: 200,
+        latencyMs: 5,
+        userAgent: "Mozilla/5.0 Chrome/128.0.0.0 Safari/537.36",
+      });
+      await logger.logServerHealth(process.memoryUsage());
+
+      // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+      const healthRow: any = mockInsertOne.mock.lastCall!.at(0)!;
+      expect(healthRow).toMatchObject({
+        humanRequests: 2,
+        humanLatencyMs: 15,
+        botRequests: 1,
+        botLatencyMs: 4,
+      });
+    } finally {
+      mockInsertOne.mockImplementation(() => Promise.resolve());
+      errorSpy.mockRestore();
+    }
   });
 
   it("swallows and rate-limits insertOne errors without rejecting", async () => {

@@ -25,6 +25,15 @@ mkdir -p "$LOGS_DIR"
 touch "$LOGS_DIR"/access.log
 touch "$LOGS_DIR"/error.log
 
+# The telemetry pruner (see src/devops/monitoring.md) archives old telemetry
+# weeks here by default before deleting them from MongoDB. It runs as UID 1000
+# inside its container, so the directory must be owned by that UID on the host.
+# Without it, the pruner refuses to start (and deletes nothing).
+ARCHIVES_DIR="$LOGS_DIR/archives"
+echo "Creating the telemetry archive directory $ARCHIVES_DIR (owned by UID 1000; may ask for sudo)."
+sudo install -d -o 1000 -g 1000 "$ARCHIVES_DIR"
+echo -e "\n==> Telemetry archives (gzipped JSONL, a few MB per week) will be written to:\n    $ARCHIVES_DIR\n    This is the ONLY copy once the week is deleted from MongoDB. Set PRUNE_BACKUP_URI\n    in .env to use S3/R2 instead (see src/devops/.env.template).\n"
+
 docker compose up -d
 echo -e "\nStarted services successfully with 'docker compose up -d'
 Use 'docker compose logs' to view logs, or 'docker compose down' to stop.\n"

@@ -22,7 +22,10 @@ export const KNOWN_CRAWLERS: ReadonlyArray<
   ["Baiduspider", "Baiduspider"],
   ["YandexBot", "YandexBot"],
   ["yandex.com/bots", "YandexBot"],
-  ["Sogou", "Sogou"],
+  // Bare "Sogou" would also match Sogou's browsers (`SogouMobileBrowser`,
+  // `SE 2.X MetaSr`); the crawlers all say "spider".
+  ["Sogou web spider", "Sogou"],
+  ["Sogou inst spider", "Sogou"],
   ["Applebot", "Applebot"],
   ["SeznamBot", "SeznamBot"],
   ["Qwantify", "Qwantify"],
@@ -89,20 +92,46 @@ const LOWER_CRAWLERS: ReadonlyArray<
   readonly [lowerSubstring: string, name: string]
 > = KNOWN_CRAWLERS.map(([sub, name]) => [sub.toLowerCase(), name]);
 
+const GENERIC_SUFFIXES = ["bot", "crawler", "spider", "scraper"] as const;
+
 /**
  * Matches any token ending in `bot`, `crawler`, `spider`, or `scraper`
  * (e.g. `SomeNewBot/1.0`, `custom_spider`).
  */
-const GENERIC_BOT_TOKEN = /\b([a-z0-9_-]*(?:bot|crawler|spider|scraper))\b/gi;
+const GENERIC_BOT_TOKEN = new RegExp(
+  `\\b([a-z0-9_-]*(?:${GENERIC_SUFFIXES.join("|")}))\\b`,
+  "gi"
+);
 
-/** Real device/browser tokens that end in `bot` and must not be treated as crawlers. */
+/**
+ * Real device/browser tokens that end in one of `GENERIC_SUFFIXES` and must
+ * not be treated as crawlers. Lowercase. Both `isCrawler` (via the lookbehind
+ * built below) and `matchCrawler` honour this list.
+ */
 const NON_BOT_TOKENS = new Set<string>(["cubot"]);
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-const GENERIC_SUFFIX_PATTERN = "(?:(?<!\\bcu)bot|crawler|spider|scraper)\\b";
+/**
+ * `bot|crawler|spider|scraper`, with a negative lookbehind in front of each
+ * suffix for the `NON_BOT_TOKENS` ending in it (e.g. `(?<!\bcu)bot`), so a
+ * whole non-bot token never matches but `SomethingElseBot` still does.
+ */
+function genericSuffixPattern(): string {
+  const alternatives = GENERIC_SUFFIXES.map((suffix) => {
+    const prefixes = [...NON_BOT_TOKENS]
+      .filter((token) => token.endsWith(suffix) && token.length > suffix.length)
+      .map((token) => escapeRegex(token.slice(0, -suffix.length)));
+    return prefixes.length === 0
+      ? suffix
+      : `(?<!\\b(?:${prefixes.join("|")}))${suffix}`;
+  });
+  return `(?:${alternatives.join("|")})\\b`;
+}
+
+const GENERIC_SUFFIX_PATTERN = genericSuffixPattern();
 const GENERIC_SUFFIX_REGEX = new RegExp(GENERIC_SUFFIX_PATTERN, "i");
 
 /**

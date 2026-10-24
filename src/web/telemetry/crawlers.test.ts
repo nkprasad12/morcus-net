@@ -67,6 +67,11 @@ describe("crawlers", () => {
       "SemrushBot",
     ],
     [
+      "Sogou web spider/4.0(+http://www.sogou.com/docs/help/webmasters.htm#07)",
+      "Sogou",
+    ],
+    ["Sogou inst spider/4.0", "Sogou"],
+    [
       "Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)",
       "AhrefsBot",
     ],
@@ -101,6 +106,9 @@ describe("crawlers", () => {
       "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
       "Mozilla/5.0 (Linux; Android 11; CUBOT MAX 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36",
+      // Sogou's browsers, not its crawler.
+      "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Safari/537.36 Core/1.70.3741.400 QQBrowser/10.5.3863.400 SE 2.X MetaSr 1.0",
+      "Mozilla/5.0 (Linux; Android 10; MI 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.80 Mobile Safari/537.36 SogouMobileBrowser/6.4.5",
     ];
     for (const ua of realBrowsers) {
       expect(matchCrawler(ua)).toBeNull();
