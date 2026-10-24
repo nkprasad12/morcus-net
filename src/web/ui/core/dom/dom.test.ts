@@ -375,6 +375,39 @@ describe("core/dom.client", () => {
       );
     });
 
+    it("switches a deferred lazy frame to eager before changing its src", () => {
+      // Safari 18.x reloads a still-deferred lazy frame from its *original*
+      // src once it shows, if src changed first.
+      const iframe = document.createElement("iframe");
+      iframe.setAttribute("src", "/dicts?embedded=1");
+      iframe.setAttribute("loading", "lazy");
+      document.body.appendChild(iframe);
+      const order: string[] = [];
+      const setAttribute = iframe.setAttribute.bind(iframe);
+      jest
+        .spyOn(iframe, "setAttribute")
+        .mockImplementation((name: string, value: string) => {
+          order.push(name);
+          setAttribute(name, value);
+        });
+      const srcSetter = jest
+        .spyOn(iframe, "src", "set")
+        .mockImplementation((value: string) => {
+          order.push("src");
+          setAttribute("src", value);
+        });
+
+      navigateFrameReplace(iframe, "/dicts?q=arma&lang=La&o=1&embedded=1");
+
+      expect(order).toEqual(["loading", "src"]);
+      expect(iframe.getAttribute("loading")).toBe("eager");
+      expect(iframe.getAttribute("src")).toBe(
+        "/dicts?q=arma&lang=La&o=1&embedded=1"
+      );
+      srcSetter.mockRestore();
+      iframe.remove();
+    });
+
     it("falls back to assigning iframe.src when contentWindow is null or throws", () => {
       const detachedFrame = document.createElement("iframe");
       navigateFrameReplace(

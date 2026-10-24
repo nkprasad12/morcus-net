@@ -127,11 +127,29 @@ export function currentIframeSrc(iframe: HTMLIFrameElement): string | null {
 }
 
 /**
+ * Sets an iframe's `src`, first switching a `loading="lazy"` frame to eager.
+ *
+ * Changing `src` while WebKit is still deferring a lazy frame loads the new
+ * URL at once but leaves the lazy-load observer armed, so the frame loads
+ * again once it scrolls into view. Before WebKit 292445@main (Safari 18.x),
+ * that second load uses the URL deferred at first, not the new one: the
+ * frame snaps back to its original document. Going eager first ends the
+ * deferral (starting the deferred URL's load), and the `src` change then
+ * replaces that navigation, so every engine ends on `url`.
+ */
+export function assignIframeSrc(iframe: HTMLIFrameElement, url: string): void {
+  if (iframe.getAttribute("loading")?.toLowerCase() === "lazy") {
+    iframe.setAttribute("loading", "eager");
+  }
+  iframe.src = url;
+}
+
+/**
  * Navigates a same-origin iframe to `url` by replacing its current session
  * history entry, so the navigation does not push to the top-level joint session
  * history. Before the frame has loaded a document (e.g. `about:blank` while
  * `loading="lazy"` is deferred), or when `contentWindow` is null or throws,
- * assigns `iframe.src` directly so the initial lazy load uses `url`.
+ * assigns `iframe.src` directly (see {@link assignIframeSrc}).
  */
 export function navigateFrameReplace(
   iframe: HTMLIFrameElement,
@@ -146,7 +164,7 @@ export function navigateFrameReplace(
   } catch {
     // Cross-origin or sandboxed: fall through
   }
-  iframe.src = url;
+  assignIframeSrc(iframe, url);
 }
 
 /**

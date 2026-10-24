@@ -241,6 +241,9 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(currentIframeSrc(iframe)).toContain(
       "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1"
     );
+    // Left lazy, Safari 18.x would reload its original (blank) src once the
+    // drawer shows it, so the first tap would land on an empty dictionary.
+    expect(iframe.getAttribute("loading")).toBe("eager");
     expect(pushStateSpy).not.toHaveBeenCalled();
     pushStateSpy.mockRestore();
     expect(window.location.search).toBe("");

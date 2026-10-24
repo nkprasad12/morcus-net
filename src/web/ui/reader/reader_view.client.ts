@@ -29,6 +29,7 @@ import {
   registerRevealer,
   wordGroupParts,
   queryUpgraded,
+  assignIframeSrc,
 } from "@/web/ui/core/index.client";
 import {
   lookupInDictFrame,
@@ -1224,7 +1225,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
     const nextSrc = `${url.pathname}${url.search}${url.hash}`;
     if (nextSrc !== rawSrc) {
-      iframe.src = nextSrc;
+      assignIframeSrc(iframe, nextSrc);
     }
   }
 
@@ -1237,13 +1238,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       rawSrc === "about:blank" ||
       currentIframeSrc(iframe) === "about:blank";
     if (!iframe.hasAttribute("data-dict-unarmed") && !isBlank) return;
-    // Arming loads the frame now, so it no longer needs to be lazy. WebKit
-    // otherwise loads it twice when `src` changes while it is still hidden:
-    // once for the new `src`, then again from its lazy-load observer once it
-    // shows, wiping whatever `/` pre-filled and focused in the first load.
-    // `src` goes first so Chromium doesn't start (and drop) the old one.
-    this.#applyScaleToIframeSrc(iframe);
+    // Arming loads the frame now, so it no longer needs to be lazy. Going
+    // eager *before* the `src` change matters in WebKit: changing `src` on a
+    // still-deferred lazy frame loads it again once it shows (and before
+    // Safari 18.x's fix, from the old `src`), wiping whatever `/` pre-filled
+    // and focused in the first load. See `assignIframeSrc`.
     iframe.setAttribute("loading", "eager");
+    this.#applyScaleToIframeSrc(iframe);
     iframe.removeAttribute("data-dict-unarmed");
   }
 
