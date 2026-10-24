@@ -91,7 +91,7 @@ sequenceDiagram
 ### Client
 
 - `reader_view.client.ts`: The main controller — partial navigation, section anchors, word lookup into the dictionary panel, dialog wiring, and keyboard shortcuts.
-- `core/widgets/anchored_dialog.client.ts` (not in this directory): `setupAnchoredDialog` — a modal `<dialog>` (via `setupModalDialog`) positioned under its trigger, shared by the TOC and the reader settings. While one is open the page is dimmed and doesn't scroll.
+- `core/widgets/anchored_dialog.client.ts` (not in this directory): `setupAnchoredDialog` — a modal `<dialog>` (via `setupModalDialog`) positioned under its trigger, shared by the TOC and the reader settings. While one is open the page is dimmed.
 - `reader_toc.client.ts`: `ReaderTocController` — opens/closes the TOC dialog, adopts its No-JS `#reader-toc-drawer` hash, and applies the live filter.
 - `reader_settings.client.ts`: `MorcusReaderSettings` — the reader settings dialog, persisting to `morcus_reader_settings` in `localStorage`.
 - `reader_layout.client.ts`: `ReaderLayoutController` — the desktop resizable splitter and the mobile bottom drawer hosting the embedded dictionary.

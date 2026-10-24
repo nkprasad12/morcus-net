@@ -1,6 +1,6 @@
 /* Table of Contents (TOC) dialog */
 
-/* The backdrop dim and scroll lock are shared by all anchored dialogs
+/* The backdrop dim is shared by all anchored dialogs
    (.anchored-popover, core/nav/components.css). */
 
 /* Undo the UA <dialog> centring and padding; in the top layer when modal. */

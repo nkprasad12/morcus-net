@@ -125,13 +125,6 @@ describe("MorcusAppearanceMenu", () => {
     expect(panel().style.left).toBe("");
   });
 
-  test("doesn't lock the page's scrolling (it isn't anchored to anything)", () => {
-    mountMenu();
-    q<HTMLButtonElement>("#appearance-btn").click();
-    expect(isOpen()).toBe(true);
-    expect(root().dataset.scrollLock).toBeUndefined();
-  });
-
   test("closes and resets its trigger when disconnected", () => {
     const el = mountMenu();
     q<HTMLButtonElement>("#appearance-btn").click();

@@ -367,18 +367,6 @@ body.body-embedded {
   }
 }
 
-/* Set while an anchored dialog is open (anchored_dialog.client.ts): the page
-   doesn't scroll, since that would carry the anchor off screen. "gutter"
-   means the page had a classic scrollbar, whose space is kept so the page
-   doesn't shift sideways. */
-html[data-scroll-lock] {
-  overflow: hidden;
-}
-
-html[data-scroll-lock="gutter"] {
-  scrollbar-gutter: stable;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .report-submit-spinner,
   .loading-spinner {

@@ -221,8 +221,8 @@ test.describe("UI V2 Visual Regression Suite", () => {
   });
 
   // The reader TOC drawer on mobile viewports while scrolled down (JS-only).
-  // Covers both TOC list flex sizing/caret rendering (#604) and sticky top bar
-  // retention under scroll lock across all three mobile browser engines.
+  // Covers both TOC list flex sizing/caret rendering (#604) and the sticky top
+  // bar staying put when scrolled, across all three mobile browser engines.
   v2VisualScenario("reader-toc", {
     path: "/work/suetonius/de_vita_caesarum",
     waitFor: ".reader-passage",
