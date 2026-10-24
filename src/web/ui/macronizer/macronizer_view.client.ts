@@ -2,7 +2,6 @@ import {
   BaseElement,
   DrawerController,
   copyText,
-  currentIframeSrc,
   escapeId,
   html,
   joinHtml,
@@ -12,6 +11,7 @@ import {
   swapElementContent,
   swapSlots,
 } from "@/web/ui/core/index.client";
+import { lookupInDictFrame } from "@/web/ui/dict/search/dict_frame_host.client";
 import { buildDictUrl } from "@/web/ui/dict/search/dict_params.common";
 import {
   MACRONIZER_MAX_CHARS,
@@ -707,9 +707,11 @@ export class MorcusMacronizerView extends BaseElement<"macronize"> {
       lang: "La",
       embedded: "1",
     });
-    if (currentIframeSrc(iframe) !== targetSrc) {
-      iframe.src = targetSrc;
-    }
+    lookupInDictFrame(
+      iframe,
+      { q: trimmed, lang: "La", inflected },
+      targetSrc
+    );
   }
 
   async #handleCopyPassage(): Promise<void> {
