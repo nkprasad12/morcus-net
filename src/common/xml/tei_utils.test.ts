@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import {
   CtsPathData,
+  extractInfo,
   findCtsEncoding,
   parseXPath,
 } from "@/common/xml/tei_utils";
@@ -164,5 +165,40 @@ describe("findCtsEncoding", () => {
         ],
       },
     ]);
+  });
+});
+
+describe("extractInfo licence", () => {
+  function header(availability: string): XmlNode {
+    return parseRawXml(`<TEI><teiHeader><fileDesc>
+      <titleStmt><title>Saturae</title><author>Juvenal</author></titleStmt>
+      <publicationStmt>
+        <authority>Perseus Project</authority>
+        ${availability}
+      </publicationStmt>
+    </fileDesc></teiHeader></TEI>`);
+  }
+
+  it("reads the licence statement", () => {
+    const root = header(`<availability>
+      <licence target="https://creativecommons.org/licenses/by-sa/4.0/">Available under a Creative
+        Commons Attribution-ShareAlike 4.0 International License</licence>
+    </availability>`);
+
+    expect(extractInfo(root).licence).toBe(
+      "Available under a Creative Commons Attribution-ShareAlike 4.0 International License"
+    );
+  });
+
+  it("ignores a placeholder licence without a target", () => {
+    const root = header(
+      `<availability status="free"><licence>Test</licence></availability>`
+    );
+
+    expect(extractInfo(root).licence).toBeUndefined();
+  });
+
+  it("is undefined without a licence", () => {
+    expect(extractInfo(header("")).licence).toBeUndefined();
   });
 });

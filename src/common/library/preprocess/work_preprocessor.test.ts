@@ -665,6 +665,32 @@ describe("preprocessWorkToV2 metadata and attribution", () => {
       "https://archive.org/details/desenectutedeami0000cice/page/108",
     ]);
   });
+
+  it("uses the file's licence statement and says the text may be modified", () => {
+    const work = makeWork({
+      rows: [[["1", "1"], span([], "Test text")]],
+    });
+    work.info.licence =
+      "Available under a Creative Commons Attribution-ShareAlike 4.0 International License";
+
+    expect(preprocessWorkToV2(work, METADATA).license).toBe(
+      "Available under a Creative Commons Attribution-ShareAlike 4.0 International License. The text may have been modified from the original."
+    );
+  });
+
+  it("falls back to the repository licence", () => {
+    const work = makeWork({
+      rows: [[["1", "1"], span([], "Test text")]],
+    });
+
+    const license = preprocessWorkToV2(work, METADATA).license;
+
+    expect(license).toContain(
+      "Creative Commons Attribution-ShareAlike 4.0 International License."
+    );
+    expect(license).toContain("may have been modified");
+    expect(license).not.toContain("3.0");
+  });
 });
 
 describe("preprocessWorkToV2 poetry line labels", () => {

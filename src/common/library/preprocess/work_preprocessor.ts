@@ -364,6 +364,20 @@ function renderNotesSection(
   )}</h2>${sections.join("\n")}</aside>`;
 }
 
+/** canonical-latinLit's repository licence (its `license.md`). */
+const PERSEUS_REPO_LICENCE =
+  "Available under a Creative Commons Attribution-ShareAlike 4.0 International License";
+
+/**
+ * The licence line for a Perseus text: the file's own `<licence>` statement,
+ * else the repository's. CC BY-SA asks adapters to say they changed the work,
+ * and we patch typos and normalise markup, so the line says so.
+ */
+function perseusLicence(fileLicence: string | undefined): string {
+  const statement = (fileLicence ?? PERSEUS_REPO_LICENCE).replace(/\.$/, "");
+  return `${statement}. The text may have been modified from the original.`;
+}
+
 type ProcessedPage = ProcessedWork2["pages"][number];
 
 /**
@@ -619,7 +633,7 @@ export function preprocessWorkToV2(
       : undefined,
     license:
       work.info.attribution === "perseus"
-        ? "Creative Commons Attribution-ShareAlike 3.0"
+        ? perseusLicence(work.info.licence)
         : work.info.attribution === "hypotactic"
         ? "Hypotactic Latin Metron (Public / Educational)"
         : "Public Domain",

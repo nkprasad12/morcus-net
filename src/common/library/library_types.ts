@@ -21,6 +21,8 @@ export interface DocumentInfo {
   isTranslation?: boolean;
   translationInfo?: TranslationInfo;
   sourceRef?: string[];
+  /** The licence statement in the source file's header, if it has one. */
+  licence?: string;
   attribution: DocumentAttribution;
 }
 

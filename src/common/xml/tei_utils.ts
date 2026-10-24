@@ -171,6 +171,37 @@ function findSourceRef(teiRoot: XmlNode): string[] | undefined {
   return targets;
 }
 
+/**
+ * The file's own licence statement: the text of
+ * `publicationStmt/availability/licence`, if it names its licence with a
+ * `target` URL. Some files carry placeholders (Juvenal's `<licence>Test`),
+ * which do not count.
+ */
+function findLicence(teiRoot: XmlNode): string | undefined {
+  const publicationStmt = teiRoot
+    .findChildren("teiHeader")[0]
+    ?.findChildren("fileDesc")[0]
+    ?.findChildren("publicationStmt")[0];
+  const licences =
+    publicationStmt
+      ?.findChildren("availability")
+      .flatMap((availability) => availability.findChildren("licence")) ?? [];
+  for (const licence of licences) {
+    if (!licence.getAttr("target")?.startsWith("http")) {
+      continue;
+    }
+    const text = licence.children
+      .filter((child): child is string => typeof child === "string")
+      .join("")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (text.length > 0) {
+      return text;
+    }
+  }
+  return undefined;
+}
+
 export function extractInfo(teiRoot: XmlNode) {
   const titleStatement = findChild(teiRoot, TITLE_STATEMENT_PATH);
   const editor: XmlNode | undefined = titleStatement.findChildren("editor")[0];
@@ -185,6 +216,7 @@ export function extractInfo(teiRoot: XmlNode) {
     sponsor: firstTextOfChild(titleStatement, "sponsor"),
     funder: firstTextOfChild(titleStatement, "funder"),
     sourceRef: findSourceRef(teiRoot),
+    licence: findLicence(teiRoot),
   };
 }
 
