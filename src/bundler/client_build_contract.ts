@@ -66,8 +66,12 @@ export const V2_CHUNK_ENTRIES: Readonly<
 > = {
   common: {
     import: "./src/web/ui/shell/common_entry.client.ts",
-    // Dictionary URLs: used by the dict and macronizer chunks.
-    shared: ["./src/web/ui/dict/search/dict_params.common.ts"],
+    shared: [
+      // Dictionary URLs: used by the dict and macronizer chunks.
+      "./src/web/ui/dict/search/dict_params.common.ts",
+      // Embedded-dictionary host wrapper: used by the reader and macronizer chunks.
+      "./src/web/ui/dict/search/dict_frame_host.client.ts",
+    ],
   },
   dict: {
     import: "./src/web/ui/dict/dict_entry.client.ts",

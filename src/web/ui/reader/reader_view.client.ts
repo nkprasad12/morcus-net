@@ -15,7 +15,6 @@ import {
   isPlainLeftClick,
   isShortcutBlocked,
   measureSvh100,
-  navigateFrameReplace,
   openSectionActionMenu,
   registerElement,
   setHtml,
@@ -31,6 +30,10 @@ import {
   wordGroupParts,
   queryUpgraded,
 } from "@/web/ui/core/index.client";
+import {
+  lookupInDictFrame,
+  type EmbeddedDictLookupRequest,
+} from "@/web/ui/dict/search/dict_frame_host.client";
 import type { SafeHtml } from "@/web/ui/core/dom/html.common";
 import { removeMacrons } from "@/common/text_cleaning";
 import {
@@ -784,24 +787,36 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
+  #lookupInFrame(request: EmbeddedDictLookupRequest, src: string): void {
+    const iframe = this.#dictFrame;
+    if (!iframe) return;
+    if (lookupInDictFrame(iframe, request, src) === "swapped") {
+      this.#wakeLock.extend();
+    }
+  }
+
   #lookupWord(word: string, activeAnchor?: HTMLElement) {
     if (!word) return;
     this.#pendingDictFocusWord = null;
 
+    const request: EmbeddedDictLookupRequest = {
+      q: word,
+      lang: "La",
+      inflected: true,
+    };
     const targetSrc = `/dicts?q=${encodeURIComponent(
       word
     )}&lang=La&o=1&embedded=1&scale=${this.#dictScalePercent()}`;
     const iframe = this.#dictFrame;
-    const iframeAtTarget =
-      iframe !== null && currentIframeSrc(iframe) === targetSrc;
 
     const dictPanel = this.#dictPanelEl;
     if (
       word === this.#currentQuery &&
-      iframeAtTarget &&
+      this.#panelController?.activeTab === "dict" &&
       dictPanel?.classList.contains("drawer-minimized")
     ) {
       this.restoreDrawer();
+      this.#lookupInFrame(request, targetSrc);
       return;
     }
 
@@ -818,9 +833,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     // Update dictionary iframe (filtering by lang=La and forcing inflected search o=1 for Latin text word lookups)
     if (iframe) {
       iframe.removeAttribute("data-dict-unarmed");
-      if (!iframeAtTarget) {
-        navigateFrameReplace(iframe, targetSrc);
-      }
+      this.#lookupInFrame(request, targetSrc);
     }
 
     // Update split layout class to active (expands mobile sheet)

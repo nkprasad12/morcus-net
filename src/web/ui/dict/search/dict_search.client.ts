@@ -3,6 +3,7 @@ import {
   closeActiveSectionUI,
   extractSelectedWord,
   fetchAndSwapPartial,
+  isPlainLeftClick,
   isShortcutBlocked,
   KeyedFetchCache,
   registerElement,
@@ -37,11 +38,19 @@ import {
 } from "@/web/ui/dict/entry/entry_links.client";
 import {
   computeActiveLanguages,
+  DICT_SETTINGS_DIALOG_ID,
   renderLangChipsHtml,
   renderInflectChipHtml,
 } from "@/web/ui/dict/search/search_bar.common";
+import type {
+  EmbeddedDictLookupRequest,
+  EmbeddedDictLookupResult,
+} from "@/web/ui/dict/search/dict_frame_host.client";
 
 const SEARCH_FORM = "form.search-form";
+
+const prefersReducedMotion = (): boolean =>
+  !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.
@@ -74,9 +83,48 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
   #activeDictBitmask: string = DEFAULT_DICT_BITMASK;
   #activeDictKeys: string[] = [...DEFAULT_DICT_KEYS];
   #isInflected: boolean = true;
+  #shownQuery: string = "";
+  #leaving: boolean = false;
 
   public get chunkCache(): KeyedFetchCache<DictChunksResponse> {
     return this.#autocomplete.chunkCache;
+  }
+
+  /**
+   * Cross-bundle API: called by `lookupInDictFrame` (`dict_frame_host.client.ts`,
+   * bundled in `common.js`) from a host page (`reader.js`, `macronizer.js`).
+   *
+   * Because the host page's chunk and this iframe's `dict.js` load independently
+   * and can come from different builds (e.g. across a deploy), the signature and
+   * return values are append-only, and arguments must be plain primitive values
+   * so the call safely crosses realms.
+   *
+   * `"declined"` returns immediately without changing URL, DOM, or in-flight
+   * state so the host can fall back to a full iframe navigation.
+   */
+  public lookupEmbeddedWord(
+    request: EmbeddedDictLookupRequest
+  ): EmbeddedDictLookupResult {
+    const loc = window.location;
+    const params = new URLSearchParams(loc.search);
+    const clean = cleanDictQuery(request.q);
+    if (
+      !clean ||
+      this.#leaving ||
+      loc.pathname !== "/dicts" ||
+      params.get("embedded") !== "1" ||
+      params.get("lang") !== request.lang ||
+      this.#isInflected !== request.inflected ||
+      this.querySelector(`dialog#${DICT_SETTINGS_DIALOG_ID}[open]`) !== null
+    ) {
+      return "declined";
+    }
+    if (clean === this.#shownQuery) {
+      return "unchanged";
+    }
+    this.#autocomplete.clear();
+    void this.#searchQuery(clean, false);
+    return "swapped";
   }
 
   // Read in more than one place; a getter re-queries rather than caches.
@@ -157,6 +205,53 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
 
     const currentParams = new URLSearchParams(window.location.search);
     const isEmbedded = currentParams.get("embedded") === "1";
+
+    this.#leaving = false;
+    this.#shownQuery =
+      window.location.pathname === "/dicts"
+        ? cleanDictQuery(currentParams.get("q") ?? "")
+        : "";
+
+    // Assumes link-intercepting click handlers live on descendant elements or
+    // `document` (e.g. `entry_links.client.ts`, `anchor_scroll.client.ts`), so
+    // they have already called `preventDefault()` before this `window` bubble
+    // listener runs. Do not register a link-intercepting click listener on
+    // `window` after `MorcusDictSearch` connects.
+    this.scope.listen(window, "click", (e) => {
+      if (
+        e.defaultPrevented ||
+        !isPlainLeftClick(e) ||
+        !(e.target instanceof Element)
+      ) {
+        return;
+      }
+      const link = e.target.closest<HTMLAnchorElement>("a[href]");
+      if (
+        !link ||
+        (link.target && link.target !== "_self") ||
+        link.hasAttribute("download") ||
+        (link.protocol !== "http:" && link.protocol !== "https:")
+      ) {
+        return;
+      }
+      const rawHref = link.getAttribute("href");
+      if (!rawHref || rawHref.startsWith("#")) return;
+      const loc = window.location;
+      if (
+        link.origin === loc.origin &&
+        link.pathname === loc.pathname &&
+        link.search === loc.search &&
+        link.hash !== ""
+      ) {
+        return;
+      }
+      this.#leaving = true;
+    });
+    this.scope.listen(window, "pageshow", (e: Event) => {
+      if ("persisted" in e && e.persisted) {
+        this.#leaving = false;
+      }
+    });
 
     if (
       !typedBeforeUpgrade &&
@@ -437,6 +532,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
         inflected: this.#isInflected,
         focus,
       });
+      this.#leaving = true;
       if (
         isEmbedded &&
         "replace" in window.location &&
@@ -467,9 +563,14 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       'form.dict-settings-form input[name="q"]'
     );
     if (settingsQ) settingsQ.value = cleanQuery;
+    if (!typed) {
+      this.#scrollToResults("instant");
+    }
     await this.#fetchResults(cleanQuery);
     this.scope.rAF(() => {
-      this.#scrollToResults("smooth");
+      this.#scrollToResults(
+        !typed || prefersReducedMotion() ? "instant" : "smooth"
+      );
     });
   }
 
@@ -507,13 +608,17 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     fetchParams.set("o", this.#isInflected ? "1" : "0");
 
     const url = `${base}?${fetchParams.toString()}`;
+    const signal = this.scope.latest("results");
+    this.#shownQuery = query;
     const success = await fetchAndSwapPartial(this.#resultsElement, url, {
-      signal: this.scope.latest("results"),
+      signal,
       errorMessage: "Error loading results.",
       loadingOpacity: 0.5,
     });
     if (success) {
       this.#enhanceWordsAfterPaint();
+    } else if (!signal.aborted) {
+      this.#shownQuery = "";
     }
     return success;
   }

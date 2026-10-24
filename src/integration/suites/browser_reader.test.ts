@@ -174,6 +174,157 @@ test.describe("UI V2 reader", () => {
     );
   });
 
+  test("second and repeat passage word clicks swap dictionary results in place without reloading the iframe document", async ({
+    page,
+  }) => {
+    await page.goto(`${DBG}/1.1`);
+    await disableSmoothScroll(page);
+    const initialHistoryLength = await page.evaluate(() => history.length);
+    const frame = page.frameLocator("#dict-frame");
+
+    // 1. Click word A ("divisa") -> initial document load in #dict-frame.
+    await passage(page)
+      .locator(".lat-word", { hasText: /^divisa$/ })
+      .first()
+      .click();
+    await expect(
+      frame.getByText("To force asunder", { exact: true })
+    ).toBeVisible();
+    await expect(
+      frame.locator("morcus-dict-search[data-upgraded]")
+    ).toBeAttached();
+
+    const dictDocRequests: string[] = [];
+    const dictAllRequests: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/dicts")) {
+        dictAllRequests.push(req.url());
+        if (req.resourceType() === "document") {
+          dictDocRequests.push(req.url());
+        }
+      }
+    });
+
+    // 2. Click word B ("omnis") -> in-place partial swap, no document request in frame.
+    await passage(page)
+      .locator(".lat-word", { hasText: /^omnis$/ })
+      .first()
+      .click();
+    await expect(frame.locator("#dict-q")).toHaveValue("omnis");
+    await expect(frame.locator("#dict-results")).toContainText("omnis");
+    expect(dictDocRequests).toEqual([]);
+    expect(
+      dictAllRequests.some(
+        (u) => u.includes("q=omnis") && u.includes("format=partial")
+      )
+    ).toBe(true);
+    expect(await page.evaluate(() => history.length)).toBe(
+      initialHistoryLength
+    );
+
+    // 3. Re-click word B ("omnis"), then click word C ("partes") to flush the request pipeline:
+    // the only new /dicts request must be C's partial fetch (none for the re-click on B).
+    dictAllRequests.length = 0;
+    await passage(page)
+      .locator(".lat-word", { hasText: /^omnis$/ })
+      .first()
+      .click();
+    await passage(page)
+      .locator(".lat-word", { hasText: /^partes$/ })
+      .first()
+      .click();
+    await expect(frame.locator("#dict-q")).toHaveValue("partes");
+    await expect(frame.locator("#dict-results")).toContainText("pars");
+    expect(dictDocRequests).toEqual([]);
+    expect(dictAllRequests.some((u) => u.includes("q=omnis"))).toBe(false);
+    expect(
+      dictAllRequests.some(
+        (u) => u.includes("q=partes") && u.includes("format=partial")
+      )
+    ).toBe(true);
+  });
+
+  test("typing an English search in the iframe leaves lang=La, and the next passage word click reloads the frame back to lang=La", async ({
+    page,
+  }) => {
+    await page.goto(`${DBG}/1.1`);
+    await disableSmoothScroll(page);
+    const frame = page.frameLocator("#dict-frame");
+
+    await passage(page)
+      .locator(".lat-word", { hasText: /^divisa$/ })
+      .first()
+      .click();
+    await expect(
+      frame.getByText("To force asunder", { exact: true })
+    ).toBeVisible();
+    await expect(
+      frame.locator("morcus-dict-search[data-upgraded]")
+    ).toBeAttached();
+
+    // Type an English word in the iframe and submit -> leaves lang=La scope.
+    const dictInput = frame.locator("#dict-q");
+    await dictInput.fill("love");
+    await dictInput.press("Enter");
+    await expect(frame.locator("#dict-results")).toContainText("love");
+    await expect(
+      frame.locator("morcus-dict-search[data-upgraded]")
+    ).toBeAttached();
+
+    const dictDocRequests: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/dicts") && req.resourceType() === "document") {
+        dictDocRequests.push(req.url());
+      }
+    });
+
+    // Click passage word C ("partes") -> declines in-place swap and does a full navigation back to lang=La.
+    await passage(page)
+      .locator(".lat-word", { hasText: /^partes$/ })
+      .first()
+      .click();
+    await expect(frame.locator("#dict-q")).toHaveValue("partes");
+    await expect(frame.locator("#dict-results")).toContainText("pars");
+    expect(
+      dictDocRequests.some(
+        (u) => u.includes("q=partes") && u.includes("lang=La")
+      )
+    ).toBe(true);
+  });
+
+  test("clicking a passage word while autocomplete is open in the iframe closes the autocomplete list", async ({
+    page,
+  }) => {
+    await page.goto(`${DBG}/1.1`);
+    await disableSmoothScroll(page);
+    const frame = page.frameLocator("#dict-frame");
+
+    await passage(page)
+      .locator(".lat-word", { hasText: /^divisa$/ })
+      .first()
+      .click();
+    await expect(
+      frame.getByText("To force asunder", { exact: true })
+    ).toBeVisible();
+    await expect(
+      frame.locator("morcus-dict-search[data-upgraded]")
+    ).toBeAttached();
+
+    const dictInput = frame.locator("#dict-q");
+    await dictInput.click();
+    await dictInput.fill("");
+    await page.keyboard.type("can", { delay: 30 });
+    const listbox = frame.locator("#dict-suggestions-list");
+    await expect(listbox).toBeVisible();
+
+    await passage(page)
+      .locator(".lat-word", { hasText: /^omnis$/ })
+      .first()
+      .click();
+    await expect(listbox).toBeHidden();
+    await expect(dictInput).toHaveValue("omnis");
+  });
+
   test("defers the embedded dictionary iframe on JS load and arms it on '/'", async ({
     page,
     viewport,
