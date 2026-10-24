@@ -1,7 +1,10 @@
 import { setupFakeHypotacticData } from "@/common/library/hypotactic_test_helper";
+import { LatinWorks } from "@/common/library/library_constants";
 import {
   processLibrary,
+  SHORT_TITLE_BY_WORK_ID,
   stripXmlProlog,
+  URL_NAME_BY_WORK_ID,
 } from "@/common/library/process_library";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { replaceEnvVar } from "@/common/test_helpers";
@@ -150,5 +153,19 @@ describe("stripXmlProlog", () => {
 
   it("throws on an unterminated DOCTYPE", () => {
     expect(() => stripXmlProlog(`<!DOCTYPE TEI [ <!ENTITY x "y">`)).toThrow();
+  });
+});
+
+describe("pinned slugs", () => {
+  it("pin only onboarded works, to distinct slugs", () => {
+    const onboarded = new Set<string>(Object.values(LatinWorks));
+    for (const id of [
+      ...URL_NAME_BY_WORK_ID.keys(),
+      ...SHORT_TITLE_BY_WORK_ID.keys(),
+    ]) {
+      expect(onboarded).toContain(id);
+    }
+    const slugs = [...URL_NAME_BY_WORK_ID.values()];
+    expect(new Set(slugs).size).toBe(slugs.length);
   });
 });

@@ -149,6 +149,35 @@ export function stripXmlProlog(xml: string): string {
   }
 }
 
+/**
+ * URL slugs pinned by work id. Slugs are derived from the TEI title, so when
+ * upstream retitles a work its reader URL would move; pinning keeps old links
+ * and saved spots working. Add an entry whenever a sync changes a slug.
+ */
+export const URL_NAME_BY_WORK_ID = new Map<string, string>([
+  // canonical-latinLit 0700a6b7 (2026-10) retitled these.
+  ["phi0474.phi003.perseus-lat2", "quintus_roscius"],
+  ["phi0474.phi007.perseus-lat2", "pro_fonteio"],
+  ["phi0474.phi018.perseus-lat2", "cum_populo_gratias_egi"],
+  ["phi0474.phi020.perseus-lat2", "de_domo_sua"],
+  ["phi0474.phi021.perseus-lat2", "de_haruspicum_responso"],
+  ["phi0474.phi023.perseus-lat2", "in_p_vatinium"],
+  ["phi0474.phi025.perseus-lat2", "de_provinciis_consularibus"],
+  ["phi0474.phi034.perseus-lat2", "pro_rege_deiotaro"],
+  ["phi0474.phi038.perseus-lat2", "de_partitione_oratoria"],
+  ["phi0474.phi043.perseus-lat2", "de_republica"],
+  ["phi0474.phi051.perseus-lat2", "de_senectute"],
+  ["phi1351.phi001.perseus-lat2", "agricola"],
+]);
+
+/** Short display titles pinned by work id, for the same reason. */
+export const SHORT_TITLE_BY_WORK_ID = new Map<string, string>([
+  ["phi0474.phi020.perseus-lat2", "de Domo Sua"],
+  ["phi0474.phi021.perseus-lat2", "De Haruspicum Responso"],
+  ["phi0474.phi023.perseus-lat2", "In P. Vatinium"],
+  ["phi1351.phi001.perseus-lat2", "Agricola"],
+]);
+
 function urlify(input: string, customs: Map<string, string>) {
   const custom = customs.get(input);
   if (custom !== undefined) {
@@ -212,7 +241,9 @@ function isTranslationId(workId: string): boolean {
 
 function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
   const rawTitle = info.title;
-  const shortName = NAME_TO_DISPLAY_NAME.get(rawTitle);
+  const shortName =
+    SHORT_TITLE_BY_WORK_ID.get(info.workId) ??
+    NAME_TO_DISPLAY_NAME.get(rawTitle);
   const decorated: DocumentInfo = { ...info };
   decorated.shortTitle = shortName;
   return decorated;
@@ -231,7 +262,7 @@ function extractWorkMetadata(
     author: info.author,
     name: info.shortTitle ?? info.title,
     urlAuthor: urlifyAuthor(info.author),
-    urlName: urlifyName(info.title),
+    urlName: URL_NAME_BY_WORK_ID.get(id) ?? urlifyName(info.title),
     translationId: args?.translationId,
     isTranslation: args?.isTranslation,
     attribution: info.attribution ?? "perseus",
