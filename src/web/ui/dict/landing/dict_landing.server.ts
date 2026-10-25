@@ -6,6 +6,7 @@ import {
 import { DEFAULT_DICT_KEYS } from "@/web/ui/dict/settings/dict_bitmask.common";
 import { resolveDictLang } from "@/web/ui/dict/dict_attribution.server";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 interface DictItem {
   key: string;
@@ -66,7 +67,7 @@ export function renderDictLandingHtml(
       .map((d) => {
         const isEnabled = activeKeysSet.has(d.key.toUpperCase());
         const statusClass = isEnabled ? "dict-enabled" : "dict-disabled";
-        return `
+        return ssr`
         <li class="dict-list-item ${statusClass}" data-dict-key="${d.key}">
           <strong class="lexicon-badge dict-badge-${d.lang} ${statusClass}">${d.key}</strong>
           <span class="lexicon-name">${d.displayName}</span>
@@ -81,7 +82,7 @@ export function renderDictLandingHtml(
   // markup. The guide's sample entry demonstrates every styling class; its
   // legend is collapsed by default. The highlight-intensity tip is JS-only
   // because the slider is client-injected.
-  return `
+  return ssr`
     <div class="landing-container">
       <p class="landing-welcome" id="landing-welcome">${welcomeText}</p>
 

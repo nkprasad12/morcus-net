@@ -1,5 +1,6 @@
 import * as he from "he";
 import { getLogeionUrl } from "@/web/ui/dict/search/dict_greek.common";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 /**
  * Renders the Greek search fallback HTML with a direct Logeion link and toggleable inline iframe embed.
@@ -8,7 +9,7 @@ export function renderGreekFallbackHtml(query: string): string {
   const logeionUrl = getLogeionUrl(query);
   const escapedQuery = he.escape(query);
 
-  return `
+  return ssr`
     <div class="greek-fallback" lang="el">
       <div class="greek-notice">
         <p class="greek-title">This site does not (yet) support Greek.</p>

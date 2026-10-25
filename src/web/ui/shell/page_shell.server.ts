@@ -16,6 +16,7 @@ import type { WidthSurface } from "@/web/ui/core/widgets/page_width.common";
 import { renderPageWidthHandles } from "@/web/ui/shell/page_width.server";
 import { renderAppearanceMenu } from "@/web/ui/shell/appearance_menu.server";
 import { THEME_COLOR } from "@/web/ui/shell/theme_color.common";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 export type V2ActivePage = "dicts" | "about" | "library" | "corpus";
 
@@ -37,8 +38,8 @@ const BRAND_SUFFIX = " | Morcus Latin Tools";
  * any script runs. `appearance_menu.client.ts` overrides both with a saved choice.
  */
 const THEME_COLOR_META_HTML =
-  `\n  <meta name="theme-color" content="${THEME_COLOR.light}" media="(prefers-color-scheme: light)">` +
-  `\n  <meta name="theme-color" content="${THEME_COLOR.dark}" media="(prefers-color-scheme: dark)">`;
+  `\n<meta name="theme-color" content="${THEME_COLOR.light}" media="(prefers-color-scheme: light)">` +
+  `\n<meta name="theme-color" content="${THEME_COLOR.dark}" media="(prefers-color-scheme: dark)">`;
 
 interface PageShellBaseOptions {
   title: string;
@@ -127,7 +128,7 @@ export function renderAppBar(activePage?: V2ActivePage): string {
   // center on mobile; `.actions-group` (Appearance menu + Report dialog) sits
   // right on desktop and left on mobile. The mobile hamburger menu is a native
   // `<details>`, so it works without JS.
-  return `
+  return ssr`
     <header class="app-bar">
       <div class="app-bar-inner">
         <div class="brand-group">
@@ -237,8 +238,8 @@ export function renderPageShell(options: PageShellOptions): string {
     ? he.escape(options.description)
     : "";
   const descriptionHeadHtml = descriptionEncoded
-    ? `\n  <meta name="description" content="${descriptionEncoded}">` +
-      `\n  <meta property="og:description" content="${descriptionEncoded}">`
+    ? `\n<meta name="description" content="${descriptionEncoded}">` +
+      `\n<meta property="og:description" content="${descriptionEncoded}">`
     : "";
   const appBarHtml = options.hideAppBar ? "" : renderAppBar(options.activePage);
   const isReader = options.isReader ?? false;
@@ -272,7 +273,7 @@ export function renderPageShell(options: PageShellOptions): string {
     mainClasses.length > 0 ? ` class="${mainClasses.join(" ")}"` : "";
 
   const dictPrefetchHtml = isReader
-    ? `\n  <link rel="prefetch" href="${getV2AssetHref("dict.js")}">`
+    ? `\n<link rel="prefetch" href="${getV2AssetHref("dict.js")}">`
     : "";
   // Installability, browser UI colour, canonical URL, and OpenGraph link card
   // metadata. Skipped in embedded iframes, which browsers neither install nor
@@ -285,21 +286,21 @@ export function renderPageShell(options: PageShellOptions): string {
       ? he.escape(`${SITE_ORIGIN}${options.canonicalPath}`)
       : "";
   const canonicalHeadHtml = canonicalUrlEncoded
-    ? `\n  <link rel="canonical" href="${canonicalUrlEncoded}">` +
-      `\n  <meta property="og:url" content="${canonicalUrlEncoded}">`
+    ? `\n<link rel="canonical" href="${canonicalUrlEncoded}">` +
+      `\n<meta property="og:url" content="${canonicalUrlEncoded}">`
     : "";
   const pwaHeadHtml = isEmbedded
     ? ""
-    : `\n  <link rel="manifest" href="/public/pwa.webmanifest">` +
+    : `\n<link rel="manifest" href="/public/pwa.webmanifest">` +
       THEME_COLOR_META_HTML +
       canonicalHeadHtml +
       descriptionHeadHtml +
-      `\n  <meta property="og:site_name" content="Morcus Latin Tools">` +
-      `\n  <meta property="og:title" content="${ogTitleEncoded}">` +
-      `\n  <meta property="og:type" content="website">` +
-      `\n  <meta property="og:image" content="${SITE_ORIGIN}/public/logo512.png">`;
+      `\n<meta property="og:site_name" content="Morcus Latin Tools">` +
+      `\n<meta property="og:title" content="${ogTitleEncoded}">` +
+      `\n<meta property="og:type" content="website">` +
+      `\n<meta property="og:image" content="${SITE_ORIGIN}/public/logo512.png">`;
   const extraHeadHtml = options.extraHeadHtml
-    ? `\n  ${options.extraHeadHtml}`
+    ? `\n${options.extraHeadHtml}`
     : "";
 
   const scriptTagsHtml = resolvePageScripts(options)
@@ -309,7 +310,7 @@ export function renderPageShell(options: PageShellOptions): string {
           scriptName
         )}" onerror="${BUNDLE_ONERROR}"></script>`
     )
-    .join("\n  ");
+    .join("\n");
 
   // `#abbr-popover` is the single global popover for abbreviation expansions.
   // It is "manual", not "auto": abbr_popover.client.ts owns dismissal; native
@@ -323,7 +324,7 @@ export function renderPageShell(options: PageShellOptions): string {
       ? ""
       : ` data-version="${he.escape(buildVersion)}"`;
 
-  return `<!DOCTYPE html>
+  return ssr`<!DOCTYPE html>
 <html lang="en"${versionAttr}>
 <head>
   <meta charset="UTF-8">

@@ -1,4 +1,5 @@
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 interface Choice {
   value: string;
@@ -16,7 +17,7 @@ function renderSegmented(
 ): string {
   const options = choices
     .map(
-      (c) => `<label class="segmented-option">
+      (c) => ssr`<label class="segmented-option">
             <input type="radio" name="${name}" value="${c.value}"${
         c.value === checked ? " checked" : ""
       } />
@@ -25,15 +26,15 @@ function renderSegmented(
             }">${c.label}</span>
           </label>`
     )
-    .join("\n          ");
-  return `<div class="segmented" role="radiogroup" ${labelAttr}>
+    .join("\n");
+  return ssr`<div class="segmented" role="radiogroup" ${labelAttr}>
           ${options}
         </div>`;
 }
 
 /** One compact settings row: the label beside its control. */
 function row(key: string, label: string, controlHtml: string): string {
-  return `<div class="appearance-row">
+  return ssr`<div class="appearance-row">
             <span class="appearance-row-label" id="appearance-${key}-label">${label}</span>
             ${controlHtml}
           </div>`;
@@ -56,7 +57,7 @@ export function renderAppearanceMenu(): string {
   // `.appearance-sample` is styled by the same custom properties as reading
   // text, so it previews every change live with no script. It comes last, so
   // the controls above it don't move as it grows.
-  return `<morcus-appearance-menu data-js-only>
+  return ssr`<morcus-appearance-menu data-js-only>
       <button
         type="button"
         class="theme-toggle-btn appearance-btn"
@@ -130,7 +131,7 @@ export function renderAppearanceMenu(): string {
               // Not "size": `#appearance-size-label` is the stepper's value.
               "size-row",
               "Size",
-              `<div class="stepper appearance-stepper" role="group" aria-labelledby="appearance-size-row-label">
+              ssr`<div class="stepper appearance-stepper" role="group" aria-labelledby="appearance-size-row-label">
                 <button type="button" class="stepper-btn" id="appearance-size-dec" aria-label="Decrease text size">A&minus;</button>
                 <span class="stepper-val" id="appearance-size-label" aria-live="polite">100%</span>
                 <button type="button" class="stepper-btn" id="appearance-size-inc" aria-label="Increase text size">A+</button>

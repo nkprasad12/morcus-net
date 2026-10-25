@@ -6,6 +6,7 @@ import { NavTreeNode } from "@/common/library/library_types";
 import { citationToString } from "@/web/ui/reader/reader_types.server";
 import * as he from "he";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 interface ReaderPageUrlOptions {
   query?: string;
@@ -197,16 +198,14 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
   const hiddenQueryInput = query
     ? `<input type="hidden" name="q" value="${he.escape(query)}" />`
     : "";
-  const searchValueAttr = jumpMiss
-    ? `\n                   value="${he.escape(jumpMiss)}"`
-    : "";
+  const searchValueAttr = jumpMiss ? `\nvalue="${he.escape(jumpMiss)}"` : "";
   const missBannerHtml = jumpMiss
-    ? `\n        <p class="reader-toc-miss" role="status">No section &ldquo;${he.escape(
+    ? `\n<p class="reader-toc-miss" role="status">No section &ldquo;${he.escape(
         jumpMiss
       )}&rdquo; in this work.</p>`
     : "";
 
-  return `<dialog id="reader-toc-drawer"
+  return ssr`<dialog id="reader-toc-drawer"
               class="anchored-popover reader-toc-drawer"
               aria-label="Table of Contents">
         <div class="reader-toc-header">

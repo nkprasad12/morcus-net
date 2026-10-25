@@ -5,6 +5,7 @@ import {
 import { renderInflections } from "@/web/ui/dict/entry/inflection_table.server";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import * as he from "he";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 /** A subsection anchor that resolves to an element in the rendered entry. */
 interface SubsectionTarget {
@@ -223,7 +224,7 @@ export function renderSubsectionNote(
     relevant.flatMap((group) => group.inflections)
   );
 
-  return `
+  return ssr`
     <aside class="subsection-note" aria-label="Matched sections in this entry">
       <p class="subsection-note-lead">
         <span class="subsection-note-label">Matched</span>

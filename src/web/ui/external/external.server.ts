@@ -38,6 +38,7 @@ import {
   buildExternalReaderUrl,
 } from "@/web/ui/external/external_url.common";
 import { formatReaderPageTitle } from "@/web/ui/reader/reader_slots.common";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 const LINE_MODE_LABELS: Record<LineMode, { name: string; hint: string }> = {
   keep: {
@@ -69,7 +70,7 @@ interface ExternalLandingOptions {
 function renderLineModeOptions(lines: LineMode): string {
   return LINE_MODES.map((mode) => {
     const label = LINE_MODE_LABELS[mode];
-    return `
+    return ssr`
             <label class="external-mode-option">
               <input type="radio" name="lines" value="${mode}"${
       mode === lines ? " checked" : ""
@@ -102,7 +103,7 @@ export function renderExternalLandingContentHtml(
   // tabs, the paste panel and the saved list are `data-js-only`, so without
   // JS (or until `<morcus-external-loader>` is upgraded) only the plain GET
   // form for web pages shows.
-  return `
+  return ssr`
     <morcus-external-loader class="external-landing" data-page="landing">
       <header class="external-landing-header">
         <h1 class="external-landing-title">Read your own text</h1>
@@ -257,7 +258,7 @@ function pageTitle(model: ExternalFrameModel): string {
 
 function renderStickyBar(model: ExternalFrameModel): string {
   const title = he.escape(model.title);
-  return `      <header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
+  return ssr`<header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
         <div class="sticky-primary-row">
           <a href="${EXTERNAL_READER_PATH}"
              class="reader-btn reader-nav-arrow"
@@ -299,7 +300,7 @@ function renderLineModeNav(model: ExternalFrameModel): string {
       readerUrl(model, mode, true)
     )}" rel="nofollow">${name}</a>`;
   }).join(`<span class="reader-meta-sep" aria-hidden="true">&middot;</span>`);
-  return `<nav class="external-mode-nav" aria-label="Line breaks">
+  return ssr`<nav class="external-mode-nav" aria-label="Line breaks">
                 <span class="external-mode-nav-label">Line breaks:</span>
                 ${links}
               </nav>`;
@@ -315,7 +316,7 @@ function renderLoader(attrs: Record<string, string>): string {
 function renderTextCard(model: ExternalFrameModel): string {
   const headingHref =
     "url" in model.target ? readerUrl(model, model.lines, false) : undefined;
-  return `          <div class="reader-text-card">
+  return ssr`<div class="reader-text-card">
             <header class="reader-text-card-header">
               <div class="reader-text-meta">
                 <span class="reader-author-tag">Imported text</span>
@@ -404,7 +405,7 @@ function buildUrlModel(options: ExternalReaderPageOptions): ExternalFrameModel {
     noticesHtml: doc.truncated
       ? `<p class="external-notice" role="note">This text is long, so only the first part is shown.</p>`
       : "",
-    sourceHtml: `<p class="external-source">
+    sourceHtml: ssr`<p class="external-source">
                 Imported from <a href="${he.escape(
                   href
                 )}" rel="nofollow noopener noreferrer" target="_blank">${he.escape(

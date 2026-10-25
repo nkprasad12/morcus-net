@@ -28,6 +28,7 @@ import {
 import { dictPageTitle } from "@/web/ui/dict/dict_title.common";
 import { renderCopyPillHtml } from "@/web/ui/core/widgets/icons.common";
 import * as he from "he";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 interface DictResultsOptions {
   queriedDicts?: string[];
@@ -97,7 +98,7 @@ export function renderDictErrorHtml(
  * Renders the generic empty-state when no dictionary results object is provided.
  */
 export function renderNoResultsHtml(query: string): string {
-  return `
+  return ssr`
       <div class="no-results">
         <p>No results found for "<strong>${he.escape(query)}</strong>".</p>
       </div>
@@ -137,14 +138,14 @@ export function renderNoEntriesHtml(options: NoEntriesOptions): string {
     embedded: isEmbedded ? "1" : undefined,
     save: canSaveInflection,
   });
-  return `
+  return ssr`
       <div class="no-results">
         <p>No dictionary entries found for "<strong>${he.escape(
           query
         )}</strong>".</p>
         ${
           !isInflected
-            ? `<p class="no-results-sub inflected-hint">
+            ? ssr`<p class="no-results-sub inflected-hint">
                 Exact headword search is active.
                 <a href="${he.escape(
                   enableInflectedHref
@@ -230,7 +231,7 @@ export function renderJumpNavHtml(options: JumpNavOptions): string {
       )}</div>`
     : `<div class="results-total results-count">${countText}</div>`;
 
-  return `
+  return ssr`
       <nav class="results-nav" aria-label="Jump to dictionary">
         <div class="results-pills">
           ${pillsHtml}
@@ -274,7 +275,7 @@ function renderEntryQuickJumpHtml(entries: EntryResult[]): string {
     })
     .join("");
 
-  return `
+  return ssr`
           <div class="entry-nav" aria-label="Jump to entry">
             <span class="entry-nav-label">Jump to</span>
             <ul class="entry-nav-list">
@@ -293,7 +294,7 @@ function renderDictSourceAttributionHtml(dictKey: string): string {
     return "";
   }
 
-  return `
+  return ssr`
           <details class="dict-source-pane" name="dict-source">
             <summary class="dict-source-btn" title="View dictionary source information">
               <span class="dict-source-btn-icon" aria-hidden="true">&#x24D8;</span>
@@ -334,7 +335,7 @@ export function renderDictCardHtml(options: DictCardOptions): string {
     )
     .join("");
 
-  return `
+  return ssr`
         <section class="dict-card" id="${cardId}">
           <header class="dict-header dict-header-slim">
             <div class="dict-header-row">
@@ -446,7 +447,7 @@ export function renderDictResultsHtml(
   const hasToc = tocTree !== null;
   const tocHtml = tocTree ? renderDictTocHtml(tocTree) : "";
 
-  return `
+  return ssr`
     <div class="results-layout${hasToc ? " has-toc" : ""}">
       ${tocHtml}
       <div class="results-main">
@@ -561,9 +562,9 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   const extraHeadHtml =
     [scaleStyleHtml, options.servedAtRoot ? ROOT_ADDRESS_BAR_SCRIPT : ""]
       .filter(Boolean)
-      .join("\n  ") || undefined;
+      .join("\n") || undefined;
 
-  const contentHtml = `
+  const contentHtml = ssr`
     <morcus-dict-search>
       ${renderDictSearchBar({
         query: options.isIdSearch ? "" : query,

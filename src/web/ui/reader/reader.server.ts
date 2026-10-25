@@ -37,6 +37,7 @@ import {
   type ReaderPageSlot,
 } from "@/web/ui/reader/reader_slots.common";
 import * as he from "he";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 export interface ReaderPageOptions {
   workId?: string;
@@ -172,7 +173,7 @@ function renderReaderPagerLink(
   const disabledAttrs = !page ? 'aria-disabled="true" tabindex="-1"' : "";
 
   if (dir === "prev") {
-    return `          <a href="${pageUrl}"
+    return ssr`<a href="${pageUrl}"
              class="reader-btn reader-nav-arrow ${!page ? "disabled" : ""}"
              id="pager-prev"
              ${disabledAttrs}
@@ -189,7 +190,7 @@ function renderReaderPagerLink(
             <span class="pager-label">${he.escape(label)}</span>
           </a>`;
   }
-  return `            <a href="${pageUrl}"
+  return ssr`<a href="${pageUrl}"
                class="reader-btn reader-nav-arrow ${!page ? "disabled" : ""}"
                id="pager-next"
                ${disabledAttrs}
@@ -224,7 +225,7 @@ function renderReaderPageLabel(ctx: ReaderRenderContext): string {
 export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
   const { work } = ctx;
 
-  return `<header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
+  return ssr`<header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
         
         <div class="sticky-primary-row">
 ${renderReaderPagerLink(ctx, "prev")}
@@ -274,7 +275,7 @@ ${renderReaderSettingsButtonHtml()}
  * by id, so every reader bar must render this exact button.
  */
 export function renderReaderSettingsButtonHtml(): string {
-  return `            <button type="button"
+  return ssr`<button type="button"
                     class="reader-btn reader-settings-btn"
                     id="reader-settings-btn"
                     data-js-only
@@ -318,7 +319,7 @@ function renderReaderTextCard(ctx: ReaderRenderContext): string {
     ? getDifferentialCitationLabel(activePage.id, nextPage.id, work.textParts)
     : "";
 
-  return `          <div class="reader-text-card" ${slotAttr("text")}>
+  return ssr`<div class="reader-text-card" ${slotAttr("text")}>
             
             <header class="reader-text-card-header">
               <div class="reader-text-meta">
@@ -337,7 +338,7 @@ function renderReaderTextCard(ctx: ReaderRenderContext): string {
               <nav class="reader-continuation-actions" aria-label="Chapter Pagination">
                 ${
                   prevPage
-                    ? `<a href="${prevPageUrl}" class="reader-continuation-card reader-return-btn prev-card" rel="prev">
+                    ? ssr`<a href="${prevPageUrl}" class="reader-continuation-card reader-return-btn prev-card" rel="prev">
                         <span class="continuation-kicker">&larr; Previous</span>
                         <span class="continuation-title">${he.escape(
                           prevLabel
@@ -347,7 +348,7 @@ function renderReaderTextCard(ctx: ReaderRenderContext): string {
                 }
                 ${
                   nextPage
-                    ? `<a href="${nextPageUrl}" class="reader-continuation-card reader-continue-btn next-card" rel="next">
+                    ? ssr`<a href="${nextPageUrl}" class="reader-continuation-card reader-continue-btn next-card" rel="next">
                         <span class="continuation-kicker">Next &rarr;</span>
                         <span class="continuation-title">${he.escape(
                           nextLabel
@@ -375,7 +376,7 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
 
 /** Wraps an already-rendered text card in the reader's left column. */
 export function renderReaderTextPanelHtml(textCardHtml: string): string {
-  return `<section class="reader-text-panel" aria-label="Reading Text">
+  return ssr`<section class="reader-text-panel" aria-label="Reading Text">
 ${textCardHtml}
         </section>`;
 }
@@ -445,7 +446,7 @@ function renderCompanionTab(
   shown: boolean
 ): string {
   const translation = tab.id === "translation";
-  return `<a href="#panel-view-${tab.id}"
+  return ssr`<a href="#panel-view-${tab.id}"
                  class="reader-panel-tab${
                    translation ? " tab-translation" : ""
                  }"
@@ -495,12 +496,12 @@ export function renderReaderDictPanelHtml(
   };
   const hasCompanionTabs = shown.notes || shown.translation || shown.about;
   const activePageUrl = he.escape(closeHref);
-  const unarmedAttr = query ? "" : "\n                      data-dict-unarmed";
+  const unarmedAttr = query ? "" : "\ndata-dict-unarmed";
 
   // `.reader-sheet-bar` is the mobile sheet handle and teaser bar. In
   // `.reader-panel-views` (the companion views), without JS the targeted view
   // shows (else the dictionary); ReaderPanelController takes over on upgrade.
-  return `<div class="reader-splitter resize-handle"
+  return ssr`<div class="reader-splitter resize-handle"
              role="separator"
              tabindex="0"
              aria-orientation="vertical"
@@ -535,7 +536,7 @@ export function renderReaderDictPanelHtml(
               }>
               ${COMPANION_TABS.map((tab) =>
                 renderCompanionTab(tab, shown[tab.id])
-              ).join("\n              ")}
+              ).join("\n")}
               </nav>
               ${
                 query
@@ -639,9 +640,9 @@ interface ReaderFrameOptions {
  */
 export function renderReaderFrameHtml(options: ReaderFrameOptions): string {
   const dataAttrs = Object.entries(options.dataAttrs)
-    .map(([key, value]) => `\n      data-${key}="${he.escape(value)}"`)
+    .map(([key, value]) => `\ndata-${key}="${he.escape(value)}"`)
     .join("");
-  return `
+  return ssr`
     <morcus-reader-view class="reader-view"${dataAttrs}>
 
       ${options.tocHtml}
@@ -720,13 +721,13 @@ export function renderReaderTranslationHtml(
   if (!resolved.matched || !resolved.page) return null;
   const page = resolved.page;
   if (!page.translationHtml) {
-    return `
+    return ssr`
 <div class="reader-translation-empty">
   <p>No translation available for this page.</p>
 </div>
         `.trim();
   }
-  return `
+  return ssr`
 <div class="reader-translation-content">
   <header class="reader-translation-header">
     <span class="reader-translation-credit">Translated by ${he.escape(

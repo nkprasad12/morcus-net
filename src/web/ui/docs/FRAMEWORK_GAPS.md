@@ -9,7 +9,33 @@ duplication bites; delete the entry when it lands. Component-level debt lives in
 
 ## Open
 
-None.
+### Server templates: no type checking, no inline comments, two escaping modes
+
+Markup is written two ways: `html` (escapes values, formatted by Prettier, shared with the client)
+and `ssr` (no escaping, not formatted; the older plain templates in ~18 `.server.ts` files).
+Neither is type-checked, so attribute typos, unclosed tags and wrong `morcus-*` attributes only
+surface in tests or in the browser. Neither can hold a comment either: `<!-- -->` ships in every
+response (`testing/no_html_comments.test.ts` bans it), so notes have to sit outside the template,
+away from the markup they describe.
+
+**Option: server-only JSX compiled to strings** (`.server.tsx`, a small escaping factory or
+`@kitajs/html`; no virtual DOM, nothing rendered on the client).
+
+- Typed elements and attributes, including `morcus-*` elements via `JSX.IntrinsicElements`.
+- `{/* */}` comments next to the markup that never ship.
+- Escaping by default, which would retire `ssr`. Raw HTML (entry XML, critical CSS/JS,
+  partials) needs an explicit marker, like `raw()` today.
+- Indentation is dropped by the compiler.
+
+**Costs.** JSX removes the whitespace between inline elements on separate lines (`{" "}`), so
+converting prose-heavy markup needs a visual review. Client fragments either keep `html` or ship
+the factory.
+
+**Not the archived contracts RFC** (see "Deferred: compile-time contracts" below): this types the
+markup itself, not server↔client refs.
+
+**Incremental path.** New server templates in `.tsx`, then convert `ssr` files one at a time. The
+comment and indentation checks in `core/conformance/ssr_conformance.test.ts` act as the safety net.
 
 ---
 

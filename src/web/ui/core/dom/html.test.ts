@@ -1,4 +1,10 @@
-import { escapeHtml, html, joinHtml, raw } from "@/web/ui/core/dom/html.common";
+import {
+  dedentTemplateStrings,
+  escapeHtml,
+  html,
+  joinHtml,
+  raw,
+} from "@/web/ui/core/dom/html.common";
 import type { SafeHtml } from "@/web/ui/core/dom/html.common";
 
 describe("escapeHtml", () => {
@@ -117,5 +123,47 @@ describe("joinHtml", () => {
 
   it("renders an empty list as nothing", () => {
     expect(html`<span>${joinHtml([])}</span>`).toBe("<span></span>");
+  });
+});
+
+describe("dedentTemplateStrings", () => {
+  // A pass-through tag: Prettier leaves these templates alone, unlike `html`.
+  const parts = (strings: TemplateStringsArray, ..._: unknown[]) => strings;
+
+  it("collapses each run of whitespace containing a newline to one newline", () => {
+    const strings = parts`
+      <div>
+        <span>a</span>   <span>b</span>  
+
+        ${0}
+      </div>
+    `;
+
+    expect(dedentTemplateStrings(strings)).toEqual([
+      "\n<div>\n<span>a</span>   <span>b</span>\n",
+      "\n</div>\n",
+    ]);
+  });
+
+  it("leaves single-line templates alone", () => {
+    expect(dedentTemplateStrings(parts`  a  ${0}  b  `)).toEqual([
+      "  a  ",
+      "  b  ",
+    ]);
+  });
+
+  it("computes each call site once", () => {
+    const strings = parts`
+      x`;
+
+    expect(dedentTemplateStrings(strings)).toBe(dedentTemplateStrings(strings));
+  });
+});
+
+describe("html dedent", () => {
+  it("never touches interpolated values", () => {
+    const text = "line one\n    line two";
+
+    expect(html`<b>${text}</b>`).toBe("<b>line one\n    line two</b>");
   });
 });

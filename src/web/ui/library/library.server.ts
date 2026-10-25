@@ -3,6 +3,7 @@ import { getV2LibrarySummaries } from "@/web/ui/reader/reader_loader.server";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import { EXTERNAL_READER_PATH } from "@/web/ui/external/external_url.common";
 import * as he from "he";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 export async function renderLibraryPageHtml(): Promise<string> {
   const summaries = (await getV2LibrarySummaries()) || [];
@@ -54,7 +55,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
       // The wrapper is the grid item: a saved spot's badge and its clear
       // button (library_view.client.ts) sit beside the link, since a button
       // can't go inside one.
-      return `
+      return ssr`
         <div class="work-card-item">
         <a href="${readerUrl}"
            class="card card-interactive work-card"
@@ -80,7 +81,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
 
   // The "In progress" filter pill counts works with a saved spot
   // (localStorage); it is shown once there are any.
-  const contentHtml = `
+  const contentHtml = ssr`
     <morcus-library-view class="library-view">
       <header class="library-header">
         <div class="library-search-form search-form" data-js-only>

@@ -21,6 +21,7 @@ import {
   renderLangChipsHtml,
   renderInflectChipHtml,
 } from "@/web/ui/dict/search/search_bar.common";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 export interface SearchBarOptions {
   query?: string;
@@ -148,7 +149,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     : "";
 
   const guestChipHtml = guest
-    ? `
+    ? ssr`
           <span class="tray-dot guest-tray-dot" aria-hidden="true">•</span>
           <span class="guest-chip" role="status">
             <span class="guest-chip-text">Using link settings</span>
@@ -160,7 +161,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   // Without JS the trigger is a hash link that opens the dialog via `:target`; with JS,
   // `<morcus-dict-settings>` intercepts it and calls `showModal()`.
   const trayHtml = includeSettings
-    ? `
+    ? ssr`
       <div class="search-tray">
         <div class="search-tray-left">
           <span class="tray-label">In</span>
@@ -193,7 +194,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   // `data-d` / `data-o` publish the selection the server resolved for this render. The client
   // adopts them (`readRenderedDictState`) instead of re-deriving state from the URL or storage.
   // A `lang=` view's search leaves the scope, so it submits no `d` (see `SearchBarOptions.lang`).
-  return `
+  return ssr`
     <form class="search-form" role="search" action="${escapeHtml(
       options.action
     )}" method="GET" data-d="${escapeHtml(dictBitmask)}" data-o="${
@@ -256,7 +257,7 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
     .map((d) => {
       const isChecked = input.activeDictKeys.has(d.key);
       const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
-      return `
+      return ssr`
       <label class="dict-item" title="${escapeHtml(
         d.displayName
       )} (${langText})">
@@ -290,7 +291,7 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
     ? input.isGuest
       ? ""
       : hiddenInput("o", input.isInflected ? "1" : "0")
-    : `
+    : ssr`
       <div class="settings-divider" role="separator"></div>
 
       <div class="settings-inflected-section">
@@ -315,7 +316,7 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
   // `#dict-appearance-link`: reading text is app-wide, so the app-bar
   // Appearance menu owns it (JS-only, like the menu). Hidden in embedded
   // views, which have no app bar (see dict_settings.client.ts).
-  const bodyHtml = `
+  const bodyHtml = ssr`
       ${input.query ? hiddenInput("q", input.query) : ""}
       ${input.extraHiddenInputsHtml}
       ${

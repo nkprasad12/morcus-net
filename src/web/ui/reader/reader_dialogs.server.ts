@@ -2,6 +2,7 @@ import { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_typ
 import * as he from "he";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import { DEFAULT_PANEL_SCALE } from "@/web/ui/reader/reader_scale.common";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 /**
  * Returns the scholarly license and provenance notice for the classical work.
@@ -34,7 +35,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
 
   const sourcesHtml =
     sources.length > 0
-      ? `<div class="meta-row">
+      ? ssr`<div class="meta-row">
               <dt>Source(s)</dt>
               <dd>${sources
                 .map((url) => {
@@ -54,7 +55,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
 
   const attributionHtml = getAttributionNoticeHtml(work.attribution);
 
-  return `<details class="reader-work-about" id="reader-work-about" open>
+  return ssr`<details class="reader-work-about" id="reader-work-about" open>
         <summary class="reader-about-summary">About this text</summary>
         <div class="reader-about-card">
           <dl class="reader-meta-list">
@@ -64,7 +65,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
             </div>
             ${
               work.editor
-                ? `<div class="meta-row">
+                ? ssr`<div class="meta-row">
                     <dt>Editor</dt>
                     <dd>${he.escape(work.editor)}</dd>
                    </div>`
@@ -72,7 +73,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
             }
             ${
               work.translator
-                ? `<div class="meta-row">
+                ? ssr`<div class="meta-row">
                     <dt>Translator</dt>
                     <dd>${he.escape(work.translator)}</dd>
                    </div>`
@@ -80,7 +81,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
             }
             ${
               work.funder
-                ? `<div class="meta-row">
+                ? ssr`<div class="meta-row">
                     <dt>Funder</dt>
                     <dd>${he.escape(work.funder)}</dd>
                    </div>`
@@ -88,7 +89,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
             }
             ${
               work.sponsor
-                ? `<div class="meta-row">
+                ? ssr`<div class="meta-row">
                     <dt>Sponsor</dt>
                     <dd>${he.escape(work.sponsor)}</dd>
                    </div>`
@@ -122,7 +123,7 @@ export function renderReaderSettingsPopover(
   // only links to it. The Side Panel size is reader-only: it applies to every
   // tab, relative to the global text size. Touch Navigation (swipe page turns)
   // is hidden without a touchscreen by reader_page_nav.css.
-  return `<morcus-reader-settings>
+  return ssr`<morcus-reader-settings>
         <dialog class="anchored-popover reader-settings-popover"
                 id="reader-settings-popover"
                 aria-label="Reader settings">
@@ -161,7 +162,7 @@ export function renderReaderSettingsPopover(
               <h3 class="settings-group-title">Textual Aids</h3>
               ${
                 hasMacra
-                  ? `<label class="settings-toggle-row">
+                  ? ssr`<label class="settings-toggle-row">
                 <span class="settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
                 <input type="checkbox" id="toggle-macra" class="toggle-checkbox" checked>
               </label>`

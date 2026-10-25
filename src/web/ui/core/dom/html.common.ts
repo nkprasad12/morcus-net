@@ -82,7 +82,36 @@ export function joinHtml(parts: SafeHtml[], separator: string = ""): RawHtml {
 }
 
 /**
+ * The static parts of a template with source indentation removed: every run
+ * of whitespace that contains a newline becomes a single `\n`.
+ *
+ * Outside `white-space: pre*` contexts a newline renders exactly like the run
+ * it replaces, so the output looks the same with ~25% fewer bytes. Only the
+ * template's own text is touched, never interpolated values, so user text,
+ * textarea contents and dictionary markup pass through unchanged. A template
+ * whose literal text sits in a `pre*` context must keep that text free of
+ * line breaks.
+ *
+ * Each call site's `TemplateStringsArray` is the same object on every call, so
+ * the result is computed once per site.
+ */
+export function dedentTemplateStrings(
+  strings: TemplateStringsArray
+): readonly string[] {
+  let dedented = DEDENTED.get(strings);
+  if (dedented === undefined) {
+    dedented = strings.map((s) => s.replace(/[ \t]*\n\s*/g, "\n"));
+    DEDENTED.set(strings, dedented);
+  }
+  return dedented;
+}
+
+const DEDENTED = new WeakMap<TemplateStringsArray, readonly string[]>();
+
+/**
  * Builds an HTML string, escaping every interpolated value.
+ *
+ * The template's own indentation is removed; see {@link dedentTemplateStrings}.
  *
  * Note that a {@link SafeHtml} interpolated directly is escaped *again*: the
  * brand is erased at runtime, so there is no way to recognise it. Compose with
@@ -90,9 +119,10 @@ export function joinHtml(parts: SafeHtml[], separator: string = ""): RawHtml {
  * double-encoded text rather than an injection, so it fails safe.
  */
 export function html(
-  strings: TemplateStringsArray,
+  templateStrings: TemplateStringsArray,
   ...values: Interpolatable[]
 ): SafeHtml {
+  const strings = dedentTemplateStrings(templateStrings);
   let out = strings[0];
   for (let i = 0; i < values.length; i++) {
     const value = values[i];

@@ -9,6 +9,7 @@ import {
 } from "@/web/ui/dict/entry/subsection_note.server";
 import { renderCopyPillHtml } from "@/web/ui/core/widgets/icons.common";
 import * as he from "he";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 interface EntryRenderOptions {
   dictKey?: string;
@@ -68,7 +69,7 @@ export function renderEntryResult(
   // that every entry gets an identical header composition, whether or not it
   // has an Outline pane beside it.
   const headwordHtml = headword
-    ? `
+    ? ssr`
       <span class="entry-headword">
         <span class="entry-headword-text">${he.escape(headword)}</span>
       </span>
@@ -107,7 +108,7 @@ export function renderEntryResult(
     : "";
 
   const outlinePanelHtml = outlineSenses
-    ? `
+    ? ssr`
       <details class="tool-pane tool-outline" name="${groupName}">
         <summary class="tab-pill">Outline</summary>
         <div class="tool-body">
@@ -126,7 +127,7 @@ export function renderEntryResult(
 
   const dictBadgeHtml =
     options?.isEmbedded && options.dictAcronym
-      ? `
+      ? ssr`
         <span class="dict-badge dict-badge-${safeLang}" title="${he.escape(
           options.dictName || options.dictAcronym
         )}">${he.escape(options.dictAcronym)}</span>
@@ -144,7 +145,7 @@ export function renderEntryResult(
     headword || (options?.isEmbedded && options.dictAcronym)
   );
   const segmentedBarHtml = hasSegmentedBar
-    ? `
+    ? ssr`
           <div class="segmented-bar${
             options?.isEmbedded && options.dictAcronym ? " has-badge" : ""
           }">
@@ -160,7 +161,7 @@ export function renderEntryResult(
     segmentedBarHtml || inflectionsHtml || subsectionNoteHtml
   );
   const topBarHtml = hasHeader
-    ? `
+    ? ssr`
       <header class="entry-header has-tools">
         <div class="entry-tools">
           ${segmentedBarHtml}${inflectionsHtml}${subsectionNoteHtml}
@@ -174,7 +175,7 @@ export function renderEntryResult(
     matchedAnchorIds(subsectionGroups)
   );
 
-  return `
+  return ssr`
     <article class="entry ${hasTools ? "has-tools" : ""}" id="${entryAnchorId}">
       ${topBarHtml}
       <div class="entry-content" data-tokenize-target="true">

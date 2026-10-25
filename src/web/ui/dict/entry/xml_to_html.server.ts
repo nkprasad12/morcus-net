@@ -1,6 +1,7 @@
 import { XmlChild } from "@/common/xml/xml_node";
 import { cleanDictQuery } from "@/web/ui/dict/search/dict_params.common";
 import * as he from "he";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 /** Collects every `id` attribute defined anywhere in an entry's XML tree. */
 export function collectXmlIds(root: XmlChild): Set<string> {
@@ -293,7 +294,7 @@ export function xmlNodeToHtml(
     //
     // Consequently the pane is `data-js-only`: without JS, the disclosure is hidden
     // and the plain "view scanned page" link immediately above it remains the entry point.
-    return `
+    return ssr`
       <span class="mateo-wrapper">
         ${baseHtml}
         <details class="mateo-embed-pane" data-js-only>

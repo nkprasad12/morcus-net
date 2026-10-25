@@ -21,6 +21,7 @@ import {
   type SsrFixture,
 } from "@/web/ui/testing/ssr_fixtures";
 import { parseInert } from "@/web/ui/testing/ssr_invariants";
+import { renderPageShell } from "@/web/ui/shell/page_shell.server";
 
 jest.mock("@/web/ui/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/assets/${name}`,
@@ -74,6 +75,34 @@ describe("SSR conformance across every page", () => {
     expect(Object.keys(PAGE_SETUPS).sort()).toEqual(setupsStartedByEntries());
   });
 
+  test("SSR markup ships no HTML comments or template indentation", () => {
+    // Templates are written with the `ssr` or `html` tags, which strip their
+    // own indentation (`dedentTemplateStrings` in `core/dom/html.common.ts`).
+    // An indented tag here means a template that skipped them.
+    const pages = [
+      ...fixtures,
+      ...PAGE_SHELL_VARIANTS.map((options, i) => ({
+        name: `page-shell-${i}`,
+        html: renderPageShell(options),
+      })),
+    ];
+    const offenders = pages.flatMap(({ name, html: page }) => {
+      // Textarea contents are the user's text, kept verbatim.
+      const html = page.replace(/<textarea\b.*?<\/textarea/gs, "");
+      return [
+        ...Array.from(
+          html.matchAll(/<!--.{0,40}/gs),
+          (m) => `${name}: ${m[0]}`
+        ),
+        ...Array.from(
+          html.matchAll(/\n[ \t]+<.{0,40}/g),
+          (m) => `${name}: ${m[0]}`
+        ),
+      ];
+    });
+    expect(offenders).toEqual([]);
+  });
+
   test("every connect-time and delegated selector lookup matches in at least one SSR fixture", () => {
     const recorder = installLookupRecorder();
     try {
@@ -108,6 +137,29 @@ describe("SSR conformance across every page", () => {
     });
   });
 });
+
+/**
+ * Page shells the fixtures don't cover: most fixtures are page content only.
+ * The full-page variants (head, reader, embedded) are checked here.
+ */
+const PAGE_SHELL_VARIANTS: Parameters<typeof renderPageShell>[0][] = [
+  {
+    title: "Shell",
+    description: "A description",
+    canonicalPath: "/about",
+    activePage: "about",
+    extraHeadHtml: "<style>:root{}</style>",
+    contentHtml: "",
+  },
+  {
+    title: "Reader",
+    activePage: "library",
+    isReader: true,
+    widthSurface: "library",
+    contentHtml: "",
+  },
+  { title: "Embedded", activePage: "dicts", hideAppBar: true, contentHtml: "" },
+];
 
 /** Mounts `fixture` on a clean page and runs every global page setup. */
 function mountWithPageSetups(fixture: SsrFixture, recorder: LookupRecorder) {

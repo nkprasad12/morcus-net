@@ -1,6 +1,7 @@
 import * as he from "he";
 import { renderPageShell } from "@/web/ui/shell/page_shell.server";
 import { getCommitId } from "@/web/ui/core/server/build_version.server";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 interface AboutPageOptions {
   commitId?: string;
@@ -15,7 +16,7 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
         )}">${he.escape(commitId.slice(0, 7))}</a>`
       : "<span>(dev build)</span>";
 
-  return `
+  return ssr`
     <article class="about-article">
       <section id="site" class="about-section">
         <h2>Site</h2>

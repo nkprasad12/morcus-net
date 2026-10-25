@@ -387,6 +387,11 @@ function renderMacronizerWorkspaceHtml(
     </div>`;
   }
 
+  // `.mac-passage` is `white-space: pre-wrap`, so any whitespace in its
+  // template would render; keep it on one line.
+  // prettier-ignore
+  const passageHtml = html`<div class="mac-passage" id="mac-passage" lang="la">${raw(renderPassageTokens(doc))}</div>`;
+
   return html`<div class="mac-split">
     <div class="mac-left">
       <details class="mac-input-details">
@@ -447,9 +452,7 @@ function renderMacronizerWorkspaceHtml(
         </div>
       </div>
 
-      <div class="mac-passage" id="mac-passage" lang="la">
-        ${raw(renderPassageTokens(doc))}
-      </div>
+      ${raw(passageHtml)}
 
       <details class="mac-legend">
         <summary class="mac-legend-summary">

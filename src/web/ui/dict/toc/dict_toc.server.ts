@@ -14,6 +14,7 @@ import {
   resolveDictLang,
 } from "@/web/ui/dict/dict_attribution.server";
 import * as he from "he";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 export const TOC_MIN_TOTAL_SENSES = 4;
 export const TOC_MIN_SINGLE_ENTRY_SENSES = 3;
@@ -332,7 +333,7 @@ export function renderTocEntriesSummaryHtml(
       )
       .join("\n");
 
-    return `
+    return ssr`
       <div class="toc-entries-group">
         <span class="toc-badge toc-badge-${group.dictLang}">${he.escape(
       group.dictAcronym
@@ -346,7 +347,7 @@ export function renderTocEntriesSummaryHtml(
 
   const dividerHtml = `<span class="toc-entries-divider" aria-hidden="true">|</span>`;
 
-  return `
+  return ssr`
     <div class="toc-section toc-entries-summary">
       <div class="toc-entries-groups">
         ${groupItems.join(`\n${dividerHtml}\n`)}
@@ -379,7 +380,7 @@ function renderTocSensesHtml(entry: TocEntryNode): string {
       })
       .join("\n");
 
-    return `
+    return ssr`
       <ul class="toc-list">
         ${itemsHtml}
       </ul>
@@ -387,7 +388,7 @@ function renderTocSensesHtml(entry: TocEntryNode): string {
   }
 
   if (entry.isLoneEntry && entry.entryAnchorId) {
-    return `
+    return ssr`
       <ul class="toc-list">
         <li class="toc-item toc-level-1">
           <a href="#${he.escape(
@@ -412,7 +413,7 @@ function renderTocEntryHtml(entry: TocEntryNode): string {
     return sensesHtml;
   }
 
-  return `
+  return ssr`
     <div class="toc-entry">
       <div class="toc-entry-header">
         <a href="#${he.escape(
@@ -434,7 +435,7 @@ function renderTocEntryHtml(entry: TocEntryNode): string {
  */
 function renderTocGroupHtml(group: TocGroupNode): string {
   const entriesHtml = group.entries.map(renderTocEntryHtml).join("\n");
-  return `
+  return ssr`
     <div class="toc-group">
       <div class="toc-dict-header">
         <a href="#${group.cardId}" class="toc-dict-link">
@@ -454,7 +455,7 @@ export function renderTocSenseListHtml(tree: DictTocTree): string {
   const groupsHtml = tree.groups.map(renderTocGroupHtml).join("\n");
   if (!groupsHtml.trim()) return "";
 
-  return `
+  return ssr`
     <div class="toc-section toc-outline">
       ${groupsHtml}
     </div>
@@ -475,7 +476,7 @@ export function renderDictTocHtml(input: DictTocOptions | DictTocTree): string {
   const entriesSummaryHtml = renderTocEntriesSummaryHtml(tree.chipGroups);
   const outlineSectionHtml = renderTocSenseListHtml(tree);
 
-  return `
+  return ssr`
     <morcus-dict-toc class="drawer drawer-toc">
       <details class="toc-details" open>
         <summary class="drawer-bar toc-bar" role="button" aria-label="Table of Contents">

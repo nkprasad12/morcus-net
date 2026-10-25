@@ -1,5 +1,6 @@
 import * as he from "he";
 import { renderPageShell } from "@/web/ui/shell/page_shell.server";
+import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 interface NotFoundOptions {
   /** The work identifier or path that was not found, e.g. "author/work" */
@@ -25,7 +26,7 @@ export function renderNotFoundContentHtml(
       )}</em> in the library catalog.`
     : "Could not locate the requested resource in the library catalog.";
 
-  return `
+  return ssr`
     <div class="empty-state empty-state-standalone library-empty-state not-found-state">
       <h2 class="empty-state-title library-empty-title">${he.escape(title)}</h2>
       <p class="empty-state-desc library-empty-desc">${descHtml}</p>
