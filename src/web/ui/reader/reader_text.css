@@ -147,7 +147,7 @@
 }
 
 .reader-paragraph {
-  margin: 0 0 var(--space-7);
+  margin: 0;
   text-align: left;
 }
 
@@ -314,7 +314,7 @@
   grid-template-columns: minmax(3.25rem, max-content) minmax(0, 1fr);
   gap: var(--space-5);
   align-items: baseline;
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   scroll-margin-top: var(
     --reader-sticky-offset,
@@ -358,7 +358,7 @@
   color: var(--text-muted);
   text-decoration: none;
   display: block;
-  padding: var(--space-1);
+  padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
   transition: color 0.15s ease, opacity 0.15s ease;
 }
@@ -443,13 +443,6 @@
 .reader-passage .reader-line,
 .reader-passage .reader-block {
   display: block;
-}
-
-/* Verse sections are one line each, so the section padding is what separates
-   the lines; a paragraph's worth of it makes a poem read as a list. */
-.section-verse {
-  padding-top: 0;
-  padding-bottom: 0;
 }
 
 /* Elegiac pentameters and other indented verse: the whole line shifts. */
@@ -558,7 +551,7 @@
   .reader-section {
     grid-template-columns: minmax(1.35rem, max-content) minmax(0, 1fr);
     gap: var(--space-3);
-    padding: var(--space-1) 0;
+    padding: 0;
   }
 
   @supports (grid-template-columns: subgrid) {

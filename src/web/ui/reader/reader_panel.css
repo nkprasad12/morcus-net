@@ -174,7 +174,6 @@
 .reader-translation-section {
   display: flex;
   align-items: baseline;
-  margin-bottom: var(--space-4);
   gap: var(--space-3);
   font-family: var(--font-text);
   font-size: calc(
