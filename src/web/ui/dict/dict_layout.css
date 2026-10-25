@@ -33,8 +33,7 @@ body.body-embedded {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-5);
-  padding-bottom: var(--space-1);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
 .results-pills {
@@ -156,7 +155,6 @@ body.body-embedded {
 @media (width <= 640px) {
   .results-nav {
     gap: 0;
-    padding-bottom: 0;
   }
 
   .results-pills {
