@@ -128,6 +128,13 @@ settings params, so it never infers intent from them. The dictionary route
   `d` / `o` fields (and, with JS, the adopted state) carry the link's settings into new searches
   until the user follows **Restore saved**, a plain link to the page without settings params. Users with
   no saved settings never see it.
+- **Partials are cookie-independent and build-versioned.** Dictionary partials (`/dicts` and
+  `/dicts/id/:id` with `format=partial`) never read cookies or sniff `Sec-Fetch-Dest` / `Referer`
+  headers, so they are pure functions of their URL and safe to fetch with `?v=<build version>` and
+  cache as `private, max-age=31536000, immutable` (`setVersionedCacheControl`). The zero-results
+  "Enable inflected search" link's `save=1` is therefore a full-page-only server affordance; after a
+  partial swap, `<morcus-dict-search>` re-adds `save=1` to the link on the client whenever the page
+  is neither in guest mode nor a scoped view.
 - **Scoped views** (reader and macronizer iframes, `embedded=1`; any `lang=` lookup) share the one
   `morcus_d` preference with `/dicts`, as V1 did. Their lookup decides two things, and the
   settings dialog follows it:

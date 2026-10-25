@@ -612,6 +612,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       signal,
       errorMessage: "Error loading results.",
       loadingOpacity: 0.5,
+      versioned: true,
     });
     if (success) {
       this.#syncInflectedHint();

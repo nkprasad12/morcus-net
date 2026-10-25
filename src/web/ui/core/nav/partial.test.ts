@@ -366,4 +366,71 @@ describe("fetchAndSwapPartial", () => {
     expect(ok).toBe(false);
     expect(container.innerHTML).toBe("<p>old</p>");
   });
+
+  describe("versioned", () => {
+    afterEach(() => {
+      delete document.documentElement.dataset.version;
+    });
+
+    test("fetches ?v=<data-version> on GET when versioned is true", async () => {
+      document.documentElement.dataset.version = "abc123";
+      const container = mountHost("<p>old</p>");
+      mockResponse("<p>new</p>");
+
+      const ok = await fetchAndSwapPartial(
+        container,
+        "/dicts?q=amo&format=partial",
+        {
+          signal: new AbortController().signal,
+          versioned: true,
+        }
+      );
+
+      expect(ok).toBe(true);
+      expect(window.fetch).toHaveBeenCalledWith(
+        "/dicts?q=amo&format=partial&v=abc123",
+        expect.anything()
+      );
+    });
+
+    test("leaves unversioned calls and POST unchanged", async () => {
+      document.documentElement.dataset.version = "abc123";
+      const container = mountHost("<p>old</p>");
+      mockResponse("<p>new</p>");
+
+      await fetchAndSwapPartial(container, "/dicts?q=amo&format=partial", {
+        signal: new AbortController().signal,
+      });
+      expect(window.fetch).toHaveBeenLastCalledWith(
+        "/dicts?q=amo&format=partial",
+        expect.anything()
+      );
+
+      mockResponse("<p>newer</p>");
+      await fetchAndSwapPartial(container, "/dicts?q=amo&format=partial", {
+        signal: new AbortController().signal,
+        method: "POST",
+        versioned: true,
+      });
+      expect(window.fetch).toHaveBeenLastCalledWith(
+        "/dicts?q=amo&format=partial",
+        expect.objectContaining({ method: "POST" })
+      );
+    });
+
+    test("is a no-op without data-version", async () => {
+      const container = mountHost("<p>old</p>");
+      mockResponse("<p>new</p>");
+
+      await fetchAndSwapPartial(container, "/dicts?q=amo&format=partial", {
+        signal: new AbortController().signal,
+        versioned: true,
+      });
+
+      expect(window.fetch).toHaveBeenCalledWith(
+        "/dicts?q=amo&format=partial",
+        expect.anything()
+      );
+    });
+  });
 });

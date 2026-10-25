@@ -727,6 +727,70 @@ describe("app_router integration", () => {
       expect(res.status).toBe(404);
       expect(res.header["cache-control"]).toBeUndefined();
     });
+
+    test("/dicts and /dicts/id/:id partials at the current version are private and immutable", async () => {
+      for (const url of [
+        "/dicts?q=amo&format=partial&v=abc123",
+        "/dicts?format=partial&v=abc123",
+        `/dicts?q=${encodeURIComponent("λόγος")}&format=partial&v=abc123`,
+        "/dicts/id/n20077?format=partial&v=abc123",
+      ]) {
+        const res = await request(app).get(url);
+        expect(res.status).toBe(200);
+        expect(res.header["cache-control"]).toBe(`private, ${IMMUTABLE}`);
+        expect(res.headers["vary"]).toContain("X-Requested-With");
+      }
+    });
+
+    test("/dicts and /dicts/id/:id partials with a missing or stale version revalidate", async () => {
+      for (const url of [
+        "/dicts?q=amo&format=partial",
+        "/dicts?q=amo&format=partial&v=old",
+        "/dicts/id/n20077?format=partial",
+        "/dicts/id/n20077?format=partial&v=old",
+      ]) {
+        const res = await request(app).get(url);
+        expect(res.status).toBe(200);
+        expect(res.header["cache-control"]).toBe("no-cache");
+      }
+    });
+
+    test("full /dicts and /dicts/id/:id pages and 500 error partials are never cached as immutable", async () => {
+      for (const url of [
+        "/dicts?q=amo&v=abc123",
+        "/dicts?v=abc123",
+        "/dicts/id/n20077?v=abc123",
+      ]) {
+        const res = await request(app).get(url);
+        expect(res.status).toBe(200);
+        expect(res.header["cache-control"]).toBeUndefined();
+      }
+
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      (mockFusedDict.getEntry as jest.Mock).mockRejectedValueOnce(
+        new Error("lookup failed")
+      );
+      (mockFusedDict.getEntry as jest.Mock).mockRejectedValueOnce(
+        new Error("id lookup failed")
+      );
+      try {
+        const dictErr = await request(app).get(
+          "/dicts?q=amo&format=partial&v=abc123"
+        );
+        expect(dictErr.status).toBe(500);
+        expect(dictErr.header["cache-control"]).toBeUndefined();
+
+        const idErr = await request(app).get(
+          "/dicts/id/n20077?format=partial&v=abc123"
+        );
+        expect(idErr.status).toBe(500);
+        expect(idErr.header["cache-control"]).toBeUndefined();
+      } finally {
+        errorSpy.mockRestore();
+      }
+    });
   });
 
   test("GET /api/completions sanitizes query parameter", async () => {

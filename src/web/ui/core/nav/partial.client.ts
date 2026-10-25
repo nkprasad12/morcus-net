@@ -49,6 +49,13 @@ interface FetchAndSwapOptions {
   headers?: Readonly<Record<string, string>>;
   loadingOpacity?: number;
   errorMessage?: string;
+  /**
+   * Fetch with `?v=<build version>` ({@link withBuildVersion}) so the browser
+   * caches the response for the rest of the build. Only for routes whose
+   * response depends on nothing but the URL (no cookies), and that answer
+   * with `setVersionedCacheControl`. Ignored for POST.
+   */
+  versioned?: boolean;
 }
 
 /**
@@ -76,9 +83,14 @@ export async function fetchAndSwapPartial(
     }
   };
 
+  const method = options.method ?? "GET";
+  const fetchUrl =
+    options.versioned === true && method === "GET"
+      ? withBuildVersion(url)
+      : url;
   try {
-    const res = await fetch(url, {
-      method: options.method ?? "GET",
+    const res = await fetch(fetchUrl, {
+      method,
       body: options.body,
       headers: {
         "X-Requested-With": "fetch",

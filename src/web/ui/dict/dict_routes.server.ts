@@ -30,6 +30,7 @@ import {
   planDictPersistence,
 } from "@/web/ui/dict/settings/dict_persistence.server";
 import { createAsyncRegistrars } from "@/web/ui/core/server/async_handler.server";
+import { setVersionedCacheControl } from "@/web/ui/core/server/build_version.server";
 import {
   isPartialRequest,
   isEmbeddedRequest,
@@ -246,14 +247,14 @@ export function createDictRoutes(
 
     if (!query) {
       if (isPartial) {
-        res.send(
-          renderDictResultsHtml("", undefined, {
-            queriedDicts: dictKeys,
-            isInflected,
-            isEmbedded,
-            canSaveInflection,
-          })
-        );
+        const body = renderDictResultsHtml("", undefined, {
+          queriedDicts: dictKeys,
+          isInflected,
+          isEmbedded,
+          canSaveInflection,
+        });
+        setVersionedCacheControl(req, res, { scope: "private" });
+        res.send(body);
         return;
       }
       // Static only in the plain case: no `lang=` scope (it narrows the settings dialog), no
@@ -288,14 +289,14 @@ export function createDictRoutes(
 
     if (hasGreek(query)) {
       if (isPartial) {
-        res.send(
-          renderDictResultsHtml(query, undefined, {
-            queriedDicts: dictKeys,
-            isInflected,
-            isEmbedded,
-            canSaveInflection,
-          })
-        );
+        const body = renderDictResultsHtml(query, undefined, {
+          queriedDicts: dictKeys,
+          isInflected,
+          isEmbedded,
+          canSaveInflection,
+        });
+        setVersionedCacheControl(req, res, { scope: "private" });
+        res.send(body);
         return;
       }
       res.send(
@@ -324,15 +325,15 @@ export function createDictRoutes(
       timer.mark("lookupComplete");
 
       if (isPartial) {
-        res.send(
-          renderDictResultsHtml(query, results, {
-            queriedDicts: dictKeys,
-            isInflected,
-            isEmbedded,
-            canSaveInflection,
-            focusLang,
-          })
-        );
+        const body = renderDictResultsHtml(query, results, {
+          queriedDicts: dictKeys,
+          isInflected,
+          isEmbedded,
+          canSaveInflection,
+          focusLang,
+        });
+        setVersionedCacheControl(req, res, { scope: "private" });
+        res.send(body);
         return;
       }
 
@@ -421,7 +422,9 @@ export function createDictRoutes(
       timer.mark("lookupComplete");
 
       if (isPartial) {
-        res.send(renderDictResultsHtml(id, results, { isEmbedded }));
+        const body = renderDictResultsHtml(id, results, { isEmbedded });
+        setVersionedCacheControl(req, res, { scope: "private" });
+        res.send(body);
         return;
       }
 

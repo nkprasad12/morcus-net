@@ -2933,4 +2933,29 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect(el.querySelector(".lat-word")?.textContent).toBe("Gallia");
     });
   });
+
+  describe("build-versioned partial fetches", () => {
+    afterEach(() => {
+      delete document.documentElement.dataset.version;
+    });
+
+    test("the results fetch URL carries v=<data-version> while keeping the page URL unversioned", async () => {
+      document.documentElement.dataset.version = "abc123";
+      window.history.replaceState(null, "", "/dicts?q=amo&d=2&o=1");
+      const el = createDictSearch("", 'data-d="2" data-o="1"');
+      const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+      el.querySelector<HTMLInputElement>("input.input")!.value = "bellum";
+
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/dicts?q=bellum&format=partial&d=2&o=1&v=abc123",
+        expect.anything()
+      );
+      expect(window.location.search).toBe("?q=bellum&d=2&o=1");
+    });
+  });
 });
