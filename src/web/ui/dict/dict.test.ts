@@ -538,7 +538,7 @@ describe("dict_ssr", () => {
       '<meta property="og:title" content="hăbĕo | Lewis &amp; Short">'
     );
     expect(pageHtml).toContain(
-      '<meta name="description" content="Dictionary entry, citations, and inflection analyses for &#x27;hăbĕo&#x27;.">'
+      '<meta name="description" content="Dictionary entry for &#x27;hăbĕo&#x27;.">'
     );
   });
 

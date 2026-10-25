@@ -601,7 +601,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
     ? `${idMeta.headword} | ${idMeta.lexicon}`
     : dictPageTitle(query, options.isIdSearch);
   const description = idMeta
-    ? `Dictionary entry, citations, and inflection analyses for '${idMeta.headword}'.`
+    ? `Dictionary entry for '${idMeta.headword}'.`
     : !query || options.isIdSearch
     ? DICT_LANDING_DESCRIPTION
     : `Definitions and inflection analyses for '${query}'.`;
