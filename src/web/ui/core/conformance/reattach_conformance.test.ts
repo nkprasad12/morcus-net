@@ -163,7 +163,7 @@ const FIXTURES: Record<string, string> = {
       <button id="library-reset-filter-btn">Reset</button>
       <button class="filter-pill" data-filter="all">All</button>
       <div class="library-author-group">
-        <div class="work-card" data-title="x"></div>
+        <div class="work-card"><h2 class="work-card-title">x</h2></div>
       </div>
     </morcus-library-view>`,
 

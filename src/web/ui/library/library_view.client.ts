@@ -9,10 +9,34 @@ import { savedSpotsStore } from "@/web/ui/reader/saved_spots.client";
 export class MorcusLibraryView extends BaseElement {
   #currentFilter: string = "all";
   #currentQuery: string = "";
+  /** Lowercased visible author and title, read once per card. */
+  readonly #searchText = new WeakMap<
+    HTMLAnchorElement,
+    { author: string; title: string }
+  >();
 
   // Read in more than one place; a getter re-queries rather than caches.
   get #workCards() {
     return this.scope.$$<HTMLAnchorElement>(".work-card");
+  }
+
+  /**
+   * The card's author and title as the user sees them, for filtering. The
+   * server doesn't duplicate them into attributes; the saved-spot badge sits
+   * in the wrapper, outside these spans, so it never leaks into the text.
+   */
+  #textOf(card: HTMLAnchorElement): { author: string; title: string } {
+    let text = this.#searchText.get(card);
+    if (!text) {
+      const read = (sel: string) =>
+        (card.querySelector(sel)?.textContent ?? "").trim().toLowerCase();
+      text = {
+        author: read(".work-card-author"),
+        title: read(".work-card-title"),
+      };
+      this.#searchText.set(card, text);
+    }
+    return text;
   }
 
   protected override onConnect() {
@@ -77,8 +101,7 @@ export class MorcusLibraryView extends BaseElement {
     const tokens = this.#currentQuery.split(/\s+/).filter((t) => t.length > 0);
 
     for (const card of cards) {
-      const author = card.dataset.author || "";
-      const title = card.dataset.title || "";
+      const { author, title } = this.#textOf(card);
       const tags = (card.dataset.tags || "").split(" ");
 
       const matchesTag =
@@ -124,18 +147,20 @@ export class MorcusLibraryView extends BaseElement {
       // A spot on the first page links where the card already goes.
       if (secId === card.dataset.firstPage) continue;
 
-      const baseUrl =
-        card.dataset.readerUrl ||
-        card.getAttribute("data-reader-url") ||
-        card.getAttribute("href") ||
-        "";
+      // The card's own URL, without any jump a previous connect added: this
+      // can run again when the element is moved, and reader URLs carry no
+      // query or fragment of their own.
+      const baseUrl = (card.getAttribute("href") || "").split(/[?#]/)[0];
 
       // Update card href to jump directly to saved spot
       const jumpUrl = `${baseUrl}?jump=${encodeURIComponent(
         secId
       )}#sec-${secId}`;
       card.setAttribute("href", jumpUrl);
-      card.dataset.tags += " progress";
+      const tags = (card.dataset.tags || "").split(" ");
+      if (!tags.includes("progress")) {
+        card.dataset.tags = [...tags, "progress"].join(" ");
+      }
 
       // Built on demand for the few cards with a saved spot in localStorage
       // rather than pre-rendered hidden on all 126 cards (no server state to
@@ -169,7 +194,10 @@ export class MorcusLibraryView extends BaseElement {
       this.scope.listen(clear, "click", () => {
         savedSpotsStore.remove(workId);
         card.setAttribute("href", baseUrl);
-        card.dataset.tags = card.dataset.tags?.replace(" progress", "");
+        card.dataset.tags = (card.dataset.tags || "")
+          .split(" ")
+          .filter((t) => t !== "progress")
+          .join(" ");
         tag.remove();
         this.#syncProgressPill();
         this.#applyFilter();

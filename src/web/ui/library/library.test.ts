@@ -53,16 +53,25 @@ describe("library SSR & client hydration", () => {
   });
 
   describe("renderLibraryPageHtml", () => {
-    it("emits data-work-id and data-reader-url on work cards", async () => {
+    it("emits data-work-id and href on work cards", async () => {
       const html = await renderLibraryPageHtml();
 
       expect(html).toContain('data-work-id="phi0448.phi001.perseus-lat2"');
-      expect(html).toContain('data-reader-url="/work/caesar/de_bello_gallico"');
       expect(html).toContain('data-work-id="phi0472.phi001.perseus-lat2"');
-      expect(html).toContain('data-reader-url="/work/catullus/carmina"');
       expect(html).toContain('href="/work/caesar/de_bello_gallico"');
+      expect(html).toContain('href="/work/catullus/carmina"');
       expect(html).toContain('data-first-page="1.1"');
       expect(html).toContain('class="work-card-item"');
+    });
+
+    it("doesn't duplicate the URL, author or title into data attributes", async () => {
+      // The client reads the href and the visible text instead; on 126 cards
+      // the copies cost ~17 kB of HTML.
+      const html = await renderLibraryPageHtml();
+
+      expect(html).not.toContain("data-reader-url=");
+      expect(html).not.toContain("data-author=");
+      expect(html).not.toContain("data-title=");
     });
   });
 
@@ -89,10 +98,7 @@ describe("library SSR & client hydration", () => {
             <a href="/work/caesar/de_bello_gallico"
                class="card card-interactive work-card"
                data-work-id="phi0448.phi001.perseus-lat2"
-               data-reader-url="/work/caesar/de_bello_gallico"
                data-first-page="1.1"
-               data-author="gaius julius caesar"
-               data-title="de bello gallico"
                data-tags="all macra">
               <div class="work-card-content">
                 <span class="work-card-author">Gaius Julius Caesar</span>
@@ -107,10 +113,7 @@ describe("library SSR & client hydration", () => {
             <a href="/work/catullus/carmina"
                class="card card-interactive work-card"
                data-work-id="phi0472.phi001.perseus-lat2"
-               data-reader-url="/work/catullus/carmina"
                data-first-page="1"
-               data-author="gaius valerius catullus"
-               data-title="carmina"
                data-tags="all">
               <div class="work-card-content">
                 <span class="work-card-author">Gaius Valerius Catullus</span>
@@ -296,6 +299,70 @@ describe("library SSR & client hydration", () => {
 
       expect(item(el, CAESAR).hidden).toBe(true);
       expect(item(el, CATULLUS).hidden).toBe(false);
+    });
+
+    it("matches each query word against the visible author or title, ignoring case", () => {
+      const el = setupLibraryDOM();
+      const input = el.querySelector<HTMLInputElement>(
+        "#library-search-input"
+      )!;
+      const search = (q: string) => {
+        input.value = q;
+        input.dispatchEvent(new Event("input"));
+      };
+
+      search("GALLICO");
+      expect(item(el, CAESAR).hidden).toBe(false);
+      expect(item(el, CATULLUS).hidden).toBe(true);
+
+      search("caesar gallico");
+      expect(item(el, CAESAR).hidden).toBe(false);
+      expect(item(el, CATULLUS).hidden).toBe(true);
+
+      // Every word must match: "carmina" is Catullus's, not Caesar's.
+      search("caesar carmina");
+      expect(item(el, CAESAR).hidden).toBe(true);
+      expect(item(el, CATULLUS).hidden).toBe(true);
+    });
+
+    it("the saved-spot badge text doesn't match the filter", () => {
+      savedSpotsStore.set("phi0448.phi001.perseus-lat2", "1.4");
+      const el = setupLibraryDOM();
+      const input = el.querySelector<HTMLInputElement>(
+        "#library-search-input"
+      )!;
+
+      input.value = "saved";
+      input.dispatchEvent(new Event("input"));
+
+      expect(item(el, CAESAR).hidden).toBe(true);
+    });
+
+    it("reconnecting doesn't stack the jump URL or the progress tag", () => {
+      savedSpotsStore.set("phi0448.phi001.perseus-lat2", "1.4");
+      const el = setupLibraryDOM();
+      const caesarCard = el.querySelector<HTMLAnchorElement>(CAESAR)!;
+
+      // Moving the element runs onConnect (and hydration) again.
+      el.remove();
+      document.body.appendChild(el);
+
+      expect(caesarCard.getAttribute("href")).toBe(
+        "/work/caesar/de_bello_gallico?jump=1.4#sec-1.4"
+      );
+      expect(caesarCard.dataset.tags).toBe("all macra progress");
+      expect(
+        item(el, CAESAR).querySelectorAll(".work-card-corner-tag")
+      ).toHaveLength(1);
+
+      item(el, CAESAR)
+        .querySelector<HTMLButtonElement>(".work-card-clear-spot")!
+        .click();
+
+      expect(caesarCard.getAttribute("href")).toBe(
+        "/work/caesar/de_bello_gallico"
+      );
+      expect(caesarCard.dataset.tags).toBe("all macra");
     });
   });
 });

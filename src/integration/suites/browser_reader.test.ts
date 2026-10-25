@@ -11,6 +11,15 @@ import { disableSmoothScroll } from "@/integration/utils/playwright_utils";
 const DBG = "/work/caesar/de_bello_gallico";
 const JUVENAL = "/work/juvenal/saturae";
 
+/**
+ * A library card, by work id: its href changes once the work has a saved
+ * spot, so it can't be the selector.
+ */
+const workCard = (page: Page, workId: string) =>
+  page.locator(`a.work-card[data-work-id="${workId}"]`);
+const DBG_ID = "phi0448.phi001.perseus-lat2";
+const JUVENAL_ID = "phi1276.phi001.perseus-lat2";
+
 const passage = (page: Page) => page.locator("#reader-passage");
 
 /** Opens the table-of-contents drawer from the sticky bar. */
@@ -24,10 +33,10 @@ test.describe("UI V2 library", () => {
     page,
   }) => {
     await page.goto("/library");
-    const dbgCard = page.locator(`a.work-card[data-reader-url="${DBG}"]`);
-    const juvenalCard = page.locator(
-      `a.work-card[data-reader-url="${JUVENAL}"]`
-    );
+    const dbgCard = workCard(page, DBG_ID);
+    const juvenalCard = workCard(page, JUVENAL_ID);
+    await expect(dbgCard).toHaveAttribute("href", DBG);
+    await expect(juvenalCard).toHaveAttribute("href", JUVENAL);
     await expect(dbgCard).toBeVisible();
     await expect(juvenalCard).toBeVisible();
 
@@ -53,7 +62,7 @@ test.describe("UI V2 reader", () => {
     await expect(passage(page)).toContainText("Orgetorix");
 
     await page.goto("/library");
-    await page.locator(`a.work-card[data-reader-url="${DBG}"]`).click();
+    await workCard(page, DBG_ID).click();
     await expect(passage(page)).toContainText("Orgetorix");
 
     // Quick navigation through a TOC link. Chapter 90 exists only in Book 7.
@@ -66,7 +75,7 @@ test.describe("UI V2 reader", () => {
     await expect(passage(page)).toContainText("Aeduos");
 
     await page.goto("/library");
-    await page.locator(`a.work-card[data-reader-url="${DBG}"]`).click();
+    await workCard(page, DBG_ID).click();
     await expect(passage(page)).toContainText("Aeduos");
   });
 

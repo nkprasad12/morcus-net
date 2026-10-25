@@ -59,10 +59,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
         <a href="${readerUrl}"
            class="card card-interactive work-card"
            data-work-id="${he.escape(w.id)}"
-           data-reader-url="${readerUrl}"
            data-first-page="${he.escape(w.firstPageId.join("."))}"
-           data-author="${he.escape((w.author || "").toLowerCase())}"
-           data-title="${he.escape((w.title || "").toLowerCase())}"
            data-tags="${tags.join(" ")}"
            aria-label="${he.escape(w.title)}${
         w.author ? ` by ${he.escape(w.author)}` : ""
