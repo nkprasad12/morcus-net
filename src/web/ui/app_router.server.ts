@@ -38,11 +38,6 @@ export function createV2Router(
   const router = Router();
   router.use(express.json());
 
-  // Root redirect to dictionary
-  router.get("/", (_req: Request, res: Response) => {
-    res.redirect("/dicts");
-  });
-
   // The manifest is a build artifact for the server, not a client asset.
   router.get("/assets/manifest.json", (_req: Request, res: Response) => {
     res.status(404).end();

@@ -178,9 +178,7 @@ describe("app_router integration", () => {
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.headers["vary"]).toContain("X-Requested-With");
     expect(res.text).toContain("<!DOCTYPE html>");
-    expect(res.text).toContain(
-      "<title>amo | LS | Morcus Latin Tools</title>"
-    );
+    expect(res.text).toContain("<title>amo | LS | Morcus Latin Tools</title>");
     expect(res.text).toContain(
       '<link rel="canonical" href="https://morcus.net/dicts/id/n20077">'
     );
@@ -818,10 +816,78 @@ describe("app_router integration", () => {
     expect(res.text).toContain('class="nav-link active"');
   });
 
-  test("GET / redirects to /dicts", async () => {
-    const res = await request(app).get("/");
-    expect(res.status).toBe(302);
-    expect(res.header.location).toBe("/dicts");
+  describe("GET / (the empty dictionary page, served at the root)", () => {
+    test("serves the page directly, canonical to /dicts, rewriting the address bar", async () => {
+      const res = await request(app).get("/");
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("text/html");
+      expect(res.text).toContain("<morcus-dict-search");
+      expect(res.text).toContain(
+        '<link rel="canonical" href="https://morcus.net/dicts">'
+      );
+      expect(res.text).toContain(
+        '<script>try{history.replaceState(history.state,"","/dicts"+location.hash)}catch(e){}</script>'
+      );
+      // Never serves partials, so its response mustn't vary on the partial header.
+      expect(res.headers["vary"] ?? "").not.toContain("X-Requested-With");
+      expect(res.header["set-cookie"]).toBeUndefined();
+    });
+
+    test("only the root rewrites the address bar", async () => {
+      const res = await request(app).get("/dicts");
+      expect(res.text).not.toContain("history.replaceState");
+    });
+
+    test("renders the user's saved settings", async () => {
+      const res = await request(app)
+        .get("/")
+        .set("Cookie", "morcus_d=2; morcus_inflected=0");
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('data-d="2" data-o="0"');
+      expect(res.header["set-cookie"]).toBeUndefined();
+    });
+
+    test("ignores the query: no lookup, no saved settings, same page", async () => {
+      const plain = await request(app).get("/");
+      const res = await request(app).get("/?q=amo&d=2&o=0&save=1&fbclid=x");
+      expect(res.status).toBe(200);
+      expect(mockFusedDict.getEntry).not.toHaveBeenCalled();
+      expect(res.header["set-cookie"]).toBeUndefined();
+      expect(res.text).toBe(plain.text);
+    });
+
+    // Without JS the address bar keeps `/`, so a relative link or a form submitting to the
+    // current URL would lead somewhere under `/` (and the query is ignored there, so a search or
+    // settings save would be lost). Every link and form must name a real path.
+    test("every link and form targets an absolute path", async () => {
+      // Forms that never submit natively: the report dialog only opens with JS, which sends it
+      // over fetch (`report_dialog.client.ts`).
+      const JS_ONLY_FORMS = ["report-form"];
+      const res = await request(app).get("/");
+      const doc = new JSDOM(res.text).window.document;
+      const forms = Array.from(doc.querySelectorAll("form")).filter(
+        (form) =>
+          form.getAttribute("method")?.toLowerCase() !== "dialog" &&
+          !JS_ONLY_FORMS.some((name) => form.classList.contains(name))
+      );
+      expect(forms.length).toBeGreaterThan(0);
+      for (const form of forms) {
+        expect({
+          form: form.className,
+          action: form.getAttribute("action"),
+        }).toEqual({
+          form: form.className,
+          action: expect.stringMatching(/^\/[^/]/),
+        });
+      }
+      const hrefs = Array.from(doc.querySelectorAll("a[href]")).map(
+        (a) => a.getAttribute("href") ?? ""
+      );
+      expect(hrefs.length).toBeGreaterThan(0);
+      for (const href of hrefs) {
+        expect(href).toMatch(/^(\/(?!\/)|#|https?:\/\/|mailto:)/);
+      }
+    });
   });
 
   test("GET /assets/<chunk>.js serves all 6 built client chunks", async () => {
@@ -1356,6 +1422,7 @@ describe("app_router integration", () => {
       form?: Record<string, string>;
       json?: Record<string, string>;
     }> = [
+      { route: "/", method: "GET", url: "/" },
       { route: "/dicts", method: "GET", url: "/dicts?q=amo" },
       { route: "/dicts/id/:id", method: "GET", url: "/dicts/id/n123" },
       {
@@ -1409,7 +1476,7 @@ describe("app_router integration", () => {
     ];
 
     /** Mounted ahead of the telemetry middleware, so never logged. */
-    const UNLOGGED_ROUTES = ["GET /", "GET /assets/manifest.json"];
+    const UNLOGGED_ROUTES = ["GET /assets/manifest.json"];
 
     /** Every `METHOD /pattern` registered in an Express router, recursively. */
     function registeredRoutes(router: any): string[] {
@@ -1496,7 +1563,7 @@ describe("app_router integration", () => {
       }
     );
 
-    test.each(["/", "/assets/manifest.json", "/no-such-page"])(
+    test.each(["/assets/manifest.json", "/no-such-page"])(
       "GET %s logs nothing",
       async (url) => {
         await request(telemetryApp).get(url);

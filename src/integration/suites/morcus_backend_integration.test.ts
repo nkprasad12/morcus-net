@@ -168,8 +168,15 @@ test.describe("morcus.net backend integration", { tag: "@backend" }, () => {
       expect(res.headers.get("cache-control")).toContain("immutable");
     });
 
+    test("serves the dictionary at the root without a redirect", async () => {
+      const res = await get("/", { redirect: "manual" });
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain(
+        '<link rel="canonical" href="https://morcus.net/dicts">'
+      );
+    });
+
     test("redirects V1 URLs that external links still use", async () => {
-      expect(await redirectTarget("/")).toBe("/dicts");
       expect(await redirectTarget("/work/phi0448.phi001.perseus-lat2")).toMatch(
         /\/work\/caesar\/de_bello_gallico\/1\.1$/
       );

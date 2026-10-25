@@ -88,6 +88,42 @@ async function openMobileMenu(page: Page): Promise<void> {
 }
 
 test.describe("UI V2 dictionary", () => {
+  test("the root serves the dictionary and the address bar shows /dicts", async ({
+    page,
+  }) => {
+    await page.goto("/about");
+    const response = await page.goto("/");
+    // Served directly: the navigation's response is the root's, not a redirect's target.
+    expect(response?.url()).toMatch(/\/$/);
+    expect(response?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/dicts$/);
+    await expect(page.locator("form.search-form")).toBeVisible();
+
+    // The rewrite replaced the root's history entry rather than adding one.
+    await page.reload();
+    await expect(page).toHaveURL(/\/dicts$/);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/about$/);
+    await page.goForward();
+    await expect(page).toHaveURL(/\/dicts$/);
+  });
+
+  test("the root works without JavaScript, and searches go to /dicts", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/$/);
+    await page.locator('input[name="q"]').fill("habeo");
+    await page.locator("form.search-form .search-btn").click();
+    await expect(page).toHaveURL(/\/dicts\?.*\bq=habeo\b/);
+    await expect(page.locator(".dict-card").first()).toBeVisible();
+
+    await context.close();
+  });
+
   test("loads results without JavaScript (No-JS fallback)", async ({
     browser,
   }) => {

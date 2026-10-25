@@ -514,7 +514,19 @@ interface DictPageOptions {
   lang?: string | string[];
   /** The request's `focus=` language. See `DictResultsOptions.focusLang`. */
   focusLang?: DictLang;
+  /**
+   * The empty page served at the site root (`dict_routes.server.ts`). An inline script in
+   * `<head>` rewrites the address bar to `/dicts` before the module chunks run, so client code
+   * only ever sees the real path, and bookmarks and copied links get `/dicts`. `replaceState`
+   * adds no history entry; it can throw on opaque origins, where `/` is harmless. Without JS
+   * the address bar keeps `/`, so every link and form on this page must target a real path
+   * (`app_router.test.ts` checks).
+   */
+  servedAtRoot?: boolean;
 }
+
+const ROOT_ADDRESS_BAR_SCRIPT =
+  '<script>try{history.replaceState(history.state,"","/dicts"+location.hash)}catch(e){}</script>';
 
 /**
  * Renders the full standalone HTML page for UI V2.
@@ -540,12 +552,16 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   );
 
   const dictScale = parseDictScale(options.scale);
-  const extraHeadHtml =
+  const scaleStyleHtml =
     dictScale !== undefined
       ? `<style>:root { --dict-scale: ${(dictScale / 100).toFixed(
           2
         )}; }</style>`
-      : undefined;
+      : "";
+  const extraHeadHtml =
+    [scaleStyleHtml, options.servedAtRoot ? ROOT_ADDRESS_BAR_SCRIPT : ""]
+      .filter(Boolean)
+      .join("\n  ") || undefined;
 
   const contentHtml = `
     <morcus-dict-search>

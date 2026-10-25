@@ -56,6 +56,24 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
   const router = Router();
   const { getAsync } = createAsyncRegistrars(router);
 
+  // The site root serves the empty dictionary page itself, saving a redirect round trip. Only
+  // this page lives at `/`: its search and settings forms submit to `/dicts`, and the page
+  // rewrites the address bar to `/dicts`, so nothing anyone links to or bookmarks is under `/`
+  // (except a No-JS bookmark of the empty page, i.e. of the site). That keeps `/` free for a
+  // future landing page. The query is ignored (it's only ever tracking params like `fbclid`),
+  // which also keeps the URL-driven selection, persistence and guest logic of `/dicts` out of it.
+  router.get("/", (req, res) => {
+    const savedPrefs = readSavedDictPrefs(req.headers.cookie);
+    res.send(
+      renderDictPageHtml({
+        query: "",
+        queriedDicts: resolveActiveDicts({ savedPrefs }).dictKeys,
+        isInflected: resolveInflection(undefined, savedPrefs),
+        servedAtRoot: true,
+      })
+    );
+  });
+
   // Main dictionary route: handles both full SSR (HTML page) and AJAX partials
   getAsync("/dicts", async (req, res) => {
     const query = extractCleanQuery(toStringOrArray(req.query.q));
