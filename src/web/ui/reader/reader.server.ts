@@ -325,7 +325,9 @@ function renderReaderTextCard(ctx: ReaderRenderContext): string {
               <div class="reader-text-meta">
                 <span class="reader-author-tag">${he.escape(work.author)}</span>
                 <span class="reader-meta-sep">&middot;</span>
-                <span class="reader-work-tag">${he.escape(work.title)}</span>
+                <span class="reader-work-tag" title="${he.escape(
+                  work.title
+                )}">${he.escape(work.shortTitle || work.title)}</span>
               </div>
               ${renderReaderHeadingHtml(activePage.title, pageUrl)}
             </header>
@@ -754,7 +756,7 @@ export async function renderReaderPageHtml(
   const ctx = await resolveReaderContext(options);
 
   const title = formatReaderPageTitle({
-    workTag: ctx.work.title,
+    workTag: ctx.work.shortTitle || ctx.work.title,
     heading: ctx.activePage.title,
   });
   const description =
