@@ -4,10 +4,15 @@ import fs from "fs";
 import request from "supertest";
 
 import {
+  DYNAMIC_BROTLI_QUALITY,
   PRECOMPRESSED_HEADER,
   setupServer,
   WebServerParams,
 } from "@/web/web_server";
+import {
+  createInMemoryPrecompressedStore,
+  sendPrecompressedJson,
+} from "@/web/ui/core/server/precompressed_json.server";
 import path from "path";
 import zlib from "zlib";
 import http from "http";
@@ -89,8 +94,10 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.type).toBe("application/javascript");
+    // supertest accepts gzip, so `compression()` encodes it and
+    // `no-transform` is appended.
     expect(response.headers["cache-control"]).toBe(
-      "no-cache, no-store, must-revalidate"
+      "no-cache, no-store, must-revalidate, no-transform"
     );
     expect(response.text).toContain("registration.unregister()");
   });
@@ -319,5 +326,101 @@ describe("pre-compressed V2 assets", () => {
       method: "POST",
     });
     expect(res.headers[PRECOMPRESSED_HEADER.toLowerCase()]).toBeUndefined();
+  });
+});
+
+describe("on-the-fly compression", () => {
+  // Over `compression()`'s 1 kB threshold.
+  const HTML = `<!DOCTYPE html><p>${"amo amas amat ".repeat(200)}</p>`;
+  const JSON_BODY = JSON.stringify({ words: "amo amas amat ".repeat(200) });
+  let server: http.Server;
+
+  beforeAll(async () => {
+    const v2Router = express.Router();
+    v2Router.get("/page", (_req, res) => res.type("html").send(HTML));
+    v2Router.get("/cached-page", (_req, res) => {
+      res.setHeader("Cache-Control", "no-store");
+      res.type("html").send(HTML);
+    });
+    v2Router.get("/tiny-page", (_req, res) => res.type("html").send("<p>hi"));
+    v2Router.get("/data", (_req, res) => res.type("json").send(JSON_BODY));
+    const row = createInMemoryPrecompressedStore(
+      new Map([["key", JSON_BODY]])
+    ).get("key");
+    if (row === undefined) throw new Error("missing precompressed row");
+    v2Router.get("/precompressed-data", (req, res) =>
+      sendPrecompressedJson(req, res, row)
+    );
+    const app = express();
+    setupServer({ webApp: app, v2Router });
+    server = app.listen(0);
+    await new Promise((resolve) => server.once("listening", resolve));
+  });
+
+  afterAll(async () => {
+    await new Promise((resolve) => server.close(resolve));
+  });
+
+  test("encodes brotli at DYNAMIC_BROTLI_QUALITY", async () => {
+    const res = await fetchRaw(server, "/page", { acceptEncoding: "br" });
+    expect(res.headers["content-encoding"]).toBe("br");
+    const expected = zlib.brotliCompressSync(HTML, {
+      params: { [zlib.constants.BROTLI_PARAM_QUALITY]: DYNAMIC_BROTLI_QUALITY },
+    });
+    expect(res.body.equals(expected)).toBe(true);
+  });
+
+  test("marks compressed HTML no-transform", async () => {
+    for (const acceptEncoding of ["br", "gzip"]) {
+      const res = await fetchRaw(server, "/page", { acceptEncoding });
+      expect(res.headers["content-encoding"]).toBe(acceptEncoding);
+      expect(res.headers["cache-control"]).toBe("no-transform");
+      expect(decode(res)).toBe(HTML);
+    }
+  });
+
+  test("appends no-transform to an existing Cache-Control", async () => {
+    const res = await fetchRaw(server, "/cached-page", {
+      acceptEncoding: "br",
+    });
+    expect(res.headers["content-encoding"]).toBe("br");
+    expect(res.headers["cache-control"]).toBe("no-store, no-transform");
+  });
+
+  test("leaves HTML it did not encode transformable", async () => {
+    const identity = await fetchRaw(server, "/page", {
+      acceptEncoding: "identity",
+    });
+    expect(identity.headers["content-encoding"]).toBeUndefined();
+    expect(identity.headers["cache-control"]).toBeUndefined();
+
+    const tiny = await fetchRaw(server, "/tiny-page", { acceptEncoding: "br" });
+    expect(tiny.headers["content-encoding"]).toBeUndefined();
+    expect(tiny.headers["cache-control"]).toBeUndefined();
+  });
+
+  test("marks any encoded response, not just HTML", async () => {
+    const res = await fetchRaw(server, "/data", { acceptEncoding: "br" });
+    expect(res.headers["content-encoding"]).toBe("br");
+    expect(res.headers["cache-control"]).toBe("no-transform");
+    expect(decode(res)).toBe(JSON_BODY);
+  });
+
+  test("marks responses that encode themselves", async () => {
+    for (const acceptEncoding of ["br", "gzip"]) {
+      const res = await fetchRaw(server, "/precompressed-data", {
+        acceptEncoding,
+      });
+      expect(res.headers["content-encoding"]).toBe(acceptEncoding);
+      expect(res.headers[PRECOMPRESSED_HEADER.toLowerCase()]).toBe("1");
+      expect(res.headers["cache-control"]).toBe("no-transform");
+      expect(decode(res)).toBe(JSON_BODY);
+    }
+
+    const identity = await fetchRaw(server, "/precompressed-data", {
+      acceptEncoding: "identity",
+    });
+    expect(identity.headers["content-encoding"]).toBeUndefined();
+    expect(identity.headers["cache-control"]).toBeUndefined();
   });
 });

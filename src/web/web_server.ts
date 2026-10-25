@@ -1,7 +1,10 @@
 import compression from "compression";
 import express from "express";
+import type { ServerResponse } from "http";
+import onHeaders from "on-headers";
 import path from "path";
 import fs from "fs/promises";
+import zlib from "zlib";
 import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
 import { getV2BuildDir } from "@/bundler/client_build_contract";
 import { IMMUTABLE_CACHE_CONTROL } from "@/web/ui/core/server/build_version.server";
@@ -110,6 +113,65 @@ function preCompressedMiddleware(getSourceDir: () => string): express.Handler {
   };
 }
 
+/**
+ * Brotli quality for on-the-fly `compression()` output (mostly SSR HTML).
+ * `compression()` defaults to 4, where Brotli is no smaller than gzip-6 on our
+ * pages; 5 is ~7% smaller for ~1.5x the CPU (well under 1 ms on the landing
+ * page, ~4 ms on the largest entry pages). Higher levels gain little more until
+ * 10-11, which take 30-100x the CPU and belong at build time, never here.
+ */
+export const DYNAMIC_BROTLI_QUALITY = 5;
+
+/**
+ * `compression()` >= 1.8 accepts `brotli` options, but `@types/compression`
+ * 1.7 doesn't declare them yet.
+ */
+type CompressionOptionsWithBrotli = compression.CompressionOptions & {
+  brotli?: zlib.BrotliOptions;
+};
+
+const COMPRESSION_OPTIONS: CompressionOptionsWithBrotli = {
+  brotli: {
+    params: { [zlib.constants.BROTLI_PARAM_QUALITY]: DYNAMIC_BROTLI_QUALITY },
+  },
+};
+
+/**
+ * Marks every response that already carries a `Content-Encoding` as
+ * `no-transform`: on-the-fly `compression()` output (mostly SSR HTML) and
+ * responses that encode themselves (e.g. `sendPrecompressedJson`). A proxy or
+ * CDN in front then forwards our encoding instead of decoding and re-encoding
+ * it (often at a lower level, e.g. to inject or rewrite markup). Responses we
+ * didn't encode are left alone, so a proxy may still compress or optimise them;
+ * that includes images, which `compression()` never encodes.
+ *
+ * Proxies typically ask the origin for `br` whatever the browser sent, then
+ * decode for clients that can't take it. With `no-transform` those clients
+ * get identity instead of the proxy's gzip; every current browser accepts
+ * `br`, so that only affects long-unsupported ones.
+ *
+ * Must be mounted *before* `compression()`: `compression()` skips responses
+ * that are already `no-transform`, and `on-headers` (which `compression()`
+ * also uses) fires listeners in reverse order of registration, so this one
+ * sees the `Content-Encoding` that `compression()` just chose.
+ */
+function noTransformEncodedResponses(): express.Handler {
+  return (_req, res, next) => {
+    onHeaders(res, function markNoTransform(this: ServerResponse) {
+      if (this.getHeader("Content-Encoding") === undefined) {
+        return;
+      }
+      const cacheControl = this.getHeader("Cache-Control");
+      if (cacheControl === undefined) {
+        this.setHeader("Cache-Control", "no-transform");
+      } else if (!/(?:^|,)\s*no-transform\s*(?:,|$)/.test(`${cacheControl}`)) {
+        this.setHeader("Cache-Control", `${cacheControl}, no-transform`);
+      }
+    });
+    next();
+  };
+}
+
 export interface WebServerParams {
   webApp: express.Express;
   v2Router: express.Router;
@@ -119,7 +181,9 @@ export function setupServer(params: WebServerParams): void {
   const app = params.webApp;
   // Ahead of the V2 router's own `/assets` static handler.
   app.use("/assets", preCompressedMiddleware(getV2BuildDir));
-  app.use(compression());
+  // Order matters; see `noTransformEncodedResponses`.
+  app.use(noTransformEncodedResponses());
+  app.use(compression(COMPRESSION_OPTIONS));
   app.get("/serviceworker.js", (_, res) => {
     // Never cached, so a later change here reaches browsers on their next visit.
     res.sendFile(path.resolve("public", "cleanup_service_worker.js"), {
