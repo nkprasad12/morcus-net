@@ -103,9 +103,12 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
             await loadAuthors()
           );
           requestTimer(res).mark("lookupComplete");
-          return isPartial
-            ? renderCorpusPartialHtml(view).toString()
-            : renderCorpusPageHtml(view);
+          if (isPartial) {
+            const body = renderCorpusPartialHtml(view).toString();
+            setVersionedCacheControl(req, res, { scope: "private" });
+            return body;
+          }
+          return renderCorpusPageHtml(view);
         }
       );
     } catch (err: unknown) {

@@ -418,4 +418,84 @@ describe("<morcus-corpus-view>", () => {
       "Copied link to this search"
     );
   });
+
+  describe("build-versioned partial fetches", () => {
+    const originalLocation = window.location;
+
+    beforeEach(() => {
+      document.documentElement.dataset.version = "abc123";
+    });
+
+    afterEach(() => {
+      delete document.documentElement.dataset.version;
+      (window as any).location = originalLocation;
+    });
+
+    test("fetches the swap URL with v=<data-version> while keeping the address bar unversioned", async () => {
+      await mount("/corpus");
+      const fetchMock = serveSlots();
+
+      input("q").value = "omnis";
+      document
+        .querySelector("form.corpus-form")
+        ?.dispatchEvent(new Event("submit", { cancelable: true }));
+      await settle();
+
+      const unversioned = "/corpus?q=omnis&contextLen=20&pageSize=50";
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${unversioned}&v=abc123`,
+        expect.anything()
+      );
+      expect(currentPath()).toBe(unversioned);
+    });
+
+    test("HTTP-error and popstate fallbacks navigate to the unversioned URL", async () => {
+      await mount("/corpus");
+      const assignMock = jest.fn();
+      const replaceMock = jest.fn();
+      delete (window as any).location;
+      (window as any).location = Object.assign(
+        new URL("http://localhost/corpus"),
+        { assign: assignMock, replace: replaceMock }
+      );
+      const errorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const fetchMock = jest
+        .fn()
+        .mockResolvedValue({ ok: false, status: 503, text: async () => "" });
+      window.fetch = fetchMock;
+
+      try {
+        input("q").value = "omnis";
+        document
+          .querySelector("form.corpus-form")
+          ?.dispatchEvent(new Event("submit", { cancelable: true }));
+        await settle();
+
+        const unversioned = "/corpus?q=omnis&contextLen=20&pageSize=50";
+        expect(fetchMock).toHaveBeenCalledWith(
+          `${unversioned}&v=abc123`,
+          expect.anything()
+        );
+        expect(assignMock).toHaveBeenCalledWith(unversioned);
+
+        const popTarget = "/corpus?q=amoris&contextLen=5&pageSize=10";
+        (window as any).location = Object.assign(
+          new URL(`http://localhost${popTarget}`),
+          { assign: assignMock, replace: replaceMock }
+        );
+        window.dispatchEvent(new PopStateEvent("popstate"));
+        await settle();
+
+        expect(fetchMock).toHaveBeenLastCalledWith(
+          `${popTarget}&v=abc123`,
+          expect.anything()
+        );
+        expect(replaceMock).toHaveBeenCalledWith(popTarget);
+      } finally {
+        errorSpy.mockRestore();
+      }
+    });
+  });
 });

@@ -44,7 +44,8 @@ flowchart TD
 - **User errors return 200.** Grammar errors, engine parse errors and over-long queries render the message in the `results` slot. No-JS users see it next to their query, and `swapSlots` falls back to a full navigation on any non-2xx.
 - **Engine errors return 503.** Missing bindings or a failed init give a 503 full page. A partial request gets the same 503, and `swapSlots` falls back to navigating there.
 - **`Vary: X-Requested-With`** is set on every `/corpus` response, because the same URL serves a full page or a slot fragment.
-- **No `Cache-Control` for HTML.** `runQuery` is synchronous and blocks the event loop, as V1's does.
+- **Build-versioned caching on partials; no `Cache-Control` on full pages.** JS swaps carry `?v=<build version>` and get `Cache-Control: private, max-age=31536000, immutable` at the current version (`setVersionedCacheControl`).
+- **`runQuery` is synchronous** and blocks the event loop, as V1's does.
 - **Engine wiring.** `start_server.ts` builds one `rustCorpusApiHandler()` and passes it in with `createV2Router(fusedDict, { corpus })`. Tests inject a fake handler (`testing/fake_corpus_engine.ts`), so nothing needs the Rust bindings or `build/corpus`.
 
 ### Results and reader links
@@ -59,10 +60,10 @@ The server imports `reader_loader.server.ts` and `reader_highlight.common.ts` (t
 
 ### Routes
 
-| Route                             | Response                                                                                                                                                                                                                                                                                                          |
-| :-------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /corpus`                     | Full page or slot templates                                                                                                                                                                                                                                                                                       |
-| `GET /api/corpus/lemmata/:letter` | JSON array of lemmata starting with `letter` (one lowercased char). URLs carry `?v=<build version>` (`withBuildVersion`, from `<html data-version>`); a request at the server's current version gets `Cache-Control: public, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`). |
+| Route                             | Response                                                                                                                                                                                                                                                                                                            |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /corpus`                     | Full page (no `Cache-Control`), or slot templates (`X-Requested-With: fetch`). JS swaps carry `?v=<build version>` (`swapSlots({ versioned: true })`); a request at the server's current version gets `Cache-Control: private, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`). |
+| `GET /api/corpus/lemmata/:letter` | JSON array of lemmata starting with `letter` (one lowercased char). URLs carry `?v=<build version>` (`withBuildVersion`, from `<html data-version>`); a request at the server's current version gets `Cache-Control: public, max-age=31536000, immutable`, anything else `no-cache` (`setVersionedCacheControl`).   |
 
 ---
 

@@ -123,6 +123,85 @@ describe("GET /corpus", () => {
     expect(res.status).toBe(500);
     error.mockRestore();
   });
+
+  describe("build-versioned partial caching", () => {
+    const savedCommit = process.env.COMMIT_ID;
+
+    beforeEach(() => {
+      process.env.COMMIT_ID = "abc123";
+    });
+
+    afterEach(() => {
+      if (savedCommit === undefined) {
+        delete process.env.COMMIT_ID;
+      } else {
+        process.env.COMMIT_ID = savedCommit;
+      }
+    });
+
+    test("a partial request at the current version is private and immutable", async () => {
+      const res = await request(makeApp(fakeCorpusEngine()))
+        .get("/corpus?q=omnis&v=abc123")
+        .set("X-Requested-With", "fetch");
+
+      expect(res.status).toBe(200);
+      expect(res.headers["cache-control"]).toBe(
+        "private, max-age=31536000, immutable"
+      );
+    });
+
+    test("a partial request with a missing or stale version revalidates", async () => {
+      const app = makeApp(fakeCorpusEngine());
+      for (const url of ["/corpus?q=omnis", "/corpus?q=omnis&v=old"]) {
+        const res = await request(app)
+          .get(url)
+          .set("X-Requested-With", "fetch");
+
+        expect(res.status).toBe(200);
+        expect(res.headers["cache-control"]).toBe("no-cache");
+      }
+    });
+
+    test("a full page never gets the immutable header", async () => {
+      const res = await request(makeApp(fakeCorpusEngine())).get(
+        "/corpus?q=omnis&v=abc123"
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.headers["cache-control"]).toBeUndefined();
+    });
+
+    test("503 and 500 partial responses are never cached", async () => {
+      const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+      const error = jest.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const noEngine = await request(makeApp())
+          .get("/corpus?q=omnis&v=abc123")
+          .set("X-Requested-With", "fetch");
+        expect(noEngine.status).toBe(503);
+        expect(noEngine.headers["cache-control"]).toBeUndefined();
+
+        const missingBindings = await request(
+          makeApp(throwingCorpusEngine("Missing Rust corpus bindings."))
+        )
+          .get("/corpus?q=omnis&v=abc123")
+          .set("X-Requested-With", "fetch");
+        expect(missingBindings.status).toBe(503);
+        expect(missingBindings.headers["cache-control"]).toBeUndefined();
+
+        const serverError = await request(
+          makeApp(fakeCorpusEngine(() => "not json"))
+        )
+          .get("/corpus?q=omnis&v=abc123")
+          .set("X-Requested-With", "fetch");
+        expect(serverError.status).toBe(500);
+        expect(serverError.headers["cache-control"]).toBeUndefined();
+      } finally {
+        warn.mockRestore();
+        error.mockRestore();
+      }
+    });
+  });
 });
 
 describe("GET /corpus: autocomplete host", () => {

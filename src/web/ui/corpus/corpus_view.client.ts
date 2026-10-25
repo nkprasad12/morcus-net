@@ -132,6 +132,7 @@ class MorcusCorpusView extends BaseElement<"nav"> {
     const ok = await swapSlots(this, path, {
       signal: this.scope.latest("nav"),
       slots: CORPUS_SLOTS,
+      versioned: true,
       // On popstate the URL is already the current entry.
       fallback: options.push ? undefined : (u) => window.location.replace(u),
     });
