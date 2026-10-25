@@ -6,7 +6,8 @@
  *    of every SSR page response to provide instant first paint and prevent
  *    Flash of Unstyled Content (FOUC) or layout shifts (CLS).
  * 2. Performance Budget: Keep this file minimal (< 2-3 KB). Do NOT import
- *    full component stylesheets or non-critical styling here.
+ *    full component stylesheets or non-critical styling here. Enforced on
+ *    minified builds by `maxCriticalCss*` in src/bundler/client_bundle_budget.ts.
  * 3. Scope: Strictly reserve for above-the-fold layout skeletons:
  *    - Core box-sizing and body background/text/font resets.
  *    - Header/App Bar persistent navigation bar layout (desktop + mobile).

@@ -30,6 +30,8 @@ export interface V2BundleBudget {
   readonly maxCssGzipBytes: number;
   readonly maxCriticalJsRawBytes: number;
   readonly maxCriticalJsGzipBytes: number;
+  readonly maxCriticalCssRawBytes: number;
+  readonly maxCriticalCssGzipBytes: number;
 }
 
 /**
@@ -71,10 +73,19 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   // instead (see "Pre-paint is a scarce budget" in src/web/ui/docs/PREFERENCES.md).
   maxCriticalJsRawBytes: 450,
   maxCriticalJsGzipBytes: 350,
+  // critical.css is inlined into the <head> of every SSR page (see the
+  // "Performance Budget" note in src/web/ui/critical.css), so every byte ships
+  // on every response. Was ~2,273 B raw / ~841 B gzip when this gate was
+  // added. Move non-critical rules to app.css rather than raising these.
+  maxCriticalCssRawBytes: 2400,
+  maxCriticalCssGzipBytes: 900,
 };
 
 /** Fixed (unhashed) filename of the inlined critical script. */
 export const CRITICAL_JS_FILE = "critical.js";
+
+/** Fixed (unhashed) filename of the inlined critical stylesheet. */
+export const CRITICAL_CSS_FILE = "critical.css";
 
 export interface V2AssetSizeInfo {
   readonly file: string;
@@ -113,6 +124,8 @@ export interface V2BundleSizeReport {
   readonly css?: V2AssetSizeInfo;
   /** Not part of the fetched chunks: it's inlined, not fetched. */
   readonly criticalJs?: V2AssetSizeInfo;
+  /** Inlined like `criticalJs`, so separate from `css` (`app.css`). */
+  readonly criticalCss?: V2AssetSizeInfo;
   readonly totalJsRawBytes: number;
   readonly totalJsGzipBytes: number;
   readonly exceeded: boolean;
@@ -127,7 +140,7 @@ function formatSize(bytes: number): string {
 function checkAssetBudget(
   outDir: string,
   label: string,
-  manifestKey: V2AssetName | "critical.js",
+  manifestKey: V2AssetName | "critical.js" | "critical.css",
   filename: string | undefined,
   limits: { readonly maxRawBytes?: number; readonly maxGzipBytes: number },
   errors: string[]
@@ -232,11 +245,24 @@ export function checkV2BundleBudget(
     errors
   );
 
+  const criticalCss = checkAssetBudget(
+    outDir,
+    "Critical CSS",
+    "critical.css",
+    CRITICAL_CSS_FILE,
+    {
+      maxRawBytes: budget.maxCriticalCssRawBytes,
+      maxGzipBytes: budget.maxCriticalCssGzipBytes,
+    },
+    errors
+  );
+
   return {
     chunks,
     routes,
     css,
     criticalJs,
+    criticalCss,
     totalJsRawBytes,
     totalJsGzipBytes,
     exceeded: errors.length > 0,
@@ -298,11 +324,24 @@ export function formatV2BundleSizeReport(
       )} gzip`
     : "missing";
   lines.push(
-    `  ${"Critical:".padEnd(13)} ${criticalStr.padEnd(
+    `  ${"Critical JS:".padEnd(13)} ${criticalStr.padEnd(
       28
     )} (budget: <= ${formatSize(
       budget.maxCriticalJsRawBytes
     )} raw / <= ${formatSize(budget.maxCriticalJsGzipBytes)} gzip, inlined)`
+  );
+
+  const criticalCssStr = report.criticalCss
+    ? `${formatSize(report.criticalCss.rawBytes)} raw / ${formatSize(
+        report.criticalCss.gzipBytes
+      )} gzip`
+    : "missing";
+  lines.push(
+    `  ${"Critical CSS:".padEnd(13)} ${criticalCssStr.padEnd(
+      28
+    )} (budget: <= ${formatSize(
+      budget.maxCriticalCssRawBytes
+    )} raw / <= ${formatSize(budget.maxCriticalCssGzipBytes)} gzip, inlined)`
   );
 
   return lines.join("\n");

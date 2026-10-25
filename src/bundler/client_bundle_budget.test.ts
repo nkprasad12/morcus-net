@@ -4,6 +4,7 @@ import * as os from "os";
 import * as zlib from "zlib";
 import * as crypto from "crypto";
 import {
+  CRITICAL_CSS_FILE,
   CRITICAL_JS_FILE,
   V2_BUNDLE_BUDGET,
   checkV2BundleBudget,
@@ -23,6 +24,7 @@ describe("UI V2 Bundle Budget", () => {
   let tmpDir: string;
 
   const criticalContent = "(()=>{try{}catch{}})();";
+  const criticalCssContent = "*{box-sizing:border-box}";
 
   function writeAllChunks(
     content: string = "console.log('test');"
@@ -41,6 +43,7 @@ describe("UI V2 Bundle Budget", () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "budget-test-"));
     fs.writeFileSync(path.join(tmpDir, CRITICAL_JS_FILE), criticalContent);
+    fs.writeFileSync(path.join(tmpDir, CRITICAL_CSS_FILE), criticalCssContent);
   });
 
   afterEach(() => {
@@ -206,6 +209,7 @@ describe("UI V2 Bundle Budget", () => {
     ).toBe(true);
 
     fs.rmSync(path.join(tmpDir, CRITICAL_JS_FILE));
+    fs.rmSync(path.join(tmpDir, CRITICAL_CSS_FILE));
     const reportMissingFiles = checkV2BundleBudget(tmpDir, {
       "common.js": "nonexistent-common.js",
       "reader.js": "nonexistent-reader.js",
@@ -228,6 +232,11 @@ describe("UI V2 Bundle Budget", () => {
     expect(
       reportMissingFiles.errors.some((e) =>
         e.includes("Critical JS asset not found on disk")
+      )
+    ).toBe(true);
+    expect(
+      reportMissingFiles.errors.some((e) =>
+        e.includes("Critical CSS asset not found on disk")
       )
     ).toBe(true);
   });
@@ -291,6 +300,68 @@ describe("UI V2 Bundle Budget", () => {
       );
       expect(formatted).toContain(
         `<= ${V2_BUNDLE_BUDGET.maxCriticalJsRawBytes} B raw`
+      );
+    });
+  });
+
+  describe("critical.css", () => {
+    let manifest: V2AssetManifest;
+
+    beforeEach(() => {
+      manifest = writeAllChunks("console.log(1);");
+    });
+
+    test("is measured separately from app.css", () => {
+      const report = checkV2BundleBudget(tmpDir, manifest);
+      expect(report.errors).toEqual([]);
+      expect(report.criticalCss?.rawBytes).toBe(
+        Buffer.byteLength(criticalCssContent)
+      );
+      expect(report.css?.rawBytes).toBe(
+        Buffer.byteLength("body { margin: 0; }")
+      );
+    });
+
+    test("fails when its raw size exceeds the ceiling", () => {
+      fs.writeFileSync(
+        path.join(tmpDir, CRITICAL_CSS_FILE),
+        "x".repeat(V2_BUNDLE_BUDGET.maxCriticalCssRawBytes + 1)
+      );
+      const report = checkV2BundleBudget(tmpDir, manifest);
+      expect(report.exceeded).toBe(true);
+      expect(
+        report.errors.some((e) => e.startsWith("Critical CSS raw size"))
+      ).toBe(true);
+    });
+
+    test("fails when its gzip size exceeds the ceiling", () => {
+      const random = crypto.randomBytes(300).toString("base64");
+      fs.writeFileSync(path.join(tmpDir, CRITICAL_CSS_FILE), random);
+      const report = checkV2BundleBudget(tmpDir, manifest, {
+        ...V2_BUNDLE_BUDGET,
+        maxCriticalCssRawBytes: 10_000,
+        maxCriticalCssGzipBytes: 100,
+      });
+      expect(
+        report.errors.some((e) => e.startsWith("Critical CSS gzip size"))
+      ).toBe(true);
+    });
+
+    test("ceilings keep critical.css within its inline budget", () => {
+      expect(V2_BUNDLE_BUDGET.maxCriticalCssRawBytes).toBeLessThanOrEqual(2400);
+      expect(V2_BUNDLE_BUDGET.maxCriticalCssGzipBytes).toBeLessThanOrEqual(900);
+    });
+
+    test("appears in the formatted report", () => {
+      const formatted = formatV2BundleSizeReport(
+        checkV2BundleBudget(tmpDir, manifest)
+      );
+      expect(formatted).toContain("Critical CSS:");
+      expect(formatted).toContain(
+        `${Buffer.byteLength(criticalCssContent)} B raw`
+      );
+      expect(formatted).toContain(
+        `<= ${V2_BUNDLE_BUDGET.maxCriticalCssGzipBytes} B gzip`
       );
     });
   });
