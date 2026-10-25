@@ -312,6 +312,9 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
       </div>
     `;
 
+  // `#dict-appearance-link`: reading text is app-wide, so the app-bar
+  // Appearance menu owns it (JS-only, like the menu). Hidden in embedded
+  // views, which have no app bar (see dict_settings.client.ts).
   const bodyHtml = `
       ${input.query ? hiddenInput("q", input.query) : ""}
       ${input.extraHiddenInputsHtml}
@@ -354,9 +357,6 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
           <span class="lsQuote">omnia</span>
         </div>
       </div>
-      <!-- Reading text is app-wide: the app-bar Appearance menu owns it
-           (JS-only, like the menu). Hidden in embedded views, which have no
-           app bar (see dict_settings.client.ts). -->
       <button type="button" class="appearance-link" id="dict-appearance-link" data-js-only>
         <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, theme</span></span>
         ${renderIconSvg("palette")}

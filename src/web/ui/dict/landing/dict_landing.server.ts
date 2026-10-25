@@ -76,14 +76,16 @@ export function renderDictLandingHtml(
       })
       .join("");
 
+  // A welcome message based on the active dictionaries, then a two-column grid:
+  // the dictionary list (first on mobile and desktop), and a guide to the
+  // markup. The guide's sample entry demonstrates every styling class; its
+  // legend is collapsed by default. The highlight-intensity tip is JS-only
+  // because the slider is client-injected.
   return `
     <div class="landing-container">
-      <!-- Dynamic Welcome message based on active dictionaries -->
       <p class="landing-welcome" id="landing-welcome">${welcomeText}</p>
 
-      <!-- Two-column info grid -->
       <div class="landing-grid">
-        <!-- Column 1: Dictionaries (First on mobile & desktop) -->
         <section class="landing-card">
           <header class="landing-card-header">
             <h3 class="landing-card-title">All Dictionaries</h3>
@@ -111,7 +113,6 @@ export function renderDictLandingHtml(
           </div>
         </section>
 
-        <!-- Column 2: Understanding the Markup -->
         <section class="landing-card">
           <header class="landing-card-header">
             <h3 class="landing-card-title">Understanding the Markup</h3>
@@ -121,7 +122,6 @@ export function renderDictLandingHtml(
               Entries highlight grammar, citations, and sections:
             </p>
 
-            <!-- Minimal mock entry demonstrating all styling classes -->
             <div class="sample-entry">
               <div class="sample-entry-line">
                 <span class="lsOrth">unda</span>, ae,
@@ -136,7 +136,6 @@ export function renderDictLandingHtml(
               </div>
             </div>
 
-            <!-- Expandable legend explaining every color and interactive style (collapsed by default) -->
             <details class="legend-details">
               <summary class="legend-summary">
                 <span class="legend-summary-title">What do the colors mean?</span>
@@ -172,7 +171,6 @@ export function renderDictLandingHtml(
               </div>
             </details>
 
-            <!-- Only displayed when JS is active since the slider is client-injected -->
             <div class="legend-settings-tip" data-js-only>
               ${renderIconSvg("tune", { className: "landing-tune-icon" })}
               <span>You can change highlight intensity in the settings</span>

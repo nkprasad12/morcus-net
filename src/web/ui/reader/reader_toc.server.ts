@@ -206,8 +206,7 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
       )}&rdquo; in this work.</p>`
     : "";
 
-  return `      <!-- Table of Contents (TOC) Dialog -->
-      <dialog id="reader-toc-drawer"
+  return `<dialog id="reader-toc-drawer"
               class="anchored-popover reader-toc-drawer"
               aria-label="Table of Contents">
         <div class="reader-toc-header">

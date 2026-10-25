@@ -78,11 +78,11 @@ export async function renderLibraryPageHtml(): Promise<string> {
     })
     .join("\n");
 
+  // The "In progress" filter pill counts works with a saved spot
+  // (localStorage); it is shown once there are any.
   const contentHtml = `
     <morcus-library-view class="library-view">
-      <!-- Library Hero Header -->
       <header class="library-header">
-        <!-- Interactive Search & Feature Filters -->
         <div class="library-search-form search-form" data-js-only>
           <div class="input-wrapper">
             <input type="search"
@@ -102,7 +102,6 @@ export async function renderLibraryPageHtml(): Promise<string> {
               <button type="button" class="filter-pill active" data-filter="all">All</button>
               <button type="button" class="filter-pill" data-filter="macra">Macronized</button>
               <button type="button" class="filter-pill" data-filter="translation">Translated</button>
-              <!-- Works with a saved spot (localStorage); shown once there are any. -->
               <button type="button" class="filter-pill" data-filter="progress" hidden>In progress</button>
             </div>
           </div>
@@ -111,14 +110,12 @@ export async function renderLibraryPageHtml(): Promise<string> {
         <p class="library-own-text">Welcome to the library! Choose a work below, or <a href="${EXTERNAL_READER_PATH}">read your own text</a>.</p>
       </header>
 
-      <!-- Empty Filter State -->
       <div id="library-empty-state" class="empty-state library-empty-state" hidden>
         <p class="empty-state-title library-empty-title">No classical works match your filter</p>
         <p class="empty-state-desc library-empty-desc">Try clearing your search query or choosing a different feature filter.</p>
         <button type="button" class="btn btn-secondary" id="library-reset-filter-btn">Show All Works</button>
       </div>
 
-      <!-- Continuous Works Grid -->
       <main class="library-main" id="library-main">
         <div class="library-grid" id="library-grid">
           ${cardsHtml}

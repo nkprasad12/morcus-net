@@ -224,14 +224,11 @@ function renderReaderPageLabel(ctx: ReaderRenderContext): string {
 export function renderReaderStickyBar(ctx: ReaderRenderContext): string {
   const { work } = ctx;
 
-  return `      <!-- Sticky Quick Navigation Bar / Desktop Paper Sheet Running Header -->
-      <header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
+  return `<header class="reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
         
-        <!-- Primary Row: Running Margin Pager Links, Work & Section Picker, and Settings Trigger -->
         <div class="sticky-primary-row">
 ${renderReaderPagerLink(ctx, "prev")}
 
-          <!-- Center: Running Author + Work Title + Section Jump Dropdown Trigger -->
           <div class="reader-sticky-form" id="reader-jump-form">
             <div class="sticky-center-group">
               <div class="sticky-jump-box">
@@ -260,13 +257,11 @@ ${renderReaderPagerLink(ctx, "prev")}
             </div>
           </div>
 
-          <!-- Right Controls: Next Arrow + Appearance & Typography Settings Popover Trigger -->
           <div class="sticky-primary-right">
 ${renderReaderPagerLink(ctx, "next")}
 
             <span class="running-right-sep" aria-hidden="true">&middot;</span>
 
-            <!-- Appearance & Typography Settings Popover Trigger -->
 ${renderReaderSettingsButtonHtml()}
           </div>
         </div>
@@ -334,12 +329,10 @@ function renderReaderTextCard(ctx: ReaderRenderContext): string {
               ${renderReaderHeadingHtml(activePage.title, pageUrl)}
             </header>
 
-            <!-- Reader Passage Container -->
             <article class="reader-passage" id="reader-passage">
               ${passageHtml}
             </article>
 
-            <!-- Bottom Paging Continuation Actions -->
             <footer class="reader-passage-footer">
               <nav class="reader-continuation-actions" aria-label="Chapter Pagination">
                 ${
@@ -364,7 +357,6 @@ function renderReaderTextCard(ctx: ReaderRenderContext): string {
                 }
               </nav>
 
-              <!-- Return to Library Link -->
               <div class="reader-library-nav">
                 <a href="/library" class="reader-library-link">&larr; Return to Library Catalog</a>
               </div>
@@ -383,8 +375,7 @@ export function renderReaderTextPanel(ctx: ReaderRenderContext): string {
 
 /** Wraps an already-rendered text card in the reader's left column. */
 export function renderReaderTextPanelHtml(textCardHtml: string): string {
-  return `        <!-- Left Column: Reading Text Canvas -->
-        <section class="reader-text-panel" aria-label="Reading Text">
+  return `<section class="reader-text-panel" aria-label="Reading Text">
 ${textCardHtml}
         </section>`;
 }
@@ -506,8 +497,10 @@ export function renderReaderDictPanelHtml(
   const activePageUrl = he.escape(closeHref);
   const unarmedAttr = query ? "" : "\n                      data-dict-unarmed";
 
-  return `        <!-- Desktop Resizable Splitter Bar -->
-        <div class="reader-splitter resize-handle"
+  // `.reader-sheet-bar` is the mobile sheet handle and teaser bar. In
+  // `.reader-panel-views` (the companion views), without JS the targeted view
+  // shows (else the dictionary); ReaderPanelController takes over on upgrade.
+  return `<div class="reader-splitter resize-handle"
              role="separator"
              tabindex="0"
              aria-orientation="vertical"
@@ -518,13 +511,11 @@ export function renderReaderDictPanelHtml(
           <div class="resize-grip" aria-hidden="true" data-js-only></div>
         </div>
 
-        <!-- Right / Bottom Column: Dictionary Panel (Adaptive Sheet on Mobile) -->
         <aside class="reader-dict-panel drawer${
           query ? "" : " drawer-minimized"
         }${
     hasCompanionTabs ? " has-companion-tabs" : ""
   }" id="reader-dict" aria-label="Dictionary">
-          <!-- Mobile sheet handle & teaser bar (visible on mobile) -->
           <div class="reader-sheet-bar"
                role="separator"
                tabindex="0"
@@ -554,8 +545,6 @@ export function renderReaderDictPanelHtml(
             </div>
           </div>
 
-          <!-- Companion views. Without JS the targeted view shows (else the
-               dictionary); ReaderPanelController takes over on upgrade. -->
           <div class="reader-panel-views">
             <div class="dict-iframe-container reader-panel-view" id="panel-view-dict">
               <div class="reader-dict-landing" data-js-only>
@@ -655,12 +644,10 @@ export function renderReaderFrameHtml(options: ReaderFrameOptions): string {
   return `
     <morcus-reader-view class="reader-view"${dataAttrs}>
 
-      <!-- Table of Contents (TOC) Dialog -->
       ${options.tocHtml}
 
       <span id="reader-dict-dismissed" class="reader-drawer-dismiss-target" aria-hidden="true"></span>
 
-      <!-- Main Split Layout -->
       <div class="reader-split-layout ${options.layoutStateClass}">
         <div class="reader-main-column">
 ${options.stickyBarHtml}

@@ -52,6 +52,10 @@ export function renderAppearanceMenu(): string {
   // A modal <dialog> (setupModalDialog, like the dictionary settings): its
   // backdrop takes outside clicks, so they neither go through to the page nor
   // get lost in an iframe, and Escape closes it natively.
+  //
+  // `.appearance-sample` is styled by the same custom properties as reading
+  // text, so it previews every change live with no script. It comes last, so
+  // the controls above it don't move as it grows.
   return `<morcus-appearance-menu data-js-only>
       <button
         type="button"
@@ -147,9 +151,6 @@ export function renderAppearanceMenu(): string {
                 "normal"
               )
             )}
-            <!-- Styled by the same custom properties as reading text, so it
-                 previews every change live with no script. Last, so the
-                 controls above it don't move as it grows. -->
             <p class="appearance-sample" lang="la">Gallia est omnis dīvīsa in partēs trēs, quārum ūnam incolunt Belgae.</p>
           </div>
         </div>

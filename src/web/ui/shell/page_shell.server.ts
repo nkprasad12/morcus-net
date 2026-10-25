@@ -123,15 +123,17 @@ export function renderAppBar(activePage?: V2ActivePage): string {
   const isCorpusActive = activePage === "corpus";
   const isAboutActive = activePage === "about";
 
+  // Layout: `.brand-group` (logo + desktop nav) sits left on desktop and
+  // center on mobile; `.actions-group` (Appearance menu + Report dialog) sits
+  // right on desktop and left on mobile. The mobile hamburger menu is a native
+  // `<details>`, so it works without JS.
   return `
     <header class="app-bar">
       <div class="app-bar-inner">
-        <!-- Left on desktop / Center on mobile: Brand Logo & Desktop Nav -->
         <div class="brand-group">
           <a href="/dicts" class="brand-logo-link" aria-label="M&oacute;rcus Home">
             <img src="/favicon.ico" alt="M&oacute;rcus Logo" class="brand-logo" width="48" height="48">
           </a>
-          <!-- Desktop Navigation Links -->
           <nav class="nav nav-desktop" aria-label="Main Navigation">
             <a
               href="/dicts"
@@ -164,7 +166,6 @@ export function renderAppBar(activePage?: V2ActivePage): string {
           </nav>
         </div>
 
-        <!-- Right on desktop / Left on mobile: Appearance menu & Report Dialog -->
         <div class="actions-group">
           ${renderAppearanceMenu()}
           <morcus-report-dialog data-js-only>
@@ -180,7 +181,6 @@ export function renderAppBar(activePage?: V2ActivePage): string {
           </morcus-report-dialog>
         </div>
 
-        <!-- Mobile Hamburger Dropdown Menu (<details> native Zero-JS) -->
         <details class="mobile-menu">
             <summary class="mobile-menu-btn" aria-label="Open navigation menu">
               ${renderIconSvg("menu", { className: "icon-menu" })}
@@ -311,6 +311,11 @@ export function renderPageShell(options: PageShellOptions): string {
     )
     .join("\n  ");
 
+  // `#abbr-popover` is the single global popover for abbreviation expansions.
+  // It is "manual", not "auto": abbr_popover.client.ts owns dismissal; native
+  // light-dismiss would close it on pointerdown so a second tap on the same
+  // word reopened it.
+
   // Read by `withBuildVersion` (`core/nav/build_version.client.ts`).
   const buildVersion = getBuildVersion();
   const versionAttr =
@@ -349,12 +354,8 @@ export function renderPageShell(options: PageShellOptions): string {
     ${renderIconSvg("chevronUp")}
   </a>
 
-  <!-- Single global popover for abbreviation expansions. "manual", not "auto":
-       abbr_popover.client.ts owns dismissal; native light-dismiss would close
-       it on pointerdown so a second tap on the same word reopened it. -->
   <div id="abbr-popover" popover="manual" class="abbr-popover"></div>
 
-  <!-- UI V2 client-side Web Components bundles -->
   ${scriptTagsHtml}
 </body>
 </html>`;

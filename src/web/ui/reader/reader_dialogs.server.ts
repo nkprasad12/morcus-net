@@ -54,8 +54,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
 
   const attributionHtml = getAttributionNoticeHtml(work.attribution);
 
-  return `      <!-- Scholarly Attribution & Work Metadata -->
-      <details class="reader-work-about" id="reader-work-about" open>
+  return `<details class="reader-work-about" id="reader-work-about" open>
         <summary class="reader-about-summary">About this text</summary>
         <div class="reader-about-card">
           <dl class="reader-meta-list">
@@ -119,8 +118,11 @@ export function renderReaderSettingsPopover(
   options: ReaderSettingsPopoverOptions = {}
 ): string {
   const hasMacra = options.hasMacra ?? true;
-  return `      <!-- Reader Settings Dialog -->
-      <morcus-reader-settings>
+  // App-wide text appearance lives in the app-bar Appearance menu, so this
+  // only links to it. The Side Panel size is reader-only: it applies to every
+  // tab, relative to the global text size. Touch Navigation (swipe page turns)
+  // is hidden without a touchscreen by reader_page_nav.css.
+  return `<morcus-reader-settings>
         <dialog class="anchored-popover reader-settings-popover"
                 id="reader-settings-popover"
                 aria-label="Reader settings">
@@ -138,13 +140,11 @@ export function renderReaderSettingsPopover(
 
           <div class="settings-body">
             
-            <!-- App-wide text appearance lives in the app-bar Appearance menu. -->
             <button type="button" class="appearance-link" id="reader-appearance-link">
               <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, theme</span></span>
               ${renderIconSvg("palette")}
             </button>
 
-            <!-- Side panel size (reader only): every tab, relative to the global text size -->
             <div class="settings-group">
               <h3 class="settings-group-title">Side Panel</h3>
               <div class="settings-row">
@@ -157,7 +157,6 @@ export function renderReaderSettingsPopover(
               </div>
             </div>
 
-            <!-- Textual Aids -->
             <div class="settings-group">
               <h3 class="settings-group-title">Textual Aids</h3>
               ${
@@ -175,7 +174,6 @@ export function renderReaderSettingsPopover(
               </label>
             </div>
 
-            <!-- Swipe page turns (hidden without a touchscreen by reader_page_nav.css) -->
             <div class="settings-group settings-touch-nav">
               <h3 class="settings-group-title">Touch Navigation</h3>
               <label class="settings-toggle-row">
