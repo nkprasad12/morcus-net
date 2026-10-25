@@ -5,6 +5,8 @@
  * poem.line, book.line, act.scene.line).
  */
 
+import { formatSectionLabel } from "@/common/library/section_labels";
+
 /**
  * Citation ID tuple representing hierarchical address coordinates (e.g. ["1", "1", "2"]).
  */
@@ -59,7 +61,6 @@ export function getDifferentialCitationLabel(
     diffIdx = targetArr.length - 1;
   }
   const partName = textParts[diffIdx] ?? `Section`;
-  const capitalized = partName.charAt(0).toUpperCase() + partName.slice(1);
   const value = targetArr[diffIdx] ?? "";
-  return `${capitalized} ${value}`.trim();
+  return formatSectionLabel(partName, value);
 }

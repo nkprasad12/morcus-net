@@ -8,21 +8,17 @@ import type {
   V2PreprocessedPage,
   V2PreprocessedWork,
 } from "@/common/library/preprocess/preprocessed_types";
+import { formatSectionLabel } from "@/common/library/section_labels";
 import { XmlNode } from "@/common/xml/xml_node";
 import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
 import * as he from "he";
-
-function formatPartCoordinate(partName: string, value: string): string {
-  const capitalized = partName.charAt(0).toUpperCase() + partName.slice(1);
-  return `${capitalized} ${value}`;
-}
 
 function formatPageTitle(pageId: string[], textParts: string[]): string {
   if (pageId.length === 0) return "Preface";
   const parts: string[] = [];
   for (let i = 0; i < pageId.length; i++) {
     const partName = textParts[i] ?? `Level ${i + 1}`;
-    parts.push(formatPartCoordinate(partName, pageId[i]));
+    parts.push(formatSectionLabel(partName, pageId[i]));
   }
   return parts.join(", ");
 }

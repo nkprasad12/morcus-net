@@ -3,6 +3,7 @@ import {
   V2PreprocessedWork,
 } from "@/common/library/preprocess/preprocessed_types";
 import { NavTreeNode } from "@/common/library/library_types";
+import { formatSectionLabel } from "@/common/library/section_labels";
 import { citationToString } from "@/web/ui/reader/reader_types.server";
 import * as he from "he";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
@@ -101,8 +102,7 @@ export function preRenderTocItemsHtml(
     const escapedKey = he.escape(key);
     const partName = textParts[node.id.length - 1] || "section";
     const coord = node.id[node.id.length - 1] || "";
-    const formattedPart = partName.charAt(0).toUpperCase() + partName.slice(1);
-    const label = coord ? `${formattedPart} ${coord}` : "Contents";
+    const label = coord ? formatSectionLabel(partName, coord) : "Contents";
 
     if (node.children.length === 0) {
       const page = pageMap.get(key);

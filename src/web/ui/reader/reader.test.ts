@@ -787,6 +787,16 @@ describe("decomposed_reader_renderers", () => {
         getDifferentialCitationLabel(["1", "1"], ["1", "2"], ["book"])
       ).toBe("Section 2");
     });
+
+    test("uses the name alone for a named section token", () => {
+      expect(
+        getDifferentialCitationLabel(
+          ["1", "1"],
+          ["1", "pr"],
+          ["book", "chapter"]
+        )
+      ).toBe("Praefatio");
+    });
   });
 });
 
