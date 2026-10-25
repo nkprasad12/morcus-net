@@ -25,8 +25,25 @@ import {
   renderCorpusPartialHtml,
   renderCorpusUnavailableHtml,
 } from "@/web/ui/corpus/corpus_view.server";
+import type { CorpusParams } from "@/web/ui/corpus/corpus_params.common";
+import {
+  sendStaticPageOr,
+  type StaticPageStore,
+} from "@/web/ui/core/server/static_pages.server";
 
 const EMPTY_JSON_ARRAY_ROW = precompressJson("[]");
+
+/**
+ * The static page key for the corpus landing (`static_pages.server.ts`): the
+ * empty-query page, which still renders the settings into its tray and form.
+ * `undefined` for a search.
+ */
+export function corpusLandingPageKey(params: CorpusParams): string | undefined {
+  if (params.q.length > 0) return undefined;
+  return `corpus:${params.pageSize}:${params.contextLen}:${
+    params.strictMode ? "1" : "0"
+  }`;
+}
 
 export interface CorpusRoutesOptions {
   /** The Rust engine; without one, `/corpus` answers 503. */
@@ -35,6 +52,8 @@ export interface CorpusRoutesOptions {
   readonly loadAuthors?: () => Promise<readonly string[] | undefined>;
   /** Overrides the lemma list source (tests). */
   readonly loadLemmata?: () => Promise<readonly string[] | undefined>;
+  /** Pre-rendered static pages; see `static_pages.server.ts`. */
+  readonly staticPages?: StaticPageStore;
 }
 
 export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
@@ -64,21 +83,30 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
     const params = parseCorpusParams(req.query);
     // The same URL answers with a full page or a partial.
     const isPartial = isPartialRequest(req, res);
-    if (options.engine === undefined) {
+    const engine = options.engine;
+    if (engine === undefined) {
       res.status(503).send(renderCorpusUnavailableHtml());
       return;
     }
     try {
-      const view = await runCorpusSearch(
-        params,
-        options.engine,
-        await loadAuthors()
-      );
-      requestTimer(res).mark("lookupComplete");
-      res.send(
-        isPartial
-          ? renderCorpusPartialHtml(view).toString()
-          : renderCorpusPageHtml(view)
+      // The lookup runs inside the render callback so a static landing hit
+      // skips it (and doesn't mark `lookupComplete`).
+      await sendStaticPageOr(
+        req,
+        res,
+        options.staticPages,
+        isPartial ? undefined : corpusLandingPageKey(params),
+        async () => {
+          const view = await runCorpusSearch(
+            params,
+            engine,
+            await loadAuthors()
+          );
+          requestTimer(res).mark("lookupComplete");
+          return isPartial
+            ? renderCorpusPartialHtml(view).toString()
+            : renderCorpusPageHtml(view);
+        }
       );
     } catch (err: unknown) {
       if (err instanceof CorpusUnavailableError) {

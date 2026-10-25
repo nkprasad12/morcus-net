@@ -23,6 +23,10 @@ import { MACRONIZER_MAX_CHARS } from "@/web/ui/macronizer/macronizer_slots.commo
 import { isPartialRequest } from "@/web/ui/core/server/request_params.server";
 import { requestTimer } from "@/web/ui/core/server/telemetry.server";
 import {
+  sendStaticPageOr,
+  type StaticPageStore,
+} from "@/web/ui/core/server/static_pages.server";
+import {
   renderMacronizerPage,
   renderMacronizerPartial,
   type MacronizerPageOptions,
@@ -30,7 +34,12 @@ import {
 
 interface CreateMacronizerRoutesOptions {
   engine?: MacronizerEngine;
+  /** Pre-rendered static pages; see `static_pages.server.ts`. */
+  staticPages?: StaticPageStore;
 }
+
+/** The static page key for the macronizer's input page (`static_pages.server.ts`). */
+export const MACRONIZER_PAGE_KEY = "page:/macronizer";
 
 /**
  * The most form fields an Apply submission can legitimately carry. Each card
@@ -159,9 +168,19 @@ export function createMacronizerRoutes(
   const engine = options.engine ?? createMacronizerEngine();
   const simulated = engine.simulated === true;
 
-  router.get("/macronizer", (_req, res) => {
-    res.status(200).type("html").send(renderMacronizerPage());
-  });
+  router.get(
+    "/macronizer",
+    asyncHandler((req, res) => {
+      res.status(200).type("html");
+      return sendStaticPageOr(
+        req,
+        res,
+        options.staticPages,
+        MACRONIZER_PAGE_KEY,
+        renderMacronizerPage
+      );
+    })
+  );
 
   router.post(
     "/macronizer",

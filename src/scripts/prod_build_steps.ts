@@ -24,6 +24,7 @@ import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
 import { buildV2Bundle } from "@/bundler/client.rsbuild";
 import { buildCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
+import { buildStaticPagesDb } from "@/web/ui/static_pages_seed.server";
 import {
   pinnedDownload,
   pinnedFileUrl,
@@ -122,6 +123,12 @@ const WRITE_COMMIT_ID: StepConfig = {
   operation: writeCommitId,
   label: "Writing commit hash",
 };
+// Last: it renders pages, so it needs everything above (the library DB, the
+// corpus author list, the bundle manifest and the commit id).
+const PRERENDER_STATIC_PAGES: StepConfig = {
+  operation: () => buildStaticPagesDb(),
+  label: "Pre-rendering static pages",
+};
 const ALL_STEPS = [
   SETUP_DIRS,
   WRITE_COMMIT_ID,
@@ -137,6 +144,7 @@ const ALL_STEPS = [
   MAKE_FORCELLINI,
   MAKE_COMPLETIONS_DB,
   PROCESS_LAT_LIB,
+  PRERENDER_STATIC_PAGES,
 ];
 
 export async function prodBuildSteps(): Promise<boolean> {

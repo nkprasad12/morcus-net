@@ -16,15 +16,28 @@ import {
   buildExternalReaderUrl,
   parseExternalReaderParams,
 } from "@/web/ui/external/external_url.common";
+import { DEFAULT_LINE_MODE } from "@/web/ui/external/external_text.common";
+import {
+  sendStaticPageOr,
+  type StaticPageStore,
+} from "@/web/ui/core/server/static_pages.server";
 
 /** The External Content Reader route path. */
 const ROUTE = "/externalReader";
 const LEGACY_POST_ROUTE = "/external";
 const UNSUPPORTED_MODE_ERROR = "Unsupported input mode.";
 
+/**
+ * The static page key for the import form with default `lines`
+ * (`static_pages.server.ts`).
+ */
+export const EXTERNAL_LANDING_PAGE_KEY = "page:/externalReader";
+
 interface ExternalRoutesOptions {
   /** Replaces the network scraper, for tests. */
   scrape?: Scraper;
+  /** Pre-rendered static pages; see `static_pages.server.ts`. */
+  staticPages?: StaticPageStore;
 }
 
 export function createExternalRoutes(
@@ -41,7 +54,15 @@ export function createExternalRoutes(
 
     // No text chosen yet: the import form.
     if (!params.url && !params.local) {
-      res.send(renderExternalLandingPageHtml({ lines: params.lines }));
+      await sendStaticPageOr(
+        req,
+        res,
+        options.staticPages,
+        params.lines === DEFAULT_LINE_MODE
+          ? EXTERNAL_LANDING_PAGE_KEY
+          : undefined,
+        () => renderExternalLandingPageHtml({ lines: params.lines })
+      );
       return;
     }
 

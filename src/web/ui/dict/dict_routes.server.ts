@@ -36,8 +36,68 @@ import {
   toStringOrArray,
 } from "@/web/ui/core/server/request_params.server";
 import { requestTimer } from "@/web/ui/core/server/telemetry.server";
+import {
+  sendStaticPageOr,
+  type StaticPageStore,
+} from "@/web/ui/core/server/static_pages.server";
+import { encodeDictBitmask } from "@/web/ui/dict/settings/dict_bitmask.common";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
+
+/** The request state that reaches an empty dictionary page's HTML. */
+export interface DictLandingState {
+  readonly dictKeys: readonly string[];
+  readonly isInflected: boolean;
+  readonly isEmbedded: boolean;
+  /** `/` renders the same page plus its address-bar script (`servedAtRoot`). */
+  readonly servedAtRoot: boolean;
+}
+
+/**
+ * The static page key for an empty dictionary page (`static_pages.server.ts`),
+ * from the resolved state. Pages with a `lang=` scope, a `scale=`, guest
+ * settings or cookies to set are never static; the route checks those before
+ * calling this.
+ */
+export function dictLandingPageKey(state: DictLandingState): string {
+  const bitmask = encodeDictBitmask(state.dictKeys);
+  const o = state.isInflected ? "1" : "0";
+  const embedded = state.isEmbedded ? "1" : "0";
+  return `dict:${bitmask}:${o}:${embedded}${state.servedAtRoot ? ":root" : ""}`;
+}
+
+/**
+ * Renders the empty dictionary page for `state`: what `/`, `/dicts` and
+ * `/dicts?embedded=1` serve in the plain case. Shared with the build step
+ * (`static_pages_seed.server.ts`) so the seed is what the route renders.
+ */
+export function renderDictLandingPage(state: DictLandingState): string {
+  return renderDictPageHtml({
+    query: "",
+    embedded: state.isEmbedded,
+    queriedDicts: [...state.dictKeys],
+    isInflected: state.isInflected,
+    // An embedded view is a scoped view (see `isScopedView` below).
+    scoped: state.isEmbedded,
+    servedAtRoot: state.servedAtRoot,
+  });
+}
+
+/** The landing state of a visitor with no dictionary cookie. */
+export function defaultDictLandingState(
+  view: Pick<DictLandingState, "isEmbedded" | "servedAtRoot">
+): DictLandingState {
+  const savedPrefs = readSavedDictPrefs(undefined);
+  return {
+    dictKeys: resolveActiveDicts({ savedPrefs }).dictKeys,
+    isInflected: resolveInflection(undefined, savedPrefs),
+    ...view,
+  };
+}
+
+interface DictRoutesOptions {
+  staticPages?: StaticPageStore;
+}
 
 function extractCleanQuery(raw: string | string[] | undefined): string {
   if (typeof raw === "string") {
@@ -52,9 +112,13 @@ function extractCleanQuery(raw: string | string[] | undefined): string {
   return "";
 }
 
-export function createDictRoutes(fusedDict: FusedDictionary): Router {
+export function createDictRoutes(
+  fusedDict: FusedDictionary,
+  options: DictRoutesOptions = {}
+): Router {
   const router = Router();
   const { getAsync } = createAsyncRegistrars(router);
+  const staticPages = options.staticPages;
 
   // The site root serves the empty dictionary page itself, saving a redirect round trip. Only
   // this page lives at `/`: its search and settings forms submit to `/dicts`, and the page
@@ -62,15 +126,20 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
   // (except a No-JS bookmark of the empty page, i.e. of the site). That keeps `/` free for a
   // future landing page. The query is ignored (it's only ever tracking params like `fbclid`),
   // which also keeps the URL-driven selection, persistence and guest logic of `/dicts` out of it.
-  router.get("/", (req, res) => {
+  getAsync("/", async (req, res) => {
     const savedPrefs = readSavedDictPrefs(req.headers.cookie);
-    res.send(
-      renderDictPageHtml({
-        query: "",
-        queriedDicts: resolveActiveDicts({ savedPrefs }).dictKeys,
-        isInflected: resolveInflection(undefined, savedPrefs),
-        servedAtRoot: true,
-      })
+    const state: DictLandingState = {
+      dictKeys: resolveActiveDicts({ savedPrefs }).dictKeys,
+      isInflected: resolveInflection(undefined, savedPrefs),
+      isEmbedded: false,
+      servedAtRoot: true,
+    };
+    await sendStaticPageOr(
+      req,
+      res,
+      staticPages,
+      dictLandingPageKey(state),
+      () => renderDictLandingPage(state)
     );
   });
 
@@ -178,15 +247,32 @@ export function createDictRoutes(fusedDict: FusedDictionary): Router {
         );
         return;
       }
-      res.send(
-        renderDictPageHtml({
-          query: "",
-          embedded: isEmbedded,
-          queriedDicts: dictKeys,
-          isInflected,
-          scale: dictScale,
-          ...pagePersistence,
-        })
+      // Static only in the plain case: no `lang=` scope (it narrows the settings dialog), no
+      // `scale=` (an inline style), not a guest view (its return link carries this URL), and
+      // no cookie being set (never without a redirect today, but it must not be cached).
+      const plainLanding: DictLandingState | undefined =
+        langParam === undefined &&
+        dictScale === undefined &&
+        pagePersistence.guest === undefined &&
+        persistence.cookies.length === 0
+          ? { dictKeys, isInflected, isEmbedded, servedAtRoot: false }
+          : undefined;
+      await sendStaticPageOr(
+        req,
+        res,
+        staticPages,
+        plainLanding && dictLandingPageKey(plainLanding),
+        () =>
+          plainLanding
+            ? renderDictLandingPage(plainLanding)
+            : renderDictPageHtml({
+                query: "",
+                embedded: isEmbedded,
+                queriedDicts: dictKeys,
+                isInflected,
+                scale: dictScale,
+                ...pagePersistence,
+              })
       );
       return;
     }

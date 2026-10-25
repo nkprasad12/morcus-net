@@ -8,12 +8,13 @@ import { PRECOMPRESSED_HEADER } from "@/web/web_server";
 import { recordUncompressedLength } from "@/web/ui/core/server/telemetry.server";
 
 /**
- * A JSON response pre-compressed at build time with Brotli (`quality 10`,
- * avoiding `11`'s ~3–4x slower Zopfli search across hundreds of shards) and
- * gzip (`level 9`, where max compression is still fast), stored alongside its
- * uncompressed byte length.
+ * A response body pre-compressed with Brotli and gzip, stored alongside its
+ * uncompressed byte length. JSON rows are compressed at Brotli `quality 10`
+ * (avoiding `11`'s ~3–4x slower Zopfli search across hundreds of shards) and
+ * gzip `level 9` (where max compression is still fast); see
+ * `static_pages.server.ts` for the HTML variant.
  */
-interface PrecompressedJsonRow {
+export interface PrecompressedRow {
   readonly br: Buffer;
   readonly gzip: Buffer;
   readonly rawLen: number;
@@ -21,12 +22,12 @@ interface PrecompressedJsonRow {
 
 /** Key-value lookup over pre-compressed JSON payloads. */
 export interface PrecompressedJsonStore {
-  get(key: string): PrecompressedJsonRow | undefined;
+  get(key: string): PrecompressedRow | undefined;
   close(): void;
 }
 
 /** Compresses a UTF-8 JSON string into `{ br, gzip, rawLen }` for SQLite storage. */
-export function precompressJson(json: string): PrecompressedJsonRow {
+export function precompressJson(json: string): PrecompressedRow {
   const raw = Buffer.from(json, "utf8");
   return {
     br: zlib.brotliCompressSync(raw, {
@@ -104,6 +105,21 @@ function isPrecompressedRow(value: unknown): value is {
 }
 
 /**
+ * A SQLite row `SELECT br, gzip, rawLen ...` as a {@link PrecompressedRow},
+ * or `undefined` for no row or a malformed one.
+ */
+export function toPrecompressedRow(row: unknown): PrecompressedRow | undefined {
+  if (!isPrecompressedRow(row)) {
+    return undefined;
+  }
+  return {
+    br: Buffer.isBuffer(row.br) ? row.br : Buffer.from(row.br),
+    gzip: Buffer.isBuffer(row.gzip) ? row.gzip : Buffer.from(row.gzip),
+    rawLen: row.rawLen,
+  };
+}
+
+/**
  * Opens a pre-compressed JSON SQLite database for read-only point lookups, or
  * returns `undefined` if `dbPath` has not been built.
  */
@@ -118,16 +134,8 @@ export function openPrecompressedJsonDb(
     "SELECT br, gzip, rawLen FROM chunks WHERE key = ?"
   );
   return {
-    get(key: string): PrecompressedJsonRow | undefined {
-      const row: unknown = selectByKey.get(key);
-      if (!isPrecompressedRow(row)) {
-        return undefined;
-      }
-      return {
-        br: Buffer.isBuffer(row.br) ? row.br : Buffer.from(row.br),
-        gzip: Buffer.isBuffer(row.gzip) ? row.gzip : Buffer.from(row.gzip),
-        rawLen: row.rawLen,
-      };
+    get(key: string): PrecompressedRow | undefined {
+      return toPrecompressedRow(selectByKey.get(key));
     },
     close(): void {
       db.close();
@@ -142,9 +150,9 @@ export function openPrecompressedJsonDb(
 export function createInMemoryPrecompressedStore(
   entries: ReadonlyMap<string, string>
 ): PrecompressedJsonStore {
-  const cache = new Map<string, PrecompressedJsonRow>();
+  const cache = new Map<string, PrecompressedRow>();
   return {
-    get(key: string): PrecompressedJsonRow | undefined {
+    get(key: string): PrecompressedRow | undefined {
       const cached = cache.get(key);
       if (cached !== undefined) {
         return cached;
@@ -164,17 +172,22 @@ export function createInMemoryPrecompressedStore(
 }
 
 /**
- * Sends a pre-compressed JSON payload, preferring Brotli over gzip as
+ * Sends a pre-compressed body, preferring Brotli over gzip as
  * `preCompressedMiddleware` (`web_server.ts`) does. If the client rejects both
  * (`Accept-Encoding: identity`), falls back to gunzipping `row.gzip`.
+ *
+ * `Vary` is merged (`res.vary`), so a route that already varies on
+ * `X-Requested-With` keeps that. `compression()` leaves the response alone
+ * because it carries a `Content-Encoding`.
  */
-export function sendPrecompressedJson(
+export function sendPrecompressed(
   req: Request,
   res: Response,
-  row: PrecompressedJsonRow
+  row: PrecompressedRow,
+  contentType: string
 ): void {
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Vary", "Accept-Encoding");
+  res.setHeader("Content-Type", contentType);
+  res.vary("Accept-Encoding");
   recordUncompressedLength(res, row.rawLen);
 
   if (req.acceptsEncodings("br") === "br") {
@@ -190,4 +203,13 @@ export function sendPrecompressedJson(
     return;
   }
   res.send(zlib.gunzipSync(row.gzip));
+}
+
+/** {@link sendPrecompressed} for a JSON row. */
+export function sendPrecompressedJson(
+  req: Request,
+  res: Response,
+  row: PrecompressedRow
+): void {
+  sendPrecompressed(req, res, row, "application/json; charset=utf-8");
 }

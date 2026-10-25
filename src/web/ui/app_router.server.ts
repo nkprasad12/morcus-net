@@ -18,6 +18,14 @@ import {
   telemetryMiddleware,
   v2ErrorHandler,
 } from "@/web/ui/core/server/telemetry.server";
+import {
+  sendStaticPageOr,
+  type StaticPageStore,
+} from "@/web/ui/core/server/static_pages.server";
+
+/** Static page keys for the routes this file owns (`static_pages.server.ts`). */
+export const ABOUT_PAGE_KEY = "page:/about";
+export const LIBRARY_PAGE_KEY = "page:/library";
 
 interface V2RouterOptions extends ApiRoutesOptions {
   /** The corpus query engine; `/corpus` answers 503 without one. */
@@ -29,6 +37,8 @@ interface V2RouterOptions extends ApiRoutesOptions {
    * Defaults to a no-op logger.
    */
   telemetry?: Promise<TelemetryLogger>;
+  /** Pre-rendered static pages (`build/pages.db`); every page renders without it. */
+  staticPages?: StaticPageStore;
 }
 
 export function createV2Router(
@@ -37,6 +47,7 @@ export function createV2Router(
 ): Router {
   const router = Router();
   router.use(express.json());
+  const staticPages = options?.staticPages;
 
   // The manifest is a build artifact for the server, not a client asset.
   router.get("/assets/manifest.json", (_req: Request, res: Response) => {
@@ -63,20 +74,27 @@ export function createV2Router(
   );
 
   // Mount vertical domain route handlers
-  router.use(createDictRoutes(fusedDict));
+  router.use(createDictRoutes(fusedDict, { staticPages }));
   router.use(createReaderRoutes());
-  router.use(createCorpusRoutes({ engine: options?.corpus }));
-  router.use(createMacronizerRoutes({ engine: options?.macronizer }));
-  router.use(createExternalRoutes());
+  router.use(createCorpusRoutes({ engine: options?.corpus, staticPages }));
+  router.use(
+    createMacronizerRoutes({ engine: options?.macronizer, staticPages })
+  );
+  router.use(createExternalRoutes({ staticPages }));
   router.use(createApiRoutes(fusedDict, options));
 
   // Library Catalog route
   router.get(
     "/library",
-    asyncHandler(async (_req: Request, res: Response) => {
+    asyncHandler(async (req: Request, res: Response) => {
       try {
-        const html = await renderLibraryPageHtml();
-        res.send(html);
+        await sendStaticPageOr(
+          req,
+          res,
+          staticPages,
+          LIBRARY_PAGE_KEY,
+          renderLibraryPageHtml
+        );
       } catch (err) {
         console.error("Error rendering library catalog:", err);
         res.status(500).send("Error rendering library catalog");
@@ -85,9 +103,18 @@ export function createV2Router(
   );
 
   // About page route
-  router.get("/about", (_req: Request, res: Response) => {
-    res.send(renderAboutPageHtml());
-  });
+  router.get(
+    "/about",
+    asyncHandler((req: Request, res: Response) =>
+      sendStaticPageOr(
+        req,
+        res,
+        staticPages,
+        ABOUT_PAGE_KEY,
+        renderAboutPageHtml
+      )
+    )
+  );
 
   // Answers errors forwarded by handlers, so their telemetry row records the
   // failure. Must be last.

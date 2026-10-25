@@ -36,6 +36,7 @@ import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
 import { ForcelliniDict } from "@/common/dictionaries/forcellini/forcellini_dict";
 import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
 import { openCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
+import { openStaticPagesDb } from "@/web/ui/core/server/static_pages.server";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -211,6 +212,9 @@ function startMorcusServer(): Promise<http.Server> {
       corpus: corpusHandler,
       macronizer: macronizerEngineFromEnv(),
       completions: openCompletionsDb(),
+      // After `COMMIT_ID` is set above: the store is only used if it was
+      // built for this server's build version and bundle.
+      staticPages: openStaticPagesDb(),
     }),
   };
 
