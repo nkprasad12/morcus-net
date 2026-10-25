@@ -1,5 +1,7 @@
 import {
   BaseElement,
+  ICON_BOOKMARK,
+  ICON_CLOSE,
   registerElement,
   setHtml,
   html,
@@ -164,31 +166,52 @@ export class MorcusLibraryView extends BaseElement {
 
       // Built on demand for the few cards with a saved spot in localStorage
       // rather than pre-rendered hidden on all 126 cards (no server state to
-      // drift from). It sits beside the link in the card's wrapper, since its
-      // clear button can't go inside the link.
+      // drift from). It sits in the top-right corner tag beside the link (at
+      // the outer right edge, after any edition badges), since its clear
+      // button can't go inside the link.
       const host = card.parentElement ?? card;
-      let tag = host.querySelector<HTMLElement>(".work-card-corner-tag");
-      if (!tag) {
-        tag = document.createElement("div");
-        tag.className = "work-card-corner-tag";
-        host.append(tag);
+      const tag = host.querySelector<HTMLElement>(".work-card-corner-tag");
+      if (!tag) continue;
+      let resume = tag.querySelector<HTMLElement>(".badge-resume");
+      if (!resume) {
+        resume = document.createElement("span");
+        resume.className = "badge badge-resume";
+        tag.append(resume);
       }
       // No title on the badge: it lets clicks through to the card (CSS), so it
       // never gets hovered, and its clear button would inherit it.
       setHtml(
-        tag,
-        html`<span class="badge badge-resume"
-          >&sect;&nbsp;${secId} <span class="resume-label">saved</span
+        resume,
+        html`<svg
+            viewBox="4 2 16 20"
+            width="9"
+            height="10.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linejoin="round"
+            aria-hidden="true">
+            <path d="${ICON_BOOKMARK}" /></svg
+          ><span>${secId}</span
           ><button
             type="button"
             class="work-card-clear-spot"
             aria-label="Clear saved spot (§ ${secId})"
             title="Clear saved spot">
-            &times;
-          </button></span
-        >`
+            <svg
+              viewBox="3 3 18 18"
+              width="8.5"
+              height="8.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true">
+              <path d="${ICON_CLOSE}" />
+            </svg>
+          </button>`
       );
-      const clear = tag.querySelector<HTMLButtonElement>(
+      const clear = resume.querySelector<HTMLButtonElement>(
         ".work-card-clear-spot"
       );
       this.scope.listen(clear, "click", () => {
@@ -198,7 +221,7 @@ export class MorcusLibraryView extends BaseElement {
           .split(" ")
           .filter((t) => t !== "progress")
           .join(" ");
-        tag.remove();
+        resume.remove();
         this.#syncProgressPill();
         this.#applyFilter();
         // The button is gone; keep keyboard focus on the card.

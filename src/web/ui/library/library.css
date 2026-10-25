@@ -63,7 +63,7 @@
 .library-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--space-7);
+  gap: var(--space-5);
 }
 
 /* The grid item: the card link, plus (with a saved spot) the corner tag laid
@@ -79,10 +79,10 @@
 
 /* Work Card (Fully Clickable Card) */
 .work-card {
-  padding: var(--space-6) var(--space-7);
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   text-decoration: none;
   color: inherit;
 }
@@ -117,28 +117,30 @@
   transition: color 0.15s ease;
 }
 
-.work-card-meta {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin: 0;
-}
-
-.work-card-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
 .work-card-corner-tag {
   position: absolute;
-  top: var(--space-4);
+  /* Aligns the badge text baseline and right edge with .work-card-author's
+     inset (padding: var(--space-5), less the badge's 2px top padding). */
+  top: calc(var(--space-5) - 2px);
   right: var(--space-5);
-  /* Clicks on the badge reach the card link beneath; only its clear button
+  display: inline-flex;
+  align-items: center;
+  background: var(--tag-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  /* Clicks on the badges reach the card link beneath; only the clear button
      takes them. */
   pointer-events: none;
   transition: transform 0.15s ease;
+}
+
+.work-card-corner-tag:empty {
+  display: none;
+}
+
+.work-card-corner-tag > .badge + .badge {
+  border-left: 1px solid var(--border);
 }
 
 /* Lift with the card (.work-card-item:hover in components.css: the card
@@ -147,17 +149,34 @@
   transform: translateY(-2px);
 }
 
+.badge-resume > svg,
+.work-card-clear-spot {
+  transform: translateY(-0.5px);
+}
+
+.badge-resume > span {
+  transform: translateY(1px);
+}
+
 /* The shared close-button look (components.css), inside the badge and
    clickable through the tag. */
 .work-card-clear-spot {
   pointer-events: auto;
-  padding: 0 2px;
+  padding: 1px;
+  margin-left: var(--space-2);
+  margin-right: -2px;
   color: inherit;
-  font-size: 0.9rem;
 }
 
-.work-card-item:has(.work-card-corner-tag) .work-card-content {
-  padding-right: 6rem;
+/* Clear the corner badges on the author line only, scaled to the badge count
+   so the title below keeps the full width of the card. */
+.work-card-item:has(.work-card-corner-tag > .badge) .work-card-author {
+  padding-right: 5.5rem;
+}
+
+.work-card-item:has(.work-card-corner-tag > .badge:nth-child(2))
+  .work-card-author {
+  padding-right: 9.5rem;
 }
 
 @media (width <= 640px) {

@@ -44,30 +44,9 @@ export async function renderLibraryPageHtml(): Promise<string> {
 
       const readerUrl = `/work/${w.urlAuthor}/${w.urlName}`;
 
-      const metaParts: string[] = [];
-      if (w.editor) {
-        metaParts.push(
-          `<span class="meta-editor">Ed. ${he.escape(w.editor)}</span>`
-        );
-      }
-      if (w.translator) {
-        metaParts.push(
-          `<span class="meta-trans">Trans. ${he.escape(w.translator)}</span>`
-        );
-      }
-      const metaHtml =
-        metaParts.length > 0
-          ? `<p class="work-card-meta">${metaParts.join(" &middot; ")}</p>`
-          : "";
-
-      const badgesHtml =
-        badges.length > 0
-          ? `<div class="work-card-badges">${badges.join(" ")}</div>`
-          : "";
-
-      // The wrapper is the grid item: a saved spot's badge and its clear
-      // button (library_view.client.ts) sit beside the link, since a button
-      // can't go inside one.
+      // The wrapper is the grid item: the top-right badges (including a saved
+      // spot's badge and clear button from library_view.client.ts) sit beside
+      // the link, since a button can't go inside one.
       return ssr`
         <div class="work-card-item">
         <a href="${readerUrl}"
@@ -85,10 +64,9 @@ export async function renderLibraryPageHtml(): Promise<string> {
             <h2 class="work-card-title"${fullTitleAttr}>${he.escape(
         shownTitle
       )}</h2>
-            ${metaHtml}
-            ${badgesHtml}
           </div>
         </a>
+        <div class="work-card-corner-tag">${badges.join(" ")}</div>
         </div>
       `;
     })

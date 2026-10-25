@@ -62,6 +62,12 @@ describe("library SSR & client hydration", () => {
       expect(html).toContain('href="/work/catullus/carmina"');
       expect(html).toContain('data-first-page="1.1"');
       expect(html).toContain('class="work-card-item"');
+      expect(html).toContain(
+        '<span class="badge badge-macra">Macronized</span>'
+      );
+      expect(html).toContain(
+        '<span class="badge badge-trans">Translated</span>'
+      );
     });
 
     it("doesn't duplicate the URL, author or title into data attributes", async () => {
@@ -103,11 +109,9 @@ describe("library SSR & client hydration", () => {
               <div class="work-card-content">
                 <span class="work-card-author">Gaius Julius Caesar</span>
                 <h2 class="work-card-title">De Bello Gallico</h2>
-                <div class="work-card-badges">
-                  <span class="badge badge-macra">Macronized</span>
-                </div>
               </div>
             </a>
+            <div class="work-card-corner-tag"><span class="badge badge-macra">Macronized</span></div>
             </div>
             <div class="work-card-item">
             <a href="/work/catullus/carmina"
@@ -118,9 +122,9 @@ describe("library SSR & client hydration", () => {
               <div class="work-card-content">
                 <span class="work-card-author">Gaius Valerius Catullus</span>
                 <h2 class="work-card-title">Carmina</h2>
-                <div class="work-card-badges"></div>
               </div>
             </a>
+            <div class="work-card-corner-tag"></div>
             </div>
           </div>
         </main>
@@ -147,9 +151,11 @@ describe("library SSR & client hydration", () => {
       expect(caesarCard.getAttribute("href")).toBe(
         "/work/caesar/de_bello_gallico"
       );
+      expect(item(el, CAESAR).querySelector(".badge-resume")).toBeNull();
+      expect(item(el, CAESAR).querySelector(".badge-macra")).not.toBeNull();
       expect(
-        item(el, CAESAR).querySelector(".work-card-corner-tag")
-      ).toBeNull();
+        item(el, CATULLUS).querySelector(".work-card-corner-tag")?.children
+      ).toHaveLength(0);
     });
 
     it("hydrates card with corner tag and resume jump URL when saved spot exists", () => {
@@ -173,15 +179,19 @@ describe("library SSR & client hydration", () => {
         ".work-card-corner-tag"
       );
       expect(cornerTag).not.toBeNull();
-      expect(cornerTag!.textContent).toContain("§\u00a01.4");
-      expect(cornerTag!.textContent).toContain("saved");
-      expect(cornerTag!.querySelector(".badge-resume")).not.toBeNull();
+      expect(cornerTag!.textContent).toContain("1.4");
+      expect(cornerTag!.textContent).not.toContain("saved");
+      expect(cornerTag!.querySelector(".badge-resume svg")).not.toBeNull();
+      expect(Array.from(cornerTag!.children).map((c) => c.className)).toEqual([
+        "badge badge-macra",
+        "badge badge-resume",
+      ]);
 
       // Catullus has no saved spot and remains clean
       expect(catullusCard.getAttribute("href")).toBe("/work/catullus/carmina");
       expect(
-        item(el, CATULLUS).querySelector(".work-card-corner-tag")
-      ).toBeNull();
+        item(el, CATULLUS).querySelector(".work-card-corner-tag")?.children
+      ).toHaveLength(0);
     });
 
     it("shows no badge for a spot on the first page, where the card already goes", () => {
@@ -192,9 +202,7 @@ describe("library SSR & client hydration", () => {
       expect(el.querySelector(CAESAR)!.getAttribute("href")).toBe(
         "/work/caesar/de_bello_gallico"
       );
-      expect(
-        item(el, CAESAR).querySelector(".work-card-corner-tag")
-      ).toBeNull();
+      expect(item(el, CAESAR).querySelector(".badge-resume")).toBeNull();
     });
 
     it("the clear button forgets the spot and restores the card", () => {
@@ -216,15 +224,18 @@ describe("library SSR & client hydration", () => {
       expect(caesarCard.getAttribute("href")).toBe(
         "/work/caesar/de_bello_gallico"
       );
-      expect(
-        item(el, CAESAR).querySelector(".work-card-corner-tag")
-      ).toBeNull();
+      expect(item(el, CAESAR).querySelector(".badge-resume")).toBeNull();
+      // Caesar keeps its static edition badge in the corner tag.
+      expect(item(el, CAESAR).querySelector(".badge-macra")).not.toBeNull();
       expect(document.activeElement).toBe(caesarCard);
-      // Other works keep theirs.
+      // Other works keep theirs; clearing a card removes its resume badge.
       expect(savedSpotsStore.get("phi0472.phi001.perseus-lat2")).toBe("5");
-      expect(
-        item(el, CATULLUS).querySelector(".work-card-corner-tag")
-      ).not.toBeNull();
+      expect(item(el, CATULLUS).querySelector(".badge-resume")).not.toBeNull();
+      const catullusClear = item(el, CATULLUS).querySelector<HTMLButtonElement>(
+        ".work-card-clear-spot"
+      )!;
+      catullusClear.click();
+      expect(item(el, CATULLUS).querySelector(".badge-resume")).toBeNull();
     });
 
     const progressPill = (el: Element) =>
@@ -332,7 +343,7 @@ describe("library SSR & client hydration", () => {
         "#library-search-input"
       )!;
 
-      input.value = "saved";
+      input.value = "1.4";
       input.dispatchEvent(new Event("input"));
 
       expect(item(el, CAESAR).hidden).toBe(true);
@@ -354,6 +365,9 @@ describe("library SSR & client hydration", () => {
       expect(
         item(el, CAESAR).querySelectorAll(".work-card-corner-tag")
       ).toHaveLength(1);
+      expect(item(el, CAESAR).querySelectorAll(".badge-resume")).toHaveLength(
+        1
+      );
 
       item(el, CAESAR)
         .querySelector<HTMLButtonElement>(".work-card-clear-spot")!
