@@ -147,7 +147,11 @@ export function createDictRoutes(
   getAsync("/dicts", async (req, res) => {
     const query = extractCleanQuery(toStringOrArray(req.query.q));
     const isPartial = isPartialRequest(req, res);
-    const isEmbedded = isEmbeddedRequest(req);
+    // The fetch URL is the partial's whole contract. Full pages keep the
+    // header sniffing: iframe links inside entries don't carry the flag.
+    const isEmbedded = isPartial
+      ? req.query.embedded === "1"
+      : isEmbeddedRequest(req);
 
     // Legacy V1 compatibility: `/dicts?q=<id>&o=2` was V1's article ID lookup URL.
     if (req.query.o === "2" && query && !isPartial) {
@@ -165,7 +169,9 @@ export function createDictRoutes(
     // > Default (All Latin except Pozo)
     const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
     const langParam = toStringOrArray(req.query.lang);
-    const cookieHeader = req.headers.cookie;
+    // A partial never reads the cookie, so it cannot depend on it: missing or
+    // malformed `d` / `o` fall through to the defaults, not to saved prefs.
+    const cookieHeader = isPartial ? undefined : req.headers.cookie;
     const savedPrefs = readSavedDictPrefs(cookieHeader);
 
     // Resolve inflection mode: o=0 (exact headwords, mode: 0) vs o=1 (inflected forms, mode: 1,
@@ -221,7 +227,10 @@ export function createDictRoutes(
         }
       : savedPrefs;
     const isGuest = isGuestView({ dictKeys, isInflected }, guestPrefs);
-    const canSaveInflection = !isScopedView && !isGuest;
+    // Partials never offer the save shortcut. Load-bearing: with the cookie
+    // blanked, `isGuest` is always false on a partial, so without `!isPartial`
+    // every partial would *grant* `save=1`, including to guests.
+    const canSaveInflection = !isPartial && !isScopedView && !isGuest;
     const pagePersistence = {
       scoped: isScopedView,
       lang: langParam,
@@ -362,7 +371,11 @@ export function createDictRoutes(
   getAsync("/dicts/id/:id", async (req, res) => {
     const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
     const isPartial = isPartialRequest(req, res);
-    const isEmbedded = isEmbeddedRequest(req);
+    // The fetch URL is the partial's whole contract. Full pages keep the
+    // header sniffing: iframe links inside entries don't carry the flag.
+    const isEmbedded = isPartial
+      ? req.query.embedded === "1"
+      : isEmbeddedRequest(req);
 
     const dictScale = parseDictScale(req.query.scale);
 
@@ -382,7 +395,10 @@ export function createDictRoutes(
 
     const keysFromQuery = resolveDictParams(dictParamsFromQuery(req));
     const langParam = toStringOrArray(req.query.lang);
-    const savedPrefs = readSavedDictPrefs(req.headers.cookie);
+    // A partial never reads the cookie, so it cannot depend on it: missing or
+    // malformed `d` / `o` fall through to the defaults, not to saved prefs.
+    const cookieHeader = isPartial ? undefined : req.headers.cookie;
+    const savedPrefs = readSavedDictPrefs(cookieHeader);
     const oParam = parseInflectionParam(toStringOrArray(req.query.o));
     const isInflected = resolveInflection(oParam, savedPrefs);
     const { dictKeys } = resolveActiveDicts({

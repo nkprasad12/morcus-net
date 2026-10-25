@@ -614,11 +614,31 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       loadingOpacity: 0.5,
     });
     if (success) {
+      this.#syncInflectedHint();
       this.#enhanceWordsAfterPaint();
     } else if (!signal.aborted) {
       this.#shownQuery = "";
     }
     return success;
+  }
+
+  /**
+   * Partials never read the cookie, so the server omits `save=1` from the
+   * zero-results "Enable inflected search" link on every partial. Restore it
+   * after the swap when the page is neither scoped nor a guest view.
+   */
+  #syncInflectedHint() {
+    const link =
+      this.#resultsElement?.querySelector<HTMLAnchorElement>(
+        ".inflected-hint a"
+      );
+    if (!link) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("embedded") === "1" || params.has("lang")) return;
+    if (this.scope.$("a.guest-return") !== null) return;
+    const url = new URL(link.href, window.location.href);
+    url.searchParams.set("save", "1");
+    link.href = `${url.pathname}${url.search}${url.hash}`;
   }
 
   /**

@@ -1142,6 +1142,138 @@ describe("app_router integration", () => {
     });
   });
 
+  describe("dictionary partial URL purity", () => {
+    test("/dicts partial body is byte-identical across cookies, iframe headers, and referers, and omits save=1 on zero-results o=0", async () => {
+      (mockFusedDict.getEntry as jest.Mock).mockResolvedValue({});
+      const url = "/dicts?q=amavi&d=2&o=0&format=partial";
+
+      const plain = await request(app).get(url);
+      expect(plain.status).toBe(200);
+      expect(plain.text).toContain("inflected-hint");
+      expect(plain.text).not.toContain("save=1");
+
+      // Matching cookie
+      const matchingCookie = await request(app)
+        .get(url)
+        .set("Cookie", "morcus_d=2; morcus_inflected=0");
+      expect(matchingCookie.text).toBe(plain.text);
+
+      // Guest-making cookie
+      const guestCookie = await request(app)
+        .get(url)
+        .set("Cookie", "morcus_d=1; morcus_inflected=1");
+      expect(guestCookie.text).toBe(plain.text);
+
+      // Sec-Fetch-Dest: iframe and embedded=1 Referer without embedded=1 in URL
+      const withHeaders = await request(app)
+        .get(url)
+        .set("Sec-Fetch-Dest", "iframe")
+        .set("Referer", "http://localhost/dicts?embedded=1");
+      expect(withHeaders.text).toBe(plain.text);
+
+      // Positive control: ?embedded=1 in the URL actually changes the zero-results markup
+      const embeddedZero = await request(app).get(`${url}&embedded=1`);
+      expect(embeddedZero.text).toContain("embedded=1");
+      expect(embeddedZero.text).not.toBe(plain.text);
+
+      // Also verify with non-empty entry results (where embedded vs non-embedded markup differs)
+      (mockFusedDict.getEntry as jest.Mock).mockResolvedValue({
+        ls: [
+          {
+            entry: '<span class="lsOrth">amo</span>',
+            outline: {
+              mainKey: "amo",
+              mainSection: {
+                text: "amo",
+                level: 0,
+                ordinal: "",
+                sectionId: "0",
+              },
+              senses: [],
+            },
+          },
+        ],
+      });
+      const hitUrl = "/dicts?q=amo&d=2&o=1&format=partial";
+      const plainHit = await request(app).get(hitUrl);
+      expect(plainHit.text).not.toContain("dict-badge");
+
+      // Positive control: ?embedded=1 in the URL renders embedded markup (with dict-badge)
+      const embeddedHit = await request(app).get(`${hitUrl}&embedded=1`);
+      expect(embeddedHit.text).toContain("dict-badge");
+      expect(embeddedHit.text).not.toBe(plainHit.text);
+
+      const hitWithHeadersAndCookie = await request(app)
+        .get(hitUrl)
+        .set("Cookie", "morcus_d=1; morcus_inflected=0")
+        .set("Sec-Fetch-Dest", "iframe")
+        .set("Referer", "http://localhost/dicts?embedded=1");
+      expect(hitWithHeadersAndCookie.text).toBe(plainHit.text);
+    });
+
+    test("/dicts/id/:id partial body is byte-identical regardless of cookies, Sec-Fetch-Dest: iframe, or embedded=1 Referer", async () => {
+      const url = "/dicts/id/n20077?format=partial";
+
+      const plain = await request(app).get(url);
+      expect(plain.status).toBe(200);
+      expect(plain.text).not.toContain("dict-badge");
+
+      // Positive control: ?embedded=1 in the URL renders embedded markup (with dict-badge)
+      const embeddedId = await request(app).get(`${url}&embedded=1`);
+      expect(embeddedId.text).toContain("dict-badge");
+      expect(embeddedId.text).not.toBe(plain.text);
+
+      const withHeadersAndCookie = await request(app)
+        .get(url)
+        .set("Cookie", "morcus_d=2; morcus_inflected=0")
+        .set("Sec-Fetch-Dest", "iframe")
+        .set("Referer", "http://localhost/dicts?embedded=1");
+      expect(withHeadersAndCookie.text).toBe(plain.text);
+    });
+
+    test("/dicts partial omitting d or o uses the defaults regardless of cookie", async () => {
+      const getEntry = mockFusedDict.getEntry as jest.Mock;
+      getEntry.mockClear();
+
+      const plain = await request(app).get("/dicts?q=amo&format=partial");
+      const plainCall = getEntry.mock.calls[0][0];
+
+      getEntry.mockClear();
+      const withCookie = await request(app)
+        .get("/dicts?q=amo&format=partial")
+        .set("Cookie", "morcus_d=2; morcus_inflected=0");
+      const cookieCall = getEntry.mock.calls[0][0];
+
+      expect(cookieCall).toEqual(plainCall);
+      expect(cookieCall.mode).toBe(1);
+      expect(cookieCall.dicts.length).toBeGreaterThan(1);
+      expect(withCookie.text).toBe(plain.text);
+    });
+
+    test("full-page zero-results o=0 still renders save=1 for a non-guest and omits it for a guest", async () => {
+      (mockFusedDict.getEntry as jest.Mock).mockResolvedValue({});
+      const url = "/dicts?q=amavi&d=2&o=0";
+
+      const nonGuest = await request(app)
+        .get(url)
+        .set("Cookie", "morcus_d=2; morcus_inflected=0");
+      const nonGuestHint = new JSDOM(
+        nonGuest.text
+      ).window.document.querySelector(".inflected-hint a");
+      expect(nonGuestHint?.getAttribute("href")).toBe(
+        "/dicts?q=amavi&d=2&o=1&save=1"
+      );
+
+      const guest = await request(app)
+        .get(url)
+        .set("Cookie", "morcus_d=1; morcus_inflected=1");
+      const guestHint = new JSDOM(guest.text).window.document.querySelector(
+        ".inflected-hint a"
+      );
+      expect(guestHint?.getAttribute("href")).toBe("/dicts?q=amavi&d=2&o=1");
+    });
+  });
+
   describe("GET /library", () => {
     test("returns 200 with catalog and author groupings", async () => {
       const res = await request(app).get("/library");

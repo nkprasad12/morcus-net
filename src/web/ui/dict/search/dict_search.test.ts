@@ -2813,4 +2813,124 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       }
     });
   });
+
+  describe("post-swap .inflected-hint save=1 synchronization", () => {
+    const ZERO_RESULTS_PARTIAL = `
+      <div class="no-results">
+        <p>No dictionary entries found for "<strong>amavi</strong>".</p>
+        <p class="no-results-sub inflected-hint">
+          Exact headword search is active.
+          <a href="/dicts?q=amavi&amp;d=2&amp;o=1" class="link">Enable inflected search</a> to find conjugated verbs and declined nouns.
+        </p>
+      </div>
+    `;
+
+    async function submitAndSettle(el: MorcusDictSearch, query = "amavi") {
+      const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+      el.querySelector<HTMLInputElement>("input.input")!.value = query;
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    test("adds save=1 to a swapped .inflected-hint link when neither guest nor scoped, and is idempotent", async () => {
+      window.history.replaceState(null, "", "/dicts?q=amo&d=2&o=0");
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(ZERO_RESULTS_PARTIAL),
+      });
+
+      const el = createDictSearch("", 'data-d="2" data-o="0"');
+      await submitAndSettle(el);
+
+      const hintLink =
+        el.querySelector<HTMLAnchorElement>(".inflected-hint a")!;
+      expect(hintLink.getAttribute("href")).toBe(
+        "/dicts?q=amavi&d=2&o=1&save=1"
+      );
+
+      // Even if server markup already carried save=1, re-running does not duplicate it.
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            ZERO_RESULTS_PARTIAL.replace("o=1", "o=1&amp;save=1")
+          ),
+      });
+      await submitAndSettle(el);
+      const hintLinkAfter =
+        el.querySelector<HTMLAnchorElement>(".inflected-hint a")!;
+      expect(hintLinkAfter.getAttribute("href")).toBe(
+        "/dicts?q=amavi&d=2&o=1&save=1"
+      );
+    });
+
+    test("leaves the hint without save=1 in guest mode, embedded=1, or lang= views", async () => {
+      // 1. Guest mode (a.guest-return present)
+      window.history.replaceState(null, "", "/dicts?q=amo&d=2&o=0");
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(ZERO_RESULTS_PARTIAL),
+      });
+      const guestEl = createDictSearch("", 'data-d="2" data-o="0"');
+      guestEl
+        .querySelector("form.search-form")!
+        .insertAdjacentHTML(
+          "beforeend",
+          '<a class="guest-return" href="/dicts?q=amo">Restore saved</a>'
+        );
+      await submitAndSettle(guestEl);
+      expect(
+        guestEl
+          .querySelector<HTMLAnchorElement>(".inflected-hint a")
+          ?.getAttribute("href")
+      ).toBe("/dicts?q=amavi&d=2&o=1");
+
+      // 2. embedded=1 view
+      document.body.innerHTML = "";
+      window.history.replaceState(null, "", "/dicts?q=amo&d=2&o=0&embedded=1");
+      const embeddedEl = createDictSearch("", 'data-d="2" data-o="0"');
+      await submitAndSettle(embeddedEl);
+      expect(
+        embeddedEl
+          .querySelector<HTMLAnchorElement>(".inflected-hint a")
+          ?.getAttribute("href")
+      ).toBe("/dicts?q=amavi&d=2&o=1");
+
+      // 3. lang= view (popstate / word click stays in scope and fetches partial)
+      document.body.innerHTML = "";
+      window.history.replaceState(null, "", "/dicts?q=amo&d=2&o=0&lang=La");
+      const langEl = createDictSearch(
+        '<div class="entry-content"><span class="lsQuote">amavi</span></div>',
+        'data-d="2" data-o="0"'
+      );
+      langEl.querySelector<HTMLElement>(".lat-word")!.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(
+        langEl
+          .querySelector<HTMLAnchorElement>(".inflected-hint a")
+          ?.getAttribute("href")
+      ).toBe("/dicts?q=amavi&d=2&o=1");
+    });
+
+    test("a swap without a hint is a no-op and continues post-swap enhancement cleanly", async () => {
+      window.history.replaceState(null, "", "/dicts?q=amo&d=2&o=1");
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            '<article class="entry"><div class="entry-content"><p><span class="lsQuote">Gallia</span></p></div></article>'
+          ),
+      });
+      const el = createDictSearch("", 'data-d="2" data-o="1"');
+      await submitAndSettle(el, "bellum");
+      // Wait for the post-swap rAF + timeout tokenization scheduled right after #syncInflectedHint()
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(el.querySelector(".inflected-hint")).toBeNull();
+      expect(el.querySelector(".lat-word")?.textContent).toBe("Gallia");
+    });
+  });
 });
