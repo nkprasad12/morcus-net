@@ -89,7 +89,7 @@ describe("library SSR & client hydration", () => {
       el.className = "library-view";
       el.innerHTML = `
         <header class="library-header">
-          <input type="search" id="library-search-input" />
+          <input type="text" id="library-search-input" />
           <button type="button" id="library-reset-filter-btn">Reset</button>
           <div class="library-filter-pills">
             <button type="button" class="filter-pill active" data-filter="all">All</button>

@@ -79,7 +79,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
       <header class="library-header">
         <div class="library-search-form search-form" data-js-only>
           <div class="input-wrapper">
-            <input type="search"
+            <input type="text"
                    id="library-search-input"
                    class="input library-search-input"
                    placeholder="Filter by author or work (e.g. Caesar, Aeneid, Catullus)..."
@@ -105,7 +105,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
       </header>
 
       <div id="library-empty-state" class="empty-state library-empty-state" hidden>
-        <p class="empty-state-title library-empty-title">No classical works match your filter</p>
+        <p class="empty-state-title library-empty-title">No works match your filter</p>
         <p class="empty-state-desc library-empty-desc">Try clearing your search query or choosing a different feature filter.</p>
         <button type="button" class="btn btn-secondary" id="library-reset-filter-btn">Show All Works</button>
       </div>
