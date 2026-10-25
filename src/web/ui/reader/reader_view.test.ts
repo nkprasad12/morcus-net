@@ -4409,6 +4409,34 @@ describe("section jump highlighting", () => {
     });
   });
 
+  test("clicking the header attribution link opens the About tab in place without scrolling", () => {
+    const scrollTo = jest.fn();
+    window.scrollTo = scrollTo;
+    const el = createReaderView(
+      `<p class="reader-header-attribution"><a href="#panel-view-about" class="reader-attribution-link">Text kindly provided by Perseus<span aria-hidden="true"> &#x24D8;</span></a></p>`,
+      { aboutHtml: '<div class="reader-work-about">About</div>' }
+    );
+
+    const link = el.querySelector<HTMLAnchorElement>(
+      "a.reader-attribution-link"
+    )!;
+    const event = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+    });
+    link.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(el.getPanelController()?.activeTab).toBe("about");
+    expect(
+      el
+        .querySelector(".reader-dict-panel")
+        ?.classList.contains("drawer-minimized")
+    ).toBe(false);
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
   describe("reader_text.css", () => {
     const css = fs
       .readFileSync(path.join(__dirname, "reader_text.css"), "utf-8")

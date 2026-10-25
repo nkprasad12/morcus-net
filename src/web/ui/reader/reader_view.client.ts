@@ -415,6 +415,17 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       return;
     }
 
+    // Handle header attribution link click (opens About tab in companion panel)
+    const attrLink = e.target.closest<HTMLAnchorElement>(
+      "a.reader-attribution-link"
+    );
+    if (attrLink) {
+      // Its attribution link switches the companion panel to About in place
+      e.preventDefault();
+      this.activatePanelTab("about");
+      return;
+    }
+
     // Handle section anchor click (opens section action menu in library reader,
     // or copies canonical permalink directly on External Reader where data-work is absent)
     const secAnchor = e.target.closest<HTMLAnchorElement>("a.section-anchor");

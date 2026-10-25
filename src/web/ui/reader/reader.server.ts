@@ -8,6 +8,7 @@ import {
   V2PreprocessedPage,
   V2PreprocessedWork,
 } from "@/common/library/preprocess/preprocessed_types";
+import type { DocumentAttribution } from "@/common/library/library_types";
 import {
   getV2Work,
   resolvePageInWork,
@@ -303,6 +304,13 @@ export function renderReaderHeadingHtml(title: string, href?: string): string {
   )}" class="reader-heading-link" title="Copy link to this page" aria-label="${escapedTitle} (copy link to this page)">${escapedTitle}${renderCopyPillIconsHtml()}</a></h1>`;
 }
 
+/** Compact source credit beneath the passage heading, linking to the About tab. */
+const HEADER_ATTRIBUTION_LABELS: Record<DocumentAttribution, string> = {
+  perseus: "Text kindly provided by Perseus",
+  hypotactic: "Text kindly provided by Hypotactic",
+  publicDomain: "Text from the public domain",
+};
+
 /**
  * Renders the main reading text card containing passage header metadata,
  * the Latin text article body, continuation buttons, and library catalog link.
@@ -330,6 +338,9 @@ function renderReaderTextCard(ctx: ReaderRenderContext): string {
                 )}">${he.escape(work.shortTitle || work.title)}</span>
               </div>
               ${renderReaderHeadingHtml(activePage.title, pageUrl)}
+              <p class="reader-header-attribution"><a href="#panel-view-about" class="reader-attribution-link">${
+                HEADER_ATTRIBUTION_LABELS[work.attribution]
+              }<span aria-hidden="true"> &#x24D8;</span></a></p>
             </header>
 
             <article class="reader-passage" id="reader-passage">

@@ -232,6 +232,9 @@ describe("reader_ssr", () => {
     // Catullus has hasMacra: true, so toggle-macra should be present
     expect(catullusHtml).toContain('id="toggle-macra"');
     expect(catullusHtml).toContain("Show Macra");
+    expect(catullusHtml).toContain(
+      '<p class="reader-header-attribution"><a href="#panel-view-about" class="reader-attribution-link">Text from the public domain<span aria-hidden="true"> &#x24D8;</span></a></p>'
+    );
 
     // Virgil Aeneid: 2 levels (book, line)
     const aeneidHtml = await renderReaderContentHtml({
@@ -242,6 +245,9 @@ describe("reader_ssr", () => {
     expect(aeneidHtml).toContain('id="sec-1.1"');
     expect(aeneidHtml).toContain("Arma");
     expect(aeneidHtml).toContain("cano");
+    expect(aeneidHtml).toContain(
+      '<p class="reader-header-attribution"><a href="#panel-view-about" class="reader-attribution-link">Text kindly provided by Hypotactic<span aria-hidden="true"> &#x24D8;</span></a></p>'
+    );
 
     // Caesar De Bello Gallico: 3 levels (book, chapter, section)
     const caesarHtml = await renderReaderContentHtml({
@@ -250,6 +256,9 @@ describe("reader_ssr", () => {
     });
     expect(caesarHtml).toContain("Caesar");
     expect(caesarHtml).toContain('id="sec-1.1.1"');
+    expect(caesarHtml).toContain(
+      '<p class="reader-header-attribution"><a href="#panel-view-about" class="reader-attribution-link">Text kindly provided by Perseus<span aria-hidden="true"> &#x24D8;</span></a></p>'
+    );
   });
 
   test("renderReaderPageHtml produces valid full HTML page with active Library nav item", async () => {
