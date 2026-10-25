@@ -1,4 +1,5 @@
 import { html, raw, type SafeHtml } from "@/web/ui/core/dom/html.common";
+import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 
 interface DialogFormOptions {
   className?: string;
@@ -64,20 +65,13 @@ export function renderDialog(options: DialogOptions): SafeHtml {
           aria-label="Close dialog"
           data-dialog-close
           ${jsOnlyCloseButton ? raw("data-js-only") : ""}>
-          <svg
-            class="dialog-close-icon"
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            aria-hidden="true"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
+          ${raw(
+            renderIconSvg("close", {
+              className: "dialog-close-icon",
+              width: 18,
+              height: 18,
+            })
+          )}
         </button>`;
 
   const actionsContainerHtml = actionsHtml
@@ -131,21 +125,13 @@ export function renderReportIssueDialog(
   const defaultReporter = options.defaultReporter ?? "";
 
   const bodyHtml = html`<div id="${descId}" class="report-notice">
-      <svg
-        class="report-notice-icon"
-        viewBox="0 0 24 24"
-        width="16"
-        height="16"
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="16" x2="12" y2="12"></line>
-        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-      </svg>
+      ${raw(
+        renderIconSvg("info", {
+          className: "report-notice-icon",
+          width: 16,
+          height: 16,
+        })
+      )}
       <div class="report-notice-text">
         <strong>This report will be visible to the general public</strong> on
         our GitHub issue tracker. Please do not submit private or sensitive

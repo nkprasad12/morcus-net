@@ -22,8 +22,8 @@ export const ICON_PATHS = {
   chevronDown: "M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z",
   flag: "M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z",
   menu: "M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z",
-  close:
-    "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
+  /** Stroked ×: the one close glyph (dialogs, popovers, sheets, mobile menu). */
+  close: "M18 6 6 18M6 6l12 12",
   /** Material "palette": the app-bar Appearance menu. */
   palette:
     "M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z",
@@ -41,15 +41,41 @@ export const ICON_PATHS = {
     "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M3 14h18 M10 17.5h4",
   edit: ICON_EDIT,
   arrowForward: "m12 4-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z",
+  /** Outline chevrons (pager, quick jump, corpus guide accordions). */
+  strokeChevronLeft: "M15 6l-6 6 6 6",
+  strokeChevronRight: "M9 6l6 6-6 6",
+  strokeChevronDown: "M6 9l6 6 6-6",
 } as const;
 
 type IconName = keyof typeof ICON_PATHS;
+
+/**
+ * Outline icons: drawn with `stroke`, not `fill`. `renderIconSvg` gives them
+ * stroke presentation attributes, so they render correctly without per-site
+ * CSS (which, being CSS, still overrides them where a site sets its own).
+ * Every other icon is a filled shape and inherits `fill` from CSS.
+ */
+const STROKE_ICONS: ReadonlySet<IconName> = new Set<IconName>([
+  "close",
+  "toc",
+  "book",
+  "notes",
+  "info",
+  "translate",
+  "translation",
+  "drawer",
+  "strokeChevronLeft",
+  "strokeChevronRight",
+  "strokeChevronDown",
+]);
 
 interface RenderIconOptions {
   className?: string;
   width?: number;
   height?: number;
   viewBox?: string;
+  /** Stroke icons only; defaults to 2. */
+  strokeWidth?: number;
   extraAttrs?: string;
 }
 
@@ -65,8 +91,13 @@ export function renderIconSvg(
   const w = options?.width ? ` width="${options.width}"` : "";
   const h = options?.height ? ` height="${options.height}"` : "";
   const vb = options?.viewBox ?? "0 0 24 24";
+  const stroke = STROKE_ICONS.has(name)
+    ? ` fill="none" stroke="currentColor" stroke-width="${
+        options?.strokeWidth ?? 2
+      }" stroke-linecap="round" stroke-linejoin="round"`
+    : "";
   const extra = options?.extraAttrs ? ` ${options.extraAttrs}` : "";
-  return `<svg viewBox="${vb}"${w}${h}${cls} aria-hidden="true"${extra}><path d="${path}"></path></svg>`;
+  return `<svg viewBox="${vb}"${w}${h}${cls} aria-hidden="true"${stroke}${extra}><path d="${path}"></path></svg>`;
 }
 
 /**

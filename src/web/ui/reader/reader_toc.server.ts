@@ -5,6 +5,7 @@ import {
 import { NavTreeNode } from "@/common/library/library_types";
 import { citationToString } from "@/web/ui/reader/reader_types.server";
 import * as he from "he";
+import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 
 interface ReaderPageUrlOptions {
   query?: string;
@@ -232,7 +233,11 @@ export function renderTocDrawer(options: ReaderTocDrawerOptions): string {
              id="reader-toc-close-btn"
              role="button"
              data-dialog-close
-             aria-label="Close table of contents">&times;</a>
+             aria-label="Close table of contents">${renderIconSvg("close", {
+               className: "dialog-close-icon",
+               width: 18,
+               height: 18,
+             })}</a>
         </div>${missBannerHtml}
 
         <div class="reader-toc-list" id="reader-toc-list">

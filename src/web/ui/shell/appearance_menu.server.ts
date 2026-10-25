@@ -78,7 +78,11 @@ export function renderAppearanceMenu(): string {
             id="appearance-close-btn"
             aria-label="Close appearance settings"
             data-dialog-close
-          >&times;</button>
+          >${renderIconSvg("close", {
+            className: "dialog-close-icon",
+            width: 18,
+            height: 18,
+          })}</button>
         </div>
         <div class="settings-body">
           ${row(

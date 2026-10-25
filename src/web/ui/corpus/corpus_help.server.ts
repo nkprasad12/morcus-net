@@ -11,27 +11,23 @@ import {
   type RawHtml,
   type SafeHtml,
 } from "@/web/ui/core/dom/html.common";
+import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import { CORPUS_PATH } from "@/web/ui/corpus/corpus_params.common";
 import { INFLECTION_CATEGORIES } from "@/web/ui/corpus/corpus_syntax.common";
 
-const CHEVRON_POINTS = {
-  right: "9 18 15 12 9 6",
-  down: "6 9 12 15 18 9",
+const CHEVRON_ICONS = {
+  right: "strokeChevronRight",
+  down: "strokeChevronDown",
 } as const;
 
 function chevron(
   className: string,
-  direction: keyof typeof CHEVRON_POINTS
-): SafeHtml {
-  return html`<svg
-    class="${className}"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2.5"
-    aria-hidden="true">
-    <polyline points="${CHEVRON_POINTS[direction]}"></polyline>
-  </svg>`;
+  direction: keyof typeof CHEVRON_ICONS
+): string {
+  return renderIconSvg(CHEVRON_ICONS[direction], {
+    className,
+    strokeWidth: 2.5,
+  });
 }
 
 interface GuideItem {

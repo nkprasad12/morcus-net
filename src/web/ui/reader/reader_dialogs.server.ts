@@ -130,7 +130,10 @@ export function renderReaderSettingsPopover(
                     class="settings-popover-close"
                     id="reader-settings-close-btn"
                     data-dialog-close
-                    aria-label="Close reader settings">&times;</button>
+                    aria-label="Close reader settings">${renderIconSvg(
+                      "close",
+                      { className: "dialog-close-icon", width: 18, height: 18 }
+                    )}</button>
           </div>
 
           <div class="settings-body">

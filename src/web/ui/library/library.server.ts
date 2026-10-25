@@ -1,10 +1,8 @@
 import { renderPageShell } from "@/web/ui/shell/page_shell.server";
 import { getV2LibrarySummaries } from "@/web/ui/reader/reader_loader.server";
-import { ICON_PATHS } from "@/web/ui/core/widgets/icons.common";
+import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import { EXTERNAL_READER_PATH } from "@/web/ui/external/external_url.common";
 import * as he from "he";
-
-const SEARCH_PATH = ICON_PATHS.search;
 
 export async function renderLibraryPageHtml(): Promise<string> {
   const summaries = (await getV2LibrarySummaries()) || [];
@@ -98,9 +96,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
                    autocomplete="off"
                    enterkeyhint="search">
             <button type="button" class="search-btn" aria-label="Search" tabindex="-1">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="${SEARCH_PATH}"></path>
-              </svg>
+              ${renderIconSvg("search")}
             </button>
           </div>
 

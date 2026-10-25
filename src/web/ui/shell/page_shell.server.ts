@@ -11,7 +11,7 @@ import {
 } from "@/bundler/client_build_contract";
 import { renderReportIssueDialog } from "@/web/ui/dialog/dialog.server";
 import { getBuildVersion } from "@/web/ui/core/server/build_version.server";
-import { ICON_PATHS } from "@/web/ui/core/widgets/icons.common";
+import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import type { WidthSurface } from "@/web/ui/core/widgets/page_width.common";
 import { renderPageWidthHandles } from "@/web/ui/shell/page_width.server";
 import { renderAppearanceMenu } from "@/web/ui/shell/appearance_menu.server";
@@ -174,9 +174,7 @@ export function renderAppBar(activePage?: V2ActivePage): string {
               aria-label="Report an issue"
               title="Report an issue"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="${ICON_PATHS.flag}"></path>
-              </svg>
+              ${renderIconSvg("flag")}
             </button>
             ${renderReportIssueDialog()}
           </morcus-report-dialog>
@@ -185,12 +183,8 @@ export function renderAppBar(activePage?: V2ActivePage): string {
         <!-- Mobile Hamburger Dropdown Menu (<details> native Zero-JS) -->
         <details class="mobile-menu">
             <summary class="mobile-menu-btn" aria-label="Open navigation menu">
-              <svg viewBox="0 0 24 24" aria-hidden="true" class="icon-menu">
-                <path d="${ICON_PATHS.menu}"></path>
-              </svg>
-              <svg viewBox="0 0 24 24" aria-hidden="true" class="icon-close">
-                <path d="${ICON_PATHS.close}"></path>
-              </svg>
+              ${renderIconSvg("menu", { className: "icon-menu" })}
+              ${renderIconSvg("close", { className: "icon-close" })}
             </summary>
             <nav class="nav mobile-menu-dropdown" aria-label="Mobile Navigation">
               <a
@@ -352,9 +346,7 @@ export function renderPageShell(options: PageShellOptions): string {
     aria-label="Jump to top"
     title="Jump to top"
   >
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="${ICON_PATHS.chevronUp}"></path>
-    </svg>
+    ${renderIconSvg("chevronUp")}
   </a>
 
   <!-- Single global popover for abbreviation expansions. "manual", not "auto":

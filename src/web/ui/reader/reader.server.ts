@@ -180,7 +180,12 @@ function renderReaderPagerLink(
              title="Previous ([)"
              ${slotAttr("pager-prev")}>
             <span class="pager-arrow" aria-hidden="true">&larr;</span>
-            <svg class="pager-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+            ${renderIconSvg("strokeChevronLeft", {
+              className: "pager-chevron",
+              width: 16,
+              height: 16,
+              strokeWidth: 2.5,
+            })}
             <span class="pager-label">${he.escape(label)}</span>
           </a>`;
   }
@@ -193,9 +198,17 @@ function renderReaderPagerLink(
                ${slotAttr("pager-next")}>
               <span class="pager-label">${he.escape(label)}</span>
               <span class="pager-arrow" aria-hidden="true">&rarr;</span>
-              <svg class="pager-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+              ${renderIconSvg("strokeChevronRight", {
+                className: "pager-chevron",
+                width: 16,
+                height: 16,
+                strokeWidth: 2.5,
+              })}
             </a>`;
 }
+
+/** The dictionary sheet's close glyph (same × as dialogs and popovers). */
+const SHEET_CLOSE_ICON = renderIconSvg("close", { width: 16, height: 16 });
 
 /** The current page id inside the TOC trigger. A page-turn slot. */
 function renderReaderPageLabel(ctx: ReaderRenderContext): string {
@@ -236,9 +249,12 @@ ${renderReaderPagerLink(ctx, "prev")}
                   <span class="sticky-section-sep" aria-hidden="true">&middot;</span>
                   <span class="jump-glyph" aria-hidden="true">&sect;</span>
                   ${renderReaderPageLabel(ctx)}
-                  <svg class="jump-chevron" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6 9l6 6 6-6"/>
-                  </svg>
+                  ${renderIconSvg("strokeChevronDown", {
+                    className: "jump-chevron",
+                    width: 14,
+                    height: 14,
+                    strokeWidth: 2.5,
+                  })}
                 </a>
               </div>
             </div>
@@ -532,8 +548,8 @@ export function renderReaderDictPanelHtml(
               </nav>
               ${
                 query
-                  ? `<a href="${activePageUrl}#reader-dict-dismissed" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">✕</a>`
-                  : `<a href="#reader-dict-dismissed" class="reader-sheet-close reader-sheet-close-target" aria-label="Close dictionary panel" title="Close">✕</a>`
+                  ? `<a href="${activePageUrl}#reader-dict-dismissed" class="reader-sheet-close" aria-label="Close dictionary panel" title="Close">${SHEET_CLOSE_ICON}</a>`
+                  : `<a href="#reader-dict-dismissed" class="reader-sheet-close reader-sheet-close-target" aria-label="Close dictionary panel" title="Close">${SHEET_CLOSE_ICON}</a>`
               }
             </div>
           </div>

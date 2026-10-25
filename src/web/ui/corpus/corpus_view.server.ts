@@ -12,8 +12,8 @@ import {
   type SafeHtml,
 } from "@/web/ui/core/dom/html.common";
 import {
-  ICON_PATHS,
   renderCopyPillHtml,
+  renderIconSvg,
 } from "@/web/ui/core/widgets/icons.common";
 import {
   liveSlot,
@@ -232,9 +232,7 @@ function renderPager(view: CorpusSearchView): SafeHtml {
           data-focus-key="corpus-next"
           aria-label="Next page"
           title="Next page">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="${ICON_PATHS.arrowForward}"></path>
-          </svg>
+          ${raw(renderIconSvg("arrowForward"))}
         </a>`
       : html``;
   return html`<nav
@@ -269,9 +267,7 @@ function renderSettings(view: CorpusSearchView): SafeHtml {
       class="settings-btn"
       aria-label="Corpus query settings"
       title="Corpus query settings">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="${ICON_PATHS.tune}"></path>
-      </svg>
+      ${raw(renderIconSvg("tune"))}
     </summary>
     <div class="settings-popover">
       <div class="settings-section-title">Query settings</div>
@@ -370,9 +366,7 @@ function renderForm(view: CorpusSearchView): SafeHtml {
         class="search-btn"
         aria-label="Search"
         title="Search">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="${ICON_PATHS.search}"></path>
-        </svg>
+        ${raw(renderIconSvg("search"))}
       </button>
     </div>
     <div class="search-tray">

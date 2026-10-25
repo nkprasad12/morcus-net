@@ -11,7 +11,7 @@ import {
 } from "@/web/ui/dict/settings/dict_selection.common";
 import { cleanDictQuery } from "@/web/ui/dict/search/dict_params.common";
 import { escapeHtml } from "@/web/ui/core/dom/html.common";
-import { ICON_PATHS, renderIconSvg } from "@/web/ui/core/widgets/icons.common";
+import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import { renderDialog } from "@/web/ui/dialog/dialog.server";
 
 import {
@@ -21,9 +21,6 @@ import {
   renderLangChipsHtml,
   renderInflectChipHtml,
 } from "@/web/ui/dict/search/search_bar.common";
-
-const TUNE_PATH = ICON_PATHS.tune;
-const SEARCH_PATH = ICON_PATHS.search;
 
 export interface SearchBarOptions {
   query?: string;
@@ -186,9 +183,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
             aria-label="Dictionary and highlight settings"
             title="Dictionary and highlight settings"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="${TUNE_PATH}"></path>
-            </svg>
+            ${renderIconSvg("tune")}
           </a>
         </div>
       </div>
@@ -225,9 +220,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           aria-label="Search"
           title="Search"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="${SEARCH_PATH}"></path>
-          </svg>
+          ${renderIconSvg("search")}
         </button>
         <morcus-dict-suggestions data-js-only data-input="dict-q"
           ><ul

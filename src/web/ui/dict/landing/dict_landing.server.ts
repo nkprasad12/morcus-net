@@ -5,7 +5,7 @@ import {
 } from "@/web/ui/dict/landing/dict_landing.common";
 import { DEFAULT_DICT_KEYS } from "@/web/ui/dict/settings/dict_bitmask.common";
 import { resolveDictLang } from "@/web/ui/dict/dict_attribution.server";
-import { ICON_PATHS } from "@/web/ui/core/widgets/icons.common";
+import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 
 interface DictItem {
   key: string;
@@ -105,9 +105,7 @@ export function renderDictLandingHtml(
             </div>
 
             <div class="card-settings-note">
-              <svg class="landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="${ICON_PATHS.tune}"></path>
-              </svg>
+              ${renderIconSvg("tune", { className: "landing-tune-icon" })}
               <span>Enable or disable dictionaries in the settings</span>
             </div>
           </div>
@@ -176,9 +174,7 @@ export function renderDictLandingHtml(
 
             <!-- Only displayed when JS is active since the slider is client-injected -->
             <div class="legend-settings-tip" data-js-only>
-              <svg class="landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="${ICON_PATHS.tune}"></path>
-              </svg>
+              ${renderIconSvg("tune", { className: "landing-tune-icon" })}
               <span>You can change highlight intensity in the settings</span>
             </div>
           </div>
