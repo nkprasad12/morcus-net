@@ -18,6 +18,7 @@ import {
   readerLayoutStateClass,
   renderReaderDictPanelHtml,
   renderReaderFrameHtml,
+  renderReaderHeadingHtml,
   renderReaderSettingsButtonHtml,
   renderReaderTextPanelHtml,
 } from "@/web/ui/reader/reader.server";
@@ -306,6 +307,8 @@ function renderLoader(attrs: Record<string, string>): string {
 }
 
 function renderTextCard(model: ExternalFrameModel): string {
+  const headingHref =
+    "url" in model.target ? readerUrl(model, model.lines, false) : undefined;
   return `          <div class="reader-text-card">
             <header class="reader-text-card-header">
               <div class="reader-text-meta">
@@ -313,9 +316,7 @@ function renderTextCard(model: ExternalFrameModel): string {
                 <span class="reader-meta-sep">&middot;</span>
                 <span class="reader-work-tag">${he.escape(model.workTag)}</span>
               </div>
-              <h1 class="reader-passage-heading" aria-live="polite">${he.escape(
-                model.title
-              )}</h1>
+              ${renderReaderHeadingHtml(model.title, headingHref)}
             </header>
             ${model.noticesHtml}
 

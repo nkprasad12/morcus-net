@@ -7,7 +7,10 @@
 // page with no work, TOC, or pager, and that lookups work on imported text.
 
 import { MorcusReaderView } from "@/web/ui/reader/reader_view.client";
-import { renderExternalReaderContentHtml } from "@/web/ui/external/external.server";
+import {
+  renderExternalLocalContentHtml,
+  renderExternalReaderContentHtml,
+} from "@/web/ui/external/external.server";
 import { SAVED_SPOTS_KEY } from "@/web/ui/reader/saved_spots.client";
 import { installPointerEventShims } from "@/web/ui/testing/pointer_events";
 
@@ -69,5 +72,33 @@ describe("external text in <morcus-reader-view>", () => {
   test("does not record a saved reading spot", () => {
     mount();
     expect(localStorage.getItem(SAVED_SPOTS_KEY)).toBeNull();
+  });
+
+  test("renders a heading permalink on URL imports and omits it on saved local texts", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    const view = mount("Belgae");
+    const link = view.querySelector<HTMLAnchorElement>(
+      "a.reader-heading-link"
+    );
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute("href")).toBe(
+      "/externalReader?url=https%3A%2F%2Fexample.com%2Fbg.html"
+    );
+
+    link?.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 })
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(writeText).toHaveBeenCalledWith(
+      "http://localhost/externalReader?url=https%3A%2F%2Fexample.com%2Fbg.html"
+    );
+
+    const localHtml = renderExternalLocalContentHtml({
+      localKey: "abc123",
+      lines: "keep",
+      query: "",
+    });
+    expect(localHtml).not.toContain("reader-heading-link");
   });
 });

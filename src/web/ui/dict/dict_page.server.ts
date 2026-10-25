@@ -26,6 +26,7 @@ import {
   cleanDictQuery,
 } from "@/web/ui/dict/search/dict_params.common";
 import { dictPageTitle } from "@/web/ui/dict/dict_title.common";
+import { renderCopyPillHtml } from "@/web/ui/core/widgets/icons.common";
 import * as he from "he";
 
 interface DictResultsOptions {
@@ -166,6 +167,7 @@ interface JumpNavOptions {
   results: DictsFusedResponse;
   hitKeys: string[];
   allQueriedKeys: string[];
+  searchUrl?: string;
 }
 
 /**
@@ -173,7 +175,7 @@ interface JumpNavOptions {
  * Returns an empty string if 1 or fewer dictionaries produced results.
  */
 export function renderJumpNavHtml(options: JumpNavOptions): string {
-  const { results, hitKeys, allQueriedKeys } = options;
+  const { results, hitKeys, allQueriedKeys, searchUrl } = options;
   if (hitKeys.length <= 1) {
     return "";
   }
@@ -217,14 +219,23 @@ export function renderJumpNavHtml(options: JumpNavOptions): string {
     })
     .join("");
 
+  const countText = `${totalCount} ${totalCount === 1 ? "result" : "results"}`;
+  const totalBlockHtml = searchUrl
+    ? `<div class="results-total"><span class="results-count">${countText}</span>${renderCopyPillHtml(
+        {
+          href: searchUrl,
+          title: "Copy link to this search",
+          extraClass: "dict-search-copy",
+        }
+      )}</div>`
+    : `<div class="results-total results-count">${countText}</div>`;
+
   return `
       <nav class="results-nav" aria-label="Jump to dictionary">
         <div class="results-pills">
           ${pillsHtml}
         </div>
-        <div class="results-total">
-          ${totalCount} ${totalCount === 1 ? "result" : "results"}
-        </div>
+        ${totalBlockHtml}
       </nav>
     `;
 }
@@ -401,10 +412,22 @@ export function renderDictResultsHtml(
     });
   }
 
+  const searchUrl = !isEmbedded
+    ? buildDictUrl({
+        q: query,
+        d:
+          queriedDicts && queriedDicts.length > 0
+            ? encodeDictBitmask(queriedDicts)
+            : undefined,
+        inflected: isInflected,
+      })
+    : undefined;
+
   const jumpBarHtml = renderJumpNavHtml({
     results,
     hitKeys,
     allQueriedKeys,
+    searchUrl,
   });
 
   const cardsHtml = hitKeys

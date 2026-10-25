@@ -1,0 +1,127 @@
+/* Shared pill & copy-link control styles across Dictionary, Corpus, and Reader */
+
+.tab-pill {
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: calc(1.65rem * var(--dict-scale, 1));
+  min-height: calc(1.65rem * var(--dict-scale, 1));
+  padding: 0 calc(0.65rem * var(--dict-scale, 1));
+  font-size: calc(0.76rem * var(--dict-scale, 1));
+  font-weight: 500;
+  line-height: 1;
+  border-radius: var(--radius-full);
+  color: var(--text);
+  background-color: var(--tag-bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease-in-out;
+}
+
+.tab-pill::-webkit-details-marker {
+  display: none;
+}
+
+.tab-pill::after {
+  content: " ▾";
+  font-size: calc(0.68rem * var(--dict-scale, 1));
+  color: var(--text-muted);
+  transition: transform 0.2s ease-in-out;
+}
+
+.tab-pill:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.tab-pill:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---- Copy-link pill --------------------------------------------------- */
+/* Shares .tab-pill on desktop so headers have uniform composition, while
+   collapsing to a subtle icon-only control on mobile. */
+.copy-pill {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.copy-pill::after {
+  /* No disclosure caret: this pill does not expand anything. */
+  content: none;
+}
+
+.copy-pill:hover {
+  color: var(--primary);
+}
+
+.copy-pill-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.copy-pill-glyph {
+  width: 0.92em;
+  height: 0.92em;
+  fill: currentColor;
+  opacity: 0.6;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.copy-pill:hover .copy-pill-glyph,
+.copy-pill:focus-visible .copy-pill-glyph {
+  opacity: 1;
+}
+
+/* Exactly one glyph is visible at a time. These selectors are deliberately
+   more specific than `.copy-pill-glyph` above; a bare `.copy-pill-check`
+   would lose to it and both glyphs would render. */
+.copy-pill .copy-pill-check,
+.copy-pill.is-copied .copy-pill-link {
+  display: none;
+}
+
+.copy-pill.is-copied .copy-pill-check {
+  display: inline;
+  opacity: 1;
+}
+
+.copy-pill.is-copied {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+@media (width <= 640px) {
+  .tab-pill {
+    flex: 0 0 auto;
+  }
+
+  /* On mobile, hide the "Copy link" label and strip the pill chrome so the
+     control renders as a subtle link icon only. */
+  .copy-pill {
+    padding: 0;
+    min-height: 0;
+    height: auto;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: var(--text-muted);
+  }
+
+  .copy-pill-label {
+    display: none;
+  }
+
+  .copy-pill .copy-pill-glyph {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .copy-pill.corpus-copy-pill {
+    margin-left: var(--space-1);
+  }
+}

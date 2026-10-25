@@ -7,7 +7,7 @@ import {
   matchedAnchorIds,
   renderSubsectionNote,
 } from "@/web/ui/dict/entry/subsection_note.server";
-import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
+import { renderCopyPillHtml } from "@/web/ui/core/widgets/icons.common";
 import * as he from "he";
 
 interface EntryRenderOptions {
@@ -78,20 +78,10 @@ export function renderEntryResult(
   // A real anchor, so the permalink exists without JS (right-click -> copy link,
   // or plain navigation). With JS the click is intercepted and copied instead.
   const copyPillHtml = headword
-    ? `
-      <a href="/dicts/id/${encodeURIComponent(entryAnchorId)}"
-         class="tab-pill copy-pill"
-         title="Copy link to this article">
-        <span class="copy-pill-icon" aria-hidden="true">${renderIconSvg(
-          "link",
-          { className: "copy-pill-glyph copy-pill-link" }
-        )}${renderIconSvg("check", {
-        className: "copy-pill-glyph copy-pill-check",
-      })}</span>
-        <span class="copy-pill-long">Copy link</span>
-        <span class="copy-pill-short">Link</span>
-      </a>
-    `
+    ? renderCopyPillHtml({
+        href: `/dicts/id/${encodeURIComponent(entryAnchorId)}`,
+        title: "Copy link to this article",
+      })
     : "";
 
   const groupName = `entry-tools-${safeId}`;

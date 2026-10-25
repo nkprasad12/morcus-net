@@ -3,6 +3,8 @@
  * Shared between SSR templates (*.server.ts) and client components (*.client.ts).
  */
 
+import { html, raw, type SafeHtml } from "@/web/ui/core/dom/html.common";
+
 // Icons used by client code are standalone consts: bundlers don't tree-shake
 // object properties, so importing `ICON_PATHS` (or `renderIconSvg`) in a
 // `*.client.ts` file would ship every path below in common.js. Client code
@@ -64,5 +66,45 @@ export function renderIconSvg(
   const h = options?.height ? ` height="${options.height}"` : "";
   const vb = options?.viewBox ?? "0 0 24 24";
   const extra = options?.extraAttrs ? ` ${options.extraAttrs}` : "";
-  return `<svg viewBox="${vb}"${w}${h}${cls} aria-hidden="true"${extra}>\n  <path d="${path}"></path>\n</svg>`;
+  return `<svg viewBox="${vb}"${w}${h}${cls} aria-hidden="true"${extra}><path d="${path}"></path></svg>`;
+}
+
+/**
+ * Renders the `.copy-pill-icon` span containing both the link and checkmark
+ * SVGs. CSS toggles between `.copy-pill-link` and `.copy-pill-check` when
+ * `.is-copied` is set on the enclosing `.copy-pill` or `.reader-heading-link`.
+ */
+export function renderCopyPillIconsHtml(): string {
+  return `<span class="copy-pill-icon" aria-hidden="true">${renderIconSvg(
+    "link",
+    { className: "copy-pill-glyph copy-pill-link" }
+  )}${renderIconSvg("check", {
+    className: "copy-pill-glyph copy-pill-check",
+  })}</span>`;
+}
+
+export interface RenderCopyPillOptions {
+  href: string;
+  title: string;
+  extraClass?: string;
+}
+
+/**
+ * Renders a `<a class="tab-pill copy-pill ...">` permalink control with the
+ * link/check icon pair and a desktop "Copy link" label (hidden on mobile so
+ * only the subtle icon renders).
+ */
+export function renderCopyPillHtml(options: RenderCopyPillOptions): SafeHtml {
+  const cls = options.extraClass
+    ? `tab-pill copy-pill ${options.extraClass}`
+    : "tab-pill copy-pill";
+  return html`<a
+    href="${options.href}"
+    class="${cls}"
+    title="${options.title}"
+    aria-label="${options.title}"
+    >${raw(renderCopyPillIconsHtml())}<span class="copy-pill-label"
+      >Copy link</span
+    ></a
+  >`;
 }

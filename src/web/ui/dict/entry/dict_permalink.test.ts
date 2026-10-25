@@ -84,6 +84,23 @@ describe("handleDictPermalinkClick", () => {
     expect(event.defaultPrevented).toBe(true);
     expect(document.querySelector(".section-action-menu")).toBeNull();
     expect(copied).toEqual([`${ORIGIN}/dicts/id/n20077`]);
+    expect(showToast).toHaveBeenCalledWith("Copied link to this article");
+  });
+
+  test("copies the search permalink on dict-search-copy click with search toast", async () => {
+    document
+      .getElementById("dict-results")!
+      .insertAdjacentHTML(
+        "afterbegin",
+        `<a href="/dicts?q=habeo&d=1b&o=1" class="tab-pill copy-pill dict-search-copy">Copy link</a>`
+      );
+    const { handled, event } = clickOn("a.dict-search-copy");
+    await flush();
+
+    expect(handled).toBe(true);
+    expect(event.defaultPrevented).toBe(true);
+    expect(copied).toEqual([`${ORIGIN}/dicts?q=habeo&d=1b&o=1`]);
+    expect(showToast).toHaveBeenCalledWith("Copied link to this search");
   });
 
   test("opens section action menu on section-anchor click and copies article-qualified permalink", async () => {

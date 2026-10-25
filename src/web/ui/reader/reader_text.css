@@ -70,6 +70,44 @@
   font-family: var(--font-serif);
 }
 
+.reader-heading-link {
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease;
+}
+
+.reader-heading-link:hover,
+.reader-heading-link.is-copied {
+  color: var(--primary);
+}
+
+.reader-heading-link .copy-pill-icon {
+  margin-left: var(--space-2);
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
+.reader-heading-link:hover .copy-pill-icon,
+.reader-heading-link.is-copied .copy-pill-icon {
+  color: var(--primary);
+}
+
+.reader-heading-link:hover .copy-pill-glyph,
+.reader-heading-link:focus-visible .copy-pill-glyph {
+  opacity: 1;
+}
+
+.reader-heading-link .copy-pill-check,
+.reader-heading-link.is-copied .copy-pill-link {
+  display: none;
+}
+
+.reader-heading-link.is-copied .copy-pill-check {
+  display: inline;
+  opacity: 1;
+}
+
 /* The reading-text base size, before the app-wide text scale. The side panel
    (translation, notes, and the dictionary iframe) sizes itself relative to
    it. Keep both values in step with `READER_BASE_REM` in

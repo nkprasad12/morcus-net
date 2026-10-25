@@ -11,7 +11,10 @@ import {
   type RawHtml,
   type SafeHtml,
 } from "@/web/ui/core/dom/html.common";
-import { ICON_PATHS } from "@/web/ui/core/widgets/icons.common";
+import {
+  ICON_PATHS,
+  renderCopyPillHtml,
+} from "@/web/ui/core/widgets/icons.common";
 import {
   liveSlot,
   renderSlotTemplates,
@@ -112,7 +115,13 @@ function renderSummary(view: CorpusSearchView): SafeHtml {
     <div class="corpus-summary-headline">
       ${raw(headline)}
       <span class="corpus-query-echo">${view.params.q}</span>
-      <span class="corpus-beta-chip">Beta</span>
+      ${raw(
+        renderCopyPillHtml({
+          href: corpusUrl(view.params),
+          title: "Copy link to this search",
+          extraClass: "corpus-copy-pill",
+        })
+      )}
     </div>
     <div class="corpus-summary-detail">${detailHtml}</div>
   </div>`;

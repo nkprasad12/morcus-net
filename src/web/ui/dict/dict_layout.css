@@ -137,6 +137,9 @@ body.body-embedded {
 }
 
 .results-total {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
   font-size: calc(0.82rem * var(--dict-scale, 1));
   font-weight: 500;
   color: var(--text-muted);
@@ -152,16 +155,24 @@ body.body-embedded {
 
 @media (width <= 640px) {
   .results-nav {
-    display: block;
+    gap: 0;
     padding-bottom: 0;
   }
 
   .results-pills {
-    width: 100%;
-    padding: var(--space-1) 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: var(--space-1) var(--space-2) var(--space-1) 0;
   }
 
   .results-total {
+    align-self: stretch;
+    padding-left: var(--space-3);
+    box-shadow: var(--results-overflow-shadow);
+    clip-path: inset(0 0 0 -16px);
+  }
+
+  .results-count {
     display: none;
   }
 

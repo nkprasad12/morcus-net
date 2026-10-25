@@ -397,7 +397,6 @@
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--border);
 }
-
 .guide-subaccordion:last-child {
   border-bottom: 0;
   padding-bottom: 0;
@@ -487,18 +486,7 @@
   color: var(--text);
   line-height: 1.4;
 }
-.corpus-beta-chip {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
-  border-radius: var(--radius-full);
-  font-size: 0.625rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background-color: var(--beta-chip-bg);
-  border: 1px solid var(--beta-chip-border);
-  color: var(--beta-chip-text);
-  line-height: 1.2;
+.corpus-copy-pill {
   vertical-align: middle;
   flex-shrink: 0;
   margin-left: var(--space-2);
@@ -533,7 +521,6 @@
   align-items: center;
   gap: 0.125rem;
 }
-
 .corpus-syntax-details {
   display: inline;
 }

@@ -1,6 +1,7 @@
 import {
   BaseElement,
   bindDismissable,
+  copyOrNavigate,
   isPlainLeftClick,
   registerElement,
   scrollToElement,
@@ -82,6 +83,18 @@ class MorcusCorpusView extends BaseElement<"nav"> {
         }
       });
     }
+
+    this.scope.delegate<HTMLAnchorElement>(
+      this,
+      "click",
+      "a.copy-pill",
+      (e, pill) => {
+        if (!(e instanceof MouseEvent) || !isPlainLeftClick(e)) return;
+        // Copies the search permalink in place instead of navigating
+        e.preventDefault();
+        void copyOrNavigate(pill.href, "Copied link to this search", pill);
+      }
+    );
 
     this.scope.delegate<HTMLAnchorElement>(
       this,

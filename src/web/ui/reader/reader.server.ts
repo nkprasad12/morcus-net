@@ -25,7 +25,10 @@ import {
   renderReaderAboutSection,
   renderReaderSettingsPopover,
 } from "@/web/ui/reader/reader_dialogs.server";
-import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
+import {
+  renderCopyPillIconsHtml,
+  renderIconSvg,
+} from "@/web/ui/core/widgets/icons.common";
 import { getFirstHighlightSectionId } from "@/web/ui/reader/reader_highlight.common";
 import { renderSlotTemplates, slotAttr } from "@/web/ui/core/nav/slots.common";
 import {
@@ -274,11 +277,27 @@ export function renderReaderSettingsButtonHtml(): string {
 }
 
 /**
+ * Renders the passage `<h1>` heading. When `href` is supplied (library works
+ * and URL-backed external texts), the heading text is wrapped in a permalink
+ * anchor (`a.reader-heading-link`) that copies the page link on click.
+ */
+export function renderReaderHeadingHtml(title: string, href?: string): string {
+  const escapedTitle = he.escape(title);
+  if (!href) {
+    return `<h1 class="reader-passage-heading" aria-live="polite">${escapedTitle}</h1>`;
+  }
+  return `<h1 class="reader-passage-heading" aria-live="polite"><a href="${he.escape(
+    href
+  )}" class="reader-heading-link" title="Copy link to this page" aria-label="${escapedTitle} (copy link to this page)">${escapedTitle}${renderCopyPillIconsHtml()}</a></h1>`;
+}
+
+/**
  * Renders the main reading text card containing passage header metadata,
  * the Latin text article body, continuation buttons, and library catalog link.
  */
 function renderReaderTextCard(ctx: ReaderRenderContext): string {
   const { work, activePage, passageHtml, prevPage, nextPage, query } = ctx;
+  const pageUrl = buildReaderPageUrl(work, activePage);
   const prevPageUrl = buildReaderPageUrl(work, prevPage, { query });
   const nextPageUrl = buildReaderPageUrl(work, nextPage, { query });
   const prevLabel = prevPage
@@ -296,9 +315,7 @@ function renderReaderTextCard(ctx: ReaderRenderContext): string {
                 <span class="reader-meta-sep">&middot;</span>
                 <span class="reader-work-tag">${he.escape(work.title)}</span>
               </div>
-              <h1 class="reader-passage-heading" aria-live="polite">${he.escape(
-                activePage.title
-              )}</h1>
+              ${renderReaderHeadingHtml(activePage.title, pageUrl)}
             </header>
 
             <!-- Reader Passage Container -->
@@ -361,15 +378,11 @@ ${textCardHtml}
  * containing word definition teasers and the embedded dictionary iframe.
  */
 export function renderReaderDictPanel(ctx: ReaderRenderContext): string {
-  const { work, activePage, query, matchText, dictIframeSrc } = ctx;
-  const activePageUrl = buildReaderPageUrl(work, activePage, {
-    query: query || undefined,
-    matchText: matchText || undefined,
-  });
+  const { work, activePage, query, singleViewUrl, dictIframeSrc } = ctx;
   return renderReaderDictPanelHtml({
     query,
     dictIframeSrc,
-    closeHref: activePageUrl,
+    closeHref: singleViewUrl,
     companion: {
       notesHtml: activePage.notesHtml ?? "",
       aboutHtml: renderReaderAboutSection(work),

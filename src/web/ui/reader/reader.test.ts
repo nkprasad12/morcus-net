@@ -984,4 +984,15 @@ describe("resolvePageInWork citation resolution and RDR-07 route handling", () =
     expect(jumpBook.status).toBe(302);
     expect(jumpBook.header.location).toBe("/work/caesar/de_bello_gallico/1.1");
   });
+
+  test("renderReaderPageHtml wraps the passage heading in a canonical permalink anchor", async () => {
+    const html = await renderReaderPageHtml({
+      workId: "caesar/de_bello_gallico",
+      pageId: "1.2",
+      query: "Gallia",
+    });
+    expect(html).toContain(
+      '<h1 class="reader-passage-heading" aria-live="polite"><a href="/work/caesar/de_bello_gallico/1.2" class="reader-heading-link" title="Copy link to this page" aria-label="Book 1, Chapter 2 (copy link to this page)">'
+    );
+  });
 });

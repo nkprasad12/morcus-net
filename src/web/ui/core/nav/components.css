@@ -132,7 +132,8 @@
 .settings-btn:focus-visible,
 .action-btn:focus-visible,
 .dict-source-btn:focus-visible,
-.reader-splitter:focus-visible {
+.reader-splitter:focus-visible,
+.reader-heading-link:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 1px;
 }

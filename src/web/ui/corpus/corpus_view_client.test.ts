@@ -397,4 +397,26 @@ describe("<morcus-corpus-view>", () => {
       document.querySelector("ol.corpus-result-list")?.getAttribute("start")
     ).toBe("1");
   });
+
+  test("clicking the summary copy pill copies the search permalink and shows a toast", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
+
+    const pill = document.querySelector<HTMLAnchorElement>(
+      "a.corpus-copy-pill"
+    );
+    expect(pill).not.toBeNull();
+    const event = click(pill);
+    await settle();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(writeText).toHaveBeenCalledWith(
+      "http://localhost/corpus?q=omnis&contextLen=20&pageSize=50"
+    );
+    expect(pill?.classList.contains("is-copied")).toBe(true);
+    expect(document.getElementById("toast")?.textContent).toBe(
+      "Copied link to this search"
+    );
+  });
 });

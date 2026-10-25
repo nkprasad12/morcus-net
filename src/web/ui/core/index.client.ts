@@ -10,6 +10,7 @@ export * from "@/web/ui/core/widgets/gesture.client";
 export * from "@/web/ui/core/widgets/dialog.client";
 export * from "@/web/ui/core/widgets/icons.common";
 export * from "@/web/ui/core/widgets/clipboard.client";
+export * from "@/web/ui/core/widgets/copy_link.client";
 export * from "@/web/ui/core/widgets/toast.client";
 export * from "@/web/ui/core/widgets/drawer.client";
 export * from "@/web/ui/core/dom/html.common";

@@ -109,7 +109,11 @@ describe("corpus page", () => {
     expect(text(doc, ".corpus-summary-headline")).toContain(
       "Found 1 results matching omnis"
     );
-    expect(text(doc, ".corpus-beta-chip")).toBe("Beta");
+    expect(
+      doc.querySelector<HTMLAnchorElement>("a.corpus-copy-pill")?.getAttribute(
+        "href"
+      )
+    ).toBe("/corpus?q=omnis&contextLen=20&pageSize=50");
     expect(text(doc, ".corpus-summary-detail")).toContain(
       "~3M words / ½ classical corpus indexed"
     );

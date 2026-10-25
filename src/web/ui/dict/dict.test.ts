@@ -876,6 +876,14 @@ describe("dict_ssr", () => {
     expect(html).toContain('<span class="jump-pill-count">1</span>');
     expect(html).toContain('class="jump-pill jump-pill-zero"');
     expect(html).toContain('<span class="jump-pill-count">0</span>');
+    expect(html).toContain('class="tab-pill copy-pill dict-search-copy"');
+    expect(html).toContain('href="/dicts?q=habeo&amp;d=1v&amp;o=1"');
+
+    const embeddedHtml = renderDictResultsHtml("habeo", results, {
+      queriedDicts: ["GAF", "GRG", "L&S"],
+      isEmbedded: true,
+    });
+    expect(embeddedHtml).not.toContain("dict-search-copy");
   });
 
   test("renderDictResultsHtml omits jump bar when hitKeys <= 1", () => {

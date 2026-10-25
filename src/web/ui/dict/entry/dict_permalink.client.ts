@@ -1,12 +1,9 @@
 import {
-  copyText,
+  copyOrNavigate,
   openSectionActionMenu,
-  showToast,
 } from "@/web/ui/core/index.client";
 import { flashElement } from "@/web/ui/core/dom/dom.client";
 
-const COPIED_CLASS = "is-copied";
-const COPIED_DURATION_MS = 1400;
 const HIGHLIGHT_CLASS = "target-active";
 
 /**
@@ -14,7 +11,7 @@ const HIGHLIGHT_CLASS = "target-active";
  *
  * Both controls are real anchors in the SSR markup, so the permalink exists and
  * is shareable with JS disabled. When JS is present we intercept the click:
- * - Article-level `a.copy-pill` copies the permalink in one click.
+ * - Search-level or article-level `a.copy-pill` copies the permalink in one click.
  * - Sense-level `a.section-anchor` opens an anchored menu with "Copy permalink"
  *   and "Suggest correction".
  *
@@ -28,7 +25,10 @@ export function handleDictPermalinkClick(
   if (pill) {
     // Pill in dict-search's results; copies the link
     event.preventDefault();
-    void copyOrNavigate(pill.href, "Copied link to this article", pill);
+    const message = pill.classList.contains("dict-search-copy")
+      ? "Copied link to this search"
+      : "Copied link to this article";
+    void copyOrNavigate(pill.href, message, pill);
     return true;
   }
 
@@ -110,24 +110,4 @@ function flashSection(anchor: HTMLAnchorElement): void {
   const targetEl = targetId ? document.getElementById(targetId) : null;
   const element = targetEl ?? anchor;
   flashElement(element, HIGHLIGHT_CLASS);
-}
-
-async function copyOrNavigate(
-  url: string,
-  message: string,
-  control: HTMLElement
-): Promise<void> {
-  const copied = await copyText(url);
-  if (!copied) {
-    // Fall back to navigating so the user still ends up with a shareable URL in
-    // the address bar, rather than a click that silently did nothing.
-    window.location.assign(url);
-    return;
-  }
-  showToast(message);
-  control.classList.add(COPIED_CLASS);
-  window.setTimeout(
-    () => control.classList.remove(COPIED_CLASS),
-    COPIED_DURATION_MS
-  );
 }

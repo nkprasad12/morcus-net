@@ -6,6 +6,7 @@
 @import "./core/widgets/toast.css";
 @import "./core/widgets/drawer.css";
 @import "./core/nav/components.css";
+@import "./core/widgets/copy_pill.css";
 @import "./core/state/settings.css";
 @import "./core/widgets/resize_handle.css";
 @import "./dict/search/search.css";

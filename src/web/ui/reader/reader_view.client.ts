@@ -7,6 +7,7 @@ import {
   DRAWER_FLOOR_SVH,
   bindBackToTop,
   closeActiveSectionUI,
+  copyOrNavigate,
   copyText,
   createWordSpan,
   currentIframeSrc,
@@ -396,6 +397,21 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       // Its drawer open link / FAB restores the drawer in place
       e.preventDefault();
       this.restoreDrawer();
+      return;
+    }
+
+    // Handle chapter/page heading click (copies page permalink in place)
+    const headingLink = e.target.closest<HTMLAnchorElement>(
+      "a.reader-heading-link"
+    );
+    if (headingLink) {
+      // Copies the page permalink in place instead of navigating
+      e.preventDefault();
+      const pageId = this.dataset.page;
+      const toastMsg = pageId
+        ? `Copied permalink: § ${pageId}`
+        : "Copied link to this page";
+      void copyOrNavigate(headingLink.href, toastMsg, headingLink);
       return;
     }
 

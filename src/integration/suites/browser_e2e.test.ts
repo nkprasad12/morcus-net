@@ -736,7 +736,7 @@ test.describe("UI V2 dictionary", () => {
     await expect(headword).toBeVisible();
     await expect(headword).not.toHaveAttribute("href", /./);
 
-    const copyPill = page.locator(".copy-pill").first();
+    const copyPill = page.locator(".entry .copy-pill").first();
     await expect(copyPill).toBeVisible();
     await expect(copyPill).toHaveAttribute("href", /^\/dicts\/id\/.+/);
 
@@ -758,7 +758,7 @@ test.describe("UI V2 dictionary", () => {
     }
     await page.goto("/dicts?q=habeo");
 
-    const copyPill = page.locator(".copy-pill").first();
+    const copyPill = page.locator(".entry .copy-pill").first();
     await expect(copyPill).toBeVisible();
     const urlBefore = page.url();
     await copyPill.click();
@@ -780,7 +780,7 @@ test.describe("UI V2 dictionary", () => {
     const page = await context.newPage();
     await page.goto("/dicts?q=habeo");
 
-    const copyPill = page.locator(".copy-pill").first();
+    const copyPill = page.locator(".entry .copy-pill").first();
     await expect(copyPill).toBeVisible();
     // No JS means no clipboard interception, so the anchor must still be a
     // genuinely navigable permalink rather than a decorative control.
@@ -1372,7 +1372,7 @@ test.describe("UI V2 corpus", () => {
     await expect(page).toHaveURL(/\/corpus\?q=Roma/);
     await expect(page).toHaveTitle(/Corpus \| Morcus Latin Tools/);
     await expect(page.locator(".corpus-result-list")).toBeVisible();
-    await expect(page.locator(".corpus-beta-chip")).toBeVisible();
+    await expect(page.locator(".corpus-copy-pill")).toBeVisible();
   });
 
   test("supports direct SSR deep-link and query parameter syncing", async ({

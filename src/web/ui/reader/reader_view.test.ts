@@ -4373,6 +4373,42 @@ describe("section jump highlighting", () => {
     );
   });
 
+  test("clicking the passage heading permalink copies the page URL without clobbering the saved reading spot", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    const el = createReaderView(`
+      <h1 class="reader-passage-heading"><a href="/work/caesar/dbg/1.2" class="reader-heading-link" title="Copy link to this page">Liber I: Caput 2</a></h1>
+      <p>Gallia</p>
+    `);
+    el.dataset.work = "caesar/dbg";
+    el.dataset.page = "1.2";
+    localStorage.setItem(
+      "morcus_saved_spots",
+      JSON.stringify({ "caesar/dbg": "1.2.5" })
+    );
+
+    const link = el.querySelector<HTMLAnchorElement>("a.reader-heading-link")!;
+    const event = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+    });
+    link.dispatchEvent(event);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(writeText).toHaveBeenCalledWith(
+      "http://localhost/work/caesar/dbg/1.2"
+    );
+    expect(link.classList.contains("is-copied")).toBe(true);
+    expect(document.getElementById("toast")?.textContent).toBe(
+      "Copied permalink: § 1.2"
+    );
+    expect(JSON.parse(localStorage.getItem("morcus_saved_spots")!)).toEqual({
+      "caesar/dbg": "1.2.5",
+    });
+  });
+
   describe("reader_text.css", () => {
     const css = fs
       .readFileSync(path.join(__dirname, "reader_text.css"), "utf-8")

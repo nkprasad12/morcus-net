@@ -115,12 +115,12 @@
   --disclaimer-bg: rgba(220, 50, 47, 0.05);
   --disclaimer-border: rgba(220, 50, 47, 0.2);
   --beta-chip-bg: rgba(191, 222, 207, 0.5);
-  --beta-chip-border: #99c2b0;
   --beta-chip-text: #1d3b33;
   --scrollbar-thumb: rgba(0, 0, 0, 0.25);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
   --drawer-shadow: 0 -6px 20px rgba(0, 0, 0, 0.09),
     0 -1px 4px rgba(0, 0, 0, 0.04);
+  --results-overflow-shadow: -8px 0 8px -6px rgba(0, 0, 0, 0.35);
   --dict-toc-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   --dict-toc-rail-border: var(--border);
   --dict-toc-header-bg: #f1f3f5;
@@ -208,12 +208,12 @@
     --disclaimer-bg: rgba(232, 116, 59, 0.1);
     --disclaimer-border: rgba(232, 116, 59, 0.28);
     --beta-chip-bg: rgba(143, 174, 159, 0.25);
-    --beta-chip-border: #7c9b8c;
     --beta-chip-text: #a3c9b8;
     --scrollbar-thumb: rgba(255, 255, 255, 0.28);
     --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
     --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),
       0 -2px 8px rgba(0, 0, 0, 0.4), 0 -1px 0 rgba(255, 255, 255, 0.09);
+    --results-overflow-shadow: -8px 0 8px -6px rgba(255, 255, 255, 0.35);
     --dict-toc-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
     --dict-toc-rail-border: var(--border);
     --dict-toc-header-bg: var(--card-header-bg);
@@ -299,12 +299,12 @@
   --disclaimer-bg: rgba(232, 116, 59, 0.1);
   --disclaimer-border: rgba(232, 116, 59, 0.28);
   --beta-chip-bg: rgba(143, 174, 159, 0.25);
-  --beta-chip-border: #7c9b8c;
   --beta-chip-text: #a3c9b8;
   --scrollbar-thumb: rgba(255, 255, 255, 0.28);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
   --drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),
     0 -2px 8px rgba(0, 0, 0, 0.4), 0 -1px 0 rgba(255, 255, 255, 0.09);
+  --results-overflow-shadow: -8px 0 8px -6px rgba(255, 255, 255, 0.35);
   --dict-toc-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   --dict-toc-rail-border: var(--border);
   --dict-toc-header-bg: var(--card-header-bg);
