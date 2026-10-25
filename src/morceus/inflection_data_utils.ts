@@ -165,10 +165,10 @@ function mergeCompatibleDegree(
   return first === second ? first : undefined;
 }
 
-function updateInflectionData<T extends LatinCase | LatinGender>(
+function updateInflectionData<T>(
   previousValue: T | T[] | undefined,
   newValue: T
-) {
+): T | T[] {
   if (previousValue === undefined) {
     return newValue;
   } else if (Array.isArray(previousValue)) {
@@ -236,167 +236,146 @@ export function compareGrammaticalData(
   return comparisons.has(-1) ? -1 : 1;
 }
 
+function parseInflectionToken(
+  data: string,
+  result: WordInflectionData,
+  tags: string[],
+  internalTags: string[],
+  grammaticalData: string[]
+): void {
+  // Cases
+  if (data === "nom") {
+    result.case = updateInflectionData(result.case, LatinCase.Nominative);
+  } else if (data === "acc") {
+    result.case = updateInflectionData(result.case, LatinCase.Accusative);
+  } else if (data === "abl") {
+    result.case = updateInflectionData(result.case, LatinCase.Ablative);
+  } else if (data === "gen") {
+    result.case = updateInflectionData(result.case, LatinCase.Genitive);
+  } else if (data === "dat") {
+    result.case = updateInflectionData(result.case, LatinCase.Dative);
+  } else if (data === "voc") {
+    result.case = updateInflectionData(result.case, LatinCase.Vocative);
+  } else if (data === "loc") {
+    result.case = updateInflectionData(result.case, LatinCase.Locative);
+  }
+
+  // Persons
+  else if (data === "1st") {
+    result.person = updateInflectionData(result.person, LatinPerson.FIRST);
+  } else if (data === "2nd") {
+    result.person = updateInflectionData(result.person, LatinPerson.SECOND);
+  } else if (data === "3rd") {
+    result.person = updateInflectionData(result.person, LatinPerson.THIRD);
+  }
+
+  // Numbers
+  else if (data === "sg") {
+    assertEqual(result.number, undefined);
+    result.number = LatinNumber.Singular;
+  } else if (data === "pl") {
+    assertEqual(result.number, undefined);
+    result.number = LatinNumber.Plural;
+  }
+
+  // Voices
+  else if (data === "act") {
+    assertEqual(result.voice, undefined);
+    result.voice = LatinVoice.Active;
+  } else if (data === "pass") {
+    assertEqual(result.voice, undefined);
+    result.voice = LatinVoice.Passive;
+  }
+
+  // Genders
+  else if (data === "masc") {
+    result.gender = updateInflectionData(result.gender, LatinGender.Masculine);
+  } else if (data === "fem") {
+    result.gender = updateInflectionData(result.gender, LatinGender.Feminine);
+  } else if (data === "neut") {
+    result.gender = updateInflectionData(result.gender, LatinGender.Neuter);
+  } else if (data === "adverbial") {
+    assertEqual(result.gender, undefined);
+    result.gender = LatinGender.Adverbial;
+  }
+
+  // Degrees
+  else if (data === "superl") {
+    assertEqual(result.degree, undefined);
+    result.degree = LatinDegree.Superlative;
+  } else if (data === "comp") {
+    assertEqual(result.degree, undefined);
+    result.degree = LatinDegree.Comparative;
+  }
+
+  // Tenses
+  else if (data === "imperf") {
+    assertEqual(result.tense, undefined);
+    result.tense = LatinTense.Imperfect;
+  } else if (data === "fut") {
+    assertEqual(result.tense, undefined);
+    result.tense = LatinTense.Future;
+  } else if (data === "pres") {
+    assertEqual(result.tense, undefined);
+    result.tense = LatinTense.Present;
+  } else if (data === "perf") {
+    assertEqual(result.tense, undefined);
+    result.tense = LatinTense.Perfect;
+  } else if (data === "plup") {
+    assertEqual(result.tense, undefined);
+    result.tense = LatinTense.Pluperfect;
+  } else if (data === "futperf") {
+    assertEqual(result.tense, undefined);
+    result.tense = LatinTense.FuturePerfect;
+  }
+
+  // Moods
+  else if (data === "ind" || data === "indic") {
+    result.mood = updateInflectionData(result.mood, LatinMood.Indicative);
+  } else if (data === "subj") {
+    assertEqual(result.mood, undefined);
+    result.mood = LatinMood.Subjunctive;
+  } else if (data === "part") {
+    assertEqual(result.mood, undefined);
+    result.mood = LatinMood.Participle;
+  } else if (data === "gerundive") {
+    assertEqual(result.mood, undefined);
+    result.mood = LatinMood.Gerundive;
+  } else if (data === "imperat") {
+    result.mood = updateInflectionData(result.mood, LatinMood.Imperative);
+  } else if (data === "inf") {
+    assertEqual(result.mood, undefined);
+    result.mood = LatinMood.Infinitive;
+  } else if (data === "supine") {
+    assertEqual(result.mood, undefined);
+    result.mood = LatinMood.Supine;
+  }
+
+  // Other data
+  else if (isSemanticTag(data)) {
+    tags.push(data);
+  } else if (INTERNAL_TAGS.has(data)) {
+    internalTags.push(data);
+  } else {
+    throw new Error(`Unexpected: ${data} from [${grammaticalData}]`);
+  }
+}
+
 export function toInflectionData(grammaticalData: string[]): InflectionContext {
   const result: WordInflectionData = {};
   const tags: string[] = [];
   const internalTags: string[] = [];
-  for (const data of grammaticalData) {
-    // Cases
-    if (data === "nom") {
-      result.case = updateInflectionData(result.case, LatinCase.Nominative);
-    } else if (data === "acc") {
-      result.case = updateInflectionData(result.case, LatinCase.Accusative);
-    } else if (data === "abl") {
-      result.case = updateInflectionData(result.case, LatinCase.Ablative);
-    } else if (data === "gen") {
-      assertEqual(result.case, undefined);
-      result.case = LatinCase.Genitive;
-    } else if (data === "dat") {
-      result.case = updateInflectionData(result.case, LatinCase.Dative);
-    } else if (data === "voc") {
-      result.case = updateInflectionData(result.case, LatinCase.Vocative);
-    } else if (data === "abl/dat") {
-      assertEqual(result.case, undefined);
-      result.case = [LatinCase.Ablative, LatinCase.Dative];
-    } else if (data === "dat/abl") {
-      assertEqual(result.case, undefined);
-      result.case = [LatinCase.Dative, LatinCase.Ablative];
-    } else if (data === "nom/voc") {
-      result.case = updateInflectionData(result.case, LatinCase.Nominative);
-      result.case = updateInflectionData(result.case, LatinCase.Vocative);
-    } else if (data === "nom/acc") {
-      assertEqual(result.case, undefined);
-      result.case = [LatinCase.Nominative, LatinCase.Accusative];
-    } else if (data === "nom/voc/acc") {
-      assertEqual(result.case, undefined);
-      result.case = [
-        LatinCase.Nominative,
-        LatinCase.Vocative,
-        LatinCase.Accusative,
-      ];
-    }
 
-    // Persons
-    else if (data === "1st") {
-      assertEqual(result.person, undefined);
-      result.person = LatinPerson.FIRST;
-    } else if (data === "2nd") {
-      assertEqual(result.person, undefined);
-      result.person = LatinPerson.SECOND;
-    } else if (data === "3rd") {
-      assertEqual(result.person, undefined);
-      result.person = LatinPerson.THIRD;
+  for (const raw of grammaticalData) {
+    if (!raw.includes("/")) {
+      parseInflectionToken(raw, result, tags, internalTags, grammaticalData);
+      continue;
     }
-
-    // Numbers
-    else if (data === "sg") {
-      assertEqual(result.number, undefined);
-      result.number = LatinNumber.Singular;
-    } else if (data === "pl") {
-      assertEqual(result.number, undefined);
-      result.number = LatinNumber.Plural;
-    }
-
-    // Voices
-    else if (data === "act") {
-      assertEqual(result.voice, undefined);
-      result.voice = LatinVoice.Active;
-    } else if (data === "pass") {
-      assertEqual(result.voice, undefined);
-      result.voice = LatinVoice.Passive;
-    }
-
-    // Genders
-    else if (data === "masc") {
-      result.gender = updateInflectionData(
-        result.gender,
-        LatinGender.Masculine
-      );
-    } else if (data === "fem") {
-      result.gender = updateInflectionData(result.gender, LatinGender.Feminine);
-    } else if (data === "neut") {
-      result.gender = updateInflectionData(result.gender, LatinGender.Neuter);
-    } else if (data === "masc/neut") {
-      assertEqual(result.gender, undefined);
-      result.gender = [LatinGender.Masculine, LatinGender.Neuter];
-    } else if (data === "masc/fem") {
-      assertEqual(result.gender, undefined);
-      result.gender = [LatinGender.Masculine, LatinGender.Feminine];
-    } else if (data === "adverbial") {
-      assertEqual(result.gender, undefined);
-      result.gender = LatinGender.Adverbial;
-    } else if (data === "masc/fem/neut") {
-      assertEqual(result.gender, undefined);
-      result.gender = [
-        LatinGender.Masculine,
-        LatinGender.Feminine,
-        LatinGender.Neuter,
-      ];
-    }
-
-    // Degrees
-    else if (data === "superl") {
-      assertEqual(result.degree, undefined);
-      result.degree = LatinDegree.Superlative;
-    } else if (data === "comp") {
-      assertEqual(result.degree, undefined);
-      result.degree = LatinDegree.Comparative;
-    }
-
-    // Tenses
-    else if (data === "imperf") {
-      assertEqual(result.tense, undefined);
-      result.tense = LatinTense.Imperfect;
-    } else if (data === "fut") {
-      assertEqual(result.tense, undefined);
-      result.tense = LatinTense.Future;
-    } else if (data === "pres") {
-      assertEqual(result.tense, undefined);
-      result.tense = LatinTense.Present;
-    } else if (data === "perf") {
-      assertEqual(result.tense, undefined);
-      result.tense = LatinTense.Perfect;
-    } else if (data === "plup") {
-      assertEqual(result.tense, undefined);
-      result.tense = LatinTense.Pluperfect;
-    } else if (data === "futperf") {
-      assertEqual(result.tense, undefined);
-      result.tense = LatinTense.FuturePerfect;
-    }
-
-    // Moods
-    else if (data === "ind" || data === "indic") {
-      assertEqual(result.mood, undefined);
-      result.mood = LatinMood.Indicative;
-    } else if (data === "subj") {
-      assertEqual(result.mood, undefined);
-      result.mood = LatinMood.Subjunctive;
-    } else if (data === "part") {
-      assertEqual(result.mood, undefined);
-      result.mood = LatinMood.Participle;
-    } else if (data === "gerundive") {
-      assertEqual(result.mood, undefined);
-      result.mood = LatinMood.Gerundive;
-    } else if (data === "imperat") {
-      assertEqual(result.mood, undefined);
-      result.mood = LatinMood.Imperative;
-    } else if (data === "inf") {
-      assertEqual(result.mood, undefined);
-      result.mood = LatinMood.Infinitive;
-    } else if (data === "supine") {
-      assertEqual(result.mood, undefined);
-      result.mood = LatinMood.Supine;
-    }
-
-    // Other data
-    else if (isSemanticTag(data)) {
-      tags.push(data);
-    } else if (INTERNAL_TAGS.has(data)) {
-      internalTags.push(data);
-    } else {
-      throw new Error(`Unexpected: ${data} from [${grammaticalData}]`);
+    for (const data of raw.split("/")) {
+      parseInflectionToken(data, result, tags, internalTags, grammaticalData);
     }
   }
+
   return {
     grammaticalData: result,
     tags: tags.length === 0 ? undefined : tags,

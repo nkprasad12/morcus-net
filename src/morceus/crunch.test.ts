@@ -233,10 +233,92 @@ describe("consolidateResultCluster", () => {
     expect(outputs).toStrictEqual([resultFor("abl/dat pl")]);
   });
 
-  it("does not combine unmergeable case results", () => {
-    const inputs: CrunchResult[] = ["acc pl", "dat pl"].map(resultFor);
+  it("combines genitive and dative cases (-ae, -eī)", () => {
+    const inputs: CrunchResult[] = [
+      "fem gen sg",
+      "fem dat sg",
+      "fem nom/voc pl",
+    ].map(resultFor);
     const outputs = consolidateResultCluster(inputs);
-    expect(outputs).toStrictEqual(inputs);
+    expect(outputs).toStrictEqual([
+      resultFor("fem gen/dat sg"),
+      resultFor("fem nom/voc pl"),
+    ]);
+  });
+
+  it("combines nominative/vocative and accusative plural (-ēs, -ūs)", () => {
+    const inputs: CrunchResult[] = [
+      "masc/fem nom/voc pl",
+      "masc/fem acc pl",
+    ].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual([resultFor("masc/fem nom/voc/acc pl")]);
+  });
+
+  it("combines multi-step gender and case dependencies", () => {
+    // Like ans_antis: dat sg split by gender, abl sg unified
+    const inputs: CrunchResult[] = [
+      "masc/fem dat sg",
+      "neut dat sg",
+      "masc/fem/neut abl sg",
+    ].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual([resultFor("masc/fem/neut dat/abl sg")]);
+  });
+
+  it("combines 2nd and 3rd person future imperatives (-tō, -tor)", () => {
+    const inputs: CrunchResult[] = [
+      "fut imperat act 2nd sg",
+      "fut imperat act 3rd sg",
+    ].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual([resultFor("fut imperat act 2nd/3rd sg")]);
+  });
+
+  it("combines indicative and imperative 2nd person passives (-re, -minī)", () => {
+    const inputs: CrunchResult[] = [
+      "pres ind pass 2nd pl",
+      "pres imperat pass 2nd pl",
+    ].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual([resultFor("pres ind/imperat pass 2nd pl")]);
+  });
+
+  it("does not combine unmergeable mood results", () => {
+    for (const pair of [
+      ["pres subj act 1st sg", "pres ind act 1st sg"],
+      ["pres subj act 2nd sg", "pres imperat act 2nd sg"],
+      ["fut part pass masc nom sg", "gerundive pass masc nom sg"],
+      ["pres inf act", "pres imperat pass 2nd sg"],
+    ]) {
+      const inputs = pair.map(resultFor);
+      expect(consolidateResultCluster(inputs)).toStrictEqual(inputs);
+    }
+  });
+
+  it("does not combine across number, tense, voice, degree, or adverbial gender", () => {
+    for (const pair of [
+      ["fem nom sg", "fem nom pl"],
+      ["pres ind act 3rd sg", "perf ind act 3rd sg"],
+      ["pres ind act 1st sg", "pres ind pass 1st sg"],
+      ["masc nom sg comp", "masc nom sg superl"],
+      ["neut nom sg", "adverbial"],
+    ]) {
+      const inputs = pair.map(resultFor);
+      const outputs = consolidateResultCluster(inputs);
+      expect(outputs).toHaveLength(inputs.length);
+      expect(outputs).toEqual(expect.arrayContaining(inputs));
+    }
+  });
+
+  it("does not combine results differing in multiple mergeable categories at once", () => {
+    for (const pair of [
+      ["masc gen sg", "fem dat sg"],
+      ["pres ind act 1st sg", "pres imperat act 2nd sg"],
+    ]) {
+      const inputs = pair.map(resultFor);
+      expect(consolidateResultCluster(inputs)).toStrictEqual(inputs);
+    }
   });
 
   it("combines mergeable gender results", () => {

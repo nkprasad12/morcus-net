@@ -26,6 +26,7 @@ import {
   LatinDegree,
   LatinGender,
   LatinMood,
+  LatinPerson,
   LatinTense,
   type WordInflectionData,
 } from "@/morceus/types";
@@ -139,10 +140,17 @@ function consolidateByCategory<T extends keyof WordInflectionData>(
   category: T,
   consolidable: WordInflectionData[T][]
 ): CrunchResult[] {
+  if (cluster.length <= 1) {
+    return cluster;
+  }
   const unmerged: CrunchResult[] = [];
   const mergeGroups: CrunchResult[] = [];
   for (const item of cluster) {
     const itemField = item.grammaticalData[category];
+    if (itemField === undefined) {
+      unmerged.push(item);
+      continue;
+    }
     // @ts-expect-error
     const k = compareField(itemField, consolidable);
     // Only consider those that have a subset.
@@ -159,33 +167,34 @@ function consolidateByCategory<T extends keyof WordInflectionData>(
       leaderData[category] = undefined;
       if (compareGrammaticalData(currData, leaderData) === 0) {
         // @ts-expect-error
-        leaderData[category] = [
-          // @ts-expect-error
-          ...fieldAsArray(leader.grammaticalData[category]),
-          // @ts-expect-error
-          ...fieldAsArray(item.grammaticalData[category]),
-        ];
+        leaderData[category] = Array.from(
+          new Set([
+            // @ts-expect-error
+            ...fieldAsArray(leader.grammaticalData[category]),
+            // @ts-expect-error
+            ...fieldAsArray(item.grammaticalData[category]),
+          ])
+        );
         leader.grammaticalData = leaderData;
         consumed = true;
         break;
       }
     }
     if (!consumed) {
-      mergeGroups.push(item);
+      mergeGroups.push({ ...item });
     }
   }
   return unmerged.concat(mergeGroups);
 }
 
-/** Consolidates cruncher results to reduce duplication. */
-export function consolidateResultCluster(
-  cluster: CrunchResult[]
-): CrunchResult[] {
-  let original = cluster.slice();
-  // Merge results that are strict subsets of other results.
+function consolidateSubsets(original: CrunchResult[]): CrunchResult[] {
+  if (original.length <= 1) {
+    return original;
+  }
+  let current = original.slice();
   while (true) {
     const consolidated: CrunchResult[] = [];
-    for (const result of original) {
+    for (const result of current) {
       let consumed = false;
       for (let i = 0; i < consolidated.length; i++) {
         const comparison = compareGrammaticalData(
@@ -204,21 +213,53 @@ export function consolidateResultCluster(
         consolidated.push(result);
       }
     }
-    const didConsolidate = original.length !== consolidated.length;
-    original = consolidated;
+    const didConsolidate = current.length !== consolidated.length;
+    current = consolidated;
     if (!didConsolidate) {
       break;
     }
   }
-  original = consolidateByCategory(original, "case", [
-    LatinCase.Ablative,
-    LatinCase.Dative,
-  ]);
-  return consolidateByCategory(original, "gender", [
-    LatinGender.Feminine,
-    LatinGender.Masculine,
-    LatinGender.Neuter,
-  ]);
+  return current;
+}
+
+/** Consolidates cruncher results to reduce duplication. */
+export function consolidateResultCluster(
+  cluster: CrunchResult[]
+): CrunchResult[] {
+  if (cluster.length <= 1) {
+    return cluster;
+  }
+  let current = cluster.slice();
+  while (true) {
+    const startLength = current.length;
+    current = consolidateSubsets(current);
+    current = consolidateByCategory(current, "case", [
+      LatinCase.Nominative,
+      LatinCase.Accusative,
+      LatinCase.Dative,
+      LatinCase.Genitive,
+      LatinCase.Ablative,
+      LatinCase.Vocative,
+      LatinCase.Locative,
+    ]);
+    current = consolidateByCategory(current, "gender", [
+      LatinGender.Feminine,
+      LatinGender.Masculine,
+      LatinGender.Neuter,
+    ]);
+    current = consolidateByCategory(current, "person", [
+      LatinPerson.FIRST,
+      LatinPerson.SECOND,
+      LatinPerson.THIRD,
+    ]);
+    current = consolidateByCategory(current, "mood", [
+      LatinMood.Indicative,
+      LatinMood.Imperative,
+    ]);
+    if (current.length <= 1 || current.length === startLength) {
+      return current;
+    }
+  }
 }
 
 function consolidateCrunchResults(rawResults: CrunchResult[]): CrunchResult[] {
