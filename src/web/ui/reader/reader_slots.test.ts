@@ -79,4 +79,3 @@ describe("formatReaderPageTitle", () => {
     expect(formatReaderPageTitle({})).toBe("Morcus Latin Tools");
   });
 });
-

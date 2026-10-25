@@ -175,7 +175,6 @@ jobs:
           name: functional-test-report-${{ matrix.arch }}
           path: playwright-report/
 
-
   build-helper-images:
     runs-on: ubuntu-24.04
     timeout-minutes: 10

@@ -5,7 +5,9 @@ import {
 
 describe("dictPageTitle", () => {
   test("query, ID lookup, and the landing page", () => {
-    expect(dictPageTitle("amo")).toBe("amo | Dictionaries | Morcus Latin Tools");
+    expect(dictPageTitle("amo")).toBe(
+      "amo | Dictionaries | Morcus Latin Tools"
+    );
     expect(dictPageTitle("n20077", true)).toBe(
       "ID n20077 | Dictionaries | Morcus Latin Tools"
     );

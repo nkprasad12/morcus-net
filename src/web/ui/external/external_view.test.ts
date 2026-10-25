@@ -78,9 +78,7 @@ describe("external text in <morcus-reader-view>", () => {
     const writeText = jest.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
     const view = mount("Belgae");
-    const link = view.querySelector<HTMLAnchorElement>(
-      "a.reader-heading-link"
-    );
+    const link = view.querySelector<HTMLAnchorElement>("a.reader-heading-link");
     expect(link).not.toBeNull();
     expect(link?.getAttribute("href")).toBe(
       "/externalReader?url=https%3A%2F%2Fexample.com%2Fbg.html"

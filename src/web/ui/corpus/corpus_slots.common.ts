@@ -17,4 +17,3 @@ export const CORPUS_SLOTS = [
 ] as const;
 
 export type CorpusSlot = (typeof CORPUS_SLOTS)[number];
-

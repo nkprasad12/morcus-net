@@ -403,9 +403,8 @@ describe("<morcus-corpus-view>", () => {
     Object.assign(navigator, { clipboard: { writeText } });
     await mount("/corpus?q=omnis&contextLen=20&pageSize=50");
 
-    const pill = document.querySelector<HTMLAnchorElement>(
-      "a.corpus-copy-pill"
-    );
+    const pill =
+      document.querySelector<HTMLAnchorElement>("a.corpus-copy-pill");
     expect(pill).not.toBeNull();
     const event = click(pill);
     await settle();
