@@ -375,37 +375,58 @@ describe("core/dom.client", () => {
       );
     });
 
-    it("switches a deferred lazy frame to eager before changing its src", () => {
-      // Safari 18.x reloads a still-deferred lazy frame from its *original*
-      // src once it shows, if src changed first.
+    it("replaces a deferred lazy frame with a fresh lazy copy born with the new src", () => {
+      // WebKit mishandles a src change on a still-deferred lazy frame: older
+      // Safari reloads the *original* src once it shows, and switching to
+      // eager first adds a top-level history entry. A fresh element does
+      // neither.
+      const container = document.createElement("div");
       const iframe = document.createElement("iframe");
+      iframe.id = "dict-frame";
+      iframe.setAttribute("name", "dict-frame");
       iframe.setAttribute("src", "/dicts?embedded=1");
       iframe.setAttribute("loading", "lazy");
-      document.body.appendChild(iframe);
-      const order: string[] = [];
-      const setAttribute = iframe.setAttribute.bind(iframe);
-      jest
-        .spyOn(iframe, "setAttribute")
-        .mockImplementation((name: string, value: string) => {
-          order.push(name);
-          setAttribute(name, value);
-        });
-      const srcSetter = jest
-        .spyOn(iframe, "src", "set")
-        .mockImplementation((value: string) => {
-          order.push("src");
-          setAttribute("src", value);
-        });
+      iframe.setAttribute("data-dict-unarmed", "");
+      container.appendChild(iframe);
+      document.body.appendChild(container);
+      const srcSetter = jest.spyOn(iframe, "src", "set");
 
-      navigateFrameReplace(iframe, "/dicts?q=arma&lang=La&o=1&embedded=1");
-
-      expect(order).toEqual(["loading", "src"]);
-      expect(iframe.getAttribute("loading")).toBe("eager");
-      expect(iframe.getAttribute("src")).toBe(
+      const result = navigateFrameReplace(
+        iframe,
         "/dicts?q=arma&lang=La&o=1&embedded=1"
       );
+
+      expect(srcSetter).not.toHaveBeenCalled();
+      expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1");
+      expect(iframe.isConnected).toBe(false);
+      expect(result).not.toBe(iframe);
+      expect(result.parentNode).toBe(container);
+      expect(container.querySelector("#dict-frame")).toBe(result);
+      expect(result.getAttribute("src")).toBe(
+        "/dicts?q=arma&lang=La&o=1&embedded=1"
+      );
+      expect(result.getAttribute("loading")).toBe("lazy");
+      expect(result.getAttribute("name")).toBe("dict-frame");
+      expect(result.hasAttribute("data-dict-unarmed")).toBe(true);
       srcSetter.mockRestore();
-      iframe.remove();
+      container.remove();
+    });
+
+    it("returns the same element when navigating in place", () => {
+      const iframe = document.createElement("iframe");
+      Object.defineProperty(iframe, "contentWindow", {
+        configurable: true,
+        value: { location: { pathname: "/dicts", replace: jest.fn() } },
+      });
+      expect(navigateFrameReplace(iframe, "/dicts?q=arma")).toBe(iframe);
+
+      const eagerFrame = document.createElement("iframe");
+      document.body.appendChild(eagerFrame);
+      expect(navigateFrameReplace(eagerFrame, "/dicts?q=arma")).toBe(
+        eagerFrame
+      );
+      expect(eagerFrame.getAttribute("src")).toBe("/dicts?q=arma");
+      eagerFrame.remove();
     });
 
     it("falls back to assigning iframe.src when contentWindow is null or throws", () => {

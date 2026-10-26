@@ -127,21 +127,54 @@ export function currentIframeSrc(iframe: HTMLIFrameElement): string | null {
 }
 
 /**
- * Sets an iframe's `src`, first switching a `loading="lazy"` frame to eager.
- *
- * Changing `src` while WebKit is still deferring a lazy frame loads the new
- * URL at once but leaves the lazy-load observer armed, so the frame loads
- * again once it scrolls into view. Before WebKit 292445@main (Safari 18.x),
- * that second load uses the URL deferred at first, not the new one: the
- * frame snaps back to its original document. Going eager first ends the
- * deferral (starting the deferred URL's load), and the `src` change then
- * replaces that navigation, so every engine ends on `url`.
+ * Whether a same-origin iframe has loaded a real document (not the initial
+ * `about:blank`, e.g. while `loading="lazy"` is deferring it).
  */
-export function assignIframeSrc(iframe: HTMLIFrameElement, url: string): void {
-  if (iframe.getAttribute("loading")?.toLowerCase() === "lazy") {
-    iframe.setAttribute("loading", "eager");
+function hasLoadedDocument(iframe: HTMLIFrameElement): boolean {
+  try {
+    const win = iframe.contentWindow;
+    return !!win && win.location.pathname.startsWith("/");
+  } catch {
+    // Cross-origin or sandboxed.
+    return false;
+  }
+}
+
+/**
+ * Points an iframe at `url`, returning the element now showing it: a
+ * connected `loading="lazy"` frame that hasn't loaded a document yet is
+ * replaced by a copy born with `url`, so callers must use the returned
+ * element (and listen for its `load` on an ancestor, in the capture phase)
+ * rather than keep the old one.
+ *
+ * WebKit mishandles a `src` change on a lazy frame it is still deferring.
+ * The change loads the new URL at once but leaves the lazy-load observer
+ * armed, so the frame loads again once it scrolls into view; before WebKit
+ * 292445@main (including iPad Safari 18.x), that second load uses the URL
+ * deferred at first, and the frame snaps back to its original document.
+ * Switching the frame to eager before the change avoids that, but WebKit
+ * then records the change as a new entry in the top-level joint session
+ * history (one extra Back press). A fresh element with `url` from the start
+ * has no deferred URL to snap back to, and its first load adds no history
+ * entry; it stays lazy, so it still waits until it is shown.
+ */
+export function assignIframeSrc(
+  iframe: HTMLIFrameElement,
+  url: string
+): HTMLIFrameElement {
+  const fresh =
+    iframe.getAttribute("loading") === "lazy" &&
+    iframe.isConnected &&
+    !hasLoadedDocument(iframe)
+      ? iframe.cloneNode()
+      : null;
+  if (fresh instanceof HTMLIFrameElement) {
+    fresh.src = url;
+    iframe.replaceWith(fresh);
+    return fresh;
   }
   iframe.src = url;
+  return iframe;
 }
 
 /**
@@ -149,22 +182,22 @@ export function assignIframeSrc(iframe: HTMLIFrameElement, url: string): void {
  * history entry, so the navigation does not push to the top-level joint session
  * history. Before the frame has loaded a document (e.g. `about:blank` while
  * `loading="lazy"` is deferred), or when `contentWindow` is null or throws,
- * assigns `iframe.src` directly (see {@link assignIframeSrc}).
+ * falls back to {@link assignIframeSrc}, which may replace the element.
+ * Returns the element now showing `url`.
  */
 export function navigateFrameReplace(
   iframe: HTMLIFrameElement,
   url: string
-): void {
+): HTMLIFrameElement {
   try {
-    const win = iframe.contentWindow;
-    if (win && win.location.pathname.startsWith("/")) {
-      win.location.replace(url);
-      return;
+    if (hasLoadedDocument(iframe)) {
+      iframe.contentWindow?.location.replace(url);
+      return iframe;
     }
   } catch {
     // Cross-origin or sandboxed: fall through
   }
-  assignIframeSrc(iframe, url);
+  return assignIframeSrc(iframe, url);
 }
 
 /**

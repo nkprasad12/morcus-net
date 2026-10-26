@@ -359,13 +359,21 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.#initKeyboardShortcuts();
     const iframe = this.#dictFrame;
     if (iframe) {
-      this.scope.listen(iframe, "load", () => {
-        this.#applyDictScale();
-        // Searches inside the dictionary iframe are activity too, but its
-        // events never reach this document's listeners.
-        this.#wakeLock.extend();
-        this.#consumePendingDictFocus();
-      });
+      // On the host, in the capture phase (`load` doesn't bubble): pointing
+      // the still-lazy frame at a URL replaces the element (`assignIframeSrc`).
+      this.scope.listen(
+        this,
+        "load",
+        (e) => {
+          if (e.target !== this.#dictFrame) return;
+          this.#applyDictScale();
+          // Searches inside the dictionary iframe are activity too, but its
+          // events never reach this document's listeners.
+          this.#wakeLock.extend();
+          this.#consumePendingDictFocus();
+        },
+        { capture: true }
+      );
       if (!iframe.hasAttribute("data-dict-unarmed")) {
         this.#applyScaleToIframeSrc(iframe);
       }
@@ -1237,9 +1245,10 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
   /**
    * Points the iframe at its URL with the current `scale=`, so it first
    * paints at the right size (the load handler also sets `--dict-scale`).
-   * Reloads only when the URL actually changes.
+   * Reloads only when the URL actually changes. Returns the element now
+   * showing the frame (see `assignIframeSrc`).
    */
-  #applyScaleToIframeSrc(iframe: HTMLIFrameElement) {
+  #applyScaleToIframeSrc(iframe: HTMLIFrameElement): HTMLIFrameElement {
     const rawSrc = iframe.getAttribute("src");
     const baseSrc =
       !rawSrc || rawSrc === "about:blank" ? "/dicts?embedded=1" : rawSrc;
@@ -1251,9 +1260,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       url.searchParams.set("scale", String(scale));
     }
     const nextSrc = `${url.pathname}${url.search}${url.hash}`;
-    if (nextSrc !== rawSrc) {
-      assignIframeSrc(iframe, nextSrc);
-    }
+    return nextSrc !== rawSrc ? assignIframeSrc(iframe, nextSrc) : iframe;
   }
 
   #armDictFrame() {
@@ -1265,14 +1272,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       rawSrc === "about:blank" ||
       currentIframeSrc(iframe) === "about:blank";
     if (!iframe.hasAttribute("data-dict-unarmed") && !isBlank) return;
-    // Arming loads the frame now, so it no longer needs to be lazy. Going
-    // eager *before* the `src` change matters in WebKit: changing `src` on a
-    // still-deferred lazy frame loads it again once it shows (and before
-    // Safari 18.x's fix, from the old `src`), wiping whatever `/` pre-filled
-    // and focused in the first load. See `assignIframeSrc`.
-    iframe.setAttribute("loading", "eager");
-    this.#applyScaleToIframeSrc(iframe);
-    iframe.removeAttribute("data-dict-unarmed");
+    // Arming loads the frame now, so it no longer needs to be lazy. Go eager
+    // only *after* the frame has its final URL: in WebKit, a `src` change on
+    // a still-deferred lazy frame (eager or not) misbehaves. See
+    // `assignIframeSrc`.
+    const armed = this.#applyScaleToIframeSrc(iframe);
+    armed.setAttribute("loading", "eager");
+    armed.removeAttribute("data-dict-unarmed");
   }
 
   #focusDictSearch(selectedWord: string) {

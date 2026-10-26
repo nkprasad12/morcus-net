@@ -66,6 +66,39 @@ function clickDictClose(el: MorcusReaderView): void {
   el.querySelector<HTMLAnchorElement>(".reader-sheet-close")!.click();
 }
 
+/**
+ * The current `#dict-frame`. Pointing the still-lazy frame at a URL replaces
+ * the element (`assignIframeSrc`), so look it up again after the first lookup
+ * or `/` rather than holding on to the server-rendered one.
+ */
+function dictFrame(el: Element): HTMLIFrameElement {
+  return el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+}
+
+/** Makes `iframe` look like it has loaded a same-origin dictionary document. */
+function stubLoadedFrame(
+  iframe: HTMLIFrameElement,
+  frameDoc: Document,
+  location: Partial<Location> = {}
+): void {
+  Object.defineProperty(iframe, "contentDocument", {
+    value: frameDoc,
+    configurable: true,
+  });
+  Object.defineProperty(iframe, "contentWindow", {
+    value: {
+      location: {
+        pathname: "/dicts",
+        search: "",
+        hash: "",
+        replace: jest.fn(),
+        ...location,
+      },
+    },
+    configurable: true,
+  });
+}
+
 function createReaderView(
   innerPassageHtml: string,
   options: {
@@ -225,7 +258,7 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     window.history.replaceState(null, "", "/work/vergil/aeneid/1");
     const pushStateSpy = jest.spyOn(window.history, "pushState");
     const el = createReaderView(passageHtml);
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
+    const initialFrame = dictFrame(el);
     const musaWord = el.querySelector<HTMLElement>(".lat-word")!;
     expect(musaWord.textContent).toBe("Mu\u0304sa");
 
@@ -234,16 +267,19 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     // Word receives active highlight class
     expect(musaWord.classList.contains("word-active")).toBe(true);
 
-    // First lookup while iframe is still on about:blank sets iframe.src without pushing ?q= to parent URL
+    // First lookup while iframe is still on about:blank swaps in a fresh frame
+    // born with the lookup URL, without pushing ?q= to parent URL
+    const iframe = dictFrame(el);
+    expect(iframe).not.toBe(initialFrame);
     expect(iframe.getAttribute("src")).toBe(
       "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1&scale=93"
     );
     expect(currentIframeSrc(iframe)).toContain(
       "/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1"
     );
-    // Left lazy, Safari 18.x would reload its original (blank) src once the
-    // drawer shows it, so the first tap would land on an empty dictionary.
-    expect(iframe.getAttribute("loading")).toBe("eager");
+    // Born with its URL, the frame can stay lazy: there is no deferred URL
+    // for older Safari to reload once the drawer shows it.
+    expect(iframe.getAttribute("loading")).toBe("lazy");
     expect(pushStateSpy).not.toHaveBeenCalled();
     pushStateSpy.mockRestore();
     expect(window.location.search).toBe("");
@@ -467,8 +503,8 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
 
     test("the dictionary gets the panel size as is on phones (both bases are 1.1rem), and follows breakpoint changes", () => {
       const el = createReaderView("<p>Arma virumque cano.</p>");
-      const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
       el.querySelector<HTMLElement>(".lat-word")!.click();
+      const iframe = dictFrame(el);
       expect(iframe.getAttribute("src")).toContain("&scale=85");
 
       const frameDoc = document.implementation.createHTMLDocument("");
@@ -2042,8 +2078,9 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     );
 
     expect(split.classList.contains("reader-layout-active")).toBe(true);
-    expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
-    expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1&scale=93");
+    const armed = dictFrame(el);
+    expect(armed.hasAttribute("data-dict-unarmed")).toBe(false);
+    expect(armed.getAttribute("src")).toBe("/dicts?embedded=1&scale=93");
   });
 
   test("ignores window shortcuts when defaultPrevented or isComposing is true", () => {
@@ -2225,10 +2262,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     const frameDoc = document.implementation.createHTMLDocument("");
     frameDoc.body.innerHTML =
       '<input type="text" id="dict-q" value="existing" />';
-    Object.defineProperty(iframe, "contentDocument", {
-      value: frameDoc,
-      configurable: true,
-    });
+    stubLoadedFrame(iframe, frameDoc);
     const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
     const focusSpy = jest.spyOn(dictInput, "focus");
     const selectSpy = jest.spyOn(dictInput, "select");
@@ -2261,10 +2295,7 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     const frameDoc = document.implementation.createHTMLDocument("");
     frameDoc.body.innerHTML =
       '<input type="text" id="dict-q" value="initial" />';
-    Object.defineProperty(iframe, "contentDocument", {
-      value: frameDoc,
-      configurable: true,
-    });
+    stubLoadedFrame(iframe, frameDoc);
     const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
 
     const p1 = el.querySelector<HTMLElement>("#p1")!;
@@ -2305,12 +2336,6 @@ describe("MorcusReaderView companion panel & notes integration", () => {
 
   test("pressing '/' before #dict-frame loads waits for load to pre-fill and focus #dict-q", () => {
     const el = createReaderView('<p id="p1">Belgae incolunt</p>');
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-    const frameDoc = document.implementation.createHTMLDocument("");
-    Object.defineProperty(iframe, "contentDocument", {
-      value: frameDoc,
-      configurable: true,
-    });
 
     const p1 = el.querySelector<HTMLElement>("#p1")!;
     const range = document.createRange();
@@ -2328,7 +2353,13 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     );
     sel.removeAllRanges();
 
-    // Populate #dict-q and dispatch load on the iframe
+    // Populate #dict-q and dispatch load on the (armed, replaced) iframe
+    const iframe = dictFrame(el);
+    const frameDoc = document.implementation.createHTMLDocument("");
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
     frameDoc.body.innerHTML = '<input type="text" id="dict-q" value="" />';
     const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
     const focusSpy = jest.spyOn(dictInput, "focus");
@@ -2343,12 +2374,6 @@ describe("MorcusReaderView companion panel & notes integration", () => {
 
   test("clicking a word before #dict-frame loads cancels any pending '/' focus", () => {
     const el = createReaderView('<p id="p1">Belgae incolunt</p>');
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-    const frameDoc = document.implementation.createHTMLDocument("");
-    Object.defineProperty(iframe, "contentDocument", {
-      value: frameDoc,
-      configurable: true,
-    });
 
     const p1 = el.querySelector<HTMLElement>("#p1")!;
     const range = document.createRange();
@@ -2370,6 +2395,12 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     const words = el.querySelectorAll<HTMLElement>(".lat-word");
     words[1].click();
 
+    const iframe = dictFrame(el);
+    const frameDoc = document.implementation.createHTMLDocument("");
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
     frameDoc.body.innerHTML =
       '<input type="text" id="dict-q" value="incolunt" />';
     const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
@@ -2400,15 +2431,9 @@ describe("MorcusReaderView companion panel & notes integration", () => {
       JSON.stringify({ dictScale: 120 })
     );
     const el = createReaderView('<p id="p1">Belgae incolunt</p>');
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
-    expect(iframe.hasAttribute("data-dict-unarmed")).toBe(true);
-    expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1");
-
-    const frameDoc = document.implementation.createHTMLDocument("");
-    Object.defineProperty(iframe, "contentDocument", {
-      value: frameDoc,
-      configurable: true,
-    });
+    const unarmed = dictFrame(el);
+    expect(unarmed.hasAttribute("data-dict-unarmed")).toBe(true);
+    expect(unarmed.getAttribute("src")).toBe("/dicts?embedded=1");
 
     const keyEv = new KeyboardEvent("keydown", {
       key: "/",
@@ -2418,12 +2443,19 @@ describe("MorcusReaderView companion panel & notes integration", () => {
     window.dispatchEvent(keyEv);
 
     expect(keyEv.defaultPrevented).toBe(true);
+    const iframe = dictFrame(el);
     expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
     expect(iframe.getAttribute("src")).toBe("/dicts?embedded=1&scale=131");
-    // If it stayed lazy, WebKit would load it a second time once it shows,
-    // wiping the focus and pre-fill below.
+    // Arming loads the frame now. It goes eager only after it has its final
+    // URL (here, as a fresh element), so WebKit has no `src` change on a
+    // deferred frame to load twice and wipe the focus and pre-fill below.
     expect(iframe.getAttribute("loading")).toBe("eager");
 
+    const frameDoc = document.implementation.createHTMLDocument("");
+    Object.defineProperty(iframe, "contentDocument", {
+      value: frameDoc,
+      configurable: true,
+    });
     frameDoc.body.innerHTML = '<input type="text" id="dict-q" value="" />';
     const dictInput = frameDoc.querySelector<HTMLInputElement>("#dict-q")!;
     const focusSpy = jest.spyOn(dictInput, "focus");
@@ -2434,14 +2466,15 @@ describe("MorcusReaderView companion panel & notes integration", () => {
 
   test("dismissing dictionary or turning pages without a query leaves #dict-frame armed and src intact", async () => {
     const el = createReaderView('<p id="p1">Belgae incolunt</p>');
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
     const word = el.querySelector<HTMLElement>(".lat-word")!;
     word.click();
+    const iframe = dictFrame(el);
     expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
     expect(currentIframeSrc(iframe)).toContain("q=Belgae");
 
     // Dismissing does not navigate the iframe back to /dicts?embedded=1
     clickDictClose(el);
+    expect(dictFrame(el)).toBe(iframe);
     expect(iframe.hasAttribute("data-dict-unarmed")).toBe(false);
     expect(currentIframeSrc(iframe)).toContain("q=Belgae");
 
@@ -3887,12 +3920,12 @@ describe("MorcusReaderView screen wake lock", () => {
 
   test("re-clicking the same word with a minimized drawer restores the drawer, asks the frame, and does not navigate when the frame answers 'unchanged'", () => {
     const el = createReaderView("<p>Gallia est omnis divisa.</p>");
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
     const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
     const galliaWord = el.querySelector<HTMLElement>(".lat-word")!;
 
     // First click loads "Gallia"
     galliaWord.click();
+    const iframe = dictFrame(el);
 
     // Attach upgraded <morcus-dict-search> stub that answers "unchanged",
     // even if the iframe's current URL differs in `d=` or `scale=` after an in-frame click.
@@ -3937,11 +3970,11 @@ describe("MorcusReaderView screen wake lock", () => {
 
   test("re-clicking the same word with a minimized drawer when the frame has moved on brings the frame back", () => {
     const el = createReaderView("<p>Gallia est omnis divisa.</p>");
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
     const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
     const galliaWord = el.querySelector<HTMLElement>(".lat-word")!;
 
     galliaWord.click();
+    const iframe = dictFrame(el);
 
     // User moved the frame to another Latin word inside the iframe; stub swaps back
     const frameDoc = document.implementation.createHTMLDocument("");
@@ -3989,7 +4022,6 @@ describe("MorcusReaderView screen wake lock", () => {
         </aside>`,
       }
     );
-    const iframe = el.querySelector<HTMLIFrameElement>("#dict-frame")!;
     const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
     const panelController = el.getPanelController()!;
     const firstWord = el.querySelector<HTMLElement>(
@@ -4002,6 +4034,7 @@ describe("MorcusReaderView screen wake lock", () => {
     firstWord.click();
     expect(panelController.activeTab).toBe("dict");
     expect(firstWord.classList.contains("word-active")).toBe(true);
+    const iframe = dictFrame(el);
 
     // Attach upgraded <morcus-dict-search> stub that answers "unchanged"
     const frameDoc = document.implementation.createHTMLDocument("");
