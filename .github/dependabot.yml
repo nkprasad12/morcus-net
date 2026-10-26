@@ -1,7 +1,11 @@
 version: 2
+# PRs target dev, where CI runs (ci-workflow.yaml), and reach main via the
+# usual dev -> main fast-forward. Dependabot reads this file from main, so
+# changes here take effect after the next fast-forward.
 updates:
   - package-ecosystem: github-actions
     directory: /
+    target-branch: dev
     schedule:
       interval: quarterly
     groups:
@@ -11,6 +15,7 @@ updates:
 
   - package-ecosystem: docker
     directory: /src/devops/reverse_proxy
+    target-branch: dev
     schedule:
       interval: quarterly
 
@@ -22,6 +27,7 @@ updates:
     directories:
       - /
       - /src/devops/pruner
+    target-branch: dev
     schedule:
       interval: quarterly
     groups:
