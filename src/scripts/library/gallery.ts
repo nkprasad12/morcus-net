@@ -479,6 +479,11 @@ function collectDetachedNotes(body: XmlNode): DetachedNotesIndex {
     }
   };
   scanTargetsAndXmlIds(body);
+  // As in `deepcopyAndExtract`: without any `<note target>`, `<note xml:id>`s
+  // are ordinary inline notes (Ovid's Ex Ponto), not detached bodies.
+  if (referencedTargets.size === 0) {
+    detachedNodes.clear();
+  }
 
   const walkForN = (node: XmlNode) => {
     for (const child of node.children) {

@@ -122,7 +122,6 @@ export const LatinWorks = {
   // Müller's Teubner text. `-lat4` (Falconer) waits for speaker support.
   CICERO_DE_DIVINATIONE: "phi0474.phi053.perseus-lat3",
   PROPERTIUS_ELEGIAE: "phi0620.phi001.perseus-lat3",
-  COLUMELLA_RES_RUSTICA: "phi0845.phi002.perseus-lat3",
   OVID_EX_PONTO: "phi0959.phi009.perseus-lat2",
   VALERIUS_FLACCUS_ARGONAUTICA: "phi1035.phi001.perseus-lat2",
   VITRUVIUS_DE_ARCHITECTURA: "phi1056.phi001.perseus-lat2",
@@ -137,6 +136,9 @@ export const LatinWorks = {
   //   six row ids repeat. Needs non-citable rows (Phase 2).
   // - Suetonius, the ten lives phi1348.abo013-abo022: PHI JSON already ships
   //   all twelve lives (`lat1348.001`, Ihm).
+  // - Columella, Res Rustica I-IX (phi0845.phi002.perseus-lat3): 289 of its
+  //   2,999 apparatus notes have lost their `<note target>` anchor upstream
+  //   and would be dropped.
 };
 
 export const EnglishTranslations: Record<string, string> = {

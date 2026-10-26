@@ -211,6 +211,8 @@ export const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "parent",
   "n", // This is just ignored, for now.
   "target",
+  // Ignored on an inline note (one that no `<note target>` refers to).
+  "xml:id",
 ]);
 
 type QuoteOpen = "‘" | "“" | "'" | '"';
@@ -522,9 +524,17 @@ function isNoteBodyByN(note: XmlNode, targets: ReadonlySet<string>): boolean {
 }
 
 // Creates a deep copy of the root, while also extracting out nodes for later assembly.
+// `<note xml:id>`s are detached bodies only in a document that has
+// `<note target>` references at all; otherwise they are ordinary inline notes
+// (Ovid's Ex Ponto gives every apparatus note an `xml:id` and has no targets).
+//
+// TODO: In a document with targets, a `<note xml:id>` that no target names
+// (its anchor was lost upstream) is still extracted and so dropped:
+// Apuleius' Metamorphoses has 8, Florus 19, Columella's Res Rustica 289.
 function deepcopyAndExtract(
   root: XmlNode,
-  targets: ReadonlySet<string>
+  extractXmlIdNotes: boolean,
+  targetsByN: ReadonlySet<string>
 ): DeepcopiedAndExtracted {
   const children: XmlChild[] = [];
   const notesWithXmlId: XmlNode[] = [];
@@ -534,15 +544,23 @@ function deepcopyAndExtract(
       children.push(child);
       continue;
     }
-    if (child.name === "note" && child.getAttr("xml:id") !== undefined) {
+    if (
+      extractXmlIdNotes &&
+      child.name === "note" &&
+      child.getAttr("xml:id") !== undefined
+    ) {
       notesWithXmlId.push(child.deepcopy());
       continue;
     }
-    if (child.name === "note" && isNoteBodyByN(child, targets)) {
+    if (child.name === "note" && isNoteBodyByN(child, targetsByN)) {
       notesWithN.push(child.deepcopy());
       continue;
     }
-    const childResult = deepcopyAndExtract(child, targets);
+    const childResult = deepcopyAndExtract(
+      child,
+      extractXmlIdNotes,
+      targetsByN
+    );
     children.push(childResult.root);
     notesWithXmlId.push(...childResult.notesWithXmlId);
     notesWithN.push(...childResult.notesWithN);
@@ -575,11 +593,13 @@ function preprocessTree(
   // Targets that an `xml:id` already satisfies never take a `<note n>` as
   // their body, so an inline `<note n>` with the same value stays in place.
   const xmlIds = findNoteXmlIds(originalRoot);
+  const allTargets = findNoteTargets(originalRoot);
   const targetsByN = new Set(
-    Array.from(findNoteTargets(originalRoot)).filter((t) => !xmlIds.has(t))
+    Array.from(allTargets).filter((t) => !xmlIds.has(t))
   );
   const { root, notesWithXmlId, notesWithN } = deepcopyAndExtract(
     originalRoot,
+    allTargets.size > 0,
     targetsByN
   );
   const notesWithXmlIdMap = indexNotesBy(notesWithXmlId, "xml:id");

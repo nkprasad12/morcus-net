@@ -1291,6 +1291,30 @@ describe("note n/target pairing", () => {
     expect(marker?.getAttr("noteId")).toBe("0");
   });
 
+  it("keeps unreferenced <note xml:id> as ordinary inline notes (Ex Ponto)", () => {
+    const work = process(
+      `Gallia <note xml:id="note.1">first</note> est <note xml:id="note.2">second</note>`
+    );
+    expect(work.notes?.map((n) => n.toString())).toEqual([
+      expect.stringContaining("first"),
+      expect.stringContaining("second"),
+    ]);
+    const markers = (work.rows[0][1].children as XmlNode[]).filter(
+      (c) => typeof c !== "string" && c.name === "note"
+    );
+    expect(markers.map((m) => m.getAttr("noteId"))).toEqual(["0", "1"]);
+  });
+
+  it("treats every <note xml:id> as a body in a document with targets", () => {
+    const work = process(
+      `a <note target="#t"/> b <note xml:id="t">body</note> <note xml:id="u">orphan</note>`
+    );
+    expect(work.notes?.map((n) => n.toString())).toEqual([
+      expect.stringContaining("body"),
+    ]);
+    expect(work.rows[0][1].toString()).not.toContain("body");
+  });
+
   it("allows the same body to be referenced twice", () => {
     const work = process(
       `a <note target="n"/> b <note target="n"/> <note n="n">twice</note>`

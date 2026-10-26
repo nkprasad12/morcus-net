@@ -1303,22 +1303,6 @@
         "span": 40
       }
     },
-    "phi0845.phi002.perseus-lat3": {
-      "textParts": ["book", "chapter", "section"],
-      "rows": 1407,
-      "pages": 183,
-      "citableRows": 1407,
-      "firstCitation": "1.pr.1",
-      "lastCitation": "9.16.2",
-      "notes": 2714,
-      "nodes": {
-        "br": 1,
-        "gap": 2,
-        "note": 2714,
-        "span": 2850,
-        "span@blockquote": 2
-      }
-    },
     "phi0860.phi001.perseus-lat2": {
       "textParts": ["book", "chapter", "section"],
       "rows": 2621,
@@ -1435,15 +1419,16 @@
     },
     "phi0959.phi009.perseus-lat2": {
       "textParts": ["book", "poem", "line"],
-      "rows": 3195,
+      "rows": 3197,
       "pages": 46,
       "citableRows": 3194,
       "firstCitation": "1.1.1",
       "lastCitation": "4.16.52",
-      "notes": 0,
+      "notes": 254,
       "nodes": {
         "gap": 2,
         "head": 1,
+        "note": 254,
         "span": 3201
       }
     },

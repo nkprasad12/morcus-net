@@ -82,7 +82,6 @@ const NAME_TO_DISPLAY_NAME = new Map<string, string>([
   ["De Imperio Cn. Pompei Ad Quirites", "De Imperio Cn. Pompei"],
   ["Pro A. Cluentio", "Pro Cluentio"],
   ["Pro L. Murena", "Pro Murena"],
-  ["Res Rustica, Books I-IX", "Res Rustica"],
 ]);
 
 const NAME_TO_URL_LOOKUP = new Map<string, string>([
@@ -106,7 +105,6 @@ const NAME_TO_URL_LOOKUP = new Map<string, string>([
   ["De Imperio Cn. Pompei Ad Quirites", "de_imperio_cn_pompei"],
   ["Pro A. Cluentio", "pro_cluentio"],
   ["Pro L. Murena", "pro_murena"],
-  ["Res Rustica, Books I-IX", "res_rustica"],
 ]);
 
 /** Index just past the `<!DOCTYPE ...>` that starts at `start`. */
@@ -260,9 +258,6 @@ function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
     SHORT_TITLE_BY_WORK_ID.get(info.workId) ??
     NAME_TO_DISPLAY_NAME.get(rawTitle);
   const decorated: DocumentInfo = { ...info };
-  // Some TEI headers pad the author (`<author>Valerius Flaccus </author>`),
-  // which would otherwise leak into the author code and URL slug.
-  decorated.author = info.author.trim();
   decorated.shortTitle = shortName;
   return decorated;
 }

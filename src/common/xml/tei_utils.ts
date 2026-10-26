@@ -207,8 +207,12 @@ export function extractInfo(teiRoot: XmlNode) {
   const editor: XmlNode | undefined = titleStatement.findChildren("editor")[0];
   const translator = editor?.getAttr("role") === "translator";
   return {
-    title: XmlNode.getSoleText(titleStatement.findChildren("title")[0]),
-    author: XmlNode.getSoleText(titleStatement.findChildren("author")[0]),
+    // Some headers pad these (`<author>Valerius Flaccus </author>`), which
+    // would otherwise leak into author codes and URL slugs.
+    title: XmlNode.getSoleText(titleStatement.findChildren("title")[0]).trim(),
+    author: XmlNode.getSoleText(
+      titleStatement.findChildren("author")[0]
+    ).trim(),
     editor: translator
       ? undefined
       : editor?.children.find((c) => typeof c === "string"),

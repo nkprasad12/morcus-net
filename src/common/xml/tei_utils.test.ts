@@ -202,3 +202,17 @@ describe("extractInfo licence", () => {
     expect(extractInfo(header("")).licence).toBeUndefined();
   });
 });
+
+describe("extractInfo title and author", () => {
+  it("trims surrounding whitespace", () => {
+    const root = parseRawXml(
+      `<TEI><teiHeader><fileDesc><titleStmt><title> Argonautica </title><author>Valerius Flaccus </author></titleStmt></fileDesc></teiHeader></TEI>`,
+      { keepWhitespace: true }
+    );
+
+    const info = extractInfo(root);
+
+    expect(info.title).toBe("Argonautica");
+    expect(info.author).toBe("Valerius Flaccus");
+  });
+});
