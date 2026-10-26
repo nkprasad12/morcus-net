@@ -2778,7 +2778,25 @@ export function formatGalleryHtml(report: GalleryReport): string {
       wrapMid(aTextNode, aStr, p, s);
     }
 
-    function diffDomPair(bNode, aNode) {
+    function isBlockKind(kind) {
+      if (!kind) return true;
+      return kind === "p" || kind.indexOf("p@") === 0 || kind === "ab" || kind.indexOf("ab@") === 0;
+    }
+
+    function filterDomChildren(node, kind) {
+      var list = Array.prototype.slice.call(node.childNodes);
+      return list.filter(function (c) {
+        if (c.nodeType === 1 && c.tagName === "P" && c.children.length === 0 && (!c.textContent || c.textContent.trim() === "")) {
+          if (isBlockKind(kind)) {
+            c.classList.add("diff-node-changed");
+          }
+          return false;
+        }
+        return true;
+      });
+    }
+
+    function diffDomPair(bNode, aNode, kind) {
       if (!bNode && !aNode) return;
       if (!bNode && aNode && aNode.nodeType === 1) {
         aNode.classList.add("diff-node-changed");
@@ -2794,15 +2812,20 @@ export function formatGalleryHtml(report: GalleryReport): string {
         return;
       }
       if (bNode.nodeType === 1 && aNode.nodeType === 1) {
-        if (bNode.tagName !== aNode.tagName || bNode.className !== aNode.className) {
+        var isParagraphWrapperDiff =
+          bNode.tagName === "P" && aNode.tagName === "P" && !isBlockKind(kind);
+        if (
+          !isParagraphWrapperDiff &&
+          (bNode.tagName !== aNode.tagName || bNode.className !== aNode.className)
+        ) {
           bNode.classList.add("diff-node-changed");
           aNode.classList.add("diff-node-changed");
         }
-        var bChildren = Array.prototype.slice.call(bNode.childNodes);
-        var aChildren = Array.prototype.slice.call(aNode.childNodes);
+        var bChildren = filterDomChildren(bNode, kind);
+        var aChildren = filterDomChildren(aNode, kind);
         var maxC = Math.max(bChildren.length, aChildren.length);
         for (var i = 0; i < maxC; i++) {
-          diffDomPair(bChildren[i], aChildren[i]);
+          diffDomPair(bChildren[i], aChildren[i], kind);
         }
       } else {
         if (bNode.nodeType === 1) bNode.classList.add("diff-node-changed");
@@ -2814,7 +2837,20 @@ export function formatGalleryHtml(report: GalleryReport): string {
       var bScope = item.querySelector(".before-scope");
       var aScope = item.querySelector(".after-scope");
       if (!bScope || !aScope) return;
-      diffDomPair(bScope, aScope);
+      var card = item.closest(".kind-card");
+      var kind = card ? card.getAttribute("data-kind") : null;
+      var inNote = item.getAttribute("data-in-note") === "true";
+      var bRoot = inNote
+        ? bScope.querySelector(".reader-notes") || bScope
+        : kind
+        ? bScope.querySelector(".reader-passage") || bScope
+        : bScope;
+      var aRoot = inNote
+        ? aScope.querySelector(".reader-notes") || aScope
+        : kind
+        ? aScope.querySelector(".reader-passage") || aScope
+        : aScope;
+      diffDomPair(bRoot, aRoot, kind);
       if (!item.querySelector(".diff-node-changed, .diff-text-changed")) {
         item.querySelectorAll(".reader-block").forEach(function (el) {
           el.classList.add("diff-css-changed");
@@ -2905,22 +2941,28 @@ function tokenizeHtmlForDiff(html: string): string[] {
   return html.match(/<[^>]+>|\s+|[^\s<]+/g) ?? [];
 }
 
-/**
- * Produces token-highlighted HTML strings for Before and After HTML snippets,
- * wrapping changed tokens in `<mark class="diff-token-del">` / `<mark class="diff-token-ins">`
- * and collapsing unchanged runs longer than 14 tokens to `<span class="diff-ellipsis"> … </span>`.
- */
-function formatHtmlDiffPair(
+interface HtmlDiffOpEq {
+  type: "eq";
+  tokens: string[];
+}
+
+interface HtmlDiffOpDiff {
+  type: "diff";
+  b: string[];
+  a: string[];
+  prevTokens: string[];
+  nextTokens: string[];
+}
+
+type HtmlDiffOp = HtmlDiffOpEq | HtmlDiffOpDiff;
+
+function computeHtmlDiffOps(
   beforeHtml: string,
   afterHtml: string
-): { beforeRichHtml: string; afterRichHtml: string } {
+): HtmlDiffOp[] {
   const bTokens = tokenizeHtmlForDiff(beforeHtml);
   const aTokens = tokenizeHtmlForDiff(afterHtml);
-
-  type Op =
-    | { type: "eq"; tokens: string[] }
-    | { type: "diff"; b: string[]; a: string[] };
-  const ops: Op[] = [];
+  const ops: HtmlDiffOp[] = [];
 
   let i = 0;
   let j = 0;
@@ -2975,6 +3017,8 @@ function formatHtmlDiffPair(
         type: "diff",
         b: bTokens.slice(i, foundBi),
         a: aTokens.slice(j, foundAj),
+        prevTokens: bTokens.slice(Math.max(0, i - 4), i),
+        nextTokens: bTokens.slice(foundBi, foundBi + 4),
       });
       i = foundBi;
       j = foundAj;
@@ -2993,6 +3037,11 @@ function formatHtmlDiffPair(
         type: "diff",
         b: bTokens.slice(i, bTokens.length - suffix),
         a: aTokens.slice(j, aTokens.length - suffix),
+        prevTokens: bTokens.slice(Math.max(0, i - 4), i),
+        nextTokens: bTokens.slice(
+          bTokens.length - suffix,
+          bTokens.length - suffix + 4
+        ),
       });
       if (suffix > 0) {
         ops.push({
@@ -3001,6 +3050,175 @@ function formatHtmlDiffPair(
         });
       }
       break;
+    }
+  }
+
+  return ops;
+}
+
+function stripParagraphWrappers(s: string): string {
+  return s
+    .replace(/<\/?p(?:\s+[^>]*)?>/g, "")
+    .replace(/<span class="indent indent-para">/g, "")
+    .replace(/<\/span>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Determines whether a specific HTML diff op actually pertains to the cited
+ * `kind` and `teiSnippet` of a gallery exemplar, rather than being a collateral
+ * change to another element in the same section or footnote.
+ */
+function isDiffOpRelevantToExemplar(
+  op: HtmlDiffOpDiff,
+  kind: string,
+  teiSnippet: string,
+  inNote: boolean
+): boolean {
+  const bStr = op.b.join("");
+  const aStr = op.a.join("");
+  const prevStr = op.prevTokens.join("");
+  const nextStr = op.nextTokens.join("");
+  const combined = `${bStr} ${aStr}`;
+
+  if (inNote) {
+    // 1. Space before superscript/subscript removed
+    if (
+      bStr.trim() === "" &&
+      aStr.trim() === "" &&
+      (nextStr.includes('class="superscript"') || nextStr.includes("<sub"))
+    ) {
+      return (
+        kind.includes("sup") || kind.includes("super") || kind.includes("sub")
+      );
+    }
+    // 2. Space inserted for <pb/> in note
+    if (bStr === "" && aStr.trim() === "" && aStr.length > 0) {
+      return kind === "note:pb" || kind.startsWith("note:pb@");
+    }
+    // 3. [gap] -> reader-gap in note
+    if (combined.includes("[gap]") || combined.includes("reader-gap")) {
+      return kind === "note:gap" || kind.startsWith("note:gap@");
+    }
+    // 4. <span class="smallcaps"> -> <span class="smallcaps overline">
+    if (combined.includes("overline") && combined.includes("smallcaps")) {
+      return (
+        (kind === "note:num" ||
+          (kind.startsWith("note:num@") && kind.includes("overline"))) &&
+        teiSnippet.includes("overline")
+      );
+    }
+    // 5. <p class="reader-block"> -> <span class="reader-line"> in note verse
+    if (combined.includes("reader-line") && combined.includes("reader-block")) {
+      return (
+        kind === "note:l" ||
+        kind.startsWith("note:l@") ||
+        kind === "note:quote" ||
+        kind.startsWith("note:quote@")
+      );
+    }
+    // 6. <emph> in note -> <span class="italic">
+    if (combined.includes('class="italic"')) {
+      return kind === "note:emph" || kind.startsWith("note:emph@");
+    }
+    return false;
+  }
+
+  // Body exemplar:
+  // 1. Pure paragraph / reader-block / indent-para wrapper change
+  if (stripParagraphWrappers(bStr) === stripParagraphWrappers(aStr)) {
+    return (
+      kind === "p" ||
+      kind.startsWith("p@") ||
+      kind === "ab" ||
+      kind.startsWith("ab@")
+    );
+  }
+
+  // 2. Speaker label <strong> -> <strong class="smallcaps">
+  const stripStrong = (s: string) =>
+    stripParagraphWrappers(s.replace(/<\/?strong(?:\s+[^>]*)?>/g, ""));
+  if (combined.includes("<strong") && stripStrong(bStr) === stripStrong(aStr)) {
+    return (
+      (kind === "label" ||
+        kind.startsWith("label@") ||
+        kind === "dialogue-speaker" ||
+        kind === "said") &&
+      teiSnippet.includes("smallcaps")
+    );
+  }
+
+  // 3. Blockquote outer quote “ or ” removed
+  const stripQuotes = (s: string) =>
+    stripParagraphWrappers(s.replace(/[“”]/g, ""));
+  if (
+    (bStr.includes("“") ||
+      bStr.includes("”") ||
+      aStr.includes("“") ||
+      aStr.includes("”")) &&
+    stripQuotes(bStr) === stripQuotes(aStr)
+  ) {
+    return (
+      ((kind === "quote" ||
+        (kind.startsWith("quote@") && kind.includes("blockquote"))) &&
+        (teiSnippet.includes("align(blockquote)") ||
+          teiSnippet.includes("blockquote"))) ||
+      kind === "embedded-verse"
+    );
+  }
+
+  // 4. Book/division <head> (<h3 class="reader-subheading">...</h3>)
+  if (
+    combined.includes("reader-subheading") ||
+    prevStr.includes("reader-subheading") ||
+    nextStr.includes("reader-subheading")
+  ) {
+    return kind === "head" || kind.startsWith("head@");
+  }
+
+  // 5. Greek Beta Code conversion (ASCII -> Greek Unicode)
+  if (/[\u0370-\u03FF\u1F00-\u1FFF]/.test(aStr)) {
+    const baseTag = kind.split("@")[0];
+    return (
+      (baseTag === "quote" ||
+        baseTag === "cit" ||
+        baseTag === "bibl" ||
+        baseTag === "foreign") &&
+      (teiSnippet.includes("grc") || teiSnippet.includes("greek"))
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Produces token-highlighted HTML strings for Before and After HTML snippets,
+ * wrapping changed tokens in `<mark class="diff-token-del">` / `<mark class="diff-token-ins">`
+ * and collapsing unchanged runs longer than 16 tokens to `<span class="diff-ellipsis"> … </span>`.
+ * When `isOpRelevant` is provided, collateral diff ops where `isOpRelevant(op)` is false
+ * are folded into the surrounding unchanged context so only the exemplar's own change is highlighted.
+ */
+function formatHtmlDiffPair(
+  beforeHtml: string,
+  afterHtml: string,
+  isOpRelevant?: (op: HtmlDiffOpDiff) => boolean
+): { beforeRichHtml: string; afterRichHtml: string } {
+  const rawOps = computeHtmlDiffOps(beforeHtml, afterHtml);
+  const ops: HtmlDiffOp[] = [];
+  for (const op of rawOps) {
+    const treatAsEq =
+      op.type === "eq" || (isOpRelevant !== undefined && !isOpRelevant(op));
+    if (treatAsEq) {
+      const toks = op.type === "eq" ? op.tokens : op.a;
+      const last = ops[ops.length - 1];
+      if (last && last.type === "eq") {
+        last.tokens.push(...toks);
+      } else {
+        ops.push({ type: "eq", tokens: [...toks] });
+      }
+    } else {
+      ops.push(op);
     }
   }
 
@@ -3094,6 +3312,9 @@ export interface DiffExemplarItem {
   teiSnippet: string;
   beforeHtml: string;
   afterHtml: string;
+  diffBeforeHtml: string;
+  diffAfterHtml: string;
+  inNote: boolean;
   markupChanged: boolean;
 }
 
@@ -3160,6 +3381,10 @@ export function renderGalleryDiffHtml(
 
     for (let i = 0; i < afterKind.examples.length; i++) {
       const afterEx = afterKind.examples[i];
+      const inNote =
+        Boolean(afterEx.inNote) ||
+        afterKind.category === "note-element" ||
+        afterKind.category === "note-rend";
       let matchingBeforeEx = beforeKind?.examples.find(
         (e) =>
           e.workId === afterEx.workId &&
@@ -3226,32 +3451,57 @@ export function renderGalleryDiffHtml(
           filterNotesHtmlToRefs(passage, notes)
         );
       };
-      const compareBefore = compactPreview(beforeHtml, Boolean(afterEx.inNote));
-      const compareAfter = compactPreview(afterHtml, Boolean(afterEx.inNote));
+      const compareBefore = compactPreview(beforeHtml, inNote);
+      const compareAfter = compactPreview(afterHtml, inNote);
 
-      const extractTargetNoteOnly = (h: string): string => {
+      const extractTargetScopeOnly = (h: string): string => {
         const asideIdx = h.indexOf('<aside class="reader-notes"');
-        if (asideIdx < 0) return h;
-        const items = extractNoteListItems(h.slice(asideIdx));
-        const target = items.find((item) => item.includes("gallery-target"));
-        return target ?? h.slice(asideIdx);
+        if (inNote) {
+          if (asideIdx < 0) return h;
+          const items = extractNoteListItems(h.slice(asideIdx));
+          const target = items.find((item) => item.includes("gallery-target"));
+          return target ?? h.slice(asideIdx);
+        }
+        return asideIdx >= 0 ? h.slice(0, asideIdx).trim() : h;
       };
 
       const normBefore = normalizePreviewHtml(
-        afterEx.inNote ? extractTargetNoteOnly(compareBefore) : compareBefore
+        extractTargetScopeOnly(compareBefore)
       );
       const normAfter = normalizePreviewHtml(
-        afterEx.inNote ? extractTargetNoteOnly(compareAfter) : compareAfter
+        extractTargetScopeOnly(compareAfter)
       );
-      const markupChanged = normBefore !== normAfter;
+      const headingRowShifted =
+        !inNote &&
+        normBefore.includes("reader-subheading") !==
+          normAfter.includes("reader-subheading") &&
+        afterKind.kind !== "head" &&
+        !afterKind.kind.startsWith("head@");
+      const allOps =
+        normBefore !== normAfter && !headingRowShifted
+          ? computeHtmlDiffOps(normBefore, normAfter)
+          : [];
+      const relevantDiffOps = allOps.filter(
+        (op): op is HtmlDiffOpDiff =>
+          op.type === "diff" &&
+          isDiffOpRelevantToExemplar(
+            op,
+            afterKind.kind,
+            afterEx.teiSnippet,
+            inNote
+          )
+      );
+      const markupChanged = relevantDiffOps.length > 0;
+      const isBlockKind =
+        afterKind.kind === "p" ||
+        afterKind.kind.startsWith("p@") ||
+        afterKind.kind === "ab" ||
+        afterKind.kind.startsWith("ab@");
       const cssChanged =
         hasCssChanges &&
-        (/\breader-block\b/.test(
-          afterEx.inNote ? extractTargetNoteOnly(compareBefore) : compareBefore
-        ) ||
-          /\breader-block\b/.test(
-            afterEx.inNote ? extractTargetNoteOnly(compareAfter) : compareAfter
-          ));
+        isBlockKind &&
+        (/\breader-block\b/.test(normBefore) ||
+          /\breader-block\b/.test(normAfter));
 
       if (markupChanged || cssChanged || !matchingBeforeEx) {
         changedExemplars.push({
@@ -3264,6 +3514,9 @@ export function renderGalleryDiffHtml(
           teiSnippet: afterEx.teiSnippet,
           beforeHtml: compareBefore,
           afterHtml: compareAfter,
+          diffBeforeHtml: normBefore,
+          diffAfterHtml: normAfter,
+          inNote,
           markupChanged,
         });
       }
@@ -3384,8 +3637,15 @@ export function renderGalleryDiffHtml(
           );
 
           const diffPair = formatHtmlDiffPair(
-            normalizePreviewHtml(ex.beforeHtml),
-            normalizePreviewHtml(ex.afterHtml)
+            ex.diffBeforeHtml,
+            ex.diffAfterHtml,
+            (op) =>
+              isDiffOpRelevantToExemplar(
+                op,
+                k.kind,
+                ex.teiSnippet,
+                ex.inNote
+              )
           );
           const markupDiffHtml = `
             <details class="html-diff-details"${ex.markupChanged ? " open" : ""}>
@@ -3404,7 +3664,7 @@ export function renderGalleryDiffHtml(
               </div>
             </details>`;
 
-          return `<div class="exemplar-item">
+          return `<div class="exemplar-item"${ex.inNote ? ' data-in-note="true"' : ""}>
             <div class="exemplar-meta">
               <span><strong>${he.escape(ex.author)}</strong>, <em>${he.escape(
             ex.workTitle
@@ -3882,7 +4142,25 @@ ${afterReaderCss ? scopeCssRules(afterReaderCss, ".after-scope") : ""}
       wrapMid(aTextNode, aStr, p, s);
     }
 
-    function diffDomPair(bNode, aNode) {
+    function isBlockKind(kind) {
+      if (!kind) return true;
+      return kind === "p" || kind.indexOf("p@") === 0 || kind === "ab" || kind.indexOf("ab@") === 0;
+    }
+
+    function filterDomChildren(node, kind) {
+      var list = Array.prototype.slice.call(node.childNodes);
+      return list.filter(function (c) {
+        if (c.nodeType === 1 && c.tagName === "P" && c.children.length === 0 && (!c.textContent || c.textContent.trim() === "")) {
+          if (isBlockKind(kind)) {
+            c.classList.add("diff-node-changed");
+          }
+          return false;
+        }
+        return true;
+      });
+    }
+
+    function diffDomPair(bNode, aNode, kind) {
       if (!bNode && !aNode) return;
       if (!bNode && aNode && aNode.nodeType === 1) {
         aNode.classList.add("diff-node-changed");
@@ -3898,15 +4176,20 @@ ${afterReaderCss ? scopeCssRules(afterReaderCss, ".after-scope") : ""}
         return;
       }
       if (bNode.nodeType === 1 && aNode.nodeType === 1) {
-        if (bNode.tagName !== aNode.tagName || bNode.className !== aNode.className) {
+        var isParagraphWrapperDiff =
+          bNode.tagName === "P" && aNode.tagName === "P" && !isBlockKind(kind);
+        if (
+          !isParagraphWrapperDiff &&
+          (bNode.tagName !== aNode.tagName || bNode.className !== aNode.className)
+        ) {
           bNode.classList.add("diff-node-changed");
           aNode.classList.add("diff-node-changed");
         }
-        var bChildren = Array.prototype.slice.call(bNode.childNodes);
-        var aChildren = Array.prototype.slice.call(aNode.childNodes);
+        var bChildren = filterDomChildren(bNode, kind);
+        var aChildren = filterDomChildren(aNode, kind);
         var maxC = Math.max(bChildren.length, aChildren.length);
         for (var i = 0; i < maxC; i++) {
-          diffDomPair(bChildren[i], aChildren[i]);
+          diffDomPair(bChildren[i], aChildren[i], kind);
         }
       } else {
         if (bNode.nodeType === 1) bNode.classList.add("diff-node-changed");
@@ -3918,7 +4201,20 @@ ${afterReaderCss ? scopeCssRules(afterReaderCss, ".after-scope") : ""}
       var bScope = item.querySelector(".before-scope");
       var aScope = item.querySelector(".after-scope");
       if (!bScope || !aScope) return;
-      diffDomPair(bScope, aScope);
+      var card = item.closest(".kind-card");
+      var kind = card ? card.getAttribute("data-kind") : null;
+      var inNote = item.getAttribute("data-in-note") === "true";
+      var bRoot = inNote
+        ? bScope.querySelector(".reader-notes") || bScope
+        : kind
+        ? bScope.querySelector(".reader-passage") || bScope
+        : bScope;
+      var aRoot = inNote
+        ? aScope.querySelector(".reader-notes") || aScope
+        : kind
+        ? aScope.querySelector(".reader-passage") || aScope
+        : aScope;
+      diffDomPair(bRoot, aRoot, kind);
       if (!item.querySelector(".diff-node-changed, .diff-text-changed")) {
         item.querySelectorAll(".reader-block").forEach(function (el) {
           el.classList.add("diff-css-changed");

@@ -988,8 +988,8 @@ describe("renderGalleryDiffHtml & Before/After Diff Inspector", () => {
           ],
         },
         {
-          kind: "hi@italic",
-          category: "rend",
+          kind: "ab",
+          category: "element",
           workCount: 1,
           occurrenceCount: 1,
           examples: [
@@ -1001,8 +1001,27 @@ describe("renderGalleryDiffHtml & Before/After Diff Inspector", () => {
               pageId: "1",
               readerUrl: "/work/caesar/de_bello_gallico/1#sec-1.2",
               url: "/work/caesar/de_bello_gallico/1#sec-1.2",
-              teiSnippet: '<hi rend="italic">omnis</hi>',
-              renderedHtml: '<div class="reader-passage"><p class="reader-paragraph"><span class="reader-block"><em class="italic">omnis</em></span></p></div>',
+              teiSnippet: "<ab>omnis</ab>",
+              renderedHtml: '<div class="reader-passage"><p class="reader-block">omnis</p></div>',
+            },
+          ],
+        },
+        {
+          kind: "hi@italics",
+          category: "rend",
+          workCount: 1,
+          occurrenceCount: 1,
+          examples: [
+            {
+              workId: LatinWorks.CAESAR_DBG,
+              workTitle: "De bello Gallico",
+              author: "Julius Caesar",
+              sectionId: "1.3",
+              pageId: "1",
+              readerUrl: "/work/caesar/de_bello_gallico/1#sec-1.3",
+              url: "/work/caesar/de_bello_gallico/1#sec-1.3",
+              teiSnippet: '<hi rend="italics">Quid</hi>',
+              renderedHtml: '<div class="reader-passage"><p class="reader-paragraph"><strong>C.</strong> <span class="italic">Quid</span></p></div>',
             },
           ],
         },
@@ -1020,7 +1039,7 @@ describe("renderGalleryDiffHtml & Before/After Diff Inspector", () => {
           citableRowCount: 10,
           pageCount: 1,
           textParts: ["chapter", "section"],
-          markupKinds: ["quote@align(blockquote)", "hi@italic"],
+          markupKinds: ["quote@align(blockquote)", "ab", "hi@italics"],
           pages: {
             first: {
               role: "first",
@@ -1057,14 +1076,27 @@ describe("renderGalleryDiffHtml & Before/After Diff Inspector", () => {
           ],
         },
         {
-          kind: "hi@italic",
-          category: "rend",
+          kind: "ab",
+          category: "element",
           workCount: 1,
           occurrenceCount: 1,
           examples: [
             {
               ...beforeReport.markupKinds[1].examples[0],
-              // Markup identical, but contains .reader-block whose margin CSS changed
+              // Markup identical, but is a block kind containing .reader-block whose margin CSS changed
+            },
+          ],
+        },
+        {
+          kind: "hi@italics",
+          category: "rend",
+          workCount: 1,
+          occurrenceCount: 1,
+          examples: [
+            {
+              ...beforeReport.markupKinds[2].examples[0],
+              // Only collateral paragraph and speaker-label changes in the section; <span class="italic">Quid</span> itself is unchanged
+              renderedHtml: '<div class="reader-passage"><p class="reader-block"><strong class="smallcaps">C.</strong> <span class="italic">Quid</span></p></div>',
             },
           ],
         },
@@ -1096,9 +1128,10 @@ describe("renderGalleryDiffHtml & Before/After Diff Inspector", () => {
     expect(diffHtml).toContain('id="gallery-hide-reviewed"');
     expect(diffHtml).toContain('id="gallery-reset-reviewed"');
 
-    // Kind cards
+    // Kind cards: includes quote@align(blockquote) and ab, excludes hi@italics (collateral change only)
     expect(diffHtml).toContain('data-review-id="diff-kind:rend:quote@align(blockquote)"');
-    expect(diffHtml).toContain('data-review-id="diff-kind:rend:hi@italic"');
+    expect(diffHtml).toContain('data-review-id="diff-kind:element:ab"');
+    expect(diffHtml).not.toContain('data-review-id="diff-kind:rend:hi@italics"');
     expect(diffHtml).toContain('class="kind-card-header"');
     expect(diffHtml).toContain('class="kind-card-footer"');
 
