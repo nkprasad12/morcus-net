@@ -275,7 +275,7 @@ describe("buildCitationSpine with a citeStructure", () => {
     ]);
   });
 
-  it("handles sibling branches with ragged depth (Terence)", () => {
+  it("evaluates sibling branches, failing on ragged depth (Terence)", () => {
     const root = tei(
       citeStructure(
         level(
@@ -289,15 +289,14 @@ describe("buildCitationSpine with a citeStructure", () => {
         <div type="textpart" subtype="act" n="prologue"><l n="1">p</l></div>
         <div type="textpart" subtype="act" n="1">
           <div type="textpart" subtype="scene" n="1"><l n="2">q</l></div>
+          <div type="textpart" subtype="scene" n="2"><l n="3">r</l></div>
         </div>
       </div>`
     );
-    const spine = spineOf(root);
-    expect(spine.textParts).toEqual(["act", "scene", "line"]);
-    expect(idsOfText(root, spine)).toEqual([
-      ["prologue.1", "p"],
-      ["1.1.2", "q"],
-    ]);
+    // act.line beside act.scene.line: the output model has one depth.
+    expect(() => spineOf(root)).toThrow(
+      /Missing citation level: act.line \(scheme act.scene.line\)/
+    );
   });
 
   it("skips an intermediate division whose children are numbered uniquely (Rule A, Livy)", () => {
@@ -712,5 +711,311 @@ describe("buildCitationSpine without a citeStructure (Rule D)", () => {
     const spine = spineOf(root);
     expect(spine.textParts).toEqual(["book", "chapter"]);
     expect(idsOfText(root, spine)).toEqual([["1.2", "a"]]);
+  });
+});
+
+describe("buildCitationSpine fits the declaration to the tree", () => {
+  it("cites a numbered division with a mistyped subtype by position", () => {
+    const root = tei(
+      citeStructure(level("section", "div/div[@subtype='section']")),
+      `<div type="edition">
+        <div type="textpart" subtype="preface" n="pr">a</div>
+        <div type="textpart" subtype="section" n="1">b</div>
+        <div type="textpart" subtype="secton" n="2">c</div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["section"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["pr", "a"],
+      ["1", "b"],
+      ["2", "c"],
+    ]);
+    expect(spine.warnings.join("\n")).toContain('subtype="secton" n="2"');
+  });
+
+  it("cites variant division names by position (Sidonius' letters as poems)", () => {
+    const root = tei(
+      citeStructure(
+        level(
+          "book",
+          "div1[@type='book']",
+          level(
+            "letter",
+            "div2[@type='letter']",
+            level("section", "milestone[@unit='section']")
+          )
+        )
+      ),
+      `<div1 type="book" n="1">
+        <div2 type="poem" n="1"><milestone unit="section" n="1"/>a</div2>
+      </div1>
+      <div1 type="book" n="8">
+        <div2 type="letter" n="1"><milestone unit="section" n="1"/>b</div2>
+      </div1>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["book", "letter", "section"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["1.1.1", "a"],
+      ["8.1.1", "b"],
+    ]);
+  });
+
+  it("does not cite a numbered wrapper by position", () => {
+    // Livy's parts hold books, so they are not books themselves.
+    const root = tei(
+      citeStructure(level("book", "div/div/div[@subtype='book']")),
+      `<div type="edition">
+        <div type="textpart" subtype="part" n="1">
+          <div type="textpart" subtype="book" n="1">a</div>
+        </div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(idsOfText(root, spine)).toEqual([["1", "a"]]);
+    expect(spine.textParts).toEqual(["book"]);
+  });
+
+  it("treats a union container holding the other alternative as a wrapper", () => {
+    // Sidonius' Carmina: `l | div2[@type='section']`, with a section of lines.
+    const root = tei(
+      citeStructure(
+        level(
+          "poem",
+          "div1[@type='poem']",
+          level("line", "l | div2[@type='section']")
+        )
+      ),
+      `<div1 type="poem" n="22"><l n="1">a</l>
+        <div2 type="section" n="4"><l n="2">b</l><l n="3">c</l></div2>
+      </div1>`
+    );
+    expect(idsOfText(root, spineOf(root))).toEqual([
+      ["22.1", "a"],
+      ["22.2", "b"],
+      ["22.3", "c"],
+    ]);
+  });
+
+  it("gives a kept division without sections its own id (Jerome's letter 44)", () => {
+    const root = tei(
+      citeStructure(level("section", "div/div/div[@subtype='section']")),
+      `<div type="edition">
+        <div type="textpart" subtype="letter" n="14">
+          <div type="textpart" subtype="section" n="1">a</div>
+        </div>
+        <div type="textpart" subtype="letter" n="44"><head>Ad Marcellam</head>b</div>
+        <div type="textpart" subtype="letter" n="45">
+          <div type="textpart" subtype="section" n="1">c</div>
+        </div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["letter", "section"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["14.1", "a"],
+      ["44", "Ad Marcellam"],
+      ["44", "b"],
+      ["45.1", "c"],
+    ]);
+    expect(spine.leafIds).toEqual(new Set(["14.1", "44", "45.1"]));
+  });
+
+  it("fails on a division that matches a level but has no @n", () => {
+    // Nepos' Cato: chapter 3 has no number.
+    const root = tei(
+      citeStructure(level("chapter", "div/div[@subtype='chapter']")),
+      `<div type="edition">
+        <div type="textpart" subtype="chapter" n="2">a</div>
+        <div type="textpart" subtype="chapter">b</div>
+      </div>`
+    );
+    expect(() => spineOf(root)).toThrow(
+      /matching citeStructure chapter.*has no @n/
+    );
+  });
+
+  it("fails on a numbered division no level accounts for", () => {
+    const root = tei(
+      citeStructure(level("section", "div/div[@subtype='section']")),
+      `<div type="edition">
+        <div type="textpart" subtype="section" n="22">
+          <div type="textpart" subtype="subsection" n="pr">a</div>
+        </div>
+      </div>`
+    );
+    expect(() => spineOf(root)).toThrow(
+      /Numbered division <div type="textpart" subtype="subsection" n="pr"> is not a citation level/
+    );
+  });
+
+  it("fails on sections deeper than the rest (Claudian's Carmina minora)", () => {
+    const root = tei(
+      citeStructure(
+        level("poem", "div/div[@subtype='poem']", level("line", "l"))
+      ),
+      `<div type="edition">
+        <div type="textpart" subtype="poem" n="1"><l n="1">a</l><l n="2">b</l></div>
+        <div type="textpart" subtype="poem" n="6"><l n="1">c</l></div>
+        <div type="textpart" subtype="poem" n="7">
+          <div type="textpart" subtype="section" n="1"><l n="1">d</l></div>
+          <div type="textpart" subtype="section" n="2"><l n="1">e</l></div>
+        </div>
+      </div>`
+    );
+    expect(() => spineOf(root)).toThrow(
+      /Ragged citation depth: poem.section.line \(scheme poem.line\)/
+    );
+  });
+
+  it("fails where a declared level is missing (Claudian's In Rufinum)", () => {
+    const root = tei(
+      citeStructure(
+        level(
+          "book",
+          "div/div[@subtype='book']",
+          level("poem", "div[@subtype='poem']", level("line", "l"))
+        )
+      ),
+      `<div type="edition">
+        <div type="textpart" subtype="book" n="1"><l n="1">a</l></div>
+        <div type="textpart" subtype="book" n="3">
+          <div type="textpart" subtype="poem" n="pr"><l n="1">b</l><l n="2">c</l></div>
+        </div>
+      </div>`
+    );
+    expect(() => spineOf(root)).toThrow(
+      /Missing citation level: book.line \(scheme book.poem.line\)/
+    );
+  });
+
+  it("fails on mixed unit paths of one depth", () => {
+    const root = tei(
+      citeStructure(
+        level(
+          "book",
+          "div/div[@subtype='book']",
+          level("poem", "div[@subtype='poem']", level("line", "l"))
+        )
+      ),
+      `<div type="edition">
+        <div type="textpart" subtype="book" n="1">
+          <div type="textpart" subtype="poem" n="1"><l n="1">a</l></div>
+        </div>
+        <div type="textpart" subtype="poem" n="5">
+          <div type="textpart" subtype="section" n="1"><l n="1">b</l><l n="2">c</l></div>
+          <div type="textpart" subtype="section" n="2"><l n="1">d</l></div>
+        </div>
+      </div>`
+    );
+    expect(() => spineOf(root)).toThrow(/Mixed citation units/);
+  });
+
+  it("allows shallower leaves of another unit (Livy's summaries)", () => {
+    const root = tei(
+      citeStructure(
+        level(
+          "book",
+          "div/div[@subtype='book']",
+          level("chapter", "div[@subtype='chapter']")
+        )
+      ),
+      `<div type="edition">
+        <div type="textpart" subtype="book" n="1">
+          <div type="textpart" subtype="chapter" n="1">a</div>
+          <div type="textpart" subtype="chapter" n="2">b</div>
+        </div>
+        <div type="textpart" subtype="book" n="46"><p>summary</p></div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["book", "chapter"]);
+    expect(spine.leafIds).toEqual(new Set(["1.1", "1.2", "46"]));
+  });
+
+  it("names the scheme after the most common leaf path, ignoring case", () => {
+    const root = tei(
+      citeStructure(level("section", "div/div/div[@subtype='section']")),
+      `<div type="edition">
+        <div type="textpart" subtype="speech" n="1">
+          <div type="textpart" subtype="section" n="1">a</div>
+        </div>
+        <div type="textpart" subtype="Speech" n="2">
+          <div type="textpart" subtype="section" n="1">b</div>
+          <div type="textpart" subtype="section" n="2">c</div>
+        </div>
+      </div>`
+    );
+    expect(spineOf(root).textParts).toEqual(["speech", "section"]);
+  });
+});
+
+describe("Rule C only drops genuine groupings", () => {
+  const poems = (book: string, ...ns: string[]) =>
+    `<div type="textpart" subtype="book" n="${book}">${ns
+      .map(
+        (n) =>
+          `<div type="textpart" subtype="poem" n="${n}"><l n="1">x</l></div>`
+      )
+      .join("")}</div>`;
+  const bookPoemLine = citeStructure(
+    level(
+      "book",
+      "div/div[@subtype='book']",
+      level("poem", "div[@subtype='poem']", level("line", "l"))
+    )
+  );
+
+  it("keeps a single book", () => {
+    const root = tei(
+      ctsRefsDecl("line", "poem") + bookPoemLine,
+      `<div type="edition">${poems("2", "1", "2")}</div>`
+    );
+    expect(spineOf(root).textParts).toEqual(["book", "poem", "line"]);
+  });
+
+  it("keeps poems over lines numbered straight through", () => {
+    const root = tei(
+      ctsRefsDecl("line") +
+        citeStructure(
+          level("poem", "div/div[@subtype='poem']", level("line", "l"))
+        ),
+      `<div type="edition">
+        <div type="textpart" subtype="poem" n="1"><head>I</head><l n="1">a</l></div>
+        <div type="textpart" subtype="poem" n="2"><head>II</head><l n="2">b</l></div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["poem", "line"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["1", "I"],
+      ["1.1", "a"],
+      ["2", "II"],
+      ["2.2", "b"],
+    ]);
+  });
+
+  it("keeps scenes within acts", () => {
+    const root = tei(
+      ctsRefsDecl("line") +
+        citeStructure(
+          level(
+            "act",
+            "div/div[@subtype='act']",
+            level("scene", "div[@subtype='scene']", level("line", "l"))
+          )
+        ),
+      `<div type="edition">
+        <div type="textpart" subtype="act" n="1">
+          <div type="textpart" subtype="scene" n="1"><l n="1">a</l></div>
+          <div type="textpart" subtype="scene" n="2"><l n="2">b</l></div>
+        </div>
+        <div type="textpart" subtype="act" n="2">
+          <div type="textpart" subtype="scene" n="1"><l n="3">c</l></div>
+        </div>
+      </div>`
+    );
+    expect(spineOf(root).textParts).toEqual(["act", "scene", "line"]);
   });
 });

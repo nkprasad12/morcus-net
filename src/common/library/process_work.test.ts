@@ -1416,3 +1416,87 @@ describe("assertOutputInvariants", () => {
     );
   });
 });
+
+describe("assertOutputInvariants text on no page (OUT-4)", () => {
+  const row = (id: string, text = "x"): ProcessedWork2["rows"][number] => [
+    id.length === 0 ? [] : id.split("."),
+    new XmlNode("span", [], [text]),
+  ];
+  const textParts = ["book", "chapter", "section"];
+  const check = (
+    rows: ProcessedWork2["rows"],
+    facts?: Parameters<typeof assertOutputInvariants>[1]
+  ) =>
+    assertOutputInvariants(
+      { rows, textParts, pages: divideWork(rows, textParts) },
+      facts
+    );
+
+  it("allows a book's preamble before its first page", () => {
+    expect(() =>
+      check([row("1.1.1"), row("2", "salutem"), row("2.1.1")])
+    ).not.toThrow();
+  });
+
+  it("allows top-level matter before the first page", () => {
+    expect(() => check([row("", "Argument"), row("1.1.1")])).not.toThrow();
+  });
+
+  it("rejects text after its section's pages", () => {
+    expect(() =>
+      check([row("1.1.1"), row("1", "stray"), row("2.1.1")])
+    ).toThrow(/Text on no page at 1: <span>stray<\/span>/);
+    expect(() => check([row("1.1.1"), row("", "stray")])).toThrow(
+      /Text on no page at \(top level\)/
+    );
+  });
+
+  it("allows editorial rows and leaf sections anywhere", () => {
+    const rows = [row("1.1.1"), row("", "Index"), row("46", "summary")];
+    expect(() => check(rows)).toThrow(/Text on no page/);
+    expect(() =>
+      check(rows, { editorialRows: new Set([1]), leafIds: new Set(["46"]) })
+    ).not.toThrow();
+  });
+
+  it("rejects rows deeper than the scheme", () => {
+    expect(() =>
+      assertOutputInvariants({
+        rows: [row("1.1"), row("1.2.1")],
+        textParts: ["book", "chapter"],
+        pages: [{ id: ["1"], rows: [0, 2] }],
+      })
+    ).toThrow(/Ragged citation depth: 1.2.1 is deeper than book.chapter/);
+  });
+});
+
+describe("processTei2 coverage of text", () => {
+  it("fails a work whose sections leave text off every page", () => {
+    // Pages are chapters; text in book 2 after its chapter is on none.
+    const section = (n: string, text: string) =>
+      `<div n="${n}" type="textpart" subtype="section"><p>${text}</p></div>`;
+    const body = `<div n="1" type="textpart" subtype="book">
+        <div n="1" type="textpart" subtype="chapter">${section("1", "a")}</div>
+      </div>
+      <div n="2" type="textpart" subtype="book"><head>II</head><p>preamble</p>
+        <div n="1" type="textpart" subtype="chapter">${section("1", "b")}</div>
+        <p>lost text</p>
+      </div>`;
+    expect(() => processTei2(testRoot(body), { workId: WORK_ID })).toThrow(
+      /Text on no page at 2: .*lost text/
+    );
+  });
+
+  it("keeps editorial matter off the pages (Livy's index)", () => {
+    const body = `<div type="textpart" subtype="index"><head>Index</head><p>V = Veronensis</p></div>
+      <div n="1" type="textpart" subtype="book">
+        <div n="1" type="textpart" subtype="chapter">a</div>
+      </div>
+      <div type="textpart" subtype="index"><p>M = Mediceus</p></div>
+      <div n="2" type="textpart" subtype="book">
+        <div n="1" type="textpart" subtype="chapter">b</div>
+      </div>`;
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+    expect(work.pages.map((p) => p.id.join("."))).toEqual(["1", "2"]);
+  });
+});

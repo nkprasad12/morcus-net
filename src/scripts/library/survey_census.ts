@@ -236,6 +236,13 @@ export function categorizeV1Error(message: string, stack: string): string {
   if (stack.includes("at parseCiteStructure")) {
     return "structure: citeStructure malformed";
   }
+  if (stack.includes("at assertNoErrors")) {
+    const detail = firstLine.replace(
+      /^Citation scheme does not fit the text: /,
+      ""
+    );
+    return `structure: scheme vs tree (${detail.slice(0, 60)})`;
+  }
   if (stack.includes("at register (") || stack.includes("at divisionUnit")) {
     return `structure: citation value (${firstLine.slice(0, 60)})`;
   }

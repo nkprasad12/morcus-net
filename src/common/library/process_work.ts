@@ -738,10 +738,33 @@ function splitSid(sid: string): string[] {
   return sid.length === 0 ? [] : sid.split(".");
 }
 
+const DIVISION_ELEMENTS = new Set(["div", "div1", "div2", "div3"]);
+const EDITION_TYPES = new Set(["edition", "translation"]);
+
+/**
+ * Whether `node` holds editorial matter rather than citable text: a heading
+ * or label, or an unnumbered division (Livy's index of sigla, a translator's
+ * `<div type="commentary">` argument), which no citation can reach.
+ */
+function isEditorialNode(node: XmlNode): boolean {
+  return (
+    node.name === "head" ||
+    node.name === "label" ||
+    (DIVISION_ELEMENTS.has(node.name) &&
+      node.getAttr("n") === undefined &&
+      !EDITION_TYPES.has(node.getAttr("type") ?? ""))
+  );
+}
+
+/** A row: its section id, its content, and whether it is editorial matter. */
+type RawRow = [string[], XmlNode, boolean];
+
 function convertToRows(
   current: XmlNode,
-  data: PreprocessedTree
-): [string[], XmlNode][] {
+  data: PreprocessedTree,
+  inEditorial: boolean = false
+): RawRow[] {
+  const editorial = inEditorial || isEditorialNode(current);
   const uid = checkPresent(safeParseInt(current.getAttr("uid")));
   const sections = checkPresent(data.includedSections[uid]);
   const sid = splitSid(checkPresent(current.getAttr("sid")));
@@ -754,9 +777,9 @@ function convertToRows(
       current.attrs.push(["lg-sid", nearestLg[0]]);
       current.attrs.push(["lg", nearestLg[1]]);
     }
-    return [[sid, current]];
+    return [[sid, current, editorial]];
   }
-  const results: [string[], XmlNode][] = [];
+  const results: RawRow[] = [];
   for (const child of current.children) {
     if (typeof child === "string") {
       // Ignore just whitespace.
@@ -764,10 +787,10 @@ function convertToRows(
         continue;
       }
       // Wrap the string child in a node.
-      results.push([sid, new XmlNode("span", [], [child])]);
+      results.push([sid, new XmlNode("span", [], [child]), editorial]);
       continue;
     }
-    results.push(...convertToRows(child, data));
+    results.push(...convertToRows(child, data, editorial));
   }
   return results;
 }
@@ -1198,18 +1221,35 @@ export function processWorkBody(
   spine: Pick<CitationSpine, "containers">,
   options: ProcessForDisplayOptions
 ): Pick<ProcessedWork2, "rows" | "notes"> {
+  const { rows, notes } = processWorkBodyDetailed(originalRoot, spine, options);
+  return { rows, notes };
+}
+
+/**
+ * `processWorkBody`, also returning the indices of the rows that hold only
+ * editorial matter (see `isEditorialNode`) or spacing.
+ */
+function processWorkBodyDetailed(
+  originalRoot: XmlNode,
+  spine: Pick<CitationSpine, "containers">,
+  options: ProcessForDisplayOptions
+): Pick<ProcessedWork2, "rows" | "notes"> & { editorialRows: Set<number> } {
   const data = preprocessTree(originalRoot, spine, options);
   const rawRows = convertToRows(data.root, data);
   // OUT-1 (coverage): every piece of text in the body lands in some row.
   const rowWeight = rawRows.reduce((sum, [, row]) => sum + textWeight(row), 0);
   assertEqual(rowWeight, textWeight(data.root), "Body text missing from rows");
   const rows: ProcessedWork2["rows"] = [];
+  const editorialRows = new Set<number>();
   let currentLg: undefined | [string, string[]] = undefined;
-  const addSpaceRowIfNeeded = () =>
-    currentLg !== undefined &&
-    rows.push([currentLg[1], new XmlNode("space", [["lg", currentLg[0]]])]);
+  const addSpaceRowIfNeeded = () => {
+    if (currentLg !== undefined) {
+      editorialRows.add(rows.length);
+      rows.push([currentLg[1], new XmlNode("space", [["lg", currentLg[0]]])]);
+    }
+  };
 
-  for (const [id, rowRoot] of rawRows) {
+  for (const [id, rowRoot, editorial] of rawRows) {
     const rowLg = rowRoot.getAttr("lg");
     // Add a spacer row when the `lg` changes.
     if (rowLg !== currentLg?.[0]) {
@@ -1219,10 +1259,17 @@ export function processWorkBody(
           ? undefined
           : [rowLg, splitSid(checkPresent(rowRoot.getAttr("lg-sid")))];
     }
+    if (editorial) {
+      editorialRows.add(rows.length);
+    }
     rows.push([id, processRowContent(rowRoot)]);
   }
   addSpaceRowIfNeeded();
-  return { rows, notes: data.notes.map((note) => transformNoteNode(note)) };
+  return {
+    rows,
+    notes: data.notes.map((note) => transformNoteNode(note)),
+    editorialRows,
+  };
 }
 
 /** Exported for unit testing. */
@@ -1352,15 +1399,29 @@ export function convertGrcBetaCode(root: XmlNode): void {
   }
 }
 
+function startsWith(id: string[], prefix: string[]): boolean {
+  return prefix.every((part, i) => id[i] === part);
+}
+
+/** What the structural stage knows about rows, for `assertOutputInvariants`. */
+export interface RowFacts {
+  /** Indices of rows of editorial matter (headings, unnumbered divisions). */
+  editorialRows?: ReadonlySet<number>;
+  /** Dotted ids of leaf sections; see `CitationSpine.leafIds`. */
+  leafIds?: ReadonlySet<string>;
+}
+
 /**
  * Build-time output assertions on a processed work (`docs/PLAN.md` §4.3,
- * pillar 2). OUT-1 (coverage) and OUT-3 (id parts) are checked where the rows
- * and ids are made; see `processWorkBody` and `cite_structure.ts`.
+ * pillar 2). OUT-1 (coverage into rows) and OUT-3 (id parts) are also
+ * checked where the rows and ids are made; see `processWorkBody` and
+ * `cite_structure.ts`.
  *
  * Exported for unit testing.
  */
 export function assertOutputInvariants(
-  work: Pick<ProcessedWork2, "rows" | "pages" | "textParts">
+  work: Pick<ProcessedWork2, "rows" | "pages" | "textParts">,
+  facts: RowFacts = {}
 ): void {
   const { rows, pages, textParts } = work;
   const isCitable = (id: string[]) => id.length === textParts.length;
@@ -1375,6 +1436,16 @@ export function assertOutputInvariants(
     assert(
       id.every((part) => part.length > 0 && !part.includes(".")),
       () => `Malformed row id ${JSON.stringify(id)}`
+    );
+    // Arity: no passage is cited more deeply than the work's scheme. Where
+    // some passages go deeper than the rest (one poem of a collection in
+    // sections), pages and citations would be wrong for one or the other.
+    assert(
+      id.length <= textParts.length,
+      () =>
+        `Ragged citation depth: ${id.join(".")} is deeper than ${textParts.join(
+          "."
+        )}`
     );
   }
   // OUT-4 and OUT-5: there are pages, their ids are unique, and they cover
@@ -1396,6 +1467,33 @@ export function assertOutputInvariants(
       () => `Citable row ${id.join(".")} is on no page`
     )
   );
+  // OUT-4 (text): the reader shows only pages, so text on no page is lost.
+  // That is only allowed for editorial matter (headings, unnumbered
+  // divisions), for the preamble of a section above page depth (text in a
+  // book before its first chapter), and, for now, for leaf sections
+  // shallower than page depth (Livy's books 46-142, which survive only as
+  // summaries), which need per-branch pagination (plan Phase 4).
+  const coveredIndices = rows.map((_, i) => i).filter((i) => covered[i]);
+  rows.forEach(([id, row], i) => {
+    if (covered[i] || facts.editorialRows?.has(i) || textWeight(row) === 0) {
+      return;
+    }
+    if (facts.leafIds?.has(id.join("."))) {
+      return;
+    }
+    const next = coveredIndices.find((j) => j > i);
+    const previous = coveredIndices.filter((j) => j < i).pop();
+    const isPreamble =
+      next !== undefined &&
+      startsWith(rows[next][0], id) &&
+      (previous === undefined || !startsWith(rows[previous][0], id));
+    assert(
+      isPreamble,
+      () =>
+        `Text on no page at ${id.join(".") || "(top level)"}: ` +
+        row.toString().replace(/\s+/g, " ").slice(0, 80)
+    );
+  });
 }
 
 export function processTei2(
@@ -1424,9 +1522,16 @@ export function processTei2(
     patchTree: createPatchTree(options?.patches ?? [], textParts),
     workId: metadata.workId,
   };
-  const { rows, notes } = processWorkBody(body, spine, processOptions);
+  const { rows, notes, editorialRows } = processWorkBodyDetailed(
+    body,
+    spine,
+    processOptions
+  );
   const pages = divideWork(rows, textParts);
-  assertOutputInvariants({ rows, pages, textParts });
+  assertOutputInvariants(
+    { rows, pages, textParts },
+    { editorialRows, leafIds: spine.leafIds }
+  );
   const navTree = buildNavTree(pages);
   const info: DocumentInfo = {
     ...extractInfo(xmlRoot, metadata.ctsMetadata),

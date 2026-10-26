@@ -192,6 +192,12 @@ describe("categorizeV1Error", () => {
       categorizeV1Error("No pages", "    at assertOutputInvariants (x)")
     ).toBe("output: No pages");
     expect(
+      categorizeV1Error(
+        "Citation scheme does not fit the text: Missing citation level: act.line",
+        "    at assertNoErrors (x)"
+      )
+    ).toBe("structure: scheme vs tree (Missing citation level: act.line)");
+    expect(
       categorizeV1Error("Unknown node foo\nmore", "    at transformContentNode")
     ).toBe("markup: content node (Unknown node foo)");
     expect(categorizeV1Error("odd", "")).toBe("other: odd");

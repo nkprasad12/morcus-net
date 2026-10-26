@@ -13,6 +13,11 @@
  * starts a section: `milestone`, `lb`, `pb`). A point level is turned into
  * containers by slicing its parent's content at each marker
  * (`sliceAtMarkers`), so the rest of the pipeline only sees containers.
+ *
+ * The build fails (rather than mis-citing or dropping text) where the
+ * declaration and the tree cannot be reconciled: a numbered division that no
+ * level accounts for, a division that matches a level but has no `@n`, or
+ * leaf sections that do not fit one scheme (`checkLeafPaths`).
  */
 
 import { assert, checkPresent } from "@/common/assert";
@@ -32,7 +37,7 @@ export interface CiteStep {
 export interface CiteLevel {
   /**
    * The unit name. Upstream leaves it off some levels, which it marks
-   * `n="chunk"` instead (see `toEvalLevel`).
+   * `n="chunk"` instead (see `toEvalLevels`).
    */
   unit?: string;
   /** The raw `@match`, for messages. */
@@ -195,13 +200,21 @@ export interface CitationContainer {
 
 export interface CitationSpine {
   /**
-   * The unit names of the deepest citation path in the work, e.g.
-   * `["book", "chapter", "section"]`. Rows whose id has this many parts are
+   * The unit names of the work's citation scheme, e.g.
+   * `["book", "chapter", "section"]`: the path of the most common kind of
+   * leaf section (see `dominantPath`). Rows whose id has this many parts are
    * citable; shallower rows (headings, prologues) are not.
    */
   textParts: string[];
   /** Every citable section element in the body, by identity. */
   containers: Map<XmlNode, CitationContainer>;
+  /**
+   * The ids (parts joined by `.`) of the leaf sections: containers with no
+   * container inside them. Usually `textParts.length` parts long; a shorter
+   * one is a section at a shallower depth (Livy's books 46-142, which are
+   * only summaries).
+   */
+  leafIds: Set<string>;
   /** Where the scheme came from. */
   source: "citeStructure" | "tree";
   /** Non-fatal disagreements between the declaration and the tree. */
@@ -331,6 +344,8 @@ interface ContainerMatch {
   between: XmlNode[];
   /** The alternative of `level.alternatives` that matched. */
   steps: CiteStep[];
+  /** Whether it matched by position rather than by the declared test. */
+  positional?: boolean;
 }
 
 interface PointMatch {
@@ -344,9 +359,57 @@ interface LevelMatches {
   points: PointMatch[];
 }
 
+/** Where `collectMatches` reports what it finds wrong or works around. */
+interface MatchSink {
+  errors: Set<string>;
+  warnings: string[];
+}
+
 /** The citation value of `node`: `@use` (normally `@n`), else `@xml:id`. */
 function citationValue(node: XmlNode, use: string): string | undefined {
   return node.getAttr(use) ?? node.getAttr("xml:id");
+}
+
+function lastStep(steps: CiteStep[]): CiteStep {
+  return steps[steps.length - 1];
+}
+
+/** The container node tests of `level`'s alternatives. */
+function containerTests(level: EvalLevel): CiteStep[] {
+  return level.alternatives.map(lastStep).filter((t) => !isPointTest(t));
+}
+
+/** Whether a numbered section of `level` lies anywhere below `node`. */
+function containsLevelMatch(node: XmlNode, level: EvalLevel): boolean {
+  const tests = containerTests(level);
+  const visit = (parent: XmlNode): boolean =>
+    parent.children.some(
+      (child) =>
+        typeof child !== "string" &&
+        !OPAQUE_ELEMENTS.has(child.name) &&
+        ((child.getAttr(level.use) !== undefined &&
+          tests.some((test) => matchesStep(child, test))) ||
+          visit(child))
+    );
+  return visit(node);
+}
+
+/**
+ * The container levels below `levels`, shallowest first. A section of one of
+ * these may sit directly in the context when the level between is absent
+ * there: Claudian's In Rufinum declares book > poem > line, but books 1 and 2
+ * have their lines directly in the book (only book 3 has poems).
+ */
+function deeperLevels(levels: EvalLevel[]): EvalLevel[] {
+  const result: EvalLevel[] = [];
+  let frontier = levels;
+  while (frontier.length > 0) {
+    frontier = frontier
+      .flatMap((level) => level.children)
+      .filter((level) => containerTests(level).length > 0);
+    result.push(...frontier);
+  }
+  return result;
 }
 
 /**
@@ -358,45 +421,116 @@ function citationValue(node: XmlNode, use: string): string | undefined {
  * steps (`div[@subtype='poem']`, `l`), but the encoding often has wrappers in
  * between (`<lg>`, `<p>`, an unnumbered grouping `<div>`), which strict XPath
  * would miss; the steps before the last only describe which intermediate
- * elements the declaration skips (see Rule A in `evaluateLevels`).
+ * elements the declaration skips (see Rule A in `evaluateLevels`). Besides:
  *
- * A container match with no citation value is not a section (Rule E: e.g.
- * Lucretius' `<l><gap/></l>`), so its content is searched for further matches
- * and otherwise belongs to the enclosing section.
+ * - An element that passes a level's test but holds sections of that same
+ *   level is a wrapper, not a section: Sidonius' `<div2 type="section">`
+ *   over numbered `<l>`s, for `l | div2[@type='section']`.
+ * - A section of a deeper level may stand in for an absent level (see
+ *   `deeperLevels`).
+ * - A numbered division in the place of a level's sections, with the same
+ *   element and attributes but another value, is one of them: upstream's
+ *   typos (`subtype="secton"`, `"chaper"`), prefaces (`subtype="preface"
+ *   n="pr"` before the sections) and variant names (Sidonius' letters
+ *   encoded as `<div2 type="poem">` in books 1-7).
+ * - A container match with no citation value is not a section. For `<l>` that
+ *   is expected (Rule E: Lucretius' `<l><gap/></l>`), and its content belongs
+ *   to the enclosing section; any other division that passes a level's test
+ *   without one is an error, as its sections could not be cited.
  */
-function collectMatches(context: XmlNode, levels: EvalLevel[]): LevelMatches {
+function collectMatches(
+  context: XmlNode,
+  levels: EvalLevel[],
+  sink?: MatchSink
+): LevelMatches {
   const result: LevelMatches = { containers: [], points: [] };
+  const deeper = deeperLevels(levels);
+  const tryDeclared = (
+    child: XmlNode,
+    between: XmlNode[]
+  ): "matched" | "tested" | undefined => {
+    for (const level of [...levels, ...deeper]) {
+      const isDeeper = !levels.includes(level);
+      const steps = level.alternatives.find((alternative) =>
+        matchesStep(child, lastStep(alternative))
+      );
+      if (steps === undefined || (isDeeper && isPointTest(lastStep(steps)))) {
+        continue;
+      }
+      if (isPointTest(lastStep(steps))) {
+        const n = citationValue(child, level.use);
+        if (n === undefined) {
+          return "tested";
+        }
+        result.points.push({ node: child, level, n });
+        return "matched";
+      }
+      const n = child.getAttr(level.use);
+      if (n === undefined) {
+        if (child.name !== "l" && child.name !== "seg") {
+          sink?.errors.add(
+            `<${child.name}> matching ${level.origin} has no @${level.use}`
+          );
+        }
+        return "tested";
+      }
+      if (
+        containsLevelMatch(child, level) ||
+        (isDeeper && levels.some((l) => containsLevelMatch(child, l)))
+      ) {
+        return "tested";
+      }
+      result.containers.push({ node: child, level, n, between, steps });
+      return "matched";
+    }
+    return undefined;
+  };
+  const tryPositional = (child: XmlNode, between: XmlNode[]): boolean => {
+    if (!isNumberedDivision(child)) {
+      return false;
+    }
+    for (const level of levels) {
+      const steps = level.alternatives.find((alternative) => {
+        const test = lastStep(alternative);
+        return (
+          !isPointTest(test) &&
+          test.name === child.name &&
+          test.predicates.every(([key]) => child.getAttr(key) !== undefined)
+        );
+      });
+      if (steps === undefined || containsLevelMatch(child, level)) {
+        continue;
+      }
+      sink?.warnings.push(
+        `Citing <${child.name} ${lastStep(steps)
+          .predicates.map(([key]) => `${key}="${child.getAttr(key)}"`)
+          .join(" ")} n="${child.getAttr("n")}"> as ${level.origin}`
+      );
+      result.containers.push({
+        node: child,
+        level,
+        n: checkPresent(child.getAttr("n")),
+        between,
+        steps,
+        positional: true,
+      });
+      return true;
+    }
+    return false;
+  };
   const visit = (node: XmlNode, between: XmlNode[]) => {
     for (const child of node.children) {
       if (typeof child === "string" || OPAQUE_ELEMENTS.has(child.name)) {
         continue;
       }
-      let matched = false;
-      for (const level of levels) {
-        const steps = level.alternatives.find((alternative) =>
-          matchesStep(child, alternative[alternative.length - 1])
-        );
-        if (steps === undefined) {
-          continue;
-        }
-        const test = steps[steps.length - 1];
-        const n = isPointTest(test)
-          ? citationValue(child, level.use)
-          : child.getAttr(level.use);
-        if (n === undefined) {
-          break;
-        }
-        if (isPointTest(test)) {
-          result.points.push({ node: child, level, n });
-        } else {
-          result.containers.push({ node: child, level, n, between, steps });
-        }
-        matched = true;
-        break;
+      const declared = tryDeclared(child, between);
+      if (declared === "matched") {
+        continue;
       }
-      if (!matched) {
-        visit(child, [...between, child]);
+      if (declared === undefined && tryPositional(child, between)) {
+        continue;
       }
+      visit(child, [...between, child]);
     }
   };
   visit(context, []);
@@ -554,9 +688,15 @@ export function sliceAtMarkers(
 
 interface SpineBuilder {
   containers: Map<XmlNode, CitationContainer>;
-  textParts: string[];
+  /** The unit path of each container, for `textParts`. */
+  paths: Map<XmlNode, string[]>;
+  /**
+   * Numbered divisions that are deliberately not sections: those a declared
+   * path steps through (Livy's `part`s) and undeclared groupings (Rule C).
+   */
+  skipped: Set<XmlNode>;
   declared: ReadonlySet<string>;
-  warnings: string[];
+  sink: MatchSink;
   slicePoints: boolean;
 }
 
@@ -577,9 +717,7 @@ function register(
     () => `Citation value "${n}" on <${node.name}> (${unit}) contains "."`
   );
   builder.containers.set(node, { unit, n });
-  if (path.length > builder.textParts.length) {
-    builder.textParts = path;
-  }
+  builder.paths.set(node, path);
 }
 
 /**
@@ -634,14 +772,22 @@ function implicitSegLevels(
 function isUndeclaredGrouping(
   builder: SpineBuilder,
   level: EvalLevel,
-  matches: ContainerMatch[]
+  matches: ContainerMatch[],
+  isTopLevel: boolean
 ): boolean {
   if (
-    level.children.length === 0 ||
+    // Only a grouping of the whole work, with more than one group: a single
+    // book (Seneca's Dialogi) or a scene within an act is not one.
+    !isTopLevel ||
+    matches.length < 2 ||
     builder.declared.size === 0 ||
     level.unit === undefined ||
     builder.declared.has(level.unit.toLowerCase()) ||
-    matches.length === 0
+    // Leaving it out must leave a scheme of at least two levels: dropping
+    // the poems of a collection whose lines run on (Claudian, Ausonius)
+    // would cite bare lines and lose every poem's heading.
+    level.children.length === 0 ||
+    level.children.some((child) => child.children.length === 0)
   ) {
     return false;
   }
@@ -668,17 +814,18 @@ function evaluateLevels(
   if (levels.length === 0) {
     return;
   }
-  const { containers, points } = collectMatches(context, levels);
-  for (const level of levels) {
+  const { containers, points } = collectMatches(context, levels, builder.sink);
+  // The levels with sections here, which may include deeper levels standing
+  // in for absent ones (see `deeperLevels`).
+  const matchedLevels = Array.from(new Set(containers.map((m) => m.level)));
+  for (const level of matchedLevels) {
     const matches = containers.filter((m) => m.level === level);
-    if (matches.length === 0) {
-      continue;
-    }
-    if (isUndeclaredGrouping(builder, level, matches)) {
-      builder.warnings.push(
+    if (isUndeclaredGrouping(builder, level, matches, path.length === 0)) {
+      builder.sink.warnings.push(
         `Ignoring undeclared grouping level ${level.origin}`
       );
       for (const match of matches) {
+        builder.skipped.add(match.node);
         evaluateLevels(builder, match.node, level.children, path);
       }
       continue;
@@ -702,13 +849,48 @@ function evaluateLevels(
             builder,
             matches.map((m) => m.node)
           );
+    // A division of the same kind as those kept between (Jerome's letters,
+    // kept over their sections) that has no sections of its own (letter 44)
+    // matched the level by position; it is one of those divisions.
+    const signature = (node: XmlNode) =>
+      `${node.name}|${divisionUnit(node).toLowerCase()}`;
+    const keptKinds = new Set(
+      collide
+        ? matches.flatMap((m) =>
+            m.between.filter(isNumberedDivision).map(signature)
+          )
+        : []
+    );
     for (const match of matches) {
+      if (match.positional && keptKinds.has(signature(match.node))) {
+        const kindPath = [...path, divisionUnit(match.node)];
+        register(
+          builder,
+          match.node,
+          divisionUnit(match.node),
+          match.n,
+          kindPath
+        );
+        evaluateLevels(builder, match.node, [level], kindPath);
+        continue;
+      }
       let matchPath = path;
+      // Also skipped: a wrapper that passes this level's own test (see
+      // `collectMatches`), which the declaration does mention.
       const explicit = collide
         ? new Set<XmlNode>()
-        : steppedThrough(match.steps, match.between);
+        : new Set([
+            ...steppedThrough(match.steps, match.between),
+            ...match.between.filter((node) =>
+              containerTests(level).some((test) => matchesStep(node, test))
+            ),
+          ]);
       for (const between of match.between) {
-        if (!isNumberedDivision(between) || explicit.has(between)) {
+        if (!isNumberedDivision(between)) {
+          continue;
+        }
+        if (explicit.has(between)) {
+          builder.skipped.add(between);
           continue;
         }
         const unit = divisionUnit(between);
@@ -740,7 +922,7 @@ function evaluateLevels(
     if (containers.some((c) => c.level === level)) {
       // A union like `div3[@type='section'] | milestone[@unit='section']`
       // where both kinds occur in one parent: the containers win.
-      builder.warnings.push(
+      builder.sink.warnings.push(
         `Ignoring ${markers.length} point markers of ${level.origin} beside containers of the same level`
       );
       continue;
@@ -825,6 +1007,155 @@ function evaluateTree(builder: SpineBuilder, context: XmlNode, path: string[]) {
   }
 }
 
+/**
+ * Checks that the scheme accounts for every numbered division of the body:
+ * each is a section, or deliberately skipped. Anything else (an undeclared
+ * subtype the tree puts somewhere no level reaches) would have its text cited
+ * by the wrong id, or by none.
+ */
+function checkCoverage(builder: SpineBuilder, body: XmlNode) {
+  const visit = (node: XmlNode) => {
+    for (const child of node.children) {
+      if (typeof child === "string" || OPAQUE_ELEMENTS.has(child.name)) {
+        continue;
+      }
+      if (
+        isNumberedDivision(child) &&
+        !builder.containers.has(child) &&
+        !builder.skipped.has(child)
+      ) {
+        const attrs = child.attrs
+          .filter(([key]) => ["type", "subtype", "n"].includes(key))
+          .map(([key, value]) => `${key}="${value}"`)
+          .join(" ");
+        builder.sink.errors.add(
+          `Numbered division <${child.name} ${attrs}> is not a citation level`
+        );
+      }
+      visit(child);
+    }
+  };
+  visit(body);
+}
+
+function assertNoErrors(builder: SpineBuilder) {
+  const errors = Array.from(builder.sink.errors);
+  assert(
+    errors.length === 0,
+    () =>
+      `Citation scheme does not fit the text: ${errors
+        .slice(0, 3)
+        .join("; ")}` +
+      (errors.length > 3 ? `; and ${errors.length - 3} more` : "")
+  );
+}
+
+/**
+ * The dotted ids of the leaf sections under `body` (see
+ * `CitationSpine.leafIds`), and each leaf's unit path.
+ */
+function findLeaves(
+  builder: SpineBuilder,
+  body: XmlNode
+): { leafIds: Set<string>; leafPaths: string[][] } {
+  const leafIds = new Set<string>();
+  const leafPaths: string[][] = [];
+  // Returns whether `node`'s subtree has a container.
+  const visit = (node: XmlNode, id: string[]): boolean => {
+    let found = false;
+    for (const child of node.children) {
+      if (typeof child === "string" || OPAQUE_ELEMENTS.has(child.name)) {
+        continue;
+      }
+      const container = builder.containers.get(child);
+      const childId = container === undefined ? id : [...id, container.n];
+      const below = visit(child, childId);
+      if (container !== undefined && !below) {
+        leafIds.add(childId.join("."));
+        leafPaths.push(checkPresent(builder.paths.get(child)));
+      }
+      found = found || below || container !== undefined;
+    }
+    return found;
+  };
+  visit(body, []);
+  return { leafIds, leafPaths };
+}
+
+function pathKey(path: string[]): string {
+  return JSON.stringify(path.map((unit) => unit.toLowerCase()));
+}
+
+/**
+ * The unit path shared by the most leaf sections (ties go to the deeper
+ * path, then the first; unit names compare case-insensitively, keeping the
+ * first spelling). Almost every work has one leaf depth; where some passages
+ * stop short of it (Livy's books that survive only as summaries) the scheme
+ * follows the majority. See `checkLeafPaths` for what may differ.
+ */
+function dominantPath(paths: string[][]): string[] {
+  const counts = new Map<string, { path: string[]; count: number }>();
+  for (const path of paths) {
+    const key = pathKey(path);
+    const entry = counts.get(key) ?? { path, count: 0 };
+    entry.count += 1;
+    counts.set(key, entry);
+  }
+  let best: { path: string[]; count: number } | undefined = undefined;
+  for (const entry of counts.values()) {
+    if (
+      best === undefined ||
+      entry.count > best.count ||
+      (entry.count === best.count && entry.path.length > best.path.length)
+    ) {
+      best = entry;
+    }
+  }
+  return best?.path ?? [];
+}
+
+/**
+ * Checks that the leaf sections fit one scheme, `textParts`. The output
+ * model has one citation depth per work (rows of `textParts.length` parts are
+ * citable, pages are one level up), so it cannot represent:
+ *
+ * - leaves deeper than the scheme (one poem of a collection split into
+ *   sections), whose rows would be mis-cited (also checked on the output,
+ *   see `assertOutputInvariants`);
+ * - two different unit paths of the same depth (`book.poem.line` beside
+ *   `poem.section.line`, where a poem is encoded outside its book);
+ * - the scheme's leaf unit at another depth (lines straight under a book in
+ *   a work that otherwise cites `book.poem.line`), where a level is missing.
+ *
+ * Shallower leaves of another unit are allowed: Livy's books 46-142 (only
+ * summaries survive) are real sections, if not yet paginated well (plan
+ * Phase 4).
+ */
+function checkLeafPaths(
+  builder: SpineBuilder,
+  leafPaths: string[][],
+  textParts: string[]
+) {
+  const schemeKey = pathKey(textParts);
+  const leafUnit = textParts[textParts.length - 1]?.toLowerCase();
+  const reported = new Set<string>();
+  for (const path of leafPaths) {
+    const key = pathKey(path);
+    if (key === schemeKey || reported.has(key)) {
+      continue;
+    }
+    reported.add(key);
+    const shape = `${path.join(".")} (scheme ${textParts.join(".")})`;
+    if (path.length > textParts.length) {
+      builder.sink.errors.add(`Ragged citation depth: ${shape}`);
+    } else if (path.length === textParts.length) {
+      builder.sink.errors.add(`Mixed citation units: ${shape}`);
+    } else if (path[path.length - 1].toLowerCase() === leafUnit) {
+      builder.sink.errors.add(`Missing citation level: ${shape}`);
+    }
+  }
+}
+
 export interface BuildSpineOptions {
   /**
    * Whether to slice the body at point-level markers (default `true`). This
@@ -844,12 +1175,12 @@ export function buildCitationSpine(
   body: XmlNode,
   options?: BuildSpineOptions
 ): CitationSpine {
-  const declaredList = declaredUnitNames(teiRoot);
   const builder: SpineBuilder = {
     containers: new Map(),
-    textParts: [],
-    declared: new Set(declaredList),
-    warnings: [],
+    paths: new Map(),
+    skipped: new Set(),
+    declared: new Set(declaredUnitNames(teiRoot)),
+    sink: { errors: new Set(), warnings: [] },
     slicePoints: options?.slicePoints ?? true,
   };
   const levels = parseCiteStructure(teiRoot);
@@ -858,10 +1189,16 @@ export function buildCitationSpine(
   } else {
     evaluateLevels(builder, body, toEvalLevels(levels), []);
   }
+  checkCoverage(builder, body);
+  const { leafIds, leafPaths } = findLeaves(builder, body);
+  const textParts = dominantPath(leafPaths);
+  checkLeafPaths(builder, leafPaths, textParts);
+  assertNoErrors(builder);
   return {
-    textParts: builder.textParts,
+    textParts,
     containers: builder.containers,
+    leafIds,
     source: levels === undefined ? "tree" : "citeStructure",
-    warnings: builder.warnings,
+    warnings: builder.sink.warnings,
   };
 }
