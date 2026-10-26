@@ -1027,6 +1027,51 @@ describe("transformNoteNode vocabulary", () => {
     expect(result).not.toContain("Gaio");
   });
 
+  it("capitalizes a standalone reg, as in the text", () => {
+    expect(note("<note>ed. <reg>cobet</reg></note>")).toContain("Cobet");
+  });
+
+  it("does not capitalize a reg chosen from a choice", () => {
+    const result = note(
+      "<note><choice><orig>vltra</orig><reg>ultra</reg></choice></note>"
+    );
+    expect(result).toContain("ultra");
+    expect(result).not.toContain("Ultra");
+  });
+
+  it("validates the branches of a choice that are not shown", () => {
+    expect(() =>
+      note("<note><choice><corr>a</corr><bogus>b</bogus></choice></note>")
+    ).toThrow(/bogus/);
+    expect(() =>
+      note(
+        '<note><choice><corr>a</corr><sic rend="inddent">b</sic></choice></note>'
+      )
+    ).toThrow(/inddent/);
+  });
+
+  it("validates the expansion dropped from an abbr", () => {
+    expect(() =>
+      note("<note><abbr><expan><bogus>Gaio</bogus></expan>C.</abbr></note>")
+    ).toThrow(/bogus/);
+  });
+
+  it("drops whitespace with the expansion of an abbr", () => {
+    const result = transformNoteNode(
+      parseRawXml("<abbr> <expan><ex>Gaio</ex></expan>C. </abbr>", {
+        keepWhitespace: true,
+      })
+    );
+    expect(result.children).toEqual(["C. "]);
+  });
+
+  it("removes comments rather than leaving empty elements", () => {
+    const result = transformNoteNode(
+      parseRawXml("<note><hi>a</hi><!-- c --><hi>b</hi></note>")
+    );
+    expect(result.children).toHaveLength(2);
+  });
+
   it("brackets supplied text", () => {
     expect(note("<note>a<supplied>b</supplied></note>")).toContain("⟨b⟩");
   });
@@ -1036,7 +1081,6 @@ describe("transformNoteNode vocabulary", () => {
     "forename",
     "addName",
     "genName",
-    "reg",
     "corr",
     "sic",
     "orig",
@@ -1159,6 +1203,14 @@ describe("Phase 1 markup in the text", () => {
     expect(row.toString()).toContain("L.</span>x");
   });
 
+  it("shows the abbreviation in a bare expan/abbr (Cicero speeches)", () => {
+    const row = onlyRow(
+      `<p><expan><abbr>L.</abbr><ex>Lucium</ex></expan> Sullam</p>`
+    );
+    expect(row.toString()).toContain("L.");
+    expect(row.toString()).not.toContain("Lucium");
+  });
+
   it("rejects a bare abbr outside choice or expan", () => {
     expect(() => onlyRow(`<abbr>L.</abbr>`)).toThrow();
   });
@@ -1202,8 +1254,31 @@ describe("note n/target pairing", () => {
     const work = process(
       `a <note target="x"/> <note xml:id="x">by id</note> <note n="x">by n</note>`
     );
-    // Both are extracted as bodies of "x"; the target resolves to `xml:id`.
-    expect(work.notes?.[0].toString()).toContain("by id");
+    // The target resolves to `xml:id`, and `<note n="x">` stays an inline note.
+    expect(work.notes?.map((n) => n.toString())).toEqual([
+      expect.stringContaining("by id"),
+      expect.stringContaining("by n"),
+    ]);
+  });
+
+  it("fails on duplicate xml:id note bodies", () => {
+    expect(() =>
+      process(
+        `a <note target="d"/> <note xml:id="d">one</note><note xml:id="d">two</note>`
+      )
+    ).toThrow(/Duplicate/);
+  });
+
+  it("fails on an inline note body", () => {
+    expect(() =>
+      process(`a <note target="i"/> <note n="i" place="inline">Lucullus</note>`)
+    ).toThrow('Inline note (place="inline")');
+  });
+
+  it("fails on unknown note body attributes", () => {
+    expect(() =>
+      process(`a <note target="i"/> <note xml:id="i" bogus="1">body</note>`)
+    ).toThrow(/bogus/);
   });
 
   it("keeps unreferenced <note n> as ordinary inline notes", () => {

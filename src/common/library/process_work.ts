@@ -474,6 +474,21 @@ function normalizeNoteTarget(target: string): string {
   return target.startsWith("#") ? target.slice(1) : target;
 }
 
+/** The `xml:id`s of every `<note>` under `root`. */
+function findNoteXmlIds(root: XmlNode, ids = new Set<string>()) {
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      continue;
+    }
+    const id = child.name === "note" ? child.getAttr("xml:id") : undefined;
+    if (id !== undefined) {
+      ids.add(id);
+    }
+    findNoteXmlIds(child, ids);
+  }
+  return ids;
+}
+
 /** The (normalized) targets of every `<note target="..."/>` under `root`. */
 function findNoteTargets(root: XmlNode, targets = new Set<string>()) {
   for (const child of root.children) {
@@ -557,13 +572,17 @@ function preprocessTree(
 ): PreprocessedTree {
   const textPartsLower = textParts.map((part) => part.toLowerCase());
   const notes: XmlNode[] = [];
+  // Targets that an `xml:id` already satisfies never take a `<note n>` as
+  // their body, so an inline `<note n>` with the same value stays in place.
+  const xmlIds = findNoteXmlIds(originalRoot);
+  const targetsByN = new Set(
+    Array.from(findNoteTargets(originalRoot)).filter((t) => !xmlIds.has(t))
+  );
   const { root, notesWithXmlId, notesWithN } = deepcopyAndExtract(
     originalRoot,
-    findNoteTargets(originalRoot)
+    targetsByN
   );
-  const notesWithXmlIdMap = new Map(
-    notesWithXmlId.map((n) => [checkPresent(n.getAttr("xml:id")), n])
-  );
+  const notesWithXmlIdMap = indexNotesBy(notesWithXmlId, "xml:id");
   const notesWithNMap = indexNotesBy(notesWithN, "n");
   const findNoteBody = (target: string): XmlNode | undefined => {
     const normalized = normalizeNoteTarget(target);
@@ -650,6 +669,17 @@ function preprocessTree(
         // The content is named by `xml:id` or, failing that, by `n`; the
         // target may carry a leading `#` (`target="#n1"`).
         const content = checkPresent(findNoteBody(target), target);
+        content.attrs.forEach(([name]) =>
+          assert(
+            name === "xml:id" || KNOWN_NOTE_ATTRS.has(name),
+            () => `Unknown note body attribute: ${name}`
+          )
+        );
+        assert(
+          content.getAttr("place") !== "inline",
+          () =>
+            `Inline note (place="inline") is not yet supported as a footnote: ${content.toString()}`
+        );
         // Note: we explicitly do not delete the note from the map because sometimes the
         // same content is referenced multiple times.
         notes.push(content.deepcopy());
@@ -807,7 +837,7 @@ function withoutChildrenNamed<T>(
 }
 
 /** Exported for unit testing. */
-export function transformNoteNode(node: XmlNode): XmlNode {
+export function transformNoteNode(node: XmlNode, parent?: XmlNode): XmlNode {
   assert(NOTE_NODES.has(node.name), node.name);
   if (node.name === "lb") {
     return new XmlNode("br", [], []);
@@ -818,26 +848,36 @@ export function transformNoteNode(node: XmlNode): XmlNode {
   if (node.name === "#comment") {
     return new XmlNode("span", [], []);
   }
-  if (node.name === "choice") {
+  const rend = node.getAttr("rend");
+  assert(allRendTokensIn(rend, KNOWN_NOTE_REND), rend);
+  // Comments are dropped outright: an empty element in their place would
+  // hide the seam between its siblings from `needsWordBreak`.
+  const sourceChildren = node.children.filter(
+    (c) => typeof c === "string" || c.name !== "#comment"
+  );
+  // Every child is transformed, and so validated, even in the branches of a
+  // `choice` or `abbr` that are not shown, just as `processRowContent` does.
+  const transformed = sourceChildren.map((c) =>
+    typeof c === "string" ? c : transformNoteNode(c, node)
+  );
+  const childIndex = (pred: (c: XmlNode) => boolean) =>
+    sourceChildren.findIndex((c) => typeof c !== "string" && pred(c));
+  if (node.name === "choice" && childIndex(() => true) !== -1) {
     // As in the text: show the corrected, regularized or abbreviated form.
-    const options = node.children.filter(
-      (c): c is XmlNode => typeof c !== "string"
-    );
-    const chosen =
-      options.find((c) => CHOICE_GOOD_CHILD.has(c.name)) ??
-      options.find((c) => c.name === "expan" && hasChildNamed(c, "abbr"));
-    if (chosen !== undefined || options.length > 0) {
-      return transformNoteNode(
-        checkPresent(chosen, `No usable <choice> child: ${node}`)
+    let chosen = childIndex((c) => CHOICE_GOOD_CHILD.has(c.name));
+    if (chosen === -1) {
+      chosen = childIndex(
+        (c) => c.name === "expan" && hasChildNamed(c, "abbr")
       );
     }
+    assert(chosen !== -1, () => `No usable <choice> child: ${node}`);
+    return XmlNode.assertIsNode(transformed[chosen]);
   }
   if (node.name === "expan" && hasChildNamed(node, "abbr")) {
     // <expan><abbr>acturu's</abbr><ex>acturus es</ex></expan>
-    const abbr = node.children.find(
-      (c): c is XmlNode => typeof c !== "string" && c.name === "abbr"
+    return XmlNode.assertIsNode(
+      transformed[childIndex((c) => c.name === "abbr")]
     );
-    return transformNoteNode(checkPresent(abbr));
   }
   const attrs: XmlNode["attrs"] = [];
   if (["l", "p", "head"].includes(node.name)) {
@@ -846,8 +886,6 @@ export function transformNoteNode(node: XmlNode): XmlNode {
   if (node.name === "num") {
     attrs.push(["rend", "smallcaps"]);
   }
-  const rend = node.getAttr("rend");
-  assert(allRendTokensIn(rend, KNOWN_NOTE_REND), rend);
   const handledRends = rendTokens(rend ?? "")
     .filter((token) => HANDLED_NOTE_REND.has(token))
     .map((token) => NOTE_REND_ALIASES.get(token) ?? token);
@@ -857,14 +895,26 @@ export function transformNoteNode(node: XmlNode): XmlNode {
   if (QUOTE_NODES.has(node.name)) {
     attrs.push(["rend", "italic"]);
   }
-  // As in the text, an `abbr` shows only its abbreviated form.
-  const sourceChildren =
-    node.name === "abbr"
-      ? node.children.filter((c) => typeof c === "string" || c.name !== "expan")
-      : node.children;
-  const baseChildren = sourceChildren.map((c) =>
-    typeof c === "string" ? c : transformNoteNode(c)
-  );
+  if (node.name === "reg" && parent?.name !== "choice") {
+    // As in the text, a standalone `reg` marks a capitalized word
+    // (`<reg>cobet</reg>`, `Suet. <reg>iul</reg>.`).
+    assert(transformed.length === 1);
+    const child = assertType(transformed[0], isString);
+    assert(/^[a-zA-Zé]/.test(child), child);
+    return new XmlNode("span", attrs, [
+      child[0].toUpperCase() + child.slice(1),
+    ]);
+  }
+  // As in the text, an `abbr` shows only its abbreviated form, flush.
+  const baseChildren =
+    node.name === "abbr" && hasChildNamed(node, "expan")
+      ? transformed.filter((c, i) => {
+          const original = sourceChildren[i];
+          return typeof original === "string"
+            ? original.trim().length > 0
+            : original.name !== "expan";
+        })
+      : transformed;
   let isAppCritLem = false;
   if (node.name === "lem") {
     isAppCritLem = true;
@@ -984,8 +1034,8 @@ export function transformContentNode(
   }
   if (node.name === "expan" && hasChildNamed(node, "abbr")) {
     // <expan><abbr>acturu's</abbr><ex>acturus es</ex></expan>: show only the
-    // abbreviated form, as everywhere else.
-    assertEqual(parent?.name, "choice");
+    // abbreviated form, as everywhere else. Plautus wraps this in a `choice`;
+    // Cicero's speeches (phi0474.phi009, phi010, phi014) use it bare.
     assertEqual(children.length, node.children.length);
     const abbrs = children.filter((c, i) => {
       const original = node.children[i];
@@ -1229,7 +1279,7 @@ export function processWorkBody(
     rows.push([id, processRowContent(rowRoot)]);
   }
   addSpaceRowIfNeeded();
-  return { rows, notes: data.notes.map(transformNoteNode) };
+  return { rows, notes: data.notes.map((note) => transformNoteNode(note)) };
 }
 
 function getTextparts(root: XmlNode, workId: string) {
