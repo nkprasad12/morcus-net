@@ -163,7 +163,7 @@ export function assignIframeSrc(
   url: string
 ): HTMLIFrameElement {
   const fresh =
-    iframe.getAttribute("loading") === "lazy" &&
+    iframe.getAttribute("loading")?.toLowerCase() === "lazy" &&
     iframe.isConnected &&
     !hasLoadedDocument(iframe)
       ? iframe.cloneNode()
