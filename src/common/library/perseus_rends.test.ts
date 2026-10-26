@@ -1,4 +1,5 @@
 import {
+  allRendTokensIn,
   canonicalRend,
   isFullyHandledRend,
   isHandledRend,
@@ -21,8 +22,6 @@ const PREVIOUS_HANDLED: [string, string][] = [
   ["overline", "overline"],
 ];
 const PREVIOUS_KNOWN_ONLY = [
-  "bold",
-  "sup",
   "merge",
   "align(indent)",
   "merge;double",
@@ -50,11 +49,34 @@ describe("rend tokens", () => {
     expect(isKnownRend(rend)).toBe(true);
   });
 
-  it("still rejects unknown and empty renditions", () => {
+  it("still rejects unknown renditions", () => {
     expect(isKnownRend("inddent")).toBe(false);
-    expect(isKnownRend("")).toBe(false);
     expect(isKnownRend("single; inddent")).toBe(false);
     expect(isKnownRend(undefined)).toBe(true);
+  });
+
+  it.each(["", " ", ";", " ; "])(
+    "treats the empty rendition %j like an absent one",
+    (rend) => {
+      expect(isKnownRend(rend)).toBe(true);
+      expect(isHandledRend(rend)).toBe(false);
+      expect(isFullyHandledRend(rend)).toBe(false);
+      expect(allRendTokensIn(rend, new Set())).toBe(true);
+    }
+  );
+
+  it.each([
+    ["bold", "bold"],
+    ["sup", "sup"],
+    ["super", "sup"],
+    ["superscript", "sup"],
+    ["superscript; sup", "sup"],
+    ["bold; single", "bold"],
+    ["italic; bold", "italic bold"],
+  ])("renders %s in body text as %s", (rend, emitted) => {
+    expect(isKnownRend(rend)).toBe(true);
+    expect(isHandledRend(rend)).toBe(true);
+    expect(canonicalRend(rend)).toBe(emitted);
   });
 
   it("splits on semicolons", () => {

@@ -8,9 +8,13 @@ const HANDLED_REND = new Set<string>([
   "smallcaps",
   "7",
   "overline",
+  "bold",
+  "sup",
   // Upstream spellings of the renditions above; see `canonicalRend`.
   "align(indent)",
   "align(blockquote)",
+  "super",
+  "superscript",
 ]);
 
 /**
@@ -23,6 +27,8 @@ const REND_ALIASES = new Map<string, string>([
   ["italics", "italic"],
   ["align(indent)", "indent"],
   ["align(blockquote)", "blockquote"],
+  ["super", "sup"],
+  ["superscript", "sup"],
 ]);
 
 /**
@@ -40,8 +46,6 @@ export const QUOTE_RENDS: ReadonlySet<string> = new Set([
 
 /** Rendition tokens that are recognised but deliberately not rendered. */
 const KNOWN_REND = new Set<string>([
-  "bold",
-  "sup",
   ...QUOTE_RENDS,
   // Letter-spaced (Sperrdruck) quotations in the 2026 upstream re-encoding.
   "spacing",
@@ -68,7 +72,11 @@ export function rendTokens(rend: string): string[] {
     .filter((token) => token.length > 0);
 }
 
-/** Whether `rend` is absent or has tokens, every one of them in `known`. */
+/**
+ * Whether every token of `rend` is in `known`. A `rend` that is absent, empty
+ * or whitespace-only (`rend=""`, as in Livy) has no tokens, so it is
+ * vacuously known: it is a no-op, exactly like an absent `rend`.
+ */
 export function allRendTokensIn(
   rend: string | undefined,
   known: ReadonlySet<string | undefined>
@@ -76,8 +84,7 @@ export function allRendTokensIn(
   if (rend === undefined) {
     return true;
   }
-  const tokens = rendTokens(rend);
-  return tokens.length > 0 && tokens.every((token) => known.has(token));
+  return rendTokens(rend).every((token) => known.has(token));
 }
 
 export function isKnownRend(rend: string | undefined): boolean {
@@ -93,9 +100,13 @@ export function isHandledRend(rend: string | undefined): boolean {
   );
 }
 
-/** Whether `rend` is present and every one of its tokens is rendered. */
+/** Whether `rend` has tokens and every one of them is rendered. */
 export function isFullyHandledRend(rend: string | undefined): boolean {
-  return rend !== undefined && allRendTokensIn(rend, HANDLED_REND);
+  return (
+    rend !== undefined &&
+    rendTokens(rend).length > 0 &&
+    allRendTokensIn(rend, HANDLED_REND)
+  );
 }
 
 /**

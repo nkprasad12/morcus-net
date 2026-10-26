@@ -44,6 +44,14 @@ const NO_SUBTYPES = new Set([LatinWorks.TACITUS_DIALOGUS]);
 
 // For regular nodes
 const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr", "abbr"]);
+/**
+ * Values of `<l part>`, which marks a verse line split between speakers or
+ * set as half-lines: Initial, Medial, Final, No (complete) and Y (incomplete,
+ * position unknown; Aeneid half-lines). See the TEI guidelines for `@part`.
+ */
+const L_PARTS = new Set<string>(["I", "M", "F", "N", "Y"]);
+/** `<l part>` values that continue a line, and so are indented. */
+const CONTINUED_L_PARTS = new Set<string>(["M", "F"]);
 const SKIP_NODES = new Set(["#comment", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
 
@@ -67,6 +75,9 @@ export const SWITCH_CONTENT_NODES = new Set<string>([
   "surname",
   "persName",
   "name",
+  "forename",
+  "addName",
+  "genName",
   "num",
   "orig",
   "seg",
@@ -137,6 +148,23 @@ export const NOTE_NODES = new Set([
   "w",
   "num",
   "gloss",
+  "name",
+  "forename",
+  "addName",
+  "genName",
+  "reg",
+  "choice",
+  "corr",
+  "sic",
+  "orig",
+  "abbr",
+  "expan",
+  "ex",
+  "supplied",
+  "p",
+  "head",
+  "seg",
+  "#comment",
 ]);
 export const NOTE_ELEMENT_ALLOWLIST: ReadonlySet<string> = NOTE_NODES;
 export const HANDLED_NOTE_REND = new Set<string | undefined>([
@@ -149,12 +177,28 @@ export const HANDLED_NOTE_REND = new Set<string | undefined>([
   "smallcaps",
   "blockquote",
   "bold",
+  "super",
+  "align(raised)",
+  "sub",
+  "subscript",
+  "align(lowered)",
+]);
+/** Note renditions emitted under another name; see `transformNoteNode`. */
+const NOTE_REND_ALIASES = new Map<string, string>([
+  ["italics", "italic"],
+  ["super", "superscript"],
+  ["align(raised)", "superscript"],
+  ["sub", "subscript"],
+  ["align(lowered)", "subscript"],
 ]);
 /** Rendition tokens allowed in notes; see `allRendTokensIn`. */
 export const KNOWN_NOTE_REND = new Set<string | undefined>([
   undefined,
   ...HANDLED_NOTE_REND,
   ...QUOTE_RENDS,
+  // Indentation means nothing inside a one-paragraph hover note: ignored.
+  "indent",
+  "align(indent)",
 ]);
 export const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "xml:lang",
@@ -422,12 +466,54 @@ interface PreprocessedTree {
 interface DeepcopiedAndExtracted {
   root: XmlNode;
   notesWithXmlId: XmlNode[];
+  notesWithN: XmlNode[];
+}
+
+/** A `<note target>` reference, without the optional leading `#`. */
+function normalizeNoteTarget(target: string): string {
+  return target.startsWith("#") ? target.slice(1) : target;
+}
+
+/** The (normalized) targets of every `<note target="..."/>` under `root`. */
+function findNoteTargets(root: XmlNode, targets = new Set<string>()) {
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      continue;
+    }
+    const target = child.name === "note" ? child.getAttr("target") : undefined;
+    if (target !== undefined) {
+      targets.add(normalizeNoteTarget(target));
+    }
+    findNoteTargets(child, targets);
+  }
+  return targets;
+}
+
+/**
+ * Whether `note` is the detached body of a `<note target="..."/>` that names
+ * it by `@n` rather than `@xml:id`, as the Historia Augusta does:
+ * `<note target="n1"/>` ... `<note n="n1">body</note>`. Ordinary inline notes
+ * also carry `@n` (`<note n="1">body</note>`), so this is only a body when
+ * something in the document actually references it.
+ */
+function isNoteBodyByN(note: XmlNode, targets: ReadonlySet<string>): boolean {
+  const n = note.getAttr("n");
+  return (
+    n !== undefined &&
+    note.getAttr("target") === undefined &&
+    targets.has(n) &&
+    note.children.some((c) => typeof c !== "string" || c.trim().length > 0)
+  );
 }
 
 // Creates a deep copy of the root, while also extracting out nodes for later assembly.
-function deepcopyAndExtract(root: XmlNode): DeepcopiedAndExtracted {
+function deepcopyAndExtract(
+  root: XmlNode,
+  targets: ReadonlySet<string>
+): DeepcopiedAndExtracted {
   const children: XmlChild[] = [];
   const notesWithXmlId: XmlNode[] = [];
+  const notesWithN: XmlNode[] = [];
   for (const child of root.children) {
     if (typeof child === "string") {
       children.push(child);
@@ -437,14 +523,31 @@ function deepcopyAndExtract(root: XmlNode): DeepcopiedAndExtracted {
       notesWithXmlId.push(child.deepcopy());
       continue;
     }
-    const childResult = deepcopyAndExtract(child);
+    if (child.name === "note" && isNoteBodyByN(child, targets)) {
+      notesWithN.push(child.deepcopy());
+      continue;
+    }
+    const childResult = deepcopyAndExtract(child, targets);
     children.push(childResult.root);
     notesWithXmlId.push(...childResult.notesWithXmlId);
+    notesWithN.push(...childResult.notesWithN);
   }
   return {
     root: new XmlNode(root.name, [...root.attrs], children),
     notesWithXmlId,
+    notesWithN,
   };
+}
+
+/** Maps each note to its `key` attribute, failing on duplicate keys. */
+function indexNotesBy(notes: XmlNode[], key: string): Map<string, XmlNode> {
+  const result = new Map<string, XmlNode>();
+  for (const note of notes) {
+    const id = checkPresent(note.getAttr(key));
+    assert(!result.has(id), () => `Duplicate note ${key}="${id}"`);
+    result.set(id, note);
+  }
+  return result;
 }
 
 function preprocessTree(
@@ -454,10 +557,22 @@ function preprocessTree(
 ): PreprocessedTree {
   const textPartsLower = textParts.map((part) => part.toLowerCase());
   const notes: XmlNode[] = [];
-  const { root, notesWithXmlId } = deepcopyAndExtract(originalRoot);
+  const { root, notesWithXmlId, notesWithN } = deepcopyAndExtract(
+    originalRoot,
+    findNoteTargets(originalRoot)
+  );
   const notesWithXmlIdMap = new Map(
     notesWithXmlId.map((n) => [checkPresent(n.getAttr("xml:id")), n])
   );
+  const notesWithNMap = indexNotesBy(notesWithN, "n");
+  const findNoteBody = (target: string): XmlNode | undefined => {
+    const normalized = normalizeNoteTarget(target);
+    return (
+      notesWithXmlIdMap.get(target) ??
+      notesWithXmlIdMap.get(normalized) ??
+      notesWithNMap.get(normalized)
+    );
+  };
   // Initialize all of the patch data structures before, since we might run into sections
   // in a non-continuous fashion. For example, we could have:
   // <div section="3.6">
@@ -507,6 +622,14 @@ function preprocessTree(
       top.attrs.forEach((attr) =>
         assert(KNOWN_NOTE_ATTRS.has(attr[0]), attr[0])
       );
+      // Inline notes are running text (e.g. the speaker labels of the
+      // Academica), not footnotes; until they are modelled, fail loudly
+      // rather than render them as hover notes.
+      assert(
+        top.getAttr("place") !== "inline",
+        () =>
+          `Inline note (place="inline") is not yet supported as a footnote: ${top.toString()}`
+      );
       const noteId = notes.length.toString();
       const target = top.getAttr("target");
       if (target === undefined) {
@@ -524,7 +647,9 @@ function preprocessTree(
         // <note target="someId" /> representing the location of a node, and we have (later)
         // <note xml:id="someId"> ... </note> representing the content.
         assertEqual(top.children.length, 0);
-        const content = checkPresent(notesWithXmlIdMap.get(target), target);
+        // The content is named by `xml:id` or, failing that, by `n`; the
+        // target may carry a leading `#` (`target="#n1"`).
+        const content = checkPresent(findNoteBody(target), target);
         // Note: we explicitly do not delete the note from the map because sometimes the
         // same content is referenced multiple times.
         notes.push(content.deepcopy());
@@ -661,6 +786,26 @@ function convertToRows(
   return results;
 }
 
+function hasChildNamed(node: XmlNode, name: string): boolean {
+  return node.children.some((c) => typeof c !== "string" && c.name === name);
+}
+
+/**
+ * The transformed `children` of `node` (which correspond one-to-one with
+ * `node.children`), except those that came from a child element `name`.
+ */
+function withoutChildrenNamed<T>(
+  node: XmlNode,
+  children: T[],
+  name: string
+): T[] {
+  assertEqual(children.length, node.children.length);
+  return children.filter((_, i) => {
+    const original = node.children[i];
+    return typeof original === "string" || original.name !== name;
+  });
+}
+
 /** Exported for unit testing. */
 export function transformNoteNode(node: XmlNode): XmlNode {
   assert(NOTE_NODES.has(node.name), node.name);
@@ -670,8 +815,32 @@ export function transformNoteNode(node: XmlNode): XmlNode {
   if (node.name === "gap") {
     return new XmlNode("span", [], [" [gap] "]);
   }
+  if (node.name === "#comment") {
+    return new XmlNode("span", [], []);
+  }
+  if (node.name === "choice") {
+    // As in the text: show the corrected, regularized or abbreviated form.
+    const options = node.children.filter(
+      (c): c is XmlNode => typeof c !== "string"
+    );
+    const chosen =
+      options.find((c) => CHOICE_GOOD_CHILD.has(c.name)) ??
+      options.find((c) => c.name === "expan" && hasChildNamed(c, "abbr"));
+    if (chosen !== undefined || options.length > 0) {
+      return transformNoteNode(
+        checkPresent(chosen, `No usable <choice> child: ${node}`)
+      );
+    }
+  }
+  if (node.name === "expan" && hasChildNamed(node, "abbr")) {
+    // <expan><abbr>acturu's</abbr><ex>acturus es</ex></expan>
+    const abbr = node.children.find(
+      (c): c is XmlNode => typeof c !== "string" && c.name === "abbr"
+    );
+    return transformNoteNode(checkPresent(abbr));
+  }
   const attrs: XmlNode["attrs"] = [];
-  if (["l"].includes(node.name)) {
+  if (["l", "p", "head"].includes(node.name)) {
     attrs.push(["block", "1"]);
   }
   if (node.name === "num") {
@@ -681,14 +850,19 @@ export function transformNoteNode(node: XmlNode): XmlNode {
   assert(allRendTokensIn(rend, KNOWN_NOTE_REND), rend);
   const handledRends = rendTokens(rend ?? "")
     .filter((token) => HANDLED_NOTE_REND.has(token))
-    .map((token) => (token === "italics" ? "italic" : token));
+    .map((token) => NOTE_REND_ALIASES.get(token) ?? token);
   if (handledRends.length > 0) {
     attrs.push(["rend", Array.from(new Set(handledRends)).join(" ")]);
   }
   if (QUOTE_NODES.has(node.name)) {
     attrs.push(["rend", "italic"]);
   }
-  const baseChildren = node.children.map((c) =>
+  // As in the text, an `abbr` shows only its abbreviated form.
+  const sourceChildren =
+    node.name === "abbr"
+      ? node.children.filter((c) => typeof c === "string" || c.name !== "expan")
+      : node.children;
+  const baseChildren = sourceChildren.map((c) =>
     typeof c === "string" ? c : transformNoteNode(c)
   );
   let isAppCritLem = false;
@@ -713,6 +887,8 @@ export function transformNoteNode(node: XmlNode): XmlNode {
       ? [...baseChildren, " ]"]
       : node.name === "del"
       ? ["[", ...baseChildren, "]"]
+      : node.name === "supplied"
+      ? ["⟨", ...baseChildren, "⟩"]
       : baseChildren;
   return new XmlNode("span", attrs, children);
 }
@@ -742,16 +918,32 @@ export function transformContentNode(
   }
   if (node.name === "l") {
     attrs.push(["l", "1"]);
+    const part = node.getAttr("part");
+    if (part !== undefined) {
+      assert(L_PARTS.has(part), () => `Unknown <l part="${part}">`);
+      if (CONTINUED_L_PARTS.has(part)) {
+        // A separate attribute rather than `rend="indent"`, which would also
+        // change the corpus text (see `extractRowText`).
+        attrs.push(["linePart", part]);
+      }
+    }
   }
   if (node.name === "choice") {
-    assertEqual(
-      // Ignore children that are just whitespace. Some of the documents have
-      // <choice> <corr>corrected</corr> <sic>incorrect</sic> </choice>
-      // where the spaces are uneeded.
-      children.filter((c) => typeof c !== "string" || c.trim().length > 0)
-        .length,
-      2
+    // Ignore children that are just whitespace. Some of the documents have
+    // <choice> <corr>corrected</corr> <sic>incorrect</sic> </choice>
+    // where the spaces are uneeded.
+    const nonEmpty = children.filter(
+      (c) => typeof c !== "string" || c.trim().length > 0
     );
+    // Plautus wraps both forms in a single `expan`:
+    // <choice><expan><abbr>acturu's</abbr><ex>acturus es</ex></expan></choice>
+    // in which case the `expan` has already chosen its `abbr`.
+    const isSoleExpan =
+      nonEmpty.length === 1 &&
+      node.children.some((c) => typeof c !== "string" && c.name === "expan");
+    if (!isSoleExpan) {
+      assertEqual(nonEmpty.length, 2);
+    }
     const corrected = XmlNode.assertIsNode(
       checkPresent(
         children.find(
@@ -768,23 +960,43 @@ export function transformContentNode(
     attrs.push(["origName", node.name]);
   }
   if (node.name === "abbr") {
-    // There are two ways to have `abbr`. The first is within a `choice`, in which it shows
+    // There are three ways to have `abbr`. The first is within a `choice`, in which it shows
     // one an abbreviated form and one expanded form. The second is an `abbr` with an `expan`
-    // inside. In the latter case, we just want to show the abbreviated form.
-    const childContent = node.children.filter(
-      (c) => typeof c !== "string" || c.trim().length > 0
-    );
-    if (
-      childContent.length === 2 &&
-      typeof childContent[0] === "string" &&
-      typeof childContent[1] !== "string" &&
-      childContent[1].name === "expan"
-    ) {
-      return new XmlNode("span", attrs, [childContent[0]]);
+    // inside, before or after the abbreviated text (`<abbr>L.<expan>..</expan></abbr>`, or
+    // Nepos' `<abbr><expan><ex>Gaio</ex></expan>C.</abbr>`). In that case, we just want to
+    // show the abbreviated form. The third is an `abbr` within an `expan` (see `choice`).
+    if (hasChildNamed(node, "expan")) {
+      // Whitespace-only text is dropped along with the `expan`, so the
+      // abbreviation renders flush, as it did before.
+      return new XmlNode(
+        "span",
+        attrs,
+        withoutChildrenNamed(node, children, "expan").filter(
+          (c) => typeof c !== "string" || c.trim().length > 0
+        )
+      );
     }
-
-    assertEqual(parent?.name, "choice");
+    assert(
+      parent?.name === "choice" || parent?.name === "expan",
+      () => `Unexpected <abbr> in <${parent?.name}>`
+    );
     attrs.push(["origName", node.name]);
+  }
+  if (node.name === "expan" && hasChildNamed(node, "abbr")) {
+    // <expan><abbr>acturu's</abbr><ex>acturus es</ex></expan>: show only the
+    // abbreviated form, as everywhere else.
+    assertEqual(parent?.name, "choice");
+    assertEqual(children.length, node.children.length);
+    const abbrs = children.filter((c, i) => {
+      const original = node.children[i];
+      return (
+        typeof c !== "string" &&
+        typeof original !== "string" &&
+        original.name === "abbr"
+      );
+    });
+    assertEqual(abbrs.length, 1);
+    return XmlNode.assertIsNode(abbrs[0]);
   }
   if (node.name === "orig") {
     attrs.push(["origName", node.name]);
@@ -850,6 +1062,9 @@ export function transformContentNode(
     case "surname":
     case "persName":
     case "name":
+    case "forename":
+    case "addName":
+    case "genName":
     case "num":
     case "orig":
     case "seg":

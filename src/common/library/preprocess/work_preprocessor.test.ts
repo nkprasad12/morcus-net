@@ -151,6 +151,105 @@ describe("preprocessWorkToV2 renditions", () => {
     expect(html).toContain('class="uppercase"');
   });
 
+  it("indents the continued parts of a split verse line", () => {
+    const line = (part: string | undefined, text: string) =>
+      span(
+        [["l", "1"], ...(part === undefined ? [] : [["linePart", part]])] as [
+          string,
+          string
+        ][],
+        text
+      );
+    const work = makeWork({
+      rows: [
+        [["1", "1", "1"], line(undefined, "Quid ais?")],
+        [["1", "1", "2"], line("F", "Nihil.")],
+        [["1", "1", "3"], line("M", "Tace.")],
+      ],
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+
+    expect(html).toContain('<span class="reader-line">Quid ais?</span>');
+    expect(html).toContain('<span class="reader-line indent">Nihil.</span>');
+    expect(html).toContain('<span class="reader-line indent">Tace.</span>');
+  });
+
+  it("does not indent a split verse line twice", () => {
+    const work = makeWork({
+      rows: [
+        [
+          ["1", "1", "1"],
+          span(
+            [
+              ["l", "1"],
+              ["linePart", "F"],
+              ["rend", "indent"],
+              ["rendParent", "l"],
+            ],
+            "Nihil."
+          ),
+        ],
+      ],
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+
+    expect(html).toContain('<span class="reader-line indent">Nihil.</span>');
+  });
+
+  it("renders bold and superscript renditions in body text", () => {
+    const work = makeWork({
+      textParts: ["book", "chapter", "section"],
+      rows: [
+        [
+          ["1", "1", "1"],
+          span(
+            [["block", "1"]],
+            span(
+              [
+                ["rend", "bold"],
+                ["rendParent", "hi"],
+              ],
+              "Caput"
+            ),
+            " primum",
+            span(
+              [
+                ["rend", "sup"],
+                ["rendParent", "hi"],
+              ],
+              "a"
+            )
+          ),
+        ],
+      ],
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+
+    expect(html).toContain('<span class="bold">Caput</span> primum');
+    expect(html).toContain('primum<span class="superscript">a</span>');
+  });
+
+  it("renders subscripts in notes with the native element", () => {
+    const work = makeWork({
+      textParts: ["book", "chapter", "section"],
+      rows: [[["1", "1", "1"], span([], "Aqua", noteMarker("0"))]],
+      notes: [
+        new XmlNode(
+          "span",
+          [],
+          ["H", new XmlNode("span", [["rend", "subscript"]], ["2"]), "O"]
+        ),
+      ],
+    });
+
+    const page = preprocessWorkToV2(work, METADATA).pages[0];
+
+    expect(page.notesHtml).toContain("H<sub>2</sub>O");
+  });
+
   it("keeps a blockquote rendition inline-safe inside a paragraph", () => {
     const work = makeWork({
       textParts: ["book", "chapter", "section"],

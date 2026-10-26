@@ -264,7 +264,10 @@ function renderXmlNodeCleanHtml(
   if (rends.has("smallcaps") || rends.has("7")) classes.push("smallcaps");
   if (rends.has("uppercase")) classes.push("uppercase");
   if (rends.has("overline")) classes.push("overline");
-  if (rends.has("indent")) {
+  // The medial and final parts of a verse line split between speakers
+  // (`<l part="M|F">`) are indented, to show they continue the line.
+  const isLinePart = isLine && node.getAttr("linePart") !== undefined;
+  if (rends.has("indent") || isLinePart) {
     classes.push("indent");
     // Inside a paragraph an indent opens the paragraph, so only the first line
     // moves; anywhere else (verse, above all) the whole block shifts. Mirrors
@@ -273,6 +276,12 @@ function renderXmlNodeCleanHtml(
   }
 
   const classAttr = classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
+
+  // Subscripts (only emitted in notes) use the native element, which needs
+  // no stylesheet support.
+  if (rends.has("subscript") && !isLine && !isBlock) {
+    return `<sub${classAttr}>${childrenHtml}</sub>`;
+  }
 
   if (isLine) {
     return `<span${classAttr}>${childrenHtml}</span>`;

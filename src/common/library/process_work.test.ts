@@ -960,6 +960,299 @@ describe("transformNoteNode renditions", () => {
 
   it("rejects unknown note renditions", () => {
     expect(() => noteRend("hi", "spacing")).toThrow();
-    expect(() => noteRend("hi", "")).toThrow();
+  });
+
+  it("treats an empty note rendition like an absent one", () => {
+    expect(noteRend("hi", "").getAttr("rend")).toBeUndefined();
+    expect(noteRend("hi", "  ").getAttr("rend")).toBeUndefined();
+  });
+
+  it.each([
+    ["super", "superscript"],
+    ["superscript", "superscript"],
+    ["align(raised)", "superscript"],
+    ["sub", "subscript"],
+    ["subscript", "subscript"],
+    ["align(lowered)", "subscript"],
+  ])("maps note rendition %s to %s", (rend, emitted) => {
+    expect(noteRend("hi", rend).getAttr("rend")).toBe(emitted);
+  });
+
+  it.each(["indent", "align(indent)"])(
+    "knows but ignores note rendition %s",
+    (rend) => {
+      expect(noteRend("hi", rend).getAttr("rend")).toBeUndefined();
+    }
+  );
+});
+
+describe("transformNoteNode vocabulary", () => {
+  function note(xml: string): string {
+    return transformNoteNode(parseRawXml(xml)).toString();
+  }
+
+  it("drops comments", () => {
+    expect(note("<note>a<!-- hidden -->b</note>")).not.toContain("hidden");
+  });
+
+  it.each(["p", "head"])("renders %s as a block", (name) => {
+    const result = transformNoteNode(new XmlNode(name, [], ["x"]));
+    expect(result.getAttr("block")).toBe("1");
+  });
+
+  it.each([
+    ["<choice><sic>teh</sic><corr>the</corr></choice>", "the", "teh"],
+    ["<choice><orig>vltra</orig><reg>ultra</reg></choice>", "ultra", "vltra"],
+    [
+      "<choice><abbr>C.</abbr><expan><ex>Gaius</ex></expan></choice>",
+      "C.",
+      "Gaius",
+    ],
+    [
+      "<choice><expan><abbr>acturu's</abbr><ex>acturus es</ex></expan></choice>",
+      "acturu's",
+      "acturus es",
+    ],
+  ])("picks the chosen form of %s", (xml, shown, hidden) => {
+    const result = note(`<note>${xml}</note>`);
+    expect(result).toContain(shown);
+    expect(result).not.toContain(hidden);
+  });
+
+  it("drops the expansion inside an abbr", () => {
+    const result = note(
+      "<note><abbr><expan><ex>Gaio</ex></expan>C.</abbr></note>"
+    );
+    expect(result).toContain("C.");
+    expect(result).not.toContain("Gaio");
+  });
+
+  it("brackets supplied text", () => {
+    expect(note("<note>a<supplied>b</supplied></note>")).toContain("⟨b⟩");
+  });
+
+  it.each([
+    "name",
+    "forename",
+    "addName",
+    "genName",
+    "reg",
+    "corr",
+    "sic",
+    "orig",
+    "seg",
+    "ex",
+  ])("renders %s as plain text", (name) => {
+    const result = transformNoteNode(new XmlNode(name, [], ["x"]));
+    expect(result.name).toBe("span");
+    expect(result.children).toEqual(["x"]);
+  });
+});
+
+describe("Phase 1 markup in the text", () => {
+  function inSection(content: string): string {
+    return `<div n="1" type="textpart" subtype="section">${content}</div>`;
+  }
+
+  function onlyRow(body: string): XmlNode {
+    const work = processTei2(testRootWithNote(body), { workId: WORK_ID });
+    expect(work.rows).toHaveLength(1);
+    return work.rows[0][1];
+  }
+
+  function findAll(root: XmlNode, pred: (n: XmlNode) => boolean): XmlNode[] {
+    const found = pred(root) ? [root] : [];
+    for (const child of root.children) {
+      if (typeof child !== "string") found.push(...findAll(child, pred));
+    }
+    return found;
+  }
+
+  it.each([
+    ["bold", "bold"],
+    ["sup", "sup"],
+    ["super", "sup"],
+    ["superscript", "sup"],
+  ])("renders hi@%s in body text as %s", (rend, emitted) => {
+    const row = onlyRow(`a <hi rend="${rend}">b</hi> c`);
+    const hi = findAll(row, (n) => n.getAttr("rendParent") === "hi");
+    expect(hi).toHaveLength(1);
+    expect(hi[0].getAttr("rend")).toBe(emitted);
+  });
+
+  it("treats an empty rend as absent", () => {
+    const row = onlyRow(`a <hi rend="">b</hi> <hi rend=" ">c</hi>`);
+    expect(findAll(row, (n) => n.getAttr("rend") !== undefined)).toEqual([]);
+    expect(row.toString()).toContain("b");
+  });
+
+  it("marks continued half-lines of split verse lines", () => {
+    const body = `<l part="I">Quid ais?</l><l part="F">Nihil.</l><l part="M">Tace.</l><l part="N">Totus.</l><l part="Y">Dimidius</l><l>Plenus.</l>`;
+    const work = processTei2(testRootWithBookAndChapter(inSection(body)), {
+      workId: WORK_ID,
+    });
+    const lines = work.rows.flatMap(([_, root]) =>
+      findAll(root, (n) => n.getAttr("l") === "1")
+    );
+    expect(lines.map((l) => l.getAttr("linePart"))).toEqual([
+      undefined,
+      "F",
+      "M",
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    // An indent rendition would also change the corpus text.
+    expect(lines.map((l) => l.getAttr("rend"))).toEqual(
+      lines.map(() => undefined)
+    );
+  });
+
+  it("rejects unknown l@part values", () => {
+    expect(() =>
+      processTei2(testRootWithBookAndChapter(inSection(`<l part="X">a</l>`)), {
+        workId: WORK_ID,
+      })
+    ).toThrow(/part="X"/);
+  });
+
+  it.each(["forename", "addName", "genName"])(
+    "renders name part %s as plain text",
+    (name) => {
+      const row = onlyRow(`<persName><${name}>Gaius</${name}></persName> est`);
+      expect(row.toString()).toContain("Gaius");
+    }
+  );
+
+  it("shows the abbreviation in choice/abbr/expan (Cicero)", () => {
+    const row = onlyRow(
+      `<choice><abbr>L.</abbr><expan><ex>Lucius</ex></expan></choice> Sulla`
+    );
+    expect(row.toString()).toContain("L.");
+    expect(row.toString()).not.toContain("Lucius");
+  });
+
+  it("shows the abbreviation in choice/expan/abbr (Plautus)", () => {
+    const row = onlyRow(
+      `<choice><expan><abbr>acturu's</abbr><ex>acturus es</ex></expan></choice> age.`
+    );
+    expect(row.toString()).toContain("acturu's");
+    expect(row.toString()).not.toContain("acturus es");
+  });
+
+  it.each([
+    ["<abbr><expan><ex>Gaio</ex></expan>C.</abbr> Mario", "C.", "Gaio"],
+    ["<abbr>L.<expan><ex>Lucium</ex></expan></abbr> Domitium", "L.", "Lucium"],
+    ["<abbr> <expan><ex>Gaio</ex></expan>C. </abbr>", "C. ", "Gaio"],
+  ])("drops the expan inside abbr in %s", (xml, shown, hidden) => {
+    const row = onlyRow(xml);
+    const abbr = findAll(
+      row,
+      (n) => n.name === "span" && n.toString().includes(shown.trim())
+    );
+    expect(abbr.length).toBeGreaterThan(0);
+    expect(row.toString()).not.toContain(hidden);
+  });
+
+  it("keeps the flush rendering of a lone abbr/expan with trailing space", () => {
+    const row = onlyRow(`<abbr>L.<expan>Lucium</expan> </abbr>x`);
+    expect(row.toString()).toContain("L.</span>x");
+  });
+
+  it("rejects a bare abbr outside choice or expan", () => {
+    expect(() => onlyRow(`<abbr>L.</abbr>`)).toThrow();
+  });
+});
+
+describe("note n/target pairing", () => {
+  function process(body: string) {
+    return processTei2(testRootWithNote(body), { workId: WORK_ID });
+  }
+
+  it("pairs <note target> with a later <note n> body (Historia Augusta)", () => {
+    const work = process(
+      `Gallia <note target="n1.1"/> est <note n="n1.1">dudum Peter</note>`
+    );
+    expect(work.notes?.map((n) => n.toString())).toEqual([
+      expect.stringContaining("dudum Peter"),
+    ]);
+    const row = work.rows[0][1].toString();
+    expect(row).not.toContain("dudum Peter");
+  });
+
+  it("pairs a <note n> body that comes before its target", () => {
+    const work = process(
+      `<note n="a">first body</note>Gallia <note target="a"/> est`
+    );
+    expect(work.notes).toHaveLength(1);
+    expect(work.notes?.[0].toString()).toContain("first body");
+  });
+
+  it("strips a leading # from the target", () => {
+    const work = process(
+      `Gallia <note target="#n2"/> est <note xml:id="n2">by id</note> <note target="#n3"/><note n="n3">by n</note>`
+    );
+    expect(work.notes?.map((n) => n.toString())).toEqual([
+      expect.stringContaining("by id"),
+      expect.stringContaining("by n"),
+    ]);
+  });
+
+  it("prefers xml:id over n", () => {
+    const work = process(
+      `a <note target="x"/> <note xml:id="x">by id</note> <note n="x">by n</note>`
+    );
+    // Both are extracted as bodies of "x"; the target resolves to `xml:id`.
+    expect(work.notes?.[0].toString()).toContain("by id");
+  });
+
+  it("keeps unreferenced <note n> as ordinary inline notes", () => {
+    const work = process(`Gallia <note n="1">inline</note> est`);
+    expect(work.notes).toHaveLength(1);
+    expect(work.notes?.[0].toString()).toContain("inline");
+    const marker = (work.rows[0][1].children as XmlNode[]).find(
+      (c) => typeof c !== "string" && c.name === "note"
+    );
+    expect(marker?.getAttr("noteId")).toBe("0");
+  });
+
+  it("allows the same body to be referenced twice", () => {
+    const work = process(
+      `a <note target="n"/> b <note target="n"/> <note n="n">twice</note>`
+    );
+    expect(work.notes).toHaveLength(2);
+  });
+
+  it("fails on a dangling target", () => {
+    expect(() => process(`a <note target="missing"/>`)).toThrow(/missing/);
+  });
+
+  it("fails on duplicate <note n> bodies for one target", () => {
+    expect(() =>
+      process(
+        `a <note target="d"/> <note n="d">one</note><note n="d">two</note>`
+      )
+    ).toThrow(/Duplicate/);
+  });
+});
+
+describe("inline notes", () => {
+  it("fails loudly on note@place=inline", () => {
+    expect(() =>
+      processTei2(
+        testRootWithNote(`<note place="inline">Lucullus</note> dixit`),
+        { workId: WORK_ID }
+      )
+    ).toThrow(
+      'Inline note (place="inline") is not yet supported as a footnote'
+    );
+  });
+
+  it("still accepts other placements", () => {
+    const work = processTei2(
+      testRootWithNote(`a <note place="foot">foot</note> b`),
+      { workId: WORK_ID }
+    );
+    expect(work.notes).toHaveLength(1);
   });
 });
