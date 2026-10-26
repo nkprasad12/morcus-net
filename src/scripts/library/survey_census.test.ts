@@ -182,9 +182,15 @@ describe("stripProlog", () => {
 
 describe("categorizeV1Error", () => {
   it("buckets by throwing function", () => {
-    expect(categorizeV1Error("boom", "Error\n    at getTextparts (x)")).toBe(
-      "textParts: refsDecl ambiguous"
+    expect(categorizeV1Error("boom", "Error\n    at parseCiteMatch (x)")).toBe(
+      "structure: citeStructure unsupported"
     );
+    expect(
+      categorizeV1Error('Citation value "1.2" bad', "    at register (x)")
+    ).toBe('structure: citation value (Citation value "1.2" bad)');
+    expect(
+      categorizeV1Error("No pages", "    at assertOutputInvariants (x)")
+    ).toBe("output: No pages");
     expect(
       categorizeV1Error("Unknown node foo\nmore", "    at transformContentNode")
     ).toBe("markup: content node (Unknown node foo)");

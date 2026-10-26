@@ -10,9 +10,10 @@ import {
 } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
-  FORCE_CTS_WORKS,
-  LatinWorks,
-} from "@/common/library/library_constants";
+  buildCitationSpine,
+  CitationSpine,
+  textWeight,
+} from "@/common/library/cite_structure";
 import type { LibraryPatch } from "@/common/library/library_patches";
 import {
   type DocumentInfo,
@@ -23,7 +24,7 @@ import {
 } from "@/common/library/library_types";
 import { areArraysEqual, safeParseInt } from "@/common/misc_utils";
 import { processWords } from "@/common/text_cleaning";
-import { extractInfo, findCtsEncoding } from "@/common/xml/tei_utils";
+import { extractInfo, type CtsMetadata } from "@/common/xml/tei_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 import {
@@ -35,12 +36,6 @@ import {
   QUOTE_RENDS,
   rendTokens,
 } from "@/common/library/perseus_rends";
-
-const IGNORE_SUBTYPES = new Map<string, Set<string>>([
-  [LatinWorks.CATULLUS, new Set(["Lyrics", "longpoems", "Elegies", "book"])],
-  [LatinWorks.LIVY_AUC, new Set(["index"])],
-]);
-const NO_SUBTYPES = new Set([LatinWorks.TACITUS_DIALOGUS]);
 
 // For regular nodes
 const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr", "abbr"]);
@@ -83,6 +78,7 @@ export const SWITCH_CONTENT_NODES = new Set<string>([
   "seg",
   "foreign",
   "div",
+  "div3",
   "div2",
   "div1",
   "ab",
@@ -395,69 +391,6 @@ export function analyzeQuotes(rows: ProcessedWork2["rows"]) {
   return opens;
 }
 
-export function getSectionId(
-  ancestors: XmlNode[],
-  textParts: string[],
-  workId?: string
-): [string[], boolean] {
-  let i = 0;
-  const sectionId: string[] = [];
-  let parentHadSection = false;
-  const noSubtypes = NO_SUBTYPES.has(workId ?? "");
-  for (const ancestor of ancestors) {
-    const n = ancestor.getAttr("n");
-    if (ancestor.name === "seg") {
-      assertEqual(textParts[i].toLowerCase(), ancestor.getAttr("type"));
-      sectionId.push(checkPresent(n));
-      i++;
-      parentHadSection = true;
-      continue;
-    }
-    const typeAttr = ancestor.getAttr("type");
-    const subtype = ancestor.getAttr("subtype");
-    const isTextPart = typeAttr === "textpart";
-    if (noSubtypes) {
-      assertEqual(ancestor.getAttr("subtype"), undefined);
-      if (typeAttr === undefined) {
-        parentHadSection = false;
-        continue;
-      }
-    }
-    // `l` is sometimes used even if the CTS says `line`, and it is often not marked.
-    // It is also sometimes used to show poetry in prose when it's not a CTS
-    // section.
-    if (
-      !noSubtypes &&
-      !isTextPart &&
-      (ancestor.name !== "l" || i >= textParts.length)
-    ) {
-      parentHadSection = false;
-      continue;
-    }
-    if (IGNORE_SUBTYPES.get(workId ?? "")?.has(subtype ?? "")) {
-      parentHadSection = false;
-      continue;
-    }
-    assertEqual(
-      ancestor.name === "l"
-        ? "line"
-        : (noSubtypes ? typeAttr : subtype)?.toLowerCase(),
-      textParts[i].toLowerCase()
-    );
-    if (n === undefined && ancestor.name === "l") {
-      assertEqual(workId, "phi0550.phi001.perseus-lat1");
-      assertEqual(ancestor.children.length, 1);
-      assertEqual(XmlNode.assertIsNode(ancestor.children[0]).name, "gap");
-      parentHadSection = false;
-      continue;
-    }
-    sectionId.push(checkPresent(n));
-    i++;
-    parentHadSection = true;
-  }
-  return [sectionId, parentHadSection];
-}
-
 interface PreprocessedTree {
   root: XmlNode;
   uids: XmlNode[];
@@ -531,10 +464,14 @@ function isNoteBodyByN(note: XmlNode, targets: ReadonlySet<string>): boolean {
 // TODO: In a document with targets, a `<note xml:id>` that no target names
 // (its anchor was lost upstream) is still extracted and so dropped:
 // Apuleius' Metamorphoses has 8, Florus 19, Columella's Res Rustica 289.
+//
+// `originals` maps each copy back to the node it was copied from, so that the
+// citation spine (computed on the original tree) can be looked up.
 function deepcopyAndExtract(
   root: XmlNode,
   extractXmlIdNotes: boolean,
-  targetsByN: ReadonlySet<string>
+  targetsByN: ReadonlySet<string>,
+  originals: Map<XmlNode, XmlNode>
 ): DeepcopiedAndExtracted {
   const children: XmlChild[] = [];
   const notesWithXmlId: XmlNode[] = [];
@@ -559,17 +496,16 @@ function deepcopyAndExtract(
     const childResult = deepcopyAndExtract(
       child,
       extractXmlIdNotes,
-      targetsByN
+      targetsByN,
+      originals
     );
     children.push(childResult.root);
     notesWithXmlId.push(...childResult.notesWithXmlId);
     notesWithN.push(...childResult.notesWithN);
   }
-  return {
-    root: new XmlNode(root.name, [...root.attrs], children),
-    notesWithXmlId,
-    notesWithN,
-  };
+  const copy = new XmlNode(root.name, [...root.attrs], children);
+  originals.set(copy, root);
+  return { root: copy, notesWithXmlId, notesWithN };
 }
 
 /** Maps each note to its `key` attribute, failing on duplicate keys. */
@@ -585,10 +521,9 @@ function indexNotesBy(notes: XmlNode[], key: string): Map<string, XmlNode> {
 
 function preprocessTree(
   originalRoot: XmlNode,
-  textParts: string[],
+  spine: Pick<CitationSpine, "containers">,
   options: ProcessForDisplayOptions
 ): PreprocessedTree {
-  const textPartsLower = textParts.map((part) => part.toLowerCase());
   const notes: XmlNode[] = [];
   // Targets that an `xml:id` already satisfies never take a `<note n>` as
   // their body, so an inline `<note n>` with the same value stays in place.
@@ -597,10 +532,12 @@ function preprocessTree(
   const targetsByN = new Set(
     Array.from(allTargets).filter((t) => !xmlIds.has(t))
   );
+  const originals = new Map<XmlNode, XmlNode>();
   const { root, notesWithXmlId, notesWithN } = deepcopyAndExtract(
     originalRoot,
     allTargets.size > 0,
-    targetsByN
+    targetsByN,
+    originals
   );
   const notesWithXmlIdMap = indexNotesBy(notesWithXmlId, "xml:id");
   const notesWithNMap = indexNotesBy(notesWithN, "n");
@@ -647,10 +584,9 @@ function preprocessTree(
     uids.push(top);
     top.attrs.push(["uid", uid.toString()]);
 
-    const [section, isLeader] = getSectionId(
-      ancestors,
-      textPartsLower,
-      options.workId
+    const [section, isLeader] = CitationSpine.sectionIdOf(
+      spine,
+      ancestors.map((node) => originals.get(node) ?? node)
     );
     section.forEach((p) => assert(!p.includes(".")));
     top.attrs.push(["sid", section.join(".")]);
@@ -1146,6 +1082,7 @@ export function transformContentNode(
     // section where it actually matters, but for now this is fine.
     // eslint-disable-next-line no-fallthrough
     case "div":
+    case "div3":
     case "div2":
     case "div1":
     case "ab":
@@ -1255,31 +1192,17 @@ export function processRowContent(
   );
 }
 
-function pruneSectionNumbering(
-  workId: string,
-  textParts: string[],
-  workBody: ReturnType<typeof processWorkBody>
-): [string[], ReturnType<typeof processWorkBody>] {
-  if (workId !== LatinWorks.LIVY_AUC) {
-    return [textParts, workBody];
-  }
-  return [
-    textParts.slice(1),
-    {
-      rows: workBody.rows.map(([id, content]) => [id.slice(1), content]),
-      notes: workBody.notes,
-    },
-  ];
-}
-
 /** Exported for unit testing. */
 export function processWorkBody(
   originalRoot: XmlNode,
-  textParts: string[],
+  spine: Pick<CitationSpine, "containers">,
   options: ProcessForDisplayOptions
 ): Pick<ProcessedWork2, "rows" | "notes"> {
-  const data = preprocessTree(originalRoot, textParts, options);
+  const data = preprocessTree(originalRoot, spine, options);
   const rawRows = convertToRows(data.root, data);
+  // OUT-1 (coverage): every piece of text in the body lands in some row.
+  const rowWeight = rawRows.reduce((sum, [, row]) => sum + textWeight(row), 0);
+  assertEqual(rowWeight, textWeight(data.root), "Body text missing from rows");
   const rows: ProcessedWork2["rows"] = [];
   let currentLg: undefined | [string, string[]] = undefined;
   const addSpaceRowIfNeeded = () =>
@@ -1302,28 +1225,6 @@ export function processWorkBody(
   return { rows, notes: data.notes.map((note) => transformNoteNode(note)) };
 }
 
-function getTextparts(root: XmlNode, workId: string) {
-  const refsDecls = root.findDescendants("refsDecl");
-  // Upstream's `<refsDecl xml:id="CTS">` declares the scheme as nested
-  // `citeStructure`s, which this pipeline does not read yet.
-  const nonCts = refsDecls.filter(
-    (node) => node.getAttr("n") !== "CTS" && node.getAttr("xml:id") !== "CTS"
-  );
-  if (FORCE_CTS_WORKS.has(workId) || nonCts.length === 0) {
-    return findCtsEncoding(root)
-      .sort((a, b) => a.idSize - b.idSize)
-      .map((p) => p.name);
-  }
-  assertEqual(nonCts.length, 1, nonCts.map((n) => n.toString()).join("\n"));
-  const textParts = nonCts[0].children
-    .filter(instanceOf(XmlNode))
-    .map((child) => {
-      assert(["refState", "state"].includes(child.name));
-      return checkPresent(child.getAttr("unit"));
-    });
-  return textParts;
-}
-
 /** Exported for unit testing. */
 export function divideWork(
   rows: ProcessedWork2["rows"],
@@ -1338,7 +1239,11 @@ export function divideWork(
 
   function addPageIfNeeded(end: number) {
     if (currentId !== undefined) {
-      assert(!addedPages.has(currentId.join(".")));
+      // OUT-5: page ids are unique (and so each page's rows contiguous).
+      assert(
+        !addedPages.has(currentId.join(".")),
+        () => `Duplicate page id ${currentId?.join(".")} (rows not contiguous)`
+      );
       addedPages.add(currentId.join("."));
       pages.push({ id: currentId, rows: [checkPresent(currentStart), end] });
     }
@@ -1447,33 +1352,84 @@ export function convertGrcBetaCode(root: XmlNode): void {
   }
 }
 
+/**
+ * Build-time output assertions on a processed work (`docs/PLAN.md` §4.3,
+ * pillar 2). OUT-1 (coverage) and OUT-3 (id parts) are checked where the rows
+ * and ids are made; see `processWorkBody` and `cite_structure.ts`.
+ *
+ * Exported for unit testing.
+ */
+export function assertOutputInvariants(
+  work: Pick<ProcessedWork2, "rows" | "pages" | "textParts">
+): void {
+  const { rows, pages, textParts } = work;
+  const isCitable = (id: string[]) => id.length === textParts.length;
+  // OUT-2: at least one citation level, and at least one citable row.
+  assert(textParts.length > 0, "No citation levels");
+  assert(
+    rows.some(([id]) => isCitable(id)),
+    () => `No citable rows (citation depth ${textParts.length}: ${textParts})`
+  );
+  for (const [id] of rows) {
+    // OUT-3: no id part is empty or contains the `.` that joins them.
+    assert(
+      id.every((part) => part.length > 0 && !part.includes(".")),
+      () => `Malformed row id ${JSON.stringify(id)}`
+    );
+  }
+  // OUT-4 and OUT-5: there are pages, their ids are unique, and they cover
+  // every citable row.
+  assert(pages.length > 0, "No pages");
+  const pageIds = new Set(pages.map((page) => page.id.join(".")));
+  assertEqual(pageIds.size, pages.length, "Duplicate page ids");
+  const covered = new Array<boolean>(rows.length).fill(false);
+  for (const { rows: range } of pages) {
+    assert(
+      0 <= range[0] && range[0] < range[1] && range[1] <= rows.length,
+      () => `Bad page range ${range}`
+    );
+    covered.fill(true, range[0], range[1]);
+  }
+  rows.forEach(([id], i) =>
+    assert(
+      covered[i] || !isCitable(id),
+      () => `Citable row ${id.join(".")} is on no page`
+    )
+  );
+}
+
 export function processTei2(
   xmlRoot: XmlNode,
-  metadata: { workId: string; translationId?: string },
+  metadata: {
+    workId: string;
+    translationId?: string;
+    /**
+     * The work's `__cts__.xml` metadata, for headers whose `titleStmt` lacks
+     * an `<author>` or `<title>` (the Historia Augusta, the Appendix
+     * Vergiliana); see `readCtsMetadata`.
+     */
+    ctsMetadata?: CtsMetadata;
+  },
   options?: ProcessTeiOptions
 ): ProcessedWork2 {
   convertGrcBetaCode(xmlRoot);
-  let textParts = getTextparts(xmlRoot, metadata.workId);
+  const body = checkSatisfies(
+    xmlRoot.findDescendants("body"),
+    (arr) => arr.length === 1
+  )[0];
+  const spine = buildCitationSpine(xmlRoot, body);
+  const textParts = spine.textParts;
   const processOptions: ProcessForDisplayOptions = {
     debug: options?.sideChannel,
     patchTree: createPatchTree(options?.patches ?? [], textParts),
     workId: metadata.workId,
   };
-  const body = checkSatisfies(
-    xmlRoot.findDescendants("body"),
-    (arr) => arr.length === 1
-  );
-  let workBody = processWorkBody(body[0], textParts, processOptions);
-  [textParts, workBody] = pruneSectionNumbering(
-    metadata.workId,
-    textParts,
-    workBody
-  );
-  const { rows, notes } = workBody;
+  const { rows, notes } = processWorkBody(body, spine, processOptions);
   const pages = divideWork(rows, textParts);
+  assertOutputInvariants({ rows, pages, textParts });
   const navTree = buildNavTree(pages);
   const info: DocumentInfo = {
-    ...extractInfo(xmlRoot),
+    ...extractInfo(xmlRoot, metadata.ctsMetadata),
     workId: metadata.workId,
     translationId: metadata.translationId,
     attribution: "perseus",

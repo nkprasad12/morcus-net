@@ -21,6 +21,7 @@ import {
 import type { LibraryPatchMap } from "@/common/library/library_patches";
 import { isKnownRend } from "@/common/library/perseus_rends";
 import { processTei2 } from "@/common/library/process_work";
+import { readCtsMetadata } from "@/common/xml/tei_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import {
@@ -166,7 +167,8 @@ function errorParts(e: unknown): [string, string] {
 
 /** Surveys one TEI file given its raw contents. */
 export function surveyWork(
-  file: Pick<SurveyFile, "workId" | "relPath" | "scope">,
+  file: Pick<SurveyFile, "workId" | "relPath" | "scope"> &
+    Partial<Pick<SurveyFile, "absPath">>,
   raw: string,
   patches?: LibraryPatchMap
 ): { survey: WorkSurvey; census?: WorkCensus } {
@@ -205,7 +207,14 @@ export function surveyWork(
   try {
     const work = processTei2(
       parse(),
-      { workId: file.workId, translationId: EnglishTranslations[file.workId] },
+      {
+        workId: file.workId,
+        translationId: EnglishTranslations[file.workId],
+        ctsMetadata:
+          file.absPath === undefined
+            ? undefined
+            : readCtsMetadata(file.absPath),
+      },
       { patches: patches?.get(file.workId) }
     );
     survey.fingerprint = fingerprintOf(work);

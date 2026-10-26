@@ -1,11 +1,10 @@
 import { checkPresent } from "@/common/assert";
-import { LatinWorks } from "@/common/library/library_constants";
 import type { LibraryPatch } from "@/common/library/library_patches";
 import { WorkPage, type ProcessedWork2 } from "@/common/library/library_types";
 import {
   analyzeQuotes,
+  assertOutputInvariants,
   divideWork,
-  getSectionId,
   patchText,
   processTei2,
   transformNoteNode,
@@ -267,11 +266,14 @@ describe("processTei2", () => {
     expect(lines[1].toString()).toContain("nec perditis addictus obruat vino");
   });
 
-  it("parses expected text parts", () => {
+  it("derives text parts from the tree without a citeStructure", () => {
+    // The header declares book > chapter > section, but only books exist.
     const work = processTei2(testRoot(BODY_WITH_BOOK_ONLY), {
       workId: WORK_ID,
     });
-    expect(work.textParts).toStrictEqual(["book", "chapter", "section"]);
+    expect(work.textParts).toStrictEqual(["book"]);
+    expect(work.rows[0][0]).toEqual(["1"]);
+    expect(work.pages).toEqual([{ id: ["1"], rows: [0, 1] }]);
   });
 
   it("renders supplied text in angle brackets", () => {
@@ -282,7 +284,7 @@ describe("processTei2", () => {
     expect(work.rows[0][1].toString()).toContain("⟨not⟩");
   });
 
-  it("ignores upstream's citeStructure refsDecl when finding text parts", () => {
+  it("reads text parts from upstream's citeStructure refsDecl", () => {
     // Upstream canonical-latinLit (2026) adds this alongside the old two.
     const citeStructure = `
     <refsDecl xml:id="CTS">
@@ -298,11 +300,17 @@ describe("processTei2", () => {
       citeStructure
     );
 
-    const work = processTei2(testRoot(BODY_WITH_BOOK_ONLY, encodingDesc), {
+    const body = `<div type="edition">
+      <div n="1" type="textpart" subtype="book">
+        <div n="1" type="textpart" subtype="chapter">Gallia est</div>
+      </div>
+    </div>`;
+    const work = processTei2(testRoot(body, encodingDesc), {
       workId: WORK_ID,
     });
 
-    expect(work.textParts).toStrictEqual(["book", "chapter", "section"]);
+    expect(work.textParts).toStrictEqual(["book", "chapter"]);
+    expect(work.rows[0][0]).toEqual(["1", "1"]);
   });
 
   it("handles elements with choice and reg", () => {
@@ -804,142 +812,6 @@ describe("analyzeQuotes", () => {
   });
 });
 
-describe("getSectionId", () => {
-  const BOOK = [
-    ["type", "textpart"],
-    ["subtype", "book"],
-  ] satisfies XmlNode["attrs"];
-  const CHAPTER = [
-    ["type", "textpart"],
-    ["subtype", "chapter"],
-  ] satisfies XmlNode["attrs"];
-
-  function book(n: string): XmlNode["attrs"] {
-    return [...BOOK, ["n", n]];
-  }
-
-  function chapter(n: string): XmlNode["attrs"] {
-    return [...CHAPTER, ["n", n]];
-  }
-
-  function toNodes(attrs: XmlNode["attrs"][]): XmlNode[] {
-    return attrs.map((a) => new XmlNode("span", a, []));
-  }
-
-  it("handles empty stack", () => {
-    expect(getSectionId([], ["book", "chapter"])).toStrictEqual([[], false]);
-  });
-
-  it("handles no subtypes on parent section", () => {
-    expect(
-      getSectionId(
-        [
-          new XmlNode("span", [
-            ["type", "book"],
-            ["n", "3"],
-          ]),
-        ],
-        ["book", "chapter"],
-        LatinWorks.TACITUS_DIALOGUS
-      )
-    ).toStrictEqual([["3"], true]);
-  });
-
-  it("handles no subtypes on non-parent section", () => {
-    expect(
-      getSectionId(
-        [
-          new XmlNode("span", [
-            ["type", "book"],
-            ["n", "3"],
-          ]),
-          new XmlNode("span"),
-        ],
-        ["book", "chapter"],
-        LatinWorks.TACITUS_DIALOGUS
-      )
-    ).toStrictEqual([["3"], false]);
-  });
-
-  it("handles no subtypes on leaf section", () => {
-    expect(
-      getSectionId(
-        [
-          new XmlNode("span", [
-            ["type", "book"],
-            ["n", "3"],
-          ]),
-          new XmlNode("span"),
-          new XmlNode("span", [
-            ["type", "chapter"],
-            ["n", "14"],
-          ]),
-        ],
-        ["book", "chapter"],
-        LatinWorks.TACITUS_DIALOGUS
-      )
-    ).toStrictEqual([["3", "14"], true]);
-  });
-
-  it("handles leaf section", () => {
-    const textParts = ["book", "chapter"];
-    const nodes = toNodes([book("2"), chapter("1")]);
-
-    expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], true]);
-  });
-
-  it("handles seg", () => {
-    const textParts = ["book", "chapter"];
-    const nodes = toNodes([book("2")]).concat(
-      new XmlNode("seg", [
-        ["type", "chapter"],
-        ["n", "1"],
-      ])
-    );
-
-    expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], true]);
-  });
-
-  it("handles l with no id due to gap", () => {
-    const textParts = ["book", "line"];
-    const nodes = toNodes([book("2")]).concat(
-      new XmlNode("l", [], [new XmlNode("gap")])
-    );
-
-    expect(
-      getSectionId(nodes, textParts, "phi0550.phi001.perseus-lat1")
-    ).toStrictEqual([["2"], false]);
-  });
-
-  it("raises on bad order", () => {
-    const textParts = ["book", "chapter"];
-    const nodes = toNodes([chapter("1"), book("2")]);
-
-    expect(() => getSectionId(nodes, textParts)).toThrow();
-  });
-
-  it("raises on unexpected section", () => {
-    const textParts = ["book", "chapter"];
-    const nodes = toNodes([book("1"), book("2")]);
-
-    expect(() => getSectionId(nodes, textParts)).toThrow();
-  });
-
-  it("handles leaf section with intermediate nodes", () => {
-    const textParts = ["book", "chapter"];
-    const nodes = toNodes([book("2"), [], chapter("1")]);
-
-    expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], true]);
-  });
-
-  it("handles leaf node without section", () => {
-    const textParts = ["book", "chapter"];
-    const nodes = toNodes([book("2"), [], chapter("1"), []]);
-
-    expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], false]);
-  });
-});
-
 describe("transformNoteNode renditions", () => {
   function noteRend(name: string, rend?: string) {
     const attrs: [string, string][] =
@@ -1353,5 +1225,194 @@ describe("inline notes", () => {
       { workId: WORK_ID }
     );
     expect(work.notes).toHaveLength(1);
+  });
+});
+
+describe("processTei2 with citeStructure point levels", () => {
+  function citeStructureDesc(levels: string): string {
+    return `<encodingDesc>
+      <refsDecl xml:id="CTS">
+        <citeStructure match="/TEI/text/body" use="@xml:base">${levels}</citeStructure>
+      </refsDecl>
+    </encodingDesc>`;
+  }
+
+  it("cites milestone spans inside paragraphs, keeping notes in order", () => {
+    const encoding = citeStructureDesc(`
+      <citeStructure unit="book" match="div1[@type='book']" use="@n">
+        <citeStructure unit="chapter" match=".//milestone[@unit='chapter']" use="@n"/>
+      </citeStructure>`);
+    const body = `<div1 type="book" n="1"><head>LIBER I</head>
+      <milestone n="1" unit="chapter"/><p>Urbem<note>first</note> Romam
+      <milestone n="2" unit="chapter"/>Postquam<note>second</note></p>
+      <p>Igitur</p>
+    </div1>`;
+
+    const work = processTei2(testRoot(body, encoding), { workId: WORK_ID });
+
+    expect(work.textParts).toStrictEqual(["book", "chapter"]);
+    expect(work.rows.map(([id]) => id.join("."))).toStrictEqual([
+      "1",
+      "1.1",
+      "1.2",
+    ]);
+    expect(work.rows[0][1].toString()).toContain("LIBER I");
+    const first = work.rows[1][1].toString();
+    const second = work.rows[2][1].toString();
+    expect(first).toContain("Urbem");
+    expect(first).toContain('noteId="0"');
+    expect(first).not.toContain("Postquam");
+    expect(second).toContain("Postquam");
+    expect(second).toContain('noteId="1"');
+    expect(second).toContain("Igitur");
+    expect(work.notes?.map((n) => n.toString())).toStrictEqual([
+      "<span>first</span>",
+      "<span>second</span>",
+    ]);
+    expect(work.pages).toStrictEqual([{ id: ["1"], rows: [0, 3] }]);
+  });
+
+  it("cites lines marked by <lb n> rather than rendering line breaks", () => {
+    const encoding = citeStructureDesc(
+      `<citeStructure unit="line" match=".//lb" use="@n"/>`
+    );
+    const body = `<head>Dirae</head><p>
+<lb n="1"/>Battare, cycneas
+<lb n="2"/>diuisas iterum
+</p>`;
+
+    const work = processTei2(testRoot(body, encoding), { workId: WORK_ID });
+
+    expect(work.textParts).toStrictEqual(["line"]);
+    expect(work.rows.map(([id]) => id.join("."))).toStrictEqual(["", "1", "2"]);
+    expect(work.rows[1][1].toString()).toContain("Battare, cycneas");
+    expect(work.rows[2][1].toString()).toContain("diuisas iterum");
+    expect(work.rows.map(([, row]) => row.toString()).join("")).not.toContain(
+      "<br>"
+    );
+  });
+
+  it("ignores upstream's unnamed chunking levels", () => {
+    const encoding = citeStructureDesc(`
+      <citeStructure use="@n" match="milestone[@unit='card']" n="chunk"/>
+      <citeStructure unit="line" match=".//l" use="@n"/>`);
+    const body = `<milestone unit="card" n="1"/><l n="1">a</l><l n="2">b</l>`;
+
+    const work = processTei2(testRoot(body, encoding), { workId: WORK_ID });
+
+    expect(work.textParts).toStrictEqual(["line"]);
+    expect(work.rows.map(([id]) => id.join("."))).toStrictEqual(["1", "2"]);
+  });
+
+  it("names an unnamed level with levels below it after its elements", () => {
+    const encoding = citeStructureDesc(`
+      <citeStructure use="@n" match="div[@type]" n="chunk">
+        <citeStructure unit="line" match="l" use="@n"/>
+      </citeStructure>`);
+    const body = `<div type="edition">
+      <div type="prologue" n="pr"><l n="1">a</l></div>
+      <div type="satire" n="1"><l n="1">b</l></div>
+      <div type="satire" n="2"><l n="1">c</l></div>
+    </div>`;
+
+    const work = processTei2(testRoot(body, encoding), { workId: WORK_ID });
+
+    expect(work.textParts).toStrictEqual(["satire", "line"]);
+    expect(work.rows.map(([id]) => id.join("."))).toStrictEqual([
+      "pr.1",
+      "1.1",
+      "2.1",
+    ]);
+  });
+
+  it("fails on a work with no citable structure", () => {
+    expect(() =>
+      processTei2(testRoot(`<p>No divisions at all</p>`), { workId: WORK_ID })
+    ).toThrow(/No citation levels/);
+  });
+});
+
+describe("assertOutputInvariants", () => {
+  const row = (id: string): ProcessedWork2["rows"][number] => [
+    id.length === 0 ? [] : id.split("."),
+    new XmlNode("span", [], ["x"]),
+  ];
+
+  it("accepts a well-formed work", () => {
+    const rows = [row("1"), row("1.1"), row("1.2"), row("2.1")];
+    expect(() =>
+      assertOutputInvariants({
+        rows,
+        textParts: ["book", "chapter"],
+        pages: divideWork(rows, ["book", "chapter"]),
+      })
+    ).not.toThrow();
+  });
+
+  it("requires a citable row (OUT-2)", () => {
+    const rows = [row("1"), row("2")];
+    expect(() =>
+      assertOutputInvariants({
+        rows,
+        textParts: ["book", "chapter"],
+        pages: [{ id: ["1"], rows: [0, 2] }],
+      })
+    ).toThrow(/No citable rows/);
+  });
+
+  it("rejects malformed ids (OUT-3)", () => {
+    const rows: ProcessedWork2["rows"] = [
+      [["1", ""], new XmlNode("span")],
+      row("1.2"),
+    ];
+    expect(() =>
+      assertOutputInvariants({
+        rows,
+        textParts: ["book", "chapter"],
+        pages: [{ id: ["1"], rows: [0, 2] }],
+      })
+    ).toThrow(/Malformed row id/);
+  });
+
+  it("requires pages (OUT-4)", () => {
+    expect(() =>
+      assertOutputInvariants({
+        rows: [row("1")],
+        textParts: ["section"],
+        pages: [],
+      })
+    ).toThrow(/No pages/);
+  });
+
+  it("requires every citable row to be on a page (OUT-4)", () => {
+    const rows = [row("1.1"), row("2.1")];
+    expect(() =>
+      assertOutputInvariants({
+        rows,
+        textParts: ["book", "chapter"],
+        pages: [{ id: ["1"], rows: [0, 1] }],
+      })
+    ).toThrow(/Citable row 2.1 is on no page/);
+  });
+
+  it("requires unique page ids (OUT-5)", () => {
+    const rows = [row("1.1"), row("1.2")];
+    expect(() =>
+      assertOutputInvariants({
+        rows,
+        textParts: ["book", "chapter"],
+        pages: [
+          { id: ["1"], rows: [0, 1] },
+          { id: ["1"], rows: [1, 2] },
+        ],
+      })
+    ).toThrow(/Duplicate page ids/);
+  });
+
+  it("is enforced by divideWork for non-contiguous sections (OUT-5)", () => {
+    const rows = [row("1.1"), row("2.1"), row("1.2")];
+    expect(() => divideWork(rows, ["book", "chapter"])).toThrow(
+      /Duplicate page id 1/
+    );
   });
 });

@@ -95,7 +95,6 @@ export const NOT_YET_ONBOARDED: readonly string[] = [
   "stoa0045.stoa019.perseus-lat2",
   "stoa0054.stoa006.perseus-lat1",
   "stoa0058.stoa003.perseus-lat1",
-  "stoa0261.stoa002.perseus-lat1",
 ];
 
 export interface WorkMarkupViolations {

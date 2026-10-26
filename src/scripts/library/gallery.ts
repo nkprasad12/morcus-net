@@ -42,7 +42,10 @@ import {
   preprocessPerseusWorks,
   stripXmlProlog,
 } from "@/common/library/process_library";
-import { getSectionId } from "@/common/library/process_work";
+import {
+  buildCitationSpine,
+  CitationSpine,
+} from "@/common/library/cite_structure";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { gitShortSha } from "@/scripts/library/render";
@@ -630,24 +633,10 @@ export function analyzeWorkForGallery(
   const isVerseWork =
     work.textParts.length > 0 &&
     work.textParts[work.textParts.length - 1].toLowerCase() === "line";
-  const nonCtsRefs = rawTei
-    .findDescendants("refsDecl")
-    .filter(
-      (n) => n.getAttr("n") !== "CTS" && n.getAttr("xml:id") !== "CTS"
-    );
-  const refsUnits =
-    nonCtsRefs.length === 1
-      ? nonCtsRefs[0].children
-          .filter((c): c is XmlNode => c instanceof XmlNode)
-          .map((c) => c.getAttr("unit")?.toLowerCase())
-          .filter((u): u is string => Boolean(u))
-      : [];
-  const hasLivyLeadingUnit =
-    input.workId === LatinWorks.LIVY_AUC &&
-    refsUnits.length === work.textParts.length + 1;
-  const rawTextParts = hasLivyLeadingUnit
-    ? refsUnits
-    : work.textParts.map((p) => p.toLowerCase());
+  // Section ids of the raw tree, from the same citation spine as the
+  // pipeline. Point levels (milestones, `<lb>`) are not sliced here, so text
+  // under them resolves to its enclosing container's id.
+  const rawSpine = buildCitationSpine(rawTei, body, { slicePoints: false });
 
   const kinds = new Map<string, WorkKindAccumulator>();
   const candidateLimit = Math.max(1, maxExamplesPerWork);
@@ -906,14 +895,9 @@ export function analyzeWorkForGallery(
       return;
     }
 
-    let dotSecId = inheritedSecId;
-    try {
-      const [rawSec] = getSectionId(ancestors, rawTextParts, input.workId);
-      const pruned = hasLivyLeadingUnit ? rawSec.slice(1) : rawSec;
-      dotSecId = pruned.join(".");
-    } catch {
-      dotSecId = inheritedSecId;
-    }
+    const dotSecId =
+      CitationSpine.sectionIdOf(rawSpine, ancestors)[0].join(".") ||
+      inheritedSecId;
 
     if (node.name === "note") {
       const noteId = nextNoteId++;

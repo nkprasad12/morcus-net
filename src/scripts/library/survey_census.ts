@@ -227,11 +227,27 @@ export function firstLineOf(message: string): string {
  */
 export function categorizeV1Error(message: string, stack: string): string {
   const firstLine = firstLineOf(message);
-  if (stack.includes("at getTextparts")) return "textParts: refsDecl ambiguous";
-  if (stack.includes("at findCtsEncoding")) {
-    return "textParts: CTS refsDecl self-inconsistent";
+  if (
+    stack.includes("at parseCiteMatch") ||
+    stack.includes("at parseCiteLevel")
+  ) {
+    return "structure: citeStructure unsupported";
   }
-  if (stack.includes("at getSectionId")) return "structure: nesting mismatch";
+  if (stack.includes("at parseCiteStructure")) {
+    return "structure: citeStructure malformed";
+  }
+  if (stack.includes("at register (") || stack.includes("at divisionUnit")) {
+    return `structure: citation value (${firstLine.slice(0, 60)})`;
+  }
+  if (
+    stack.includes("at evaluateLevels") ||
+    stack.includes("at evaluateTree")
+  ) {
+    return "structure: citation spine";
+  }
+  if (stack.includes("at assertOutputInvariants")) {
+    return `output: ${firstLine.slice(0, 60)}`;
+  }
   if (stack.includes("at extractInfo")) return "metadata: titleStmt incomplete";
   if (stack.includes("at transformNoteNode")) return "markup: note contents";
   if (
@@ -245,6 +261,10 @@ export function categorizeV1Error(message: string, stack: string): string {
   }
   if (stack.includes("at divideWork")) return "pagination: duplicate page id";
   if (stack.includes("at preprocessTree")) return "structure: preprocess";
+  // Last: every row-building failure has `processWorkBody` on its stack.
+  if (stack.includes("at processWorkBody")) {
+    return `structure: rows (${firstLine.slice(0, 60)})`;
+  }
   return `other: ${firstLine.slice(0, 70)}`;
 }
 

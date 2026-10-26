@@ -27,6 +27,7 @@ import { processPhiJson } from "@/common/library/process_phi_json";
 import { processTei2 } from "@/common/library/process_work";
 import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
 import type { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_types";
+import { readCtsMetadata, type CtsMetadata } from "@/common/xml/tei_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { MorceusCruncher } from "@/morceus/crunch";
@@ -214,7 +215,8 @@ function processTeiCts2(
   root: XmlNode,
   workId: string,
   patches?: LibraryPatch[],
-  translationId?: string
+  translationId?: string,
+  ctsMetadata?: CtsMetadata
 ): ProcessedWork2 {
   const words = new Set<string>();
   const onWord = (word: string) => {
@@ -231,7 +233,7 @@ function processTeiCts2(
   const debugHelper = debugRoot === undefined ? undefined : { onWord };
   const result = processTei2(
     root,
-    { workId, translationId },
+    { workId, translationId, ctsMetadata },
     { patches, sideChannel: debugHelper }
   );
   const debugName = result.info.title.replaceAll(" ", "_");
@@ -329,7 +331,8 @@ export function preprocessPerseusWorks(
         rawXml,
         workId,
         patches.get(workId),
-        translationId
+        translationId,
+        readCtsMetadata(workPath)
       );
       const isTranslation = isTranslationId(workId);
       result.info.isTranslation = isTranslation;
