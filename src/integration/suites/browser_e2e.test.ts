@@ -100,7 +100,13 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator("form.search-form")).toBeVisible();
 
     // The rewrite replaced the root's history entry rather than adding one.
-    await page.reload();
+    // Reload via `location.reload()`, not `page.reload()`: in Firefox,
+    // Playwright's reload adds a session history entry on any page.
+    await Promise.all([
+      page.waitForEvent("load"),
+      // Deferred so `evaluate` resolves before the page unloads.
+      page.evaluate(() => void setTimeout(() => location.reload())),
+    ]);
     await expect(page).toHaveURL(/\/dicts$/);
     await page.goBack();
     await expect(page).toHaveURL(/\/about$/);
