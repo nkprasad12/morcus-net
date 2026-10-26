@@ -1057,15 +1057,13 @@ export function transformContentNode(
   }
   if (QUOTE_NODES.has(node.name)) {
     const normRends = canonicalRend(rend ?? "").split(" ").filter(Boolean);
-    const rawTokens = rendTokens(rend ?? "");
-    const suppressQuotes =
-      normRends.includes("blockquote") || rawTokens.includes("merge");
+    const isBlockquote = normRends.includes("blockquote");
     return new XmlNode(
       "span",
       attrs,
       // We don't need to add quotes even if the node is a `quote` since
-      // the blockquote will emphasize enough, or if quotes are merged.
-      suppressQuotes ? children : ["“", ...children, "”"]
+      // the blockquote will emphasize enough.
+      isBlockquote ? children : ["“", ...children, "”"]
     );
   }
   if (node.name === "foreign") {

@@ -1180,10 +1180,10 @@ describe("Phase 1 markup in the text", () => {
     expect(row.toString()).toContain("content");
   });
 
-  it("suppresses quotes on quote with rend=merge", () => {
+  it("keeps quotes on quote with rend=merge (treated as no-op)", () => {
     const row = onlyRow(`<quote rend="merge">content</quote>`);
-    expect(row.toString()).not.toContain("“");
-    expect(row.toString()).not.toContain("”");
+    expect(row.toString()).toContain("“");
+    expect(row.toString()).toContain("”");
     expect(row.toString()).toContain("content");
   });
 
