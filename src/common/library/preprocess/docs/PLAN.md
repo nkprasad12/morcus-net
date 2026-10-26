@@ -1,17 +1,17 @@
 # Library Expansion Plan
 
-**Status:** Phase 0 complete (pending user `git push` of `morcus-upstream-sync` to `origin` to finalize [`upstream_sources.lock.json`](../../../../../upstream_sources.lock.json))
+**Status:** Phase 0, Phase 1, and Phase 2A complete on `library-expansion` (`ffcfeedb`); ready for Phase 2B onboarding
 **Goal:** onboard every distinct Perseus Latin work into the V2 library with an enumerated, tested guarantee that we are not misrendering the editor's intended formatting.
 **Sources:** the Sep-2026 study ([README.md](README.md), [V1_PREPROCESSING.md](V1_PREPROCESSING.md), [DIRECTION.md](DIRECTION.md), [OUTPUT_MODEL.md](OUTPUT_MODEL.md)); the Oct-2026 corpus survey over all 398 pre-sync / 334 post-sync `perseus-lat*` files ([CORPUS_SURVEY.md](CORPUS_SURVEY.md)); and the diff and Phase 0 sync of our fork against `PerseusDL/canonical-latinLit@master` ([UPSTREAM.md](UPSTREAM.md)).
 
-| Phase | Scope                                                        | Status                                                        | Target onboarded |
-| ----- | ------------------------------------------------------------ | ------------------------------------------------------------- | ---------------: |
-| **0** | Instrumentation, baseline, and upstream sync                 | **Complete** (pending `git push origin morcus-upstream-sync`) |               98 |
-| **1** | Free wins (Cluster A) and markup / silent-drop bug fixes     | Not started                                                   |             ≈115 |
-| **2** | `citeStructure`-driven structural builder and unified markup | Not started                                                   |             ≈250 |
-| **3** | Speakers, stage directions, and verse-in-prose               | Not started                                                   |             ≈290 |
-| **4** | Secondary milestone axes and explicit pagination depth       | Not started                                                   |             ≈290 |
-| **5** | Long tail, multi-edition selection, and upstream PRs         | Not started                                                   |             ≈300 |
+| Phase | Scope                                                        | Status                                                       | Target onboarded |
+| ----- | ------------------------------------------------------------ | ------------------------------------------------------------ | ---------------: |
+| **0** | Instrumentation, baseline, and upstream sync                 | **Complete** (`b3ff6ba3`)                                    |               99 |
+| **1** | Free wins (Cluster A) and markup / silent-drop bug fixes     | **Complete** (`6d5b27ed`, 117 Perseus / 144 total onboarded) |              117 |
+| **2** | `citeStructure`-driven structural builder and unified markup | **2A Complete (`ffcfeedb`, 266/341 pass)**; 2B onboarding    |             ≈250 |
+| **3** | Speakers, stage directions, and verse-in-prose               | Not started                                                  |             ≈290 |
+| **4** | Secondary milestone axes and explicit pagination depth       | Not started                                                  |             ≈290 |
+| **5** | Long tail, multi-edition selection, and upstream PRs         | Not started                                                  |             ≈300 |
 
 ---
 
