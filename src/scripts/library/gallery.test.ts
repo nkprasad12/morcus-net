@@ -628,10 +628,18 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     );
     const html = formatGalleryHtml(report);
 
-    // Sticky-header scroll offset styles
+    // Sticky-header scroll offset and card header sticky styles
     expect(html).toContain("scroll-padding-top: var(--gallery-header-h, 8.5rem);");
     expect(html).toContain("scroll-margin-top: var(--gallery-header-h, 8.5rem);");
     expect(html).toContain("--gallery-header-h");
+    expect(html).toContain("position: sticky;");
+    expect(html).toContain("top: var(--gallery-header-h, 52px);");
+    expect(html).toContain("z-index: 20;");
+
+    // Target highlight styling (calm sky-blue #0284c7, not error red)
+    expect(html).toContain(".reader-preview .gallery-target");
+    expect(html).toContain("#0284c7");
+    expect(html).not.toContain("#dc2626");
 
     // Header review controls
     expect(html).toContain('id="gallery-review-progress"');
@@ -644,15 +652,19 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     expect(html).toContain('class="gallery-btn mark-cat-btn"');
     expect(html).toContain('data-mark-cat="element"');
 
-    // Kind card and work review checkboxes
+    // Kind card and work review checkboxes (both header and footer)
     expect(html).toContain('class="review-checkbox"');
     expect(html).toContain('data-review-id="kind:element:foreign"');
     expect(html).toContain(
       `data-review-id="work:${LatinWorks.CAESAR_DBG}"`
     );
+    expect(html).toContain('class="kind-card-footer"');
+    expect(html).toContain('class="work-details-footer"');
 
     // Collapsed and hide styles
     expect(html).toContain('.kind-card[data-reviewed="true"] .exemplar-list');
+    expect(html).toContain('.kind-card[data-reviewed="true"] .kind-card-footer');
+    expect(html).toContain('.kind-card.is-reviewed .kind-card-footer');
     expect(html).toContain('body[data-hide-reviewed="true"] .kind-card[data-reviewed="true"]');
     expect(html).toContain('body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .cat-all-reviewed-banner');
   });

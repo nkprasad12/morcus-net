@@ -26,6 +26,7 @@ import { envVar } from "@/common/env_vars";
 import {
   EnglishTranslations,
   LatinWorks,
+  resolveWorkIdAlias,
 } from "@/common/library/library_constants";
 import {
   loadPatches,
@@ -1326,11 +1327,12 @@ export function selectGalleryWorkFiles(
   options: { works?: string[]; includeCandidates?: boolean } = {}
 ): DiscoveredGalleryFile[] {
   if (options.works && options.works.length > 0) {
-    return options.works.map((workId) => {
+    return options.works.map((rawWorkId) => {
+      const workId = resolveWorkIdAlias(rawWorkId);
       const relPath = workIdToRelPath(workId);
       const absPath = path.join(root, relPath);
       if (!fs.existsSync(absPath)) {
-        throw new Error(`Work file not found for '${workId}' at ${absPath}`);
+        throw new Error(`Work file not found for '${rawWorkId}' at ${absPath}`);
       }
       return {
         workId,
@@ -1536,7 +1538,7 @@ body {
   padding: 1.25rem 2rem;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 50;
 }
 
 .gallery-header-top {
@@ -1712,7 +1714,6 @@ body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
   border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 1.25rem;
-  overflow: hidden;
 }
 
 .kind-card-header {
@@ -1724,6 +1725,11 @@ body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  position: sticky;
+  top: var(--gallery-header-h, 52px);
+  z-index: 20;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
 }
 
 .kind-name {
@@ -1824,10 +1830,12 @@ body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
   position: relative;
 }
 
-.reader-section.gallery-target {
-  background: var(--primary-light);
-  border-left: 3px solid var(--primary);
-  border-radius: 4px;
+.reader-section.gallery-target,
+.reader-preview .gallery-target {
+  outline: 2px dashed #0284c7;
+  outline-offset: 2px;
+  background: rgba(2, 132, 199, 0.08);
+  border-radius: 2px;
 }
 
 /* ==========================================================================
@@ -2079,36 +2087,69 @@ a.reader-note-ref sup {
   margin: 0;
 }
 
-.kind-card[data-reviewed="true"] {
+.kind-card[data-reviewed="true"],
+.kind-card.is-reviewed {
   border-color: #a5d6a7;
 }
 
-.kind-card[data-reviewed="true"] .kind-card-header {
+.kind-card[data-reviewed="true"] .kind-card-header,
+.kind-card.is-reviewed .kind-card-header {
   background: #f1f8e9;
   border-bottom: none;
+  position: static;
+  border-radius: 7px;
 }
 
-.kind-card[data-reviewed="true"] .exemplar-list {
+.kind-card[data-reviewed="true"] .exemplar-list,
+.kind-card.is-reviewed .exemplar-list,
+.kind-card[data-reviewed="true"] .kind-card-footer,
+.kind-card.is-reviewed .kind-card-footer {
   display: none;
 }
 
-.work-details[data-reviewed="true"] {
+.kind-card-footer {
+  background: var(--surface-muted);
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+.work-details-footer {
+  padding: 0.5rem 0.5rem 0.25rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  margin-top: 0.75rem;
+}
+
+.work-details[data-reviewed="true"],
+.work-details.is-reviewed {
   border-color: #a5d6a7;
   background: #fdfefd;
 }
 
-.work-details[data-reviewed="true"] summary {
+.work-details[data-reviewed="true"] summary,
+.work-details.is-reviewed summary {
   color: #2e7d32;
 }
 
-tr[data-reviewed="true"] {
+tr[data-reviewed="true"],
+tr.is-reviewed {
   background: #f1f8e9;
   color: var(--text-muted);
 }
 
 body[data-hide-reviewed="true"] .kind-card[data-reviewed="true"],
+body[data-hide-reviewed="true"] .kind-card.is-reviewed,
 body[data-hide-reviewed="true"] .work-details[data-reviewed="true"],
-body[data-hide-reviewed="true"] tr[data-reviewed="true"] {
+body[data-hide-reviewed="true"] .work-details.is-reviewed,
+body[data-hide-reviewed="true"] tr[data-reviewed="true"],
+body[data-hide-reviewed="true"] tr.is-reviewed {
   display: none;
 }
 `;
@@ -2190,6 +2231,11 @@ export function formatGalleryHtml(report: GalleryReport): string {
           <div class="exemplar-list">
             ${examplesHtml}
           </div>
+          <footer class="kind-card-footer">
+            <label class="review-toggle-label"><input type="checkbox" class="review-checkbox" data-review-id="kind:${he.escape(
+              k.category
+            )}:${he.escape(k.kind)}" /> Reviewed</label>
+          </footer>
         </article>`;
         })
         .join("\n");
@@ -2307,6 +2353,11 @@ export function formatGalleryHtml(report: GalleryReport): string {
         <div class="spot-pages-grid">
           ${spotPagesHtml}
         </div>
+        <footer class="work-details-footer">
+          <label class="review-toggle-label"><input type="checkbox" class="review-checkbox" data-review-id="work:${he.escape(
+            w.workId
+          )}" /> Reviewed</label>
+        </footer>
       </details>`;
     })
     .join("\n");
@@ -2488,8 +2539,10 @@ export function formatGalleryHtml(report: GalleryReport): string {
         } else {
           if (isReviewed) {
             el.setAttribute("data-reviewed", "true");
+            el.classList.add("is-reviewed");
           } else {
             el.removeAttribute("data-reviewed");
+            el.classList.remove("is-reviewed");
           }
         }
       });
