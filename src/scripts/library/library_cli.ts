@@ -17,6 +17,18 @@ export function optString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+/** An integer flag's value, or `undefined` if it was not passed. */
+export function optInt(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number.parseInt(value.trim(), 10);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
 export interface LibraryAction {
   /** The action's name on the command line. */
   name: string;
@@ -134,6 +146,47 @@ export const LIBRARY_ACTIONS: LibraryAction[] = [
         out: optString(args.out),
         allowDiff: Boolean(args.allow_diff),
         quiet: Boolean(args.quiet),
+      });
+    },
+  },
+  {
+    name: "gallery",
+    help:
+      "Builds the exemplar review gallery (HTML, Markdown, JSON) across " +
+      "Perseus Latin works for markup sign-off and per-work spot-check. " +
+      "Writes .cache/library-gallery/<label>/.",
+    configure: (parser) => {
+      parser.add_argument("--root", {
+        help: "The canonical-latinLit checkout (default: $LIB_XML_ROOT).",
+      });
+      parser.add_argument("--label", {
+        help: "Output label (default: <latinLit short sha>-<morcus-net short sha>).",
+      });
+      parser.add_argument("--out", {
+        help: "Output directory root (default: .cache/library-gallery).",
+      });
+      parser.add_argument("--works", {
+        help: "Comma-separated work ids (default: all V1-passing Latin works in LatinWorks, or discovered in --root with --include-candidates).",
+      });
+      parser.add_argument("--include-candidates", {
+        help: "Also include non-onboarded Latin works in --root that pass processTei2.",
+        action: "store_true",
+      });
+      parser.add_argument("--max-examples", {
+        help: "Max exemplar passages per markup kind (default: 3).",
+        type: "int",
+      });
+    },
+    run: async (args) => {
+      const { runGalleryCli } = await import("@/scripts/library/gallery");
+      const { parseWorkList } = await import("@/scripts/library/render");
+      return runGalleryCli({
+        root: optString(args.root),
+        label: optString(args.label),
+        out: optString(args.out),
+        works: parseWorkList(optString(args.works)),
+        includeCandidates: Boolean(args.include_candidates),
+        maxExamples: optInt(args.max_examples),
       });
     },
   },
