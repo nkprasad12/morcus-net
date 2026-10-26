@@ -11,12 +11,18 @@ import {
   buildGalleryReportFromInputs,
   buildReaderSectionUrl,
   extractNoteListItems,
+  filterNotesHtmlToRefs,
   formatGalleryHtml,
   formatGalleryMarkdown,
+  normalizePreviewHtml,
+  renderGalleryDiffHtml,
+  rewriteExemplarIds,
+  scopeCssRules,
   scopePreviewHtmlIds,
   selectDiverseExemplars,
   serializeTeiSnippet,
   type GalleryExemplar,
+  type GalleryReport,
 } from "@/scripts/library/gallery";
 import {
   LIBRARY_ACTIONS,
@@ -628,18 +634,27 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     );
     const html = formatGalleryHtml(report);
 
-    // Sticky-header scroll offset and card header sticky styles
+    // Sticky top gallery header and non-sticky card headers
     expect(html).toContain("scroll-padding-top: var(--gallery-header-h, 8.5rem);");
     expect(html).toContain("scroll-margin-top: var(--gallery-header-h, 8.5rem);");
     expect(html).toContain("--gallery-header-h");
-    expect(html).toContain("position: sticky;");
-    expect(html).toContain("top: var(--gallery-header-h, 52px);");
-    expect(html).toContain("z-index: 20;");
+    expect(html).toContain("overflow: hidden;");
+    expect(html).not.toContain("top: var(--gallery-header-h, 52px);");
 
-    // Target highlight styling (calm sky-blue #0284c7, not error red)
+    // Target highlight removed: normal reader colors with zero outline or background tint
     expect(html).toContain(".reader-preview .gallery-target");
-    expect(html).toContain("#0284c7");
-    expect(html).not.toContain("#dc2626");
+    expect(html).not.toContain("#0284c7");
+    expect(html).not.toContain("outline: 2px dashed");
+
+    // Reader block reset margin: 0 and text-muted color
+    expect(html).toContain(
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .reader-block"
+    );
+    expect(html).toContain("margin: 0;");
+    expect(html).toContain(
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .text-muted"
+    );
+    expect(html).toContain("color: var(--text-muted);");
 
     // Header review controls
     expect(html).toContain('id="gallery-review-progress"');
@@ -843,6 +858,336 @@ describe("buildGallery filesystem & library_cli integration", () => {
     expect(saved.works).toHaveLength(2);
     for (const k of saved.markupKinds) {
       expect(k.examples.length).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+describe("filterNotesHtmlToRefs & Bug 15 Footnote Filtering", () => {
+  const sampleNotesHtml = `<aside class="reader-notes" role="doc-endnotes" aria-labelledby="reader-notes-heading">
+    <h2 class="reader-notes-heading" id="reader-notes-heading">Notes</h2>
+    <ol class="reader-notes-list">
+      <li class="reader-note" id="note-n1"><a class="reader-note-backref" href="#noteref-n1">[1]</a><div class="reader-note-body">First critical note.</div></li>
+      <li class="reader-note" id="note-n2"><a class="reader-note-backref" href="#noteref-n2">[2]</a><div class="reader-note-body">Second critical note.</div></li>
+      <li class="reader-note" id="note-n3"><a class="reader-note-backref" href="#noteref-n3">[3]</a><div class="reader-note-body">Third critical note.</div></li>
+    </ol>
+  </aside>`;
+
+  it("extracts and retains only the referenced notes matching href or data-note-id", () => {
+    // 1. Passage referencing only note 2
+    const passageSingle = `<p class="reader-paragraph">Gallia est omnis divisa<a class="reader-note-ref" id="noteref-n2" href="#note-n2"><sup>[2]</sup></a> in partes tres.</p>`;
+    const filteredSingle = filterNotesHtmlToRefs(passageSingle, sampleNotesHtml);
+    expect(filteredSingle).toBeDefined();
+    expect(filteredSingle).toContain('id="note-n2"');
+    expect(filteredSingle).toContain("Second critical note.");
+    expect(filteredSingle).not.toContain("First critical note.");
+    expect(filteredSingle).not.toContain("Third critical note.");
+
+    // 2. Passage referencing notes 1 and 3 with scoped ID prefixes
+    const passageScoped = `<p class="reader-paragraph">Text <a class="reader-note-ref" href="#ex-0-1-0-note-n1">[1]</a> and <a class="reader-note-ref" href="#ex-0-1-0-note-n3">[3]</a></p>`;
+    const filteredScoped = filterNotesHtmlToRefs(passageScoped, sampleNotesHtml);
+    expect(filteredScoped).toBeDefined();
+    expect(filteredScoped).toContain('id="note-n1"');
+    expect(filteredScoped).toContain('id="note-n3"');
+    expect(filteredScoped).not.toContain('id="note-n2"');
+
+    // 3. Passage referencing via data-note-id
+    const passageDataAttr = `<p class="reader-paragraph">Word<span data-note-id="n1">[1]</span></p>`;
+    const filteredData = filterNotesHtmlToRefs(passageDataAttr, sampleNotesHtml);
+    expect(filteredData).toBeDefined();
+    expect(filteredData).toContain('id="note-n1"');
+    expect(filteredData).not.toContain('id="note-n2"');
+
+    // 4. Passage referencing NO notes
+    const passageNoNotes = `<p class="reader-paragraph">No notes here <a class="section-anchor" href="#sec-1.1">1.1</a></p>`;
+    expect(filterNotesHtmlToRefs(passageNoNotes, sampleNotesHtml)).toBeUndefined();
+
+    // 5. Undefined or empty pageNotesHtml
+    expect(filterNotesHtmlToRefs(passageSingle, undefined)).toBeUndefined();
+    expect(filterNotesHtmlToRefs(passageSingle, "")).toBeUndefined();
+  });
+
+  it("includes footnotes in makeBodyExemplar when body passage contains footnote references", () => {
+    const analyzed = analyzeWorkForGallery({
+      workId: LatinWorks.CAESAR_DBG,
+      rawXml: makeTei({
+        title: "De bello Gallico",
+        author: "Julius Caesar",
+        body: RICH_PROSE_BODY,
+      }),
+      onboarded: true,
+    });
+
+    // In RICH_PROSE_BODY, section 1.1 contains `<del>divisa</del>` AND a `<note place="foot">Nota codicem...</note>`
+    const delEx = analyzed.kinds.get("del")?.candidates[0];
+    expect(delEx).toBeDefined();
+    expect(delEx!.renderedHtml).toContain('<div class="reader-passage">');
+    expect(delEx!.renderedHtml).toContain("[divisa]");
+    // Bug 15 fix: body exemplar containing footnote marker [1] now displays the footnote at the bottom!
+    expect(delEx!.renderedHtml).toContain('class="reader-notes"');
+    expect(delEx!.renderedHtml).toContain("Nota");
+    expect(delEx!.renderedHtml).toContain("codicem");
+
+    // Spot-check page 1: contains section 1.1 with note 1, but spot-check preview should NOT dump notes from other sections
+    const firstPage = analyzed.spotCheck.pages.first;
+    expect(firstPage).toBeDefined();
+    expect(firstPage!.previewHtml).toContain('class="reader-notes"');
+    expect(firstPage!.previewHtml).toContain("Nota");
+  });
+});
+
+describe("renderGalleryDiffHtml & Before/After Diff Inspector", () => {
+  it("normalizes preview IDs and scopes CSS rules correctly", () => {
+    const scoped = scopePreviewHtmlIds(
+      '<div id="sec-1.1"><a href="#note-n1">1</a><li id="note-n1">Note</li></div>',
+      "ex-0-1-2"
+    );
+    expect(scoped).toContain('id="ex-0-1-2-sec-1.1"');
+    expect(normalizePreviewHtml(scoped)).toBe(
+      '<div id="sec-1.1"><a href="#note-n1">1</a><li id="note-n1">Note</li></div>'
+    );
+    expect(rewriteExemplarIds(scoped, "prefix")).toContain('id="prefix-ex-0-1-2-sec-1.1"');
+
+    const rawCss = `.reader-block { margin: 1em 0; } .reader-line, .indent { display: block; }`;
+    const scopedCss = scopeCssRules(rawCss, ".before-scope");
+    expect(scopedCss).toContain(".before-scope .reader-block { margin: 1em 0; }");
+    expect(scopedCss).toContain(".before-scope .reader-line, .before-scope .indent { display: block; }");
+  });
+
+  it("renders a 3-column diff inspector for changed exemplars and 2-column for spot-checks with review tracking", () => {
+    const beforeReport: GalleryReport = {
+      label: "before-run",
+      createdAt: new Date().toISOString(),
+      root: "/corpus",
+      includeCandidates: false,
+      maxExamples: 1,
+      totals: {
+        worksProcessed: 1,
+        onboardedCount: 1,
+        candidateCount: 0,
+        failedCount: 0,
+        markupKindCount: 2,
+      },
+      markupKinds: [
+        {
+          kind: "quote@align(blockquote)",
+          category: "rend",
+          workCount: 1,
+          occurrenceCount: 1,
+          examples: [
+            {
+              workId: LatinWorks.CAESAR_DBG,
+              workTitle: "De bello Gallico",
+              author: "Julius Caesar",
+              sectionId: "1.1",
+              pageId: "1",
+              readerUrl: "/work/caesar/de_bello_gallico/1#sec-1.1",
+              url: "/work/caesar/de_bello_gallico/1#sec-1.1",
+              teiSnippet: '<quote rend="align(blockquote)"><l>Versus</l></quote>',
+              renderedHtml: '<div class="reader-passage"><span class="blockquote">“<span class="reader-line">Versus</span>”</span></div>',
+            },
+          ],
+        },
+        {
+          kind: "hi@italic",
+          category: "rend",
+          workCount: 1,
+          occurrenceCount: 1,
+          examples: [
+            {
+              workId: LatinWorks.CAESAR_DBG,
+              workTitle: "De bello Gallico",
+              author: "Julius Caesar",
+              sectionId: "1.2",
+              pageId: "1",
+              readerUrl: "/work/caesar/de_bello_gallico/1#sec-1.2",
+              url: "/work/caesar/de_bello_gallico/1#sec-1.2",
+              teiSnippet: '<hi rend="italic">omnis</hi>',
+              renderedHtml: '<div class="reader-passage"><p class="reader-paragraph"><span class="reader-block"><em class="italic">omnis</em></span></p></div>',
+            },
+          ],
+        },
+      ],
+      kindsByName: {},
+      works: [
+        {
+          workId: LatinWorks.CAESAR_DBG,
+          author: "Julius Caesar",
+          title: "De bello Gallico",
+          urlAuthor: "caesar",
+          urlName: "de_bello_gallico",
+          onboarded: true,
+          rowCount: 10,
+          citableRowCount: 10,
+          pageCount: 1,
+          textParts: ["chapter", "section"],
+          markupKinds: ["quote@align(blockquote)", "hi@italic"],
+          pages: {
+            first: {
+              role: "first",
+              pageId: "1",
+              title: "Liber 1",
+              sectionCount: 2,
+              citationRange: ["1.1", "1.2"],
+              readerUrl: "/work/caesar/de_bello_gallico/1",
+              url: "/work/caesar/de_bello_gallico/1",
+              previewHtml: '<div class="reader-passage">Old spot check passage</div>',
+            },
+          },
+          spotCheckPages: [],
+        },
+      ],
+      failures: {},
+    };
+
+    const afterReport: GalleryReport = {
+      ...beforeReport,
+      label: "after-run",
+      markupKinds: [
+        {
+          kind: "quote@align(blockquote)",
+          category: "rend",
+          workCount: 1,
+          occurrenceCount: 1,
+          examples: [
+            {
+              ...beforeReport.markupKinds[0].examples[0],
+              // Spurious quotes removed in after report
+              renderedHtml: '<div class="reader-passage"><span class="blockquote"><span class="reader-line">Versus</span></span></div>',
+            },
+          ],
+        },
+        {
+          kind: "hi@italic",
+          category: "rend",
+          workCount: 1,
+          occurrenceCount: 1,
+          examples: [
+            {
+              ...beforeReport.markupKinds[1].examples[0],
+              // Markup identical, but contains .reader-block whose margin CSS changed
+            },
+          ],
+        },
+      ],
+      works: [
+        {
+          ...beforeReport.works[0],
+          pages: {
+            first: {
+              ...beforeReport.works[0].pages.first!,
+              previewHtml: '<div class="reader-passage">New spot check passage</div>',
+            },
+          },
+        },
+      ],
+    };
+
+    const diffHtml = renderGalleryDiffHtml(
+      beforeReport,
+      afterReport,
+      ".reader-block { margin: 1em 0; }"
+    );
+
+    expect(diffHtml).toContain("<!DOCTYPE html>");
+    expect(diffHtml).toContain("Morcus Library Gallery Diff: <code>before-run</code> &rarr; <code>after-run</code>");
+
+    // Review controls & header
+    expect(diffHtml).toContain('id="gallery-review-progress"');
+    expect(diffHtml).toContain('id="gallery-hide-reviewed"');
+    expect(diffHtml).toContain('id="gallery-reset-reviewed"');
+
+    // Kind cards
+    expect(diffHtml).toContain('data-review-id="diff-kind:rend:quote@align(blockquote)"');
+    expect(diffHtml).toContain('data-review-id="diff-kind:rend:hi@italic"');
+    expect(diffHtml).toContain('class="kind-card-header"');
+    expect(diffHtml).toContain('class="kind-card-footer"');
+
+    // 3-column comparison grid for exemplars
+    expect(diffHtml).toContain('class="diff-grid"');
+    expect(diffHtml).toContain("Source TEI XML");
+    expect(diffHtml).toContain("Before");
+    expect(diffHtml).toContain("After");
+    expect(diffHtml).toContain("before-scope");
+    expect(diffHtml).toContain("after-scope");
+
+    // HTML markup diff details
+    expect(diffHtml).toContain('class="html-diff-details"');
+    expect(diffHtml).toContain("HTML markup diff");
+    expect(diffHtml).toContain("Before HTML");
+    expect(diffHtml).toContain("After HTML");
+
+    // Spot-check 2-column grid
+    expect(diffHtml).toContain('class="diff-grid diff-grid-2col"');
+    expect(diffHtml).toContain(`data-review-id="diff-work:${LatinWorks.CAESAR_DBG}"`);
+
+    // Scoped beforeReaderCss
+    expect(diffHtml).toContain(".before-scope .reader-block { margin: 1em 0; }");
+  });
+
+  it("handles identical reports with zero differences cleanly", () => {
+    const report: GalleryReport = {
+      label: "clean-run",
+      createdAt: new Date().toISOString(),
+      root: "/corpus",
+      includeCandidates: false,
+      maxExamples: 1,
+      totals: {
+        worksProcessed: 0,
+        onboardedCount: 0,
+        candidateCount: 0,
+        failedCount: 0,
+        markupKindCount: 0,
+      },
+      markupKinds: [],
+      kindsByName: {},
+      works: [],
+      failures: {},
+    };
+
+    const diffHtml = renderGalleryDiffHtml(report, report);
+    expect(diffHtml).toContain("No markup kind exemplar differences detected.");
+    expect(diffHtml).toContain("No spot-check page differences detected.");
+    expect(diffHtml).toContain("Reviewed: 0 / 0 kinds &middot; 0 / 0 works");
+  });
+
+  it("writes diff.html when buildGallery is called with compareWith", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "gallery-diff-build-test-"));
+    try {
+      const root = path.join(tmp, "latinLit");
+      const caesarDir = path.join(root, "data", "phi0448", "phi001");
+      fs.mkdirSync(caesarDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(caesarDir, `${LatinWorks.CAESAR_DBG}.xml`),
+        makeTei({
+          title: "De bello Gallico",
+          author: "Julius Caesar",
+          body: RICH_PROSE_BODY,
+        })
+      );
+
+      const outDir = path.join(tmp, "out");
+      const firstResult = buildGallery({
+        root,
+        out: outDir,
+        label: "v1",
+        quiet: true,
+      });
+
+      const secondResult = buildGallery({
+        root,
+        out: outDir,
+        label: "v2",
+        compareWith: firstResult.report,
+        quiet: true,
+      });
+
+      expect(fs.existsSync(path.join(secondResult.dir, "diff.html"))).toBe(true);
+      const diffContent = fs.readFileSync(path.join(secondResult.dir, "diff.html"), "utf8");
+      expect(diffContent).toContain("Morcus Library Gallery Diff");
+      expect(diffContent).toContain("v1");
+      expect(diffContent).toContain("v2");
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
     }
   });
 });

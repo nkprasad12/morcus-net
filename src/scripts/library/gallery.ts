@@ -167,6 +167,8 @@ export interface GalleryOptions {
   maxExamples?: number;
   /** Optional patch map override. */
   patches?: LibraryPatchMap;
+  /** Optional previous gallery report or directory to compare against and write diff.html. */
+  compareWith?: string | GalleryReport;
   /** Suppress progress output. */
   quiet?: boolean;
 }
@@ -294,7 +296,7 @@ function splitPageSectionHtmls(singleHtml: string): string[] {
 }
 
 /**
- * Extracts top-level `<li class="reader-note" id="note-n...">...</li>` items
+ * Extracts top-level `<li class="reader-note" ...>...</li>` items
  * from `notesHtml` using balanced `<li>` / `</li>` tag matching so nested
  * lists inside note bodies cannot truncate a note item.
  */
@@ -303,7 +305,7 @@ export function extractNoteListItems(notesHtml: string | undefined): string[] {
     return [];
   }
   const items: string[] = [];
-  const startPattern = /<li class="reader-note" id="note-n\d+">/g;
+  const startPattern = /<li class="reader-note"[^>]*>/g;
   const liTagPattern = /<(\/?)li\b[^>]*>/gi;
 
   let startMatch: RegExpExecArray | null;
@@ -325,6 +327,82 @@ export function extractNoteListItems(notesHtml: string | undefined): string[] {
   }
   return items;
 }
+
+/**
+ * Filters a work page's `notesHtml` to include only the `<li class="reader-note">`
+ * items that are actually referenced in `passageHtml` (via `href="#...note-..."`
+ * or `data-note-id="..."`), returning a scoped `<aside class="reader-notes">`
+ * element or `undefined` if no notes are referenced.
+ */
+export function filterNotesHtmlToRefs(
+  passageHtml: string,
+  pageNotesHtml?: string
+): string | undefined {
+  if (!pageNotesHtml || pageNotesHtml.trim().length === 0) {
+    return undefined;
+  }
+
+  const referencedIds = new Set<string>();
+
+  // 1. Match href attributes pointing to notes: e.g. href="#note-n1", href="#ex-0-note-n1", etc.
+  const hrefRegex = /\bhref="#([^"]+)"/g;
+  let match: RegExpExecArray | null;
+  while ((match = hrefRegex.exec(passageHtml)) !== null) {
+    const rawTarget = match[1];
+    referencedIds.add(rawTarget);
+    const noteIdx = rawTarget.lastIndexOf("note-");
+    if (noteIdx !== -1) {
+      const fromNote = rawTarget.slice(noteIdx);
+      referencedIds.add(fromNote);
+      referencedIds.add(fromNote.slice(5)); // id after 'note-'
+    }
+  }
+
+  // 2. Match data-note-id attributes
+  const dataNoteRegex = /\bdata-note-id="([^"]+)"/g;
+  while ((match = dataNoteRegex.exec(passageHtml)) !== null) {
+    const noteId = match[1];
+    referencedIds.add(noteId);
+    referencedIds.add(`note-${noteId}`);
+  }
+
+  if (referencedIds.size === 0) {
+    return undefined;
+  }
+
+  const items = extractNoteListItems(pageNotesHtml);
+  if (items.length === 0) {
+    return undefined;
+  }
+
+  const keptLis: string[] = [];
+  for (const item of items) {
+    const idMatch = item.match(/\bid="([^"]+)"/);
+    if (!idMatch) continue;
+    const fullId = idMatch[1];
+    const noteIdx = fullId.lastIndexOf("note-");
+    const suffix = noteIdx !== -1 ? fullId.slice(noteIdx + 5) : fullId;
+    const fromNote = noteIdx !== -1 ? fullId.slice(noteIdx) : `note-${fullId}`;
+
+    if (
+      referencedIds.has(fullId) ||
+      referencedIds.has(suffix) ||
+      referencedIds.has(fromNote)
+    ) {
+      keptLis.push(item);
+    }
+  }
+
+  if (keptLis.length === 0) {
+    return undefined;
+  }
+
+  return `<aside class="reader-notes" role="doc-endnotes"><ol class="reader-notes-list">${keptLis.join(
+    "\n"
+  )}</ol></aside>`;
+}
+
+export const rewriteExemplarIds = scopePreviewHtmlIds;
 
 function collectNoteIdsInRow(
   node: XmlNode | string,
@@ -556,7 +634,8 @@ function buildSpotCheckPage(
   const readerUrl = `/work/${v2Work.urlAuthor}/${v2Work.urlName}/${pageId}`;
   const sections = splitPageSectionHtmls(page.singleHtml);
   const previewSections = sections.slice(0, maxPreviewSections).join("\n");
-  const previewHtml = joinPassageAndNotesHtml(previewSections, page.notesHtml);
+  const filteredNotes = filterNotesHtmlToRefs(previewSections, page.notesHtml);
+  const previewHtml = joinPassageAndNotesHtml(previewSections, filteredNotes);
   return {
     role,
     pageId,
@@ -689,15 +768,12 @@ export function analyzeWorkForGallery(
       return undefined;
     }
     const targetOffsets = new Set(loc.rowOffsetsInPage);
-    let renderedHtml: string;
+    let passageHtml: string;
     if (options?.fullPage) {
       const markedPageRows = loc.pageRowHtmls.map((rowHtml, idx) =>
         targetOffsets.has(idx) ? markGalleryTargetRow(rowHtml) : rowHtml
       );
-      renderedHtml = joinPassageAndNotesHtml(
-        markedPageRows.join("\n"),
-        loc.pageNotesHtml
-      );
+      passageHtml = markedPageRows.join("\n");
     } else if (options?.adjacentRows && loc.rowOffsetsInPage.length > 0) {
       const firstOffset = loc.rowOffsetsInPage[0];
       const start = Math.max(0, firstOffset - 1);
@@ -709,15 +785,20 @@ export function analyzeWorkForGallery(
             ? markGalleryTargetRow(rowHtml)
             : rowHtml
         );
-      renderedHtml = joinPassageAndNotesHtml(sliceRows.join("\n"));
+      passageHtml = sliceRows.join("\n");
     } else {
       const markedRows = loc.rowHtmls
         .slice(0, 3)
         .map((rowHtml, idx) =>
           idx === 0 ? markGalleryTargetRow(rowHtml) : rowHtml
         );
-      renderedHtml = joinPassageAndNotesHtml(markedRows.join("\n"));
+      passageHtml = markedRows.join("\n");
     }
+    const filteredNotes = filterNotesHtmlToRefs(
+      passageHtml,
+      loc.pageNotesHtml
+    );
+    const renderedHtml = joinPassageAndNotesHtml(passageHtml, filteredNotes);
     const readerUrl = buildReaderSectionUrl(
       v2Work.urlAuthor,
       v2Work.urlName,
@@ -1714,6 +1795,7 @@ body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
   border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 1.25rem;
+  overflow: hidden;
 }
 
 .kind-card-header {
@@ -1725,9 +1807,6 @@ body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  position: sticky;
-  top: var(--gallery-header-h, 52px);
-  z-index: 20;
   border-top-left-radius: 7px;
   border-top-right-radius: 7px;
 }
@@ -1832,10 +1911,7 @@ body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
 
 .reader-section.gallery-target,
 .reader-preview .gallery-target {
-  outline: 2px dashed #0284c7;
-  outline-offset: 2px;
-  background: rgba(2, 132, 199, 0.08);
-  border-radius: 2px;
+  /* Normal reader colors with zero outline or background highlight */
 }
 
 /* ==========================================================================
@@ -1882,6 +1958,14 @@ body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
 :is(.reader-passage, .reader-notes, .reader-translation-text) .reader-line,
 :is(.reader-passage, .reader-notes, .reader-translation-text) .reader-block {
   display: block;
+}
+
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-block {
+  margin: 0;
+}
+
+:is(.reader-passage, .reader-notes, .reader-translation-text) .text-muted {
+  color: var(--text-muted);
 }
 
 :is(.reader-passage, .reader-notes, .reader-translation-text) .indent {
@@ -2096,7 +2180,6 @@ a.reader-note-ref sup {
 .kind-card.is-reviewed .kind-card-header {
   background: #f1f8e9;
   border-bottom: none;
-  position: static;
   border-radius: 7px;
 }
 
@@ -2705,6 +2788,832 @@ export function formatGalleryHtml(report: GalleryReport): string {
 }
 
 /**
+ * Strips preview scoping prefixes (`ex-\d+-\d+-\d+-` and `spot-\d+-\d+-`)
+ * so markup can be compared semantically across before and after reports.
+ */
+export function normalizePreviewHtml(html: string): string {
+  return html
+    .replace(/(?:ex|spot)-\d+(?:-\d+)+-/g, "")
+    .trim();
+}
+
+/**
+ * Scopes standard CSS rule blocks under a prefix selector (e.g. `.before-scope`).
+ */
+export function scopeCssRules(css: string, prefix: string): string {
+  if (!css || css.trim().length === 0) return "";
+  return css.replace(
+    /([^{};]+)\{([^}]+)\}/g,
+    (match, selector, declarations) => {
+      const trimmed = selector.trim();
+      if (
+        trimmed.startsWith("@") ||
+        trimmed.startsWith(":root") ||
+        trimmed.startsWith("from") ||
+        trimmed.startsWith("to") ||
+        /^\d+%/.test(trimmed)
+      ) {
+        return match;
+      }
+      const scopedSelectors = trimmed
+        .split(",")
+        .map((s: string) => `${prefix} ${s.trim()}`)
+        .join(", ");
+      return `${scopedSelectors} {${declarations}}`;
+    }
+  );
+}
+
+function formatHtmlSnippet(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/></g, ">\n<")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join("\n");
+}
+
+function formatHtmlDiffPair(
+  beforeHtml: string,
+  afterHtml: string
+): { beforeText: string; afterText: string } {
+  const bLines = formatHtmlSnippet(beforeHtml).split("\n");
+  const aLines = formatHtmlSnippet(afterHtml).split("\n");
+  if (bLines.length + aLines.length <= 24) {
+    return { beforeText: bLines.join("\n"), afterText: aLines.join("\n") };
+  }
+  let prefix = 0;
+  const minLen = Math.min(bLines.length, aLines.length);
+  while (prefix < minLen && bLines[prefix] === aLines[prefix]) {
+    prefix++;
+  }
+  let suffix = 0;
+  while (
+    suffix < minLen - prefix &&
+    bLines[bLines.length - 1 - suffix] === aLines[aLines.length - 1 - suffix]
+  ) {
+    suffix++;
+  }
+  const start = Math.max(0, prefix - 1);
+  const bEnd = Math.min(bLines.length, bLines.length - suffix + 1);
+  const aEnd = Math.min(aLines.length, aLines.length - suffix + 1);
+  const bSlice = [
+    ...(start > 0 ? [`... (${start} unchanged lines)`] : []),
+    ...bLines.slice(start, bEnd),
+    ...(bEnd < bLines.length
+      ? [`... (${bLines.length - bEnd} unchanged lines)`]
+      : []),
+  ];
+  const aSlice = [
+    ...(start > 0 ? [`... (${start} unchanged lines)`] : []),
+    ...aLines.slice(start, aEnd),
+    ...(aEnd < aLines.length
+      ? [`... (${aLines.length - aEnd} unchanged lines)`]
+      : []),
+  ];
+  return { beforeText: bSlice.join("\n"), afterText: aSlice.join("\n") };
+}
+
+export interface DiffExemplarItem {
+  author: string;
+  workTitle: string;
+  workId: string;
+  sectionId: string;
+  pageId: string;
+  readerUrl: string;
+  teiSnippet: string;
+  beforeHtml: string;
+  afterHtml: string;
+  markupChanged: boolean;
+}
+
+export interface DiffKindCard {
+  kind: string;
+  category: MarkupCategory;
+  changedExemplars: DiffExemplarItem[];
+}
+
+export interface DiffSpotPageItem {
+  role: "first" | "middle" | "last";
+  title: string;
+  pageId: string;
+  citationRange: [string, string];
+  readerUrl: string;
+  beforeHtml: string;
+  afterHtml: string;
+  markupChanged: boolean;
+}
+
+export interface DiffWorkCard {
+  workId: string;
+  author: string;
+  title: string;
+  shortTitle?: string;
+  changedPages: DiffSpotPageItem[];
+}
+
+/**
+ * Compares two GalleryReport instances (`before` and `after`) and generates a
+ * self-contained Before/After Diff Inspector HTML document (`diff.html`).
+ *
+ * For every exemplar or spot-check page that changed (markup or CSS styling),
+ * it displays:
+ * - Card header with kind/work, badge showing changed count, and "Reviewed" checkbox
+ * - Comparison grid: Source TEI XML, Before, and After
+ * - `<details class="html-diff-details">` raw HTML markup diff
+ * - Review tracking controls with localStorage and hide-reviewed support
+ */
+export function renderGalleryDiffHtml(
+  before: GalleryReport,
+  after: GalleryReport,
+  beforeReaderCss?: string,
+  afterReaderCss?: string
+): string {
+  const hasCssChanges =
+    beforeReaderCss !== undefined || Boolean(afterReaderCss);
+
+  const beforeKinds = before.markupKinds ?? [];
+  const afterKinds = after.markupKinds ?? [];
+
+  const beforeKindsMap = new Map<string, GalleryMarkupKind>();
+  for (const k of beforeKinds) {
+    beforeKindsMap.set(`${k.category}:${k.kind}`, k);
+  }
+
+  const diffKinds: DiffKindCard[] = [];
+
+  for (const afterKind of afterKinds) {
+    const beforeKind =
+      beforeKindsMap.get(`${afterKind.category}:${afterKind.kind}`) ??
+      beforeKindsMap.get(afterKind.kind);
+    const changedExemplars: DiffExemplarItem[] = [];
+
+    for (let i = 0; i < afterKind.examples.length; i++) {
+      const afterEx = afterKind.examples[i];
+      let matchingBeforeEx = beforeKind?.examples.find(
+        (e) =>
+          e.workId === afterEx.workId &&
+          e.sectionId === afterEx.sectionId &&
+          Boolean(e.inNote) === Boolean(afterEx.inNote)
+      );
+      if (
+        !matchingBeforeEx &&
+        beforeKind &&
+        beforeKind.examples.length === afterKind.examples.length
+      ) {
+        matchingBeforeEx = beforeKind.examples[i];
+      }
+
+      const beforeHtml = matchingBeforeEx?.renderedHtml ?? "";
+      const afterHtml = afterEx.renderedHtml;
+
+      const compactPreview = (h: string, isNote: boolean) => {
+        const asideIdx = h.indexOf('<aside class="reader-notes"');
+        let passage = asideIdx >= 0 ? h.slice(0, asideIdx).trim() : h;
+        const notes = asideIdx >= 0 ? h.slice(asideIdx) : undefined;
+        // If full-page layout (more than 5 reader-section blocks), keep +-2 around gallery-target
+        const secStarts = Array.from(
+          passage.matchAll(/<div class="reader-section(?:\s+[^"]*)?"/g),
+          (m) => m.index ?? 0
+        );
+        if (secStarts.length > 5) {
+          const chunks = secStarts.map((s, idx) =>
+            passage.slice(
+              s,
+              idx + 1 < secStarts.length ? secStarts[idx + 1] : passage.length
+            )
+          );
+          const targetIdx = Math.max(
+            0,
+            chunks.findIndex((c) => c.includes("gallery-target"))
+          );
+          passage = chunks
+            .slice(Math.max(0, targetIdx - 2), Math.min(chunks.length, targetIdx + 3))
+            .join("\n");
+        }
+        if (!isNote && !beforeHtml.includes('<aside class="reader-notes"')) {
+          return passage;
+        }
+        if (!notes) {
+          return passage;
+        }
+        const items = extractNoteListItems(notes);
+        if (items.length > 3) {
+          const targetNotes = items.filter((item) =>
+            item.includes("gallery-target")
+          );
+          if (targetNotes.length > 0) {
+            return joinPassageAndNotesHtml(
+              passage,
+              `<aside class="reader-notes" role="doc-endnotes"><ol class="reader-notes-list">${targetNotes.join(
+                ""
+              )}</ol></aside>`
+            );
+          }
+        }
+        return joinPassageAndNotesHtml(
+          passage,
+          filterNotesHtmlToRefs(passage, notes)
+        );
+      };
+      const compareBefore = compactPreview(beforeHtml, Boolean(afterEx.inNote));
+      const compareAfter = compactPreview(afterHtml, Boolean(afterEx.inNote));
+
+      const extractTargetNoteOnly = (h: string): string => {
+        const asideIdx = h.indexOf('<aside class="reader-notes"');
+        if (asideIdx < 0) return h;
+        const items = extractNoteListItems(h.slice(asideIdx));
+        const target = items.find((item) => item.includes("gallery-target"));
+        return target ?? h.slice(asideIdx);
+      };
+
+      const normBefore = normalizePreviewHtml(
+        afterEx.inNote ? extractTargetNoteOnly(compareBefore) : compareBefore
+      );
+      const normAfter = normalizePreviewHtml(
+        afterEx.inNote ? extractTargetNoteOnly(compareAfter) : compareAfter
+      );
+      const markupChanged = normBefore !== normAfter;
+      const cssChanged =
+        hasCssChanges &&
+        (/\breader-block\b/.test(
+          afterEx.inNote ? extractTargetNoteOnly(compareBefore) : compareBefore
+        ) ||
+          /\breader-block\b/.test(
+            afterEx.inNote ? extractTargetNoteOnly(compareAfter) : compareAfter
+          ));
+
+      if (markupChanged || cssChanged || !matchingBeforeEx) {
+        changedExemplars.push({
+          author: afterEx.author,
+          workTitle: afterEx.workTitle,
+          workId: afterEx.workId,
+          sectionId: afterEx.sectionId,
+          pageId: afterEx.pageId,
+          readerUrl: afterEx.readerUrl,
+          teiSnippet: afterEx.teiSnippet,
+          beforeHtml: compareBefore,
+          afterHtml: compareAfter,
+          markupChanged,
+        });
+      }
+    }
+
+    if (changedExemplars.length > 0) {
+      diffKinds.push({
+        kind: afterKind.kind,
+        category: afterKind.category,
+        changedExemplars,
+      });
+    }
+  }
+
+  // Spot-check works comparison
+  const beforeWorks = before.works ?? [];
+  const afterWorks = after.works ?? [];
+  const beforeWorksMap = new Map<string, GalleryWorkSpotCheck>();
+  for (const w of beforeWorks) {
+    beforeWorksMap.set(w.workId, w);
+  }
+
+  const diffWorks: DiffWorkCard[] = [];
+  const roles: Array<"first" | "middle" | "last"> = ["first", "middle", "last"];
+
+  for (const afterWork of afterWorks) {
+    const beforeWork = beforeWorksMap.get(afterWork.workId);
+    const changedPages: DiffSpotPageItem[] = [];
+
+    for (const role of roles) {
+      const afterPage =
+        afterWork.pages?.[role] ??
+        afterWork.spotCheckPages?.find((p) => p.role === role);
+      const beforePage =
+        beforeWork?.pages?.[role] ??
+        beforeWork?.spotCheckPages?.find((p) => p.role === role);
+
+      if (!afterPage && !beforePage) {
+        continue;
+      }
+
+      const rawBeforeHtml = beforePage?.previewHtml ?? "";
+      const afterHtml = afterPage?.previewHtml ?? "";
+      const beforeAsideIdx = rawBeforeHtml.indexOf('<aside class="reader-notes"');
+      const beforeHtml =
+        beforeAsideIdx >= 0
+          ? joinPassageAndNotesHtml(
+              rawBeforeHtml.slice(0, beforeAsideIdx).trim(),
+              filterNotesHtmlToRefs(
+                rawBeforeHtml.slice(0, beforeAsideIdx),
+                rawBeforeHtml.slice(beforeAsideIdx)
+              )
+            )
+          : rawBeforeHtml;
+
+      const normBefore = normalizePreviewHtml(beforeHtml);
+      const normAfter = normalizePreviewHtml(afterHtml);
+      const markupChanged = normBefore !== normAfter;
+      const cssChanged =
+        hasCssChanges &&
+        (/\breader-block\b/.test(beforeHtml) ||
+          /\breader-block\b/.test(afterHtml));
+
+      if (markupChanged || cssChanged || !beforePage) {
+        const pageRef = afterPage ?? beforePage!;
+        changedPages.push({
+          role,
+          title: pageRef.title,
+          pageId: pageRef.pageId,
+          citationRange: pageRef.citationRange,
+          readerUrl: pageRef.readerUrl,
+          beforeHtml,
+          afterHtml,
+          markupChanged,
+        });
+      }
+    }
+
+    if (changedPages.length > 0) {
+      diffWorks.push({
+        workId: afterWork.workId,
+        author: afterWork.author,
+        title: afterWork.title,
+        shortTitle: afterWork.shortTitle,
+        changedPages,
+      });
+    }
+  }
+
+  let totalChangedExemplars = 0;
+  for (const k of diffKinds) {
+    totalChangedExemplars += k.changedExemplars.length;
+  }
+  let totalChangedSpotPages = 0;
+  for (const w of diffWorks) {
+    totalChangedSpotPages += w.changedPages.length;
+  }
+  const totalChangedKinds = diffKinds.length;
+  const totalChangedWorks = diffWorks.length;
+
+  let globalExIdx = 0;
+  const kindsCardsHtml = diffKinds
+    .map((k, kindIdx) => {
+      const anchorId = `diff-kind-${kindIdx}`;
+      const reviewId = `diff-kind:${k.category}:${k.kind}`;
+      const exemplarsHtml = k.changedExemplars
+        .map((ex) => {
+          const exIdx = globalExIdx++;
+          const beforeScope = `diff-${exIdx}-b`;
+          const afterScope = `diff-${exIdx}-a`;
+          const scopedBefore = scopePreviewHtmlIds(
+            sanitizeReaderHtmlFragment(ex.beforeHtml),
+            beforeScope
+          );
+          const scopedAfter = scopePreviewHtmlIds(
+            sanitizeReaderHtmlFragment(ex.afterHtml),
+            afterScope
+          );
+
+          const diffPair = formatHtmlDiffPair(
+            normalizePreviewHtml(ex.beforeHtml),
+            normalizePreviewHtml(ex.afterHtml)
+          );
+          const markupDiffHtml = `
+            <details class="html-diff-details">
+              <summary>HTML markup diff${
+                ex.markupChanged ? "" : " (styling only)"
+              }</summary>
+              <div class="html-diff-container">
+                <div class="html-diff-pane">
+                  <div class="diff-col-header">Before HTML</div>
+                  <pre><code>${he.escape(diffPair.beforeText)}</code></pre>
+                </div>
+                <div class="html-diff-pane">
+                  <div class="diff-col-header">After HTML</div>
+                  <pre><code>${he.escape(diffPair.afterText)}</code></pre>
+                </div>
+              </div>
+            </details>`;
+
+          return `<div class="exemplar-item">
+            <div class="exemplar-meta">
+              <span><strong>${he.escape(ex.author)}</strong>, <em>${he.escape(
+            ex.workTitle
+          )}</em> (<code>${he.escape(ex.workId)}</code> &middot; page <code>${he.escape(
+            ex.pageId
+          )}</code> &middot; &sect;<code>${he.escape(ex.sectionId)}</code>)</span>
+              <a class="exemplar-link" href="${he.escape(ex.readerUrl)}">${he.escape(
+            ex.readerUrl
+          )}</a>
+            </div>
+            <div class="diff-grid">
+              <div class="diff-col">
+                <div class="diff-col-header">Source TEI XML</div>
+                <pre class="tei-snippet"><code>${he.escape(ex.teiSnippet)}</code></pre>
+              </div>
+              <div class="diff-col">
+                <div class="diff-col-header">Before</div>
+                <div class="reader-preview reader-view before-scope">${scopedBefore}</div>
+              </div>
+              <div class="diff-col">
+                <div class="diff-col-header">After</div>
+                <div class="reader-preview reader-view after-scope">${scopedAfter}</div>
+              </div>
+            </div>
+            ${markupDiffHtml}
+          </div>`;
+        })
+        .join("\n");
+
+      return `<article class="kind-card" id="${he.escape(anchorId)}" data-kind="${he.escape(
+        k.kind
+      )}" data-category="${he.escape(k.category)}" data-review-id="${he.escape(reviewId)}">
+        <header class="kind-card-header">
+          <span class="kind-name">${he.escape(k.kind)}</span>
+          <div class="kind-badges">
+            <span class="badge">${he.escape(k.category)}</span>
+            <span class="badge">${k.changedExemplars.length} changed ${
+        k.changedExemplars.length === 1 ? "exemplar" : "exemplars"
+      }</span>
+            <label class="review-toggle-label"><input type="checkbox" class="review-checkbox" data-review-id="${he.escape(
+              reviewId
+            )}" /> Reviewed</label>
+          </div>
+        </header>
+        <div class="exemplar-list">
+          ${exemplarsHtml}
+        </div>
+        <footer class="kind-card-footer">
+          <label class="review-toggle-label"><input type="checkbox" class="review-checkbox" data-review-id="${he.escape(
+            reviewId
+          )}" /> Reviewed</label>
+        </footer>
+      </article>`;
+    })
+    .join("\n");
+
+  let globalSpotIdx = 0;
+  const worksCardsHtml = diffWorks
+    .map((w, workIdx) => {
+      const anchorId = `diff-work-${workIdx}`;
+      const reviewId = `diff-work:${w.workId}`;
+      const pagesHtml = w.changedPages
+        .map((p) => {
+          const spotIdx = globalSpotIdx++;
+          const beforeScope = `diff-spot-${spotIdx}-b`;
+          const afterScope = `diff-spot-${spotIdx}-a`;
+          const scopedBefore = scopePreviewHtmlIds(
+            sanitizeReaderHtmlFragment(p.beforeHtml),
+            beforeScope
+          );
+          const scopedAfter = scopePreviewHtmlIds(
+            sanitizeReaderHtmlFragment(p.afterHtml),
+            afterScope
+          );
+
+          const spotDiffPair = formatHtmlDiffPair(
+            normalizePreviewHtml(p.beforeHtml),
+            normalizePreviewHtml(p.afterHtml)
+          );
+          const markupDiffHtml = `
+            <details class="html-diff-details">
+              <summary>HTML markup diff${
+                p.markupChanged ? "" : " (styling only)"
+              }</summary>
+              <div class="html-diff-container">
+                <div class="html-diff-pane">
+                  <div class="diff-col-header">Before HTML</div>
+                  <pre><code>${he.escape(spotDiffPair.beforeText)}</code></pre>
+                </div>
+                <div class="html-diff-pane">
+                  <div class="diff-col-header">After HTML</div>
+                  <pre><code>${he.escape(spotDiffPair.afterText)}</code></pre>
+                </div>
+              </div>
+            </details>`;
+
+          return `<div class="exemplar-item">
+            <div class="exemplar-meta">
+              <span><strong>${he.escape(p.role.toUpperCase())}</strong>: ${he.escape(
+            p.title
+          )} (<code>${he.escape(p.pageId)}</code>, &sect;${he.escape(
+            p.citationRange[0]
+          )}&ndash;${he.escape(p.citationRange[1])})</span>
+              <a class="exemplar-link" href="${he.escape(p.readerUrl)}">${he.escape(
+            p.readerUrl
+          )}</a>
+            </div>
+            <div class="diff-grid diff-grid-2col">
+              <div class="diff-col">
+                <div class="diff-col-header">Before</div>
+                <div class="reader-preview reader-view before-scope">${scopedBefore}</div>
+              </div>
+              <div class="diff-col">
+                <div class="diff-col-header">After</div>
+                <div class="reader-preview reader-view after-scope">${scopedAfter}</div>
+              </div>
+            </div>
+            ${markupDiffHtml}
+          </div>`;
+        })
+        .join("\n");
+
+      return `<article class="kind-card" id="${he.escape(anchorId)}" data-work-id="${he.escape(
+        w.workId
+      )}" data-review-id="${he.escape(reviewId)}">
+        <header class="kind-card-header">
+          <span class="kind-name"><code>${he.escape(w.workId)}</code> &mdash; ${he.escape(
+        w.author
+      )}, <em>${he.escape(w.shortTitle ?? w.title)}</em></span>
+          <div class="kind-badges">
+            <span class="badge">${w.changedPages.length} changed ${
+        w.changedPages.length === 1 ? "page" : "pages"
+      }</span>
+            <label class="review-toggle-label"><input type="checkbox" class="review-checkbox" data-review-id="${he.escape(
+              reviewId
+            )}" /> Reviewed</label>
+          </div>
+        </header>
+        <div class="exemplar-list">
+          ${pagesHtml}
+        </div>
+        <footer class="kind-card-footer">
+          <label class="review-toggle-label"><input type="checkbox" class="review-checkbox" data-review-id="${he.escape(
+            reviewId
+          )}" /> Reviewed</label>
+        </footer>
+      </article>`;
+    })
+    .join("\n");
+
+  const diffKey = `${before.label}->${after.label}`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Morcus Library Gallery Diff — ${he.escape(before.label)} vs ${he.escape(
+    after.label
+  )}</title>
+  <style>
+${GALLERY_CSS}
+
+/* Diff Viewer Grid and Comparison Layout */
+.diff-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1.25fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.diff-grid-2col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .diff-grid,
+  .diff-grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.diff-col {
+  min-width: 0;
+}
+
+.diff-col-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.html-diff-details {
+  margin-top: 0.75rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.html-diff-details summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  color: var(--link);
+  font-weight: 600;
+}
+
+.html-diff-container {
+  margin-top: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .html-diff-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.html-diff-pane pre {
+  margin: 0;
+  padding: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.before-scope {
+  border-left: 3px solid #d97706;
+}
+
+.after-scope {
+  border-left: 3px solid #059669;
+}
+
+.before-scope .reader-block {
+  margin: 1em 0;
+}
+
+${beforeReaderCss ? scopeCssRules(beforeReaderCss, ".before-scope") : ""}
+${afterReaderCss ? scopeCssRules(afterReaderCss, ".after-scope") : ""}
+  </style>
+</head>
+<body>
+  <header class="gallery-header">
+    <div class="gallery-header-top">
+      <h1 class="gallery-title">Morcus Library Gallery Diff: <code>${he.escape(
+        before.label
+      )}</code> &rarr; <code>${he.escape(after.label)}</code></h1>
+      <div class="gallery-meta">
+        <span><strong>Changed kinds:</strong> ${totalChangedKinds} (${totalChangedExemplars} exemplars)</span>
+        <span><strong>Changed works:</strong> ${totalChangedWorks} (${totalChangedSpotPages} spot-check pages)</span>
+      </div>
+    </div>
+    <div class="gallery-controls">
+      <span id="gallery-review-progress" class="gallery-progress-badge">Reviewed: 0 / ${totalChangedKinds} kinds &middot; 0 / ${totalChangedWorks} works</span>
+      <label class="gallery-control-pill"><input type="checkbox" id="gallery-hide-reviewed" /> Hide reviewed</label>
+      <button type="button" id="gallery-reset-reviewed" class="gallery-btn">Reset progress</button>
+    </div>
+    <nav class="gallery-nav" aria-label="Diff navigation">
+      <a href="#diff-kinds">Changed Kinds (${totalChangedKinds})</a>
+      <a href="#diff-works">Changed Spot-Checks (${totalChangedWorks})</a>
+    </nav>
+  </header>
+  <main class="gallery-main">
+    <section id="diff-kinds">
+      <h2 class="gallery-section-heading">1. Changed Markup Kind Exemplars (${totalChangedKinds} kinds, ${totalChangedExemplars} exemplars)</h2>
+      ${
+        totalChangedKinds > 0
+          ? kindsCardsHtml
+          : '<div class="cat-all-reviewed-banner" style="display:block;">No markup kind exemplar differences detected.</div>'
+      }
+    </section>
+    <section id="diff-works">
+      <h2 class="gallery-section-heading">2. Changed Per-Work Spot-Checks (${totalChangedWorks} works, ${totalChangedSpotPages} pages)</h2>
+      ${
+        totalChangedWorks > 0
+          ? worksCardsHtml
+          : '<div class="cat-all-reviewed-banner" style="display:block;">No spot-check page differences detected.</div>'
+      }
+    </section>
+  </main>
+  <script>
+    var DIFF_KEY = ${JSON.stringify(diffKey).replace(/</g, "\\u003c")};
+    var storageKey = "morcus-gallery-diff-reviewed:" + DIFF_KEY;
+    var reviewedSet = new Set();
+
+    function findReviewElements(id) {
+      var results = [];
+      var all = document.querySelectorAll("[data-review-id]");
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].getAttribute("data-review-id") === id) {
+          results.push(all[i]);
+        }
+      }
+      return results;
+    }
+
+    function applyReviewedState(id, isReviewed) {
+      if (isReviewed) {
+        reviewedSet.add(id);
+      } else {
+        reviewedSet.delete(id);
+      }
+
+      var elements = findReviewElements(id);
+      elements.forEach(function (el) {
+        if (el.tagName === "INPUT" && el.type === "checkbox") {
+          el.checked = isReviewed;
+        } else {
+          if (isReviewed) {
+            el.setAttribute("data-reviewed", "true");
+            el.classList.add("is-reviewed");
+          } else {
+            el.removeAttribute("data-reviewed");
+            el.classList.remove("is-reviewed");
+          }
+        }
+      });
+    }
+
+    function updateProgress() {
+      var totalKinds = document.querySelectorAll('article.kind-card[data-review-id^="diff-kind:"]').length;
+      var reviewedKinds = document.querySelectorAll('article.kind-card[data-review-id^="diff-kind:"][data-reviewed="true"]').length;
+      var totalWorks = document.querySelectorAll('article.kind-card[data-review-id^="diff-work:"]').length;
+      var reviewedWorks = document.querySelectorAll('article.kind-card[data-review-id^="diff-work:"][data-reviewed="true"]').length;
+
+      var progressBadge = document.getElementById("gallery-review-progress");
+      if (progressBadge) {
+        progressBadge.textContent = "Reviewed: " + reviewedKinds + " / " + totalKinds + " kinds · " + reviewedWorks + " / " + totalWorks + " works";
+      }
+
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(Array.from(reviewedSet)));
+      } catch (err) {}
+    }
+
+    // Load from localStorage
+    try {
+      var saved = localStorage.getItem(storageKey);
+      if (saved) {
+        var arr = JSON.parse(saved);
+        if (Array.isArray(arr)) {
+          arr.forEach(function (id) {
+            applyReviewedState(id, true);
+          });
+        }
+      }
+      var savedHide = localStorage.getItem(storageKey + ":hide");
+      if (savedHide === "true") {
+        var hideCb = document.getElementById("gallery-hide-reviewed");
+        if (hideCb) hideCb.checked = true;
+        document.body.setAttribute("data-hide-reviewed", "true");
+      }
+    } catch (err) {}
+
+    updateProgress();
+
+    document.addEventListener("change", function (e) {
+      var target = e.target;
+      if (!target) return;
+      if (target.classList && target.classList.contains("review-checkbox")) {
+        var id = target.getAttribute("data-review-id");
+        if (id) {
+          applyReviewedState(id, target.checked);
+          updateProgress();
+        }
+      } else if (target.id === "gallery-hide-reviewed") {
+        if (target.checked) {
+          document.body.setAttribute("data-hide-reviewed", "true");
+          try {
+            localStorage.setItem(storageKey + ":hide", "true");
+          } catch (err) {}
+        } else {
+          document.body.removeAttribute("data-hide-reviewed");
+          try {
+            localStorage.removeItem(storageKey + ":hide");
+          } catch (err) {}
+        }
+      }
+    });
+
+    var resetBtn = document.getElementById("gallery-reset-reviewed");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", function () {
+        var ids = Array.from(reviewedSet);
+        ids.forEach(function (id) {
+          applyReviewedState(id, false);
+        });
+        reviewedSet.clear();
+        try {
+          localStorage.removeItem(storageKey);
+        } catch (err) {}
+        updateProgress();
+      });
+    }
+  </script>
+</body>
+</html>
+`;
+}
+
+/**
  * Builds the exemplar review gallery from a `canonical-latinLit` checkout and
  * writes `gallery.json`, `gallery.md`, and `index.html` to `<out>/<label>/`.
  */
@@ -2829,6 +3738,22 @@ export function buildGallery(options: GalleryOptions = {}): GalleryResult {
     formatGalleryMarkdown(report)
   );
   fs.writeFileSync(path.join(dir, "index.html"), formatGalleryHtml(report));
+
+  if (options.compareWith) {
+    let beforeReport: GalleryReport;
+    if (typeof options.compareWith === "string") {
+      const p = fs.statSync(options.compareWith).isDirectory()
+        ? path.join(options.compareWith, "gallery.json")
+        : options.compareWith;
+      beforeReport = JSON.parse(fs.readFileSync(p, "utf8"));
+    } else {
+      beforeReport = options.compareWith;
+    }
+    fs.writeFileSync(
+      path.join(dir, "diff.html"),
+      renderGalleryDiffHtml(beforeReport, report)
+    );
+  }
 
   if (!options.quiet) {
     console.log(

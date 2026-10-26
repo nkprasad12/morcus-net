@@ -822,17 +822,17 @@ export function transformNoteNode(node: XmlNode, parent?: XmlNode): XmlNode {
     return new XmlNode("br", [], []);
   }
   if (node.name === "gap") {
-    return new XmlNode("span", [], [" [gap] "]);
+    return new XmlNode("gap", [], []);
   }
-  if (node.name === "#comment") {
+  if (node.name === "#comment" || node.name === "pb") {
     return new XmlNode("span", [], []);
   }
   const rend = node.getAttr("rend");
   assert(allRendTokensIn(rend, KNOWN_NOTE_REND), rend);
-  // Comments are dropped outright: an empty element in their place would
-  // hide the seam between its siblings from `needsWordBreak`.
+  // Comments and page breaks are dropped outright: an empty element in
+  // their place would hide the seam between its siblings from `needsWordBreak`.
   const sourceChildren = node.children.filter(
-    (c) => typeof c === "string" || c.name !== "#comment"
+    (c) => typeof c === "string" || (c.name !== "#comment" && c.name !== "pb")
   );
   // Every child is transformed, and so validated, even in the branches of a
   // `choice` or `abbr` that are not shown, just as `processRowContent` does.
@@ -859,15 +859,20 @@ export function transformNoteNode(node: XmlNode, parent?: XmlNode): XmlNode {
     );
   }
   const attrs: XmlNode["attrs"] = [];
-  if (["l", "p", "head"].includes(node.name)) {
+  if (node.name === "l") {
+    attrs.push(["l", "1"]);
+  } else if (["p", "head"].includes(node.name)) {
     attrs.push(["block", "1"]);
-  }
-  if (node.name === "num") {
-    attrs.push(["rend", "smallcaps"]);
   }
   const handledRends = rendTokens(rend ?? "")
     .filter((token) => HANDLED_NOTE_REND.has(token))
     .map((token) => NOTE_REND_ALIASES.get(token) ?? token);
+  if (node.name === "num") {
+    handledRends.push("smallcaps");
+  }
+  if (node.name === "emph" && handledRends.length === 0) {
+    handledRends.push("italic");
+  }
   if (handledRends.length > 0) {
     attrs.push(["rend", Array.from(new Set(handledRends)).join(" ")]);
   }
@@ -942,7 +947,12 @@ export function transformContentNode(
   if (node.name === "title") {
     attrs.push(["sectionHead", "1"]);
   }
-  if (node.name === "ab") {
+  const hasSiblingParagraphs =
+    node.name === "p" &&
+    parent !== undefined &&
+    parent.children.filter((c) => typeof c !== "string" && c.name === "p")
+      .length > 1;
+  if (node.name === "ab" || hasSiblingParagraphs) {
     attrs.push(["block", "1"]);
   }
   if (node.name === "l") {
@@ -1046,12 +1056,16 @@ export function transformContentNode(
     return new XmlNode("span", attrs, [capitalized]);
   }
   if (QUOTE_NODES.has(node.name)) {
+    const normRends = canonicalRend(rend ?? "").split(" ").filter(Boolean);
+    const rawTokens = rendTokens(rend ?? "");
+    const suppressQuotes =
+      normRends.includes("blockquote") || rawTokens.includes("merge");
     return new XmlNode(
       "span",
       attrs,
       // We don't need to add quotes even if the node is a `quote` since
-      // the blockquote will emphasize enough.
-      rend === "blockquote" ? children : ["“", ...children, "”"]
+      // the blockquote will emphasize enough, or if quotes are merged.
+      suppressQuotes ? children : ["“", ...children, "”"]
     );
   }
   if (node.name === "foreign") {
@@ -1272,6 +1286,10 @@ function processWorkBodyDetailed(
   };
 }
 
+function startsWith(id: string[], prefix: string[]): boolean {
+  return prefix.every((part, i) => id[i] === part);
+}
+
 /** Exported for unit testing. */
 export function divideWork(
   rows: ProcessedWork2["rows"],
@@ -1283,6 +1301,7 @@ export function divideWork(
   const addedPages = new Set<string>();
   let currentId: undefined | string[] = undefined;
   let currentStart: undefined | number = undefined;
+  let pendingHeaderStartIdx: number | undefined = undefined;
 
   function addPageIfNeeded(end: number) {
     if (currentId !== undefined) {
@@ -1308,11 +1327,27 @@ export function divideWork(
     // If the current id matches the expected length, start a new page.
     // Otherwise, reset the current ID and start.
     if (pageId.length === idLength) {
+      const hasPrefix =
+        pendingHeaderStartIdx !== undefined &&
+        startsWith(pageId, rows[pendingHeaderStartIdx][0]);
       currentId = pageId;
-      currentStart = i;
+      currentStart = hasPrefix ? pendingHeaderStartIdx : i;
+      pendingHeaderStartIdx = undefined;
     } else {
       currentId = undefined;
       currentStart = undefined;
+      if (0 < pageId.length && pageId.length < idLength) {
+        if (
+          pendingHeaderStartIdx !== undefined &&
+          !startsWith(pageId, rows[pendingHeaderStartIdx][0])
+        ) {
+          pendingHeaderStartIdx = i;
+        } else {
+          pendingHeaderStartIdx ??= i;
+        }
+      } else {
+        pendingHeaderStartIdx = undefined;
+      }
     }
   }
   addPageIfNeeded(rows.length);
@@ -1387,20 +1422,28 @@ function betaCodeCandidateText(node: XmlNode): string {
  * (`xml:lang="greek"` is always Beta Code; see `transformContentNode`.)
  */
 export function convertGrcBetaCode(root: XmlNode): void {
-  for (const node of root.findDescendants("foreign")) {
-    if (node.getAttr("xml:lang") !== "grc") {
-      continue;
+  function walk(node: XmlNode, inConvertedSubtree: boolean): void {
+    const isSkip = BETA_CODE_SKIP_NODES.has(node.name);
+    const isConverted = inConvertedSubtree && !isSkip;
+    const lang = node.getAttr("xml:lang");
+    let convertedHere = false;
+    if (!isConverted && (lang === "grc" || lang === "greek")) {
+      const text = betaCodeCandidateText(node);
+      // eslint-disable-next-line no-control-regex
+      if (/^[\x00-\x7F]*$/.test(text) && /[a-zA-Z]/.test(text)) {
+        convertBetaCodeStrings(node);
+        convertedHere = true;
+      }
     }
-    const text = betaCodeCandidateText(node);
-    // eslint-disable-next-line no-control-regex
-    if (/^[\x00-\x7F]*$/.test(text) && /[a-zA-Z]/.test(text)) {
-      convertBetaCodeStrings(node);
+    const nextConverted = isConverted || convertedHere;
+    for (const child of node.children) {
+      if (typeof child !== "string") {
+        walk(child, nextConverted);
+      }
     }
   }
-}
 
-function startsWith(id: string[], prefix: string[]): boolean {
-  return prefix.every((part, i) => id[i] === part);
+  walk(root, false);
 }
 
 /** What the structural stage knows about rows, for `assertOutputInvariants`. */

@@ -388,9 +388,9 @@ describe("processTei2", () => {
     const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
     expect(noteRoot.children).toHaveLength(3);
     expect(noteRoot.children[0]).toBe("text ");
-    expect(XmlNode.assertIsNode(noteRoot.children[1]).children[0]).toContain(
-      "[gap]"
-    );
+    const gapNode = XmlNode.assertIsNode(noteRoot.children[1]);
+    expect(gapNode.name).toBe("gap");
+    expect(gapNode.children).toEqual([]);
     expect(noteRoot.children[2]).toBe(" more text");
   });
 
@@ -452,6 +452,33 @@ describe("processTei2", () => {
     expect(out).toContain("τὸν ἄνδρα");
     expect(out).toContain("εἰ");
     expect(out).toContain("γεγέννηται");
+  });
+
+  it("converts beta-code in quote xml:lang=grc to unicode", () => {
+    const body = `<div n="1" type="textpart" subtype="book">inquit: <quote xml:lang="grc">Si/bulla, ti/ qe/leis;</quote></div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    const out = work.rows[0][1].toString();
+    expect(out).toContain("Σίβυλλα, τί θέλεις;");
+  });
+
+  it("converts beta-code in cit xml:lang=grc to unicode", () => {
+    const body = `<div n="1" type="textpart" subtype="book"><cit xml:lang="grc"><quote>lo/gos</quote></cit></div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    const out = work.rows[0][1].toString();
+    expect(out).toContain("λόγος");
+  });
+
+  it("converts beta-code in quote xml:lang=greek to unicode", () => {
+    const body = `<div n="1" type="textpart" subtype="book"><quote xml:lang="greek">lo/gos</quote></div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    const out = work.rows[0][1].toString();
+    expect(out).toContain("λόγος");
   });
 
   it("uses a medial sigma for a lone beta-code sigma", () => {
@@ -762,6 +789,19 @@ describe("divideWork", () => {
     ]);
   });
 
+  it("includes shallower headings before pagination depth into following page", () => {
+    const rows = toRows(["1", "1.1.1", "1.1.2", "1.2.1", "2", "2.1.1"]);
+    const textParts = ["book", "chapter", "section"];
+
+    const pages = divideWork(rows, textParts);
+
+    expect(pages).toStrictEqual<WorkPage[]>([
+      { id: ["1", "1"], rows: [0, 3] },
+      { id: ["1", "2"], rows: [3, 4] },
+      { id: ["2", "1"], rows: [4, 6] },
+    ]);
+  });
+
   it("raises on malformed sections", () => {
     const rows = toRows(["1.1", "1", "2.1", "2.2", "2", "1.2"]);
     const textParts = ["chapter", "section"];
@@ -856,6 +896,27 @@ describe("transformNoteNode renditions", () => {
       expect(noteRend("hi", rend).getAttr("rend")).toBeUndefined();
     }
   );
+
+  it("adds smallcaps to num without dropping overline", () => {
+    const result = transformNoteNode(
+      new XmlNode("num", [["rend", "overline"]], ["V"])
+    );
+    const rends = result.attrs.filter(([name]) => name === "rend");
+    expect(rends).toHaveLength(1);
+    expect(result.getAttr("rend")).toBe("overline smallcaps");
+  });
+
+  it("styles unstyled emph as italic in notes", () => {
+    const result = transformNoteNode(new XmlNode("emph", [], ["text"]));
+    expect(result.getAttr("rend")).toBe("italic");
+  });
+
+  it("preserves explicitly styled emph in notes", () => {
+    const result = transformNoteNode(
+      new XmlNode("emph", [["rend", "bold"]], ["text"])
+    );
+    expect(result.getAttr("rend")).toBe("bold");
+  });
 });
 
 describe("transformNoteNode vocabulary", () => {
@@ -870,6 +931,12 @@ describe("transformNoteNode vocabulary", () => {
   it.each(["p", "head"])("renders %s as a block", (name) => {
     const result = transformNoteNode(new XmlNode(name, [], ["x"]));
     expect(result.getAttr("block")).toBe("1");
+  });
+
+  it("renders l as a line, not a block", () => {
+    const result = transformNoteNode(new XmlNode("l", [], ["x"]));
+    expect(result.getAttr("l")).toBe("1");
+    expect(result.getAttr("block")).toBeUndefined();
   });
 
   it.each([
@@ -942,6 +1009,17 @@ describe("transformNoteNode vocabulary", () => {
       parseRawXml("<note><hi>a</hi><!-- c --><hi>b</hi></note>")
     );
     expect(result.children).toHaveLength(2);
+  });
+
+  it("removes pb rather than leaving empty elements", () => {
+    const result = transformNoteNode(
+      parseRawXml("<note><hi>LO</hi><pb/><hi>L</hi></note>")
+    );
+    expect(result.children).toHaveLength(2);
+    expect(result.children.map((c) => (c as XmlNode).name)).toEqual([
+      "span",
+      "span",
+    ]);
   });
 
   it("brackets supplied text", () => {
@@ -1085,6 +1163,34 @@ describe("Phase 1 markup in the text", () => {
 
   it("rejects a bare abbr outside choice or expan", () => {
     expect(() => onlyRow(`<abbr>L.</abbr>`)).toThrow();
+  });
+
+  it("marks sibling paragraphs with block=1", () => {
+    const row = onlyRow(`<p>First paragraph</p><p>Second paragraph</p>`);
+    const ps = findAll(row, (n) => n.getAttr("block") === "1");
+    expect(ps).toHaveLength(2);
+    expect(ps[0].toString()).toContain("First paragraph");
+    expect(ps[1].toString()).toContain("Second paragraph");
+  });
+
+  it("suppresses quotes on quote with align(blockquote)", () => {
+    const row = onlyRow(`<quote rend="align(blockquote)">content</quote>`);
+    expect(row.toString()).not.toContain("“");
+    expect(row.toString()).not.toContain("”");
+    expect(row.toString()).toContain("content");
+  });
+
+  it("suppresses quotes on quote with rend=merge", () => {
+    const row = onlyRow(`<quote rend="merge">content</quote>`);
+    expect(row.toString()).not.toContain("“");
+    expect(row.toString()).not.toContain("”");
+    expect(row.toString()).toContain("content");
+  });
+
+  it("keeps quotes on quote with ordinary rendition", () => {
+    const row = onlyRow(`<quote rend="italic">content</quote>`);
+    expect(row.toString()).toContain("“");
+    expect(row.toString()).toContain("”");
   });
 });
 

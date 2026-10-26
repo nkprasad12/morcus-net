@@ -296,6 +296,51 @@ describe("preprocessWorkToV2 renditions", () => {
       '<span class="reader-gap text-muted" data-no-tokenize="true">[gap]</span>'
     );
   });
+
+  it("renders <b> elements with rendition classes, preserving smallcaps on speaker labels", () => {
+    const work = makeWork({
+      textParts: ["book", "chapter", "section"],
+      rows: [
+        [
+          ["1", "1", "1"],
+          span(
+            [],
+            new XmlNode<ProcessedWorkContentNodeType>(
+              "b",
+              [["rend", "smallcaps"]],
+              ["MYS."]
+            ),
+            " Hercle vero serio scriptum."
+          ),
+        ],
+      ],
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+    expect(html).toContain('<strong class="smallcaps">MYS.</strong>');
+  });
+
+  it("does not wrap rows containing a reader-block or leading whitespace in invalid nested paragraphs", () => {
+    const work = makeWork({
+      textParts: ["book", "chapter", "section"],
+      rows: [
+        [
+          ["1", "1", "1"],
+          span(
+            [],
+            "praefatio: ",
+            span([["block", "1"]], "Incipit liber primus.")
+          ),
+        ],
+      ],
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+    expect(html).not.toMatch(
+      /<p class="reader-paragraph">[^<]*<p class="reader-block">/
+    );
+    expect(html).toContain('<p class="reader-block">Incipit liber primus.</p>');
+  });
 });
 
 describe("preprocessWorkToV2 word boundaries between sibling tags", () => {
@@ -396,6 +441,23 @@ describe("preprocessWorkToV2 word boundaries between sibling tags", () => {
     );
     expect(renderRow(row)).toContain(
       '<p class="reader-block">unum</p><p class="reader-block">duo</p>'
+    );
+  });
+
+  it("adds no space before superscript or subscript elements (preserving sigla like J²)", () => {
+    const row = span(
+      [],
+      span([["rend", "italic"]], "J"),
+      span([["rend", "superscript"]], "2"),
+      " et ",
+      span([["rend", "italic"]], "P"),
+      span([["rend", "sup"]], "a"),
+      " et ",
+      span([["rend", "italic"]], "M"),
+      span([["rend", "subscript"]], "2")
+    );
+    expect(renderRow(row)).toBe(
+      '<span class="italic">J</span><span class="superscript">2</span> et <span class="italic">P</span><span class="superscript">a</span> et <span class="italic">M</span><sub>2</sub>'
     );
   });
 });

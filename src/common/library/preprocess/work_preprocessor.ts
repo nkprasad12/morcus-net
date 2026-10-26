@@ -185,6 +185,18 @@ function needsWordBreak(previous: XmlNode, next: XmlNode): boolean {
   if (!isInlineTextElement(previous) || !isInlineTextElement(next)) {
     return false;
   }
+  const nextRend = next.getAttr("rend");
+  if (
+    next.name === "sub" ||
+    next.name === "sup" ||
+    (nextRend !== undefined &&
+      (nextRend.includes("superscript") ||
+        nextRend.includes("sup") ||
+        nextRend.includes("super") ||
+        nextRend.includes("subscript")))
+  ) {
+    return false;
+  }
   const before = inlineText(previous);
   const after = inlineText(next);
   return (
@@ -239,9 +251,6 @@ function renderXmlNodeCleanHtml(
   if (tag === "head" || isSectionHead) {
     return `<h3 class="reader-subheading">${childrenHtml}</h3>`;
   }
-  if (tag === "b") {
-    return `<strong>${childrenHtml}</strong>`;
-  }
   if (tag === "ul") {
     return `<ul class="reader-list">${childrenHtml}</ul>`;
   }
@@ -283,6 +292,10 @@ function renderXmlNodeCleanHtml(
     return `<sub${classAttr}>${childrenHtml}</sub>`;
   }
 
+  if (tag === "b") {
+    return `<strong${classAttr}>${childrenHtml}</strong>`;
+  }
+
   if (isLine) {
     return `<span${classAttr}>${childrenHtml}</span>`;
   }
@@ -309,13 +322,14 @@ function renderPassageContent(
 
 /** Wraps a row's rendered HTML in a verse line or prose paragraph. */
 function wrapPassageHtml(rendered: string, isVerseWork: boolean): string {
+  const trimmed = rendered.trimStart();
   if (isVerseWork) {
     // Matches `reader-line` with or without trailing rendition classes, so an
     // indented pentameter is not wrapped in a second, redundant line span.
     if (
-      rendered.startsWith('<span class="reader-line') ||
-      rendered.startsWith("<h") ||
-      rendered.startsWith('<span class="line-space"')
+      trimmed.startsWith('<span class="reader-line') ||
+      trimmed.startsWith("<h") ||
+      trimmed.startsWith('<span class="line-space"')
     ) {
       return rendered;
     }
@@ -323,9 +337,10 @@ function wrapPassageHtml(rendered: string, isVerseWork: boolean): string {
   }
   // For prose, if it's not already wrapped in a paragraph or block, wrap in paragraph
   if (
-    rendered.startsWith("<p") ||
-    rendered.startsWith("<h") ||
-    rendered.startsWith("<ul")
+    trimmed.startsWith("<p") ||
+    trimmed.startsWith("<h") ||
+    trimmed.startsWith("<ul") ||
+    rendered.includes('<p class="reader-block')
   ) {
     return rendered;
   }
