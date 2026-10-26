@@ -53,6 +53,11 @@ const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
   ["C. Suetonius Tranquillus", "suetonius"],
   ["L. Annaeus Seneca iunior", "seneca_minor"],
   ["Titus Livius (Livy)", "livy"],
+  ["Pseudo-Caesar", "pseudo_caesar"],
+  ["Sextus Propertius", "propertius"],
+  ["Valerius Flaccus", "valerius_flaccus"],
+  ["Vitruvius Pollio", "vitruvius"],
+  ["Aulus Gellius", "gellius"],
 ]);
 
 const NAME_TO_DISPLAY_NAME = new Map<string, string>([
@@ -73,6 +78,11 @@ const NAME_TO_DISPLAY_NAME = new Map<string, string>([
   ["Pro L. Cornelio Balbo", "Pro Balbo"],
   ["In L. Calpurnium Pisonem", "In Pisonem"],
   ["Pro C. Rabirio Postumo", "Pro Rabirio Postumo"],
+  ["Pro M. Tullio", "Pro Tullio"],
+  ["De Imperio Cn. Pompei Ad Quirites", "De Imperio Cn. Pompei"],
+  ["Pro A. Cluentio", "Pro Cluentio"],
+  ["Pro L. Murena", "Pro Murena"],
+  ["Res Rustica, Books I-IX", "Res Rustica"],
 ]);
 
 const NAME_TO_URL_LOOKUP = new Map<string, string>([
@@ -92,6 +102,11 @@ const NAME_TO_URL_LOOKUP = new Map<string, string>([
   ["Pro L. Cornelio Balbo", "pro_balbo"],
   ["In L. Calpurnium Pisonem", "in_pisonem"],
   ["Pro C. Rabirio Postumo", "pro_rabirio_postumo"],
+  ["Pro M. Tullio", "pro_tullio"],
+  ["De Imperio Cn. Pompei Ad Quirites", "de_imperio_cn_pompei"],
+  ["Pro A. Cluentio", "pro_cluentio"],
+  ["Pro L. Murena", "pro_murena"],
+  ["Res Rustica, Books I-IX", "res_rustica"],
 ]);
 
 /** Index just past the `<!DOCTYPE ...>` that starts at `start`. */
@@ -245,6 +260,9 @@ function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
     SHORT_TITLE_BY_WORK_ID.get(info.workId) ??
     NAME_TO_DISPLAY_NAME.get(rawTitle);
   const decorated: DocumentInfo = { ...info };
+  // Some TEI headers pad the author (`<author>Valerius Flaccus </author>`),
+  // which would otherwise leak into the author code and URL slug.
+  decorated.author = info.author.trim();
   decorated.shortTitle = shortName;
   return decorated;
 }

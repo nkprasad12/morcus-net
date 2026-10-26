@@ -32,6 +32,10 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["Valerius Maximus", "ValeriusMaximus"],
   ["Florus, Lucius Annaeus", "Florus"],
   ["Pliny the Younger", "PlinyYounger"],
+  ["Sextus Propertius", "Propertius"],
+  ["Valerius Flaccus", "ValeriusFlaccus"],
+  ["Vitruvius Pollio", "Vitruvius"],
+  ["Aulus Gellius", "Gellius"],
 ]);
 
 function toAuthorCode(author: string): string {

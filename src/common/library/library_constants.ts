@@ -108,6 +108,35 @@ export const LatinWorks = {
   SENECA_DE_BREVITATE_VITAE: "stoa0255.stoa004.perseus-lat2",
   TERTULLIAN_DE_SPECTACULIS: "stoa0275.stoa027.perseus-lat2",
   TERTULLIAN_AD_UXOREM: "stoa0276.stoa002.opp-lat1",
+  // Phase 1 (Cluster A) onboarding. Each was checked to have a clean V1
+  // citation hierarchy, no text outside the citable rows beyond title and book
+  // headings, unique row and page ids, and no duplicate in Hypotactic or PHI.
+  PSEUDO_CAESAR_DE_BELLO_AFRICO: "phi0426.phi001.perseus-lat1",
+  PSEUDO_CAESAR_DE_BELLO_ALEXANDRINO: "phi0428.phi001.perseus-lat1",
+  PSEUDO_CAESAR_DE_BELLO_HISPANIENSI: "phi0430.phi001.perseus-lat1",
+  CICERO_PRO_TULLIO: "phi0474.phi006.perseus-lat2",
+  CICERO_DE_IMPERIO_CN_POMPEI: "phi0474.phi009.perseus-lat2",
+  CICERO_PRO_CLUENTIO: "phi0474.phi010.perseus-lat2",
+  CICERO_PRO_MURENA: "phi0474.phi014.perseus-lat2",
+  CICERO_DE_NATURA_DEORUM: "phi0474.phi050.perseus-lat2",
+  // Müller's Teubner text. `-lat4` (Falconer) waits for speaker support.
+  CICERO_DE_DIVINATIONE: "phi0474.phi053.perseus-lat3",
+  PROPERTIUS_ELEGIAE: "phi0620.phi001.perseus-lat3",
+  COLUMELLA_RES_RUSTICA: "phi0845.phi002.perseus-lat3",
+  OVID_EX_PONTO: "phi0959.phi009.perseus-lat2",
+  VALERIUS_FLACCUS_ARGONAUTICA: "phi1035.phi001.perseus-lat2",
+  VITRUVIUS_DE_ARCHITECTURA: "phi1056.phi001.perseus-lat2",
+  APULEIUS_APOLOGIA: "phi1212.phi001.perseus-lat1",
+  APULEIUS_FLORIDA: "phi1212.phi003.perseus-lat2",
+  GELLIUS_NOCTES_ATTICAE: "phi1254.phi001.perseus-lat2",
+  MARTIAL_EPIGRAMMATA: "phi1294.phi002.perseus-lat2",
+  TERTULLIAN_APOLOGETICUM: "stoa0275.stoa009.perseus-lat2",
+  // Not onboarded:
+  // - Silius Italicus, Punica (phi1345.phi001.perseus-lat2): 11.453-458 occur
+  //   twice (transposed, and again as `<del>` at their transmitted place), so
+  //   six row ids repeat. Needs non-citable rows (Phase 2).
+  // - Suetonius, the ten lives phi1348.abo013-abo022: PHI JSON already ships
+  //   all twelve lives (`lat1348.001`, Ihm).
 };
 
 export const EnglishTranslations: Record<string, string> = {
