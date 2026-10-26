@@ -49,7 +49,10 @@ export interface V2BundleBudget {
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
-    "common.js": { maxGzipBytes: 21 * 1024 },
+    // Raised by 0.1 KiB (with the routes that include it: about, library,
+    // external, macronizer) for the reader's fresh-frame first lookup, which
+    // left common.js exactly at its old 21 KiB ceiling.
+    "common.js": { maxGzipBytes: 21.1 * 1024 },
     "reader.js": { maxGzipBytes: 14 * 1024 },
     "dict.js": { maxGzipBytes: 9.5 * 1024 },
     "corpus.js": { maxGzipBytes: 6.5 * 1024 },
@@ -57,13 +60,13 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     "macronizer.js": { maxGzipBytes: 4.5 * 1024 },
   },
   routes: {
-    about: { maxGzipBytes: 21 * 1024 },
+    about: { maxGzipBytes: 21.1 * 1024 },
     // Raised by 0.5 KiB for in-place embedded dictionary lookups (+439 B gzip across common.js + dict.js).
     dicts: { maxGzipBytes: 30.5 * 1024 },
     corpus: { maxGzipBytes: 27 * 1024 },
-    library: { maxGzipBytes: 34.5 * 1024 },
-    external: { maxGzipBytes: 38.5 * 1024 },
-    macronizer: { maxGzipBytes: 25 * 1024 },
+    library: { maxGzipBytes: 34.6 * 1024 },
+    external: { maxGzipBytes: 38.6 * 1024 },
+    macronizer: { maxGzipBytes: 25.1 * 1024 },
   },
   maxCssGzipBytes: 24.5 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
