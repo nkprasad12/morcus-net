@@ -555,7 +555,7 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     }
 
     // R7: Verify zero duplicate HTML id="..." attributes across the entire document
-    const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
+    const ids = [...html.matchAll(/(?<=\s)id="([^"]+)"/g)].map((m) => m[1]);
     const uniqueIds = new Set(ids);
     expect(ids.length).toBeGreaterThan(20);
     expect(uniqueIds.size).toBe(ids.length);
@@ -603,6 +603,58 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     expect(html).toContain(
       ":is(.reader-passage, .reader-notes, .reader-translation-text) .superscript"
     );
+  });
+
+  it("renders sticky-header scroll offsets and review tracking controls in gallery HTML", () => {
+    const report = buildGalleryReportFromInputs(
+      [
+        {
+          workId: LatinWorks.CAESAR_DBG,
+          onboarded: true,
+          rawXml: makeTei({
+            title: "De bello Gallico",
+            author: "Julius Caesar",
+            body: RICH_PROSE_BODY,
+          }),
+        },
+      ],
+      {
+        label: "test-review-controls",
+        root: "/corpus/root",
+        latinLitCommit: "aaaa1111",
+        morcusCommit: "bbbb2222",
+        maxExamples: 1,
+      }
+    );
+    const html = formatGalleryHtml(report);
+
+    // Sticky-header scroll offset styles
+    expect(html).toContain("scroll-padding-top: var(--gallery-header-h, 8.5rem);");
+    expect(html).toContain("scroll-margin-top: var(--gallery-header-h, 8.5rem);");
+    expect(html).toContain("--gallery-header-h");
+
+    // Header review controls
+    expect(html).toContain('id="gallery-review-progress"');
+    expect(html).toContain('id="gallery-hide-reviewed"');
+    expect(html).toContain('id="gallery-reset-reviewed"');
+
+    // Category progress & mark-all buttons
+    expect(html).toContain('class="cat-progress"');
+    expect(html).toContain('data-cat-progress="element"');
+    expect(html).toContain('class="gallery-btn mark-cat-btn"');
+    expect(html).toContain('data-mark-cat="element"');
+
+    // Kind card and work review checkboxes
+    expect(html).toContain('class="review-checkbox"');
+    expect(html).toContain('data-review-id="kind:element:foreign"');
+    expect(html).toContain(
+      `data-review-id="work:${LatinWorks.CAESAR_DBG}"`
+    );
+
+    // Collapsed and hide styles
+    expect(html).toContain('.kind-card[data-reviewed="true"] .exemplar-list');
+    expect(html).toContain('body[data-hide-reviewed="true"] .kind-card[data-reviewed="true"]');
+    expect(html).toContain('body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .cat-all-reviewed-banner');
   });
 });
 

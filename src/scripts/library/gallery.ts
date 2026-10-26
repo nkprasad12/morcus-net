@@ -1511,6 +1511,16 @@ const GALLERY_CSS = `
   box-sizing: border-box;
 }
 
+html {
+  scroll-padding-top: var(--gallery-header-h, 8.5rem);
+}
+
+section[id],
+article[id],
+details[id] {
+  scroll-margin-top: var(--gallery-header-h, 8.5rem);
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -1553,6 +1563,56 @@ body {
   gap: 1rem;
 }
 
+.gallery-controls {
+  max-width: 1400px;
+  margin: 0.75rem auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.gallery-progress-badge {
+  background: var(--badge-bg);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border: 1px solid var(--border);
+}
+
+.gallery-control-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.8rem;
+}
+
+.gallery-btn {
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.gallery-btn:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .gallery-nav {
   max-width: 1400px;
   margin: 0.75rem auto 0;
@@ -1577,6 +1637,13 @@ body {
   color: var(--primary);
 }
 
+.gallery-nav a[data-cat-done="true"] {
+  opacity: 0.75;
+  background: #e8f5e9;
+  border-color: #a5d6a7;
+  color: #2e7d32;
+}
+
 .gallery-main {
   max-width: 1400px;
   margin: 0 auto;
@@ -1592,9 +1659,52 @@ body {
 }
 
 .category-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   font-size: 1.15rem;
   margin: 1.75rem 0 0.75rem;
   color: var(--primary);
+}
+
+.category-heading-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: normal;
+}
+
+.cat-progress {
+  background: var(--badge-bg);
+  color: var(--text-muted);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  border: 1px solid var(--border);
+}
+
+.cat-all-reviewed-banner {
+  display: none;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0 1.25rem;
+  background: var(--surface-muted);
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-style: italic;
+}
+
+body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .cat-all-reviewed-banner {
+  display: block;
+}
+
+body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
+  display: none;
 }
 
 .kind-card {
@@ -1951,6 +2061,56 @@ a.reader-note-ref sup {
   margin-bottom: 0.5rem;
   font-size: 0.82rem;
 }
+
+.review-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  font-weight: normal;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.review-toggle-label input[type="checkbox"] {
+  cursor: pointer;
+  margin: 0;
+}
+
+.kind-card[data-reviewed="true"] {
+  border-color: #a5d6a7;
+}
+
+.kind-card[data-reviewed="true"] .kind-card-header {
+  background: #f1f8e9;
+  border-bottom: none;
+}
+
+.kind-card[data-reviewed="true"] .exemplar-list {
+  display: none;
+}
+
+.work-details[data-reviewed="true"] {
+  border-color: #a5d6a7;
+  background: #fdfefd;
+}
+
+.work-details[data-reviewed="true"] summary {
+  color: #2e7d32;
+}
+
+tr[data-reviewed="true"] {
+  background: #f1f8e9;
+  color: var(--text-muted);
+}
+
+body[data-hide-reviewed="true"] .kind-card[data-reviewed="true"],
+body[data-hide-reviewed="true"] .work-details[data-reviewed="true"],
+body[data-hide-reviewed="true"] tr[data-reviewed="true"] {
+  display: none;
+}
 `;
 
 /** Formats the self-contained HTML review gallery (`index.html`). */
@@ -2011,6 +2171,8 @@ export function formatGalleryHtml(report: GalleryReport): string {
             anchorId
           )}" data-kind="${he.escape(k.kind)}" data-category="${he.escape(
             k.category
+          )}" data-review-id="kind:${he.escape(k.category)}:${he.escape(
+            k.kind
           )}">
           <header class="kind-card-header">
             <span class="kind-name">${he.escape(k.kind)}</span>
@@ -2020,6 +2182,9 @@ export function formatGalleryHtml(report: GalleryReport): string {
             k.workCount === 1 ? "work" : "works"
           }</span>
               <span class="badge">${k.occurrenceCount}&times;</span>
+              <label class="review-toggle-label"><input type="checkbox" class="review-checkbox" data-review-id="kind:${he.escape(
+                k.category
+              )}:${he.escape(k.kind)}" /> Reviewed</label>
             </div>
           </header>
           <div class="exemplar-list">
@@ -2030,9 +2195,18 @@ export function formatGalleryHtml(report: GalleryReport): string {
         .join("\n");
 
       return `<section id="cat-${he.escape(cat)}">
-        <h3 class="category-heading">${he.escape(
-          CATEGORY_TITLES[cat]
-        )} (${items.length})</h3>
+        <h3 class="category-heading">
+          <span>${he.escape(CATEGORY_TITLES[cat])} (${items.length})</span>
+          <span class="category-heading-controls">
+            <span class="cat-progress" data-cat-progress="${he.escape(
+              cat
+            )}">0 / ${items.length}</span>
+            <button type="button" class="gallery-btn mark-cat-btn" data-mark-cat="${he.escape(
+              cat
+            )}">Mark section reviewed</button>
+          </span>
+        </h3>
+        <div class="cat-all-reviewed-banner">All items in this section reviewed</div>
         ${cardsHtml}
       </section>`;
     })
@@ -2047,7 +2221,12 @@ export function formatGalleryHtml(report: GalleryReport): string {
               p.readerUrl
             )}">${he.escape(p.pageId)}</a>`
           : "&mdash;";
-      return `<tr>
+      return `<tr data-work-id="${he.escape(
+        w.workId
+      )}" data-review-id="work:${he.escape(w.workId)}">
+        <td><label class="review-toggle-label"><input type="checkbox" class="review-checkbox" data-review-id="work:${he.escape(
+          w.workId
+        )}" /> Reviewed</label></td>
         <td><a class="exemplar-link" href="#work-${he.escape(
           w.workId
         )}"><code>${he.escape(w.workId)}</code></a></td>
@@ -2103,8 +2282,15 @@ export function formatGalleryHtml(report: GalleryReport): string {
         })
         .join("\n");
 
-      return `<details class="work-details" id="work-${he.escape(w.workId)}">
+      return `<details class="work-details" id="work-${he.escape(
+        w.workId
+      )}" data-work-id="${he.escape(w.workId)}" data-review-id="work:${he.escape(
+        w.workId
+      )}">
         <summary>
+          <label class="review-toggle-label"><input type="checkbox" class="review-checkbox" data-review-id="work:${he.escape(
+            w.workId
+          )}" /> Reviewed</label>
           <code>${he.escape(w.workId)}</code> &mdash; ${he.escape(
         w.author
       )}, <em>${he.escape(w.shortTitle ?? w.title)}</em>
@@ -2178,6 +2364,13 @@ export function formatGalleryHtml(report: GalleryReport): string {
         <span><strong>Max examples/kind:</strong> ${report.maxExamples}</span>
       </div>
     </div>
+    <div class="gallery-controls">
+      <span id="gallery-review-progress" class="gallery-progress-badge">Reviewed: 0 / ${
+        t.markupKindCount
+      } kinds &middot; 0 / ${t.worksProcessed} works</span>
+      <label class="gallery-control-pill"><input type="checkbox" id="gallery-hide-reviewed" /> Hide reviewed</label>
+      <button type="button" id="gallery-reset-reviewed" class="gallery-btn">Reset progress</button>
+    </div>
     <nav class="gallery-nav" aria-label="Gallery navigation">
       <a href="#cat-element">Content Elements</a>
       <a href="#cat-note-element">Note Elements</a>
@@ -2208,6 +2401,7 @@ export function formatGalleryHtml(report: GalleryReport): string {
       <table class="work-table">
         <thead>
           <tr>
+            <th>Reviewed</th>
             <th>Work ID</th>
             <th>Author</th>
             <th>Title</th>
@@ -2239,6 +2433,218 @@ export function formatGalleryHtml(report: GalleryReport): string {
         );
       }
     });
+
+    function updateHeaderHeight() {
+      var header = document.querySelector(".gallery-header");
+      if (header) {
+        document.documentElement.style.setProperty(
+          "--gallery-header-h",
+          (header.offsetHeight + 16) + "px"
+        );
+      }
+    }
+    updateHeaderHeight();
+    window.addEventListener("resize", updateHeaderHeight);
+    if (typeof ResizeObserver !== "undefined") {
+      var headerEl = document.querySelector(".gallery-header");
+      if (headerEl) {
+        new ResizeObserver(updateHeaderHeight).observe(headerEl);
+      }
+    }
+
+    var GALLERY_LABEL = ${JSON.stringify(report.label).replace(/</g, "\\u003c")};
+    var storageKey = "morcus-gallery-reviewed:" + GALLERY_LABEL;
+    var reviewedSet = new Set();
+
+    function findReviewElements(id) {
+      var results = [];
+      var all = document.querySelectorAll("[data-review-id]");
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].getAttribute("data-review-id") === id) {
+          results.push(all[i]);
+        }
+      }
+      return results;
+    }
+
+    // Stop propagation on summary click when clicking review toggle label inside summary
+    document.addEventListener("click", function (e) {
+      if (e.target && e.target.closest(".work-details > summary .review-toggle-label")) {
+        e.stopPropagation();
+      }
+    }, true);
+
+    function applyReviewedState(id, isReviewed) {
+      if (isReviewed) {
+        reviewedSet.add(id);
+      } else {
+        reviewedSet.delete(id);
+      }
+
+      var elements = findReviewElements(id);
+      elements.forEach(function (el) {
+        if (el.tagName === "INPUT" && el.type === "checkbox") {
+          el.checked = isReviewed;
+        } else {
+          if (isReviewed) {
+            el.setAttribute("data-reviewed", "true");
+          } else {
+            el.removeAttribute("data-reviewed");
+          }
+        }
+      });
+    }
+
+    function updateProgress() {
+      var totalKinds = document.querySelectorAll(".kind-card").length;
+      var reviewedKinds = document.querySelectorAll('.kind-card[data-reviewed="true"]').length;
+      var totalWorks = document.querySelectorAll(".work-details").length;
+      var reviewedWorks = document.querySelectorAll('.work-details[data-reviewed="true"]').length;
+
+      var progressBadge = document.getElementById("gallery-review-progress");
+      if (progressBadge) {
+        progressBadge.textContent = "Reviewed: " + reviewedKinds + " / " + totalKinds + " kinds · " + reviewedWorks + " / " + totalWorks + " works";
+      }
+
+      // Update per-category progress
+      document.querySelectorAll('section[id^="cat-"]').forEach(function (section) {
+        var cat = section.id.slice(4);
+        var catCards = section.querySelectorAll(".kind-card");
+        var totalInCat = catCards.length;
+        var reviewedInCat = section.querySelectorAll('.kind-card[data-reviewed="true"]').length;
+
+        var catCounter = section.querySelector('.cat-progress[data-cat-progress="' + cat + '"]');
+        if (catCounter) {
+          catCounter.textContent = reviewedInCat + " / " + totalInCat;
+        }
+
+        var markBtn = section.querySelector('.mark-cat-btn[data-mark-cat="' + cat + '"]');
+        var allDone = totalInCat > 0 && reviewedInCat === totalInCat;
+        if (allDone) {
+          section.setAttribute("data-all-reviewed", "true");
+          if (markBtn) markBtn.textContent = "Unmark section";
+        } else {
+          section.removeAttribute("data-all-reviewed");
+          if (markBtn) markBtn.textContent = "Mark section reviewed";
+        }
+
+        var navLink = document.querySelector('.gallery-nav a[href="#' + section.id + '"]');
+        if (navLink) {
+          if (!navLink.getAttribute("data-orig-text")) {
+            navLink.setAttribute("data-orig-text", navLink.textContent);
+          }
+          var baseText = navLink.getAttribute("data-orig-text");
+          if (allDone) {
+            navLink.setAttribute("data-cat-done", "true");
+            navLink.textContent = baseText + " ✓";
+          } else {
+            navLink.removeAttribute("data-cat-done");
+            navLink.textContent = baseText;
+          }
+        }
+      });
+
+      var spotLink = document.querySelector('.gallery-nav a[href="#spot-check-index"]');
+      if (spotLink) {
+        if (!spotLink.getAttribute("data-orig-text")) {
+          spotLink.setAttribute("data-orig-text", spotLink.textContent);
+        }
+        var baseSpot = spotLink.getAttribute("data-orig-text");
+        if (totalWorks > 0 && reviewedWorks === totalWorks) {
+          spotLink.setAttribute("data-cat-done", "true");
+          spotLink.textContent = baseSpot + " ✓";
+        } else {
+          spotLink.removeAttribute("data-cat-done");
+          spotLink.textContent = baseSpot;
+        }
+      }
+
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(Array.from(reviewedSet)));
+      } catch (err) {}
+    }
+
+    // Load from localStorage
+    try {
+      var saved = localStorage.getItem(storageKey);
+      if (saved) {
+        var arr = JSON.parse(saved);
+        if (Array.isArray(arr)) {
+          arr.forEach(function (id) {
+            applyReviewedState(id, true);
+          });
+        }
+      }
+      var savedHide = localStorage.getItem(storageKey + ":hide");
+      if (savedHide === "true") {
+        var hideCb = document.getElementById("gallery-hide-reviewed");
+        if (hideCb) hideCb.checked = true;
+        document.body.setAttribute("data-hide-reviewed", "true");
+      }
+    } catch (err) {}
+
+    updateProgress();
+
+    // Event listeners
+    document.addEventListener("change", function (e) {
+      var target = e.target;
+      if (!target) return;
+      if (target.classList && target.classList.contains("review-checkbox")) {
+        var id = target.getAttribute("data-review-id");
+        if (id) {
+          applyReviewedState(id, target.checked);
+          updateProgress();
+        }
+      } else if (target.id === "gallery-hide-reviewed") {
+        if (target.checked) {
+          document.body.setAttribute("data-hide-reviewed", "true");
+          try {
+            localStorage.setItem(storageKey + ":hide", "true");
+          } catch (err) {}
+        } else {
+          document.body.removeAttribute("data-hide-reviewed");
+          try {
+            localStorage.removeItem(storageKey + ":hide");
+          } catch (err) {}
+        }
+      }
+    });
+
+    document.addEventListener("click", function (e) {
+      var target = e.target;
+      if (!target) return;
+      if (target.classList && target.classList.contains("mark-cat-btn")) {
+        var cat = target.getAttribute("data-mark-cat");
+        if (!cat) return;
+        var section = document.getElementById("cat-" + cat);
+        if (!section) return;
+        var cards = section.querySelectorAll(".kind-card");
+        var allReviewed = section.getAttribute("data-all-reviewed") === "true";
+        var setTo = !allReviewed;
+        cards.forEach(function (card) {
+          var id = card.getAttribute("data-review-id");
+          if (id) {
+            applyReviewedState(id, setTo);
+          }
+        });
+        updateProgress();
+      }
+    });
+
+    var resetBtn = document.getElementById("gallery-reset-reviewed");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", function () {
+        var ids = Array.from(reviewedSet);
+        ids.forEach(function (id) {
+          applyReviewedState(id, false);
+        });
+        reviewedSet.clear();
+        try {
+          localStorage.removeItem(storageKey);
+        } catch (err) {}
+        updateProgress();
+      });
+    }
   </script>
 </body>
 </html>
