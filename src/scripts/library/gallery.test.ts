@@ -332,8 +332,21 @@ describe("analyzeWorkForGallery", () => {
     expect(kinds.has('l@part="F"')).toBe(true);
     expect(kinds.has('l@part="N"')).toBe(true);
     const partIEx = kinds.get('l@part="I"')!.candidates[0];
+    // R5b: attr l@part="I" uses matched row ±1 (lines 1 and 1b, not line 3) and marks gallery-target
+    expect(partIEx.renderedHtml).toContain(
+      '<div class="reader-section gallery-target section-verse" id="sec-1.1">'
+    );
     expect(partIEx.renderedHtml).toContain("Cui dono lepidum");
-    expect(partIEx.renderedHtml).toContain("Arida modo pumice expolitum?");
+    expect(partIEx.renderedHtml).toContain("novum");
+    expect(partIEx.renderedHtml).not.toContain("Arida modo pumice expolitum?");
+
+    // R5b: layout l@part keeps full page and marks the matched row with gallery-target
+    const layoutPartEx = kinds.get("l@part")!.candidates[0];
+    expect(layoutPartEx.renderedHtml).toContain(
+      '<div class="reader-section gallery-target section-verse" id="sec-1.1">'
+    );
+    expect(layoutPartEx.renderedHtml).toContain("Cui dono lepidum");
+    expect(layoutPartEx.renderedHtml).toContain("Arida modo pumice expolitum?");
   });
 });
 
@@ -512,9 +525,13 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     expect(html).toContain("&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;");
     // Raw TEI tags inside <pre class="tei-snippet"> must be escaped
     expect(html).toContain("&lt;del&gt;divisa&lt;/del&gt;");
-    // Rendered reader HTML is placed cleanly in .reader-preview with .reader-section and .reader-passage
-    expect(html).toContain('<div class="reader-preview reader-view"><div class="reader-section"');
+    // Rendered reader HTML is placed cleanly in .reader-preview with .reader-section, .gallery-target, and .reader-passage
+    expect(html).toContain(
+      '<div class="reader-preview reader-view"><div class="reader-section gallery-target"'
+    );
     expect(html).toContain('<div class="reader-passage">');
+    expect(html).toContain(".reader-section.gallery-target");
+    expect(html).toContain('preview.querySelector(".gallery-target")');
     // Failures section is rendered in HTML
     expect(html).toContain('<section id="failures">');
     expect(html).toContain("phi9999.phi002.perseus-lat1");

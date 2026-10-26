@@ -265,6 +265,7 @@ interface SectionRenderLocation {
   sectionId: string;
   rowHtmls: string[];
   pageRowHtmls: string[];
+  rowOffsetsInPage: number[];
   pageNotesHtml?: string;
 }
 
@@ -379,6 +380,7 @@ function indexWorkRender(
           sectionId: effectiveSecId,
           rowHtmls: [],
           pageRowHtmls,
+          rowOffsetsInPage: [],
           pageNotesHtml: v2Page.notesHtml,
         };
         bySectionId.set(rawDotId, loc);
@@ -386,6 +388,7 @@ function indexWorkRender(
       }
       if (rowHtml.length > 0) {
         loc.rowHtmls.push(rowHtml);
+        loc.rowOffsetsInPage.push(offsetInPage);
       }
 
       const rowNoteIds: number[] = [];
@@ -518,6 +521,13 @@ export interface AnalyzedWorkGallery {
   kinds: Map<string, WorkKindAccumulator>;
 }
 
+function markGalleryTargetRow(rowHtml: string): string {
+  return rowHtml.replace(
+    /^<div class="reader-section\b/,
+    '<div class="reader-section gallery-target'
+  );
+}
+
 function joinPassageAndNotesHtml(
   passageHtml: string,
   notesHtml?: string
@@ -640,6 +650,8 @@ export function analyzeWorkForGallery(
   const recordKind = (
     kind: string,
     category: MarkupCategory,
+    resolvedSecId: string | undefined,
+    inNote: boolean,
     buildExemplar: () => GalleryExemplar | undefined
   ) => {
     let acc = kinds.get(kind);
@@ -653,35 +665,64 @@ export function analyzeWorkForGallery(
       kinds.set(kind, acc);
     }
     acc.occurrences++;
-    if (acc.candidates.length >= candidateLimit) {
+    if (acc.candidates.length >= candidateLimit || resolvedSecId === undefined) {
+      return;
+    }
+    const sameSection = acc.candidates.some(
+      (c) => c.sectionId === resolvedSecId && Boolean(c.inNote) === inNote
+    );
+    if (sameSection && acc.sameSectionFallbacks.length >= candidateLimit) {
       return;
     }
     const ex = buildExemplar();
     if (!ex) {
       return;
     }
-    const sameSection = acc.candidates.some(
-      (c) => c.sectionId === ex.sectionId && c.inNote === ex.inNote
-    );
     if (!sameSection) {
       acc.candidates.push(ex);
-    } else if (acc.sameSectionFallbacks.length < candidateLimit) {
+    } else {
       acc.sameSectionFallbacks.push(ex);
     }
   };
 
   const makeBodyExemplar = (
     node: XmlNode,
-    dotSecId: string,
-    options?: { fullPage?: boolean }
+    loc: SectionRenderLocation | undefined,
+    options?: { fullPage?: boolean; adjacentRows?: boolean }
   ): GalleryExemplar | undefined => {
-    const loc = resolveSectionLocation(dotSecId, indexed);
     if (!loc) {
       return undefined;
     }
-    const renderedHtml = options?.fullPage
-      ? joinPassageAndNotesHtml(loc.pageRowHtmls.join("\n"), loc.pageNotesHtml)
-      : joinPassageAndNotesHtml(loc.rowHtmls.slice(0, 3).join("\n"));
+    const targetOffsets = new Set(loc.rowOffsetsInPage);
+    let renderedHtml: string;
+    if (options?.fullPage) {
+      const markedPageRows = loc.pageRowHtmls.map((rowHtml, idx) =>
+        targetOffsets.has(idx) ? markGalleryTargetRow(rowHtml) : rowHtml
+      );
+      renderedHtml = joinPassageAndNotesHtml(
+        markedPageRows.join("\n"),
+        loc.pageNotesHtml
+      );
+    } else if (options?.adjacentRows && loc.rowOffsetsInPage.length > 0) {
+      const firstOffset = loc.rowOffsetsInPage[0];
+      const start = Math.max(0, firstOffset - 1);
+      const end = Math.min(loc.pageRowHtmls.length, firstOffset + 2);
+      const sliceRows = loc.pageRowHtmls
+        .slice(start, end)
+        .map((rowHtml, idx) =>
+          targetOffsets.has(start + idx)
+            ? markGalleryTargetRow(rowHtml)
+            : rowHtml
+        );
+      renderedHtml = joinPassageAndNotesHtml(sliceRows.join("\n"));
+    } else {
+      const markedRows = loc.rowHtmls
+        .slice(0, 3)
+        .map((rowHtml, idx) =>
+          idx === 0 ? markGalleryTargetRow(rowHtml) : rowHtml
+        );
+      renderedHtml = joinPassageAndNotesHtml(markedRows.join("\n"));
+    }
     const readerUrl = buildReaderSectionUrl(
       v2Work.urlAuthor,
       v2Work.urlName,
@@ -717,7 +758,7 @@ export function analyzeWorkForGallery(
       noteLoc.sectionId
     );
     const renderedHtml = joinPassageAndNotesHtml(
-      noteLoc.sectionHtml,
+      markGalleryTargetRow(noteLoc.sectionHtml),
       noteLoc.noteHtml
     );
     return {
@@ -739,35 +780,67 @@ export function analyzeWorkForGallery(
    */
   const recordElementAttributes = (
     node: XmlNode,
+    resolvedSecId: string | undefined,
+    inNote: boolean,
     buildEx: () => GalleryExemplar | undefined,
+    buildAdjacentEx?: () => GalleryExemplar | undefined,
     buildFullPageEx?: () => GalleryExemplar | undefined
   ) => {
     if (node.name === "l") {
       const part = node.getAttr("part");
       if (part !== undefined) {
-        const splitEx = buildFullPageEx ?? buildEx;
-        recordKind(`l@part="${part}"`, "attr", splitEx);
+        recordKind(
+          `l@part="${part}"`,
+          "attr",
+          resolvedSecId,
+          inNote,
+          buildAdjacentEx ?? buildEx
+        );
         if (part !== "N") {
-          recordKind("l@part", "layout", splitEx);
+          recordKind(
+            "l@part",
+            "layout",
+            resolvedSecId,
+            inNote,
+            buildFullPageEx ?? buildEx
+          );
         }
       }
     }
     if (node.name === "foreign") {
       const lang = node.getAttr("xml:lang");
       if (lang !== undefined) {
-        recordKind(`foreign@xml:lang="${lang}"`, "attr", buildEx);
+        recordKind(
+          `foreign@xml:lang="${lang}"`,
+          "attr",
+          resolvedSecId,
+          inNote,
+          buildEx
+        );
       }
     }
     if (node.name === "milestone") {
       const unit = node.getAttr("unit");
       if (unit !== undefined) {
-        recordKind(`milestone@unit="${unit}"`, "attr", buildEx);
+        recordKind(
+          `milestone@unit="${unit}"`,
+          "attr",
+          resolvedSecId,
+          inNote,
+          buildEx
+        );
       }
     }
     if (node.name === "w") {
       const wType = node.getAttr("type");
       if (wType !== undefined) {
-        recordKind(`w@type="${wType}"`, "attr", buildEx);
+        recordKind(
+          `w@type="${wType}"`,
+          "attr",
+          resolvedSecId,
+          inNote,
+          buildEx
+        );
       }
     }
   };
@@ -775,28 +848,41 @@ export function analyzeWorkForGallery(
   let nextNoteId = 0;
 
   const walkNoteDescendants = (noteBody: XmlNode, noteId: number) => {
+    const noteSecId = indexed.byNoteId.get(noteId)?.sectionId;
     for (const child of noteBody.children) {
       if (typeof child === "string") continue;
       if (child.name === "#comment") continue;
 
       const buildEx = () => makeNoteExemplar(child, noteId);
-      recordKind(`note:${child.name}`, "note-element", buildEx);
+      recordKind(`note:${child.name}`, "note-element", noteSecId, true, buildEx);
 
       const rend = child.getAttr("rend");
       if (rend !== undefined) {
         const trimmed = rend.trim();
         if (trimmed.length > 0) {
-          recordKind(`note:${child.name}@${trimmed}`, "note-rend", buildEx);
+          recordKind(
+            `note:${child.name}@${trimmed}`,
+            "note-rend",
+            noteSecId,
+            true,
+            buildEx
+          );
           const tokens = rendTokens(rend);
           if (tokens.length > 1) {
             for (const token of tokens) {
-              recordKind(`note:${child.name}@${token}`, "note-rend", buildEx);
+              recordKind(
+                `note:${child.name}@${token}`,
+                "note-rend",
+                noteSecId,
+                true,
+                buildEx
+              );
             }
           }
         }
       }
 
-      recordElementAttributes(child, buildEx);
+      recordElementAttributes(child, noteSecId, true, buildEx);
       walkNoteDescendants(child, noteId);
     }
   };
@@ -826,38 +912,53 @@ export function analyzeWorkForGallery(
 
     if (node.name === "note") {
       const noteId = nextNoteId++;
+      const noteSecId = indexed.byNoteId.get(noteId)?.sectionId;
       const target = node.getAttr("target");
       const targetNode =
         target !== undefined
           ? detachedNotes.byTarget.get(target) ??
             detachedNotes.byTarget.get(target.replace(/^#/, ""))
           : undefined;
-      const snippet =
-        target !== undefined && targetNode !== undefined
-          ? `${serializeTeiSnippet(node, 120)} → ${serializeTeiSnippet(
-              targetNode,
-              180
-            )}`
-          : serializeTeiSnippet(node);
-      const buildNoteEx = () => makeNoteExemplar(node, noteId, snippet);
+      const buildNoteEx = () => {
+        const snippet =
+          target !== undefined && targetNode !== undefined
+            ? `${serializeTeiSnippet(node, 120)} → ${serializeTeiSnippet(
+                targetNode,
+                180
+              )}`
+            : serializeTeiSnippet(node);
+        return makeNoteExemplar(node, noteId, snippet);
+      };
 
-      recordKind("note", "element", buildNoteEx);
+      recordKind("note", "element", noteSecId, true, buildNoteEx);
       if (target !== undefined) {
-        recordKind("note@target", "attr", buildNoteEx);
+        recordKind("note@target", "attr", noteSecId, true, buildNoteEx);
       }
       const place = node.getAttr("place");
       if (place !== undefined) {
-        recordKind(`note@place="${place}"`, "attr", buildNoteEx);
+        recordKind(
+          `note@place="${place}"`,
+          "attr",
+          noteSecId,
+          true,
+          buildNoteEx
+        );
       }
       if (
         node.getAttr("n") !== undefined ||
         targetNode?.getAttr("n") !== undefined
       ) {
-        recordKind("note@n", "attr", buildNoteEx);
+        recordKind("note@n", "attr", noteSecId, true, buildNoteEx);
       }
       const rend = node.getAttr("rend");
       if (rend !== undefined && rend.trim().length > 0) {
-        recordKind(`note@${rend.trim()}`, "rend", buildNoteEx);
+        recordKind(
+          `note@${rend.trim()}`,
+          "rend",
+          noteSecId,
+          true,
+          buildNoteEx
+        );
       }
 
       const bodyToWalk = targetNode ?? node;
@@ -865,36 +966,65 @@ export function analyzeWorkForGallery(
       return;
     }
 
-    const buildBodyEx = () => makeBodyExemplar(node, dotSecId);
+    const loc = resolveSectionLocation(dotSecId, indexed);
+    const resolvedSecId = loc?.sectionId;
+    const buildBodyEx = () => makeBodyExemplar(node, loc);
+    const buildAdjacentEx = () =>
+      makeBodyExemplar(node, loc, { adjacentRows: true });
     const buildFullPageEx = () =>
-      makeBodyExemplar(node, dotSecId, { fullPage: true });
+      makeBodyExemplar(node, loc, { fullPage: true });
 
     if (!STRUCTURAL_CONTAINER_ELEMENTS.has(node.name)) {
-      recordKind(node.name, "element", buildBodyEx);
+      recordKind(node.name, "element", resolvedSecId, false, buildBodyEx);
     }
 
     const rend = node.getAttr("rend");
     if (rend !== undefined) {
       const trimmed = rend.trim();
       if (trimmed.length > 0) {
-        recordKind(`${node.name}@${trimmed}`, "rend", buildBodyEx);
+        recordKind(
+          `${node.name}@${trimmed}`,
+          "rend",
+          resolvedSecId,
+          false,
+          buildBodyEx
+        );
         const tokens = rendTokens(rend);
         if (tokens.length > 1) {
           for (const token of tokens) {
-            recordKind(`${node.name}@${token}`, "rend", buildBodyEx);
+            recordKind(
+              `${node.name}@${token}`,
+              "rend",
+              resolvedSecId,
+              false,
+              buildBodyEx
+            );
           }
         }
       }
     }
 
-    recordElementAttributes(node, buildBodyEx, buildFullPageEx);
+    recordElementAttributes(
+      node,
+      resolvedSecId,
+      false,
+      buildBodyEx,
+      buildAdjacentEx,
+      buildFullPageEx
+    );
 
     if (!isVerseWork) {
       const hasLgAncestor = ancestors
         .slice(0, -1)
         .some((a) => a.name === "lg");
       if (node.name === "lg" || (node.name === "l" && !hasLgAncestor)) {
-        recordKind("embedded-verse", "layout", buildFullPageEx);
+        recordKind(
+          "embedded-verse",
+          "layout",
+          resolvedSecId,
+          false,
+          buildFullPageEx
+        );
       }
     }
 
@@ -904,7 +1034,13 @@ export function analyzeWorkForGallery(
       node.name === "stage" ||
       (node.name === "said" && node.getAttr("who") !== undefined)
     ) {
-      recordKind("dialogue-speaker", "layout", buildFullPageEx);
+      recordKind(
+        "dialogue-speaker",
+        "layout",
+        resolvedSecId,
+        false,
+        buildFullPageEx
+      );
     }
 
     for (const child of node.children) {
@@ -1584,6 +1720,15 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
+  max-height: 28rem;
+  overflow-y: auto;
+  position: relative;
+}
+
+.reader-section.gallery-target {
+  background: var(--primary-light);
+  border-left: 3px solid var(--primary);
+  border-radius: 4px;
 }
 
 /* ==========================================================================
@@ -2094,6 +2239,18 @@ export function formatGalleryHtml(report: GalleryReport): string {
     </section>
     ${failuresSectionHtml}
   </main>
+  <script>
+    document.querySelectorAll(".reader-preview").forEach(function (preview) {
+      if (preview.scrollHeight <= preview.clientHeight) return;
+      var target = preview.querySelector(".gallery-target");
+      if (target) {
+        preview.scrollTop = Math.max(
+          0,
+          target.offsetTop - Math.floor(preview.clientHeight / 3)
+        );
+      }
+    });
+  </script>
 </body>
 </html>
 `;
