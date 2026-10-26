@@ -17,9 +17,11 @@
  */
 
 import fs from "fs";
+import os from "os";
 import path from "path";
 import he from "he";
 
+import { assert } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import {
   EnglishTranslations,
@@ -30,23 +32,17 @@ import {
   type LibraryPatch,
   type LibraryPatchMap,
 } from "@/common/library/library_patches";
-import type {
-  DocumentInfo,
-  LibraryWorkMetadata,
-  ProcessedWork2,
-} from "@/common/library/library_types";
+import type { ProcessedWork2 } from "@/common/library/library_types";
 import { rendTokens } from "@/common/library/perseus_rends";
-import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
 import type {
   V2PreprocessedPage,
   V2PreprocessedWork,
 } from "@/common/library/preprocess/preprocessed_types";
 import {
-  SHORT_TITLE_BY_WORK_ID,
-  URL_NAME_BY_WORK_ID,
+  preprocessPerseusWorks,
   stripXmlProlog,
 } from "@/common/library/process_library";
-import { getSectionId, processTei2 } from "@/common/library/process_work";
+import { getSectionId } from "@/common/library/process_work";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { gitShortSha } from "@/scripts/library/render";
@@ -144,7 +140,12 @@ export interface GalleryWorkInput {
   workId: string;
   rawXml: string;
   onboarded: boolean;
+  absPath?: string;
   patches?: LibraryPatch[];
+  precomputed?: {
+    work: ProcessedWork2;
+    v2Work: V2PreprocessedWork;
+  };
 }
 
 export interface GalleryOptions {
@@ -186,84 +187,6 @@ const STRUCTURAL_CONTAINER_ELEMENTS = new Set<string>([
   "#comment",
 ]);
 
-const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
-  ["Julius Caesar", "caesar"],
-  ["P. Ovidius Naso", "ovid"],
-  ["Cornelius Tacitus", "tacitus"],
-  ["C. Valerius Catullus", "catullus"],
-  ["M. Tullius Cicero", "cicero"],
-  ["C. Suetonius Tranquillus", "suetonius"],
-  ["L. Annaeus Seneca iunior", "seneca_minor"],
-  ["Titus Livius (Livy)", "livy"],
-]);
-
-const NAME_TO_DISPLAY_NAME = new Map<string, string>([
-  ["de Origine et Situ Germanorum Liber", "Germania"],
-  ["De Vita Iulii Agricolae", "Agricola"],
-  ["The Catilinarian Conspiracy", "Bellum Catilinae"],
-  ["Laelius De Amicitia", "De Amicitia"],
-  ["Pro P. Quinctio", "Pro Quinctio"],
-  ["Medicamina faciei femineae", "Medicamina"],
-  [
-    "Pro C. Rabirio Perduellionis Reo Ad Quirites",
-    "Pro Rabirio Perduellionis Reo",
-  ],
-  ["In L. Catilinam", "In Catilinam"],
-  ["De domo sua ad pontifices", "de Domo Sua"],
-  ["De haruspicum responso in P. Clodium", "De Haruspicum Responso"],
-  ["In P. Vatinium testem interrogatio", "In P. Vatinium"],
-  ["Pro L. Cornelio Balbo", "Pro Balbo"],
-  ["In L. Calpurnium Pisonem", "In Pisonem"],
-  ["Pro C. Rabirio Postumo", "Pro Rabirio Postumo"],
-]);
-
-const NAME_TO_URL_LOOKUP = new Map<string, string>([
-  ["de Origine et Situ Germanorum Liber", "germania"],
-  ["De Vita Iulii Agricolae", "agricola"],
-  ["The Catilinarian Conspiracy", "catalina1"],
-  ["Medicamina faciei femineae", "medicamina"],
-  ["Pro P. Quinctio", "pro_quinctio"],
-  [
-    "Pro C. Rabirio Perduellionis Reo Ad Quirites",
-    "pro_rabirio_perduellionis_reo",
-  ],
-  ["In L. Catilinam", "in_catilinam"],
-  ["De domo sua ad pontifices", "de_domo_sua"],
-  ["De haruspicum responso in P. Clodium", "de_haruspicum_responso"],
-  ["In P. Vatinium testem interrogatio", "in_p_vatinium"],
-  ["Pro L. Cornelio Balbo", "pro_balbo"],
-  ["In L. Calpurnium Pisonem", "in_pisonem"],
-  ["Pro C. Rabirio Postumo", "pro_rabirio_postumo"],
-]);
-
-function urlify(input: string, customs: Map<string, string>): string {
-  const custom = customs.get(input);
-  if (custom !== undefined) {
-    return custom;
-  }
-  return input
-    .split(" ")
-    .map((c) => c.toLowerCase())
-    .join("_");
-}
-
-function buildWorkMetadata(
-  workId: string,
-  info: DocumentInfo
-): LibraryWorkMetadata {
-  const shortTitle =
-    SHORT_TITLE_BY_WORK_ID.get(workId) ?? NAME_TO_DISPLAY_NAME.get(info.title);
-  return {
-    id: workId,
-    author: info.author,
-    name: shortTitle ?? info.title,
-    urlAuthor: urlify(info.author, AUTHOR_TO_URL_LOOKUP),
-    urlName:
-      URL_NAME_BY_WORK_ID.get(workId) ?? urlify(info.title, NAME_TO_URL_LOOKUP),
-    attribution: info.attribution ?? "perseus",
-  };
-}
-
 /** Builds a canonical reader URL path `/work/<urlAuthor>/<urlName>/<pageId>#sec-<sectionId>`. */
 export function buildReaderSectionUrl(
   urlAuthor: string,
@@ -298,6 +221,19 @@ function sanitizeReaderHtmlFragment(html: string): string {
 }
 
 /**
+ * Scopes all `id="..."`, `href="#..."`, and `aria-labelledby="..."` attributes
+ * within a rendered reader preview fragment to a unique card prefix so that
+ * `index.html` never repeats HTML IDs across exemplars/spot-checks and
+ * in-preview footnote links (`#noteref-n1` ↔ `#note-n1`) jump within the same card.
+ */
+export function scopePreviewHtmlIds(html: string, prefix: string): string {
+  return html
+    .replace(/\bid="([^"]+)"/g, `id="${prefix}-$1"`)
+    .replace(/\bhref="#([^"]+)"/g, `href="#${prefix}-$1"`)
+    .replace(/\baria-labelledby="([^"]+)"/g, `aria-labelledby="${prefix}-$1"`);
+}
+
+/**
  * Serializes an `XmlNode` into a compact, single-line TEI XML snippet with
  * properly escaped attributes/text and collapsed whitespace.
  */
@@ -329,7 +265,7 @@ interface SectionRenderLocation {
   sectionId: string;
   rowHtmls: string[];
   pageRowHtmls: string[];
-  rowOffsetsInPage: number[];
+  pageNotesHtml?: string;
 }
 
 interface NoteRenderLocation {
@@ -343,9 +279,6 @@ interface IndexedWorkRender {
   bySectionId: Map<string, SectionRenderLocation>;
   orderedLocations: SectionRenderLocation[];
   byNoteId: Map<number, NoteRenderLocation>;
-  defaultPageId: string;
-  defaultSectionId: string;
-  defaultHtml: string;
 }
 
 function splitPageSectionHtmls(singleHtml: string): string[] {
@@ -355,11 +288,37 @@ function splitPageSectionHtmls(singleHtml: string): string[] {
   return singleHtml.split(/\n(?=<div class="reader-section)/);
 }
 
-function extractNoteListItems(notesHtml: string | undefined): string[] {
+/**
+ * Extracts top-level `<li class="reader-note" id="note-n...">...</li>` items
+ * from `notesHtml` using balanced `<li>` / `</li>` tag matching so nested
+ * lists inside note bodies cannot truncate a note item.
+ */
+export function extractNoteListItems(notesHtml: string | undefined): string[] {
   if (!notesHtml) {
     return [];
   }
-  return notesHtml.match(/<li class="reader-note" id="note-n\d+">[\s\S]*?<\/li>/g) ?? [];
+  const items: string[] = [];
+  const startPattern = /<li class="reader-note" id="note-n\d+">/g;
+  const liTagPattern = /<(\/?)li\b[^>]*>/gi;
+
+  let startMatch: RegExpExecArray | null;
+  while ((startMatch = startPattern.exec(notesHtml)) !== null) {
+    const startIdx = startMatch.index;
+    liTagPattern.lastIndex = startIdx;
+    let depth = 0;
+    let tagMatch: RegExpExecArray | null;
+    while ((tagMatch = liTagPattern.exec(notesHtml)) !== null) {
+      const isClosing = tagMatch[1] === "/";
+      depth += isClosing ? -1 : 1;
+      if (depth === 0) {
+        const endIdx = tagMatch.index + tagMatch[0].length;
+        items.push(notesHtml.slice(startIdx, endIdx));
+        startPattern.lastIndex = endIdx;
+        break;
+      }
+    }
+  }
+  return items;
 }
 
 function collectNoteIdsInRow(
@@ -420,14 +379,13 @@ function indexWorkRender(
           sectionId: effectiveSecId,
           rowHtmls: [],
           pageRowHtmls,
-          rowOffsetsInPage: [],
+          pageNotesHtml: v2Page.notesHtml,
         };
         bySectionId.set(rawDotId, loc);
         orderedLocations.push(loc);
       }
       if (rowHtml.length > 0) {
         loc.rowHtmls.push(rowHtml);
-        loc.rowOffsetsInPage.push(offsetInPage);
       }
 
       const rowNoteIds: number[] = [];
@@ -436,12 +394,13 @@ function indexWorkRender(
         if (work.notes?.[noteId] === undefined) {
           continue;
         }
-        const noteLi = noteLis[pageNoteSeq] ?? "";
+        const noteLi = noteLis[pageNoteSeq];
         pageNoteSeq++;
-        const noteAsideHtml =
-          noteLi.length > 0
-            ? `<aside class="reader-notes" role="doc-endnotes"><ol class="reader-notes-list">${noteLi}</ol></aside>`
-            : v2Page.notesHtml ?? "";
+        assert(
+          noteLi !== undefined && noteLi.length > 0,
+          `Missing rendered <li class="reader-note"> for noteId=${noteId} on page ${pageId} of ${v2Work.id}`
+        );
+        const noteAsideHtml = `<aside class="reader-notes" role="doc-endnotes"><ol class="reader-notes-list">${noteLi}</ol></aside>`;
         byNoteId.set(noteId, {
           pageId,
           sectionId: effectiveSecId,
@@ -452,31 +411,17 @@ function indexWorkRender(
     }
   }
 
-  const firstPage = v2Work.pages[0];
-  const defaultPageId = firstPage
-    ? Array.isArray(firstPage.id)
-      ? firstPage.id.join(".")
-      : firstPage.id
-    : "1";
-  const defaultSectionId =
-    firstPage?.citationRange[0] || orderedLocations[0]?.sectionId || defaultPageId;
-  const defaultHtml =
-    orderedLocations[0]?.rowHtmls[0] ?? firstPage?.singleHtml ?? "";
-
   return {
     bySectionId,
     orderedLocations,
     byNoteId,
-    defaultPageId,
-    defaultSectionId,
-    defaultHtml,
   };
 }
 
 function resolveSectionLocation(
   dotSecId: string,
   indexed: IndexedWorkRender
-): SectionRenderLocation {
+): SectionRenderLocation | undefined {
   const exact = indexed.bySectionId.get(dotSecId);
   if (exact && exact.rowHtmls.length > 0) {
     return exact;
@@ -489,16 +434,13 @@ function resolveSectionLocation(
       }
     }
   }
-  if (indexed.orderedLocations.length > 0) {
-    return indexed.orderedLocations[0];
-  }
-  return {
-    pageId: indexed.defaultPageId,
-    sectionId: indexed.defaultSectionId,
-    rowHtmls: indexed.defaultHtml ? [indexed.defaultHtml] : [],
-    pageRowHtmls: indexed.defaultHtml ? [indexed.defaultHtml] : [],
-    rowOffsetsInPage: [0],
-  };
+  return undefined;
+}
+
+function hasNonWhitespaceContent(node: XmlNode): boolean {
+  return node.children.some(
+    (child) => typeof child !== "string" || child.trim().length > 0
+  );
 }
 
 interface DetachedNotesIndex {
@@ -546,7 +488,7 @@ function collectDetachedNotes(body: XmlNode): DetachedNotesIndex {
         if (
           nAttr !== undefined &&
           child.getAttr("target") === undefined &&
-          child.children.length > 0
+          hasNonWhitespaceContent(child)
         ) {
           const norm = nAttr.replace(/^#/, "");
           if (referencedTargets.has(norm) && !byTarget.has(norm)) {
@@ -568,11 +510,21 @@ interface WorkKindAccumulator {
   category: MarkupCategory;
   occurrences: number;
   candidates: GalleryExemplar[];
+  sameSectionFallbacks: GalleryExemplar[];
 }
 
 export interface AnalyzedWorkGallery {
   spotCheck: GalleryWorkSpotCheck;
   kinds: Map<string, WorkKindAccumulator>;
+}
+
+function joinPassageAndNotesHtml(
+  passageHtml: string,
+  notesHtml?: string
+): string {
+  return notesHtml && notesHtml.length > 0
+    ? `${passageHtml}\n${notesHtml}`
+    : passageHtml;
 }
 
 function buildSpotCheckPage(
@@ -585,9 +537,7 @@ function buildSpotCheckPage(
   const readerUrl = `/work/${v2Work.urlAuthor}/${v2Work.urlName}/${pageId}`;
   const sections = splitPageSectionHtmls(page.singleHtml);
   const previewSections = sections.slice(0, maxPreviewSections).join("\n");
-  const previewHtml = page.notesHtml
-    ? `${previewSections}\n${page.notesHtml}`
-    : previewSections;
+  const previewHtml = joinPassageAndNotesHtml(previewSections, page.notesHtml);
   return {
     role,
     pageId,
@@ -600,33 +550,63 @@ function buildSpotCheckPage(
   };
 }
 
+function runPreprocessSingleWork(input: GalleryWorkInput): {
+  work: ProcessedWork2;
+  v2Work: V2PreprocessedWork;
+} {
+  if (input.precomputed) {
+    return input.precomputed;
+  }
+  const patchMap: LibraryPatchMap = new Map();
+  if (input.patches) {
+    patchMap.set(input.workId, input.patches);
+  }
+  let captured:
+    | { work: ProcessedWork2; v2Work: V2PreprocessedWork }
+    | undefined;
+
+  if (input.absPath && fs.existsSync(input.absPath)) {
+    preprocessPerseusWorks([input.absPath], {
+      patches: patchMap,
+      onV2Work: (v2Work, work) => {
+        captured = { work, v2Work };
+      },
+    });
+  } else {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "morcus-gallery-"));
+    try {
+      const tmpPath = path.join(tmpDir, `${input.workId}.xml`);
+      fs.writeFileSync(tmpPath, input.rawXml, "utf8");
+      preprocessPerseusWorks([tmpPath], {
+        patches: patchMap,
+        onV2Work: (v2Work, work) => {
+          captured = { work, v2Work };
+        },
+      });
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  }
+
+  assert(
+    captured !== undefined,
+    `preprocessPerseusWorks produced no V2 output for '${input.workId}'`
+  );
+  return captured!;
+}
+
 /**
- * Processes a single TEI work through `processTei2` and `preprocessWorkToV2`,
- * extracting all markup kind occurrences/exemplars and its per-work spot-check
- * summary.
+ * Processes a single TEI work through `preprocessPerseusWorks` (`processTei2`
+ * + `preprocessWorkToV2`), extracting all markup kind occurrences/exemplars
+ * and its per-work spot-check summary.
  */
 export function analyzeWorkForGallery(
   input: GalleryWorkInput,
   maxExamplesPerWork = GALLERY_MAX_EXAMPLES_DEFAULT
 ): AnalyzedWorkGallery {
+  const { work, v2Work } = runPreprocessSingleWork(input);
   const stripped = stripXmlProlog(input.rawXml);
   const rawTei = parseRawXml(stripped, { keepWhitespace: true });
-  const teiForV1 = rawTei.deepcopy();
-
-  const work = processTei2(
-    teiForV1,
-    {
-      workId: input.workId,
-      translationId: EnglishTranslations[input.workId],
-    },
-    { patches: input.patches }
-  );
-  const shortTitle =
-    SHORT_TITLE_BY_WORK_ID.get(input.workId) ??
-    NAME_TO_DISPLAY_NAME.get(work.info.title);
-  work.info = { ...work.info, shortTitle };
-  const metadata = buildWorkMetadata(input.workId, work.info);
-  const v2Work = preprocessWorkToV2(work, metadata);
 
   const indexed = indexWorkRender(work, v2Work);
   const body = rawTei.findDescendants("body")[0] ?? new XmlNode("body");
@@ -660,60 +640,48 @@ export function analyzeWorkForGallery(
   const recordKind = (
     kind: string,
     category: MarkupCategory,
-    buildExemplar: () => GalleryExemplar
+    buildExemplar: () => GalleryExemplar | undefined
   ) => {
     let acc = kinds.get(kind);
     if (!acc) {
-      acc = { category, occurrences: 0, candidates: [] };
+      acc = {
+        category,
+        occurrences: 0,
+        candidates: [],
+        sameSectionFallbacks: [],
+      };
       kinds.set(kind, acc);
     }
     acc.occurrences++;
-    if (acc.candidates.length < candidateLimit) {
-      const ex = buildExemplar();
-      const sameSection = acc.candidates.some(
-        (c) => c.sectionId === ex.sectionId && c.inNote === ex.inNote
-      );
-      if (!sameSection || acc.candidates.length === 0) {
-        acc.candidates.push(ex);
-      } else if (acc.candidates.length < candidateLimit) {
-        // Store as fallback if we still have room, or allow distinct sections to replace it later.
-        acc.candidates.push(ex);
-      }
-    } else {
-      // Replace a duplicate-section candidate if this new occurrence is from a fresh section.
-      const dupIdx = acc.candidates.findIndex(
-        (c, idx) =>
-          idx > 0 &&
-          acc.candidates
-            .slice(0, idx)
-            .some((prev) => prev.sectionId === c.sectionId)
-      );
-      if (dupIdx !== -1) {
-        const ex = buildExemplar();
-        if (!acc.candidates.some((c) => c.sectionId === ex.sectionId)) {
-          acc.candidates[dupIdx] = ex;
-        }
-      }
+    if (acc.candidates.length >= candidateLimit) {
+      return;
+    }
+    const ex = buildExemplar();
+    if (!ex) {
+      return;
+    }
+    const sameSection = acc.candidates.some(
+      (c) => c.sectionId === ex.sectionId && c.inNote === ex.inNote
+    );
+    if (!sameSection) {
+      acc.candidates.push(ex);
+    } else if (acc.sameSectionFallbacks.length < candidateLimit) {
+      acc.sameSectionFallbacks.push(ex);
     }
   };
 
   const makeBodyExemplar = (
     node: XmlNode,
     dotSecId: string,
-    options?: { includeAdjacentRows?: boolean; fullSection?: boolean }
-  ): GalleryExemplar => {
+    options?: { fullPage?: boolean }
+  ): GalleryExemplar | undefined => {
     const loc = resolveSectionLocation(dotSecId, indexed);
-    let renderedHtml: string;
-    if (options?.includeAdjacentRows && loc.rowOffsetsInPage.length > 0) {
-      const firstOffset = loc.rowOffsetsInPage[0];
-      const start = Math.max(0, firstOffset - 1);
-      const end = Math.min(loc.pageRowHtmls.length, firstOffset + 2);
-      renderedHtml = loc.pageRowHtmls.slice(start, end).join("\n");
-    } else if (options?.fullSection) {
-      renderedHtml = loc.rowHtmls.slice(0, 6).join("\n");
-    } else {
-      renderedHtml = loc.rowHtmls.slice(0, 3).join("\n");
+    if (!loc) {
+      return undefined;
     }
+    const renderedHtml = options?.fullPage
+      ? joinPassageAndNotesHtml(loc.pageRowHtmls.join("\n"), loc.pageNotesHtml)
+      : joinPassageAndNotesHtml(loc.rowHtmls.slice(0, 3).join("\n"));
     const readerUrl = buildReaderSectionUrl(
       v2Work.urlAuthor,
       v2Work.urlName,
@@ -736,86 +704,100 @@ export function analyzeWorkForGallery(
   const makeNoteExemplar = (
     node: XmlNode,
     noteId: number,
-    fallbackSecId: string,
     customSnippet?: string
-  ): GalleryExemplar => {
+  ): GalleryExemplar | undefined => {
     const noteLoc = indexed.byNoteId.get(noteId);
-    if (noteLoc) {
-      const readerUrl = buildReaderSectionUrl(
-        v2Work.urlAuthor,
-        v2Work.urlName,
-        noteLoc.pageId,
-        noteLoc.sectionId
-      );
-      const renderedHtml = noteLoc.noteHtml
-        ? `${noteLoc.sectionHtml}\n${noteLoc.noteHtml}`
-        : noteLoc.sectionHtml;
-      return {
-        workId: input.workId,
-        workTitle: v2Work.shortTitle ?? v2Work.title,
-        author: v2Work.author,
-        sectionId: noteLoc.sectionId,
-        pageId: noteLoc.pageId,
-        readerUrl,
-        url: readerUrl,
-        teiSnippet: customSnippet ?? serializeTeiSnippet(node),
-        renderedHtml,
-        inNote: true,
-      };
+    if (!noteLoc) {
+      return undefined;
     }
-    const base = makeBodyExemplar(node, fallbackSecId);
+    const readerUrl = buildReaderSectionUrl(
+      v2Work.urlAuthor,
+      v2Work.urlName,
+      noteLoc.pageId,
+      noteLoc.sectionId
+    );
+    const renderedHtml = joinPassageAndNotesHtml(
+      noteLoc.sectionHtml,
+      noteLoc.noteHtml
+    );
     return {
-      ...base,
-      teiSnippet: customSnippet ?? base.teiSnippet,
+      workId: input.workId,
+      workTitle: v2Work.shortTitle ?? v2Work.title,
+      author: v2Work.author,
+      sectionId: noteLoc.sectionId,
+      pageId: noteLoc.pageId,
+      readerUrl,
+      url: readerUrl,
+      teiSnippet: customSnippet ?? serializeTeiSnippet(node),
+      renderedHtml,
       inNote: true,
     };
   };
 
+  /**
+   * Symmetric attribute extraction used in both body and note walks.
+   */
+  const recordElementAttributes = (
+    node: XmlNode,
+    buildEx: () => GalleryExemplar | undefined,
+    buildFullPageEx?: () => GalleryExemplar | undefined
+  ) => {
+    if (node.name === "l") {
+      const part = node.getAttr("part");
+      if (part !== undefined) {
+        const splitEx = buildFullPageEx ?? buildEx;
+        recordKind(`l@part="${part}"`, "attr", splitEx);
+        if (part !== "N") {
+          recordKind("l@part", "layout", splitEx);
+        }
+      }
+    }
+    if (node.name === "foreign") {
+      const lang = node.getAttr("xml:lang");
+      if (lang !== undefined) {
+        recordKind(`foreign@xml:lang="${lang}"`, "attr", buildEx);
+      }
+    }
+    if (node.name === "milestone") {
+      const unit = node.getAttr("unit");
+      if (unit !== undefined) {
+        recordKind(`milestone@unit="${unit}"`, "attr", buildEx);
+      }
+    }
+    if (node.name === "w") {
+      const wType = node.getAttr("type");
+      if (wType !== undefined) {
+        recordKind(`w@type="${wType}"`, "attr", buildEx);
+      }
+    }
+  };
+
   let nextNoteId = 0;
 
-  const walkNoteDescendants = (
-    noteBody: XmlNode,
-    noteId: number,
-    dotSecId: string
-  ) => {
+  const walkNoteDescendants = (noteBody: XmlNode, noteId: number) => {
     for (const child of noteBody.children) {
       if (typeof child === "string") continue;
       if (child.name === "#comment") continue;
 
-      const buildEx = () => makeNoteExemplar(child, noteId, dotSecId);
+      const buildEx = () => makeNoteExemplar(child, noteId);
       recordKind(`note:${child.name}`, "note-element", buildEx);
-      if (!STRUCTURAL_CONTAINER_ELEMENTS.has(child.name)) {
-        recordKind(child.name, "element", buildEx);
-      }
 
       const rend = child.getAttr("rend");
       if (rend !== undefined) {
         const trimmed = rend.trim();
-        recordKind(`${child.name}@${trimmed}`, "rend", buildEx);
-        recordKind(`note:${child.name}@${trimmed}`, "note-rend", buildEx);
-        const tokens = rendTokens(rend);
-        if (tokens.length > 1) {
-          for (const token of tokens) {
-            recordKind(`${child.name}@${token}`, "rend", buildEx);
-            recordKind(`note:${child.name}@${token}`, "note-rend", buildEx);
+        if (trimmed.length > 0) {
+          recordKind(`note:${child.name}@${trimmed}`, "note-rend", buildEx);
+          const tokens = rendTokens(rend);
+          if (tokens.length > 1) {
+            for (const token of tokens) {
+              recordKind(`note:${child.name}@${token}`, "note-rend", buildEx);
+            }
           }
         }
       }
 
-      if (child.name === "foreign") {
-        const lang = child.getAttr("xml:lang");
-        if (lang !== undefined) {
-          recordKind(`foreign@xml:lang="${lang}"`, "attr", buildEx);
-        }
-      }
-      if (child.name === "w") {
-        const wType = child.getAttr("type");
-        if (wType !== undefined) {
-          recordKind(`w@type="${wType}"`, "attr", buildEx);
-        }
-      }
-
-      walkNoteDescendants(child, noteId, dotSecId);
+      recordElementAttributes(child, buildEx);
+      walkNoteDescendants(child, noteId);
     }
   };
 
@@ -857,8 +839,7 @@ export function analyzeWorkForGallery(
               180
             )}`
           : serializeTeiSnippet(node);
-      const buildNoteEx = () =>
-        makeNoteExemplar(node, noteId, dotSecId, snippet);
+      const buildNoteEx = () => makeNoteExemplar(node, noteId, snippet);
 
       recordKind("note", "element", buildNoteEx);
       if (target !== undefined) {
@@ -867,9 +848,6 @@ export function analyzeWorkForGallery(
       const place = node.getAttr("place");
       if (place !== undefined) {
         recordKind(`note@place="${place}"`, "attr", buildNoteEx);
-        if (place === "inline") {
-          recordKind("dialogue-speaker", "layout", buildNoteEx);
-        }
       }
       if (
         node.getAttr("n") !== undefined ||
@@ -878,73 +856,45 @@ export function analyzeWorkForGallery(
         recordKind("note@n", "attr", buildNoteEx);
       }
       const rend = node.getAttr("rend");
-      if (rend !== undefined) {
+      if (rend !== undefined && rend.trim().length > 0) {
         recordKind(`note@${rend.trim()}`, "rend", buildNoteEx);
       }
 
       const bodyToWalk = targetNode ?? node;
-      walkNoteDescendants(bodyToWalk, noteId, dotSecId);
+      walkNoteDescendants(bodyToWalk, noteId);
       return;
     }
 
+    const buildBodyEx = () => makeBodyExemplar(node, dotSecId);
+    const buildFullPageEx = () =>
+      makeBodyExemplar(node, dotSecId, { fullPage: true });
+
     if (!STRUCTURAL_CONTAINER_ELEMENTS.has(node.name)) {
-      recordKind(node.name, "element", () => makeBodyExemplar(node, dotSecId));
+      recordKind(node.name, "element", buildBodyEx);
     }
 
     const rend = node.getAttr("rend");
     if (rend !== undefined) {
       const trimmed = rend.trim();
-      recordKind(`${node.name}@${trimmed}`, "rend", () =>
-        makeBodyExemplar(node, dotSecId)
-      );
-      const tokens = rendTokens(rend);
-      if (tokens.length > 1) {
-        for (const token of tokens) {
-          recordKind(`${node.name}@${token}`, "rend", () =>
-            makeBodyExemplar(node, dotSecId)
-          );
+      if (trimmed.length > 0) {
+        recordKind(`${node.name}@${trimmed}`, "rend", buildBodyEx);
+        const tokens = rendTokens(rend);
+        if (tokens.length > 1) {
+          for (const token of tokens) {
+            recordKind(`${node.name}@${token}`, "rend", buildBodyEx);
+          }
         }
       }
     }
 
-    if (node.name === "l") {
-      const part = node.getAttr("part");
-      if (part !== undefined) {
-        const buildSplitEx = () =>
-          makeBodyExemplar(node, dotSecId, { includeAdjacentRows: true });
-        recordKind(`l@part="${part}"`, "attr", buildSplitEx);
-        if (part !== "N") {
-          recordKind("l@part", "layout", buildSplitEx);
-        }
-      }
-    }
-
-    if (node.name === "foreign") {
-      const lang = node.getAttr("xml:lang");
-      if (lang !== undefined) {
-        recordKind(`foreign@xml:lang="${lang}"`, "attr", () =>
-          makeBodyExemplar(node, dotSecId)
-        );
-      }
-    }
-
-    if (node.name === "milestone") {
-      const unit = node.getAttr("unit");
-      if (unit !== undefined) {
-        recordKind(`milestone@unit="${unit}"`, "attr", () =>
-          makeBodyExemplar(node, dotSecId)
-        );
-      }
-    }
+    recordElementAttributes(node, buildBodyEx, buildFullPageEx);
 
     if (!isVerseWork) {
       const hasLgAncestor = ancestors
         .slice(0, -1)
         .some((a) => a.name === "lg");
       if (node.name === "lg" || (node.name === "l" && !hasLgAncestor)) {
-        recordKind("embedded-verse", "layout", () =>
-          makeBodyExemplar(node, dotSecId, { fullSection: true })
-        );
+        recordKind("embedded-verse", "layout", buildFullPageEx);
       }
     }
 
@@ -954,9 +904,7 @@ export function analyzeWorkForGallery(
       node.name === "stage" ||
       (node.name === "said" && node.getAttr("who") !== undefined)
     ) {
-      recordKind("dialogue-speaker", "layout", () =>
-        makeBodyExemplar(node, dotSecId, { fullSection: true })
-      );
+      recordKind("dialogue-speaker", "layout", buildFullPageEx);
     }
 
     for (const child of node.children) {
@@ -966,6 +914,21 @@ export function analyzeWorkForGallery(
   };
 
   walkBody(body, [body], "");
+
+  const expectedNotes = work.notes?.length ?? 0;
+  assert(
+    nextNoteId === expectedNotes,
+    `Note count mismatch in '${input.workId}': raw walk visited ${nextNoteId} notes, processTei2 produced ${expectedNotes}`
+  );
+
+  for (const acc of kinds.values()) {
+    while (
+      acc.candidates.length < candidateLimit &&
+      acc.sameSectionFallbacks.length > 0
+    ) {
+      acc.candidates.push(acc.sameSectionFallbacks.shift()!);
+    }
+  }
 
   const citableRowCount = work.rows.filter(
     ([id]) => id.length === work.textParts.length
@@ -1024,7 +987,8 @@ const CATEGORY_ORDER: Record<MarkupCategory, number> = {
 
 /**
  * Selects up to `maxExamples` exemplars across works using round-robin
- * selection so that exemplars come from distinct works whenever possible.
+ * selection, spreading across distinct authors first, then distinct works
+ * by the same author, and finally distinct sections within a work.
  */
 export function selectDiverseExemplars(
   perWorkCandidates: GalleryExemplar[][],
@@ -1037,13 +1001,38 @@ export function selectDiverseExemplars(
   if (nonEmpty.length === 0) {
     return [];
   }
-  // If candidates contain both body and note exemplars across works, order works
-  // so both contexts are represented early when possible.
+
+  // Spread work lists across distinct authors first so common markup kinds
+  // don't just pick multiple works from the alphabetically first author.
+  const byAuthor = new Map<string, GalleryExemplar[][]>();
+  for (const workList of nonEmpty) {
+    const authorKey = workList[0].author || workList[0].workId.split(".")[0];
+    let authorWorks = byAuthor.get(authorKey);
+    if (!authorWorks) {
+      authorWorks = [];
+      byAuthor.set(authorKey, authorWorks);
+    }
+    authorWorks.push(workList);
+  }
+  const authorSpreadWorks: GalleryExemplar[][] = [];
+  let authorRound = 0;
+  while (authorSpreadWorks.length < nonEmpty.length) {
+    let added = false;
+    for (const authorWorks of byAuthor.values()) {
+      if (authorRound < authorWorks.length) {
+        authorSpreadWorks.push(authorWorks[authorRound]);
+        added = true;
+      }
+    }
+    if (!added) break;
+    authorRound++;
+  }
+
   const selected: GalleryExemplar[] = [];
   let round = 0;
   while (selected.length < maxExamples) {
     let addedInRound = false;
-    for (const workList of nonEmpty) {
+    for (const workList of authorSpreadWorks) {
       if (round < workList.length) {
         selected.push(workList[round]);
         addedInRound = true;
@@ -1071,7 +1060,9 @@ export interface BuildGalleryFromWorksOptions {
 
 /**
  * Pure aggregation over a list of `GalleryWorkInput` items, returning the
- * structured `GalleryReport`.
+ * structured `GalleryReport`. Onboarded works (`input.onboarded === true`)
+ * fail loudly if they cannot be processed; candidate works record their
+ * failure in `report.failures`.
  */
 export function buildGalleryReportFromInputs(
   inputs: GalleryWorkInput[],
@@ -1124,6 +1115,13 @@ export function buildGalleryReportFromInputs(
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      if (input.onboarded) {
+        throw new Error(
+          `Onboarded work '${input.workId}' failed gallery processing: ${firstLineOf(
+            msg
+          )}`
+        );
+      }
       failures[input.workId] = firstLineOf(msg).slice(0, 160);
     }
   }
@@ -1236,12 +1234,12 @@ export function selectGalleryWorkFiles(
 // Markdown & Self-Contained HTML Gallery Formatting
 
 const CATEGORY_TITLES: Record<MarkupCategory, string> = {
-  element: "Content Elements (Body & Notes)",
+  element: "Content Elements (Body Only)",
   "note-element": "Note Elements (Inside `<note>`)",
-  rend: "Element `@rend` Combinations (Body & Notes)",
+  rend: "Element `@rend` Combinations (Body Only)",
   "note-rend": "Note `@rend` Combinations (Inside `<note>`)",
   attr: "Key Structural & Attribute Kinds",
-  layout: "Complex Layout Passages",
+  layout: "Complex Layout Passages (Full Page Context)",
 };
 
 function escapeMdCell(s: string): string {
@@ -1253,6 +1251,9 @@ export function formatGalleryMarkdown(report: GalleryReport): string {
   const lines: string[] = [];
   const P = (line = "") => lines.push(line);
   const t = report.totals;
+  const failureEntries = Object.entries(report.failures).sort(([a], [b]) =>
+    a < b ? -1 : a > b ? 1 : 0
+  );
 
   P(`# Library Exemplar Review Gallery: \`${report.label}\``);
   P();
@@ -1329,6 +1330,18 @@ export function formatGalleryMarkdown(report: GalleryReport): string {
     );
   }
   P();
+
+  if (failureEntries.length > 0) {
+    P(`## 3. Skipped / Failed Candidate Works (${failureEntries.length})`);
+    P();
+    P(`| Work ID | Error |`);
+    P(`| --- | --- |`);
+    for (const [workId, errMsg] of failureEntries) {
+      P(`| \`${escapeMdCell(workId)}\` | ${escapeMdCell(errMsg)} |`);
+    }
+    P();
+  }
+
   return lines.join("\n") + "\n";
 }
 
@@ -1340,9 +1353,10 @@ function kindAnchorId(kind: string, category: MarkupCategory): string {
 }
 
 /**
- * Core reader typography, indentation, and apparatus styles (matching
- * `work_preprocessor.ts`, `reader_text.css`, and `reader_notes.css`) so every
- * formatting kind is visually inspectable directly inside `index.html`.
+ * Core reader typography, indentation, and apparatus styles scoped strictly to
+ * `.reader-passage` and `.reader-notes` (matching `reader_text.css` and
+ * `reader_notes.css` in production so body vs note styling is faithfully
+ * reproduced in `index.html`).
  */
 const GALLERY_CSS = `
 :root {
@@ -1570,15 +1584,12 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-family: var(--font-text);
-  font-size: var(--reader-base);
-  line-height: 1.65;
-  color: var(--reading-text);
 }
 
 /* ==========================================================================
    Core Reader Typography, Indentation & Apparatus Classes
-   (mirrors src/web/ui/reader/reader_text.css & reader_notes.css)
+   Scoped to .reader-passage and .reader-notes exactly as in production
+   (src/web/ui/reader/reader_text.css & reader_notes.css)
    ========================================================================== */
 
 .reader-passage {
@@ -1616,34 +1627,28 @@ body {
   opacity: 0.45;
 }
 
-.reader-line,
-.reader-block,
 .reader-passage .reader-line,
 .reader-passage .reader-block {
   display: block;
 }
 
-.indent,
 .reader-passage .indent {
   display: block;
   padding-left: 1.5em;
 }
 
-.indent-para,
 .reader-passage .indent-para {
   display: block;
   padding-left: 0;
   text-indent: 1.5em;
 }
 
-.blockquote,
 .reader-passage .blockquote {
   display: block;
   margin: 0.4em 0 0.4em 1.5em;
   font-style: italic;
 }
 
-.reader-subheading,
 .reader-passage .reader-subheading {
   font-family: var(--font-serif);
   font-size: 1em;
@@ -1652,52 +1657,43 @@ body {
   margin: 0.6em 0 0.4em;
 }
 
-.reader-list,
 .reader-passage .reader-list {
   margin: 0.4em 0;
   padding-left: 1.5em;
 }
 
-.italic,
 .reader-passage .italic {
   font-style: italic;
 }
 
-.bold,
 .reader-passage .bold {
   font-weight: 600;
 }
 
-.smallcaps,
 .reader-passage .smallcaps {
   font-variant-caps: small-caps;
   letter-spacing: 0.02em;
 }
 
-.uppercase,
 .reader-passage .uppercase {
   text-transform: uppercase;
 }
 
-.overline,
 .reader-passage .overline {
   text-decoration: overline;
 }
 
-.superscript,
 .reader-passage .superscript {
   vertical-align: super;
   font-size: smaller;
   line-height: 0;
 }
 
-.line-space,
 .reader-passage .line-space {
   display: block;
   height: 0.75em;
 }
 
-.reader-gap,
 .reader-passage .reader-gap {
   font-style: italic;
   opacity: 0.7;
@@ -1834,19 +1830,27 @@ export function formatGalleryHtml(report: GalleryReport): string {
     "attr",
     "layout",
   ];
+  const failureEntries = Object.entries(report.failures).sort(([a], [b]) =>
+    a < b ? -1 : a > b ? 1 : 0
+  );
 
   const categorySectionsHtml = categories
-    .map((cat) => {
+    .map((cat, catIdx) => {
       const items = report.markupKinds.filter((k) => k.category === cat);
       if (items.length === 0) {
         return "";
       }
       const cardsHtml = items
-        .map((k) => {
+        .map((k, kindIdx) => {
           const anchorId = kindAnchorId(k.kind, k.category);
           const examplesHtml = k.examples
-            .map(
-              (ex) => `<div class="exemplar-item">
+            .map((ex, exIdx) => {
+              const previewScope = `ex-${catIdx}-${kindIdx}-${exIdx}`;
+              const scopedHtml = scopePreviewHtmlIds(
+                sanitizeReaderHtmlFragment(ex.renderedHtml),
+                previewScope
+              );
+              return `<div class="exemplar-item">
               <div class="exemplar-meta">
                 <span><strong>${he.escape(ex.author)}</strong>, <em>${he.escape(
                 ex.workTitle
@@ -1863,12 +1867,10 @@ export function formatGalleryHtml(report: GalleryReport): string {
                 <pre class="tei-snippet"><code>${he.escape(
                   ex.teiSnippet
                 )}</code></pre>
-                <div class="reader-preview reader-view">${sanitizeReaderHtmlFragment(
-                  ex.renderedHtml
-                )}</div>
+                <div class="reader-preview reader-view">${scopedHtml}</div>
               </div>
-            </div>`
-            )
+            </div>`;
+            })
             .join("\n");
 
           return `<article class="kind-card" id="${he.escape(
@@ -1933,7 +1935,7 @@ export function formatGalleryHtml(report: GalleryReport): string {
     .join("\n");
 
   const worksCardsHtml = report.works
-    .map((w) => {
+    .map((w, workIdx) => {
       const kindsListHtml = w.markupKinds
         .map((kName) => {
           const kObj = report.kindsByName[kName];
@@ -1945,8 +1947,13 @@ export function formatGalleryHtml(report: GalleryReport): string {
         .join(" ");
 
       const spotPagesHtml = w.spotCheckPages
-        .map(
-          (p) => `<div class="spot-page-card">
+        .map((p, pageIdx) => {
+          const previewScope = `spot-${workIdx}-${pageIdx}`;
+          const scopedHtml = scopePreviewHtmlIds(
+            sanitizeReaderHtmlFragment(p.previewHtml),
+            previewScope
+          );
+          return `<div class="spot-page-card">
           <div class="spot-page-header">
             <span><strong>${he.escape(p.role.toUpperCase())}</strong>: ${he.escape(
             p.title
@@ -1957,11 +1964,9 @@ export function formatGalleryHtml(report: GalleryReport): string {
               p.readerUrl
             )}">${he.escape(p.readerUrl)}</a>
           </div>
-          <div class="reader-preview reader-view">${sanitizeReaderHtmlFragment(
-            p.previewHtml
-          )}</div>
-        </div>`
-        )
+          <div class="reader-preview reader-view">${scopedHtml}</div>
+        </div>`;
+        })
         .join("\n");
 
       return `<details class="work-details" id="work-${he.escape(w.workId)}">
@@ -1986,6 +1991,33 @@ export function formatGalleryHtml(report: GalleryReport): string {
     })
     .join("\n");
 
+  const failuresSectionHtml =
+    failureEntries.length > 0
+      ? `<section id="failures">
+      <h2 class="gallery-section-heading">3. Skipped / Failed Candidate Works (${
+        failureEntries.length
+      })</h2>
+      <table class="work-table">
+        <thead>
+          <tr>
+            <th>Work ID</th>
+            <th>Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${failureEntries
+            .map(
+              ([workId, errMsg]) => `<tr>
+            <td><code>${he.escape(workId)}</code></td>
+            <td>${he.escape(errMsg)}</td>
+          </tr>`
+            )
+            .join("\n")}
+        </tbody>
+      </table>
+    </section>`
+      : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2005,7 +2037,9 @@ export function formatGalleryHtml(report: GalleryReport): string {
       <div class="gallery-meta">
         <span><strong>Works:</strong> ${t.worksProcessed} (${
     t.onboardedCount
-  } onboarded, ${t.candidateCount} candidates)</span>
+  } onboarded, ${t.candidateCount} candidates${
+    t.failedCount > 0 ? `, ${t.failedCount} skipped/failed` : ""
+  })</span>
         <span><strong>Markup kinds:</strong> ${t.markupKindCount}</span>
         <span><strong>Max examples/kind:</strong> ${report.maxExamples}</span>
       </div>
@@ -2019,7 +2053,11 @@ export function formatGalleryHtml(report: GalleryReport): string {
       <a href="#cat-layout">Complex Layouts</a>
       <a href="#spot-check-index">Per-Work Spot-Check Index (${
         t.worksProcessed
-      })</a>
+      })</a>${
+        failureEntries.length > 0
+          ? `\n      <a href="#failures">Failed Candidates (${failureEntries.length})</a>`
+          : ""
+      }
     </nav>
   </header>
   <main class="gallery-main">
@@ -2054,6 +2092,7 @@ export function formatGalleryHtml(report: GalleryReport): string {
       </table>
       ${worksCardsHtml}
     </section>
+    ${failuresSectionHtml}
   </main>
 </body>
 </html>
@@ -2099,12 +2138,68 @@ export function buildGallery(options: GalleryOptions = {}): GalleryResult {
     includeCandidates: options.includeCandidates,
   });
 
-  const inputs: GalleryWorkInput[] = files.map((file) => ({
-    workId: file.workId,
-    rawXml: fs.readFileSync(file.absPath, "utf8"),
-    onboarded: file.onboarded,
-    patches: patches.get(file.workId),
-  }));
+  // Also include any existing English translation files so `preprocessPerseusWorks`
+  // attaches translation metadata identically to production.
+  const translationPaths: string[] = [];
+  for (const file of files) {
+    const trId = EnglishTranslations[file.workId];
+    if (trId) {
+      const trPath = path.join(root, workIdToRelPath(trId));
+      if (fs.existsSync(trPath)) {
+        translationPaths.push(trPath);
+      }
+    }
+  }
+
+  const precomputedByWorkId = new Map<
+    string,
+    { work: ProcessedWork2; v2Work: V2PreprocessedWork }
+  >();
+  const preprocessErrors = new Map<string, unknown>();
+
+  preprocessPerseusWorks(
+    [...translationPaths, ...files.map((f) => f.absPath)],
+    {
+      patches,
+      onV2Work: (v2Work, work) => {
+        precomputedByWorkId.set(v2Work.id, { work, v2Work });
+      },
+      onError: (workId, err) => {
+        preprocessErrors.set(workId, err);
+      },
+    }
+  );
+
+  for (const file of files) {
+    if (file.onboarded && preprocessErrors.has(file.workId)) {
+      const err = preprocessErrors.get(file.workId);
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(
+        `Onboarded work '${file.workId}' failed gallery processing: ${firstLineOf(
+          msg
+        )}`
+      );
+    }
+  }
+
+  const inputs: GalleryWorkInput[] = [];
+  const candidateFailures: Record<string, string> = {};
+  for (const file of files) {
+    if (preprocessErrors.has(file.workId)) {
+      const err = preprocessErrors.get(file.workId);
+      const msg = err instanceof Error ? err.message : String(err);
+      candidateFailures[file.workId] = firstLineOf(msg).slice(0, 160);
+      continue;
+    }
+    inputs.push({
+      workId: file.workId,
+      rawXml: fs.readFileSync(file.absPath, "utf8"),
+      onboarded: file.onboarded,
+      absPath: file.absPath,
+      patches: patches.get(file.workId),
+      precomputed: precomputedByWorkId.get(file.workId),
+    });
+  }
 
   const report = buildGalleryReportFromInputs(inputs, {
     label,
@@ -2114,6 +2209,10 @@ export function buildGallery(options: GalleryOptions = {}): GalleryResult {
     includeCandidates: options.includeCandidates,
     maxExamples,
   });
+  for (const [failedWorkId, errMsg] of Object.entries(candidateFailures)) {
+    report.failures[failedWorkId] = errMsg;
+  }
+  report.totals.failedCount = Object.keys(report.failures).length;
 
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(

@@ -1,19 +1,22 @@
-import { ArgumentParser } from "argparse";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { ArgumentParser } from "argparse";
 
 import { LatinWorks } from "@/common/library/library_constants";
+import { parseRawXml } from "@/common/xml/xml_utils";
 import {
   analyzeWorkForGallery,
   buildGallery,
   buildGalleryReportFromInputs,
   buildReaderSectionUrl,
+  extractNoteListItems,
   formatGalleryHtml,
   formatGalleryMarkdown,
+  scopePreviewHtmlIds,
   selectDiverseExemplars,
   serializeTeiSnippet,
-  type GalleryWorkInput,
+  type GalleryExemplar,
 } from "@/scripts/library/gallery";
 import {
   LIBRARY_ACTIONS,
@@ -22,114 +25,114 @@ import {
   optString,
   runLibraryCli,
 } from "@/scripts/library/library_cli";
-import { parseRawXml } from "@/common/xml/xml_utils";
-
-console.debug = jest.fn();
-
-const PROSE_ENCODING_DESC = `
-  <encodingDesc>
-    <refsDecl n="CTS">
-      <cRefPattern n="section" matchPattern="(\\w+).(\\w+)"
-        replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2'])"><p>x</p></cRefPattern>
-      <cRefPattern n="chapter" matchPattern="(\\w+)"
-        replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1'])"><p>x</p></cRefPattern>
-    </refsDecl>
-  </encodingDesc>`;
-
-const VERSE_ENCODING_DESC = `
-  <encodingDesc>
-    <refsDecl n="CTS">
-      <cRefPattern n="line" matchPattern="(\\w+).(\\w+)"
-        replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:l[@n='$2'])"><p>x</p></cRefPattern>
-      <cRefPattern n="poem" matchPattern="(\\w+)"
-        replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1'])"><p>x</p></cRefPattern>
-    </refsDecl>
-  </encodingDesc>`;
 
 function makeTei(options: {
   title?: string;
   author?: string;
-  encodingDesc?: string;
+  refsDecl?: string;
   body: string;
 }): string {
-  const {
-    title = "De Bello Testo",
-    author = "Julius Caesar",
-    encodingDesc = PROSE_ENCODING_DESC,
-    body,
-  } = options;
-  return `<TEI xmlns="http://www.tei-c.org/ns/1.0">
+  const title = options.title ?? "Test Work";
+  const author = options.author ?? "Julius Caesar";
+  const refsDecl =
+    options.refsDecl ??
+    `<refsDecl>
+      <state unit="chapter"/>
+      <state unit="section"/>
+    </refsDecl>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<TEI.2>
   <teiHeader>
     <fileDesc>
-      <titleStmt><title>${title}</title><author>${author}</author></titleStmt>
-      <publicationStmt><availability><licence>CC BY-SA 4.0</licence></availability></publicationStmt>
+      <titleStmt>
+        <title>${title}</title>
+        <author>${author}</author>
+      </titleStmt>
     </fileDesc>
-    ${encodingDesc}
+    <encodingDesc>
+      ${refsDecl}
+    </encodingDesc>
   </teiHeader>
-  <text xml:lang="lat"><body>${body}</body></text>
-</TEI>`;
+  <text>
+    <body>
+      ${options.body}
+    </body>
+  </text>
+</TEI.2>`;
 }
 
 const RICH_PROSE_BODY = `<div type="edition" n="urn:cts:latinLit:phi0448.phi001.perseus-lat2">
   <div type="textpart" subtype="chapter" n="1">
-    <head>Liber Primus</head>
+    <head rend="align(center)">LIBER PRIMUS</head>
     <div type="textpart" subtype="section" n="1">
-      <p rend="align(indent)">Gallia <hi rend="italic">est</hi> omnis <del>divisa</del> <supplied>in</supplied> partes <choice><reg>tres</reg><orig>tris</orig></choice><note place="foot">Vide <hi rend="bold">codicem</hi> et <app><lem>Gallia</lem><rdg>Galia</rdg></app> <foreign xml:lang="grc">λόγος</foreign></note>.</p>
+      <p rend="align(indent)">
+        <milestone unit="chapter" n="1"/>
+        Gallia est <hi rend="italic">omnis</hi> <del>divisa</del> <add>in</add> partes
+        <num rend="smallcaps">III</num>, <supplied>quarum</supplied> <gap reason="lost" rend="* * *"/>
+        <choice><abbr>C.</abbr><expan>Gaius</expan></choice> <reg>caesar</reg>
+        <foreign xml:lang="grc">λόγος</foreign> <foreign xml:lang="greek">lo/gos</foreign>
+        <w type="lemma">Gallia</w>
+        <q rend="single; smallcaps">dixit</q> <emph rend="italic">omnino</emph>.
+        <note place="foot">Nota <hi rend="bold">codicem</hi> <hi rend="sup">2</hi> <foreign xml:lang="grc">α</foreign> <w type="lemma">omnis</w> <app><lem>Gallia</lem></app>.</note>
+      </p>
     </div>
     <div type="textpart" subtype="section" n="2">
-      <p>Quarum <q rend="single; smallcaps">unam</q> incolunt <persName><surname>Belgae</surname></persName>, <add>aliam</add> <placeName>Aquitani</placeName> <date>Kal. Ian.</date> <num>III</num> <gap/> <foreign xml:lang="greek">logos</foreign> <note target="n_ext"/>.</p>
-      <note xml:id="n_ext">Detached <hi rend="sup">2</hi> note</note>
+      <p>
+        Versus in prosa:
+        <quote rend="blockquote">
+          <lg>
+            <l rend="indent">Arma virumque cano</l>
+            <l>Troiae qui primus ab oris</l>
+          </lg>
+        </quote>
+        <said who="#Cicero"><label>M.</label> Sequitur <date>Kal. Ian.</date></said>
+        <note target="n_ext"/>
+        <note xml:id="n_ext">Detached <q rend="single">target</q> note.</note>
+      </p>
     </div>
   </div>
   <div type="textpart" subtype="chapter" n="2">
     <div type="textpart" subtype="section" n="1">
-      <p><quote rend="blockquote">Inscius <emph rend="italic">poeta</emph> canit</quote> et <abbr>C.<expan><ex>Gaius</ex></expan></abbr> <said who="Caesar">dixit</said>:</p>
-      <lg>
-        <l>Arma virumque cano</l>
-        <l rend="indent">Troiae qui primus ab oris</l>
-      </lg>
+      <p>Caput secundum.</p>
     </div>
   </div>
   <div type="textpart" subtype="chapter" n="3">
     <div type="textpart" subtype="section" n="1">
-      <list type="simple">
-        <headLabel>Consules</headLabel>
-        <label>I</label>
-        <item>Cicero <date>63 BC</date></item>
-      </list>
+      <p>Caput tertium.</p>
     </div>
   </div>
 </div>`;
 
-const VERSE_BODY = `<div type="edition" n="urn:cts:latinLit:phi0472.phi001.perseus-lat2">
-  <div type="textpart" subtype="poem" n="1">
-    <l n="1" part="I">Cui dono lepidum</l>
-    <l n="2" part="F">novum libellum</l>
-    <l n="3" rend="indent">Arida modo <hi rend="overline">X</hi> pumice expolitum?</l>
-  </div>
-</div>`;
-
-describe("serializeTeiSnippet", () => {
+describe("serializeTeiSnippet & extractNoteListItems", () => {
   it("serializes compact XML and escapes special characters", () => {
     const node = parseRawXml(
-      `<p rend="align(indent)">Hello   \n  <hi rend="italic">world</hi> <gap/></p>`,
+      `<p rend="align(indent)">Gallia &amp; <hi rend="italic">omnis</hi><!-- comment --><gap reason="lost"/></p>`,
       { keepWhitespace: true }
     );
-    expect(serializeTeiSnippet(node)).toBe(
-      `<p rend="align(indent)">Hello <hi rend="italic">world</hi> <gap/></p>`
+    const snippet = serializeTeiSnippet(node);
+    expect(snippet).toBe(
+      `<p rend="align(indent)">Gallia &amp; <hi rend="italic">omnis</hi><gap reason="lost"/></p>`
     );
   });
 
   it("clips long snippets cleanly", () => {
-    const node = parseRawXml(`<p>${"abcdefghij".repeat(10)}</p>`);
-    const clipped = serializeTeiSnippet(node, 30);
-    expect(clipped.endsWith("…")).toBe(true);
-    expect(clipped.length).toBe(31);
+    const node = parseRawXml(`<p>${"abcdefghij ".repeat(40)}</p>`);
+    const snippet = serializeTeiSnippet(node, 50);
+    expect(snippet.length).toBe(51);
+    expect(snippet.endsWith("…")).toBe(true);
+  });
+
+  it("extracts balanced <li class='reader-note'> items even when notes contain nested <li> tags", () => {
+    const notesHtml = `<aside class="reader-notes"><ol class="reader-notes-list"><li class="reader-note" id="note-n1"><a class="reader-note-backref" href="#noteref-n1">1</a><div class="reader-note-body">Outer <ul><li>Nested item</li></ul> end 1</div></li><li class="reader-note" id="note-n2"><a class="reader-note-backref" href="#noteref-n2">2</a><div class="reader-note-body">Note 2</div></li></ol></aside>`;
+    const items = extractNoteListItems(notesHtml);
+    expect(items).toHaveLength(2);
+    expect(items[0]).toContain("<ul><li>Nested item</li></ul> end 1");
+    expect(items[1]).toContain("Note 2");
   });
 });
 
 describe("analyzeWorkForGallery", () => {
-  it("extracts content elements, note elements, @rend, attributes, and embedded verse in prose", () => {
+  it("extracts body elements/rends separately from note-elements/note-rends and renders full pages for layout kinds", () => {
     const analyzed = analyzeWorkForGallery({
       workId: LatinWorks.CAESAR_DBG,
       rawXml: makeTei({
@@ -142,83 +145,91 @@ describe("analyzeWorkForGallery", () => {
 
     const { spotCheck, kinds } = analyzed;
     expect(spotCheck.workId).toBe(LatinWorks.CAESAR_DBG);
-    expect(spotCheck.author).toBe("Julius Caesar");
     expect(spotCheck.urlAuthor).toBe("caesar");
     expect(spotCheck.urlName).toBe("de_bello_gallico");
-    expect(spotCheck.onboarded).toBe(true);
     expect(spotCheck.pageCount).toBe(3);
     expect(spotCheck.pages.first?.pageId).toBe("1");
     expect(spotCheck.pages.middle?.pageId).toBe("2");
     expect(spotCheck.pages.last?.pageId).toBe("3");
-    expect(spotCheck.pages.first?.readerUrl).toBe(
-      "/work/caesar/de_bello_gallico/1"
-    );
 
-    // Content elements
-    for (const elem of [
+    // Content elements (body only)
+    for (const el of [
       "head",
       "p",
       "hi",
       "del",
-      "supplied",
-      "choice",
-      "reg",
-      "orig",
-      "note",
-      "q",
-      "persName",
-      "surname",
       "add",
-      "placeName",
-      "date",
       "num",
+      "supplied",
       "gap",
-      "foreign",
-      "quote",
-      "emph",
+      "choice",
       "abbr",
       "expan",
-      "ex",
-      "said",
+      "reg",
+      "foreign",
+      "w",
+      "q",
+      "emph",
+      "note",
+      "quote",
       "lg",
       "l",
-      "list",
-      "headLabel",
+      "said",
       "label",
-      "item",
+      "date",
     ]) {
-      expect(kinds.has(elem)).toBe(true);
+      expect(kinds.has(el)).toBe(true);
+      expect(kinds.get(el)?.category).toBe("element");
+    }
+    // `app` and `lem` appear only inside `<note>` in RICH_PROSE_BODY, so they must NOT leak into body `element`
+    expect(kinds.has("app")).toBe(false);
+    expect(kinds.has("lem")).toBe(false);
+
+    // Note elements
+    for (const noteEl of [
+      "note:hi",
+      "note:foreign",
+      "note:w",
+      "note:app",
+      "note:lem",
+      "note:q",
+    ]) {
+      expect(kinds.has(noteEl)).toBe(true);
+      expect(kinds.get(noteEl)?.category).toBe("note-element");
     }
 
-    // Note elements (both inline note and target/xml:id note)
-    expect(kinds.get("note:hi")?.occurrences).toBe(2);
-    expect(kinds.has("note:app")).toBe(true);
-    expect(kinds.has("note:lem")).toBe(true);
-    expect(kinds.has("note:rdg")).toBe(true);
-    expect(kinds.has("note:foreign")).toBe(true);
-
-    // element@rend in body and notes
+    // R1: Body element@rend vs note:element@rend separation
     expect(kinds.has("p@align(indent)")).toBe(true);
     expect(kinds.has("hi@italic")).toBe(true);
-    expect(kinds.has("hi@bold")).toBe(true);
-    expect(kinds.has("note:hi@bold")).toBe(true);
-    expect(kinds.has("hi@sup")).toBe(true);
-    expect(kinds.has("note:hi@sup")).toBe(true);
     expect(kinds.has("q@single; smallcaps")).toBe(true);
     expect(kinds.has("q@single")).toBe(true);
     expect(kinds.has("q@smallcaps")).toBe(true);
     expect(kinds.has("quote@blockquote")).toBe(true);
     expect(kinds.has("l@indent")).toBe(true);
 
-    // Key structural/attribute kinds
+    // `hi@bold` and `hi@sup` appear ONLY inside `<note>` in RICH_PROSE_BODY:
+    // they must be in `note-rend` (`note:hi@bold`, `note:hi@sup`) and absent from body `rend`.
+    expect(kinds.has("note:hi@bold")).toBe(true);
+    expect(kinds.has("note:hi@sup")).toBe(true);
+    expect(kinds.has("hi@bold")).toBe(false);
+    expect(kinds.has("hi@sup")).toBe(false);
+
+    // Symmetric structural/attribute kinds across body and notes
     expect(kinds.has("note@target")).toBe(true);
     expect(kinds.has('note@place="foot"')).toBe(true);
     expect(kinds.has('foreign@xml:lang="grc"')).toBe(true);
     expect(kinds.has('foreign@xml:lang="greek"')).toBe(true);
+    expect(kinds.has('milestone@unit="chapter"')).toBe(true);
+    expect(kinds.has('w@type="lemma"')).toBe(true);
+    expect(kinds.get('w@type="lemma"')?.occurrences).toBe(2); // 1 in body + 1 in note
 
-    // Complex layouts
+    // Complex layouts (full page context)
     expect(kinds.has("embedded-verse")).toBe(true);
     expect(kinds.has("dialogue-speaker")).toBe(true);
+    const embeddedVerseEx = kinds.get("embedded-verse")!.candidates[0];
+    // Full page 1 contains both section 1.1 ("Gallia") and section 1.2 ("Arma virumque cano")
+    expect(embeddedVerseEx.renderedHtml).toContain("Gallia");
+    expect(embeddedVerseEx.renderedHtml).toContain("Arma virumque cano");
 
     // Verify exemplar details and URLs
     const delEx = kinds.get("del")!.candidates[0];
@@ -226,15 +237,17 @@ describe("analyzeWorkForGallery", () => {
     expect(delEx.pageId).toBe("1");
     expect(delEx.readerUrl).toBe("/work/caesar/de_bello_gallico/1#sec-1.1");
     expect(delEx.teiSnippet).toBe("<del>divisa</del>");
+    expect(delEx.renderedHtml).toContain('<div class="reader-passage">');
     expect(delEx.renderedHtml).toContain("[divisa]");
-    expect(delEx.renderedHtml).toContain("⟨in⟩");
+    expect(delEx.renderedHtml).toContain("⟨quarum⟩");
 
-    // Verify note exemplar includes both section HTML and rendered footnote HTML
+    // Verify note exemplar includes both `<div class="reader-passage">` and sibling `<aside class="reader-notes">`
     const noteBoldEx = kinds.get("note:hi@bold")!.candidates[0];
     expect(noteBoldEx.inNote).toBe(true);
     expect(noteBoldEx.readerUrl).toBe(
       "/work/caesar/de_bello_gallico/1#sec-1.1"
     );
+    expect(noteBoldEx.renderedHtml).toContain('<div class="reader-passage">');
     expect(noteBoldEx.renderedHtml).toContain('class="reader-note-ref"');
     expect(noteBoldEx.renderedHtml).toContain('class="reader-notes"');
     expect(noteBoldEx.renderedHtml).toContain(
@@ -248,116 +261,212 @@ describe("analyzeWorkForGallery", () => {
     expect(noteTargetEx.renderedHtml).toContain("Detached");
   });
 
+  it("aligns note exemplars across inline notes, target notes, and whitespace-only <note n>", () => {
+    const analyzed = analyzeWorkForGallery({
+      workId: LatinWorks.CAESAR_DBG,
+      rawXml: makeTei({
+        title: "De bello Gallico",
+        author: "Julius Caesar",
+        body: `<div type="edition" n="urn:x">
+          <div type="textpart" subtype="chapter" n="1">
+            <div type="textpart" subtype="section" n="1">
+              <p>
+                Text one <note place="foot"><hi rend="italic">first inline note</hi></note>
+                middle <note target="n_second"/>
+                end <note place="foot"><emph rend="italic">third inline note</emph></note>
+                <note n="unreferenced_whitespace">   </note>
+                <note xml:id="n_second"><quote rend="smallcaps">second target note</quote></note>
+              </p>
+            </div>
+          </div>
+        </div>`,
+      }),
+      onboarded: true,
+    });
+
+    const firstEx = analyzed.kinds.get("note:hi@italic")!.candidates[0];
+    const secondEx = analyzed.kinds.get("note:quote@smallcaps")!.candidates[0];
+    const thirdEx = analyzed.kinds.get("note:emph@italic")!.candidates[0];
+
+    expect(firstEx.renderedHtml).toContain("first inline note");
+    expect(firstEx.renderedHtml).not.toContain("second target note");
+    expect(firstEx.renderedHtml).not.toContain("third inline note");
+
+    expect(secondEx.renderedHtml).toContain("second target note");
+    expect(secondEx.renderedHtml).not.toContain("first inline note");
+    expect(secondEx.renderedHtml).not.toContain("third inline note");
+
+    expect(thirdEx.renderedHtml).toContain("third inline note");
+    expect(thirdEx.renderedHtml).not.toContain("first inline note");
+    expect(thirdEx.renderedHtml).not.toContain("second target note");
+  });
+
   it("extracts split verse lines (l@part) in verse works without flagging embedded-verse", () => {
     const analyzed = analyzeWorkForGallery({
       workId: LatinWorks.CATULLUS,
       rawXml: makeTei({
         title: "Carmina",
         author: "C. Valerius Catullus",
-        encodingDesc: VERSE_ENCODING_DESC,
-        body: VERSE_BODY,
+        refsDecl: `<refsDecl>
+          <state unit="poem"/>
+          <state unit="line"/>
+        </refsDecl>`,
+        body: `<div type="edition" n="urn:cts:latinLit:phi0472.phi001.perseus-lat2">
+          <div type="textpart" subtype="poem" n="1">
+            <l n="1" part="I">Cui dono lepidum</l>
+            <l n="1b" part="M">novum</l>
+            <l n="2" part="F">libellum</l>
+            <l n="3" part="N">Arida modo pumice expolitum?</l>
+          </div>
+        </div>`,
       }),
       onboarded: true,
     });
 
     const { kinds } = analyzed;
-    expect(kinds.has("l@part")).toBe(true);
-    expect(kinds.get("l@part")?.occurrences).toBe(2);
-    expect(kinds.has('l@part="I"')).toBe(true);
-    expect(kinds.has('l@part="F"')).toBe(true);
-    expect(kinds.has("hi@overline")).toBe(true);
-    // Verse work should not record `<l>` as embedded-verse in prose
     expect(kinds.has("embedded-verse")).toBe(false);
-
-    const splitEx = kinds.get('l@part="I"')!.candidates[0];
-    expect(splitEx.sectionId).toBe("1.1");
-    expect(splitEx.pageId).toBe("1");
-    expect(splitEx.readerUrl).toBe("/work/catullus/carmina/1#sec-1.1");
-    // Includes adjacent split line row for visual context
-    expect(splitEx.renderedHtml).toContain("Cui dono lepidum");
-    expect(splitEx.renderedHtml).toContain("novum libellum");
+    expect(kinds.has("l@part")).toBe(true);
+    expect(kinds.get("l@part")?.occurrences).toBe(3); // I, M, F (part="N" excluded from split-line layout)
+    expect(kinds.has('l@part="I"')).toBe(true);
+    expect(kinds.has('l@part="M"')).toBe(true);
+    expect(kinds.has('l@part="F"')).toBe(true);
+    expect(kinds.has('l@part="N"')).toBe(true);
+    const partIEx = kinds.get('l@part="I"')!.candidates[0];
+    expect(partIEx.renderedHtml).toContain("Cui dono lepidum");
+    expect(partIEx.renderedHtml).toContain("Arida modo pumice expolitum?");
   });
 });
 
 describe("buildGalleryReportFromInputs & --max-examples diversity", () => {
-  const makeSimpleWorkInput = (
-    workId: string,
-    title: string,
-    word: string,
-    onboarded = true
-  ): GalleryWorkInput => ({
-    workId,
-    onboarded,
-    rawXml: makeTei({
-      title,
-      author: "M. Tullius Cicero",
-      body: `<div type="edition" n="urn:x">
-        <div type="textpart" subtype="chapter" n="1">
-          <div type="textpart" subtype="section" n="1"><p><hi rend="italic">${word}1</hi> <hi rend="italic">${word}2</hi></p></div>
-          <div type="textpart" subtype="section" n="2"><p><hi rend="italic">${word}3</hi></p></div>
-        </div>
-      </div>`,
-    }),
-  });
-
-  it("caps exemplars at maxExamples and prioritizes distinct works", () => {
-    const inputs: GalleryWorkInput[] = [
-      makeSimpleWorkInput("phi0474.phi001.perseus-lat2", "Work One", "alpha"),
-      makeSimpleWorkInput("phi0474.phi003.perseus-lat2", "Work Two", "beta"),
-      makeSimpleWorkInput("phi0474.phi004.perseus-lat2", "Work Three", "gamma"),
-      makeSimpleWorkInput(
-        "phi9999.phi001.perseus-lat1",
-        "Work Four",
-        "delta",
-        false
-      ),
+  it("caps exemplars at maxExamples and spreads across distinct authors and works", () => {
+    // 2 Cicero works + 1 Caesar work + 1 Catullus work: maxExamples=3 should pick
+    // 1 Caesar, 1 Catullus, and 1 Cicero (3 distinct authors) rather than 2 Ciceros.
+    const inputs = [
+      {
+        workId: "phi0474.phi001.perseus-lat2",
+        onboarded: true,
+        rawXml: makeTei({
+          title: "Pro Quinctio",
+          author: "M. Tullius Cicero",
+          body: `<div type="edition" n="urn:1">
+            <div type="textpart" subtype="chapter" n="1">
+              <div type="textpart" subtype="section" n="1"><p><del>cic1</del></p></div>
+            </div>
+          </div>`,
+        }),
+      },
+      {
+        workId: "phi0474.phi002.perseus-lat2",
+        onboarded: true,
+        rawXml: makeTei({
+          title: "Pro Roscio",
+          author: "M. Tullius Cicero",
+          body: `<div type="edition" n="urn:2">
+            <div type="textpart" subtype="chapter" n="1">
+              <div type="textpart" subtype="section" n="1"><p><del>cic2</del></p></div>
+            </div>
+          </div>`,
+        }),
+      },
+      {
+        workId: LatinWorks.CAESAR_DBG,
+        onboarded: true,
+        rawXml: makeTei({
+          title: "De bello Gallico",
+          author: "Julius Caesar",
+          body: `<div type="edition" n="urn:3">
+            <div type="textpart" subtype="chapter" n="1">
+              <div type="textpart" subtype="section" n="1"><p><del>caes</del></p></div>
+            </div>
+          </div>`,
+        }),
+      },
+      {
+        workId: LatinWorks.CATULLUS,
+        onboarded: true,
+        rawXml: makeTei({
+          title: "Carmina",
+          author: "C. Valerius Catullus",
+          body: `<div type="edition" n="urn:4">
+            <div type="textpart" subtype="chapter" n="1">
+              <div type="textpart" subtype="section" n="1"><p><del>cat</del></p></div>
+            </div>
+          </div>`,
+        }),
+      },
     ];
 
-    const report = buildGalleryReportFromInputs(inputs, {
-      label: "test-label",
-      maxExamples: 3,
-      includeCandidates: true,
-    });
-
-    expect(report.totals.worksProcessed).toBe(4);
-    expect(report.totals.onboardedCount).toBe(3);
-    expect(report.totals.candidateCount).toBe(1);
-
-    const hiItalic = report.kindsByName["hi@italic"];
-    expect(hiItalic).toBeDefined();
-    expect(hiItalic.workCount).toBe(4);
-    expect(hiItalic.occurrenceCount).toBe(12); // 3 per work * 4 works
-    expect(hiItalic.examples).toHaveLength(3);
-
-    // Every exemplar must come from a distinct work
-    const distinctWorkIds = new Set(hiItalic.examples.map((e) => e.workId));
-    expect(distinctWorkIds.size).toBe(3);
+    const report = buildGalleryReportFromInputs(inputs, { maxExamples: 3 });
+    const delKind = report.kindsByName["del"];
+    expect(delKind).toBeDefined();
+    expect(delKind.workCount).toBe(4);
+    expect(delKind.occurrenceCount).toBe(4);
+    expect(delKind.examples).toHaveLength(3);
+    const distinctAuthors = new Set(delKind.examples.map((e) => e.author));
+    expect(distinctAuthors.size).toBe(3);
   });
 
   it("takes multiple exemplars from distinct sections of one work when fewer than maxExamples works have a kind", () => {
     const inputs = [
-      makeSimpleWorkInput("phi0474.phi001.perseus-lat2", "Solo Work", "solo"),
+      {
+        workId: LatinWorks.CAESAR_DBG,
+        onboarded: true,
+        rawXml: makeTei({
+          title: "De bello Gallico",
+          author: "Julius Caesar",
+          body: `<div type="edition" n="urn:1">
+            <div type="textpart" subtype="chapter" n="1">
+              <div type="textpart" subtype="section" n="1"><p><del>a</del> <del>a2</del></p></div>
+              <div type="textpart" subtype="section" n="2"><p><del>b</del></p></div>
+              <div type="textpart" subtype="section" n="3"><p><del>c</del></p></div>
+            </div>
+          </div>`,
+        }),
+      },
     ];
-    const report = buildGalleryReportFromInputs(inputs, { maxExamples: 2 });
-    const hiItalic = report.kindsByName["hi@italic"];
-    expect(hiItalic.workCount).toBe(1);
-    expect(hiItalic.occurrenceCount).toBe(3);
-    expect(hiItalic.examples).toHaveLength(2);
-    expect(hiItalic.examples.map((e) => e.sectionId)).toEqual(["1.1", "1.2"]);
+
+    const report = buildGalleryReportFromInputs(inputs, { maxExamples: 3 });
+    const delKind = report.kindsByName["del"];
+    expect(delKind.workCount).toBe(1);
+    expect(delKind.occurrenceCount).toBe(4);
+    expect(delKind.examples.map((e) => e.sectionId)).toEqual([
+      "1.1",
+      "1.2",
+      "1.3",
+    ]);
   });
 
-  it("supports maxExamples = 0", () => {
-    const inputs = [
-      makeSimpleWorkInput("phi0474.phi001.perseus-lat2", "Solo Work", "solo"),
-    ];
-    const report = buildGalleryReportFromInputs(inputs, { maxExamples: 0 });
-    expect(report.kindsByName["hi@italic"].examples).toEqual([]);
+  it("supports maxExamples = 0 and fails loudly if an onboarded work fails", () => {
+    const dummy: GalleryExemplar = {
+      workId: "w1",
+      workTitle: "T",
+      author: "A",
+      sectionId: "1",
+      pageId: "1",
+      readerUrl: "/work/a/t/1#sec-1",
+      url: "/work/a/t/1#sec-1",
+      teiSnippet: "<p/>",
+      renderedHtml: "<div/>",
+    };
+    expect(selectDiverseExemplars([[dummy]], 0)).toEqual([]);
     expect(selectDiverseExemplars([], 3)).toEqual([]);
+
+    expect(() =>
+      buildGalleryReportFromInputs([
+        {
+          workId: LatinWorks.CAESAR_DBG,
+          onboarded: true,
+          rawXml: makeTei({
+            body: `<div type="edition" n="urn:x"><div type="textpart" subtype="chapter" n="1"><div type="textpart" subtype="section" n="1"><p><unknownTag>boom</unknownTag></p></div></div></div>`,
+          }),
+        },
+      ])
+    ).toThrow(/Onboarded work 'phi0448\.phi001\.perseus-lat2' failed/);
   });
 });
 
 describe("formatGalleryHtml & formatGalleryMarkdown", () => {
-  it("produces valid Markdown and XSS-safe HTML with all required reader CSS classes", () => {
+  it("produces valid Markdown and XSS-safe HTML with scoped IDs, failure tables, and .reader-passage CSS scoping", () => {
     const report = buildGalleryReportFromInputs(
       [
         {
@@ -367,6 +476,15 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
             title: 'Bellum &lt;script&gt;alert("xss")&lt;/script&gt;',
             author: 'Caesar &amp; "Friends"',
             body: RICH_PROSE_BODY,
+          }),
+        },
+        {
+          workId: "phi9999.phi002.perseus-lat1",
+          onboarded: false,
+          rawXml: makeTei({
+            title: "Broken Candidate",
+            author: "Anon",
+            body: `<div type="edition" n="urn:x"><div type="textpart" subtype="chapter" n="1"><div type="textpart" subtype="section" n="1"><p><unknownTag>boom</unknownTag></p></div></div></div>`,
           }),
         },
       ],
@@ -383,7 +501,9 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     expect(md).toContain("# Library Exemplar Review Gallery: `sha1-sha2`");
     expect(md).toContain("## 1. Markup Kind Exemplars");
     expect(md).toContain("## 2. Per-Work Spot-Check Index");
-    expect(md).toContain("/work/caesar_&_\"friends\"/");
+    expect(md).toContain("## 3. Skipped / Failed Candidate Works (1)");
+    expect(md).toContain("phi9999.phi002.perseus-lat1");
+    expect(md).toContain('/work/caesar_&_"friends"/');
 
     const html = formatGalleryHtml(report);
     expect(html).toContain("<!DOCTYPE html>");
@@ -392,35 +512,54 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     expect(html).toContain("&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;");
     // Raw TEI tags inside <pre class="tei-snippet"> must be escaped
     expect(html).toContain("&lt;del&gt;divisa&lt;/del&gt;");
-    // Rendered reader HTML is placed cleanly in .reader-preview
-    expect(html).toContain('<div class="reader-preview reader-view">');
+    // Rendered reader HTML is placed cleanly in .reader-preview with .reader-section and .reader-passage
+    expect(html).toContain('<div class="reader-preview reader-view"><div class="reader-section"');
+    expect(html).toContain('<div class="reader-passage">');
+    // Failures section is rendered in HTML
+    expect(html).toContain('<section id="failures">');
+    expect(html).toContain("phi9999.phi002.perseus-lat1");
 
-    // All required reader typography/indentation classes are defined in the stylesheet
+    // R2: All required reader typography/indentation classes are scoped under .reader-passage
     for (const cssClass of [
-      ".reader-line",
-      ".indent",
-      ".indent-para",
-      ".blockquote",
-      ".smallcaps",
-      ".uppercase",
-      ".overline",
-      ".bold",
-      ".superscript",
-      ".italic",
-      ".reader-subheading",
-      ".reader-gap",
+      ".reader-passage .reader-line",
+      ".reader-passage .indent",
+      ".reader-passage .indent-para",
+      ".reader-passage .blockquote",
+      ".reader-passage .smallcaps",
+      ".reader-passage .uppercase",
+      ".reader-passage .overline",
+      ".reader-passage .bold",
+      ".reader-passage .superscript",
+      ".reader-passage .italic",
+      ".reader-passage .reader-subheading",
+      ".reader-passage .reader-gap",
     ]) {
       expect(html).toContain(cssClass);
     }
+
+    // R7: Verify zero duplicate HTML id="..." attributes across the entire document
+    const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
+    const uniqueIds = new Set(ids);
+    expect(ids.length).toBeGreaterThan(20);
+    expect(uniqueIds.size).toBe(ids.length);
   });
 
-  it("builds reader URLs with and without sectionId", () => {
+  it("builds reader URLs with and without sectionId and scopes preview HTML IDs", () => {
     expect(buildReaderSectionUrl("caesar", "dbg", "1.2", "1.2.3")).toBe(
       "/work/caesar/dbg/1.2#sec-1.2.3"
     );
     expect(buildReaderSectionUrl("caesar", "dbg", "1.2")).toBe(
       "/work/caesar/dbg/1.2"
     );
+    const scoped = scopePreviewHtmlIds(
+      `<a id="noteref-n1" href="#note-n1">1</a><aside aria-labelledby="reader-notes-heading"><h2 id="reader-notes-heading">Notes</h2><li id="note-n1"><a href="#noteref-n1">1</a></li></aside>`,
+      "ex-0-1-0"
+    );
+    expect(scoped).toContain('id="ex-0-1-0-noteref-n1"');
+    expect(scoped).toContain('href="#ex-0-1-0-note-n1"');
+    expect(scoped).toContain('aria-labelledby="ex-0-1-0-reader-notes-heading"');
+    expect(scoped).toContain('id="ex-0-1-0-note-n1"');
+    expect(scoped).toContain('href="#ex-0-1-0-noteref-n1"');
   });
 });
 
