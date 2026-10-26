@@ -65,8 +65,6 @@ export const NOT_YET_ONBOARDED: readonly string[] = [
   "phi0134.phi006.perseus-lat2",
   "phi0474.phi002.perseus-lat2",
   "phi0474.phi005.perseus-lat2",
-  "phi0474.phi006.perseus-lat2",
-  "phi0474.phi045.perseus-lat2",
   "phi0474.phi049.perseus-lat2",
   "phi0474.phi053.perseus-lat4",
   "phi0474.phi056.perseus-lat2",
@@ -76,11 +74,7 @@ export const NOT_YET_ONBOARDED: readonly string[] = [
   "phi0690.phi001.perseus-lat2",
   "phi0836.phi002.perseus-lat5",
   "phi0836.phi002.perseus-lat6",
-  "phi0914.phi001.perseus-lat3",
-  "phi0914.phi001.perseus-lat4",
-  "phi0914.phi001.perseus-lat5",
   "phi0972.phi001f.perseus-lat1",
-  "phi1002.phi001.perseus-lat2",
   "phi1014.phi003.perseus-lat1",
   "phi1017.phi001.perseus-lat2",
   "phi1017.phi002.perseus-lat2",
@@ -93,7 +87,6 @@ export const NOT_YET_ONBOARDED: readonly string[] = [
   "phi1017.phi009.perseus-lat2",
   "phi1017.phi010.perseus-lat2",
   "phi1017.phi013.perseus-lat2",
-  "phi1017.phi015.perseus-lat2",
   "phi1348.abo011.perseus-lat2",
   "phi2331.phi002.perseus-lat2",
   "phi2331.phi026.perseus-lat2",
@@ -379,20 +372,20 @@ describe("evaluateCensusRatchet on synthetic fixtures", () => {
       "bad.work": {
         ...cleanWork,
         onboarded: false,
-        elements: ["div", "forename"],
+        elements: ["div", "speaker"],
         noteElements: ["hi", "figure"],
         rends: ["p@inddent"],
-        noteRends: ["hi@sub"],
+        noteRends: ["hi@unknownNoteRend"],
       },
     });
     const report = evaluateCensusRatchet(snapshot, []);
     expect(report.passed).toBe(false);
     const msg = formatCensusRatchetReport(report);
     expect(msg).toContain("bad.work");
-    expect(msg).toContain("<forename>");
+    expect(msg).toContain("<speaker>");
     expect(msg).toContain("note:<figure>");
     expect(msg).toContain("rend:p@inddent");
-    expect(msg).toContain("note-rend:hi@sub");
+    expect(msg).toContain("note-rend:hi@unknownNoteRend");
   });
 
   it("fails when an onboarded work is placed in NOT_YET_ONBOARDED or an exclusion is stale", () => {
