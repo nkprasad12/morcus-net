@@ -1761,29 +1761,29 @@ body {
   opacity: 0.45;
 }
 
-.reader-passage .reader-line,
-.reader-passage .reader-block {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-line,
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-block {
   display: block;
 }
 
-.reader-passage .indent {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .indent {
   display: block;
   padding-left: 1.5em;
 }
 
-.reader-passage .indent-para {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .indent-para {
   display: block;
   padding-left: 0;
   text-indent: 1.5em;
 }
 
-.reader-passage .blockquote {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .blockquote {
   display: block;
   margin: 0.4em 0 0.4em 1.5em;
   font-style: italic;
 }
 
-.reader-passage .reader-subheading {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-subheading {
   font-family: var(--font-serif);
   font-size: 1em;
   font-weight: 600;
@@ -1791,44 +1791,44 @@ body {
   margin: 0.6em 0 0.4em;
 }
 
-.reader-passage .reader-list {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-list {
   margin: 0.4em 0;
   padding-left: 1.5em;
 }
 
-.reader-passage .italic {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .italic {
   font-style: italic;
 }
 
-.reader-passage .bold {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .bold {
   font-weight: 600;
 }
 
-.reader-passage .smallcaps {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .smallcaps {
   font-variant-caps: small-caps;
   letter-spacing: 0.02em;
 }
 
-.reader-passage .uppercase {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .uppercase {
   text-transform: uppercase;
 }
 
-.reader-passage .overline {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .overline {
   text-decoration: overline;
 }
 
-.reader-passage .superscript {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .superscript {
   vertical-align: super;
   font-size: smaller;
   line-height: 0;
 }
 
-.reader-passage .line-space {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .line-space {
   display: block;
   height: 0.75em;
 }
 
-.reader-passage .reader-gap {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-gap {
   font-style: italic;
   opacity: 0.7;
 }

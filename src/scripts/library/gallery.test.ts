@@ -536,20 +536,20 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     expect(html).toContain('<section id="failures">');
     expect(html).toContain("phi9999.phi002.perseus-lat1");
 
-    // R2: All required reader typography/indentation classes are scoped under .reader-passage
+    // R2: All required reader typography/indentation classes are scoped under :is(.reader-passage, .reader-notes, .reader-translation-text)
     for (const cssClass of [
-      ".reader-passage .reader-line",
-      ".reader-passage .indent",
-      ".reader-passage .indent-para",
-      ".reader-passage .blockquote",
-      ".reader-passage .smallcaps",
-      ".reader-passage .uppercase",
-      ".reader-passage .overline",
-      ".reader-passage .bold",
-      ".reader-passage .superscript",
-      ".reader-passage .italic",
-      ".reader-passage .reader-subheading",
-      ".reader-passage .reader-gap",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .reader-line",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .indent",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .indent-para",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .blockquote",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .smallcaps",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .uppercase",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .overline",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .bold",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .superscript",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .italic",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .reader-subheading",
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .reader-gap",
     ]) {
       expect(html).toContain(cssClass);
     }
@@ -577,6 +577,32 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     expect(scoped).toContain('aria-labelledby="ex-0-1-0-reader-notes-heading"');
     expect(scoped).toContain('id="ex-0-1-0-note-n1"');
     expect(scoped).toContain('href="#ex-0-1-0-noteref-n1"');
+  });
+
+  it("includes :is(.reader-passage, .reader-notes, .reader-translation-text) rendition rules in gallery HTML", () => {
+    const report = buildGalleryReportFromInputs([], {
+      label: "test-renditions",
+      root: "/corpus/root",
+      latinLitCommit: "aaaa1111",
+      morcusCommit: "bbbb2222",
+      maxExamples: 1,
+    });
+    const html = formatGalleryHtml(report);
+    expect(html).toContain(
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .italic"
+    );
+    expect(html).toContain(
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .bold"
+    );
+    expect(html).toContain(
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .smallcaps"
+    );
+    expect(html).toContain(
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .overline"
+    );
+    expect(html).toContain(
+      ":is(.reader-passage, .reader-notes, .reader-translation-text) .superscript"
+    );
   });
 });
 
