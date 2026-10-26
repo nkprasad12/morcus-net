@@ -2743,6 +2743,82 @@ export function formatGalleryHtml(report: GalleryReport): string {
             localStorage.removeItem(storageKey + ":hide");
           } catch (err) {}
         }
+      } else if (target.id === "gallery-highlight-diff") {
+        if (target.checked) {
+          document.body.setAttribute("data-highlight-diff", "true");
+        } else {
+          document.body.removeAttribute("data-highlight-diff");
+        }
+      }
+    });
+
+    function highlightTextDiff(bTextNode, aTextNode) {
+      var bStr = bTextNode.nodeValue || "";
+      var aStr = aTextNode.nodeValue || "";
+      if (bStr === aStr) return;
+      var p = 0;
+      var minL = Math.min(bStr.length, aStr.length);
+      while (p < minL && bStr.charAt(p) === aStr.charAt(p)) p++;
+      var s = 0;
+      while (s < minL - p && bStr.charAt(bStr.length - 1 - s) === aStr.charAt(aStr.length - 1 - s)) s++;
+
+      function wrapMid(textNode, str, pref, suff) {
+        var mid = str.slice(pref, str.length - suff);
+        if (!mid) return;
+        var frag = document.createDocumentFragment();
+        if (pref > 0) frag.appendChild(document.createTextNode(str.slice(0, pref)));
+        var mark = document.createElement("mark");
+        mark.className = "diff-text-changed";
+        mark.textContent = mid;
+        frag.appendChild(mark);
+        if (suff > 0) frag.appendChild(document.createTextNode(str.slice(str.length - suff)));
+        if (textNode.parentNode) textNode.parentNode.replaceChild(frag, textNode);
+      }
+      wrapMid(bTextNode, bStr, p, s);
+      wrapMid(aTextNode, aStr, p, s);
+    }
+
+    function diffDomPair(bNode, aNode) {
+      if (!bNode && !aNode) return;
+      if (!bNode && aNode && aNode.nodeType === 1) {
+        aNode.classList.add("diff-node-changed");
+        return;
+      }
+      if (bNode && !aNode && bNode.nodeType === 1) {
+        bNode.classList.add("diff-node-changed");
+        return;
+      }
+      if (!bNode || !aNode) return;
+      if (bNode.nodeType === 3 && aNode.nodeType === 3) {
+        highlightTextDiff(bNode, aNode);
+        return;
+      }
+      if (bNode.nodeType === 1 && aNode.nodeType === 1) {
+        if (bNode.tagName !== aNode.tagName || bNode.className !== aNode.className) {
+          bNode.classList.add("diff-node-changed");
+          aNode.classList.add("diff-node-changed");
+        }
+        var bChildren = Array.prototype.slice.call(bNode.childNodes);
+        var aChildren = Array.prototype.slice.call(aNode.childNodes);
+        var maxC = Math.max(bChildren.length, aChildren.length);
+        for (var i = 0; i < maxC; i++) {
+          diffDomPair(bChildren[i], aChildren[i]);
+        }
+      } else {
+        if (bNode.nodeType === 1) bNode.classList.add("diff-node-changed");
+        if (aNode.nodeType === 1) aNode.classList.add("diff-node-changed");
+      }
+    }
+
+    document.querySelectorAll(".exemplar-item").forEach(function (item) {
+      var bScope = item.querySelector(".before-scope");
+      var aScope = item.querySelector(".after-scope");
+      if (!bScope || !aScope) return;
+      diffDomPair(bScope, aScope);
+      if (!item.querySelector(".diff-node-changed, .diff-text-changed")) {
+        item.querySelectorAll(".reader-block").forEach(function (el) {
+          el.classList.add("diff-css-changed");
+        });
       }
     });
 
@@ -2824,55 +2900,188 @@ export function scopeCssRules(css: string, prefix: string): string {
   );
 }
 
-function formatHtmlSnippet(html: string): string {
-  if (!html) return "";
-  return html
-    .replace(/></g, ">\n<")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .join("\n");
+function tokenizeHtmlForDiff(html: string): string[] {
+  if (!html) return [];
+  return html.match(/<[^>]+>|\s+|[^\s<]+/g) ?? [];
 }
 
+/**
+ * Produces token-highlighted HTML strings for Before and After HTML snippets,
+ * wrapping changed tokens in `<mark class="diff-token-del">` / `<mark class="diff-token-ins">`
+ * and collapsing unchanged runs longer than 14 tokens to `<span class="diff-ellipsis"> … </span>`.
+ */
 function formatHtmlDiffPair(
   beforeHtml: string,
   afterHtml: string
-): { beforeText: string; afterText: string } {
-  const bLines = formatHtmlSnippet(beforeHtml).split("\n");
-  const aLines = formatHtmlSnippet(afterHtml).split("\n");
-  if (bLines.length + aLines.length <= 24) {
-    return { beforeText: bLines.join("\n"), afterText: aLines.join("\n") };
+): { beforeRichHtml: string; afterRichHtml: string } {
+  const bTokens = tokenizeHtmlForDiff(beforeHtml);
+  const aTokens = tokenizeHtmlForDiff(afterHtml);
+
+  type Op =
+    | { type: "eq"; tokens: string[] }
+    | { type: "diff"; b: string[]; a: string[] };
+  const ops: Op[] = [];
+
+  let i = 0;
+  let j = 0;
+  const ANCHOR_LEN = 3;
+  const MAX_LOOKAHEAD = 160;
+
+  const matchesAnchor = (bi: number, aj: number): boolean => {
+    if (bi + ANCHOR_LEN > bTokens.length || aj + ANCHOR_LEN > aTokens.length) {
+      return false;
+    }
+    for (let k = 0; k < ANCHOR_LEN; k++) {
+      if (bTokens[bi + k] !== aTokens[aj + k]) return false;
+    }
+    return true;
+  };
+
+  while (i < bTokens.length || j < aTokens.length) {
+    if (i < bTokens.length && j < aTokens.length && bTokens[i] === aTokens[j]) {
+      const eqStart = i;
+      while (
+        i < bTokens.length &&
+        j < aTokens.length &&
+        bTokens[i] === aTokens[j]
+      ) {
+        i++;
+        j++;
+      }
+      ops.push({ type: "eq", tokens: bTokens.slice(eqStart, i) });
+      continue;
+    }
+
+    // Look ahead for the nearest 3-token resync anchor
+    let foundBi = -1;
+    let foundAj = -1;
+    const maxDist = Math.min(
+      MAX_LOOKAHEAD,
+      Math.max(bTokens.length - i, aTokens.length - j)
+    );
+    outer: for (let dist = 1; dist <= maxDist; dist++) {
+      for (let db = 0; db <= dist; db++) {
+        const da = dist - db;
+        if (matchesAnchor(i + db, j + da)) {
+          foundBi = i + db;
+          foundAj = j + da;
+          break outer;
+        }
+      }
+    }
+
+    if (foundBi >= 0 && foundAj >= 0) {
+      ops.push({
+        type: "diff",
+        b: bTokens.slice(i, foundBi),
+        a: aTokens.slice(j, foundAj),
+      });
+      i = foundBi;
+      j = foundAj;
+    } else {
+      // Compare common suffix on the remainder
+      let suffix = 0;
+      while (
+        suffix < bTokens.length - i &&
+        suffix < aTokens.length - j &&
+        bTokens[bTokens.length - 1 - suffix] ===
+          aTokens[aTokens.length - 1 - suffix]
+      ) {
+        suffix++;
+      }
+      ops.push({
+        type: "diff",
+        b: bTokens.slice(i, bTokens.length - suffix),
+        a: aTokens.slice(j, aTokens.length - suffix),
+      });
+      if (suffix > 0) {
+        ops.push({
+          type: "eq",
+          tokens: bTokens.slice(bTokens.length - suffix),
+        });
+      }
+      break;
+    }
   }
-  let prefix = 0;
-  const minLen = Math.min(bLines.length, aLines.length);
-  while (prefix < minLen && bLines[prefix] === aLines[prefix]) {
-    prefix++;
+
+  const CONTEXT_TOKENS = 8;
+  const bParts: string[] = [];
+  const aParts: string[] = [];
+
+  for (let idx = 0; idx < ops.length; idx++) {
+    const op = ops[idx];
+    if (op.type === "eq") {
+      const toks = op.tokens;
+      const isFirst = idx === 0;
+      const isLast = idx === ops.length - 1;
+      if (ops.length === 1) {
+        // Identical (CSS-only change): show up to 24 tokens
+        const preview = toks.slice(0, 24).map((t) => he.escape(t)).join("");
+        const ell =
+          toks.length > 24 ? '<span class="diff-ellipsis"> …</span>' : "";
+        bParts.push(preview + ell);
+        aParts.push(preview + ell);
+      } else if (isFirst) {
+        if (toks.length > CONTEXT_TOKENS) {
+          bParts.push('<span class="diff-ellipsis">… </span>');
+          aParts.push('<span class="diff-ellipsis">… </span>');
+        }
+        const tail = toks
+          .slice(Math.max(0, toks.length - CONTEXT_TOKENS))
+          .map((t) => he.escape(t))
+          .join("");
+        bParts.push(tail);
+        aParts.push(tail);
+      } else if (isLast) {
+        const head = toks
+          .slice(0, CONTEXT_TOKENS)
+          .map((t) => he.escape(t))
+          .join("");
+        bParts.push(head);
+        aParts.push(head);
+        if (toks.length > CONTEXT_TOKENS) {
+          bParts.push('<span class="diff-ellipsis"> …</span>');
+          aParts.push('<span class="diff-ellipsis"> …</span>');
+        }
+      } else if (toks.length > CONTEXT_TOKENS * 2) {
+        const head = toks
+          .slice(0, CONTEXT_TOKENS)
+          .map((t) => he.escape(t))
+          .join("");
+        const tail = toks
+          .slice(toks.length - CONTEXT_TOKENS)
+          .map((t) => he.escape(t))
+          .join("");
+        const chunk = `${head}<span class="diff-ellipsis"> … </span>${tail}`;
+        bParts.push(chunk);
+        aParts.push(chunk);
+      } else {
+        const chunk = toks.map((t) => he.escape(t)).join("");
+        bParts.push(chunk);
+        aParts.push(chunk);
+      }
+    } else {
+      if (op.b.length > 0) {
+        bParts.push(
+          `<mark class="diff-token-del">${op.b
+            .map((t) => he.escape(t))
+            .join("")}</mark>`
+        );
+      }
+      if (op.a.length > 0) {
+        aParts.push(
+          `<mark class="diff-token-ins">${op.a
+            .map((t) => he.escape(t))
+            .join("")}</mark>`
+        );
+      }
+    }
   }
-  let suffix = 0;
-  while (
-    suffix < minLen - prefix &&
-    bLines[bLines.length - 1 - suffix] === aLines[aLines.length - 1 - suffix]
-  ) {
-    suffix++;
-  }
-  const start = Math.max(0, prefix - 1);
-  const bEnd = Math.min(bLines.length, bLines.length - suffix + 1);
-  const aEnd = Math.min(aLines.length, aLines.length - suffix + 1);
-  const bSlice = [
-    ...(start > 0 ? [`... (${start} unchanged lines)`] : []),
-    ...bLines.slice(start, bEnd),
-    ...(bEnd < bLines.length
-      ? [`... (${bLines.length - bEnd} unchanged lines)`]
-      : []),
-  ];
-  const aSlice = [
-    ...(start > 0 ? [`... (${start} unchanged lines)`] : []),
-    ...aLines.slice(start, aEnd),
-    ...(aEnd < aLines.length
-      ? [`... (${aLines.length - aEnd} unchanged lines)`]
-      : []),
-  ];
-  return { beforeText: bSlice.join("\n"), afterText: aSlice.join("\n") };
+
+  return {
+    beforeRichHtml: bParts.join(""),
+    afterRichHtml: aParts.join(""),
+  };
 }
 
 export interface DiffExemplarItem {
@@ -3179,18 +3388,18 @@ export function renderGalleryDiffHtml(
             normalizePreviewHtml(ex.afterHtml)
           );
           const markupDiffHtml = `
-            <details class="html-diff-details">
+            <details class="html-diff-details"${ex.markupChanged ? " open" : ""}>
               <summary>HTML markup diff${
-                ex.markupChanged ? "" : " (styling only)"
+                ex.markupChanged ? "" : " (CSS styling change: .reader-block margin: 1em 0 → 0)"
               }</summary>
               <div class="html-diff-container">
-                <div class="html-diff-pane">
-                  <div class="diff-col-header">Before HTML</div>
-                  <pre><code>${he.escape(diffPair.beforeText)}</code></pre>
+                <div class="html-diff-pane html-diff-pane-before">
+                  <div class="diff-col-header">Before HTML (&minus;)</div>
+                  <pre><code>${diffPair.beforeRichHtml}</code></pre>
                 </div>
-                <div class="html-diff-pane">
-                  <div class="diff-col-header">After HTML</div>
-                  <pre><code>${he.escape(diffPair.afterText)}</code></pre>
+                <div class="html-diff-pane html-diff-pane-after">
+                  <div class="diff-col-header">After HTML (+)</div>
+                  <pre><code>${diffPair.afterRichHtml}</code></pre>
                 </div>
               </div>
             </details>`;
@@ -3276,18 +3485,18 @@ export function renderGalleryDiffHtml(
             normalizePreviewHtml(p.afterHtml)
           );
           const markupDiffHtml = `
-            <details class="html-diff-details">
+            <details class="html-diff-details"${p.markupChanged ? " open" : ""}>
               <summary>HTML markup diff${
-                p.markupChanged ? "" : " (styling only)"
+                p.markupChanged ? "" : " (CSS styling change: .reader-block margin: 1em 0 → 0)"
               }</summary>
               <div class="html-diff-container">
-                <div class="html-diff-pane">
-                  <div class="diff-col-header">Before HTML</div>
-                  <pre><code>${he.escape(spotDiffPair.beforeText)}</code></pre>
+                <div class="html-diff-pane html-diff-pane-before">
+                  <div class="diff-col-header">Before HTML (&minus;)</div>
+                  <pre><code>${spotDiffPair.beforeRichHtml}</code></pre>
                 </div>
-                <div class="html-diff-pane">
-                  <div class="diff-col-header">After HTML</div>
-                  <pre><code>${he.escape(spotDiffPair.afterText)}</code></pre>
+                <div class="html-diff-pane html-diff-pane-after">
+                  <div class="diff-col-header">After HTML (+)</div>
+                  <pre><code>${spotDiffPair.afterRichHtml}</code></pre>
                 </div>
               </div>
             </details>`;
@@ -3450,11 +3659,58 @@ ${GALLERY_CSS}
   margin: 1em 0;
 }
 
+mark.diff-token-del {
+  background: #fecaca;
+  color: #7f1d1d;
+  font-weight: 600;
+  padding: 0.08rem 0.22rem;
+  border-radius: 3px;
+  border: 1px solid #f87171;
+}
+
+mark.diff-token-ins {
+  background: #bbf7d0;
+  color: #14532d;
+  font-weight: 600;
+  padding: 0.08rem 0.22rem;
+  border-radius: 3px;
+  border: 1px solid #4ade80;
+}
+
+span.diff-ellipsis {
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  padding: 0 0.25rem;
+  border-radius: 3px;
+  font-style: italic;
+}
+
+body[data-highlight-diff="true"] .before-scope .diff-node-changed,
+body[data-highlight-diff="true"] .before-scope mark.diff-text-changed {
+  background: rgba(239, 68, 68, 0.16);
+  outline: 1.5px solid #ef4444;
+  border-radius: 2px;
+  color: inherit;
+}
+
+body[data-highlight-diff="true"] .after-scope .diff-node-changed,
+body[data-highlight-diff="true"] .after-scope mark.diff-text-changed {
+  background: rgba(34, 197, 94, 0.18);
+  outline: 1.5px solid #16a34a;
+  border-radius: 2px;
+  color: inherit;
+}
+
+body[data-highlight-diff="true"] .diff-css-changed {
+  outline: 1.5px dashed #d97706;
+  background: rgba(245, 158, 11, 0.08);
+}
+
 ${beforeReaderCss ? scopeCssRules(beforeReaderCss, ".before-scope") : ""}
 ${afterReaderCss ? scopeCssRules(afterReaderCss, ".after-scope") : ""}
   </style>
 </head>
-<body>
+<body data-highlight-diff="true">
   <header class="gallery-header">
     <div class="gallery-header-top">
       <h1 class="gallery-title">Morcus Library Gallery Diff: <code>${he.escape(
@@ -3467,6 +3723,7 @@ ${afterReaderCss ? scopeCssRules(afterReaderCss, ".after-scope") : ""}
     </div>
     <div class="gallery-controls">
       <span id="gallery-review-progress" class="gallery-progress-badge">Reviewed: 0 / ${totalChangedKinds} kinds &middot; 0 / ${totalChangedWorks} works</span>
+      <label class="gallery-control-pill"><input type="checkbox" id="gallery-highlight-diff" checked /> Highlight changes in preview</label>
       <label class="gallery-control-pill"><input type="checkbox" id="gallery-hide-reviewed" /> Hide reviewed</label>
       <button type="button" id="gallery-reset-reviewed" class="gallery-btn">Reset progress</button>
     </div>
@@ -3590,6 +3847,82 @@ ${afterReaderCss ? scopeCssRules(afterReaderCss, ".after-scope") : ""}
             localStorage.removeItem(storageKey + ":hide");
           } catch (err) {}
         }
+      } else if (target.id === "gallery-highlight-diff") {
+        if (target.checked) {
+          document.body.setAttribute("data-highlight-diff", "true");
+        } else {
+          document.body.removeAttribute("data-highlight-diff");
+        }
+      }
+    });
+
+    function highlightTextDiff(bTextNode, aTextNode) {
+      var bStr = bTextNode.nodeValue || "";
+      var aStr = aTextNode.nodeValue || "";
+      if (bStr === aStr) return;
+      var p = 0;
+      var minL = Math.min(bStr.length, aStr.length);
+      while (p < minL && bStr.charAt(p) === aStr.charAt(p)) p++;
+      var s = 0;
+      while (s < minL - p && bStr.charAt(bStr.length - 1 - s) === aStr.charAt(aStr.length - 1 - s)) s++;
+
+      function wrapMid(textNode, str, pref, suff) {
+        var mid = str.slice(pref, str.length - suff);
+        if (!mid) return;
+        var frag = document.createDocumentFragment();
+        if (pref > 0) frag.appendChild(document.createTextNode(str.slice(0, pref)));
+        var mark = document.createElement("mark");
+        mark.className = "diff-text-changed";
+        mark.textContent = mid;
+        frag.appendChild(mark);
+        if (suff > 0) frag.appendChild(document.createTextNode(str.slice(str.length - suff)));
+        if (textNode.parentNode) textNode.parentNode.replaceChild(frag, textNode);
+      }
+      wrapMid(bTextNode, bStr, p, s);
+      wrapMid(aTextNode, aStr, p, s);
+    }
+
+    function diffDomPair(bNode, aNode) {
+      if (!bNode && !aNode) return;
+      if (!bNode && aNode && aNode.nodeType === 1) {
+        aNode.classList.add("diff-node-changed");
+        return;
+      }
+      if (bNode && !aNode && bNode.nodeType === 1) {
+        bNode.classList.add("diff-node-changed");
+        return;
+      }
+      if (!bNode || !aNode) return;
+      if (bNode.nodeType === 3 && aNode.nodeType === 3) {
+        highlightTextDiff(bNode, aNode);
+        return;
+      }
+      if (bNode.nodeType === 1 && aNode.nodeType === 1) {
+        if (bNode.tagName !== aNode.tagName || bNode.className !== aNode.className) {
+          bNode.classList.add("diff-node-changed");
+          aNode.classList.add("diff-node-changed");
+        }
+        var bChildren = Array.prototype.slice.call(bNode.childNodes);
+        var aChildren = Array.prototype.slice.call(aNode.childNodes);
+        var maxC = Math.max(bChildren.length, aChildren.length);
+        for (var i = 0; i < maxC; i++) {
+          diffDomPair(bChildren[i], aChildren[i]);
+        }
+      } else {
+        if (bNode.nodeType === 1) bNode.classList.add("diff-node-changed");
+        if (aNode.nodeType === 1) aNode.classList.add("diff-node-changed");
+      }
+    }
+
+    document.querySelectorAll(".exemplar-item").forEach(function (item) {
+      var bScope = item.querySelector(".before-scope");
+      var aScope = item.querySelector(".after-scope");
+      if (!bScope || !aScope) return;
+      diffDomPair(bScope, aScope);
+      if (!item.querySelector(".diff-node-changed, .diff-text-changed")) {
+        item.querySelectorAll(".reader-block").forEach(function (el) {
+          el.classList.add("diff-css-changed");
+        });
       }
     });
 
