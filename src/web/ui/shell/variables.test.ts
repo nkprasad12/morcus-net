@@ -128,3 +128,138 @@ describe("UI V2 Design Token Parity (variables.css & critical_variables.css)", (
     );
   });
 });
+
+/** WCAG 2 contrast ratio between two `#rrggbb` colours. */
+function contrastRatio(a: string, b: string): number {
+  const luminance = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => {
+      const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+describe("reading-text contrast levels and highlight text colours", () => {
+  const variables = fs.readFileSync(
+    path.join(SHELL_DIR, "variables.css"),
+    "utf8"
+  );
+  const tokens = extractThemeBlocks(variables);
+  const critical = extractThemeBlocks(
+    fs.readFileSync(path.join(SHELL_DIR, "critical_variables.css"), "utf8")
+  );
+  const theme = {
+    light: { base: tokens.light!, bg: critical.light!.get("--bg")! },
+    dark: {
+      base: tokens.explicitDark!,
+      bg: critical.explicitDark!.get("--bg")!,
+    },
+  };
+  const hex = (v: string | undefined) => {
+    expect(v).toMatch(/^#[0-9a-f]{6}$/i);
+    return v!;
+  };
+
+  /** `{ "light:higher": props with the theme suffix dropped, ... }` */
+  function contrastRules(): Map<string, Map<string, string>> {
+    const rules = new Map<string, Map<string, string>>();
+    const clean = variables.replace(/\/\*[\s\S]*?\*\//g, "");
+    const re = /\[data-text-contrast-(light|dark)="([a-z]+)"\]\s*\{([^}]+)\}/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(clean)) !== null) {
+      const key = `${m[1]}:${m[2]}`;
+      expect(rules.has(key)).toBe(false);
+      const props = new Map<string, string>();
+      for (const [name, value] of parseCustomProperties(m[3])) {
+        // A level may only set its own theme's variables.
+        expect(name.endsWith(`-${m[1]}`)).toBe(true);
+        props.set(name.slice(0, -m[1].length - 1), value);
+      }
+      rules.set(key, props);
+    }
+    return rules;
+  }
+
+  /** The default inside `var(--x-light, default)`, resolving `var(--text)`. */
+  function normal(name: "light" | "dark", token: string): string | undefined {
+    const value = theme[name].base.get(token);
+    const m = value?.match(/^var\(--[a-z-]+-(light|dark), (.+)\)$/);
+    if (!m) return value;
+    expect(m[1]).toBe(name);
+    return m[2] === "var(--text)"
+      ? (name === "light" ? critical.light! : critical.explicitDark!).get(
+          "--text"
+        )
+      : m[2];
+  }
+
+  test("there is one rule per theme and level", () => {
+    expect([...contrastRules().keys()].sort()).toEqual(
+      ["softer", "higher", "highest"]
+        .flatMap((l) => [`light:${l}`, `dark:${l}`])
+        .sort()
+    );
+  });
+
+  test.each(["light", "dark"] as const)(
+    "%s levels stay readable and rise monotonically",
+    (name) => {
+      const { bg } = theme[name];
+      const rules = contrastRules();
+      const ratios = ["softer", "normal", "higher", "highest"].map((level) => {
+        const props =
+          rules.get(`${name}:${level}`) ?? new Map<string, string>();
+        const reading = hex(
+          props.get("--reading-text") ?? normal(name, "--reading-text")
+        );
+        expect(contrastRatio(reading, bg)).toBeGreaterThanOrEqual(7);
+        // Light glosses follow the reading text (currentColor).
+        if (name === "dark") {
+          const emph = hex(
+            props.get("--emph-text") ?? normal(name, "--emph-text")
+          );
+          expect(contrastRatio(emph, bg)).toBeGreaterThanOrEqual(7);
+        }
+        // Softer and Normal keep today's muted text (light's sits at 4.2:1, a
+        // pre-existing token); the levels that change it must reach AA.
+        const muted = props.get("--text-muted");
+        if (muted !== undefined) {
+          expect(contrastRatio(hex(muted), bg)).toBeGreaterThanOrEqual(4.5);
+        }
+        return contrastRatio(reading, bg);
+      });
+      expect(ratios).toEqual([...ratios].sort((a, b) => a - b));
+      expect(new Set(ratios).size).toBe(ratios.length);
+    }
+  );
+
+  test.each(["light", "dark"] as const)(
+    "%s highlight text colours reach 4.5:1 on every entry surface",
+    (name) => {
+      const { base } = theme[name];
+      const surfaces = [
+        theme[name].bg,
+        ...["--card-surface-bg", "--paper-bg", "--tag-bg"].map((t) =>
+          hex(base.get(t))
+        ),
+      ];
+      for (const cat of ["orth", "grammar", "quote", "bibl"]) {
+        const fg = hex(base.get(`--fg-${cat}`));
+        for (const surface of surfaces) {
+          expect({
+            cat,
+            surface,
+            ok: contrastRatio(fg, surface) >= 4.5,
+          }).toEqual({
+            cat,
+            surface,
+            ok: true,
+          });
+        }
+      }
+    }
+  );
+});

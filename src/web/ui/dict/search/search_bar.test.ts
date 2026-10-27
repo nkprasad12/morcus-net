@@ -206,7 +206,14 @@ describe("renderDictSearchBar", () => {
     const html = renderDictSearchBar({ query: "amo", action: "/dicts" });
     expect(html).not.toContain("guest-chip");
     expect(html).not.toContain("settings-guest-note");
-    expect(html).not.toContain("disabled");
+    // No guest locks. (The highlight-style radios are rendered disabled until
+    // upgrade, to keep them out of the form submission; they aren't locks.)
+    const { doc } = forms(html);
+    expect(
+      [...doc.querySelectorAll<HTMLInputElement>("[disabled]")].map(
+        (el) => el.name
+      )
+    ).toEqual(["highlight-style", "highlight-style"]);
     expect(html).not.toContain("data-scoped");
   });
 

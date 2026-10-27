@@ -77,6 +77,7 @@ beforeEach(() => {
   localStorage.clear();
   clearCookies();
   document.documentElement.style.removeProperty("--highlight-scale");
+  document.documentElement.removeAttribute("data-highlight-style");
   document.body.innerHTML = "";
   window.history.replaceState(null, "", "/");
 });
@@ -158,6 +159,84 @@ describe("MorcusDictSettings", () => {
     expect(prepaint()["--highlight-scale"]).toBeUndefined();
     // Strength isn't a content setting.
     expect(m.commits).toEqual([]);
+  });
+
+  describe("highlight style", () => {
+    const radio = (m: Mounted, value: string) =>
+      m.el.querySelector<HTMLInputElement>(
+        `input[name="highlight-style"][value="${value}"]`
+      )!;
+    const prepaint = () =>
+      JSON.parse(localStorage.getItem("morcus_prepaint") ?? "{}");
+    const root = () => document.documentElement;
+
+    test("is rendered disabled, so it never joins the no-JS form submission", () => {
+      const wrapper = build();
+      const radios = wrapper.querySelectorAll<HTMLInputElement>(
+        'input[name="highlight-style"]'
+      );
+      expect(radios).toHaveLength(2);
+      for (const r of radios) expect(r.disabled).toBe(true);
+      const form = wrapper.querySelector<HTMLFormElement>("form")!;
+      expect(new FormData(form).has("highlight-style")).toBe(false);
+    });
+
+    test("is enabled on upgrade, Highlight by default", () => {
+      const m = mount();
+      expect(radio(m, "background").disabled).toBe(false);
+      expect(radio(m, "background").checked).toBe(true);
+      expect(root().hasAttribute("data-highlight-style")).toBe(false);
+    });
+
+    test("Colored text applies live, saves, and records pre-paint", () => {
+      const m = mount();
+      toggle(radio(m, "text"), true);
+      expect(root().getAttribute("data-highlight-style")).toBe("text");
+      expect(JSON.parse(localStorage.getItem("GlobalSettings")!)).toEqual(
+        expect.objectContaining({ highlightStyle: "text" })
+      );
+      expect(prepaint()["data-highlight-style"]).toBe("text");
+
+      // Highlight is the default: stored as absent, attribute removed.
+      toggle(radio(m, "background"), true);
+      expect(root().hasAttribute("data-highlight-style")).toBe(false);
+      expect(
+        JSON.parse(localStorage.getItem("GlobalSettings") ?? "{}")
+      ).not.toHaveProperty("highlightStyle");
+      expect(prepaint()).not.toHaveProperty("data-highlight-style");
+      // Neither is a content setting.
+      expect(m.commits).toEqual([]);
+    });
+
+    test("adopts the saved style and heals a stale snapshot on connect", () => {
+      localStorage.setItem(
+        "GlobalSettings",
+        JSON.stringify({ highlightStyle: "text" })
+      );
+      localStorage.setItem("morcus_prepaint", JSON.stringify({}));
+      const m = mount();
+      expect(radio(m, "text").checked).toBe(true);
+      expect(root().getAttribute("data-highlight-style")).toBe("text");
+      expect(prepaint()["data-highlight-style"]).toBe("text");
+    });
+
+    test("is disabled again on disconnect, so a left-behind form omits it", () => {
+      const m = mount();
+      expect(new FormData(m.form).has("highlight-style")).toBe(true);
+      m.el.remove();
+      expect(radio(m, "background").disabled).toBe(true);
+      expect(new FormData(m.form).has("highlight-style")).toBe(false);
+    });
+
+    test("ignores an invalid saved style", () => {
+      localStorage.setItem(
+        "GlobalSettings",
+        JSON.stringify({ highlightStyle: "neon" })
+      );
+      const m = mount();
+      expect(radio(m, "background").checked).toBe(true);
+      expect(root().hasAttribute("data-highlight-style")).toBe(false);
+    });
   });
 
   test("content changes apply only when the dialog closes, once", () => {

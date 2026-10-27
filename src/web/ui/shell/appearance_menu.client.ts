@@ -12,7 +12,11 @@ import {
   type Appearance,
   type ThemeChoice,
 } from "@/web/ui/shell/appearance.client";
-import { isLineSpacing, isTextFont } from "@/web/ui/core/state/settings.client";
+import {
+  isLineSpacing,
+  isTextFont,
+  TEXT_CONTRASTS,
+} from "@/web/ui/core/state/settings.client";
 import { THEME_COLOR } from "@/web/ui/shell/theme_color.common";
 import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
 
@@ -31,6 +35,8 @@ function isThemeChoice(x: unknown): x is ThemeChoice {
 class MorcusAppearanceMenu extends BaseElement {
   #appearance: Appearance = resolveAppearance({});
   #modal: ModalDialogHandle | null = null;
+  /** The OS scheme, which decides the theme on screen under "System". */
+  #darkQuery: MediaQueryList | null = null;
 
   get #panel() {
     return this.scope.$<HTMLDialogElement>("#appearance-popover");
@@ -51,6 +57,10 @@ class MorcusAppearanceMenu extends BaseElement {
   protected override onConnect() {
     this.#appearance = appearanceStore.get();
     applyAppearance(this.#appearance);
+    this.#darkQuery =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-color-scheme: dark)")
+        : null;
     this.#syncControls();
     this.#syncThemeColor();
 
@@ -96,14 +106,28 @@ class MorcusAppearanceMenu extends BaseElement {
       }
     }
 
-    for (const [id, delta] of [
-      ["#appearance-size-dec", -TEXT_SCALE.step],
-      ["#appearance-size-inc", TEXT_SCALE.step],
+    // The steppers. Contrast is saved per theme: it edits the one on screen.
+    for (const [end, delta] of [
+      ["dec", -1],
+      ["inc", 1],
     ] as const) {
-      const btn = this.scope.$<HTMLButtonElement>(id);
-      this.scope.listen(btn, "click", () => {
-        this.#update({ textScale: this.#appearance.textScale + delta });
-      });
+      this.scope.listen(this.scope.$(`#appearance-size-${end}`), "click", () =>
+        this.#update({
+          textScale: this.#appearance.textScale + delta * TEXT_SCALE.step,
+        })
+      );
+      this.scope.listen(
+        this.scope.$(`#appearance-contrast-${end}`),
+        "click",
+        () => {
+          const key = this.#isDark() ? "contrastDark" : "contrastLight";
+          const level =
+            TEXT_CONTRASTS[
+              TEXT_CONTRASTS.indexOf(this.#appearance[key]) + delta
+            ];
+          if (level) this.#update({ [key]: level });
+        }
+      );
     }
 
     const reset = this.scope.$<HTMLButtonElement>("#appearance-reset-btn");
@@ -111,13 +135,15 @@ class MorcusAppearanceMenu extends BaseElement {
       this.#update(resolveAppearance({}));
     });
 
-    // With no saved theme the OS scheme applies; keep the meta tags and the
-    // "System" option's meaning in step when it changes.
-    if (typeof window.matchMedia === "function") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      if (typeof mq?.addEventListener === "function") {
-        this.scope.listen(mq, "change", () => this.#syncThemeColor());
-      }
+    // With no saved theme the OS scheme applies; keep the meta tags, the
+    // "System" option's meaning and the theme the contrast row edits in step
+    // when it changes.
+    const mq = this.#darkQuery;
+    if (typeof mq?.addEventListener === "function") {
+      this.scope.listen(mq, "change", () => {
+        this.#syncThemeColor();
+        this.#syncControls();
+      });
     }
   }
 
@@ -131,6 +157,14 @@ class MorcusAppearanceMenu extends BaseElement {
     applyAppearance(this.#appearance);
     this.#syncControls();
     if ("theme" in patch) this.#syncThemeColor();
+  }
+
+  /** Whether the dark theme is on screen: saved, or the OS's under "System". */
+  #isDark(): boolean {
+    const theme = this.#appearance.theme;
+    return theme === "system"
+      ? this.#darkQuery?.matches === true
+      : theme === "dark";
   }
 
   #radios(name: string): HTMLInputElement[] {
@@ -148,12 +182,34 @@ class MorcusAppearanceMenu extends BaseElement {
         radio.checked = radio.value === value;
       }
     }
-    const sizeLabel = this.scope.$("#appearance-size-label");
-    if (sizeLabel) sizeLabel.textContent = `${a.textScale}%`;
-    const dec = this.scope.$<HTMLButtonElement>("#appearance-size-dec");
-    const inc = this.scope.$<HTMLButtonElement>("#appearance-size-inc");
-    if (dec) dec.disabled = a.textScale <= TEXT_SCALE.min;
-    if (inc) inc.disabled = a.textScale >= TEXT_SCALE.max;
+    this.#syncStepper(
+      "size",
+      `${a.textScale}%`,
+      a.textScale <= TEXT_SCALE.min,
+      a.textScale >= TEXT_SCALE.max
+    );
+    const dark = this.#isDark();
+    const contrast = dark ? a.contrastDark : a.contrastLight;
+    const level = TEXT_CONTRASTS.indexOf(contrast);
+    // Capitalized by CSS.
+    this.#syncStepper(
+      "contrast",
+      contrast,
+      level <= 0,
+      level >= TEXT_CONTRASTS.length - 1
+    );
+    const note = this.scope.$("#appearance-contrast-note");
+    if (note) note.textContent = `For the ${dark ? "dark" : "light"} theme`;
+  }
+
+  /** A stepper's value and, at either end of its range, disabled buttons. */
+  #syncStepper(name: string, value: string, atMin: boolean, atMax: boolean) {
+    const label = this.scope.$(`#appearance-${name}-label`);
+    if (label) label.textContent = value;
+    const dec = this.scope.$<HTMLButtonElement>(`#appearance-${name}-dec`);
+    const inc = this.scope.$<HTMLButtonElement>(`#appearance-${name}-inc`);
+    if (dec) dec.disabled = atMin;
+    if (inc) inc.disabled = atMax;
   }
 
   /**

@@ -81,7 +81,9 @@ morcus-dict-settings {
   margin-bottom: var(--space-3);
 }
 
+/* Reading text, like the entries it previews (and their contrast level). */
 .dict-settings-dialog .settings-preview {
+  color: var(--reading-text);
   padding: var(--space-2) var(--space-4);
 }
 

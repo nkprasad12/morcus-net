@@ -1,7 +1,7 @@
 /* About Page Layout & Sections */
 
 /* Reading text: the About page exists to be read, so it follows the
-   Appearance menu's font, size and spacing (see docs/PREFERENCES.md). */
+   Appearance menu's font, size, spacing and contrast (see docs/PREFERENCES.md). */
 .about-article {
   width: 100%;
   font-family: var(--font-text);

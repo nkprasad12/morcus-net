@@ -49,12 +49,12 @@
   --font-mono: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono",
     Consolas, "Liberation Mono", "Courier New", monospace;
   --card-bg: var(--bg);
-  --text-muted: #6c757d;
+  --text-muted: var(--text-muted-light, #6c757d);
   /* Reading text (dictionary entries, reader passages) and its bold glosses
      (.lsEmph). Same as the body text in light mode; dark mode softens the
      reading text a little and lifts the glosses, which are usually the direct
      English translations, so they stand out when scanning (#598). */
-  --reading-text: var(--text);
+  --reading-text: var(--reading-text-light, var(--text));
   --emph-text: currentColor;
   --primary: #286e56;
   --primary-hover: #1d5441;
@@ -96,6 +96,12 @@
   );
   --accent-quote: rgba(var(--rgb-quote), calc(0.084 * var(--highlight-scale)));
   --accent-bibl: rgba(var(--rgb-bibl), calc(0.105 * var(--highlight-scale)));
+  /* "Colored text" highlight style (dict_typography.css): the category
+     colours as text, at least 4.5:1 on every entry surface. */
+  --fg-orth: #b4232f;
+  --fg-grammar: #a14a00;
+  --fg-quote: #0b55c4;
+  --fg-bibl: #5b33a8;
   --bullet-bg: rgba(0, 0, 0, 0.08);
   --tab-chip-bg: var(--tag-bg);
   --app-bar-nav-hover-bg: rgba(0, 0, 0, 0.07);
@@ -148,9 +154,9 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --card-bg: #23272c;
-    --text-muted: #9a9ea4;
-    --reading-text: #b4b9bf;
-    --emph-text: var(--text);
+    --text-muted: var(--text-muted-dark, #9a9ea4);
+    --reading-text: var(--reading-text-dark, #b4b9bf);
+    --emph-text: var(--emph-text-dark, var(--text));
     --primary: #7cc4a6;
     --primary-hover: #9ad4bc;
     --primary-light: rgba(124, 196, 166, 0.14);
@@ -190,6 +196,10 @@
       calc(0.161 * var(--highlight-scale))
     );
     --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
+    --fg-orth: #ff8a9b;
+    --fg-grammar: #f5b85a;
+    --fg-quote: #8fbaff;
+    --fg-bibl: #c4a3ff;
     --bullet-bg: rgba(255, 255, 255, 0.15);
     --tab-chip-bg: rgba(255, 255, 255, 0.08);
     --app-bar-nav-hover-bg: rgba(255, 255, 255, 0.08);
@@ -242,9 +252,9 @@
 :root[data-theme="dark"],
 [data-theme="dark"] {
   --card-bg: #23272c;
-  --text-muted: #9a9ea4;
-  --reading-text: #b4b9bf;
-  --emph-text: var(--text);
+  --text-muted: var(--text-muted-dark, #9a9ea4);
+  --reading-text: var(--reading-text-dark, #b4b9bf);
+  --emph-text: var(--emph-text-dark, var(--text));
   --primary: #7cc4a6;
   --primary-hover: #9ad4bc;
   --primary-light: rgba(124, 196, 166, 0.14);
@@ -281,6 +291,10 @@
   );
   --accent-quote: rgba(var(--rgb-quote), calc(0.161 * var(--highlight-scale)));
   --accent-bibl: rgba(var(--rgb-bibl), calc(0.175 * var(--highlight-scale)));
+  --fg-orth: #ff8a9b;
+  --fg-grammar: #f5b85a;
+  --fg-quote: #8fbaff;
+  --fg-bibl: #c4a3ff;
   --bullet-bg: rgba(255, 255, 255, 0.15);
   --tab-chip-bg: rgba(255, 255, 255, 0.08);
   --app-bar-nav-hover-bg: rgba(255, 255, 255, 0.08);
@@ -327,4 +341,43 @@
   --badge-resume-text: #fde68a;
   --badge-resume-border: rgba(251, 191, 36, 0.35);
   --dropdown-backdrop: rgba(0, 0, 0, 0.45);
+}
+
+/* Reading-text contrast (the Appearance menu; shell/appearance.client.ts),
+   saved per theme. Each level sets only its own theme's variables, and the
+   theme blocks above read just their own (`var(--reading-text-dark, …)`), so
+   "System" follows the OS scheme. Normal is the absence of the attribute: the
+   defaults above. Literal colours for target ratios on --bg, checked by
+   variables.test.ts: reading text and glosses at least 7:1, muted text at
+   least 4.5:1. Softer leaves muted text alone (it is near its floor); in dark
+   mode the glosses keep their lift over the reading text. */
+:root[data-text-contrast-light="softer"] {
+  --reading-text-light: #3f4346;
+}
+
+:root[data-text-contrast-light="higher"] {
+  --reading-text-light: #15181c;
+  --text-muted-light: #565d64;
+}
+
+:root[data-text-contrast-light="highest"] {
+  --reading-text-light: #07080a;
+  --text-muted-light: #484e54;
+}
+
+:root[data-text-contrast-dark="softer"] {
+  --reading-text-dark: #a3a7ad;
+  --emph-text-dark: #bdbfc4;
+}
+
+:root[data-text-contrast-dark="higher"] {
+  --reading-text-dark: #cbcfd3;
+  --emph-text-dark: #eaebed;
+  --text-muted-dark: #a2a6ab;
+}
+
+:root[data-text-contrast-dark="highest"] {
+  --reading-text-dark: #e6e8ea;
+  --emph-text-dark: #ffffff;
+  --text-muted-dark: #b9bcc0;
 }

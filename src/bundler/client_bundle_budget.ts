@@ -51,24 +51,30 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
     // Raised by 0.1 KiB (with the routes that include it: about, library,
     // external, macronizer) for the reader's fresh-frame first lookup, which
-    // left common.js exactly at its old 21 KiB ceiling.
-    "common.js": { maxGzipBytes: 21.1 * 1024 },
+    // left common.js exactly at its old 21 KiB ceiling. Raised by 0.4 KiB
+    // (with every route) for the reading-text contrast setting and the
+    // highlight-style setting (+347 B gzip).
+    "common.js": { maxGzipBytes: 21.5 * 1024 },
     "reader.js": { maxGzipBytes: 14 * 1024 },
-    "dict.js": { maxGzipBytes: 9.5 * 1024 },
+    // Raised by 0.2 KiB for the highlight-style control (+118 B gzip).
+    "dict.js": { maxGzipBytes: 9.7 * 1024 },
     "corpus.js": { maxGzipBytes: 6.5 * 1024 },
     "external.js": { maxGzipBytes: 4.5 * 1024 },
     "macronizer.js": { maxGzipBytes: 4.5 * 1024 },
   },
   routes: {
-    about: { maxGzipBytes: 21.1 * 1024 },
-    // Raised by 0.5 KiB for in-place embedded dictionary lookups (+439 B gzip across common.js + dict.js).
-    dicts: { maxGzipBytes: 30.5 * 1024 },
-    corpus: { maxGzipBytes: 27 * 1024 },
-    library: { maxGzipBytes: 34.6 * 1024 },
-    external: { maxGzipBytes: 38.6 * 1024 },
-    macronizer: { maxGzipBytes: 25.1 * 1024 },
+    about: { maxGzipBytes: 21.5 * 1024 },
+    // Raised by 0.5 KiB for in-place embedded dictionary lookups (+439 B gzip across common.js + dict.js),
+    // and by 0.5 KiB for the contrast and highlight-style settings (+465 B).
+    dicts: { maxGzipBytes: 31 * 1024 },
+    corpus: { maxGzipBytes: 27.4 * 1024 },
+    library: { maxGzipBytes: 35 * 1024 },
+    external: { maxGzipBytes: 39 * 1024 },
+    macronizer: { maxGzipBytes: 25.5 * 1024 },
   },
-  maxCssGzipBytes: 24.5 * 1024,
+  // Raised by 0.5 KiB for the contrast levels, the highlight text colours
+  // and the colored-text rules (+439 B gzip).
+  maxCssGzipBytes: 25 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
   // pre-paint preference must not grow it (~300 B raw / ~237 B gzip). Do not

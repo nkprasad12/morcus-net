@@ -316,6 +316,10 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
   // `#dict-appearance-link`: reading text is app-wide, so the app-bar
   // Appearance menu owns it (JS-only, like the menu). Hidden in embedded
   // views, which have no app bar (see dict_settings.client.ts).
+  //
+  // The highlight-style radios are rendered disabled and enabled on upgrade:
+  // disabled controls aren't submitted, so they never join this form's
+  // dictionary query. The style lives in localStorage, not the URL.
   const bodyHtml = ssr`
       ${input.query ? hiddenInput("q", input.query) : ""}
       ${input.extraHiddenInputsHtml}
@@ -333,6 +337,20 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
 
       <div class="settings-slider-section" data-js-only>
         <div class="settings-divider" role="separator"></div>
+
+        <div class="settings-header">
+          <span class="settings-title" id="dict-highlight-style-label">Highlight Style</span>
+        </div>
+        <div class="segmented dict-highlight-style" role="radiogroup" aria-labelledby="dict-highlight-style-label">
+          <label class="segmented-option">
+            <input type="radio" name="highlight-style" value="background" checked disabled />
+            <span class="segmented-label">Highlight</span>
+          </label>
+          <label class="segmented-option">
+            <input type="radio" name="highlight-style" value="text" disabled />
+            <span class="segmented-label">Colored text</span>
+          </label>
+        </div>
 
         <div class="settings-header">
           <span class="settings-title">Highlight Strength</span>
@@ -359,7 +377,7 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
         </div>
       </div>
       <button type="button" class="appearance-link" id="dict-appearance-link" data-js-only>
-        <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, theme</span></span>
+        <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, contrast, theme</span></span>
         ${renderIconSvg("palette")}
       </button>
   `;

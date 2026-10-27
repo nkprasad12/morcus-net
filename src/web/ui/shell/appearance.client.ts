@@ -1,6 +1,6 @@
 /**
  * Owner of the app-wide appearance preferences: theme and the reading text's
- * font, size and line spacing. They live in
+ * font, size, line spacing and contrast. They live in
  * `GlobalSettings` and are presentation only, so each maps to one pre-paint
  * value on <html> (see docs/PREFERENCES.md):
  *
@@ -10,9 +10,18 @@
  * | `textFont`          | `--font-text`      | sans (`variables.css`)   |
  * | `textScale`         | `--text-scale`     | 1                        |
  * | `lineSpacing`       | `--text-leading`   | 1                        |
+ * | `textContrastLight` | `data-text-contrast-light` | normal           |
+ * | `textContrastDark`  | `data-text-contrast-dark`  | normal           |
  *
  * Reading-text CSS multiplies its own base size and line height by
  * `--text-scale` and `--text-leading`, so every surface keeps its proportions.
+ *
+ * Contrast is stored per theme, as one attribute each, and `variables.css`
+ * reads only the one for the theme on screen, so "System"
+ * follows the OS scheme without script. A subtle colour shift doesn't need
+ * pre-paint for itself, but it goes through the snapshot anyway because the
+ * embedded dictionary (the reader's and macronizer's iframes) has no
+ * Appearance menu to apply it, only the critical script.
  */
 
 import {
@@ -23,6 +32,7 @@ import {
   settingsStore,
   type GlobalSettings,
   type LineSpacing,
+  type TextContrast,
   type TextFont,
 } from "@/web/ui/core/state/settings.client";
 
@@ -31,6 +41,7 @@ export type ThemeChoice = "system" | "light" | "dark";
 export const TEXT_SCALE = { min: 70, max: 160, step: 5, default: 100 };
 export const DEFAULT_TEXT_FONT: TextFont = "sans";
 export const DEFAULT_LINE_SPACING: LineSpacing = "normal";
+export const DEFAULT_TEXT_CONTRAST: TextContrast = "normal";
 
 /** Line-height multipliers; with the reader's 1.65 they give 1.45 / 1.65 / 1.85. */
 const LEADING: Record<LineSpacing, number> = {
@@ -45,6 +56,8 @@ export interface Appearance {
   textFont: TextFont;
   textScale: number;
   lineSpacing: LineSpacing;
+  contrastLight: TextContrast;
+  contrastDark: TextContrast;
 }
 
 function clamp(n: number, min: number, max: number): number {
@@ -67,6 +80,8 @@ export function resolveAppearance(settings: GlobalSettings): Appearance {
       TEXT_SCALE.max
     ),
     lineSpacing: settings.lineSpacing ?? DEFAULT_LINE_SPACING,
+    contrastLight: settings.textContrastLight ?? DEFAULT_TEXT_CONTRAST,
+    contrastDark: settings.textContrastDark ?? DEFAULT_TEXT_CONTRAST,
   };
 }
 
@@ -89,7 +104,13 @@ export function appearanceToSettings(
       appearance.lineSpacing === DEFAULT_LINE_SPACING
         ? undefined
         : appearance.lineSpacing,
+    textContrastLight: nonDefaultContrast(appearance.contrastLight),
+    textContrastDark: nonDefaultContrast(appearance.contrastDark),
   };
+}
+
+function nonDefaultContrast(c: TextContrast): TextContrast | undefined {
+  return c === DEFAULT_TEXT_CONTRAST ? undefined : c;
 }
 
 /**
@@ -116,6 +137,14 @@ export function appearancePrepaint(
       appearance.lineSpacing === DEFAULT_LINE_SPACING
         ? null
         : String(LEADING[appearance.lineSpacing]),
+    ],
+    [
+      "data-text-contrast-light",
+      nonDefaultContrast(appearance.contrastLight) ?? null,
+    ],
+    [
+      "data-text-contrast-dark",
+      nonDefaultContrast(appearance.contrastDark) ?? null,
     ],
   ];
 }

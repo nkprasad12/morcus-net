@@ -41,8 +41,8 @@ function row(key: string, label: string, controlHtml: string): string {
 }
 
 /**
- * The app-bar Appearance menu: the theme and the reading text's font, size
- * and line spacing, all app-wide (see
+ * The app-bar Appearance menu: the theme and the reading text's font, size,
+ * line spacing and contrast, all app-wide (see
  * `appearance.client.ts`). JS-only like every setting in it: they live in
  * localStorage, so without JS the icon is hidden and the defaults apply.
  *
@@ -55,7 +55,8 @@ export function renderAppearanceMenu(): string {
   // get lost in an iframe, and Escape closes it natively.
   //
   // `.appearance-sample` is styled by the same custom properties as reading
-  // text, so it previews every change live with no script. It comes last, so
+  // text, so it previews the font, size, spacing and reading-text colour live
+  // with no script. It comes last, so
   // the controls above it don't move as it grows.
   return ssr`<morcus-appearance-menu data-js-only>
       <button
@@ -152,6 +153,19 @@ export function renderAppearanceMenu(): string {
                 "normal"
               )
             )}
+            ${row(
+              "contrast-row",
+              "Contrast",
+              // A stepper, not a segmented control: four levels don't fit the
+              // row. Saved per theme, so the note names the one being edited
+              // (filled in on upgrade, like the other values).
+              ssr`<div class="stepper appearance-stepper" role="group" aria-labelledby="appearance-contrast-row-label" aria-describedby="appearance-contrast-note">
+                <button type="button" class="stepper-btn" id="appearance-contrast-dec" aria-label="Decrease text contrast">&minus;</button>
+                <span class="stepper-val appearance-contrast-val" id="appearance-contrast-label" aria-live="polite">normal</span>
+                <button type="button" class="stepper-btn" id="appearance-contrast-inc" aria-label="Increase text contrast">+</button>
+              </div>`
+            )}
+            <p class="appearance-note" id="appearance-contrast-note"></p>
             <p class="appearance-sample" lang="la">Gallia est omnis dīvīsa in partēs trēs, quārum ūnam incolunt Belgae.</p>
           </div>
         </div>

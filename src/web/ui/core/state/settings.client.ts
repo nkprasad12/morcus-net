@@ -25,6 +25,12 @@ export interface GlobalSettings {
   textScale?: number;
   /** Reading-text line spacing (`--text-leading`); absent means normal. */
   lineSpacing?: LineSpacing;
+  /** Reading-text contrast in the light theme; absent means the default. */
+  textContrastLight?: TextContrast;
+  /** Reading-text contrast in the dark theme; absent means the default. */
+  textContrastDark?: TextContrast;
+  /** How dictionary highlights are drawn; absent means background tints. */
+  highlightStyle?: HighlightStyle;
   autoOpenLogeion?: boolean;
   readerWidth?: DraggedPageWidth;
   libraryWidth?: DraggedPageWidth;
@@ -34,13 +40,28 @@ export interface GlobalSettings {
 
 export type TextFont = "sans" | "serif";
 export type LineSpacing = "compact" | "normal" | "relaxed";
+export type TextContrast = "softer" | "normal" | "higher" | "highest";
+export type HighlightStyle = "background" | "text";
 
 export const isTextFont: Validator<TextFont> = (x: unknown): x is TextFont =>
   x === "sans" || x === "serif";
-
 export const isLineSpacing: Validator<LineSpacing> = (
   x: unknown
 ): x is LineSpacing => x === "compact" || x === "normal" || x === "relaxed";
+/** The contrast levels, lowest first (the Appearance menu steps through them). */
+export const TEXT_CONTRASTS: readonly TextContrast[] = [
+  "softer",
+  "normal",
+  "higher",
+  "highest",
+];
+export const isTextContrast: Validator<TextContrast> = (
+  x: unknown
+): x is TextContrast =>
+  x === "softer" || x === "normal" || x === "higher" || x === "highest";
+export const isHighlightStyle: Validator<HighlightStyle> = (
+  x: unknown
+): x is HighlightStyle => x === "background" || x === "text";
 
 export const GLOBAL_SETTINGS_KEY = "GlobalSettings";
 
@@ -82,6 +103,9 @@ const GLOBAL_SETTINGS_CHECKERS: FieldCheckers<GlobalSettings> = {
   textFont: isTextFont,
   textScale: isNumber,
   lineSpacing: isLineSpacing,
+  textContrastLight: isTextContrast,
+  textContrastDark: isTextContrast,
+  highlightStyle: isHighlightStyle,
   autoOpenLogeion: isBoolean,
   readerWidth: isDraggedPageWidth,
   libraryWidth: isDraggedPageWidth,
