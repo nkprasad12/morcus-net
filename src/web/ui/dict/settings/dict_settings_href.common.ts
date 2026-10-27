@@ -1,4 +1,4 @@
-import { SAVE_PARAM } from "@/web/ui/dict/settings/dict_selection.common";
+import { SAVE_PARAM } from "@/web/ui/dict/settings/dict_bitmask.common";
 
 /** Every query parameter that carries dictionary content settings (or the save marker). */
 export const SETTINGS_PARAMS = ["d", "dict", "in", "o", SAVE_PARAM] as const;

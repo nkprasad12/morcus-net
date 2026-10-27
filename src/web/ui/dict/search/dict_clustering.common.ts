@@ -1,8 +1,8 @@
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { type DictLang } from "@/common/dictionaries/dictionaries";
-import { Vowels } from "@/common/character_utils";
+import { haveCompatibleVowelLength } from "@/common/character_utils";
 import { removeDiacritics } from "@/common/text_cleaning";
 import type { CompletionItem } from "@/web/ui/dict/search/dict_completions.common";
+import { DICT_SOURCE_LANG } from "@/web/ui/dict/settings/dict_bitmask.common";
 
 export interface Candidate {
   dictKey: string;
@@ -22,11 +22,8 @@ const EXTRA_KEY_LOOKUP = new Map<string, string>([
  * Defaults to "La" for universal ("*") or unrecognized dictionaries.
  */
 export function getDictSourceLang(dictKey: string): DictLang {
-  const info = LatinDict.BY_KEY.get(dictKey);
-  if (!info || info.languages.from === "*") {
-    return "La";
-  }
-  return info.languages.from;
+  const from = DICT_SOURCE_LANG[dictKey];
+  return !from || from === "*" ? "La" : from;
 }
 
 /**
@@ -58,7 +55,7 @@ export function getExpandedPrefixes(prefix: string, lang: DictLang): string[] {
 }
 
 /**
- * Deduplicates candidates, clusters vowel-length variants via Vowels.haveCompatibleLength,
+ * Deduplicates candidates, clusters vowel-length variants via haveCompatibleVowelLength,
  * selects Gaffiot as canonical macron leader for Latin, sorts results, and exits early
  * once the limit of clusters is reached.
  */
@@ -103,7 +100,7 @@ export function clusterAndDeduplicate(
       let foundGroup = false;
       for (const fg of formGroups) {
         const compatible = fg.every((member) =>
-          Vowels.haveCompatibleLength(member.word, option.word)
+          haveCompatibleVowelLength(member.word, option.word)
         );
         if (compatible) {
           fg.push(option);
@@ -118,8 +115,7 @@ export function clusterAndDeduplicate(
 
     // Canonical leader selection: prefer Gaffiot for Latin macrons
     for (const fg of formGroups) {
-      const leader =
-        fg.find((m) => m.dictKey === LatinDict.Gaffiot.key) ?? fg[0];
+      const leader = fg.find((m) => m.dictKey === "GAF") ?? fg[0];
       results.push({ lang: group.lang, word: leader.word });
     }
 

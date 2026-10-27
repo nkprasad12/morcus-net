@@ -14,13 +14,10 @@ export interface DictType {
   to: DictLang;
 }
 
-export type DictTags = "Classical" | "Other" | "Numeral";
-
 export interface DictInfo {
   key: string;
   displayName: string;
   languages: DictType;
-  tags?: DictTags[];
 }
 
 export interface DictOptions {

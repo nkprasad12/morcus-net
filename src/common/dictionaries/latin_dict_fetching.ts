@@ -1,5 +1,5 @@
 import { assertEqual } from "@/common/assert";
-import { Vowels } from "@/common/character_utils";
+import { haveCompatibleVowelLength } from "@/common/character_utils";
 import type {
   EntryResult,
   DictSubsectionResult,
@@ -121,7 +121,7 @@ export async function findEntriesForQuery<T extends EntryResult>(
       const fullForm = form.form + enclitic;
       // We should enforce vowel correctness on the enclitic, too.
       // https://github.com/nkprasad12/morcus-net/issues/175
-      return Vowels.haveCompatibleLength(input, fullForm);
+      return haveCompatibleVowelLength(input, fullForm);
     });
     if (inflectedForms.length === 0) {
       continue;

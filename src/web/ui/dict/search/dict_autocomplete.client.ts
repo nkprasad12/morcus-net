@@ -16,8 +16,8 @@ import { createDictChunkCache } from "@/web/ui/dict/search/dict_chunk_cache.clie
 import {
   DEFAULT_DICT_KEYS,
   encodeDictBitmask,
+  parseDictsFromCookie,
 } from "@/web/ui/dict/settings/dict_bitmask.common";
-import { parseDictsFromCookie } from "@/web/ui/dict/settings/dict_selection.common";
 import "@/web/ui/dict/search/dict_suggestions.client";
 
 interface DictAutocompleteOptions {

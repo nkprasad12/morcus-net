@@ -1,4 +1,7 @@
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import {
+  DICT_BIT_REGISTRY,
+  DICT_SOURCE_LANG,
+} from "@/web/ui/dict/settings/dict_bitmask.common";
 
 /**
  * Formats natural language list with Oxford comma:
@@ -53,14 +56,13 @@ export function buildWelcomeMessage(
   let hasLatinSource = false;
   const reverseLanguagesSet = new Set<string>();
 
-  for (const dict of LatinDict.AVAILABLE) {
-    if (dict.key === "NUM") continue;
-    if (!activeKeysSet.has(dict.key.toUpperCase())) continue;
-
-    if (dict.languages.from === "La") {
+  for (const key of DICT_BIT_REGISTRY) {
+    if (!activeKeysSet.has(key)) continue;
+    const from = DICT_SOURCE_LANG[key];
+    if (from === "La") {
       hasLatinSource = true;
-    } else if (dict.languages.to === "La") {
-      reverseLanguagesSet.add(fullLangName(dict.languages.from));
+    } else if (from && from !== "*") {
+      reverseLanguagesSet.add(fullLangName(from));
     }
   }
 

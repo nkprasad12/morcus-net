@@ -1,6 +1,6 @@
 import { removeDiacritics } from "@/common/text_cleaning";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
-import { Vowels } from "@/common/character_utils";
+import { haveCompatibleVowelLength } from "@/common/character_utils";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
 import type { DictLang } from "@/common/dictionaries/dictionaries";
 
@@ -48,7 +48,7 @@ export class StoredDict {
     let candidates = await this.backing.matchesForCleanName(request);
     if (lang === "La") {
       candidates = candidates.filter(({ orth }) =>
-        Vowels.haveCompatibleLength(input, orth)
+        haveCompatibleVowelLength(input, orth)
       );
     }
     // TODO: Re-enable this if we run into performance issues.

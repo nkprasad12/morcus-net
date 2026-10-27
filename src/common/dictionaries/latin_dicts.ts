@@ -20,63 +20,54 @@ export namespace LatinDict {
     key: "L&S",
     displayName: "Lewis and Short",
     languages: { from: "La", to: "En" },
-    tags: ["Classical"],
   };
 
   export const SmithAndHall: LatinDictInfo = {
     key: "S&H",
     displayName: "Smith and Hall",
     languages: { from: "En", to: "La" },
-    tags: ["Classical"],
   };
 
   export const Gesner: LatinDictInfo = {
     key: "GES",
     displayName: "Gesner",
     languages: { from: "La", to: "La" },
-    tags: ["Classical"],
   };
 
   export const Forcellini: LatinDictInfo = {
     key: "FOR",
     displayName: "Forcellini",
     languages: { from: "La", to: "La" },
-    tags: ["Classical"],
   };
 
   export const Numeral: LatinDictInfo = {
     key: "NUM",
     displayName: "Numeral",
     languages: { from: "*", to: "*" },
-    tags: ["Numeral"],
   };
 
   export const RiddleArnold: LatinDictInfo = {
     key: "R&A",
     displayName: "Riddle and Arnold",
     languages: { from: "En", to: "La" },
-    tags: ["Classical"],
   };
 
   export const Gaffiot: LatinDictInfo = {
     key: "GAF",
     displayName: "Gaffiot",
     languages: { from: "La", to: "Fr" },
-    tags: ["Classical"],
   };
 
   export const Georges: LatinDictInfo = {
     key: "GRG",
     displayName: "Georges",
     languages: { from: "De", to: "La" },
-    tags: ["Classical"],
   };
 
   export const Pozo: LatinDictInfo = {
     key: "EGL",
     displayName: "Pozo",
     languages: { from: "Es", to: "La" },
-    tags: ["Classical"],
   };
 
   export const AVAILABLE: LatinDictInfo[] = [
