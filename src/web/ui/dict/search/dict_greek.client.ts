@@ -2,15 +2,13 @@ import {
   BaseElement,
   registerElement,
   settingsStore,
-  storage,
 } from "@/web/ui/core/index.client";
-import { EMBEDDED_LOGEION_SETTING_KEY } from "@/web/ui/dict/search/dict_greek.common";
 
 /**
  * Progressively enhanced custom element for the Greek query Logeion embed.
  *
  * Handles:
- * - Syncing the "Automatically open embedded Logeion searches" preference with localStorage.
+ * - Syncing the auto-open Logeion preference with settingsStore.
  * - Auto-opening the <details> element if the preference is enabled.
  */
 export class MorcusGreekEmbed extends BaseElement {
@@ -23,7 +21,7 @@ export class MorcusGreekEmbed extends BaseElement {
       ".greek-auto-open-checkbox"
     );
 
-    const isAutoOpen = this.#getAutoOpenPreference();
+    const isAutoOpen = Boolean(settingsStore.get().autoOpenLogeion);
 
     if (this.#checkbox) {
       this.#checkbox.checked = isAutoOpen;
@@ -45,17 +43,7 @@ export class MorcusGreekEmbed extends BaseElement {
     }
   }
 
-  #getAutoOpenPreference(): boolean {
-    const stored = storage.get(EMBEDDED_LOGEION_SETTING_KEY);
-    if (stored !== null) {
-      return stored === "true";
-    }
-    const globalSettings = settingsStore.get();
-    return Boolean(globalSettings.autoOpenLogeion);
-  }
-
   #saveAutoOpenPreference(enabled: boolean) {
-    storage.setBoolean(EMBEDDED_LOGEION_SETTING_KEY, enabled);
     settingsStore.update({ autoOpenLogeion: enabled });
   }
 }

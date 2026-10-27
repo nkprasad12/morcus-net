@@ -135,7 +135,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
             <span class="lsQuote">Gallia est omnis</span>,
             <b class="lsEmph">important note</b>,
             <span lang="el">&#x1F35;&#x3C0;&#x3C0;&#x3BF;&#x3C2;</span>,
-            <span class="dLink" to="facio">facio</span>,
+            <a class="dLink" href="/dicts?q=facio">facio</a>,
             <a href="#sense-1" class="section-anchor">1</a>
           </p>
         </div>
@@ -313,7 +313,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const resultsHtml = `
       <article class="entry">
         <div class="entry-content">
-          <p><span class="dLink" to="facio">facio</span></p>
+          <p><a class="dLink" href="/dicts?q=facio">see facio</a></p>
         </div>
       </article>
     `;
@@ -506,7 +506,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         <div class="entry-content">
           <p>
             <span class="lsQuote">Gallia est</span>
-            <a class="dLink" to="facio" href="/dicts?q=facio">facio</a>
+            <a class="dLink" href="/dicts?q=facio">facio</a>
           </p>
         </div>
       </article>

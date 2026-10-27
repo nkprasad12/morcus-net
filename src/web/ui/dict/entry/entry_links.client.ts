@@ -99,8 +99,6 @@ export function bindEntryResultInteractions(
       // Link in our results; runs the lookup in place
       e.preventDefault();
       const toWord =
-        dLinkEl.getAttribute("to") ||
-        dLinkEl.dataset.to ||
         (dLinkEl instanceof HTMLAnchorElement &&
           new URL(dLinkEl.href, window.location.origin).searchParams.get(
             "q"

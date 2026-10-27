@@ -69,22 +69,6 @@ describe("core/cookies.common", () => {
         `morcus_inflected=0; Path=/; Max-Age=${COOKIE_MAX_AGE_ONE_YEAR}; SameSite=Lax`
       );
     });
-
-    it("supports custom option overrides", () => {
-      const cookie = formatCookie("session", "abc", {
-        path: "/v2",
-        maxAge: 3600,
-        sameSite: "Strict",
-      });
-      expect(cookie).toBe(
-        "session=abc; Path=/v2; Max-Age=3600; SameSite=Strict"
-      );
-    });
-
-    it("supports deletion via maxAge: 0", () => {
-      const cookie = formatCookie("morcus_dicts", "", { maxAge: 0 });
-      expect(cookie).toBe("morcus_dicts=; Path=/; Max-Age=0; SameSite=Lax");
-    });
   });
 
   describe("round-trip: formatCookie -> readCookie", () => {

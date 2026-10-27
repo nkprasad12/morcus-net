@@ -4,7 +4,6 @@
 import {
   hasGreek,
   getLogeionUrl,
-  EMBEDDED_LOGEION_SETTING_KEY,
 } from "@/web/ui/dict/search/dict_greek.common";
 import { renderGreekFallbackHtml } from "@/web/ui/dict/search/dict_greek.server";
 import { renderDictResultsHtml } from "@/web/ui/dict/dict_page.server";
@@ -125,21 +124,6 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       expect(toggleText?.textContent).toBe("Logeion Embed");
     });
 
-    test("auto-opens embed when localStorage preference is set", () => {
-      localStorage.setItem(EMBEDDED_LOGEION_SETTING_KEY, "true");
-      document.body.innerHTML = renderGreekFallbackHtml("λόγος");
-
-      const embedEl = document.querySelector("morcus-greek-embed");
-      const details =
-        embedEl?.querySelector<HTMLDetailsElement>(".greek-details");
-      const checkbox = embedEl?.querySelector<HTMLInputElement>(
-        ".greek-auto-open-checkbox"
-      );
-
-      expect(details?.open).toBe(true);
-      expect(checkbox?.checked).toBe(true);
-    });
-
     test("auto-opens embed when GlobalSettings autoOpenLogeion is true", () => {
       settingsStore.update({ autoOpenLogeion: true });
       document.body.innerHTML = renderGreekFallbackHtml("λόγος");
@@ -170,7 +154,6 @@ describe("Greek Query Fallback & Logeion Integration", () => {
       checkbox.checked = true;
       checkbox.dispatchEvent(new Event("change"));
 
-      expect(localStorage.getItem(EMBEDDED_LOGEION_SETTING_KEY)).toBe("true");
       expect(settingsStore.get().autoOpenLogeion).toBe(true);
       expect(details.open).toBe(true);
     });
