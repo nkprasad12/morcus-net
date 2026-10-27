@@ -45,7 +45,7 @@ export const CREATED_DOM_ALLOWLIST: readonly CreatedDomRule[] = [
       "On upgrade only if the input already has focus (`corpus-focused-before-upgrade`).",
   },
   {
-    selector: "morcus-dict-suggestions > ul",
+    selector: "#dict-suggestions-list",
     subtree: true,
     from: "interaction",
     reason:

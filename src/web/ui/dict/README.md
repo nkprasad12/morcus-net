@@ -29,7 +29,7 @@ sequenceDiagram
         Router->>Fused: getCompletions("hab")
         Fused-->>Router: string[]
         Router-->>Client: JSON string[]
-        Client-->>User: Declarative <morcus-dict-suggestions> dropdown
+        Client-->>User: Accessible #dict-suggestions-list combobox dropdown
     else With JS: Form Hijack (AJAX Swap)
         User->>Client: Submit form / select suggestion
         Client->>Router: GET /dicts?q=habeo&format=partial (X-Requested-With: fetch)
@@ -49,8 +49,7 @@ sequenceDiagram
 - `search/search_bar.server.ts`: Renders the accessible search `<form>`, input field, action buttons, and dictionary settings triggers.
 - `entry/xml_to_html.server.ts`: Safe transformer converting TEI XML AST nodes into sanitized HTML.
 - `search/dict_search.client.ts`: Custom element managing form hijacking, history pushes, and keyboard navigation.
-- `search/dict_autocomplete.client.ts`: Controller orchestrating live autocomplete suggestions, prefix/suffix debouncing, and 2-letter chunk caching.
-- `search/dict_suggestions.client.ts`: Accessible dropdown list rendering live autocomplete suggestions.
+- `search/dict_autocomplete.client.ts`: Controller orchestrating live autocomplete suggestions, prefix/suffix debouncing, and 2-letter chunk caching. Owns the `ComboboxController` that renders them into the server-rendered `#dict-suggestions-list`.
 - `entry/entry_links.client.ts`: Progressive enhancement for entry content: Latin word tokenization, hover linkification, and delegated word/entry click routing.
 - `settings/dict_settings.client.ts`: The settings dialog (highlight strength, dictionary checkboxes, inflection toggle). Without JS it opens via `:target` and Done submits its own form; with JS it opens with `showModal()` and applies content changes when it closes (`dict-settings-commit`). It adopts the server-rendered state and persists changes to cookies.
 - `settings/dict_preferences.client.ts`: Reads the server-rendered dictionary state (`readRenderedDictState`), decides whether a change may be saved (`mayPersistDictChange`), and writes the preference cookies.

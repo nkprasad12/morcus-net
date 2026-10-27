@@ -223,13 +223,12 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
         >
           ${renderIconSvg("search")}
         </button>
-        <morcus-dict-suggestions data-js-only data-input="dict-q"
-          ><ul
-            id="dict-suggestions-list"
-            class="suggestions"
-            role="listbox"
-            hidden></ul
-        ></morcus-dict-suggestions>
+        <ul
+          id="dict-suggestions-list"
+          class="suggestions"
+          role="listbox"
+          hidden
+          data-js-only></ul>
       </div>
       ${trayHtml}
     </form>
