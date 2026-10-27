@@ -58,14 +58,14 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
     "common.js": { maxBrotliBytes: 19.75 * 1024 },
     "reader.js": { maxBrotliBytes: 12.5 * 1024 },
-    "dict.js": { maxBrotliBytes: 8.75 * 1024 },
+    "dict.js": { maxBrotliBytes: 8 * 1024 },
     "corpus.js": { maxBrotliBytes: 5.5 * 1024 },
     "external.js": { maxBrotliBytes: 4 * 1024 },
     "macronizer.js": { maxBrotliBytes: 4 * 1024 },
   },
   routes: {
     about: { maxBrotliBytes: 19.75 * 1024 },
-    dicts: { maxBrotliBytes: 28.25 * 1024 },
+    dicts: { maxBrotliBytes: 27.25 * 1024 },
     corpus: { maxBrotliBytes: 24.75 * 1024 },
     library: { maxBrotliBytes: 31.75 * 1024 },
     external: { maxBrotliBytes: 35.25 * 1024 },
