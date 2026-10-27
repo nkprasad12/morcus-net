@@ -70,7 +70,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     new DictAutocompleteController(this, {
       getActiveDictKeys: () => this.#activeDictKeys,
       onSelectSuggestion: (word, lang) =>
-        this.#chooseSuggestion(word, true, lang),
+        void this.#searchQuery(word, true, lang),
     })
   );
 
@@ -120,8 +120,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     if (clean === this.#shownQuery) {
       return "unchanged";
     }
-    this.#autocomplete.clear();
-    void this.#searchQuery(clean, false);
+    void this.#searchQuery(clean);
     return "swapped";
   }
 
@@ -160,11 +159,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     this.#resultsElement = this.scope.$<HTMLElement>("#dict-results");
 
     this.hijackForm(SEARCH_FORM, ({ q }) => {
-      this.#autocomplete.clear();
-      const cleaned = cleanDictQuery(q || "");
-      if (cleaned) {
-        void this.#searchQuery(cleaned, true);
-      }
+      void this.#searchQuery(q || "", true);
     });
 
     if (this.#inputElement) {
@@ -174,7 +169,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     if (this.#resultsElement) {
       bindEntryResultInteractions(this.scope, this.#resultsElement, {
         getWordHref: (word) => this.#wordHref(word),
-        onSelectWord: (word) => this.#chooseSuggestion(word),
+        onSelectWord: (word) => void this.#searchQuery(word),
       });
     }
 
@@ -323,20 +318,12 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       new URLSearchParams(window.location.search).get("q") ?? ""
     );
     const queryChanged = currentQuery !== "" && currentQuery !== renderedQ;
-    if (currentQuery) {
-      const settingsQ = this.scope.$<HTMLInputElement>(
-        'form.dict-settings-form input[name="q"]'
-      );
-      if (settingsQ) settingsQ.value = currentQuery;
-    }
+    if (currentQuery) this.#syncSettingsQ(currentQuery);
     // Keeps `lang`: the new `d=` is still narrowed to it (the dialog showed only its dictionaries).
     this.#syncUrlParams(
-      {
-        d: commit.bitmask,
-        o,
-        ...(queryChanged ? { q: currentQuery } : {}),
-      },
-      queryChanged
+      commit.bitmask,
+      o,
+      queryChanged ? currentQuery : undefined
     );
 
     const langChipsContainer = this.scope.$<HTMLElement>(".lang-chips");
@@ -389,12 +376,7 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     if (this.#inputElement) {
       this.#inputElement.value = cleanQ;
     }
-    const settingsQ = this.querySelector<HTMLInputElement>(
-      'form.dict-settings-form input[name="q"]'
-    );
-    if (settingsQ) {
-      settingsQ.value = cleanQ;
-    }
+    this.#syncSettingsQ(cleanQ);
     this.#syncGuestReturn();
     const ok = await this.#fetchResults(cleanQ, {
       path: window.location.pathname,
@@ -419,45 +401,44 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     });
   }
 
-  #syncUrlParams(
-    updates: { d?: string; o?: string; q?: string },
-    push = false
-  ) {
+  /** Writes committed settings to the URL; a new `q` (non-empty) also gets a history entry. */
+  #syncUrlParams(d: string, o: string, q?: string) {
     const url = new URL(window.location.href);
-    const isEmbedded = url.searchParams.get("embedded") === "1";
-    if (updates.q !== undefined) {
+    if (q) {
       if (url.pathname.startsWith("/dicts/id/")) {
         url.pathname = "/dicts";
       }
-      if (updates.q) {
-        url.searchParams.set("q", updates.q);
-      } else {
-        url.searchParams.delete("q");
-      }
+      url.searchParams.set("q", q);
       // `focus` belongs to the suggestion pick that set the old `q`.
       url.searchParams.delete(FOCUS_PARAM);
     }
-    if (updates.d !== undefined) {
-      if (updates.d) {
-        url.searchParams.set("d", updates.d);
-        url.searchParams.delete("dict");
-        url.searchParams.delete("in");
-      } else {
-        url.searchParams.delete("d");
-      }
-    }
-    if (updates.o !== undefined) {
-      url.searchParams.set("o", updates.o);
-    }
+    url.searchParams.set("d", d);
+    url.searchParams.delete("dict");
+    url.searchParams.delete("in");
+    url.searchParams.set("o", o);
+    this.#commitUrl(url, q);
+  }
+
+  /**
+   * Commits a search URL: with a `q`, pushes it with `{ q }` state (replaces in embedded views,
+   * which must not grow the host's history); without one, replaces it with no state.
+   */
+  #commitUrl(url: URL, q?: string) {
     url.hash = "";
-    if (push && !isEmbedded) {
-      this.#router?.pushUrl(url, { state: { q: updates.q } });
-    } else if (push && isEmbedded) {
-      this.#router?.replaceUrl(url, { state: { q: updates.q } });
+    const opts = q ? { state: { q } } : undefined;
+    if (q && url.searchParams.get("embedded") !== "1") {
+      this.#router?.pushUrl(url, opts);
     } else {
-      this.#router?.replaceUrl(url);
+      this.#router?.replaceUrl(url, opts);
     }
     this.#syncGuestReturn(url);
+  }
+
+  #syncSettingsQ(q: string) {
+    const settingsQ = this.scope.$<HTMLInputElement>(
+      'form.dict-settings-form input[name="q"]'
+    );
+    if (settingsQ) settingsQ.value = q;
   }
 
   #syncGuestReturn(url: URL = new URL(window.location.href)) {
@@ -492,25 +473,19 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
    * `focus`: the picked autocomplete suggestion's source language (see `FOCUS_PARAM`). Only a
    * suggestion pick passes it; every other search drops it.
    */
-  #chooseSuggestion(suggestion: string, typed = false, focus?: DictLang) {
-    const clean = cleanDictQuery(suggestion);
-    if (this.#inputElement) {
-      this.#inputElement.value = clean;
-    }
-    this.#autocomplete.clear();
-    this.scope.rAF(() => {
-      this.#inputElement?.blur();
-    });
-    void this.#searchQuery(clean, typed, focus);
-  }
-
   async #searchQuery(query: string, typed = false, focus?: DictLang) {
+    this.#autocomplete.clear();
     const cleanQuery = cleanDictQuery(query);
     if (!cleanQuery) return;
     if (this.#inputElement) {
       this.#inputElement.value = cleanQuery;
       this.#inputElement.blur();
     }
+    // Blur again after the frame, so the pointer events of a picked suggestion (on mobile) can't
+    // re-focus the input.
+    this.scope.rAF(() => {
+      this.#inputElement?.blur();
+    });
 
     const url = new URL(window.location.href);
     const isEmbedded = url.searchParams.get("embedded") === "1";
@@ -550,17 +525,8 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
       focus,
     });
 
-    url.hash = "";
-    if (isEmbedded) {
-      this.#router?.replaceUrl(url, { state: { q: cleanQuery } });
-    } else {
-      this.#router?.pushUrl(url, { state: { q: cleanQuery } });
-    }
-    this.#syncGuestReturn(url);
-    const settingsQ = this.scope.$<HTMLInputElement>(
-      'form.dict-settings-form input[name="q"]'
-    );
-    if (settingsQ) settingsQ.value = cleanQuery;
+    this.#commitUrl(url, cleanQuery);
+    this.#syncSettingsQ(cleanQuery);
     if (!typed) {
       this.#scrollToResults("instant");
     }
