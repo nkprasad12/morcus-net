@@ -13,11 +13,11 @@ import {
   savePrecompressedJsonDb,
   type PrecompressedJsonStore,
 } from "@/web/ui/core/server/precompressed_json.server";
-import { getExpandedPrefixes } from "@/web/ui/dict/search/dict_clustering.common";
 import { cleanCompletionQuery } from "@/web/ui/dict/search/dict_completions.common";
 import {
   getV2DictChunks,
   type CompletionsProvider,
+  getExpandedPrefixes,
 } from "@/web/ui/dict/search/dict_completions.server";
 import { hasGreek } from "@/web/ui/dict/search/dict_greek.common";
 

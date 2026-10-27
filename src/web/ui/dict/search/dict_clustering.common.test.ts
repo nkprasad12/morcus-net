@@ -1,6 +1,6 @@
 import {
   getDictSourceLang,
-  getExpandedPrefixes,
+  foldOrthography,
   clusterAndDeduplicate,
   filterAndClusterDictionaryChunks,
   type Candidate,
@@ -22,31 +22,23 @@ describe("dict_clustering.common", () => {
     });
   });
 
-  describe("getExpandedPrefixes", () => {
-    test("expands Latin u/v and i/j", () => {
-      expect(getExpandedPrefixes("am", "La")).toEqual(["am"]);
-      expect(getExpandedPrefixes("i", "La")).toEqual(["i", "j"]);
-      expect(getExpandedPrefixes("u", "La")).toEqual(["u", "v"]);
-      const expanded = getExpandedPrefixes("iust", "La");
-      expect(expanded).toContain("iust");
-      expect(expanded).toContain("just");
-      expect(expanded).toContain("ivst");
-      expect(expanded).toContain("jvst");
+  describe("foldOrthography", () => {
+    test("folds Latin v -> u and j -> i", () => {
+      expect(foldOrthography("iustus", "La")).toBe("iustus");
+      expect(foldOrthography("justus", "La")).toBe("iustus");
+      expect(foldOrthography("jvstvs", "La")).toBe("iustus");
+      expect(foldOrthography("vir", "La")).toBe("uir");
     });
 
-    test("expands German ß and ss", () => {
-      const nuss = getExpandedPrefixes("nuss", "De");
-      expect(nuss).toContain("nuss");
-      expect(nuss).toContain("nuß");
-
-      const nussSharp = getExpandedPrefixes("nuß", "De");
-      expect(nussSharp).toContain("nuß");
-      expect(nussSharp).toContain("nuss");
+    test("folds German ß -> ss", () => {
+      expect(foldOrthography("nuß", "De")).toBe("nuss");
+      expect(foldOrthography("nuss", "De")).toBe("nuss");
+      expect(foldOrthography("vjß", "De")).toBe("vjss");
     });
 
     test("leaves English and Spanish unchanged", () => {
-      expect(getExpandedPrefixes("love", "En")).toEqual(["love"]);
-      expect(getExpandedPrefixes("amor", "Es")).toEqual(["amor"]);
+      expect(foldOrthography("love", "En")).toBe("love");
+      expect(foldOrthography("viaje", "Es")).toBe("viaje");
     });
   });
 
@@ -102,6 +94,22 @@ describe("dict_clustering.common", () => {
   });
 
   describe("filterAndClusterDictionaryChunks", () => {
+    test("matches German ß, ss, and partial eszett prefixes", () => {
+      const chunks = { GRG: ["nuß", "nus", "nusflicht", "nußbaum"] };
+      for (const q of ["nuß", "nuss"]) {
+        expect(
+          filterAndClusterDictionaryChunks(chunks, ["GRG"], q).map(
+            (r) => r.word
+          )
+        ).toEqual(["nuß", "nußbaum"]);
+      }
+      expect(
+        filterAndClusterDictionaryChunks(chunks, ["GRG"], "nus").map(
+          (r) => r.word
+        )
+      ).toEqual(["nus", "nusflicht", "nuß", "nußbaum"]);
+    });
+
     test("returns empty array for empty query or empty chunks", () => {
       expect(filterAndClusterDictionaryChunks({}, ["L&S"], "am")).toEqual([]);
       expect(

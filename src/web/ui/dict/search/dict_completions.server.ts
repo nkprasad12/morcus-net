@@ -15,8 +15,42 @@ import {
   type Candidate,
   clusterAndDeduplicate,
   getDictSourceLang,
-  getExpandedPrefixes,
 } from "@/web/ui/dict/search/dict_clustering.common";
+
+const EXTRA_KEY_LOOKUP = new Map<string, string>([
+  ["u", "v"],
+  ["v", "u"],
+  ["i", "j"],
+  ["j", "i"],
+]);
+
+/**
+ * Expands query prefixes for orthographic equivalents (u/v, i/j in Latin; ß/ss in German).
+ */
+export function getExpandedPrefixes(prefix: string, lang: DictLang): string[] {
+  if (lang === "La") {
+    const maxDepth = Math.min(25, prefix.length);
+    let prefixes: string[] = [""];
+    for (let i = 0; i < maxDepth; i++) {
+      const nextChar = prefix.charAt(i);
+      const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
+      const nextChars =
+        altChar === undefined ? [nextChar] : [nextChar, altChar];
+      prefixes = prefixes.flatMap((p) => nextChars.map((n) => p + n));
+    }
+    if (prefix.length > maxDepth) {
+      const remainder = prefix.slice(maxDepth);
+      prefixes = prefixes.map((p) => p + remainder);
+    }
+    return prefixes;
+  }
+  if (lang === "De") {
+    const s1 = prefix.replaceAll("ß", "ss");
+    const s2 = prefix.replaceAll("ss", "ß");
+    return Array.from(new Set([prefix, s1, s2]));
+  }
+  return [prefix];
+}
 
 export interface CompletionsProvider {
   getCompletions(

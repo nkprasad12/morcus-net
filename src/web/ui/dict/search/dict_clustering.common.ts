@@ -8,14 +8,8 @@ export interface Candidate {
   dictKey: string;
   lang: DictLang;
   word: string;
+  clean?: string;
 }
-
-const EXTRA_KEY_LOOKUP = new Map<string, string>([
-  ["u", "v"],
-  ["v", "u"],
-  ["i", "j"],
-  ["j", "i"],
-]);
 
 /**
  * Resolves the source language for a canonical dictionary key.
@@ -27,31 +21,15 @@ export function getDictSourceLang(dictKey: string): DictLang {
 }
 
 /**
- * Expands query prefixes for orthographic equivalents (u/v, i/j in Latin; ß/ss in German).
+ * Folds orthographic equivalents into canonical forms for prefix matching
+ * (v -> u, j -> i in Latin; ß -> ss in German).
  */
-export function getExpandedPrefixes(prefix: string, lang: DictLang): string[] {
-  if (lang === "La") {
-    const maxDepth = Math.min(25, prefix.length);
-    let prefixes: string[] = [""];
-    for (let i = 0; i < maxDepth; i++) {
-      const nextChar = prefix.charAt(i);
-      const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
-      const nextChars =
-        altChar === undefined ? [nextChar] : [nextChar, altChar];
-      prefixes = prefixes.flatMap((p) => nextChars.map((n) => p + n));
-    }
-    if (prefix.length > maxDepth) {
-      const remainder = prefix.slice(maxDepth);
-      prefixes = prefixes.map((p) => p + remainder);
-    }
-    return prefixes;
-  }
-  if (lang === "De") {
-    const s1 = prefix.replaceAll("ß", "ss");
-    const s2 = prefix.replaceAll("ss", "ß");
-    return Array.from(new Set([prefix, s1, s2]));
-  }
-  return [prefix];
+export function foldOrthography(clean: string, lang: DictLang): string {
+  return lang === "La"
+    ? clean.replaceAll("v", "u").replaceAll("j", "i")
+    : lang === "De"
+    ? clean.replaceAll("ß", "ss")
+    : clean;
 }
 
 /**
@@ -75,7 +53,7 @@ export function clusterAndDeduplicate(
 
   for (const c of candidates) {
     if (!c.word) continue;
-    const cleanForm = removeDiacritics(c.word).toLowerCase();
+    const cleanForm = c.clean ?? removeDiacritics(c.word).toLowerCase();
     const groupKey = `${c.lang}:${cleanForm}`;
     let entry = groups.get(groupKey);
     if (!entry) {
@@ -146,9 +124,7 @@ export function filterAndClusterDictionaryChunks(
   query: string,
   limit: number = 25
 ): CompletionItem[] {
-  const clean = query.trim();
-  if (!clean) return [];
-  const folded = removeDiacritics(clean).toLowerCase();
+  const folded = removeDiacritics(query.trim()).toLowerCase();
   if (!folded) return [];
 
   const dictsToScan =
@@ -161,12 +137,12 @@ export function filterAndClusterDictionaryChunks(
     if (!words || words.length === 0) continue;
 
     const lang = getDictSourceLang(dictKey);
-    const prefixes = getExpandedPrefixes(folded, lang);
+    const foldedQuery = foldOrthography(folded, lang);
 
     for (const word of words) {
-      const cleanWord = removeDiacritics(word).toLowerCase();
-      if (prefixes.some((p) => cleanWord.startsWith(p))) {
-        candidates.push({ dictKey, lang, word });
+      const clean = removeDiacritics(word).toLowerCase();
+      if (foldOrthography(clean, lang).startsWith(foldedQuery)) {
+        candidates.push({ dictKey, lang, word, clean });
       }
     }
   }
