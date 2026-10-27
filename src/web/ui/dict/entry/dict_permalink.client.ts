@@ -1,8 +1,8 @@
 import {
   copyOrNavigate,
+  flashElement,
   openSectionActionMenu,
 } from "@/web/ui/core/index.client";
-import { flashElement } from "@/web/ui/core/dom/dom.client";
 
 const HIGHLIGHT_CLASS = "target-active";
 

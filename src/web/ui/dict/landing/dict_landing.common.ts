@@ -49,9 +49,7 @@ export function buildWelcomeMessage(
   activeDictKeys: Iterable<string>,
   isInflected: boolean = true
 ): string {
-  const activeKeysSet = new Set(
-    Array.from(activeDictKeys).map((k) => k.toUpperCase())
-  );
+  const activeKeysSet = new Set(activeDictKeys);
 
   let hasLatinSource = false;
   const reverseLanguagesSet = new Set<string>();

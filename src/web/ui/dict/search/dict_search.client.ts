@@ -358,9 +358,9 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
     }
 
     // Dictionary list badges on the landing page.
-    const activeSet = new Set(commit.dictKeys.map((k) => k.toUpperCase()));
+    const activeSet = new Set(commit.dictKeys);
     for (const item of this.scope.$$<HTMLElement>(".dict-list-item")) {
-      const key = item.dataset.dictKey?.toUpperCase();
+      const key = item.dataset.dictKey;
       if (!key) continue;
       const isEnabled = activeSet.has(key);
       item.classList.toggle("dict-enabled", isEnabled);
