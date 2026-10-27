@@ -4,7 +4,6 @@ import {
   type APIRequestContext,
   type Page,
 } from "@playwright/test";
-import { gzipSync } from "zlib";
 import { PRECOMPRESSED_HEADER } from "@/web/web_server";
 import { disableSmoothScroll } from "@/integration/utils/playwright_utils";
 import { encodeDictBitmask } from "@/web/ui/dict/settings/dict_bitmask.common";
@@ -1292,10 +1291,10 @@ test.describe("UI V2 dictionary", () => {
       expect(cssRes.status()).toBe(200);
       expect(cssRes.headers()["content-type"]).toContain("text/css");
       expect(cssRes.headers()["cache-control"]).toContain("immutable");
-      const cssBuffer = await cssRes.body();
-      expect(gzipSync(cssBuffer).byteLength).toBeLessThan(
-        V2_BUNDLE_BUDGET.maxCssGzipBytes
-      );
+      expect(cssRes.headers()["content-encoding"]).toBe("br");
+      const cssBrotliBytes = Number(cssRes.headers()["content-length"]);
+      expect(cssBrotliBytes).toBeGreaterThan(0);
+      expect(cssBrotliBytes).toBeLessThan(V2_BUNDLE_BUDGET.maxCssBrotliBytes);
 
       // 3. Fetch and validate each JS chunk asset
       const chunkSizes: Partial<Record<V2JsChunkName, V2SizeTotal>> = {};
@@ -1304,15 +1303,18 @@ test.describe("UI V2 dictionary", () => {
         expect(jsRes.status()).toBe(200);
         expect(jsRes.headers()["content-type"]).toContain("javascript");
         expect(jsRes.headers()["cache-control"]).toContain("immutable");
+        expect(jsRes.headers()["content-encoding"]).toBe("br");
+        const brotliBytes = Number(jsRes.headers()["content-length"]);
+        expect(brotliBytes).toBeGreaterThan(0);
         const jsBuffer = await jsRes.body();
         const size = {
           rawBytes: jsBuffer.byteLength,
-          gzipBytes: gzipSync(jsBuffer).byteLength,
+          brotliBytes,
         };
         chunkSizes[chunk] = size;
 
         const budget = V2_BUNDLE_BUDGET.chunks[chunk];
-        expect(size.gzipBytes).toBeLessThan(budget.maxGzipBytes);
+        expect(size.brotliBytes).toBeLessThan(budget.maxBrotliBytes);
 
         // Ensure no banned development-only strings leaked into any client chunk
         expect(jsBuffer.toString("utf8")).not.toContain("/devOnlyHelper");
@@ -1322,7 +1324,7 @@ test.describe("UI V2 dictionary", () => {
       for (const route of V2_ROUTES) {
         const total = sumRouteSizes(route, chunkSizes)!;
         const budget = V2_BUNDLE_BUDGET.routes[route];
-        expect(total.gzipBytes).toBeLessThan(budget.maxGzipBytes);
+        expect(total.brotliBytes).toBeLessThan(budget.maxBrotliBytes);
       }
     });
 

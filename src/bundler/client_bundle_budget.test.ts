@@ -14,11 +14,22 @@ import {
   type V2BundleBudget,
 } from "@/bundler/client_bundle_budget";
 import {
+  DYNAMIC_BROTLI_QUALITY,
+  STATIC_BROTLI_QUALITY,
   V2_CHUNK_ENTRIES,
   V2_JS_CHUNKS,
   V2_ROUTES,
   type V2AssetManifest,
 } from "@/bundler/client_build_contract";
+
+function brotliSize(
+  content: string | Buffer,
+  quality: number = STATIC_BROTLI_QUALITY
+): number {
+  return zlib.brotliCompressSync(content, {
+    params: { [zlib.constants.BROTLI_PARAM_QUALITY]: quality },
+  }).byteLength;
+}
 
 describe("UI V2 Bundle Budget", () => {
   let tmpDir: string;
@@ -77,9 +88,22 @@ describe("UI V2 Bundle Budget", () => {
     expect(report.totalJsRawBytes).toBe(
       Buffer.byteLength(jsContent) * V2_JS_CHUNKS.length
     );
-    expect(report.totalJsGzipBytes).toBe(
-      zlib.gzipSync(jsContent).byteLength * V2_JS_CHUNKS.length
+    expect(report.totalJsBrotliBytes).toBe(
+      brotliSize(jsContent) * V2_JS_CHUNKS.length
     );
+  });
+
+  test("uses precompressed .br sibling size when present on disk", () => {
+    const manifest = writeAllChunks("console.log('test');");
+    const precompressed = zlib.brotliCompressSync("console.log('test');", {
+      params: { [zlib.constants.BROTLI_PARAM_QUALITY]: STATIC_BROTLI_QUALITY },
+    });
+    // Write a .br sibling with a distinct byte length to prove it is read from disk
+    const paddedBr = Buffer.concat([precompressed, Buffer.from("extra")]);
+    fs.writeFileSync(path.join(tmpDir, "common.js.br"), paddedBr);
+
+    const report = checkV2BundleBudget(tmpDir, manifest);
+    expect(report.chunks["common.js"]?.brotliBytes).toBe(paddedBr.byteLength);
   });
 
   test("sums each route's chunks in its per-route total", () => {
@@ -101,23 +125,23 @@ describe("UI V2 Bundle Budget", () => {
 
   test("fails a route whose total exceeds its budget though every chunk passes", () => {
     const manifest = writeAllChunks("x".repeat(100));
-    const singleGzip = zlib.gzipSync("x".repeat(100)).byteLength;
+    const singleBrotli = brotliSize("x".repeat(100));
 
     const tightBudget: V2BundleBudget = {
       ...V2_BUNDLE_BUDGET,
       routes: {
         ...V2_BUNDLE_BUDGET.routes,
-        // common + dict = 2 * singleGzip > singleGzip + 5, while each chunk is within its own budget.
-        dicts: { maxGzipBytes: singleGzip + 5 },
+        // common + dict = 2 * singleBrotli > singleBrotli + 5, while each chunk is within its own budget.
+        dicts: { maxBrotliBytes: singleBrotli + 5 },
       },
     };
 
     const report = checkV2BundleBudget(tmpDir, manifest, tightBudget);
 
     expect(report.errors).toEqual([
-      `Route 'dicts' (common.js + dict.js) gzip total ${
-        2 * singleGzip
-      } B exceeds budget ${singleGzip + 5} B`,
+      `Route 'dicts' (common.js + dict.js) brotli total ${
+        2 * singleBrotli
+      } B exceeds budget ${singleBrotli + 5} B`,
     ]);
   });
 
@@ -130,19 +154,19 @@ describe("UI V2 Bundle Budget", () => {
             c,
             {
               rawBytes: 0,
-              gzipBytes: V2_BUNDLE_BUDGET.chunks[c].maxGzipBytes,
+              brotliBytes: V2_BUNDLE_BUDGET.chunks[c].maxBrotliBytes,
             },
           ])
         )
       )!;
       const routeBudget = V2_BUNDLE_BUDGET.routes[route];
-      expect(routeBudget.maxGzipBytes).toBeLessThanOrEqual(
-        summedCeilings.gzipBytes
+      expect(routeBudget.maxBrotliBytes).toBeLessThanOrEqual(
+        summedCeilings.brotliBytes
       );
     }
   });
 
-  test("fails when a JS chunk gzip size exceeds its per-chunk budget", () => {
+  test("fails when a JS chunk brotli size exceeds its per-chunk budget", () => {
     const manifest = writeAllChunks("x".repeat(20));
     const random = crypto.randomBytes(300).toString("base64");
     fs.writeFileSync(path.join(tmpDir, "corpus.js"), random);
@@ -152,7 +176,7 @@ describe("UI V2 Bundle Budget", () => {
       chunks: {
         ...V2_BUNDLE_BUDGET.chunks,
         "corpus.js": {
-          maxGzipBytes: 100,
+          maxBrotliBytes: 100,
         },
       },
     };
@@ -162,14 +186,15 @@ describe("UI V2 Bundle Budget", () => {
     expect(report.exceeded).toBe(true);
     expect(
       report.errors.some(
-        (e) => e.includes("corpus.js gzip size") && e.includes("exceeds budget")
+        (e) =>
+          e.includes("corpus.js brotli size") && e.includes("exceeds budget")
       )
     ).toBe(true);
   });
 
-  test("fails when CSS gzip size exceeds budget, but allows large raw CSS when gzip is within budget", () => {
+  test("fails when CSS brotli size exceeds budget, but allows large raw CSS when brotli is within budget", () => {
     const manifest = writeAllChunks("console.log(1);");
-    // 200 kB of repetitive CSS compresses to well under 25 kB gzip.
+    // 200 kB of repetitive CSS compresses to well under 21 kB brotli.
     const largeCompressibleCss = ".cls { color: red; }\n".repeat(10_000);
     fs.writeFileSync(path.join(tmpDir, "app.css"), largeCompressibleCss);
 
@@ -179,7 +204,7 @@ describe("UI V2 Bundle Budget", () => {
 
     const tightBudget: V2BundleBudget = {
       ...V2_BUNDLE_BUDGET,
-      maxCssGzipBytes: 10,
+      maxCssBrotliBytes: 10,
     };
 
     const report = checkV2BundleBudget(tmpDir, manifest, tightBudget);
@@ -187,7 +212,7 @@ describe("UI V2 Bundle Budget", () => {
     expect(report.exceeded).toBe(true);
     expect(
       report.errors.some(
-        (e) => e.includes("CSS gzip size") && e.includes("exceeds budget")
+        (e) => e.includes("CSS brotli size") && e.includes("exceeds budget")
       )
     ).toBe(true);
   });
@@ -248,11 +273,14 @@ describe("UI V2 Bundle Budget", () => {
       manifest = writeAllChunks("console.log(1);");
     });
 
-    test("is measured but not counted in the fetched JS chunk totals", () => {
+    test("is measured at DYNAMIC_BROTLI_QUALITY and not counted in the fetched JS chunk totals", () => {
       const report = checkV2BundleBudget(tmpDir, manifest);
       expect(report.errors).toEqual([]);
       expect(report.criticalJs?.rawBytes).toBe(
         Buffer.byteLength(criticalContent)
+      );
+      expect(report.criticalJs?.brotliBytes).toBe(
+        brotliSize(criticalContent, DYNAMIC_BROTLI_QUALITY)
       );
       expect(report.totalJsRawBytes).toBe(
         Buffer.byteLength("console.log(1);") * V2_JS_CHUNKS.length
@@ -273,22 +301,24 @@ describe("UI V2 Bundle Budget", () => {
       );
     });
 
-    test("fails when its gzip size exceeds the ceiling", () => {
+    test("fails when its brotli size exceeds the ceiling", () => {
       const random = crypto.randomBytes(300).toString("base64");
       fs.writeFileSync(path.join(tmpDir, CRITICAL_JS_FILE), random);
       const report = checkV2BundleBudget(tmpDir, manifest, {
         ...V2_BUNDLE_BUDGET,
         maxCriticalJsRawBytes: 10_000,
-        maxCriticalJsGzipBytes: 100,
+        maxCriticalJsBrotliBytes: 100,
       });
       expect(
-        report.errors.some((e) => e.startsWith("Critical JS gzip size"))
+        report.errors.some((e) => e.startsWith("Critical JS brotli size"))
       ).toBe(true);
     });
 
     test("ceilings stay at a fixed-size applier, not per-preference logic", () => {
       expect(V2_BUNDLE_BUDGET.maxCriticalJsRawBytes).toBeLessThanOrEqual(450);
-      expect(V2_BUNDLE_BUDGET.maxCriticalJsGzipBytes).toBeLessThanOrEqual(350);
+      expect(V2_BUNDLE_BUDGET.maxCriticalJsBrotliBytes).toBeLessThanOrEqual(
+        350
+      );
     });
 
     test("appears in the formatted report", () => {
@@ -311,11 +341,14 @@ describe("UI V2 Bundle Budget", () => {
       manifest = writeAllChunks("console.log(1);");
     });
 
-    test("is measured separately from app.css", () => {
+    test("is measured at DYNAMIC_BROTLI_QUALITY separately from app.css", () => {
       const report = checkV2BundleBudget(tmpDir, manifest);
       expect(report.errors).toEqual([]);
       expect(report.criticalCss?.rawBytes).toBe(
         Buffer.byteLength(criticalCssContent)
+      );
+      expect(report.criticalCss?.brotliBytes).toBe(
+        brotliSize(criticalCssContent, DYNAMIC_BROTLI_QUALITY)
       );
       expect(report.css?.rawBytes).toBe(
         Buffer.byteLength("body { margin: 0; }")
@@ -334,22 +367,24 @@ describe("UI V2 Bundle Budget", () => {
       ).toBe(true);
     });
 
-    test("fails when its gzip size exceeds the ceiling", () => {
+    test("fails when its brotli size exceeds the ceiling", () => {
       const random = crypto.randomBytes(300).toString("base64");
       fs.writeFileSync(path.join(tmpDir, CRITICAL_CSS_FILE), random);
       const report = checkV2BundleBudget(tmpDir, manifest, {
         ...V2_BUNDLE_BUDGET,
         maxCriticalCssRawBytes: 10_000,
-        maxCriticalCssGzipBytes: 100,
+        maxCriticalCssBrotliBytes: 100,
       });
       expect(
-        report.errors.some((e) => e.startsWith("Critical CSS gzip size"))
+        report.errors.some((e) => e.startsWith("Critical CSS brotli size"))
       ).toBe(true);
     });
 
     test("ceilings keep critical.css within its inline budget", () => {
       expect(V2_BUNDLE_BUDGET.maxCriticalCssRawBytes).toBeLessThanOrEqual(2400);
-      expect(V2_BUNDLE_BUDGET.maxCriticalCssGzipBytes).toBeLessThanOrEqual(900);
+      expect(V2_BUNDLE_BUDGET.maxCriticalCssBrotliBytes).toBeLessThanOrEqual(
+        900
+      );
     });
 
     test("appears in the formatted report", () => {
@@ -361,7 +396,7 @@ describe("UI V2 Bundle Budget", () => {
         `${Buffer.byteLength(criticalCssContent)} B raw`
       );
       expect(formatted).toContain(
-        `<= ${V2_BUNDLE_BUDGET.maxCriticalCssGzipBytes} B gzip`
+        `<= ${V2_BUNDLE_BUDGET.maxCriticalCssBrotliBytes} B brotli`
       );
     });
   });
@@ -372,11 +407,14 @@ describe("UI V2 Bundle Budget", () => {
 
     const formatted = formatV2BundleSizeReport(report);
     expect(formatted).toContain("UI V2 Bundle Budget (Minified):");
+    const kb = (bytes: number) =>
+      (bytes / 1024).toFixed(2).replace(/(\.\d)0$/, "$1");
     for (const chunkName of V2_JS_CHUNKS) {
       expect(formatted).toContain(`${chunkName}:`);
       const cb = V2_BUNDLE_BUDGET.chunks[chunkName];
-      const kb = (bytes: number) => (bytes / 1024).toFixed(1);
-      expect(formatted).toContain(`(budget: < ${kb(cb.maxGzipBytes)} kB gzip)`);
+      expect(formatted).toContain(
+        `(budget: < ${kb(cb.maxBrotliBytes)} kB brotli)`
+      );
     }
     expect(formatted).toContain("Per-route JS:");
     for (const route of V2_ROUTES) {
@@ -384,9 +422,7 @@ describe("UI V2 Bundle Budget", () => {
     }
     expect(formatted).toContain("CSS:");
     expect(formatted).toContain(
-      `(budget: < ${(V2_BUNDLE_BUDGET.maxCssGzipBytes / 1024).toFixed(
-        1
-      )} kB gzip)`
+      `(budget: < ${kb(V2_BUNDLE_BUDGET.maxCssBrotliBytes)} kB brotli)`
     );
   });
 

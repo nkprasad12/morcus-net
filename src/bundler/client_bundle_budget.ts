@@ -2,6 +2,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as zlib from "zlib";
 import {
+  DYNAMIC_BROTLI_QUALITY,
+  STATIC_BROTLI_QUALITY,
   V2_JS_CHUNKS,
   V2_CHUNK_ENTRIES,
   V2_JS_ENTRY_NAMES,
@@ -15,7 +17,7 @@ import {
 } from "@/bundler/client_build_contract";
 
 export interface V2ChunkBudget {
-  readonly maxGzipBytes: number;
+  readonly maxBrotliBytes: number;
 }
 
 export interface V2BundleBudget {
@@ -27,67 +29,62 @@ export interface V2BundleBudget {
    * critical path.
    */
   readonly routes: Readonly<Record<V2Route, V2ChunkBudget>>;
-  readonly maxCssGzipBytes: number;
+  readonly maxCssBrotliBytes: number;
   readonly maxCriticalJsRawBytes: number;
-  readonly maxCriticalJsGzipBytes: number;
+  readonly maxCriticalJsBrotliBytes: number;
   readonly maxCriticalCssRawBytes: number;
-  readonly maxCriticalCssGzipBytes: number;
+  readonly maxCriticalCssBrotliBytes: number;
 }
 
 /**
- * Maximum allowed gzip-compressed asset sizes (in bytes) for UI V2
- * (plus raw + gzip ceilings for inlined `critical.js`).
+ * Maximum allowed Brotli-compressed asset sizes (in bytes) for UI V2:
+ * - Fetched JS chunks and `app.css` are measured at `STATIC_BROTLI_QUALITY`
+ *   (11), matching the precompressed `.br` siblings `preCompressedMiddleware`
+ *   (`web/web_server.ts`) serves to browsers.
+ * - Inlined `critical.js` and `critical.css` are measured both raw and at
+ *   `DYNAMIC_BROTLI_QUALITY` (5), matching on-the-fly `compression()` on SSR
+ *   HTML responses.
  *
  * Enforced on minified production builds (`client.rsbuild.ts --minify`) and in E2E
  * bundle validation (`browser_e2e.test.ts`).
  *
- * Per-chunk ceilings provide small headroom to absorb routine fixes without
- * false positives while blocking major regressions or accidental imports (e.g.
- * un-tree-shaken heavy modules). Per-route ceilings sit slightly below the sum
- * of each route's chunk ceilings so several chunks drifting up together still
- * trip a check.
+ * Per-chunk ceilings provide at least 0.25 KiB headroom (rounded up to the
+ * nearest 0.25 KiB) to absorb routine fixes without false positives while
+ * blocking major regressions or accidental imports (e.g. un-tree-shaken heavy
+ * modules). Per-route ceilings sit slightly below the sum of each route's
+ * chunk ceilings so several chunks drifting up together still trip a check.
  */
 export const V2_BUNDLE_BUDGET: V2BundleBudget = {
   chunks: {
-    // Raised by 0.1 KiB (with the routes that include it: about, library,
-    // external, macronizer) for the reader's fresh-frame first lookup, which
-    // left common.js exactly at its old 21 KiB ceiling. Raised by 0.4 KiB
-    // (with every route) for the reading-text contrast setting and the
-    // highlight-style setting (+347 B gzip).
-    "common.js": { maxGzipBytes: 21.5 * 1024 },
-    "reader.js": { maxGzipBytes: 14 * 1024 },
-    // Raised by 0.2 KiB for the highlight-style control (+118 B gzip).
-    "dict.js": { maxGzipBytes: 9.7 * 1024 },
-    "corpus.js": { maxGzipBytes: 6.5 * 1024 },
-    "external.js": { maxGzipBytes: 4.5 * 1024 },
-    "macronizer.js": { maxGzipBytes: 4.5 * 1024 },
+    "common.js": { maxBrotliBytes: 19.75 * 1024 },
+    "reader.js": { maxBrotliBytes: 12.5 * 1024 },
+    "dict.js": { maxBrotliBytes: 8.75 * 1024 },
+    "corpus.js": { maxBrotliBytes: 5.5 * 1024 },
+    "external.js": { maxBrotliBytes: 4 * 1024 },
+    "macronizer.js": { maxBrotliBytes: 4 * 1024 },
   },
   routes: {
-    about: { maxGzipBytes: 21.5 * 1024 },
-    // Raised by 0.5 KiB for in-place embedded dictionary lookups (+439 B gzip across common.js + dict.js),
-    // and by 0.5 KiB for the contrast and highlight-style settings (+465 B).
-    dicts: { maxGzipBytes: 31 * 1024 },
-    corpus: { maxGzipBytes: 27.4 * 1024 },
-    library: { maxGzipBytes: 35 * 1024 },
-    external: { maxGzipBytes: 39 * 1024 },
-    macronizer: { maxGzipBytes: 25.5 * 1024 },
+    about: { maxBrotliBytes: 19.75 * 1024 },
+    dicts: { maxBrotliBytes: 28.25 * 1024 },
+    corpus: { maxBrotliBytes: 24.75 * 1024 },
+    library: { maxBrotliBytes: 31.75 * 1024 },
+    external: { maxBrotliBytes: 35.25 * 1024 },
+    macronizer: { maxBrotliBytes: 23.25 * 1024 },
   },
-  // Raised by 0.5 KiB for the contrast levels, the highlight text colours
-  // and the colored-text rules (+439 B gzip).
-  maxCssGzipBytes: 25 * 1024,
+  maxCssBrotliBytes: 21 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
-  // pre-paint preference must not grow it (~300 B raw / ~237 B gzip). Do not
+  // pre-paint preference must not grow it (~300 B raw / ~210 B brotli). Do not
   // raise these to fit per-preference logic; move that logic into the owner
   // instead (see "Pre-paint is a scarce budget" in src/web/ui/docs/PREFERENCES.md).
   maxCriticalJsRawBytes: 450,
-  maxCriticalJsGzipBytes: 350,
+  maxCriticalJsBrotliBytes: 350,
   // critical.css is inlined into the <head> of every SSR page (see the
   // "Performance Budget" note in src/web/ui/critical.css), so every byte ships
-  // on every response. Was ~2,273 B raw / ~841 B gzip when this gate was
-  // added. Move non-critical rules to app.css rather than raising these.
+  // on every response. Was ~2,273 B raw / ~716 B brotli when this gate was
+  // calibrated. Move non-critical rules to app.css rather than raising these.
   maxCriticalCssRawBytes: 2400,
-  maxCriticalCssGzipBytes: 900,
+  maxCriticalCssBrotliBytes: 900,
 };
 
 /** Fixed (unhashed) filename of the inlined critical script. */
@@ -99,12 +96,12 @@ export const CRITICAL_CSS_FILE = "critical.css";
 export interface V2AssetSizeInfo {
   readonly file: string;
   readonly rawBytes: number;
-  readonly gzipBytes: number;
+  readonly brotliBytes: number;
 }
 
 export interface V2SizeTotal {
   readonly rawBytes: number;
-  readonly gzipBytes: number;
+  readonly brotliBytes: number;
 }
 
 /**
@@ -116,14 +113,14 @@ export function sumRouteSizes(
   chunks: Partial<Record<V2JsChunkName, V2SizeTotal>>
 ): V2SizeTotal | undefined {
   let rawBytes = 0;
-  let gzipBytes = 0;
+  let brotliBytes = 0;
   for (const chunkName of v2RouteScripts(route)) {
     const info = chunks[chunkName];
     if (!info) return undefined;
     rawBytes += info.rawBytes;
-    gzipBytes += info.gzipBytes;
+    brotliBytes += info.brotliBytes;
   }
-  return { rawBytes, gzipBytes };
+  return { rawBytes, brotliBytes };
 }
 
 export interface V2BundleSizeReport {
@@ -136,14 +133,35 @@ export interface V2BundleSizeReport {
   /** Inlined like `criticalJs`, so separate from `css` (`app.css`). */
   readonly criticalCss?: V2AssetSizeInfo;
   readonly totalJsRawBytes: number;
-  readonly totalJsGzipBytes: number;
+  readonly totalJsBrotliBytes: number;
   readonly exceeded: boolean;
   readonly errors: readonly string[];
 }
 
-/** Bytes below 1 KiB (the critical script), KiB with one decimal above. */
+/** KiB with one decimal, or two when needed (e.g. `.25` / `.75` ceilings). */
+function formatKb(bytes: number): string {
+  return (bytes / 1024).toFixed(2).replace(/(\.\d)0$/, "$1");
+}
+
+/** Bytes below 1 KiB (the critical script), KiB above. */
 function formatSize(bytes: number): string {
-  return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} kB`;
+  return bytes < 1024 ? `${bytes} B` : `${formatKb(bytes)} kB`;
+}
+
+function measureBrotliBytes(
+  assetPath: string,
+  content: Buffer,
+  quality: number
+): number {
+  if (quality === STATIC_BROTLI_QUALITY) {
+    const precompressedPath = `${assetPath}.br`;
+    if (fs.existsSync(precompressedPath)) {
+      return fs.statSync(precompressedPath).size;
+    }
+  }
+  return zlib.brotliCompressSync(content, {
+    params: { [zlib.constants.BROTLI_PARAM_QUALITY]: quality },
+  }).byteLength;
 }
 
 function checkAssetBudget(
@@ -151,7 +169,11 @@ function checkAssetBudget(
   label: string,
   manifestKey: V2AssetName | "critical.js" | "critical.css",
   filename: string | undefined,
-  limits: { readonly maxRawBytes?: number; readonly maxGzipBytes: number },
+  limits: {
+    readonly maxRawBytes?: number;
+    readonly maxBrotliBytes: number;
+    readonly brotliQuality?: number;
+  },
   errors: string[]
 ): V2AssetSizeInfo | undefined {
   if (!filename) {
@@ -167,7 +189,11 @@ function checkAssetBudget(
 
   const content = fs.readFileSync(assetPath);
   const rawBytes = content.byteLength;
-  const gzipBytes = zlib.gzipSync(content).byteLength;
+  const brotliBytes = measureBrotliBytes(
+    assetPath,
+    content,
+    limits.brotliQuality ?? STATIC_BROTLI_QUALITY
+  );
 
   if (limits.maxRawBytes !== undefined && rawBytes > limits.maxRawBytes) {
     errors.push(
@@ -176,15 +202,15 @@ function checkAssetBudget(
       )}`
     );
   }
-  if (gzipBytes > limits.maxGzipBytes) {
+  if (brotliBytes > limits.maxBrotliBytes) {
     errors.push(
-      `${label} gzip size ${formatSize(gzipBytes)} exceeds budget ${formatSize(
-        limits.maxGzipBytes
-      )}`
+      `${label} brotli size ${formatSize(
+        brotliBytes
+      )} exceeds budget ${formatSize(limits.maxBrotliBytes)}`
     );
   }
 
-  return { file: filename, rawBytes, gzipBytes };
+  return { file: filename, rawBytes, brotliBytes };
 }
 
 /**
@@ -198,7 +224,7 @@ export function checkV2BundleBudget(
   const errors: string[] = [];
   const chunks: Partial<Record<V2JsChunkName, V2AssetSizeInfo>> = {};
   let totalJsRawBytes = 0;
-  let totalJsGzipBytes = 0;
+  let totalJsBrotliBytes = 0;
 
   for (const chunkName of V2_JS_CHUNKS) {
     const chunkBudget = budget.chunks[chunkName];
@@ -213,7 +239,7 @@ export function checkV2BundleBudget(
     if (info) {
       chunks[chunkName] = info;
       totalJsRawBytes += info.rawBytes;
-      totalJsGzipBytes += info.gzipBytes;
+      totalJsBrotliBytes += info.brotliBytes;
     }
   }
 
@@ -224,11 +250,11 @@ export function checkV2BundleBudget(
     routes[route] = total;
     const routeBudget = budget.routes[route];
     const label = `Route '${route}' (${v2RouteScripts(route).join(" + ")})`;
-    if (total.gzipBytes > routeBudget.maxGzipBytes) {
+    if (total.brotliBytes > routeBudget.maxBrotliBytes) {
       errors.push(
-        `${label} gzip total ${formatSize(
-          total.gzipBytes
-        )} exceeds budget ${formatSize(routeBudget.maxGzipBytes)}`
+        `${label} brotli total ${formatSize(
+          total.brotliBytes
+        )} exceeds budget ${formatSize(routeBudget.maxBrotliBytes)}`
       );
     }
   }
@@ -238,7 +264,7 @@ export function checkV2BundleBudget(
     "CSS",
     "app.css",
     manifest["app.css"],
-    { maxGzipBytes: budget.maxCssGzipBytes },
+    { maxBrotliBytes: budget.maxCssBrotliBytes },
     errors
   );
 
@@ -249,7 +275,8 @@ export function checkV2BundleBudget(
     CRITICAL_JS_FILE,
     {
       maxRawBytes: budget.maxCriticalJsRawBytes,
-      maxGzipBytes: budget.maxCriticalJsGzipBytes,
+      maxBrotliBytes: budget.maxCriticalJsBrotliBytes,
+      brotliQuality: DYNAMIC_BROTLI_QUALITY,
     },
     errors
   );
@@ -261,7 +288,8 @@ export function checkV2BundleBudget(
     CRITICAL_CSS_FILE,
     {
       maxRawBytes: budget.maxCriticalCssRawBytes,
-      maxGzipBytes: budget.maxCriticalCssGzipBytes,
+      maxBrotliBytes: budget.maxCriticalCssBrotliBytes,
+      brotliQuality: DYNAMIC_BROTLI_QUALITY,
     },
     errors
   );
@@ -273,7 +301,7 @@ export function checkV2BundleBudget(
     criticalJs,
     criticalCss,
     totalJsRawBytes,
-    totalJsGzipBytes,
+    totalJsBrotliBytes,
     exceeded: errors.length > 0,
     errors,
   };
@@ -290,13 +318,13 @@ export function formatV2BundleSizeReport(
     const chunkBudget = budget.chunks[chunkName];
     const sizeStr = info
       ? `${(info.rawBytes / 1024).toFixed(1)} kB raw / ${(
-          info.gzipBytes / 1024
-        ).toFixed(1)} kB gzip`
+          info.brotliBytes / 1024
+        ).toFixed(1)} kB brotli`
       : "missing";
     lines.push(
-      `  ${(chunkName + ":").padEnd(13)} ${sizeStr.padEnd(28)} (budget: < ${(
-        chunkBudget.maxGzipBytes / 1024
-      ).toFixed(1)} kB gzip)`
+      `  ${(chunkName + ":").padEnd(13)} ${sizeStr.padEnd(
+        30
+      )} (budget: < ${formatKb(chunkBudget.maxBrotliBytes)} kB brotli)`
     );
   }
 
@@ -306,51 +334,51 @@ export function formatV2BundleSizeReport(
     const routeBudget = budget.routes[route];
     const sizeStr = total
       ? `${(total.rawBytes / 1024).toFixed(1)} kB raw / ${(
-          total.gzipBytes / 1024
-        ).toFixed(1)} kB gzip`
+          total.brotliBytes / 1024
+        ).toFixed(1)} kB brotli`
       : "missing";
     lines.push(
-      `    ${(route + ":").padEnd(11)} ${sizeStr.padEnd(28)} (budget: < ${(
-        routeBudget.maxGzipBytes / 1024
-      ).toFixed(1)} kB gzip)`
+      `    ${(route + ":").padEnd(11)} ${sizeStr.padEnd(
+        30
+      )} (budget: < ${formatKb(routeBudget.maxBrotliBytes)} kB brotli)`
     );
   }
 
   const cssStr = report.css
     ? `${(report.css.rawBytes / 1024).toFixed(1)} kB raw / ${(
-        report.css.gzipBytes / 1024
-      ).toFixed(1)} kB gzip`
+        report.css.brotliBytes / 1024
+      ).toFixed(1)} kB brotli`
     : "missing";
   lines.push(
-    `  ${"CSS:".padEnd(13)} ${cssStr.padEnd(28)} (budget: < ${(
-      budget.maxCssGzipBytes / 1024
-    ).toFixed(1)} kB gzip)`
+    `  ${"CSS:".padEnd(13)} ${cssStr.padEnd(30)} (budget: < ${formatKb(
+      budget.maxCssBrotliBytes
+    )} kB brotli)`
   );
 
   const criticalStr = report.criticalJs
     ? `${formatSize(report.criticalJs.rawBytes)} raw / ${formatSize(
-        report.criticalJs.gzipBytes
-      )} gzip`
+        report.criticalJs.brotliBytes
+      )} brotli`
     : "missing";
   lines.push(
     `  ${"Critical JS:".padEnd(13)} ${criticalStr.padEnd(
-      28
+      30
     )} (budget: <= ${formatSize(
       budget.maxCriticalJsRawBytes
-    )} raw / <= ${formatSize(budget.maxCriticalJsGzipBytes)} gzip, inlined)`
+    )} raw / <= ${formatSize(budget.maxCriticalJsBrotliBytes)} brotli, inlined)`
   );
 
   const criticalCssStr = report.criticalCss
     ? `${formatSize(report.criticalCss.rawBytes)} raw / ${formatSize(
-        report.criticalCss.gzipBytes
-      )} gzip`
+        report.criticalCss.brotliBytes
+      )} brotli`
     : "missing";
   lines.push(
     `  ${"Critical CSS:".padEnd(13)} ${criticalCssStr.padEnd(
-      28
+      30
     )} (budget: <= ${formatSize(
       budget.maxCriticalCssRawBytes
-    )} raw / <= ${formatSize(budget.maxCriticalCssGzipBytes)} gzip, inlined)`
+    )} raw / <= ${formatSize(budget.maxCriticalCssBrotliBytes)} brotli, inlined)`
   );
 
   return lines.join("\n");
