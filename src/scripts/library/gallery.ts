@@ -3611,18 +3611,61 @@ export function renderGalleryDiffHtml(
       }
 
       const rawBeforeHtml = beforePage?.previewHtml ?? "";
-      const afterHtml = afterPage?.previewHtml ?? "";
+      const rawAfterHtml = afterPage?.previewHtml ?? "";
       const beforeAsideIdx = rawBeforeHtml.indexOf('<aside class="reader-notes"');
-      const beforeHtml =
+      const afterAsideIdx = rawAfterHtml.indexOf('<aside class="reader-notes"');
+      const beforePassage =
         beforeAsideIdx >= 0
-          ? joinPassageAndNotesHtml(
-              rawBeforeHtml.slice(0, beforeAsideIdx).trim(),
-              filterNotesHtmlToRefs(
-                rawBeforeHtml.slice(0, beforeAsideIdx),
-                rawBeforeHtml.slice(beforeAsideIdx)
-              )
-            )
+          ? rawBeforeHtml.slice(0, beforeAsideIdx).trim()
           : rawBeforeHtml;
+      const beforeNotes =
+        beforeAsideIdx >= 0 ? rawBeforeHtml.slice(beforeAsideIdx) : undefined;
+      let afterPassage =
+        afterAsideIdx >= 0
+          ? rawAfterHtml.slice(0, afterAsideIdx).trim()
+          : rawAfterHtml;
+      const afterNotes =
+        afterAsideIdx >= 0 ? rawAfterHtml.slice(afterAsideIdx) : undefined;
+
+      const isHeadingSection = (sec: string) =>
+        sec.includes("reader-subheading") && !sec.includes("cite-local");
+      const beforeSecs = splitPageSectionHtmls(beforePassage);
+      const afterSecs = splitPageSectionHtmls(afterPassage);
+      const beforeCitCount = beforeSecs.filter(
+        (s) => !isHeadingSection(s)
+      ).length;
+      const afterCitCount = afterSecs.filter(
+        (s) => !isHeadingSection(s)
+      ).length;
+      if (beforeCitCount > 0 && afterCitCount > beforeCitCount) {
+        const trimmedAfterSecs: string[] = [];
+        let cit = 0;
+        for (const sec of afterSecs) {
+          trimmedAfterSecs.push(sec);
+          if (!isHeadingSection(sec)) {
+            cit++;
+            if (cit >= beforeCitCount) {
+              break;
+            }
+          }
+        }
+        afterPassage = trimmedAfterSecs.join("\n");
+      }
+
+      const beforeHtml =
+        beforeNotes !== undefined
+          ? joinPassageAndNotesHtml(
+              beforePassage,
+              filterNotesHtmlToRefs(beforePassage, beforeNotes)
+            )
+          : beforePassage;
+      const afterHtml =
+        afterNotes !== undefined
+          ? joinPassageAndNotesHtml(
+              afterPassage,
+              filterNotesHtmlToRefs(afterPassage, afterNotes)
+            )
+          : afterPassage;
 
       const normBefore = normalizePreviewHtml(beforeHtml);
       const normAfter = normalizePreviewHtml(afterHtml);
