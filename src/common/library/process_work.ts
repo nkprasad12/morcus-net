@@ -1248,7 +1248,7 @@ function processWorkBodyDetailed(
 ): Pick<ProcessedWork2, "rows" | "notes"> & { editorialRows: Set<number> } {
   const data = preprocessTree(originalRoot, spine, options);
   const rawRows = convertToRows(data.root, data);
-  // OUT-1 (coverage): every piece of text in the body lands in some row.
+  // Coverage: every piece of text in the body lands in some row.
   const rowWeight = rawRows.reduce((sum, [, row]) => sum + textWeight(row), 0);
   assertEqual(rowWeight, textWeight(data.root), "Body text missing from rows");
   const rows: ProcessedWork2["rows"] = [];
@@ -1303,7 +1303,7 @@ export function divideWork(
 
   function addPageIfNeeded(end: number) {
     if (currentId !== undefined) {
-      // OUT-5: page ids are unique (and so each page's rows contiguous).
+      // Page ids are unique (and so each page's rows are contiguous).
       assert(
         !addedPages.has(currentId.join(".")),
         () => `Duplicate page id ${currentId?.join(".")} (rows not contiguous)`
@@ -1454,9 +1454,10 @@ export interface RowFacts {
 
 /**
  * Build-time output assertions on a processed work (`docs/PLAN.md` §4.3,
- * pillar 2). OUT-1 (coverage into rows) and OUT-3 (id parts) are also
- * checked where the rows and ids are made; see `processWorkBody` and
- * `cite_structure.ts`.
+ * pillar 2: citation presence, well-formed row ids, uniform citation depth,
+ * unique contiguous pages, and text coverage across pages). Body-to-row text
+ * coverage and id-part validation are also checked where the rows and ids are
+ * made; see `processWorkBody` and `cite_structure.ts`.
  *
  * Exported for unit testing.
  */
@@ -1466,14 +1467,14 @@ export function assertOutputInvariants(
 ): void {
   const { rows, pages, textParts } = work;
   const isCitable = (id: string[]) => id.length === textParts.length;
-  // OUT-2: at least one citation level, and at least one citable row.
+  // At least one citation level, and at least one citable row.
   assert(textParts.length > 0, "No citation levels");
   assert(
     rows.some(([id]) => isCitable(id)),
     () => `No citable rows (citation depth ${textParts.length}: ${textParts})`
   );
   for (const [id] of rows) {
-    // OUT-3: no id part is empty or contains the `.` that joins them.
+    // No id part is empty or contains the `.` that joins them.
     assert(
       id.every((part) => part.length > 0 && !part.includes(".")),
       () => `Malformed row id ${JSON.stringify(id)}`
@@ -1489,8 +1490,7 @@ export function assertOutputInvariants(
         )}`
     );
   }
-  // OUT-4 and OUT-5: there are pages, their ids are unique, and they cover
-  // every citable row.
+  // There are pages, their ids are unique, and they cover every citable row.
   assert(pages.length > 0, "No pages");
   const pageIds = new Set(pages.map((page) => page.id.join(".")));
   assertEqual(pageIds.size, pages.length, "Duplicate page ids");
@@ -1508,7 +1508,7 @@ export function assertOutputInvariants(
       () => `Citable row ${id.join(".")} is on no page`
     )
   );
-  // OUT-4 (text): the reader shows only pages, so text on no page is lost.
+  // Page text coverage: the reader shows only pages, so text on no page is lost.
   // That is only allowed for editorial matter (headings, unnumbered
   // divisions), for the preamble of a section above page depth (text in a
   // book before its first chapter), and, for now, for leaf sections

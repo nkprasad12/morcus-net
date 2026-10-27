@@ -488,7 +488,7 @@ describe("buildCitationSpine with a citeStructure", () => {
     ]);
   });
 
-  it("fails on a citation value containing a dot (OUT-3)", () => {
+  it("fails on a citation value containing a dot", () => {
     const root = tei(
       citeStructure(level("section", "div/div[@subtype='section']")),
       `<div type="edition"><div type="textpart" subtype="section" n="1.2">a</div></div>`
@@ -496,7 +496,7 @@ describe("buildCitationSpine with a citeStructure", () => {
     expect(() => spineOf(root)).toThrow(/contains "."/);
   });
 
-  it("fails on an empty citation value (OUT-3)", () => {
+  it("fails on an empty citation value", () => {
     const root = tei(
       citeStructure(level("section", "div/div[@subtype='section']")),
       `<div type="edition"><div type="textpart" subtype="section" n="">a</div></div>`

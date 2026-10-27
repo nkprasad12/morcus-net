@@ -250,7 +250,7 @@ A fresh builder (~500 lines) that:
 - evaluates the `citeStructure` declaration with a 19-pattern XPath-subset evaluator → ordered citation levels, each **container** (`div`, `div1..3`, `seg`, `l`) or **point** (`milestone`, `lb`, `pb`);
 - walks the body producing `Row { id, citable, display?, content }` with **declared** citability, point levels producing rows between consecutive markers, ragged depth handled per the declaration;
 - falls back to tree derivation (right-aligned header names) when no `citeStructure` is present, and **asserts** tree depth == declared depth otherwise (warning on mismatch, listed in the survey);
-- enforces OUT-1…OUT-5 (coverage, ≥1 citable row, arity, page contiguity, unique page ids) at build;
+- enforces output invariants (text coverage, ≥1 citable row, well-formed non-ragged ids, page coverage & contiguity, unique page ids) at build;
 - reads author/title from `__cts__.xml` when `titleStmt` lacks them; reads `<licence>`;
 - emits a structured work type that `work_preprocessor`, `saveAsCorpusInputWork`, Hypotactic, and PHI all consume ([§4.4](#44-constraint-corpus-processing-must-keep-working), [§4.5](#45-constraint-dont-strand-hypotactic-or-phi)). `ProcessedWork2` is deleted.
 

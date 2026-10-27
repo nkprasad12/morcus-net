@@ -707,7 +707,7 @@ function register(
   n: string,
   path: string[]
 ) {
-  // OUT-3: every id part is non-empty and has no `.`, which joins the parts.
+  // Every id part is non-empty and has no `.`, which joins the parts.
   assert(
     n.trim().length > 0,
     () => `Empty citation value on <${node.name}> (${unit})`
@@ -945,7 +945,7 @@ function evaluateLevels(
           content
         )
     );
-    // OUT-1 (coverage): slicing only moves content and drops the markers.
+    // Coverage: slicing only moves content and drops the markers.
     assert(
       textWeight(context) === before,
       () => `Text lost slicing at ${level.origin}`

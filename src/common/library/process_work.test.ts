@@ -1455,7 +1455,7 @@ describe("assertOutputInvariants", () => {
     ).not.toThrow();
   });
 
-  it("requires a citable row (OUT-2)", () => {
+  it("requires a citable row", () => {
     const rows = [row("1"), row("2")];
     expect(() =>
       assertOutputInvariants({
@@ -1466,7 +1466,7 @@ describe("assertOutputInvariants", () => {
     ).toThrow(/No citable rows/);
   });
 
-  it("rejects malformed ids (OUT-3)", () => {
+  it("rejects malformed ids", () => {
     const rows: ProcessedWork2["rows"] = [
       [["1", ""], new XmlNode("span")],
       row("1.2"),
@@ -1480,7 +1480,7 @@ describe("assertOutputInvariants", () => {
     ).toThrow(/Malformed row id/);
   });
 
-  it("requires pages (OUT-4)", () => {
+  it("requires pages", () => {
     expect(() =>
       assertOutputInvariants({
         rows: [row("1")],
@@ -1490,7 +1490,7 @@ describe("assertOutputInvariants", () => {
     ).toThrow(/No pages/);
   });
 
-  it("requires every citable row to be on a page (OUT-4)", () => {
+  it("requires every citable row to be on a page", () => {
     const rows = [row("1.1"), row("2.1")];
     expect(() =>
       assertOutputInvariants({
@@ -1501,7 +1501,7 @@ describe("assertOutputInvariants", () => {
     ).toThrow(/Citable row 2.1 is on no page/);
   });
 
-  it("requires unique page ids (OUT-5)", () => {
+  it("requires unique page ids", () => {
     const rows = [row("1.1"), row("1.2")];
     expect(() =>
       assertOutputInvariants({
@@ -1515,7 +1515,7 @@ describe("assertOutputInvariants", () => {
     ).toThrow(/Duplicate page ids/);
   });
 
-  it("is enforced by divideWork for non-contiguous sections (OUT-5)", () => {
+  it("is enforced by divideWork for non-contiguous sections", () => {
     const rows = [row("1.1"), row("2.1"), row("1.2")];
     expect(() => divideWork(rows, ["book", "chapter"])).toThrow(
       /Duplicate page id 1/
@@ -1523,7 +1523,7 @@ describe("assertOutputInvariants", () => {
   });
 });
 
-describe("assertOutputInvariants text on no page (OUT-4)", () => {
+describe("assertOutputInvariants text on no page", () => {
   const row = (id: string, text = "x"): ProcessedWork2["rows"][number] => [
     id.length === 0 ? [] : id.split("."),
     new XmlNode("span", [], [text]),
