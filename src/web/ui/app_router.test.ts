@@ -1627,7 +1627,7 @@ describe("app_router integration", () => {
         url: "/work/caesar/de_bello_gallico/1.1/translation",
       },
       {
-        route: "/work/:author/:name/:page?",
+        route: "/work/:author/:name{/:page}",
         method: "GET",
         url: "/work/caesar/de_bello_gallico/1.1",
       },

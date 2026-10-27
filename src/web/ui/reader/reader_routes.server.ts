@@ -12,7 +12,10 @@ import {
 } from "@/web/ui/reader/reader_loader.server";
 import { createAsyncRegistrars } from "@/web/ui/core/server/async_handler.server";
 import { renderNotFoundPageHtml } from "@/web/ui/library/not_found.server";
-import { isPartialRequest } from "@/web/ui/core/server/request_params.server";
+import {
+  isPartialRequest,
+  readStringParam,
+} from "@/web/ui/core/server/request_params.server";
 import { setVersionedCacheControl } from "@/web/ui/core/server/build_version.server";
 import { requestTimer } from "@/web/ui/core/server/telemetry.server";
 import { getFirstHighlightSectionId } from "@/web/ui/reader/reader_highlight.common";
@@ -128,11 +131,12 @@ export function createReaderRoutes(): Router {
 
   // Lazy-loading translation partial endpoint: /work/:author/:name/:page/translation
   getAsync("/work/:author/:name/:page/translation", async (req, res) => {
-    const work = await findReaderWork(req.params.author, req.params.name);
+    const author = readStringParam(req.params.author);
+    const name = readStringParam(req.params.name);
+    const page = readStringParam(req.params.page);
+    const work = await findReaderWork(author, name);
     requestTimer(res).mark("lookupComplete");
-    const body = work
-      ? renderReaderTranslationHtml(work, req.params.page)
-      : null;
+    const body = work ? renderReaderTranslationHtml(work, page) : null;
     if (body === null) {
       res.status(404).send("Translation not found");
       return;
@@ -142,11 +146,12 @@ export function createReaderRoutes(): Router {
     res.send(body);
   });
 
-  // Human-readable reader route: /work/:author/:name/:page?
-  getAsync("/work/:author/:name/:page?", async (req, res) => {
-    const author = req.params.author;
-    const name = req.params.name;
-    const pageId = req.params.page;
+  // Human-readable reader route: /work/:author/:name{/:page}
+  getAsync("/work/:author/:name{/:page}", async (req, res) => {
+    const author = readStringParam(req.params.author);
+    const name = readStringParam(req.params.name);
+    const pageId =
+      typeof req.params.page === "string" ? req.params.page : undefined;
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const matchText =
       typeof req.query.matchText === "string" ? req.query.matchText.trim() : "";
@@ -203,7 +208,7 @@ export function createReaderRoutes(): Router {
 
   // Legacy V1 work ID route: /work/:workId (e.g. /work/phi0448.phi001.perseus-lat2?id=1.1.1)
   getAsync("/work/:workId", async (req, res) => {
-    const workId = req.params.workId;
+    const workId = readStringParam(req.params.workId);
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const matchText =
       typeof req.query.matchText === "string" ? req.query.matchText.trim() : "";

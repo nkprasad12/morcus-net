@@ -4,7 +4,6 @@ import { LS_PATH } from "@/common/lewis_and_short/ls_scripts";
 import { LsRewriters } from "@/common/lewis_and_short/ls_write";
 import { XmlNode } from "@/common/xml/xml_node";
 import http from "http";
-import bodyParser from "body-parser";
 import express, { Response } from "express";
 import { checkPresent } from "@/common/assert";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
@@ -33,7 +32,7 @@ export async function startInteractiveEditor() {
   let editLsPromise: undefined | Promise<void>;
 
   app.use(express.static("./genfiles_static"));
-  app.use(bodyParser.text());
+  app.use(express.text());
   app.post("/respond", (req, res) => {
     console.log("Get browser message");
     pendingResponse = res;

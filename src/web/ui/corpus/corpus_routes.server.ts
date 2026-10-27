@@ -125,7 +125,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
   // The lemmata starting with one letter, for the autocomplete.
   getAsync("/api/corpus/lemmata/:letter", async (req, res) => {
     const letter = req.params.letter;
-    if (letter.length !== 1) {
+    if (typeof letter !== "string" || letter.length !== 1) {
       res.setHeader("Cache-Control", "no-store");
       res.status(400).json({ error: "Expected a single letter." });
       return;
