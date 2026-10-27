@@ -633,7 +633,20 @@ function buildSpotCheckPage(
   const pageId = Array.isArray(page.id) ? page.id.join(".") : page.id;
   const readerUrl = `/work/${v2Work.urlAuthor}/${v2Work.urlName}/${pageId}`;
   const sections = splitPageSectionHtmls(page.singleHtml);
-  const previewSections = sections.slice(0, maxPreviewSections).join("\n");
+  const keptSections: string[] = [];
+  let citableCount = 0;
+  for (const sec of sections) {
+    keptSections.push(sec);
+    const isHeadingOnly =
+      sec.includes("reader-subheading") && !sec.includes("cite-local");
+    if (!isHeadingOnly) {
+      citableCount++;
+      if (citableCount >= maxPreviewSections) {
+        break;
+      }
+    }
+  }
+  const previewSections = keptSections.join("\n");
   const filteredNotes = filterNotesHtmlToRefs(previewSections, page.notesHtml);
   const previewHtml = joinPassageAndNotesHtml(previewSections, filteredNotes);
   return {
@@ -2796,6 +2809,41 @@ export function formatGalleryHtml(report: GalleryReport): string {
       });
     }
 
+    function isInsertedHeadingSection(el) {
+      return (
+        el &&
+        el.nodeType === 1 &&
+        el.classList &&
+        el.classList.contains("reader-section") &&
+        !el.id &&
+        Boolean(el.querySelector(".reader-subheading"))
+      );
+    }
+
+    function alignSectionChildren(bList, aList) {
+      var bHasHeading = bList.some(isInsertedHeadingSection);
+      var aHasHeading = aList.some(isInsertedHeadingSection);
+      if (!bHasHeading && aHasHeading) {
+        var filteredA = [];
+        for (var i = 0; i < aList.length; i++) {
+          if (isInsertedHeadingSection(aList[i])) {
+            aList[i].classList.add("diff-node-changed");
+            if (
+              i + 1 < aList.length &&
+              aList[i + 1].nodeType === 3 &&
+              (!aList[i + 1].nodeValue || aList[i + 1].nodeValue.trim() === "")
+            ) {
+              i++;
+            }
+            continue;
+          }
+          filteredA.push(aList[i]);
+        }
+        return [bList, filteredA];
+      }
+      return [bList, aList];
+    }
+
     function diffDomPair(bNode, aNode, kind) {
       if (!bNode && !aNode) return;
       if (!bNode && aNode && aNode.nodeType === 1) {
@@ -2821,8 +2869,12 @@ export function formatGalleryHtml(report: GalleryReport): string {
           bNode.classList.add("diff-node-changed");
           aNode.classList.add("diff-node-changed");
         }
-        var bChildren = filterDomChildren(bNode, kind);
-        var aChildren = filterDomChildren(aNode, kind);
+        var aligned = alignSectionChildren(
+          filterDomChildren(bNode, kind),
+          filterDomChildren(aNode, kind)
+        );
+        var bChildren = aligned[0];
+        var aChildren = aligned[1];
         var maxC = Math.max(bChildren.length, aChildren.length);
         for (var i = 0; i < maxC; i++) {
           diffDomPair(bChildren[i], aChildren[i], kind);
@@ -4160,6 +4212,41 @@ ${afterReaderCss ? scopeCssRules(afterReaderCss, ".after-scope") : ""}
       });
     }
 
+    function isInsertedHeadingSection(el) {
+      return (
+        el &&
+        el.nodeType === 1 &&
+        el.classList &&
+        el.classList.contains("reader-section") &&
+        !el.id &&
+        Boolean(el.querySelector(".reader-subheading"))
+      );
+    }
+
+    function alignSectionChildren(bList, aList) {
+      var bHasHeading = bList.some(isInsertedHeadingSection);
+      var aHasHeading = aList.some(isInsertedHeadingSection);
+      if (!bHasHeading && aHasHeading) {
+        var filteredA = [];
+        for (var i = 0; i < aList.length; i++) {
+          if (isInsertedHeadingSection(aList[i])) {
+            aList[i].classList.add("diff-node-changed");
+            if (
+              i + 1 < aList.length &&
+              aList[i + 1].nodeType === 3 &&
+              (!aList[i + 1].nodeValue || aList[i + 1].nodeValue.trim() === "")
+            ) {
+              i++;
+            }
+            continue;
+          }
+          filteredA.push(aList[i]);
+        }
+        return [bList, filteredA];
+      }
+      return [bList, aList];
+    }
+
     function diffDomPair(bNode, aNode, kind) {
       if (!bNode && !aNode) return;
       if (!bNode && aNode && aNode.nodeType === 1) {
@@ -4185,8 +4272,12 @@ ${afterReaderCss ? scopeCssRules(afterReaderCss, ".after-scope") : ""}
           bNode.classList.add("diff-node-changed");
           aNode.classList.add("diff-node-changed");
         }
-        var bChildren = filterDomChildren(bNode, kind);
-        var aChildren = filterDomChildren(aNode, kind);
+        var aligned = alignSectionChildren(
+          filterDomChildren(bNode, kind),
+          filterDomChildren(aNode, kind)
+        );
+        var bChildren = aligned[0];
+        var aChildren = aligned[1];
         var maxC = Math.max(bChildren.length, aChildren.length);
         for (var i = 0; i < maxC; i++) {
           diffDomPair(bChildren[i], aChildren[i], kind);
