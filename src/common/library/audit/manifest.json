@@ -107,6 +107,24 @@
         "span@smallcaps": 13
       }
     },
+    "phi0474.phi002.perseus-lat2": {
+      "textParts": ["section"],
+      "rows": 155,
+      "pages": 154,
+      "citableRows": 154,
+      "firstCitation": "1",
+      "lastCitation": "154",
+      "notes": 450,
+      "nodes": {
+        "gap": 2,
+        "head": 1,
+        "note": 450,
+        "span": 893,
+        "span@blockquote": 1,
+        "span@indent": 55,
+        "span@italic": 1
+      }
+    },
     "phi0474.phi003.perseus-lat2": {
       "textParts": ["section"],
       "rows": 57,
@@ -137,6 +155,28 @@
         "span": 340,
         "span@indent": 23,
         "span@smallcaps": 1
+      }
+    },
+    "phi0474.phi005.perseus-lat2": {
+      "textParts": ["actio", "book", "section"],
+      "rows": 987,
+      "pages": 6,
+      "citableRows": 974,
+      "firstCitation": "1.1.1",
+      "lastCitation": "2.5.189",
+      "notes": 3983,
+      "nodes": {
+        "b": 11,
+        "head": 13,
+        "note": 3983,
+        "span": 5800,
+        "span@blockquote smallcaps": 1,
+        "span@indent": 375,
+        "span@italic": 1,
+        "span@overline": 8,
+        "span@overline smallcaps": 54,
+        "span@smallcaps": 199,
+        "span@smallcaps overline": 1
       }
     },
     "phi0474.phi006.perseus-lat2": {
@@ -879,6 +919,23 @@
         "span@smallcaps": 64
       }
     },
+    "phi0474.phi049.perseus-lat2": {
+      "textParts": ["chapter", "section"],
+      "rows": 475,
+      "pages": 5,
+      "citableRows": 475,
+      "firstCitation": "1.1",
+      "lastCitation": "5.121",
+      "notes": 4193,
+      "nodes": {
+        "b": 6,
+        "gap": 12,
+        "note": 4193,
+        "span": 1866,
+        "span@blockquote": 86,
+        "span@smallcaps": 1
+      }
+    },
     "phi0474.phi050.perseus-lat2": {
       "textParts": ["book", "section"],
       "rows": 391,
@@ -1005,6 +1062,85 @@
         "span@indent": 474,
         "span@italic": 14,
         "span@smallcaps": 15
+      }
+    },
+    "phi0474.phi056.perseus-lat2": {
+      "textParts": ["book", "letter", "section"],
+      "rows": 1791,
+      "pages": 431,
+      "citableRows": 1344,
+      "firstCitation": "1.1.1",
+      "lastCitation": "16.27.2",
+      "notes": 0,
+      "nodes": {
+        "b": 432,
+        "br": 431,
+        "gap": 7,
+        "head": 16,
+        "span": 8388,
+        "span@blockquote": 23,
+        "span@indent": 297,
+        "span@italic": 440,
+        "span@smallcaps": 28
+      }
+    },
+    "phi0474.phi057.perseus-lat2": {
+      "textParts": ["book", "letter", "section"],
+      "rows": 1940,
+      "pages": 446,
+      "citableRows": 1494,
+      "firstCitation": "1.1.1",
+      "lastCitation": "16.16F.2",
+      "notes": 0,
+      "nodes": {
+        "b": 454,
+        "br": 451,
+        "gap": 20,
+        "span": 12114,
+        "span@blockquote": 66,
+        "span@indent": 1526,
+        "span@italic": 764,
+        "span@smallcaps": 111
+      }
+    },
+    "phi0474.phi058.perseus-lat2": {
+      "textParts": ["book", "letter", "section"],
+      "rows": 228,
+      "pages": 27,
+      "citableRows": 198,
+      "firstCitation": "1.1.1",
+      "lastCitation": "3.9.8",
+      "notes": 1,
+      "nodes": {
+        "b": 29,
+        "br": 27,
+        "head": 3,
+        "note": 1,
+        "span": 1361,
+        "span@blockquote": 6,
+        "span@indent": 99,
+        "span@italic": 27,
+        "span@smallcaps": 10
+      }
+    },
+    "phi0474.phi059.perseus-lat2": {
+      "textParts": ["book", "letter", "section"],
+      "rows": 137,
+      "pages": 26,
+      "citableRows": 109,
+      "firstCitation": "1.1.1",
+      "lastCitation": "2.5.6",
+      "notes": 0,
+      "nodes": {
+        "b": 26,
+        "br": 26,
+        "gap": 7,
+        "head": 2,
+        "span": 720,
+        "span@blockquote": 1,
+        "span@indent": 57,
+        "span@italic": 26,
+        "span@smallcaps": 4
       }
     },
     "phi0474.phi072.perseus-lat2": {
@@ -1743,6 +1879,25 @@
         "span@italic": 17
       }
     },
+    "phi0972.phi001f.perseus-lat1": {
+      "textParts": ["section"],
+      "rows": 26,
+      "pages": 26,
+      "citableRows": 26,
+      "firstCitation": "1",
+      "lastCitation": "25",
+      "notes": 2,
+      "nodes": {
+        "b": 2,
+        "gap": 1,
+        "head": 26,
+        "note": 2,
+        "span": 118,
+        "span@blockquote": 7,
+        "span@italic": 40,
+        "span@sup": 13
+      }
+    },
     "phi0972.phi001p.perseus-lat1": {
       "textParts": ["section"],
       "rows": 31,
@@ -1851,6 +2006,22 @@
         "note": 11,
         "span": 183,
         "span@blockquote": 13
+      }
+    },
+    "phi1017.phi013.perseus-lat2": {
+      "textParts": ["book", "chapter", "section"],
+      "rows": 914,
+      "pages": 228,
+      "citableRows": 906,
+      "firstCitation": "1.1.1",
+      "lastCitation": "7.32.1",
+      "notes": 81,
+      "nodes": {
+        "gap": 2,
+        "head": 8,
+        "note": 81,
+        "span": 1817,
+        "span@blockquote": 3
       }
     },
     "phi1017.phi014.perseus-lat2": {
@@ -2579,6 +2750,19 @@
         "span": 5740,
         "span@blockquote": 9,
         "span@indent": 922
+      }
+    },
+    "stoa0040.stoa011.perseus-lat2": {
+      "textParts": ["letter", "section"],
+      "rows": 336,
+      "pages": 62,
+      "citableRows": 274,
+      "firstCitation": "1.1",
+      "lastCitation": "62.1",
+      "notes": 0,
+      "nodes": {
+        "head": 62,
+        "span": 773
       }
     },
     "stoa0045.stoa001.perseus-lat2": {

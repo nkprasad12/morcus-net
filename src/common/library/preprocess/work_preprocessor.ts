@@ -213,7 +213,8 @@ function isInlineTextElement(node: XmlNode): boolean {
     node.getAttr("block") !== undefined ||
     node.getAttr("sectionHead") !== undefined ||
     rends.has("blockquote") ||
-    rends.has("indent")
+    rends.has("indent") ||
+    rends.has("center")
   );
 }
 
@@ -342,6 +343,7 @@ function renderXmlNodeCleanHtml(
   if (isBlock) classes.push("reader-block");
   if (rends.has("italic")) classes.push("italic");
   if (rends.has("bold")) classes.push("bold");
+  if (rends.has("center")) classes.push("center");
   if (rends.has("blockquote")) classes.push("blockquote");
   if (rends.has("sup") || rends.has("superscript")) {
     classes.push("superscript");

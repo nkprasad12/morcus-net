@@ -131,9 +131,16 @@ export const LatinWorks = {
   MARTIAL_EPIGRAMMATA: "phi1294.phi002.perseus-lat2",
   TERTULLIAN_APOLOGETICUM: "stoa0275.stoa009.perseus-lat2",
 
-  // Phase 2B: Cicero (Philosophica & Rhetorica)
+  // Phase 2B/2C: Cicero (Orationes, Philosophica, Rhetorica, Epistulae)
+  CICERO_PRO_ROSCIO_AMERINO: "phi0474.phi002.perseus-lat2",
+  CICERO_IN_VERREM: "phi0474.phi005.perseus-lat2",
   CICERO_TOPICA: "phi0474.phi042.perseus-lat2",
   CICERO_PARADOXA_STOICORUM: "phi0474.phi047.perseus-lat2",
+  CICERO_TUSCULANAE_DISPUTATIONES: "phi0474.phi049.perseus-lat2",
+  CICERO_EPISTULAE_AD_FAMILIARES: "phi0474.phi056.perseus-lat2",
+  CICERO_EPISTULAE_AD_ATTICUM: "phi0474.phi057.perseus-lat2",
+  CICERO_EPISTULAE_AD_QUINTUM_FRATREM: "phi0474.phi058.perseus-lat2",
+  CICERO_EPISTULAE_AD_BRUTUM: "phi0474.phi059.perseus-lat2",
 
   // Phase 2B: Quintus Tullius Cicero
   QUINTUS_CICERO_COMMENTARIOLUM_PETITIONIS: "phi0478.phi003.perseus-lat2",
@@ -162,13 +169,15 @@ export const LatinWorks = {
   // Phase 2B: Columella
   COLUMELLA_RES_RUSTICA: "phi0845.phi002.perseus-lat3",
 
-  // Phase 2B: Petronius
+  // Phase 2B/2C: Petronius
+  PETRONIUS_FRAGMENTA: "phi0972.phi001f.perseus-lat1",
   PETRONIUS_POEMS: "phi0972.phi001p.perseus-lat1",
 
   // Phase 2B: Quintilian
   QUINTILIAN_INSTITUTIO_ORATORIA: "phi1002.phi001.perseus-lat2",
 
-  // Phase 2B: Seneca the Younger (Epistulae Morales)
+  // Phase 2B/2C: Seneca the Younger (De Beneficiis & Epistulae Morales)
+  SENECA_DE_BENEFICIIS: "phi1017.phi013.perseus-lat2",
   SENECA_EPISTULAE_MORALES: "phi1017.phi015.perseus-lat2",
 
   // Phase 2B: Silius Italicus
@@ -211,6 +220,9 @@ export const LatinWorks = {
   HISTORIA_AUGUSTA_PROBUS: "phi2331.phi028.perseus-lat2",
   HISTORIA_AUGUSTA_QUADRIGAE_TYRANNORUM: "phi2331.phi029.perseus-lat2",
   HISTORIA_AUGUSTA_CARUS_CARINUS_NUMERIANUS: "phi2331.phi030.perseus-lat2",
+
+  // Phase 2C: Augustine
+  AUGUSTINE_EPISTULAE_SELECTIONS: "stoa0040.stoa011.perseus-lat2",
 
   // Phase 2B: Ausonius
   AUSONIUS_BISSULA: "stoa0045.stoa001.perseus-lat2",

@@ -6,6 +6,7 @@ import {
   assertOutputInvariants,
   divideWork,
   patchText,
+  processRowContent,
   processTei2,
   transformNoteNode,
   type DebugSideChannel,
@@ -1772,5 +1773,59 @@ describe("processTei2 coverage of text", () => {
       </div>`;
     const work = processTei2(testRoot(body), { workId: WORK_ID });
     expect(work.pages.map((p) => p.id.join("."))).toEqual(["1", "2"]);
+  });
+
+  it("handles Phase 2C epistolary labels, desc/term/lemma/ref, l@rend=F, leading-whitespace reg, and note figure", () => {
+    const label = new XmlNode(
+      "label",
+      [["rend", "opener"]],
+      [
+        "\n",
+        new XmlNode("seg", [["rend", "dateline"]], ["Scr. Romae."]),
+        "\n",
+        new XmlNode("seg", [["rend", "salute"]], ["CICERO ATTICO S."]),
+      ]
+    );
+    const processedLabel = processRowContent(label);
+    expect(processedLabel.name).toBe("b");
+    expect(processedLabel.children).toHaveLength(3);
+    expect((processedLabel.children[0] as XmlNode).getAttr("rend")).toBe(
+      "italic"
+    );
+    expect((processedLabel.children[1] as XmlNode).name).toBe("br");
+
+    const desc = processRowContent(
+      new XmlNode("desc", [["rend", "align(center)"]], ["Desunt non pauca."])
+    );
+    expect(desc.getAttr("rend")).toBe("center italic");
+
+    const term = processRowContent(new XmlNode("term", [], ["tor"]));
+    expect(term.getAttr("rend")).toBe("italic");
+
+    const lemma = processRowContent(
+      new XmlNode("lemma", [], ["auri sacra fames"])
+    );
+    expect(lemma.name).toBe("b");
+
+    const ref = processRowContent(new XmlNode("ref", [], ["Epistula II"]));
+    expect(ref.name).toBe("span");
+
+    const halfLine = processRowContent(
+      new XmlNode(
+        "l",
+        [
+          ["rend", "F"],
+          ["part", "N"],
+        ],
+        ["Quid ? tu non intellegis"]
+      )
+    );
+    expect(halfLine.getAttr("linePart")).toBe("F");
+
+    const regSpace = processRowContent(new XmlNode("reg", [], [" oporteret"]));
+    expect(regSpace.children).toEqual([" Oporteret"]);
+
+    const figNote = transformNoteNode(new XmlNode("figure", [], []));
+    expect(figNote.name).toBe("gap");
   });
 });

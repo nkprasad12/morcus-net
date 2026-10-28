@@ -63,18 +63,10 @@ export const NOT_YET_ONBOARDED: readonly string[] = [
   "phi0134.phi004.perseus-lat2",
   "phi0134.phi005.perseus-lat2",
   "phi0134.phi006.perseus-lat2",
-  "phi0474.phi002.perseus-lat2",
-  "phi0474.phi005.perseus-lat2",
-  "phi0474.phi049.perseus-lat2",
   "phi0474.phi053.perseus-lat4",
-  "phi0474.phi056.perseus-lat2",
-  "phi0474.phi057.perseus-lat2",
-  "phi0474.phi058.perseus-lat2",
-  "phi0474.phi059.perseus-lat2",
   "phi0690.phi001.perseus-lat2",
   "phi0836.phi002.perseus-lat5",
   "phi0836.phi002.perseus-lat6",
-  "phi0972.phi001f.perseus-lat1",
   "phi1014.phi003.perseus-lat1",
   "phi1017.phi001.perseus-lat2",
   "phi1017.phi002.perseus-lat2",
@@ -86,10 +78,7 @@ export const NOT_YET_ONBOARDED: readonly string[] = [
   "phi1017.phi008.perseus-lat2",
   "phi1017.phi009.perseus-lat2",
   "phi1017.phi010.perseus-lat2",
-  "phi1017.phi013.perseus-lat2",
   "phi1348.abo011.perseus-lat2",
-  "stoa0040.stoa011.perseus-lat1",
-  "stoa0040.stoa011.perseus-lat2",
   "stoa0054.stoa006.perseus-lat1",
 ];
 
@@ -317,7 +306,7 @@ describe("process_work allowlist consistency", () => {
 
   it("handles every element in NOTE_ELEMENT_ALLOWLIST via transformNoteNode", () => {
     for (const name of NOTE_ELEMENT_ALLOWLIST) {
-      const node = new XmlNode(name, [], ["note text"]);
+      const node = new XmlNode(name, [], name === "figure" ? [] : ["note text"]);
       expect(() => transformNoteNode(node)).not.toThrow();
     }
   });
@@ -368,7 +357,7 @@ describe("evaluateCensusRatchet on synthetic fixtures", () => {
         ...cleanWork,
         onboarded: false,
         elements: ["div", "speaker"],
-        noteElements: ["hi", "figure"],
+        noteElements: ["hi", "stage"],
         rends: ["p@inddent"],
         noteRends: ["hi@unknownNoteRend"],
       },
@@ -378,7 +367,7 @@ describe("evaluateCensusRatchet on synthetic fixtures", () => {
     const msg = formatCensusRatchetReport(report);
     expect(msg).toContain("bad.work");
     expect(msg).toContain("<speaker>");
-    expect(msg).toContain("note:<figure>");
+    expect(msg).toContain("note:<stage>");
     expect(msg).toContain("rend:p@inddent");
     expect(msg).toContain("note-rend:hi@unknownNoteRend");
   });

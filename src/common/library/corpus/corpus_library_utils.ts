@@ -44,6 +44,7 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["Silius Italicus", "Silius"],
   ["Cato, Marcus Porcius", "Cato"],
   ["Jerome, Saint", "Jerome"],
+  ["Augustine, Saint", "Augustine"],
 ]);
 
 /** Exported for testing. */
@@ -76,6 +77,7 @@ function isStructural(node: XmlNode): boolean {
   return (
     rend === "indent" ||
     rend === "blockquote" ||
+    (rend !== undefined && rend.split(" ").includes("center")) ||
     node.getAttr("block") !== undefined ||
     node.getAttr("l") !== undefined ||
     node.getAttr("sectionHead") !== undefined ||

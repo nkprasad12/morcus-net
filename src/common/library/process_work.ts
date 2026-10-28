@@ -87,6 +87,10 @@ export const SWITCH_CONTENT_NODES = new Set<string>([
   "body",
   "p",
   "title",
+  "desc",
+  "ref",
+  "lemma",
+  "term",
   "bibl",
   "cit",
   "corr",
@@ -127,6 +131,7 @@ export const NOTE_NODES = new Set([
   "quote",
   "title",
   "gap",
+  "figure",
   "placeName",
   "date",
   "bibl",
@@ -876,7 +881,11 @@ export function transformNoteNode(node: XmlNode, parent?: XmlNode): XmlNode {
   if (node.name === "lb") {
     return new XmlNode("br", [], []);
   }
-  if (node.name === "gap") {
+  if (node.name === "gap" || node.name === "figure") {
+    if (node.name === "figure") {
+      assertEqual(node.children.length, 0);
+      assertEqual(node.attrs.length, 0);
+    }
     return new XmlNode("gap", [], []);
   }
   if (node.name === "#comment" || node.name === "pb") {
@@ -939,9 +948,12 @@ export function transformNoteNode(node: XmlNode, parent?: XmlNode): XmlNode {
     // (`<reg>cobet</reg>`, `Suet. <reg>iul</reg>.`).
     assert(transformed.length === 1);
     const child = assertType(transformed[0], isString);
-    assert(/^[a-zA-Zé]/.test(child), child);
+    assert(/^\s*[a-zA-Zé]/.test(child), child);
     return new XmlNode("span", attrs, [
-      child[0].toUpperCase() + child.slice(1),
+      child.replace(
+        /^(\s*)([a-zA-Zé])/,
+        (_, ws: string, ch: string) => ws + ch.toUpperCase()
+      ),
     ]);
   }
   // As in the text, an `abbr` shows only its abbreviated form, flush.
@@ -996,14 +1008,31 @@ export function transformContentNode(
       // Emphasis is italic, or (upstream 2026) small caps: never ignored.
       assert(isFullyHandledRend(rend), rend);
     }
-    const finalRend = canonicalRend(rend);
-    attrs.push(["rend", finalRend], ["rendParent", node.name]);
+    // In Cicero's Epistulae ad Atticum, `<p rend="align(center)">` wraps 8
+    // multi-sentence enclosed letters; keep prose paragraphs left-aligned.
+    const tokens = canonicalRend(rend)
+      .split(" ")
+      .filter((t) => Boolean(t) && !(node.name === "p" && t === "center"));
+    if (tokens.length > 0) {
+      attrs.push(["rend", tokens.join(" ")], ["rendParent", node.name]);
+    }
   }
-  if (node.name === "title") {
-    // A title cited in running text (`qui <title>Ἁλιευτικὰ</title> scripsit`)
-    // is italic, as printed; it is not a heading.
-    if (rend === undefined || !isHandledRend(rend)) {
+  if (
+    node.name === "title" ||
+    node.name === "desc" ||
+    node.name === "term"
+  ) {
+    // A title cited in running text (`qui <title>Ἁλιευτικὰ</title> scripsit`),
+    // an editorial lacuna note (`<desc rend="align(center)">Desunt non pauca.</desc>`),
+    // or a cited linguistic form (`<term>tor</term>`) is italic, as printed.
+    const existingRend = attrs.find(([k]) => k === "rend");
+    if (existingRend === undefined) {
       attrs.push(["rend", "italic"]);
+    } else if (
+      node.name === "desc" &&
+      !existingRend[1].split(" ").includes("italic")
+    ) {
+      existingRend[1] = `${existingRend[1]} italic`;
     }
   }
   if (node.name === "p" || node.name === "ab") {
@@ -1029,6 +1058,14 @@ export function transformContentNode(
         // change the corpus text (see `extractRowText`).
         attrs.push(["linePart", part]);
       }
+    }
+    // Seneca's De Beneficiis 2.5.2 encodes a final half-line as
+    // `<l rend="F" part="N">`.
+    if (
+      !CONTINUED_L_PARTS.has(part ?? "") &&
+      rendTokens(rend ?? "").includes("F")
+    ) {
+      attrs.push(["linePart", "F"]);
     }
   }
   if (node.name === "choice") {
@@ -1115,8 +1152,11 @@ export function transformContentNode(
       attrs.push(["origName", node.name]);
       return new XmlNode("span", attrs, children);
     }
-    assert(/^[a-zA-Zé]/.test(child), child);
-    const capitalized = child[0].toUpperCase() + child.slice(1);
+    assert(/^\s*[a-zA-Zé]/.test(child), child);
+    const capitalized = child.replace(
+      /^(\s*)([a-zA-Zé])/,
+      (_, ws: string, ch: string) => ws + ch.toUpperCase()
+    );
     return new XmlNode("span", attrs, [capitalized]);
   }
   if (QUOTE_NODES.has(node.name)) {
@@ -1193,8 +1233,24 @@ export function transformContentNode(
     case "gap":
       assert(children.length === 0);
       return new XmlNode("gap", attrs, children);
-    case "label":
-      assert(children.length === 1);
+    case "label": {
+      const nonWhitespace = children.filter(
+        (c) => typeof c !== "string" || c.trim().length > 0
+      );
+      assert(nonWhitespace.length >= 1);
+      if (nonWhitespace.length === 1 && children.length === 1) {
+        return new XmlNode("b", attrs, children);
+      }
+      const labelChildren: XmlChild<ProcessedWorkContentNodeType>[] = [];
+      nonWhitespace.forEach((child, idx) => {
+        if (idx > 0) {
+          labelChildren.push(new XmlNode("br", [], []));
+        }
+        labelChildren.push(child);
+      });
+      return new XmlNode("b", attrs, labelChildren);
+    }
+    case "lemma":
       return new XmlNode("b", attrs, children);
     case "w":
     case "l":
@@ -1233,6 +1289,9 @@ export function transformContentNode(
     case "body":
     case "p":
     case "title":
+    case "desc":
+    case "ref":
+    case "term":
     // TODO: Eventually we should probably link with these, but for now
     // we don't really need to do anything.
     // eslint-disable-next-line no-fallthrough

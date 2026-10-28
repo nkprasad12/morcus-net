@@ -70,6 +70,7 @@ const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
   ["Silius Italicus", "silius_italicus"],
   ["Cato, Marcus Porcius", "cato"],
   ["Jerome, Saint", "jerome"],
+  ["Augustine, Saint", "augustine"],
   // Slugs from before `urlify` dropped punctuation, kept so links still work.
   ["Curtius Rufus, Quintus", "curtius_rufus,_quintus"],
   ["Florus, Lucius Annaeus", "florus,_lucius_annaeus"],
@@ -219,6 +220,7 @@ export const URL_NAME_BY_WORK_ID = new Map<string, string>([
   ["stoa0058.stoa025.perseus-lat1", "de_trinitate"],
   ["stoa0058.stoa028.perseus-lat1", "utrum_pater_et_filius"],
   ["stoa0162.stoa004.perseus-lat2", "epistulae"],
+  ["stoa0040.stoa011.perseus-lat2", "epistulae"],
   ["phi0845.phi002.perseus-lat3", "res_rustica"],
   ["stoa0261.stoa002.perseus-lat1", "epistulae"],
 ]);
@@ -237,6 +239,7 @@ export const SHORT_TITLE_BY_WORK_ID = new Map<string, string>([
   ["stoa0058.stoa025.perseus-lat1", "De Trinitate"],
   ["stoa0058.stoa028.perseus-lat1", "Utrum Pater et Filius"],
   ["stoa0162.stoa004.perseus-lat2", "Epistulae"],
+  ["stoa0040.stoa011.perseus-lat2", "Epistulae"],
   ["phi0845.phi002.perseus-lat3", "Res Rustica"],
   ["stoa0261.stoa002.perseus-lat1", "Epistulae"],
 ]);

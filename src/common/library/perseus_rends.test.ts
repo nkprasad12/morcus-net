@@ -85,8 +85,13 @@ describe("rend tokens", () => {
   });
 
   it.each([
+    ["align(center)", "center"],
     ["align(indent)", "indent"],
     ["align(blockquote)", "blockquote"],
+    ["align(blockquote", "blockquote"],
+    ["aign(blockquote); single; merge", "blockquote"],
+    ["smallcaos", "smallcaps"],
+    ["dateline", "italic"],
     ["single; smallcaps", "smallcaps"],
     ["smallcaps; single", "smallcaps"],
     ["align(blockquote); single", "blockquote"],
@@ -105,8 +110,10 @@ describe("rend tokens", () => {
     "merge; single",
     "single; spacing",
     "spacing",
-    "align(center)",
     "align(right)",
+    "opener",
+    "salute",
+    "F",
   ])("knows but does not render %s", (rend) => {
     expect(isKnownRend(rend)).toBe(true);
     expect(isHandledRend(rend)).toBe(false);
@@ -129,6 +136,8 @@ describe("transformContentNode with upstream rend spellings", () => {
   it.each([
     ["p", "align(indent)", "indent"],
     ["l", "align(indent)", "indent"],
+    ["l", "align(center)", "center"],
+    ["label", "align(center)", "center"],
     ["quote", "align(blockquote)", "blockquote"],
     ["quote", "single; smallcaps", "smallcaps"],
     ["emph", "smallcaps", "smallcaps"],
@@ -139,6 +148,13 @@ describe("transformContentNode with upstream rend spellings", () => {
     expect(aliased.attrs).toEqual(original.attrs);
     expect(aliased.getAttr("rend")).toBe(canonical);
     expect(aliased.getAttr("rendParent")).toBe(name);
+  });
+
+  it("ignores align(center) on <p> while preserving center + italic on <desc>", () => {
+    expect(transform("p", "align(center)").getAttr("rend")).toBeUndefined();
+    expect(transform("desc", "align(center)").getAttr("rend")).toBe(
+      "center italic"
+    );
   });
 
   it("emits every handled token of a compound rendition", () => {

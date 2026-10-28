@@ -10,9 +10,15 @@ const HANDLED_REND = new Set<string>([
   "overline",
   "bold",
   "sup",
-  // Upstream spellings of the renditions above; see `canonicalRend`.
+  "center",
+  "dateline",
+  // Upstream spellings and typos of the renditions above; see `canonicalRend`.
+  "align(center)",
   "align(indent)",
   "align(blockquote)",
+  "align(blockquote",
+  "aign(blockquote)",
+  "smallcaos",
   "super",
   "superscript",
 ]);
@@ -25,8 +31,13 @@ const HANDLED_REND = new Set<string>([
 const REND_ALIASES = new Map<string, string>([
   ["ital", "italic"],
   ["italics", "italic"],
+  ["dateline", "italic"],
+  ["align(center)", "center"],
   ["align(indent)", "indent"],
   ["align(blockquote)", "blockquote"],
+  ["align(blockquote", "blockquote"],
+  ["aign(blockquote)", "blockquote"],
+  ["smallcaos", "smallcaps"],
   ["super", "sup"],
   ["superscript", "sup"],
 ]);
@@ -49,13 +60,15 @@ const KNOWN_REND = new Set<string>([
   ...QUOTE_RENDS,
   // Letter-spaced (Sperrdruck) quotations in the 2026 upstream re-encoding.
   "spacing",
-  // Added upstream to `<head>`s and `<label>`s, which render as headings.
-  "align(center)",
   // Short verse fragments set flush right in the edition (De Oratore 3).
   "align(right)",
   // A letter's opening salutation on a `<label>` (Historia Augusta, Ausonius'
-  // Mosella), which already renders on a line of its own.
+  // Mosella, Cicero's Epistulae), which already renders on a line of its own.
   "opener",
+  "salute",
+  // Final half-line encoded as `<l rend="F" part="N">` in Seneca's De Beneficiis;
+  // handled on `<l>` in `transformContentNode`.
+  "F",
   // Indirect discourse on a `<q>` (Boethius), set without quotation marks;
   // see `transformContentNode`.
   "undirect",
