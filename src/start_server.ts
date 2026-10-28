@@ -12,7 +12,10 @@ import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { readFileSync } from "fs";
 import { createV2Router } from "@/web/ui/app_router.server";
-import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
+import {
+  sqliteBacking,
+  warmLookupPages,
+} from "@/common/dictionaries/sqlite_backing";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { MorceusCruncher } from "@/morceus/crunch";
@@ -77,8 +80,11 @@ function startMorcusServer(): Promise<http.Server> {
   // created on first use, or by `warmup` once the server is listening, in the
   // order registered here.
   const warmup = new Warmup();
-  const dictBacking = (name: string, pathVar: string) =>
-    lazyBacking(warmup.lazy(name, () => sqliteBacking(envVar(pathVar))));
+  const dictFiles: Array<[name: string, pathVar: string]> = [];
+  const dictBacking = (name: string, pathVar: string) => {
+    dictFiles.push([name, pathVar]);
+    return lazyBacking(warmup.lazy(name, () => sqliteBacking(envVar(pathVar))));
+  };
 
   // `morceus` is declared below so that it warms after the databases.
   const inflections: InflectionProvider = (word) => morceus.get()(word);
@@ -117,6 +123,12 @@ function startMorcusServer(): Promise<http.Server> {
   });
   const corpusHandler = rustCorpusApiHandler();
   warmup.add(corpusHandler.initialize);
+  // Optional, so last: pull the pages dictionary lookups use into the OS page
+  // cache (~260 ms for all of them, one dictionary per turn), so the first
+  // lookups after a cold start wait less on disk.
+  for (const [name, pathVar] of dictFiles) {
+    warmup.add(() => warmLookupPages(envVar(pathVar)), `${name} lookup pages`);
+  }
 
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
   const mongodbUri = process.env.MONGODB_URI;

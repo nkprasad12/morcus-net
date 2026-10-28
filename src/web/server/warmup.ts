@@ -43,9 +43,20 @@ export class Warmup {
     return { get };
   }
 
-  /** Adds a task that manages its own caching (and timing, if any). */
-  add(task: () => void): void {
-    this.tasks.push(task);
+  /**
+   * Adds a task that manages its own caching. With a `name`, logs how long it
+   * took; without one, the task is expected to log its own timing (if any).
+   */
+  add(task: () => void, name?: string): void {
+    if (name === undefined) {
+      this.tasks.push(task);
+      return;
+    }
+    this.tasks.push(() => {
+      const start = performance.now();
+      task();
+      this.log(`${name}: ${(performance.now() - start).toFixed(2)} ms`);
+    });
   }
 
   /** Runs every registered task in order, one per `setImmediate` turn. */

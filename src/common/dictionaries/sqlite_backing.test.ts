@@ -4,6 +4,7 @@ import { SqliteDb } from "@/common/sqlite/sql_db";
 import {
   sqliteBacking,
   SqliteDict,
+  warmLookupPages,
 } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 
@@ -37,6 +38,30 @@ describe("SqliteDict", () => {
 
     expect(result).not.toContain("foo");
     expect(result).toContain("bar");
+  });
+
+  test("warmLookupPages reads a saved dictionary without changing it", async () => {
+    SqliteDict.save(
+      [
+        { id: "n1", keys: ["amo"], entry: "love" },
+        {
+          id: "n2",
+          keys: ["habeo"],
+          entry: "have",
+          derivedKeys: [["s1", ["habitus"]]],
+        },
+      ],
+      TEMP_FILE
+    );
+
+    expect(() => warmLookupPages(TEMP_FILE)).not.toThrow();
+    expect(sqliteBacking(TEMP_FILE).entriesForIds(["n2"])).toEqual([
+      { id: "n2", entry: "have" },
+    ]);
+  });
+
+  test("warmLookupPages throws for a missing file", async () => {
+    expect(() => warmLookupPages("missing.db")).toThrow(/missing\.db/);
   });
 
   test("save writes to SQL table", async () => {

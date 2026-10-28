@@ -38,6 +38,20 @@ describe("Warmup", () => {
     expect(log.mock.calls[0][0]).toMatch(/^Gesner init: \d+\.\d{2} ms$/);
   });
 
+  test("add logs a named task's time and leaves unnamed ones silent", async () => {
+    const log = jest.fn();
+    const warmup = new Warmup(log);
+    warmup.add(() => {}, "Gesner lookup pages");
+    warmup.add(() => {});
+
+    warmup.start();
+    await drainImmediates();
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls[0][0]).toMatch(
+      /^Gesner lookup pages: \d+\.\d{2} ms$/
+    );
+  });
+
   test("start runs tasks in order, one per turn, without re-creating", async () => {
     const warmup = new Warmup(() => {});
     const order: string[] = [];
