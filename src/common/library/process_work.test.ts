@@ -729,6 +729,54 @@ describe("divideWork", () => {
     expect(pages).toHaveLength(0);
   });
 
+  it("makes a work cited by line alone a single page", () => {
+    const rows = toRows(["", "1", "2", "3"]);
+
+    expect(divideWork(rows, ["line"])).toStrictEqual<WorkPage[]>([
+      { id: ["1"], rows: [0, 4] },
+    ]);
+  });
+
+  it("keeps one page per section for other single-level schemes", () => {
+    const rows = toRows(["1", "2"]);
+
+    expect(divideWork(rows, ["section"])).toStrictEqual<WorkPage[]>([
+      { id: ["1"], rows: [0, 1] },
+      { id: ["2"], rows: [1, 2] },
+    ]);
+  });
+
+  it("puts top-level headings before the first page on that page", () => {
+    const rows = toRows(["", "", "1", "1.1", "1.2", "2.1"]);
+
+    const pages = divideWork(rows, ["chapter", "section"], new Set([0, 1]));
+
+    expect(pages).toStrictEqual<WorkPage[]>([
+      { id: ["1"], rows: [0, 5] },
+      { id: ["2"], rows: [5, 6] },
+    ]);
+  });
+
+  it("leaves a top-level non-heading before the first page off the pages", () => {
+    // Livy's index of sigla, then the work's title heading.
+    const rows = toRows(["", "", "1.1"]);
+
+    const pages = divideWork(rows, ["chapter", "section"], new Set([1]));
+
+    expect(pages).toStrictEqual<WorkPage[]>([{ id: ["1"], rows: [1, 3] }]);
+  });
+
+  it("does not attach top-level headings between pages to the next page", () => {
+    const rows = toRows(["1.1", "", "2.1"]);
+
+    const pages = divideWork(rows, ["chapter", "section"], new Set([1]));
+
+    expect(pages).toStrictEqual<WorkPage[]>([
+      { id: ["1"], rows: [0, 1] },
+      { id: ["2"], rows: [2, 3] },
+    ]);
+  });
+
   it("handles clean division", () => {
     const rows = toRows(["1.1", "1.2", "2.1", "2.2"]);
     const textParts = ["chapter", "section"];
@@ -1180,6 +1228,22 @@ describe("Phase 1 markup in the text", () => {
     expect(row.toString()).toContain("content");
   });
 
+  it("strips leading br elements in blockquotes while preserving internal ones", () => {
+    const rowWithInternal = onlyRow(
+      `<quote rend="blockquote"><lb/>first line<lb/>second line</quote>`
+    );
+    expect(rowWithInternal.toString()).toBe(
+      `<span><span rend="blockquote" rendParent="quote">first line<br></br>second line</span></span>`
+    );
+
+    const rowWithMultipleLeading = onlyRow(
+      `<quote rend="blockquote"> <lb/> <lb/>first line</quote>`
+    );
+    expect(rowWithMultipleLeading.toString()).toBe(
+      `<span><span rend="blockquote" rendParent="quote">first line</span></span>`
+    );
+  });
+
   it("keeps quotes on quote with rend=merge (treated as no-op)", () => {
     const row = onlyRow(`<quote rend="merge">content</quote>`);
     expect(row.toString()).toContain("“");
@@ -1283,14 +1347,20 @@ describe("note n/target pairing", () => {
     expect(markers.map((m) => m.getAttr("noteId"))).toEqual(["0", "1"]);
   });
 
-  it("treats every <note xml:id> as a body in a document with targets", () => {
+  it("keeps a <note xml:id> that no target names as an inline note", () => {
     const work = process(
-      `a <note target="#t"/> b <note xml:id="t">body</note> <note xml:id="u">orphan</note>`
+      `a <note target="#t"/> b <note xml:id="t">body</note> c <note xml:id="u">orphan</note>`
     );
+    // The body is detached and paired with its target, which comes first;
+    // the orphan (its anchor lost upstream) stays where it stands.
     expect(work.notes?.map((n) => n.toString())).toEqual([
       expect.stringContaining("body"),
+      expect.stringContaining("orphan"),
     ]);
-    expect(work.rows[0][1].toString()).not.toContain("body");
+    const row = work.rows[0][1].toString();
+    expect(row).not.toContain("body");
+    expect(row).not.toContain("orphan");
+    expect(row).toContain('noteId="1"');
   });
 
   it("allows the same body to be referenced twice", () => {
@@ -1438,6 +1508,82 @@ describe("processTei2 with citeStructure point levels", () => {
   });
 });
 
+describe("Phase 2B markup and notes", () => {
+  function inSection(content: string): string {
+    return `<div n="1" type="textpart" subtype="section">${content}</div>`;
+  }
+
+  function process(body: string) {
+    return processTei2(testRootWithNote(body), { workId: WORK_ID });
+  }
+
+  it("renders a body <title> inline in italics, not as a heading", () => {
+    const row = process(
+      inSection(`<p>qui <title>Halieutica</title> scripsit</p>`)
+    ).rows[0][1].toString();
+    expect(row).not.toContain("sectionHead");
+    expect(row).toMatch(/rend="italic"[^>]*>Halieutica</);
+  });
+
+  it("marks prose paragraphs for the reader", () => {
+    const row = process(inSection(`<p>prose</p>`)).rows[0][1];
+    expect(row.toString()).toContain('para="1"');
+  });
+
+  it("sets indirect discourse (q@undirect) without quotation marks", () => {
+    const row = process(
+      inSection(`<p>ut <q rend="undirect">si aequalia</q> dicas</p>`)
+    ).rows[0][1].toString();
+    expect(row).toContain("si aequalia");
+    expect(row).not.toContain("“");
+  });
+
+  it("converts Beta Code in <foreign lang='greek'> (no xml: prefix)", () => {
+    const row = process(
+      inSection(`<p>vinum <foreign lang="greek">pnhi/on</foreign></p>`)
+    ).rows[0][1].toString();
+    expect(row).not.toContain("pnhi/on");
+    expect(row).toMatch(/[\u0370-\u03ff\u1f00-\u1fff]/);
+  });
+
+  it("leaves Unicode Greek in <foreign xml:lang='greek'> unchanged", () => {
+    const row = process(
+      inSection(`<p><foreign xml:lang="greek">γνῶθι σεαυτόν</foreign></p>`)
+    ).rows[0][1].toString();
+    expect(row).toContain("γνῶθι σεαυτόν");
+  });
+
+  it("drops empty notes and OCR'd marginal line numbers", () => {
+    const work = process(
+      inSection(
+        `<p>a <note n="3"/> b <note n="marg ">35</note> c <note n="marg">see 35</note></p>`
+      )
+    );
+    expect(work.notes?.map((n) => n.toString())).toEqual([
+      expect.stringContaining("see 35"),
+    ]);
+  });
+
+  it("shows a reference carried in an empty note's @n (Tertullian)", () => {
+    const work = process(
+      inSection(`<p>nubere in domino <note n="I Cor. VII, 39."/> licet</p>`)
+    );
+    expect(work.notes?.map((n) => n.toString())).toEqual([
+      expect.stringContaining("I Cor. VII, 39."),
+    ]);
+  });
+
+  it("puts a docAuthor byline as a heading on the first page", () => {
+    const work = processTei2(
+      testRoot(`<docAuthor>Flavius Vopiscus</docAuthor>${BODY_WITH_BOOK_ONLY}`),
+      { workId: WORK_ID }
+    );
+    expect(work.rows[0][0]).toEqual([]);
+    expect(work.rows[0][1].name).toBe("head");
+    expect(work.pages[0].rows[0]).toBe(0);
+  });
+});
+
 describe("assertOutputInvariants", () => {
   const row = (id: string): ProcessedWork2["rows"][number] => [
     id.length === 0 ? [] : id.split("."),
@@ -1451,6 +1597,28 @@ describe("assertOutputInvariants", () => {
         rows,
         textParts: ["book", "chapter"],
         pages: divideWork(rows, ["book", "chapter"]),
+      })
+    ).not.toThrow();
+  });
+
+  it("rejects a citation that occurs in two places (Cato's two chapter 1s)", () => {
+    const rows = [row("1.1"), row("1.2"), row("1.1")];
+    expect(() =>
+      assertOutputInvariants({
+        rows,
+        textParts: ["book", "chapter"],
+        pages: [{ id: ["1"], rows: [0, 3] }],
+      })
+    ).toThrow(/Citation 1.1 occurs twice/);
+  });
+
+  it("accepts a citation spread over consecutive rows", () => {
+    const rows = [row("1.1"), row("1.1"), row("1.2")];
+    expect(() =>
+      assertOutputInvariants({
+        rows,
+        textParts: ["book", "chapter"],
+        pages: [{ id: ["1"], rows: [0, 3] }],
       })
     ).not.toThrow();
   });

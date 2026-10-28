@@ -53,6 +53,12 @@ const KNOWN_REND = new Set<string>([
   "align(center)",
   // Short verse fragments set flush right in the edition (De Oratore 3).
   "align(right)",
+  // A letter's opening salutation on a `<label>` (Historia Augusta, Ausonius'
+  // Mosella), which already renders on a line of its own.
+  "opener",
+  // Indirect discourse on a `<q>` (Boethius), set without quotation marks;
+  // see `transformContentNode`.
+  "undirect",
 ]);
 
 const ALL_KNOWN_REND = new Set<string>([...HANDLED_REND, ...KNOWN_REND]);

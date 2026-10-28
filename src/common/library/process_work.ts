@@ -56,6 +56,7 @@ const TABLE_ITEM_CHILDREN = new Set<string>(["date"]);
 export const SWITCH_CONTENT_NODES = new Set<string>([
   "lb",
   "head",
+  "docAuthor",
   "gap",
   "label",
   "w",
@@ -456,20 +457,54 @@ function isNoteBodyByN(note: XmlNode, targets: ReadonlySet<string>): boolean {
   );
 }
 
+/**
+ * The text of an empty `<note>` that carries its content in `@n` rather than
+ * a footnote number: Tertullian's scripture references
+ * (`<note n="I Cor. VII, 39."/>`).
+ */
+function referenceInN(node: XmlNode): string | undefined {
+  const n = node.getAttr("n")?.trim();
+  return n !== undefined &&
+    /\p{L}/u.test(n) &&
+    n.toLowerCase() !== "marg" &&
+    textWeight(node) === 0
+    ? n
+    : undefined;
+}
+
+/**
+ * Whether `node` is a footnote with nothing to show, which is dropped rather
+ * than left as a dangling marker: an empty `<note n="..."/>` (Ausonius), or a
+ * printed edition's marginal line number that OCR turned into a note
+ * (`<note n="marg">35</note>`; Ausonius, Claudian, the Appendix Vergiliana).
+ * Never a `<note target>` anchor, which is empty by design.
+ */
+export function isVacuousNote(node: XmlNode): boolean {
+  if (node.name !== "note" || node.getAttr("target") !== undefined) {
+    return false;
+  }
+  if (textWeight(node) === 0 && node.findDescendants("gap").length === 0) {
+    return referenceInN(node) === undefined;
+  }
+  return (
+    node.getAttr("n")?.trim().toLowerCase() === "marg" &&
+    node.children.every((c) => typeof c === "string") &&
+    /^\s*\d+\s*$/.test(node.children.join(""))
+  );
+}
+
 // Creates a deep copy of the root, while also extracting out nodes for later assembly.
-// `<note xml:id>`s are detached bodies only in a document that has
-// `<note target>` references at all; otherwise they are ordinary inline notes
-// (Ovid's Ex Ponto gives every apparatus note an `xml:id` and has no targets).
-//
-// TODO: In a document with targets, a `<note xml:id>` that no target names
-// (its anchor was lost upstream) is still extracted and so dropped:
-// Apuleius' Metamorphoses has 8, Florus 19, Columella's Res Rustica 289.
+// A `<note xml:id>` is a detached body only if some `<note target>` names it;
+// otherwise it is an ordinary inline note where it stands (Ovid's Ex Ponto
+// gives every apparatus note an `xml:id` and has no targets, and Columella,
+// Florus and Apuleius' Metamorphoses have bodies whose anchors were lost
+// upstream, which sit at the Loeb page break they belong to).
 //
 // `originals` maps each copy back to the node it was copied from, so that the
 // citation spine (computed on the original tree) can be looked up.
 function deepcopyAndExtract(
   root: XmlNode,
-  extractXmlIdNotes: boolean,
+  targets: ReadonlySet<string>,
   targetsByN: ReadonlySet<string>,
   originals: Map<XmlNode, XmlNode>
 ): DeepcopiedAndExtracted {
@@ -481,11 +516,8 @@ function deepcopyAndExtract(
       children.push(child);
       continue;
     }
-    if (
-      extractXmlIdNotes &&
-      child.name === "note" &&
-      child.getAttr("xml:id") !== undefined
-    ) {
+    const xmlId = child.name === "note" ? child.getAttr("xml:id") : undefined;
+    if (xmlId !== undefined && targets.has(normalizeNoteTarget(xmlId))) {
       notesWithXmlId.push(child.deepcopy());
       continue;
     }
@@ -495,7 +527,7 @@ function deepcopyAndExtract(
     }
     const childResult = deepcopyAndExtract(
       child,
-      extractXmlIdNotes,
+      targets,
       targetsByN,
       originals
     );
@@ -535,7 +567,7 @@ function preprocessTree(
   const originals = new Map<XmlNode, XmlNode>();
   const { root, notesWithXmlId, notesWithN } = deepcopyAndExtract(
     originalRoot,
-    allTargets.size > 0,
+    allTargets,
     targetsByN,
     originals
   );
@@ -611,7 +643,12 @@ function preprocessTree(
         // If there's no target, treat it as a regular note. This means we expect that it has
         // content as its children. In this case, we keep the original node to mark the location,
         // and store the content separately.
-        notes.push(top.deepcopy());
+        const reference = referenceInN(top);
+        notes.push(
+          reference === undefined
+            ? top.deepcopy()
+            : new XmlNode("note", [...top.attrs], [reference])
+        );
         top.attrs.push(["noteId", noteId]);
         // This is a way to remove all children from the node.
         // `note` is included in the tree to mark the position,
@@ -662,7 +699,7 @@ function preprocessTree(
         assertEqual(child.children.length, 0);
         continue;
       }
-      if (SKIP_NODES.has(child.name)) {
+      if (SKIP_NODES.has(child.name) || isVacuousNote(child)) {
         continue;
       }
       assertEqual(child.getAttr("parent"), undefined);
@@ -750,9 +787,27 @@ function isEditorialNode(node: XmlNode): boolean {
   return (
     node.name === "head" ||
     node.name === "label" ||
+    node.name === "docAuthor" ||
     (DIVISION_ELEMENTS.has(node.name) &&
       node.getAttr("n") === undefined &&
       !EDITION_TYPES.has(node.getAttr("type") ?? ""))
+  );
+}
+
+/**
+ * Whether `node`, a row's root, is a heading: a `<head>`, `<label>` or
+ * `<docAuthor>` byline, or an unnumbered `opener` division (a letter's
+ * dateline and salutation, as in Q. Cicero's Commentariolum). See
+ * `divideWork`.
+ */
+function isHeadingNode(node: XmlNode): boolean {
+  if (["head", "label", "docAuthor"].includes(node.name)) {
+    return true;
+  }
+  return (
+    DIVISION_ELEMENTS.has(node.name) &&
+    node.getAttr("n") === undefined &&
+    (node.getAttr("subtype") === "opener" || node.getAttr("type") === "opener")
   );
 }
 
@@ -945,7 +1000,16 @@ export function transformContentNode(
     attrs.push(["rend", finalRend], ["rendParent", node.name]);
   }
   if (node.name === "title") {
-    attrs.push(["sectionHead", "1"]);
+    // A title cited in running text (`qui <title>Ἁλιευτικὰ</title> scripsit`)
+    // is italic, as printed; it is not a heading.
+    if (rend === undefined || !isHandledRend(rend)) {
+      attrs.push(["rend", "italic"]);
+    }
+  }
+  if (node.name === "p" || node.name === "ab") {
+    // Marks prose, so that a verse work's reader can set a prose preface or
+    // epilogue as a paragraph rather than a verse line (`work_preprocessor`).
+    attrs.push(["para", "1"]);
   }
   const hasSiblingParagraphs =
     node.name === "p" &&
@@ -1056,22 +1120,63 @@ export function transformContentNode(
     return new XmlNode("span", attrs, [capitalized]);
   }
   if (QUOTE_NODES.has(node.name)) {
-    const normRends = canonicalRend(rend ?? "").split(" ").filter(Boolean);
+    const normRends = canonicalRend(rend ?? "")
+      .split(" ")
+      .filter(Boolean);
     const isBlockquote = normRends.includes("blockquote");
+    // `undirect` marks indirect discourse (Boethius' De Hebdomadibus), which
+    // the printed edition sets without quotation marks.
+    const isIndirect = rendTokens(rend ?? "").includes("undirect");
+    let quoteChildren = children;
+    if (isBlockquote) {
+      // Perseus TEI sometimes places <lb/> (or <lb/><lb/>) at the very start
+      // of <quote rend="blockquote"> to force a line break in inline
+      // renderers; since .blockquote is already display: block with top
+      // margin, a leading <br> inside .blockquote produces an unintended blank
+      // line before the quote.
+      const firstContentIdx = children.findIndex(
+        (c) =>
+          (typeof c === "string" && c.trim().length > 0) ||
+          (typeof c !== "string" && c.name !== "br")
+      );
+      if (firstContentIdx !== -1) {
+        const hasLeadingBr = children
+          .slice(0, firstContentIdx)
+          .some((c) => typeof c !== "string" && c.name === "br");
+        if (hasLeadingBr) {
+          quoteChildren = children.slice(firstContentIdx);
+        }
+      } else {
+        const hasBr = children.some(
+          (c) => typeof c !== "string" && c.name === "br"
+        );
+        if (hasBr) {
+          quoteChildren = [];
+        }
+      }
+    }
     return new XmlNode(
       "span",
       attrs,
       // We don't need to add quotes even if the node is a `quote` since
       // the blockquote will emphasize enough.
-      isBlockquote ? children : ["“", ...children, "”"]
+      isBlockquote || isIndirect ? quoteChildren : ["“", ...quoteChildren, "”"]
     );
   }
   if (node.name === "foreign") {
-    const lang = node.getAttr("xml:lang");
+    const lang = node.getAttr("xml:lang") ?? node.getAttr("lang");
     if (lang === "greek") {
       assertEqual(node.children.length, 1);
       const child = assertType(node.children[0], isString);
-      return new XmlNode("span", [], [betaCodeToGreek(child)]);
+      // `convertGrcBetaCode` has usually converted it already; only text that
+      // is still Beta Code (ASCII, with a letter) is converted here.
+      // eslint-disable-next-line no-control-regex
+      const isBetaCode = /^[\x00-\x7F]*$/.test(child) && /[a-zA-Z]/.test(child);
+      return new XmlNode(
+        "span",
+        [],
+        [isBetaCode ? betaCodeToGreek(child) : child]
+      );
     }
   }
   if (!SWITCH_CONTENT_NODES.has(node.name)) {
@@ -1081,6 +1186,9 @@ export function transformContentNode(
     case "lb":
       return new XmlNode("br", [], []);
     case "head":
+    case "docAuthor":
+      // A `docAuthor` byline (the Historia Augusta's lives) reads as a
+      // heading over the text.
       return new XmlNode("head", attrs, children);
     case "gap":
       assert(children.length === 0);
@@ -1245,7 +1353,10 @@ function processWorkBodyDetailed(
   originalRoot: XmlNode,
   spine: Pick<CitationSpine, "containers">,
   options: ProcessForDisplayOptions
-): Pick<ProcessedWork2, "rows" | "notes"> & { editorialRows: Set<number> } {
+): Pick<ProcessedWork2, "rows" | "notes"> & {
+  editorialRows: Set<number>;
+  headingRows: Set<number>;
+} {
   const data = preprocessTree(originalRoot, spine, options);
   const rawRows = convertToRows(data.root, data);
   // Coverage: every piece of text in the body lands in some row.
@@ -1253,6 +1364,7 @@ function processWorkBodyDetailed(
   assertEqual(rowWeight, textWeight(data.root), "Body text missing from rows");
   const rows: ProcessedWork2["rows"] = [];
   const editorialRows = new Set<number>();
+  const headingRows = new Set<number>();
   let currentLg: undefined | [string, string[]] = undefined;
   const addSpaceRowIfNeeded = () => {
     if (currentLg !== undefined) {
@@ -1274,6 +1386,9 @@ function processWorkBodyDetailed(
     if (editorial) {
       editorialRows.add(rows.length);
     }
+    if (isHeadingNode(rowRoot)) {
+      headingRows.add(rows.length);
+    }
     rows.push([id, processRowContent(rowRoot)]);
   }
   addSpaceRowIfNeeded();
@@ -1281,6 +1396,7 @@ function processWorkBodyDetailed(
     rows,
     notes: data.notes.map((note) => transformNoteNode(note)),
     editorialRows,
+    headingRows,
   };
 }
 
@@ -1288,12 +1404,28 @@ function startsWith(id: string[], prefix: string[]): boolean {
   return prefix.every((part, i) => id[i] === part);
 }
 
-/** Exported for unit testing. */
+/**
+ * Splits `rows` into pages: one per section one level above the leaf (one per
+ * section for a single-level scheme), except that a work cited by line alone
+ * is a single page, as a poem is in Hypotactic.
+ *
+ * `headingRows` are the indices of heading rows (see `isHeadingNode`); a run
+ * of them at the top level before the first page joins that page, so a work's
+ * title heading or opening byline is not lost.
+ *
+ * Exported for unit testing.
+ */
 export function divideWork(
   rows: ProcessedWork2["rows"],
-  textParts: string[]
+  textParts: string[],
+  headingRows: ReadonlySet<number> = new Set()
 ): WorkPage[] {
   const n = textParts.length;
+  if (n === 1 && textParts[0] === "line") {
+    // One page per line is unreadable (the Appendix Vergiliana's `.//lb`
+    // spines); a whole poem per page is what Hypotactic does too.
+    return rows.length === 0 ? [] : [{ id: ["1"], rows: [0, rows.length] }];
+  }
   const idLength = n === 1 ? n : n - 1;
   const pages: WorkPage[] = [];
   const addedPages = new Set<string>();
@@ -1343,6 +1475,16 @@ export function divideWork(
         } else {
           pendingHeaderStartIdx ??= i;
         }
+      } else if (
+        pageId.length === 0 &&
+        pages.length === 0 &&
+        headingRows.has(i)
+      ) {
+        // A top-level heading before the first page (a speech's title, the
+        // Historia Augusta's `docAuthor` byline) opens that page. Unnumbered
+        // divisions there (Livy's index of sigla) are not headings and stay
+        // off the pages, as do top-level rows between pages.
+        pendingHeaderStartIdx ??= i;
       } else {
         pendingHeaderStartIdx = undefined;
       }
@@ -1423,7 +1565,8 @@ export function convertGrcBetaCode(root: XmlNode): void {
   function walk(node: XmlNode, inConvertedSubtree: boolean): void {
     const isSkip = BETA_CODE_SKIP_NODES.has(node.name);
     const isConverted = inConvertedSubtree && !isSkip;
-    const lang = node.getAttr("xml:lang");
+    // Apicius writes `lang` without the `xml:` prefix.
+    const lang = node.getAttr("xml:lang") ?? node.getAttr("lang");
     let convertedHere = false;
     if (!isConverted && (lang === "grc" || lang === "greek")) {
       const text = betaCodeCandidateText(node);
@@ -1490,6 +1633,23 @@ export function assertOutputInvariants(
         )}`
     );
   }
+  // Each citation names one passage: a citable id occurs in a single run of
+  // consecutive rows. A passage the editor transposed and also printed, struck
+  // out, where it was transmitted (Silius 11.453-458), or two divisions with
+  // the same number (Cato's preface and chapter 1), would otherwise give two
+  // `#sec-` anchors and break corpus search-to-reader links.
+  const seenCitable = new Set<string>();
+  rows.forEach(([id], i) => {
+    if (!isCitable(id)) {
+      return;
+    }
+    const key = id.join(".");
+    if (i > 0 && areArraysEqual(rows[i - 1][0], id)) {
+      return;
+    }
+    assert(!seenCitable.has(key), () => `Citation ${key} occurs twice`);
+    seenCitable.add(key);
+  });
   // There are pages, their ids are unique, and they cover every citable row.
   assert(pages.length > 0, "No pages");
   const pageIds = new Set(pages.map((page) => page.id.join(".")));
@@ -1563,12 +1723,12 @@ export function processTei2(
     patchTree: createPatchTree(options?.patches ?? [], textParts),
     workId: metadata.workId,
   };
-  const { rows, notes, editorialRows } = processWorkBodyDetailed(
+  const { rows, notes, editorialRows, headingRows } = processWorkBodyDetailed(
     body,
     spine,
     processOptions
   );
-  const pages = divideWork(rows, textParts);
+  const pages = divideWork(rows, textParts, headingRows);
   assertOutputInvariants(
     { rows, pages, textParts },
     { editorialRows, leafIds: spine.leafIds }
