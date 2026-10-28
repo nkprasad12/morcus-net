@@ -8,28 +8,21 @@ import { envVar } from "@/common/env_vars";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 import { MongoLogger } from "@/web/telemetry/mongo_logger";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
-import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { readFileSync } from "fs";
 import { createV2Router } from "@/web/ui/app_router.server";
 import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
+import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
 import { MorceusTables } from "@/morceus/cruncher_tables";
-import { timed } from "@/common/timing/timed_invocation";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { CruncherOptions } from "@/morceus/cruncher_types";
 import { NumeralDict } from "@/common/dictionaries/numeral/numeral_dict";
 import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arnold_dict";
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
-import {
-  getFormattedMemoryUsage,
-  lruMemoize,
-  singletonOf,
-} from "@/common/misc_utils";
+import { getFormattedMemoryUsage, lruMemoize } from "@/common/misc_utils";
 import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
-import { assertEqual } from "@/common/assert";
 import { macronizerEngineFromEnv } from "@/web/ui/macronizer/macronizer_engine.server";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
@@ -37,28 +30,23 @@ import { ForcelliniDict } from "@/common/dictionaries/forcellini/forcellini_dict
 import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
 import { openCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 import { openStaticPagesDb } from "@/web/ui/core/server/static_pages.server";
+import { Warmup, type Lazy } from "@/web/server/warmup";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
 
-function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
-  let delegate: Dictionary | null = null;
-  const cachedProvider = () => {
-    if (delegate === null) {
-      delegate = provider();
-      assertEqual(delegate.info, info, "Bad configuration");
-    }
-    return delegate;
-  };
-  // Allow some fuzz here so that when we start up dev and prod instances at the same time, we are
-  // not initializing all databases across all instances at the exact same time.
-  setTimeout(() => cachedProvider(), randInRange(25, 150));
+/** A dictionary backing that opens its database on first use. */
+function lazyBacking(
+  backing: Lazy<StoredDictBacking<"Sync">>
+): StoredDictBacking<"Sync"> {
   return {
-    info: info,
-    getEntry: (...args) => cachedProvider().getEntry(...args),
-    getEntryById: (...args) => cachedProvider().getEntryById(...args),
-    getCompletions: (...args) => cachedProvider().getCompletions(...args),
+    allEntryNames: () => backing.get().allEntryNames(),
+    matchesForCleanName: (name) => backing.get().matchesForCleanName(name),
+    entriesForIds: (ids) => backing.get().entriesForIds(ids),
+    entryNamesByPrefix: (prefix) => backing.get().entryNamesByPrefix(prefix),
+    entryNamesBySuffix: (suffix) => backing.get().entryNamesBySuffix(suffix),
+    lowMemory: false,
   };
 }
 
@@ -75,19 +63,8 @@ function logTelemetryError(err: unknown): void {
   console.error("[start_server] Telemetry error:", err);
 }
 
-const INFLECTION_PROVIDER = singletonOf<InflectionProvider>(() => {
-  const tables = timed(
-    () => MorceusTables.CACHED.get(),
-    "Create Morpheus tables"
-  );
-  const cruncher = MorceusCruncher.make(tables);
-  // Each lookup fans out to every Latin dictionary, and they all ask for the
-  // analyses of the same word, so share the result instead of re-running
-  // Morceus for each one.
-  return lruMemoize((word) => cruncher(word, CruncherOptions.DEFAULT), 32);
-});
-
 function startMorcusServer(): Promise<http.Server> {
+  const startTime = performance.now();
   log("Attempting to start server");
   process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt")
     .toString()
@@ -96,88 +73,50 @@ function startMorcusServer(): Promise<http.Server> {
   const app = express();
   const server = http.createServer(app);
 
-  const lewisAndShort = delayedInit(() => {
-    return LewisAndShort.create(
-      sqliteBacking(envVar("LS_PROCESSED_PATH")),
-      INFLECTION_PROVIDER.get()
-    );
-  }, LatinDict.LewisAndShort);
-  const smithAndHall = delayedInit(() => {
-    const start = performance.now();
-    const result = new SmithAndHall(sqliteBacking(envVar("SH_PROCESSED_PATH")));
-    const elapsed = (performance.now() - start).toFixed(3);
-    console.debug(`SmithAndHall init: ${elapsed} ms`);
-    return result;
-  }, LatinDict.SmithAndHall);
-  const gaffiot = delayedInit(() => {
-    const start = performance.now();
-    const result = new GaffiotDict(
-      sqliteBacking(envVar("GAFFIOT_PROCESSED_PATH")),
-      INFLECTION_PROVIDER.get()
-    );
-    const elapsed = (performance.now() - start).toFixed(3);
-    console.debug(`Gaffiot init: ${elapsed} ms`);
-    return result;
-  }, LatinDict.Gaffiot);
-  const georges = delayedInit(() => {
-    const start = performance.now();
-    const result = new GeorgesDict(
-      sqliteBacking(envVar("GEORGES_PROCESSED_PATH"))
-    );
-    const elapsed = (performance.now() - start).toFixed(3);
-    console.debug(`Georges init: ${elapsed} ms`);
-    return result;
-  }, LatinDict.Georges);
-  const pozo = delayedInit(() => {
-    const start = performance.now();
-    const result = new PozoDict(sqliteBacking(envVar("POZO_PROCESSED_PATH")));
-    const elapsed = (performance.now() - start).toFixed(3);
-    console.debug(`Pozo init: ${elapsed} ms`);
-    return result;
-  }, LatinDict.Pozo);
-  const gesner = delayedInit(() => {
-    const start = performance.now();
-    const result = new GesnerDict(
-      sqliteBacking(envVar("GESNER_PROCESSED_PATH")),
-      INFLECTION_PROVIDER.get()
-    );
-    const elapsed = (performance.now() - start).toFixed(3);
-    console.debug(`Gesner init: ${elapsed} ms`);
-    return result;
-  }, LatinDict.Gesner);
-  const forcellini = delayedInit(() => {
-    const start = performance.now();
-    const result = new ForcelliniDict(
-      sqliteBacking(envVar("FORC_PROCESSED_PATH")),
-      INFLECTION_PROVIDER.get()
-    );
-    const elapsed = (performance.now() - start).toFixed(3);
-    console.debug(`Forcellini init: ${elapsed} ms`);
-    return result;
-  }, LatinDict.Forcellini);
-  const numeralDict = new NumeralDict();
-  const riddleArnold = delayedInit(() => {
-    const start = performance.now();
-    const result = new RiddleArnoldDict(
-      sqliteBacking(envVar("RA_PROCESSED_PATH"))
-    );
-    const elapsed = (performance.now() - start).toFixed(3);
-    console.debug(`RiddleArnold init: ${elapsed} ms`);
-    return result;
-  }, LatinDict.RiddleArnold);
+  // Nothing expensive happens before `server.listen`: each resource below is
+  // created on first use, or by `warmup` once the server is listening, in the
+  // order registered here.
+  const warmup = new Warmup();
+  const dictBacking = (name: string, pathVar: string) =>
+    lazyBacking(warmup.lazy(name, () => sqliteBacking(envVar(pathVar))));
+
+  // `morceus` is declared below so that it warms after the databases.
+  const inflections: InflectionProvider = (word) => morceus.get()(word);
+
   const fusedDict = new FusedDictionary([
-    lewisAndShort,
-    smithAndHall,
-    riddleArnold,
-    gaffiot,
-    georges,
-    gesner,
-    forcellini,
-    pozo,
-    numeralDict,
+    LewisAndShort.create(
+      dictBacking("LewisAndShort", "LS_PROCESSED_PATH"),
+      inflections
+    ),
+    new SmithAndHall(dictBacking("SmithAndHall", "SH_PROCESSED_PATH")),
+    new RiddleArnoldDict(dictBacking("RiddleArnold", "RA_PROCESSED_PATH")),
+    new GaffiotDict(
+      dictBacking("Gaffiot", "GAFFIOT_PROCESSED_PATH"),
+      inflections
+    ),
+    new GeorgesDict(dictBacking("Georges", "GEORGES_PROCESSED_PATH")),
+    new GesnerDict(dictBacking("Gesner", "GESNER_PROCESSED_PATH"), inflections),
+    new ForcelliniDict(
+      dictBacking("Forcellini", "FORC_PROCESSED_PATH"),
+      inflections
+    ),
+    new PozoDict(dictBacking("Pozo", "POZO_PROCESSED_PATH")),
+    new NumeralDict(),
   ]);
+  const completions = warmup.lazy("completions.db", () => openCompletionsDb());
+  // Opened after `COMMIT_ID` is set above: the store is only used if it was
+  // built for this server's build version and bundle.
+  const staticPages = warmup.lazy("pages.db", () => openStaticPagesDb());
+  // Morceus and the corpus come last: they're the slow ones.
+  const morceus = warmup.lazy("Morpheus tables", () => {
+    const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
+    // Each lookup fans out to every Latin dictionary, and they all ask for the
+    // analyses of the same word, so share the result instead of re-running
+    // Morceus for each one.
+    return lruMemoize((word) => cruncher(word, CruncherOptions.DEFAULT), 32);
+  });
   const corpusHandler = rustCorpusApiHandler();
-  setTimeout(corpusHandler.initialize, randInRange(250, 500));
+  warmup.add(corpusHandler.initialize);
 
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
   const mongodbUri = process.env.MONGODB_URI;
@@ -211,10 +150,8 @@ function startMorcusServer(): Promise<http.Server> {
       telemetry,
       corpus: corpusHandler,
       macronizer: macronizerEngineFromEnv(),
-      completions: openCompletionsDb(),
-      // After `COMMIT_ID` is set above: the store is only used if it was
-      // built for this server's build version and bundle.
-      staticPages: openStaticPagesDb(),
+      completions: { get: (key) => completions.get()?.get(key) },
+      staticPages: { get: (key) => staticPages.get()?.get(key) },
     }),
   };
 
@@ -228,11 +165,13 @@ function startMorcusServer(): Promise<http.Server> {
   const port = portVar === undefined ? 0 : parseInt(portVar);
   return new Promise((resolve) => {
     server.listen(port, () => {
+      warmup.start();
       const memoryLogId = setInterval(() => {
         telemetry.then(logMemoryUsage).catch(logTelemetryError);
       }, 1000 * 60 * randInRange(14.75, 15.25));
       server.on("close", () => {
         log("Cleaning up resources.");
+        warmup.stop();
         clearInterval(memoryLogId);
         telemetry.then((t) => t.teardown()).catch(logTelemetryError);
       });
@@ -240,7 +179,10 @@ function startMorcusServer(): Promise<http.Server> {
       const address = server.address();
       const realPort =
         typeof address === "string" || address === null ? port : address.port;
-      log(`Running on http://${host}:${realPort}/`);
+      const listenMs = (performance.now() - startTime).toFixed(2);
+      log(
+        `Running on http://${host}:${realPort}/ (listening in ${listenMs} ms)`
+      );
     });
   });
 }

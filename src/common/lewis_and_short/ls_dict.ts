@@ -82,10 +82,6 @@ export namespace LewisAndShort {
     backing: StoredDictBacking<any>,
     inflectionProvider: InflectionProvider
   ): LewisAndShort {
-    const start = performance.now();
-    const result = new LewisAndShort(backing, inflectionProvider);
-    const elapsed = (performance.now() - start).toFixed(2);
-    console.debug(`LewisAndShort init: ${elapsed} ms`);
-    return result;
+    return new LewisAndShort(backing, inflectionProvider);
   }
 }

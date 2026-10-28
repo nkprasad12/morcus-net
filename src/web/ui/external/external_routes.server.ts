@@ -19,7 +19,7 @@ import {
 import { DEFAULT_LINE_MODE } from "@/web/ui/external/external_text.common";
 import {
   sendStaticPageOr,
-  type StaticPageStore,
+  type StaticPageLookup,
 } from "@/web/ui/core/server/static_pages.server";
 
 /** The External Content Reader route path. */
@@ -37,7 +37,7 @@ interface ExternalRoutesOptions {
   /** Replaces the network scraper, for tests. */
   scrape?: Scraper;
   /** Pre-rendered static pages; see `static_pages.server.ts`. */
-  staticPages?: StaticPageStore;
+  staticPages?: StaticPageLookup;
 }
 
 export function createExternalRoutes(

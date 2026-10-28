@@ -38,7 +38,7 @@ export interface ApiRoutesOptions {
   reportHandler?: (request: ReportApiRequest) => Promise<void>;
   githubToken?: string;
   /** Pre-compressed 2-letter dictionary completion chunks (`build/dbs/completions.db`). */
-  completions?: PrecompressedJsonStore;
+  completions?: Pick<PrecompressedJsonStore, "get">;
 }
 
 export function createApiRoutes(

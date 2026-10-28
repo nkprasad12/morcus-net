@@ -66,6 +66,9 @@ export interface StaticPageStore {
   close(): void;
 }
 
+/** What routes need from a {@link StaticPageStore}: point lookups. */
+export type StaticPageLookup = Pick<StaticPageStore, "get">;
+
 /** `build/pages.db` unless `STATIC_PAGES_DB_PATH` says otherwise. */
 export function staticPagesDbPath(): string {
   return envVar("STATIC_PAGES_DB_PATH");
@@ -250,7 +253,7 @@ export const STATIC_PAGE_MARK = "staticPage";
 export async function sendStaticPageOr(
   req: Request,
   res: Response,
-  store: StaticPageStore | undefined,
+  store: StaticPageLookup | undefined,
   key: string | undefined,
   render: () => string | Promise<string>
 ): Promise<void> {
