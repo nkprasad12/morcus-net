@@ -21,6 +21,7 @@ describe("helper images", () => {
     expect(isHelperImageName("morcus-proxy")).toBe(true);
     expect(isHelperImageName("morcus-latincy")).toBe(true);
     expect(isHelperImageName("morcus-pruner")).toBe(true);
+    expect(isHelperImageName("morcus-watchtower")).toBe(true);
     expect(isHelperImageName("unknown-image")).toBe(false);
     expect(ALL_HELPER_IMAGE_NAMES).toEqual(Object.keys(HELPER_IMAGES));
   });

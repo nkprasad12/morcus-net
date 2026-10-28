@@ -130,6 +130,8 @@ By default, the `main-latest` tag will be used for the production instance. For 
 Please contact Morcus if you are interested in images built for `arm64`. These builds are currently not made, but can be
 added easily.
 
+To switch an existing machine from `containrrr/watchtower` to `morcus-watchtower` (once `morcus-watchtower:latest` exists, i.e. after the first `main` release that includes it): update its `docker-compose.yaml`, then run `docker compose pull watchtower && docker compose up -d watchtower`.
+
 #### Local testing
 
 If you don't have an SSL certificate and key, you can generate one for local testing with the following:
@@ -154,12 +156,13 @@ in your hosts file:
 
 #### Helper Images
 
-The helper images that run alongside the server (listed in `src/scripts/helper_images/images.ts`, e.g. `morcus-proxy` from `src/devops/reverse_proxy` and `morcus-latincy` from `src/py/latincy/image`) are built (`linux/amd64`) and smoke-tested automatically in CI (`build-helper-images` in `.github/workflows/ci-workflow.yaml`).
+The helper images that run alongside the server (listed in `src/scripts/helper_images/images.ts`) are built (`linux/amd64`) and smoke-tested automatically in CI (`build-helper-images` in `.github/workflows/ci-workflow.yaml`).
 
 - **Tags**: each image is tagged `:tree-<hash>`, a hash of exactly the files in its Docker build context plus the shared `docker build` step (`src/scripts/helper_images/build.ts`). Editing anything else (smoke tests, docs, tests next to the image, other images) doesn't change the tag, so CI skips the build and nothing is redeployed.
 - **Explicit changes**: each image's context files and tag are checked in to `src/scripts/helper_images/expected_tags.ts`. If an image's context changes, CI and the unit tests fail and print the new values; updating that file is the explicit decision to change (and redeploy) the image. Note that `morcus-pruner`'s context is an esbuild bundle, so a version bump of `mongodb`, `bson` or `esbuild` (e.g. from Dependabot) changes its tag too and needs the same update.
 - **Testing**: a `:tested-<hash>` tag records that the image passed its current smoke test. If only a smoke test changes, CI re-tests the existing image instead of rebuilding it.
 - **Promotion**: when `main` is updated, `.github/workflows/promote-image.yaml` points `:latest` at each image's tree tag (backing up the old `:latest` to `:previous`), but only once its `:tested-` tag exists. Watchtower then redeploys images whose `:latest` changed. Pushes to `dev` run `promote --dry-run`, which reports which images the next `main` release would redeploy.
+- **Upgrading Watchtower**: `morcus-watchtower` is upstream's published image, pinned by digest in `src/devops/watchtower/Dockerfile`; the steps to upgrade it are in that file.
 
 #### New VM Checklist
 

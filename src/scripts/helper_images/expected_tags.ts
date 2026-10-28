@@ -31,4 +31,8 @@ export const EXPECTED_IMAGES: Readonly<Record<HelperImageName, ExpectedImage>> =
       files: ["Dockerfile", "pruner.js"],
       tag: "tree-4f8912b92a8264db575cd097c0ab40573c652244",
     },
+    "morcus-watchtower": {
+      files: ["Dockerfile"],
+      tag: "tree-14d4a15e15cf0e3bb6c18cd7417141ae61634e45",
+    },
   };
