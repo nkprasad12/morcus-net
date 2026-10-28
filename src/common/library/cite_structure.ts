@@ -253,6 +253,8 @@ interface EvalLevel {
   children: EvalLevel[];
   /** Why the level exists, for messages. */
   origin: string;
+  /** Elements inside which this level's sections are not sought. */
+  skipInside?: ReadonlySet<string>;
 }
 
 /**
@@ -451,6 +453,10 @@ function collectMatches(
   ): "matched" | "tested" | undefined => {
     for (const level of [...levels, ...deeper]) {
       const isDeeper = !levels.includes(level);
+      const skipInside = level.skipInside;
+      if (skipInside && between.some((node) => skipInside.has(node.name))) {
+        continue;
+      }
       const steps = level.alternatives.find((alternative) =>
         matchesStep(child, lastStep(alternative))
       );
@@ -721,18 +727,37 @@ function register(
 }
 
 /**
+ * Elements whose `<l n>` are a quotation's own numbering, not the work's
+ * lines: Ausonius' Epistulae 25 quotes two verses, numbered 1 and 2, in the
+ * prose preface before the letter's own lines 1 and 2.
+ */
+const QUOTATION_ELEMENTS: ReadonlySet<string> = new Set(["quote", "q", "cit"]);
+
+/**
+ * The share of a leaf level's `<l>`s that must carry `@n` for Rule B to add a
+ * `line` level; the rest belong to their enclosing section (Rule E).
+ */
+const IMPLICIT_LINE_MIN_NUMBERED = 0.9;
+
+/**
  * Rule B: a leaf level whose sections hold `<seg type="X" n="...">`, where
  * the older headers declare `X` as a unit, gets `X` as an implicit last level.
  * Upstream's generator only looked at `<div>`s, so it missed (for example)
  * the `seg[@type='section']` level inside every chapter of Nepos, which
- * `<refsDecl n="CTS">` declares.
+ * `<refsDecl n="CTS">` declares. Likewise a leaf level whose sections hold
+ * numbered `<l>`s gets an implicit `line` level where the older headers
+ * declare `line`: the `citeStructure` of Prudentius' Psychomachia and seven
+ * Ausonius poems stops at `section`, so their lines would not be citable.
+ * Lines inside a quotation (`QUOTATION_ELEMENTS`) are not counted or cited.
  */
-function implicitSegLevels(
+function implicitLeafLevels(
   builder: SpineBuilder,
   containers: XmlNode[]
 ): EvalLevel[] {
   const types = new Set<string>();
-  const visit = (node: XmlNode) => {
+  let numberedLines = 0;
+  let unnumberedLines = 0;
+  const visit = (node: XmlNode, inQuotation: boolean) => {
     for (const child of node.children) {
       if (typeof child === "string" || OPAQUE_ELEMENTS.has(child.name)) {
         continue;
@@ -747,11 +772,19 @@ function implicitSegLevels(
         types.add(type);
         continue;
       }
-      visit(child);
+      if (child.name === "l" && !inQuotation) {
+        if (child.getAttr("n") === undefined) {
+          unnumberedLines++;
+        } else {
+          numberedLines++;
+          continue;
+        }
+      }
+      visit(child, inQuotation || QUOTATION_ELEMENTS.has(child.name));
     }
   };
-  containers.forEach(visit);
-  return Array.from(types).map((type) => ({
+  containers.forEach((container) => visit(container, false));
+  const levels: EvalLevel[] = Array.from(types).map((type) => ({
     unit: type,
     alternatives: [
       [{ name: "seg", predicates: [["type", type]], descendant: true }],
@@ -760,6 +793,29 @@ function implicitSegLevels(
     children: [],
     origin: `seg[@type='${type}'] (undeclared in citeStructure)`,
   }));
+  if (
+    levels.length === 0 &&
+    numberedLines > 0 &&
+    builder.declared.has("line")
+  ) {
+    const share = numberedLines / (numberedLines + unnumberedLines);
+    if (share >= IMPLICIT_LINE_MIN_NUMBERED) {
+      levels.push({
+        unit: "line",
+        alternatives: [[{ name: "l", predicates: [], descendant: true }]],
+        use: "n",
+        children: [],
+        origin: "l (undeclared in citeStructure)",
+        skipInside: QUOTATION_ELEMENTS,
+      });
+    } else {
+      builder.sink.warnings.push(
+        `Not adding an implicit line level: only ${numberedLines} of ` +
+          `${numberedLines + unnumberedLines} <l> have @n`
+      );
+    }
+  }
+  return levels;
 }
 
 /**
@@ -805,6 +861,45 @@ function isUndeclaredGrouping(
   );
 }
 
+/**
+ * Whether `node`'s whole content is struck out (`<l n="453"><del>...</del></l>`).
+ */
+function isStruckOut(node: XmlNode): boolean {
+  const content = node.children.filter(
+    (c) => typeof c !== "string" || c.trim().length > 0
+  );
+  return (
+    content.length === 1 &&
+    typeof content[0] !== "string" &&
+    content[0].name === "del"
+  );
+}
+
+/**
+ * `matches` without the struck-out sections whose number another section
+ * here also has. An editor who transposes lines prints them, cited, where
+ * they belong and, struck out, where they were transmitted (Silius 11.453-458
+ * after 11.290 and after 11.452); the struck-out copy is not a second 11.453
+ * but part of the enclosing section. Struck-out sections with a number of
+ * their own (bracketed spurious lines in Juvenal or Lucretius) stay citable.
+ */
+function withoutStruckOutDuplicates(
+  matches: ContainerMatch[]
+): ContainerMatch[] {
+  const byN = new Map<string, ContainerMatch[]>();
+  for (const match of matches) {
+    byN.set(match.n, [...(byN.get(match.n) ?? []), match]);
+  }
+  const dropped = new Set<ContainerMatch>();
+  for (const group of byN.values()) {
+    const struck = group.filter((m) => isStruckOut(m.node));
+    if (group.length > 1 && 0 < struck.length && struck.length < group.length) {
+      struck.forEach((m) => dropped.add(m));
+    }
+  }
+  return matches.filter((m) => !dropped.has(m));
+}
+
 function evaluateLevels(
   builder: SpineBuilder,
   context: XmlNode,
@@ -819,7 +914,9 @@ function evaluateLevels(
   // in for absent ones (see `deeperLevels`).
   const matchedLevels = Array.from(new Set(containers.map((m) => m.level)));
   for (const level of matchedLevels) {
-    const matches = containers.filter((m) => m.level === level);
+    const matches = withoutStruckOutDuplicates(
+      containers.filter((m) => m.level === level)
+    );
     if (isUndeclaredGrouping(builder, level, matches, path.length === 0)) {
       builder.sink.warnings.push(
         `Ignoring undeclared grouping level ${level.origin}`
@@ -845,7 +942,7 @@ function evaluateLevels(
     const leafLevels =
       level.children.length > 0
         ? level.children
-        : implicitSegLevels(
+        : implicitLeafLevels(
             builder,
             matches.map((m) => m.node)
           );

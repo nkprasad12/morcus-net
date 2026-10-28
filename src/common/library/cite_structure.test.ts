@@ -392,6 +392,124 @@ describe("buildCitationSpine with a citeStructure", () => {
     ]);
   });
 
+  it("adds an undeclared line level the headers declare (Rule B, Psychomachia)", () => {
+    const root = tei(
+      ctsRefsDecl("section", "line") +
+        citeStructure(level("section", "div/div[@subtype='section']")),
+      `<div type="edition">
+        <div type="textpart" subtype="section" n="pr"><p>prose preface</p></div>
+        <div type="textpart" subtype="section" n="1">
+          <lg><l n="1">x</l><l n="2">y</l></lg>
+        </div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["section", "line"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["pr", "prose preface"],
+      ["1.1", "x"],
+      ["1.2", "y"],
+    ]);
+  });
+
+  it("adds the line level under a sibling-declared line branch (Genethliacon)", () => {
+    const root = tei(
+      ctsRefsDecl("section", "line") +
+        citeStructure(
+          level("section", "div/div[@subtype='section']") + level("line", "l")
+        ),
+      `<div type="edition">
+        <div type="textpart" subtype="section" n="1"><l n="1">x</l><l n="2">y</l></div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["section", "line"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["1.1", "x"],
+      ["1.2", "y"],
+    ]);
+  });
+
+  it("does not cite lines quoted in prose as the work's lines (Ausonius, Ep. 25)", () => {
+    const root = tei(
+      ctsRefsDecl("letter", "line") +
+        citeStructure(level("letter", "div/div[@subtype='letter']")),
+      `<div type="edition">
+        <div type="textpart" subtype="letter" n="25">
+          <p>preface <quote><l n="1">quoted a</l><l n="2">quoted b</l></quote></p>
+          <l n="1">own a</l><l n="2">own b</l>
+        </div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["letter", "line"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["25", "preface"],
+      ["25", "quoted a"],
+      ["25", "quoted b"],
+      ["25.1", "own a"],
+      ["25.2", "own b"],
+    ]);
+  });
+
+  it("lets a few unnumbered lines inherit under an implicit line level", () => {
+    const lines = Array.from(
+      { length: 10 },
+      (_, i) => `<l n="${i + 1}">v${i + 1}</l>`
+    );
+    const root = tei(
+      ctsRefsDecl("letter", "line") +
+        citeStructure(level("letter", "div/div[@subtype='letter']")),
+      `<div type="edition">
+        <div type="textpart" subtype="letter" n="7">${lines.join(
+          ""
+        )}<l>loose</l></div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["letter", "line"]);
+    expect(idsOfText(root, spine).slice(-2)).toEqual([
+      ["7.10", "v10"],
+      ["7", "loose"],
+    ]);
+  });
+
+  it("adds no line level where numbered lines are a small minority", () => {
+    const root = tei(
+      ctsRefsDecl("section", "line") +
+        citeStructure(level("section", "div/div[@subtype='section']")),
+      `<div type="edition">
+        <div type="textpart" subtype="section" n="1">
+          <l n="1">a</l><l>b</l><l>c</l>
+        </div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["section"]);
+    expect(spine.warnings.join("\n")).toMatch(/implicit line level/);
+  });
+
+  it("does not cite a struck-out copy of a transposed line twice (Silius 11.453)", () => {
+    const root = tei(
+      citeStructure(
+        level("book", "div/div[@subtype='book']", level("line", "l"))
+      ),
+      `<div type="edition"><div type="textpart" subtype="book" n="11">
+        <l n="290">a</l><l n="453"><add>moved</add></l><l n="291">b</l>
+        <l n="452">c</l><lg><l n="453"><del>moved</del></l></lg>
+        <l n="455"><del>bracketed but cited</del></l>
+      </div></div>`
+    );
+    expect(idsOfText(root, spineOf(root))).toEqual([
+      ["11.290", "a"],
+      ["11.453", "moved"],
+      ["11.291", "b"],
+      ["11.452", "c"],
+      ["11", "moved"],
+      ["11.455", "bracketed but cited"],
+    ]);
+  });
+
   it("drops an undeclared grouping over uniquely numbered children (Rule C, Catullus)", () => {
     const root = tei(
       ctsRefsDecl("line", "poem") +
