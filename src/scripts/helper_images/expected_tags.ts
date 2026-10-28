@@ -21,7 +21,7 @@ export const EXPECTED_IMAGES: Readonly<Record<HelperImageName, ExpectedImage>> =
   {
     "morcus-proxy": {
       files: ["Dockerfile", "nginx.conf"],
-      tag: "tree-665809bc40fe88a70857097f85c2137a0b744754",
+      tag: "tree-da9b386b14098e4fcb57710e74611fb10c0010b2",
     },
     "morcus-latincy": {
       files: ["Dockerfile", "__init__.py", "latincy_server.py"],
