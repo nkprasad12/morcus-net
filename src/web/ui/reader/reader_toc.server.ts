@@ -39,6 +39,12 @@ interface PreRenderTocItemsOptions {
     textParts?: string[];
     navTree?: NavTreeNode;
   };
+  /**
+   * Labels that replace the default `formatSectionLabel` label, keyed by the
+   * dotted node id. A line-only work's single page `1` uses this to read
+   * `Lines 1–414` rather than `Line 1`.
+   */
+  nodeLabels?: ReadonlyMap<string, string>;
 }
 
 interface RenderTocItemsOptions extends PreRenderTocItemsOptions {
@@ -102,7 +108,9 @@ export function preRenderTocItemsHtml(
     const escapedKey = he.escape(key);
     const partName = textParts[node.id.length - 1] || "section";
     const coord = node.id[node.id.length - 1] || "";
-    const label = coord ? formatSectionLabel(partName, coord) : "Contents";
+    const label =
+      options.nodeLabels?.get(key) ??
+      (coord ? formatSectionLabel(partName, coord) : "Contents");
 
     if (node.children.length === 0) {
       const page = pageMap.get(key);

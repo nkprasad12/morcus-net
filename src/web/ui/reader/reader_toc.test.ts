@@ -4,6 +4,7 @@
 
 import { ReaderTocController } from "@/web/ui/reader/reader_toc.client";
 import { revealTarget } from "@/web/ui/core/nav/reveal.client";
+import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
 
 describe("ReaderTocController", () => {
   let container: HTMLDivElement;
@@ -772,5 +773,32 @@ describe("ReaderTocController", () => {
 
       controller.dispose();
     });
+  });
+});
+
+describe("preRenderTocItemsHtml", () => {
+  const work = {
+    urlAuthor: "appendix_vergiliana",
+    urlName: "culex",
+    textParts: ["line"],
+    navTree: { id: [], children: [{ id: ["1"], children: [] }] },
+  };
+
+  test("labels nodes from their citation level by default", () => {
+    const html = preRenderTocItemsHtml({ work });
+
+    expect(html).toContain('<span class="reader-toc-item-title">Line 1</span>');
+  });
+
+  test("uses a node label override when one is given", () => {
+    const html = preRenderTocItemsHtml({
+      work,
+      nodeLabels: new Map([["1", "Lines 1–414"]]),
+    });
+
+    expect(html).toContain(
+      '<span class="reader-toc-item-title">Lines 1–414</span>'
+    );
+    expect(html).toContain('data-page-id="1"');
   });
 });
