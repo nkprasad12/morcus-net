@@ -219,6 +219,18 @@ describe("extractInfo title and author", () => {
     expect(info.title).toBe("Argonautica");
     expect(info.author).toBe("Valerius Flaccus");
   });
+
+  it("collapses internal whitespace, including line breaks", () => {
+    const root = parseRawXml(
+      `<TEI><teiHeader><fileDesc><titleStmt><title>Gratiarum Actio Ad\n                    Imperatorem</title><author>Ausonius,  Decimus\tMagnus</author></titleStmt></fileDesc></teiHeader></TEI>`,
+      { keepWhitespace: true }
+    );
+
+    const info = extractInfo(root);
+
+    expect(info.title).toBe("Gratiarum Actio Ad Imperatorem");
+    expect(info.author).toBe("Ausonius, Decimus Magnus");
+  });
 });
 
 describe("extractInfo __cts__.xml fallback", () => {
@@ -254,6 +266,49 @@ describe("extractInfo __cts__.xml fallback", () => {
     expect(() =>
       extractInfo(headerWith(`<title>Dirae</title>`), { author: " " })
     ).toThrow(/No <author>/);
+  });
+
+  const APP_VERG = { author: "Appendix Vergiliana", title: "Ciris" };
+
+  it("prefers the fallback title when the header's is the group name", () => {
+    expect(
+      extractInfo(headerWith(`<title>Appendix Vergiliana</title>`), APP_VERG)
+        .title
+    ).toBe("Ciris");
+    expect(
+      extractInfo(headerWith(`<title>appendix  vergiliana</title>`), APP_VERG)
+        .title
+    ).toBe("Ciris");
+  });
+
+  it("keeps a group-name title when the fallback has no title", () => {
+    const info = extractInfo(headerWith(`<title>Appendix Vergiliana</title>`), {
+      author: "Appendix Vergiliana",
+    });
+    expect(info.title).toBe("Appendix Vergiliana");
+  });
+
+  it("drops a trailing ', <group name>' from the header's title", () => {
+    expect(
+      extractInfo(
+        headerWith(`<title>Dirae, Appendix Vergiliana</title>`),
+        APP_VERG
+      ).title
+    ).toBe("Dirae");
+    expect(
+      extractInfo(
+        headerWith(`<title>De Est et Non, appendix vergiliana</title>`),
+        APP_VERG
+      ).title
+    ).toBe("De Est et Non");
+  });
+
+  it("leaves other titles that mention the group name alone", () => {
+    const info = extractInfo(
+      headerWith(`<title>Appendix Vergiliana Minor</title>`),
+      APP_VERG
+    );
+    expect(info.title).toBe("Appendix Vergiliana Minor");
   });
 });
 

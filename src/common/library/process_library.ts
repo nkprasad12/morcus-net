@@ -59,6 +59,20 @@ const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
   ["Valerius Flaccus", "valerius_flaccus"],
   ["Vitruvius Pollio", "vitruvius"],
   ["Aulus Gellius", "gellius"],
+  // Seneca the Younger's Perseus works joined his PHI ones in Phase 2B. The
+  // old `seneca,_lucius_annaeus` slug still resolves and redirects; see
+  // `LEGACY_AUTHOR_SLUGS` in reader_loader.server.ts.
+  ["Seneca, Lucius Annaeus", "seneca_minor"],
+  ["Scriptores Historiae Augustae", "historia_augusta"],
+  ["Ausonius, Decimus Magnus", "ausonius"],
+  ["Q. Tullius Cicero", "quintus_cicero"],
+  ["Sidonius Apollinaris", "sidonius"],
+  ["Silius Italicus", "silius_italicus"],
+  ["Cato, Marcus Porcius", "cato"],
+  ["Jerome, Saint", "jerome"],
+  // Slugs from before `urlify` dropped punctuation, kept so links still work.
+  ["Curtius Rufus, Quintus", "curtius_rufus,_quintus"],
+  ["Florus, Lucius Annaeus", "florus,_lucius_annaeus"],
 ]);
 
 const NAME_TO_DISPLAY_NAME = new Map<string, string>([
@@ -182,6 +196,31 @@ export const URL_NAME_BY_WORK_ID = new Map<string, string>([
   ["phi0474.phi043.perseus-lat2", "de_republica"],
   ["phi0474.phi051.perseus-lat2", "de_senectute"],
   ["phi1351.phi001.perseus-lat2", "agricola"],
+  // Slugs from before `urlify` dropped punctuation, kept so links still work.
+  ["phi0474.phi004.perseus-lat2", "divinatio_in_q._caecilium"],
+  ["phi0474.phi008.perseus-lat2", "pro_a._caecina"],
+  ["phi0474.phi015.perseus-lat2", "pro_p._sulla"],
+  ["phi0474.phi017.perseus-lat2", "pro_l._flacco"],
+  ["phi0474.phi022.perseus-lat2", "pro_p._sestio"],
+  ["phi0474.phi024.perseus-lat2", "pro_m._caelio"],
+  ["phi0474.phi028.perseus-lat2", "pro_cn._plancio"],
+  ["phi0474.phi029.perseus-lat2", "pro_m._scauro"],
+  ["phi0474.phi031.perseus-lat2", "pro_t._annio_milone"],
+  ["phi0474.phi032.perseus-lat2", "pro_m._marcello"],
+  ["phi0474.phi033.perseus-lat2", "pro_q._ligario"],
+  // Phase 2B: TEI titles that are too long, or wrong (stoa014's is OCR'd
+  // with a line break), to make a good slug. Named after `__cts__.xml`.
+  ["stoa0045.stoa010.perseus-lat2", "epigrammata"],
+  // Both are titled "Epistularum" in the TEI.
+  ["stoa0045.stoa011.perseus-lat2", "epistulae"],
+  ["stoa0045.stoa014.perseus-lat2", "gratiarum_actio"],
+  ["stoa0045.stoa016.perseus-lat2", "protrepticus_ad_nepotem"],
+  ["stoa0058.stoa023.perseus-lat1", "contra_eutychen_et_nestorium"],
+  ["stoa0058.stoa025.perseus-lat1", "de_trinitate"],
+  ["stoa0058.stoa028.perseus-lat1", "utrum_pater_et_filius"],
+  ["stoa0162.stoa004.perseus-lat2", "epistulae"],
+  ["phi0845.phi002.perseus-lat3", "res_rustica"],
+  ["stoa0261.stoa002.perseus-lat1", "epistulae"],
 ]);
 
 /** Short display titles pinned by work id, for the same reason. */
@@ -190,17 +229,39 @@ export const SHORT_TITLE_BY_WORK_ID = new Map<string, string>([
   ["phi0474.phi021.perseus-lat2", "De Haruspicum Responso"],
   ["phi0474.phi023.perseus-lat2", "In P. Vatinium"],
   ["phi1351.phi001.perseus-lat2", "Agricola"],
+  ["stoa0045.stoa010.perseus-lat2", "Epigrammata"],
+  ["stoa0045.stoa011.perseus-lat2", "Epistulae"],
+  ["stoa0045.stoa014.perseus-lat2", "Gratiarum Actio"],
+  ["stoa0045.stoa016.perseus-lat2", "Protrepticus ad Nepotem"],
+  ["stoa0058.stoa023.perseus-lat1", "Contra Eutychen et Nestorium"],
+  ["stoa0058.stoa025.perseus-lat1", "De Trinitate"],
+  ["stoa0058.stoa028.perseus-lat1", "Utrum Pater et Filius"],
+  ["stoa0162.stoa004.perseus-lat2", "Epistulae"],
+  ["phi0845.phi002.perseus-lat3", "Res Rustica"],
+  ["stoa0261.stoa002.perseus-lat1", "Epistulae"],
 ]);
 
-function urlify(input: string, customs: Map<string, string>) {
+/**
+ * The URL slug for `input`: its entry in `customs`, else the lower-cased
+ * words joined by `_`, with accents removed and only `[a-z0-9_-]` kept.
+ * Exported for testing.
+ */
+export function urlify(input: string, customs: Map<string, string>): string {
   const custom = customs.get(input);
   if (custom !== undefined) {
     return custom;
   }
-  return input
-    .split(" ")
-    .map((c) => c.toLowerCase())
-    .join("_");
+  const slug = input
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_-]/g, "")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+  assert(slug.length > 0, () => `Empty URL slug for "${input}"`);
+  return slug;
 }
 
 function urlifyAuthor(input: string): string {
@@ -254,7 +315,8 @@ function isTranslationId(workId: string): boolean {
   );
 }
 
-function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
+/** Exported for testing. */
+export function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
   const rawTitle = info.title;
   const shortName =
     SHORT_TITLE_BY_WORK_ID.get(info.workId) ??
@@ -264,7 +326,8 @@ function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
   return decorated;
 }
 
-function extractWorkMetadata(
+/** Exported for testing. */
+export function extractWorkMetadata(
   id: string,
   info: DocumentInfo,
   args?: {

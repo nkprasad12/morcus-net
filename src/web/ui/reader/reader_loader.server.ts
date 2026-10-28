@@ -56,6 +56,17 @@ interface LibraryStore {
 
 const storesByDir = new Map<string, LibraryStore>();
 
+/**
+ * Author slugs that used to be canonical, by the slug that replaced them.
+ * `<legacy>/<urlName>` keeps resolving to the work, and the reader route
+ * redirects it to the canonical URL. Exported for testing.
+ */
+export const LEGACY_AUTHOR_SLUGS: ReadonlyMap<string, readonly string[]> =
+  new Map([
+    // Phase 2B moved Seneca the Younger's Perseus works under `seneca_minor`.
+    ["seneca_minor", ["seneca,_lucius_annaeus"]],
+  ]);
+
 function isSummaryRow(val: unknown): val is SummaryRow {
   return (
     typeof val === "object" &&
@@ -178,6 +189,15 @@ function openLibraryStore(resultDir: string): LibraryStore | undefined {
       slugToWorkId.set(`${item.urlAuthor}/${item.urlName}`, item.id);
       slugToWorkId.set(item.urlName, item.id);
       slugToWorkId.set(item.id, item.id);
+    }
+    // Retired author slugs resolve too, unless a work now owns that slug.
+    for (const item of summaries) {
+      for (const legacy of LEGACY_AUTHOR_SLUGS.get(item.urlAuthor) ?? []) {
+        const slug = `${legacy}/${item.urlName}`;
+        if (!slugToWorkId.has(slug)) {
+          slugToWorkId.set(slug, item.id);
+        }
+      }
     }
     // Retired ids (old URLs, saved spots) resolve to their successors.
     for (const [oldId, newId] of Object.entries(WORK_ID_ALIASES)) {
@@ -505,6 +525,25 @@ export function resolvePageInWork(
   if (stripped && stripped !== rawNeedle) {
     const afterStrip = tryResolve(stripped);
     if (afterStrip) return afterStrip;
+  }
+
+  // 4. A section on some page. A work cited by line alone (`["line"]`) has a
+  //    single page `1`, so `?jump=57` has to find the page holding `sec-57`.
+  //    This reads page HTML, so it only runs once everything else has missed.
+  for (const needle of new Set([rawNeedle, stripped])) {
+    if (!/^[^\s"'<>&]+$/.test(needle)) continue;
+    const anchor = `id="sec-${needle}"`;
+    const sectionIdx = work.pages.findIndex((p) =>
+      p.singleHtml.includes(anchor)
+    );
+    if (sectionIdx !== -1) {
+      return {
+        page: work.pages[sectionIdx],
+        index: sectionIdx,
+        pageIndex: sectionIdx,
+        matched: true,
+      };
+    }
   }
 
   return { page: work.pages[0], index: 0, pageIndex: 0, matched: false };

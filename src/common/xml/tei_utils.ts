@@ -285,27 +285,51 @@ export function readCtsMetadata(workPath: string): CtsMetadata {
  * Basic information from the TEI header's `titleStmt`. Some headers have no
  * `<author>` (all of the Historia Augusta and the Appendix Vergiliana) or no
  * `<title>`; those come from `fallback` (the work's `__cts__.xml`) instead.
+ * The `__cts__.xml` title also wins when the header's `<title>` is just the
+ * text group's name (the Appendix Vergiliana's *Ciris*, *Priapea* and
+ * *Elegiae in Maecenatem* are all titled "Appendix Vergiliana"), and a
+ * trailing ", <text group name>" is dropped ("Dirae, Appendix Vergiliana").
  */
 export function extractInfo(teiRoot: XmlNode, fallback?: CtsMetadata) {
   const titleStatement = findChild(teiRoot, TITLE_STATEMENT_PATH);
   const editor: XmlNode | undefined = titleStatement.findChildren("editor")[0];
   const translator = editor?.getAttr("role") === "translator";
+  // Some headers pad these (`<author>Valerius Flaccus </author>`) or break
+  // them across lines, which would otherwise leak into author codes and URL
+  // slugs.
+  const normalize = (text: string | undefined) =>
+    text?.replace(/\s+/g, " ").trim() ?? "";
   const fromHeaderOr = (field: "title" | "author"): string => {
     const node: XmlNode | undefined = titleStatement.findChildren(field)[0];
-    // Some headers pad these (`<author>Valerius Flaccus </author>`), which
-    // would otherwise leak into author codes and URL slugs.
     if (node !== undefined) {
-      return XmlNode.getSoleText(node).trim();
+      return normalize(XmlNode.getSoleText(node));
     }
-    const value = fallback?.[field]?.trim() ?? "";
+    const value = normalize(fallback?.[field]);
     assert(
       value.length > 0,
       () => `No <${field}> in titleStmt, and none in __cts__.xml`
     );
     return value;
   };
+  const headerTitle = fromHeaderOr("title");
+  const groupName = normalize(fallback?.author).toLowerCase();
+  const ctsTitle = normalize(fallback?.title);
+  const groupSuffix = `, ${groupName}`;
+  let title = headerTitle;
+  if (groupName.length > 0) {
+    const lowerTitle = headerTitle.toLowerCase();
+    if (lowerTitle === groupName && ctsTitle.length > 0) {
+      title = ctsTitle;
+    } else if (
+      lowerTitle.endsWith(groupSuffix) &&
+      lowerTitle.length > groupSuffix.length
+    ) {
+      // "Dirae, Appendix Vergiliana" -> "Dirae".
+      title = headerTitle.slice(0, -groupSuffix.length).trim();
+    }
+  }
   return {
-    title: fromHeaderOr("title"),
+    title,
     author: fromHeaderOr("author"),
     editor: translator
       ? undefined

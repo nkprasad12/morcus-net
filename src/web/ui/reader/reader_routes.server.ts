@@ -173,6 +173,21 @@ export function createReaderRoutes(): Router {
       return;
     }
 
+    // A retired slug (e.g. `seneca,_lucius_annaeus/de_clementia`) moves to the
+    // canonical one, keeping the page and the query.
+    if (author !== work.urlAuthor || name !== work.urlName) {
+      const queryStart = req.originalUrl.indexOf("?");
+      const queryString =
+        queryStart === -1 ? "" : req.originalUrl.slice(queryStart);
+      res.redirect(
+        302,
+        `/work/${work.urlAuthor}/${work.urlName}${
+          pageId ? `/${encodeURIComponent(pageId)}` : ""
+        }${queryString}`
+      );
+      return;
+    }
+
     // A `matchText` or legacy `?id=` / `?pg=` link without a page redirects
     // like a jump, so the URL is canonical and `#sec-` scrolls No-JS readers
     // to the match.

@@ -1,7 +1,10 @@
 /**
  * @jest-environment jsdom
  */
-import { extractRowText } from "@/common/library/corpus/corpus_library_utils";
+import {
+  extractRowText,
+  toAuthorCode,
+} from "@/common/library/corpus/corpus_library_utils";
 import type {
   LibraryWorkMetadata,
   ProcessedWork2,
@@ -347,5 +350,29 @@ describe("corpus row text matches V2 reader tokens", () => {
       [2, "que"],
       [3, "est"],
     ]);
+  });
+});
+
+describe("toAuthorCode", () => {
+  it.each([
+    ["Scriptores Historiae Augustae", "HistoriaAugusta"],
+    ["Ausonius, Decimus Magnus", "Ausonius"],
+    ["Appendix Vergiliana", "AppVerg"],
+    ["Q. Tullius Cicero", "QuintusCicero"],
+    ["Sidonius Apollinaris", "Sidonius"],
+    ["Silius Italicus", "Silius"],
+    ["Cato, Marcus Porcius", "Cato"],
+    ["Jerome, Saint", "Jerome"],
+    ["Seneca, Lucius Annaeus", "Seneca Minor"],
+  ])("maps the Phase 2B author %s", (author, code) => {
+    expect(toAuthorCode(author)).toBe(code);
+  });
+
+  it("passes a one-word author through", () => {
+    expect(toAuthorCode("Boethius")).toBe("Boethius");
+  });
+
+  it("rejects an unknown multi-word author", () => {
+    expect(() => toAuthorCode("Nobody Inparticular")).toThrow(/No code/);
   });
 });

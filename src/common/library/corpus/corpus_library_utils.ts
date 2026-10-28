@@ -36,9 +36,18 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["Valerius Flaccus", "ValeriusFlaccus"],
   ["Vitruvius Pollio", "Vitruvius"],
   ["Aulus Gellius", "Gellius"],
+  ["Scriptores Historiae Augustae", "HistoriaAugusta"],
+  ["Ausonius, Decimus Magnus", "Ausonius"],
+  ["Appendix Vergiliana", "AppVerg"],
+  ["Q. Tullius Cicero", "QuintusCicero"],
+  ["Sidonius Apollinaris", "Sidonius"],
+  ["Silius Italicus", "Silius"],
+  ["Cato, Marcus Porcius", "Cato"],
+  ["Jerome, Saint", "Jerome"],
 ]);
 
-function toAuthorCode(author: string): string {
+/** Exported for testing. */
+export function toAuthorCode(author: string): string {
   if (author.split(" ").length === 1) {
     return author;
   }
