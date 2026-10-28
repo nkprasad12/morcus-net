@@ -26,10 +26,12 @@ import { envVar } from "@/common/env_vars";
 import {
   ALL_SUPPORTED_WORKS,
   EnglishTranslations,
+  resolveWorkIdAlias,
 } from "@/common/library/library_constants";
 import { loadPatches } from "@/common/library/library_patches";
 import type { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_types";
 import { preprocessPerseusWorks } from "@/common/library/process_library";
+import { surveyFiles } from "@/scripts/library/survey";
 
 export const RENDER_OUT_DEFAULT = ".cache/library-render";
 export const RENDER_INDEX = "index.json";
@@ -108,11 +110,65 @@ export function workIdOfPath(workPath: string): string {
   return path.basename(workPath).replace(/\.[^/.]+$/, "");
 }
 
+export interface SelectWorkPathsOptions {
+  /** canonical-latinLit checkout (used when `includeCandidates` is true). */
+  root?: string;
+  /** Also include non-onboarded `perseus-lat*` candidate works under `root`. */
+  includeCandidates?: boolean;
+}
+
 /**
- * The repo-relative paths to render: all onboarded works, or the requested
- * ones plus their English translations (needed for `translationHtml`).
+ * The repo-relative paths to render: all onboarded works (plus candidate works
+ * when `options.includeCandidates` is true), or the requested ones plus their
+ * English translations (needed for `translationHtml`).
  */
-export function selectWorkPaths(works?: string[]): string[] {
+export function selectWorkPaths(
+  works?: string[],
+  options?: SelectWorkPathsOptions
+): string[] {
+  if (options?.includeCandidates) {
+    const root = path.resolve(
+      options.root ?? envVar("LIB_XML_ROOT", "unsafe") ?? ""
+    );
+    if (!fs.existsSync(path.join(root, "data"))) {
+      throw new Error(
+        `No canonical-latinLit checkout at '${root}': pass --root= or set LIB_XML_ROOT.`
+      );
+    }
+    const surveyed = surveyFiles(root);
+    const byId = new Map<string, string>();
+    for (const f of surveyed) {
+      byId.set(f.workId, f.relPath);
+    }
+    for (const relPath of ALL_SUPPORTED_WORKS) {
+      const id = workIdOfPath(relPath);
+      if (!byId.has(id) && fs.existsSync(path.join(root, relPath))) {
+        byId.set(id, relPath);
+      }
+    }
+    if (works === undefined || works.length === 0) {
+      return [...byId.values()];
+    }
+    const wanted = new Set<string>();
+    const requestedIds: string[] = [];
+    for (const rawId of works) {
+      const id = resolveWorkIdAlias(rawId);
+      requestedIds.push(id);
+      wanted.add(id);
+      const translation = EnglishTranslations[id];
+      if (translation !== undefined && byId.has(translation)) {
+        wanted.add(translation);
+      }
+    }
+    const missing = requestedIds.filter((id) => !byId.has(id));
+    if (missing.length > 0) {
+      throw new Error(`Work files not found in '${root}': ${missing.join(", ")}`);
+    }
+    return [...byId.entries()]
+      .filter(([id]) => wanted.has(id))
+      .map(([, relPath]) => relPath);
+  }
+
   if (works === undefined || works.length === 0) {
     return [...ALL_SUPPORTED_WORKS];
   }
@@ -205,8 +261,10 @@ export function readRenderIndex(dir: string): RenderIndex {
 export interface RenderOptions {
   /** Output label (default: `<latinLit sha>-<morcus-net sha>`). */
   label?: string;
-  /** Work ids to render (default: all onboarded works). */
+  /** Work ids to render (default: all onboarded works, or all with `includeCandidates`). */
   works?: string[];
+  /** Also include non-onboarded Latin works in `--root` that pass `processTei2`. */
+  includeCandidates?: boolean;
   /** canonical-latinLit checkout (default: `$LIB_XML_ROOT`). */
   root?: string;
   /** Output root (default: `.cache/library-render`). */
@@ -245,7 +303,10 @@ export function renderLibrary(options: RenderOptions = {}): RenderResult {
     throw new Error(`Refusing to write a render under build/: ${dir}`);
   }
 
-  const relPaths = selectWorkPaths(options.works);
+  const relPaths = selectWorkPaths(options.works, {
+    root,
+    includeCandidates: options.includeCandidates,
+  });
   const partial = options.works !== undefined && options.works.length > 0;
   let previous: RenderIndex | undefined = undefined;
   if (partial && fs.existsSync(path.join(dir, RENDER_INDEX))) {

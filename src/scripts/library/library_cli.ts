@@ -87,6 +87,10 @@ export const LIBRARY_ACTIONS: LibraryAction[] = [
       parser.add_argument("--works", {
         help: "Comma-separated work ids to (re-)render into the label (default: all).",
       });
+      parser.add_argument("--include-candidates", {
+        help: "Also render non-onboarded Latin works in --root that pass processTei2.",
+        action: "store_true",
+      });
       parser.add_argument("--root", {
         help: "The canonical-latinLit checkout to render (default: $LIB_XML_ROOT).",
       });
@@ -101,6 +105,7 @@ export const LIBRARY_ACTIONS: LibraryAction[] = [
       return runRenderCli({
         label: optString(args.label),
         works: parseWorkList(optString(args.works)),
+        includeCandidates: Boolean(args.include_candidates),
         root: optString(args.root),
         out: optString(args.out),
       });
@@ -176,6 +181,20 @@ export const LIBRARY_ACTIONS: LibraryAction[] = [
         help: "Max exemplar passages per markup kind (default: 3).",
         type: "int",
       });
+      parser.add_argument("--compare-with", {
+        help: "Earlier gallery (label under --out, directory, or gallery.json) to diff against; writes diff.html.",
+      });
+      parser.add_argument("--delta-from", {
+        help:
+          "Gallery from before the onboarding (label under --out, directory, or gallery.json). " +
+          "Also writes <label>-delta/: only works onboarded now but not then, and the markup kinds only they exercise.",
+      });
+      parser.add_argument("--before-render", {
+        help: "With --compare-with: `library render` output of the earlier pipeline (directory with index.json).",
+      });
+      parser.add_argument("--after-render", {
+        help: "With --compare-with: `library render` output of the current pipeline. With --before-render, drops exemplars on pages byte-identical in both.",
+      });
     },
     run: async (args) => {
       const { runGalleryCli } = await import("@/scripts/library/gallery");
@@ -187,6 +206,49 @@ export const LIBRARY_ACTIONS: LibraryAction[] = [
         works: parseWorkList(optString(args.works)),
         includeCandidates: Boolean(args.include_candidates),
         maxExamples: optInt(args.max_examples),
+        compareWith: optString(args.compare_with),
+        deltaFrom: optString(args.delta_from),
+        beforeRenderDir: optString(args.before_render),
+        afterRenderDir: optString(args.after_render),
+      });
+    },
+  },
+  {
+    name: "gallery-diff",
+    help:
+      "Writes diff.html comparing two existing galleries (Before/After Diff " +
+      "Inspector) without rebuilding either.",
+    configure: (parser) => {
+      parser.add_argument("--before", {
+        help: "Before gallery (label under --out, directory, or gallery.json).",
+        required: true,
+      });
+      parser.add_argument("--after", {
+        help: "After gallery (label under --out, directory, or gallery.json).",
+        required: true,
+      });
+      parser.add_argument("--before-render", {
+        help: "`library render` output of the Before pipeline (directory with index.json).",
+      });
+      parser.add_argument("--after-render", {
+        help: "`library render` output of the After pipeline. With --before-render, drops exemplars on pages byte-identical in both.",
+      });
+      parser.add_argument("--output", {
+        help: "Output file (default: diff.html next to the After gallery.json).",
+      });
+      parser.add_argument("--out", {
+        help: "Gallery output root for labels (default: .cache/library-gallery).",
+      });
+    },
+    run: async (args) => {
+      const { runGalleryDiffCli } = await import("@/scripts/library/gallery");
+      return runGalleryDiffCli({
+        before: String(args.before),
+        after: String(args.after),
+        beforeRenderDir: optString(args.before_render),
+        afterRenderDir: optString(args.after_render),
+        output: optString(args.output),
+        out: optString(args.out),
       });
     },
   },
