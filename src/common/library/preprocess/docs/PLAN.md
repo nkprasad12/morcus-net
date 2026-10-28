@@ -1,6 +1,6 @@
 # Library Expansion Plan
 
-**Status:** Phase 0, Phase 1, and Phase 2A complete on `library-expansion` (`ffcfeedb`); ready for Phase 2B onboarding
+**Status:** Phase 0, Phase 1, Phase 2A, and Phase 2B complete on `library-expansion`; ready for Phase 2C
 **Goal:** onboard every distinct Perseus Latin work into the V2 library with an enumerated, tested guarantee that we are not misrendering the editor's intended formatting.
 **Sources:** the Sep-2026 study ([README.md](README.md), [V1_PREPROCESSING.md](V1_PREPROCESSING.md), [DIRECTION.md](DIRECTION.md), [OUTPUT_MODEL.md](OUTPUT_MODEL.md)); the Oct-2026 corpus survey over all 398 pre-sync / 334 post-sync `perseus-lat*` files ([CORPUS_SURVEY.md](CORPUS_SURVEY.md)); and the diff and Phase 0 sync of our fork against `PerseusDL/canonical-latinLit@master` ([UPSTREAM.md](UPSTREAM.md)).
 
@@ -8,7 +8,7 @@
 | ----- | ------------------------------------------------------------ | ------------------------------------------------------------ | ---------------: |
 | **0** | Instrumentation, baseline, and upstream sync                 | **Complete** (`b3ff6ba3`)                                    |               99 |
 | **1** | Free wins (Cluster A) and markup / silent-drop bug fixes     | **Complete** (`6d5b27ed`, 117 Perseus / 144 total onboarded) |              117 |
-| **2** | `citeStructure`-driven structural builder and unified markup | **2A Complete (`ffcfeedb`, 266/341 pass)**; 2B onboarding    |             ≈250 |
+| **2** | `citeStructure`-driven structural builder and unified markup | **Complete** (228 Perseus / 255 total onboarded); 2C next    |             ≈250 |
 | **3** | Speakers, stage directions, and verse-in-prose               | Not started                                                  |             ≈290 |
 | **4** | Secondary milestone axes and explicit pagination depth       | Not started                                                  |             ≈290 |
 | **5** | Long tail, multi-edition selection, and upstream PRs         | Not started                                                  |             ≈300 |
@@ -257,6 +257,16 @@ A fresh builder (~500 lines) that:
 Markup stage: one table, one transformer, context predicates for notes. Deletes `FORCE_CTS_WORKS`, `NO_SUBTYPES`, `IGNORE_SUBTYPES`, the Lucretius hardcode, `pruneSectionNumbering`, and the DOCTYPE string hack. Migration gate: Phase 0 HTML diff — identical or reviewed.
 
 **Exit:** ≈250 onboarded (Clusters B, C, H, I); every row citable or deliberately not; coverage proven; corpus build unchanged byte-for-byte on previously shipped works.
+
+#### Phase 2B Completion & Target Counts
+- **Phase 2B Onboarded**: 114 new Perseus Latin works onboarded in `LatinWorks` across Clusters B, C, H, I (bringing total Perseus onboarded to 231, and total library onboarded to 258 including 2 PHI and 25 Hypotactic works).
+- **Q6 Heroides Tracking**: Perseus `Epistulae (Heroides)` (`phi0959.phi002.perseus-lat2`) remains onboarded in parallel with Hypotactic `Heroides` (`hypotactic_Heroides_Ovid`); both editions resolve and are tracked.
+- **Phase 2B Held Works (1 work)**:
+  1. Celsus *De Medicina* (`phi0836.phi002.perseus-lat4`): held so that `-lat6` (Marx) can be onboarded in Phase 2C/4.
+- **Phase 2C Stragglers (B-5..B-7)**:
+  - **B-5**: Cicero *Epistulae* (`phi0474.phi056` *Ad Atticum*, `phi057` *Ad Familiares*, `phi058` *Ad Quintum Fratrem*, `phi059` *Ad Brutum*): requires `<seg rend="dateline">`, `rend="salute"`, `rend="opener"`.
+  - **B-6**: Cicero *Pro Roscio Amerino* `phi0474.phi002` (`<desc rend="align(center)">`), *In Verrem* `phi005` (`<ref>`, typo `quote@smallcaos`), *Tusculanae Disputationes* `phi049` (typo `aign(blockquote)`), Seneca *De Beneficiis* `phi1017.phi013` (`l@rend="F"`), Petronius *Fragmenta* `phi0972.phi001f` (`<lemma>`, `<term>`).
+  - **B-7**: Augustine *Epistulae* (Select Letters, Baxter 1930) `stoa0040.stoa011.perseus-lat1/-lat2`: requires `<ref>` content node and entity handling, unlocking `-lat2` with title metadata override.
 
 ### Phase 3 — Speakers, stage directions, verse-in-prose (medium; one UI feature)
 

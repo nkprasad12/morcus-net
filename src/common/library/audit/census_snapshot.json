@@ -2,7 +2,7 @@
   "schema": 1,
   "source": {
     "repo": "canonical-latinLit",
-    "commit": "47c90661d778250c0b0541ff5a2dc4071d3f0aed",
+    "commit": "66b1fcdc566fe1295cc8855d4b1dba348195dcae",
     "dirty": false
   },
   "works": {
@@ -2612,7 +2612,7 @@
     },
     "phi0474.phi027.perseus-lat2": {
       "path": "data/phi0474/phi027/phi0474.phi027.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -3288,7 +3288,7 @@
     },
     "phi0474.phi042.perseus-lat2": {
       "path": "data/phi0474/phi042/phi0474.phi042.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "body",
@@ -3413,7 +3413,7 @@
     },
     "phi0474.phi045.perseus-lat2": {
       "path": "data/phi0474/phi045/phi0474.phi045.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -3509,7 +3509,7 @@
     },
     "phi0474.phi047.perseus-lat2": {
       "path": "data/phi0474/phi047/phi0474.phi047.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -4505,7 +4505,7 @@
     },
     "phi0478.phi003.perseus-lat2": {
       "path": "data/phi0478/phi003/phi0478.phi003.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -4954,7 +4954,7 @@
     },
     "phi0588.abo022.perseus-lat2": {
       "path": "data/phi0588/abo022/phi0588.abo022.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["abbr", "body", "div", "ex", "expan", "p", "seg"],
       "noteElements": [],
       "rends": [],
@@ -4972,7 +4972,7 @@
     },
     "phi0588.abo023.perseus-lat2": {
       "path": "data/phi0588/abo023/phi0588.abo023.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["abbr", "body", "del", "div", "ex", "expan", "p", "seg"],
       "noteElements": [],
       "rends": [],
@@ -5018,7 +5018,7 @@
     },
     "phi0588.abo025.perseus-lat2": {
       "path": "data/phi0588/abo025/phi0588.abo025.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "body",
@@ -5194,7 +5194,7 @@
     },
     "phi0631.phi003.perseus-lat2": {
       "path": "data/phi0631/phi003/phi0631.phi003.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -5351,7 +5351,7 @@
     },
     "phi0692.phi001.perseus-lat1": {
       "path": "data/phi0692/phi001/phi0692.phi001.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "head", "lb", "p"],
       "noteElements": [],
       "rends": [],
@@ -5361,7 +5361,7 @@
     },
     "phi0692.phi002.perseus-lat1": {
       "path": "data/phi0692/phi002/phi0692.phi002.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "head", "lb", "milestone", "p"],
       "noteElements": [],
       "rends": [],
@@ -5371,7 +5371,7 @@
     },
     "phi0692.phi003.perseus-lat1": {
       "path": "data/phi0692/phi003/phi0692.phi003.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "gap", "head", "lb", "p"],
       "noteElements": [],
       "rends": [],
@@ -5381,7 +5381,7 @@
     },
     "phi0692.phi005.perseus-lat1": {
       "path": "data/phi0692/phi005/phi0692.phi005.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "head", "lb", "p"],
       "noteElements": [],
       "rends": [],
@@ -5391,7 +5391,7 @@
     },
     "phi0692.phi006.perseus-lat1": {
       "path": "data/phi0692/phi006/phi0692.phi006.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "del", "gap", "head", "lb", "note", "p"],
       "noteElements": [],
       "rends": [],
@@ -5401,7 +5401,7 @@
     },
     "phi0692.phi007.perseus-lat1": {
       "path": "data/phi0692/phi007/phi0692.phi007.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "head", "lb", "note", "p"],
       "noteElements": [],
       "rends": [],
@@ -5411,7 +5411,7 @@
     },
     "phi0692.phi008.perseus-lat1": {
       "path": "data/phi0692/phi008/phi0692.phi008.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div1", "head", "lb", "p"],
       "noteElements": [],
       "rends": [],
@@ -5421,7 +5421,7 @@
     },
     "phi0692.phi009.perseus-lat1": {
       "path": "data/phi0692/phi009/phi0692.phi009.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div1", "gap", "head", "lb", "p"],
       "noteElements": [],
       "rends": [],
@@ -5431,7 +5431,7 @@
     },
     "phi0692.phi011.perseus-lat1": {
       "path": "data/phi0692/phi011/phi0692.phi011.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "del", "gap", "head", "lb", "p"],
       "noteElements": [],
       "rends": [],
@@ -5441,7 +5441,7 @@
     },
     "phi0692.phi012.perseus-lat1": {
       "path": "data/phi0692/phi012/phi0692.phi012.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "del", "head", "lb", "p"],
       "noteElements": [],
       "rends": [],
@@ -5451,7 +5451,7 @@
     },
     "phi0692.phi013.perseus-lat1": {
       "path": "data/phi0692/phi013/phi0692.phi013.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "head", "lb", "p"],
       "noteElements": [],
       "rends": [],
@@ -5572,7 +5572,7 @@
     },
     "phi0845.phi002.perseus-lat3": {
       "path": "data/phi0845/phi002/phi0845.phi002.perseus-lat3.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6402,7 +6402,7 @@
     },
     "phi0972.phi001p.perseus-lat1": {
       "path": "data/phi0972/phi001p/phi0972.phi001p.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "hi", "l", "milestone", "note", "p", "pb", "quote"],
       "noteElements": ["gap", "hi"],
       "rends": ["hi@italics", "quote@blockquote"],
@@ -6491,7 +6491,7 @@
     },
     "phi1002.phi001.perseus-lat2": {
       "path": "data/phi1002/phi001/phi1002.phi001.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6509,15 +6509,7 @@
         "quote",
         "reg"
       ],
-      "noteElements": [
-        "foreign",
-        "gap",
-        "hi",
-        "milestone",
-        "name",
-        "quote",
-        "reg"
-      ],
+      "noteElements": ["foreign", "gap", "hi", "name", "quote", "reg"],
       "rends": ["hi@italic", "hi@italics", "quote@blockquote"],
       "noteRends": ["hi@italic", "hi@italics"],
       "attrs": [
@@ -6538,13 +6530,7 @@
         "pb@n",
         "quote@rend"
       ],
-      "noteAttrs": [
-        "foreign@xml:lang",
-        "gap@reason",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit"
-      ]
+      "noteAttrs": ["foreign@xml:lang", "gap@reason", "hi@rend"]
     },
     "phi1014.phi001.perseus-lat1": {
       "path": "data/phi1014/phi001/phi1014.phi001.perseus-lat1.xml",
@@ -7100,7 +7086,7 @@
     },
     "phi1017.phi015.perseus-lat2": {
       "path": "data/phi1017/phi015/phi1017.phi015.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -7613,7 +7599,7 @@
     },
     "phi1345.phi001.perseus-lat2": {
       "path": "data/phi1345/phi001/phi1345.phi001.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -8079,7 +8065,7 @@
     },
     "phi1351.phi005.perseus-lat1": {
       "path": "data/phi1351/phi005/phi1351.phi005.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -8108,7 +8094,7 @@
     },
     "phi2003.phi001.perseus-lat1": {
       "path": "data/phi2003/phi001/phi2003.phi001.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -8136,7 +8122,7 @@
     },
     "phi2331.phi001.perseus-lat2": {
       "path": "data/phi2331/phi001/phi2331.phi001.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "gap", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["gap", "q"],
       "rends": [],
@@ -8158,7 +8144,7 @@
     },
     "phi2331.phi002.perseus-lat2": {
       "path": "data/phi2331/phi002/phi2331.phi002.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "label", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["gap"],
       "rends": ["label@opener"],
@@ -8180,7 +8166,7 @@
     },
     "phi2331.phi003.perseus-lat2": {
       "path": "data/phi2331/phi003/phi2331.phi003.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["gap"],
       "rends": [],
@@ -8201,7 +8187,7 @@
     },
     "phi2331.phi004.perseus-lat2": {
       "path": "data/phi2331/phi004/phi2331.phi004.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "gap", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["gap"],
       "rends": [],
@@ -8223,7 +8209,7 @@
     },
     "phi2331.phi005.perseus-lat2": {
       "path": "data/phi2331/phi005/phi2331.phi005.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["gap"],
       "rends": [],
@@ -8244,7 +8230,7 @@
     },
     "phi2331.phi006.perseus-lat2": {
       "path": "data/phi2331/phi006/phi2331.phi006.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["q"],
       "rends": [],
@@ -8265,7 +8251,7 @@
     },
     "phi2331.phi007.perseus-lat2": {
       "path": "data/phi2331/phi007/phi2331.phi007.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["gap", "q"],
       "rends": [],
@@ -8286,7 +8272,7 @@
     },
     "phi2331.phi008.perseus-lat2": {
       "path": "data/phi2331/phi008/phi2331.phi008.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "gap", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add"],
       "rends": [],
@@ -8308,7 +8294,7 @@
     },
     "phi2331.phi009.perseus-lat2": {
       "path": "data/phi2331/phi009/phi2331.phi009.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "gap", "milestone", "note", "p", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -8330,7 +8316,7 @@
     },
     "phi2331.phi010.perseus-lat2": {
       "path": "data/phi2331/phi010/phi2331.phi010.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "gap", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add", "del", "gap"],
       "rends": [],
@@ -8352,7 +8338,7 @@
     },
     "phi2331.phi011.perseus-lat2": {
       "path": "data/phi2331/phi011/phi2331.phi011.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add", "gap"],
       "rends": [],
@@ -8373,7 +8359,7 @@
     },
     "phi2331.phi012.perseus-lat2": {
       "path": "data/phi2331/phi012/phi2331.phi012.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add", "del"],
       "rends": [],
@@ -8394,7 +8380,7 @@
     },
     "phi2331.phi013.perseus-lat2": {
       "path": "data/phi2331/phi013/phi2331.phi013.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["gap"],
       "rends": [],
@@ -8415,7 +8401,7 @@
     },
     "phi2331.phi014.perseus-lat2": {
       "path": "data/phi2331/phi014/phi2331.phi014.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["del"],
       "rends": [],
@@ -8436,7 +8422,7 @@
     },
     "phi2331.phi015.perseus-lat2": {
       "path": "data/phi2331/phi015/phi2331.phi015.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add", "gap"],
       "rends": [],
@@ -8457,7 +8443,7 @@
     },
     "phi2331.phi016.perseus-lat2": {
       "path": "data/phi2331/phi016/phi2331.phi016.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add"],
       "rends": [],
@@ -8478,7 +8464,7 @@
     },
     "phi2331.phi017.perseus-lat2": {
       "path": "data/phi2331/phi017/phi2331.phi017.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "gap", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add", "gap"],
       "rends": [],
@@ -8500,7 +8486,7 @@
     },
     "phi2331.phi018.perseus-lat2": {
       "path": "data/phi2331/phi018/phi2331.phi018.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -8531,7 +8517,7 @@
     },
     "phi2331.phi019.perseus-lat2": {
       "path": "data/phi2331/phi019/phi2331.phi019.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -8565,7 +8551,7 @@
     },
     "phi2331.phi020.perseus-lat2": {
       "path": "data/phi2331/phi020/phi2331.phi020.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add", "gap"],
       "rends": [],
@@ -8586,7 +8572,7 @@
     },
     "phi2331.phi021.perseus-lat2": {
       "path": "data/phi2331/phi021/phi2331.phi021.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add", "gap", "q"],
       "rends": [],
@@ -8607,7 +8593,7 @@
     },
     "phi2331.phi022.perseus-lat2": {
       "path": "data/phi2331/phi022/phi2331.phi022.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "gap", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["foreign"],
       "rends": [],
@@ -8629,7 +8615,7 @@
     },
     "phi2331.phi023.perseus-lat2": {
       "path": "data/phi2331/phi023/phi2331.phi023.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -8663,7 +8649,7 @@
     },
     "phi2331.phi024.perseus-lat2": {
       "path": "data/phi2331/phi024/phi2331.phi024.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add", "foreign"],
       "rends": [],
@@ -8684,7 +8670,7 @@
     },
     "phi2331.phi025.perseus-lat2": {
       "path": "data/phi2331/phi025/phi2331.phi025.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["add", "foreign", "gap"],
       "rends": [],
@@ -8705,7 +8691,7 @@
     },
     "phi2331.phi026.perseus-lat2": {
       "path": "data/phi2331/phi026/phi2331.phi026.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -8735,7 +8721,7 @@
     },
     "phi2331.phi027.perseus-lat2": {
       "path": "data/phi2331/phi027/phi2331.phi027.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["foreign", "gap"],
       "rends": [],
@@ -8756,7 +8742,7 @@
     },
     "phi2331.phi028.perseus-lat2": {
       "path": "data/phi2331/phi028/phi2331.phi028.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "gap", "milestone", "note", "p", "pb", "q"],
       "noteElements": ["foreign"],
       "rends": [],
@@ -8778,7 +8764,7 @@
     },
     "phi2331.phi029.perseus-lat2": {
       "path": "data/phi2331/phi029/phi2331.phi029.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -8811,7 +8797,7 @@
     },
     "phi2331.phi030.perseus-lat2": {
       "path": "data/phi2331/phi030/phi2331.phi030.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "milestone", "note", "p", "pb", "q", "title"],
       "noteElements": ["foreign", "gap"],
       "rends": [],
@@ -8933,7 +8919,7 @@
     },
     "stoa0045.stoa001.perseus-lat2": {
       "path": "data/stoa0045/stoa001/stoa0045.stoa001.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "gap", "head", "l", "note", "p", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9009,7 +8995,7 @@
     },
     "stoa0045.stoa004.perseus-lat2": {
       "path": "data/stoa0045/stoa004/stoa0045.stoa004.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "foreign", "head", "l", "note", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9029,7 +9015,7 @@
     },
     "stoa0045.stoa005.perseus-lat2": {
       "path": "data/stoa0045/stoa005/stoa0045.stoa005.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "head", "l", "p", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9048,7 +9034,7 @@
     },
     "stoa0045.stoa006.perseus-lat2": {
       "path": "data/stoa0045/stoa006/stoa0045.stoa006.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "foreign", "head", "l", "p", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9101,7 +9087,7 @@
     },
     "stoa0045.stoa008.perseus-lat2": {
       "path": "data/stoa0045/stoa008/stoa0045.stoa008.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "gap", "head", "l", "note", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9121,7 +9107,7 @@
     },
     "stoa0045.stoa009.perseus-lat2": {
       "path": "data/stoa0045/stoa009/stoa0045.stoa009.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "l", "note", "p", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9141,7 +9127,7 @@
     },
     "stoa0045.stoa010.perseus-lat2": {
       "path": "data/stoa0045/stoa010/stoa0045.stoa010.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "foreign", "head", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9160,7 +9146,7 @@
     },
     "stoa0045.stoa011.perseus-lat2": {
       "path": "data/stoa0045/stoa011/stoa0045.stoa011.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -9199,7 +9185,7 @@
     },
     "stoa0045.stoa012.perseus-lat2": {
       "path": "data/stoa0045/stoa012/stoa0045.stoa012.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "foreign", "head", "l", "p", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9219,7 +9205,7 @@
     },
     "stoa0045.stoa013.perseus-lat2": {
       "path": "data/stoa0045/stoa013/stoa0045.stoa013.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9237,7 +9223,7 @@
     },
     "stoa0045.stoa014.perseus-lat2": {
       "path": "data/stoa0045/stoa014/stoa0045.stoa014.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "p", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9254,7 +9240,7 @@
     },
     "stoa0045.stoa015.perseus-lat2": {
       "path": "data/stoa0045/stoa015/stoa0045.stoa015.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -9336,7 +9322,7 @@
     },
     "stoa0045.stoa018.perseus-lat2": {
       "path": "data/stoa0045/stoa018/stoa0045.stoa018.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "foreign", "head", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9355,7 +9341,7 @@
     },
     "stoa0045.stoa019.perseus-lat2": {
       "path": "data/stoa0045/stoa019/stoa0045.stoa019.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -9387,7 +9373,7 @@
     },
     "stoa0045.stoa020.perseus-lat2": {
       "path": "data/stoa0045/stoa020/stoa0045.stoa020.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "note", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9406,7 +9392,7 @@
     },
     "stoa0045.stoa021.perseus-lat2": {
       "path": "data/stoa0045/stoa021/stoa0045.stoa021.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "milestone", "note", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9427,7 +9413,7 @@
     },
     "stoa0045.stoa022.perseus-lat2": {
       "path": "data/stoa0045/stoa022/stoa0045.stoa022.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "head", "l", "note", "p", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9467,7 +9453,7 @@
     },
     "stoa0045.stoa026.perseus-lat2": {
       "path": "data/stoa0045/stoa026/stoa0045.stoa026.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "gap", "head", "l", "note", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9487,7 +9473,7 @@
     },
     "stoa0045.stoa027.perseus-lat2": {
       "path": "data/stoa0045/stoa027/stoa0045.stoa027.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "gap", "l", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9506,7 +9492,7 @@
     },
     "stoa0045.stoa028.perseus-lat2": {
       "path": "data/stoa0045/stoa028/stoa0045.stoa028.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -9582,7 +9568,7 @@
     },
     "stoa0058.stoa001.perseus-lat2": {
       "path": "data/stoa0058/stoa001/stoa0058.stoa001.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -9617,7 +9603,7 @@
     },
     "stoa0058.stoa003.perseus-lat1": {
       "path": "data/stoa0058/stoa003/stoa0058.stoa003.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "label", "milestone", "p", "pb", "q"],
       "noteElements": [],
       "rends": ["q@undirect"],
@@ -9638,7 +9624,7 @@
     },
     "stoa0058.stoa006.perseus-lat1": {
       "path": "data/stoa0058/stoa006/stoa0058.stoa006.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "milestone", "p", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9657,7 +9643,7 @@
     },
     "stoa0058.stoa023.perseus-lat1": {
       "path": "data/stoa0058/stoa023/stoa0058.stoa023.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -9689,7 +9675,7 @@
     },
     "stoa0058.stoa025.perseus-lat1": {
       "path": "data/stoa0058/stoa025/stoa0058.stoa025.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -9721,7 +9707,7 @@
     },
     "stoa0058.stoa028.perseus-lat1": {
       "path": "data/stoa0058/stoa028/stoa0058.stoa028.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "label", "milestone", "p", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9742,7 +9728,7 @@
     },
     "stoa0079.stoa001.perseus-lat1": {
       "path": "data/stoa0079/stoa001/stoa0079.stoa001.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -9787,7 +9773,7 @@
     },
     "stoa0089.stoa002.perseus-lat2": {
       "path": "data/stoa0089/stoa002/stoa0089.stoa002.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "l", "note", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9809,7 +9795,7 @@
     },
     "stoa0089.stoa003.perseus-lat2": {
       "path": "data/stoa0089/stoa003/stoa0089.stoa003.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9850,7 +9836,7 @@
     },
     "stoa0089.stoa005.perseus-lat2": {
       "path": "data/stoa0089/stoa005/stoa0089.stoa005.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "del", "div", "head", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9871,7 +9857,7 @@
     },
     "stoa0089.stoa006.perseus-lat2": {
       "path": "data/stoa0089/stoa006/stoa0089.stoa006.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9891,7 +9877,7 @@
     },
     "stoa0089.stoa007.perseus-lat2": {
       "path": "data/stoa0089/stoa007/stoa0089.stoa007.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9932,7 +9918,7 @@
     },
     "stoa0089.stoa009.perseus-lat2": {
       "path": "data/stoa0089/stoa009/stoa0089.stoa009.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -9952,7 +9938,7 @@
     },
     "stoa0089.stoa010.perseus-lat2": {
       "path": "data/stoa0089/stoa010/stoa0089.stoa010.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9971,7 +9957,7 @@
     },
     "stoa0089.stoa011.perseus-lat2": {
       "path": "data/stoa0089/stoa011/stoa0089.stoa011.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "l", "note", "pb"],
       "noteElements": [],
       "rends": [],
@@ -9992,7 +9978,7 @@
     },
     "stoa0089.stoa012.perseus-lat2": {
       "path": "data/stoa0089/stoa012/stoa0089.stoa012.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["#comment", "body", "div", "head", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -10012,7 +9998,7 @@
     },
     "stoa0089.stoa013.perseus-lat2": {
       "path": "data/stoa0089/stoa013/stoa0089.stoa013.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "pb"],
       "noteElements": [],
       "rends": [],
@@ -10031,7 +10017,7 @@
     },
     "stoa0089.stoa014.perseus-lat2": {
       "path": "data/stoa0089/stoa014/stoa0089.stoa014.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -10050,7 +10036,7 @@
     },
     "stoa0162.stoa004.perseus-lat2": {
       "path": "data/stoa0162/stoa004/stoa0162.stoa004.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",
@@ -10130,7 +10116,7 @@
     },
     "stoa0238.stoa002.perseus-lat2": {
       "path": "data/stoa0238/stoa002/stoa0238.stoa002.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -10148,7 +10134,7 @@
     },
     "stoa0238.stoa003.perseus-lat2": {
       "path": "data/stoa0238/stoa003/stoa0238.stoa003.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "pb"],
       "noteElements": [],
       "rends": [],
@@ -10166,7 +10152,7 @@
     },
     "stoa0238.stoa004.perseus-lat2": {
       "path": "data/stoa0238/stoa004/stoa0238.stoa004.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -10184,7 +10170,7 @@
     },
     "stoa0238.stoa005.perseus-lat2": {
       "path": "data/stoa0238/stoa005/stoa0238.stoa005.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "del", "div", "head", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -10202,7 +10188,7 @@
     },
     "stoa0238.stoa006.perseus-lat2": {
       "path": "data/stoa0238/stoa006/stoa0238.stoa006.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "del", "div", "head", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -10220,7 +10206,7 @@
     },
     "stoa0238.stoa007.perseus-lat2": {
       "path": "data/stoa0238/stoa007/stoa0238.stoa007.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "l", "note", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -10239,7 +10225,7 @@
     },
     "stoa0238.stoa008.perseus-lat2": {
       "path": "data/stoa0238/stoa008/stoa0238.stoa008.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "del", "div", "head", "l", "pb", "q"],
       "noteElements": [],
       "rends": [],
@@ -10257,7 +10243,7 @@
     },
     "stoa0238.stoa009.perseus-lat2": {
       "path": "data/stoa0238/stoa009/stoa0238.stoa009.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "pb"],
       "noteElements": [],
       "rends": [],
@@ -10293,7 +10279,7 @@
     },
     "stoa0255.stoa006.perseus-lat2": {
       "path": "data/stoa0255/stoa006/stoa0255.stoa006.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "note", "p", "pb"],
       "noteElements": [],
       "rends": [],
@@ -10313,7 +10299,7 @@
     },
     "stoa0255.stoa007.perseus-lat2": {
       "path": "data/stoa0255/stoa007/stoa0255.stoa007.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -10346,7 +10332,7 @@
     },
     "stoa0255.stoa008.perseus-lat2": {
       "path": "data/stoa0255/stoa008/stoa0255.stoa008.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "note", "p", "pb"],
       "noteElements": ["gap"],
       "rends": [],
@@ -10363,7 +10349,7 @@
     },
     "stoa0255.stoa009.perseus-lat2": {
       "path": "data/stoa0255/stoa009/stoa0255.stoa009.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "note", "p", "pb"],
       "noteElements": [],
       "rends": [],
@@ -10381,7 +10367,7 @@
     },
     "stoa0255.stoa010.perseus-lat2": {
       "path": "data/stoa0255/stoa010/stoa0255.stoa010.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -10415,7 +10401,7 @@
     },
     "stoa0255.stoa011.perseus-lat2": {
       "path": "data/stoa0255/stoa011/stoa0255.stoa011.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -10451,7 +10437,7 @@
     },
     "stoa0255.stoa012.perseus-lat2": {
       "path": "data/stoa0255/stoa012/stoa0255.stoa012.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "note", "p", "pb", "quote"],
       "noteElements": [],
       "rends": ["quote@blockquote"],
@@ -10469,7 +10455,7 @@
     },
     "stoa0255.stoa013.perseus-lat2": {
       "path": "data/stoa0255/stoa013/stoa0255.stoa013.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "note", "p", "pb", "quote"],
       "noteElements": [],
       "rends": ["quote@blockquote"],
@@ -10488,7 +10474,7 @@
     },
     "stoa0255.stoa014.perseus-lat2": {
       "path": "data/stoa0255/stoa014/stoa0255.stoa014.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -10536,7 +10522,7 @@
     },
     "stoa0261.stoa002.perseus-lat1": {
       "path": "data/stoa0261/stoa002/stoa0261.stoa002.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",

@@ -88,13 +88,9 @@ export const NOT_YET_ONBOARDED: readonly string[] = [
   "phi1017.phi010.perseus-lat2",
   "phi1017.phi013.perseus-lat2",
   "phi1348.abo011.perseus-lat2",
-  "phi2331.phi002.perseus-lat2",
-  "phi2331.phi026.perseus-lat2",
   "stoa0040.stoa011.perseus-lat1",
   "stoa0040.stoa011.perseus-lat2",
-  "stoa0045.stoa019.perseus-lat2",
   "stoa0054.stoa006.perseus-lat1",
-  "stoa0058.stoa003.perseus-lat1",
 ];
 
 export interface WorkMarkupViolations {

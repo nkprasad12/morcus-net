@@ -27,7 +27,7 @@ export const LatinWorks = {
   CICERO_PRO_M_CAELIO: "phi0474.phi024.perseus-lat2",
   CICERO_DE_PROVINCIIS_CONSULARIBUS: "phi0474.phi025.perseus-lat2",
   CICERO_PRO_BALBO: "phi0474.phi026.perseus-lat2",
-  // CICERO_IN_PISONEM: "phi0474.phi027.perseus-lat2",
+  CICERO_IN_PISONEM: "phi0474.phi027.perseus-lat2",
   CICERO_PRO_PLANCIO: "phi0474.phi028.perseus-lat2",
   CICERO_PRO_SCAURO: "phi0474.phi029.perseus-lat2",
   CICERO_PRO_RABIRIO_POSTUMO: "phi0474.phi030.perseus-lat2",
@@ -45,7 +45,7 @@ export const LatinWorks = {
   // Skipped 42 b/c it had a textpart without an n
   CICERO_DE_RE_PUBLICA: "phi0474.phi043.perseus-lat2",
   // 44 is missing?
-  // CICERO_ACADEMICA: "phi0474.phi045.perseus-lat2", // Has <note> that is meant to be inline
+  CICERO_ACADEMICA: "phi0474.phi045.perseus-lat2",
   CICERO_LUCULLUS: "phi0474.phi046.perseus-lat2",
   CICERO_DE_FINIBUS: "phi0474.phi048.perseus-lat2",
   CICERO_DE_SENECTUTE: "phi0474.phi051.perseus-lat2",
@@ -130,15 +130,166 @@ export const LatinWorks = {
   GELLIUS_NOCTES_ATTICAE: "phi1254.phi001.perseus-lat2",
   MARTIAL_EPIGRAMMATA: "phi1294.phi002.perseus-lat2",
   TERTULLIAN_APOLOGETICUM: "stoa0275.stoa009.perseus-lat2",
+
+  // Phase 2B: Cicero (Philosophica & Rhetorica)
+  CICERO_TOPICA: "phi0474.phi042.perseus-lat2",
+  CICERO_PARADOXA_STOICORUM: "phi0474.phi047.perseus-lat2",
+
+  // Phase 2B: Quintus Tullius Cicero
+  QUINTUS_CICERO_COMMENTARIOLUM_PETITIONIS: "phi0478.phi003.perseus-lat2",
+
+  // Phase 2B: Cornelius Nepos
+  NEPOS_HAMILCAR: "phi0588.abo022.perseus-lat2",
+  NEPOS_HANNIBAL: "phi0588.abo023.perseus-lat2",
+  NEPOS_ATTICUS: "phi0588.abo025.perseus-lat2",
+
+  // Phase 2B: Sallust
+  SALLUST_HISTORIAE_FRAGMENTA: "phi0631.phi003.perseus-lat2",
+
+  // Phase 2B: Appendix Vergiliana
+  APPENDIX_VERGILIANA_DIRAE: "phi0692.phi001.perseus-lat1",
+  APPENDIX_VERGILIANA_LYDIA: "phi0692.phi002.perseus-lat1",
+  APPENDIX_VERGILIANA_CULEX: "phi0692.phi003.perseus-lat1",
+  APPENDIX_VERGILIANA_COPA: "phi0692.phi005.perseus-lat1",
+  APPENDIX_VERGILIANA_ELEGIAE_IN_MAECENATEM: "phi0692.phi006.perseus-lat1",
+  APPENDIX_VERGILIANA_CIRIS: "phi0692.phi007.perseus-lat1",
+  APPENDIX_VERGILIANA_PRIAPEA: "phi0692.phi008.perseus-lat1",
+  APPENDIX_VERGILIANA_CATALEPTON: "phi0692.phi009.perseus-lat1",
+  APPENDIX_VERGILIANA_MORETUM: "phi0692.phi011.perseus-lat1",
+  APPENDIX_VERGILIANA_DE_INSTITUTIONE_VIRI_BONI: "phi0692.phi012.perseus-lat1",
+  APPENDIX_VERGILIANA_DE_EST_ET_NON: "phi0692.phi013.perseus-lat1",
+
+  // Phase 2B: Columella
+  COLUMELLA_RES_RUSTICA: "phi0845.phi002.perseus-lat3",
+
+  // Phase 2B: Petronius
+  PETRONIUS_POEMS: "phi0972.phi001p.perseus-lat1",
+
+  // Phase 2B: Quintilian
+  QUINTILIAN_INSTITUTIO_ORATORIA: "phi1002.phi001.perseus-lat2",
+
+  // Phase 2B: Seneca the Younger (Epistulae Morales)
+  SENECA_EPISTULAE_MORALES: "phi1017.phi015.perseus-lat2",
+
+  // Phase 2B: Silius Italicus
+  SILIUS_ITALICUS_PUNICA: "phi1345.phi001.perseus-lat2",
+
+  // Phase 2B: Tacitus
+  TACITUS_ANNALES: "phi1351.phi005.perseus-lat1",
+
+  // Phase 2B: Apicius
+  APICIUS_DE_RE_COQUINARIA: "phi2003.phi001.perseus-lat1",
+
+  // Phase 2B: Historia Augusta
+  HISTORIA_AUGUSTA_HADRIAN: "phi2331.phi001.perseus-lat2",
+  HISTORIA_AUGUSTA_AELIUS: "phi2331.phi002.perseus-lat2",
+  HISTORIA_AUGUSTA_ANTONINUS_PIUS: "phi2331.phi003.perseus-lat2",
+  HISTORIA_AUGUSTA_MARCUS_AURELIUS: "phi2331.phi004.perseus-lat2",
+  HISTORIA_AUGUSTA_VERUS: "phi2331.phi005.perseus-lat2",
+  HISTORIA_AUGUSTA_AVIDIUS_CASSIUS: "phi2331.phi006.perseus-lat2",
+  HISTORIA_AUGUSTA_COMMODUS: "phi2331.phi007.perseus-lat2",
+  HISTORIA_AUGUSTA_PERTINAX: "phi2331.phi008.perseus-lat2",
+  HISTORIA_AUGUSTA_DIDIUS_JULIANUS: "phi2331.phi009.perseus-lat2",
+  HISTORIA_AUGUSTA_SEVERUS: "phi2331.phi010.perseus-lat2",
+  HISTORIA_AUGUSTA_PESCENNIUS_NIGER: "phi2331.phi011.perseus-lat2",
+  HISTORIA_AUGUSTA_CLODIUS_ALBINUS: "phi2331.phi012.perseus-lat2",
+  HISTORIA_AUGUSTA_CARACALLA: "phi2331.phi013.perseus-lat2",
+  HISTORIA_AUGUSTA_GETA: "phi2331.phi014.perseus-lat2",
+  HISTORIA_AUGUSTA_MACRINUS: "phi2331.phi015.perseus-lat2",
+  HISTORIA_AUGUSTA_DIADUMENUS: "phi2331.phi016.perseus-lat2",
+  HISTORIA_AUGUSTA_ELAGABALUS: "phi2331.phi017.perseus-lat2",
+  HISTORIA_AUGUSTA_SEVERUS_ALEXANDER: "phi2331.phi018.perseus-lat2",
+  HISTORIA_AUGUSTA_MAXIMINI_DUO: "phi2331.phi019.perseus-lat2",
+  HISTORIA_AUGUSTA_GORDIANI_TRES: "phi2331.phi020.perseus-lat2",
+  HISTORIA_AUGUSTA_MAXIMUS_ET_BALBINUS: "phi2331.phi021.perseus-lat2",
+  HISTORIA_AUGUSTA_VALERIANI_DUO: "phi2331.phi022.perseus-lat2",
+  HISTORIA_AUGUSTA_GALLIENI_DUO: "phi2331.phi023.perseus-lat2",
+  HISTORIA_AUGUSTA_TYRANNI_TRIGINTA: "phi2331.phi024.perseus-lat2",
+  HISTORIA_AUGUSTA_CLAUDIUS: "phi2331.phi025.perseus-lat2",
+  HISTORIA_AUGUSTA_AURELIANUS: "phi2331.phi026.perseus-lat2",
+  HISTORIA_AUGUSTA_TACITUS: "phi2331.phi027.perseus-lat2",
+  HISTORIA_AUGUSTA_PROBUS: "phi2331.phi028.perseus-lat2",
+  HISTORIA_AUGUSTA_QUADRIGAE_TYRANNORUM: "phi2331.phi029.perseus-lat2",
+  HISTORIA_AUGUSTA_CARUS_CARINUS_NUMERIANUS: "phi2331.phi030.perseus-lat2",
+
+  // Phase 2B: Ausonius
+  AUSONIUS_BISSULA: "stoa0045.stoa001.perseus-lat2",
+  AUSONIUS_PROFESSORES: "stoa0045.stoa004.perseus-lat2",
+  AUSONIUS_CUPIDO_CRUCIATUS: "stoa0045.stoa005.perseus-lat2",
+  AUSONIUS_DE_HEREDIOLO: "stoa0045.stoa006.perseus-lat2",
+  AUSONIUS_EPHEMERIS: "stoa0045.stoa008.perseus-lat2",
+  AUSONIUS_EPICEDION: "stoa0045.stoa009.perseus-lat2",
+  AUSONIUS_EPIGRAMMATA: "stoa0045.stoa010.perseus-lat2",
+  AUSONIUS_EPISTULAE: "stoa0045.stoa011.perseus-lat2",
+  AUSONIUS_EPITAPHIA: "stoa0045.stoa012.perseus-lat2",
+  AUSONIUS_GENETHLIACON: "stoa0045.stoa013.perseus-lat2",
+  AUSONIUS_GRATIARUM_ACTIO: "stoa0045.stoa014.perseus-lat2",
+  AUSONIUS_GRIPHUS: "stoa0045.stoa015.perseus-lat2",
+  AUSONIUS_LUDUS_SEPTEM_SAPIENTUM: "stoa0045.stoa018.perseus-lat2",
+  AUSONIUS_MOSELLA: "stoa0045.stoa019.perseus-lat2",
+  AUSONIUS_ORATIO: "stoa0045.stoa020.perseus-lat2",
+  AUSONIUS_ORDO_URBIUM_NOBILIUM: "stoa0045.stoa021.perseus-lat2",
+  AUSONIUS_PARENTALIA: "stoa0045.stoa022.perseus-lat2",
+  AUSONIUS_PRECATIONES: "stoa0045.stoa026.perseus-lat2",
+  AUSONIUS_VERSUS_PASCHALES: "stoa0045.stoa027.perseus-lat2",
+  AUSONIUS_TECHNOPAEGNION: "stoa0045.stoa028.perseus-lat2",
+
+  // Phase 2B: Boethius
+  BOETHIUS_DE_CONSOLATIONE_PHILOSOPHIAE: "stoa0058.stoa001.perseus-lat2",
+  BOETHIUS_QUOMODO_SUBSTANTIAE: "stoa0058.stoa003.perseus-lat1",
+  BOETHIUS_DE_FIDE_CATHOLICA: "stoa0058.stoa006.perseus-lat1",
+  BOETHIUS_CONTRA_EUTYCHEN_ET_NESTORIUM: "stoa0058.stoa023.perseus-lat1",
+  BOETHIUS_DE_TRINITATE: "stoa0058.stoa025.perseus-lat1",
+  BOETHIUS_UTRUM_PATER_ET_FILIUS: "stoa0058.stoa028.perseus-lat1",
+
+  // Phase 2B: Cato the Elder
+  CATO_DE_AGRI_CULTURA: "stoa0079.stoa001.perseus-lat1",
+
+  // Phase 2B: Claudian
+  CLAUDIAN_DE_BELLO_GILDONICO: "stoa0089.stoa002.perseus-lat2",
+  CLAUDIAN_DE_BELLO_GOTHICO: "stoa0089.stoa003.perseus-lat2",
+  CLAUDIAN_DE_RAPTU_PROSERPINAE: "stoa0089.stoa005.perseus-lat2",
+  CLAUDIAN_EPITHALAMIUM_HONORII: "stoa0089.stoa006.perseus-lat2",
+  CLAUDIAN_FESCENNINA: "stoa0089.stoa007.perseus-lat2",
+  CLAUDIAN_IN_RUFINUM: "stoa0089.stoa009.perseus-lat2",
+  CLAUDIAN_PANEGYRICUS_HONORII_III: "stoa0089.stoa010.perseus-lat2",
+  CLAUDIAN_PANEGYRICUS_HONORII_IV: "stoa0089.stoa011.perseus-lat2",
+  CLAUDIAN_PANEGYRICUS_HONORII_VI: "stoa0089.stoa012.perseus-lat2",
+  CLAUDIAN_PANEGYRICUS_MANLIO_THEODORO: "stoa0089.stoa013.perseus-lat2",
+  CLAUDIAN_PANEGYRICUS_PROBINO_ET_OLYBRIO: "stoa0089.stoa014.perseus-lat2",
+
+  // Phase 2B: Jerome
+  JEROME_EPISTULAE_SELECTIONS: "stoa0162.stoa004.perseus-lat2",
+
+  // Phase 2B: Prudentius
+  PRUDENTIUS_PSYCHOMACHIA: "stoa0238.stoa002.perseus-lat2",
+  PRUDENTIUS_PRAEFATIO: "stoa0238.stoa003.perseus-lat2",
+  PRUDENTIUS_CATHEMERINON: "stoa0238.stoa004.perseus-lat2",
+  PRUDENTIUS_APOTHEOSIS: "stoa0238.stoa005.perseus-lat2",
+  PRUDENTIUS_HAMARTIGENIA: "stoa0238.stoa006.perseus-lat2",
+  PRUDENTIUS_CONTRA_SYMMACHUM: "stoa0238.stoa007.perseus-lat2",
+  PRUDENTIUS_DITTOCHAEON: "stoa0238.stoa008.perseus-lat2",
+  PRUDENTIUS_EPILOGUS: "stoa0238.stoa009.perseus-lat2",
+
+  // Phase 2B: Seneca the Younger (Dialogi)
+  SENECA_DE_CONSOLATIONE_AD_HELVIAM: "stoa0255.stoa006.perseus-lat2",
+  SENECA_DE_CONSOLATIONE_AD_MARCIAM: "stoa0255.stoa007.perseus-lat2",
+  SENECA_DE_CONSOLATIONE_AD_POLYBIUM: "stoa0255.stoa008.perseus-lat2",
+  SENECA_DE_CONSTANTIA: "stoa0255.stoa009.perseus-lat2",
+  SENECA_DE_IRA: "stoa0255.stoa010.perseus-lat2",
+  SENECA_DE_OTIO: "stoa0255.stoa011.perseus-lat2",
+  SENECA_DE_PROVIDENTIA: "stoa0255.stoa012.perseus-lat2",
+  SENECA_DE_TRANQUILLITATE_ANIMI: "stoa0255.stoa013.perseus-lat2",
+  SENECA_DE_VITA_BEATA: "stoa0255.stoa014.perseus-lat2",
+
+  // Phase 2B: Sidonius Apollinaris
+  SIDONIUS_APOLLINARIS_EPISTULAE: "stoa0261.stoa002.perseus-lat1",
+
   // Not onboarded:
-  // - Silius Italicus, Punica (phi1345.phi001.perseus-lat2): 11.453-458 occur
-  //   twice (transposed, and again as `<del>` at their transmitted place), so
-  //   six row ids repeat. Needs non-citable rows (Phase 2).
   // - Suetonius, the ten lives phi1348.abo013-abo022: PHI JSON already ships
   //   all twelve lives (`lat1348.001`, Ihm).
-  // - Columella, Res Rustica I-IX (phi0845.phi002.perseus-lat3): 289 of its
-  //   2,999 apparatus notes have lost their `<note target>` anchor upstream
-  //   and would be dropped.
+  // - Celsus, De Medicina (phi0836.phi002.perseus-lat4): waits so that -lat6
+  //   (Marx) can be onboarded in Phase 2C/4.
 };
 
 export const EnglishTranslations: Record<string, string> = {
