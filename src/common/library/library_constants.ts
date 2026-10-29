@@ -4,7 +4,6 @@ export const LatinWorks = {
   PLINY_NATURAL_HISTORY: "phi0978.phi001.perseus-lat2",
   APULEIUS_METAMORPHOSES: "phi1212.phi002.perseus-lat1",
   LIVY_AUC: "phi0914.phi001.perseus-lat2",
-  // PLAUTUS_AMPHITRYO: "phi0119.phi001.perseus-lat2",
   CAESAR_DBG: "phi0448.phi001.perseus-lat2",
   CAESAR_BELLUM_CIVILIS: "phi0448.phi002.perseus-lat2",
   CICERO_PRO_QUINCTIO: "phi0474.phi001.perseus-lat2",
@@ -119,8 +118,8 @@ export const LatinWorks = {
   CICERO_PRO_CLUENTIO: "phi0474.phi010.perseus-lat2",
   CICERO_PRO_MURENA: "phi0474.phi014.perseus-lat2",
   CICERO_DE_NATURA_DEORUM: "phi0474.phi050.perseus-lat2",
-  // Müller's Teubner text. `-lat4` (Falconer) waits for speaker support.
-  CICERO_DE_DIVINATIONE: "phi0474.phi053.perseus-lat3",
+  // Falconer's Loeb text with speaker support and critical notes. Replaces `-lat3`.
+  CICERO_DE_DIVINATIONE: "phi0474.phi053.perseus-lat4",
   PROPERTIUS_ELEGIAE: "phi0620.phi001.perseus-lat3",
   OVID_EX_PONTO: "phi0959.phi009.perseus-lat2",
   VALERIUS_FLACCUS_ARGONAUTICA: "phi1035.phi001.perseus-lat2",
@@ -297,6 +296,52 @@ export const LatinWorks = {
   // Phase 2B: Sidonius Apollinaris
   SIDONIUS_APOLLINARIS_EPISTULAE: "stoa0261.stoa002.perseus-lat1",
 
+  // Phase 3: Drama, Dialogue, and Ready Stragglers
+  // Plautus (20 comedies)
+  PLAUTUS_AMPHITRUO: "phi0119.phi001.perseus-lat2",
+  PLAUTUS_ASINARIA: "phi0119.phi002.perseus-lat2",
+  PLAUTUS_AULULARIA: "phi0119.phi003.perseus-lat2",
+  PLAUTUS_BACCHIDES: "phi0119.phi004.perseus-lat2",
+  PLAUTUS_CAPTIVI: "phi0119.phi005.perseus-lat2",
+  PLAUTUS_CASINA: "phi0119.phi006.perseus-lat2",
+  PLAUTUS_CISTELLARIA: "phi0119.phi007.perseus-lat2",
+  PLAUTUS_CURCULIO: "phi0119.phi008.perseus-lat2",
+  PLAUTUS_EPIDICUS: "phi0119.phi009.perseus-lat2",
+  PLAUTUS_MENAECHMI: "phi0119.phi010.perseus-lat2",
+  PLAUTUS_MERCATOR: "phi0119.phi011.perseus-lat2",
+  PLAUTUS_MILES_GLORIOSUS: "phi0119.phi012.perseus-lat2",
+  PLAUTUS_MOSTELLARIA: "phi0119.phi013.perseus-lat2",
+  PLAUTUS_PERSA: "phi0119.phi014.perseus-lat2",
+  PLAUTUS_POENULUS: "phi0119.phi015.perseus-lat2",
+  PLAUTUS_PSEUDOLUS: "phi0119.phi016.perseus-lat2",
+  PLAUTUS_RUDENS: "phi0119.phi017.perseus-lat2",
+  PLAUTUS_STICHUS: "phi0119.phi018.perseus-lat2",
+  PLAUTUS_TRINUMMUS: "phi0119.phi019.perseus-lat2",
+  PLAUTUS_TRUCULENTUS: "phi0119.phi020.perseus-lat2",
+
+  // Terence (6 comedies)
+  TERENCE_ANDRIA: "phi0134.phi001.perseus-lat2",
+  TERENCE_HEAUTONTIMORUMENOS: "phi0134.phi002.perseus-lat2",
+  TERENCE_EUNUCHUS: "phi0134.phi003.perseus-lat2",
+  TERENCE_PHORMIO: "phi0134.phi004.perseus-lat2",
+  TERENCE_HECYRA: "phi0134.phi005.perseus-lat2",
+  TERENCE_ADELPHI: "phi0134.phi006.perseus-lat2",
+
+  // Seneca the Younger (10 tragedies)
+  SENECA_HERCULES_FURENS: "phi1017.phi001.perseus-lat2",
+  SENECA_TROADES: "phi1017.phi002.perseus-lat2",
+  SENECA_PHOENISSAE: "phi1017.phi003.perseus-lat2",
+  SENECA_MEDEA: "phi1017.phi004.perseus-lat2",
+  SENECA_PHAEDRA: "phi1017.phi005.perseus-lat2",
+  SENECA_OEDIPUS: "phi1017.phi006.perseus-lat2",
+  SENECA_AGAMEMNON: "phi1017.phi007.perseus-lat2",
+  SENECA_THYESTES: "phi1017.phi008.perseus-lat2",
+  SENECA_HERCULES_OETAEUS: "phi1017.phi009.perseus-lat2",
+  SENECA_OCTAVIA: "phi1017.phi010.perseus-lat2",
+
+  // Ausonius
+  AUSONIUS_PRAEFATIUNCULAE: "stoa0045.stoa025.perseus-lat2",
+
   // Not onboarded:
   // - Suetonius, the ten lives phi1348.abo013-abo022: PHI JSON already ships
   //   all twelve lives (`lat1348.001`, Ihm).
@@ -335,6 +380,8 @@ export const WORK_ID_ALIASES: Readonly<Record<string, string>> = {
   "phi0474.phi046.perseus-lat1": LatinWorks.CICERO_LUCULLUS,
   "phi0474.phi048.perseus-lat1": LatinWorks.CICERO_DE_FINIBUS,
   "phi0474.phi051.perseus-lat1": LatinWorks.CICERO_DE_SENECTUTE,
+  // Phase 3: Falconer Loeb text with speaker support (-lat4) replaces Teubner (-lat3).
+  "phi0474.phi053.perseus-lat3": LatinWorks.CICERO_DE_DIVINATIONE,
   "phi0474.phi054.perseus-lat1": LatinWorks.CICERO_DE_FATO,
   "phi0474.phi055.perseus-lat1": LatinWorks.CICERO_DE_OFFICIIS,
   "phi0474.phi072.perseus-lat1": LatinWorks.CICERO_TIMAEUS,

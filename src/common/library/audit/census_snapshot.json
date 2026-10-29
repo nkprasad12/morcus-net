@@ -8,7 +8,7 @@
   "works": {
     "phi0119.phi001.perseus-lat2": {
       "path": "data/phi0119/phi001/phi0119.phi001.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -49,7 +49,7 @@
     },
     "phi0119.phi002.perseus-lat2": {
       "path": "data/phi0119/phi002/phi0119.phi002.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -92,7 +92,7 @@
     },
     "phi0119.phi003.perseus-lat2": {
       "path": "data/phi0119/phi003/phi0119.phi003.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -135,7 +135,7 @@
     },
     "phi0119.phi004.perseus-lat2": {
       "path": "data/phi0119/phi004/phi0119.phi004.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -179,7 +179,7 @@
     },
     "phi0119.phi005.perseus-lat2": {
       "path": "data/phi0119/phi005/phi0119.phi005.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -223,7 +223,7 @@
     },
     "phi0119.phi006.perseus-lat2": {
       "path": "data/phi0119/phi006/phi0119.phi006.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -275,7 +275,7 @@
     },
     "phi0119.phi007.perseus-lat2": {
       "path": "data/phi0119/phi007/phi0119.phi007.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -316,7 +316,7 @@
     },
     "phi0119.phi008.perseus-lat2": {
       "path": "data/phi0119/phi008/phi0119.phi008.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -357,7 +357,7 @@
     },
     "phi0119.phi009.perseus-lat2": {
       "path": "data/phi0119/phi009/phi0119.phi009.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -399,7 +399,7 @@
     },
     "phi0119.phi010.perseus-lat2": {
       "path": "data/phi0119/phi010/phi0119.phi010.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -441,7 +441,7 @@
     },
     "phi0119.phi011.perseus-lat2": {
       "path": "data/phi0119/phi011/phi0119.phi011.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -484,7 +484,7 @@
     },
     "phi0119.phi012.perseus-lat2": {
       "path": "data/phi0119/phi012/phi0119.phi012.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -527,7 +527,7 @@
     },
     "phi0119.phi013.perseus-lat2": {
       "path": "data/phi0119/phi013/phi0119.phi013.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -571,7 +571,7 @@
     },
     "phi0119.phi014.perseus-lat2": {
       "path": "data/phi0119/phi014/phi0119.phi014.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -614,7 +614,7 @@
     },
     "phi0119.phi015.perseus-lat2": {
       "path": "data/phi0119/phi015/phi0119.phi015.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -662,7 +662,7 @@
     },
     "phi0119.phi016.perseus-lat2": {
       "path": "data/phi0119/phi016/phi0119.phi016.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -702,7 +702,7 @@
     },
     "phi0119.phi017.perseus-lat2": {
       "path": "data/phi0119/phi017/phi0119.phi017.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -743,7 +743,7 @@
     },
     "phi0119.phi018.perseus-lat2": {
       "path": "data/phi0119/phi018/phi0119.phi018.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -786,7 +786,7 @@
     },
     "phi0119.phi019.perseus-lat2": {
       "path": "data/phi0119/phi019/phi0119.phi019.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -830,7 +830,7 @@
     },
     "phi0119.phi020.perseus-lat2": {
       "path": "data/phi0119/phi020/phi0119.phi020.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "add",
@@ -874,7 +874,7 @@
     },
     "phi0134.phi001.perseus-lat2": {
       "path": "data/phi0134/phi001/phi0134.phi001.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -918,7 +918,7 @@
     },
     "phi0134.phi002.perseus-lat2": {
       "path": "data/phi0134/phi002/phi0134.phi002.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -964,7 +964,7 @@
     },
     "phi0134.phi003.perseus-lat2": {
       "path": "data/phi0134/phi003/phi0134.phi003.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "div",
@@ -1013,7 +1013,7 @@
     },
     "phi0134.phi004.perseus-lat2": {
       "path": "data/phi0134/phi004/phi0134.phi004.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -1056,7 +1056,7 @@
     },
     "phi0134.phi005.perseus-lat2": {
       "path": "data/phi0134/phi005/phi0134.phi005.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -1108,7 +1108,7 @@
     },
     "phi0134.phi006.perseus-lat2": {
       "path": "data/phi0134/phi006/phi0134.phi006.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "#comment",
         "body",
@@ -3951,7 +3951,7 @@
     },
     "phi0474.phi053.perseus-lat3": {
       "path": "data/phi0474/phi053/phi0474.phi053.perseus-lat3.xml",
-      "onboarded": true,
+      "onboarded": false,
       "elements": [
         "add",
         "body",
@@ -4019,7 +4019,7 @@
     },
     "phi0474.phi053.perseus-lat4": {
       "path": "data/phi0474/phi053/phi0474.phi053.perseus-lat4.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "#comment",
         "body",
@@ -6671,7 +6671,7 @@
     },
     "phi1017.phi001.perseus-lat2": {
       "path": "data/phi1017/phi001/phi1017.phi001.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6704,7 +6704,7 @@
     },
     "phi1017.phi002.perseus-lat2": {
       "path": "data/phi1017/phi002/phi1017.phi002.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6736,7 +6736,7 @@
     },
     "phi1017.phi003.perseus-lat2": {
       "path": "data/phi1017/phi003/phi1017.phi003.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6768,7 +6768,7 @@
     },
     "phi1017.phi004.perseus-lat2": {
       "path": "data/phi1017/phi004/phi1017.phi004.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6799,7 +6799,7 @@
     },
     "phi1017.phi005.perseus-lat2": {
       "path": "data/phi1017/phi005/phi1017.phi005.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6830,7 +6830,7 @@
     },
     "phi1017.phi006.perseus-lat2": {
       "path": "data/phi1017/phi006/phi1017.phi006.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6863,7 +6863,7 @@
     },
     "phi1017.phi007.perseus-lat2": {
       "path": "data/phi1017/phi007/phi1017.phi007.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6894,7 +6894,7 @@
     },
     "phi1017.phi008.perseus-lat2": {
       "path": "data/phi1017/phi008/phi1017.phi008.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6924,7 +6924,7 @@
     },
     "phi1017.phi009.perseus-lat2": {
       "path": "data/phi1017/phi009/phi1017.phi009.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -6956,7 +6956,7 @@
     },
     "phi1017.phi010.perseus-lat2": {
       "path": "data/phi1017/phi010/phi1017.phi010.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "body",
         "del",
@@ -9511,7 +9511,7 @@
     },
     "stoa0045.stoa025.perseus-lat2": {
       "path": "data/stoa0045/stoa025/stoa0045.stoa025.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["add", "body", "div", "head", "l", "label", "p", "pb"],
       "noteElements": [],
       "rends": [],

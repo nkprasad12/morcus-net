@@ -71,6 +71,8 @@ const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
   ["Cato, Marcus Porcius", "cato"],
   ["Jerome, Saint", "jerome"],
   ["Augustine, Saint", "augustine"],
+  ["T. Maccius Plautus", "plautus"],
+  ["Publius Terentius Afer (Terence)", "terence"],
   // Slugs from before `urlify` dropped punctuation, kept so links still work.
   ["Curtius Rufus, Quintus", "curtius_rufus,_quintus"],
   ["Florus, Lucius Annaeus", "florus,_lucius_annaeus"],
@@ -223,6 +225,8 @@ export const URL_NAME_BY_WORK_ID = new Map<string, string>([
   ["stoa0040.stoa011.perseus-lat2", "epistulae"],
   ["phi0845.phi002.perseus-lat3", "res_rustica"],
   ["stoa0261.stoa002.perseus-lat1", "epistulae"],
+  // Phase 3: Seneca's Hercules Furens (TEI title is just "Hercules", distinct from Hercules Oetaeus).
+  ["phi1017.phi001.perseus-lat2", "hercules_furens"],
 ]);
 
 /** Short display titles pinned by work id, for the same reason. */
@@ -242,6 +246,7 @@ export const SHORT_TITLE_BY_WORK_ID = new Map<string, string>([
   ["stoa0040.stoa011.perseus-lat2", "Epistulae"],
   ["phi0845.phi002.perseus-lat3", "Res Rustica"],
   ["stoa0261.stoa002.perseus-lat1", "Epistulae"],
+  ["phi1017.phi001.perseus-lat2", "Hercules Furens"],
 ]);
 
 /**

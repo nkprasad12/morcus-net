@@ -1056,11 +1056,18 @@ describe("Phase 2B work metadata", () => {
       "columella/res_rustica",
     ],
     [
-      "phi1017.phi001.perseus-lat2",
+      "stoa0255.stoa010.perseus-lat2",
       "Seneca, Lucius Annaeus",
       "De Ira",
       "De Ira",
       "seneca_minor/de_ira",
+    ],
+    [
+      "phi1017.phi001.perseus-lat2",
+      "Seneca, Lucius Annaeus",
+      "Hercules",
+      "Hercules Furens",
+      "seneca_minor/hercules_furens",
     ],
     [
       "phi2331.phi029.perseus-lat2",

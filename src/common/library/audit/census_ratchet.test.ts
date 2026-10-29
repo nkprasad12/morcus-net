@@ -37,49 +37,20 @@ const SNAPSHOT_PATH = path.resolve(__dirname, "census_snapshot.json");
  *    files that are explicitly triaged.
  */
 export const NOT_YET_ONBOARDED: readonly string[] = [
-  "phi0119.phi001.perseus-lat2",
-  "phi0119.phi002.perseus-lat2",
-  "phi0119.phi003.perseus-lat2",
-  "phi0119.phi004.perseus-lat2",
-  "phi0119.phi005.perseus-lat2",
-  "phi0119.phi006.perseus-lat2",
-  "phi0119.phi007.perseus-lat2",
-  "phi0119.phi008.perseus-lat2",
-  "phi0119.phi009.perseus-lat2",
-  "phi0119.phi010.perseus-lat2",
-  "phi0119.phi011.perseus-lat2",
-  "phi0119.phi012.perseus-lat2",
-  "phi0119.phi013.perseus-lat2",
-  "phi0119.phi014.perseus-lat2",
-  "phi0119.phi015.perseus-lat2",
-  "phi0119.phi016.perseus-lat2",
-  "phi0119.phi017.perseus-lat2",
-  "phi0119.phi018.perseus-lat2",
-  "phi0119.phi019.perseus-lat2",
-  "phi0119.phi020.perseus-lat2",
-  "phi0134.phi001.perseus-lat2",
-  "phi0134.phi002.perseus-lat2",
-  "phi0134.phi003.perseus-lat2",
-  "phi0134.phi004.perseus-lat2",
-  "phi0134.phi005.perseus-lat2",
-  "phi0134.phi006.perseus-lat2",
-  "phi0474.phi053.perseus-lat4",
-  "phi0690.phi001.perseus-lat2",
+  // Phase 4 deferred / blocked works:
+  // - Celsus De Medicina: -lat5 (malformed XML), -lat6 (table/row/cell markup)
   "phi0836.phi002.perseus-lat5",
   "phi0836.phi002.perseus-lat6",
+  // - Lactantius De Mortibus Persecutorum: floatingText markup
   "phi1014.phi003.perseus-lat1",
-  "phi1017.phi001.perseus-lat2",
-  "phi1017.phi002.perseus-lat2",
-  "phi1017.phi003.perseus-lat2",
-  "phi1017.phi004.perseus-lat2",
-  "phi1017.phi005.perseus-lat2",
-  "phi1017.phi006.perseus-lat2",
-  "phi1017.phi007.perseus-lat2",
-  "phi1017.phi008.perseus-lat2",
-  "phi1017.phi009.perseus-lat2",
-  "phi1017.phi010.perseus-lat2",
+  // - Suetonius Divus Titus: duplicate Caesar/Suetonius covered by PHI JSON lat1348.001
   "phi1348.abo011.perseus-lat2",
+  // - Jerome Vita Pauli: figure / lg@indent(1)
   "stoa0054.stoa006.perseus-lat1",
+
+  // Note: Vergil Eclogues (phi0690.phi001.perseus-lat2) has 0 unhandled markup,
+  // but is intentionally omitted from LatinWorks / corpus indexing because
+  // Morcus ships the macronized edition with hexameter meter via Hypotactic (Decision 5A-1).
 ];
 
 export interface WorkMarkupViolations {
@@ -245,7 +216,10 @@ export function formatCensusRatchetReport(report: CensusRatchetReport): string {
 describe("process_work allowlist consistency", () => {
   it("handles every element in SWITCH_CONTENT_NODES in transformContentNode's switch", () => {
     for (const name of SWITCH_CONTENT_NODES) {
-      const children = name === "gap" || name === "lb" ? [] : ["Samplecontent"];
+      const children =
+        name === "gap" || name === "lb" || name === "space"
+          ? []
+          : ["Samplecontent"];
       const parent =
         name === "corr" || name === "abbr"
           ? new XmlNode("choice", [], [])
@@ -285,7 +259,7 @@ describe("process_work allowlist consistency", () => {
         );
       } else if (name === "note") {
         node = new XmlNode("note", [["noteId", "0"]], []);
-      } else if (name === "gap" || name === "lb") {
+      } else if (name === "gap" || name === "lb" || name === "space") {
         node = new XmlNode(name, [], []);
       } else {
         if (name === "corr" || name === "abbr") {
@@ -347,7 +321,7 @@ describe("evaluateCensusRatchet on synthetic fixtures", () => {
       "excluded.work": {
         ...cleanWork,
         onboarded: false,
-        elements: [...cleanWork.elements, "sp", "speaker"],
+        elements: [...cleanWork.elements, "castList", "castItem"],
       },
     });
     const report = evaluateCensusRatchet(snapshot, ["excluded.work"]);
@@ -360,7 +334,7 @@ describe("evaluateCensusRatchet on synthetic fixtures", () => {
       "bad.work": {
         ...cleanWork,
         onboarded: false,
-        elements: ["div", "speaker"],
+        elements: ["div", "castList"],
         noteElements: ["hi", "stage"],
         rends: ["p@inddent"],
         noteRends: ["hi@unknownNoteRend"],
@@ -370,7 +344,7 @@ describe("evaluateCensusRatchet on synthetic fixtures", () => {
     expect(report.passed).toBe(false);
     const msg = formatCensusRatchetReport(report);
     expect(msg).toContain("bad.work");
-    expect(msg).toContain("<speaker>");
+    expect(msg).toContain("<castList>");
     expect(msg).toContain("note:<stage>");
     expect(msg).toContain("rend:p@inddent");
     expect(msg).toContain("note-rend:hi@unknownNoteRend");

@@ -276,6 +276,18 @@ Markup stage: one table, one transformer, context predicates for notes. Deletes 
 
 **Exit:** Cluster E + _Academica_; ≈290 onboarded.
 
+#### Phase 3 Completion & Target Counts
+
+- **Phase 3 Onboarded**: 37 net new Perseus Latin works onboarded in `LatinWorks` (38 newly added works plus replacing Cicero _De Divinatione_ `phi0474.phi053.perseus-lat3` with `-lat4`), bringing total Perseus onboarded to 278 (277 in corpus) and total library onboarded to 305 (304 in corpus) across 277,244 citable reader sections and 5,361,084 corpus words:
+  - **Plautus (20 comedies)**: `phi0119.phi001`–`phi020.perseus-lat2` (27,386 citable sections, 165,273 words).
+  - **Terence (6 comedies)**: `phi0134.phi001`–`phi006.perseus-lat2` (6,077 citable sections, 50,024 words).
+  - **Seneca (10 tragedies)**: `phi1017.phi001`–`phi010.perseus-lat2` (11,769 citable sections, 62,732 words; `phi1017.phi001` titled _Hercules Furens_ at `/work/seneca_minor/hercules_furens`).
+  - **Ausonius _Praefatiunculae_**: `stoa0045.stoa025.perseus-lat2` (154 citable sections, 1,100 words; mixed verse/prose letter via Rule F).
+  - **Cicero _De Divinatione_**: upgraded to Loeb edition `phi0474.phi053.perseus-lat4` (+2,630 net citable sections, +1,069 net words; `div1` step repair via Rule G).
+- **Drama & Dialogue Features**:
+  - Structural TEI normalizations (`drama_normalize.ts`): nested `act > act` in Plautus _Rudens_, Terence `act@n="front"` cast list and didascalia extraction (dropping Parry's English introductions), unnumbered split half-lines in Seneca _Octavia_, and mistagged `@part` sequences in Seneca.
+  - Content kinds (`speaker`, `speaker-inline`, `stage`, `cast-list`, `cast-person`, `role-name`, `unclear`, `tei-space`), step-indexed antilabe staircase (`.reader-step-1`–`.reader-step-6` on continuation `<l part="M|F">` and preceding `<speaker>` labels), every-fifth verse line numbering from `@n`, and speaker/stage exclusion from corpus and reader word tokenization.
+
 ### Phase 4 — Secondary axes (needs Open Questions 6 & 8)
 
 Undeclared milestones as inline citable anchors and secondary schemes; explicit pagination depth (Pliny). The survey shows `crossing` is the common case (185 axes) and `aligned` is rare (13), so inline anchors are the general answer; re-run the classifier after Phase 2 since the prototype assumes a `textpart`-only spine.
