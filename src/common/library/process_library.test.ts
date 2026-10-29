@@ -561,13 +561,13 @@ const ONBOARDED_SLUGS: [string, string, string, string][] = [
     "tacitus/agricola",
   ],
   [
-    "phi1351.phi002.perseus-lat1",
+    "phi1351.phi002.perseus-lat2",
     "Cornelius Tacitus",
-    "de Origine et Situ Germanorum Liber",
+    "Germania",
     "tacitus/germania",
   ],
   [
-    "phi1351.phi003.perseus-lat1",
+    "phi1351.phi003.perseus-lat2",
     "Cornelius Tacitus",
     "Dialogus de Oratoribus",
     "tacitus/dialogus_de_oratoribus",

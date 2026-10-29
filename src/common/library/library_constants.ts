@@ -60,8 +60,8 @@ export const LatinWorks = {
   OVID_MEDICAMINA: "phi0959.phi003.perseus-lat2",
   OVID_ARS_AMATORIA: "phi0959.phi004.perseus-lat2",
   TACITUS_AGRICOLA: "phi1351.phi001.perseus-lat2",
-  TACITUS_GERMANIA: "phi1351.phi002.perseus-lat1",
-  TACITUS_DIALOGUS: "phi1351.phi003.perseus-lat1",
+  TACITUS_GERMANIA: "phi1351.phi002.perseus-lat2",
+  TACITUS_DIALOGUS: "phi1351.phi003.perseus-lat2",
   JUVENAL_SATURAE: "phi1276.phi001.perseus-lat2",
   SALLUST_CATALINA1: "phi0631.phi001.perseus-lat4",
   SALLUST_JUGURTHA: "phi0631.phi002.perseus-lat4",
@@ -184,7 +184,7 @@ export const LatinWorks = {
   SILIUS_ITALICUS_PUNICA: "phi1345.phi001.perseus-lat2",
 
   // Phase 2B: Tacitus
-  TACITUS_ANNALES: "phi1351.phi005.perseus-lat1",
+  TACITUS_ANNALES: "phi1351.phi005.perseus-lat2",
 
   // Phase 2B: Apicius
   APICIUS_DE_RE_COQUINARIA: "phi2003.phi001.perseus-lat1",
@@ -339,6 +339,9 @@ export const WORK_ID_ALIASES: Readonly<Record<string, string>> = {
   "phi0474.phi055.perseus-lat1": LatinWorks.CICERO_DE_OFFICIIS,
   "phi0474.phi072.perseus-lat1": LatinWorks.CICERO_TIMAEUS,
   "phi1351.phi001.perseus-lat1": LatinWorks.TACITUS_AGRICOLA,
+  "phi1351.phi002.perseus-lat1": LatinWorks.TACITUS_GERMANIA,
+  "phi1351.phi003.perseus-lat1": LatinWorks.TACITUS_DIALOGUS,
+  "phi1351.phi005.perseus-lat1": LatinWorks.TACITUS_ANNALES,
 };
 
 /** Returns the current id for `workId`, following `WORK_ID_ALIASES`. */

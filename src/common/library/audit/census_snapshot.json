@@ -2,7 +2,7 @@
   "schema": 1,
   "source": {
     "repo": "canonical-latinLit",
-    "commit": "66b1fcdc566fe1295cc8855d4b1dba348195dcae",
+    "commit": "8b536bdf3ed1f43494055efe112433b4a58eab67",
     "dirty": false
   },
   "works": {
@@ -8014,81 +8014,159 @@
       ],
       "noteAttrs": []
     },
-    "phi1351.phi002.perseus-lat1": {
-      "path": "data/phi1351/phi002/phi1351.phi002.perseus-lat1.xml",
+    "phi1351.phi002.perseus-lat2": {
+      "path": "data/phi1351/phi002/phi1351.phi002.perseus-lat2.xml",
       "onboarded": true,
-      "elements": ["body", "div", "head", "p"],
+      "elements": ["body", "div", "p"],
       "noteElements": [],
-      "rends": [],
+      "rends": ["p@align(indent)"],
       "noteRends": [],
       "attrs": [
         "body@xml:base",
         "div@n",
         "div@subtype",
         "div@type",
-        "div@xml:lang"
-      ],
-      "noteAttrs": []
-    },
-    "phi1351.phi003.perseus-lat1": {
-      "path": "data/phi1351/phi003/phi1351.phi003.perseus-lat1.xml",
-      "onboarded": true,
-      "elements": ["add", "body", "del", "div1", "div2", "gap", "head", "p"],
-      "noteElements": [],
-      "rends": [],
-      "noteRends": [],
-      "attrs": ["body@xml:base", "div1@n", "div1@type", "div2@n", "div2@type"],
-      "noteAttrs": []
-    },
-    "phi1351.phi004.perseus-lat2": {
-      "path": "data/phi1351/phi004/phi1351.phi004.perseus-lat2.xml",
-      "onboarded": true,
-      "elements": ["add", "body", "del", "div", "gap", "head", "hi", "p", "pb"],
-      "noteElements": [],
-      "rends": ["hi@7"],
-      "noteRends": [],
-      "attrs": [
-        "add@instant",
-        "add@status",
-        "body@xml:base",
-        "del@instant",
-        "del@status",
-        "div@n",
-        "div@subtype",
-        "div@type",
+        "div@xml:base",
         "div@xml:lang",
-        "gap@reason",
-        "hi@rend",
-        "pb@ed"
+        "p@rend"
       ],
       "noteAttrs": []
     },
-    "phi1351.phi005.perseus-lat1": {
-      "path": "data/phi1351/phi005/phi1351.phi005.perseus-lat1.xml",
+    "phi1351.phi003.perseus-lat2": {
+      "path": "data/phi1351/phi003/phi1351.phi003.perseus-lat2.xml",
       "onboarded": true,
       "elements": [
         "add",
         "body",
         "del",
-        "div1",
+        "div",
         "gap",
         "head",
-        "hi",
-        "milestone",
+        "l",
         "p",
-        "pb"
+        "q",
+        "quote"
       ],
       "noteElements": [],
-      "rends": ["hi@7"],
+      "rends": [
+        "gap@ . . ",
+        "gap@ . . . ",
+        "gap@**",
+        "head@align(center)",
+        "p@align(indent)",
+        "q@double",
+        "q@single",
+        "q@single; merge",
+        "quote@align(blockquote)"
+      ],
       "noteRends": [],
       "attrs": [
         "body@xml:base",
-        "div1@n",
-        "div1@type",
-        "hi@rend",
-        "milestone@n",
-        "milestone@unit",
-        "pb@ed"
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
+        "p@rend",
+        "q@rend",
+        "quote@rend"
+      ],
+      "noteAttrs": []
+    },
+    "phi1351.phi004.perseus-lat2": {
+      "path": "data/phi1351/phi004/phi1351.phi004.perseus-lat2.xml",
+      "onboarded": true,
+      "elements": [
+        "add",
+        "body",
+        "del",
+        "div",
+        "gap",
+        "head",
+        "num",
+        "p",
+        "pb",
+        "q"
+      ],
+      "noteElements": [],
+      "rends": [
+        "gap@ * * ",
+        "gap@ * * * ",
+        "gap@ . . . ",
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single"
+      ],
+      "noteRends": [],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
+        "num@rend",
+        "p@rend",
+        "pb@ed",
+        "q@rend"
+      ],
+      "noteAttrs": []
+    },
+    "phi1351.phi005.perseus-lat2": {
+      "path": "data/phi1351/phi005/phi1351.phi005.perseus-lat2.xml",
+      "onboarded": true,
+      "elements": [
+        "add",
+        "body",
+        "del",
+        "div",
+        "gap",
+        "head",
+        "label",
+        "note",
+        "num",
+        "p",
+        "pb",
+        "q"
+      ],
+      "noteElements": [],
+      "rends": [
+        "gap@ * * ",
+        "gap@ * * * ",
+        "gap@ . . . ",
+        "gap@ . . . . . ",
+        "gap@ . . . . . . ",
+        "gap@ . . . . . . . . ",
+        "head@align(center)",
+        "num@smallcaps",
+        "p@align(indent)",
+        "q@single",
+        "q@single; merge"
+      ],
+      "noteRends": [],
+      "attrs": [
+        "body@xml:base",
+        "div@n",
+        "div@subtype",
+        "div@type",
+        "div@xml:base",
+        "div@xml:lang",
+        "gap@reason",
+        "gap@rend",
+        "head@rend",
+        "note@resp",
+        "note@xml:lang",
+        "num@rend",
+        "p@rend",
+        "pb@ed",
+        "q@rend"
       ],
       "noteAttrs": []
     },

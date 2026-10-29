@@ -2,7 +2,7 @@
   "schema": 1,
   "source": {
     "repo": "canonical-latinLit",
-    "commit": "66b1fcdc566fe1295cc8855d4b1dba348195dcae",
+    "commit": "8b536bdf3ed1f43494055efe112433b4a58eab67",
     "dirty": false
   },
   "works": {
@@ -101,7 +101,7 @@
       "notes": 0,
       "nodes": {
         "gap": 6,
-        "head": 1,
+        "head@center": 1,
         "span": 616,
         "span@indent": 38,
         "span@smallcaps": 13
@@ -117,12 +117,12 @@
       "notes": 450,
       "nodes": {
         "gap": 2,
-        "head": 1,
+        "head@center": 1,
         "note": 450,
         "span": 893,
         "span@blockquote": 1,
-        "span@indent": 55,
-        "span@italic": 1
+        "span@center italic": 1,
+        "span@indent": 55
       }
     },
     "phi0474.phi003.perseus-lat2": {
@@ -135,7 +135,7 @@
       "notes": 0,
       "nodes": {
         "gap": 2,
-        "head": 1,
+        "head@center": 1,
         "span": 495,
         "span@indent": 15,
         "span@smallcaps": 6
@@ -150,7 +150,7 @@
       "lastCitation": "73",
       "notes": 158,
       "nodes": {
-        "head": 2,
+        "head@center": 2,
         "note": 158,
         "span": 340,
         "span@indent": 23,
@@ -167,7 +167,7 @@
       "notes": 3983,
       "nodes": {
         "b": 11,
-        "head": 13,
+        "head@center": 13,
         "note": 3983,
         "span": 5800,
         "span@blockquote smallcaps": 1,
@@ -189,7 +189,7 @@
       "notes": 124,
       "nodes": {
         "gap": 16,
-        "head": 1,
+        "head@center": 1,
         "note": 124,
         "span": 303,
         "span@indent": 12,
@@ -222,7 +222,7 @@
       "lastCitation": "104",
       "notes": 0,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "span": 614,
         "span@indent": 28,
         "span@smallcaps": 22
@@ -252,7 +252,7 @@
       "lastCitation": "202",
       "notes": 1075,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 1075,
         "span": 1451,
         "span@indent": 52,
@@ -287,7 +287,7 @@
       "notes": 0,
       "nodes": {
         "gap": 1,
-        "head": 4,
+        "head@center": 4,
         "span": 903,
         "span@indent": 39,
         "span@smallcaps": 137
@@ -318,7 +318,7 @@
       "notes": 1,
       "nodes": {
         "gap": 5,
-        "head": 1,
+        "head@center": 1,
         "note": 1,
         "span": 258,
         "span@indent": 13,
@@ -334,7 +334,7 @@
       "lastCitation": "4.24",
       "notes": 482,
       "nodes": {
-        "head": 5,
+        "head@center": 5,
         "note": 482,
         "span": 758,
         "span@indent": 27,
@@ -351,7 +351,7 @@
       "notes": 451,
       "nodes": {
         "gap": 3,
-        "head": 1,
+        "head@center": 1,
         "note": 451,
         "span": 782,
         "span@indent": 29,
@@ -367,7 +367,7 @@
       "lastCitation": "93",
       "notes": 579,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 579,
         "span": 565,
         "span@indent": 23
@@ -382,7 +382,7 @@
       "lastCitation": "32",
       "notes": 192,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 192,
         "span": 175,
         "span@indent": 10,
@@ -398,10 +398,11 @@
       "lastCitation": "fragments",
       "notes": 0,
       "nodes": {
-        "b": 18,
+        "b": 14,
+        "b@center": 4,
         "br": 13,
         "gap": 17,
-        "head": 1,
+        "head@center": 1,
         "span": 793,
         "span@indent": 27,
         "span@overline smallcaps": 3,
@@ -417,7 +418,7 @@
       "lastCitation": "25",
       "notes": 90,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 90,
         "span": 130,
         "span@indent": 5
@@ -432,7 +433,7 @@
       "lastCitation": "39",
       "notes": 111,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 111,
         "span": 179,
         "span@indent": 9
@@ -448,7 +449,7 @@
       "notes": 468,
       "nodes": {
         "gap": 2,
-        "head": 1,
+        "head@center": 1,
         "note": 468,
         "span": 834,
         "span@indent": 30,
@@ -465,7 +466,7 @@
       "notes": 190,
       "nodes": {
         "gap": 1,
-        "head": 1,
+        "head@center": 1,
         "note": 190,
         "span": 403,
         "span@indent": 14,
@@ -481,7 +482,7 @@
       "lastCitation": "147",
       "notes": 552,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 552,
         "span": 858,
         "span@blockquote": 15,
@@ -499,7 +500,7 @@
       "notes": 156,
       "nodes": {
         "gap": 2,
-        "head": 1,
+        "head@center": 1,
         "note": 156,
         "span": 180,
         "span@indent": 17,
@@ -516,7 +517,7 @@
       "notes": 476,
       "nodes": {
         "br": 4,
-        "head": 1,
+        "head@center": 1,
         "note": 476,
         "span": 575,
         "span@blockquote": 7,
@@ -533,7 +534,7 @@
       "lastCitation": "47",
       "notes": 109,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 109,
         "span": 258,
         "span@indent": 18
@@ -549,7 +550,7 @@
       "notes": 259,
       "nodes": {
         "gap": 1,
-        "head": 1,
+        "head@center": 1,
         "note": 259,
         "span": 383,
         "span@blockquote": 1,
@@ -567,7 +568,7 @@
       "notes": 0,
       "nodes": {
         "gap": 3,
-        "head": 2,
+        "head@center": 2,
         "span": 659,
         "span@blockquote": 4,
         "span@indent": 24,
@@ -583,7 +584,7 @@
       "lastCitation": "104",
       "notes": 719,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 719,
         "span": 701,
         "span@blockquote": 1,
@@ -601,7 +602,7 @@
       "notes": 133,
       "nodes": {
         "gap": 10,
-        "head": 1,
+        "head@center": 1,
         "note": 133,
         "span": 294,
         "span@blockquote": 1,
@@ -618,7 +619,7 @@
       "notes": 0,
       "nodes": {
         "gap": 1,
-        "head": 1,
+        "head@center": 1,
         "span": 352,
         "span@blockquote": 2,
         "span@indent": 11,
@@ -634,7 +635,7 @@
       "lastCitation": "105",
       "notes": 583,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 583,
         "span": 643,
         "span@indent": 18,
@@ -650,7 +651,7 @@
       "lastCitation": "34",
       "notes": 137,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 137,
         "span": 173,
         "span@indent": 8
@@ -665,7 +666,7 @@
       "lastCitation": "38",
       "notes": 174,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 174,
         "span": 254,
         "span@indent": 7
@@ -680,7 +681,7 @@
       "lastCitation": "43",
       "notes": 205,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 205,
         "span": 273,
         "span@blockquote": 1,
@@ -696,7 +697,7 @@
       "lastCitation": "14.38",
       "notes": 2489,
       "nodes": {
-        "head": 15,
+        "head@center": 15,
         "note": 2489,
         "span": 3801,
         "span@indent": 92,
@@ -714,7 +715,7 @@
       "nodes": {
         "br": 14,
         "gap": 6,
-        "head": 1,
+        "head@center": 1,
         "span": 759,
         "span@blockquote": 7,
         "span@indent": 193,
@@ -731,9 +732,10 @@
       "notes": 0,
       "nodes": {
         "gap": 9,
-        "head": 3,
-        "span": 3293,
+        "head@center": 3,
+        "span": 3292,
         "span@blockquote": 47,
+        "span@center": 1,
         "span@indent": 18,
         "span@smallcaps": 12
       }
@@ -748,7 +750,7 @@
       "notes": 211,
       "nodes": {
         "b@smallcaps": 109,
-        "head": 2,
+        "head@center": 2,
         "note": 211,
         "span": 406,
         "span@indent": 20,
@@ -765,7 +767,7 @@
       "notes": 690,
       "nodes": {
         "gap": 3,
-        "head": 2,
+        "head@center": 2,
         "note": 690,
         "span": 988,
         "span@blockquote": 4,
@@ -783,7 +785,7 @@
       "lastCitation": "238",
       "notes": 687,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 687,
         "span": 830,
         "span@blockquote": 33,
@@ -801,7 +803,7 @@
       "lastCitation": "23",
       "notes": 59,
       "nodes": {
-        "head": 1,
+        "head@center": 1,
         "note": 59,
         "span": 78,
         "span@blockquote": 1,
@@ -820,7 +822,7 @@
       "notes": 110,
       "nodes": {
         "gap": 1,
-        "head": 2,
+        "head@center": 2,
         "note": 110,
         "span": 375,
         "span@blockquote": 2,
@@ -838,10 +840,11 @@
       "lastCitation": "fr.9",
       "notes": 1,
       "nodes": {
-        "b": 77,
+        "b": 76,
+        "b@center": 1,
         "br": 2,
         "gap": 147,
-        "head": 9,
+        "head@center": 9,
         "note": 1,
         "span": 774,
         "span@blockquote": 10,
@@ -861,7 +864,7 @@
       "nodes": {
         "b": 12,
         "gap": 2,
-        "head": 4,
+        "head@center": 4,
         "note": 357,
         "span": 225,
         "span@indent": 55,
@@ -894,7 +897,7 @@
       "notes": 0,
       "nodes": {
         "gap": 2,
-        "head": 6,
+        "head@center": 6,
         "head@indent": 10,
         "span": 133,
         "span@indent": 8,
@@ -911,7 +914,7 @@
       "notes": 1828,
       "nodes": {
         "gap": 4,
-        "head": 5,
+        "head@center": 5,
         "note": 1828,
         "span": 1023,
         "span@blockquote": 7,
@@ -948,7 +951,7 @@
         "b": 2,
         "br": 19,
         "gap": 33,
-        "head": 4,
+        "head@center": 4,
         "span": 1601,
         "span@7": 1,
         "span@blockquote": 70,
@@ -966,7 +969,7 @@
       "notes": 33,
       "nodes": {
         "b@smallcaps": 8,
-        "head": 1,
+        "head@center": 1,
         "note": 33,
         "span": 592,
         "span@blockquote": 13,
@@ -1001,7 +1004,7 @@
       "notes": 16,
       "nodes": {
         "b": 14,
-        "head": 1,
+        "head@center": 1,
         "note": 16,
         "span": 687,
         "span@blockquote": 5,
@@ -1020,7 +1023,7 @@
       "nodes": {
         "b": 2,
         "gap": 7,
-        "head": 4,
+        "head@center": 4,
         "span": 916,
         "span@blockquote": 53,
         "span@indent": 91,
@@ -1038,7 +1041,7 @@
       "nodes": {
         "b": 5,
         "gap": 4,
-        "head": 3,
+        "head@center": 3,
         "span": 193,
         "span@blockquote": 4,
         "span@indent": 20,
@@ -1056,7 +1059,7 @@
       "nodes": {
         "b": 6,
         "gap": 2,
-        "head": 3,
+        "head@center": 3,
         "span": 661,
         "span@blockquote": 21,
         "span@indent": 474,
@@ -1076,7 +1079,7 @@
         "b": 432,
         "br": 431,
         "gap": 7,
-        "head": 16,
+        "head@center": 16,
         "span": 8388,
         "span@blockquote": 23,
         "span@indent": 297,
@@ -1114,7 +1117,7 @@
       "nodes": {
         "b": 29,
         "br": 27,
-        "head": 3,
+        "head@center": 3,
         "note": 1,
         "span": 1361,
         "span@blockquote": 6,
@@ -1135,7 +1138,7 @@
         "b": 26,
         "br": 26,
         "gap": 7,
-        "head": 2,
+        "head@center": 2,
         "span": 720,
         "span@blockquote": 1,
         "span@indent": 57,
@@ -2050,7 +2053,7 @@
       "notes": 1206,
       "nodes": {
         "gap": 5,
-        "head": 124,
+        "head@center": 124,
         "note": 1206,
         "span": 4778,
         "span@blockquote": 99,
@@ -2251,25 +2254,25 @@
       "notes": 0,
       "nodes": {
         "gap": 3,
-        "head": 1,
+        "head@center": 1,
         "span": 414,
         "span@indent": 47
       }
     },
-    "phi1351.phi002.perseus-lat1": {
+    "phi1351.phi002.perseus-lat2": {
       "textParts": ["chapter", "section"],
-      "rows": 186,
+      "rows": 187,
       "pages": 46,
-      "citableRows": 185,
+      "citableRows": 187,
       "firstCitation": "1.1",
       "lastCitation": "46.6",
       "notes": 0,
       "nodes": {
-        "head": 1,
-        "span": 376
+        "span": 322,
+        "span@indent": 52
       }
     },
-    "phi1351.phi003.perseus-lat1": {
+    "phi1351.phi003.perseus-lat2": {
       "textParts": ["chapter", "section"],
       "rows": 227,
       "pages": 42,
@@ -2278,39 +2281,45 @@
       "lastCitation": "42.2",
       "notes": 0,
       "nodes": {
-        "gap": 4,
-        "head": 1,
-        "span": 502
+        "gap": 6,
+        "head@center": 1,
+        "span": 678,
+        "span@blockquote": 1,
+        "span@indent": 57
       }
     },
     "phi1351.phi004.perseus-lat2": {
       "textParts": ["book", "chapter"],
-      "rows": 410,
+      "rows": 394,
       "pages": 5,
-      "citableRows": 405,
+      "citableRows": 389,
       "firstCitation": "1.1",
-      "lastCitation": "5.27",
+      "lastCitation": "5.26",
       "notes": 0,
       "nodes": {
         "gap": 6,
-        "head": 5,
-        "span": 852,
-        "span@7": 1
+        "head@center": 5,
+        "span": 470,
+        "span@indent": 406,
+        "span@smallcaps": 1
       }
     },
-    "phi1351.phi005.perseus-lat1": {
+    "phi1351.phi005.perseus-lat2": {
       "textParts": ["book", "chapter"],
       "rows": 733,
-      "pages": 13,
+      "pages": 12,
       "citableRows": 721,
       "firstCitation": "1.1",
       "lastCitation": "16.35",
-      "notes": 0,
+      "notes": 1,
       "nodes": {
-        "gap": 20,
-        "head": 12,
-        "span": 1568,
-        "span@7": 1
+        "b": 6,
+        "gap": 19,
+        "head@center": 12,
+        "note": 1,
+        "span": 918,
+        "span@indent": 740,
+        "span@smallcaps": 1
       }
     },
     "phi2003.phi001.perseus-lat1": {
