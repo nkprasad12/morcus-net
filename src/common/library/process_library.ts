@@ -427,7 +427,8 @@ export function preprocessPerseusWorks(
       onV2Work(preprocessWorkToV2(result, metadata, translationWork), result);
     } catch (e) {
       if (onError === undefined) {
-        throw e;
+        const message = e instanceof Error ? e.message : String(e);
+        throw new Error(`${workId}: ${message}`, { cause: e });
       }
       onError(workId, e);
     }

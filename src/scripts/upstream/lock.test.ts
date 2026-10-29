@@ -4,7 +4,6 @@ import {
   githubSshUrl,
   isGitHubRepo,
   pinnedDownload,
-  pinnedFileUrl,
   rawFileUrl,
   readUpstreamLock,
   upstreamSource,
@@ -60,7 +59,7 @@ describe("lock helpers", () => {
 
   it("resolves sources from the lock file", () => {
     const lexica = upstreamSource("lexica");
-    expect(pinnedFileUrl("lexica", "x.xml")).toBe(
+    expect(rawFileUrl(lexica, "x.xml")).toBe(
       `https://raw.githubusercontent.com/nkprasad12/lexica/${lexica.commit}/x.xml`
     );
     expect(() => upstreamSource("not-a-source")).toThrow();

@@ -101,6 +101,16 @@ describe("Library Processing", () => {
       "hypotactic_Metamorphoses_Ovid",
     ]);
   });
+
+  test("includes the work id when a work fails to process", async () => {
+    await expect(
+      processLibrary({
+        outputDir: LIB_DIR,
+        corpusInputDir: CORPUS_INPUT_DIR,
+        works: ["texts/latin/perseus/data/missing.work.perseus-lat1.xml"],
+      })
+    ).rejects.toThrow(/missing\.work\.perseus-lat1:/);
+  });
 });
 
 describe("stripXmlProlog", () => {

@@ -7,7 +7,6 @@ import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
 import {
-  DownloadConfig,
   StepConfig,
   runPipeline,
   runtimeMessage,
@@ -25,30 +24,12 @@ import { processForcellini } from "@/common/dictionaries/forcellini/process_forc
 import { buildV2Bundle } from "@/bundler/client.rsbuild";
 import { buildCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 import { buildStaticPagesDb } from "@/web/ui/static_pages_seed.server";
-import {
-  pinnedDownload,
-  pinnedFileUrl,
-  upstreamSource,
-} from "@/scripts/upstream/lock";
+import { pinnedDownload, upstreamSource } from "@/scripts/upstream/lock";
 
-const RAW_LAT_LIB_DIR = "latin_works_raw";
-
-// Every upstream input is pinned to a commit in `upstream_sources.lock.json`.
-const PERSEUS_DOWNLOADS = ALL_SUPPORTED_WORKS.map(perseusDownloadConfig);
-
-function perseusDownloadConfig(resource: string): DownloadConfig {
-  const url = pinnedFileUrl("canonical-latinlit", resource);
-  const name = url.split("/").slice(-1)[0];
-  return { url, path: `${RAW_LAT_LIB_DIR}/${name}` };
-}
+const CANONICAL_LATINLIT_DIR = "canonical-latinlit";
 
 const SETUP_DIRS: StepConfig = {
-  operation: () =>
-    Promise.all([
-      createCleanDir(LIB_DEFAULT_DIR),
-      createCleanDir(RAW_LAT_LIB_DIR),
-    ]).then(() => {}),
-
+  operation: () => createCleanDir(LIB_DEFAULT_DIR).then(() => {}),
   label: "Setting up directories",
 };
 const SAVE_TABLES: StepConfig = {
@@ -103,13 +84,15 @@ const PROCESS_LAT_LIB: StepConfig = {
   operation: () =>
     processLibrary({
       outputDir: LIB_DEFAULT_DIR,
-      works: PERSEUS_DOWNLOADS.map((dl) => dl.path),
+      works: ALL_SUPPORTED_WORKS.map(
+        (resource) => `${CANONICAL_LATINLIT_DIR}/${resource}`
+      ),
       shouldBuildCorpus: true,
     }),
   label: "Latin library processing",
-  dlInfo: PERSEUS_DOWNLOADS,
   repoInfo: {
     repos: [
+      upstreamSource("canonical-latinlit"),
       upstreamSource("hypotactic"),
       upstreamSource("phi-public-domain-json"),
     ],

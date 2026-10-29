@@ -117,11 +117,6 @@ export function rawFileUrl(source: UpstreamSource, path: string): string {
   return `https://raw.githubusercontent.com/${owner}/${repo}/${source.commit}/${path}`;
 }
 
-/** The URL of `path` in the source called `name`, at its pinned commit. */
-export function pinnedFileUrl(name: string, path: string): string {
-  return rawFileUrl(upstreamSource(name), path);
-}
-
 /**
  * The prod build download for a single-file source: its `file` at the pinned
  * commit, saved where its `env` var points.
