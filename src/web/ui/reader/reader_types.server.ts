@@ -62,5 +62,5 @@ export function getDifferentialCitationLabel(
   }
   const partName = textParts[diffIdx] ?? `Section`;
   const value = targetArr[diffIdx] ?? "";
-  return formatSectionLabel(partName, value);
+  return formatSectionLabel(partName, value, targetArr[diffIdx - 1]);
 }

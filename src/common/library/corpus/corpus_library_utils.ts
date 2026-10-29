@@ -1,6 +1,10 @@
 import { checkPresent } from "@/common/assert";
 import type { CorpusInputWork } from "@/common/library/corpus/corpus_common";
 import { ProcessedWork2 } from "@/common/library/library_types";
+import {
+  BLOCK_CONTENT_KINDS,
+  UNTOKENIZED_CONTENT_KINDS,
+} from "@/common/library/process_work";
 import { XmlNode } from "@/common/xml/xml_node";
 
 import fs from "fs";
@@ -45,6 +49,8 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["Cato, Marcus Porcius", "Cato"],
   ["Jerome, Saint", "Jerome"],
   ["Augustine, Saint", "Augustine"],
+  ["T. Maccius Plautus", "Plautus"],
+  ["Publius Terentius Afer (Terence)", "Terence"],
 ]);
 
 /** Exported for testing. */
@@ -81,9 +87,27 @@ function isStructural(node: XmlNode): boolean {
     node.getAttr("block") !== undefined ||
     node.getAttr("l") !== undefined ||
     node.getAttr("sectionHead") !== undefined ||
+    BLOCK_CONTENT_KINDS.has(node.getAttr("kind") ?? "") ||
     node.name === "head" ||
     node.name === "li" ||
     node.name === "ul"
+  );
+}
+
+/**
+ * Whether `node` is set as a superscript or subscript, exactly as
+ * `needsWordBreak` (`work_preprocessor.ts`) decides it.
+ */
+function isRaisedOrLowered(node: XmlNode): boolean {
+  const rend = node.getAttr("rend");
+  return (
+    node.name === "sub" ||
+    node.name === "sup" ||
+    (rend !== undefined &&
+      (rend.includes("superscript") ||
+        rend.includes("sup") ||
+        rend.includes("super") ||
+        rend.includes("subscript")))
   );
 }
 
@@ -98,7 +122,15 @@ function assembleRowText(node: XmlNode | string): string {
   if (node.name === "br") {
     return "\n";
   }
-  if (WORD_BREAK_TAGS.has(node.name)) {
+  // Speaker labels and stage directions are editorial apparatus rather than
+  // words of the text (rule 5): the reader does not tokenize them either
+  // (`tokenize.client.ts`).
+  const kind = node.getAttr("kind");
+  if (
+    WORD_BREAK_TAGS.has(node.name) ||
+    kind === "tei-space" ||
+    UNTOKENIZED_CONTENT_KINDS.has(kind ?? "")
+  ) {
     return " ";
   }
   const rend = node.getAttr("rend");
@@ -106,12 +138,15 @@ function assembleRowText(node: XmlNode | string): string {
   let childContent = "";
   node.children.forEach((child, i) => {
     // Rule 2: two sibling tags with nothing between them are a word break,
-    // unless the first ends a word hyphenated across a line (rule 3).
+    // unless the first ends a word hyphenated across a line (rule 3), or the
+    // second is a superscript or subscript, which the reader sets flush
+    // (`needsWordBreak` in `work_preprocessor.ts`): a siglum like `R²`.
     const previous = node.children[i - 1];
     if (
       typeof child !== "string" &&
       previous instanceof XmlNode &&
-      !childContent.endsWith("-")
+      !childContent.endsWith("-") &&
+      !isRaisedOrLowered(child)
     ) {
       childContent += " ";
     }
@@ -149,6 +184,9 @@ function assembleRowText(node: XmlNode | string): string {
  *    across a line break (`<hi>lon-</hi><hi>gitudo</hi>`), so join.
  * 4. Structure always breaks: lines, blocks, headings, `br`, and note, gap
  *    and space markers.
+ * 5. Speaker labels (a play's `<speaker>`, a dialogue's speaker `<label>`)
+ *    and stage directions (a scene's roster of characters) are not text:
+ *    they contribute no words, but break like a marker.
  *
  * A review of every seam in the library where this rule changes the tokens
  * (9,661) found about 10 errors, all missing spaces in the source TEI. See

@@ -110,7 +110,9 @@ export function preRenderTocItemsHtml(
     const coord = node.id[node.id.length - 1] || "";
     const label =
       options.nodeLabels?.get(key) ??
-      (coord ? formatSectionLabel(partName, coord) : "Contents");
+      (coord
+        ? formatSectionLabel(partName, coord, node.id[node.id.length - 2])
+        : "Contents");
 
     if (node.children.length === 0) {
       const page = pageMap.get(key);

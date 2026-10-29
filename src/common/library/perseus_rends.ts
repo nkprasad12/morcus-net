@@ -72,6 +72,12 @@ const KNOWN_REND = new Set<string>([
   // Indirect discourse on a `<q>` (Boethius), set without quotation marks;
   // see `transformContentNode`.
   "undirect",
+  // A lacuna left as blank space in the edition (`<gap rend="space"/>`,
+  // Plautus' Mercator 1056-1060); every `<gap>` renders as `[gap]`.
+  "space",
+  // Terence's cast lists (`<l rend="bulletted" n="cast">`), which are set as
+  // a cast list anyway; see `normalizeTerenceFrontMatter`.
+  "bulletted",
 ]);
 
 const ALL_KNOWN_REND = new Set<string>([...HANDLED_REND, ...KNOWN_REND]);

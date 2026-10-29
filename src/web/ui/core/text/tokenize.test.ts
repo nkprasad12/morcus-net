@@ -540,6 +540,36 @@ describe("tokenizeSubtree with joinAcrossInline", () => {
       ["liberavissent", 2, undefined],
     ]);
   });
+
+  it("continues across unclear letters and a cast list's role", () => {
+    const { seen } = tokenize(
+      'comba<span class="reader-unclear">e</span>pumam ' +
+        '<span class="reader-role-name italic">sen</span>ex'
+    );
+    expect(seen.map((s) => [s.part?.word ?? s.token, s.index])).toEqual([
+      ["combaepumam", 0],
+      ["combaepumam", 0],
+      ["combaepumam", 0],
+      ["senex", 1],
+      ["senex", 1],
+    ]);
+  });
+
+  it("skips speaker labels and stage directions, which are not words of the text", () => {
+    const { div, seen } = tokenize(
+      '<div class="reader-stage">(SIMO. SOSIA.)</div>' +
+        '<div class="reader-speaker">Mercvrivs</div>' +
+        '<span class="reader-speaker-inline">VA.</span>Quod est' +
+        '<span class="reader-speaker">H.</span>Sed'
+    );
+    expect(seen.map((s) => [s.token, s.index])).toEqual([
+      ["Quod", 0],
+      ["est", 1],
+      ["Sed", 2],
+    ]);
+    expect(div.querySelector(".reader-speaker .lat-word")).toBeNull();
+    expect(div.querySelector(".reader-speaker-inline .lat-word")).toBeNull();
+  });
 });
 
 describe("syncWordGroupHover", () => {

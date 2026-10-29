@@ -1,0 +1,105 @@
+/* ==========================================================================
+   Reader: drama and dialogue (Plautus, Terence, Seneca; Cicero's dialogues)
+
+   Emitted by work_preprocessor.ts for `<speaker>`, `<stage>`, `<listPerson>`,
+   split verse lines (`<l part="M|F">`) and speakers' `<label>`s. Speaker
+   labels and stage directions are apparatus, not text: the reader does not
+   make them clickable words (tokenize.client.ts), and the corpus does not
+   index them.
+
+   Roles in a cast list (`.reader-role-name`) carry `.italic`, and a
+   manuscript blank (`.tei-space`) `.italic` and `.text-muted`, so they need
+   no rules of their own.
+   ========================================================================== */
+
+/* A speaker's name, set above the speech. Also a block when it is a `<span>`
+   inside a prose section (a dialogue quoted in De Divinatione). */
+.reader-passage .reader-speaker {
+  display: block;
+  margin-top: 0.6em;
+  font-size: 0.8em;
+  font-weight: 600;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  /* The split-line step (below), scaled to the label's 0.8em. */
+  --antilabe-step: min(3.125em, 8%);
+}
+
+/* A prose dialogue's speaker attribution (`VA.`, `SCIPIO.`), in the line. */
+.reader-passage .reader-speaker-inline {
+  font-size: 0.85em;
+  font-weight: 600;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* A stage direction: in this corpus, the roster of characters in a scene. */
+.reader-passage .reader-stage {
+  display: block;
+  margin: 0.6em 0 0.2em;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* The parts of a verse line split between speakers (antilabe) step across
+   the page as in a printed edition, one step per part, with the speaker label
+   over each part (`AntilabeSteps` in work_preprocessor.ts). Steps override
+   the plain `.indent`, and shrink on narrow screens. */
+.reader-passage {
+  --antilabe-step: min(2.5em, 8%);
+}
+
+/* A speaker label is set at 0.8em, and an `em` in its step resolves against
+   its own font size, so its step is scaled to land exactly over its line
+   (3.125 × 0.8 = 2.5; set with its other styles above). `%` resolves against
+   the passage width for both. */
+@media (width <= 640px) {
+  .reader-passage {
+    --antilabe-step: min(1.25em, 7.5%);
+  }
+
+  .reader-passage .reader-speaker {
+    --antilabe-step: min(1.5625em, 7.5%);
+  }
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-1 {
+  padding-left: var(--antilabe-step);
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-2 {
+  padding-left: calc(2 * var(--antilabe-step));
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-3 {
+  padding-left: calc(3 * var(--antilabe-step));
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-4 {
+  padding-left: calc(4 * var(--antilabe-step));
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-5 {
+  padding-left: calc(5 * var(--antilabe-step));
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-6 {
+  padding-left: calc(6 * var(--antilabe-step));
+}
+
+/* Dramatis personae: one character per line. */
+.reader-passage .reader-cast-list {
+  margin: 0 0 0.8em;
+}
+
+.reader-passage .reader-cast-person {
+  padding-left: 1.5em;
+}
+
+/* Letters the editor could not read with certainty (Leiden underdot). */
+.reader-passage .reader-unclear {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}

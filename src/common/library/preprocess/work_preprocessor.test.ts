@@ -171,8 +171,41 @@ describe("preprocessWorkToV2 renditions", () => {
     const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
 
     expect(html).toContain('<span class="reader-line">Quid ais?</span>');
+    // In a verse work each part also steps further across the page.
+    expect(html).toContain(
+      '<span class="reader-line indent reader-step-1">Nihil.</span>'
+    );
+    expect(html).toContain(
+      '<span class="reader-line indent reader-step-2">Tace.</span>'
+    );
+  });
+
+  it("only indents a split verse line quoted in a prose work", () => {
+    const work = makeWork({
+      textParts: ["book", "section"],
+      rows: [
+        [
+          ["1", "1"],
+          span(
+            [],
+            "Ut ait poeta: ",
+            span(
+              [
+                ["l", "1"],
+                ["linePart", "F"],
+              ],
+              "Nihil."
+            )
+          ),
+        ],
+      ],
+      pages: [{ id: ["1"], rows: [0, 1] }],
+    });
+
+    const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
+
     expect(html).toContain('<span class="reader-line indent">Nihil.</span>');
-    expect(html).toContain('<span class="reader-line indent">Tace.</span>');
+    expect(html).not.toContain("reader-step");
   });
 
   it("does not indent a split verse line twice", () => {
@@ -195,7 +228,9 @@ describe("preprocessWorkToV2 renditions", () => {
 
     const html = preprocessWorkToV2(work, METADATA).pages[0].singleHtml;
 
-    expect(html).toContain('<span class="reader-line indent">Nihil.</span>');
+    expect(html).toContain(
+      '<span class="reader-line indent reader-step-1">Nihil.</span>'
+    );
   });
 
   it("renders bold and superscript renditions in body text", () => {
@@ -1159,5 +1194,298 @@ describe("preprocessWorkToV2 line-only works", () => {
     expect(v2.tocHtml).toContain(
       '<span class="reader-toc-item-title">Section 1</span>'
     );
+  });
+});
+
+describe("preprocessWorkToV2 drama and dialogue", () => {
+  const kind = (k: string, ...children: (ContentNode | string)[]) =>
+    span([["kind", k]], ...children);
+  const line = (text: string, part?: string) =>
+    span(
+      part === undefined
+        ? [["l", "1"]]
+        : [
+            ["l", "1"],
+            ["linePart", part],
+          ],
+      text
+    );
+  const DRAMA = { textParts: ["act", "scene", "line"] };
+
+  function render(
+    rows: [string[], ContentNode][],
+    options: Partial<WorkOptions> = DRAMA
+  ): string {
+    return preprocessWorkToV2(
+      makeWork({
+        pages: [{ id: ["1", "1"], rows: [0, rows.length] }],
+        ...options,
+        rows,
+      }),
+      METADATA
+    ).pages[0].singleHtml;
+  }
+
+  it("sets a speaker row as a block above the speech, with no citation", () => {
+    const html = render([
+      [["1", "1"], kind("speaker", "Mercvrivs")],
+      [["1", "1", "292"], line("Ibo ut erus quod imperavit.")],
+    ]);
+
+    expect(html).toContain(
+      '<div class="reader-section section-verse"><div class="reader-gutter"></div><div class="reader-passage"><div class="reader-speaker">Mercvrivs</div></div></div>'
+    );
+    expect(html).not.toContain('<span class="reader-line"><div');
+  });
+
+  it("sets a stage direction and a cast list as blocks", () => {
+    const html = render([
+      [
+        ["1", "1"],
+        span(
+          [],
+          kind(
+            "cast-list",
+            kind("cast-person", "CHREMES, ", kind("role-name", "senex."))
+          ),
+          span(
+            [
+              ["para", "1"],
+              ["block", "1"],
+            ],
+            "ACTA LUDIS"
+          )
+        ),
+      ],
+      [["1", "1"], kind("stage", "(SIMO. SOSIA.)")],
+    ]);
+
+    expect(html).toContain(
+      '<div class="reader-passage"><div class="reader-cast-list"><div class="reader-cast-person">CHREMES, <span class="reader-role-name italic">senex.</span></div></div><p class="reader-block">ACTA LUDIS</p></div>'
+    );
+    expect(html).toContain(
+      '<div class="reader-passage"><div class="reader-stage">(SIMO. SOSIA.)</div></div>'
+    );
+  });
+
+  it("keeps a speaker inside a prose row a span, so the paragraph stays valid", () => {
+    const html = render(
+      [
+        [
+          ["1", "66"],
+          span(
+            [],
+            "Tum ",
+            span([], kind("speaker", "H."), line("Sed quid oculis"))
+          ),
+        ],
+      ],
+      { textParts: ["book", "section"], pages: [{ id: ["1"], rows: [0, 1] }] }
+    );
+
+    expect(html).toContain(
+      '<p class="reader-paragraph">Tum <span class="reader-speaker">H.</span><span class="reader-line">Sed quid oculis</span></p>'
+    );
+  });
+
+  it("renders a dialogue's speaker label, unclear letters and a manuscript blank inline", () => {
+    const html = render(
+      [
+        [
+          ["1", "4"],
+          span(
+            [],
+            kind("speaker-inline", "VA."),
+            " Quod comba",
+            kind("unclear", "e"),
+            "pumam ",
+            kind("tei-space"),
+            " haec"
+          ),
+        ],
+      ],
+      { textParts: ["book", "section"], pages: [{ id: ["1"], rows: [0, 1] }] }
+    );
+
+    expect(html).toContain(
+      '<span class="reader-speaker-inline">VA.</span> Quod comba<span class="reader-unclear">e</span>pumam <span class="tei-space italic text-muted" data-no-tokenize="true">[space]</span> haec'
+    );
+  });
+
+  describe("split-line staircase", () => {
+    /** `[row text, class]` of each verse line and speaker on the page. */
+    const steps = (html: string) =>
+      Array.from(
+        html.matchAll(
+          /<(?:span|div) class="(reader-(?:line|speaker)[^"]*)">([^<]*)</g
+        )
+      ).map(([, cls, text]) => [text, /reader-step-\d/.exec(cls)?.[0] ?? ""]);
+
+    it("steps each part further, with its speaker over it, and resets on a new line", () => {
+      const html = render([
+        [["1", "1"], kind("speaker", "A")],
+        [["1", "1", "170"], line("Quid?")],
+        [["1", "1"], kind("speaker", "B")],
+        [["1", "1", "170b"], line("Nihil.", "M")],
+        [["1", "1"], kind("stage", "(A. B.)")],
+        [["1", "1"], kind("speaker", "A")],
+        [["1", "1", "170c"], line("Tace.", "F")],
+        [["1", "1", "171"], line("Abi.")],
+        [["1", "1"], kind("speaker", "B")],
+        [["1", "1", "172"], line("Eo.")],
+      ]);
+      expect(steps(html)).toEqual([
+        ["A", ""],
+        ["Quid?", ""],
+        ["B", "reader-step-1"],
+        ["Nihil.", "reader-step-1"],
+        ["A", "reader-step-2"],
+        ["Tace.", "reader-step-2"],
+        ["Abi.", ""],
+        ["B", ""],
+        ["Eo.", ""],
+      ]);
+      // The stage direction between the parts is not stepped.
+      expect(html).toContain('<div class="reader-stage">(A. B.)</div>');
+    });
+
+    it("stops stepping at six parts", () => {
+      const rows: [string[], ContentNode][] = [[["1", "1", "9"], line("p0")]];
+      for (let i = 1; i <= 7; i++) {
+        rows.push([["1", "1", `9${"bcdefgh"[i - 1]}`], line(`p${i}`, "M")]);
+      }
+      expect(steps(render(rows)).map(([, step]) => step)).toEqual([
+        "",
+        "reader-step-1",
+        "reader-step-2",
+        "reader-step-3",
+        "reader-step-4",
+        "reader-step-5",
+        "reader-step-6",
+        "reader-step-6",
+      ]);
+    });
+  });
+
+  describe("gutter line numbers", () => {
+    const anchors = (html: string) =>
+      Array.from(
+        html.matchAll(
+          /class="section-anchor( latent)?">(?:<span class="cite-prefix">[^<]*<\/span>)?<span class="cite-local">([^<]*)</g
+        )
+      ).map(([, latent, n]) => (latent ? `(${n})` : n));
+
+    it("numbers a scene that opens mid-count by its line numbers", () => {
+      const rows: [string[], ContentNode][] = [];
+      for (let n = 153; n <= 161; n++) {
+        rows.push([["1", "1", String(n)], line(`v${n}`)]);
+      }
+      expect(anchors(render(rows))).toEqual([
+        "153",
+        "(154)",
+        "155",
+        "(156)",
+        "(157)",
+        "(158)",
+        "(159)",
+        "160",
+        "(161)",
+      ]);
+    });
+
+    it("never numbers or counts the continuation of a split line", () => {
+      const html = render([
+        [["1", "1"], kind("speaker", "A")],
+        // `process_work` marks only medial and final parts (`linePart`).
+        [["1", "1", "293"], line("sed quis")],
+        [["1", "1"], kind("speaker", "B")],
+        [["1", "1", "293b"], line("Nullus est", "F")],
+        [["1", "1", "294"], line("mihi")],
+        [["1", "1", "295"], line("par")],
+        [["1", "1", "295b"], line("Quid?")],
+        [["1", "1", "295c"], line("Nihil.", "M")],
+      ]);
+      expect(anchors(html)).toEqual([
+        "293",
+        "(293b)",
+        "(294)",
+        "295",
+        "(295b)",
+        "(295c)",
+      ]);
+    });
+
+    it("numbers a merged line that covers a fifth line", () => {
+      const html = render([
+        [["1", "1", "158"], line("a")],
+        [["1", "1", "159_160"], line("b")],
+        [["1", "1", "161_162"], line("c")],
+      ]);
+      expect(anchors(html)).toEqual(["158", "159_160", "(161_162)"]);
+    });
+
+    it("counts lines whose ids are not numbers", () => {
+      const rows: [string[], ContentNode][] = [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+      ].map((n) => [["1", "1", n], line(n)]);
+      expect(anchors(render(rows))).toEqual([
+        "a",
+        "(b)",
+        "(c)",
+        "(d)",
+        "e",
+        "(f)",
+      ]);
+    });
+
+    it("never numbers a line whose id has anything after its number", () => {
+      const html = render([
+        [["1", "1", "1033"], line("a")],
+        [["1", "1", "1034_frg1"], line("b")],
+        [["1", "1", "1034_frg6"], line("c")],
+        [["1", "1", "1018a1019b"], line("d")],
+        [["1", "1", "375O"], line("e")],
+        [["1", "1", "1035"], line("f")],
+      ]);
+      expect(anchors(html)).toEqual([
+        "1033",
+        "(1034_frg1)",
+        "(1034_frg6)",
+        "(1018a1019b)",
+        "(375O)",
+        "1035",
+      ]);
+    });
+
+    it("always numbers cited prose paragraphs in a verse work", () => {
+      const para = (text: string) => span([["para", "1"]], text);
+      const html = render(
+        [
+          [["2"], span([], "EPISTULA")],
+          [["2", "1"], para("Prima.")],
+          [["2", "2"], para("Secunda.")],
+          [["2", "3"], para("Tertia.")],
+        ],
+        {
+          textParts: ["poem", "line"],
+          pages: [{ id: ["2"], rows: [0, 4] }],
+        }
+      );
+      expect(anchors(html)).toEqual(["1", "2", "3"]);
+    });
+
+    it("numbers one row of a line that spans several rows", () => {
+      const html = render([
+        [["1", "1", "4"], line("a")],
+        [["1", "1", "5"], line("b")],
+        [["1", "1", "5"], line("c")],
+      ]);
+      expect(anchors(html)).toEqual(["4", "5", "(5)"]);
+    });
   });
 });

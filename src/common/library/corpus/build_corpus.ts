@@ -384,10 +384,16 @@ function absorbWork(
     return 1;
   }
 
+  let lastRowHardBreak: number | undefined = undefined;
   work.rows.forEach((rowText, rowIdx) => {
     const breakType = isBreak(rowIdx);
     if (breakType === 2) {
-      breaksIndex.add("hard", tokens.length - 1);
+      // A row with no words (a stanza spacer, a play's speaker label) breaks
+      // both before and after itself at the same token: index it once.
+      if (lastRowHardBreak !== tokens.length - 1) {
+        breaksIndex.add("hard", tokens.length - 1);
+        lastRowHardBreak = tokens.length - 1;
+      }
       breaks[tokens.length - 1] += "\n";
     }
     if (breakType === 1) {

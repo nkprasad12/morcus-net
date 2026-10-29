@@ -5,7 +5,8 @@ import fs from "fs";
 import path from "path";
 import * as he from "he";
 
-import { divideWork, processTei2 } from "@/common/library/process_work";
+import { checkPresent } from "@/common/assert";
+import { processTei2 } from "@/common/library/process_work";
 import {
   extractRowText,
   LIB_CORPUS_INPUT_DIR,
@@ -414,6 +415,32 @@ describe("row_text_parity: extractRowText vs V2 reader tokenization", () => {
     });
   });
 
+  describe("Rule 2 exception: a superscript sibling is set flush", () => {
+    it("joins a siglum and its superscript (Pliny's `<hi rend=bold>R</hi><hi rend=sup>2</hi>`)", () => {
+      const SUP: [string, string][] = [
+        ["rend", "sup"],
+        ["rendParent", "hi"],
+      ];
+      const result = assertRowParity([
+        span(
+          [],
+          "circuli spatio ",
+          span(BOLD, "R"),
+          span(SUP, "2"),
+          " ",
+          span(BOLD, "E"),
+          span(SUP, "2"),
+          " solaris"
+        ),
+      ]);
+      expect(result[0]).toEqual([
+        [0, "circuli"],
+        [1, "spatio"],
+        [4, "solaris"],
+      ]);
+    });
+  });
+
   describe("Rule 3: adjacent sibling tags where the first ends in `-` join as one hyphenated word", () => {
     it("joins `<hi>lon-</hi><hi>gitudo</hi>` and unstyled `<span>lon-</span><span>gitudo</span>`", () => {
       const rows = [
@@ -565,6 +592,140 @@ describe("row_text_parity: extractRowText vs V2 reader tokenization", () => {
     });
   });
 
+  describe("Rule 5: speaker labels are not words; drama markup agrees", () => {
+    const kind = (k: string, ...children: (ContentNode | string)[]) =>
+      span([["kind", k]], ...children);
+
+    it("skips a dialogue's inline speaker label and a speaker quoted in prose", () => {
+      const result = assertRowParity([
+        span([], kind("speaker-inline", "VA."), " Quod est istud?"),
+        span([], kind("speaker-inline", "SCIPIO."), "Saepe"),
+        span(
+          [],
+          "Tum ",
+          span([], kind("speaker", "H."), span(LINE, "Sed quid oculis"))
+        ),
+      ]);
+      expect(result[0]).toEqual([
+        [0, "Quod"],
+        [1, "est"],
+        [2, "istud"],
+      ]);
+      expect(result[1]).toEqual([[0, "Saepe"]]);
+      expect(result[2]).toEqual([
+        [0, "Tum"],
+        [1, "Sed"],
+        [2, "quid"],
+        [3, "oculis"],
+      ]);
+    });
+
+    it("gives speaker and stage rows no words, and keeps cast lists", () => {
+      const result = assertRowParity([
+        kind("speaker", "Sosia"),
+        kind("stage", "(SIMO. SOSIA.)"),
+        span(
+          [],
+          kind(
+            "cast-list",
+            kind("cast-person", "CHREMES, ", kind("role-name", "senex.")),
+            kind("cast-person", "DAVUS,", kind("role-name", "servus."))
+          )
+        ),
+      ]);
+      expect(result[0]).toEqual([]);
+      expect(result[1]).toEqual([]);
+      expect(result[2]).toEqual([
+        [0, "CHREMES"],
+        [1, "senex"],
+        [2, "DAVUS"],
+        [3, "servus"],
+      ]);
+    });
+
+    it("keeps unclear letters in their word and breaks at a manuscript blank", () => {
+      const result = assertRowParity([
+        span(
+          LINE,
+          "comba",
+          kind("unclear", "e"),
+          "pumamitalme",
+          kind("unclear", "t"),
+          "lo est"
+        ),
+        span(LINE, "sapientiam tuam", kind("tei-space"), "haec quidem"),
+      ]);
+      expect(result[0]).toEqual([
+        [0, "combaepumamitalmetlo"],
+        [1, "est"],
+      ]);
+      expect(result[1]).toEqual([
+        [0, "sapientiam"],
+        [1, "tuam"],
+        [2, "haec"],
+        [3, "quidem"],
+      ]);
+    });
+
+    it("agrees end-to-end on a play from TEI", () => {
+      const xml = parseRawXml(
+        `<TEI xmlns="http://www.tei-c.org/ns/1.0">
+        <teiHeader><fileDesc><titleStmt><title>Amphitruo</title><author>Plautus</author></titleStmt>
+        <sourceDesc><p>Test</p></sourceDesc></fileDesc>
+        <encodingDesc><refsDecl xml:id="CTS">
+          <citeStructure match="/TEI/text/body" use="@xml:base">
+            <citeStructure unit="act" match="div/div[@subtype='act']" use="@n">
+              <citeStructure unit="scene" match="div[@subtype='scene']" use="@n">
+                <citeStructure unit="line" match="l" use="@n"/>
+              </citeStructure>
+            </citeStructure>
+          </citeStructure>
+        </refsDecl></encodingDesc></teiHeader>
+        <text><body><div type="edition">
+          <div type="textpart" subtype="act" n="1"><div type="textpart" subtype="scene" n="1">
+            <stage>(SOSIA. MERCVRIVS.)</stage>
+            <sp><speaker>Mercvrivs</speaker>
+              <l n="292">Ibo ut erus quod imperavit.</l><lb ed="actscene" n="5"/>
+              <l n="293" part="I">sed quis hic est homo?</l>
+            </sp>
+            <sp><speaker>Sosia</speaker>
+              <l n="293b" part="F">Nullus comba<unclear>e</unclear>pumam <space/> est</l>
+            </sp>
+          </div></div>
+        </div></body></text></TEI>`,
+        { keepWhitespace: true }
+      );
+      const work = processTei2(xml, { workId: "test.work" });
+      const actualReader = readerWordsForWork(work);
+      const expectedCorpus = work.rows.map(([, row]) => corpusWordsForRow(row));
+      expect(actualReader).toEqual(expectedCorpus);
+      expect(actualReader).toEqual([
+        [],
+        [],
+        [
+          [0, "Ibo"],
+          [1, "ut"],
+          [2, "erus"],
+          [3, "quod"],
+          [4, "imperavit"],
+        ],
+        [
+          [0, "sed"],
+          [1, "quis"],
+          [2, "hic"],
+          [3, "est"],
+          [4, "homo"],
+        ],
+        [],
+        [
+          [0, "Nullus"],
+          [1, "combaepumam"],
+          [2, "est"],
+        ],
+      ]);
+    });
+  });
+
   const dbPath = path.resolve(process.cwd(), LIB_DEFAULT_DIR, LIBRARY_DB);
   const corpusDir = path.resolve(process.cwd(), LIB_CORPUS_INPUT_DIR);
   const runSweep =
@@ -619,27 +780,45 @@ describe("row_text_parity: extractRowText vs V2 reader tokenization", () => {
           const corpus: CorpusInputWork = JSON.parse(
             fs.readFileSync(corpusFile, "utf8")
           );
-          const stubRows: ProcessedWork2["rows"] = corpus.rowIds.map((id) => [
-            id,
-            new XmlNode("span"),
-          ]);
-          const stubTextParts = Array.from(
-            { length: corpus.sectionDepth },
-            (_, idx) => `p${idx}`
-          );
-          const expectedPages = divideWork(stubRows, stubTextParts);
           const dbPages = selectPages.all(workId) as {
             page_index: number;
             single_html: string;
           }[];
-          expect(dbPages.length).toBe(expectedPages.length);
+          const rowKeys = corpus.rowIds.map((id) => id.join("."));
+          // Each page renders a contiguous run of rows, one section per row,
+          // but where a run starts depends on pagination details the corpus
+          // input does not record (headings joined to the first page, rows
+          // on no page). So each page is aligned on its first cited section.
+          let nextRow = 0;
 
           for (let p = 0; p < dbPages.length; p++) {
-            const [startIdx, endIdx] = expectedPages[p].rows;
             const sectionLines = dbPages[p].single_html.split(
               /\n(?=<div class="reader-section)/
             );
-            expect(sectionLines.length).toBe(endIdx - startIdx);
+            const citedIds = sectionLines.map(
+              (line) =>
+                /^<div class="reader-section[^"]*" id="sec-([^"]+)"/.exec(
+                  line
+                )?.[1]
+            );
+            let startIdx = nextRow;
+            const firstCited = citedIds.findIndex((id) => id !== undefined);
+            if (firstCited !== -1) {
+              const rowIdx = rowKeys.indexOf(
+                checkPresent(citedIds[firstCited]),
+                nextRow
+              );
+              expect(rowIdx).toBeGreaterThanOrEqual(firstCited);
+              startIdx = rowIdx - firstCited;
+            }
+            const endIdx = startIdx + sectionLines.length;
+            expect(endIdx).toBeLessThanOrEqual(rowKeys.length);
+            citedIds.forEach((id, k) => {
+              if (id !== undefined) {
+                expect(rowKeys[startIdx + k]).toBe(id);
+              }
+            });
+            nextRow = endIdx;
 
             for (let k = 0; k < sectionLines.length; k++) {
               const rowIdx = startIdx + k;

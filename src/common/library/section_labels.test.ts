@@ -1,4 +1,7 @@
-import { formatSectionLabel } from "@/common/library/section_labels";
+import {
+  formatSectionLabel,
+  formatSectionPath,
+} from "@/common/library/section_labels";
 
 describe("formatSectionLabel", () => {
   test("capitalizes the part name before a numeric token", () => {
@@ -27,5 +30,31 @@ describe("formatSectionLabel", () => {
 
   test("omits the trailing space for an empty token", () => {
     expect(formatSectionLabel("section", "")).toBe("Section");
+  });
+});
+
+describe("prologues of plays", () => {
+  test("labels a prologue act or scene as Prologus", () => {
+    expect(formatSectionLabel("act", "prologue")).toBe("Prologus");
+    expect(formatSectionLabel("scene", "prologue", "1")).toBe("Prologus");
+  });
+
+  test("labels a pr scene inside a prologue act as the prologue", () => {
+    expect(formatSectionLabel("scene", "pr", "prologue")).toBe("Prologus");
+    expect(formatSectionLabel("scene", "pr2", "prologue")).toBe("Prologus 2");
+    // Elsewhere `pr` is still a praefatio.
+    expect(formatSectionLabel("chapter", "pr", "1")).toBe("Praefatio");
+    expect(formatSectionLabel("scene", "pr2", "1")).toBe("Scene pr2");
+  });
+
+  test("formats a whole citation without repeating the prologue", () => {
+    const parts = ["act", "scene", "line"];
+    expect(formatSectionPath(parts, ["prologue", "pr"])).toBe("Prologus");
+    expect(formatSectionPath(parts, ["prologue", "pr1"])).toBe("Prologus 1");
+    expect(formatSectionPath(parts, ["1", "prologue"])).toBe("Act 1, Prologus");
+    expect(formatSectionPath(parts, ["2", "3"])).toBe("Act 2, Scene 3");
+    expect(formatSectionPath(["book", "chapter"], ["1", "pr"])).toBe(
+      "Book 1, Praefatio"
+    );
   });
 });

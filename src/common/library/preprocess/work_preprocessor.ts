@@ -8,7 +8,8 @@ import type {
   V2PreprocessedPage,
   V2PreprocessedWork,
 } from "@/common/library/preprocess/preprocessed_types";
-import { formatSectionLabel } from "@/common/library/section_labels";
+import { BLOCK_CONTENT_KINDS } from "@/common/library/process_work";
+import { formatSectionPath } from "@/common/library/section_labels";
 import { areArraysEqual } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
@@ -16,12 +17,7 @@ import * as he from "he";
 
 function formatPageTitle(pageId: string[], textParts: string[]): string {
   if (pageId.length === 0) return "Preface";
-  const parts: string[] = [];
-  for (let i = 0; i < pageId.length; i++) {
-    const partName = textParts[i] ?? `Level ${i + 1}`;
-    parts.push(formatSectionLabel(partName, pageId[i]));
-  }
-  return parts.join(", ");
+  return formatSectionPath(textParts, pageId);
 }
 
 /**
@@ -37,13 +33,86 @@ function formatLineRangeTitle(lineIds: string[]): string | undefined {
   return first === last ? `Line ${first}` : `Lines ${first}–${last}`;
 }
 
-/** Whether a row's root is a heading or a spacer, which carry no citation. */
+/**
+ * Whether a row's root is a heading, a spacer, a speaker label or a stage
+ * direction, which carry no citation.
+ */
 function isHeadingOrSpacerRow(node: XmlNode): boolean {
+  const kind = node.getAttr("kind");
   return (
     node.name === "head" ||
     node.name === "space" ||
-    node.getAttr("sectionHead") === "1"
+    node.getAttr("sectionHead") === "1" ||
+    kind === "speaker" ||
+    kind === "stage"
   );
+}
+
+/**
+ * A verse line number: the range of integers it covers and whatever follows
+ * them, e.g. `293b` -> `[293, 293, "b"]`, Plautus' merged `159_160` ->
+ * `[159, 160, ""]`, his fragment `1034_frg1` -> `[1034, 1034, "_frg1"]` and
+ * Seneca's transposed `1018a1019b` -> `[1018, 1018, "a1019b"]`; `undefined`
+ * for an id that does not start with a number (`pr`).
+ */
+function parseLineNumber(
+  localId: string
+): [number, number, string] | undefined {
+  const match = /^(\d+)(?:_(\d+))?(.*)$/.exec(localId);
+  if (match === null) {
+    return undefined;
+  }
+  const first = Number(match[1]);
+  const last = match[2] === undefined ? first : Number(match[2]);
+  return last < first ? undefined : [first, last, match[3]];
+}
+
+/** Whether a line numbered `first`..`last` holds line 1 or a multiple of 5. */
+function coversCountedLine(first: number, last: number): boolean {
+  return first === 1 || Math.floor(last / 5) > Math.floor((first - 1) / 5);
+}
+
+/**
+ * Decides which verse line numbers show in the gutter (the rest are latent,
+ * shown on hover): the first line of a page, then every fifth line.
+ *
+ * Every fifth line is read off the line number itself where there is one
+ * (`5`, `10`, ...), so a page that opens mid-count (a Plautus scene starting
+ * at line 153) still numbers 155, 160. A line without a numeric id falls back
+ * to counting lines (the fifth, tenth, ... on the page).
+ *
+ * The continuation of a line split between speakers (`<l part="M|F">`, or a
+ * suffixed id with the same number as the line before, like `293b` after
+ * `293`) never shows a number and is not counted: it is the same verse.
+ */
+class VerseLineNumbering {
+  #counted = 0;
+  #previousId: string | undefined = undefined;
+  #previousBase: number | undefined = undefined;
+
+  /** Whether the line `localId` (whose content is `node`) shows its number. */
+  shows(localId: string, node: XmlNode): boolean {
+    const parsed = parseLineNumber(localId);
+    // A line in several rows (split around a block) is numbered once.
+    const isContinuation =
+      localId === this.#previousId ||
+      node.getAttr("linePart") !== undefined ||
+      (parsed !== undefined &&
+        parsed[2] !== "" &&
+        parsed[0] === this.#previousBase);
+    this.#previousId = localId;
+    this.#previousBase = parsed?.[1];
+    if (isContinuation) {
+      return false;
+    }
+    const index = this.#counted++;
+    if (index === 0) {
+      return true;
+    }
+    return parsed === undefined
+      ? (index + 1) % 5 === 0
+      : parsed[2] === "" && coversCountedLine(parsed[0], parsed[1]);
+  }
 }
 
 /**
@@ -198,6 +267,11 @@ function rendClasses(node: XmlNode): Set<string> {
 /** Elements rendered as markers with no text of their own (rule 4). */
 const MARKER_TAGS = new Set(["br", "space", "gap", "note"]);
 
+/** Whether `node` renders as a marker with no text of its own. */
+function isMarker(node: XmlNode): boolean {
+  return MARKER_TAGS.has(node.name) || node.getAttr("kind") === "tei-space";
+}
+
 /**
  * Whether `node` renders as inline text, as opposed to a marker or a line,
  * block, heading or list element, which break words on their own.
@@ -205,7 +279,8 @@ const MARKER_TAGS = new Set(["br", "space", "gap", "note"]);
 function isInlineTextElement(node: XmlNode): boolean {
   const rends = rendClasses(node);
   return !(
-    MARKER_TAGS.has(node.name) ||
+    isMarker(node) ||
+    BLOCK_CONTENT_KINDS.has(node.getAttr("kind") ?? "") ||
     node.name === "head" ||
     node.name === "ul" ||
     node.name === "li" ||
@@ -223,7 +298,7 @@ function inlineText(node: XmlNode | string): string {
   if (typeof node === "string") {
     return node;
   }
-  if (MARKER_TAGS.has(node.name)) {
+  if (isMarker(node)) {
     return "";
   }
   return node.children.map(inlineText).join("");
@@ -268,17 +343,39 @@ function needsWordBreak(previous: XmlNode, next: XmlNode): boolean {
 }
 
 /**
+ * The element and class of each content `kind` (see `ContentKind` in
+ * `process_work.ts`). A speaker or stage direction that is a row of its own
+ * is a `<div>`; inside a row (a speech quoted in a prose section) it is a
+ * `<span>` that the stylesheet sets as a block, since a prose row is a `<p>`.
+ */
+const KIND_HTML: Readonly<
+  Record<string, { tag: "span" | "div"; className: string }>
+> = {
+  speaker: { tag: "span", className: "reader-speaker" },
+  "speaker-inline": { tag: "span", className: "reader-speaker-inline" },
+  stage: { tag: "span", className: "reader-stage" },
+  "cast-list": { tag: "div", className: "reader-cast-list" },
+  "cast-person": { tag: "div", className: "reader-cast-person" },
+  "role-name": { tag: "span", className: "reader-role-name italic" },
+  unclear: { tag: "span", className: "reader-unclear" },
+};
+
+/**
  * Renders a content node as reader HTML.
  *
  * @param isVerseWork Whether the node belongs to a verse work. There, a node
  * that came from a TEI `<p>`/`<ab>` (`para="1"`) renders as a paragraph, so
  * that a prose preface is not set as a verse line. Outside verse works the
  * row is already wrapped in a paragraph and `para` changes nothing.
+ * @param isRowRoot Whether the node is a row's root, so its own block.
+ * @param rowClass An extra class for a row's root (see `AntilabeSteps`).
  */
 function renderXmlNodeCleanHtml(
   node: XmlNode | string,
   notes?: NoteCollector,
-  isVerseWork = false
+  isVerseWork = false,
+  isRowRoot = false,
+  rowClass?: string
 ): string {
   if (typeof node === "string") {
     return he.escape(node);
@@ -289,6 +386,7 @@ function renderXmlNodeCleanHtml(
   const isLine = node.getAttr("l") === "1";
   const isSectionHead = node.getAttr("sectionHead") === "1";
   const noteId = node.getAttr("noteId");
+  const kind = node.getAttr("kind");
 
   if (tag === "br") {
     return "<br>";
@@ -298,6 +396,10 @@ function renderXmlNodeCleanHtml(
   }
   if (tag === "gap") {
     return '<span class="reader-gap text-muted" data-no-tokenize="true">[gap]</span>';
+  }
+  if (kind === "tei-space") {
+    // A blank in the manuscript, inside a verse line.
+    return '<span class="tei-space italic text-muted" data-no-tokenize="true">[space]</span>';
   }
   if (tag === "note" && noteId !== undefined) {
     return renderNoteMarker(noteId, notes);
@@ -336,6 +438,18 @@ function renderXmlNodeCleanHtml(
   if (tag === "li") {
     return `<li>${childrenHtml}</li>`;
   }
+  const kindHtml = kind === undefined ? undefined : KIND_HTML[kind];
+  if (kindHtml !== undefined) {
+    const kindTag =
+      isRowRoot && (kind === "speaker" || kind === "stage")
+        ? "div"
+        : kindHtml.tag;
+    const kindClass =
+      rowClass === undefined
+        ? kindHtml.className
+        : `${kindHtml.className} ${rowClass}`;
+    return `<${kindTag} class="${kindClass}">${childrenHtml}</${kindTag}>`;
+  }
 
   // Handle attributes and renditions
   const classes: string[] = [];
@@ -362,6 +476,11 @@ function renderXmlNodeCleanHtml(
     // moves; anywhere else (verse, above all) the whole block shifts. Mirrors
     // the textIndent / paddingLeft split in `reader.tsx`.
     if (node.getAttr("rendParent") === "p") classes.push("indent-para");
+  }
+  // In a verse work the parts of a split line step across the page
+  // (`AntilabeSteps`). A verse quotation in prose keeps the plain indent.
+  if (rowClass !== undefined) {
+    classes.push(rowClass);
   }
 
   const classAttr = classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
@@ -395,17 +514,73 @@ function renderXmlNodeCleanHtml(
 function renderPassageContent(
   node: XmlNode<ProcessedWorkContentNodeType>,
   isVerseWork: boolean,
-  notes?: NoteCollector
+  notes?: NoteCollector,
+  rowClass?: string
 ): string {
   return wrapPassageHtml(
-    renderXmlNodeCleanHtml(node, notes, isVerseWork),
+    renderXmlNodeCleanHtml(node, notes, isVerseWork, true, rowClass),
     isVerseWork
   );
+}
+
+/** The most steps a split line's parts are indented across the page. */
+const MAX_ANTILABE_STEP = 6;
+
+/**
+ * The staircase of a verse line split between speakers (antilabe), as in a
+ * printed edition: each medial or final part (`linePart`) is indented one
+ * step further than the part before it, so it starts about where that part
+ * ended, and the speaker label over a part is indented with it.
+ *
+ * `classFor` is called on a page's rows in order and returns the step class
+ * (`reader-step-N`) for a row, if any. A whole line, or the first part of a
+ * split one, resets the staircase. Only rows that are a verse line or a
+ * speaker label get a class.
+ */
+class AntilabeSteps {
+  #step = 0;
+  readonly #rows: ProcessedWork2["rows"];
+
+  constructor(rows: ProcessedWork2["rows"]) {
+    this.#rows = rows;
+  }
+
+  classFor(index: number): string | undefined {
+    const node = this.#rows[index][1];
+    if (node.getAttr("l") === "1") {
+      if (node.getAttr("linePart") === undefined) {
+        this.#step = 0;
+        return undefined;
+      }
+      this.#step = Math.min(this.#step + 1, MAX_ANTILABE_STEP);
+      return `reader-step-${this.#step}`;
+    }
+    if (node.getAttr("kind") !== "speaker") {
+      return undefined;
+    }
+    // The speaker of a part sits over it: look ahead to the speech's first
+    // line, past any stage direction.
+    for (let j = index + 1; j < this.#rows.length; j++) {
+      const next = this.#rows[j][1];
+      if (next.getAttr("kind") === "stage") {
+        continue;
+      }
+      if (next.getAttr("l") !== "1" || next.getAttr("linePart") === undefined) {
+        return undefined;
+      }
+      return `reader-step-${Math.min(this.#step + 1, MAX_ANTILABE_STEP)}`;
+    }
+    return undefined;
+  }
 }
 
 /** Wraps a row's rendered HTML in a verse line or prose paragraph. */
 function wrapPassageHtml(rendered: string, isVerseWork: boolean): string {
   const trimmed = rendered.trimStart();
+  // A block of its own: a speaker label, a stage direction or a cast list.
+  if (trimmed.startsWith('<div class="reader-')) {
+    return rendered;
+  }
   if (isVerseWork) {
     // Matches `reader-line` with or without trailing rendition classes, so an
     // indented pentameter is not wrapped in a second, redundant line span.
@@ -636,7 +811,8 @@ export function preprocessWorkToV2(
       "alpha"
     );
 
-    let verseLineIndex = 0;
+    const lineNumbering = new VerseLineNumbering();
+    const antilabe = new AntilabeSteps(work.rows.slice(startIdx, endIdx));
 
     for (let j = startIdx; j < endIdx; j++) {
       const [secId, node] = work.rows[j];
@@ -647,16 +823,23 @@ export function preprocessWorkToV2(
       const isLeafRow = isFullDepthLeaf || j === shallowLeafRow;
       // Rendered once and reused by both views, so a note keeps the same label
       // whether the reader is in single or parallel mode.
-      const latinHtml = renderPassageContent(node, isVerseWork, textNotes);
+      const latinHtml = renderPassageContent(
+        node,
+        isVerseWork,
+        textNotes,
+        isVerseWork ? antilabe.classFor(j - startIdx) : undefined
+      );
 
       // A shallow leaf (a preface or a letter with no sections) is not a verse
       // line, so its label always shows and it does not count towards the
-      // every-fifth-line numbering.
+      // every-fifth-line numbering. Nor is a cited prose paragraph (Rule F in
+      // `cite_structure.ts`: Ausonius' prose letters, cited `pr.1`, `pr.2`).
       const isLatentVerseLabel =
         isVerseWork &&
         isFullDepthLeaf &&
-        verseLineIndex !== 0 &&
-        (verseLineIndex + 1) % 5 !== 0;
+        isLeafRow &&
+        node.getAttr("para") !== "1" &&
+        !lineNumbering.shows(localId, node);
       const anchorClass = isLatentVerseLabel
         ? "section-anchor latent"
         : "section-anchor";
@@ -664,9 +847,6 @@ export function preprocessWorkToV2(
       if (isLeafRow) {
         citationIds.push(dotId);
         citationLocalIds.push(localId);
-        if (isVerseWork && isFullDepthLeaf) {
-          verseLineIndex++;
-        }
       }
 
       const prefixHtml = prefix

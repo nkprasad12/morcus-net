@@ -37,6 +37,83 @@ import {
   rendTokens,
 } from "@/common/library/perseus_rends";
 
+/**
+ * The `kind` attribute on content nodes for drama and dialogue markup, which
+ * `work_preprocessor.ts` renders and `extractRowText` (corpus) and
+ * `tokenize.client.ts` (reader) treat alike:
+ *
+ * - `speaker`: a dramatic `<speaker>` label, set as a block above its speech.
+ * - `speaker-inline`: a prose dialogue's speaker `<label>` (`VA.`, `SCIPIO.`).
+ * - `stage`: a `<stage>` direction (a scene's roster of characters).
+ * - `cast-list`, `cast-person`, `role-name`: a `<listPerson>` cast list.
+ * - `unclear`: `<unclear>` letters, which stay part of their word.
+ * - `tei-space`: a TEI `<space/>`, a blank left in the manuscript. Not the
+ *   `space` rows that `processWorkBody` adds between stanzas.
+ *
+ * Speaker labels and stage directions (in this corpus only scene rosters
+ * like `(SIMO. SOSIA.)`) are editorial apparatus, not words of the text, so
+ * neither the corpus nor the reader's word tokenizer counts them.
+ */
+export type ContentKind =
+  | "speaker"
+  | "speaker-inline"
+  | "stage"
+  | "cast-list"
+  | "cast-person"
+  | "role-name"
+  | "unclear"
+  | "tei-space";
+
+/** `kind`s rendered as their own block, which always break words. */
+export const BLOCK_CONTENT_KINDS: ReadonlySet<string> = new Set<ContentKind>([
+  "speaker",
+  "stage",
+  "cast-list",
+  "cast-person",
+]);
+
+/** `kind`s whose text is excluded from the corpus and from word lookup. */
+export const UNTOKENIZED_CONTENT_KINDS: ReadonlySet<string> =
+  new Set<ContentKind>(["speaker", "speaker-inline", "stage"]);
+
+/** The `kind` of each drama element that becomes a marked `<span>`. */
+const DRAMA_ELEMENT_KINDS: ReadonlyMap<string, ContentKind> = new Map<
+  string,
+  ContentKind
+>([
+  ["speaker", "speaker"],
+  ["stage", "stage"],
+  ["listPerson", "cast-list"],
+  ["person", "cast-person"],
+  ["roleName", "role-name"],
+  ["unclear", "unclear"],
+]);
+
+/**
+ * `<lb ed>` editions that mark a reference numbering rather than a line
+ * break: Plautus' and Terence's `<lb ed="actscene" n="5"/>` every five lines
+ * (and Plautus' 4 `ed="TLN"`), which sit between the `<l>`s of a speech.
+ */
+const REFERENCE_LB_EDITIONS = new Set(["actscene", "TLN"]);
+
+/**
+ * Whether a `<label>` is a prose dialogue's speaker attribution: `type` or
+ * `n="speaker"` (Cicero's De Re Publica, Academica, De Divinatione), or an
+ * untyped label opening a `<said>` (Cato Maior and Laelius:
+ * `<said><label>FANNIUS.</label> ...`). Other labels (an alternative section
+ * number, a letter's opener) are not.
+ */
+function isSpeakerLabel(node: XmlNode, parent?: XmlNode): boolean {
+  if (node.getAttr("type") === "speaker" || node.getAttr("n") === "speaker") {
+    return true;
+  }
+  return (
+    parent?.name === "said" &&
+    node.getAttr("type") === undefined &&
+    node.getAttr("n") === undefined
+  );
+}
+
 // For regular nodes
 const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr", "abbr"]);
 /**
@@ -99,6 +176,15 @@ export const SWITCH_CONTENT_NODES = new Set<string>([
   "ex",
   "del",
   "supplied",
+  // Drama (Plautus, Terence, Seneca) and dialogue; see `transformContentNode`.
+  "sp",
+  "speaker",
+  "stage",
+  "listPerson",
+  "person",
+  "roleName",
+  "space",
+  "unclear",
 ]);
 
 /**
@@ -707,6 +793,15 @@ function preprocessTree(
       if (SKIP_NODES.has(child.name) || isVacuousNote(child)) {
         continue;
       }
+      // A reference marker, not a line break: as a `<br>` between the lines
+      // of a speech it would add a blank verse line every five lines.
+      if (
+        child.name === "lb" &&
+        REFERENCE_LB_EDITIONS.has(child.getAttr("ed") ?? "")
+      ) {
+        assertEqual(child.children.length, 0);
+        continue;
+      }
       assertEqual(child.getAttr("parent"), undefined);
       child.attrs.push(["parent", uid.toString()]);
       stack.push(ancestors.concat(child));
@@ -829,7 +924,10 @@ function convertToRows(
   const sections = checkPresent(data.includedSections[uid]);
   const sid = splitSid(checkPresent(current.getAttr("sid")));
   // If the current node only has one section beneath it, add it as a row.
-  if (sections.size === 1) {
+  // A speech (`<sp>`) is still split into its speaker and its lines, so the
+  // speaker label is set above the speech wherever it stands (a speech whose
+  // only line is unnumbered, like Plautus' `<l><gap/></l>`, holds one section).
+  if (sections.size === 1 && current.name !== "sp") {
     // Check to see if the section is contained within an `lg` node and attach
     // the data of the `lg` node for later processing.
     const nearestLg = findLg(current, data);
@@ -1230,6 +1328,9 @@ export function transformContentNode(
       assert(children.length === 0);
       return new XmlNode("gap", attrs, children);
     case "label": {
+      if (isSpeakerLabel(node, parent)) {
+        return new XmlNode("span", [["kind", "speaker-inline"]], children);
+      }
       const nonWhitespace = children.filter(
         (c) => typeof c !== "string" || c.trim().length > 0
       );
@@ -1306,6 +1407,31 @@ export function transformContentNode(
     case "supplied":
       // Text the editor supplied, in Leiden angle brackets.
       return new XmlNode("span", attrs, ["⟨", ...children, "⟩"]);
+    case "sp":
+      // A speech: its `<speaker>` and lines. Usually split into rows (see
+      // `convertToRows`); inside a prose section (a quoted dialogue in
+      // De Divinatione) it stays inline.
+      return new XmlNode("span", attrs, children);
+    case "speaker":
+    case "stage":
+    case "listPerson":
+    case "person":
+    case "roleName":
+    case "unclear": {
+      const kind = checkPresent(DRAMA_ELEMENT_KINDS.get(node.name));
+      assert(
+        textWeight(node) > 0,
+        () => `Empty <${node.name}> has nothing to show`
+      );
+      return new XmlNode("span", [["kind", kind]], children);
+    }
+    case "space":
+      // A blank in the manuscript (Plautus' Poenulus 1199-1200), inline.
+      assert(
+        textWeight(node) === 0,
+        () => `<space> with content: ${node.toString()}`
+      );
+      return new XmlNode("span", [["kind", "tei-space"]], []);
   }
   throw new Error(`Unknown node: ${node.name}`);
 }

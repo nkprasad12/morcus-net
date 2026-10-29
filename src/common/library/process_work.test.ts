@@ -1829,3 +1829,269 @@ describe("processTei2 coverage of text", () => {
     expect(figNote.name).toBe("gap");
   });
 });
+
+describe("Phase 3 drama and dialogue", () => {
+  function citeStructureDesc(levels: string, older = ""): string {
+    return `<encodingDesc>
+      <refsDecl xml:id="CTS">
+        <citeStructure match="/TEI/text/body" use="@xml:base">${levels}</citeStructure>
+      </refsDecl>
+      ${older}
+    </encodingDesc>`;
+  }
+
+  const ACT_SCENE_LINE = citeStructureDesc(`
+    <citeStructure unit="act" match="div/div[@subtype='act']" use="@n">
+      <citeStructure unit="scene" match="div[@subtype='scene']" use="@n">
+        <citeStructure unit="line" match="l" use="@n"/>
+      </citeStructure>
+    </citeStructure>`);
+
+  const LINE_ONLY = citeStructureDesc(`
+    <citeStructure use="@n" match="milestone[@unit='card']" n="chunk"/>
+    <citeStructure unit="line" match=".//l" use="@n"/>`);
+
+  function play(acts: string): ProcessedWork2 {
+    return processTei2(
+      testRoot(`<div type="edition">${acts}</div>`, ACT_SCENE_LINE),
+      { workId: WORK_ID }
+    );
+  }
+
+  const ids = (work: ProcessedWork2) => work.rows.map(([id]) => id.join("."));
+  const kinds = (work: ProcessedWork2) =>
+    work.rows.map(([, row]) => row.getAttr("kind") ?? row.name);
+
+  it("sets each speaker as a row above its lines, and keeps split lines' ids", () => {
+    const work = play(`
+      <div type="textpart" subtype="act" n="1">
+        <div type="textpart" subtype="scene" n="1">
+          <sp><speaker>Mercvrivs</speaker>
+            <l n="292">Ibo ut erus quod imperavit.</l>
+            <lb ed="actscene" n="5"/>
+            <l n="293" part="I">sed quis hic est homo?</l>
+          </sp>
+          <sp><speaker>Sosia</speaker>
+            <l n="293b" part="F">Nullus est</l>
+          </sp>
+        </div>
+      </div>`);
+
+    expect(work.textParts).toEqual(["act", "scene", "line"]);
+    expect(ids(work)).toEqual(["1.1", "1.1.292", "1.1.293", "1.1", "1.1.293b"]);
+    expect(kinds(work)).toEqual(["speaker", "span", "span", "speaker", "span"]);
+    expect(work.rows[0][1].toString()).toContain("Mercvrivs");
+    expect(work.rows[4][1].getAttr("linePart")).toBe("F");
+    expect(work.pages).toEqual([{ id: ["1", "1"], rows: [0, 5] }]);
+  });
+
+  it("drops <lb ed='actscene|TLN'> reference markers but keeps a line's own <lb/>", () => {
+    const work = play(`
+      <div type="textpart" subtype="act" n="1">
+        <div type="textpart" subtype="scene" n="1">
+          <sp><speaker>A</speaker>
+            <l n="1">unus</l><lb ed="actscene" n="1"/><lb ed="TLN" n="9"/>
+            <l n="2">duo<lb/>tres</l>
+          </sp>
+        </div>
+      </div>`);
+
+    expect(ids(work)).toEqual(["1.1", "1.1.1", "1.1.2"]);
+    const all = work.rows.map(([, row]) => row.toString()).join("");
+    expect(all.match(/<br/g)).toHaveLength(1);
+    expect(work.rows[2][1].toString()).toContain("<br");
+  });
+
+  it("reads an act nested in an act (Rudens' prologue) as a scene", () => {
+    const work = play(`
+      <div type="textpart" subtype="act" n="prologue">
+        <div type="textpart" subtype="act" n="prologue">
+          <sp><speaker>Arcturus</speaker><l n="1">Qui gentes</l></sp>
+        </div>
+      </div>
+      <div type="textpart" subtype="act" n="1">
+        <div type="textpart" subtype="scene" n="1">
+          <sp><speaker>Sceparnio</speaker><l n="83">Pro di</l></sp>
+        </div>
+      </div>`);
+
+    expect(ids(work)).toEqual([
+      "prologue.prologue",
+      "prologue.prologue.1",
+      "1.1",
+      "1.1.83",
+    ]);
+  });
+
+  it("opens a Terence play with its cast list and didascalia, dropping the English introductions", () => {
+    const work = play(`
+      <div type="textpart" subtype="act" n="front">
+        <l n="cast" rend="bulletted"><listPerson>
+          <head>FABULAE INTERLOCUTORES.</head>
+          <person><persName>CHREMES, <roleName>senex.</roleName></persName></person>
+        </listPerson></l>
+        <l n="subject_1" xml:lang="eng"><milestone unit="paragraph"/>INTRODUCTION. THE Andria derives its name</l>
+        <l n="production"><milestone unit="paragraph"/>ANDRIA. ACTA LUDIS MEGALENSIB.</l>
+      </div>
+      <div type="textpart" subtype="act" n="prologue">
+        <div type="textpart" subtype="scene" n="pr">
+          <sp><speaker>PROLOGUS</speaker><l n="1">Poeta quum primum</l></sp>
+        </div>
+      </div>
+      <div type="textpart" subtype="act" n="1">
+        <div type="textpart" subtype="scene" n="1">
+          <stage>(SIMO. SOSIA.)</stage>
+          <sp><speaker>SIMO</speaker><l n="28">Vos istaec intro auferte</l></sp>
+        </div>
+      </div>`);
+
+    expect(ids(work)).toEqual([
+      "prologue.pr",
+      "prologue.pr",
+      "prologue.pr.1",
+      "1.1",
+      "1.1",
+      "1.1.28",
+    ]);
+    expect(kinds(work)).toEqual([
+      "span",
+      "speaker",
+      "span",
+      "stage",
+      "speaker",
+      "span",
+    ]);
+    const front = work.rows[0][1].toString();
+    expect(front).toContain('kind="cast-list"');
+    expect(front).toContain('kind="cast-person"');
+    expect(front).toContain('kind="role-name"');
+    expect(front).toContain("ACTA LUDIS MEGALENSIB.");
+    expect(front).not.toContain("INTRODUCTION");
+    // The front matter opens the first page.
+    expect(work.pages[0]).toEqual({ id: ["prologue", "pr"], rows: [0, 3] });
+  });
+
+  it("fails on unexpected Terence front matter", () => {
+    expect(() =>
+      play(`
+        <div type="textpart" subtype="act" n="front"><l n="argument">x</l></div>
+        <div type="textpart" subtype="act" n="1">
+          <div type="textpart" subtype="scene" n="1"><l n="1">a</l></div>
+        </div>`)
+    ).toThrow(/Unexpected <l n="argument">/);
+  });
+
+  it("numbers Octavia's unnumbered final half-lines after their first part", () => {
+    const work = processTei2(
+      testRoot(
+        `<div type="edition">
+          <milestone unit="card" n="1"/>
+          <sp who="nutrix"><speaker>Nvtr.</speaker><l n="185" part="I">Vis magna populi est.</l></sp>
+          <stage>Octavia Nutrix</stage>
+          <sp who="octavia"><speaker>Oct.</speaker><l part="F">Principis maior tamen.</l></sp>
+          <sp><speaker>Nvtr.</speaker><l n="186">Sed</l></sp>
+        </div>`,
+        LINE_ONLY
+      ),
+      { workId: WORK_ID }
+    );
+
+    expect(work.textParts).toEqual(["line"]);
+    expect(ids(work)).toEqual(["", "185", "", "", "185b", "", "186"]);
+    expect(kinds(work)).toEqual([
+      "speaker",
+      "span",
+      "stage",
+      "speaker",
+      "span",
+      "speaker",
+      "span",
+    ]);
+  });
+
+  it("splits a speech whose only line is unnumbered (Cistellaria's lost line)", () => {
+    const work = play(`
+      <div type="textpart" subtype="act" n="2">
+        <div type="textpart" subtype="scene" n="1">
+          <sp><speaker>Melaenis</speaker><l n="461">eos</l></sp>
+          <sp><speaker>(unknown)</speaker><l><gap reason="lost"/></l></sp>
+          <sp><speaker>(Selenivm)</speaker><l n="462">dabis.</l></sp>
+        </div>
+      </div>`);
+
+    expect(ids(work)).toEqual([
+      "2.1",
+      "2.1.461",
+      "2.1",
+      "2.1",
+      "2.1",
+      "2.1.462",
+    ]);
+    expect(kinds(work)[2]).toBe("speaker");
+    expect(work.rows[3][1].getAttr("l")).toBe("1");
+    expect(work.rows[3][1].toString()).toContain("<gap");
+  });
+
+  it("keeps a speech quoted inside a prose section inline (De Divinatione)", () => {
+    const work = processTei2(
+      testRootWithNote(
+        `<div n="66" type="textpart" subtype="section"><p>Tum
+          <quote><sp><speaker>H.</speaker><l>Sed quid oculis</l></sp></quote>
+        </p></div>`
+      ),
+      { workId: WORK_ID }
+    );
+
+    expect(ids(work)).toEqual(["1.66"]);
+    const row = work.rows[0][1].toString();
+    expect(row).toMatch(/kind="speaker"[^>]*>H\.</);
+    expect(row).toContain("Sed quid oculis");
+  });
+
+  it.each([
+    ['<label type="speaker">VA.</label>', "p"],
+    ['<label n="speaker">C.</label>', "p"],
+    ['<label type="speaker" rend="smallcaps" n="Cicero">Cicero.</label>', "p"],
+  ])("marks the speaker label %s", (label, parent) => {
+    const row = processRowContent(
+      parseRawXml(`<${parent}>${label} Quod est istud?</${parent}>`)
+    );
+    const speaker = XmlNode.assertIsNode(row.children[0]);
+    expect(speaker.name).toBe("span");
+    expect(speaker.getAttr("kind")).toBe("speaker-inline");
+    expect(speaker.getAttr("rend")).toBeUndefined();
+  });
+
+  it("marks an untyped label opening a <said> as a speaker (Cato Maior, Laelius)", () => {
+    const row = processRowContent(
+      parseRawXml(`<said><label rend="smallcaps">SCIPIO.</label> Saepe</said>`)
+    );
+    expect(XmlNode.assertIsNode(row.children[0]).getAttr("kind")).toBe(
+      "speaker-inline"
+    );
+  });
+
+  it.each([
+    '<label type="alt_section">(21)</label>',
+    '<label n="opener">Ausonius Pacato</label>',
+    "<label>1.</label>",
+  ])("leaves the non-speaker label %s bold", (label) => {
+    const row = processRowContent(parseRawXml(`<p>${label} Textus</p>`));
+    expect(XmlNode.assertIsNode(row.children[0]).name).toBe("b");
+  });
+
+  it("transforms <unclear> and a manuscript <space/> inline", () => {
+    const row = processRowContent(
+      parseRawXml(
+        `<l n="941">comba<unclear>e</unclear>pumam tuam <space/> haec</l>`
+      )
+    );
+    const unclear = XmlNode.assertIsNode(row.children[1]);
+    expect(unclear.getAttr("kind")).toBe("unclear");
+    expect(unclear.children).toEqual(["e"]);
+    const space = XmlNode.assertIsNode(row.children[3]);
+    expect(space.name).toBe("span");
+    expect(space.getAttr("kind")).toBe("tei-space");
+    expect(space.children).toEqual([]);
+  });
+});
