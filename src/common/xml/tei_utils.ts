@@ -1,7 +1,11 @@
+import fs from "fs";
+import path from "path";
+
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { DocumentInfo } from "@/common/library/library_types";
 import { safeParseInt } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
+import { parseRawXml } from "@/common/xml/xml_utils";
 import type { DescendantNode } from "@/common/xml/xml_text_utils";
 
 const XPATH_START = "#xpath(";
@@ -171,13 +175,162 @@ function findSourceRef(teiRoot: XmlNode): string[] | undefined {
   return targets;
 }
 
-export function extractInfo(teiRoot: XmlNode) {
+/**
+ * The file's own licence statement: the text of
+ * `publicationStmt/availability/licence`, if it names its licence with a
+ * `target` URL. Some files carry placeholders (Juvenal's `<licence>Test`),
+ * which do not count.
+ */
+function findLicence(teiRoot: XmlNode): string | undefined {
+  const publicationStmt = teiRoot
+    .findChildren("teiHeader")[0]
+    ?.findChildren("fileDesc")[0]
+    ?.findChildren("publicationStmt")[0];
+  const licences =
+    publicationStmt
+      ?.findChildren("availability")
+      .flatMap((availability) => availability.findChildren("licence")) ?? [];
+  for (const licence of licences) {
+    if (!licence.getAttr("target")?.startsWith("http")) {
+      continue;
+    }
+    const text = licence.children
+      .filter((child): child is string => typeof child === "string")
+      .join("")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (text.length > 0) {
+      return text;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Work metadata from the CapiTainS `__cts__.xml` files next to a TEI file:
+ * `data/<textgroup>/__cts__.xml` names the author (`<ti:groupname>`) and
+ * `data/<textgroup>/<work>/__cts__.xml` the title (`<ti:title>`).
+ */
+export interface CtsMetadata {
+  author?: string;
+  title?: string;
+}
+
+function textOf(node: XmlNode): string {
+  return node.children
+    .map((child) => (typeof child === "string" ? child : textOf(child)))
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** The text of the first `<ti:name>` (or unprefixed `<name>`) under `root`. */
+function firstCtsText(root: XmlNode, name: string): string | undefined {
+  for (const candidate of [`ti:${name}`, name]) {
+    const node = root.findDescendants(candidate)[0];
+    const text = node === undefined ? undefined : textOf(node);
+    if (text !== undefined && text.length > 0) {
+      return text;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Reads `CtsMetadata` from parsed `__cts__.xml` documents: the textgroup's
+ * (for `author`) and the work's (for `title`). Either may be absent.
+ */
+export function parseCtsMetadata(
+  textgroupCts: XmlNode | undefined,
+  workCts: XmlNode | undefined
+): CtsMetadata {
+  return {
+    author: textgroupCts && firstCtsText(textgroupCts, "groupname"),
+    title: workCts && firstCtsText(workCts, "title"),
+  };
+}
+
+/** Parses the `__cts__.xml` at `ctsPath`, if there is a readable one. */
+function readCtsFile(ctsPath: string): XmlNode | undefined {
+  if (!fs.existsSync(ctsPath)) {
+    return undefined;
+  }
+  try {
+    // Drop any XML declaration or comments before the root element.
+    const xml = fs
+      .readFileSync(ctsPath, "utf8")
+      .replace(/^\uFEFF?(\s*(<\?[\s\S]*?\?>|<!--[\s\S]*?-->))*/, "");
+    return parseRawXml(xml);
+  } catch (e) {
+    console.warn(`Could not parse ${ctsPath}: ${e}`);
+    return undefined;
+  }
+}
+
+/**
+ * The CapiTainS metadata for the TEI file at `workPath`
+ * (`data/<textgroup>/<work>/<id>.xml`): the author from
+ * `data/<textgroup>/__cts__.xml` and the title from
+ * `data/<textgroup>/<work>/__cts__.xml`. Used where the TEI header lacks them.
+ */
+export function readCtsMetadata(workPath: string): CtsMetadata {
+  const workDir = path.dirname(workPath);
+  return parseCtsMetadata(
+    readCtsFile(path.join(path.dirname(workDir), "__cts__.xml")),
+    readCtsFile(path.join(workDir, "__cts__.xml"))
+  );
+}
+
+/**
+ * Basic information from the TEI header's `titleStmt`. Some headers have no
+ * `<author>` (all of the Historia Augusta and the Appendix Vergiliana) or no
+ * `<title>`; those come from `fallback` (the work's `__cts__.xml`) instead.
+ * The `__cts__.xml` title also wins when the header's `<title>` is just the
+ * text group's name (the Appendix Vergiliana's *Ciris*, *Priapea* and
+ * *Elegiae in Maecenatem* are all titled "Appendix Vergiliana"), and a
+ * trailing ", <text group name>" is dropped ("Dirae, Appendix Vergiliana").
+ */
+export function extractInfo(teiRoot: XmlNode, fallback?: CtsMetadata) {
   const titleStatement = findChild(teiRoot, TITLE_STATEMENT_PATH);
   const editor: XmlNode | undefined = titleStatement.findChildren("editor")[0];
   const translator = editor?.getAttr("role") === "translator";
+  // Some headers pad these (`<author>Valerius Flaccus </author>`) or break
+  // them across lines, which would otherwise leak into author codes and URL
+  // slugs.
+  const normalize = (text: string | undefined) =>
+    text?.replace(/\s+/g, " ").trim() ?? "";
+  const fromHeaderOr = (field: "title" | "author"): string => {
+    const node: XmlNode | undefined = titleStatement.findChildren(field)[0];
+    if (node !== undefined) {
+      return normalize(XmlNode.getSoleText(node));
+    }
+    const value = normalize(fallback?.[field]);
+    assert(
+      value.length > 0,
+      () => `No <${field}> in titleStmt, and none in __cts__.xml`
+    );
+    return value;
+  };
+  const headerTitle = fromHeaderOr("title");
+  const groupName = normalize(fallback?.author).toLowerCase();
+  const ctsTitle = normalize(fallback?.title);
+  const groupSuffix = `, ${groupName}`;
+  let title = headerTitle;
+  if (groupName.length > 0) {
+    const lowerTitle = headerTitle.toLowerCase();
+    if (lowerTitle === groupName && ctsTitle.length > 0) {
+      title = ctsTitle;
+    } else if (
+      lowerTitle.endsWith(groupSuffix) &&
+      lowerTitle.length > groupSuffix.length
+    ) {
+      // "Dirae, Appendix Vergiliana" -> "Dirae".
+      title = headerTitle.slice(0, -groupSuffix.length).trim();
+    }
+  }
   return {
-    title: XmlNode.getSoleText(titleStatement.findChildren("title")[0]),
-    author: XmlNode.getSoleText(titleStatement.findChildren("author")[0]),
+    title,
+    author: fromHeaderOr("author"),
     editor: translator
       ? undefined
       : editor?.children.find((c) => typeof c === "string"),
@@ -185,6 +338,7 @@ export function extractInfo(teiRoot: XmlNode) {
     sponsor: firstTextOfChild(titleStatement, "sponsor"),
     funder: firstTextOfChild(titleStatement, "funder"),
     sourceRef: findSourceRef(teiRoot),
+    licence: findLicence(teiRoot),
   };
 }
 

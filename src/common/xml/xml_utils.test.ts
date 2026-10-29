@@ -3,9 +3,11 @@ import { findTextNodes } from "@/common/xml/xml_text_utils";
 import {
   TargetMatch,
   XmlOperations,
+  createXmlParser,
   findXmlNodes,
   modifyInTree,
   parseRawXml,
+  parseXmlStrings,
   removeTextNode,
   searchTree,
   searchTreeSimple,
@@ -52,6 +54,64 @@ describe("parseRawXml", () => {
     expect(() =>
       parseRawXml('<a f="g">hi</a>', { validate: true })
     ).not.toThrow();
+  });
+
+  it("decodes TEI/HTML named entities into Unicode characters", () => {
+    const result = parseRawXml(
+      "<div>&dagger;crux&dagger; &mdash; &lsquo;test&rsquo; &ldquo;quote&rdquo; &ouml; &aelig; &hellip; &deg; &cdot; &Ccedil;</div>"
+    );
+    expect(result).toEqual(
+      new XmlNode("div", [], ["†crux† — ‘test’ “quote” ö æ … ° · Ç"])
+    );
+  });
+
+  it("decodes specific Perseus TEI named entities (&dagger;, &mdash;, &ouml;, &lsquo;, &rsquo;)", () => {
+    const result = parseRawXml(
+      "<div>&dagger; &mdash; &ouml; &lsquo; &rsquo;</div>"
+    );
+    expect(result).toEqual(new XmlNode("div", [], ["† — ö ‘ ’"]));
+  });
+
+  it("decodes decimal and hex character references", () => {
+    // &#8224; is † (U+2020), &#x2014; is — (U+2014), &#246; and &#xF6; are ö (U+00F6)
+    const result = parseRawXml("<div>&#8224; &#x2014; &#246; &#xF6;</div>");
+    expect(result).toEqual(new XmlNode("div", [], ["† — ö ö"]));
+  });
+
+  it("preserves explicit escaped entities like &amp;dagger; without double-decoding", () => {
+    const result = parseRawXml(
+      "<div>&amp;dagger; &amp;mdash; &amp;ouml; &amp;lsquo; &amp;rsquo;</div>"
+    );
+    expect(result).toEqual(
+      new XmlNode("div", [], ["&dagger; &mdash; &ouml; &lsquo; &rsquo;"])
+    );
+  });
+
+  it("decodes named entities in attribute values", () => {
+    const result = parseRawXml(
+      '<div title="&dagger; &mdash; &ouml;">text</div>'
+    );
+    expect(result).toEqual(new XmlNode("div", [["title", "† — ö"]], ["text"]));
+  });
+});
+
+describe("parseXmlStrings", () => {
+  it("decodes TEI named entities in serialized XML documents", () => {
+    const results = parseXmlStrings([
+      "<div>&dagger;crux&dagger; &mdash; &ouml;</div>",
+      "<p>&lsquo;test&rsquo; &amp;dagger;</p>",
+    ]);
+    expect(results).toHaveLength(2);
+    expect(results[0]).toEqual(new XmlNode("div", [], ["†crux† — ö"]));
+    expect(results[1]).toEqual(new XmlNode("p", [], ["‘test’ &dagger;"]));
+  });
+});
+
+describe("createXmlParser", () => {
+  it("creates a parser with external entities registered", () => {
+    const parser = createXmlParser({ preserveOrder: true });
+    const parsed = parser.parse("<r>&dagger;&mdash;</r>");
+    expect(parsed[0].r[0]["#text"]).toBe("†—");
   });
 });
 

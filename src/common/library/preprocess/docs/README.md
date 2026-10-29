@@ -22,7 +22,14 @@ flowchart LR
 
 Stage B — the V1 layer — is the bottleneck. It works hard to coerce arbitrary TEI into one clean,
 uniformly-nested tree, and sources that don't fit that shape need bespoke code, hand-written
-patches, or stay unavailable. **139 of the 398 Latin works in the Perseus repo currently process.**
+patches, or stay unavailable. **At the pre-sync clone (`379331f1`), 137 of the 398 Latin files
+processed through `processTei2`** (133 in the initial scratch survey before fixing its DOCTYPE
+regex, 129 with ≥1 citable row, and 130 works in `NOT_YET_ONBOARDED`). **After the Phase 0 upstream
+sync (`452d0905`), 136 of the 334 Latin files (143 of 341 total surveyed) process through
+`processTei2`, 266 of 334 have zero markup violations against the closed markup policy table, and
+only 68 works remain in `NOT_YET_ONBOARDED`** (98 Perseus Latin works are onboarded today out of
+≈300 distinct works post-sync / ≈320 pre-sync — see [CORPUS_SURVEY.md](CORPUS_SURVEY.md) and
+[UPSTREAM.md](UPSTREAM.md)).
 
 Two distinct kinds of strictness are tangled together in that layer, and they deserve opposite
 treatment:
@@ -55,33 +62,48 @@ Perseus Digital Library's canonical corpus, kept as a local sync and pointed at 
 [`src/scripts/process_lat_lib.ts`](../../../../scripts/process_lat_lib.ts)).
 
 Individual works live at `$LIB_XML_ROOT/data/<textgroup>/<work>/<id>.xml`. The "398 works" figure
-used throughout these documents is every `perseus-lat*` edition found under that tree. Which of
-them are actually built is a separate, hand-maintained question — see
+used in the initial Sep-2026 study is every `perseus-lat*` file found under that tree at the time
+(≈320 distinct works in our clone; **334 files / ≈300 distinct works** upstream after Livy slice
+removal). Which of them are actually built is a separate, hand-maintained question — see
 [`library_constants.ts`](../../../../common/library/library_constants.ts).
+
+## Where this is going
+
+The concrete execution plan for expanding the library to the full Perseus Latin corpus — starting
+with Phase 0 instrumentation (`./morcus.sh library survey|render|diff`), ratcheting the closed
+markup vocabulary, syncing `canonical-latinLit` to upstream `HEAD`, and replacing the structural
+stage with a `<citeStructure>`-driven builder — lives in **[PLAN.md](PLAN.md)**.
 
 ## Documents
 
-| Document                                   | What it is                                                                                                                                                                                                                      |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [V1_PREPROCESSING.md](V1_PREPROCESSING.md) | The study. What V1 does stage by stage, an inventory of 19 structural/markup/output invariants with enforcement sites, and a catalogue of how real unintegrated works deviate. Includes corpus-wide numbers over all 398 works. |
-| [DIRECTION.md](DIRECTION.md)               | Where this should go: a proposed model for citation structure (a hierarchical spine plus linear marker axes), how it handles milestones, and a staged path to get there. Open questions are flagged.                            |
-| [OUTPUT_MODEL.md](OUTPUT_MODEL.md)         | The data contract that model implies: the proposed successor to `ProcessedWork2`, its checked output invariants (OUT-1 … OUT-9), what it asks of the V2 pre-processor, and a projection-based migration path.                   |
+| Document                                   | What it is                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [PLAN.md](PLAN.md)                         | **The execution plan.** Phased roadmap (Phases 0–5), architectural constraints (corpus parity, Hypotactic/PHI compatibility), the four pillars of formatting confidence, and decisions taken vs open.                                                                                             |
+| [CORPUS_SURVEY.md](CORPUS_SURVEY.md)       | **Corpus-wide numbers.** V1 status buckets, blocker clusters, full `<body>` markup census (elements, note elements, `rend`s, attributes, gaps), header/structure facts, and axis relation distributions across all 398 files.                                                                     |
+| [UPSTREAM.md](UPSTREAM.md)                 | **Upstream Perseus delta & policy.** What changed across 202 upstream commits: `<citeStructure>` adoption (19 `match` patterns), 15 re-editioned `-lat2` works, Livy slice removal, `align(indent)`, CC BY-SA 4.0, and sync policy.                                                               |
+| [V1_PREPROCESSING.md](V1_PREPROCESSING.md) | The initial study. What V1 does stage by stage, an inventory of 19 structural/markup/output invariants with enforcement sites, and a catalogue of how real unintegrated works deviate.                                                                                                            |
+| [DIRECTION.md](DIRECTION.md)               | Conceptual model for citation structure (a hierarchical spine plus linear marker axes) and how it handles milestones. _(§4's header heuristic is superseded by `<citeStructure>` in [PLAN.md §5.2](PLAN.md#52-citestructure-is-the-design-input-phase-2-was-missing).)_                           |
+| [OUTPUT_MODEL.md](OUTPUT_MODEL.md)         | The data contract that model implies: the proposed successor to `ProcessedWork2`, its checked output invariants (OUT-1 … OUT-9), and prototype validation. _(§11–§12 updated by [PLAN.md §5.2](PLAN.md#52-citestructure-is-the-design-input-phase-2-was-missing) and [§6](PLAN.md#6-decisions).)_ |
 
 ## Scratch work
 
 Investigation tooling — instrumentation scripts, probes, corpus surveys — **may** be present
 locally under `.investigation/<topic>/`, e.g. `.investigation/library-preprocessing/` for the work
-behind these documents.
+behind these documents (note: an early scratch `README.md` there referred to the checked-in docs
+path as `src/common/library/v2/docs/`; the canonical path is `src/common/library/preprocess/docs/`).
 
 At the time of writing that directory holds, beyond the V1 harness in
 [Appendix A](V1_PREPROCESSING.md#appendix-a--the-harness):
 
-| File              | Purpose                                                                                                                                                                                                                                                            |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `proto_axes.ts`   | End-to-end prototype of the spine/axis model in [OUTPUT_MODEL.md](OUTPUT_MODEL.md). Builds `ProcessedWork3` straight from TEI, classifies axis relations, runs the OUT-n assertions, renders pages, resolves citations. Shares no code with `src/common/library/`. |
-| `keys_diag.ts`    | Dumps colliding axis citation keys with row context. This is what produced the identity-vs-citation split.                                                                                                                                                         |
-| `bench_render.ts` | Per-page render cost, for the request-time-rendering question.                                                                                                                                                                                                     |
-| `notes_rank.ts`   | Ranks the whole built library by footnotes per page.                                                                                                                                                                                                               |
+| File               | Purpose                                                                                                                                                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `proto_axes.ts`    | End-to-end prototype of the spine/axis model in [OUTPUT_MODEL.md](OUTPUT_MODEL.md). Builds `ProcessedWork3` straight from TEI, classifies axis relations, runs the OUT-n assertions, renders pages, resolves citations. Shares no code with `src/common/library/`. |
+| `keys_diag.ts`     | Dumps colliding axis citation keys with row context. This is what produced the identity-vs-citation split.                                                                                                                                                         |
+| `bench_render.ts`  | Per-page render cost, for the request-time-rendering question.                                                                                                                                                                                                     |
+| `notes_rank.ts`    | Ranks the whole built library by footnotes per page.                                                                                                                                                                                                               |
+| `corpus_survey.ts` | One-pass survey over all 398 `perseus-lat*` files collecting V1 status, `proto_axes` relations, full `<body>` markup census, and header facts ([CORPUS_SURVEY.md](CORPUS_SURVEY.md); promoted into `./morcus.sh library survey`).                                  |
+| `xtab.ts`          | Cross-tabulations over `corpus_survey.json` (non-`textpart` structures, onboarded works with dropped milestone axes, ragged leaf depths, drama works, per-author pass rates).                                                                                      |
+| `upstream_diff.sh` | Compares our `canonical-latinLit` fork against `upstream/master`: old vs new `-lat2` editions, Livy `-lat2`…`-lat5`, and structural vs header diffs across modified files ([UPSTREAM.md](UPSTREAM.md)).                                                            |
 
 That directory is gitignored and is never checked in. It is a convention, not a guarantee: on a
 fresh clone it will not exist, and nothing in these documents depends on it. It is written down so

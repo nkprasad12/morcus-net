@@ -1,0 +1,38 @@
+[
+  {
+    "location": [
+      ["book", "3"],
+      ["section", "65"]
+    ],
+    "target": "Cicero \u2014\u00a0\u2014",
+    "replacement": "Cicero \u2014 \u2014",
+    "reason": "No-break space (U+00A0) in the source. The reader tokenizer counts it as a word token while the corpus normalizes it to a space, which shifts corpus word offsets for the rest of the section."
+  },
+  {
+    "location": [
+      ["book", "3"],
+      ["section", "65"]
+    ],
+    "target": "\u2014\u00a0 ante omnes",
+    "replacement": "\u2014 ante omnes",
+    "reason": "No-break space (U+00A0) in the source. The reader tokenizer counts it as a word token while the corpus normalizes it to a space, which shifts corpus word offsets for the rest of the section."
+  },
+  {
+    "location": [
+      ["book", "3"],
+      ["section", "65"]
+    ],
+    "target": "Tullius \u2014\u00a0\u2014",
+    "replacement": "Tullius \u2014 \u2014",
+    "reason": "No-break space (U+00A0) in the source. The reader tokenizer counts it as a word token while the corpus normalizes it to a space, which shifts corpus word offsets for the rest of the section."
+  },
+  {
+    "location": [
+      ["book", "3"],
+      ["section", "65"]
+    ],
+    "target": "invidiam \u2014\u00a0\u2014",
+    "replacement": "invidiam \u2014 \u2014",
+    "reason": "No-break space (U+00A0) in the source. The reader tokenizer counts it as a word token while the corpus normalizes it to a space, which shifts corpus word offsets for the rest of the section."
+  }
+]

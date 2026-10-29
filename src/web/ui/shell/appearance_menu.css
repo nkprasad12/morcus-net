@@ -79,6 +79,20 @@ morcus-appearance-menu {
   justify-self: start;
 }
 
+/* Wide enough for "Highest", so the buttons don't move between levels. The
+   value is the stored level ("higher"), capitalized here. */
+.appearance-contrast-val {
+  min-width: 4.5rem;
+  text-transform: capitalize;
+}
+
+/* Which theme the contrast row edits; aligned with the controls. */
+.appearance-note {
+  margin: calc(-1 * var(--space-2)) 0 0 calc(4.5rem + var(--space-4));
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 /* Segmented control: a radio group drawn as one pill with sliding options. */
 .segmented {
   display: flex;

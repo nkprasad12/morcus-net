@@ -5,6 +5,7 @@ import fs from "fs";
 import { brotliCompress, gzip, constants } from "zlib";
 import { promisify } from "node:util";
 
+import { STATIC_BROTLI_QUALITY } from "@/bundler/client_build_contract";
 import { assert, checkPresent } from "@/common/assert";
 import { runCommand } from "@/scripts/script_utils";
 import { exhaustiveGuard } from "@/common/misc_utils";
@@ -56,7 +57,7 @@ interface CompressedFileInfo {
 const runGzip = (buf: Buffer) => promisify(gzip)(buf, { level: 9 });
 const runBrotli = (buf: Buffer) =>
   promisify(brotliCompress)(buf, {
-    params: { [constants.BROTLI_PARAM_QUALITY]: 11 },
+    params: { [constants.BROTLI_PARAM_QUALITY]: STATIC_BROTLI_QUALITY },
   });
 
 function getCompressor(

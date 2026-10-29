@@ -24,7 +24,7 @@ import { isPartialRequest } from "@/web/ui/core/server/request_params.server";
 import { requestTimer } from "@/web/ui/core/server/telemetry.server";
 import {
   sendStaticPageOr,
-  type StaticPageStore,
+  type StaticPageLookup,
 } from "@/web/ui/core/server/static_pages.server";
 import {
   renderMacronizerPage,
@@ -35,7 +35,7 @@ import {
 interface CreateMacronizerRoutesOptions {
   engine?: MacronizerEngine;
   /** Pre-rendered static pages; see `static_pages.server.ts`. */
-  staticPages?: StaticPageStore;
+  staticPages?: StaticPageLookup;
 }
 
 /** The static page key for the macronizer's input page (`static_pages.server.ts`). */

@@ -1,13 +1,17 @@
 /**
  * @jest-environment jsdom
  */
-import { extractRowText } from "@/common/library/corpus/corpus_library_utils";
+import {
+  extractRowText,
+  toAuthorCode,
+} from "@/common/library/corpus/corpus_library_utils";
 import type {
   LibraryWorkMetadata,
   ProcessedWork2,
   ProcessedWorkContentNodeType,
 } from "@/common/library/library_types";
 import { preprocessWorkToV2 } from "@/common/library/preprocess/work_preprocessor";
+import { transformContentNode } from "@/common/library/process_work";
 import { processTokens } from "@/common/text_cleaning";
 import { XmlNode } from "@/common/xml/xml_node";
 import {
@@ -139,6 +143,22 @@ describe("extractRowText", () => {
       span([...LINE, ["rend", "indent"]], " pentameter ")
     );
     expect(extractRowText(row)).toBe("Hexameter\n    pentameter");
+  });
+
+  it("indents upstream's align(indent) spelling like indent", () => {
+    const tei = (rend: string) =>
+      transformContentNode(
+        new XmlNode("l", [["rend", rend]], [" pentameter "]),
+        [" pentameter "]
+      );
+    const row = (rend: string) => span([], span(LINE, "Hexameter"), tei(rend));
+
+    expect(extractRowText(row("align(indent)"))).toBe(
+      "Hexameter\n    pentameter"
+    );
+    expect(extractRowText(row("align(indent)"))).toBe(
+      extractRowText(row("indent"))
+    );
   });
 
   it("breaks words at markers that contribute no text", () => {
@@ -330,5 +350,29 @@ describe("corpus row text matches V2 reader tokens", () => {
       [2, "que"],
       [3, "est"],
     ]);
+  });
+});
+
+describe("toAuthorCode", () => {
+  it.each([
+    ["Scriptores Historiae Augustae", "HistoriaAugusta"],
+    ["Ausonius, Decimus Magnus", "Ausonius"],
+    ["Appendix Vergiliana", "AppVerg"],
+    ["Q. Tullius Cicero", "QuintusCicero"],
+    ["Sidonius Apollinaris", "Sidonius"],
+    ["Silius Italicus", "Silius"],
+    ["Cato, Marcus Porcius", "Cato"],
+    ["Jerome, Saint", "Jerome"],
+    ["Seneca, Lucius Annaeus", "Seneca Minor"],
+  ])("maps the Phase 2B author %s", (author, code) => {
+    expect(toAuthorCode(author)).toBe(code);
+  });
+
+  it("passes a one-word author through", () => {
+    expect(toAuthorCode("Boethius")).toBe("Boethius");
+  });
+
+  it("rejects an unknown multi-word author", () => {
+    expect(() => toAuthorCode("Nobody Inparticular")).toThrow(/No code/);
   });
 });

@@ -14,7 +14,7 @@ import { OPEN_APPEARANCE_EVENT } from "@/web/ui/shell/appearance_events.common";
 import { DEFAULT_PANEL_SCALE } from "@/web/ui/reader/reader_scale.common";
 
 /**
- * Reader-only preferences. The reading-text font, size and line spacing are
+ * Reader-only preferences. The reading-text font, size, line spacing and contrast are
  * app-wide and live in the app-bar Appearance menu (`appearance.client.ts`).
  */
 export interface ReaderPreferences {
@@ -128,7 +128,7 @@ export interface ReaderSettingsChangeEventDetail {
  * Coordinates the anchored modal dialog (`core/widgets/anchored_dialog.client.ts`),
  * the side panel's text-size stepper,
  * the scholarly aids and swipe toggles, and persistence to localStorage. The
- * reading-text font, size and spacing are app-wide: the "Text appearance" link
+ * reading-text font, size, spacing and contrast are app-wide: the "Text appearance" link
  * opens the app-bar Appearance menu for them. When preferences are updated,
  * dispatches a bubbling `reader-settings-change` custom event.
  */
@@ -249,7 +249,7 @@ export class MorcusReaderSettings extends BaseElement {
       });
     }
 
-    // The text font, size and spacing are app-wide: this link opens the
+    // The text font, size, spacing and contrast are app-wide: this link opens the
     // app-bar Appearance menu instead of duplicating its controls.
     const appearanceLink = this.scope.$<HTMLButtonElement>(
       "#reader-appearance-link"

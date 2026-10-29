@@ -20,9 +20,7 @@ function createTableCommand(
       allKeys.includes(primaryKey),
     "Invalid primary key."
   );
-  const columns: string[] = allKeys.map(
-    (key) => `'${key}' TEXT` + (key === primaryKey ? " PRIMARY KEY ASC" : "")
-  );
+  const columns: string[] = allKeys.map((key) => `'${key}' TEXT`);
   if (primaryKey === ARRAY_INDEX) {
     columns.push("'n' INTEGER PRIMARY KEY ASC");
     allKeys.push("n");
@@ -103,6 +101,16 @@ export namespace ReadOnlyDb {
         });
       });
       insertAll();
+      // A column primary key is a unique index created after the inserts,
+      // rather than a `PRIMARY KEY` constraint. SQLite fills the latter's
+      // index row by row during the inserts, scattering its pages across the
+      // whole file; built afterwards, the index is contiguous (and denser),
+      // so it is cheap to read from a cold page cache.
+      if (table.primaryKey !== undefined && table.primaryKey !== ARRAY_INDEX) {
+        db.exec(
+          `CREATE UNIQUE INDEX ${tableName}_${table.primaryKey} ON ${tableName}(${table.primaryKey});`
+        );
+      }
       for (const index of indices ?? []) {
         db.exec(
           `CREATE INDEX ${index.join("_")} ON ${tableName}(${index.join(

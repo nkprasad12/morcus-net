@@ -20,7 +20,7 @@ import {
 } from "@/web/ui/core/server/telemetry.server";
 import {
   sendStaticPageOr,
-  type StaticPageStore,
+  type StaticPageLookup,
 } from "@/web/ui/core/server/static_pages.server";
 
 /** Static page keys for the routes this file owns (`static_pages.server.ts`). */
@@ -38,7 +38,7 @@ interface V2RouterOptions extends ApiRoutesOptions {
    */
   telemetry?: Promise<TelemetryLogger>;
   /** Pre-rendered static pages (`build/pages.db`); every page renders without it. */
-  staticPages?: StaticPageStore;
+  staticPages?: StaticPageLookup;
 }
 
 export function createV2Router(

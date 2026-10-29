@@ -32,9 +32,23 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["Valerius Maximus", "ValeriusMaximus"],
   ["Florus, Lucius Annaeus", "Florus"],
   ["Pliny the Younger", "PlinyYounger"],
+  ["Sextus Propertius", "Propertius"],
+  ["Valerius Flaccus", "ValeriusFlaccus"],
+  ["Vitruvius Pollio", "Vitruvius"],
+  ["Aulus Gellius", "Gellius"],
+  ["Scriptores Historiae Augustae", "HistoriaAugusta"],
+  ["Ausonius, Decimus Magnus", "Ausonius"],
+  ["Appendix Vergiliana", "AppVerg"],
+  ["Q. Tullius Cicero", "QuintusCicero"],
+  ["Sidonius Apollinaris", "Sidonius"],
+  ["Silius Italicus", "Silius"],
+  ["Cato, Marcus Porcius", "Cato"],
+  ["Jerome, Saint", "Jerome"],
+  ["Augustine, Saint", "Augustine"],
 ]);
 
-function toAuthorCode(author: string): string {
+/** Exported for testing. */
+export function toAuthorCode(author: string): string {
   if (author.split(" ").length === 1) {
     return author;
   }
@@ -63,6 +77,7 @@ function isStructural(node: XmlNode): boolean {
   return (
     rend === "indent" ||
     rend === "blockquote" ||
+    (rend !== undefined && rend.split(" ").includes("center")) ||
     node.getAttr("block") !== undefined ||
     node.getAttr("l") !== undefined ||
     node.getAttr("sectionHead") !== undefined ||

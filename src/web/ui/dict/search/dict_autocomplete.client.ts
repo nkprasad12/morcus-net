@@ -2,8 +2,11 @@ import { type DictLang } from "@/common/dictionaries/dictionaries";
 import { removeDiacritics } from "@/common/text_cleaning";
 import {
   BaseController,
+  ComboboxController,
+  html,
+  joinHtml,
   KeyedFetchCache,
-  queryUpgraded,
+  setHtml,
 } from "@/web/ui/core/index.client";
 import {
   cleanCompletionQuery,
@@ -11,14 +14,12 @@ import {
   type DictChunksResponse,
 } from "@/web/ui/dict/search/dict_completions.common";
 import { filterAndClusterDictionaryChunks } from "@/web/ui/dict/search/dict_clustering.common";
-import { parseFocusLang } from "@/web/ui/dict/search/dict_params.common";
 import { createDictChunkCache } from "@/web/ui/dict/search/dict_chunk_cache.client";
 import {
   DEFAULT_DICT_KEYS,
   encodeDictBitmask,
+  parseDictsFromCookie,
 } from "@/web/ui/dict/settings/dict_bitmask.common";
-import { parseDictsFromCookie } from "@/web/ui/dict/settings/dict_selection.common";
-import "@/web/ui/dict/search/dict_suggestions.client";
 
 interface DictAutocompleteOptions {
   /** Active dictionary keys currently selected for this view. */
@@ -34,7 +35,8 @@ interface DictAutocompleteOptions {
  * Manages dictionary search input autocomplete:
  * - Debounces 2-letter prefix chunk loads (`chunkCache`) and client-side clustering.
  * - Debounces server-side suffix completion fetches (`-arum`, `-ibus`).
- * - Populates `<morcus-dict-suggestions>` and forwards `suggestion-select` events.
+ * - Owns the `ComboboxController` on the server-rendered `#dict-suggestions-list`
+ *   (see `renderDictSearchBar`) and renders the suggestions into it.
  */
 export class DictAutocompleteController extends BaseController<"completions"> {
   public readonly chunkCache: KeyedFetchCache<DictChunksResponse> =
@@ -42,8 +44,44 @@ export class DictAutocompleteController extends BaseController<"completions"> {
 
   readonly #options: DictAutocompleteOptions;
   #inputElement: HTMLInputElement | null = null;
-  /** The suggestions host, for events and dismissal (works before it upgrades). */
-  #suggestionsEl: HTMLElement | null = null;
+  #listboxElement: HTMLUListElement | null = null;
+
+  /**
+   * A child controller, so it connects after this controller's `onConnect` has
+   * re-queried the elements it binds to (on first connect and on reattach).
+   */
+  readonly #combobox = this.addController(
+    new ComboboxController<CompletionItem>({
+      root: this.root,
+      getInput: () => this.#inputElement,
+      getListbox: () => this.#listboxElement,
+      acceptOnTab: false,
+      // No `id`, `role`, `aria-selected` or `data-index` here:
+      // `ComboboxController.syncItemAttributes` manages those.
+      renderItems: (items, box) => {
+        setHtml(
+          box,
+          html`${joinHtml(
+            items.map(
+              (item) =>
+                html`<li class="suggestion-item" data-word="${item.word}">
+                  <span class="lang-chip lang-chip-${item.lang.toLowerCase()}"
+                    >${item.lang}</span
+                  ><span class="suggestion-word">${item.word}</span>
+                </li>`
+            )
+          )}`
+        );
+      },
+      onSelect: (item) => {
+        // `*` (a universal dictionary) is no concrete language to focus on.
+        this.#options.onSelectSuggestion(
+          item.word,
+          item.lang === "*" ? undefined : item.lang
+        );
+      },
+    })
+  );
 
   constructor(root: HTMLElement, options: DictAutocompleteOptions) {
     super(root);
@@ -125,47 +163,36 @@ export class DictAutocompleteController extends BaseController<"completions"> {
   }, 180);
 
   protected override onConnect() {
+    // Re-queried on every connect, so a re-attached element binds the
+    // combobox to the elements actually in its subtree.
     this.#inputElement = this.scope.$<HTMLInputElement>("input.input");
-
-    // Adopt the server-rendered suggestions host (see `renderDictSearchBar`).
-    // Re-queried on every connect, so a re-attached element listens to the
-    // child that is actually in its subtree.
-    this.#suggestionsEl = this.scope.$("morcus-dict-suggestions");
-    if (this.#suggestionsEl) {
-      this.scope.listen(
-        this.#suggestionsEl,
-        "suggestion-select",
-        (e: Event) => {
-          if (e instanceof CustomEvent) {
-            const detail: unknown = e.detail;
-            if (
-              typeof detail === "object" &&
-              detail !== null &&
-              "word" in detail &&
-              typeof detail.word === "string"
-            ) {
-              this.#options.onSelectSuggestion(
-                detail.word,
-                "lang" in detail ? parseFocusLang(detail.lang) : undefined
-              );
-            }
-          }
-        }
-      );
-    }
-
+    this.#listboxElement = this.scope.$<HTMLUListElement>(
+      "#dict-suggestions-list"
+    );
     if (this.#inputElement) {
       this.scope.listen(this.#inputElement, "input", this.#handleInput);
+    }
+  }
 
-      // The input is usable before upgrade, so its live value may be text the
-      // user typed rather than the query the server rendered results for.
-      const renderedQuery = this.#inputElement.defaultValue.trim();
-      const typedBeforeUpgrade =
-        this.#inputElement.value.trim() !== renderedQuery;
-      if (typedBeforeUpgrade && document.activeElement === this.#inputElement) {
-        // The user is mid-search; start autocomplete for what's already typed.
-        this.#handleInput();
-      }
+  protected override onDisconnect() {
+    this.#inputElement = null;
+    this.#listboxElement = null;
+  }
+
+  public override connect() {
+    // `super.connect()` runs `onConnect` and then connects the combobox, so
+    // only now can typed-ahead suggestions render. Starting them from
+    // `onConnect` instead would, on reattach, render into a combobox that
+    // `super.connect()` then reconnects (clearing it).
+    super.connect();
+    const input = this.#inputElement;
+    if (!this.isConnected || !input) return;
+    // The input is usable before upgrade, so its live value may be text the
+    // user typed rather than the query the server rendered results for.
+    const typedBeforeUpgrade = input.value.trim() !== input.defaultValue.trim();
+    if (typedBeforeUpgrade && document.activeElement === input) {
+      // The user is mid-search; start autocomplete for what's already typed.
+      this.#handleInput();
     }
   }
 
@@ -191,22 +218,16 @@ export class DictAutocompleteController extends BaseController<"completions"> {
   }
 
   /**
-   * The list's items live only in `<morcus-dict-suggestions>`: it closes
-   * itself on blur and Escape, so a copy here would go stale and could
-   * reopen it later (e.g. on a dictionary settings change).
+   * The list's items live only in the combobox: it closes itself on blur and
+   * Escape, so a copy here would go stale and could reopen it later (e.g. on
+   * a dictionary settings change).
    */
   get #shownSuggestions(): readonly CompletionItem[] {
-    return this.host
-      ? queryUpgraded(this.host, "morcus-dict-suggestions")?.items ?? []
-      : [];
+    return this.#combobox.items;
   }
 
   #showSuggestions(items: readonly CompletionItem[]) {
-    if (!this.host) return;
-    const suggestions = queryUpgraded(this.host, "morcus-dict-suggestions");
-    if (suggestions) {
-      suggestions.items = items;
-    }
+    this.#combobox.setItems(items);
   }
 
   readonly #handleInput = () => {

@@ -50,14 +50,18 @@ function makeTables(config?: CruncherConfig): CruncherTables {
     assert(!rawTablesMap.has(table.name), `Duplicate table: ${table.name}`);
     rawTablesMap.set(table.name, table);
   }
-  const rawLemmataMap = arrayMapBy(allLemmata, (l) => l.lemma);
+  // Only the Rust export reads `rawLemmata`, so it is built on first use.
+  let rawLemmataMap: Map<string, Lemma[]> | undefined = undefined;
   return {
     endsMap,
     stemMap,
     inflectionLookup: endTables,
     numerals: allLemmata.filter(isNumeral),
     rawTables: rawTablesMap,
-    rawLemmata: rawLemmataMap.map,
+    get rawLemmata() {
+      rawLemmataMap ??= arrayMapBy(allLemmata, (l) => l.lemma).map;
+      return rawLemmataMap;
+    },
   };
 }
 
@@ -230,11 +234,7 @@ async function saveTables(config?: CruncherConfig) {
 }
 
 function normalizeKey(input: string): string {
-  return input
-    .replaceAll("^", "")
-    .replaceAll("_", "")
-    .replaceAll("-", "")
-    .replaceAll("+", "");
+  return input.replace(/[\^_\-+]/g, "");
 }
 
 function makeStemsMap(lemmata: Lemma[]): Map<string, StemMapValue[]> {

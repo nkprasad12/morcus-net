@@ -39,7 +39,7 @@ import {
 import { requestTimer } from "@/web/ui/core/server/telemetry.server";
 import {
   sendStaticPageOr,
-  type StaticPageStore,
+  type StaticPageLookup,
 } from "@/web/ui/core/server/static_pages.server";
 import { encodeDictBitmask } from "@/web/ui/dict/settings/dict_bitmask.common";
 
@@ -97,7 +97,7 @@ export function defaultDictLandingState(
 }
 
 interface DictRoutesOptions {
-  staticPages?: StaticPageStore;
+  staticPages?: StaticPageLookup;
 }
 
 function extractCleanQuery(raw: string | string[] | undefined): string {

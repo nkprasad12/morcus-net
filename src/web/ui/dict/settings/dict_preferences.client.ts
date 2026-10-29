@@ -2,13 +2,11 @@ import {
   DEFAULT_DICT_KEYS,
   decodeDictBitmask,
   encodeDictBitmask,
-} from "@/web/ui/dict/settings/dict_bitmask.common";
-import {
   formatDictsCookie,
   formatInflectedCookie,
   mergeDictKeysForSave,
   parseDictsFromCookie,
-} from "@/web/ui/dict/settings/dict_selection.common";
+} from "@/web/ui/dict/settings/dict_bitmask.common";
 
 /**
  * Dictionary content preferences on the client.

@@ -10,9 +10,10 @@ import {
 } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
-  FORCE_CTS_WORKS,
-  LatinWorks,
-} from "@/common/library/library_constants";
+  buildCitationSpine,
+  CitationSpine,
+  textWeight,
+} from "@/common/library/cite_structure";
 import type { LibraryPatch } from "@/common/library/library_patches";
 import {
   type DocumentInfo,
@@ -23,26 +24,105 @@ import {
 } from "@/common/library/library_types";
 import { areArraysEqual, safeParseInt } from "@/common/misc_utils";
 import { processWords } from "@/common/text_cleaning";
-import { extractInfo, findCtsEncoding } from "@/common/xml/tei_utils";
+import { extractInfo, type CtsMetadata } from "@/common/xml/tei_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
-import { isHandledRend, isKnownRend } from "@/common/library/perseus_rends";
-
-const IGNORE_SUBTYPES = new Map<string, Set<string>>([
-  [LatinWorks.CATULLUS, new Set(["Lyrics", "longpoems", "Elegies", "book"])],
-  [LatinWorks.LIVY_AUC, new Set(["index"])],
-]);
-const NO_SUBTYPES = new Set([LatinWorks.TACITUS_DIALOGUS]);
+import {
+  allRendTokensIn,
+  canonicalRend,
+  isFullyHandledRend,
+  isHandledRend,
+  isKnownRend,
+  QUOTE_RENDS,
+  rendTokens,
+} from "@/common/library/perseus_rends";
 
 // For regular nodes
 const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr", "abbr"]);
+/**
+ * Values of `<l part>`, which marks a verse line split between speakers or
+ * set as half-lines: Initial, Medial, Final, No (complete) and Y (incomplete,
+ * position unknown; Aeneid half-lines). See the TEI guidelines for `@part`.
+ */
+const L_PARTS = new Set<string>(["I", "M", "F", "N", "Y"]);
+/** `<l part>` values that continue a line, and so are indented. */
+const CONTINUED_L_PARTS = new Set<string>(["M", "F"]);
 const SKIP_NODES = new Set(["#comment", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
 
 const TABLE_ITEM_CHILDREN = new Set<string>(["date"]);
+
+/** Elements handled by the `switch` in `transformContentNode`. */
+export const SWITCH_CONTENT_NODES = new Set<string>([
+  "lb",
+  "head",
+  "docAuthor",
+  "gap",
+  "label",
+  "w",
+  "l",
+  "hi",
+  "add",
+  "sic",
+  "said",
+  "emph",
+  "placeName",
+  "date",
+  "surname",
+  "persName",
+  "name",
+  "forename",
+  "addName",
+  "genName",
+  "num",
+  "orig",
+  "seg",
+  "foreign",
+  "div",
+  "div3",
+  "div2",
+  "div1",
+  "ab",
+  "lg",
+  "body",
+  "p",
+  "title",
+  "desc",
+  "ref",
+  "lemma",
+  "term",
+  "bibl",
+  "cit",
+  "corr",
+  "abbr",
+  "expan",
+  "ex",
+  "del",
+  "supplied",
+]);
+
+/**
+ * All content (non-note) element names accepted by the V1 TEI pipeline across
+ * `preprocessTree`, `processRowContent`, `processListNode`, and
+ * `transformContentNode`.
+ */
+export const CONTENT_ELEMENT_ALLOWLIST: ReadonlySet<string> = new Set<string>([
+  ...SWITCH_CONTENT_NODES,
+  "choice",
+  "reg",
+  "note",
+  ...QUOTE_NODES,
+  "list",
+  "headLabel",
+  "item",
+  ...TABLE_ITEM_CHILDREN,
+  "milestone",
+  ...SKIP_NODES,
+]);
+
 // For `note` nodes. These should be separate since they're
 // rendered in a tooltip.
-const NOTE_NODES = new Set([
+export const NOTE_NODES = new Set([
   "note",
   "hi",
   "emph",
@@ -51,6 +131,7 @@ const NOTE_NODES = new Set([
   "quote",
   "title",
   "gap",
+  "figure",
   "placeName",
   "date",
   "bibl",
@@ -69,8 +150,26 @@ const NOTE_NODES = new Set([
   "w",
   "num",
   "gloss",
+  "name",
+  "forename",
+  "addName",
+  "genName",
+  "reg",
+  "choice",
+  "corr",
+  "sic",
+  "orig",
+  "abbr",
+  "expan",
+  "ex",
+  "supplied",
+  "p",
+  "head",
+  "seg",
+  "#comment",
 ]);
-const HANDLED_NOTE_REND = new Set<string | undefined>([
+export const NOTE_ELEMENT_ALLOWLIST: ReadonlySet<string> = NOTE_NODES;
+export const HANDLED_NOTE_REND = new Set<string | undefined>([
   "italic",
   "italics",
   "sup",
@@ -80,12 +179,30 @@ const HANDLED_NOTE_REND = new Set<string | undefined>([
   "smallcaps",
   "blockquote",
   "bold",
+  "super",
+  "align(raised)",
+  "sub",
+  "subscript",
+  "align(lowered)",
 ]);
-const KNOWN_NOTE_REND = new Set<string | undefined>([
+/** Note renditions emitted under another name; see `transformNoteNode`. */
+const NOTE_REND_ALIASES = new Map<string, string>([
+  ["italics", "italic"],
+  ["super", "superscript"],
+  ["align(raised)", "superscript"],
+  ["sub", "subscript"],
+  ["align(lowered)", "subscript"],
+]);
+/** Rendition tokens allowed in notes; see `allRendTokensIn`. */
+export const KNOWN_NOTE_REND = new Set<string | undefined>([
   undefined,
   ...HANDLED_NOTE_REND,
+  ...QUOTE_RENDS,
+  // Indentation means nothing inside a one-paragraph hover note: ignored.
+  "indent",
+  "align(indent)",
 ]);
-const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
+export const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "xml:lang",
   "anchored",
   "type",
@@ -96,6 +213,8 @@ const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "parent",
   "n", // This is just ignored, for now.
   "target",
+  // Ignored on an inline note (one that no `<note target>` refers to).
+  "xml:id",
 ]);
 
 type QuoteOpen = "‘" | "“" | "'" | '"';
@@ -278,69 +397,6 @@ export function analyzeQuotes(rows: ProcessedWork2["rows"]) {
   return opens;
 }
 
-export function getSectionId(
-  ancestors: XmlNode[],
-  textParts: string[],
-  workId?: string
-): [string[], boolean] {
-  let i = 0;
-  const sectionId: string[] = [];
-  let parentHadSection = false;
-  const noSubtypes = NO_SUBTYPES.has(workId ?? "");
-  for (const ancestor of ancestors) {
-    const n = ancestor.getAttr("n");
-    if (ancestor.name === "seg") {
-      assertEqual(textParts[i].toLowerCase(), ancestor.getAttr("type"));
-      sectionId.push(checkPresent(n));
-      i++;
-      parentHadSection = true;
-      continue;
-    }
-    const typeAttr = ancestor.getAttr("type");
-    const subtype = ancestor.getAttr("subtype");
-    const isTextPart = typeAttr === "textpart";
-    if (noSubtypes) {
-      assertEqual(ancestor.getAttr("subtype"), undefined);
-      if (typeAttr === undefined) {
-        parentHadSection = false;
-        continue;
-      }
-    }
-    // `l` is sometimes used even if the CTS says `line`, and it is often not marked.
-    // It is also sometimes used to show poetry in prose when it's not a CTS
-    // section.
-    if (
-      !noSubtypes &&
-      !isTextPart &&
-      (ancestor.name !== "l" || i >= textParts.length)
-    ) {
-      parentHadSection = false;
-      continue;
-    }
-    if (IGNORE_SUBTYPES.get(workId ?? "")?.has(subtype ?? "")) {
-      parentHadSection = false;
-      continue;
-    }
-    assertEqual(
-      ancestor.name === "l"
-        ? "line"
-        : (noSubtypes ? typeAttr : subtype)?.toLowerCase(),
-      textParts[i].toLowerCase()
-    );
-    if (n === undefined && ancestor.name === "l") {
-      assertEqual(workId, "phi0550.phi001.perseus-lat1");
-      assertEqual(ancestor.children.length, 1);
-      assertEqual(XmlNode.assertIsNode(ancestor.children[0]).name, "gap");
-      parentHadSection = false;
-      continue;
-    }
-    sectionId.push(checkPresent(n));
-    i++;
-    parentHadSection = true;
-  }
-  return [sectionId, parentHadSection];
-}
-
 interface PreprocessedTree {
   root: XmlNode;
   uids: XmlNode[];
@@ -351,42 +407,185 @@ interface PreprocessedTree {
 interface DeepcopiedAndExtracted {
   root: XmlNode;
   notesWithXmlId: XmlNode[];
+  notesWithN: XmlNode[];
+}
+
+/** A `<note target>` reference, without the optional leading `#`. */
+function normalizeNoteTarget(target: string): string {
+  return target.startsWith("#") ? target.slice(1) : target;
+}
+
+/** The `xml:id`s of every `<note>` under `root`. */
+function findNoteXmlIds(root: XmlNode, ids = new Set<string>()) {
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      continue;
+    }
+    const id = child.name === "note" ? child.getAttr("xml:id") : undefined;
+    if (id !== undefined) {
+      ids.add(id);
+    }
+    findNoteXmlIds(child, ids);
+  }
+  return ids;
+}
+
+/** The (normalized) targets of every `<note target="..."/>` under `root`. */
+function findNoteTargets(root: XmlNode, targets = new Set<string>()) {
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      continue;
+    }
+    const target = child.name === "note" ? child.getAttr("target") : undefined;
+    if (target !== undefined) {
+      targets.add(normalizeNoteTarget(target));
+    }
+    findNoteTargets(child, targets);
+  }
+  return targets;
+}
+
+/**
+ * Whether `note` is the detached body of a `<note target="..."/>` that names
+ * it by `@n` rather than `@xml:id`, as the Historia Augusta does:
+ * `<note target="n1"/>` ... `<note n="n1">body</note>`. Ordinary inline notes
+ * also carry `@n` (`<note n="1">body</note>`), so this is only a body when
+ * something in the document actually references it.
+ */
+function isNoteBodyByN(note: XmlNode, targets: ReadonlySet<string>): boolean {
+  const n = note.getAttr("n");
+  return (
+    n !== undefined &&
+    note.getAttr("target") === undefined &&
+    targets.has(n) &&
+    note.children.some((c) => typeof c !== "string" || c.trim().length > 0)
+  );
+}
+
+/**
+ * The text of an empty `<note>` that carries its content in `@n` rather than
+ * a footnote number: Tertullian's scripture references
+ * (`<note n="I Cor. VII, 39."/>`).
+ */
+function referenceInN(node: XmlNode): string | undefined {
+  const n = node.getAttr("n")?.trim();
+  return n !== undefined &&
+    /\p{L}/u.test(n) &&
+    n.toLowerCase() !== "marg" &&
+    textWeight(node) === 0
+    ? n
+    : undefined;
+}
+
+/**
+ * Whether `node` is a footnote with nothing to show, which is dropped rather
+ * than left as a dangling marker: an empty `<note n="..."/>` (Ausonius), or a
+ * printed edition's marginal line number that OCR turned into a note
+ * (`<note n="marg">35</note>`; Ausonius, Claudian, the Appendix Vergiliana).
+ * Never a `<note target>` anchor, which is empty by design.
+ */
+export function isVacuousNote(node: XmlNode): boolean {
+  if (node.name !== "note" || node.getAttr("target") !== undefined) {
+    return false;
+  }
+  if (textWeight(node) === 0 && node.findDescendants("gap").length === 0) {
+    return referenceInN(node) === undefined;
+  }
+  return (
+    node.getAttr("n")?.trim().toLowerCase() === "marg" &&
+    node.children.every((c) => typeof c === "string") &&
+    /^\s*\d+\s*$/.test(node.children.join(""))
+  );
 }
 
 // Creates a deep copy of the root, while also extracting out nodes for later assembly.
-function deepcopyAndExtract(root: XmlNode): DeepcopiedAndExtracted {
+// A `<note xml:id>` is a detached body only if some `<note target>` names it;
+// otherwise it is an ordinary inline note where it stands (Ovid's Ex Ponto
+// gives every apparatus note an `xml:id` and has no targets, and Columella,
+// Florus and Apuleius' Metamorphoses have bodies whose anchors were lost
+// upstream, which sit at the Loeb page break they belong to).
+//
+// `originals` maps each copy back to the node it was copied from, so that the
+// citation spine (computed on the original tree) can be looked up.
+function deepcopyAndExtract(
+  root: XmlNode,
+  targets: ReadonlySet<string>,
+  targetsByN: ReadonlySet<string>,
+  originals: Map<XmlNode, XmlNode>
+): DeepcopiedAndExtracted {
   const children: XmlChild[] = [];
   const notesWithXmlId: XmlNode[] = [];
+  const notesWithN: XmlNode[] = [];
   for (const child of root.children) {
     if (typeof child === "string") {
       children.push(child);
       continue;
     }
-    if (child.name === "note" && child.getAttr("xml:id") !== undefined) {
+    const xmlId = child.name === "note" ? child.getAttr("xml:id") : undefined;
+    if (xmlId !== undefined && targets.has(normalizeNoteTarget(xmlId))) {
       notesWithXmlId.push(child.deepcopy());
       continue;
     }
-    const childResult = deepcopyAndExtract(child);
+    if (child.name === "note" && isNoteBodyByN(child, targetsByN)) {
+      notesWithN.push(child.deepcopy());
+      continue;
+    }
+    const childResult = deepcopyAndExtract(
+      child,
+      targets,
+      targetsByN,
+      originals
+    );
     children.push(childResult.root);
     notesWithXmlId.push(...childResult.notesWithXmlId);
+    notesWithN.push(...childResult.notesWithN);
   }
-  return {
-    root: new XmlNode(root.name, [...root.attrs], children),
-    notesWithXmlId,
-  };
+  const copy = new XmlNode(root.name, [...root.attrs], children);
+  originals.set(copy, root);
+  return { root: copy, notesWithXmlId, notesWithN };
+}
+
+/** Maps each note to its `key` attribute, failing on duplicate keys. */
+function indexNotesBy(notes: XmlNode[], key: string): Map<string, XmlNode> {
+  const result = new Map<string, XmlNode>();
+  for (const note of notes) {
+    const id = checkPresent(note.getAttr(key));
+    assert(!result.has(id), () => `Duplicate note ${key}="${id}"`);
+    result.set(id, note);
+  }
+  return result;
 }
 
 function preprocessTree(
   originalRoot: XmlNode,
-  textParts: string[],
+  spine: Pick<CitationSpine, "containers">,
   options: ProcessForDisplayOptions
 ): PreprocessedTree {
-  const textPartsLower = textParts.map((part) => part.toLowerCase());
   const notes: XmlNode[] = [];
-  const { root, notesWithXmlId } = deepcopyAndExtract(originalRoot);
-  const notesWithXmlIdMap = new Map(
-    notesWithXmlId.map((n) => [checkPresent(n.getAttr("xml:id")), n])
+  // Targets that an `xml:id` already satisfies never take a `<note n>` as
+  // their body, so an inline `<note n>` with the same value stays in place.
+  const xmlIds = findNoteXmlIds(originalRoot);
+  const allTargets = findNoteTargets(originalRoot);
+  const targetsByN = new Set(
+    Array.from(allTargets).filter((t) => !xmlIds.has(t))
   );
+  const originals = new Map<XmlNode, XmlNode>();
+  const { root, notesWithXmlId, notesWithN } = deepcopyAndExtract(
+    originalRoot,
+    allTargets,
+    targetsByN,
+    originals
+  );
+  const notesWithXmlIdMap = indexNotesBy(notesWithXmlId, "xml:id");
+  const notesWithNMap = indexNotesBy(notesWithN, "n");
+  const findNoteBody = (target: string): XmlNode | undefined => {
+    const normalized = normalizeNoteTarget(target);
+    return (
+      notesWithXmlIdMap.get(target) ??
+      notesWithXmlIdMap.get(normalized) ??
+      notesWithNMap.get(normalized)
+    );
+  };
   // Initialize all of the patch data structures before, since we might run into sections
   // in a non-continuous fashion. For example, we could have:
   // <div section="3.6">
@@ -422,10 +621,9 @@ function preprocessTree(
     uids.push(top);
     top.attrs.push(["uid", uid.toString()]);
 
-    const [section, isLeader] = getSectionId(
-      ancestors,
-      textPartsLower,
-      options.workId
+    const [section, isLeader] = CitationSpine.sectionIdOf(
+      spine,
+      ancestors.map((node) => originals.get(node) ?? node)
     );
     section.forEach((p) => assert(!p.includes(".")));
     top.attrs.push(["sid", section.join(".")]);
@@ -436,13 +634,26 @@ function preprocessTree(
       top.attrs.forEach((attr) =>
         assert(KNOWN_NOTE_ATTRS.has(attr[0]), attr[0])
       );
+      // Inline notes are running text (e.g. the speaker labels of the
+      // Academica), not footnotes; until they are modelled, fail loudly
+      // rather than render them as hover notes.
+      assert(
+        top.getAttr("place") !== "inline",
+        () =>
+          `Inline note (place="inline") is not yet supported as a footnote: ${top.toString()}`
+      );
       const noteId = notes.length.toString();
       const target = top.getAttr("target");
       if (target === undefined) {
         // If there's no target, treat it as a regular note. This means we expect that it has
         // content as its children. In this case, we keep the original node to mark the location,
         // and store the content separately.
-        notes.push(top.deepcopy());
+        const reference = referenceInN(top);
+        notes.push(
+          reference === undefined
+            ? top.deepcopy()
+            : new XmlNode("note", [...top.attrs], [reference])
+        );
         top.attrs.push(["noteId", noteId]);
         // This is a way to remove all children from the node.
         // `note` is included in the tree to mark the position,
@@ -453,7 +664,20 @@ function preprocessTree(
         // <note target="someId" /> representing the location of a node, and we have (later)
         // <note xml:id="someId"> ... </note> representing the content.
         assertEqual(top.children.length, 0);
-        const content = checkPresent(notesWithXmlIdMap.get(target), target);
+        // The content is named by `xml:id` or, failing that, by `n`; the
+        // target may carry a leading `#` (`target="#n1"`).
+        const content = checkPresent(findNoteBody(target), target);
+        content.attrs.forEach(([name]) =>
+          assert(
+            name === "xml:id" || KNOWN_NOTE_ATTRS.has(name),
+            () => `Unknown note body attribute: ${name}`
+          )
+        );
+        assert(
+          content.getAttr("place") !== "inline",
+          () =>
+            `Inline note (place="inline") is not yet supported as a footnote: ${content.toString()}`
+        );
         // Note: we explicitly do not delete the note from the map because sometimes the
         // same content is referenced multiple times.
         notes.push(content.deepcopy());
@@ -480,7 +704,7 @@ function preprocessTree(
         assertEqual(child.children.length, 0);
         continue;
       }
-      if (SKIP_NODES.has(child.name)) {
+      if (SKIP_NODES.has(child.name) || isVacuousNote(child)) {
         continue;
       }
       assertEqual(child.getAttr("parent"), undefined);
@@ -556,10 +780,51 @@ function splitSid(sid: string): string[] {
   return sid.length === 0 ? [] : sid.split(".");
 }
 
+const DIVISION_ELEMENTS = new Set(["div", "div1", "div2", "div3"]);
+const EDITION_TYPES = new Set(["edition", "translation"]);
+
+/**
+ * Whether `node` holds editorial matter rather than citable text: a heading
+ * or label, or an unnumbered division (Livy's index of sigla, a translator's
+ * `<div type="commentary">` argument), which no citation can reach.
+ */
+function isEditorialNode(node: XmlNode): boolean {
+  return (
+    node.name === "head" ||
+    node.name === "label" ||
+    node.name === "docAuthor" ||
+    (DIVISION_ELEMENTS.has(node.name) &&
+      node.getAttr("n") === undefined &&
+      !EDITION_TYPES.has(node.getAttr("type") ?? ""))
+  );
+}
+
+/**
+ * Whether `node`, a row's root, is a heading: a `<head>`, `<label>` or
+ * `<docAuthor>` byline, or an unnumbered `opener` division (a letter's
+ * dateline and salutation, as in Q. Cicero's Commentariolum). See
+ * `divideWork`.
+ */
+function isHeadingNode(node: XmlNode): boolean {
+  if (["head", "label", "docAuthor"].includes(node.name)) {
+    return true;
+  }
+  return (
+    DIVISION_ELEMENTS.has(node.name) &&
+    node.getAttr("n") === undefined &&
+    (node.getAttr("subtype") === "opener" || node.getAttr("type") === "opener")
+  );
+}
+
+/** A row: its section id, its content, and whether it is editorial matter. */
+type RawRow = [string[], XmlNode, boolean];
+
 function convertToRows(
   current: XmlNode,
-  data: PreprocessedTree
-): [string[], XmlNode][] {
+  data: PreprocessedTree,
+  inEditorial: boolean = false
+): RawRow[] {
+  const editorial = inEditorial || isEditorialNode(current);
   const uid = checkPresent(safeParseInt(current.getAttr("uid")));
   const sections = checkPresent(data.includedSections[uid]);
   const sid = splitSid(checkPresent(current.getAttr("sid")));
@@ -572,9 +837,9 @@ function convertToRows(
       current.attrs.push(["lg-sid", nearestLg[0]]);
       current.attrs.push(["lg", nearestLg[1]]);
     }
-    return [[sid, current]];
+    return [[sid, current, editorial]];
   }
-  const results: [string[], XmlNode][] = [];
+  const results: RawRow[] = [];
   for (const child of current.children) {
     if (typeof child === "string") {
       // Ignore just whitespace.
@@ -582,41 +847,125 @@ function convertToRows(
         continue;
       }
       // Wrap the string child in a node.
-      results.push([sid, new XmlNode("span", [], [child])]);
+      results.push([sid, new XmlNode("span", [], [child]), editorial]);
       continue;
     }
-    results.push(...convertToRows(child, data));
+    results.push(...convertToRows(child, data, editorial));
   }
   return results;
 }
 
-function transformNoteNode(node: XmlNode): XmlNode {
+function hasChildNamed(node: XmlNode, name: string): boolean {
+  return node.children.some((c) => typeof c !== "string" && c.name === name);
+}
+
+/**
+ * The transformed `children` of `node` (which correspond one-to-one with
+ * `node.children`), except those that came from a child element `name`.
+ */
+function withoutChildrenNamed<T>(
+  node: XmlNode,
+  children: T[],
+  name: string
+): T[] {
+  assertEqual(children.length, node.children.length);
+  return children.filter((_, i) => {
+    const original = node.children[i];
+    return typeof original === "string" || original.name !== name;
+  });
+}
+
+/** Exported for unit testing. */
+export function transformNoteNode(node: XmlNode, parent?: XmlNode): XmlNode {
   assert(NOTE_NODES.has(node.name), node.name);
   if (node.name === "lb") {
     return new XmlNode("br", [], []);
   }
-  if (node.name === "gap") {
-    return new XmlNode("span", [], [" [gap] "]);
+  if (node.name === "gap" || node.name === "figure") {
+    if (node.name === "figure") {
+      assertEqual(node.children.length, 0);
+      assertEqual(node.attrs.length, 0);
+    }
+    return new XmlNode("gap", [], []);
   }
-  const attrs: XmlNode["attrs"] = [];
-  if (["l"].includes(node.name)) {
-    attrs.push(["block", "1"]);
-  }
-  if (node.name === "num") {
-    attrs.push(["rend", "smallcaps"]);
+  if (node.name === "#comment" || node.name === "pb") {
+    return new XmlNode("span", [], []);
   }
   const rend = node.getAttr("rend");
-  assert(KNOWN_NOTE_REND.has(rend), rend);
-  if (HANDLED_NOTE_REND.has(rend)) {
-    const finalRend = rend === "italics" ? "italic" : rend;
-    attrs.push(["rend", checkPresent(finalRend)]);
+  assert(allRendTokensIn(rend, KNOWN_NOTE_REND), rend);
+  // Comments and page breaks are dropped outright: an empty element in
+  // their place would hide the seam between its siblings from `needsWordBreak`.
+  const sourceChildren = node.children.filter(
+    (c) => typeof c === "string" || (c.name !== "#comment" && c.name !== "pb")
+  );
+  // Every child is transformed, and so validated, even in the branches of a
+  // `choice` or `abbr` that are not shown, just as `processRowContent` does.
+  const transformed = sourceChildren.map((c) =>
+    typeof c === "string" ? c : transformNoteNode(c, node)
+  );
+  const childIndex = (pred: (c: XmlNode) => boolean) =>
+    sourceChildren.findIndex((c) => typeof c !== "string" && pred(c));
+  if (node.name === "choice" && childIndex(() => true) !== -1) {
+    // As in the text: show the corrected, regularized or abbreviated form.
+    let chosen = childIndex((c) => CHOICE_GOOD_CHILD.has(c.name));
+    if (chosen === -1) {
+      chosen = childIndex(
+        (c) => c.name === "expan" && hasChildNamed(c, "abbr")
+      );
+    }
+    assert(chosen !== -1, () => `No usable <choice> child: ${node}`);
+    return XmlNode.assertIsNode(transformed[chosen]);
+  }
+  if (node.name === "expan" && hasChildNamed(node, "abbr")) {
+    // <expan><abbr>acturu's</abbr><ex>acturus es</ex></expan>
+    return XmlNode.assertIsNode(
+      transformed[childIndex((c) => c.name === "abbr")]
+    );
+  }
+  const attrs: XmlNode["attrs"] = [];
+  if (node.name === "l") {
+    attrs.push(["l", "1"]);
+  } else if (["p", "head"].includes(node.name)) {
+    attrs.push(["block", "1"]);
+  }
+  const handledRends = rendTokens(rend ?? "")
+    .filter((token) => HANDLED_NOTE_REND.has(token))
+    .map((token) => NOTE_REND_ALIASES.get(token) ?? token);
+  if (node.name === "num") {
+    handledRends.push("smallcaps");
+  }
+  if (node.name === "emph" && handledRends.length === 0) {
+    handledRends.push("italic");
+  }
+  if (handledRends.length > 0) {
+    attrs.push(["rend", Array.from(new Set(handledRends)).join(" ")]);
   }
   if (QUOTE_NODES.has(node.name)) {
     attrs.push(["rend", "italic"]);
   }
-  const baseChildren = node.children.map((c) =>
-    typeof c === "string" ? c : transformNoteNode(c)
-  );
+  if (node.name === "reg" && parent?.name !== "choice") {
+    // As in the text, a standalone `reg` marks a capitalized word
+    // (`<reg>cobet</reg>`, `Suet. <reg>iul</reg>.`).
+    assert(transformed.length === 1);
+    const child = assertType(transformed[0], isString);
+    assert(/^\s*[a-zA-Zé]/.test(child), child);
+    return new XmlNode("span", attrs, [
+      child.replace(
+        /^(\s*)([a-zA-Zé])/,
+        (_, ws: string, ch: string) => ws + ch.toUpperCase()
+      ),
+    ]);
+  }
+  // As in the text, an `abbr` shows only its abbreviated form, flush.
+  const baseChildren =
+    node.name === "abbr" && hasChildNamed(node, "expan")
+      ? transformed.filter((c, i) => {
+          const original = sourceChildren[i];
+          return typeof original === "string"
+            ? original.trim().length > 0
+            : original.name !== "expan";
+        })
+      : transformed;
   let isAppCritLem = false;
   if (node.name === "lem") {
     isAppCritLem = true;
@@ -639,11 +988,14 @@ function transformNoteNode(node: XmlNode): XmlNode {
       ? [...baseChildren, " ]"]
       : node.name === "del"
       ? ["[", ...baseChildren, "]"]
+      : node.name === "supplied"
+      ? ["⟨", ...baseChildren, "⟩"]
       : baseChildren;
   return new XmlNode("span", attrs, children);
 }
 
-function transformContentNode(
+/** Exported for unit testing. */
+export function transformContentNode(
   node: XmlNode,
   children: XmlChild<ProcessedWorkContentNodeType>[],
   parent?: XmlNode
@@ -653,29 +1005,81 @@ function transformContentNode(
   assert(isKnownRend(rend), rend);
   if (rend !== undefined && isHandledRend(rend)) {
     if (node.name === "emph") {
-      assertEqual(rend, "italic");
+      // Emphasis is italic, or (upstream 2026) small caps: never ignored.
+      assert(isFullyHandledRend(rend), rend);
     }
-    const finalRend = rend === "ital" || rend === "italics" ? "italic" : rend;
-    attrs.push(["rend", finalRend], ["rendParent", node.name]);
+    // In Cicero's Epistulae ad Atticum, `<p rend="align(center)">` wraps 8
+    // multi-sentence enclosed letters; keep prose paragraphs left-aligned.
+    const tokens = canonicalRend(rend)
+      .split(" ")
+      .filter((t) => Boolean(t) && !(node.name === "p" && t === "center"));
+    if (tokens.length > 0) {
+      attrs.push(["rend", tokens.join(" ")], ["rendParent", node.name]);
+    }
   }
-  if (node.name === "title") {
-    attrs.push(["sectionHead", "1"]);
+  if (node.name === "title" || node.name === "desc" || node.name === "term") {
+    // A title cited in running text (`qui <title>Ἁλιευτικὰ</title> scripsit`),
+    // an editorial lacuna note (`<desc rend="align(center)">Desunt non pauca.</desc>`),
+    // or a cited linguistic form (`<term>tor</term>`) is italic, as printed.
+    const existingRend = attrs.find(([k]) => k === "rend");
+    if (existingRend === undefined) {
+      attrs.push(["rend", "italic"]);
+    } else if (
+      node.name === "desc" &&
+      !existingRend[1].split(" ").includes("italic")
+    ) {
+      existingRend[1] = `${existingRend[1]} italic`;
+    }
   }
-  if (node.name === "ab") {
+  if (node.name === "p" || node.name === "ab") {
+    // Marks prose, so that a verse work's reader can set a prose preface or
+    // epilogue as a paragraph rather than a verse line (`work_preprocessor`).
+    attrs.push(["para", "1"]);
+  }
+  const hasSiblingParagraphs =
+    node.name === "p" &&
+    parent !== undefined &&
+    parent.children.filter((c) => typeof c !== "string" && c.name === "p")
+      .length > 1;
+  if (node.name === "ab" || hasSiblingParagraphs) {
     attrs.push(["block", "1"]);
   }
   if (node.name === "l") {
     attrs.push(["l", "1"]);
+    const part = node.getAttr("part");
+    if (part !== undefined) {
+      assert(L_PARTS.has(part), () => `Unknown <l part="${part}">`);
+      if (CONTINUED_L_PARTS.has(part)) {
+        // A separate attribute rather than `rend="indent"`, which would also
+        // change the corpus text (see `extractRowText`).
+        attrs.push(["linePart", part]);
+      }
+    }
+    // Seneca's De Beneficiis 2.5.2 encodes a final half-line as
+    // `<l rend="F" part="N">`.
+    if (
+      !CONTINUED_L_PARTS.has(part ?? "") &&
+      rendTokens(rend ?? "").includes("F")
+    ) {
+      attrs.push(["linePart", "F"]);
+    }
   }
   if (node.name === "choice") {
-    assertEqual(
-      // Ignore children that are just whitespace. Some of the documents have
-      // <choice> <corr>corrected</corr> <sic>incorrect</sic> </choice>
-      // where the spaces are uneeded.
-      children.filter((c) => typeof c !== "string" || c.trim().length > 0)
-        .length,
-      2
+    // Ignore children that are just whitespace. Some of the documents have
+    // <choice> <corr>corrected</corr> <sic>incorrect</sic> </choice>
+    // where the spaces are uneeded.
+    const nonEmpty = children.filter(
+      (c) => typeof c !== "string" || c.trim().length > 0
     );
+    // Plautus wraps both forms in a single `expan`:
+    // <choice><expan><abbr>acturu's</abbr><ex>acturus es</ex></expan></choice>
+    // in which case the `expan` has already chosen its `abbr`.
+    const isSoleExpan =
+      nonEmpty.length === 1 &&
+      node.children.some((c) => typeof c !== "string" && c.name === "expan");
+    if (!isSoleExpan) {
+      assertEqual(nonEmpty.length, 2);
+    }
     const corrected = XmlNode.assertIsNode(
       checkPresent(
         children.find(
@@ -692,23 +1096,43 @@ function transformContentNode(
     attrs.push(["origName", node.name]);
   }
   if (node.name === "abbr") {
-    // There are two ways to have `abbr`. The first is within a `choice`, in which it shows
+    // There are three ways to have `abbr`. The first is within a `choice`, in which it shows
     // one an abbreviated form and one expanded form. The second is an `abbr` with an `expan`
-    // inside. In the latter case, we just want to show the abbreviated form.
-    const childContent = node.children.filter(
-      (c) => typeof c !== "string" || c.trim().length > 0
-    );
-    if (
-      childContent.length === 2 &&
-      typeof childContent[0] === "string" &&
-      typeof childContent[1] !== "string" &&
-      childContent[1].name === "expan"
-    ) {
-      return new XmlNode("span", attrs, [childContent[0]]);
+    // inside, before or after the abbreviated text (`<abbr>L.<expan>..</expan></abbr>`, or
+    // Nepos' `<abbr><expan><ex>Gaio</ex></expan>C.</abbr>`). In that case, we just want to
+    // show the abbreviated form. The third is an `abbr` within an `expan` (see `choice`).
+    if (hasChildNamed(node, "expan")) {
+      // Whitespace-only text is dropped along with the `expan`, so the
+      // abbreviation renders flush, as it did before.
+      return new XmlNode(
+        "span",
+        attrs,
+        withoutChildrenNamed(node, children, "expan").filter(
+          (c) => typeof c !== "string" || c.trim().length > 0
+        )
+      );
     }
-
-    assertEqual(parent?.name, "choice");
+    assert(
+      parent?.name === "choice" || parent?.name === "expan",
+      () => `Unexpected <abbr> in <${parent?.name}>`
+    );
     attrs.push(["origName", node.name]);
+  }
+  if (node.name === "expan" && hasChildNamed(node, "abbr")) {
+    // <expan><abbr>acturu's</abbr><ex>acturus es</ex></expan>: show only the
+    // abbreviated form, as everywhere else. Plautus wraps this in a `choice`;
+    // Cicero's speeches (phi0474.phi009, phi010, phi014) use it bare.
+    assertEqual(children.length, node.children.length);
+    const abbrs = children.filter((c, i) => {
+      const original = node.children[i];
+      return (
+        typeof c !== "string" &&
+        typeof original !== "string" &&
+        original.name === "abbr"
+      );
+    });
+    assertEqual(abbrs.length, 1);
+    return XmlNode.assertIsNode(abbrs[0]);
   }
   if (node.name === "orig") {
     attrs.push(["origName", node.name]);
@@ -724,37 +1148,105 @@ function transformContentNode(
       attrs.push(["origName", node.name]);
       return new XmlNode("span", attrs, children);
     }
-    assert(/^[a-zA-Zé]/.test(child), child);
-    const capitalized = child[0].toUpperCase() + child.slice(1);
+    assert(/^\s*[a-zA-Zé]/.test(child), child);
+    const capitalized = child.replace(
+      /^(\s*)([a-zA-Zé])/,
+      (_, ws: string, ch: string) => ws + ch.toUpperCase()
+    );
     return new XmlNode("span", attrs, [capitalized]);
   }
   if (QUOTE_NODES.has(node.name)) {
+    const normRends = canonicalRend(rend ?? "")
+      .split(" ")
+      .filter(Boolean);
+    const isBlockquote = normRends.includes("blockquote");
+    // `undirect` marks indirect discourse (Boethius' De Hebdomadibus), which
+    // the printed edition sets without quotation marks.
+    const isIndirect = rendTokens(rend ?? "").includes("undirect");
+    let quoteChildren = children;
+    if (isBlockquote) {
+      // Perseus TEI sometimes places <lb/> (or <lb/><lb/>) at the very start
+      // of <quote rend="blockquote"> to force a line break in inline
+      // renderers; since .blockquote is already display: block with top
+      // margin, a leading <br> inside .blockquote produces an unintended blank
+      // line before the quote.
+      const firstContentIdx = children.findIndex(
+        (c) =>
+          (typeof c === "string" && c.trim().length > 0) ||
+          (typeof c !== "string" && c.name !== "br")
+      );
+      if (firstContentIdx !== -1) {
+        const hasLeadingBr = children
+          .slice(0, firstContentIdx)
+          .some((c) => typeof c !== "string" && c.name === "br");
+        if (hasLeadingBr) {
+          quoteChildren = children.slice(firstContentIdx);
+        }
+      } else {
+        const hasBr = children.some(
+          (c) => typeof c !== "string" && c.name === "br"
+        );
+        if (hasBr) {
+          quoteChildren = [];
+        }
+      }
+    }
     return new XmlNode(
       "span",
       attrs,
       // We don't need to add quotes even if the node is a `quote` since
       // the blockquote will emphasize enough.
-      rend === "blockquote" ? children : ["“", ...children, "”"]
+      isBlockquote || isIndirect ? quoteChildren : ["“", ...quoteChildren, "”"]
     );
   }
   if (node.name === "foreign") {
-    const lang = node.getAttr("xml:lang");
+    const lang = node.getAttr("xml:lang") ?? node.getAttr("lang");
     if (lang === "greek") {
       assertEqual(node.children.length, 1);
       const child = assertType(node.children[0], isString);
-      return new XmlNode("span", [], [betaCodeToGreek(child)]);
+      // `convertGrcBetaCode` has usually converted it already; only text that
+      // is still Beta Code (ASCII, with a letter) is converted here.
+      // eslint-disable-next-line no-control-regex
+      const isBetaCode = /^[\x00-\x7F]*$/.test(child) && /[a-zA-Z]/.test(child);
+      return new XmlNode(
+        "span",
+        [],
+        [isBetaCode ? betaCodeToGreek(child) : child]
+      );
     }
+  }
+  if (!SWITCH_CONTENT_NODES.has(node.name)) {
+    throw new Error(`Unknown node: ${node.name}`);
   }
   switch (node.name) {
     case "lb":
       return new XmlNode("br", [], []);
     case "head":
+    case "docAuthor":
+      // A `docAuthor` byline (the Historia Augusta's lives) reads as a
+      // heading over the text.
       return new XmlNode("head", attrs, children);
     case "gap":
       assert(children.length === 0);
       return new XmlNode("gap", attrs, children);
-    case "label":
-      assert(children.length === 1);
+    case "label": {
+      const nonWhitespace = children.filter(
+        (c) => typeof c !== "string" || c.trim().length > 0
+      );
+      assert(nonWhitespace.length >= 1);
+      if (nonWhitespace.length === 1 && children.length === 1) {
+        return new XmlNode("b", attrs, children);
+      }
+      const labelChildren: XmlChild<ProcessedWorkContentNodeType>[] = [];
+      nonWhitespace.forEach((child, idx) => {
+        if (idx > 0) {
+          labelChildren.push(new XmlNode("br", [], []));
+        }
+        labelChildren.push(child);
+      });
+      return new XmlNode("b", attrs, labelChildren);
+    }
+    case "lemma":
       return new XmlNode("b", attrs, children);
     case "w":
     case "l":
@@ -771,6 +1263,9 @@ function transformContentNode(
     case "surname":
     case "persName":
     case "name":
+    case "forename":
+    case "addName":
+    case "genName":
     case "num":
     case "orig":
     case "seg":
@@ -782,6 +1277,7 @@ function transformContentNode(
     // section where it actually matters, but for now this is fine.
     // eslint-disable-next-line no-fallthrough
     case "div":
+    case "div3":
     case "div2":
     case "div1":
     case "ab":
@@ -789,6 +1285,9 @@ function transformContentNode(
     case "body":
     case "p":
     case "title":
+    case "desc":
+    case "ref":
+    case "term":
     // TODO: Eventually we should probably link with these, but for now
     // we don't really need to do anything.
     // eslint-disable-next-line no-fallthrough
@@ -804,6 +1303,9 @@ function transformContentNode(
       return new XmlNode("span", attrs, children);
     case "del":
       return new XmlNode("span", attrs, ["[", ...children, "]"]);
+    case "supplied":
+      // Text the editor supplied, in Leiden angle brackets.
+      return new XmlNode("span", attrs, ["⟨", ...children, "⟩"]);
   }
   throw new Error(`Unknown node: ${node.name}`);
 }
@@ -871,7 +1373,8 @@ function processListNode(root: XmlNode): XmlNode<ProcessedWorkContentNodeType> {
   );
 }
 
-function processRowContent(
+/** Exported for unit testing. */
+export function processRowContent(
   root: XmlNode,
   parent?: XmlNode
 ): XmlNode<ProcessedWorkContentNodeType> {
@@ -887,38 +1390,45 @@ function processRowContent(
   );
 }
 
-function pruneSectionNumbering(
-  workId: string,
-  textParts: string[],
-  workBody: ReturnType<typeof processWorkBody>
-): [string[], ReturnType<typeof processWorkBody>] {
-  if (workId !== LatinWorks.LIVY_AUC) {
-    return [textParts, workBody];
-  }
-  return [
-    textParts.slice(1),
-    {
-      rows: workBody.rows.map(([id, content]) => [id.slice(1), content]),
-      notes: workBody.notes,
-    },
-  ];
-}
-
 /** Exported for unit testing. */
 export function processWorkBody(
   originalRoot: XmlNode,
-  textParts: string[],
+  spine: Pick<CitationSpine, "containers">,
   options: ProcessForDisplayOptions
 ): Pick<ProcessedWork2, "rows" | "notes"> {
-  const data = preprocessTree(originalRoot, textParts, options);
-  const rawRows = convertToRows(data.root, data);
-  const rows: ProcessedWork2["rows"] = [];
-  let currentLg: undefined | [string, string[]] = undefined;
-  const addSpaceRowIfNeeded = () =>
-    currentLg !== undefined &&
-    rows.push([currentLg[1], new XmlNode("space", [["lg", currentLg[0]]])]);
+  const { rows, notes } = processWorkBodyDetailed(originalRoot, spine, options);
+  return { rows, notes };
+}
 
-  for (const [id, rowRoot] of rawRows) {
+/**
+ * `processWorkBody`, also returning the indices of the rows that hold only
+ * editorial matter (see `isEditorialNode`) or spacing.
+ */
+function processWorkBodyDetailed(
+  originalRoot: XmlNode,
+  spine: Pick<CitationSpine, "containers">,
+  options: ProcessForDisplayOptions
+): Pick<ProcessedWork2, "rows" | "notes"> & {
+  editorialRows: Set<number>;
+  headingRows: Set<number>;
+} {
+  const data = preprocessTree(originalRoot, spine, options);
+  const rawRows = convertToRows(data.root, data);
+  // Coverage: every piece of text in the body lands in some row.
+  const rowWeight = rawRows.reduce((sum, [, row]) => sum + textWeight(row), 0);
+  assertEqual(rowWeight, textWeight(data.root), "Body text missing from rows");
+  const rows: ProcessedWork2["rows"] = [];
+  const editorialRows = new Set<number>();
+  const headingRows = new Set<number>();
+  let currentLg: undefined | [string, string[]] = undefined;
+  const addSpaceRowIfNeeded = () => {
+    if (currentLg !== undefined) {
+      editorialRows.add(rows.length);
+      rows.push([currentLg[1], new XmlNode("space", [["lg", currentLg[0]]])]);
+    }
+  };
+
+  for (const [id, rowRoot, editorial] of rawRows) {
     const rowLg = rowRoot.getAttr("lg");
     // Add a spacer row when the `lg` changes.
     if (rowLg !== currentLg?.[0]) {
@@ -928,45 +1438,63 @@ export function processWorkBody(
           ? undefined
           : [rowLg, splitSid(checkPresent(rowRoot.getAttr("lg-sid")))];
     }
+    if (editorial) {
+      editorialRows.add(rows.length);
+    }
+    if (isHeadingNode(rowRoot)) {
+      headingRows.add(rows.length);
+    }
     rows.push([id, processRowContent(rowRoot)]);
   }
   addSpaceRowIfNeeded();
-  return { rows, notes: data.notes.map(transformNoteNode) };
+  return {
+    rows,
+    notes: data.notes.map((note) => transformNoteNode(note)),
+    editorialRows,
+    headingRows,
+  };
 }
 
-function getTextparts(root: XmlNode, workId: string) {
-  const refsDecls = root.findDescendants("refsDecl");
-  const nonCts = refsDecls.filter((node) => node.getAttr("n") !== "CTS");
-  if (FORCE_CTS_WORKS.has(workId) || nonCts.length === 0) {
-    return findCtsEncoding(root)
-      .sort((a, b) => a.idSize - b.idSize)
-      .map((p) => p.name);
-  }
-  assertEqual(nonCts.length, 1, nonCts.map((n) => n.toString()).join("\n"));
-  const textParts = nonCts[0].children
-    .filter(instanceOf(XmlNode))
-    .map((child) => {
-      assert(["refState", "state"].includes(child.name));
-      return checkPresent(child.getAttr("unit"));
-    });
-  return textParts;
+function startsWith(id: string[], prefix: string[]): boolean {
+  return prefix.every((part, i) => id[i] === part);
 }
 
-/** Exported for unit testing. */
+/**
+ * Splits `rows` into pages: one per section one level above the leaf (one per
+ * section for a single-level scheme), except that a work cited by line alone
+ * is a single page, as a poem is in Hypotactic.
+ *
+ * `headingRows` are the indices of heading rows (see `isHeadingNode`); a run
+ * of them at the top level before the first page joins that page, so a work's
+ * title heading or opening byline is not lost.
+ *
+ * Exported for unit testing.
+ */
 export function divideWork(
   rows: ProcessedWork2["rows"],
-  textParts: string[]
+  textParts: string[],
+  headingRows: ReadonlySet<number> = new Set()
 ): WorkPage[] {
   const n = textParts.length;
+  if (n === 1 && textParts[0] === "line") {
+    // One page per line is unreadable (the Appendix Vergiliana's `.//lb`
+    // spines); a whole poem per page is what Hypotactic does too.
+    return rows.length === 0 ? [] : [{ id: ["1"], rows: [0, rows.length] }];
+  }
   const idLength = n === 1 ? n : n - 1;
   const pages: WorkPage[] = [];
   const addedPages = new Set<string>();
   let currentId: undefined | string[] = undefined;
   let currentStart: undefined | number = undefined;
+  let pendingHeaderStartIdx: number | undefined = undefined;
 
   function addPageIfNeeded(end: number) {
     if (currentId !== undefined) {
-      assert(!addedPages.has(currentId.join(".")));
+      // Page ids are unique (and so each page's rows are contiguous).
+      assert(
+        !addedPages.has(currentId.join(".")),
+        () => `Duplicate page id ${currentId?.join(".")} (rows not contiguous)`
+      );
       addedPages.add(currentId.join("."));
       pages.push({ id: currentId, rows: [checkPresent(currentStart), end] });
     }
@@ -984,11 +1512,37 @@ export function divideWork(
     // If the current id matches the expected length, start a new page.
     // Otherwise, reset the current ID and start.
     if (pageId.length === idLength) {
+      const hasPrefix =
+        pendingHeaderStartIdx !== undefined &&
+        startsWith(pageId, rows[pendingHeaderStartIdx][0]);
       currentId = pageId;
-      currentStart = i;
+      currentStart = hasPrefix ? pendingHeaderStartIdx : i;
+      pendingHeaderStartIdx = undefined;
     } else {
       currentId = undefined;
       currentStart = undefined;
+      if (0 < pageId.length && pageId.length < idLength) {
+        if (
+          pendingHeaderStartIdx !== undefined &&
+          !startsWith(pageId, rows[pendingHeaderStartIdx][0])
+        ) {
+          pendingHeaderStartIdx = i;
+        } else {
+          pendingHeaderStartIdx ??= i;
+        }
+      } else if (
+        pageId.length === 0 &&
+        pages.length === 0 &&
+        headingRows.has(i)
+      ) {
+        // A top-level heading before the first page (a speech's title, the
+        // Historia Augusta's `docAuthor` byline) opens that page. Unnumbered
+        // divisions there (Livy's index of sigla) are not headings and stay
+        // off the pages, as do top-level rows between pages.
+        pendingHeaderStartIdx ??= i;
+      } else {
+        pendingHeaderStartIdx = undefined;
+      }
     }
   }
   addPageIfNeeded(rows.length);
@@ -1063,45 +1617,180 @@ function betaCodeCandidateText(node: XmlNode): string {
  * (`xml:lang="greek"` is always Beta Code; see `transformContentNode`.)
  */
 export function convertGrcBetaCode(root: XmlNode): void {
-  for (const node of root.findDescendants("foreign")) {
-    if (node.getAttr("xml:lang") !== "grc") {
-      continue;
+  function walk(node: XmlNode, inConvertedSubtree: boolean): void {
+    const isSkip = BETA_CODE_SKIP_NODES.has(node.name);
+    const isConverted = inConvertedSubtree && !isSkip;
+    // Apicius writes `lang` without the `xml:` prefix.
+    const lang = node.getAttr("xml:lang") ?? node.getAttr("lang");
+    let convertedHere = false;
+    if (!isConverted && (lang === "grc" || lang === "greek")) {
+      const text = betaCodeCandidateText(node);
+      // eslint-disable-next-line no-control-regex
+      if (/^[\x00-\x7F]*$/.test(text) && /[a-zA-Z]/.test(text)) {
+        convertBetaCodeStrings(node);
+        convertedHere = true;
+      }
     }
-    const text = betaCodeCandidateText(node);
-    // eslint-disable-next-line no-control-regex
-    if (/^[\x00-\x7F]*$/.test(text) && /[a-zA-Z]/.test(text)) {
-      convertBetaCodeStrings(node);
+    const nextConverted = isConverted || convertedHere;
+    for (const child of node.children) {
+      if (typeof child !== "string") {
+        walk(child, nextConverted);
+      }
     }
   }
+
+  walk(root, false);
+}
+
+/** What the structural stage knows about rows, for `assertOutputInvariants`. */
+export interface RowFacts {
+  /** Indices of rows of editorial matter (headings, unnumbered divisions). */
+  editorialRows?: ReadonlySet<number>;
+  /** Dotted ids of leaf sections; see `CitationSpine.leafIds`. */
+  leafIds?: ReadonlySet<string>;
+}
+
+/**
+ * Build-time output assertions on a processed work (`docs/PLAN.md` §4.3,
+ * pillar 2: citation presence, well-formed row ids, uniform citation depth,
+ * unique contiguous pages, and text coverage across pages). Body-to-row text
+ * coverage and id-part validation are also checked where the rows and ids are
+ * made; see `processWorkBody` and `cite_structure.ts`.
+ *
+ * Exported for unit testing.
+ */
+export function assertOutputInvariants(
+  work: Pick<ProcessedWork2, "rows" | "pages" | "textParts">,
+  facts: RowFacts = {}
+): void {
+  const { rows, pages, textParts } = work;
+  const isCitable = (id: string[]) => id.length === textParts.length;
+  // At least one citation level, and at least one citable row.
+  assert(textParts.length > 0, "No citation levels");
+  assert(
+    rows.some(([id]) => isCitable(id)),
+    () => `No citable rows (citation depth ${textParts.length}: ${textParts})`
+  );
+  for (const [id] of rows) {
+    // No id part is empty or contains the `.` that joins them.
+    assert(
+      id.every((part) => part.length > 0 && !part.includes(".")),
+      () => `Malformed row id ${JSON.stringify(id)}`
+    );
+    // Arity: no passage is cited more deeply than the work's scheme. Where
+    // some passages go deeper than the rest (one poem of a collection in
+    // sections), pages and citations would be wrong for one or the other.
+    assert(
+      id.length <= textParts.length,
+      () =>
+        `Ragged citation depth: ${id.join(".")} is deeper than ${textParts.join(
+          "."
+        )}`
+    );
+  }
+  // Each citation names one passage: a citable id occurs in a single run of
+  // consecutive rows. A passage the editor transposed and also printed, struck
+  // out, where it was transmitted (Silius 11.453-458), or two divisions with
+  // the same number (Cato's preface and chapter 1), would otherwise give two
+  // `#sec-` anchors and break corpus search-to-reader links.
+  const seenCitable = new Set<string>();
+  rows.forEach(([id], i) => {
+    if (!isCitable(id)) {
+      return;
+    }
+    const key = id.join(".");
+    if (i > 0 && areArraysEqual(rows[i - 1][0], id)) {
+      return;
+    }
+    assert(!seenCitable.has(key), () => `Citation ${key} occurs twice`);
+    seenCitable.add(key);
+  });
+  // There are pages, their ids are unique, and they cover every citable row.
+  assert(pages.length > 0, "No pages");
+  const pageIds = new Set(pages.map((page) => page.id.join(".")));
+  assertEqual(pageIds.size, pages.length, "Duplicate page ids");
+  const covered = new Array<boolean>(rows.length).fill(false);
+  for (const { rows: range } of pages) {
+    assert(
+      0 <= range[0] && range[0] < range[1] && range[1] <= rows.length,
+      () => `Bad page range ${range}`
+    );
+    covered.fill(true, range[0], range[1]);
+  }
+  rows.forEach(([id], i) =>
+    assert(
+      covered[i] || !isCitable(id),
+      () => `Citable row ${id.join(".")} is on no page`
+    )
+  );
+  // Page text coverage: the reader shows only pages, so text on no page is lost.
+  // That is only allowed for editorial matter (headings, unnumbered
+  // divisions), for the preamble of a section above page depth (text in a
+  // book before its first chapter), and, for now, for leaf sections
+  // shallower than page depth (Livy's books 46-142, which survive only as
+  // summaries), which need per-branch pagination (plan Phase 4).
+  const coveredIndices = rows.map((_, i) => i).filter((i) => covered[i]);
+  rows.forEach(([id, row], i) => {
+    if (covered[i] || facts.editorialRows?.has(i) || textWeight(row) === 0) {
+      return;
+    }
+    if (facts.leafIds?.has(id.join("."))) {
+      return;
+    }
+    const next = coveredIndices.find((j) => j > i);
+    const previous = coveredIndices.filter((j) => j < i).pop();
+    const isPreamble =
+      next !== undefined &&
+      startsWith(rows[next][0], id) &&
+      (previous === undefined || !startsWith(rows[previous][0], id));
+    assert(
+      isPreamble,
+      () =>
+        `Text on no page at ${id.join(".") || "(top level)"}: ` +
+        row.toString().replace(/\s+/g, " ").slice(0, 80)
+    );
+  });
 }
 
 export function processTei2(
   xmlRoot: XmlNode,
-  metadata: { workId: string; translationId?: string },
+  metadata: {
+    workId: string;
+    translationId?: string;
+    /**
+     * The work's `__cts__.xml` metadata, for headers whose `titleStmt` lacks
+     * an `<author>` or `<title>` (the Historia Augusta, the Appendix
+     * Vergiliana); see `readCtsMetadata`.
+     */
+    ctsMetadata?: CtsMetadata;
+  },
   options?: ProcessTeiOptions
 ): ProcessedWork2 {
   convertGrcBetaCode(xmlRoot);
-  let textParts = getTextparts(xmlRoot, metadata.workId);
+  const body = checkSatisfies(
+    xmlRoot.findDescendants("body"),
+    (arr) => arr.length === 1
+  )[0];
+  const spine = buildCitationSpine(xmlRoot, body);
+  const textParts = spine.textParts;
   const processOptions: ProcessForDisplayOptions = {
     debug: options?.sideChannel,
     patchTree: createPatchTree(options?.patches ?? [], textParts),
     workId: metadata.workId,
   };
-  const body = checkSatisfies(
-    xmlRoot.findDescendants("body"),
-    (arr) => arr.length === 1
+  const { rows, notes, editorialRows, headingRows } = processWorkBodyDetailed(
+    body,
+    spine,
+    processOptions
   );
-  let workBody = processWorkBody(body[0], textParts, processOptions);
-  [textParts, workBody] = pruneSectionNumbering(
-    metadata.workId,
-    textParts,
-    workBody
+  const pages = divideWork(rows, textParts, headingRows);
+  assertOutputInvariants(
+    { rows, pages, textParts },
+    { editorialRows, leafIds: spine.leafIds }
   );
-  const { rows, notes } = workBody;
-  const pages = divideWork(rows, textParts);
   const navTree = buildNavTree(pages);
   const info: DocumentInfo = {
-    ...extractInfo(xmlRoot),
+    ...extractInfo(xmlRoot, metadata.ctsMetadata),
     workId: metadata.workId,
     translationId: metadata.translationId,
     attribution: "perseus",

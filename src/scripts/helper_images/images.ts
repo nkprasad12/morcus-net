@@ -14,6 +14,7 @@ import { preparePrunerContext } from "@/scripts/helper_images/pruner_context";
 import { smokeTestLatincy } from "@/scripts/helper_images/smoke_tests/latincy";
 import { smokeTestProxy } from "@/scripts/helper_images/smoke_tests/proxy";
 import { smokeTestPruner } from "@/scripts/helper_images/smoke_tests/pruner";
+import { smokeTestWatchtower } from "@/scripts/helper_images/smoke_tests/watchtower";
 
 const DIR = "src/scripts/helper_images";
 const DOCKER_HELPERS = `${DIR}/docker.ts`;
@@ -41,6 +42,11 @@ export const HELPER_IMAGES = {
     prepareContext: preparePrunerContext,
     smokeTestInputs: [`${DIR}/smoke_tests/pruner.ts`, DOCKER_HELPERS],
     smokeTest: smokeTestPruner,
+  },
+  "morcus-watchtower": {
+    prepareContext: (outDir) => copyRepoDir("src/devops/watchtower", outDir),
+    smokeTestInputs: [`${DIR}/smoke_tests/watchtower.ts`, DOCKER_HELPERS],
+    smokeTest: smokeTestWatchtower,
   },
 } satisfies Record<string, HelperImage>;
 

@@ -224,7 +224,7 @@ async function planTier1(
     if (targets.length > cap) {
       const listing = [...raw].map(([key, n]) => `    ${n}× ${key}`).join("\n");
       overCap.push(
-        `${fixture.name}: ${targets.length} Tier 1 targets, cap ${cap}:\n${listing}`
+        `${fixture.name}: ${targets.length} Tier 1 targets, cap ${cap}:\n${listing}\n  Fix: ${HINTS.tier1Caps}`
       );
     }
   }
@@ -347,6 +347,83 @@ function tier1Script(el: Element): Step[] {
  */
 const SWAP_REGIONS = `[${SLOT_ATTR}], #dict-results, #panel-view-translation`;
 
+const ISOMORPHIC_FRAGMENT =
+  "If the client re-renders it with the same .common.ts renderer the server uses, " +
+  "add it to ISOMORPHIC_RERENDERS in testing/isomorphic_rerenders.ts (needs human review).";
+
+const ALLOWLIST_FRAGMENT =
+  'For a client-only element, add it to CREATED_DOM_ALLOWLIST in testing/created_dom_allowlist.ts (phase "interaction", needs human review).';
+
+const HINTS = {
+  removed:
+    "SSR nodes may only be removed by a partial swap inside [data-slot] or a partial-swap " +
+    "region (SWAP_REGIONS) once a partial was actually served, or by an ISOMORPHIC_RERENDERS " +
+    "region; otherwise hide it instead of removing it. " +
+    `If this node was created by JS after upgrade: ${ALLOWLIST_FRAGMENT}`,
+  moved:
+    "Don't move server-rendered nodes; toggle attributes/hidden, or render it in its final place on the server.",
+  created:
+    "Render markup on the server and swap inside a [data-slot] or partial-swap region (SWAP_REGIONS); " +
+    "the swap exemption only applies to elements from a served partial (tag counts), so building DOM " +
+    `client-side inside a slot still fails. ${ISOMORPHIC_FRAGMENT} ${ALLOWLIST_FRAGMENT}`,
+  noJsControl:
+    "Interactive controls visible without JS must be native (a link with href, a submit button " +
+    "for a form, or a named form control inside a form); client-only controls belong under [data-js-only].",
+  detachedWrite:
+    "Run late work through this.scope / lanes (e.g. this.scope.latest(lane), this.scope.timeout, " +
+    "this.scope.listen) so teardown cancels it.",
+  unroutedFetch:
+    "Add a route to testing/fake_network.ts that calls the real server renderer " +
+    '(docs/TESTING.md, "When to add or change a conformance test").',
+  expectSwap:
+    "Tier 2 scenarios with expectSwap must trigger a fetch that returns HTML and swaps it in " +
+    "(or remove expectSwap if no swap occurs).",
+  tier1Caps:
+    "Tighten targetKey in testing/interaction_harness.ts to deduplicate repeated controls; " +
+    "raising the cap or adding a caps.overrides entry needs human review " +
+    '(docs/TESTING.md, "SSR conformance harnesses").',
+  noFixture:
+    "Ensure scenario.fixture matches a fixture returned by suite.fixtures (build<Feature>Fixtures in testing/ssr_fixtures.ts).",
+  danglingHref:
+    "Ensure swapped-in hash links point to an existing id in the document.",
+  unrevealedTarget:
+    "Ensure target elements inside <details> or companion panel views can be revealed by revealTarget().",
+} as const;
+
+type InvariantKind = "removed" | "moved" | "nojs" | "created" | "duplicateId";
+
+interface InvariantProblem {
+  readonly kind: InvariantKind;
+  readonly fact: string;
+}
+
+function invariantRemedy(
+  kind: InvariantKind,
+  facts: readonly string[]
+): string {
+  switch (kind) {
+    case "removed":
+      return HINTS.removed;
+    case "moved":
+      return HINTS.moved;
+    case "created":
+      return HINTS.created;
+    case "nojs":
+      return HINTS.noJsControl;
+    case "duplicateId": {
+      const ids = Array.from(
+        new Set(
+          facts.map((f) => {
+            const m = /^duplicate id="([^"]+)"$/.exec(f);
+            return m ? `"${m[1]}"` : f;
+          })
+        )
+      ).join(", ");
+      return `client-created or swapped markup must not reuse SSR ids; colliding id(s): ${ids}.`;
+    }
+  }
+}
+
 function inSwapRegion(
   el: Element,
   baseline: ReadonlyMap<Element, Node>
@@ -382,9 +459,9 @@ function servedTagCounts(log: FakeNetworkLog): Map<string, number> {
 function checkInvariants(
   baseline: ReadonlyMap<Element, Node>,
   log: FakeNetworkLog
-): string[] {
+): InvariantProblem[] {
   const root = document.body;
-  const out: string[] = [];
+  const out: InvariantProblem[] = [];
   const swapped = log.html.length > 0;
   const { removed, reparented, created } = diffTree(baseline, root);
 
@@ -396,15 +473,16 @@ function checkInvariants(
     // Those are not SSR nodes: the component that made one may replace it
     // (the dictionary swaps a hovered `.lat-word` span for a link).
     if (isAllowlistedCreation(el, "interaction")) continue;
-    out.push(`removed ${describeElement(el)}`);
+    out.push({ kind: "removed", fact: `removed ${describeElement(el)}` });
   }
   for (const { el, from } of reparented) {
-    out.push(
-      `moved ${describeElement(el)} from ${describeParent(
+    out.push({
+      kind: "moved",
+      fact: `moved ${describeElement(el)} from ${describeParent(
         from,
         root
-      )} to ${describeParent(el.parentNode, root)}`
-    );
+      )} to ${describeParent(el.parentNode, root)}`,
+    });
   }
 
   const served = servedTagCounts(log);
@@ -414,7 +492,12 @@ function checkInvariants(
     // `[data-js-only]`.
     if (el.matches(NO_JS_CONTROLS)) {
       const violation = noJsControlViolation(el, document);
-      if (violation) out.push(`created ${describeElement(el)} ${violation}`);
+      if (violation) {
+        out.push({
+          kind: "nojs",
+          fact: `created ${describeElement(el)} ${violation}`,
+        });
+      }
     }
     if (isAllowlistedCreation(el, "interaction")) continue;
     if (inIsomorphicRerender(el)) continue;
@@ -423,17 +506,20 @@ function checkInvariants(
       served.set(el.localName, left - 1);
       continue;
     }
-    out.push(
-      `created ${describeElement(el)} inside ${describeParent(
+    out.push({
+      kind: "created",
+      fact: `created ${describeElement(el)} inside ${describeParent(
         el.parentElement,
         root
-      )}`
-    );
+      )}`,
+    });
   }
 
   const ids = new Set<string>();
   for (const el of Array.from(root.querySelectorAll("[id]"))) {
-    if (ids.has(el.id)) out.push(`duplicate id="${el.id}"`);
+    if (ids.has(el.id)) {
+      out.push({ kind: "duplicateId", fact: `duplicate id="${el.id}"` });
+    }
     ids.add(el.id);
   }
   return out;
@@ -480,13 +566,14 @@ async function runScript(
   const log = installFakeNetwork();
   const errors: string[] = [];
   const onError = (e: ErrorEvent) => {
-    errors.push(String(e.error ?? e.message));
+    errors.push(`listener threw ${String(e.error ?? e.message)}`);
     e.preventDefault();
   };
   window.addEventListener("error", onError);
   clearDetachedDomWrites();
   // First step that hit each problem, so a lasting one is reported once.
-  const found = new Map<string, string>();
+  const seenFacts = new Set<string>();
+  const discovered: Array<{ step: string; problem: InvariantProblem }> = [];
   let label = `${fixture.name} (${mode})`;
   try {
     const { wrapper, cleanup } = await mountFresh(fixture);
@@ -510,7 +597,10 @@ async function runScript(
           }
           await settle();
           for (const problem of checkInvariants(baseline, log)) {
-            if (!found.has(problem)) found.set(problem, step.name);
+            if (!seenFacts.has(problem.fact)) {
+              seenFacts.add(problem.fact);
+              discovered.push({ step: step.name, problem });
+            }
           }
         }
         if (mode === "settled") {
@@ -520,7 +610,12 @@ async function runScript(
           // already checked after every step.
           if (log.html.length > 0) {
             const { danglingHrefs, unrevealedTargets } = checkAddresses();
-            errors.push(...danglingHrefs, ...unrevealedTargets);
+            errors.push(
+              ...danglingHrefs.map((d) => `${d}\n  Fix: ${HINTS.danglingHref}`),
+              ...unrevealedTargets.map(
+                (u) => `${u}\n  Fix: ${HINTS.unrevealedTarget}`
+              )
+            );
           }
         }
         if (mode === "mid-body") {
@@ -539,16 +634,44 @@ async function runScript(
   } finally {
     window.removeEventListener("error", onError);
   }
-  const out = [...found].map(
-    ([problem, step]) => `${label}: after ${step}: ${problem}`
-  );
+
+  // Group discovered invariant problems by (step, kind) preserving order.
+  const groups = new Map<
+    string,
+    { step: string; kind: InvariantKind; facts: string[] }
+  >();
+  for (const { step, problem } of discovered) {
+    const key = `${step}\0${problem.kind}`;
+    let group = groups.get(key);
+    if (!group) {
+      group = { step, kind: problem.kind, facts: [] };
+      groups.set(key, group);
+    }
+    group.facts.push(problem.fact);
+  }
+
+  const out: string[] = [];
+  for (const group of groups.values()) {
+    const lines = group.facts.map(
+      (fact) => `${label}: after ${group.step}: ${fact}`
+    );
+    const remedy = invariantRemedy(group.kind, group.facts);
+    out.push(`${lines.join("\n")}\n  Fix: ${remedy}`);
+  }
+
   out.push(...errors.map((e) => `${label}: ${e}`));
-  out.push(...log.unrouted.map((u) => `${label}: unrouted fetch ${u}`));
-  out.push(
-    ...detachedDomWrites.map(
+
+  if (log.unrouted.length > 0) {
+    const lines = log.unrouted.map((u) => `${label}: unrouted fetch ${u}`);
+    out.push(`${lines.join("\n")}\n  Fix: ${HINTS.unroutedFetch}`);
+  }
+
+  if (detachedDomWrites.length > 0) {
+    const lines = detachedDomWrites.map(
       (w) => `${label}: write to a detached node: ${w.split("\n")[0]}`
-    )
-  );
+    );
+    out.push(`${lines.join("\n")}\n  Fix: ${HINTS.detachedWrite}`);
+  }
   clearDetachedDomWrites();
   return out;
 }
@@ -653,7 +776,7 @@ function runTier2(
     () => ({ label: scenario.name, steps: scenario.steps }),
     (log) =>
       scenario.expectSwap && log.html.length === 0
-        ? ["ended without a partial swap"]
+        ? [`ended without a partial swap\n  Fix: ${HINTS.expectSwap}`]
         : []
   );
 }
@@ -735,7 +858,9 @@ export function describeInteractionConformance(
       for (const scenario of scenarios) {
         const fixture = byName.get(scenario.fixture);
         if (!fixture) {
-          violations.push(`${scenario.name}: no fixture ${scenario.fixture}`);
+          violations.push(
+            `${scenario.name}: no fixture ${scenario.fixture}\n  Fix: ${HINTS.noFixture}`
+          );
           continue;
         }
         for (const mode of RUN_MODES) {

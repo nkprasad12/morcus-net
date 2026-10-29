@@ -28,7 +28,7 @@ import {
 import type { CorpusParams } from "@/web/ui/corpus/corpus_params.common";
 import {
   sendStaticPageOr,
-  type StaticPageStore,
+  type StaticPageLookup,
 } from "@/web/ui/core/server/static_pages.server";
 
 const EMPTY_JSON_ARRAY_ROW = precompressJson("[]");
@@ -53,7 +53,7 @@ export interface CorpusRoutesOptions {
   /** Overrides the lemma list source (tests). */
   readonly loadLemmata?: () => Promise<readonly string[] | undefined>;
   /** Pre-rendered static pages; see `static_pages.server.ts`. */
-  readonly staticPages?: StaticPageStore;
+  readonly staticPages?: StaticPageLookup;
 }
 
 export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
@@ -125,7 +125,7 @@ export function createCorpusRoutes(options: CorpusRoutesOptions = {}): Router {
   // The lemmata starting with one letter, for the autocomplete.
   getAsync("/api/corpus/lemmata/:letter", async (req, res) => {
     const letter = req.params.letter;
-    if (letter.length !== 1) {
+    if (typeof letter !== "string" || letter.length !== 1) {
       res.setHeader("Cache-Control", "no-store");
       res.status(400).json({ error: "Expected a single letter." });
       return;

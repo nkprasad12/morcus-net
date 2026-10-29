@@ -1,5 +1,6 @@
 import {
   BaseElement,
+  isHighlightStyle,
   registerElement,
   registerRevealer,
   setPrepaint,
@@ -38,8 +39,8 @@ export interface DictSettingsCommit {
  *   backdrop), not on each tick, so the results don't shift behind the dialog. If anything
  *   changed, closing saves it and emits one `dict-settings-commit`. A scoped dialog (reader
  *   iframe, `lang=`) saves only the dictionaries it shows, and has no inflection to save.
- * - Highlight strength is presentation only, so it stays live.
- * - Reading text (font, size, spacing) and the theme are app-wide and live in the app-bar
+ * - Highlight strength and style are presentation only, so they stay live.
+ * - Reading text (font, size, spacing, contrast) and the theme are app-wide and live in the app-bar
  *   Appearance menu; the dialog only links to it.
  */
 export class MorcusDictSettings extends BaseElement {
@@ -132,6 +133,30 @@ export class MorcusDictSettings extends BaseElement {
         this.#updateStrength(Number(e.target.value), true);
       }
     });
+
+    // Highlight style: live and saved at once, like the strength. Coloured
+    // text drops the highlight padding, which reflows entries, so it is a
+    // pre-paint value (recorded on every connect, which heals the snapshot).
+    const style = settingsStore.get().highlightStyle ?? "background";
+    setPrepaint("data-highlight-style", style === "text" ? style : null);
+    const styleRadios = this.scope.$$<HTMLInputElement>(
+      'input[name="highlight-style"]'
+    );
+    // Disabled again on disconnect, so a form left behind submits without them.
+    this.scope.use(() => {
+      for (const radio of styleRadios) radio.disabled = true;
+    });
+    for (const radio of styleRadios) {
+      radio.disabled = false;
+      radio.checked = radio.value === style;
+      this.scope.listen(radio, "change", () => {
+        const value = radio.value;
+        if (!radio.checked || !isHighlightStyle(value)) return;
+        const text = value === "text";
+        settingsStore.update({ highlightStyle: text ? value : undefined });
+        setPrepaint("data-highlight-style", text ? value : null);
+      });
+    }
   }
 
   protected override onDisconnect() {

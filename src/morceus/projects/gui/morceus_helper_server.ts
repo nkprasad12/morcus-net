@@ -14,7 +14,7 @@ function setupServer(app: express.Express, buildDir: string): void {
     res.json(inLsButNotMorceus());
   });
   app.use(express.static(buildDir));
-  app.use("/*", (_req, res) => {
+  app.use("/{*splat}", (_req, res) => {
     // Force users to always fetch the index from the server so that they
     // always get the latest Javascript bundles.
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");

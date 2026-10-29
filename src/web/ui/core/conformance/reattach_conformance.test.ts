@@ -77,8 +77,6 @@ const FIXTURES: Record<string, string> = {
 
   "morcus-page-width": renderPageWidthHandles("reader"),
 
-  "morcus-dict-suggestions": `<morcus-dict-suggestions><ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul></morcus-dict-suggestions>`,
-
   "morcus-dict-settings": renderDictSearchBar({
     action: "/dicts",
   }),
@@ -96,9 +94,7 @@ const FIXTURES: Record<string, string> = {
       <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only data-input="dict-q">
-            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
-          </morcus-dict-suggestions>
+          <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden data-js-only></ul>
         </div>
       </form>
       <output id="dict-results" class="results"></output>

@@ -142,7 +142,7 @@ export function renderReaderSettingsPopover(
           <div class="settings-body">
             
             <button type="button" class="appearance-link" id="reader-appearance-link">
-              <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, theme</span></span>
+              <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, contrast, theme</span></span>
               ${renderIconSvg("palette")}
             </button>
 

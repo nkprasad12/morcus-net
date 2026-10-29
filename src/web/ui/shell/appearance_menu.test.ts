@@ -26,6 +26,8 @@ describe("appearance settings mapping", () => {
       textFont: "sans",
       textScale: 100,
       lineSpacing: "normal",
+      contrastLight: "normal",
+      contrastDark: "normal",
     });
     expect(resolveAppearance({ textScale: 400 })).toMatchObject({
       textScale: 160,
@@ -41,6 +43,8 @@ describe("appearance settings mapping", () => {
       textFont: undefined,
       textScale: undefined,
       lineSpacing: undefined,
+      textContrastLight: undefined,
+      textContrastDark: undefined,
     });
   });
 
@@ -50,6 +54,8 @@ describe("appearance settings mapping", () => {
       ["--font-text", null],
       ["--text-scale", null],
       ["--text-leading", null],
+      ["data-text-contrast-light", null],
+      ["data-text-contrast-dark", null],
     ]);
     expect(
       appearancePrepaint(
@@ -58,6 +64,8 @@ describe("appearance settings mapping", () => {
           textFont: "serif",
           textScale: 120,
           lineSpacing: "relaxed",
+          textContrastLight: "softer",
+          textContrastDark: "highest",
         })
       )
     ).toEqual([
@@ -65,6 +73,8 @@ describe("appearance settings mapping", () => {
       ["--font-text", "var(--font-serif)"],
       ["--text-scale", "1.20"],
       ["--text-leading", "1.12"],
+      ["data-text-contrast-light", "softer"],
+      ["data-text-contrast-dark", "highest"],
     ]);
   });
 });
@@ -92,6 +102,8 @@ describe("MorcusAppearanceMenu", () => {
   function resetDocument() {
     localStorage.clear();
     root().removeAttribute("data-theme");
+    root().removeAttribute("data-text-contrast-light");
+    root().removeAttribute("data-text-contrast-dark");
     root().removeAttribute("style");
     document.body.innerHTML = "";
   }
@@ -297,6 +309,137 @@ describe("MorcusAppearanceMenu", () => {
     });
   });
 
+  describe("reading-text contrast, saved per theme", () => {
+    /** A controllable `(prefers-color-scheme: dark)` for the "System" theme. */
+    class FakeDarkQuery extends EventTarget {
+      constructor(public matches: boolean) {
+        super();
+      }
+      flip(matches: boolean) {
+        this.matches = matches;
+        this.dispatchEvent(new Event("change"));
+      }
+    }
+
+    let query: FakeDarkQuery | undefined;
+    const originalMatchMedia = window.matchMedia;
+    function fakeOsScheme(dark: boolean): FakeDarkQuery {
+      query = new FakeDarkQuery(dark);
+      const mq = query;
+      window.matchMedia = ((media: string) => {
+        expect(media).toBe("(prefers-color-scheme: dark)");
+        return mq;
+      }) as unknown as typeof window.matchMedia;
+      return mq;
+    }
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+      query = undefined;
+    });
+
+    const label = () => q("#appearance-contrast-label").textContent;
+    const note = () => q("#appearance-contrast-note").textContent;
+    const dec = () => q<HTMLButtonElement>("#appearance-contrast-dec");
+    const inc = () => q<HTMLButtonElement>("#appearance-contrast-inc");
+
+    test("the stepper edits only the theme on screen", () => {
+      mountMenu();
+      choose("appearance-theme", "light");
+      expect(label()).toBe("normal");
+      expect(note()).toBe("For the light theme");
+
+      inc().click();
+      expect(label()).toBe("higher");
+      expect(root().getAttribute("data-text-contrast-light")).toBe("higher");
+      expect(settingsStore.get()).toMatchObject({
+        textContrastLight: "higher",
+      });
+
+      choose("appearance-theme", "dark");
+      expect(label()).toBe("normal");
+      expect(note()).toBe("For the dark theme");
+      dec().click();
+      expect(label()).toBe("softer");
+
+      expect(settingsStore.get()).toMatchObject({
+        textContrastLight: "higher",
+        textContrastDark: "softer",
+      });
+      // Both stay on <html>: the CSS picks the theme's own.
+      expect(prepaintSnapshot()).toEqual(
+        expect.objectContaining({
+          "data-text-contrast-light": "higher",
+          "data-text-contrast-dark": "softer",
+        })
+      );
+
+      choose("appearance-theme", "light");
+      expect(label()).toBe("higher");
+    });
+
+    test("stops at both ends and disables the button there", () => {
+      settingsStore.update({ darkMode: false, textContrastLight: "higher" });
+      mountMenu();
+      expect(dec().disabled).toBe(false);
+      inc().click();
+      expect(label()).toBe("highest");
+      expect(inc().disabled).toBe(true);
+      inc().click();
+      expect(settingsStore.get().textContrastLight).toBe("highest");
+
+      for (let i = 0; i < 5; i++) dec().click();
+      expect(label()).toBe("softer");
+      expect(dec().disabled).toBe(true);
+      expect(inc().disabled).toBe(false);
+    });
+
+    test("Normal is stored as absent and clears the attribute", () => {
+      settingsStore.update({ darkMode: false, textContrastLight: "higher" });
+      mountMenu();
+      expect(root().getAttribute("data-text-contrast-light")).toBe("higher");
+      dec().click();
+      expect(label()).toBe("normal");
+      expect(settingsStore.get()).not.toHaveProperty("textContrastLight");
+      expect(root().hasAttribute("data-text-contrast-light")).toBe(false);
+      expect(prepaintSnapshot()).not.toHaveProperty("data-text-contrast-light");
+    });
+
+    test("under System, it follows the OS scheme, live", () => {
+      const mq = fakeOsScheme(true);
+      mountMenu();
+      expect(note()).toBe("For the dark theme");
+      inc().click();
+      expect(settingsStore.get().textContrastDark).toBe("higher");
+
+      mq.flip(false);
+      expect(note()).toBe("For the light theme");
+      expect(label()).toBe("normal");
+      inc().click();
+      expect(settingsStore.get()).toMatchObject({
+        textContrastLight: "higher",
+        textContrastDark: "higher",
+      });
+    });
+
+    test("without matchMedia, System edits the light theme", () => {
+      // jsdom has no matchMedia, like the oldest browsers we serve.
+      mountMenu();
+      expect(note()).toBe("For the light theme");
+    });
+
+    test("reset restores Normal in both themes", () => {
+      settingsStore.update({
+        textContrastLight: "softer",
+        textContrastDark: "highest",
+      });
+      mountMenu();
+      q<HTMLButtonElement>("#appearance-reset-btn").click();
+      expect(settingsStore.get()).toEqual({});
+      expect(root().hasAttribute("data-text-contrast-light")).toBe(false);
+      expect(root().hasAttribute("data-text-contrast-dark")).toBe(false);
+    });
+  });
+
   test("mirrors changes into same-origin iframes (the reader's dictionary)", () => {
     const iframe = document.createElement("iframe");
     document.body.appendChild(iframe);
@@ -311,6 +454,9 @@ describe("MorcusAppearanceMenu", () => {
     expect(frameRoot.style.getPropertyValue("--font-text")).toBe(
       "var(--font-serif)"
     );
+    // Contrast too: the embedded dictionary has no menu of its own.
+    q<HTMLButtonElement>("#appearance-contrast-inc").click();
+    expect(frameRoot.getAttribute("data-text-contrast-dark")).toBe("higher");
 
     choose("appearance-theme", "system");
     choose("appearance-font", "sans");

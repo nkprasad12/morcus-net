@@ -1,8 +1,13 @@
-import { readFileSync } from "fs";
+import fs, { readFileSync } from "fs";
+import os from "os";
+import path from "path";
 import {
   CtsPathData,
+  extractInfo,
   findCtsEncoding,
+  parseCtsMetadata,
   parseXPath,
+  readCtsMetadata,
 } from "@/common/xml/tei_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
@@ -164,5 +169,202 @@ describe("findCtsEncoding", () => {
         ],
       },
     ]);
+  });
+});
+
+describe("extractInfo licence", () => {
+  function header(availability: string): XmlNode {
+    return parseRawXml(`<TEI><teiHeader><fileDesc>
+      <titleStmt><title>Saturae</title><author>Juvenal</author></titleStmt>
+      <publicationStmt>
+        <authority>Perseus Project</authority>
+        ${availability}
+      </publicationStmt>
+    </fileDesc></teiHeader></TEI>`);
+  }
+
+  it("reads the licence statement", () => {
+    const root = header(`<availability>
+      <licence target="https://creativecommons.org/licenses/by-sa/4.0/">Available under a Creative
+        Commons Attribution-ShareAlike 4.0 International License</licence>
+    </availability>`);
+
+    expect(extractInfo(root).licence).toBe(
+      "Available under a Creative Commons Attribution-ShareAlike 4.0 International License"
+    );
+  });
+
+  it("ignores a placeholder licence without a target", () => {
+    const root = header(
+      `<availability status="free"><licence>Test</licence></availability>`
+    );
+
+    expect(extractInfo(root).licence).toBeUndefined();
+  });
+
+  it("is undefined without a licence", () => {
+    expect(extractInfo(header("")).licence).toBeUndefined();
+  });
+});
+
+describe("extractInfo title and author", () => {
+  it("trims surrounding whitespace", () => {
+    const root = parseRawXml(
+      `<TEI><teiHeader><fileDesc><titleStmt><title> Argonautica </title><author>Valerius Flaccus </author></titleStmt></fileDesc></teiHeader></TEI>`,
+      { keepWhitespace: true }
+    );
+
+    const info = extractInfo(root);
+
+    expect(info.title).toBe("Argonautica");
+    expect(info.author).toBe("Valerius Flaccus");
+  });
+
+  it("collapses internal whitespace, including line breaks", () => {
+    const root = parseRawXml(
+      `<TEI><teiHeader><fileDesc><titleStmt><title>Gratiarum Actio Ad\n                    Imperatorem</title><author>Ausonius,  Decimus\tMagnus</author></titleStmt></fileDesc></teiHeader></TEI>`,
+      { keepWhitespace: true }
+    );
+
+    const info = extractInfo(root);
+
+    expect(info.title).toBe("Gratiarum Actio Ad Imperatorem");
+    expect(info.author).toBe("Ausonius, Decimus Magnus");
+  });
+});
+
+describe("extractInfo __cts__.xml fallback", () => {
+  function headerWith(titleStmt: string): XmlNode {
+    return parseRawXml(
+      `<TEI><teiHeader><fileDesc><titleStmt>${titleStmt}<editor>David Magie</editor></titleStmt></fileDesc></teiHeader></TEI>`,
+      { keepWhitespace: true }
+    );
+  }
+
+  it("takes a missing author from the fallback (Historia Augusta)", () => {
+    const info = extractInfo(
+      headerWith(`<title xml:lang="lat">De vita Hadriani</title>`),
+      { author: "Scriptores Historiae Augustae", title: "De Vita Hadriani" }
+    );
+    expect(info.author).toBe("Scriptores Historiae Augustae");
+    // The header's own title still wins.
+    expect(info.title).toBe("De vita Hadriani");
+  });
+
+  it("takes a missing title from the fallback", () => {
+    const info = extractInfo(headerWith(`<author>Vergil</author>`), {
+      title: "Dirae",
+    });
+    expect(info.title).toBe("Dirae");
+    expect(info.author).toBe("Vergil");
+  });
+
+  it("fails clearly with neither header nor fallback", () => {
+    expect(() => extractInfo(headerWith(`<title>Dirae</title>`))).toThrow(
+      /No <author> in titleStmt, and none in __cts__.xml/
+    );
+    expect(() =>
+      extractInfo(headerWith(`<title>Dirae</title>`), { author: " " })
+    ).toThrow(/No <author>/);
+  });
+
+  const APP_VERG = { author: "Appendix Vergiliana", title: "Ciris" };
+
+  it("prefers the fallback title when the header's is the group name", () => {
+    expect(
+      extractInfo(headerWith(`<title>Appendix Vergiliana</title>`), APP_VERG)
+        .title
+    ).toBe("Ciris");
+    expect(
+      extractInfo(headerWith(`<title>appendix  vergiliana</title>`), APP_VERG)
+        .title
+    ).toBe("Ciris");
+  });
+
+  it("keeps a group-name title when the fallback has no title", () => {
+    const info = extractInfo(headerWith(`<title>Appendix Vergiliana</title>`), {
+      author: "Appendix Vergiliana",
+    });
+    expect(info.title).toBe("Appendix Vergiliana");
+  });
+
+  it("drops a trailing ', <group name>' from the header's title", () => {
+    expect(
+      extractInfo(
+        headerWith(`<title>Dirae, Appendix Vergiliana</title>`),
+        APP_VERG
+      ).title
+    ).toBe("Dirae");
+    expect(
+      extractInfo(
+        headerWith(`<title>De Est et Non, appendix vergiliana</title>`),
+        APP_VERG
+      ).title
+    ).toBe("De Est et Non");
+  });
+
+  it("leaves other titles that mention the group name alone", () => {
+    const info = extractInfo(
+      headerWith(`<title>Appendix Vergiliana Minor</title>`),
+      APP_VERG
+    );
+    expect(info.title).toBe("Appendix Vergiliana Minor");
+  });
+});
+
+const TEXTGROUP_CTS = `<ti:textgroup xmlns:ti="http://chs.harvard.edu/xmlns/cts" urn="urn:cts:latinLit:phi2331">
+  <ti:groupname xml:lang="lat">Scriptores Historiae Augustae</ti:groupname>
+</ti:textgroup>`;
+const WORK_CTS = `<ti:work xmlns:ti="http://chs.harvard.edu/xmlns/cts" urn="urn:cts:latinLit:phi2331.phi001">
+  <ti:title xml:lang="lat">De Vita
+    Hadriani</ti:title>
+  <ti:edition urn="urn:cts:latinLit:phi2331.phi001.perseus-lat2">
+    <ti:label xml:lang="lat">De Vita Hadriani</ti:label>
+  </ti:edition>
+</ti:work>`;
+
+describe("parseCtsMetadata", () => {
+  it("reads the group name and work title", () => {
+    expect(
+      parseCtsMetadata(parseRawXml(TEXTGROUP_CTS), parseRawXml(WORK_CTS))
+    ).toStrictEqual({
+      author: "Scriptores Historiae Augustae",
+      title: "De Vita Hadriani",
+    });
+  });
+
+  it("accepts unprefixed elements and missing files", () => {
+    expect(
+      parseCtsMetadata(
+        parseRawXml(`<textgroup><groupname>Vergil</groupname></textgroup>`),
+        undefined
+      )
+    ).toStrictEqual({ author: "Vergil", title: undefined });
+  });
+});
+
+describe("readCtsMetadata", () => {
+  it("reads the __cts__.xml files next to a work", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "cts-"));
+    try {
+      const workDir = path.join(root, "data", "phi2331", "phi001");
+      fs.mkdirSync(workDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(root, "data", "phi2331", "__cts__.xml"),
+        `<?xml version="1.0" encoding="UTF-8"?>\n${TEXTGROUP_CTS}`
+      );
+      fs.writeFileSync(path.join(workDir, "__cts__.xml"), WORK_CTS);
+      expect(
+        readCtsMetadata(path.join(workDir, "phi2331.phi001.perseus-lat2.xml"))
+      ).toStrictEqual({
+        author: "Scriptores Historiae Augustae",
+        title: "De Vita Hadriani",
+      });
+      expect(
+        readCtsMetadata(path.join(root, "elsewhere", "x", "y.xml"))
+      ).toStrictEqual({ author: undefined, title: undefined });
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

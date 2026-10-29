@@ -56,19 +56,32 @@ The app-bar Appearance menu (`shell/appearance_menu.client.ts`) is the single ow
 presentation preferences shared by every page. They live in `GlobalSettings` and each maps to one
 pre-paint value; a default is stored as absent and removed from `<html>`, leaving the CSS fallback:
 
-| Setting       | Pre-paint        | Read by                                                             |
-| :------------ | :--------------- | :------------------------------------------------------------------ |
-| `darkMode`    | `data-theme`     | every themed token (`variables.css`)                                |
-| `textFont`    | `--font-text`    | reading text: dictionary entries, reader, corpus, macronizer        |
-| `textScale`   | `--text-scale`   | reading-text sizes, as a multiplier on each surface's own base size |
-| `lineSpacing` | `--text-leading` | reading-text line heights, as a multiplier                          |
+| Setting                                  | Pre-paint                            | Read by                                                                |
+| :--------------------------------------- | :----------------------------------- | :--------------------------------------------------------------------- |
+| `darkMode`                               | `data-theme`                         | every themed token (`variables.css`)                                   |
+| `textFont`                               | `--font-text`                        | reading text: dictionary entries, reader, corpus, macronizer           |
+| `textScale`                              | `--text-scale`                       | reading-text sizes, as a multiplier on each surface's own base size    |
+| `lineSpacing`                            | `--text-leading`                     | reading-text line heights, as a multiplier                             |
+| `textContrastLight` / `textContrastDark` | `data-text-contrast-light` / `-dark` | reading-text colours (`--reading-text`, `--emph-text`, `--text-muted`) |
 
 Reading text is the text a page exists for you to read: dictionary entries, reader passages,
 translations and notes, corpus results, the macronizer's output, and the About page. Navigation,
 forms, landing blurbs and help are UI and keep their own fonts and sizes.
 
-Highlight strength (`highlightStrength` → `--highlight-scale`, the dictionary highlight tints) is
-dictionary-only, so the dictionary settings dialog owns it (`dict/settings/dict_settings.client.ts`).
+Contrast is saved per theme, because the themes start from different places: light reading text is
+already near black, while dark is deliberately dimmed. Each level is a set of literal colours in
+`variables.css`, chosen for a target contrast ratio and checked by `variables.test.ts`. Each theme's
+rules read only that theme's attribute, under the same conditions as the theme blocks, so "System"
+follows the OS scheme with no script. The menu's stepper edits the theme on screen and says which.
+As a subtle colour shift it wouldn't qualify for pre-paint on its own (see the table above), but it
+goes through the snapshot anyway: the embedded dictionary iframes have no Appearance menu to apply it.
+UI text (`--text`) is not affected.
+
+Highlight strength (`highlightStrength` → `--highlight-scale`, the dictionary highlight tints) and
+style (`highlightStyle` → `data-highlight-style`) are dictionary-only, so the dictionary settings
+dialog owns them (`dict/settings/dict_settings.client.ts`). "Colored text" draws the categories as
+text colours (`--fg-*`) blended from the reading text by the strength, and drops the highlight
+padding. That reflows entries, so the style is pre-paint by the layout rule.
 
 The reader and dictionary settings link to the menu rather than duplicating these controls. The
 reader keeps only reader-specific preferences (its side panel's size, macra, section numbers).

@@ -21,7 +21,7 @@ export const EXPECTED_IMAGES: Readonly<Record<HelperImageName, ExpectedImage>> =
   {
     "morcus-proxy": {
       files: ["Dockerfile", "nginx.conf"],
-      tag: "tree-665809bc40fe88a70857097f85c2137a0b744754",
+      tag: "tree-da9b386b14098e4fcb57710e74611fb10c0010b2",
     },
     "morcus-latincy": {
       files: ["Dockerfile", "__init__.py", "latincy_server.py"],
@@ -30,5 +30,9 @@ export const EXPECTED_IMAGES: Readonly<Record<HelperImageName, ExpectedImage>> =
     "morcus-pruner": {
       files: ["Dockerfile", "pruner.js"],
       tag: "tree-4f8912b92a8264db575cd097c0ab40573c652244",
+    },
+    "morcus-watchtower": {
+      files: ["Dockerfile"],
+      tag: "tree-14d4a15e15cf0e3bb6c18cd7417141ae61634e45",
     },
   };

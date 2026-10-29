@@ -86,6 +86,16 @@ describe("clones", () => {
       expect(noEnv).toMatchObject({ kind: "clone", envUnset: true });
     });
 
+    it("hints at a default clone that differs only in case", () => {
+      const dir = cloneInto(sandbox, "Foo");
+      const location = locateClone("foo", source, env(), sandbox.morcusDir);
+      if (location.kind === "clone") {
+        // Case-insensitive filesystem: the default path resolves anyway.
+        return;
+      }
+      expect(location).toMatchObject({ kind: "missing", caseMismatch: dir });
+    });
+
     it("flags clones elsewhere, files outside clones, and missing paths", () => {
       const elsewhere = cloneInto(sandbox, "elsewhere");
       expect(

@@ -81,7 +81,7 @@ sequenceDiagram
 
 ### Server
 
-- `reader_routes.server.ts`: Registers `/work/:author/:name/:page?`, `/work/:author/:name/:page/translation`, and the legacy `/work/:workId` entry point, handles jump/legacy redirects to canonical URLs, and serves full pages or partials depending on `isPartialRequest`.
+- `reader_routes.server.ts`: Registers `/work/:author/:name{/:page}`, `/work/:author/:name/:page/translation`, and the legacy `/work/:workId` entry point, handles jump/legacy redirects to canonical URLs, and serves full pages or partials depending on `isPartialRequest`.
 - `reader_loader.server.ts`: Reads preprocessed works and pages from `build/library_processed/library.db`, caching work headers, slug→id mappings, and library summaries in memory while lazily reading page HTML on demand. Also resolves a citation string to a concrete page.
 - `reader.server.ts`: Renders the page shell — primary sticky navigation bar (TOC dialog launcher, pager controls, and the `Aa` reader settings launcher), passage text with citation gutters, the companion panel, and the passage footer with continuation cards.
 - `reader_toc.server.ts`: Renders the table of contents, including its `:target`-addressable No-JS fallback.

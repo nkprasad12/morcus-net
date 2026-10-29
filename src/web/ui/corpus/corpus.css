@@ -609,6 +609,7 @@
   line-height: calc(1.6 * var(--text-leading, 1));
   text-align: justify;
   white-space: pre-line;
+  color: var(--reading-text);
 }
 .corpus-match {
   background-color: transparent;

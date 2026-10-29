@@ -65,7 +65,7 @@ function makeApp(
   });
   sub.get("/moved", (_req, res) => res.redirect(302, "/dicts"));
   sub.get(
-    "/work/:author/:name/:page?",
+    "/work/:author/:name{/:page}",
     asyncHandler(async () => {
       throw new Error("boom");
     })
@@ -256,7 +256,7 @@ describe("telemetryMiddleware", () => {
       expect.any(Error)
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0].name).toBe("/work/:author/:name/:page?");
+    expect(rows[0].name).toBe("/work/:author/:name{/:page}");
     expect(rows[0].status).toBe(500);
     expect(rows[0].params).toEqual({ q: "x" });
     expect(rows[0].extras).toMatchObject({

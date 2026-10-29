@@ -1,49 +1,23 @@
 import { LatinDict, LatinDictInfo } from "@/common/dictionaries/latin_dicts";
 import {
-  DEFAULT_DICT_KEYS,
+  SAVE_PARAM,
   decodeDictBitmask,
-  decodeStoredDictBitmask,
-  encodeDictBitmask,
+  formatDictsCookie,
+  formatInflectedCookie,
+  mergeDictKeysForSave,
+  parseDictsFromCookie,
 } from "@/web/ui/dict/settings/dict_bitmask.common";
-import { formatCookie, readCookie } from "@/web/ui/core/state/cookies.common";
+import { readCookie } from "@/web/ui/core/state/cookies.common";
 
-/**
- * The dictionary preference cookie. It holds the same base36 bitmask as `?d=` (one canonical
- * encoding). Renamed from `morcus_dicts`, which held a `;`-joined key list, so that old values are
- * simply ignored rather than misread as a bitmask.
- */
-const DICT_COOKIE_NAME = "morcus_d";
+export {
+  SAVE_PARAM,
+  formatDictsCookie,
+  formatInflectedCookie,
+  mergeDictKeysForSave,
+  parseDictsFromCookie,
+};
+
 const INFLECTED_COOKIE_NAME = "morcus_inflected";
-
-/**
- * The query parameter (and the No-JS Apply button's `name`) marking an explicit "save these as my
- * preferences". Only the server acts on it; see `dict_persistence.server.ts`.
- */
-export const SAVE_PARAM = "save";
-
-/**
- * Formats canonical dict keys into a cookie value (the `?d=` bitmask).
- */
-export function formatDictsCookie(dictKeys: string[]): string {
-  return formatCookie(DICT_COOKIE_NAME, encodeDictBitmask(dictKeys));
-}
-
-/**
- * Formats inflection mode into a cookie value.
- */
-export function formatInflectedCookie(isInflected: boolean): string {
-  return formatCookie(INFLECTED_COOKIE_NAME, isInflected ? "1" : "0");
-}
-
-/**
- * Parses dictionary selection from HTTP Cookie header string. Anything that isn't a canonical
- * bitmask is ignored.
- */
-export function parseDictsFromCookie(
-  cookieHeader: string | undefined | null
-): string[] | null {
-  return decodeStoredDictBitmask(readCookie(cookieHeader, DICT_COOKIE_NAME));
-}
 
 /**
  * The user's saved dictionary preferences decoded once from the HTTP Cookie header.
@@ -244,28 +218,6 @@ export function filterKeysByLang(
     const dictInfo = LatinDict.BY_KEY.get(key);
     return dictInfo !== undefined && isDictInLangScope(dictInfo, langs);
   });
-}
-
-/**
- * The dictionary preference to save when the user edited only some of the dictionaries.
- *
- * A scoped settings dialog (e.g. the reader's, `lang=La`) shows only the dictionaries in its
- * scope. Saving takes `selectedKeys` for those (`inScopeKeys`) and keeps every other dictionary
- * as it was in `savedDicts` (or the default, when nothing is saved), so editing the reader's
- * Latin lexica never changes the English → Latin ones. The result is in `LatinDict.AVAILABLE`
- * order.
- */
-export function mergeDictKeysForSave(
-  selectedKeys: Iterable<string>,
-  inScopeKeys: Iterable<string>,
-  savedDicts: readonly string[] | null | undefined
-): string[] {
-  const selected = new Set(selectedKeys);
-  const inScope = new Set(inScopeKeys);
-  const base = new Set(savedDicts ?? DEFAULT_DICT_KEYS);
-  return LatinDict.AVAILABLE.filter((d) =>
-    inScope.has(d.key) ? selected.has(d.key) : base.has(d.key)
-  ).map((d) => d.key);
 }
 
 export interface DictParamsInput {

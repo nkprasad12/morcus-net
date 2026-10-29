@@ -16,6 +16,7 @@ const BASE_XML_PARSER_OPTIONS = {
   alwaysCreateTextNode: true,
   preserveOrder: true,
   commentPropName: COMMENT_NODE,
+  htmlEntities: true,
 };
 
 const PARSE_TRIM_WHITESPACE = {
@@ -27,6 +28,149 @@ const PARSE_KEEP_WHITESPACE = {
   ...BASE_XML_PARSER_OPTIONS,
   trimValues: false,
 };
+
+/**
+ * External TEI P4 / ISOpub / ISOlat1 / ISOnum named entities used across Perseus
+ * TEI P4 XML texts.
+ *
+ * Registered directly on XMLParser via `parser.addEntity` rather than decoded
+ * post-hoc (e.g. via `he.decode`). In fast-xml-parser's `OrderedObjParser.replaceEntitiesValue`,
+ * `addEntity` (`this.lastEntities`) runs before `this.ampEntity` (`&amp;` -> `&`),
+ * ensuring an explicit `&amp;dagger;` in source XML is preserved as literal `&dagger;`
+ * and never double-decoded.
+ */
+export const TEI_NAMED_ENTITIES: Readonly<Record<string, string>> = {
+  // ISOpub / typographical and punctuation symbols
+  dagger: "†",
+  Dagger: "‡",
+  mdash: "—",
+  ndash: "–",
+  lsquo: "‘",
+  rsquo: "’",
+  ldquo: "“",
+  rdquo: "”",
+  sbquo: "‚",
+  bdquo: "„",
+  sect: "§",
+  para: "¶",
+  hellip: "…",
+  bull: "•",
+  prime: "′",
+  Prime: "″",
+  laquo: "«",
+  raquo: "»",
+  deg: "°",
+  cdot: "·",
+
+  // Diacritics and accents
+  acute: "´",
+  grave: "`",
+  circ: "ˆ",
+  tilde: "˜",
+  uml: "¨",
+  macr: "¯",
+  breve: "˘",
+
+  // ISOlat1 diaereses / umlauts
+  auml: "ä",
+  Auml: "Ä",
+  euml: "ë",
+  Euml: "Ë",
+  iuml: "ï",
+  Iuml: "Ï",
+  ouml: "ö",
+  Ouml: "Ö",
+  uuml: "ü",
+  Uuml: "Ü",
+  yuml: "ÿ",
+  Yuml: "Ÿ",
+
+  // Ligatures
+  aelig: "æ",
+  AElig: "Æ",
+  oelig: "œ",
+  OElig: "Œ",
+  szlig: "ß",
+
+  // ISOlat2 macrons
+  amacr: "ā",
+  Amacr: "Ā",
+  emacr: "ē",
+  Emacr: "Ē",
+  imacr: "ī",
+  Imacr: "Ī",
+  omacr: "ō",
+  Omacr: "Ō",
+  umacr: "ū",
+  Umacr: "Ū",
+  ymacr: "ȳ",
+  Ymacr: "Ȳ",
+
+  // ISOlat2 breves
+  abreve: "ă",
+  Abreve: "Ă",
+  ebreve: "ĕ",
+  Ebreve: "Ĕ",
+  ibreve: "ĭ",
+  Ibreve: "Ĭ",
+  obreve: "ŏ",
+  Obreve: "Ŏ",
+  ubreve: "ŭ",
+  Ubreve: "Ŭ",
+
+  // ISOlat1 accented vowels
+  aacute: "á",
+  Aacute: "Á",
+  eacute: "é",
+  Eacute: "É",
+  iacute: "í",
+  Iacute: "Í",
+  oacute: "ó",
+  Oacute: "Ó",
+  uacute: "ú",
+  Uacute: "Ú",
+  yacute: "ý",
+  Yacute: "Ý",
+  agrave: "à",
+  Agrave: "À",
+  egrave: "è",
+  Egrave: "È",
+  igrave: "ì",
+  Igrave: "Ì",
+  ograve: "ò",
+  Ograve: "Ò",
+  ugrave: "ù",
+  Ugrave: "Ù",
+  acirc: "â",
+  Acirc: "Â",
+  ecirc: "ê",
+  Ecirc: "Ê",
+  icirc: "î",
+  Icirc: "Î",
+  ocirc: "ô",
+  Ocirc: "Ô",
+  ucirc: "û",
+  Ucirc: "Û",
+  atilde: "ã",
+  Atilde: "Ã",
+  otilde: "õ",
+  Otilde: "Õ",
+  ntilde: "ñ",
+  Ntilde: "Ñ",
+  ccedil: "ç",
+  Ccedil: "Ç",
+};
+
+/**
+ * Creates and configures an `XMLParser` instance with TEI P4 / HTML named entities registered.
+ */
+export function createXmlParser(config?: Partial<X2jOptions>): XMLParser {
+  const parser = new XMLParser(config);
+  for (const [key, value] of Object.entries(TEI_NAMED_ENTITIES)) {
+    parser.addEntity(key, value);
+  }
+  return parser;
+}
 
 function crawlXml(root: any, depth = 0): XmlNode | string {
   // Each node in the parsed XML tree is either a text node, which is
@@ -116,7 +260,7 @@ export function parseRawXml(
   if (options?.unpairedTags !== undefined) {
     parseConfig.unpairedTags = options?.unpairedTags;
   }
-  const parser = new XMLParser(parseConfig);
+  const parser = createXmlParser(parseConfig);
   if (options?.validate === true) {
     validateXml(rawXml);
   }
@@ -153,7 +297,7 @@ export function* parseXmlStringsInline(
   start?: number,
   end?: number
 ): Generator<XmlNode> {
-  const parser = new XMLParser(PARSE_KEEP_WHITESPACE);
+  const parser = createXmlParser(PARSE_KEEP_WHITESPACE);
   for (let i = start || 0; i < (end || serializedXml.length); i++) {
     const entryFree = parser.parse(serializedXml[i])[0];
     if (validate) {

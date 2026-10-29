@@ -9,13 +9,11 @@
 
 import {
   BaseElement,
-  registerElement,
-} from "@/web/ui/core/dom/base_element.client";
-import {
-  DrawerController,
   DRAWER_EXPANDED_SVH,
   DRAWER_FLOOR_SVH,
-} from "@/web/ui/core/widgets/drawer.client";
+  DrawerController,
+  registerElement,
+} from "@/web/ui/core/index.client";
 
 export const TOC_DRAWER_DEFAULT_SVH = 30;
 

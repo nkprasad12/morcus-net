@@ -3,11 +3,11 @@ import type { Request, Response, NextFunction, Router } from "express";
 type AsyncRouteHandler = (req: Request, res: Response) => Promise<void>;
 
 /**
- * Adapts an async route handler to the signature Express 4 expects.
+ * Adapts an async route handler to an Express RequestHandler signature.
  *
- * Express 4 ignores a handler's return value, so a rejection escapes as an unhandled
- * rejection — which Node terminates the process over. Synchronous throws and
- * rejected promises are caught and forwarded to next().
+ * Express 5 forwards rejections to `next` itself; this wrapper exists for
+ * lint/typing ergonomics (`@typescript-eslint/no-misused-promises`) and as an
+ * explicit choke point.
  */
 export function asyncHandler(
   handler: AsyncRouteHandler

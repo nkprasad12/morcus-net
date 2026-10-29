@@ -9,7 +9,7 @@
  * else is reported and left alone.
  */
 
-import { existsSync, realpathSync } from "fs";
+import { existsSync, readdirSync, realpathSync } from "fs";
 import path from "path";
 import chalk from "chalk";
 import {
@@ -47,7 +47,15 @@ export type CloneLocation =
       /** The env var isn't set; this is the default clone. */
       envUnset: boolean;
     }
-  | { kind: "missing"; path: string }
+  | {
+      kind: "missing";
+      path: string;
+      /**
+       * A clone in the morcus directory whose name matches the default one
+       * except for case (e.g. `canonical-latinLit` for `canonical-latinlit`).
+       */
+      caseMismatch?: string;
+    }
   | { kind: "not-a-clone"; path: string };
 
 function samePath(a: string, b: string): boolean {
@@ -89,6 +97,39 @@ function enclosingGitRoot(dir: string, morcusDir: string): string | undefined {
   return containsMorcusDir ? undefined : result.stdout;
 }
 
+/**
+ * A git clone directly in `morcusDir` whose name equals `name` ignoring case,
+ * but not exactly. Clones made by hand from a repo URL take the repo's own
+ * casing (e.g. Perseus' `canonical-latinLit`), not the lock file's key.
+ */
+function findCaseMismatch(name: string, morcusDir: string): string | undefined {
+  let entries: string[];
+  try {
+    entries = readdirSync(morcusDir);
+  } catch {
+    return undefined;
+  }
+  const lower = name.toLowerCase();
+  for (const entry of entries) {
+    if (entry === name || entry.toLowerCase() !== lower) continue;
+    const dir = path.join(morcusDir, entry);
+    if (gitRoot(dir) !== undefined) return dir;
+  }
+  return undefined;
+}
+
+/** A hint for a `missing` location, or an empty string. */
+export function caseMismatchHint(location: CloneLocation): string {
+  if (location.kind !== "missing" || location.caseMismatch === undefined) {
+    return "";
+  }
+  return ` (found ${
+    location.caseMismatch
+  }, which differs only in case; rename it to ${path.basename(
+    location.path
+  )} or point the source's env var at it)`;
+}
+
 /** Finds the clone that local builds use for `source`. */
 export function locateClone(
   name: string,
@@ -102,7 +143,10 @@ export function locateClone(
     if (existsSync(defaultDir) && gitRoot(defaultDir) !== undefined) {
       return { kind: "clone", dir: defaultDir, custom: false, envUnset: true };
     }
-    return { kind: "missing", path: defaultDir };
+    const caseMismatch = findCaseMismatch(name, morcusDir);
+    return caseMismatch === undefined
+      ? { kind: "missing", path: defaultDir }
+      : { kind: "missing", path: defaultDir, caseMismatch };
   }
   const file = source.file;
   // Usually the env var is `<clone>/<file>` (or the clone itself), so the
@@ -204,7 +248,9 @@ function plural(n: number, word: string): string {
 export function describeStatus(status: CloneStatus): string {
   if (!("state" in status)) {
     return status.location.kind === "missing"
-      ? `missing (${status.location.path}); run set_up_or_update.sh`
+      ? `missing (${status.location.path})${caseMismatchHint(
+          status.location
+        )}; run set_up_or_update.sh`
       : `not a git clone (${status.location.path}); remove its env var from .env and rerun set_up_or_update.sh to manage it`;
   }
   const { state } = status;

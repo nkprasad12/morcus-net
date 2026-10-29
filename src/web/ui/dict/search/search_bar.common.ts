@@ -1,6 +1,6 @@
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { html, joinHtml } from "@/web/ui/core/dom/html.common";
 import type { SafeHtml } from "@/web/ui/core/dom/html.common";
+import { DICT_SOURCE_LANG } from "@/web/ui/dict/settings/dict_bitmask.common";
 
 /** The dictionary settings `<dialog>`, also the `#hash` that opens it without JS. */
 export const DICT_SETTINGS_DIALOG_ID = "dict-settings";
@@ -14,17 +14,14 @@ export const DICT_SETTINGS_TRIGGER_ID = "dict-settings-btn";
 export function computeActiveLanguages(
   activeDictKeys: Iterable<string>
 ): string[] {
-  const keysSet =
-    activeDictKeys instanceof Set ? activeDictKeys : new Set(activeDictKeys);
-  const langs = new Set<string>();
-
-  for (const dict of LatinDict.AVAILABLE) {
-    if (keysSet.has(dict.key) && dict.languages.from !== "*") {
-      langs.add(dict.languages.from);
+  const seen = new Set<string>();
+  for (const key of activeDictKeys) {
+    const from = DICT_SOURCE_LANG[key];
+    if (from && from !== "*" && !seen.has(from)) {
+      seen.add(from);
     }
   }
-
-  return Array.from(langs);
+  return Array.from(seen);
 }
 
 /**

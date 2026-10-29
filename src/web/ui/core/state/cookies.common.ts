@@ -4,23 +4,8 @@
  * Isomorphic: safe to use in both Node.js SSR and client browser code.
  */
 
-interface CookieSerializeOptions {
-  /** Cookie path. Defaults to "/". */
-  path?: string;
-  /** Max-Age in seconds. Defaults to 31536000 (1 year). */
-  maxAge?: number;
-  /** SameSite attribute. Defaults to "Lax". */
-  sameSite?: "Lax" | "Strict" | "None";
-}
-
 /** One year in seconds (365 days). */
 export const COOKIE_MAX_AGE_ONE_YEAR = 31536000;
-
-const DEFAULT_COOKIE_OPTIONS: Readonly<CookieSerializeOptions> = {
-  path: "/",
-  maxAge: COOKIE_MAX_AGE_ONE_YEAR,
-  sameSite: "Lax",
-};
 
 /**
  * Reads a single named cookie value out of a raw cookie string
@@ -48,20 +33,11 @@ export function readCookie(
 }
 
 /**
- * Serializes a cookie name and value with standard attributes.
- * Defaults to: `; Path=/; Max-Age=31536000; SameSite=Lax`
+ * Serializes a cookie name and value with standard attributes:
+ * `; Path=/; Max-Age=31536000; SameSite=Lax`
  */
-export function formatCookie(
-  name: string,
-  value: string,
-  options?: CookieSerializeOptions
-): string {
-  const opts = { ...DEFAULT_COOKIE_OPTIONS, ...options };
-  let cookie = `${name}=${encodeURIComponent(value)}`;
-
-  if (opts.path) cookie += `; Path=${opts.path}`;
-  if (typeof opts.maxAge === "number") cookie += `; Max-Age=${opts.maxAge}`;
-  if (opts.sameSite) cookie += `; SameSite=${opts.sameSite}`;
-
-  return cookie;
+export function formatCookie(name: string, value: string): string {
+  return `${name}=${encodeURIComponent(
+    value
+  )}; Path=/; Max-Age=${COOKIE_MAX_AGE_ONE_YEAR}; SameSite=Lax`;
 }

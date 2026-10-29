@@ -1,10 +1,10 @@
 import { computeAnchoredPlacement } from "@/web/ui/core/widgets/anchored_position.client";
-import { LifetimeScope } from "@/web/ui/core/dom/lifetime_scope.client";
 import {
+  bindDismissable,
   createSingletonSetup,
+  LifetimeScope,
   type CleanupFn,
-} from "@/web/ui/core/dom/disposable.client";
-import { bindDismissable } from "@/web/ui/core/widgets/dismissable.client";
+} from "@/web/ui/core/index.client";
 
 /**
  * Interactive abbreviation popover for expandable dictionary words (.lsHover).

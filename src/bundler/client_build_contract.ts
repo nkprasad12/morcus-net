@@ -151,3 +151,22 @@ export function getV2BuildDir(): string {
     process.env.MORCUS_V2_BUILD_DIR ?? "build/client"
   );
 }
+
+/**
+ * Brotli quality for build-time `.br` siblings of fetched assets (`common.js`,
+ * `reader.js`, `dict.js`, `corpus.js`, `external.js`, `macronizer.js`,
+ * `app.css`), written by `compressOutputs` (`bundler/plugin_utils.ts`),
+ * served by `preCompressedMiddleware` (`web/web_server.ts`), and budgeted in
+ * `bundler/client_bundle_budget.ts`.
+ */
+export const STATIC_BROTLI_QUALITY = 11;
+
+/**
+ * Brotli quality for on-the-fly `compression()` output (`web/web_server.ts`,
+ * mostly SSR HTML, which carries inlined `critical.js` and `critical.css`).
+ * `compression()` defaults to 4, where Brotli is no smaller than gzip-6 on our
+ * pages; 5 is ~7% smaller for ~1.5x the CPU (well under 1 ms on the landing
+ * page, ~4 ms on the largest entry pages). Higher levels gain little more until
+ * 10-11, which take 30-100x the CPU and belong at build time, never on the fly.
+ */
+export const DYNAMIC_BROTLI_QUALITY = 5;

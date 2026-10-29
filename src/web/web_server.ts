@@ -6,8 +6,13 @@ import path from "path";
 import fs from "fs/promises";
 import zlib from "zlib";
 import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
-import { getV2BuildDir } from "@/bundler/client_build_contract";
+import {
+  DYNAMIC_BROTLI_QUALITY,
+  getV2BuildDir,
+} from "@/bundler/client_build_contract";
 import { IMMUTABLE_CACHE_CONTROL } from "@/web/ui/core/server/build_version.server";
+
+export { DYNAMIC_BROTLI_QUALITY };
 
 const SECONDS_IN_DAY = 24 * 3600;
 const MS_PER_SECOND = 1000;
@@ -112,15 +117,6 @@ function preCompressedMiddleware(getSourceDir: () => string): express.Handler {
     serve(req, res, next).catch(next);
   };
 }
-
-/**
- * Brotli quality for on-the-fly `compression()` output (mostly SSR HTML).
- * `compression()` defaults to 4, where Brotli is no smaller than gzip-6 on our
- * pages; 5 is ~7% smaller for ~1.5x the CPU (well under 1 ms on the landing
- * page, ~4 ms on the largest entry pages). Higher levels gain little more until
- * 10-11, which take 30-100x the CPU and belong at build time, never here.
- */
-export const DYNAMIC_BROTLI_QUALITY = 5;
 
 /**
  * `compression()` >= 1.8 accepts `brotli` options, but `@types/compression`

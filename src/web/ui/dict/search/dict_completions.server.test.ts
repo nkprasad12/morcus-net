@@ -3,6 +3,7 @@ import {
   getV2Completions,
   getV2DictChunks,
   type CompletionsProvider,
+  getExpandedPrefixes,
 } from "@/web/ui/dict/search/dict_completions.server";
 
 describe("dict_completions.server", () => {
@@ -182,6 +183,34 @@ describe("dict_completions.server", () => {
         GAF: ["iūstus"],
         "L&S": ["justus"],
       });
+    });
+  });
+
+  describe("getExpandedPrefixes", () => {
+    test("expands Latin u/v and i/j", () => {
+      expect(getExpandedPrefixes("am", "La")).toEqual(["am"]);
+      expect(getExpandedPrefixes("i", "La")).toEqual(["i", "j"]);
+      expect(getExpandedPrefixes("u", "La")).toEqual(["u", "v"]);
+      const expanded = getExpandedPrefixes("iust", "La");
+      expect(expanded).toContain("iust");
+      expect(expanded).toContain("just");
+      expect(expanded).toContain("ivst");
+      expect(expanded).toContain("jvst");
+    });
+
+    test("expands German ß and ss", () => {
+      const nuss = getExpandedPrefixes("nuss", "De");
+      expect(nuss).toContain("nuss");
+      expect(nuss).toContain("nuß");
+
+      const nussSharp = getExpandedPrefixes("nuß", "De");
+      expect(nussSharp).toContain("nuß");
+      expect(nussSharp).toContain("nuss");
+    });
+
+    test("leaves English and Spanish unchanged", () => {
+      expect(getExpandedPrefixes("love", "En")).toEqual(["love"]);
+      expect(getExpandedPrefixes("amor", "Es")).toEqual(["amor"]);
     });
   });
 });

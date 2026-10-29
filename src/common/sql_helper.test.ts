@@ -119,6 +119,55 @@ describe("SqlDict", () => {
     expect(getIndices(db)).toHaveLength(2);
   });
 
+  test("column primary key is a unique index used for lookups", async () => {
+    const data = [
+      { keys: "Julius", entry: "Gallia" },
+      { keys: "Publius", entry: "Roma" },
+    ];
+    makeTable(data, "entry");
+
+    const db = SqliteDb.create(TEMP_FILE, { readonly: true });
+    const plan = db
+      .prepare("EXPLAIN QUERY PLAN SELECT keys FROM data WHERE entry = ?")
+      .all("Roma")
+      // @ts-ignore
+      .map((row) => row.detail);
+
+    expect(getIndices(db)).toEqual(["data_entry"]);
+    expect(plan.join()).toContain("data_entry");
+    expect(
+      db.prepare("SELECT keys FROM data WHERE entry = ?").get("Roma")
+    ).toEqual({ keys: "Publius" });
+  });
+
+  test("save throws on a duplicate column primary key", async () => {
+    const data = [
+      { keys: "Julius", entry: "Gallia" },
+      { keys: "Publius", entry: "Gallia" },
+    ];
+    expect(() => makeTable(data, "entry")).toThrow(/UNIQUE/);
+  });
+
+  test("column primary key index pages are contiguous", async () => {
+    // Enough large rows that a row-by-row index would interleave its pages
+    // with the table's.
+    const data = Array.from({ length: 3000 }, (_, i) => ({
+      id: `id${String(i).padStart(5, "0")}`,
+      entry: "x".repeat(500),
+    }));
+    makeTable(data, "id");
+
+    const db = SqliteDb.create(TEMP_FILE, { readonly: true });
+    const pages = db
+      .prepare("SELECT pageno FROM dbstat WHERE name = 'data_id'")
+      .all()
+      // @ts-ignore
+      .map((row) => row.pageno as number);
+
+    expect(pages.length).toBeGreaterThan(1);
+    expect(Math.max(...pages) - Math.min(...pages) + 1).toBe(pages.length);
+  });
+
   test("save throws with invalid column primary key", async () => {
     const data = [
       {

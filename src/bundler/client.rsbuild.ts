@@ -80,6 +80,16 @@ function v2ManifestPlugin(
           }
         }
 
+        if (precompress) {
+          // Only the hashed assets the browser fetches: `critical.*` is
+          // inlined into `<head>`, and `manifest.json` is never served.
+          // Run before `checkV2BundleBudget` so the budget check measures the
+          // `.br` siblings written here directly instead of recompressing.
+          await compressOutputs(
+            Object.values(manifest).map((file) => path.join(outputDir, file))
+          );
+        }
+
         if (enforceBudget) {
           const report = checkV2BundleBudget(outputDir, manifest);
           console.log(formatV2BundleSizeReport(report));
@@ -90,14 +100,6 @@ function v2ManifestPlugin(
               )}`
             );
           }
-        }
-
-        if (precompress) {
-          // Only the hashed assets the browser fetches: `critical.*` is
-          // inlined into `<head>`, and `manifest.json` is never served.
-          await compressOutputs(
-            Object.values(manifest).map((file) => path.join(outputDir, file))
-          );
         }
       });
     },

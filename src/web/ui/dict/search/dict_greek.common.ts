@@ -18,9 +18,3 @@ export function hasGreek(input: string): boolean {
 export function getLogeionUrl(word: string): string {
   return `https://logeion.uchicago.edu/${encodeURIComponent(word.trim())}`;
 }
-
-/**
- * Storage key for auto-opening embedded Logeion searches (backwards-compatible with V1).
- */
-export const EMBEDDED_LOGEION_SETTING_KEY =
-  "Automatically open embedded Logeion searches";

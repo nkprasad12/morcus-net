@@ -1,8 +1,8 @@
 import { assert, checkPresent } from "@/common/assert";
 import {
   combineLengthCombiners,
+  isVowel,
   stripCombiners,
-  Vowels,
 } from "@/common/character_utils";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
@@ -353,7 +353,7 @@ export function findAmbiguousIandU(
   const isVowelTable: boolean[] = [];
   for (let i = 0; i < n; i++) {
     const c = cleanWord[i];
-    isVowelTable.push(Vowels.isVowel(c));
+    isVowelTable.push(isVowel(c));
     // If the word has a `j`, we assume `i` is only used as a vowel.
     markI = markI && c !== "j";
     // If the word has a `v`, assume that `v` is only used as a vowel.

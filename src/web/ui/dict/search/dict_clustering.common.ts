@@ -1,64 +1,39 @@
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { type DictLang } from "@/common/dictionaries/dictionaries";
-import { Vowels } from "@/common/character_utils";
+import { haveCompatibleVowelLength } from "@/common/character_utils";
 import { removeDiacritics } from "@/common/text_cleaning";
 import type { CompletionItem } from "@/web/ui/dict/search/dict_completions.common";
+import { DICT_SOURCE_LANG } from "@/web/ui/dict/settings/dict_bitmask.common";
 
 export interface Candidate {
   dictKey: string;
   lang: DictLang;
   word: string;
+  clean?: string;
 }
-
-const EXTRA_KEY_LOOKUP = new Map<string, string>([
-  ["u", "v"],
-  ["v", "u"],
-  ["i", "j"],
-  ["j", "i"],
-]);
 
 /**
  * Resolves the source language for a canonical dictionary key.
  * Defaults to "La" for universal ("*") or unrecognized dictionaries.
  */
 export function getDictSourceLang(dictKey: string): DictLang {
-  const info = LatinDict.BY_KEY.get(dictKey);
-  if (!info || info.languages.from === "*") {
-    return "La";
-  }
-  return info.languages.from;
+  const from = DICT_SOURCE_LANG[dictKey];
+  return !from || from === "*" ? "La" : from;
 }
 
 /**
- * Expands query prefixes for orthographic equivalents (u/v, i/j in Latin; ß/ss in German).
+ * Folds orthographic equivalents into canonical forms for prefix matching
+ * (v -> u, j -> i in Latin; ß -> ss in German).
  */
-export function getExpandedPrefixes(prefix: string, lang: DictLang): string[] {
-  if (lang === "La") {
-    const maxDepth = Math.min(25, prefix.length);
-    let prefixes: string[] = [""];
-    for (let i = 0; i < maxDepth; i++) {
-      const nextChar = prefix.charAt(i);
-      const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
-      const nextChars =
-        altChar === undefined ? [nextChar] : [nextChar, altChar];
-      prefixes = prefixes.flatMap((p) => nextChars.map((n) => p + n));
-    }
-    if (prefix.length > maxDepth) {
-      const remainder = prefix.slice(maxDepth);
-      prefixes = prefixes.map((p) => p + remainder);
-    }
-    return prefixes;
-  }
-  if (lang === "De") {
-    const s1 = prefix.replaceAll("ß", "ss");
-    const s2 = prefix.replaceAll("ss", "ß");
-    return Array.from(new Set([prefix, s1, s2]));
-  }
-  return [prefix];
+export function foldOrthography(clean: string, lang: DictLang): string {
+  return lang === "La"
+    ? clean.replaceAll("v", "u").replaceAll("j", "i")
+    : lang === "De"
+    ? clean.replaceAll("ß", "ss")
+    : clean;
 }
 
 /**
- * Deduplicates candidates, clusters vowel-length variants via Vowels.haveCompatibleLength,
+ * Deduplicates candidates, clusters vowel-length variants via haveCompatibleVowelLength,
  * selects Gaffiot as canonical macron leader for Latin, sorts results, and exits early
  * once the limit of clusters is reached.
  */
@@ -78,7 +53,7 @@ export function clusterAndDeduplicate(
 
   for (const c of candidates) {
     if (!c.word) continue;
-    const cleanForm = removeDiacritics(c.word).toLowerCase();
+    const cleanForm = c.clean ?? removeDiacritics(c.word).toLowerCase();
     const groupKey = `${c.lang}:${cleanForm}`;
     let entry = groups.get(groupKey);
     if (!entry) {
@@ -103,7 +78,7 @@ export function clusterAndDeduplicate(
       let foundGroup = false;
       for (const fg of formGroups) {
         const compatible = fg.every((member) =>
-          Vowels.haveCompatibleLength(member.word, option.word)
+          haveCompatibleVowelLength(member.word, option.word)
         );
         if (compatible) {
           fg.push(option);
@@ -118,8 +93,7 @@ export function clusterAndDeduplicate(
 
     // Canonical leader selection: prefer Gaffiot for Latin macrons
     for (const fg of formGroups) {
-      const leader =
-        fg.find((m) => m.dictKey === LatinDict.Gaffiot.key) ?? fg[0];
+      const leader = fg.find((m) => m.dictKey === "GAF") ?? fg[0];
       results.push({ lang: group.lang, word: leader.word });
     }
 
@@ -150,9 +124,7 @@ export function filterAndClusterDictionaryChunks(
   query: string,
   limit: number = 25
 ): CompletionItem[] {
-  const clean = query.trim();
-  if (!clean) return [];
-  const folded = removeDiacritics(clean).toLowerCase();
+  const folded = removeDiacritics(query.trim()).toLowerCase();
   if (!folded) return [];
 
   const dictsToScan =
@@ -165,12 +137,12 @@ export function filterAndClusterDictionaryChunks(
     if (!words || words.length === 0) continue;
 
     const lang = getDictSourceLang(dictKey);
-    const prefixes = getExpandedPrefixes(folded, lang);
+    const foldedQuery = foldOrthography(folded, lang);
 
     for (const word of words) {
-      const cleanWord = removeDiacritics(word).toLowerCase();
-      if (prefixes.some((p) => cleanWord.startsWith(p))) {
-        candidates.push({ dictKey, lang, word });
+      const clean = removeDiacritics(word).toLowerCase();
+      if (foldOrthography(clean, lang).startsWith(foldedQuery)) {
+        candidates.push({ dictKey, lang, word, clean });
       }
     }
   }

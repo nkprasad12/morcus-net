@@ -440,31 +440,41 @@
 /* Verse lines and TEI blocks are block-level. Without this, any structure that
    puts several of them in one citation section - blockquotes above all -
    collapses into undifferentiated running text. */
-.reader-passage .reader-line,
-.reader-passage .reader-block {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-line,
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-block {
   display: block;
 }
 
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-block {
+  margin: 0;
+}
+
 /* Elegiac pentameters and other indented verse: the whole line shifts. */
-.reader-passage .indent {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .indent {
   display: block;
   padding-left: 1.5em;
 }
 
 /* Inside a paragraph, an indent opens the paragraph: only the first line moves. */
-.reader-passage .indent-para {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .indent-para {
   display: block;
   padding-left: 0;
   text-indent: 1.5em;
 }
 
-.reader-passage .blockquote {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .blockquote {
   display: block;
   margin: 0.4em 0 0.4em 1.5em;
   font-style: italic;
 }
 
-.reader-passage .reader-subheading {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .center {
+  display: block;
+  text-align: center;
+}
+
+:is(.reader-passage, .reader-notes, .reader-translation-text)
+  .reader-subheading {
   font-family: var(--font-serif);
   font-size: 1em;
   font-weight: 600;
@@ -476,50 +486,54 @@
   margin-top: 0;
 }
 
-.reader-passage .reader-list {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-list {
   margin: 0.4em 0;
   padding-left: 1.5em;
 }
 
-.reader-passage .italic {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .italic {
   font-style: italic;
 }
 
-.reader-passage .bold {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .bold {
   font-weight: 600;
 }
 
 /* Inscriptional and legal quotations. The source text is usually already
    lowercase, so small caps renders it as the edition sets it. */
-.reader-passage .smallcaps {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .smallcaps {
   font-variant-caps: small-caps;
   letter-spacing: 0.02em;
 }
 
-.reader-passage .uppercase {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .uppercase {
   text-transform: uppercase;
 }
 
 /* Overlined Roman numerals (thousands), e.g. Petronius' sums of money. */
-.reader-passage .overline {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .overline {
   text-decoration: overline;
 }
 
-.reader-passage .superscript {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .superscript {
   vertical-align: super;
   font-size: smaller;
   line-height: 0;
 }
 
 /* `<space>` marks a break between line groups in the source. */
-.reader-passage .line-space {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .line-space {
   display: block;
   height: 0.75em;
 }
 
-.reader-passage .reader-gap {
+:is(.reader-passage, .reader-notes, .reader-translation-text) .reader-gap {
   font-style: italic;
   opacity: 0.7;
+}
+
+:is(.reader-passage, .reader-notes, .reader-translation-text) .text-muted {
+  color: var(--text-muted);
 }
 
 /* ==========================================================================

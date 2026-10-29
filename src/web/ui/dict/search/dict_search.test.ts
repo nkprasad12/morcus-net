@@ -1,11 +1,11 @@
 /**
  * @jest-environment jsdom
  */
-// Suggestions register first, as in `dict_entry.client.ts`.
-import "@/web/ui/dict/search/dict_suggestions.client";
 import "@/web/ui/dict/search/dict_search.client";
+import { ComboboxController } from "@/web/ui/core/index.client";
 import { enhanceEntryWords } from "@/web/ui/dict/entry/entry_links.client";
 import { MorcusDictSearch } from "@/web/ui/dict/search/dict_search.client";
+import type { CompletionItem } from "@/web/ui/dict/search/dict_completions.common";
 import { DICT_SETTINGS_DIALOG_ID } from "@/web/ui/dict/search/search_bar.common";
 import {
   DEFAULT_DICT_KEYS,
@@ -27,6 +27,49 @@ function commitSettings(
   el.dispatchEvent(
     new CustomEvent("dict-settings-commit", { bubbles: true, detail })
   );
+}
+
+/** The server-rendered listbox the autocomplete combobox renders into. */
+function suggestionsList(el: HTMLElement): HTMLUListElement {
+  return el.querySelector<HTMLUListElement>("#dict-suggestions-list")!;
+}
+
+/** The suggestions currently shown, read back from the rendered rows. */
+function shownSuggestions(el: HTMLElement): CompletionItem[] {
+  return Array.from(
+    suggestionsList(el).querySelectorAll<HTMLLIElement>(".suggestion-item"),
+    (li) => ({
+      lang: li.querySelector(".lang-chip")!
+        .textContent as CompletionItem["lang"],
+      word: li.querySelector(".suggestion-word")!.textContent!,
+    })
+  );
+}
+
+/**
+ * Shows exactly `items` through the element's real combobox, for items no
+ * cached chunk would cluster to (e.g. a homograph number or markup).
+ */
+function showSuggestions(el: HTMLElement, items: CompletionItem[]) {
+  const input = el.querySelector<HTMLInputElement>("input.input")!;
+  // Clearing the input clears the suggestions: a call on the combobox.
+  const setItems = jest.spyOn(ComboboxController.prototype, "setItems");
+  input.value = "";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  const combobox = setItems.mock
+    .contexts[0] as ComboboxController<CompletionItem>;
+  setItems.mockRestore();
+  combobox.setItems(items);
+}
+
+/** Shows `item` as the only suggestion, then clicks (`mousedown`) it. */
+function pickSuggestion(el: HTMLElement, item: CompletionItem) {
+  showSuggestions(el, [item]);
+  suggestionsList(el)
+    .querySelector(".suggestion-item")!
+    .dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, cancelable: true })
+    );
 }
 
 describe("MorcusDictSearch client progressive enhancement", () => {
@@ -65,9 +108,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       <form class="search-form" action="/dicts" method="GET" ${formAttrs}>
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only data-input="dict-q">
-            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
-          </morcus-dict-suggestions>
+          <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden data-js-only></ul>
         </div>
       </form>
       <output id="dict-results" class="results">
@@ -94,7 +135,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
             <span class="lsQuote">Gallia est omnis</span>,
             <b class="lsEmph">important note</b>,
             <span lang="el">&#x1F35;&#x3C0;&#x3C0;&#x3BF;&#x3C2;</span>,
-            <span class="dLink" to="facio">facio</span>,
+            <a class="dLink" href="/dicts?q=facio">facio</a>,
             <a href="#sense-1" class="section-anchor">1</a>
           </p>
         </div>
@@ -272,7 +313,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const resultsHtml = `
       <article class="entry">
         <div class="entry-content">
-          <p><span class="dLink" to="facio">facio</span></p>
+          <p><a class="dLink" href="/dicts?q=facio">see facio</a></p>
         </div>
       </article>
     `;
@@ -465,7 +506,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
         <div class="entry-content">
           <p>
             <span class="lsQuote">Gallia est</span>
-            <a class="dLink" to="facio" href="/dicts?q=facio">facio</a>
+            <a class="dLink" href="/dicts?q=facio">facio</a>
           </p>
         </div>
       </article>
@@ -592,13 +633,12 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     try {
       const el = createDictSearch();
       const input = el.querySelector<HTMLInputElement>("input.input")!;
-      const suggestions = el.querySelector("morcus-dict-suggestions") as any;
       input.focus();
       el.chunkCache.set("am", { "L&S": ["amo"], GAF: ["ămō"] });
 
       input.value = "amo";
       input.dispatchEvent(new Event("input", { bubbles: true }));
-      expect(suggestions.items).not.toHaveLength(0);
+      expect(shownSuggestions(el)).not.toHaveLength(0);
 
       // "be" isn't cached and its fetch fails (e.g. offline).
       (global.fetch as jest.Mock).mockRejectedValueOnce(new Error("offline"));
@@ -611,7 +651,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       jest.useRealTimers();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(suggestions.items).toEqual([]);
+      expect(shownSuggestions(el)).toEqual([]);
       expect(errorSpy).toHaveBeenCalled();
     } finally {
       jest.useRealTimers();
@@ -672,9 +712,10 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       input.value = "am";
       input.dispatchEvent(new Event("input", { bubbles: true }));
 
-      const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
       expect(
-        suggestionsEl.items.map((i: any) => `${i.lang}:${i.word}`).sort()
+        shownSuggestions(el)
+          .map((i) => `${i.lang}:${i.word}`)
+          .sort()
       ).toEqual(["De:Ameise", "En:amber", "La:amabilis"]);
     });
 
@@ -728,9 +769,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     // Instant synchronous hit: 0 network calls!
     expect(global.fetch).not.toHaveBeenCalled();
 
-    const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
-    expect(suggestionsEl).not.toBeNull();
-    expect(suggestionsEl.items).toEqual([
+    expect(shownSuggestions(el)).toEqual([
       { lang: "La", word: "ămō" },
       { lang: "La", word: "ămŏr" },
     ]);
@@ -749,8 +788,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     input.value = "am";
     input.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
-    expect(suggestionsEl.items.map((i: any) => i.word)).toEqual([
+    expect(shownSuggestions(el).map((i) => i.word)).toEqual([
       "amabilis",
       "ămīcĭtĭa",
     ]);
@@ -761,7 +799,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     commitSettings(el, ["GAF"], true);
 
     // Suggestions immediately update with only GAF words
-    expect(suggestionsEl.items.map((i: any) => i.word)).toEqual(["ămīcĭtĭa"]);
+    expect(shownSuggestions(el).map((i) => i.word)).toEqual(["ămīcĭtĭa"]);
     // Zero completion network calls made for suggestions
     expect(global.fetch).not.toHaveBeenCalledWith(
       expect.stringContaining("/api/completions")
@@ -778,8 +816,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     input.value = "am";
     input.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
-    const listbox = suggestionsEl.querySelector("ul") as HTMLUListElement;
+    const listbox = suggestionsList(el);
     expect(listbox.hidden).toBe(false);
 
     // e.g. focus moves to the settings popover.
@@ -788,7 +825,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     commitSettings(el, ["GAF"], true);
 
-    expect(suggestionsEl.items).toEqual([]);
+    expect(shownSuggestions(el)).toEqual([]);
     expect(listbox.hidden).toBe(true);
     expect(input.getAttribute("aria-expanded")).toBe("false");
   });
@@ -1039,8 +1076,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     jest.useFakeTimers();
     const el = createDictSearch("", 'data-d="an" data-o="1"');
     const input = el.querySelector<HTMLInputElement>("input.input")!;
-    const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
-    const listbox = suggestionsEl.querySelector("ul") as HTMLUListElement;
+    const listbox = suggestionsList(el);
 
     // 1. Open suggestions from cache
     el.chunkCache.set("qu", { "L&S": ["qui", "quis"] });
@@ -1048,7 +1084,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     input.value = "qu";
     input.dispatchEvent(new Event("input", { bubbles: true }));
     expect(listbox.hidden).toBe(false);
-    expect(suggestionsEl.items).toHaveLength(2);
+    expect(shownSuggestions(el)).toHaveLength(2);
 
     // 2. Also start an in-flight suffix completion fetch
     let completionSignal: AbortSignal | undefined;
@@ -1075,7 +1111,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     window.history.replaceState(null, "", "/dicts?q=amo&d=an&o=1");
     window.dispatchEvent(new PopStateEvent("popstate"));
 
-    expect(suggestionsEl.items).toEqual([]);
+    expect(shownSuggestions(el)).toEqual([]);
     expect(listbox.hidden).toBe(true);
     expect(completionSignal!.aborted).toBe(true);
   });
@@ -1251,14 +1287,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     test("an autocomplete pick also leaves the scope", () => {
       const el = createDictSearch("", 'data-d="3" data-o="1"');
-      el.querySelector("morcus-dict-suggestions")!.dispatchEvent(
-        new CustomEvent("suggestion-select", {
-          bubbles: true,
-          detail: { word: "love" },
-        })
-      );
+      pickSuggestion(el, { word: "love", lang: "En" });
       expect(assign).toHaveBeenCalledWith(
-        "/dicts?q=love&o=1&embedded=1&scale=120"
+        "/dicts?q=love&o=1&embedded=1&scale=120&focus=En"
       );
     });
 
@@ -1404,9 +1435,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only data-input="dict-q">
-            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
-          </morcus-dict-suggestions>
+          <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden data-js-only></ul>
         </div>
       </form>
       <output id="dict-results" class="results">
@@ -1439,9 +1468,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only data-input="dict-q">
-            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
-          </morcus-dict-suggestions>
+          <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden data-js-only></ul>
         </div>
       </form>
       <output id="dict-results" class="results">
@@ -1476,9 +1503,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       <form class="search-form" action="/dicts" method="GET">
         <div class="input-wrapper">
           <input type="text" name="q" id="dict-q" class="input" value="habeo" />
-          <morcus-dict-suggestions data-js-only data-input="dict-q">
-            <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden></ul>
-          </morcus-dict-suggestions>
+          <ul id="dict-suggestions-list" class="suggestions" role="listbox" hidden data-js-only></ul>
         </div>
       </form>
       <output id="dict-results" class="results">
@@ -1588,33 +1613,79 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     });
   });
 
-  test("still reacts to suggestion-select after the element is re-attached", () => {
+  test("still reacts to a suggestion pick after the element is re-attached", () => {
     const el = createDictSearch();
-    const suggestions = el.querySelector("morcus-dict-suggestions");
-    expect(suggestions).not.toBeNull();
     const input = el.querySelector<HTMLInputElement>("input.input")!;
-    const selectHabeo = () =>
-      suggestions!.dispatchEvent(
-        new CustomEvent("suggestion-select", {
-          detail: { word: "habeo" },
-          bubbles: true,
-        })
-      );
 
     // Establish that the handler runs at all on the first attach.
-    input.value = "";
-    selectHabeo();
+    pickSuggestion(el, { word: "habeo", lang: "La" });
     expect(input.value).toBe("habeo");
 
     // Moving an element in the DOM disconnects and reconnects it, which runs
-    // BaseElement's dispose(). The child is created once and cached, so the
-    // listener has to be re-registered outside that one-time creation.
+    // BaseElement's dispose(). The combobox is created once, so it has to
+    // rebind to the listbox and input on every connect.
     el.remove();
     document.body.appendChild(el);
+    expect(suggestionsList(el).hidden).toBe(true);
 
-    input.value = "";
-    selectHabeo();
+    pickSuggestion(el, { word: "habeo", lang: "La" });
     expect(input.value).toBe("habeo");
+  });
+
+  test("re-attaching with a focused, edited input and a warm chunk cache shows its suggestions", () => {
+    const el = createDictSearch();
+    const input = el.querySelector<HTMLInputElement>("input.input")!;
+    el.chunkCache.set("am", { "L&S": ["amo", "amor"] });
+
+    el.remove();
+    input.value = "amo";
+    // Moving a focused element blurs it, so stand in for one that kept focus.
+    const activeElement = jest
+      .spyOn(document, "activeElement", "get")
+      .mockReturnValue(input);
+    document.body.appendChild(el);
+    activeElement.mockRestore();
+
+    // Rendered synchronously from the cache, into a combobox already bound to
+    // the live listbox and input.
+    const listbox = suggestionsList(el);
+    expect(shownSuggestions(el)).toEqual([
+      { lang: "La", word: "amo" },
+      { lang: "La", word: "amor" },
+    ]);
+    expect(listbox.hidden).toBe(false);
+    expect(input.getAttribute("aria-controls")).toBe(listbox.id);
+    expect(input.getAttribute("aria-expanded")).toBe("true");
+
+    listbox
+      .querySelector(".suggestion-item")!
+      .dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, cancelable: true })
+      );
+    expect(input.value).toBe("amo");
+  });
+
+  test("renders suggestion rows with escaped text and combobox-managed attributes", () => {
+    const el = createDictSearch();
+    const word = '<img src=x onerror="alert(1)">&';
+
+    showSuggestions(el, [
+      { word, lang: "En" },
+      { word: "amo", lang: "La" },
+    ]);
+
+    const listbox = suggestionsList(el);
+    expect(listbox.querySelector("img")).toBeNull();
+    const rows = listbox.querySelectorAll<HTMLLIElement>(".suggestion-item");
+    expect(rows).toHaveLength(2);
+    expect(rows[0].dataset.word).toBe(word);
+    expect(rows[0].querySelector(".suggestion-word")!.textContent).toBe(word);
+    const chip = rows[0].querySelector(".lang-chip")!;
+    expect(chip.className).toBe("lang-chip lang-chip-en");
+    expect(chip.textContent).toBe("En");
+    expect(rows[1].id).toBe("dict-suggestions-list-1");
+    expect(rows[1].getAttribute("role")).toBe("option");
+    expect(rows[1].getAttribute("aria-selected")).toBe("false");
   });
 
   describe("stale response handling", () => {
@@ -1781,10 +1852,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     test("initializes combobox ARIA and controls listbox on input", () => {
       const el = createDictSearch();
       const input = el.querySelector<HTMLInputElement>("input.input")!;
-      const suggestions = el.querySelector("morcus-dict-suggestions") as any;
-      const listbox = suggestions.querySelector(
-        'ul[role="listbox"]'
-      ) as HTMLElement;
+      const listbox = suggestionsList(el);
 
       expect(input.getAttribute("role")).toBe("combobox");
       expect(input.getAttribute("aria-autocomplete")).toBe("list");
@@ -1811,10 +1879,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     test("navigates suggestions with ArrowDown / ArrowUp and selects with Enter", () => {
       const el = createDictSearch();
       const input = el.querySelector<HTMLInputElement>("input.input")!;
-      const suggestions = el.querySelector("morcus-dict-suggestions") as any;
-      const listbox = suggestions.querySelector(
-        'ul[role="listbox"]'
-      ) as HTMLElement;
+      const listbox = suggestionsList(el);
 
       el.chunkCache.set("am", {
         "L&S": ["amo", "amor"],
@@ -1906,9 +1971,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       jest.useFakeTimers();
       const el = createDictSearch();
       const input = el.querySelector<HTMLInputElement>("input.input")!;
-      const suggestions = el.querySelector("morcus-dict-suggestions")!;
-      const listbox =
-        suggestions.querySelector<HTMLElement>('ul[role="listbox"]')!;
+      const listbox = suggestionsList(el);
       const loadSpy = jest
         .spyOn(el.chunkCache, "load")
         .mockImplementation((key: string) => {
@@ -2123,16 +2186,10 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
       const el = createDictSearch("");
       const input = el.querySelector<HTMLInputElement>("input.input")!;
-      const suggestionsEl = el.querySelector("morcus-dict-suggestions")!;
       input.focus();
       const blurSpy = jest.spyOn(input, "blur");
 
-      suggestionsEl.dispatchEvent(
-        new CustomEvent("suggestion-select", {
-          detail: { word: "1 fero" },
-          bubbles: true,
-        })
-      );
+      pickSuggestion(el, { word: "1 fero", lang: "La" });
 
       expect(input.value).toBe("fero");
       blurSpy.mockClear();
@@ -2148,16 +2205,10 @@ describe("MorcusDictSearch client progressive enhancement", () => {
   });
 
   describe("focus= from autocomplete picks (#598)", () => {
-    function pick(el: MorcusDictSearch, detail: object) {
-      el.querySelector("morcus-dict-suggestions")!.dispatchEvent(
-        new CustomEvent("suggestion-select", { bubbles: true, detail })
-      );
-    }
-
     test("picking an English suggestion adds focus=En to the URL and the results fetch", async () => {
       const el = createDictSearch("", 'data-d="an" data-o="1"');
 
-      pick(el, { word: "ago", lang: "En" });
+      pickSuggestion(el, { word: "ago", lang: "En" });
       await Promise.resolve();
 
       expect(new URLSearchParams(window.location.search).get("focus")).toBe(
@@ -2172,7 +2223,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     test("a suggestion without a concrete language adds no focus", async () => {
       const el = createDictSearch("", 'data-d="an" data-o="1"');
 
-      pick(el, { word: "ago", lang: "*" });
+      pickSuggestion(el, { word: "ago", lang: "*" });
       await Promise.resolve();
 
       expect(window.location.search).not.toContain("focus=");
@@ -2293,8 +2344,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
       const el = createDictSearch("", 'data-d="3" data-o="1"');
       const input = el.querySelector<HTMLInputElement>("input.input")!;
-      const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
-      const listbox = suggestionsEl.querySelector("ul") as HTMLUListElement;
+      const listbox = suggestionsList(el);
 
       // Open autocomplete suggestions first
       el.chunkCache.set("am", { "L&S": ["amo", "amor"] });
@@ -2315,7 +2365,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
       expect(res).toBe("swapped");
       expect(listbox.hidden).toBe(true);
-      expect(suggestionsEl.items).toEqual([]);
+      expect(shownSuggestions(el)).toEqual([]);
       expect(input.value).toBe("virumque");
       expect(pushStateSpy).not.toHaveBeenCalled();
       expect(replaceStateSpy).toHaveBeenCalledWith(
@@ -2771,12 +2821,7 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
         // 2. Autocomplete pick (normal motion): no scroll before fetch, smooth scroll after
         scrollMock.mockClear();
-        el.querySelector("morcus-dict-suggestions")!.dispatchEvent(
-          new CustomEvent("suggestion-select", {
-            bubbles: true,
-            detail: { word: "pax" },
-          })
-        );
+        pickSuggestion(el, { word: "pax", lang: "La" });
         expect(scrollMock).not.toHaveBeenCalled();
 
         pending[1].respond("<div>pax</div>");

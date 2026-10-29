@@ -9,6 +9,7 @@ import type {
   V2PreprocessedWork,
 } from "@/common/library/preprocess/preprocessed_types";
 import { formatSectionLabel } from "@/common/library/section_labels";
+import { areArraysEqual } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
 import * as he from "he";
@@ -21,6 +22,63 @@ function formatPageTitle(pageId: string[], textParts: string[]): string {
     parts.push(formatSectionLabel(partName, pageId[i]));
   }
   return parts.join(", ");
+}
+
+/**
+ * The title of a page holding a run of lines, e.g. `Lines 1–414`, from the
+ * local ids of its citable rows; `undefined` if it has none.
+ */
+function formatLineRangeTitle(lineIds: string[]): string | undefined {
+  const first = lineIds[0];
+  const last = lineIds[lineIds.length - 1];
+  if (first === undefined || last === undefined) {
+    return undefined;
+  }
+  return first === last ? `Line ${first}` : `Lines ${first}–${last}`;
+}
+
+/** Whether a row's root is a heading or a spacer, which carry no citation. */
+function isHeadingOrSpacerRow(node: XmlNode): boolean {
+  return (
+    node.name === "head" ||
+    node.name === "space" ||
+    node.getAttr("sectionHead") === "1"
+  );
+}
+
+/**
+ * The index of the row that cites a page whose leaf sits above full depth,
+ * such as Jerome's Letter 44, which has no sections: `undefined` unless the
+ * page has no row deeper than its own id.
+ *
+ * That row is the first one with the page's id that is not a heading or a
+ * spacer. Only one row gets the citation, so its DOM id stays unique.
+ */
+function findShallowLeafRow(
+  rows: ProcessedWork2["rows"],
+  page: ProcessedPage,
+  textParts: string[]
+): number | undefined {
+  const pageId = page.id;
+  if (pageId.length === 0 || pageId.length >= textParts.length) {
+    return undefined;
+  }
+  const [start, end] = page.rows;
+  let leafRow: number | undefined = undefined;
+  for (let j = start; j < end; j++) {
+    const [secId, node] = rows[j];
+    if (secId.length > pageId.length) {
+      return undefined;
+    }
+    if (
+      leafRow === undefined &&
+      areArraysEqual(secId, pageId) &&
+      !isHeadingOrSpacerRow(node)
+    ) {
+      leafRow = j;
+    }
+  }
+  return leafRow;
 }
 
 function getSectionLocalId(secId: string[], pageId: string[]): string {
@@ -128,6 +186,15 @@ function renderNoteMarker(
   return `<a class="reader-note-ref" id="${refId}" href="#${bodyId}" role="doc-noteref" aria-label="Note ${label}"><sup>[${label}]</sup></a>`;
 }
 
+/**
+ * The renditions on a content node. `process_work` emits one or more
+ * space-separated canonical tokens (see `canonicalRend`), e.g. `smallcaps` or
+ * `overline smallcaps`.
+ */
+function rendClasses(node: XmlNode): Set<string> {
+  return new Set(node.getAttr("rend")?.split(" "));
+}
+
 /** Elements rendered as markers with no text of their own (rule 4). */
 const MARKER_TAGS = new Set(["br", "space", "gap", "note"]);
 
@@ -136,7 +203,7 @@ const MARKER_TAGS = new Set(["br", "space", "gap", "note"]);
  * block, heading or list element, which break words on their own.
  */
 function isInlineTextElement(node: XmlNode): boolean {
-  const rend = node.getAttr("rend");
+  const rends = rendClasses(node);
   return !(
     MARKER_TAGS.has(node.name) ||
     node.name === "head" ||
@@ -145,8 +212,9 @@ function isInlineTextElement(node: XmlNode): boolean {
     node.getAttr("l") !== undefined ||
     node.getAttr("block") !== undefined ||
     node.getAttr("sectionHead") !== undefined ||
-    rend === "blockquote" ||
-    rend === "indent"
+    rends.has("blockquote") ||
+    rends.has("indent") ||
+    rends.has("center")
   );
 }
 
@@ -176,6 +244,18 @@ function needsWordBreak(previous: XmlNode, next: XmlNode): boolean {
   if (!isInlineTextElement(previous) || !isInlineTextElement(next)) {
     return false;
   }
+  const nextRend = next.getAttr("rend");
+  if (
+    next.name === "sub" ||
+    next.name === "sup" ||
+    (nextRend !== undefined &&
+      (nextRend.includes("superscript") ||
+        nextRend.includes("sup") ||
+        nextRend.includes("super") ||
+        nextRend.includes("subscript")))
+  ) {
+    return false;
+  }
   const before = inlineText(previous);
   const after = inlineText(next);
   return (
@@ -187,18 +267,26 @@ function needsWordBreak(previous: XmlNode, next: XmlNode): boolean {
   );
 }
 
+/**
+ * Renders a content node as reader HTML.
+ *
+ * @param isVerseWork Whether the node belongs to a verse work. There, a node
+ * that came from a TEI `<p>`/`<ab>` (`para="1"`) renders as a paragraph, so
+ * that a prose preface is not set as a verse line. Outside verse works the
+ * row is already wrapped in a paragraph and `para` changes nothing.
+ */
 function renderXmlNodeCleanHtml(
   node: XmlNode | string,
-  notes?: NoteCollector
+  notes?: NoteCollector,
+  isVerseWork = false
 ): string {
   if (typeof node === "string") {
     return he.escape(node);
   }
 
   const tag = node.name;
-  const rend = node.getAttr("rend");
+  const rends = rendClasses(node);
   const isLine = node.getAttr("l") === "1";
-  const isBlock = node.getAttr("block") === "1";
   const isSectionHead = node.getAttr("sectionHead") === "1";
   const noteId = node.getAttr("noteId");
 
@@ -215,10 +303,17 @@ function renderXmlNodeCleanHtml(
     return renderNoteMarker(noteId, notes);
   }
 
+  // A paragraph cannot hold another, so only the outermost `para` node in a
+  // verse work becomes one.
+  const wantsVersePara = isVerseWork && !isLine && node.getAttr("para") === "1";
   const childrenHtml = node.children
     .map((child, i) => {
       const previous = node.children[i - 1];
-      const html = renderXmlNodeCleanHtml(child, notes);
+      const html = renderXmlNodeCleanHtml(
+        child,
+        notes,
+        isVerseWork && !wantsVersePara
+      );
       return child instanceof XmlNode &&
         previous instanceof XmlNode &&
         needsWordBreak(previous, child)
@@ -227,11 +322,13 @@ function renderXmlNodeCleanHtml(
     })
     .join("");
 
+  // An empty paragraph would add a blank block to the page, so it renders as
+  // before (nothing of its own).
+  const isVersePara = wantsVersePara && childrenHtml.trim() !== "";
+  const isBlock = node.getAttr("block") === "1" || isVersePara;
+
   if (tag === "head" || isSectionHead) {
     return `<h3 class="reader-subheading">${childrenHtml}</h3>`;
-  }
-  if (tag === "b") {
-    return `<strong>${childrenHtml}</strong>`;
   }
   if (tag === "ul") {
     return `<ul class="reader-list">${childrenHtml}</ul>`;
@@ -244,16 +341,22 @@ function renderXmlNodeCleanHtml(
   const classes: string[] = [];
   if (isLine) classes.push("reader-line");
   if (isBlock) classes.push("reader-block");
-  if (rend === "italic") classes.push("italic");
-  if (rend === "bold") classes.push("bold");
-  if (rend === "blockquote") classes.push("blockquote");
-  if (rend === "sup" || rend === "superscript") classes.push("superscript");
+  if (rends.has("italic")) classes.push("italic");
+  if (rends.has("bold")) classes.push("bold");
+  if (rends.has("center")) classes.push("center");
+  if (rends.has("blockquote")) classes.push("blockquote");
+  if (rends.has("sup") || rends.has("superscript")) {
+    classes.push("superscript");
+  }
   // Perseus marks the inscriptional and legal quotations that other editions
   // set in small caps with a bare `rend="7"`.
-  if (rend === "smallcaps" || rend === "7") classes.push("smallcaps");
-  if (rend === "uppercase") classes.push("uppercase");
-  if (rend === "overline") classes.push("overline");
-  if (rend === "indent") {
+  if (rends.has("smallcaps") || rends.has("7")) classes.push("smallcaps");
+  if (rends.has("uppercase")) classes.push("uppercase");
+  if (rends.has("overline")) classes.push("overline");
+  // The medial and final parts of a verse line split between speakers
+  // (`<l part="M|F">`) are indented, to show they continue the line.
+  const isLinePart = isLine && node.getAttr("linePart") !== undefined;
+  if (rends.has("indent") || isLinePart) {
     classes.push("indent");
     // Inside a paragraph an indent opens the paragraph, so only the first line
     // moves; anywhere else (verse, above all) the whole block shifts. Mirrors
@@ -262,6 +365,16 @@ function renderXmlNodeCleanHtml(
   }
 
   const classAttr = classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
+
+  // Subscripts (only emitted in notes) use the native element, which needs
+  // no stylesheet support.
+  if (rends.has("subscript") && !isLine && !isBlock) {
+    return `<sub${classAttr}>${childrenHtml}</sub>`;
+  }
+
+  if (tag === "b") {
+    return `<strong${classAttr}>${childrenHtml}</strong>`;
+  }
 
   if (isLine) {
     return `<span${classAttr}>${childrenHtml}</span>`;
@@ -284,18 +397,26 @@ function renderPassageContent(
   isVerseWork: boolean,
   notes?: NoteCollector
 ): string {
-  return wrapPassageHtml(renderXmlNodeCleanHtml(node, notes), isVerseWork);
+  return wrapPassageHtml(
+    renderXmlNodeCleanHtml(node, notes, isVerseWork),
+    isVerseWork
+  );
 }
 
 /** Wraps a row's rendered HTML in a verse line or prose paragraph. */
 function wrapPassageHtml(rendered: string, isVerseWork: boolean): string {
+  const trimmed = rendered.trimStart();
   if (isVerseWork) {
     // Matches `reader-line` with or without trailing rendition classes, so an
     // indented pentameter is not wrapped in a second, redundant line span.
+    // A row holding a paragraph (a prose preface in a verse work) is prose,
+    // and a `<p>` inside a `<span>` would be invalid anyway. Hypotactic rows
+    // (`<span meter>`) hold no paragraph, so they still get their line here.
     if (
-      rendered.startsWith('<span class="reader-line') ||
-      rendered.startsWith("<h") ||
-      rendered.startsWith('<span class="line-space"')
+      trimmed.startsWith('<span class="reader-line') ||
+      trimmed.startsWith("<h") ||
+      trimmed.startsWith('<span class="line-space"') ||
+      rendered.includes('<p class="reader-block')
     ) {
       return rendered;
     }
@@ -303,9 +424,10 @@ function wrapPassageHtml(rendered: string, isVerseWork: boolean): string {
   }
   // For prose, if it's not already wrapped in a paragraph or block, wrap in paragraph
   if (
-    rendered.startsWith("<p") ||
-    rendered.startsWith("<h") ||
-    rendered.startsWith("<ul")
+    trimmed.startsWith("<p") ||
+    trimmed.startsWith("<h") ||
+    trimmed.startsWith("<ul") ||
+    rendered.includes('<p class="reader-block')
   ) {
     return rendered;
   }
@@ -351,6 +473,20 @@ function renderNotesSection(
   return `<aside class="reader-notes" role="doc-endnotes" aria-labelledby="${headingId}"><h2 class="reader-notes-heading" id="${headingId}">${he.escape(
     mainHeading
   )}</h2>${sections.join("\n")}</aside>`;
+}
+
+/** canonical-latinLit's repository licence (its `license.md`). */
+const PERSEUS_REPO_LICENCE =
+  "Available under a Creative Commons Attribution-ShareAlike 4.0 International License";
+
+/**
+ * The licence line for a Perseus text: the file's own `<licence>` statement,
+ * else the repository's. CC BY-SA asks adapters to say they changed the work,
+ * and we patch typos and normalise markup, so the line says so.
+ */
+function perseusLicence(fileLicence: string | undefined): string {
+  const statement = (fileLicence ?? PERSEUS_REPO_LICENCE).replace(/\.$/, "");
+  return `${statement}. The text may have been modified from the original.`;
 }
 
 type ProcessedPage = ProcessedWork2["pages"][number];
@@ -471,6 +607,11 @@ export function preprocessWorkToV2(
     ? createTranslationPageMatcher(work.info.workId, translationWork)
     : undefined;
 
+  // A work cited by line alone is one page (see `divideWork`), titled by its
+  // line range in both the page header and the table of contents.
+  const isLineOnly = textParts.length === 1 && textParts[0] === "line";
+  const tocLabels = new Map<string, string>();
+
   const v2Pages: V2PreprocessedPage[] = [];
   const seenPageIds = new Set<string>();
 
@@ -482,11 +623,12 @@ export function preprocessWorkToV2(
       `Duplicate page id ${dotPageId} in ${work.info.workId}`
     );
     seenPageIds.add(dotPageId);
-    const pageTitle = formatPageTitle(pageId, textParts);
     const [startIdx, endIdx] = page.rows;
+    const shallowLeafRow = findShallowLeafRow(work.rows, page, textParts);
 
     const singleSectionsHtml: string[] = [];
     const citationIds: string[] = [];
+    const citationLocalIds: string[] = [];
     const textNotes = createNoteCollector(work.notes, "n", "numeric");
     const translationNotes = createNoteCollector(
       translationWork?.notes,
@@ -501,14 +643,18 @@ export function preprocessWorkToV2(
       const dotId = secId.join(".");
       const localId = getSectionLocalId(secId, pageId);
       const prefix = getSectionPrefix(secId, pageId);
-      const isLeafRow = secId.length === textParts.length;
+      const isFullDepthLeaf = secId.length === textParts.length;
+      const isLeafRow = isFullDepthLeaf || j === shallowLeafRow;
       // Rendered once and reused by both views, so a note keeps the same label
       // whether the reader is in single or parallel mode.
       const latinHtml = renderPassageContent(node, isVerseWork, textNotes);
 
+      // A shallow leaf (a preface or a letter with no sections) is not a verse
+      // line, so its label always shows and it does not count towards the
+      // every-fifth-line numbering.
       const isLatentVerseLabel =
         isVerseWork &&
-        isLeafRow &&
+        isFullDepthLeaf &&
         verseLineIndex !== 0 &&
         (verseLineIndex + 1) % 5 !== 0;
       const anchorClass = isLatentVerseLabel
@@ -517,7 +663,8 @@ export function preprocessWorkToV2(
 
       if (isLeafRow) {
         citationIds.push(dotId);
-        if (isVerseWork) {
+        citationLocalIds.push(localId);
+        if (isVerseWork && isFullDepthLeaf) {
           verseLineIndex++;
         }
       }
@@ -545,6 +692,15 @@ export function preprocessWorkToV2(
       citationIds[0] ?? "",
       citationIds[citationIds.length - 1] ?? "",
     ];
+    // Set after the rows, since a line-only work's title names its line range.
+    const pageTitle =
+      isLineOnly && pageId.length === textParts.length
+        ? formatLineRangeTitle(citationLocalIds) ??
+          formatPageTitle(pageId, textParts)
+        : formatPageTitle(pageId, textParts);
+    if (isLineOnly) {
+      tocLabels.set(dotPageId, pageTitle);
+    }
 
     const transPage = findTranslationPage?.(pageId);
     const translationSectionsHtml =
@@ -608,7 +764,7 @@ export function preprocessWorkToV2(
       : undefined,
     license:
       work.info.attribution === "perseus"
-        ? "Creative Commons Attribution-ShareAlike 3.0"
+        ? perseusLicence(work.info.licence)
         : work.info.attribution === "hypotactic"
         ? "Hypotactic Latin Metron (Public / Educational)"
         : "Public Domain",
@@ -625,6 +781,7 @@ export function preprocessWorkToV2(
         textParts,
         navTree: work.navTree,
       },
+      nodeLabels: tocLabels,
     }),
     pages: v2Pages,
   };

@@ -27,6 +27,50 @@
   padding: var(--space-1) var(--space-1);
 }
 
+/* "Colored text" highlight style (the dictionary settings; a pre-paint
+   attribute, since dropping the padding reflows entries): the categories keep
+   their weight and style, but are coloured instead of boxed. :where() keeps
+   this at the specificity of the base rules, so `.lsHover` (later in this
+   file) keeps its own padding on abbreviations that are also a category.
+   The strength (a scale of 0 to 2) sets how far the colour moves from the
+   reading text to the category colour, 0.9s - 0.2s^2: none at 0%, so 0% is
+   off as it is for highlights, 70% at the default, and all of it at 100%.
+   color-mix() is older than :has(), which we rely on. */
+[data-highlight-style="text"]
+  :where(.lsOrth, .lsGrammar, .lsQuote, .lsBibl, .lsAuthor, .gafAuth) {
+  --hl-fg: var(--fg-quote);
+  background: none;
+  padding: 0;
+  color: color-mix(
+    in oklab,
+    var(--hl-fg)
+      calc(
+        90% * var(--highlight-scale) - 20% * var(--highlight-scale) *
+          var(--highlight-scale)
+      ),
+    var(--reading-text)
+  );
+}
+
+/* Italics inside a category take its colour, as they do in light mode. */
+[data-highlight-style="text"]
+  :is(.lsOrth, .lsGrammar, .lsQuote, .lsBibl, .lsAuthor, .gafAuth)
+  .lsEmph {
+  color: inherit;
+}
+
+[data-highlight-style="text"] .lsOrth {
+  --hl-fg: var(--fg-orth);
+}
+
+[data-highlight-style="text"] .lsGrammar {
+  --hl-fg: var(--fg-grammar);
+}
+
+[data-highlight-style="text"] :is(.lsBibl, .lsAuthor, .gafAuth) {
+  --hl-fg: var(--fg-bibl);
+}
+
 .lsEmph {
   font-weight: bold;
   font-style: italic;
