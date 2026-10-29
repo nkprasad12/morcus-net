@@ -21,6 +21,7 @@
  */
 
 import { assert, checkPresent } from "@/common/assert";
+import { normalizeDramaTei } from "@/common/library/drama_normalize";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 
 /** One step of a `citeStructure/@match` path, e.g. `div[@subtype='book']`. */
@@ -900,6 +901,37 @@ function withoutStruckOutDuplicates(
   return matches.filter((m) => !dropped.has(m));
 }
 
+/**
+ * Rule F: a section whose only level below is a `line` level matching `<l>`,
+ * but which holds numbered paragraphs (`<p n>`) and no numbered lines, cites
+ * its paragraphs as its lines. Ausonius' Praefatiunculae set a prose letter
+ * (section 3, `<p n="1">`) among verse prefaces; the older `cRefPattern`
+ * matched `l or p` there, but the generated `citeStructure` only `l`, which
+ * would leave the letter (and its heading) one undivided shallow row.
+ */
+function proseLineLevels(levels: EvalLevel[], node: XmlNode): EvalLevel[] {
+  if (levels.length !== 1) {
+    return levels;
+  }
+  const [level] = levels;
+  const tests = containerTests(level);
+  if (
+    level.unit?.toLowerCase() !== "line" ||
+    level.children.length > 0 ||
+    tests.length !== 1 ||
+    tests[0].name !== "l" ||
+    containsLevelMatch(node, level)
+  ) {
+    return levels;
+  }
+  const paragraphs: EvalLevel = {
+    ...level,
+    alternatives: [[{ name: "p", predicates: [], descendant: true }]],
+    origin: `${level.origin} (as numbered <p>: no numbered <l> here)`,
+  };
+  return containsLevelMatch(node, paragraphs) ? [paragraphs] : levels;
+}
+
 function evaluateLevels(
   builder: SpineBuilder,
   context: XmlNode,
@@ -1004,7 +1036,12 @@ function evaluateLevels(
       }
       matchPath = [...matchPath, unit];
       register(builder, match.node, unit, match.n, matchPath);
-      evaluateLevels(builder, match.node, leafLevels, matchPath);
+      evaluateLevels(
+        builder,
+        match.node,
+        proseLineLevels(leafLevels, match.node),
+        matchPath
+      );
     }
   }
 
@@ -1263,6 +1300,46 @@ export interface BuildSpineOptions {
 }
 
 /**
+ * Rule G: a declared step on `div1`..`div3` in a body with no such element
+ * at all names the `<div type="textpart">` the body uses instead, with the
+ * declared `@type` as its `@subtype`. Upstream's generator wrote
+ * `div1[@type='book']` for De Divinatione's Loeb edition
+ * (`phi0474.phi053.perseus-lat4`), which has
+ * `<div type="textpart" subtype="book">`. (A `div` step with the wrong
+ * predicate is already matched by position; see `collectMatches`.)
+ */
+function repairNumberedDivSteps(
+  levels: CiteLevel[],
+  body: XmlNode,
+  warnings: string[]
+): CiteLevel[] {
+  const absent = new Set(
+    Array.from(NUMBERED_DIVS).filter(
+      (name) => body.findDescendants(name).length === 0
+    )
+  );
+  const repair = (step: CiteStep): CiteStep => {
+    if (!absent.has(step.name)) {
+      return step;
+    }
+    warnings.push(`Reading citeStructure step ${step.name} as textpart div`);
+    return {
+      ...step,
+      name: "div",
+      predicates: step.predicates.map(([key, value]) => [
+        key === "type" ? "subtype" : key,
+        value,
+      ]),
+    };
+  };
+  return levels.map((level) => ({
+    ...level,
+    alternatives: level.alternatives.map((steps) => steps.map(repair)),
+    children: repairNumberedDivSteps(level.children, body, warnings),
+  }));
+}
+
+/**
  * Works out the citation scheme of `teiRoot` and the citable section of every
  * element of `body`. Point levels are sliced into containers in place (see
  * `BuildSpineOptions.slicePoints`).
@@ -1272,6 +1349,7 @@ export function buildCitationSpine(
   body: XmlNode,
   options?: BuildSpineOptions
 ): CitationSpine {
+  normalizeDramaTei(body);
   const builder: SpineBuilder = {
     containers: new Map(),
     paths: new Map(),
@@ -1284,7 +1362,12 @@ export function buildCitationSpine(
   if (levels === undefined) {
     evaluateTree(builder, body, []);
   } else {
-    evaluateLevels(builder, body, toEvalLevels(levels), []);
+    const repaired = repairNumberedDivSteps(
+      levels,
+      body,
+      builder.sink.warnings
+    );
+    evaluateLevels(builder, body, toEvalLevels(repaired), []);
   }
   checkCoverage(builder, body);
   const { leafIds, leafPaths } = findLeaves(builder, body);

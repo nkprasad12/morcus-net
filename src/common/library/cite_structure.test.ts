@@ -1137,3 +1137,69 @@ describe("Rule C only drops genuine groupings", () => {
     expect(spineOf(root).textParts).toEqual(["act", "scene", "line"]);
   });
 });
+
+describe("buildCitationSpine repairs (Phase 3)", () => {
+  it("cites a section's numbered paragraphs as its lines when it has no numbered lines (Rule F)", () => {
+    const root = tei(
+      citeStructure(
+        level("section", "div/div[@subtype='section']", level("line", "l"))
+      ),
+      `<div type="edition">
+        <div type="textpart" subtype="section" n="2"><l n="1">a</l><l n="2">b</l></div>
+        <div type="textpart" subtype="section" n="3">
+          <head>EPISTULA</head><p n="1">c</p>
+        </div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["section", "line"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["2.1", "a"],
+      ["2.2", "b"],
+      ["3", "EPISTULA"],
+      ["3.1", "c"],
+    ]);
+  });
+
+  it("leaves numbered paragraphs alone in a section with numbered lines", () => {
+    const root = tei(
+      citeStructure(
+        level("section", "div/div[@subtype='section']", level("line", "l"))
+      ),
+      `<div type="edition">
+        <div type="textpart" subtype="section" n="1"><p n="1">pr</p><l n="1">a</l></div>
+      </div>`
+    );
+    expect(idsOfText(root, spineOf(root))).toEqual([
+      ["1", "pr"],
+      ["1.1", "a"],
+    ]);
+  });
+
+  it("reads a div1 step as a textpart div when the body has no div1 (Rule G)", () => {
+    const root = tei(
+      citeStructure(
+        level(
+          "book",
+          "div1[@type='book']",
+          level("section", "div[@type='section']")
+        )
+      ),
+      `<div type="edition">
+        <div type="textpart" subtype="book" n="1">
+          <div type="textpart" subtype="section" n="1">a</div>
+          <div type="textpart" subtype="section" n="2">b</div>
+        </div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["book", "section"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["1.1", "a"],
+      ["1.2", "b"],
+    ]);
+    expect(spine.warnings).toContain(
+      "Reading citeStructure step div1 as textpart div"
+    );
+  });
+});
