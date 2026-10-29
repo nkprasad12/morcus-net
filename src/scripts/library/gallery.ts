@@ -766,9 +766,14 @@ function joinPassageAndNotesHtml(
     : passageHtml;
 }
 
+/**
+ * Whether a section is uncited context that leads into the lines after it: a
+ * heading, or a play's speaker label, stage direction or cast list.
+ */
 function isHeadingOnlySection(secHtml: string): boolean {
   return (
-    secHtml.includes("reader-subheading") && !secHtml.includes("cite-local")
+    /\breader-(?:subheading|speaker|stage|cast-list)\b/.test(secHtml) &&
+    !secHtml.includes("cite-local")
   );
 }
 
@@ -810,9 +815,9 @@ function profileSectionRow(sec: string): RowFeatureProfile {
         sec
       ),
     noteCount: (sec.match(/\bclass="reader-note-ref"/g) ?? []).length,
-    hasSpeakerLabel: /<strong\b/.test(sec),
+    hasSpeakerLabel: /<strong\b|\bclass="reader-speaker/.test(sec),
     hasStyledSpan:
-      /\bclass="[^"]*\b(?:italic|smallcaps|bold|uppercase|overline|superscript|reader-gap)\b|<sub\b/.test(
+      /\bclass="[^"]*\b(?:italic|smallcaps|bold|uppercase|overline|superscript|reader-gap|reader-unclear|reader-role-name|tei-space)\b|<sub\b/.test(
         sec
       ),
   };
@@ -1889,7 +1894,9 @@ export function analyzeWorkForGallery(
       node.name === "sp" ||
       node.name === "speaker" ||
       node.name === "stage" ||
-      (node.name === "said" && node.getAttr("who") !== undefined)
+      (node.name === "said" && node.getAttr("who") !== undefined) ||
+      (node.name === "label" &&
+        (node.getAttr("type") === "speaker" || node.getAttr("n") === "speaker"))
     ) {
       recordKind(
         "dialogue-speaker",
@@ -2912,6 +2919,25 @@ body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
   padding: 0.1rem 0.25rem;
 }
 
+/* As in reader_text.css: every row of a preview shares one gutter column,
+   so an empty gutter (a speaker row) is as wide as a numbered one. */
+@supports (grid-template-columns: subgrid) {
+  .reader-preview {
+    display: grid;
+    grid-template-columns: minmax(2.75rem, max-content) minmax(0, 1fr);
+    column-gap: 0.85rem;
+  }
+
+  .reader-preview > * {
+    grid-column: 1 / -1;
+  }
+
+  .reader-preview > .reader-section {
+    grid-template-columns: subgrid;
+    column-gap: inherit;
+  }
+}
+
 .reader-gutter {
   text-align: center;
   font-size: 0.82em;
@@ -3010,6 +3036,88 @@ body[data-hide-reviewed="true"] section[data-all-reviewed="true"] .kind-card {
 :is(.reader-passage, .reader-notes, .reader-translation-text) .reader-gap {
   font-style: italic;
   opacity: 0.7;
+}
+
+/* Drama and dialogue, as in src/web/ui/reader/reader_drama.css */
+.reader-passage .reader-speaker {
+  display: block;
+  margin-top: 0.6em;
+  font-size: 0.8em;
+  font-weight: 600;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  --antilabe-step: min(3.125em, 8%);
+}
+
+.reader-passage .reader-speaker-inline {
+  font-size: 0.85em;
+  font-weight: 600;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.reader-passage .reader-stage {
+  display: block;
+  margin: 0.6em 0 0.2em;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.reader-passage {
+  --antilabe-step: min(2.5em, 8%);
+}
+
+@media (width <= 640px) {
+  .reader-passage {
+    --antilabe-step: min(1.25em, 7.5%);
+  }
+}
+
+/* .reader-speaker is set at 0.8em: its em step is scaled to match the
+   line's (3.125 x 0.8 = 2.5), as in reader_drama.css. */
+@media (width <= 640px) {
+  .reader-passage .reader-speaker {
+    --antilabe-step: min(1.5625em, 7.5%);
+  }
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-1 {
+  padding-left: var(--antilabe-step);
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-2 {
+  padding-left: calc(2 * var(--antilabe-step));
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-3 {
+  padding-left: calc(3 * var(--antilabe-step));
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-4 {
+  padding-left: calc(4 * var(--antilabe-step));
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-5 {
+  padding-left: calc(5 * var(--antilabe-step));
+}
+
+.reader-passage :is(.reader-line, .reader-speaker).reader-step-6 {
+  padding-left: calc(6 * var(--antilabe-step));
+}
+
+.reader-passage .reader-cast-list {
+  margin: 0 0 0.8em;
+}
+
+.reader-passage .reader-cast-person {
+  padding-left: 1.5em;
+}
+
+.reader-passage .reader-unclear {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
 }
 
 a.reader-note-ref {
@@ -4968,6 +5076,29 @@ export function makeRenderWindowLocator(
     return -1;
   };
 
+  /**
+   * `matchRowIndex` for an un-id'd row, preferring, among the rows with the
+   * same text, the one nearest `expected`.
+   */
+  const matchRowIndexNear = (
+    sections: string[],
+    row: string,
+    expected: number
+  ): number => {
+    const fullText = compactText(renderedRowText(row));
+    let best = -1;
+    sections.forEach((s, i) => {
+      if (
+        extractRowSecId(s) === undefined &&
+        compactText(renderedRowText(s)) === fullText &&
+        (best < 0 || Math.abs(i - expected) < Math.abs(best - expected))
+      ) {
+        best = i;
+      }
+    });
+    return best >= 0 ? best : matchRowIndex(sections, row);
+  };
+
   return (ex, inNote) => {
     const loaded = loadPage(ex.workId, ex.pageId);
     if (!loaded) return undefined;
@@ -4977,7 +5108,6 @@ export function makeRenderWindowLocator(
     );
     const exRows = splitPageSectionHtmls(exPassage);
     const targetRows = exRows.filter((r) => r.includes("gallery-target"));
-    const contextRows = exRows.filter((r) => !r.includes("gallery-target"));
 
     if (inNote) {
       const exNoteItems = extractNoteListItems(exNotes);
@@ -5027,6 +5157,8 @@ export function makeRenderWindowLocator(
 
     // Body exemplar: match target rows first.
     const matchedTargetIndices: number[] = [];
+    /** The first matched target: its index in `exRows` and in `sections`. */
+    let anchor: { exIdx: number; secIdx: number } | undefined = undefined;
     for (const tRow of targetRows.length > 0 ? targetRows : exRows) {
       // Do not fall back to prefix matching when the target row is an un-id'd heading row.
       const isHeadingRow =
@@ -5038,12 +5170,26 @@ export function makeRenderWindowLocator(
       );
       if (idx >= 0 && !matchedTargetIndices.includes(idx)) {
         matchedTargetIndices.push(idx);
+        anchor ??= { exIdx: exRows.indexOf(tRow), secIdx: idx };
       }
     }
 
     const matchedContextIndices: number[] = [];
-    for (const cRow of contextRows) {
-      const idx = matchRowIndex(sections, cRow);
+    for (const [exIdx, cRow] of exRows.entries()) {
+      if (cRow.includes("gallery-target")) {
+        continue;
+      }
+      // A context row with no id (a play's speaker label, a heading) may
+      // repeat across the page (the same speaker speaks again): take the
+      // copy at the same distance from the target as in the exemplar.
+      const idx =
+        anchor !== undefined && extractRowSecId(cRow) === undefined
+          ? matchRowIndexNear(
+              sections,
+              cRow,
+              anchor.secIdx + (exIdx - anchor.exIdx)
+            )
+          : matchRowIndex(sections, cRow);
       if (idx >= 0 && !matchedContextIndices.includes(idx)) {
         matchedContextIndices.push(idx);
       }

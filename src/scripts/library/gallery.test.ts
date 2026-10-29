@@ -3143,6 +3143,77 @@ describe("Human Checkpoint 2 gallery fixes", () => {
       }
     });
 
+    it("keeps an un-id'd speaker row next to its line when the same speaker spoke earlier on the page", () => {
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "gallery-locator-"));
+      try {
+        const renderDir = path.join(tmp, "render");
+        fs.mkdirSync(path.join(renderDir, WORK), { recursive: true });
+        const speaker = (name: string) =>
+          `<div class="reader-section section-verse"><div class="reader-gutter"></div><div class="reader-passage"><div class="reader-speaker">${name}</div></div></div>`;
+        const verse = (n: string, text: string, target = false) =>
+          `<div class="reader-section section-verse${
+            target ? " gallery-target" : ""
+          }" id="sec-1.1.${n}"><div class="reader-gutter"></div><div class="reader-passage"><span class="reader-line">${text}</span></div></div>`;
+        const page = [
+          speaker("Sosia"),
+          verse("10", "Qui me alter est audacior"),
+          speaker("Mercvrivs"),
+          verse("11", "Ibo ut erus quod imperavit"),
+          speaker("Sosia"),
+          verse("12", "Nullus est mihi par"),
+          speaker("Mercvrivs"),
+          verse("13", "Sed quis hic est homo"),
+        ];
+        fs.writeFileSync(
+          path.join(renderDir, "index.json"),
+          JSON.stringify({
+            version: 1,
+            label: "test",
+            createdAt: "",
+            root: "",
+            works: {
+              [WORK]: {
+                id: WORK,
+                pages: [
+                  {
+                    id: "1",
+                    file: "1",
+                    title: "",
+                    sectionCount: 4,
+                    citationRange: ["1.1.10", "1.1.13"],
+                    html: "h1",
+                  },
+                ],
+              },
+            },
+            failures: {},
+          })
+        );
+        fs.writeFileSync(path.join(renderDir, WORK, "1.html"), page.join("\n"));
+
+        const locate = makeRenderWindowLocator(renderDir);
+        const ex = makeExemplar(
+          WORK,
+          "1.1.12",
+          [
+            speaker("Sosia"),
+            verse("12", "Nullus est mihi par", true),
+            speaker("Mercvrivs"),
+          ].join("\n")
+        );
+        const located = locate(ex, false);
+
+        expect(located?.status).toBe("matched");
+        const rows = (located?.html ?? "").split("\n");
+        expect(rows).toHaveLength(3);
+        expect(rows[0]).toBe(page[4]);
+        expect(rows[1]).toContain('id="sec-1.1.12"');
+        expect(rows[2]).toBe(page[6]);
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    });
+
     it("writes diff.html for two existing galleries through `library gallery-diff`", async () => {
       const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "gallery-diff-cli-"));
       try {
