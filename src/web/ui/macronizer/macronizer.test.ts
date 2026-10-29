@@ -603,19 +603,35 @@ describe("macronizerEngineFromEnv", () => {
     }
   );
 
-  test.each<Record<string, string>>([
-    {},
-    { MACRONIZER_ENGINE: "" },
-    { MACRONIZER_ENGINE: "off" },
-  ])("warns loudly when off (%o) but LATINCY_SERVER_ADDRESS is set", (env) => {
-    const { warnings } = fromEnv({
-      ...env,
+  test("warns loudly when off but LATINCY_SERVER_ADDRESS is set", async () => {
+    const { engine, warnings } = fromEnv({
+      MACRONIZER_ENGINE: "off",
       LATINCY_SERVER_ADDRESS: "http://latincy:8000",
     });
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain("WARNING");
     expect(warnings[0]).toContain("MACRONIZER_ENGINE=latincy");
+    await expect(engine.macronize("Gallia")).rejects.toThrow("not configured");
   });
+
+  // Deployed compose files predate MACRONIZER_ENGINE and only set the address.
+  test.each<Record<string, string>>([{}, { MACRONIZER_ENGINE: "" }])(
+    "defaults to latincy (%o) when LATINCY_SERVER_ADDRESS is set",
+    async (env) => {
+      const calls: string[] = [];
+      const { engine, warnings } = fromEnv({
+        ...env,
+        LATINCY_SERVER_ADDRESS: "http://127.0.0.1:1",
+      });
+      expect(warnings).toEqual([]);
+      expect(engine.simulated).toBe(false);
+      // It tries the (unreachable) server instead of saying "not configured".
+      await engine
+        .macronize("Gallia")
+        .catch((e: Error) => calls.push(e.message));
+      expect(calls.join("\n")).not.toContain("not configured");
+    }
+  );
 
   test("latincy requires LATINCY_SERVER_ADDRESS", () => {
     expect(() => fromEnv({ MACRONIZER_ENGINE: "latincy" })).toThrow(

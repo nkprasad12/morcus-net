@@ -53,7 +53,12 @@ const MACRONIZER_ENGINE_MODES = ["latincy", "fake-latincy", "off"];
  * - `latincy`: the LatinCy server at `LATINCY_SERVER_ADDRESS` (required).
  * - `fake-latincy`: an in-process tagger that simulates suggestions from
  *   Morceus data, for dev and E2E.
- * - `off` (the default): no tagger; Macronize answers 503.
+ * - `off`: no tagger; Macronize answers 503.
+ *
+ * When `MACRONIZER_ENGINE` is unset, the mode is `latincy` if
+ * `LATINCY_SERVER_ADDRESS` is set and `off` otherwise. Deployed compose files
+ * predate `MACRONIZER_ENGINE` and only set the address (see the compatibility
+ * note in `src/devops/docker-compose.yaml`), so they must keep getting LatinCy.
  *
  * Throws on an unknown mode or a missing address, so a misconfigured server
  * fails at startup instead of on the first request.
@@ -62,10 +67,11 @@ export function macronizerEngineFromEnv(
   env: NodeJS.ProcessEnv = process.env,
   warn: (message: string) => void = console.warn
 ): MacronizerEngine {
+  const address = env.LATINCY_SERVER_ADDRESS;
+  const hasAddress = address !== undefined && address.length > 0;
   // Empty counts as unset: compose's `${MACRONIZER_ENGINE}` with the host
   // variable unset passes "".
-  const mode = env.MACRONIZER_ENGINE || "off";
-  const address = env.LATINCY_SERVER_ADDRESS;
+  const mode = env.MACRONIZER_ENGINE || (hasAddress ? "latincy" : "off");
   switch (mode) {
     case "latincy": {
       if (address === undefined || address.length === 0) {
@@ -84,15 +90,13 @@ export function macronizerEngineFromEnv(
       );
       return createMacronizerEngine(fakeLatincyTagger, { simulated: true });
     case "off":
-      if (address !== undefined && address.length > 0) {
+      if (hasAddress) {
         warn(
           [
             "",
             "*".repeat(72),
             "* WARNING: LATINCY_SERVER_ADDRESS is set, but MACRONIZER_ENGINE is",
-            `* ${
-              !env.MACRONIZER_ENGINE ? "unset (default: off)" : "off"
-            }, so the macronizer is DISABLED.`,
+            "* off, so the macronizer is DISABLED.",
             "* Set MACRONIZER_ENGINE=latincy to use the LatinCy server.",
             "*".repeat(72),
             "",

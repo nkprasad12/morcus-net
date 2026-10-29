@@ -49,11 +49,12 @@ Errors (engine failure, too-long input, too many Apply fields) re-render the wor
 
 The server reads `MACRONIZER_ENGINE` once at startup (`macronizerEngineFromEnv`):
 
-| Value                                     | Behavior                                                                                                                                                                        |
-| :---------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `off` (default; also when unset or empty) | Macronize returns 503 ("not configured"); Apply still works, since it only needs Morceus. Logs a loud warning if `LATINCY_SERVER_ADDRESS` is set, as that usually means a typo. |
-| `latincy`                                 | Morceus plus the LatinCy server at `LATINCY_SERVER_ADDRESS`. Startup fails if the address is missing.                                                                           |
-| `fake-latincy`                            | Morceus plus a deterministic in-process tagger that picks plausible but sometimes wrong tags. The page shows a "Suggestions are simulated" note. For development and E2E only.  |
+| Value                    | Behavior                                                                                                                                                                        |
+| :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| unset or empty (default) | `latincy` if `LATINCY_SERVER_ADDRESS` is set, otherwise `off`. Deployed compose files predate `MACRONIZER_ENGINE` and only set the address, so they must keep getting LatinCy.  |
+| `off`                    | Macronize returns 503 ("not configured"); Apply still works, since it only needs Morceus. Logs a loud warning if `LATINCY_SERVER_ADDRESS` is set, as that usually means a typo. |
+| `latincy`                | Morceus plus the LatinCy server at `LATINCY_SERVER_ADDRESS`. Startup fails if the address is missing.                                                                           |
+| `fake-latincy`           | Morceus plus a deterministic in-process tagger that picks plausible but sometimes wrong tags. The page shows a "Suggestions are simulated" note. For development and E2E only.  |
 
 Any other value fails startup and lists the valid ones. `./morcus.sh web` defaults to `fake-latincy` unless the variable is already set; production (`node build/server.js` in the Dockerfile, with `docker-compose.yaml` setting `latincy`) does not go through that script.
 
