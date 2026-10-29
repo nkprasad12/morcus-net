@@ -37,5 +37,7 @@ export function readCookie(
  * `; Path=/; Max-Age=31536000; SameSite=Lax`
  */
 export function formatCookie(name: string, value: string): string {
-  return `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${COOKIE_MAX_AGE_ONE_YEAR}; SameSite=Lax`;
+  return `${name}=${encodeURIComponent(
+    value
+  )}; Path=/; Max-Age=${COOKIE_MAX_AGE_ONE_YEAR}; SameSite=Lax`;
 }

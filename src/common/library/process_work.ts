@@ -1017,11 +1017,7 @@ export function transformContentNode(
       attrs.push(["rend", tokens.join(" ")], ["rendParent", node.name]);
     }
   }
-  if (
-    node.name === "title" ||
-    node.name === "desc" ||
-    node.name === "term"
-  ) {
+  if (node.name === "title" || node.name === "desc" || node.name === "term") {
     // A title cited in running text (`qui <title>Ἁλιευτικὰ</title> scripsit`),
     // an editorial lacuna note (`<desc rend="align(center)">Desunt non pauca.</desc>`),
     // or a cited linguistic form (`<term>tor</term>`) is italic, as printed.

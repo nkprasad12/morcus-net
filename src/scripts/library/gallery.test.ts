@@ -831,7 +831,8 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     expect(hrefs).toContain("#cat-rend");
     expect(hrefs).toContain("#cat-attr");
     expect(
-      navLinks.find((a) => a.getAttribute("href") === "#cat-element")?.textContent
+      navLinks.find((a) => a.getAttribute("href") === "#cat-element")
+        ?.textContent
     ).toBe("Content Elements");
     expect(
       navLinks.find((a) => a.getAttribute("href") === "#cat-rend")?.textContent
@@ -844,7 +845,9 @@ describe("formatGalleryHtml & formatGalleryMarkdown", () => {
     expect(hrefs).not.toContain("#cat-note-element");
     expect(hrefs).not.toContain("#cat-note-rend");
     expect(hrefs).not.toContain("#cat-layout");
-    expect(navLinks.some((a) => a.textContent === "Complex Layouts")).toBe(false);
+    expect(navLinks.some((a) => a.textContent === "Complex Layouts")).toBe(
+      false
+    );
 
     // Spot-check link is included when works exist
     expect(hrefs).toContain("#spot-check-index");
@@ -2515,14 +2518,7 @@ describe("Human Checkpoint 2 gallery fixes", () => {
         [
           kindOf(
             kind,
-            [
-              makeExemplar(
-                WORK,
-                "1.3",
-                spacer,
-                '<seg type="chapter" n="3"/>'
-              ),
-            ],
+            [makeExemplar(WORK, "1.3", spacer, '<seg type="chapter" n="3"/>')],
             "attr"
           ),
         ],
@@ -2581,7 +2577,9 @@ describe("Human Checkpoint 2 gallery fixes", () => {
       const before = makeReport(
         "before",
         [
-          kindOf("milestone", [makeExemplar(WORK, "1", oldWindow, "<milestone/>")]),
+          kindOf("milestone", [
+            makeExemplar(WORK, "1", oldWindow, "<milestone/>"),
+          ]),
           kindOf("lb", [makeExemplar(WORK, "1", oldWindow, "<lb/>")]),
           kindOf("pb", [makeExemplar(WORK, "1", oldWindow, "<pb/>")]),
         ],
@@ -2590,7 +2588,9 @@ describe("Human Checkpoint 2 gallery fixes", () => {
       const after = makeReport(
         "after",
         [
-          kindOf("milestone", [makeExemplar(WORK, "1", newWindow, "<milestone/>")]),
+          kindOf("milestone", [
+            makeExemplar(WORK, "1", newWindow, "<milestone/>"),
+          ]),
           kindOf("lb", [makeExemplar(WORK, "1", newWindow, "<lb/>")]),
           kindOf("pb", [makeExemplar(WORK, "1", newWindow, "<pb/>")]),
         ],
@@ -2727,11 +2727,7 @@ describe("Human Checkpoint 2 gallery fixes", () => {
     });
 
     it("surfaces No longer rendered cards when a kind is dropped in After and never synthesizes an After pane without observed After HTML", () => {
-      const beforeNoteHtml = `${lineRow(
-        "149",
-        1,
-        " gallery-target"
-      ).replace(
+      const beforeNoteHtml = `${lineRow("149", 1, " gallery-target").replace(
         "Versus numero 1",
         'Versus <a class="reader-note-ref" href="#note-n1">[1]</a> numero 1'
       )}\n<aside class="reader-notes" role="doc-endnotes"><ol class="reader-notes-list"><li class="reader-note gallery-target" id="note-n1"><a class="reader-note-backref" href="#noteref-n1">[1]</a><div class="reader-note-body">5</div></li></ol></aside>`;
@@ -3037,7 +3033,9 @@ describe("Human Checkpoint 2 gallery fixes", () => {
         expect(section).toContain(
           "&lt;note n=&quot;I Cor. VII, 39.&quot;/&gt;"
         );
-        expect(section).toContain("&lt;note n=&quot;marg&quot;&gt;12&lt;/note&gt;");
+        expect(section).toContain(
+          "&lt;note n=&quot;marg&quot;&gt;12&lt;/note&gt;"
+        );
         // Citation-anchor-only head change is excluded (N7):
         expect(section).not.toContain(
           'data-review-id="diff-kind:element:head"'
@@ -3367,9 +3365,7 @@ describe("Human Checkpoint 2 gallery fixes", () => {
       const html = formatGalleryHtml(report);
       expect(html).toContain("FEATURED MARKUP");
       expect(html).toContain("&sect;1.10&ndash;1.14");
-      expect(html).toContain(
-        `<span class="badge">${middle.reason}</span>`
-      );
+      expect(html).toContain(`<span class="badge">${middle.reason}</span>`);
       expect(html).toContain("1 (&sect;1.10)");
     });
 
@@ -3470,9 +3466,7 @@ describe("Human Checkpoint 2 gallery fixes", () => {
     });
 
     it("pairs shifted spot-check windows by (pageId, windowStart) or slices from beforeRenderDir in renderGalleryDiffHtml", () => {
-      const tmp = fs.mkdtempSync(
-        path.join(os.tmpdir(), "gallery-spot-shift-")
-      );
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "gallery-spot-shift-"));
       try {
         const WORK = "phi0448.phi001.perseus-lat2";
         const row = (sec: string, text: string) =>
@@ -3638,7 +3632,7 @@ describe("Human Checkpoint 2 gallery fixes", () => {
         // 3. When row `1.10` inside the featured mid-page window actually changed,
         // Section 2 slices the old `1.10..1.14` from beforeRenderDir and shows the real diff!
         const changedMidRows = [
-          row("1.10", "Sententia 1.10 <span class=\"foreign\">λόγος</span>"),
+          row("1.10", 'Sententia 1.10 <span class="foreign">λόγος</span>'),
           ...page1Rows.slice(10, 14),
         ];
         const diffChangedWindow = renderGalleryDiffHtml(
@@ -3648,7 +3642,9 @@ describe("Human Checkpoint 2 gallery fixes", () => {
           undefined,
           { beforeRenderDir: beforeRender, afterRenderDir: afterRender }
         );
-        expect(diffChangedWindow).toContain(`data-review-id="diff-work:${WORK}"`);
+        expect(diffChangedWindow).toContain(
+          `data-review-id="diff-work:${WORK}"`
+        );
         expect(diffChangedWindow).toContain("FEATURED MARKUP");
         expect(diffChangedWindow).toContain("&sect;1.10&ndash;1.14");
         expect(diffChangedWindow).toContain("featured: foreign/greek");
@@ -3734,7 +3730,9 @@ describe("Human Checkpoint 2 gallery fixes", () => {
       expect(html).toContain("morcus-gallery-theme");
       expect(html).toContain("var(--diff-del-bg)");
       expect(html).toContain("var(--diff-ins-bg)");
-      expect(html).toContain(":is(.badge-status-changed, .diff-status-changed)");
+      expect(html).toContain(
+        ":is(.badge-status-changed, .diff-status-changed)"
+      );
     });
 
     it("toggling #gallery-dark-mode in jsdom updates data-theme and localStorage in formatGalleryHtml", () => {

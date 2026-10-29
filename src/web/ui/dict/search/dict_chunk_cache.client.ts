@@ -1,7 +1,4 @@
-import {
-  KeyedFetchCache,
-  withBuildVersion,
-} from "@/web/ui/core/index.client";
+import { KeyedFetchCache, withBuildVersion } from "@/web/ui/core/index.client";
 import type { DictChunksResponse } from "@/web/ui/dict/search/dict_completions.common";
 
 function isDictChunksResponse(data: unknown): data is DictChunksResponse {

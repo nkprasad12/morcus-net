@@ -162,7 +162,9 @@ export function selectWorkPaths(
     }
     const missing = requestedIds.filter((id) => !byId.has(id));
     if (missing.length > 0) {
-      throw new Error(`Work files not found in '${root}': ${missing.join(", ")}`);
+      throw new Error(
+        `Work files not found in '${root}': ${missing.join(", ")}`
+      );
     }
     return [...byId.entries()]
       .filter(([id]) => wanted.has(id))

@@ -102,10 +102,7 @@ function enclosingGitRoot(dir: string, morcusDir: string): string | undefined {
  * but not exactly. Clones made by hand from a repo URL take the repo's own
  * casing (e.g. Perseus' `canonical-latinLit`), not the lock file's key.
  */
-function findCaseMismatch(
-  name: string,
-  morcusDir: string
-): string | undefined {
+function findCaseMismatch(name: string, morcusDir: string): string | undefined {
   let entries: string[];
   try {
     entries = readdirSync(morcusDir);
@@ -126,7 +123,11 @@ export function caseMismatchHint(location: CloneLocation): string {
   if (location.kind !== "missing" || location.caseMismatch === undefined) {
     return "";
   }
-  return ` (found ${location.caseMismatch}, which differs only in case; rename it to ${path.basename(location.path)} or point the source's env var at it)`;
+  return ` (found ${
+    location.caseMismatch
+  }, which differs only in case; rename it to ${path.basename(
+    location.path
+  )} or point the source's env var at it)`;
 }
 
 /** Finds the clone that local builds use for `source`. */
@@ -247,7 +248,9 @@ function plural(n: number, word: string): string {
 export function describeStatus(status: CloneStatus): string {
   if (!("state" in status)) {
     return status.location.kind === "missing"
-      ? `missing (${status.location.path})${caseMismatchHint(status.location)}; run set_up_or_update.sh`
+      ? `missing (${status.location.path})${caseMismatchHint(
+          status.location
+        )}; run set_up_or_update.sh`
       : `not a git clone (${status.location.path}); remove its env var from .env and rerun set_up_or_update.sh to manage it`;
   }
   const { state } = status;

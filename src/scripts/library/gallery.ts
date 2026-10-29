@@ -767,7 +767,9 @@ function joinPassageAndNotesHtml(
 }
 
 function isHeadingOnlySection(secHtml: string): boolean {
-  return secHtml.includes("reader-subheading") && !secHtml.includes("cite-local");
+  return (
+    secHtml.includes("reader-subheading") && !secHtml.includes("cite-local")
+  );
 }
 
 function extractSectionRowSecId(rowHtml: string): string | undefined {
@@ -1268,8 +1270,7 @@ export function selectWorkSpotChecks(
         // 3. Fallback: closing rows of the last page (or another non-overlapping window on the last page).
         const lastPageIdx = pages.length - 1;
         const lastPage = parsedPages[lastPageIdx];
-        const closingCand =
-          lastPage.candidates[lastPage.candidates.length - 1];
+        const closingCand = lastPage.candidates[lastPage.candidates.length - 1];
         if (
           closingCand &&
           !overlaps(closingCand, slot1Cand) &&
@@ -5194,7 +5195,11 @@ function spotWindowStartId(p: GalleryPageSpotCheck): string {
 
 function isTopOfPageSpotWindow(p: GalleryPageSpotCheck): boolean {
   if (p.readerUrl.includes("#sec-")) return false;
-  if (p.windowRange && p.citationRange[0] && p.windowRange[0] !== p.citationRange[0]) {
+  if (
+    p.windowRange &&
+    p.citationRange[0] &&
+    p.windowRange[0] !== p.citationRange[0]
+  ) {
     return false;
   }
   return true;
@@ -5211,11 +5216,7 @@ function spotWindowsMatch(
     if (aSecIds.length > 0 && bSecIds.length > 0) {
       const a0 = aSecIds[0];
       const b0 = bSecIds[0];
-      return (
-        a0 === b0 ||
-        a0.startsWith(`${b0}.`) ||
-        b0.startsWith(`${a0}.`)
-      );
+      return a0 === b0 || a0.startsWith(`${b0}.`) || b0.startsWith(`${a0}.`);
     }
     return true;
   }
@@ -5604,7 +5605,11 @@ export function renderGalleryDiffHtml(
         afterEx.pageId
       );
       let matchedUnchangedSpot = false;
-      if (targetParts.length > 0 && beforeSpots.length > 0 && afterSpots.length > 0) {
+      if (
+        targetParts.length > 0 &&
+        beforeSpots.length > 0 &&
+        afterSpots.length > 0
+      ) {
         for (const afterSpot of afterSpots) {
           const normAfterSpot = normalizePreviewHtml(afterSpot.previewHtml);
           if (
@@ -6459,7 +6464,10 @@ export function renderGalleryDiffHtml(
                 : undefined;
               if (!aRefSec) continue;
               const bRefSec = matchRefSec(aRefSec, bSecs);
-              if (!bRefSec || countNoteRefs(aRefSec) <= countNoteRefs(bRefSec)) {
+              if (
+                !bRefSec ||
+                countNoteRefs(aRefSec) <= countNoteRefs(bRefSec)
+              ) {
                 continue;
               }
               const xmlTags = getWorkNoteTags(workId);
@@ -6517,7 +6525,10 @@ export function renderGalleryDiffHtml(
                 : undefined;
               if (!bRefSec) continue;
               const aRefSec = matchRefSec(bRefSec, aSecs);
-              if (!aRefSec || countNoteRefs(aRefSec) >= countNoteRefs(bRefSec)) {
+              if (
+                !aRefSec ||
+                countNoteRefs(aRefSec) >= countNoteRefs(bRefSec)
+              ) {
                 continue;
               }
               const xmlTags = getWorkNoteTags(workId);

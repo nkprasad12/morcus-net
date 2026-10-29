@@ -378,7 +378,9 @@ export function formatV2BundleSizeReport(
       30
     )} (budget: <= ${formatSize(
       budget.maxCriticalCssRawBytes
-    )} raw / <= ${formatSize(budget.maxCriticalCssBrotliBytes)} brotli, inlined)`
+    )} raw / <= ${formatSize(
+      budget.maxCriticalCssBrotliBytes
+    )} brotli, inlined)`
   );
 
   return lines.join("\n");

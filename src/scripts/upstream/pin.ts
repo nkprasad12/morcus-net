@@ -94,7 +94,9 @@ function cloneContext(
   );
   if (location.kind !== "clone") {
     throw new Error(
-      `${name}: no local clone (${location.path})${caseMismatchHint(location)}; run set_up_or_update.sh first`
+      `${name}: no local clone (${location.path})${caseMismatchHint(
+        location
+      )}; run set_up_or_update.sh first`
     );
   }
   const remote = findRemote(location.dir, source.repo);

@@ -306,7 +306,11 @@ describe("process_work allowlist consistency", () => {
 
   it("handles every element in NOTE_ELEMENT_ALLOWLIST via transformNoteNode", () => {
     for (const name of NOTE_ELEMENT_ALLOWLIST) {
-      const node = new XmlNode(name, [], name === "figure" ? [] : ["note text"]);
+      const node = new XmlNode(
+        name,
+        [],
+        name === "figure" ? [] : ["note text"]
+      );
       expect(() => transformNoteNode(node)).not.toThrow();
     }
   });

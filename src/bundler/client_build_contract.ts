@@ -170,4 +170,3 @@ export const STATIC_BROTLI_QUALITY = 11;
  * 10-11, which take 30-100x the CPU and belong at build time, never on the fly.
  */
 export const DYNAMIC_BROTLI_QUALITY = 5;
-

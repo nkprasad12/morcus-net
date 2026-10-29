@@ -88,10 +88,10 @@ describe("parseRawXml", () => {
   });
 
   it("decodes named entities in attribute values", () => {
-    const result = parseRawXml('<div title="&dagger; &mdash; &ouml;">text</div>');
-    expect(result).toEqual(
-      new XmlNode("div", [["title", "† — ö"]], ["text"])
+    const result = parseRawXml(
+      '<div title="&dagger; &mdash; &ouml;">text</div>'
     );
+    expect(result).toEqual(new XmlNode("div", [["title", "† — ö"]], ["text"]));
   });
 });
 

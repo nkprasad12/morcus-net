@@ -259,14 +259,15 @@ Markup stage: one table, one transformer, context predicates for notes. Deletes 
 **Exit:** ≈250 onboarded (Clusters B, C, H, I); every row citable or deliberately not; coverage proven; corpus build unchanged byte-for-byte on previously shipped works.
 
 #### Phase 2B/2C Completion & Target Counts
+
 - **Phase 2B/2C Onboarded**: 124 new Perseus Latin works onboarded in `LatinWorks` across Clusters B, C, H, I and stragglers B-5..B-7 (bringing total Perseus onboarded to 241, and total library onboarded to 268 including 2 PHI and 25 Hypotactic works).
 - **Q6 Heroides Tracking**: Perseus `Epistulae (Heroides)` (`phi0959.phi002.perseus-lat2`) remains onboarded in parallel with Hypotactic `Heroides` (`hypotactic_Heroides_Ovid`); both editions resolve and are tracked.
 - **Phase 2B Held Works (1 work)**:
-  1. Celsus *De Medicina* (`phi0836.phi002.perseus-lat4`): held so that `-lat6` (Marx) can be onboarded in Phase 4.
+  1. Celsus _De Medicina_ (`phi0836.phi002.perseus-lat4`): held so that `-lat6` (Marx) can be onboarded in Phase 4.
 - **Phase 2C Stragglers (B-5..B-7 — Onboarded)**:
-  - **B-5**: Cicero *Epistulae* (`phi0474.phi056` *Ad Familiares*, `phi057` *Ad Atticum*, `phi058` *Ad Quintum Fratrem*, `phi059` *Ad Brutum*): `<seg rend="dateline">`, `rend="salute"`, `rend="opener"`, multi-child `<label>`, and `align(blockquote` alias.
-  - **B-6**: Cicero *Pro Roscio Amerino* `phi0474.phi002` (`<desc>`), *In Verrem* `phi005` (`<ref>`, typo `quote@smallcaos`, leading-whitespace `<reg>`), *Tusculanae Disputationes* `phi049` (typo `aign(blockquote)`, `note:<figure>`), Seneca *De Beneficiis* `phi1017.phi013` (`l@rend="F"`), Petronius *Fragmenta* `phi0972.phi001f` (`<lemma>`, `<term>`).
-  - **B-7**: Augustine *Epistulae* (Select Letters, Baxter 1930) `stoa0040.stoa011.perseus-lat2`: `<ref>` content node, TEI named entities, and title metadata override.
+  - **B-5**: Cicero _Epistulae_ (`phi0474.phi056` _Ad Familiares_, `phi057` _Ad Atticum_, `phi058` _Ad Quintum Fratrem_, `phi059` _Ad Brutum_): `<seg rend="dateline">`, `rend="salute"`, `rend="opener"`, multi-child `<label>`, and `align(blockquote` alias.
+  - **B-6**: Cicero _Pro Roscio Amerino_ `phi0474.phi002` (`<desc>`), _In Verrem_ `phi005` (`<ref>`, typo `quote@smallcaos`, leading-whitespace `<reg>`), _Tusculanae Disputationes_ `phi049` (typo `aign(blockquote)`, `note:<figure>`), Seneca _De Beneficiis_ `phi1017.phi013` (`l@rend="F"`), Petronius _Fragmenta_ `phi0972.phi001f` (`<lemma>`, `<term>`).
+  - **B-7**: Augustine _Epistulae_ (Select Letters, Baxter 1930) `stoa0040.stoa011.perseus-lat2`: `<ref>` content node, TEI named entities, and title metadata override.
 
 ### Phase 3 — Speakers, stage directions, verse-in-prose (medium; one UI feature)
 
