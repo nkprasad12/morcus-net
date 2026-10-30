@@ -19,6 +19,9 @@ export function preparePrunerContext(outDir: string): void {
     entryPoints: [join(PRUNER_SOURCE_DIR, "pruner_main.ts")],
     bundle: true,
     platform: "node",
+    // Keep `node_modules/...` paths stable in git worktrees where
+    // `node_modules` is a symlink to the main checkout.
+    preserveSymlinks: true,
     outfile: join(outDir, "pruner.js"),
   });
   copyFileSync(
