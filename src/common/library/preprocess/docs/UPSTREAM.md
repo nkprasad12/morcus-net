@@ -188,6 +188,8 @@ Source errors found during onboarding, at the pinned commit (`8b536bdf`). Perseu
 | `stoa0261.stoa002.perseus-lat1` | Sidonius _Ep._, 115 letters | `div2@type="poem"` on letters (32 others use `type="letter"`) | `type="letter"`       | `cite_structure.ts`   |
 | `phi0474.phi050.perseus-lat2`   | _De Nat. D._ 3.65           | no-break spaces (U+00A0) inside `— —`                         | plain spaces          | patch file            |
 
+**To verify, then likely send:** `phi1014.phi001.perseus-lat1` (Seneca the Elder, _Controversiae_, onboarded) numbers its books `1, 2, 7, 8, 10`, but the books that survive in full are 1, 2, 7, **9** and 10. The "book 8" preface opens _Ultro Votieni Montani mentionem intulistis_ (the opening of the book 9 preface) and holds 6 controversiae, as book 9 does; book 8 survives only in the excerpta (`phi1014.phi002`). If Kiessling's print confirms it, `n="8"` → `n="9"` is a numbering error for every consumer of the file (Morcus currently cites _Contr._ 9.x as 8.x), so it belongs upstream.
+
 **Not an upstream error:** Juvenal 7.12 `Alcitheon` (`phi1276.phi001.perseus-lat2`) matches Ramsay's printed edition, so Perseus is faithful to its source. Our patch file (→ `Alcithoen`, the form in other sources and reference works) is a local editorial correction and stays.
 
 ------------------------------- | --------------------------- | ------------------------------------------------------------- | --------------------- | --------------------- |
