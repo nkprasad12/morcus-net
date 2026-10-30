@@ -2,7 +2,7 @@
   "schema": 1,
   "source": {
     "repo": "canonical-latinLit",
-    "commit": "8b536bdf3ed1f43494055efe112433b4a58eab67",
+    "commit": "087c067dc0f325e29b2bb5534a1762541f8741d7",
     "dirty": false
   },
   "works": {
@@ -1814,6 +1814,19 @@
       "notes": 0,
       "nodes": {
         "span": 90
+      }
+    },
+    "phi0588.abo024.perseus-lat2": {
+      "textParts": ["chapter", "section"],
+      "rows": 12,
+      "pages": 3,
+      "citableRows": 12,
+      "firstCitation": "1.1",
+      "lastCitation": "3.4",
+      "notes": 0,
+      "nodes": {
+        "br": 1,
+        "span": 26
       }
     },
     "phi0588.abo025.perseus-lat2": {

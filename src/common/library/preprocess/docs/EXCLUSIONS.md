@@ -2,12 +2,12 @@
 
 **Purpose:** The Phase 5 exit criterion in [PLAN.md](PLAN.md#phase-5--long-tail-and-policy) is "every distinct work onboarded or documented on the exclusion list." This file is that list: every Perseus Latin file in `canonical-latinLit` that is **not** in `LatinWorks` ([`library_constants.ts`](../../library_constants.ts)), with the reason.
 
-**Source:** `canonical-latinLit@8b536bdf` (the pinned commit); survey `.cache/library-survey/8b536bdf-62a3f702/survey.json`; blockers are the survey's V1 result, plus the census ratchet ([`census_ratchet.test.ts`](../../audit/census_ratchet.test.ts)) where the survey has no detail.
+**Source:** `canonical-latinLit@8b536bdf` (the pin when this list was made; Nepos _Cato_ was onboarded after re-pinning to `087c067`); survey `.cache/library-survey/8b536bdf-62a3f702/survey.json`; blockers are the survey's V1 result, plus the census ratchet ([`census_ratchet.test.ts`](../../audit/census_ratchet.test.ts)) where the survey has no detail.
 
-**Summary:** 334 Perseus Latin files. 280 are onboarded (`LatinWorks`). The other **54** are listed here:
+**Summary:** 334 Perseus Latin files. 281 are onboarded (`LatinWorks`). The other **53** are listed here:
 
 - **Group A — served elsewhere (43 files):** 19 served by Hypotactic, 12 by PHI JSON, and 12 superseded editions of works we already serve.
-- **Group B — deferred (10 files):** distinct works not yet served, blocked on structure or markup support.
+- **Group B — deferred (9 files):** distinct works not yet served, blocked on structure or markup support.
 - **Group C — policy review (1 file):** Bede, held back on scope (post-classical), not on technical capability.
 
 When a Group B or C work is onboarded, delete its row here, and remove it from `NOT_YET_ONBOARDED` in the census ratchet if it is listed there.
@@ -85,13 +85,12 @@ We serve one edition per work. These are the other editions of works we already 
 
 ---
 
-## Group B — deferred: structure or markup support pending (10 files)
+## Group B — deferred: structure or markup support pending (9 files)
 
 Distinct works with no other source in the library. Each is blocked on the V1 failure from the survey.
 
 | Work ID                         | Author           | Title                      | Editor             | Blocker                                                                                                                                                                                                 |
 | ------------------------------- | ---------------- | -------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `phi0588.abo024.perseus-lat2`   | Cornelius Nepos  | _Cato_                     | Fleckeisen & Halm  | Structure: `div[@subtype='chapter']` with no `@n`                                                                                                                                                       |
 | `phi1014.phi002.perseus-lat1`   | Seneca the Elder | _Controversiae_ (excerpta) | A. G. Kiessling    | Structure: ragged citation depth, `book.chapter.section` against the declared `book.chapter` (also the upstream typo `subtype="chaper"`; see [UPSTREAM.md §6.1](UPSTREAM.md#61-pending-upstream-fixes)) |
 | `stoa0045.stoa002.perseus-lat2` | Ausonius         | _De XII Caesaribus_        | H. G. Evelyn-White | Structure: mixed citation units, `book.poem.line` against the declared `poem.section.line`                                                                                                              |
 | `stoa0045.stoa003.perseus-lat2` | Ausonius         | _Cento Nuptialis_          | H. G. Evelyn-White | Structure: `div[@subtype='section']` with no `@n`                                                                                                                                                       |

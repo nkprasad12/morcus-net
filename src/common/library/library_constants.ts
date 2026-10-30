@@ -147,6 +147,8 @@ export const LatinWorks = {
   // Phase 2B: Cornelius Nepos
   NEPOS_HAMILCAR: "phi0588.abo022.perseus-lat2",
   NEPOS_HANNIBAL: "phi0588.abo023.perseus-lat2",
+  // Needs canonical-latinlit@087c067 (chapter 3 numbered upstream).
+  NEPOS_CATO: "phi0588.abo024.perseus-lat2",
   NEPOS_ATTICUS: "phi0588.abo025.perseus-lat2",
 
   // Phase 2B: Sallust

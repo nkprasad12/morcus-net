@@ -2,7 +2,7 @@
   "schema": 1,
   "source": {
     "repo": "canonical-latinLit",
-    "commit": "8b536bdf3ed1f43494055efe112433b4a58eab67",
+    "commit": "087c067dc0f325e29b2bb5534a1762541f8741d7",
     "dirty": false
   },
   "works": {
@@ -4990,7 +4990,7 @@
     },
     "phi0588.abo024.perseus-lat2": {
       "path": "data/phi0588/abo024/phi0588.abo024.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "abbr",
         "body",
