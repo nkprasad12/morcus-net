@@ -844,6 +844,11 @@ function startWebServer(args: any) {
   if (!serverEnv.MACRONIZER_ENGINE) {
     serverEnv.MACRONIZER_ENGINE = "fake-latincy";
   }
+  // Keep dev and E2E / visual regression runs deterministic and offline unless
+  // the caller explicitly configured `LATEST_POST_URL`.
+  if (!serverEnv.LATEST_POST_URL) {
+    serverEnv.LATEST_POST_URL = "off";
+  }
   let baseCommand: string[] = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];

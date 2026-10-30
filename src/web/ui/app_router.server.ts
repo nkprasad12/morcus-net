@@ -11,6 +11,7 @@ import { createCorpusRoutes } from "@/web/ui/corpus/corpus_routes.server";
 import type { CorpusEngine } from "@/web/ui/corpus/corpus_query.server";
 import { createMacronizerRoutes } from "@/web/ui/macronizer/macronizer_routes.server";
 import type { MacronizerEngine } from "@/web/ui/macronizer/macronizer_engine.server";
+import type { LatestPostSource } from "@/web/ui/whats_new/whats_new.server";
 import { getV2BuildDir } from "@/bundler/client_build_contract";
 import { IMMUTABLE_CACHE_CONTROL } from "@/web/ui/core/server/build_version.server";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
@@ -39,6 +40,8 @@ interface V2RouterOptions extends ApiRoutesOptions {
   telemetry?: Promise<TelemetryLogger>;
   /** Pre-rendered static pages (`build/pages.db`); every page renders without it. */
   staticPages?: StaticPageLookup;
+  /** Active release post source for the dictionary landing page (`whats_new.server.ts`). */
+  latestPost?: LatestPostSource;
 }
 
 export function createV2Router(
@@ -74,7 +77,12 @@ export function createV2Router(
   );
 
   // Mount vertical domain route handlers
-  router.use(createDictRoutes(fusedDict, { staticPages }));
+  router.use(
+    createDictRoutes(fusedDict, {
+      staticPages,
+      latestPost: options?.latestPost,
+    })
+  );
   router.use(createReaderRoutes());
   router.use(createCorpusRoutes({ engine: options?.corpus, staticPages }));
   router.use(

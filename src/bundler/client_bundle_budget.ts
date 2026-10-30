@@ -71,7 +71,7 @@ export const V2_BUNDLE_BUDGET: V2BundleBudget = {
     external: { maxBrotliBytes: 35.25 * 1024 },
     macronizer: { maxBrotliBytes: 23.25 * 1024 },
   },
-  maxCssBrotliBytes: 21 * 1024,
+  maxCssBrotliBytes: 21.25 * 1024,
   // critical.js is a fixed-size pre-paint applier (core/dom/prepaint.client.ts):
   // owners in the bundle compute values and it only copies them, so adding a
   // pre-paint preference must not grow it (~300 B raw / ~210 B brotli). Do not

@@ -24,17 +24,24 @@
  *   ignored unless it equals the server's. A dev server's version carries a
  *   per-process nonce, so dev never serves a seed.
  *
- * Why no runtime cache: an in-memory tier only pays off on repeated requests
- * within one server process, and with modest traffic and frequent deploys
- * most keys would be rendered once and discarded. Compression levels follow
- * measurements on these pages: q11 adds 0–2% over q10 for 3–4x the time,
- * q6–q9 gain nothing over q5 (and q9 allocates ~32 MiB regardless of input),
- * and gzip 9 is within 1% of gzip 6 for up to 1.7x the CPU.
+ * Why no general runtime cache: an in-memory tier only pays off on repeated
+ * requests within one server process, and with modest traffic and frequent
+ * deploys most keys would be rendered once and discarded. The one exception is
+ * the active release announcement on the two non-embedded default dictionary
+ * landing keys (`dict:<defaultBitmask>:1:0:root` and `dict:<defaultBitmask>:1:0`):
+ * `withDictLandingOverrides` (`dict/dict_routes.server.ts`) overlays a 2-key
+ * in-memory `PrecompressedRow` map refreshed only when the active blog post
+ * changes (and cleared when none is within the 10-day window, falling back to
+ * `build/pages.db`). Compression levels follow measurements on these pages:
+ * q11 adds 0–2% over q10 for 3–4x the time, q6–q9 gain nothing over q5 (and
+ * q9 allocates ~32 MiB regardless of input), and gzip 9 is within 1% of gzip 6
+ * for up to 1.7x the CPU.
  */
 
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { promisify } from "util";
 import zlib from "zlib";
 import type { Request, Response } from "express";
 import { getV2BuildDir } from "@/bundler/client_build_contract";
@@ -101,19 +108,44 @@ export function staticPagesEpoch(): string | undefined {
   return `${version}|${hash.digest("hex")}`;
 }
 
+function brotliOptions(raw: Buffer): zlib.BrotliOptions {
+  return {
+    params: {
+      [zlib.constants.BROTLI_PARAM_QUALITY]: 10,
+      [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.byteLength,
+    },
+  };
+}
+
+const GZIP_OPTIONS: zlib.ZlibOptions = { level: 6 };
+
 /** Compresses one page for the store: Brotli q10 and gzip 6. */
 export function compressStaticPage(html: string): PrecompressedRow {
   const raw = Buffer.from(html, "utf8");
   return {
-    br: zlib.brotliCompressSync(raw, {
-      params: {
-        [zlib.constants.BROTLI_PARAM_QUALITY]: 10,
-        [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.byteLength,
-      },
-    }),
-    gzip: zlib.gzipSync(raw, { level: 6 }),
+    br: zlib.brotliCompressSync(raw, brotliOptions(raw)),
+    gzip: zlib.gzipSync(raw, GZIP_OPTIONS),
     rawLen: raw.byteLength,
   };
+}
+
+const brotliCompressAsync = promisify(zlib.brotliCompress);
+const gzipAsync = promisify(zlib.gzip);
+
+/**
+ * {@link compressStaticPage} on libuv's thread pool, for compressing at
+ * runtime (the What's New landing overlay in `dict_routes.server.ts`) without
+ * blocking the event loop. Same settings, so the output is byte-identical.
+ */
+export async function compressStaticPageAsync(
+  html: string
+): Promise<PrecompressedRow> {
+  const raw = Buffer.from(html, "utf8");
+  const [br, gzip] = await Promise.all([
+    brotliCompressAsync(raw, brotliOptions(raw)),
+    gzipAsync(raw, GZIP_OPTIONS),
+  ]);
+  return { br, gzip, rawLen: raw.byteLength };
 }
 
 /**

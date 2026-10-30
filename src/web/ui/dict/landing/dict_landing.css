@@ -18,6 +18,41 @@
   line-height: 1.5;
 }
 
+/* What's New banner: shown before first paint by a <style> in <head>
+   (`dict_page.server.ts`), so it never shifts the page. Inline children, so
+   the pill and the text share a line on narrow screens. */
+.whats-new {
+  display: none;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  /* Between --text and --text-muted: readable on the tint in both themes. */
+  color: color-mix(in srgb, var(--text) 60%, var(--text-muted));
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.wn-tag {
+  margin-right: var(--space-2);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--primary-fill);
+  color: var(--on-accent);
+  font: 700 0.68rem var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 0.1em;
+}
+
+.whats-new a,
+.whats-new a:hover {
+  margin-left: var(--space-1);
+  color: var(--primary);
+  white-space: nowrap;
+}
+
 .landing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));

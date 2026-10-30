@@ -38,10 +38,16 @@ import {
 } from "@/web/ui/core/server/request_params.server";
 import { requestTimer } from "@/web/ui/core/server/telemetry.server";
 import {
+  compressStaticPageAsync,
   sendStaticPageOr,
   type StaticPageLookup,
 } from "@/web/ui/core/server/static_pages.server";
+import type { PrecompressedRow } from "@/web/ui/core/server/precompressed_json.server";
 import { encodeDictBitmask } from "@/web/ui/dict/settings/dict_bitmask.common";
+import type {
+  LatestPost,
+  LatestPostSource,
+} from "@/web/ui/whats_new/whats_new.server";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
@@ -72,7 +78,10 @@ export function dictLandingPageKey(state: DictLandingState): string {
  * `/dicts?embedded=1` serve in the plain case. Shared with the build step
  * (`static_pages_seed.server.ts`) so the seed is what the route renders.
  */
-export function renderDictLandingPage(state: DictLandingState): string {
+export function renderDictLandingPage(
+  state: DictLandingState,
+  latestPost?: LatestPost | null
+): string {
   return renderDictPageHtml({
     query: "",
     embedded: state.isEmbedded,
@@ -81,6 +90,7 @@ export function renderDictLandingPage(state: DictLandingState): string {
     // An embedded view is a scoped view (see `isScopedView` below).
     scoped: state.isEmbedded,
     servedAtRoot: state.servedAtRoot,
+    latestPost,
   });
 }
 
@@ -96,8 +106,116 @@ export function defaultDictLandingState(
   };
 }
 
+/** A {@link StaticPageLookup} whose What's New overlay builds in the background. */
+export interface DictLandingOverrides extends StaticPageLookup {
+  /** Resolves once the latest overlay build (if any) has landed or failed. */
+  settled(): Promise<void>;
+}
+
+/**
+ * Wraps `staticPages` with a 2-entry in-memory override for the default
+ * non-embedded dictionary landing pages (`/` and `/dicts`) whenever
+ * `latestPost` has an active release announcement (`static_pages.server.ts`).
+ *
+ * When the active post changes, the two pages are rendered and then
+ * compressed on libuv's thread pool (`compressStaticPageAsync`), so the event
+ * loop never blocks on Brotli. Until a build lands, lookups keep returning
+ * what the overlay already holds (the previous post's pages, or the
+ * underlying `staticPages` row). When no post is active (`current()` is
+ * `null`), the overlay is cleared at once and lookups fall straight through.
+ */
+export function withDictLandingOverrides(
+  staticPages: StaticPageLookup,
+  latestPost: LatestPostSource
+): DictLandingOverrides;
+export function withDictLandingOverrides(
+  staticPages: StaticPageLookup,
+  latestPost?: LatestPostSource
+): StaticPageLookup;
+export function withDictLandingOverrides(
+  staticPages: StaticPageLookup,
+  latestPost?: LatestPostSource
+): StaticPageLookup {
+  if (latestPost === undefined) return staticPages;
+  const rootState = defaultDictLandingState({
+    isEmbedded: false,
+    servedAtRoot: true,
+  });
+  const dictsState = defaultDictLandingState({
+    isEmbedded: false,
+    servedAtRoot: false,
+  });
+  const rootKey = dictLandingPageKey(rootState);
+  const dictsKey = dictLandingPageKey(dictsState);
+  const overrides = new Map<string, PrecompressedRow>();
+  // The post the overlay holds or is being built for; `null` for none.
+  let wantedKey: string | null = null;
+  let pending: Promise<void> = Promise.resolve();
+
+  const sync = (post: LatestPost | null) => {
+    const nextKey = post?.description
+      ? `${post.date}\n${post.description}\n${post.url}`
+      : null;
+    if (nextKey === wantedKey) return;
+    wantedKey = nextKey;
+    if (post === null || nextKey === null) {
+      overrides.clear();
+      return;
+    }
+    const rootHtml = renderDictLandingPage(rootState, post);
+    const dictsHtml = renderDictLandingPage(dictsState, post);
+    pending = Promise.all([
+      compressStaticPageAsync(rootHtml),
+      compressStaticPageAsync(dictsHtml),
+    ]).then(
+      ([root, dicts]) => {
+        // A newer post (or none) superseded this build while it ran.
+        if (wantedKey !== nextKey) return;
+        overrides.set(rootKey, root);
+        overrides.set(dictsKey, dicts);
+      },
+      (err: unknown) => {
+        console.warn(
+          `What's New: compressing the landing overlay failed: ${String(err)}`
+        );
+        // Retry on the next lookup.
+        if (wantedKey === nextKey) wantedKey = null;
+      }
+    );
+  };
+
+  latestPost.onChange?.((post) => {
+    // No store loaded (dev, or before `pages.db` opens): nothing to overlay.
+    // The first lookup after the store opens builds it instead.
+    if (
+      staticPages.get(rootKey) === undefined &&
+      staticPages.get(dictsKey) === undefined
+    ) {
+      wantedKey = null;
+      overrides.clear();
+      return;
+    }
+    sync(post);
+  });
+
+  const lookup: DictLandingOverrides = {
+    get(key: string): PrecompressedRow | undefined {
+      const base = staticPages.get(key);
+      if (base === undefined) return undefined;
+      if (key === rootKey || key === dictsKey) {
+        sync(latestPost.current());
+        return overrides.get(key) ?? base;
+      }
+      return base;
+    },
+    settled: () => pending,
+  };
+  return lookup;
+}
+
 interface DictRoutesOptions {
   staticPages?: StaticPageLookup;
+  latestPost?: LatestPostSource;
 }
 
 function extractCleanQuery(raw: string | string[] | undefined): string {
@@ -119,7 +237,10 @@ export function createDictRoutes(
 ): Router {
   const router = Router();
   const { getAsync } = createAsyncRegistrars(router);
-  const staticPages = options.staticPages;
+  const latestPost = options.latestPost;
+  const staticPages =
+    options.staticPages &&
+    withDictLandingOverrides(options.staticPages, latestPost);
 
   // The site root serves the empty dictionary page itself, saving a redirect round trip. Only
   // this page lives at `/`: its search and settings forms submit to `/dicts`, and the page
@@ -140,7 +261,7 @@ export function createDictRoutes(
       res,
       staticPages,
       dictLandingPageKey(state),
-      () => renderDictLandingPage(state)
+      () => renderDictLandingPage(state, latestPost?.current())
     );
   });
 
@@ -272,9 +393,10 @@ export function createDictRoutes(
         res,
         staticPages,
         plainLanding && dictLandingPageKey(plainLanding),
-        () =>
-          plainLanding
-            ? renderDictLandingPage(plainLanding)
+        () => {
+          const activePost = latestPost?.current();
+          return plainLanding
+            ? renderDictLandingPage(plainLanding, activePost)
             : renderDictPageHtml({
                 query: "",
                 embedded: isEmbedded,
@@ -282,7 +404,9 @@ export function createDictRoutes(
                 isInflected,
                 scale: dictScale,
                 ...pagePersistence,
-              })
+                latestPost: activePost,
+              });
+        }
       );
       return;
     }

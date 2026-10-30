@@ -14,6 +14,10 @@ import {
   resolveDictLang,
 } from "@/web/ui/dict/dict_attribution.server";
 import { renderDictLandingHtml } from "@/web/ui/dict/landing/dict_landing.server";
+import {
+  isValidIsoDate,
+  type LatestPost,
+} from "@/web/ui/whats_new/whats_new.server";
 import { hasGreek } from "@/web/ui/dict/search/dict_greek.common";
 import { renderGreekFallbackHtml } from "@/web/ui/dict/search/dict_greek.server";
 import {
@@ -45,6 +49,8 @@ interface DictResultsOptions {
    * Ignored when none of its dictionaries has results.
    */
   focusLang?: DictLang;
+  /** Active release announcement for the non-embedded landing page. */
+  latestPost?: LatestPost | null;
 }
 
 /**
@@ -377,7 +383,11 @@ export function renderDictResultsHtml(
   } = options;
 
   if (!query.trim()) {
-    return renderDictLandingHtml(queriedDicts, isInflected);
+    return renderDictLandingHtml(
+      queriedDicts,
+      isInflected,
+      isEmbedded ? null : options.latestPost
+    );
   }
 
   if (hasGreek(query)) {
@@ -524,10 +534,26 @@ interface DictPageOptions {
    * (`app_router.test.ts` checks).
    */
   servedAtRoot?: boolean;
+  /**
+   * Active release post to announce on the non-embedded landing page
+   * (`whats_new/whats_new.server.ts`). Ignored on searches, ID lookups and
+   * embedded views.
+   */
+  latestPost?: LatestPost | null;
 }
 
 const ROOT_ADDRESS_BAR_SCRIPT =
   '<script>try{history.replaceState(history.state,"","/dicts"+location.hash)}catch(e){}</script>';
+
+/**
+ * Shows the What's New banner (`#whats-new`, hidden by default in
+ * `dict_landing.css`) to a returning visitor who hasn't seen `date`. The
+ * critical script copies `data-wn-seen` onto <html> before first paint, so the
+ * banner is laid out from the first frame and nothing shifts.
+ */
+function renderWhatsNewHeadStyle(date: string): string {
+  return `<style>html[data-wn-seen]:not([data-wn-seen="${date}"]) #whats-new { display: block; }</style>`;
+}
 
 /**
  * Renders the full standalone HTML page for UI V2.
@@ -538,6 +564,18 @@ export function renderDictPageHtml(options: DictPageOptions): string {
     : cleanDictQuery(options.query || "");
   const isInflected = options.isInflected !== false;
   const isEmbedded = options.embedded ?? false;
+  // The release announcement belongs to the site's front page: the empty,
+  // non-embedded dictionary page (`/` and `/dicts`), never to results or to
+  // dictionaries embedded in other pages. `isValidIsoDate` guards the `<style>`
+  // attribute selector against CSS/HTML breakout.
+  const activePost =
+    !query &&
+    !isEmbedded &&
+    !options.isIdSearch &&
+    options.latestPost?.description &&
+    isValidIsoDate(options.latestPost.date)
+      ? options.latestPost
+      : null;
   const resultsHtml = renderDictResultsHtml(
     query,
     options.results,
@@ -549,6 +587,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
           isEmbedded,
           canSaveInflection: !options.scoped && !options.guest,
           focusLang: options.focusLang,
+          latestPost: activePost,
         }
   );
 
@@ -559,8 +598,15 @@ export function renderDictPageHtml(options: DictPageOptions): string {
           2
         )}; }</style>`
       : "";
+  const whatsNewStyleHtml = activePost
+    ? renderWhatsNewHeadStyle(activePost.date)
+    : "";
   const extraHeadHtml =
-    [scaleStyleHtml, options.servedAtRoot ? ROOT_ADDRESS_BAR_SCRIPT : ""]
+    [
+      scaleStyleHtml,
+      whatsNewStyleHtml,
+      options.servedAtRoot ? ROOT_ADDRESS_BAR_SCRIPT : "",
+    ]
       .filter(Boolean)
       .join("\n") || undefined;
 

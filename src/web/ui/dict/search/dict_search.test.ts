@@ -3003,4 +3003,75 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect(window.location.search).toBe("?q=bellum&d=2&o=1");
     });
   });
+
+  describe("What's New pre-paint recording", () => {
+    function readPrepaint(): Record<string, string> {
+      return JSON.parse(localStorage.getItem("morcus_prepaint") ?? "{}") as Record<
+        string,
+        string
+      >;
+    }
+
+    beforeEach(() => {
+      localStorage.clear();
+      document.documentElement.removeAttribute("data-wn-seen");
+    });
+
+    afterEach(() => {
+      localStorage.clear();
+      document.documentElement.removeAttribute("data-wn-seen");
+    });
+
+    test("records data-wn-seen from #whats-new[data-wn-date] on connect without modifying <html>", () => {
+      window.history.replaceState(null, "", "/dicts");
+      createDictSearch(
+        '<p id="landing-welcome" class="landing-welcome">Welcome.</p>' +
+          '<p id="whats-new" class="whats-new" data-wn-date="2026-10-25">New</p>'
+      );
+      expect(readPrepaint()["data-wn-seen"]).toBe("2026-10-25");
+      expect(document.documentElement.hasAttribute("data-wn-seen")).toBe(false);
+    });
+
+    test("seeds data-wn-seen='0' on a quiet-period landing visit when <html> has no data-wn-seen", () => {
+      window.history.replaceState(null, "", "/dicts");
+      createDictSearch(
+        '<p id="landing-welcome" class="landing-welcome">Welcome.</p>'
+      );
+      expect(readPrepaint()["data-wn-seen"]).toBe("0");
+      expect(document.documentElement.hasAttribute("data-wn-seen")).toBe(false);
+    });
+
+    test("preserves an existing data-wn-seen attribute on <html> during a quiet-period landing visit", () => {
+      localStorage.setItem(
+        "morcus_prepaint",
+        JSON.stringify({ "data-wn-seen": "2026-04-11" })
+      );
+      document.documentElement.setAttribute("data-wn-seen", "2026-04-11");
+      window.history.replaceState(null, "", "/dicts");
+      createDictSearch(
+        '<p id="landing-welcome" class="landing-welcome">Welcome.</p>'
+      );
+      expect(readPrepaint()["data-wn-seen"]).toBe("2026-04-11");
+    });
+
+    test("leaves <html> and the banner alone when the landing page is swapped out by a search", async () => {
+      document.documentElement.setAttribute("data-wn-seen", "0");
+      window.history.replaceState(null, "", "/dicts");
+      const el = createDictSearch(
+        '<p id="landing-welcome" class="landing-welcome">Welcome.</p>' +
+          '<p id="whats-new" class="whats-new" data-wn-date="2026-10-25">New</p>'
+      );
+
+      const form = el.querySelector<HTMLFormElement>("form.search-form")!;
+      form.dispatchEvent(
+        new Event("submit", { bubbles: true, cancelable: true })
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // The banner is additive: nothing hides the welcome line, so a Back to
+      // the (banner-less) partial landing needs no fix-up on <html>.
+      expect(document.documentElement.getAttribute("data-wn-seen")).toBe("0");
+      expect(readPrepaint()["data-wn-seen"]).toBe("2026-10-25");
+    });
+  });
 });

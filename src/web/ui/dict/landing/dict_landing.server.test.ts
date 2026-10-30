@@ -63,4 +63,22 @@ describe("renderDictLandingHtml", () => {
     );
     expect(html).not.toContain("Latin headwords");
   });
+
+  test("renders #whats-new only when latestPost has a valid date and non-empty description", () => {
+    const withPost = renderDictLandingHtml(undefined, true, {
+      date: "2026-10-25",
+      description: "New corpus features.",
+      url: "https://updates.morcus.net/2026/10/25/Corpus.html",
+    });
+    expect(withPost).toContain('id="landing-welcome"');
+    expect(withPost).toContain(
+      '<p class="whats-new" id="whats-new" data-wn-date="2026-10-25"><span class="wn-tag">New update</span> New corpus features. <a href="https://updates.morcus.net/2026/10/25/Corpus.html" target="_blank" rel="noopener">Read more →</a></p>'
+    );
+
+    const withoutDesc = renderDictLandingHtml(undefined, true, {
+      date: "2026-10-25",
+      url: "https://updates.morcus.net/2026/10/25/Corpus.html",
+    });
+    expect(withoutDesc).not.toContain("whats-new");
+  });
 });

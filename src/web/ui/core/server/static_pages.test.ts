@@ -10,6 +10,7 @@ import { DEV_SERVER_ENV } from "@/web/ui/core/server/build_version.server";
 import { telemetryMiddleware } from "@/web/ui/core/server/telemetry.server";
 import {
   compressStaticPage,
+  compressStaticPageAsync,
   openStaticPagesDb,
   saveStaticPagesDb,
   sendStaticPageOr,
@@ -100,6 +101,12 @@ describe("static_pages.server", () => {
       expect(row.rawLen).toBe(Buffer.byteLength(html));
       expect(zlib.brotliDecompressSync(row.br).toString()).toBe(html);
       expect(zlib.gunzipSync(row.gzip).toString()).toBe(html);
+    });
+
+    test("compressStaticPageAsync is byte-identical to compressStaticPage", async () => {
+      expect(await compressStaticPageAsync(html)).toEqual(
+        compressStaticPage(html)
+      );
     });
 
     test("saves and opens under a matching epoch", () => {

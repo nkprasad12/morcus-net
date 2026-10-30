@@ -175,6 +175,17 @@ export function buildDictFixtures(): SsrFixture[] {
       html: renderDictPageHtml({ query: "" }),
     },
     {
+      name: "dict-landing-whats-new",
+      html: renderDictPageHtml({
+        query: "",
+        latestPost: {
+          date: "2026-10-25",
+          description: "A redesigned site.",
+          url: "https://updates.morcus.net/2026/10/25/New-Release.html",
+        },
+      }),
+    },
+    {
       name: "dict-results",
       html: renderDictPageHtml({
         query: "amo",

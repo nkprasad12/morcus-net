@@ -7,6 +7,7 @@ import {
   isShortcutBlocked,
   KeyedFetchCache,
   prefersReducedMotion,
+  recordPrepaint,
   registerElement,
   replaceWithHtml,
   scrollToElement,
@@ -157,6 +158,20 @@ export class MorcusDictSearch extends BaseElement<"results" | "words"> {
   #enhanceExistingMarkup() {
     this.#inputElement = this.scope.$<HTMLInputElement>("input.input");
     this.#resultsElement = this.scope.$<HTMLElement>("#dict-results");
+
+    // What's New (`whats_new/README.md`): record the announced post as seen
+    // for the next load, leaving <html> as is so the banner stays up for this
+    // one. On a landing page with no announcement, mark the visitor as
+    // returning ("0") so the next release reaches them.
+    const wnDate = this.scope.$<HTMLElement>("#whats-new")?.dataset.wnDate;
+    if (wnDate) {
+      recordPrepaint("data-wn-seen", wnDate);
+    } else if (
+      this.scope.$("#landing-welcome") &&
+      !document.documentElement.hasAttribute("data-wn-seen")
+    ) {
+      recordPrepaint("data-wn-seen", "0");
+    }
 
     this.hijackForm(SEARCH_FORM, ({ q }) => {
       void this.#searchQuery(q || "", true);

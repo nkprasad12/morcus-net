@@ -34,6 +34,7 @@ import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
 import { openCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 import { openStaticPagesDb } from "@/web/ui/core/server/static_pages.server";
 import { Warmup, type Lazy } from "@/web/server/warmup";
+import { latestPostFromEnv } from "@/web/ui/whats_new/whats_new.server";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -156,6 +157,9 @@ function startMorcusServer(): Promise<http.Server> {
       "No `GITHUB_TOKEN` environment variable set. Logging issues to console."
     );
   }
+  // The landing page's release announcement. `LATEST_POST_URL` overrides the
+  // blog's `latest.json`; set it to `"off"` or `""` to disable polling.
+  const latestPost = latestPostFromEnv();
   const params: WebServerParams = {
     webApp: app,
     v2Router: createV2Router(fusedDict, {
@@ -164,6 +168,7 @@ function startMorcusServer(): Promise<http.Server> {
       macronizer: macronizerEngineFromEnv(),
       completions: { get: (key) => completions.get()?.get(key) },
       staticPages: { get: (key) => staticPages.get()?.get(key) },
+      latestPost,
     }),
   };
 
@@ -178,12 +183,14 @@ function startMorcusServer(): Promise<http.Server> {
   return new Promise((resolve) => {
     server.listen(port, () => {
       warmup.start();
+      latestPost?.start();
       const memoryLogId = setInterval(() => {
         telemetry.then(logMemoryUsage).catch(logTelemetryError);
       }, 1000 * 60 * randInRange(14.75, 15.25));
       server.on("close", () => {
         log("Cleaning up resources.");
         warmup.stop();
+        latestPost?.stop();
         clearInterval(memoryLogId);
         telemetry.then((t) => t.teardown()).catch(logTelemetryError);
       });

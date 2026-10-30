@@ -1,3 +1,4 @@
+import * as he from "he";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
   buildWelcomeMessage,
@@ -7,6 +8,10 @@ import { DEFAULT_DICT_KEYS } from "@/web/ui/dict/settings/dict_bitmask.common";
 import { resolveDictLang } from "@/web/ui/dict/dict_attribution.server";
 import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import { ssr } from "@/web/ui/core/server/ssr_template.server";
+import {
+  isValidIsoDate,
+  type LatestPost,
+} from "@/web/ui/whats_new/whats_new.server";
 
 interface DictItem {
   key: string;
@@ -53,12 +58,23 @@ function getDirectionalDicts(): {
  */
 export function renderDictLandingHtml(
   activeDicts?: string[],
-  isInflected: boolean = true
+  isInflected: boolean = true,
+  latestPost?: LatestPost | null
 ): string {
   const { fromLatin, toLatin } = getDirectionalDicts();
   const dictKeys =
     activeDicts && activeDicts.length > 0 ? activeDicts : DEFAULT_DICT_KEYS;
   const welcomeText = buildWelcomeMessage(dictKeys, isInflected);
+  const whatsNewHtml =
+    latestPost?.description && isValidIsoDate(latestPost.date)
+      ? `<p class="whats-new" id="whats-new" data-wn-date="${he.escape(
+          latestPost.date
+        )}"><span class="wn-tag">New update</span> ${he.escape(
+          latestPost.description
+        )} <a href="${he.escape(
+          latestPost.url
+        )}" target="_blank" rel="noopener">Read more →</a></p>`
+      : "";
 
   const activeKeysSet = new Set(dictKeys.map((k) => k.toUpperCase()));
 
@@ -84,6 +100,7 @@ export function renderDictLandingHtml(
   // because the slider is client-injected.
   return ssr`
     <div class="landing-container">
+      ${whatsNewHtml}
       <p class="landing-welcome" id="landing-welcome">${welcomeText}</p>
 
       <div class="landing-grid">

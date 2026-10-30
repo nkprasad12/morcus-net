@@ -24,6 +24,7 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["MORCEUS_DATA_ROOT", "morceus-data/"],
   ["HYPOTACTIC_ROOT", "hypotactic/"],
   ["PHI_JSON_ROOT", "phi-public-domain-json/"],
+  ["LATEST_POST_URL", "https://updates.morcus.net/latest.json"],
 ]);
 
 export function envVar(name: string, unsafe: "unsafe"): string | undefined;

@@ -238,4 +238,53 @@ describe("static page seeds", () => {
     expect(search.extras?.[STATIC_PAGE_MARK]).toBeUndefined();
     expect(search.extras?.lookupComplete).toEqual(expect.any(Number));
   });
+
+  test("an active release post override on staticPages matches the dynamic render byte-for-byte", async () => {
+    const activePost = {
+      current: () => ({
+        date: "2026-10-25",
+        description: "A redesigned site.",
+        url: "https://updates.morcus.net/2026/10/25/New-Release.html",
+      }),
+    };
+    const engine = fakeCorpusEngine();
+    const seededWithPost = express().use(
+      createV2Router(fusedDict, {
+        corpus: engine,
+        staticPages: store,
+        latestPost: activePost,
+      })
+    );
+    const dynamicWithPost = express().use(
+      createV2Router(fusedDict, {
+        corpus: engine,
+        latestPost: activePost,
+      })
+    );
+
+    for (const url of ["/", "/dicts", "/dicts?embedded=1"]) {
+      const rendered = await request(dynamicWithPost)
+        .get(url)
+        .set("Accept-Encoding", "identity");
+      expect(rendered.status).toBe(200);
+
+      // The overlay compresses off the event loop: the first lookup after the
+      // post appears still gets the seed, so retry until the overlay lands.
+      let served = "";
+      for (let i = 0; i < 100 && served !== rendered.text; i++) {
+        if (i > 0) await new Promise((resolve) => setTimeout(resolve, 10));
+        const fromStore = await request(seededWithPost)
+          .get(url)
+          .set("Accept-Encoding", "br")
+          .buffer(true)
+          .parse(rawBody);
+        expect(fromStore.status).toBe(200);
+        expect(fromStore.headers[PRECOMPRESSED_HEADER.toLowerCase()]).toBe("1");
+        served = zlib
+          .brotliDecompressSync(fromStore.body as Buffer)
+          .toString("utf8");
+      }
+      expect(served).toBe(rendered.text);
+    }
+  });
 });
