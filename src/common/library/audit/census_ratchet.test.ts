@@ -41,8 +41,6 @@ export const NOT_YET_ONBOARDED: readonly string[] = [
   // - Celsus De Medicina -lat5 (Daremberg): `<figure>`; superseded by -lat6
   //   (Marx), onboarded in Phase 4
   "phi0836.phi002.perseus-lat5",
-  // - Seneca the Elder, Suasoriae: `lb@rend="displayNum"`
-  "phi1014.phi003.perseus-lat1",
   // - Suetonius, Divus Julius: `emph@rend="box"`; all twelve lives are served
   //   by PHI JSON lat1348.001
   "phi1348.abo011.perseus-lat2",

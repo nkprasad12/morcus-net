@@ -78,6 +78,9 @@ const KNOWN_REND = new Set<string>([
   // Terence's cast lists (`<l rend="bulletted" n="cast">`), which are set as
   // a cast list anyway; see `normalizeTerenceFrontMatter`.
   "bulletted",
+  // The edition's printed line number on an `<lb n="5"/>` inside verse quoted
+  // in prose (Seneca the Elder, Suasoriae 1.15); the `<lb>` still breaks.
+  "displayNum",
 ]);
 
 const ALL_KNOWN_REND = new Set<string>([...HANDLED_REND, ...KNOWN_REND]);

@@ -6611,7 +6611,7 @@
     },
     "phi1014.phi003.perseus-lat1": {
       "path": "data/phi1014/phi003/phi1014.phi003.perseus-lat1.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "bibl",
@@ -9382,7 +9382,7 @@
     },
     "stoa0045.stoa017.perseus-lat2": {
       "path": "data/stoa0045/stoa017/stoa0045.stoa017.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": ["body", "div", "head", "l", "pb"],
       "noteElements": [],
       "rends": [],

@@ -302,7 +302,9 @@ export function extractInfo(teiRoot: XmlNode, fallback?: CtsMetadata) {
   const fromHeaderOr = (field: "title" | "author"): string => {
     const node: XmlNode | undefined = titleStatement.findChildren(field)[0];
     if (node !== undefined) {
-      return normalize(XmlNode.getSoleText(node));
+      // Not `getSoleText`: a title can hold markup, e.g. Ausonius'
+      // `<title><add>Libri de Fastis</add> conclusio</title>`.
+      return normalize(textOf(node));
     }
     const value = normalize(fallback?.[field]);
     assert(

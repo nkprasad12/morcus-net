@@ -172,6 +172,21 @@ describe("findCtsEncoding", () => {
   });
 });
 
+describe("extractInfo title", () => {
+  it("reads a title that contains markup", () => {
+    // Library TEI is parsed with `keepWhitespace`, as in process_library.ts.
+    const root = parseRawXml(
+      `<TEI><teiHeader><fileDesc>
+      <titleStmt><title xml:lang="lat">
+        <add>Libri de Fastis</add> conclusio</title><author>Ausonius</author></titleStmt>
+    </fileDesc></teiHeader></TEI>`,
+      { keepWhitespace: true }
+    );
+
+    expect(extractInfo(root).title).toBe("Libri de Fastis conclusio");
+  });
+});
+
 describe("extractInfo licence", () => {
   function header(availability: string): XmlNode {
     return parseRawXml(`<TEI><teiHeader><fileDesc>

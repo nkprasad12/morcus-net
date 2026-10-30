@@ -2347,6 +2347,23 @@
         "span@blockquote": 9
       }
     },
+    "phi1014.phi003.perseus-lat1": {
+      "textParts": ["chapter", "section"],
+      "rows": 106,
+      "pages": 7,
+      "citableRows": 100,
+      "firstCitation": "1.1",
+      "lastCitation": "7.14",
+      "notes": 12,
+      "nodes": {
+        "br": 59,
+        "gap": 15,
+        "head": 6,
+        "note": 12,
+        "span": 317,
+        "span@blockquote": 11
+      }
+    },
     "phi1014.phi004.perseus-lat1": {
       "textParts": ["book", "fragment"],
       "rows": 5,
@@ -3430,6 +3447,19 @@
         "head": 2,
         "span": 98,
         "span@blockquote": 2
+      }
+    },
+    "stoa0045.stoa017.perseus-lat2": {
+      "textParts": ["section", "line"],
+      "rows": 28,
+      "pages": 4,
+      "citableRows": 24,
+      "firstCitation": "1.1",
+      "lastCitation": "4.24",
+      "notes": 0,
+      "nodes": {
+        "head": 4,
+        "span": 24
       }
     },
     "stoa0045.stoa018.perseus-lat2": {

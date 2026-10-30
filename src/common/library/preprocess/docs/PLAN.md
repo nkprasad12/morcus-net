@@ -313,9 +313,10 @@ Remaining multi-edition choices, front matter, the 5 coverage mismatches (Catull
 
 #### Phase 5 Status
 
-- **Exclusion list**: [EXCLUSIONS.md](EXCLUSIONS.md) covers all 56 non-onboarded Perseus Latin files (334 in total, 278 onboarded).
+- **Exclusion list**: [EXCLUSIONS.md](EXCLUSIONS.md) covers all 54 non-onboarded Perseus Latin files (334 in total, 280 onboarded).
   - **Group A, served elsewhere (43): documented.** 19 are served by Hypotactic (Vergil, Horace including _Carmen Saeculare_ as Odes 4.16, Ovid, Persius, Statius, Lucan), 12 by PHI JSON (the Suetonius lives, `lat1348.001`), and 12 are superseded editions (each row names the edition we ship and why).
-  - **Group B, deferred (12): structure or markup support pending.** These are Seneca the Elder _Controversiae_ (excerpta) and _Suasoriae_, Sidonius _Carmina_, Claudian ×3, Ausonius ×5, and Nepos _Cato_. Each row gives its survey blocker.
+  - **Group B, deferred (10): structure or markup support pending.** These are Seneca the Elder _Controversiae_ (excerpta), Sidonius _Carmina_, Claudian ×3, Ausonius ×4, and Nepos _Cato_. Each row gives its survey blocker.
+- **Group B, onboarded (2)**: Seneca the Elder _Suasoriae_ (`phi1014.phi003.perseus-lat1`, ~10,150 words; `lb@rend="displayNum"` accepted as a known rend) and Ausonius _Libri de Fastis conclusio_ (`stoa0045.stoa017.perseus-lat2`; titles with markup now read with all their text).
   - **Group C, policy review (1):** Bede _Historia Ecclesiastica_, held back on the post-classical scope question rather than on technical capability.
 - **Upstream typos**: listed in [UPSTREAM.md §6.1](UPSTREAM.md#61-pending-upstream-fixes) and absorbed locally for now. No PRs have been opened yet.
 - **Label fixes**: work-ID labels corrected in the census ratchet and the survey and upstream docs (`stoa0261` is Sidonius, not Symmachus or Ausonius; `stoa0054.stoa006` is Bede; `phi1014.phi003` is Seneca the Elder's _Suasoriae_; `phi2003.phi001` is Apicius; `stoa0079.stoa001` is Cato).
