@@ -25,13 +25,13 @@ Between April and October 2026, `PerseusDL/canonical-latinLit` landed 202 commit
 | Files with versioned `<licence>` (all CC BY-SA 4.0)              |                      0 |                                **99 / 334** |
 | Files retaining `<!DOCTYPE …>`                                   |                   ~398 |   **20 / 334** (rest use `<?xml-model …?>`) |
 
-No work in the corpus was structurally re-nested from milestones to `<div>`s or vice versa (verified across _Topica_, _De Officiis_, _Pro Sestio_, Seneca _Medea_, Tacitus _Annales_, Symmachus, Plautus, and Historia Augusta; note that 9 Suetonius lives had earlier milestone-to-div conversions recorded in their `<change>` log). All 301 modified Latin files show structural diff lines because `xml:base` URN attributes were added to `<body>` and every `textpart` `<div>`, and `<refsDecl xml:id="CTS">` blocks were added to headers.
+No work in the corpus was structurally re-nested from milestones to `<div>`s or vice versa (verified across _Topica_, _De Officiis_, _Pro Sestio_, Seneca _Medea_, Tacitus _Annales_, Sidonius, Plautus, and Historia Augusta; note that 9 Suetonius lives had earlier milestone-to-div conversions recorded in their `<change>` log). All 301 modified Latin files show structural diff lines because `xml:base` URN attributes were added to `<body>` and every `textpart` `<div>`, and `<refsDecl xml:id="CTS">` blocks were added to headers.
 
 ---
 
 ## 2. `<citeStructure>` adoption and the 19 `match` patterns
 
-In August 2026, upstream added TEI P5 `<refsDecl xml:id="CTS">` blocks containing nested `<citeStructure>` elements to **326 of the 334** Latin files. The only 8 files without `<citeStructure>` are six Cicero rhetorica `-lat2` files (`phi0474.phi036`–`phi041`, mid-migration), Vitruvius (`phi1056.phi001.perseus-lat2`), and Sidonius (`stoa0054.stoa006.perseus-lat1`).
+In August 2026, upstream added TEI P5 `<refsDecl xml:id="CTS">` blocks containing nested `<citeStructure>` elements to **326 of the 334** Latin files. The only 8 files without `<citeStructure>` are six Cicero rhetorica `-lat2` files (`phi0474.phi036`–`phi041`, mid-migration), Vitruvius (`phi1056.phi001.perseus-lat2`), and Bede (`stoa0054.stoa006.perseus-lat1`).
 
 Across all 326 files, every `<citeStructure match="…" unit="…">` attribute uses a closed vocabulary of **19 normalized XPath patterns** (1 root pattern + 18 step patterns):
 
@@ -54,8 +54,8 @@ Across all 326 files, every `<citeStructure match="…" unit="…">` attribute u
 |  15 | `pb`                                      |     1 | **Point**        | `page` (`phi0959.phi010.perseus-lat2`, Ovid _Ibis_)                                                           |
 |  16 | `div[@type]`                              |     1 | Container (typo) | Unconstrained `@type` (`phi0969.phi001.perseus-lat2`, Persius, for satires + prologue)                        |
 |  17 | `.//div[@subtype='X']`                    |     1 | Container        | `fragment` (`phi1014.phi004.perseus-lat1`, Seneca the Elder _Fragmenta_)                                      |
-|  18 | `l \| div2[@type='X']`                    |     1 | Union            | `line` or `section` (`stoa0261.stoa001.perseus-lat1`, Ausonius _Epistulae_)                                   |
-|  19 | `div3[@type='X'] \| milestone[@unit='X']` |     1 | Union            | `section` container or milestone (`stoa0261.stoa002.perseus-lat1`, Symmachus _Epistulae_)                     |
+|  18 | `l \| div2[@type='X']`                    |     1 | Union            | `line` or `section` (`stoa0261.stoa001.perseus-lat1`, Sidonius _Carmina_)                                     |
+|  19 | `div3[@type='X'] \| milestone[@unit='X']` |     1 | Union            | `section` container or milestone (`stoa0261.stoa002.perseus-lat1`, Sidonius _Epistulae_)                      |
 
 ### 2.1 Worked examples of `<citeStructure>` declarations
 
@@ -65,7 +65,7 @@ Across all 326 files, every `<citeStructure match="…" unit="…">` attribute u
 | Cicero, _De Officiis_           | `phi0474.phi055.perseus-lat2`   | `book` ← `div/div[@subtype='book']` > `section` ← `div[@subtype='section']`                                               | ✓                                                                    | Confirms 2-level container spine; `chapter` milestones are secondary                                       |
 | Seneca, _Medea_                 | `phi1017.phi004.perseus-lat2`   | `card` ← `milestone[@unit='card']` > `line` ← `.//l`                                                                      | Fails (no `textpart` divs)                                           | Declares point-based `card` level above `<l>` lines                                                        |
 | Tacitus, _Annales_              | `phi1351.phi005.perseus-lat1`   | `book` ← `div1[@type='book']` > `chapter` ← `.//milestone[@unit='chapter']`                                               | Fails (`div1` + milestones)                                          | Declares `div1` container + milestone `chapter` spans                                                      |
-| Symmachus, _Epistulae_          | `stoa0261.stoa002.perseus-lat2` | `book` ← `div1[@type='book']` > `letter` ← `div2[@type='letter']` > `section` ← `.//milestone[@unit='section']`           | Fails (`div1`/`div2` + milestones)                                   | 2 container levels + 1 point level                                                                         |
+| Sidonius, _Epistulae_           | `stoa0261.stoa002.perseus-lat2` | `book` ← `div1[@type='book']` > `letter` ← `div2[@type='letter']` > `section` ← `.//milestone[@unit='section']`           | Fails (`div1`/`div2` + milestones)                                   | 2 container levels + 1 point level                                                                         |
 | Appendix Vergiliana, _Dirae_    | `phi0692.phi003.perseus-lat1`   | `line` ← `.//lb`                                                                                                          | Fails (no divs)                                                      | Point-based `<lb>` line spine                                                                              |
 | Plautus, _Amphitruo_            | `phi0119.phi001.perseus-lat2`   | `act` ← `div/div[@subtype='act']` > `scene` ← `div[@subtype='scene']` > `line` ← `l`                                      | Fails ([INV-1](V1_PREPROCESSING.md#inv-1): 2 non-CTS `refsDecl`)     | Replaces ambiguous `refsDecl` with single 3-level hierarchy                                                |
 | Terence, _Andria_               | `phi0134.phi001.perseus-lat2`   | `act` ← `div/div[@subtype='act']` (with `line` ← `l` for prologue _and_ `scene` ← `div[@subtype='scene']` > `line` ← `l`) | Fails ([INV-1](V1_PREPROCESSING.md#inv-1) + ragged depth)            | Explicitly declares ragged depth (prologue has lines directly under `act`; acts 1–5 have `scene` > `line`) |
@@ -116,8 +116,8 @@ All 15 must be updated in [`library_constants.ts`](../../library_constants.ts) a
 | `phi0474.phi058.perseus-lat1`             | `phi0474.phi058.perseus-lat2`            | Cicero, _Epistulae ad Quintum Fratrem_ | L. C. Purser                                        | Header/encoding cleanup, `citeStructure`                                             |
 | `phi0474.phi059.perseus-lat1`             | `phi0474.phi059.perseus-lat2`            | Cicero, _Epistulae ad Brutum_          | L. C. Purser                                        | Header/encoding cleanup, `citeStructure`                                             |
 | `phi1056.phi001.perseus-lat1`             | `phi1056.phi001.perseus-lat2`            | Vitruvius, _De Architectura_           | Fritz Krohn                                         | Converted to TEI P5 / EpiDoc, URN bumped _(no `citeStructure` yet)_                  |
-| `stoa0261.stoa0001.perseus-lat1`          | `stoa0261.stoa001.perseus-lat1`          | Ausonius, _Epistulae_                  | H. G. Evelyn-White                                  | Directory/ID zero-padding removed (`stoa0001` → `stoa001`)                           |
-| `stoa0261.stoa0002.perseus-lat1`, `-lat2` | `stoa0261.stoa002.perseus-lat1`, `-lat2` | Symmachus, _Epistulae_                 | Otto Seeck                                          | Directory/ID zero-padding removed (`stoa0002` → `stoa002`)                           |
+| `stoa0261.stoa0001.perseus-lat1`          | `stoa0261.stoa001.perseus-lat1`          | Sidonius, _Carmina_                    | W. B. Anderson                                      | Directory/ID zero-padding removed (`stoa0001` → `stoa001`)                           |
+| `stoa0261.stoa0002.perseus-lat1`, `-lat2` | `stoa0261.stoa002.perseus-lat1`, `-lat2` | Sidonius, _Epistulae_                  | W. B. Anderson / Christianus Luetjohann             | Directory/ID zero-padding removed (`stoa0002` → `stoa002`)                           |
 
 ---
 
@@ -160,7 +160,26 @@ As detailed in [PLAN.md §5.2a](PLAN.md#52a-how-far-along-is-upstream-and-should
 
 1. **Sync monthly behind tooling.** Do not wait for the manual review pass to finish. Run `./morcus.sh library survey` and `./morcus.sh library render` / `diff` on each upstream sync so any URN bump, markup change, or section-break revision surfaces as an explicit diff before the pin in [`upstream_sources.lock.json`](../../../../../upstream_sources.lock.json) is updated.
 2. **Maintain a work-ID alias table.** Whenever an upstream review bumps a URN (`-lat1` → `-lat2`) or renames a work directory (`stoa0001` → `stoa001`), add the old → new mapping to the reader's alias table so existing URLs, links, and user state resolve transparently.
-3. **Send fixes upstream as PRs, never carry fork commits.** Upstream actively merges small fixes. Our 3 local typo commits on `morcus-user-typos`, as well as source markup typos uncovered by the census (`p@inddent`, `quote@bockquote`, `quote@align(blockquote`, `div/div[@subtype=book']`, `alternatechpater`, `secton`, `chaper`), should be submitted as PRs to `PerseusDL/canonical-latinLit` so our fork can fast-forward cleanly to `upstream/master`.
+3. **Send fixes upstream as PRs, never carry fork commits.** Upstream actively merges small fixes. Our 3 local typo commits on `morcus-user-typos`, as well as source markup typos uncovered by the census (`p@inddent`, `quote@bockquote`, `quote@align(blockquote`, `div/div[@subtype=book']`, `alternatechpater` (in the file: `alt_chpater`), `secton`, `chaper`), should be submitted as PRs to `PerseusDL/canonical-latinLit` so our fork can fast-forward cleanly to `upstream/master`.
+
+### 6.1 Pending upstream fixes
+
+Source typos found during onboarding that are still present at the pinned commit (`8b536bdf`) and that we currently absorb locally (alias in [`perseus_rends.ts`](../../perseus_rends.ts), tolerance in [`cite_structure.ts`](../../cite_structure.ts), or a patch under [`patches/canonical-latinLit/`](../../../../../patches/canonical-latinLit/)). No PRs are open for these yet. `p@inddent` and `quote@bockquote` from the census list above are already gone upstream.
+
+| File                            | Location                    | Typo                                                          | Fix                   | Absorbed by           |
+| ------------------------------- | --------------------------- | ------------------------------------------------------------- | --------------------- | --------------------- |
+| `phi0474.phi005.perseus-lat2`   | _In Verrem_ 2.3.92          | `quote@rend="smallcaos"`                                      | `smallcaps`           | `canonicalRend`       |
+| `phi0474.phi049.perseus-lat2`   | _Tusc._ 2.21                | `quote@rend="aign(blockquote); single; merge"`                | `align(blockquote)`   | `canonicalRend`       |
+| `phi0474.phi058.perseus-lat2`   | _Ad Q. fr._ (5×)            | `quote@rend="align(blockquote"`                               | close the parenthesis | `canonicalRend`       |
+| `phi1348.abo011.perseus-lat2`   | Suetonius _Iul._            | `quote@rend="align(blockquote"`                               | close the parenthesis | not onboarded         |
+| `phi0474.phi043.perseus-lat2`   | `citeStructure` header      | `match="div/div[@subtype=book']"`                             | `[@subtype='book']`   | `cite_structure.ts`   |
+| `phi0474.phi055.perseus-lat2`   | _De Off._ 2 (`n="13"`)      | `milestone@unit="alt_chpater"`                                | `alt_chapter`         | not used for citation |
+| `stoa0045.stoa015.perseus-lat2` | Ausonius _Griphus_ pr.      | `div@subtype="secton"`                                        | `section`             | `cite_structure.ts`   |
+| `phi1014.phi002.perseus-lat1`   | Seneca Elder _Contr. exc._  | `div@subtype="chaper"`                                        | `chapter`             | not onboarded         |
+| `stoa0261.stoa002.perseus-lat1` | Sidonius _Ep._ 4.21.3       | OCR `querirnoniarn`                                           | `querimoniam`         | not patched           |
+| `stoa0261.stoa002.perseus-lat1` | Sidonius _Ep._, 115 letters | `div2@type="poem"` on letters (32 others use `type="letter"`) | `type="letter"`       | `cite_structure.ts`   |
+| `phi1276.phi001.perseus-lat2`   | Juvenal 3.7.12              | `Alcitheon`                                                   | `Alcithoen`           | patch file            |
+| `phi0474.phi050.perseus-lat2`   | _De Nat. D._ 3.65           | no-break spaces (U+00A0) inside `— —`                         | plain spaces          | patch file            |
 
 ---
 

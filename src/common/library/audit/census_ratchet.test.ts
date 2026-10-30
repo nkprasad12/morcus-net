@@ -37,14 +37,17 @@ const SNAPSHOT_PATH = path.resolve(__dirname, "census_snapshot.json");
  *    files that are explicitly triaged.
  */
 export const NOT_YET_ONBOARDED: readonly string[] = [
-  // Phase 4 deferred / blocked works:
-  // - Celsus De Medicina: -lat5 (malformed XML); -lat6 (Marx) onboarded in Phase 4
+  // Deferred / blocked works (see preprocess/docs/EXCLUSIONS.md):
+  // - Celsus De Medicina -lat5 (Daremberg): `<figure>`; superseded by -lat6
+  //   (Marx), onboarded in Phase 4
   "phi0836.phi002.perseus-lat5",
-  // - Lactantius De Mortibus Persecutorum: floatingText markup
+  // - Seneca the Elder, Suasoriae: `lb@rend="displayNum"`
   "phi1014.phi003.perseus-lat1",
-  // - Suetonius Divus Titus: duplicate Caesar/Suetonius covered by PHI JSON lat1348.001
+  // - Suetonius, Divus Julius: `emph@rend="box"`; all twelve lives are served
+  //   by PHI JSON lat1348.001
   "phi1348.abo011.perseus-lat2",
-  // - Jerome Vita Pauli: figure / lg@indent(1)
+  // - Bede, Historia Ecclesiastica: `<argument>`, `<opener>`, `<closer>`,
+  //   nested `<text>`
   "stoa0054.stoa006.perseus-lat1",
 
   // Note: Vergil Eclogues (phi0690.phi001.perseus-lat2) has 0 unhandled markup,

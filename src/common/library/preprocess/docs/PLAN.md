@@ -165,7 +165,7 @@ What it declares, by example:
 | Cicero, _De Officiis_           | `book` > `section` (divs)                                       | ✓                        |
 | Seneca, _Medea_                 | `card` (**milestone**) > `line` (`.//l`)                        | fails (no textpart divs) |
 | Tacitus, _Annales_              | `book` (`div1`) > `chapter` (**`.//milestone`**)                | fails                    |
-| Symmachus (`stoa0261`)          | `book` (`div1`) > `letter` (`div2`) > `section` (**milestone**) | fails                    |
+| Sidonius (`stoa0261`)           | `book` (`div1`) > `letter` (`div2`) > `section` (**milestone**) | fails                    |
 | Appendix Vergiliana, _Dirae_    | `line` (**`.//lb`**)                                            | fails                    |
 | Plautus, _Amphitruo_            | `act` > `scene` (divs) > `line` (`l`)                           | fails                    |
 | Historia Augusta                | `chapter` (div). Section milestones **not** declared            | fails                    |
@@ -294,11 +294,33 @@ Undeclared milestones as inline citable anchors and secondary schemes; explicit 
 
 **Exit:** no onboarded work drops a citation level a scholar would use.
 
+#### Phase 4 Completion & Target Counts
+
+- **Phase 4 Onboarded**: 1 net new Perseus Latin work, Celsus _De Medicina_ `phi0836.phi002.perseus-lat6` (Marx; 211 pages, 1,688 citable sections, `book.chapter.section`), replacing the held `-lat4`. That brings total Perseus onboarded to 279 and total library onboarded to 306 (with 2 PHI and 25 Hypotactic works). Across the Perseus Latin works in the manifest, citable reader sections go from 201,604 to 213,768 and pages from 14,970 to 14,081.
+- **Milestone-driven pagination** (secondary axes promoted to citation levels):
+  - **Pliny _Naturalis Historia_** (`phi0978.phi001.perseus-lat2`): section milestones cleaned and aligned across chapter boundaries. The spine goes from `book.chapter` to `book.chapter.section`, with 37 whole-book pages (up to 255 KiB) becoming 1,116 chapter pages (~10 KiB) and 1,116 citable sections becoming 7,068.
+  - **Cicero, 39 single-book works** (`phi0474.*.perseus-lat2`, plus the `-eng` translations of _Pro Rabirio_ and _De Amicitia_, 41 manifest entries in all): sliced at chapter milestones into a `chapter.section` spine. Pages go from 3,597 to 1,260 (the largest from 334 to 98; now 7–98 per work) and citable sections from 3,597 to 4,029.
+  - **Seneca, 10 tragedies** (`phi1017.phi001`–`phi010.perseus-lat2`): paginated by `card` milestone (9–28 pages per play, 168 in all, up from one page each). The `line` citation spine and Lewis & Short line references are unchanged (12,008 citable lines).
+  - **_Historia Augusta_, 30 lives** (`phi2331.phi001`–`phi030.perseus-lat2`): `section` exposed under `chapter` (`chapter.section`). Pages are unchanged (633); citable sections go from 633 to 4,724.
+  - **Cato _De Agri Cultura_** (`stoa0079.stoa001.perseus-lat1`, 354 citable sections, up 1) and **Sidonius _Epistulae_** (`stoa0261.stoa002.perseus-lat1`, 9 books, 147 letters, 706 citable sections, unchanged) were re-verified under the new spine code.
+- **Reader**: a bare section number on a compound spine (e.g. `?jump=150` on Cicero _Brutus_, whose sections are `41.150`) resolves to the chapter page holding `sec-<chapter>.<section>` and redirects there with that anchor.
+
 ### Phase 5 — Long tail and policy
 
 Remaining multi-edition choices, front matter, the 5 coverage mismatches (Catullus, Lucan, Florus, two fragment files), upstream PRs for typos, and an explicit exclusion list with reasons for whatever remains.
 
 **Exit:** every distinct work onboarded or documented on the exclusion list.
+
+#### Phase 5 Status
+
+- **Exclusion list**: [EXCLUSIONS.md](EXCLUSIONS.md) covers all 56 non-onboarded Perseus Latin files (334 in total, 278 onboarded).
+  - **Group A, served elsewhere (43): documented.** 19 are served by Hypotactic (Vergil, Horace including _Carmen Saeculare_ as Odes 4.16, Ovid, Persius, Statius, Lucan), 12 by PHI JSON (the Suetonius lives, `lat1348.001`), and 12 are superseded editions (each row names the edition we ship and why).
+  - **Group B, deferred (12): structure or markup support pending.** These are Seneca the Elder _Controversiae_ (excerpta) and _Suasoriae_, Sidonius _Carmina_, Claudian ×3, Ausonius ×5, and Nepos _Cato_. Each row gives its survey blocker.
+  - **Group C, policy review (1):** Bede _Historia Ecclesiastica_, held back on the post-classical scope question rather than on technical capability.
+- **Upstream typos**: listed in [UPSTREAM.md §6.1](UPSTREAM.md#61-pending-upstream-fixes) and absorbed locally for now. No PRs have been opened yet.
+- **Label fixes**: work-ID labels corrected in the census ratchet and the survey and upstream docs (`stoa0261` is Sidonius, not Symmachus or Ausonius; `stoa0054.stoa006` is Bede; `phi1014.phi003` is Seneca the Elder's _Suasoriae_; `phi2003.phi001` is Apicius; `stoa0079.stoa001` is Cato).
+- **Coverage mismatches**: all 5 from the prototype survey are resolved. Catullus, Florus and Petronius _Fragmenta_ are onboarded; Lucan is served by Hypotactic; the Livy fragment slice `phi0914.phi001fr` was deleted upstream.
+- **Still open**: front matter, and the Group B onboarding.
 
 ---
 

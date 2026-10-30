@@ -646,7 +646,7 @@ describe("buildCitationSpine with a citeStructure", () => {
     ]);
   });
 
-  it("evaluates unions of containers (Symmachus' poems)", () => {
+  it("evaluates unions of containers (Sidonius' poems)", () => {
     const root = tei(
       citeStructure(
         level(
@@ -742,7 +742,7 @@ describe("buildCitationSpine point levels", () => {
     expect(root.findDescendants("lb")).toHaveLength(0);
   });
 
-  it("nests point levels under containers (Symmachus' letters)", () => {
+  it("nests point levels under containers (Sidonius' letters)", () => {
     const root = tei(
       citeStructure(
         level(

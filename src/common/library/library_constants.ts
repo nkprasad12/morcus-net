@@ -345,11 +345,9 @@ export const LatinWorks = {
   // Phase 4: Celsus
   CELSUS_DE_MEDICINA: "phi0836.phi002.perseus-lat6",
 
-  // Not onboarded:
-  // - Suetonius, the ten lives phi1348.abo013-abo022: PHI JSON already ships
-  //   all twelve lives (`lat1348.001`, Ihm).
-  // - Celsus, De Medicina: -lat4 (Daremberg) and -lat5 are superseded by
-  //   -lat6 (Marx, CELSUS_DE_MEDICINA).
+  // Not onboarded: every other Perseus Latin file (served by Hypotactic or PHI
+  // JSON, a superseded edition, or deferred) is listed with its reason in
+  // preprocess/docs/EXCLUSIONS.md.
 };
 
 export const EnglishTranslations: Record<string, string> = {
