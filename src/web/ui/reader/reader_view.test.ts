@@ -6,6 +6,10 @@ import path from "path";
 import "@/web/ui/reader/reader_view.client";
 import type { MorcusReaderView } from "@/web/ui/reader/reader_view.client";
 import {
+  STALE_SECTION_JUMP_KEY,
+  staleSectionJumpUrl,
+} from "@/web/ui/reader/reader_view.client";
+import {
   DEFAULT_READER_PREFS,
   READER_SETTINGS_KEY,
 } from "@/web/ui/reader/reader_settings.client";
@@ -4508,5 +4512,79 @@ describe("section jump highlighting", () => {
         }
       }
     });
+  });
+});
+
+describe("staleSectionJumpUrl", () => {
+  function memoryStorage(): Pick<
+    Storage,
+    "getItem" | "setItem" | "removeItem"
+  > {
+    const values = new Map<string, string>();
+    return {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => void values.set(key, value),
+      removeItem: (key) => void values.delete(key),
+    };
+  }
+
+  const missing = () => false;
+  const brutus = {
+    pathname: "/work/cicero/brutus/40",
+    search: "?q=tum&matchText=x&jumpMiss=1",
+    hash: "#sec-150",
+  };
+
+  test("jumps to a section missing from the page", () => {
+    expect(staleSectionJumpUrl(brutus, missing, memoryStorage())).toBe(
+      "/work/cicero/brutus?jump=150&q=tum&matchText=x"
+    );
+  });
+
+  test("works without a page in the path", () => {
+    expect(
+      staleSectionJumpUrl(
+        { pathname: "/work/seneca_minor/medea", search: "", hash: "#sec-130" },
+        missing,
+        memoryStorage()
+      )
+    ).toBe("/work/seneca_minor/medea?jump=130");
+  });
+
+  test("stays when the section is on the page", () => {
+    const storage = memoryStorage();
+    storage.setItem(STALE_SECTION_JUMP_KEY, "/work/cicero/brutus/40#sec-150");
+
+    expect(
+      staleSectionJumpUrl(brutus, (id) => id === "sec-150", storage)
+    ).toBeNull();
+    expect(storage.getItem(STALE_SECTION_JUMP_KEY)).toBeNull();
+  });
+
+  test("tries each stale anchor once, so a missed jump cannot loop", () => {
+    const storage = memoryStorage();
+
+    expect(staleSectionJumpUrl(brutus, missing, storage)).not.toBeNull();
+    // The jump came back to the same missing anchor.
+    expect(staleSectionJumpUrl(brutus, missing, storage)).toBeNull();
+  });
+
+  test("ignores hashes that are not sections", () => {
+    for (const hash of ["", "#reader-toc-drawer", "#reader-dict", "#sec-"]) {
+      expect(
+        staleSectionJumpUrl({ ...brutus, hash }, missing, memoryStorage())
+      ).toBeNull();
+    }
+  });
+
+  test("ignores pages outside the reader and missing storage", () => {
+    expect(
+      staleSectionJumpUrl(
+        { pathname: "/work", search: "", hash: "#sec-1" },
+        missing,
+        memoryStorage()
+      )
+    ).toBeNull();
+    expect(staleSectionJumpUrl(brutus, missing, undefined)).toBeNull();
   });
 });

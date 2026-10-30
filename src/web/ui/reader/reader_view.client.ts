@@ -69,6 +69,69 @@ import {
 
 const READER_DRAWER_MIN_HEIGHT = 40;
 
+/** Session key for the last stale `#sec-` hash sent through `?jump=`. */
+export const STALE_SECTION_JUMP_KEY = "morcus-reader-stale-section-jump";
+
+/**
+ * The `?jump=` URL for a `#sec-` hash that names no section on this page, or
+ * `null` to stay. Old links name sections by ids that repagination changed
+ * (`/work/cicero/brutus#sec-150`, where the section is now `sec-41.150`); the
+ * server resolves the jump and redirects to the right page and anchor.
+ *
+ * A jump that lands on another missing anchor would send the reader round
+ * again, so each `path#hash` is tried once per session: `storage` holds the
+ * last one tried, and without storage nothing is tried. A jump the server
+ * can't resolve lands on `#reader-toc-drawer`, which is not a `#sec-` hash.
+ */
+export function staleSectionJumpUrl(
+  location: Pick<Location, "pathname" | "search" | "hash">,
+  hasElement: (id: string) => boolean,
+  storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> | undefined
+): string | null {
+  const hash = location.hash;
+  if (!hash.startsWith("#sec-") || !storage) return null;
+  let id: string;
+  try {
+    id = decodeURIComponent(hash.slice(1));
+  } catch {
+    return null;
+  }
+  const jump = id.slice("sec-".length).trim();
+  const parts = location.pathname.split("/");
+  if (!jump || parts[1] !== "work" || parts.length < 4) return null;
+  const attempt = location.pathname + hash;
+  try {
+    if (hasElement(id)) {
+      storage.removeItem(STALE_SECTION_JUMP_KEY);
+      return null;
+    }
+    if (storage.getItem(STALE_SECTION_JUMP_KEY) === attempt) {
+      storage.removeItem(STALE_SECTION_JUMP_KEY);
+      return null;
+    }
+    storage.setItem(STALE_SECTION_JUMP_KEY, attempt);
+  } catch {
+    return null;
+  }
+  const current = new URLSearchParams(location.search);
+  const params = new URLSearchParams();
+  params.set("jump", jump);
+  for (const key of ["q", "matchText"]) {
+    const value = current.get(key);
+    if (value) params.set(key, value);
+  }
+  return `${parts.slice(0, 4).join("/")}?${params.toString()}`;
+}
+
+/** `sessionStorage`, or `undefined` where reading it throws. */
+function sessionStorageOrUndefined(): Storage | undefined {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Whether `section` is the only citable section in its passage, so that it is
  * the whole page. Heading rows are `.reader-section`s too, but carry no id.
@@ -261,6 +324,18 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
           // Ignored
         }
       });
+    }
+
+    // An old link's `#sec-` anchor that this page doesn't have: let the server
+    // find the section (replace, so Back skips the stale URL).
+    const staleJump = staleSectionJumpUrl(
+      window.location,
+      (id) => this.ownerDocument.getElementById(id) !== null,
+      sessionStorageOrUndefined()
+    );
+    if (staleJump) {
+      window.location.replace(staleJump);
+      return;
     }
 
     this.#preferredDrawerSvh = this.#drawerController.getPreferredSvh();

@@ -48,7 +48,11 @@ function redirectReaderJump(
     .replace(/^(book|liber|chapter|caput|section|elegy|poem|carmen)\s+/i, "")
     .trim();
   let hash = "";
-  if (cleanJump && cleanJump !== pageId && !pageId.startsWith(cleanJump + ".")) {
+  if (
+    cleanJump &&
+    cleanJump !== pageId &&
+    !pageId.startsWith(cleanJump + ".")
+  ) {
     hash =
       !cleanJump.includes(".") &&
       resolved.page.singleHtml.includes(`id="sec-${pageId}.${cleanJump}"`)
@@ -204,13 +208,29 @@ export function createReaderRoutes(): Router {
       return;
     }
 
-    if (pageId && !resolvePageInWork(work, pageId).matched) {
+    const resolvedPage = pageId ? resolvePageInWork(work, pageId) : undefined;
+    if (pageId && !resolvedPage?.matched) {
       res.status(404).send(
         renderNotFoundPageHtml({
           workSlug: `${author}/${name}/${pageId}`,
         })
       );
       return;
+    }
+
+    // A page id that resolves to a different page (a section on it, such as
+    // an old `/work/cicero/brutus/150` now that _Brutus_ pages by chapter)
+    // moves to the canonical page with a `#sec-` anchor. Partials are left
+    // alone: page turns fetch canonical ids, and a redirect would drop
+    // `format=partial`. A `jumpMiss` page is left alone to keep its notice.
+    if (pageId && resolvedPage && !isPartial && !jumpMiss) {
+      const canonicalId = Array.isArray(resolvedPage.page.id)
+        ? resolvedPage.page.id.join(".")
+        : resolvedPage.page.id;
+      if (canonicalId !== pageId) {
+        redirectReaderJump(res, work, pageId, query, matchText);
+        return;
+      }
     }
 
     await sendReaderPassage(req, res, {
