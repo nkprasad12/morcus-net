@@ -428,9 +428,14 @@ function renderXmlNodeCleanHtml(
   // before (nothing of its own).
   const isVersePara = wantsVersePara && childrenHtml.trim() !== "";
   const isBlock = node.getAttr("block") === "1" || isVersePara;
+  // Editorial matter inside a row (a letter's dateline) looks like the text
+  // around it but is not tokenized for lookup, as the corpus does not index
+  // it. A whole editorial row is marked by `markUntokenizedRow` instead.
+  const noTokenize =
+    kind === "editorial" && !isRowRoot ? ' data-no-tokenize="true"' : "";
 
   if (tag === "head" || isSectionHead) {
-    return `<h3 class="reader-subheading">${childrenHtml}</h3>`;
+    return `<h3 class="reader-subheading"${noTokenize}>${childrenHtml}</h3>`;
   }
   if (tag === "ul") {
     return `<ul class="reader-list">${childrenHtml}</ul>`;
@@ -483,7 +488,8 @@ function renderXmlNodeCleanHtml(
     classes.push(rowClass);
   }
 
-  const classAttr = classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
+  const classAttr =
+    (classes.length > 0 ? ` class="${classes.join(" ")}"` : "") + noTokenize;
 
   // Subscripts (only emitted in notes) use the native element, which needs
   // no stylesheet support.
@@ -501,7 +507,7 @@ function renderXmlNodeCleanHtml(
   if (isBlock) {
     return `<p${classAttr}>${childrenHtml}</p>`;
   }
-  if (classes.length === 0) {
+  if (classes.length === 0 && noTokenize === "") {
     return childrenHtml;
   }
 
@@ -517,10 +523,22 @@ function renderPassageContent(
   notes?: NoteCollector,
   rowClass?: string
 ): string {
-  return wrapPassageHtml(
+  const html = wrapPassageHtml(
     renderXmlNodeCleanHtml(node, notes, isVerseWork, true, rowClass),
     isVerseWork
   );
+  return node.getAttr("kind") === "editorial" ? markUntokenizedRow(html) : html;
+}
+
+/**
+ * Marks a whole row of editorial matter (a list of sigla, an English heading)
+ * as not tokenized for lookup, as the corpus does not index it either
+ * (`UNTOKENIZED_CONTENT_KINDS`). The wrapper has no class or style, so the
+ * row looks as it did; it only carries `data-no-tokenize`, which the reader's
+ * tokenizer skips along with everything inside.
+ */
+function markUntokenizedRow(html: string): string {
+  return `<div data-no-tokenize="true">${html}</div>`;
 }
 
 /** The most steps a split line's parts are indented across the page. */

@@ -202,6 +202,17 @@ describe("non-canonical page ids", () => {
     expect(res.header.location).toBe("/work/cicero/brutus/41#sec-41.150");
   });
 
+  test("redirect retired front matter pages to the first page", async () => {
+    // Brutus' sigla were a page (`sigla`, cited `sigla.1`) until Phase 5;
+    // they now open the first page, which here is chapter 40.
+    for (const old of ["sigla", "sigla.1", "arg"]) {
+      const res = await request(app()).get(`/work/cicero/brutus/${old}`);
+
+      expect(res.status).toBe(302);
+      expect(res.header.location).toBe("/work/cicero/brutus/40");
+    }
+  });
+
   test("keep the query and match text", async () => {
     const res = await request(app()).get(
       "/work/cicero/brutus/150?q=brutus&matchText=Tum"

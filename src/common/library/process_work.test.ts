@@ -12,6 +12,7 @@ import {
   type DebugSideChannel,
   type MarkupTextOptions,
 } from "@/common/library/process_work";
+import { extractRowText } from "@/common/library/corpus/corpus_library_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { instanceOf } from "@/web/utils/rpc/parsing";
@@ -1788,25 +1789,40 @@ describe("assertOutputInvariants text on no page", () => {
     ).not.toThrow();
   });
 
-  it("allows top-level matter before the first page", () => {
-    expect(() => check([row("", "Argument"), row("1.1.1")])).not.toThrow();
+  it("allows a top-level heading before the first page", () => {
+    expect(() =>
+      check([row("", "Argument"), row("1.1.1")], { headingRows: new Set([0]) })
+    ).not.toThrow();
   });
 
   it("rejects text after its section's pages", () => {
     expect(() =>
       check([row("1.1.1"), row("1", "stray"), row("2.1.1")])
-    ).toThrow(/Text on no page at 1: <span>stray<\/span>/);
+    ).toThrow(/Corpus text on no page at 1: <span>stray<\/span>/);
     expect(() => check([row("1.1.1"), row("", "stray")])).toThrow(
-      /Text on no page at \(top level\)/
+      /Corpus text on no page at \(top level\)/
     );
   });
 
-  it("allows editorial rows and leaf sections anywhere", () => {
-    const rows = [row("1.1.1"), row("", "Index"), row("46", "summary")];
-    expect(() => check(rows)).toThrow(/Text on no page/);
+  it("allows headings and unindexed editorial rows anywhere", () => {
+    const editorial = (id: string): ProcessedWork2["rows"][number] => [
+      id.split("."),
+      new XmlNode("span", [["kind", "editorial"]], ["V = Veronensis"]),
+    ];
+    const rows = [row("1.1.1"), row("2", "Liber II"), editorial("3")];
+    expect(() => check(rows)).toThrow(/Corpus text on no page at 2/);
     expect(() =>
-      check(rows, { editorialRows: new Set([1]), leafIds: new Set(["46"]) })
+      check(rows, { editorialRows: new Set([1, 2]), headingRows: new Set([1]) })
     ).not.toThrow();
+  });
+
+  it("requires indexed text to be on a page, even in a leaf section (Livy's periochae)", () => {
+    // Before Phase 5, Livy's `1s` and `46` were shallow leaves on no page,
+    // exempt from the text check but indexed by the corpus.
+    const rows = [row("1.1.1"), row("1s", "periocha libri I"), row("46", "x")];
+    expect(() => check(rows, { leafIds: new Set(["1s", "46"]) })).toThrow(
+      /Corpus text on no page at 1s: <span>periocha libri I/
+    );
   });
 
   it("rejects rows deeper than the scheme", () => {
@@ -1817,6 +1833,91 @@ describe("assertOutputInvariants text on no page", () => {
         pages: [{ id: ["1"], rows: [0, 2] }],
       })
     ).toThrow(/Ragged citation depth: 1.2.1 is deeper than book.chapter/);
+  });
+});
+
+describe("processTei2 editorial matter", () => {
+  const rowTexts = (body: string) =>
+    processTei2(testRoot(body), { workId: WORK_ID }).rows.map(([id, root]) => [
+      id.join("."),
+      extractRowText(root),
+    ]);
+
+  it("keeps a letter's dateline out of the corpus, but not its salutation", () => {
+    const texts = rowTexts(`<div n="1" type="textpart" subtype="book">
+        <label rend="opener"><seg rend="dateline">Scr. Romae a. 689.</seg>
+        <seg rend="salute">CICERO ATTICO salutem</seg></label>
+        <div n="1" type="textpart" subtype="chapter">Petitionis nostrae</div>
+      </div>`);
+    expect(texts).toEqual([
+      ["1", "CICERO ATTICO salutem"],
+      ["1.1", "Petitionis nostrae"],
+    ]);
+  });
+
+  it("keeps sigla, an editor's argumentum and English headings out of the corpus", () => {
+    const texts = rowTexts(`<div n="1" type="textpart" subtype="book">
+        <div type="front" subtype="sigla"><head>SIGLA</head><p>F = codex Florentinus</p></div>
+        <div type="front" subtype="arg"><head>Argumentum.</head><p>Hoc libro</p></div>
+        <head xml:lang="eng" resp="perseus">Youths</head>
+        <div n="1" type="textpart" subtype="chapter">Vesper adest</div>
+      </div>`);
+    expect(texts).toEqual([
+      ["1", ""],
+      ["1", ""],
+      ["1", ""],
+      ["1.1", "Vesper adest"],
+    ]);
+  });
+
+  it("keeps Perseus' English 'Argument' label out of the corpus, not the lemma (Gellius)", () => {
+    const texts = rowTexts(`<div n="1" type="textpart" subtype="book">
+        <div n="1" type="textpart" subtype="chapter"><head>Argument</head>
+          <p>Quali proportione Plutarchus ratiocinatum esse</p></div>
+      </div>`);
+    expect(texts).toEqual([
+      ["1.1", "Quali proportione Plutarchus ratiocinatum esse"],
+    ]);
+  });
+
+  it("gives Livy's periochae a page each, cited `per.N`", () => {
+    const encodingDesc = `<encodingDesc><refsDecl n="CTS">
+      <cRefPattern n="section" matchPattern="(\\w+).(\\w+).(\\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2']/tei:div[@n='$3'])"><p>s</p></cRefPattern>
+      <cRefPattern n="chapter" matchPattern="(\\w+).(\\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2'])"><p>c</p></cRefPattern>
+      <cRefPattern n="book" matchPattern="(\\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1'])"><p>b</p></cRefPattern>
+    </refsDecl></encodingDesc>`;
+    const book = (n: string, inner: string) =>
+      `<div type="textpart" subtype="book" n="${n}">${inner}</div>`;
+    const chapter = (n: string) =>
+      `<div type="textpart" subtype="chapter" n="${n}"><div type="textpart" subtype="section" n="1"><p>urbs ${n}</p></div></div>`;
+    const work = processTei2(
+      testRoot(
+        `<div type="edition">
+          ${book("1", `<head>liber I</head>${chapter("1")}${chapter("2")}`)}
+          ${book("1s", "<head>periocha libri I</head><p>Adventus Aeneae</p>")}
+          ${book("2s", "<head>periocha libri II</head><p>Brutus</p>")}
+          ${book("2", chapter("1"))}
+          ${book("3", "<p>Eumenes rex</p>")}
+        </div>`,
+        encodingDesc
+      ),
+      { workId: WORK_ID }
+    );
+    expect(work.textParts).toEqual(["book", "chapter", "section"]);
+    expect(work.pages.map((p) => p.id.join("."))).toEqual([
+      "1.1",
+      "1.2",
+      "2.1",
+      "per.1",
+      "per.2",
+      "per.3",
+    ]);
+    const per3 = checkPresent(work.pages.at(-1));
+    expect(
+      work.rows
+        .slice(...per3.rows)
+        .map(([id, root]) => [id.join("."), extractRowText(root)])
+    ).toEqual([["per.3", "Eumenes rex"]]);
   });
 });
 
@@ -1833,7 +1934,7 @@ describe("processTei2 coverage of text", () => {
         <p>lost text</p>
       </div>`;
     expect(() => processTei2(testRoot(body), { workId: WORK_ID })).toThrow(
-      /Text on no page at 2: .*lost text/
+      /Corpus text on no page at 2: .*lost text/
     );
   });
 

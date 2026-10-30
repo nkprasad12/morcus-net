@@ -19,17 +19,29 @@ const NAMED_SECTION_TOKENS: ReadonlyMap<string, string> = new Map([
   ["sigla", "Sigla"],
   ["arg", "Argumentum"],
   ["fragments", "Fragmenta"],
+  // Livy's Periochae, gathered into one group by `collectPeriochae`.
+  ["per", "Periochae"],
 ]);
 
 /**
- * A scene `pr` (or `pr1`, `pr2`) inside a play's `prologue` act is the
- * prologue itself, not a praefatio: Plautus' and Terence's `prologue.pr`,
- * Terence's Hecyra `prologue.pr1` and `prologue.pr2`.
+ * The label of a token that is named by its parent rather than its level:
+ *
+ * - A scene `pr` (or `pr1`, `pr2`) inside a play's `prologue` act is the
+ *   prologue itself, not a praefatio: Plautus' and Terence's `prologue.pr`,
+ *   Terence's Hecyra `prologue.pr1` and `prologue.pr2`.
+ * - A chapter `N` of Livy's `per` group is the periocha of book N:
+ *   `per.49` is `Periocha 49`.
+ *
+ * The parent's own label is then left out of a whole citation
+ * (`formatSectionPath`).
  */
-function prologueSceneLabel(
+function parentNamedLabel(
   token: string,
   parentToken: string | undefined
 ): string | undefined {
+  if (parentToken?.toLowerCase() === "per") {
+    return `Periocha ${token}`;
+  }
   if (parentToken?.toLowerCase() !== "prologue") {
     return undefined;
   }
@@ -55,7 +67,7 @@ export function formatSectionLabel(
   parentToken?: string
 ): string {
   const named =
-    prologueSceneLabel(token, parentToken) ??
+    parentNamedLabel(token, parentToken) ??
     NAMED_SECTION_TOKENS.get(token.toLowerCase());
   if (named !== undefined) {
     return named;
@@ -68,7 +80,8 @@ export function formatSectionLabel(
  * Formats a whole citation (`["1", "2"]`) as one label, joining the label of
  * each level with `, ` (`Act 1, Scene 2`). A play's `prologue` act is left
  * out before its own prologue scene, so `prologue.pr` reads `Prologus` and
- * Hecyra's `prologue.pr2` `Prologus 2`, not `Prologus, Prologus 2`.
+ * Hecyra's `prologue.pr2` `Prologus 2`, not `Prologus, Prologus 2`; likewise
+ * Livy's `per.49` reads `Periocha 49`, not `Periochae, Periocha 49`.
  */
 export function formatSectionPath(
   partNames: readonly string[],
@@ -79,7 +92,7 @@ export function formatSectionPath(
   );
   return labels
     .filter(
-      (_, i) => prologueSceneLabel(tokens[i + 1] ?? "", tokens[i]) === undefined
+      (_, i) => parentNamedLabel(tokens[i + 1] ?? "", tokens[i]) === undefined
     )
     .join(", ");
 }

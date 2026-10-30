@@ -17,6 +17,10 @@
  * - Cato's *De Agri Cultura* omits `<milestone unit="section" n="1"/>` in its
  *   prologue, and Historia Augusta's *Aurelianus* 20 repeats milestone 7 twice
  *   (`normalizeSectionMilestones`).
+ * - Livy's *Periochae* are book divisions (`1s`, and `46`…`142` for the lost
+ *   books) outside the `book.chapter.section` scheme (`collectPeriochae`).
+ * - Cicero's single-book works put an editor's sigla or argumentum in a
+ *   citable section (`normalizeCiceroChapterMilestones`).
  *
  * See `phase3_research_options.md` (Decision 3) for the census behind these.
  */
@@ -515,10 +519,26 @@ export function normalizePlinySectionMilestones(root: XmlNode): void {
 }
 
 /**
+ * `@n`s of the sections in single-book Cicero works that hold an editor's
+ * front matter rather than Cicero's text: the `SIGLA` of *Partitiones
+ * Oratoriae*, *Brutus* and *Orator* (phi038, phi039, phi042), and the Teubner
+ * *Argumentum* of *De Fato* (phi054, the only onboarded work with an `arg`
+ * division; it summarises the dialogue and dates it `a. u. c. 710, a. ante
+ * Chr. nat. 44`). `normalizeCiceroChapterMilestones` makes them unnumbered
+ * `<div type="front" subtype="sigla|arg">`s, which `process_work.ts` marks
+ * as editorial (`EDITORIAL_DIV_SUBTYPES`).
+ */
+const FRONT_MATTER_SECTIONS: ReadonlySet<string> = new Set(["sigla", "arg"]);
+
+/**
  * Normalizes single-book Cicero speeches and treatises (phi0474.*):
  * When a single-book work is cited by section but has `<milestone unit="chapter" n="..."/>`
  * markers throughout the text, slices the edition `<div>` into `<div type="textpart" subtype="chapter">`
  * containers at those markers, promoting the work to `["chapter", "section"]`.
+ *
+ * A leading `sigla` or `arg` section (`FRONT_MATTER_SECTIONS`) becomes
+ * uncitable front matter at the top of the first chapter, so it opens the
+ * first page instead of being a page (and the first citation) of its own.
  */
 export function normalizeCiceroChapterMilestones(root: XmlNode): void {
   const editionDiv =
@@ -585,7 +605,34 @@ export function normalizeCiceroChapterMilestones(root: XmlNode): void {
   }
   editionDiv.children.splice(0, editionDiv.children.length, ...newChildren);
 
-  // Handle front/back matter (sigla, arg, fragments)
+  // The editor's front matter (a list of sigla, De Fato's Teubner
+  // argumentum) is not Cicero's text: it becomes uncitable front matter at
+  // the top of the first chapter (see `FRONT_MATTER_SECTIONS`).
+  const frontMatter: XmlNode[] = [];
+  const withoutFrontMatter = editionDiv.children.filter((c) => {
+    const n = typeof c === "string" ? undefined : c.getAttr("n");
+    if (!isTextpart(c, "section") || !FRONT_MATTER_SECTIONS.has(n ?? "")) {
+      return true;
+    }
+    frontMatter.push(
+      new XmlNode(
+        "div",
+        [
+          ["type", "front"],
+          ["subtype", checkPresent(n)],
+        ],
+        c.children
+      )
+    );
+    return false;
+  });
+  editionDiv.children.splice(
+    0,
+    editionDiv.children.length,
+    ...withoutFrontMatter
+  );
+
+  // Handle back matter (fragments)
   let seenCh1 = false;
   let addedPreFrag = false;
   let addedPostFrag = false;
@@ -604,7 +651,7 @@ export function normalizeCiceroChapterMilestones(root: XmlNode): void {
     }
     if (isTextpart(c, "section")) {
       const n = c.getAttr("n");
-      if (n === "sigla" || n === "arg" || n === "fragments") {
+      if (n === "fragments") {
         setAttr(c, "n", "1");
         c.children.unshift(
           new XmlNode(
@@ -649,6 +696,10 @@ export function normalizeCiceroChapterMilestones(root: XmlNode): void {
     .filter(
       (n) => n.getAttr("unit") === "chapter" && n.getAttr("n") !== undefined
     );
+  assert(
+    allChMs.length > 0 || frontMatter.length === 0,
+    "No chapter to attach Cicero front matter to"
+  );
   if (allChMs.length === 0) return;
 
   sliceAtMarkers(
@@ -665,6 +716,15 @@ export function normalizeCiceroChapterMilestones(root: XmlNode): void {
         content
       )
   );
+  if (frontMatter.length > 0) {
+    // Opens the first page, above its first section, as Terence's front
+    // matter does (`normalizeTerenceFrontMatter`).
+    const firstChapter = checkPresent(
+      editionDiv.children.find((c): c is XmlNode => isTextpart(c, "chapter")),
+      "No chapter to attach Cicero front matter to"
+    );
+    firstChapter.children.unshift(...frontMatter);
+  }
 }
 
 /**
@@ -806,11 +866,98 @@ export function wrapPoemlessBooks(root: XmlNode): void {
   }
 }
 
+/** The citation token of the group `collectPeriochae` builds. */
+export const PERIOCHAE_GROUP = "per";
+
+/** A book division holding only the summary of book N: Livy's `1s`. */
+const SUMMARY_BOOK_N = /^(\d+)s$/;
+
+/**
+ * Livy's *Ab Urbe Condita* (phi0914.phi001) carries the *Periochae*, the
+ * late-antique summaries of all 142 books, as book divisions: `n="1s"` …
+ * `n="45s"` (each headed `periocha libri I`, next to the book it summarises)
+ * and, for the lost books, `n="46"` … `n="142"`, which hold only their
+ * periocha. Neither is cited `book.chapter.section`, so they are on no page.
+ *
+ * Moves them, in periocha order, into one new book-level group
+ * `<div subtype="book" n="per">` at the end of the work, each as a chapter
+ * numbered by its book (`per.1`, `per.49`, `per.142`): a shallow leaf, one
+ * page per periocha. Detected from the markup: books whose `@n` is `Ns`, and,
+ * only in a work that has those, numbered books past the last one with
+ * chapters (the lost books). No-op everywhere else.
+ */
+export function collectPeriochae(root: XmlNode): void {
+  const parents = [root, ...root.findDescendants("div")];
+  const parentOf = new Map<XmlNode, XmlNode>();
+  const books: XmlNode[] = [];
+  for (const parent of parents) {
+    for (const child of childNodes(parent)) {
+      if (isTextpartOf(child, "book")) {
+        parentOf.set(child, parent);
+        books.push(child);
+      }
+    }
+  }
+  const summaries = books.filter((b) =>
+    SUMMARY_BOOK_N.test(b.getAttr("n") ?? "")
+  );
+  if (summaries.length === 0) {
+    return;
+  }
+  const hasChapters = (book: XmlNode) =>
+    book.children.some((c) => isTextpartOf(c, "chapter"));
+  const lastNarrated = Math.max(
+    ...books
+      .filter(hasChapters)
+      .map((b) => b.getAttr("n") ?? "")
+      .filter((n) => /^\d+$/.test(n))
+      .map(Number)
+  );
+  const lost = books.filter((b) => {
+    const n = b.getAttr("n") ?? "";
+    return (
+      Number.isFinite(lastNarrated) &&
+      /^\d+$/.test(n) &&
+      Number(n) > lastNarrated
+    );
+  });
+  const periochae = [...summaries, ...lost].map((book): [number, XmlNode] => [
+    Number.parseInt(checkPresent(book.getAttr("n")), 10),
+    book,
+  ]);
+  periochae.sort(([a], [b]) => a - b);
+  const numbers = periochae.map(([n]) => n);
+  assert(
+    new Set(numbers).size === numbers.length,
+    () => `Duplicate periocha numbers: ${numbers}`
+  );
+  const lastBook = checkPresent(periochae[periochae.length - 1])[1];
+  const lastParent = checkPresent(parentOf.get(lastBook));
+  for (const [n, book] of periochae) {
+    const parent = checkPresent(parentOf.get(book));
+    parent.children.splice(parent.children.indexOf(book), 1);
+    setAttr(book, "subtype", "chapter");
+    setAttr(book, "n", String(n));
+  }
+  lastParent.children.push(
+    new XmlNode(
+      "div",
+      [
+        ["type", "textpart"],
+        ["subtype", "book"],
+        ["n", PERIOCHAE_GROUP],
+      ],
+      periochae.map(([, book]) => book)
+    )
+  );
+}
+
 export function normalizeDramaTei(body: XmlNode): void {
   normalizeNestedActs(body);
   normalizeTerenceFrontMatter(body);
   unnumberHeadingLines(body);
   wrapPoemlessBooks(body);
+  collectPeriochae(body);
   numberContinuedLines(body);
   normalizeSplitLineParts(body);
   normalizeSectionMilestones(body);

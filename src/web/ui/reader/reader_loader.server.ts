@@ -9,6 +9,7 @@ import {
 import { ReadOnlyDb } from "@/common/sql_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 import { preRenderTocItemsHtml } from "@/web/ui/reader/reader_toc.server";
+import { isRetiredFrontMatterId } from "@/web/ui/reader/reader_types.server";
 import fs from "fs";
 import path from "path";
 
@@ -558,6 +559,12 @@ export function resolvePageInWork(
         };
       }
     }
+  }
+
+  // 5. Front matter that used to be a page of its own (`sigla`, `arg`, as in
+  //    `/work/cicero/brutus/sigla` or `sigla.1`) now opens the first page.
+  if (isRetiredFrontMatterId(rawNeedle)) {
+    return { page: work.pages[0], index: 0, pageIndex: 0, matched: true };
   }
 
   return { page: work.pages[0], index: 0, pageIndex: 0, matched: false };

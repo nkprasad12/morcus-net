@@ -30,6 +30,15 @@ export function parseCitationString(str: string): CitationId {
 }
 
 /**
+ * Whether `id` names an editor's front matter that was once cited and paged
+ * on its own (Cicero's `sigla.1`, De Fato's `arg.1`) and is now uncitable
+ * text at the top of the work's first page (`normalizeCiceroChapterMilestones`).
+ */
+export function isRetiredFrontMatterId(id: string): boolean {
+  return /^(?:sigla|arg)(?:\.|$)/i.test(id.trim());
+}
+
+/**
  * Computes a boundary-aware differential citation label between the current page
  * and a target page. Returns only the structural tier that changes relative to the current page.
  * E.g.:

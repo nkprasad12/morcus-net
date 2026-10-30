@@ -10,6 +10,7 @@ import {
   getV2Work,
   resolvePageInWork,
 } from "@/web/ui/reader/reader_loader.server";
+import { isRetiredFrontMatterId } from "@/web/ui/reader/reader_types.server";
 import { createAsyncRegistrars } from "@/web/ui/core/server/async_handler.server";
 import { renderNotFoundPageHtml } from "@/web/ui/library/not_found.server";
 import {
@@ -51,7 +52,9 @@ function redirectReaderJump(
   if (
     cleanJump &&
     cleanJump !== pageId &&
-    !pageId.startsWith(cleanJump + ".")
+    !pageId.startsWith(cleanJump + ".") &&
+    // Retired front matter has no section of its own to scroll to.
+    !isRetiredFrontMatterId(cleanJump)
   ) {
     hash =
       !cleanJump.includes(".") &&

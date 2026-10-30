@@ -84,21 +84,24 @@ const INLINE_STYLE_CLASSES = new Set([
   "superscript",
   // Uncertain letters inside a word (`comba<unclear>e</unclear>pumam`).
   "reader-unclear",
-  // A cast list's role (`CHREMES, <roleName>senex.</roleName>`).
-  "reader-role-name",
 ]);
 
 /**
  * Classes of speaker labels (a play's `<speaker>`, a dialogue's speaker
- * `<label>`) and stage directions (a scene's roster of characters), which
- * are editorial apparatus rather than words of the text. The corpus does not
- * index them either (`extractRowText`, rule 5), so word indices stay aligned
- * with corpus `matchText` offsets.
+ * `<label>`), stage directions (a scene's roster of characters) and cast
+ * lists (`CHREMES, <roleName>senex.</roleName>`), which are editorial
+ * apparatus rather than words of the text. The corpus does not index them
+ * either (`extractRowText`, rule 5, and `UNTOKENIZED_CONTENT_KINDS`), so word
+ * indices stay aligned with corpus `matchText` offsets. Other editorial
+ * matter carries `data-no-tokenize`.
  */
 const UNTOKENIZED_CLASSES = [
   "reader-speaker",
   "reader-speaker-inline",
   "reader-stage",
+  "reader-cast-list",
+  "reader-cast-person",
+  "reader-role-name",
 ];
 
 /**

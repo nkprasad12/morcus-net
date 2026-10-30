@@ -122,9 +122,9 @@ function assembleRowText(node: XmlNode | string): string {
   if (node.name === "br") {
     return "\n";
   }
-  // Speaker labels and stage directions are editorial apparatus rather than
-  // words of the text (rule 5): the reader does not tokenize them either
-  // (`tokenize.client.ts`).
+  // Speaker labels, stage directions, cast lists and editorial matter are
+  // apparatus rather than words of the text (rule 5): the reader does not
+  // tokenize them either (`tokenize.client.ts`).
   const kind = node.getAttr("kind");
   if (
     WORD_BREAK_TAGS.has(node.name) ||
@@ -184,9 +184,11 @@ function assembleRowText(node: XmlNode | string): string {
  *    across a line break (`<hi>lon-</hi><hi>gitudo</hi>`), so join.
  * 4. Structure always breaks: lines, blocks, headings, `br`, and note, gap
  *    and space markers.
- * 5. Speaker labels (a play's `<speaker>`, a dialogue's speaker `<label>`)
- *    and stage directions (a scene's roster of characters) are not text:
- *    they contribute no words, but break like a marker.
+ * 5. Speaker labels (a play's `<speaker>`, a dialogue's speaker `<label>`),
+ *    stage directions (a scene's roster of characters), cast lists and an
+ *    editor's matter (a letter's dateline, sigla, an argumentum; kind
+ *    `editorial`) are not text: they contribute no words, but break like a
+ *    marker. See `UNTOKENIZED_CONTENT_KINDS`.
  *
  * A review of every seam in the library where this rule changes the tokens
  * (9,661) found about 10 errors, all missing spaces in the source TEI. See

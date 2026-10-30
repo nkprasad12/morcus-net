@@ -1099,9 +1099,9 @@
     "phi0474.phi038.perseus-lat2": {
       "textParts": ["chapter", "section"],
       "rows": 144,
-      "pages": 41,
-      "citableRows": 143,
-      "firstCitation": "sigla.1",
+      "pages": 40,
+      "citableRows": 142,
+      "firstCitation": "1.1",
       "lastCitation": "40.140",
       "notes": 211,
       "nodes": {
@@ -1115,9 +1115,9 @@
     "phi0474.phi039.perseus-lat2": {
       "textParts": ["chapter", "section"],
       "rows": 363,
-      "pages": 98,
-      "citableRows": 362,
-      "firstCitation": "sigla.1",
+      "pages": 97,
+      "citableRows": 361,
+      "firstCitation": "1.1",
       "lastCitation": "97.333",
       "notes": 690,
       "nodes": {
@@ -1170,9 +1170,9 @@
     "phi0474.phi042.perseus-lat2": {
       "textParts": ["chapter", "section"],
       "rows": 114,
-      "pages": 27,
-      "citableRows": 113,
-      "firstCitation": "sigla.1",
+      "pages": 26,
+      "citableRows": 112,
+      "firstCitation": "1.1",
       "lastCitation": "26.100",
       "notes": 110,
       "nodes": {
@@ -1382,9 +1382,9 @@
     "phi0474.phi054.perseus-lat2": {
       "textParts": ["chapter", "section"],
       "rows": 61,
-      "pages": 22,
-      "citableRows": 60,
-      "firstCitation": "arg.1",
+      "pages": 21,
+      "citableRows": 59,
+      "firstCitation": "1.1",
       "lastCitation": "fragments.fr5",
       "notes": 0,
       "nodes": {
@@ -2145,7 +2145,7 @@
     "phi0914.phi001.perseus-lat2": {
       "textParts": ["book", "chapter", "section"],
       "rows": 20476,
-      "pages": 1765,
+      "pages": 1907,
       "citableRows": 20296,
       "firstCitation": "1.pr.1",
       "lastCitation": "45.44.21",

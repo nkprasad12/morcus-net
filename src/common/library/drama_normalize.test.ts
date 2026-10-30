@@ -1,4 +1,6 @@
+import { checkPresent } from "@/common/assert";
 import {
+  collectPeriochae,
   hoistSenecaCardMilestones,
   nextSegmentNumber,
   normalizeCiceroChapterMilestones,
@@ -22,6 +24,66 @@ function parse(xml: string): XmlNode {
 function lineNumbers(root: XmlNode): string[] {
   return root.findDescendants("l").map((l) => l.getAttr("n") ?? "-");
 }
+
+describe("collectPeriochae", () => {
+  const book = (n: string, inner: string) =>
+    `<div type="textpart" subtype="book" n="${n}">${inner}</div>`;
+  const chapter = `<div type="textpart" subtype="chapter" n="1"><div type="textpart" subtype="section" n="1"><p>x</p></div></div>`;
+
+  it("gathers Livy's periochae, in order, into a `per` group of chapters", () => {
+    const root = parse(`<body><div type="edition">
+      <div type="textpart" subtype="part" n="1">
+        ${book("1", chapter)}
+        ${book("1s", "<head>periocha libri I</head><p>Adventus Aeneae</p>")}
+        ${book("11s", "<head>periocha libri XI</head><p>Fabius</p>")}
+        ${book("2s", "<head>periocha libri II</head><p>Brutus</p>")}
+        ${book("2", chapter)}
+      </div>
+      <div type="textpart" subtype="part" n="2">
+        ${book("45", chapter)}
+        <div type="textpart" subtype="index"><head>Librorum XLVI—CXLII Periochae.</head></div>
+        ${book("142", "<p>bellum adversus Germanos</p>")}
+        ${book("46", "<p>Eumenes rex</p>")}
+      </div>
+    </div></body>`);
+    collectPeriochae(root);
+
+    const books = root
+      .findDescendants("div")
+      .filter((d) => d.getAttr("subtype") === "book");
+    expect(books.map((b) => b.getAttr("n"))).toEqual(["1", "2", "45", "per"]);
+    const group = books[3];
+    const periochae = group.children.filter(
+      (c): c is XmlNode => typeof c !== "string"
+    );
+    expect(periochae.map((p) => p.getAttr("n"))).toEqual([
+      "1",
+      "2",
+      "11",
+      "46",
+      "142",
+    ]);
+    expect(periochae.every((p) => p.getAttr("subtype") === "chapter")).toBe(
+      true
+    );
+    expect(periochae[0].toString()).toContain("periocha libri I");
+    // The group goes at the end of the part that held the last periocha.
+    const lastPart = root
+      .findDescendants("div")
+      .filter((d) => d.getAttr("subtype") === "part")[1];
+    expect(lastPart.children.at(-1)).toBe(group);
+  });
+
+  it("leaves works without summary books alone", () => {
+    const xml = `<body><div type="edition">${book("1", chapter)}${book(
+      "2",
+      "<p>A book with no chapters</p>"
+    )}</div></body>`;
+    const root = parse(xml);
+    collectPeriochae(root);
+    expect(root.toString()).toBe(parse(xml).toString());
+  });
+});
 
 describe("wrapPoemlessBooks", () => {
   const book = (n: string, inner: string) =>
@@ -418,11 +480,46 @@ describe("normalizeCiceroChapterMilestones", () => {
     const chapters = root
       .findDescendants("div")
       .filter((d) => d.getAttr("subtype") === "chapter");
-    expect(chapters.map((c) => c.getAttr("n"))).toEqual([
-      "sigla",
-      "1",
-      "fragments",
+    expect(chapters.map((c) => c.getAttr("n"))).toEqual(["1", "fragments"]);
+    // The sigla open chapter 1 as unnumbered front matter, before section 1.
+    const [front, section] = chapters[0].children.filter(
+      (c): c is XmlNode => typeof c !== "string" && c.name === "div"
+    );
+    expect(front.attrs).toEqual([
+      ["type", "front"],
+      ["subtype", "sigla"],
     ]);
+    expect(front.toString()).toContain("Sigla text");
+    expect(section.getAttr("n")).toBe("1");
+  });
+
+  it("makes an editor's argumentum front matter of the first chapter", () => {
+    const root = parse(`<body>
+      <div type="edition">
+        <div type="textpart" subtype="section" n="arg"><head>Argumentum.</head><p>Hoc libro</p></div>
+        <div type="textpart" subtype="section" n="1"><p><milestone unit="chapter" n="1"/>Text 1</p></div>
+        <div type="textpart" subtype="section" n="2"><p>Text 2</p></div>
+      </div>
+    </body>`);
+    normalizeCiceroChapterMilestones(root);
+
+    const chapters = root
+      .findDescendants("div")
+      .filter((d) => d.getAttr("subtype") === "chapter");
+    expect(chapters.map((c) => c.getAttr("n"))).toEqual(["1"]);
+    const front = checkPresent(
+      chapters[0].children.find(
+        (c): c is XmlNode => typeof c !== "string" && c.name === "div"
+      )
+    );
+    expect(front.getAttr("subtype")).toBe("arg");
+    expect(front.getAttr("n")).toBeUndefined();
+    expect(
+      root
+        .findDescendants("div")
+        .filter((d) => d.getAttr("subtype") === "section")
+        .map((s) => s.getAttr("n"))
+    ).toEqual(["1", "2"]);
   });
 
   it("leaves multi-book works alone", () => {

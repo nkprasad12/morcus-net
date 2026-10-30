@@ -620,7 +620,7 @@ describe("row_text_parity: extractRowText vs V2 reader tokenization", () => {
       ]);
     });
 
-    it("gives speaker and stage rows no words, and keeps cast lists", () => {
+    it("gives speaker, stage and cast list rows no words", () => {
       const result = assertRowParity([
         kind("speaker", "Sosia"),
         kind("stage", "(SIMO. SOSIA.)"),
@@ -630,16 +630,58 @@ describe("row_text_parity: extractRowText vs V2 reader tokenization", () => {
             "cast-list",
             kind("cast-person", "CHREMES, ", kind("role-name", "senex.")),
             kind("cast-person", "DAVUS,", kind("role-name", "servus."))
-          )
+          ),
+          span([["block", "1"]], "ACTA LUDIS MEGALENSIBUS")
         ),
       ]);
       expect(result[0]).toEqual([]);
       expect(result[1]).toEqual([]);
+      // The didascalia after the cast list is still text.
       expect(result[2]).toEqual([
-        [0, "CHREMES"],
-        [1, "senex"],
-        [2, "DAVUS"],
-        [3, "servus"],
+        [0, "ACTA"],
+        [1, "LUDIS"],
+        [2, "MEGALENSIBUS"],
+      ]);
+    });
+
+    it("gives editorial matter no words, inside a row or as a whole row", () => {
+      const result = assertRowParity([
+        // A letter's dateline and salutation (`<label rend="opener">`).
+        el(
+          "b",
+          [],
+          span(
+            [
+              ["kind", "editorial"],
+              ["rend", "italic"],
+              ["rendParent", "seg"],
+            ],
+            "Scr. Romae a. 689."
+          ),
+          el("br"),
+          span([], "CICERO ATTICO salutem")
+        ),
+        // Sigla, a row of their own.
+        span(
+          [["kind", "editorial"]],
+          el("head", [], "SIGLA"),
+          span([["block", "1"]], "F = codex Florentinus"),
+          span([["block", "1"]], "B = cod. Ottobonianus")
+        ),
+        // An English heading (Catullus 62).
+        el("head", [["kind", "editorial"]], "Youths"),
+        // Dateline and text, flush: still a word break.
+        span([], span([["kind", "editorial"]], "Scr."), "Romae"),
+      ]);
+      expect(result).toEqual([
+        [
+          [0, "CICERO"],
+          [1, "ATTICO"],
+          [2, "salutem"],
+        ],
+        [],
+        [],
+        [[0, "Romae"]],
       ]);
     });
 

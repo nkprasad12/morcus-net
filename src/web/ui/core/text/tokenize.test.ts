@@ -541,17 +541,29 @@ describe("tokenizeSubtree with joinAcrossInline", () => {
     ]);
   });
 
-  it("continues across unclear letters and a cast list's role", () => {
+  it("continues across unclear letters", () => {
     const { seen } = tokenize(
-      'comba<span class="reader-unclear">e</span>pumam ' +
-        '<span class="reader-role-name italic">sen</span>ex'
+      'comba<span class="reader-unclear">e</span>pumam est'
     );
     expect(seen.map((s) => [s.part?.word ?? s.token, s.index])).toEqual([
       ["combaepumam", 0],
       ["combaepumam", 0],
       ["combaepumam", 0],
-      ["senex", 1],
-      ["senex", 1],
+      ["est", 1],
+    ]);
+  });
+
+  it("skips cast lists and editorial matter, which are not words of the text", () => {
+    const { seen } = tokenize(
+      '<div class="reader-cast-list"><div class="reader-cast-person">CHREMES, ' +
+        '<span class="reader-role-name italic">senex.</span></div></div>' +
+        '<strong><span class="italic" data-no-tokenize="true">Scr. Romae.</span>' +
+        "<br>CICERO ATTICO salutem</strong>"
+    );
+    expect(seen.map((s) => [s.token, s.index])).toEqual([
+      ["CICERO", 0],
+      ["ATTICO", 1],
+      ["salutem", 2],
     ]);
   });
 

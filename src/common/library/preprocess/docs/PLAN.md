@@ -326,7 +326,12 @@ Remaining multi-edition choices, front matter, the 5 coverage mismatches (Catull
 - **Upstream typos**: listed in [UPSTREAM.md §6.1](UPSTREAM.md#61-pending-upstream-fixes) and absorbed locally for now. No PRs have been opened yet.
 - **Label fixes**: work-ID labels corrected in the census ratchet and the survey and upstream docs (`stoa0261` is Sidonius, not Symmachus or Ausonius; `stoa0054.stoa006` is Bede; `phi1014.phi003` is Seneca the Elder's _Suasoriae_; `phi2003.phi001` is Apicius; `stoa0079.stoa001` is Cato).
 - **Coverage mismatches**: all 5 from the prototype survey are resolved. Catullus, Florus and Petronius _Fragmenta_ are onboarded; Lucan is served by Hypotactic; the Livy fragment slice `phi0914.phi001fr` was deleted upstream.
-- **Still open**: front matter, and the Group B onboarding.
+- **Front matter: done.** No file has a TEI `<front>`/`<back>` (upstream's review removes them), so "front matter" means editorial material inside `<body>` that is not the author's text. Authorial prefaces, Pliny's book 1 _Summarium_ and Terence's cast lists were already handled; the rest:
+  - **Livy's Periochae** (`phi0914.phi001`; ~20,500 words) were in the corpus but on no page. `collectPeriochae` gathers the `Ns` books (1–45) and the periocha-only books 46–142 into a `per` group: 142 pages `per.1`–`per.142`, titled "Periocha N", under "Periochae" in the TOC. Livy's own pages are unchanged.
+  - **An `editorial` content kind**, rendered unchanged but excluded from the corpus and word lookup (~7,500 words): Cicero letter datelines (the salutation stays), _sigla_ / `index` divisions (incl. Livy's _Index notarum_), the editor's _argumentum_ of _De Fato_, English headings (`xml:lang="eng"`, `resp="perseus"`, and Gellius' 383 untagged `<head>Argument</head>` labels over his chapter lemmata). Terence's cast lists are also untokenized.
+  - **_Sigla_ and editorial _argumenta_** are uncitable rows at the top of page 1 (Cicero `phi038`, `phi039`, `phi042`, `phi054`; `firstCitation` is now `1.1`); old `…/sigla` and `…/arg` URLs redirect to page 1.
+  - **New invariant:** a row whose text goes into the corpus must be on some page. It also surfaced Q. Cicero's _Commentariolum_ title and opener, now shown on page 1.
+- **Still open**: the Group B onboarding (see [EXCLUSIONS.md](EXCLUSIONS.md); all six are deferred).
 
 ---
 

@@ -49,10 +49,14 @@ import {
  * - `unclear`: `<unclear>` letters, which stay part of their word.
  * - `tei-space`: a TEI `<space/>`, a blank left in the manuscript. Not the
  *   `space` rows that `processWorkBody` adds between stanzas.
+ * - `editorial`: an editor's matter inside the body, rendered like any other
+ *   text (see `isEditorialContent`): a letter's dateline, a list of sigla,
+ *   an editor's argumentum, an English heading.
  *
  * Speaker labels and stage directions (in this corpus only scene rosters
  * like `(SIMO. SOSIA.)`) are editorial apparatus, not words of the text, so
- * neither the corpus nor the reader's word tokenizer counts them.
+ * neither the corpus nor the reader's word tokenizer counts them. Nor do
+ * they count cast lists or `editorial` matter (`UNTOKENIZED_CONTENT_KINDS`).
  */
 export type ContentKind =
   | "speaker"
@@ -62,7 +66,8 @@ export type ContentKind =
   | "cast-person"
   | "role-name"
   | "unclear"
-  | "tei-space";
+  | "tei-space"
+  | "editorial";
 
 /** `kind`s rendered as their own block, which always break words. */
 export const BLOCK_CONTENT_KINDS: ReadonlySet<string> = new Set<ContentKind>([
@@ -72,9 +77,74 @@ export const BLOCK_CONTENT_KINDS: ReadonlySet<string> = new Set<ContentKind>([
   "cast-person",
 ]);
 
-/** `kind`s whose text is excluded from the corpus and from word lookup. */
+/**
+ * `kind`s whose text is excluded from the corpus and from word lookup. The
+ * exclusion covers the whole subtree of a node of one of these kinds
+ * (`extractRowText`, `tokenize.client.ts`), so a cast list's people and
+ * roles, or everything in an editorial division, are excluded with it.
+ */
 export const UNTOKENIZED_CONTENT_KINDS: ReadonlySet<string> =
-  new Set<ContentKind>(["speaker", "speaker-inline", "stage"]);
+  new Set<ContentKind>([
+    "speaker",
+    "speaker-inline",
+    "stage",
+    "cast-list",
+    "cast-person",
+    "role-name",
+    "editorial",
+  ]);
+
+/**
+ * `@subtype`s of divisions that hold an editor's matter: lists of sigla
+ * (Cicero's `SIGLA`, Livy's `Index notarum`) and an editor's argumentum (De
+ * Fato's, made a `<div type="front" subtype="arg">` by
+ * `normalizeCiceroChapterMilestones`; a TEI `n="arg"` section has subtype
+ * `section` and is not matched).
+ */
+const EDITORIAL_DIV_SUBTYPES: ReadonlySet<string> = new Set([
+  "sigla",
+  "index",
+  "arg",
+]);
+
+/** `@xml:lang`s of English headings in Latin texts. */
+const ENGLISH_LANGS: ReadonlySet<string> = new Set(["eng", "en"]);
+
+/**
+ * Whether `node` is an editor's matter rather than the author's text, which
+ * is rendered as usual but kept out of the corpus and word lookup (kind
+ * `editorial`):
+ *
+ * - a letter's dateline (`<seg rend="dateline">Scr. Romae …</seg>` in
+ *   Cicero's letters, `<seg type="dateline">` in Q. Cicero's
+ *   Commentariolum), but not the salutation beside it;
+ * - a division of sigla, an index of sigla or an editor's argumentum
+ *   (`EDITORIAL_DIV_SUBTYPES`);
+ * - a heading in English, or one Perseus added (`<head xml:lang="eng"
+ *   resp="perseus">Youths</head>` in Catullus 62).
+ */
+function isEditorialContent(node: XmlNode): boolean {
+  if (node.name === "seg") {
+    return (
+      node.getAttr("rend") === "dateline" || node.getAttr("type") === "dateline"
+    );
+  }
+  if (DIVISION_ELEMENTS.has(node.name)) {
+    return EDITORIAL_DIV_SUBTYPES.has(node.getAttr("subtype") ?? "");
+  }
+  if (node.name === "head" || node.name === "label") {
+    return (
+      ENGLISH_LANGS.has(node.getAttr("xml:lang") ?? "") ||
+      node.getAttr("resp") === "perseus" ||
+      // Perseus' untagged English label over each of Gellius' chapter
+      // lemmata (`<head>Argument</head>`, 383×); the lemmata are authorial.
+      (node.children.length === 1 &&
+        typeof node.children[0] === "string" &&
+        node.children[0].trim() === "Argument")
+    );
+  }
+  return false;
+}
 
 /** The `kind` of each drama element that becomes a marked `<span>`. */
 const DRAMA_ELEMENT_KINDS: ReadonlyMap<string, ContentKind> = new Map<
@@ -937,17 +1007,29 @@ function isEditorialNode(node: XmlNode): boolean {
 /**
  * Whether `node`, a row's root, is a heading: a `<head>`, `<label>` or
  * `<docAuthor>` byline, or an unnumbered `opener` division (a letter's
- * dateline and salutation, as in Q. Cicero's Commentariolum). See
- * `divideWork`.
+ * dateline and salutation, as in Q. Cicero's Commentariolum), or an
+ * unnumbered wrapper holding only those (the Commentariolum's title and
+ * opener, before its first chapter milestone). See `divideWork`.
  */
 function isHeadingNode(node: XmlNode): boolean {
   if (["head", "label", "docAuthor"].includes(node.name)) {
     return true;
   }
-  return (
+  if (node.getAttr("n") !== undefined) {
+    return false;
+  }
+  if (
     DIVISION_ELEMENTS.has(node.name) &&
-    node.getAttr("n") === undefined &&
     (node.getAttr("subtype") === "opener" || node.getAttr("type") === "opener")
+  ) {
+    return true;
+  }
+  const elements = node.children.filter(instanceOf(XmlNode));
+  return (
+    elements.length > 0 &&
+    node.children.every((c) =>
+      typeof c === "string" ? c.trim() === "" : isHeadingNode(c)
+    )
   );
 }
 
@@ -1139,6 +1221,9 @@ export function transformContentNode(
   parent?: XmlNode
 ): XmlNode<ProcessedWorkContentNodeType> {
   const attrs: XmlNode["attrs"] = [];
+  if (isEditorialContent(node)) {
+    attrs.push(["kind", "editorial"]);
+  }
   const rend = node.getAttr("rend");
   assert(isKnownRend(rend), rend);
   if (rend !== undefined && isHandledRend(rend)) {
@@ -1851,8 +1936,35 @@ export function convertGrcBetaCode(root: XmlNode): void {
 export interface RowFacts {
   /** Indices of rows of editorial matter (headings, unnumbered divisions). */
   editorialRows?: ReadonlySet<number>;
+  /** Indices of heading rows; see `isHeadingNode`. */
+  headingRows?: ReadonlySet<number>;
+  /**
+   * Whether the work is a translation (`<div type="translation">`), which the
+   * corpus never indexes (`saveAsCorpusInputWork`), so the corpus
+   * reachability check does not apply.
+   */
+  isTranslation?: boolean;
   /** Dotted ids of leaf sections; see `CitationSpine.leafIds`. */
   leafIds?: ReadonlySet<string>;
+}
+
+/**
+ * Whether `node` has text that the corpus indexes: any text outside notes,
+ * gaps, spaces and `UNTOKENIZED_CONTENT_KINDS` (mirrors `extractRowText`).
+ */
+function hasIndexedText(node: XmlNode | string): boolean {
+  if (typeof node === "string") {
+    return node.trim().length > 0;
+  }
+  const kind = node.getAttr("kind") ?? "";
+  if (
+    ["note", "gap", "space"].includes(node.name) ||
+    kind === "tei-space" ||
+    UNTOKENIZED_CONTENT_KINDS.has(kind)
+  ) {
+    return false;
+  }
+  return node.children.some(hasIndexedText);
 }
 
 /**
@@ -1928,12 +2040,27 @@ export function assertOutputInvariants(
       () => `Citable row ${id.join(".")} is on no page`
     )
   );
+  // Corpus reachability: the corpus indexes every row, and a search hit links
+  // to the row's page, so a row with indexed text must be on a page. Only a
+  // heading may sit between pages (a book's title before its first chapter).
+  // Editorial matter off the pages (Livy's index of sigla) is not indexed.
+  rows.forEach(([id, row], i) => {
+    assert(
+      facts.isTranslation === true ||
+        covered[i] ||
+        facts.headingRows?.has(i) ||
+        !hasIndexedText(row),
+      () =>
+        `Corpus text on no page at ${id.join(".") || "(top level)"}: ` +
+        row.toString().replace(/\s+/g, " ").slice(0, 80)
+    );
+  });
   // Page text coverage: the reader shows only pages, so text on no page is lost.
   // That is only allowed for editorial matter (headings, unnumbered
   // divisions), for the preamble of a section above page depth (text in a
-  // book before its first chapter), and, for now, for leaf sections
-  // shallower than page depth (Livy's books 46-142, which survive only as
-  // summaries), which need per-branch pagination (plan Phase 4).
+  // book before its first chapter), and for leaf sections shallower than
+  // page depth; the check above still requires any of their indexed text to
+  // be on a page.
   const coveredIndices = rows.map((_, i) => i).filter((i) => covered[i]);
   rows.forEach(([id, row], i) => {
     if (covered[i] || facts.editorialRows?.has(i) || textWeight(row) === 0) {
@@ -1988,7 +2115,14 @@ export function processTei2(
   const pages = divideWork(rows, textParts, headingRows, cardStarts);
   assertOutputInvariants(
     { rows, pages, textParts },
-    { editorialRows, leafIds: spine.leafIds }
+    {
+      editorialRows,
+      headingRows,
+      leafIds: spine.leafIds,
+      isTranslation: body
+        .findDescendants("div")
+        .some((div) => div.getAttr("type") === "translation"),
+    }
   );
   const navTree = buildNavTree(pages);
   const info: DocumentInfo = {

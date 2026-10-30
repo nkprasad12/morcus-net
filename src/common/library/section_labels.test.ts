@@ -62,3 +62,18 @@ describe("prologues of plays", () => {
     );
   });
 });
+
+describe("Livy's Periochae", () => {
+  test("labels the group Periochae and each chapter in it a periocha", () => {
+    expect(formatSectionLabel("book", "per")).toBe("Periochae");
+    expect(formatSectionLabel("chapter", "49", "per")).toBe("Periocha 49");
+    // Elsewhere a chapter is still a chapter.
+    expect(formatSectionLabel("chapter", "49", "45")).toBe("Chapter 49");
+  });
+
+  test("formats a whole citation without repeating the group", () => {
+    const parts = ["book", "chapter", "section"];
+    expect(formatSectionPath(parts, ["per", "142"])).toBe("Periocha 142");
+    expect(formatSectionPath(parts, ["45", "1"])).toBe("Book 45, Chapter 1");
+  });
+});
