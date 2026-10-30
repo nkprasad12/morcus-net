@@ -27,7 +27,7 @@ function* walkDir(dir: string): Generator<RawPhiJson> {
   for (const dirent of fs.readdirSync(dir, { withFileTypes: true })) {
     const file_path = path.join(dir, dirent.name);
     if (dirent.isDirectory()) {
-      walkDir(file_path);
+      yield* walkDir(file_path);
       continue;
     }
     if (!dirent.isFile() || !file_path.endsWith(".json")) {

@@ -212,6 +212,18 @@ describe("processPhiJson", () => {
     expect(results[0].rows[0][1].toString()).toContain("Valid work");
   });
 
+  it("should recurse into subdirectories", () => {
+    const subDir = path.join(tempDir, "nested");
+    fs.mkdirSync(subDir);
+    const work = createRawPhiJson([[["1", "1", "1", "1"], "Nested work"]]);
+    fs.writeFileSync(path.join(subDir, "work.json"), JSON.stringify(work));
+
+    const results = processPhiJson();
+
+    expect(results).toHaveLength(1);
+    expect(results[0].info.workId).toBe("phi-json-lat0690.001");
+  });
+
   it("should handle empty directory", () => {
     expect(processPhiJson()).toHaveLength(0);
   });
