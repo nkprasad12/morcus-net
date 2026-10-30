@@ -164,9 +164,18 @@ As detailed in [PLAN.md §5.2a](PLAN.md#52a-how-far-along-is-upstream-and-should
 
 ### 6.1 Pending upstream fixes
 
-Source typos found during onboarding that are still present at the pinned commit (`8b536bdf`) and that we currently absorb locally (alias in [`perseus_rends.ts`](../../perseus_rends.ts), tolerance in [`cite_structure.ts`](../../cite_structure.ts), or a patch under [`patches/canonical-latinLit/`](../../../../../patches/canonical-latinLit/)). No PRs are open for these yet. `p@inddent` and `quote@bockquote` from the census list above are already gone upstream.
+Source errors found during onboarding, at the pinned commit (`8b536bdf`). Perseus is in the middle of a large refactor, so the policy is to **send upstream only what we can't absorb locally without risk**: errors in the Latin text itself, and structural gaps no local workaround can target. Typos in markup values and division names are absorbed locally with zero risk (an alias in [`perseus_rends.ts`](../../perseus_rends.ts), a tolerance in [`cite_structure.ts`](../../cite_structure.ts), or a patch under [`patches/canonical-latinLit/`](../../../../../patches/canonical-latinLit/)) and are **not** sent. `p@inddent` and `quote@bockquote` from the census list above are already gone upstream.
 
-| File                            | Location                    | Typo                                                          | Fix                   | Absorbed by           |
+**Sent upstream** (fork branch `morcus-upstream-sync-3`, based on the pin):
+
+| File                            | Location              | Error                                                      | Fix           | Why upstream                                                                                                                               |
+| ------------------------------- | --------------------- | ---------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `phi0588.abo024.perseus-lat2`   | Nepos _Cato_ ch. 3    | `<div subtype="chapter">` with no `@n` (chs. 1–2 numbered) | add `n="3"`   | A patch locates text by citation, so it cannot reach an uncitable div; auto-numbering would hide real errors elsewhere. Blocks onboarding. |
+| `stoa0261.stoa002.perseus-lat1` | Sidonius _Ep._ 4.21.3 | OCR `querirnoniarn`                                        | `querimoniam` | An error in the Latin text, wrong for every consumer of the file.                                                                          |
+
+**Kept local** (decided; do not send):
+
+| File                            | Location                    | Error                                                         | Correct form          | Absorbed by           |
 | ------------------------------- | --------------------------- | ------------------------------------------------------------- | --------------------- | --------------------- |
 | `phi0474.phi005.perseus-lat2`   | _In Verrem_ 2.3.92          | `quote@rend="smallcaos"`                                      | `smallcaps`           | `canonicalRend`       |
 | `phi0474.phi049.perseus-lat2`   | _Tusc._ 2.21                | `quote@rend="aign(blockquote); single; merge"`                | `align(blockquote)`   | `canonicalRend`       |
@@ -175,11 +184,25 @@ Source typos found during onboarding that are still present at the pinned commit
 | `phi0474.phi043.perseus-lat2`   | `citeStructure` header      | `match="div/div[@subtype=book']"`                             | `[@subtype='book']`   | `cite_structure.ts`   |
 | `phi0474.phi055.perseus-lat2`   | _De Off._ 2 (`n="13"`)      | `milestone@unit="alt_chpater"`                                | `alt_chapter`         | not used for citation |
 | `stoa0045.stoa015.perseus-lat2` | Ausonius _Griphus_ pr.      | `div@subtype="secton"`                                        | `section`             | `cite_structure.ts`   |
-| `phi1014.phi002.perseus-lat1`   | Seneca Elder _Contr. exc._  | `div@subtype="chaper"`                                        | `chapter`             | not onboarded         |
-| `stoa0261.stoa002.perseus-lat1` | Sidonius _Ep._ 4.21.3       | OCR `querirnoniarn`                                           | `querimoniam`         | not patched           |
+| `phi1014.phi002.perseus-lat1`   | Seneca Elder _Contr. exc._  | `div@subtype="chaper"`                                        | `chapter`             | `cite_structure.ts`   |
 | `stoa0261.stoa002.perseus-lat1` | Sidonius _Ep._, 115 letters | `div2@type="poem"` on letters (32 others use `type="letter"`) | `type="letter"`       | `cite_structure.ts`   |
-| `phi1276.phi001.perseus-lat2`   | Juvenal 3.7.12              | `Alcitheon`                                                   | `Alcithoen`           | patch file            |
 | `phi0474.phi050.perseus-lat2`   | _De Nat. D._ 3.65           | no-break spaces (U+00A0) inside `— —`                         | plain spaces          | patch file            |
+
+**Not an upstream error:** Juvenal 7.12 `Alcitheon` (`phi1276.phi001.perseus-lat2`) matches Ramsay's printed edition, so Perseus is faithful to its source. Our patch file (→ `Alcithoen`, the form in other sources and reference works) is a local editorial correction and stays.
+
+------------------------------- | --------------------------- | ------------------------------------------------------------- | --------------------- | --------------------- |
+| `phi0474.phi005.perseus-lat2` | _In Verrem_ 2.3.92 | `quote@rend="smallcaos"` | `smallcaps` | `canonicalRend` |
+| `phi0474.phi049.perseus-lat2` | _Tusc._ 2.21 | `quote@rend="aign(blockquote); single; merge"` | `align(blockquote)` | `canonicalRend` |
+| `phi0474.phi058.perseus-lat2` | _Ad Q. fr._ (5×) | `quote@rend="align(blockquote"` | close the parenthesis | `canonicalRend` |
+| `phi1348.abo011.perseus-lat2` | Suetonius _Iul._ | `quote@rend="align(blockquote"` | close the parenthesis | not onboarded |
+| `phi0474.phi043.perseus-lat2` | `citeStructure` header | `match="div/div[@subtype=book']"` | `[@subtype='book']` | `cite_structure.ts` |
+| `phi0474.phi055.perseus-lat2` | _De Off._ 2 (`n="13"`) | `milestone@unit="alt_chpater"` | `alt_chapter` | not used for citation |
+| `stoa0045.stoa015.perseus-lat2` | Ausonius _Griphus_ pr. | `div@subtype="secton"` | `section` | `cite_structure.ts` |
+| `phi1014.phi002.perseus-lat1` | Seneca Elder _Contr. exc._ | `div@subtype="chaper"` | `chapter` | not onboarded |
+| `stoa0261.stoa002.perseus-lat1` | Sidonius _Ep._ 4.21.3 | OCR `querirnoniarn` | `querimoniam` | not patched |
+| `stoa0261.stoa002.perseus-lat1` | Sidonius _Ep._, 115 letters | `div2@type="poem"` on letters (32 others use `type="letter"`) | `type="letter"` | `cite_structure.ts` |
+| `phi1276.phi001.perseus-lat2` | Juvenal 3.7.12 | `Alcitheon` | `Alcithoen` | patch file |
+| `phi0474.phi050.perseus-lat2` | _De Nat. D._ 3.65 | no-break spaces (U+00A0) inside `— —` | plain spaces | patch file |
 
 ---
 
