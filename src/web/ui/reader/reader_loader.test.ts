@@ -201,4 +201,35 @@ describe("resolvePageInWork section fallback", () => {
       matched: true,
     });
   });
+
+  test("resolves a bare section number in a chapter.section work", () => {
+    const work: V2PreprocessedWork = {
+      ...fakeWork("phi0474.phi038.perseus-lat2", "brutus"),
+      textParts: ["chapter", "section"],
+      paginationDepth: 1,
+      pages: [
+        {
+          id: ["40"],
+          title: "Chapter 40",
+          sectionCount: 2,
+          citationRange: ["40.148", "40.149"],
+          singleHtml:
+            '<span id="sec-40.148">a</span><span id="sec-40.149">b</span>',
+        },
+        {
+          id: ["41"],
+          title: "Chapter 41",
+          sectionCount: 2,
+          citationRange: ["41.150", "41.151"],
+          singleHtml:
+            '<span id="sec-41.150">c</span><span id="sec-41.151">d</span>',
+        },
+      ],
+    };
+
+    expect(resolvePageInWork(work, "150")).toMatchObject({
+      pageIndex: 1,
+      matched: true,
+    });
+  });
 });

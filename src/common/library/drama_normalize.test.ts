@@ -1,6 +1,10 @@
 import {
+  hoistSenecaCardMilestones,
   nextSegmentNumber,
+  normalizeCiceroChapterMilestones,
   normalizeNestedActs,
+  normalizePlinySectionMilestones,
+  normalizeSectionMilestones,
   normalizeSplitLineParts,
   normalizeTerenceFrontMatter,
   numberContinuedLines,
@@ -191,5 +195,222 @@ describe("normalizeSplitLineParts", () => {
     </body>`);
     normalizeSplitLineParts(body);
     expect(parts(body)).toEqual(["F", "F", "F", "F"]);
+  });
+});
+
+describe("normalizeSectionMilestones", () => {
+  it("prepends milestone n=1 to p when division starts at n=2 preceded by text", () => {
+    const body = parse(`<body>
+      <div1 type="chapter" n="pr">
+        <head>Praefatio</head>
+        <p>Est interdum praestare... <milestone unit="section" n="2"/>Et virum bonum... <milestone unit="section" n="3"/>Mercatorem...</p>
+      </div1>
+    </body>`);
+    normalizeSectionMilestones(body);
+    const p = body.findDescendants("p")[0];
+    expect(p.children[0]).toBeInstanceOf(XmlNode);
+    const firstChild = p.children[0] as XmlNode;
+    expect(firstChild.name).toBe("milestone");
+    expect(firstChild.getAttr("unit")).toBe("section");
+    expect(firstChild.getAttr("n")).toBe("1");
+    const milestones = body
+      .findDescendants("milestone")
+      .map((m) => m.getAttr("n"));
+    expect(milestones).toEqual(["1", "2", "3"]);
+  });
+
+  it("leaves divisions alone when milestone n=1 is already present or n=2 is not preceded by text", () => {
+    const withOne = parse(`<body>
+      <div1 type="chapter" n="1">
+        <p><milestone unit="section" n="1"/>Text <milestone unit="section" n="2"/>More text</p>
+      </div1>
+    </body>`);
+    normalizeSectionMilestones(withOne);
+    expect(
+      withOne.findDescendants("milestone").map((m) => m.getAttr("n"))
+    ).toEqual(["1", "2"]);
+
+    const noTextBefore = parse(`<body>
+      <div1 type="chapter" n="2">
+        <p><milestone unit="section" n="2"/>Text <milestone unit="section" n="3"/>More text</p>
+      </div1>
+    </body>`);
+    normalizeSectionMilestones(noTextBefore);
+    expect(
+      noTextBefore.findDescendants("milestone").map((m) => m.getAttr("n"))
+    ).toEqual(["2", "3"]);
+  });
+
+  it("renumbers duplicate consecutive integer milestones in sequence (Aurelianus 20)", () => {
+    const body = parse(`<body>
+      <div type="textpart" subtype="chapter" n="20">
+        <p>
+          <milestone unit="section" n="1"/>A
+          <milestone unit="section" n="2"/>B
+          <milestone unit="section" n="3"/>C
+          <milestone unit="section" n="4"/>D
+          <milestone unit="section" n="5"/>E
+          <milestone unit="section" n="6"/>F
+          <milestone unit="section" n="7"/>G
+          <milestone unit="section" n="7"/>H
+        </p>
+      </div>
+    </body>`);
+    normalizeSectionMilestones(body);
+    expect(
+      body.findDescendants("milestone").map((m) => m.getAttr("n"))
+    ).toEqual(["1", "2", "3", "4", "5", "6", "7", "8"]);
+  });
+});
+
+describe("normalizePlinySectionMilestones", () => {
+  it("cleans @n, moves trailing milestones across chapters, prepends mid-section milestone, and disambiguates duplicates", () => {
+    const root = parse(`<body>
+      <div type="textpart" subtype="book" n="1">
+        <div type="textpart" subtype="chapter" n="1">
+          <p><milestone unit="section" n="1?"/>Text 1 <milestone unit="section" n="2 "/><note>Apparatus</note></p>
+        </div>
+        <div type="textpart" subtype="chapter" n="2">
+          <p>Continued text <milestone unit="section" n="3"/>Text 3 <milestone unit="section" n="3"/>More text</p>
+        </div>
+      </div>
+    </body>`);
+    normalizePlinySectionMilestones(root);
+
+    const ch1 = root
+      .findDescendants("div")
+      .find(
+        (d) => d.getAttr("subtype") === "chapter" && d.getAttr("n") === "1"
+      )!;
+    const ch2 = root
+      .findDescendants("div")
+      .find(
+        (d) => d.getAttr("subtype") === "chapter" && d.getAttr("n") === "2"
+      )!;
+
+    // Trailing milestone 2 was moved from chapter 1 into chapter 2
+    expect(
+      ch1.findDescendants("milestone").map((m) => m.getAttr("n"))
+    ).toEqual(["1"]);
+
+    // Chapter 2 received milestone 2 at the front, cleaned question mark, and deduplicated 3 as 3b
+    expect(
+      ch2.findDescendants("milestone").map((m) => m.getAttr("n"))
+    ).toEqual(["2", "3", "3b"]);
+  });
+});
+
+describe("normalizeCiceroChapterMilestones", () => {
+  it("slices a single-book section work at chapter milestones", () => {
+    const root = parse(`<body>
+      <div type="edition">
+        <milestone unit="chapter" n="1"/>
+        <div type="textpart" subtype="section" n="1"><p>Text 1</p></div>
+        <div type="textpart" subtype="section" n="2"><p>Text 2</p></div>
+        <milestone unit="chapter" n="2"/>
+        <div type="textpart" subtype="section" n="3"><p>Text 3</p></div>
+      </div>
+    </body>`);
+    normalizeCiceroChapterMilestones(root);
+
+    const chapters = root
+      .findDescendants("div")
+      .filter((d) => d.getAttr("subtype") === "chapter");
+    expect(chapters).toHaveLength(2);
+    expect(chapters[0].getAttr("n")).toBe("1");
+    expect(chapters[1].getAttr("n")).toBe("2");
+    expect(
+      chapters[0]
+        .findDescendants("div")
+        .filter((d) => d.getAttr("subtype") === "section")
+        .map((s) => s.getAttr("n"))
+    ).toEqual(["1", "2"]);
+    expect(
+      chapters[1]
+        .findDescendants("div")
+        .filter((d) => d.getAttr("subtype") === "section")
+        .map((s) => s.getAttr("n"))
+    ).toEqual(["3"]);
+  });
+
+  it("handles sigla and unnumbered fragment wrappers", () => {
+    const root = parse(`<body>
+      <div type="edition">
+        <div type="textpart" subtype="section" n="sigla"><p>Sigla text</p></div>
+        <milestone unit="chapter" n="1"/>
+        <div type="textpart" subtype="section" n="1"><p>Text 1</p></div>
+        <div type="textpart" subtype="fragments">
+          <div type="textpart" subtype="section" n="fr1"><p>Fragment 1</p></div>
+        </div>
+      </div>
+    </body>`);
+    normalizeCiceroChapterMilestones(root);
+
+    const chapters = root
+      .findDescendants("div")
+      .filter((d) => d.getAttr("subtype") === "chapter");
+    expect(chapters.map((c) => c.getAttr("n"))).toEqual([
+      "sigla",
+      "1",
+      "fragments",
+    ]);
+  });
+
+  it("leaves multi-book works alone", () => {
+    const root = parse(`<body>
+      <div type="edition">
+        <div type="textpart" subtype="book" n="1">
+          <milestone unit="chapter" n="1"/>
+          <div type="textpart" subtype="section" n="1"><p>Text</p></div>
+        </div>
+      </div>
+    </body>`);
+    normalizeCiceroChapterMilestones(root);
+
+    expect(
+      root.findDescendants("div").filter((d) => d.getAttr("subtype") === "chapter")
+    ).toHaveLength(0);
+  });
+});
+
+describe("hoistSenecaCardMilestones", () => {
+  it("splits <sp> around a child card milestone so the milestone sits between speeches", () => {
+    const root = parse(`<div>
+      <sp who="#theseus">
+        <speaker>Thes.</speaker>
+        <l n="1114b" part="F">O nimium potens,</l>
+        <milestone n="1115" unit="card"/>
+        <pb n="p.195"/>
+        <l n="1115">quanto parentes sanguinis vinclo tenes.</l>
+      </sp>
+    </div>`);
+    hoistSenecaCardMilestones(root);
+
+    const nonWhitespaceChildren = root.children.filter(
+      (c): c is XmlNode => typeof c !== "string"
+    );
+    expect(nonWhitespaceChildren).toHaveLength(3);
+    const [sp1, milestone, sp2] = nonWhitespaceChildren;
+    expect(sp1.name).toBe("sp");
+    expect(sp1.children.filter((c) => typeof c !== "string").map((c) => (c as XmlNode).name)).toEqual([
+      "speaker",
+      "l",
+    ]);
+    expect(
+      (
+        sp1.children.filter((c) => typeof c !== "string")[1] as XmlNode
+      ).getAttr("n")
+    ).toBe("1114b");
+
+    expect(milestone.name).toBe("milestone");
+    expect(milestone.getAttr("n")).toBe("1115");
+
+    expect(sp2.name).toBe("sp");
+    expect(sp2.children.filter((c) => typeof c !== "string").map((c) => (c as XmlNode).name)).toEqual(["pb", "l"]);
+    expect(
+      (
+        sp2.children.filter((c) => typeof c !== "string")[1] as XmlNode
+      ).getAttr("n")
+    ).toBe("1115");
   });
 });

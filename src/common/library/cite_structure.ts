@@ -626,7 +626,12 @@ export function sliceAtMarkers(
     content.every((c) => typeof c === "string" && c.trim().length === 0);
   // A copy of `node` with other `children`. Continuation copies drop the
   // element's identity and its paragraph indent, which belong to its start.
-  const copyWith = (node: XmlNode, children: XmlChild[], first: boolean) => {
+  const copyWith = (
+    node: XmlNode,
+    children: XmlChild[],
+    first: boolean,
+    last: boolean
+  ) => {
     const attrs = node.attrs
       .filter(([key]) => first || key !== "xml:id")
       .map(([key, value]): [string, string] => [
@@ -634,25 +639,37 @@ export function sliceAtMarkers(
         first || key !== "rend"
           ? value
           : value
-              .split(/[\s;]+/)
-              .filter((t) => t !== "indent" && t !== "align(indent)")
-              .join(" "),
+              .split(";")
+              .map((t) => t.trim())
+              .filter(
+                (t) => t.length > 0 && t !== "indent" && t !== "align(indent)"
+              )
+              .join("; "),
       ])
       .filter(([key, value]) => key !== "rend" || value.length > 0);
+    if (node.name === "q" || node.name === "quote") {
+      if (!first && !attrs.some(([k]) => k === "splitOpen")) {
+        attrs.push(["splitOpen", "0"]);
+      }
+      if (!last && !attrs.some(([k]) => k === "splitClose")) {
+        attrs.push(["splitClose", "0"]);
+      }
+    }
     return new XmlNode(node.name, attrs, children);
   };
   const pushCopy = (
     target: XmlChild[],
     node: XmlNode,
     children: XmlChild[],
-    first: boolean
+    first: boolean,
+    last: boolean
   ) => {
     if (isBlank(children)) {
       // Nothing but layout whitespace: keep the whitespace, not the element.
       target.push(...children);
       return;
     }
-    target.push(copyWith(node, children, first));
+    target.push(copyWith(node, children, first, last));
   };
   const split = (node: XmlNode): { head: XmlChild[]; parts: Part[] } => {
     const head: XmlChild[] = [];
@@ -667,14 +684,30 @@ export function sliceAtMarkers(
       }
       if (typeof child !== "string" && holdsMarker.has(child)) {
         const inner = split(child);
-        pushCopy(current, child, inner.head, true);
+        const pieces = [inner.head, ...inner.parts.map((p) => p.content)];
+        const firstNonBlank = pieces.findIndex((p) => !isBlank(p));
+        let lastNonBlank = -1;
+        for (let j = pieces.length - 1; j >= 0; j--) {
+          if (!isBlank(pieces[j])) {
+            lastNonBlank = j;
+            break;
+          }
+        }
+        pushCopy(
+          current,
+          child,
+          inner.head,
+          0 === firstNonBlank,
+          0 === lastNonBlank
+        );
         inner.parts.forEach((innerPart, i) => {
           const part: Part = { marker: innerPart.marker, content: [] };
           pushCopy(
             part.content,
             child,
             innerPart.content,
-            i === 0 && isBlank(inner.head)
+            i + 1 === firstNonBlank,
+            i + 1 === lastNonBlank
           );
           parts.push(part);
           current = part.content;
@@ -740,6 +773,74 @@ const QUOTATION_ELEMENTS: ReadonlySet<string> = new Set(["quote", "q", "cit"]);
  */
 const IMPLICIT_LINE_MIN_NUMBERED = 0.9;
 
+function hasSectionMilestone(node: XmlNode): boolean {
+  for (const child of node.children) {
+    if (typeof child === "string" || OPAQUE_ELEMENTS.has(child.name)) {
+      continue;
+    }
+    if (
+      child.name === "milestone" &&
+      child.getAttr("unit") === "section" &&
+      child.getAttr("n") !== undefined
+    ) {
+      return true;
+    }
+    if (hasSectionMilestone(child)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const HEADING_OR_NOTE_ELEMENTS = new Set([
+  "head",
+  "label",
+  "docAuthor",
+  "note",
+  "pb",
+  "bibl",
+]);
+
+function findFirstContent(node: XmlNode): XmlNode | string | undefined {
+  for (const child of node.children) {
+    if (typeof child === "string") {
+      if (child.trim().length > 0) {
+        return child;
+      }
+      continue;
+    }
+    if (
+      OPAQUE_ELEMENTS.has(child.name) ||
+      HEADING_OR_NOTE_ELEMENTS.has(child.name)
+    ) {
+      continue;
+    }
+    if (
+      child.name === "milestone" &&
+      child.getAttr("unit") === "section" &&
+      child.getAttr("n") !== undefined
+    ) {
+      return child;
+    }
+    const inner = findFirstContent(child);
+    if (inner !== undefined) {
+      return inner;
+    }
+  }
+  return undefined;
+}
+
+function startsWithSectionMilestone(node: XmlNode): boolean {
+  const first = findFirstContent(node);
+  return (
+    first !== undefined &&
+    typeof first !== "string" &&
+    first.name === "milestone" &&
+    first.getAttr("unit") === "section" &&
+    first.getAttr("n") !== undefined
+  );
+}
+
 /**
  * Rule B: a leaf level whose sections hold `<seg type="X" n="...">`, where
  * the older headers declare `X` as a unit, gets `X` as an implicit last level.
@@ -750,10 +851,21 @@ const IMPLICIT_LINE_MIN_NUMBERED = 0.9;
  * declare `line`: the `citeStructure` of Prudentius' Psychomachia and seven
  * Ausonius poems stops at `section`, so their lines would not be citable.
  * Lines inside a quotation (`QUOTATION_ELEMENTS`) are not counted or cited.
+ *
+ * Likewise, when a leaf container level (other than `section` or `line`) has
+ * `section` declared in the older `<refsDecl>` headers and every container in
+ * the group holds at least one `<milestone unit="section" n="...">`, it gets
+ * an implicit `section` leaf level (`milestone[@unit='section']`), covering
+ * the 30 Historia Augusta lives and Celsus' *De Medicina*.
+ *
+ * Pliny's *Naturalis Historia* also gets an implicit `section` level under
+ * chapters: `<refsDecl>` omits section, but chapters with sections start with
+ * a `<milestone unit="section" n="...">`.
  */
 function implicitLeafLevels(
   builder: SpineBuilder,
-  containers: XmlNode[]
+  containers: XmlNode[],
+  parentUnit: string
 ): EvalLevel[] {
   const types = new Set<string>();
   let numberedLines = 0;
@@ -815,6 +927,35 @@ function implicitLeafLevels(
           `${numberedLines + unnumberedLines} <l> have @n`
       );
     }
+  }
+  if (
+    levels.length === 0 &&
+    parentUnit.toLowerCase() !== "section" &&
+    parentUnit.toLowerCase() !== "line" &&
+    ((builder.declared.has("section") &&
+      containers.length > 0 &&
+      containers.every(hasSectionMilestone)) ||
+      (parentUnit.toLowerCase() === "chapter" &&
+        containers.some(hasSectionMilestone) &&
+        containers
+          .filter(hasSectionMilestone)
+          .every(startsWithSectionMilestone)))
+  ) {
+    levels.push({
+      unit: "section",
+      alternatives: [
+        [
+          {
+            name: "milestone",
+            predicates: [["unit", "section"]],
+            descendant: true,
+          },
+        ],
+      ],
+      use: "n",
+      children: [],
+      origin: "milestone[@unit='section'] (undeclared in citeStructure)",
+    });
   }
   return levels;
 }
@@ -976,7 +1117,8 @@ function evaluateLevels(
         ? level.children
         : implicitLeafLevels(
             builder,
-            matches.map((m) => m.node)
+            matches.map((m) => m.node),
+            unit
           );
     // A division of the same kind as those kept between (Jerome's letters,
     // kept over their sections) that has no sections of its own (letter 44)

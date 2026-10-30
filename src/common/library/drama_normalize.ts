@@ -14,11 +14,15 @@
  *   `@n`, where every other play numbers them `185b` (`numberContinuedLines`).
  * - A few of Seneca's split lines carry the wrong `@part`s (Medea 170 is
  *   `F,F,F,F`) (`normalizeSplitLineParts`).
+ * - Cato's *De Agri Cultura* omits `<milestone unit="section" n="1"/>` in its
+ *   prologue, and Historia Augusta's *Aurelianus* 20 repeats milestone 7 twice
+ *   (`normalizeSectionMilestones`).
  *
  * See `phase3_research_options.md` (Decision 3) for the census behind these.
  */
 
 import { assert, checkPresent } from "@/common/assert";
+import { sliceAtMarkers } from "@/common/library/cite_structure";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 
 /** The `@type="textpart"` division with `@subtype` `subtype`. */
@@ -248,10 +252,472 @@ export function normalizeSplitLineParts(root: XmlNode): void {
   }
 }
 
+const DIVISION_NAMES = new Set(["div", "div1", "div2", "div3"]);
+
+/**
+ * Repairs two upstream `<milestone unit="section">` encoding bugs inside a
+ * division before `buildCitationSpine` slices section milestones:
+ *
+ * 1. Cato's *De Agri Cultura* (`stoa0079.stoa001.perseus-lat1`, `<div1
+ *    type="chapter" n="pr">`) omits `<milestone unit="section" n="1"/>` at the
+ *    beginning of `<p>` before `<milestone unit="section" n="2"/>`, leaving
+ *    `pr.1` ("Est interdum praestare...") as an uncitable shallow row. When a
+ *    division's first section milestone is `n="2"` inside a `<p>` with
+ *    non-whitespace text before that milestone, prepend
+ *    `<milestone unit="section" n="1"/>` to that `<p>`.
+ * 2. Historia Augusta's *Divus Aurelianus* (`phi2331.phi026.perseus-lat2`,
+ *    chapter 20) repeats `<milestone unit="section" n="7"/>` twice in the
+ *    sequence `1, 2, 3, 4, 5, 6, 7, 7` (a typo for `8`). When a division's
+ *    section milestones run `1..k` and the next milestone repeats `k` (with
+ *    either the end of the division or `k + 2` after it), renumber the
+ *    duplicate to `k + 1`.
+ */
+export function normalizeSectionMilestones(root: XmlNode): void {
+  const visitDivision = (div: XmlNode) => {
+    const milestones: {
+      node: XmlNode;
+      pAncestor?: XmlNode;
+      textBeforeInP: boolean;
+    }[] = [];
+    const scan = (
+      node: XmlNode,
+      currentP: XmlNode | undefined,
+      state: { seenTextInP: boolean }
+    ) => {
+      for (const child of node.children) {
+        if (typeof child === "string") {
+          if (currentP !== undefined && child.trim().length > 0) {
+            state.seenTextInP = true;
+          }
+          continue;
+        }
+        if (child.name === "note" || child.name === "#comment") {
+          continue;
+        }
+        if (DIVISION_NAMES.has(child.name)) {
+          visitDivision(child);
+          continue;
+        }
+        if (child.name === "milestone" && child.getAttr("unit") === "section") {
+          milestones.push({
+            node: child,
+            pAncestor: currentP,
+            textBeforeInP: state.seenTextInP,
+          });
+          continue;
+        }
+        const enteringP = currentP === undefined && child.name === "p";
+        const pState = enteringP ? { seenTextInP: false } : state;
+        scan(child, currentP ?? (enteringP ? child : undefined), pState);
+      }
+    };
+    scan(div, undefined, { seenTextInP: false });
+
+    if (milestones.length === 0) {
+      return;
+    }
+    const first = milestones[0];
+    if (
+      first.node.getAttr("n") === "2" &&
+      first.pAncestor !== undefined &&
+      first.textBeforeInP
+    ) {
+      first.pAncestor.children.unshift(
+        new XmlNode("milestone", [["unit", "section"], ["n", "1"]], [])
+      );
+    }
+
+    for (let i = 1; i < milestones.length; i++) {
+      const prevN = milestones[i - 1].node.getAttr("n");
+      const currN = milestones[i].node.getAttr("n");
+      if (prevN === undefined || currN !== prevN || !/^\d+$/.test(currN)) {
+        continue;
+      }
+      const k = Number(currN);
+      const prefixSequential = milestones
+        .slice(0, i)
+        .every((m, idx) => m.node.getAttr("n") === String(idx + 1));
+      const nextN = milestones[i + 1]?.node.getAttr("n");
+      if (
+        prefixSequential &&
+        k === i &&
+        (nextN === undefined || nextN === String(k + 2))
+      ) {
+        setAttr(milestones[i].node, "n", String(k + 1));
+      }
+    }
+  };
+  visitDivision(root);
+}
+
+function startsWithSectionMilestoneInChapter(node: XmlNode): boolean {
+  for (const child of node.children) {
+    if (typeof child === "string") {
+      if (child.trim().length > 0) {
+        return false;
+      }
+      continue;
+    }
+    if (
+      child.name === "head" ||
+      child.name === "label" ||
+      child.name === "docAuthor" ||
+      child.name === "note" ||
+      child.name === "pb" ||
+      child.name === "#comment"
+    ) {
+      continue;
+    }
+    if (child.name === "milestone" && child.getAttr("unit") === "section") {
+      return true;
+    }
+    return startsWithSectionMilestoneInChapter(child);
+  }
+  return false;
+}
+
+/**
+ * Normalizes Pliny's *Naturalis Historia* (phi0978.phi001.perseus-lat2):
+ * 1. Cleans `@n` attributes on all `<milestone unit="section"/>` (trimming whitespace
+ *    and trailing `?`).
+ * 2. Moves trailing textless section milestones across chapter boundaries into the
+ *    opening of the next chapter, keeping apparatus notes attached to the right section.
+ * 3. Prepends active section milestones to mid-section chapter openings.
+ * 4. Disambiguates duplicate section numbers within a chapter with a `b` suffix.
+ */
+export function normalizePlinySectionMilestones(root: XmlNode): void {
+  const books = (
+    root.name === "div" && isTextpart(root, "book") ? [root] : []
+  ).concat(
+    root
+      .findDescendants("div")
+      .filter(
+        (n) =>
+          isTextpart(n, "book") &&
+          n.children.some((c) => isTextpart(c, "chapter"))
+      )
+  );
+  for (const book of books) {
+    const secMilestones = book
+      .findDescendants("milestone")
+      .filter((n) => n.getAttr("unit") === "section");
+    if (secMilestones.length === 0) {
+      continue;
+    }
+    // 1. Clean @n
+    for (const m of secMilestones) {
+      const n = m.getAttr("n");
+      if (n !== undefined) {
+        setAttr(m, "n", n.trim().replace(/\?$/, ""));
+      }
+    }
+
+    const chapters = book.children.filter((c): c is XmlNode =>
+      isTextpart(c, "chapter")
+    );
+    // 2. Move trailing textless section milestones across chapter boundaries
+    for (let i = 0; i < chapters.length - 1; i++) {
+      const currCh = chapters[i];
+      const nextCh = chapters[i + 1];
+      const ps = currCh.findDescendants("p");
+      if (ps.length === 0) continue;
+      const lastP = ps[ps.length - 1];
+
+      let msIndex = -1;
+      for (let j = lastP.children.length - 1; j >= 0; j--) {
+        const child = lastP.children[j];
+        if (typeof child === "string") {
+          if (child.trim().length > 0) {
+            break;
+          }
+          continue;
+        }
+        if (
+          child.name === "note" ||
+          child.name === "pb" ||
+          child.name === "#comment"
+        ) {
+          continue;
+        }
+        if (child.name === "milestone" && child.getAttr("unit") === "section") {
+          msIndex = j;
+        }
+        break;
+      }
+
+      if (msIndex >= 0) {
+        const movedChildren = lastP.children.splice(msIndex);
+        let nextP = nextCh.findDescendants("p")[0];
+        if (nextP === undefined) {
+          nextP = new XmlNode("p", [], []);
+          nextCh.children.push(nextP);
+        }
+        nextP.children.unshift(...movedChildren);
+      }
+    }
+
+    // 3 & 4. Mid-section chapter starts and within-chapter dedup
+    let prevActiveSecN: string | undefined = undefined;
+    for (const ch of chapters) {
+      const secMs = ch
+        .findDescendants("milestone")
+        .filter((n) => n.getAttr("unit") === "section");
+      const paraMs = ch
+        .findDescendants("milestone")
+        .filter((n) => n.getAttr("unit") === "paragraph");
+      if (secMs.length === 0 && paraMs.length > 1) {
+        continue;
+      }
+
+      let firstP = ch.findDescendants("p")[0];
+      if (firstP === undefined && ch.children.length > 0) {
+        firstP = new XmlNode("p", [], []);
+        ch.children.push(firstP);
+      }
+
+      const startsWithSec = startsWithSectionMilestoneInChapter(ch);
+      if (
+        !startsWithSec &&
+        prevActiveSecN !== undefined &&
+        firstP !== undefined
+      ) {
+        const synMs = new XmlNode(
+          "milestone",
+          [
+            ["unit", "section"],
+            ["n", prevActiveSecN],
+          ],
+          []
+        );
+        firstP.children.unshift(synMs);
+        secMs.unshift(synMs);
+      }
+
+      const seenInCh = new Set<string>();
+      for (const m of secMs) {
+        let n = checkPresent(m.getAttr("n"));
+        if (seenInCh.has(n)) {
+          n = `${n}b`;
+          setAttr(m, "n", n);
+        }
+        seenInCh.add(n);
+        prevActiveSecN = n;
+      }
+    }
+  }
+}
+
+/**
+ * Normalizes single-book Cicero speeches and treatises (phi0474.*):
+ * When a single-book work is cited by section but has `<milestone unit="chapter" n="..."/>`
+ * markers throughout the text, slices the edition `<div>` into `<div type="textpart" subtype="chapter">`
+ * containers at those markers, promoting the work to `["chapter", "section"]`.
+ */
+export function normalizeCiceroChapterMilestones(root: XmlNode): void {
+  const editionDiv =
+    root.name === "div" &&
+    (root.getAttr("type") === "edition" ||
+      root.getAttr("type") === "translation")
+      ? root
+      : root
+          .findDescendants("div")
+          .find(
+            (n) =>
+              n.getAttr("type") === "edition" ||
+              n.getAttr("type") === "translation"
+          );
+  if (editionDiv === undefined) {
+    return;
+  }
+
+  const chMilestones = editionDiv
+    .findDescendants("milestone")
+    .filter(
+      (n) => n.getAttr("unit") === "chapter" && n.getAttr("n") !== undefined
+    );
+  if (chMilestones.length === 0) {
+    return;
+  }
+  const hasSectionDivs = editionDiv
+    .findDescendants("div")
+    .some((n) => isTextpart(n, "section"));
+  if (!hasSectionDivs) {
+    return;
+  }
+  const hasNumberedOuterDivs = editionDiv.children.some((c) => {
+    if (typeof c === "string") return false;
+    if (c.name !== "div") return false;
+    const subtype = c.getAttr("subtype") ?? c.getAttr("type") ?? "";
+    if (["book", "actio", "letter", "poem", "chapter"].includes(subtype)) {
+      return true;
+    }
+    if (subtype === "speech" && c.getAttr("n") !== undefined) {
+      return true;
+    }
+    return false;
+  });
+  if (hasNumberedOuterDivs) {
+    return;
+  }
+
+  // Unwrap unnumbered grouping divs (e.g. In Pisonem phi027 fragments/speech wrappers)
+  const newChildren: XmlChild[] = [];
+  for (const child of editionDiv.children) {
+    if (
+      typeof child !== "string" &&
+      child.name === "div" &&
+      child.getAttr("n") === undefined &&
+      (child.getAttr("subtype") === "fragments" ||
+        child.getAttr("subtype") === "speech" ||
+        child.getAttr("type") === "textpart")
+    ) {
+      newChildren.push(...child.children);
+    } else {
+      newChildren.push(child);
+    }
+  }
+  editionDiv.children.splice(0, editionDiv.children.length, ...newChildren);
+
+  // Handle front/back matter (sigla, arg, fragments)
+  let seenCh1 = false;
+  let addedPreFrag = false;
+  let addedPostFrag = false;
+
+  for (const c of editionDiv.children) {
+    if (typeof c === "string") continue;
+    if (
+      (c.name === "milestone" &&
+        c.getAttr("unit") === "chapter" &&
+        c.getAttr("n") === "1") ||
+      c
+        .findDescendants("milestone")
+        .some(
+          (n) =>
+            n.getAttr("unit") === "chapter" &&
+            n.getAttr("n") === "1"
+        )
+    ) {
+      seenCh1 = true;
+    }
+    if (isTextpart(c, "section")) {
+      const n = c.getAttr("n");
+      if (n === "sigla" || n === "arg" || n === "fragments") {
+        setAttr(c, "n", "1");
+        c.children.unshift(
+          new XmlNode("milestone", [["unit", "chapter"], ["n", n]], [])
+        );
+      } else if (!seenCh1 && n?.startsWith("fr") && !addedPreFrag) {
+        c.children.unshift(
+          new XmlNode(
+            "milestone",
+            [["unit", "chapter"], ["n", "fragments"]],
+            []
+          )
+        );
+        addedPreFrag = true;
+      } else if (seenCh1 && n?.startsWith("fr") && !addedPostFrag) {
+        c.children.unshift(
+          new XmlNode(
+            "milestone",
+            [["unit", "chapter"], ["n", "fragments"]],
+            []
+          )
+        );
+        addedPostFrag = true;
+      }
+    }
+  }
+
+  const allChMs = editionDiv
+    .findDescendants("milestone")
+    .filter(
+      (n) => n.getAttr("unit") === "chapter" && n.getAttr("n") !== undefined
+    );
+  if (allChMs.length === 0) return;
+
+  sliceAtMarkers(
+    editionDiv,
+    new Set(allChMs),
+    (m, content) =>
+      new XmlNode(
+        "div",
+        [
+          ["type", "textpart"],
+          ["subtype", "chapter"],
+          ["n", checkPresent(m.getAttr("n"))],
+        ],
+        content
+      )
+  );
+}
+
+/**
+ * Normalizes Seneca tragedies (phi1017.phi001-010.perseus-lat2):
+ * Hoists any `<milestone unit="card" n="..."/>` nested inside `<sp>` (e.g. Phaedra
+ * card 1115) out of `<sp>` by splitting the `<sp>` around the milestone, so every
+ * card milestone in Seneca tragedies sits cleanly at the top level between speech blocks.
+ */
+export function hoistSenecaCardMilestones(root: XmlNode): void {
+  const visit = (parent: XmlNode) => {
+    for (const child of parent.children) {
+      if (typeof child !== "string") {
+        visit(child);
+      }
+    }
+    const hasCardInSp = parent.children.some(
+      (c) =>
+        typeof c !== "string" &&
+        c.name === "sp" &&
+        c.children.some(
+          (sc) =>
+            typeof sc !== "string" &&
+            sc.name === "milestone" &&
+            sc.getAttr("unit") === "card"
+        )
+    );
+    if (!hasCardInSp) return;
+
+    const newChildren: XmlChild[] = [];
+    for (const child of parent.children) {
+      if (typeof child === "string" || child.name !== "sp") {
+        newChildren.push(child);
+        continue;
+      }
+      const cardIdx = child.children.findIndex(
+        (sc) =>
+          typeof sc !== "string" &&
+          sc.name === "milestone" &&
+          sc.getAttr("unit") === "card"
+      );
+      if (cardIdx === -1) {
+        newChildren.push(child);
+        continue;
+      }
+      const before = child.children.slice(0, cardIdx);
+      const milestone = child.children[cardIdx];
+      const after = child.children.slice(cardIdx + 1);
+
+      if (before.length > 0) {
+        newChildren.push(new XmlNode("sp", [...child.attrs], before));
+      }
+      newChildren.push(milestone);
+      if (after.length > 0) {
+        newChildren.push(new XmlNode("sp", [...child.attrs], after));
+      }
+    }
+    parent.children.splice(0, parent.children.length, ...newChildren);
+  };
+  visit(root);
+}
+
 /** Applies every drama normalization to `body`, in place. */
 export function normalizeDramaTei(body: XmlNode): void {
   normalizeNestedActs(body);
   normalizeTerenceFrontMatter(body);
   numberContinuedLines(body);
   normalizeSplitLineParts(body);
+  normalizeSectionMilestones(body);
+  normalizePlinySectionMilestones(body);
+  normalizeCiceroChapterMilestones(body);
+  hoistSenecaCardMilestones(body);
 }

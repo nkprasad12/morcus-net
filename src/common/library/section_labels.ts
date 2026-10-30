@@ -9,12 +9,16 @@
  */
 const NAMED_SECTION_TOKENS: ReadonlyMap<string, string> = new Map([
   ["pr", "Praefatio"],
+  ["praef", "Praefatio"],
   ["prologus", "Prologus"],
   // A play's prologue (Plautus, Terence), cited as an act or a scene.
   ["prologue", "Prologus"],
   ["epilogus", "Epilogus"],
   ["appendix", "Appendix"],
   ["index", "Index"],
+  ["sigla", "Sigla"],
+  ["arg", "Argumentum"],
+  ["fragments", "Fragmenta"],
 ]);
 
 /**

@@ -47,10 +47,14 @@ function redirectReaderJump(
   const cleanJump = jump
     .replace(/^(book|liber|chapter|caput|section|elegy|poem|carmen)\s+/i, "")
     .trim();
-  const hash =
-    cleanJump && cleanJump !== pageId && !pageId.startsWith(cleanJump + ".")
-      ? `#sec-${cleanJump}`
-      : "";
+  let hash = "";
+  if (cleanJump && cleanJump !== pageId && !pageId.startsWith(cleanJump + ".")) {
+    hash =
+      !cleanJump.includes(".") &&
+      resolved.page.singleHtml.includes(`id="sec-${pageId}.${cleanJump}"`)
+        ? `#sec-${pageId}.${cleanJump}`
+        : `#sec-${cleanJump}`;
+  }
   res.redirect(
     302,
     `/work/${work.urlAuthor}/${work.urlName}/${pageId}${qStr}${hash}`

@@ -38,9 +38,8 @@ const SNAPSHOT_PATH = path.resolve(__dirname, "census_snapshot.json");
  */
 export const NOT_YET_ONBOARDED: readonly string[] = [
   // Phase 4 deferred / blocked works:
-  // - Celsus De Medicina: -lat5 (malformed XML), -lat6 (table/row/cell markup)
+  // - Celsus De Medicina: -lat5 (malformed XML); -lat6 (Marx) onboarded in Phase 4
   "phi0836.phi002.perseus-lat5",
-  "phi0836.phi002.perseus-lat6",
   // - Lactantius De Mortibus Persecutorum: floatingText markup
   "phi1014.phi003.perseus-lat1",
   // - Suetonius Divus Titus: duplicate Caesar/Suetonius covered by PHI JSON lat1348.001

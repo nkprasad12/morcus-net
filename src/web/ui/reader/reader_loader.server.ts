@@ -544,6 +544,20 @@ export function resolvePageInWork(
         matched: true,
       };
     }
+    if (!needle.includes(".")) {
+      const compoundIdx = work.pages.findIndex((p) => {
+        const pIdStr = Array.isArray(p.id) ? p.id.join(".") : p.id;
+        return p.singleHtml.includes(`id="sec-${pIdStr}.${needle}"`);
+      });
+      if (compoundIdx !== -1) {
+        return {
+          page: work.pages[compoundIdx],
+          index: compoundIdx,
+          pageIndex: compoundIdx,
+          matched: true,
+        };
+      }
+    }
   }
 
   return { page: work.pages[0], index: 0, pageIndex: 0, matched: false };

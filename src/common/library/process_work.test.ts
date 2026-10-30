@@ -1481,6 +1481,36 @@ describe("processTei2 with citeStructure point levels", () => {
     expect(work.rows.map(([id]) => id.join("."))).toStrictEqual(["1", "2"]);
   });
 
+  it("paginates a line-only tragedy by scene at card milestones (Seneca)", () => {
+    const encoding = citeStructureDesc(`
+      <citeStructure use="@n" match="milestone[@unit='card']" n="chunk"/>
+      <citeStructure unit="line" match=".//l" use="@n"/>`);
+    const body = `<head>Hercules Furens</head>
+      <milestone unit="card" n="1"/>
+      <sp><speaker>Iuno</speaker><l n="1">Soror Tonantis</l><l n="2">iamque non caelo hospes</l></sp>
+      <milestone unit="card" n="125"/>
+      <sp><speaker>Chorus</speaker><l n="125">Iam rara micant</l><l n="126">sidera prono languida mundo</l></sp>`;
+
+    const work = processTei2(testRoot(body, encoding), { workId: WORK_ID });
+
+    expect(work.textParts).toStrictEqual(["line"]);
+    expect(work.pages).toHaveLength(2);
+    expect(work.pages[0].id).toStrictEqual(["1"]);
+    expect(work.pages[1].id).toStrictEqual(["125"]);
+
+    expect(work.pages[0].rows).toStrictEqual([0, 4]);
+    expect(work.pages[1].rows).toStrictEqual([4, 7]);
+    expect(work.rows.map(([id]) => id.join("."))).toStrictEqual([
+      "",
+      "",
+      "1",
+      "2",
+      "",
+      "125",
+      "126",
+    ]);
+  });
+
   it("names an unnamed level with levels below it after its elements", () => {
     const encoding = citeStructureDesc(`
       <citeStructure use="@n" match="div[@type]" n="chunk">
@@ -2093,5 +2123,56 @@ describe("Phase 3 drama and dialogue", () => {
     expect(space.name).toBe("span");
     expect(space.getAttr("kind")).toBe("tei-space");
     expect(space.children).toEqual([]);
+  });
+
+  it("respects splitOpen and splitClose attributes on split <q> and <quote>", () => {
+    const rowOpening = processRowContent(
+      parseRawXml(`<p><q splitClose="0">first segment</q></p>`)
+    );
+    expect(rowOpening.toString()).toBe(
+      '<span para="1"><span>“first segment</span></span>'
+    );
+
+    const rowMiddle = processRowContent(
+      parseRawXml(`<p><q splitOpen="0" splitClose="0">middle segment</q></p>`)
+    );
+    expect(rowMiddle.toString()).toBe(
+      '<span para="1"><span>middle segment</span></span>'
+    );
+
+    const rowClosing = processRowContent(
+      parseRawXml(`<p><q splitOpen="0">last segment</q></p>`)
+    );
+    expect(rowClosing.toString()).toBe(
+      '<span para="1"><span>last segment”</span></span>'
+    );
+  });
+
+  it("handles body <app> with <lem> child and rejects body <app> with <rdg>", () => {
+    const row = processRowContent(
+      parseRawXml(`<p>ante <app><lem>cancer</lem></app> post</p>`, {
+        keepWhitespace: true,
+      })
+    );
+    expect(row.toString()).toBe(
+      '<span para="1">ante <span><span>cancer</span></span> post</span>'
+    );
+
+    expect(() =>
+      processRowContent(
+        parseRawXml(`<p><app><lem>cancer</lem><rdg>ulcus</rdg></app></p>`)
+      )
+    ).toThrow(/Unexpected <rdg> in body <app>|Unknown node: rdg/);
+  });
+
+  it("renders <note type=\"title\" place=\"inline\"> inline as bold and not as a detached footnote", () => {
+    const root = testRootWithBookAndChapter(
+      `<p><note type="title" place="inline">CAPITULO CVI: De uesica</note> Textus</p>`
+    );
+    const work = processTei2(root, { workId: "test_celsus" });
+    expect(work.notes).toEqual([]);
+    const rowStr = work.rows[0][1].toString();
+    expect(rowStr).toContain("<b>CAPITULO CVI: De uesica</b>");
+    expect(rowStr).toContain("Textus");
   });
 });

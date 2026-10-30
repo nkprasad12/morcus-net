@@ -5531,7 +5531,7 @@
     },
     "phi0836.phi002.perseus-lat6": {
       "path": "data/phi0836/phi002/phi0836.phi002.perseus-lat6.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "app",

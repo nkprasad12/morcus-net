@@ -412,6 +412,63 @@ describe("buildCitationSpine with a citeStructure", () => {
     ]);
   });
 
+  it("adds undeclared section milestone levels the headers declare (Rule B, Historia Augusta / Celsus)", () => {
+    const root = tei(
+      ctsRefsDecl("chapter", "section") +
+        citeStructure(level("chapter", "div/div[@subtype='chapter']")),
+      `<div type="edition">
+        <div type="textpart" subtype="chapter" n="1">
+          <p><milestone unit="section" n="1"/>a <q><milestone unit="section" n="2"/>b</q></p>
+        </div>
+        <div type="textpart" subtype="chapter" n="2">
+          <p><milestone unit="section" n="1"/>c</p>
+        </div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["chapter", "section"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["1.1", "a"],
+      ["1.2", "b"],
+      ["2.1", "c"],
+    ]);
+  });
+
+  it("adds undeclared section milestone levels under chapter even when refsDecl omits section (Pliny)", () => {
+    const root = tei(
+      citeStructure(
+        level(
+          "book",
+          "div/div[@subtype='book']",
+          level("chapter", "div[@subtype='chapter']")
+        )
+      ),
+      `<div type="edition">
+        <div type="textpart" subtype="book" n="1">
+          <div type="textpart" subtype="chapter" n="praef">
+            <p><milestone unit="section" n="1"/>a <milestone unit="section" n="2"/>b</p>
+          </div>
+          <div type="textpart" subtype="chapter" n="1">
+            <p><milestone unit="paragraph" n="1"/><milestone unit="paragraph" n="2"/>Summarium book 1</p>
+          </div>
+        </div>
+        <div type="textpart" subtype="book" n="2">
+          <div type="textpart" subtype="chapter" n="1">
+            <p><milestone unit="section" n="1"/>c</p>
+          </div>
+        </div>
+      </div>`
+    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["book", "chapter", "section"]);
+    expect(idsOfText(root, spine)).toEqual([
+      ["1.praef.1", "a"],
+      ["1.praef.2", "b"],
+      ["1.1", "Summarium book 1"],
+      ["2.1.1", "c"],
+    ]);
+  });
+
   it("adds the line level under a sibling-declared line branch (Genethliacon)", () => {
     const root = tei(
       ctsRefsDecl("section", "line") +
@@ -785,6 +842,21 @@ describe("sliceAtMarkers", () => {
       (_, content) => new XmlNode("w", [], content)
     );
     expect(root.toString()).toBe("<div><p>a</p><w><p>b</p></w></div>");
+  });
+
+  it("preserves semicolon in multi-token rend attributes across markers", () => {
+    const root = parseRawXml(
+      `<div><p><q rend="single; merge">start <m/>end</q></p></div>`
+    );
+    sliceAtMarkers(
+      root,
+      new Set(root.findDescendants("m")),
+      (_, content) => new XmlNode("w", [], content)
+    );
+    const qs = root.findDescendants("q");
+    expect(qs).toHaveLength(2);
+    expect(qs[0].getAttr("rend")).toBe("single; merge");
+    expect(qs[1].getAttr("rend")).toBe("single; merge");
   });
 });
 

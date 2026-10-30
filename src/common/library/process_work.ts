@@ -185,6 +185,9 @@ export const SWITCH_CONTENT_NODES = new Set<string>([
   "roleName",
   "space",
   "unclear",
+  // Text critical markup in running text (Celsus)
+  "app",
+  "lem",
 ]);
 
 /**
@@ -584,6 +587,21 @@ export function isVacuousNote(node: XmlNode): boolean {
   );
 }
 
+/**
+ * Whether `node` is an inline manuscript rubric encoded as
+ * `<note type="title" place="inline">` (Celsus 4.27.1d(fr2):
+ * `CAPITULO CVI: De uesica`), which belongs in the running text as a bold
+ * rubric rather than a hover footnote.
+ */
+export function isInlineTitleNote(node: XmlNode): boolean {
+  return (
+    node.name === "note" &&
+    node.getAttr("type") === "title" &&
+    node.getAttr("place") === "inline" &&
+    node.getAttr("target") === undefined
+  );
+}
+
 // Creates a deep copy of the root, while also extracting out nodes for later assembly.
 // A `<note xml:id>` is a detached body only if some `<note target>` names it;
 // otherwise it is an ordinary inline note where it stands (Ovid's Ex Ponto
@@ -644,9 +662,11 @@ function indexNotesBy(notes: XmlNode[], key: string): Map<string, XmlNode> {
 
 function preprocessTree(
   originalRoot: XmlNode,
-  spine: Pick<CitationSpine, "containers">,
+  spine: Pick<CitationSpine, "containers"> & { textParts?: string[] },
   options: ProcessForDisplayOptions
 ): PreprocessedTree {
+  const keepCardMilestones =
+    spine.textParts?.length === 1 && spine.textParts[0] === "line";
   const notes: XmlNode[] = [];
   // Targets that an `xml:id` already satisfies never take a `<note n>` as
   // their body, so an inline `<note n>` with the same value stays in place.
@@ -716,7 +736,7 @@ function preprocessTree(
     if (isLeader) {
       top.attrs.push(["leader", "1"]);
     }
-    if (top.name === "note") {
+    if (top.name === "note" && !isInlineTitleNote(top)) {
       top.attrs.forEach((attr) =>
         assert(KNOWN_NOTE_ATTRS.has(attr[0]), attr[0])
       );
@@ -788,7 +808,15 @@ function preprocessTree(
       // Ignore milestones for now, but we may need to use it later.
       if (child.name === "milestone") {
         assertEqual(child.children.length, 0);
-        continue;
+        if (
+          !(
+            keepCardMilestones &&
+            child.getAttr("unit") === "card" &&
+            child.getAttr("n") !== undefined
+          )
+        ) {
+          continue;
+        }
       }
       if (SKIP_NODES.has(child.name) || isVacuousNote(child)) {
         continue;
@@ -1236,6 +1264,9 @@ export function transformContentNode(
     attrs.push(["origName", node.name]);
   }
   if (node.name === "note") {
+    if (isInlineTitleNote(node)) {
+      return new XmlNode("b", attrs, children);
+    }
     const noteId = checkPresent(node.getAttr("noteId"));
     return new XmlNode("note", [["noteId", noteId]]);
   }
@@ -1289,12 +1320,16 @@ export function transformContentNode(
         }
       }
     }
+    const openQuote = node.getAttr("splitOpen") === "0" ? [] : ["“"];
+    const closeQuote = node.getAttr("splitClose") === "0" ? [] : ["”"];
     return new XmlNode(
       "span",
       attrs,
       // We don't need to add quotes even if the node is a `quote` since
       // the blockquote will emphasize enough.
-      isBlockquote || isIndirect ? quoteChildren : ["“", ...quoteChildren, "”"]
+      isBlockquote || isIndirect
+        ? quoteChildren
+        : [...openQuote, ...quoteChildren, ...closeQuote]
     );
   }
   if (node.name === "foreign") {
@@ -1349,6 +1384,16 @@ export function transformContentNode(
     }
     case "lemma":
       return new XmlNode("b", attrs, children);
+    case "app":
+      // Celsus 5.26.27c has `<app><lem>cancer</lem></app>` in running text
+      // with no variant reading; fail loudly if a body `<app>` ever carries
+      // `<rdg>` children that would otherwise be concatenated into the text.
+      assert(
+        !hasChildNamed(node, "rdg"),
+        () => `Unexpected <rdg> in body <app>: ${node.toString()}`
+      );
+      return new XmlNode("span", attrs, children);
+    case "lem":
     case "w":
     case "l":
     case "hi":
@@ -1532,11 +1577,12 @@ export function processWorkBody(
  */
 function processWorkBodyDetailed(
   originalRoot: XmlNode,
-  spine: Pick<CitationSpine, "containers">,
+  spine: Pick<CitationSpine, "containers"> & { textParts?: string[] },
   options: ProcessForDisplayOptions
 ): Pick<ProcessedWork2, "rows" | "notes"> & {
   editorialRows: Set<number>;
   headingRows: Set<number>;
+  cardStarts: { id: string[]; rowIdx: number }[];
 } {
   const data = preprocessTree(originalRoot, spine, options);
   const rawRows = convertToRows(data.root, data);
@@ -1546,6 +1592,7 @@ function processWorkBodyDetailed(
   const rows: ProcessedWork2["rows"] = [];
   const editorialRows = new Set<number>();
   const headingRows = new Set<number>();
+  const cardStarts: { id: string[]; rowIdx: number }[] = [];
   let currentLg: undefined | [string, string[]] = undefined;
   const addSpaceRowIfNeeded = () => {
     if (currentLg !== undefined) {
@@ -1555,6 +1602,13 @@ function processWorkBodyDetailed(
   };
 
   for (const [id, rowRoot, editorial] of rawRows) {
+    if (rowRoot.name === "milestone" && rowRoot.getAttr("unit") === "card") {
+      cardStarts.push({
+        id: [checkPresent(rowRoot.getAttr("n"))],
+        rowIdx: rows.length,
+      });
+      continue;
+    }
     const rowLg = rowRoot.getAttr("lg");
     // Add a spacer row when the `lg` changes.
     if (rowLg !== currentLg?.[0]) {
@@ -1578,6 +1632,7 @@ function processWorkBodyDetailed(
     notes: data.notes.map((note) => transformNoteNode(note)),
     editorialRows,
     headingRows,
+    cardStarts,
   };
 }
 
@@ -1599,10 +1654,22 @@ function startsWith(id: string[], prefix: string[]): boolean {
 export function divideWork(
   rows: ProcessedWork2["rows"],
   textParts: string[],
-  headingRows: ReadonlySet<number> = new Set()
+  headingRows: ReadonlySet<number> = new Set(),
+  cardStarts: readonly { id: string[]; rowIdx: number }[] = []
 ): WorkPage[] {
   const n = textParts.length;
   if (n === 1 && textParts[0] === "line") {
+    if (cardStarts.length > 1 && rows.length > 0) {
+      return cardStarts.map((card, idx) => ({
+        id: card.id,
+        rows: [
+          idx === 0 ? 0 : card.rowIdx,
+          idx + 1 < cardStarts.length
+            ? cardStarts[idx + 1].rowIdx
+            : rows.length,
+        ],
+      }));
+    }
     // One page per line is unreadable (the Appendix Vergiliana's `.//lb`
     // spines); a whole poem per page is what Hypotactic does too.
     return rows.length === 0 ? [] : [{ id: ["1"], rows: [0, rows.length] }];
@@ -1904,12 +1971,9 @@ export function processTei2(
     patchTree: createPatchTree(options?.patches ?? [], textParts),
     workId: metadata.workId,
   };
-  const { rows, notes, editorialRows, headingRows } = processWorkBodyDetailed(
-    body,
-    spine,
-    processOptions
-  );
-  const pages = divideWork(rows, textParts, headingRows);
+  const { rows, notes, editorialRows, headingRows, cardStarts } =
+    processWorkBodyDetailed(body, spine, processOptions);
+  const pages = divideWork(rows, textParts, headingRows, cardStarts);
   assertOutputInvariants(
     { rows, pages, textParts },
     { editorialRows, leafIds: spine.leafIds }

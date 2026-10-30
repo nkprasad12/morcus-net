@@ -47,7 +47,7 @@ import {
   buildCitationSpine,
   CitationSpine,
 } from "@/common/library/cite_structure";
-import { isVacuousNote } from "@/common/library/process_work";
+import { isInlineTitleNote, isVacuousNote } from "@/common/library/process_work";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import {
@@ -1770,7 +1770,7 @@ export function analyzeWorkForGallery(
       CitationSpine.sectionIdOf(rawSpine, ancestors)[0].join(".") ||
       inheritedSecId;
 
-    if (node.name === "note") {
+    if (node.name === "note" && !isInlineTitleNote(node)) {
       const noteId = nextNoteId++;
       const noteSecId = indexed.byNoteId.get(noteId)?.sectionId;
       const target = node.getAttr("target");

@@ -11,10 +11,14 @@ describe("formatSectionLabel", () => {
 
   test("uses the name alone for named tokens", () => {
     expect(formatSectionLabel("chapter", "pr")).toBe("Praefatio");
+    expect(formatSectionLabel("chapter", "praef")).toBe("Praefatio");
     expect(formatSectionLabel("poem", "prologus")).toBe("Prologus");
     expect(formatSectionLabel("poem", "epilogus")).toBe("Epilogus");
     expect(formatSectionLabel("book", "appendix")).toBe("Appendix");
     expect(formatSectionLabel("book", "index")).toBe("Index");
+    expect(formatSectionLabel("chapter", "sigla")).toBe("Sigla");
+    expect(formatSectionLabel("chapter", "arg")).toBe("Argumentum");
+    expect(formatSectionLabel("chapter", "fragments")).toBe("Fragmenta");
   });
 
   test("matches named tokens case-insensitively", () => {
