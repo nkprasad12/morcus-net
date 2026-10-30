@@ -9132,7 +9132,7 @@
     },
     "stoa0045.stoa007.perseus-lat2": {
       "path": "data/stoa0045/stoa007/stoa0045.stoa007.perseus-lat2.xml",
-      "onboarded": false,
+      "onboarded": true,
       "elements": [
         "add",
         "body",

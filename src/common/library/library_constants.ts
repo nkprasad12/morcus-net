@@ -350,6 +350,7 @@ export const LatinWorks = {
   // Phase 5: trivial Group B fixes (see preprocess/docs/EXCLUSIONS.md)
   SENECA_ELDER_SUASORIAE: "phi1014.phi003.perseus-lat1",
   AUSONIUS_FASTI_CONCLUSIO: "stoa0045.stoa017.perseus-lat2",
+  AUSONIUS_ECLOGAE: "stoa0045.stoa007.perseus-lat2",
 
   // Not onboarded: every other Perseus Latin file (served by Hypotactic or PHI
   // JSON, a superseded edition, or deferred) is listed with its reason in

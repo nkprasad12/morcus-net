@@ -837,6 +837,18 @@ function preprocessTree(
     }
     top.children.push(...children.reverse());
   }
+  // A patch that never matched would silently leave the uncorrected text in
+  // place, e.g. after upstream moves or renumbers its section.
+  const unapplied = Array.from(textMarkupOptionsBySection.values()).flatMap(
+    (markupOptions) => Array.from(markupOptions.unhandledPatches ?? [])
+  );
+  if (unapplied.length > 0) {
+    throw new Error(
+      `${unapplied.length} patch(es) were not applied in ` +
+        `'${options?.workId ?? "(unknown work)"}' (section not found, or ` +
+        `target text not in it): ${JSON.stringify(unapplied)}`
+    );
+  }
   const includedSections = uids.map((_) => new Set<string>());
   computeIncludedSections(root, includedSections);
   return { root, uids, includedSections, notes };

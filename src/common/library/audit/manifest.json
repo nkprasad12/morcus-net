@@ -3353,6 +3353,20 @@
         "span": 34
       }
     },
+    "stoa0045.stoa007.perseus-lat2": {
+      "textParts": ["poem", "line"],
+      "rows": 476,
+      "pages": 26,
+      "citableRows": 447,
+      "firstCitation": "1.1",
+      "lastCitation": "26.8",
+      "notes": 0,
+      "nodes": {
+        "gap": 3,
+        "head": 26,
+        "span": 472
+      }
+    },
     "stoa0045.stoa008.perseus-lat2": {
       "textParts": ["poem", "line"],
       "rows": 245,

@@ -8,6 +8,7 @@ import {
   normalizeSplitLineParts,
   normalizeTerenceFrontMatter,
   numberContinuedLines,
+  unnumberHeadingLines,
 } from "@/common/library/drama_normalize";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
@@ -20,6 +21,19 @@ function parse(xml: string): XmlNode {
 function lineNumbers(root: XmlNode): string[] {
   return root.findDescendants("l").map((l) => l.getAttr("n") ?? "-");
 }
+
+describe("unnumberHeadingLines", () => {
+  it("drops @n from a line quoted in a heading, not from the poem's lines", () => {
+    const root = parse(
+      `<div n="26"><head>HIC VERSUS <lg><l n="1">UNGUES Mercurio</l></lg> Hoc sic refellendum</head>` +
+        `<l n="1">MERCURIUS furtis</l><l n="2">articulisque</l></div>`
+    );
+
+    unnumberHeadingLines(root);
+
+    expect(lineNumbers(root)).toEqual(["-", "1", "2"]);
+  });
+});
 
 describe("nextSegmentNumber", () => {
   it.each([
@@ -289,14 +303,14 @@ describe("normalizePlinySectionMilestones", () => {
       )!;
 
     // Trailing milestone 2 was moved from chapter 1 into chapter 2
-    expect(
-      ch1.findDescendants("milestone").map((m) => m.getAttr("n"))
-    ).toEqual(["1"]);
+    expect(ch1.findDescendants("milestone").map((m) => m.getAttr("n"))).toEqual(
+      ["1"]
+    );
 
     // Chapter 2 received milestone 2 at the front, cleaned question mark, and deduplicated 3 as 3b
-    expect(
-      ch2.findDescendants("milestone").map((m) => m.getAttr("n"))
-    ).toEqual(["2", "3", "3b"]);
+    expect(ch2.findDescendants("milestone").map((m) => m.getAttr("n"))).toEqual(
+      ["2", "3", "3b"]
+    );
   });
 });
 
@@ -368,7 +382,9 @@ describe("normalizeCiceroChapterMilestones", () => {
     normalizeCiceroChapterMilestones(root);
 
     expect(
-      root.findDescendants("div").filter((d) => d.getAttr("subtype") === "chapter")
+      root
+        .findDescendants("div")
+        .filter((d) => d.getAttr("subtype") === "chapter")
     ).toHaveLength(0);
   });
 });
@@ -392,25 +408,30 @@ describe("hoistSenecaCardMilestones", () => {
     expect(nonWhitespaceChildren).toHaveLength(3);
     const [sp1, milestone, sp2] = nonWhitespaceChildren;
     expect(sp1.name).toBe("sp");
-    expect(sp1.children.filter((c) => typeof c !== "string").map((c) => (c as XmlNode).name)).toEqual([
-      "speaker",
-      "l",
-    ]);
     expect(
-      (
-        sp1.children.filter((c) => typeof c !== "string")[1] as XmlNode
-      ).getAttr("n")
+      sp1.children
+        .filter((c) => typeof c !== "string")
+        .map((c) => (c as XmlNode).name)
+    ).toEqual(["speaker", "l"]);
+    expect(
+      (sp1.children.filter((c) => typeof c !== "string")[1] as XmlNode).getAttr(
+        "n"
+      )
     ).toBe("1114b");
 
     expect(milestone.name).toBe("milestone");
     expect(milestone.getAttr("n")).toBe("1115");
 
     expect(sp2.name).toBe("sp");
-    expect(sp2.children.filter((c) => typeof c !== "string").map((c) => (c as XmlNode).name)).toEqual(["pb", "l"]);
     expect(
-      (
-        sp2.children.filter((c) => typeof c !== "string")[1] as XmlNode
-      ).getAttr("n")
+      sp2.children
+        .filter((c) => typeof c !== "string")
+        .map((c) => (c as XmlNode).name)
+    ).toEqual(["pb", "l"]);
+    expect(
+      (sp2.children.filter((c) => typeof c !== "string")[1] as XmlNode).getAttr(
+        "n"
+      )
     ).toBe("1115");
   });
 });

@@ -645,6 +645,51 @@ describe("processTei2", () => {
   });
 });
 
+describe("processTei2 patches", () => {
+  const body = `<div n="1" type="textpart" subtype="book">
+      <div n="1" type="textpart" subtype="chapter">Gallia est omnis divisa</div>
+    </div>`;
+  const patch = (chapter: string, target: string): LibraryPatch => ({
+    location: [
+      ["book", "1"],
+      ["chapter", chapter],
+    ],
+    target,
+    replacement: "REPLACED",
+    reason: "test",
+  });
+
+  it("applies a patch at its location", () => {
+    const work = processTei2(
+      testRoot(body),
+      { workId: WORK_ID },
+      { patches: [patch("1", "omnis")] }
+    );
+
+    expect(work.rows[0][1].toString()).toContain("Gallia est REPLACED divisa");
+  });
+
+  it("fails when a patch's section does not exist", () => {
+    expect(() =>
+      processTei2(
+        testRoot(body),
+        { workId: WORK_ID },
+        { patches: [patch("2", "omnis")] }
+      )
+    ).toThrow(/1 patch\(es\) were not applied in 'workId'/);
+  });
+
+  it("fails when a patch's target is not in its section", () => {
+    expect(() =>
+      processTei2(
+        testRoot(body),
+        { workId: WORK_ID },
+        { patches: [patch("1", "tres")] }
+      )
+    ).toThrow(/were not applied/);
+  });
+});
+
 describe("patchText", () => {
   function markupTextOptions(
     unhandled: LibraryPatch[],
@@ -2165,7 +2210,7 @@ describe("Phase 3 drama and dialogue", () => {
     ).toThrow(/Unexpected <rdg> in body <app>|Unknown node: rdg/);
   });
 
-  it("renders <note type=\"title\" place=\"inline\"> inline as bold and not as a detached footnote", () => {
+  it('renders <note type="title" place="inline"> inline as bold and not as a detached footnote', () => {
     const root = testRootWithBookAndChapter(
       `<p><note type="title" place="inline">CAPITULO CVI: De uesica</note> Textus</p>`
     );

@@ -323,7 +323,14 @@ export function normalizeSectionMilestones(root: XmlNode): void {
       first.textBeforeInP
     ) {
       first.pAncestor.children.unshift(
-        new XmlNode("milestone", [["unit", "section"], ["n", "1"]], [])
+        new XmlNode(
+          "milestone",
+          [
+            ["unit", "section"],
+            ["n", "1"],
+          ],
+          []
+        )
       );
     }
 
@@ -591,11 +598,7 @@ export function normalizeCiceroChapterMilestones(root: XmlNode): void {
         c.getAttr("n") === "1") ||
       c
         .findDescendants("milestone")
-        .some(
-          (n) =>
-            n.getAttr("unit") === "chapter" &&
-            n.getAttr("n") === "1"
-        )
+        .some((n) => n.getAttr("unit") === "chapter" && n.getAttr("n") === "1")
     ) {
       seenCh1 = true;
     }
@@ -604,13 +607,23 @@ export function normalizeCiceroChapterMilestones(root: XmlNode): void {
       if (n === "sigla" || n === "arg" || n === "fragments") {
         setAttr(c, "n", "1");
         c.children.unshift(
-          new XmlNode("milestone", [["unit", "chapter"], ["n", n]], [])
+          new XmlNode(
+            "milestone",
+            [
+              ["unit", "chapter"],
+              ["n", n],
+            ],
+            []
+          )
         );
       } else if (!seenCh1 && n?.startsWith("fr") && !addedPreFrag) {
         c.children.unshift(
           new XmlNode(
             "milestone",
-            [["unit", "chapter"], ["n", "fragments"]],
+            [
+              ["unit", "chapter"],
+              ["n", "fragments"],
+            ],
             []
           )
         );
@@ -619,7 +632,10 @@ export function normalizeCiceroChapterMilestones(root: XmlNode): void {
         c.children.unshift(
           new XmlNode(
             "milestone",
-            [["unit", "chapter"], ["n", "fragments"]],
+            [
+              ["unit", "chapter"],
+              ["n", "fragments"],
+            ],
             []
           )
         );
@@ -711,9 +727,28 @@ export function hoistSenecaCardMilestones(root: XmlNode): void {
 }
 
 /** Applies every drama normalization to `body`, in place. */
+/**
+ * A verse line quoted inside a heading is part of the heading, not a citable
+ * line of the poem: Ausonius' Eclogae 26 quotes the monostich it refutes as
+ * `<head>… <lg><l n="1">UNGUES Mercurio …</l></lg> Hoc sic refellendum</head>`,
+ * and its `n="1"` collides with the poem's own line 1. Drops `@n` from any
+ * `<l>` inside a `<head>`, so the whole heading stays one row of the poem.
+ */
+export function unnumberHeadingLines(root: XmlNode): void {
+  for (const head of root.findDescendants("head")) {
+    for (const line of head.findDescendants("l")) {
+      const idx = line.attrs.findIndex(([key]) => key === "n");
+      if (idx !== -1) {
+        line.attrs.splice(idx, 1);
+      }
+    }
+  }
+}
+
 export function normalizeDramaTei(body: XmlNode): void {
   normalizeNestedActs(body);
   normalizeTerenceFrontMatter(body);
+  unnumberHeadingLines(body);
   numberContinuedLines(body);
   normalizeSplitLineParts(body);
   normalizeSectionMilestones(body);

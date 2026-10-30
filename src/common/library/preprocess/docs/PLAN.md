@@ -313,11 +313,14 @@ Remaining multi-edition choices, front matter, the 5 coverage mismatches (Catull
 
 #### Phase 5 Status
 
-- **Exclusion list**: [EXCLUSIONS.md](EXCLUSIONS.md) covers all 53 non-onboarded Perseus Latin files (334 in total, 281 onboarded).
+- **Exclusion list**: [EXCLUSIONS.md](EXCLUSIONS.md) covers all 52 non-onboarded Perseus Latin files (334 in total, 282 onboarded).
   - **Group A, served elsewhere (43): documented.** 19 are served by Hypotactic (Vergil, Horace including _Carmen Saeculare_ as Odes 4.16, Ovid, Persius, Statius, Lucan), 12 by PHI JSON (the Suetonius lives, `lat1348.001`), and 12 are superseded editions (each row names the edition we ship and why).
-  - **Group B, deferred (9): structure or markup support pending.** These are Seneca the Elder _Controversiae_ (excerpta), Sidonius _Carmina_, Claudian ×3, and Ausonius ×4. Each row gives its survey blocker.
+  - **Group B, deferred (8): structure or markup support pending.** These are Seneca the Elder _Controversiae_ (excerpta), Sidonius _Carmina_, Claudian ×3, and Ausonius ×3 (_Cento Nuptialis_, _Protrepticus_, _Caesares_). Each row gives its survey blocker.
 - **Group B, onboarded (2)**: Seneca the Elder _Suasoriae_ (`phi1014.phi003.perseus-lat1`, ~10,150 words; `lb@rend="displayNum"` accepted as a known rend) and Ausonius _Libri de Fastis conclusio_ (`stoa0045.stoa017.perseus-lat2`; titles with markup now read with all their text).
 - **Group B, onboarded via upstream (1)**: Nepos _Cato_ (`phi0588.abo024.perseus-lat2`), after adding the missing chapter `n="3"` upstream and re-pinning `canonical-latinlit` to `087c067` (fork branch `morcus-upstream-sync-3`, PR to PerseusDL pending; see [UPSTREAM.md §6.1](UPSTREAM.md#61-pending-upstream-fixes)).
+- **Group B, onboarded (Ausonius _Eclogarum Liber_)**: `stoa0045.stoa007.perseus-lat2` (26 poems, `poem.line`). Poem 26's heading quotes the monostich it refutes as `<l n="1">`, colliding with the poem's own line 1; `unnumberHeadingLines` drops `@n` from lines inside a `<head>` (the only such heading in the corpus).
+- **Patches fail loudly**: `processTei2` now throws if a library patch never matched (section moved or renumbered upstream, or target text gone), instead of silently shipping the uncorrected text.
+- **TODO (not now)**: _Carmen Saeculare_ is page 4.16 of Hypotactic's _Odes_ but has no title of its own, so it can't be found by name. Idea: let a work carry extra search tags/aliases to match against in the library.
   - **Group C, policy review (1):** Bede _Historia Ecclesiastica_, held back on the post-classical scope question rather than on technical capability.
 - **Upstream typos**: listed in [UPSTREAM.md §6.1](UPSTREAM.md#61-pending-upstream-fixes) and absorbed locally for now. No PRs have been opened yet.
 - **Label fixes**: work-ID labels corrected in the census ratchet and the survey and upstream docs (`stoa0261` is Sidonius, not Symmachus or Ausonius; `stoa0054.stoa006` is Bede; `phi1014.phi003` is Seneca the Elder's _Suasoriae_; `phi2003.phi001` is Apicius; `stoa0079.stoa001` is Cato).
