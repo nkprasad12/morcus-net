@@ -745,10 +745,72 @@ export function unnumberHeadingLines(root: XmlNode): void {
   }
 }
 
+/** Whether `node` is a `<div type="textpart" subtype="…">` of `subtype`. */
+function isTextpartOf(node: XmlChild, subtype: string): node is XmlNode {
+  return (
+    typeof node !== "string" &&
+    node.name === "div" &&
+    node.getAttr("type") === "textpart" &&
+    node.getAttr("subtype") === subtype
+  );
+}
+
+/**
+ * Claudian's multi-book poems cite every book as `book.poem.line`, the
+ * book's preface as poem `pr` and its main text as poem `1` (De Raptu
+ * Proserpinae, In Rufinum). De Consulatu Stilichonis and In Eutropium give
+ * poems only to the book that has a preface (Stil. 3, Eutr. 2); the other
+ * books hold their lines directly, which mixes `book.line` with
+ * `book.poem.line`. Where some sibling books have poems and others hold
+ * numbered lines directly, wraps those books' content (after any leading
+ * heading) in an implicit `<div type="textpart" subtype="poem" n="1">`.
+ */
+export function wrapPoemlessBooks(root: XmlNode): void {
+  const parents = [root, ...root.findDescendants("div")];
+  for (const parent of parents) {
+    const books = parent.children.filter((c): c is XmlNode =>
+      isTextpartOf(c, "book")
+    );
+    const hasPoems = (book: XmlNode) =>
+      book.children.some((c) => isTextpartOf(c, "poem"));
+    const holdsLines = (book: XmlNode) =>
+      book.children.some(
+        (c) =>
+          typeof c !== "string" &&
+          c.name === "l" &&
+          c.getAttr("n") !== undefined
+      );
+    const poemless = books.filter((b) => !hasPoems(b) && holdsLines(b));
+    if (poemless.length === 0 || !books.some(hasPoems)) {
+      continue;
+    }
+    for (const book of poemless) {
+      const isLeading = (c: XmlChild) =>
+        typeof c === "string" ? c.trim() === "" : c.name === "head";
+      let start = 0;
+      while (start < book.children.length && isLeading(book.children[start])) {
+        start++;
+      }
+      const content = book.children.slice(start);
+      const poem = new XmlNode(
+        "div",
+        [
+          ["type", "textpart"],
+          ["subtype", "poem"],
+          ["n", "1"],
+        ],
+        content
+      );
+      book.children.splice(start, content.length, poem);
+    }
+  }
+}
+
 export function normalizeDramaTei(body: XmlNode): void {
   normalizeNestedActs(body);
   normalizeTerenceFrontMatter(body);
   unnumberHeadingLines(body);
+  wrapPoemlessBooks(body);
   numberContinuedLines(body);
   normalizeSplitLineParts(body);
   normalizeSectionMilestones(body);

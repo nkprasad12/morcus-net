@@ -9,6 +9,7 @@ import {
   normalizeTerenceFrontMatter,
   numberContinuedLines,
   unnumberHeadingLines,
+  wrapPoemlessBooks,
 } from "@/common/library/drama_normalize";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
@@ -21,6 +22,60 @@ function parse(xml: string): XmlNode {
 function lineNumbers(root: XmlNode): string[] {
   return root.findDescendants("l").map((l) => l.getAttr("n") ?? "-");
 }
+
+describe("wrapPoemlessBooks", () => {
+  const book = (n: string, inner: string) =>
+    `<div type="textpart" subtype="book" n="${n}">${inner}</div>`;
+  const poem = (n: string, inner: string) =>
+    `<div type="textpart" subtype="poem" n="${n}">${inner}</div>`;
+  const poemsOf = (root: XmlNode) =>
+    root
+      .findDescendants("div")
+      .filter((d) => d.getAttr("subtype") === "book")
+      .map((b) =>
+        b.children
+          .filter(
+            (c): c is XmlNode => typeof c !== "string" && c.name === "div"
+          )
+          .map((d) => d.getAttr("n"))
+          .join(",")
+      );
+
+  it("wraps books with direct lines when a sibling book has poems", () => {
+    const root = parse(
+      `<div type="edition">${book(
+        "1",
+        `<head>I</head><l n="1">a</l><l n="2">b</l>`
+      )}` +
+        `${book(
+          "2",
+          poem("pr", `<l n="1">c</l>`) + poem("20", `<l n="1">d</l>`)
+        )}</div>`
+    );
+
+    wrapPoemlessBooks(root);
+
+    expect(poemsOf(root)).toEqual(["1", "pr,20"]);
+    const book1 = root
+      .findDescendants("div")
+      .find((d) => d.getAttr("subtype") === "book")!;
+    expect(book1.findChildren("head")).toHaveLength(1);
+    expect(lineNumbers(book1)).toEqual(["1", "2"]);
+  });
+
+  it("leaves works alone when no book has poems", () => {
+    const root = parse(
+      `<div type="edition">${book("1", `<l n="1">a</l>`)}${book(
+        "2",
+        `<l n="1">b</l>`
+      )}</div>`
+    );
+
+    wrapPoemlessBooks(root);
+
+    expect(poemsOf(root)).toEqual(["", ""]);
+  });
+});
 
 describe("unnumberHeadingLines", () => {
   it("drops @n from a line quoted in a heading, not from the poem's lines", () => {

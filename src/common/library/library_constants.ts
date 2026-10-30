@@ -351,6 +351,8 @@ export const LatinWorks = {
   SENECA_ELDER_SUASORIAE: "phi1014.phi003.perseus-lat1",
   AUSONIUS_FASTI_CONCLUSIO: "stoa0045.stoa017.perseus-lat2",
   AUSONIUS_ECLOGAE: "stoa0045.stoa007.perseus-lat2",
+  CLAUDIAN_DE_CONSULATU_STILICHONIS: "stoa0089.stoa004.perseus-lat2",
+  CLAUDIAN_IN_EUTROPIUM: "stoa0089.stoa008.perseus-lat2",
 
   // Not onboarded: every other Perseus Latin file (served by Hypotactic or PHI
   // JSON, a superseded edition, or deferred) is listed with its reason in

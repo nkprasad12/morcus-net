@@ -3733,6 +3733,18 @@
         "span": 670
       }
     },
+    "stoa0089.stoa004.perseus-lat2": {
+      "textParts": ["book", "poem", "line"],
+      "rows": 1254,
+      "pages": 4,
+      "citableRows": 1254,
+      "firstCitation": "1.1.1",
+      "lastCitation": "3.1.393",
+      "notes": 0,
+      "nodes": {
+        "span": 1256
+      }
+    },
     "stoa0089.stoa005.perseus-lat2": {
       "textParts": ["book", "poem", "line"],
       "rows": 1174,
@@ -3769,6 +3781,18 @@
       "notes": 0,
       "nodes": {
         "span": 137
+      }
+    },
+    "stoa0089.stoa008.perseus-lat2": {
+      "textParts": ["book", "poem", "line"],
+      "rows": 1191,
+      "pages": 3,
+      "citableRows": 1191,
+      "firstCitation": "1.1.1",
+      "lastCitation": "2.20.678",
+      "notes": 0,
+      "nodes": {
+        "span": 1191
       }
     },
     "stoa0089.stoa009.perseus-lat2": {

@@ -1059,7 +1059,7 @@ describe("buildCitationSpine fits the declaration to the tree", () => {
     );
   });
 
-  it("fails where a declared level is missing (Claudian's In Rufinum)", () => {
+  it("gives poemless books an implicit poem 1 (Claudian's In Eutropium)", () => {
     const root = tei(
       citeStructure(
         level(
@@ -1075,9 +1075,9 @@ describe("buildCitationSpine fits the declaration to the tree", () => {
         </div>
       </div>`
     );
-    expect(() => spineOf(root)).toThrow(
-      /Missing citation level: book.line \(scheme book.poem.line\)/
-    );
+    const spine = spineOf(root);
+    expect(spine.textParts).toEqual(["book", "poem", "line"]);
+    expect(spine.leafIds).toEqual(new Set(["1.1.1", "3.pr.1", "3.pr.2"]));
   });
 
   it("fails on mixed unit paths of one depth", () => {
