@@ -4,6 +4,7 @@ import {
   registerElement,
   registerRevealer,
   setPrepaint,
+  setHtml,
   settingsStore,
   setupModalDialog,
   type ModalDialogHandle,
@@ -12,7 +13,17 @@ import {
   persistDictKeys,
   persistInflected,
 } from "@/web/ui/dict/settings/dict_preferences.client";
-import { encodeDictBitmask } from "@/web/ui/dict/settings/dict_bitmask.common";
+import {
+  decodeDictBitmask,
+  encodeDictBitmask,
+} from "@/web/ui/dict/settings/dict_bitmask.common";
+import {
+  findDictSet,
+  readDictSets,
+  removeDictSet,
+  renderDictSets,
+  saveDictSet,
+} from "@/web/ui/dict/settings/dict_saved_sets.client";
 import {
   DICT_SETTINGS_DIALOG_ID,
   DICT_SETTINGS_TRIGGER_ID,
@@ -52,6 +63,8 @@ export class MorcusDictSettings extends BaseElement {
   #formEl: HTMLFormElement | null = null;
   #triggerEl: HTMLElement | null = null;
   #modal: ModalDialogHandle | null = null;
+  /** The save field's placeholder as rendered (a save temporarily replaces it). */
+  #savePlaceholder = "";
 
   // Read in more than one place; a getter re-queries rather than caches.
   get #sliderEl() {
@@ -79,8 +92,11 @@ export class MorcusDictSettings extends BaseElement {
     if (this.#dialogEl) {
       this.#modal = setupModalDialog(this.#dialogEl, {
         trigger: this.#triggerEl,
+        // Another tab may have changed the saved sets since this page drew them.
+        onOpen: () => this.#renderSavedSets(),
         onClose: () => {
           this.#commit();
+          this.#resetSaveField();
           this.#triggerEl?.focus();
         },
       });
@@ -106,6 +122,8 @@ export class MorcusDictSettings extends BaseElement {
     this.scope.listen(this.#formEl, "change", () => {
       this.#syncDoneDisabled();
     });
+
+    this.#bindSavedSets();
 
     // Opens the app-bar Appearance menu. Embedded views (the reader's and
     // macronizer's dictionary) have no app bar, so there is nothing to open.
@@ -166,10 +184,95 @@ export class MorcusDictSettings extends BaseElement {
     }
     this.#triggerEl?.setAttribute("aria-expanded", "false");
     this.#resetControls();
+    this.#resetSaveField();
   }
 
   #isHashTarget(): boolean {
     return window.location.hash === `#${DICT_SETTINGS_DIALOG_ID}`;
+  }
+
+  #renderSavedSets() {
+    const list = this.scope.$<HTMLElement>("#dict-saved-list");
+    if (list) setHtml(list, renderDictSets(readDictSets()));
+  }
+
+  /** Clears the save field and its "Saved" confirmation, e.g. when the dialog closes. */
+  #resetSaveField() {
+    const nameInput = this.scope.$<HTMLInputElement>(".dict-set-name");
+    if (!nameInput) return;
+    nameInput.value = "";
+    nameInput.placeholder = this.#savePlaceholder;
+  }
+
+  /**
+   * Saved sets (`dict_saved_sets.client.ts`), when the server rendered their section (it doesn't
+   * in guest mode or scoped views). Picking one ticks exactly its dictionaries and closes the
+   * dialog, which saves them like any other edit. Chips act on their set by name, not position.
+   */
+  #bindSavedSets() {
+    const list = this.scope.$<HTMLElement>("#dict-saved-list");
+    if (!list) return;
+    this.#renderSavedSets();
+
+    this.scope.delegate<HTMLButtonElement>(
+      list,
+      "click",
+      ".dict-set-apply",
+      (_e, button) => {
+        const keys = new Set(
+          decodeDictBitmask(findDictSet(button.dataset.name ?? "")?.d) ?? []
+        );
+        const checkboxes = this.#dictCheckboxes();
+        // Nothing to tick (a set removed in another tab, or none of its dictionaries shown).
+        if (!checkboxes.some((cb) => keys.has(cb.dataset.key || cb.value))) {
+          return;
+        }
+        for (const cb of checkboxes) {
+          cb.checked = keys.has(cb.dataset.key || cb.value);
+        }
+        this.#modal?.close();
+      }
+    );
+    this.scope.delegate<HTMLButtonElement>(
+      list,
+      "click",
+      ".dict-set-remove",
+      (_e, button) => {
+        removeDictSet(button.dataset.name ?? "");
+        this.#renderSavedSets();
+        // The focused × is gone; keep focus in the dialog.
+        (
+          list.querySelector<HTMLElement>(".dict-set-apply") ??
+          this.scope.$<HTMLElement>(".dict-set-name")
+        )?.focus();
+      }
+    );
+    // An inline name field, not `prompt()`, which standalone PWAs may not show. A blank name
+    // falls back to the dictionaries' keys.
+    const nameInput = this.scope.$<HTMLInputElement>(".dict-set-name");
+    this.#savePlaceholder = nameInput?.placeholder ?? "";
+    const save = () => {
+      const keys = this.#dictCheckboxes()
+        .filter((cb) => cb.checked)
+        .map((cb) => cb.dataset.key || cb.value);
+      if (keys.length === 0 || !nameInput) return;
+      const name = nameInput.value.trim() || keys.join(", ");
+      saveDictSet(name, keys);
+      // The new chip is above the list, often scrolled out of view, so confirm here.
+      nameInput.value = "";
+      nameInput.placeholder = `Saved \u201c${name}\u201d`;
+      this.#renderSavedSets();
+    };
+    this.scope.listen(this.scope.$(".dict-set-save"), "click", save);
+    this.scope.listen(nameInput, "input", () => {
+      if (nameInput) nameInput.placeholder = this.#savePlaceholder;
+    });
+    this.scope.listen(nameInput, "keydown", (e: KeyboardEvent) => {
+      // Enter in a text field would submit (and so close) the dialog's form.
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      save();
+    });
   }
 
   #computeInitialStrength(): number {
@@ -192,8 +295,11 @@ export class MorcusDictSettings extends BaseElement {
     const doneBtn = this.scope.$<HTMLButtonElement>(
       "button.dict-settings-done"
     );
-    if (!doneBtn) return;
-    doneBtn.disabled = !this.#dictCheckboxes().some((cb) => cb.checked);
+    const none = !this.#dictCheckboxes().some((cb) => cb.checked);
+    if (doneBtn) doneBtn.disabled = none;
+    // A set of no dictionaries can't be saved either.
+    const saveBtn = this.scope.$<HTMLButtonElement>(".dict-set-save");
+    if (saveBtn) saveBtn.disabled = none;
   }
 
   /**

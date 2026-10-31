@@ -203,6 +203,10 @@ function stubMatchMedia(matches: boolean) {
  * created on the client or lives outside the fixture's scope.
  */
 const UNMATCHED_SELECTOR_ALLOWLIST: Readonly<Record<string, string>> = {
+  "morcus-dict-settings :: .dict-set-apply":
+    "Saved-set chips are rendered on the client from localStorage.",
+  "morcus-dict-settings :: .dict-set-remove":
+    "Saved-set chips are rendered on the client from localStorage.",
   "morcus-external-loader :: .external-saved-delete":
     "Delete buttons are rendered on the client from IndexedDB saved items.",
   "morcus-reader-view :: #btn-retry-translation":

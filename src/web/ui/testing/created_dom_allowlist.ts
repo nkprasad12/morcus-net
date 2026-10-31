@@ -53,6 +53,14 @@ export const CREATED_DOM_ALLOWLIST: readonly CreatedDomRule[] = [
       "(`ComboboxController.renderItems`), as for the corpus listbox above.",
   },
   {
+    selector: "#dict-saved-list",
+    subtree: true,
+    from: "upgrade",
+    reason:
+      "Saved dictionary sets live only in localStorage (`dict_saved_sets.client.ts`); " +
+      "the server renders the empty, JS-only list and the client draws a chip per set.",
+  },
+  {
     selector: "#panel-view-translation > .reader-translation-loading",
     subtree: true,
     from: "interaction",

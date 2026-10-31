@@ -107,6 +107,84 @@ morcus-dict-settings {
   flex-direction: column;
 }
 
+/* Saved sets (dict_saved_sets.client.ts): chips above the dictionary list, the save field
+   below it. Both are the list's size (`.dict-item`). */
+.dict-saved-list,
+.dict-save-set {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: 0.78rem;
+}
+
+.dict-saved-list {
+  margin-bottom: var(--space-3);
+}
+
+/* No sets saved: no row (and no gap) at all. */
+.dict-saved-list:empty {
+  display: none;
+}
+
+.dict-save-set {
+  margin-top: var(--space-3);
+}
+
+.dict-saved-list .btn,
+.dict-save-set .btn {
+  font-size: inherit;
+}
+
+/* One bordered box per set: its name, then a lighter ×. */
+.dict-set {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.dict-set-apply,
+.dict-set-remove {
+  font-weight: 400;
+}
+
+.dict-set-apply {
+  padding-inline-end: var(--space-2);
+}
+
+/* A primary tint, stronger than the dialog's other hovers, so it's clear which half (apply or
+   remove) is under the pointer. */
+.dict-set:hover {
+  border-color: var(--primary);
+}
+
+.dict-set-apply:hover,
+.dict-set-remove:hover {
+  background-color: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary);
+}
+
+.dict-set-remove {
+  padding-inline: var(--space-2) var(--space-3);
+  color: var(--text-muted);
+}
+
+/* Inset, since the box clips anything outside its buttons. */
+.dict-set .btn:focus-visible {
+  outline-offset: -2px;
+}
+
+.dict-set-name {
+  flex: 1 1 8rem;
+  min-width: 0;
+  padding: var(--space-1) var(--space-3);
+  font: inherit;
+  color: var(--text);
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+}
+
 .dict-list {
   display: flex;
   flex-direction: column;

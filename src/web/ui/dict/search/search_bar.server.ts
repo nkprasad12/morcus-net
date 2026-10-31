@@ -312,6 +312,31 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
       </div>
     `;
 
+  // Saved sets of dictionaries (`dict_saved_sets.client.ts`), within the dictionary list's
+  // section: picking a set (chips, drawn by the client, above the list) and saving the ticked
+  // dictionaries as one (below it) are different steps. JS-only, since sets live in
+  // localStorage. Not offered where the dictionaries are read-only (guest mode) or only partly
+  // shown and saved (scoped views).
+  const offerSavedSets = !input.isGuest && !input.isScoped;
+  const savedSetsListHtml = offerSavedSets
+    ? `<div class="dict-saved-list" id="dict-saved-list" role="group" aria-label="Saved sets" data-js-only></div>`
+    : "";
+  const saveSetHtml = offerSavedSets
+    ? ssr`
+      <div class="dict-save-set" data-js-only>
+        <input
+          type="text"
+          class="dict-set-name"
+          placeholder="Name (optional)"
+          aria-label="Name for the ticked dictionaries"
+          maxlength="40"
+          autocomplete="off"
+          enterkeyhint="done"
+        />
+        <button type="button" class="btn btn-sm btn-secondary dict-set-save">Save these</button>
+      </div>`
+    : "";
+
   // `#dict-appearance-link`: reading text is app-wide, so the app-bar
   // Appearance menu owns it (JS-only, like the menu). Hidden in embedded
   // views, which have no app bar (see dict_settings.client.ts).
@@ -328,9 +353,11 @@ function renderSettingsDialog(input: SettingsDialogInput): string {
           : ""
       }
       <div class="settings-section-title">Enabled Dictionaries</div>
+      ${savedSetsListHtml}
       <div class="dict-list">
         ${dictItemsHtml}
       </div>
+      ${saveSetHtml}
 
       ${inflectedSectionHtml}
 

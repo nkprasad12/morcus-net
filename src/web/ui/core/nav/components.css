@@ -149,7 +149,8 @@
 /* Shared text input focus ring */
 .report-reporter:focus-visible,
 .report-textarea:focus-visible,
-.external-input:focus-visible {
+.external-input:focus-visible,
+.dict-set-name:focus-visible {
   outline: none;
   border-color: var(--primary);
   box-shadow: var(--focus-ring);

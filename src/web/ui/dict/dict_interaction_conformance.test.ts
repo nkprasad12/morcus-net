@@ -72,6 +72,22 @@ describeInteractionConformance("dict", {
       expectSwap: true,
     },
     {
+      // Saved sets (`dict_saved_sets.client.ts`): save the edited selection, remove a set,
+      // save again, then pick it, which closes the dialog and applies it.
+      fixture: "dict-results",
+      name: "save, remove and pick a saved set",
+      steps: [
+        clickOn("#dict-settings-btn"),
+        clickOn(".dict-checkbox:not(:checked)"),
+        typeIn(".dict-set-name", "Prose"),
+        clickOn(".dict-set-save"),
+        clickOn(".dict-set-remove"),
+        clickOn(".dict-set-save"),
+        clickOn(".dict-set-apply"),
+      ],
+      expectSwap: true,
+    },
+    {
       fixture: "dict-landing",
       name: "change settings on landing page",
       steps: [
