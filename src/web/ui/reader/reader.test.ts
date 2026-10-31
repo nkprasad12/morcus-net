@@ -334,11 +334,13 @@ describe("decomposed_reader_renderers", () => {
   describe("renderReaderAboutSection", () => {
     test("renders scholarly attribution section with metadata", () => {
       const html = renderReaderAboutSection(dbgWork);
-      expect(html).toContain('id="reader-work-about"');
-      expect(html).toContain('class="reader-work-about"');
+      expect(html).toContain(
+        '<div class="reader-work-about" id="reader-work-about">'
+      );
+      expect(html).not.toContain("<details");
+      expect(html).not.toContain("<summary");
       expect(html).toContain("Julius Caesar");
       expect(html).toContain("T. Rice Holmes");
-      expect(html).toContain("About this text");
       expect(html).toContain("Perseus Digital Library");
       expect(html).not.toContain('["book", "chapter", "section"]');
     });
@@ -647,8 +649,8 @@ describe("decomposed_reader_renderers", () => {
           ?.parentElement?.id
       ).toBe("panel-view-notes");
       const about = doc.getElementById("reader-work-about");
+      expect(about?.tagName).toBe("DIV");
       expect(about?.closest("#panel-view-about")).not.toBeNull();
-      expect(about?.hasAttribute("open")).toBe(true);
     });
 
     test("hides the Notes tab on a page without notes", async () => {

@@ -182,6 +182,11 @@ export class ReaderPanelController extends BaseController {
       swappedRoot.matches(notesSlot) ||
       swappedRoot.querySelector(notesSlot)
     ) {
+      if (typeof this.notesView?.scrollTo === "function") {
+        this.notesView.scrollTo({ top: 0, behavior: "instant" });
+      } else if (this.notesView) {
+        this.notesView.scrollTop = 0;
+      }
       this.#syncNotes();
       this.#syncTabVisibility();
       if (this.#activeTab === "notes" && !this.hasNotes) {

@@ -29,6 +29,8 @@ import {
   renderReaderDictPanelHtml,
   renderReaderNotesSlot,
 } from "@/web/ui/reader/reader.server";
+import { renderReaderAboutSection } from "@/web/ui/reader/reader_dialogs.server";
+import { MOCK_CAESAR_WORK } from "@/web/ui/testing/mock_reader_loader";
 
 jest.mock("@/web/ui/reader/reader_loader.server", () =>
   jest.requireActual("@/web/ui/testing/mock_reader_loader")
@@ -2572,6 +2574,7 @@ describe("MorcusReaderView client-side partial page navigation", () => {
       prevPageUrl?: string;
       nextPageUrl?: string;
       notesHtml?: string;
+      aboutHtml?: string;
     } = {}
   ): MorcusReaderView {
     const pageId = options.pageId ?? "1";
@@ -2659,7 +2662,11 @@ describe("MorcusReaderView client-side partial page navigation", () => {
             </footer>
           </div>
         </section>
-        ${dictPanelHtml({ notesHtml: options.notesHtml, hasTranslation })}
+        ${dictPanelHtml({
+          notesHtml: options.notesHtml,
+          aboutHtml: options.aboutHtml,
+          hasTranslation,
+        })}
       </div>
     `;
 
@@ -3030,6 +3037,157 @@ describe("MorcusReaderView client-side partial page navigation", () => {
     await el.swapPage("/work/sallust/catalina1/1");
     expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
     expect(el.querySelectorAll(".word-active")).toHaveLength(0);
+  });
+
+  test("page turn on About tab keeps About tab active, keeps drawer open, preserves .reader-about-card, and preserves scrollTop", async () => {
+    const aboutHtml = renderReaderAboutSection(MOCK_CAESAR_WORK);
+    const el = createNavigableReaderView({
+      pageId: "1",
+      aboutHtml,
+    });
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+    const aboutSection = el.querySelector<HTMLElement>("#reader-work-about")!;
+    const aboutCard = el.querySelector<HTMLElement>(".reader-about-card")!;
+    const aboutView = el.querySelector<HTMLElement>("#panel-view-about")!;
+
+    // On initial connect() with drawer-minimized, #reader-work-about and .reader-about-card are intact
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+    expect(aboutSection.tagName).toBe("DIV");
+    expect(aboutCard.textContent).toContain("Julius Caesar");
+
+    // Open About tab and scroll #panel-view-about
+    el.activatePanelTab("about");
+    expect(el.getPanelController()?.activeTab).toBe("about");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    aboutView.scrollTop = 120;
+
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => page2Response,
+    });
+
+    await el.swapPage("/work/caesar/de-bello-gallico/2");
+
+    expect(el.getPanelController()?.activeTab).toBe("about");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    expect(aboutView.classList.contains("active")).toBe(true);
+    expect(
+      el.querySelector<HTMLElement>(".reader-about-card")?.textContent
+    ).toContain("Julius Caesar");
+    expect(aboutView.scrollTop).toBe(120);
+  });
+
+  test("page turn on Notes tab keeps drawer open and resets notes scroll when new page has notes, and switches to dict and minimizes when new page has no notes", async () => {
+    const initialNotesHtml = `
+      <aside class="reader-notes">
+        <ol class="reader-notes-list">
+          <li class="reader-note" id="note-n1">Page 1 note</li>
+        </ol>
+      </aside>`;
+    const page2NotesHtml = `
+      <aside class="reader-notes">
+        <ol class="reader-notes-list">
+          <li class="reader-note" id="note-n2">Page 2 note</li>
+        </ol>
+      </aside>`;
+    const el = createNavigableReaderView({
+      pageId: "1",
+      notesHtml: initialNotesHtml,
+      aboutHtml: renderReaderAboutSection(MOCK_CAESAR_WORK),
+    });
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+    const notesView = el.querySelector<HTMLElement>("#panel-view-notes")!;
+
+    el.activatePanelTab("notes");
+    expect(el.getPanelController()?.activeTab).toBe("notes");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    notesView.scrollTop = 160;
+
+    // 1. Page turn to a page WITH notes: keeps drawer open on notes and resets notesView scroll to top
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () =>
+        pageResponse(page2CardHtml, {
+          pageId: "2",
+          prevUrl: "/work/caesar/de-bello-gallico/1",
+          nextUrl: "/work/caesar/de-bello-gallico/3",
+          notesHtml: page2NotesHtml,
+        }),
+    });
+
+    await el.swapPage("/work/caesar/de-bello-gallico/2");
+    expect(el.getPanelController()?.activeTab).toBe("notes");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    expect(notesView.scrollTop).toBe(0);
+
+    // 2. Page turn to a page WITHOUT notes: falls back to dict and minimizes drawer
+    notesView.scrollTop = 90;
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () =>
+        pageResponse(page2CardHtml, {
+          pageId: "3",
+          prevUrl: "/work/caesar/de-bello-gallico/2",
+          notesHtml: "",
+        }),
+    });
+
+    await el.swapPage("/work/caesar/de-bello-gallico/3");
+    expect(el.getPanelController()?.activeTab).toBe("dict");
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+  });
+
+  test("tapping .reader-sheet-bar on an open reader drawer minimizes it, and tapping it while minimized restores it", () => {
+    const el = createNavigableReaderView({
+      pageId: "1",
+      aboutHtml: renderReaderAboutSection(MOCK_CAESAR_WORK),
+    });
+    const dictPanel = el.querySelector<HTMLElement>(".reader-dict-panel")!;
+    const sheetBar = el.querySelector<HTMLElement>(".reader-sheet-bar")!;
+
+    el.restoreDrawer(60);
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+
+    // Tap on open sheet bar -> minimizes drawer
+    sheetBar.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        button: 0,
+        bubbles: true,
+        clientX: 100,
+        clientY: 300,
+        pointerId: 1,
+      })
+    );
+    sheetBar.dispatchEvent(
+      new PointerEvent("pointerup", {
+        bubbles: true,
+        clientX: 100,
+        clientY: 300,
+        pointerId: 1,
+      })
+    );
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(true);
+
+    // Tap on minimized sheet bar -> restores drawer
+    sheetBar.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        button: 0,
+        bubbles: true,
+        clientX: 100,
+        clientY: 700,
+        pointerId: 2,
+      })
+    );
+    sheetBar.dispatchEvent(
+      new PointerEvent("pointerup", {
+        bubbles: true,
+        clientX: 100,
+        clientY: 700,
+        pointerId: 2,
+      })
+    );
+    expect(dictPanel.classList.contains("drawer-minimized")).toBe(false);
+    expect(dictPanel.style.getPropertyValue("--drawer-height")).toBe("60svh");
   });
 
   test("swapPage fetches the page and translation build-versioned, but keeps the address bar clean", async () => {

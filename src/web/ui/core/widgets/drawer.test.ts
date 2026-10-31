@@ -175,6 +175,7 @@ describe("DrawerController", () => {
     const controller = connectController({
       drawer: detailsDrawer,
       handle: detailsHandle,
+      detailsSelector: "details",
     });
 
     expect(detailsEl.open).toBe(true);
@@ -204,6 +205,7 @@ describe("DrawerController", () => {
     const controller = connectController({
       drawer: detailsDrawer,
       handle: document.getElementById("handle")!,
+      detailsSelector: "details",
       minHeight: 54,
     });
 
@@ -232,6 +234,7 @@ describe("DrawerController", () => {
     const controller = connectController({
       drawer: detailsDrawer,
       handle: detailsHandle,
+      detailsSelector: "details",
       heightTargets: () => [backToTop],
       minHeight: 28,
     });
@@ -316,6 +319,7 @@ describe("DrawerController", () => {
       const controller = connectController({
         drawer: detailsDrawer,
         handle: summary,
+        detailsSelector: "details",
         onMinimize,
         onRestore,
       });
@@ -335,6 +339,7 @@ describe("DrawerController", () => {
       const controller = connectController({
         drawer: detailsDrawer,
         handle: summary,
+        detailsSelector: "details",
         heightTargets: () => [target],
         minHeight: 28,
       });
@@ -355,6 +360,7 @@ describe("DrawerController", () => {
       const controller = connectController({
         drawer: detailsDrawer,
         handle: summary,
+        detailsSelector: "details",
         minHeight: 28,
         onRestore,
       });
@@ -380,6 +386,7 @@ describe("DrawerController", () => {
       const controller = connectController({
         drawer: detailsDrawer,
         handle: summary,
+        detailsSelector: "details",
         minHeight: 28,
         onMinimize,
       });
@@ -402,6 +409,7 @@ describe("DrawerController", () => {
       const controller = connectController({
         drawer: detailsDrawer,
         handle: summary,
+        detailsSelector: "details",
         minHeight: 28,
       });
       controller.restore(62);
@@ -422,6 +430,138 @@ describe("DrawerController", () => {
 
       controller.dispose();
     });
+  });
+
+  test("never hijacks or syncs a descendant <details> when detailsElement and detailsSelector are omitted", () => {
+    document.body.innerHTML = `
+      <aside id="drawer" class="drawer drawer-minimized">
+        <div id="handle" class="drawer-bar" tabindex="0" role="separator"></div>
+        <div id="content">
+          <details id="inner-details" open>
+            <summary>Collapsible section</summary>
+            <div>Inner content</div>
+          </details>
+        </div>
+      </aside>
+    `;
+    const hostDrawer = document.getElementById("drawer")!;
+    const hostHandle = document.getElementById("handle")!;
+    const innerDetails = document.getElementById(
+      "inner-details"
+    ) as HTMLDetailsElement;
+
+    const controller = connectController({
+      drawer: hostDrawer,
+      handle: hostHandle,
+    });
+
+    // Connecting on a drawer-minimized panel does not close inner <details> or write inline height
+    expect(innerDetails.open).toBe(true);
+    expect(hostDrawer.style.getPropertyValue("--drawer-height")).toBe("");
+    expect(controller.isMinimized()).toBe(true);
+
+    // minimize() and restore() leave inner <details> untouched
+    controller.restore(50);
+    expect(innerDetails.open).toBe(true);
+    expect(controller.isMinimized()).toBe(false);
+
+    controller.minimize();
+    expect(innerDetails.open).toBe(true);
+    expect(controller.isMinimized()).toBe(true);
+
+    // Native toggle of inner <details> does not toggle the drawer
+    controller.restore(50);
+    innerDetails.open = false;
+    innerDetails.dispatchEvent(new Event("toggle"));
+    expect(controller.isMinimized()).toBe(false);
+
+    // Drag start does not force inner <details> open
+    hostHandle.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        button: 0,
+        bubbles: true,
+        clientX: 100,
+        clientY: 300,
+        pointerId: 1,
+      })
+    );
+    expect(innerDetails.open).toBe(false);
+    hostHandle.dispatchEvent(
+      new PointerEvent("pointerup", {
+        bubbles: true,
+        clientX: 100,
+        clientY: 300,
+        pointerId: 1,
+      })
+    );
+    expect(innerDetails.open).toBe(false);
+
+    controller.dispose();
+  });
+
+  test("tapToggles: true minimizes an open non-<details> drawer on handle tap and restores it when minimized", () => {
+    const onMinimize = jest.fn();
+    const onRestore = jest.fn();
+    const controller = connectController({
+      drawer,
+      handle,
+      tapToggles: true,
+      defaultSvh: 48,
+      minHeight: 40,
+      onMinimize,
+      onRestore,
+    });
+
+    controller.restore(60);
+    onRestore.mockClear();
+
+    // Tap while open -> minimizes
+    handle.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        button: 0,
+        bubbles: true,
+        clientX: 100,
+        clientY: 300,
+        pointerId: 1,
+      })
+    );
+    handle.dispatchEvent(
+      new PointerEvent("pointerup", {
+        bubbles: true,
+        clientX: 100,
+        clientY: 300,
+        pointerId: 1,
+      })
+    );
+    expect(controller.isMinimized()).toBe(true);
+    expect(drawer.classList.contains("drawer-minimized")).toBe(true);
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("40px");
+    expect(onMinimize).toHaveBeenCalledTimes(1);
+
+    // Tap while minimized -> restores preferred 60svh
+    handle.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        button: 0,
+        bubbles: true,
+        clientX: 100,
+        clientY: 700,
+        pointerId: 2,
+      })
+    );
+    handle.dispatchEvent(
+      new PointerEvent("pointerup", {
+        bubbles: true,
+        clientX: 100,
+        clientY: 700,
+        pointerId: 2,
+      })
+    );
+    expect(controller.isMinimized()).toBe(false);
+    expect(drawer.classList.contains("drawer-minimized")).toBe(false);
+    expect(drawer.style.getPropertyValue("--drawer-height")).toBe("60svh");
+    expect(onRestore).toHaveBeenCalledWith(60);
+
+    controller.dispose();
   });
 
   test("handles keyboard navigation (ArrowUp, ArrowDown, Escape)", () => {

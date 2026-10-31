@@ -195,6 +195,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
       floorSvh: DRAWER_FLOOR_SVH,
       expandedSvh: DRAWER_EXPANDED_SVH,
       preferredSvh: DRAWER_DEFAULT_SVH,
+      tapToggles: true,
       filter: (e) => {
         if (
           e.target instanceof Element &&
@@ -1708,11 +1709,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
 
     const isPageTurn = isPopState || url.pathname !== window.location.pathname;
-    const isTransActive = this.#panelController?.activeTab === "translation";
+    const activeTabBeforeSwap = this.#panelController?.activeTab ?? "dict";
+    const isTransActive = activeTabBeforeSwap === "translation";
     const clearPageTurnQuery =
       isPageTurn && (!isPopState || !url.searchParams.has("q"));
     if (clearPageTurnQuery) {
-      if (!isTransActive) {
+      if (activeTabBeforeSwap === "dict") {
         this.minimizeDrawer();
       }
       this.#currentQuery = "";
@@ -1758,6 +1760,13 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
 
     if (clearPageTurnQuery) {
       url.searchParams.delete("q");
+      if (
+        activeTabBeforeSwap === "notes" &&
+        this.#panelController?.activeTab === "dict" &&
+        !this.#currentQuery
+      ) {
+        this.minimizeDrawer();
+      }
       this.#currentQuery = "";
     } else {
       this.#currentQuery = url.searchParams.get("q") ?? "";

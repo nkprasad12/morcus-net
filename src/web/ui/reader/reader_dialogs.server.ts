@@ -22,8 +22,7 @@ function getAttributionNoticeHtml(attribution?: string): string {
 /**
  * Renders the scholarly attribution and work metadata colophon detailing authors,
  * critical editors, funding, sponsors, CTS URN / work ID, source links, and license.
- * Rendered into the companion panel's About view, which hides the summary, so
- * the <details> is always open.
+ * Rendered into the companion panel's About view.
  */
 export function renderReaderAboutSection(work: V2PreprocessedWork): string {
   const sources =
@@ -55,8 +54,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
 
   const attributionHtml = getAttributionNoticeHtml(work.attribution);
 
-  return ssr`<details class="reader-work-about" id="reader-work-about" open>
-        <summary class="reader-about-summary">About this text</summary>
+  return ssr`<div class="reader-work-about" id="reader-work-about">
         <div class="reader-about-card">
           <dl class="reader-meta-list">
             <div class="meta-row">
@@ -103,7 +101,7 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
           </dl>
           ${attributionHtml}
         </div>
-      </details>`;
+      </div>`;
 }
 
 interface ReaderSettingsPopoverOptions {

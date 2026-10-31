@@ -32,10 +32,9 @@ const NOTES_HTML = `<aside class="reader-notes" role="doc-endnotes" aria-labelle
   </ol>
 </aside>`;
 
-const ABOUT_HTML = `<details class="reader-work-about" id="reader-work-about" open>
-  <summary class="reader-about-summary">About this text</summary>
+const ABOUT_HTML = `<div class="reader-work-about" id="reader-work-about">
   <div class="reader-about-card">Julius Caesar</div>
-</details>`;
+</div>`;
 
 const TRANSLATION_HTML = `<div class="reader-translation-content">
   <div class="reader-translation-header">Translated by John Selby Watson</div>
@@ -370,9 +369,15 @@ describe("ReaderPanelController", () => {
       notifyContentSwap(next);
     }
 
-    it("recounts notes and keeps the Notes view", () => {
+    it("recounts notes, resets notes scroll to top, and keeps the Notes view", () => {
       controller.setTab("notes");
       const view = $(container, "#panel-view-notes");
+      const scrollSpy = jest.fn((opts: ScrollToOptions) => {
+        view.scrollTop = opts.top ?? 0;
+      });
+      view.scrollTo = scrollSpy as typeof view.scrollTo;
+      view.scrollTop = 180;
+
       swapNotes(
         NOTES_HTML.replace(
           /<li class="reader-note" id="note-n2">[\s\S]*?<\/li>/,
@@ -382,6 +387,18 @@ describe("ReaderPanelController", () => {
       expect(controller.noteCount).toBe(1);
       expect(controller.activeTab).toBe("notes");
       expect($(container, "#panel-view-notes")).toBe(view);
+      expect(scrollSpy).toHaveBeenCalledWith({ top: 0, behavior: "instant" });
+      expect(view.scrollTop).toBe(0);
+    });
+
+    it("unconditionally resets notes scroll to top on notes slot swap even when another tab is active", () => {
+      controller.setTab("about");
+      const view = $(container, "#panel-view-notes");
+      view.scrollTop = 140;
+
+      swapNotes(NOTES_HTML);
+      expect(controller.activeTab).toBe("about");
+      expect(view.scrollTop).toBe(0);
     });
 
     it("hides the Notes tab and falls back to the dictionary when a page has none", () => {

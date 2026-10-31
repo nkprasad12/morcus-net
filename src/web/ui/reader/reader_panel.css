@@ -153,10 +153,6 @@
   box-shadow: inset 3px 0 0 var(--primary);
 }
 
-.reader-panel-about .reader-about-summary {
-  display: none;
-}
-
 .reader-about-card {
   max-width: 600px;
 }

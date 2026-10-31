@@ -164,10 +164,12 @@ interface DrawerControllerOptions {
    * every element on each pointer move.
    */
   heightTargets?: () => Iterable<HTMLElement>;
-  /** Optional <details> element (for disclosure drawers). If omitted, inferred from drawer or its children. */
+  /** Optional <details> element (for disclosure drawers). If omitted, bound only when detailsSelector is provided or drawer itself is a <details>. */
   detailsElement?: HTMLDetailsElement | null;
   /** Optional selector to resolve the <details> element from root on connect */
   detailsSelector?: string;
+  /** If true, tapping the handle when the drawer is already open minimizes it (always true for <details>-backed drawers). */
+  tapToggles?: boolean;
   /** Optional guard callback; if it returns false, onConnect() skips binding listeners. */
   enabled?: () => boolean;
   /** Minimum height in pixels (peek / minimized height). Defaults to DRAWER_MIN_HEIGHT (54). */
@@ -288,7 +290,7 @@ export class DrawerController extends BaseController {
     } else if (this.drawer instanceof HTMLDetailsElement) {
       this.#details = this.drawer;
     } else {
-      this.#details = this.drawer?.querySelector("details") ?? null;
+      this.#details = null;
     }
 
     this.#resolveTargets();
@@ -535,7 +537,7 @@ export class DrawerController extends BaseController {
           if (decision.action === "tap") {
             // `onStart` already opened `<details>`, so the native click would
             // close it again (the click guard swallows it): toggle here instead.
-            if (this.#details && !wasMinimized) {
+            if ((this.#details || this.#options.tapToggles) && !wasMinimized) {
               this.minimize();
             } else {
               this.restore();
