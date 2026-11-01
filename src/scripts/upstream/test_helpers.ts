@@ -9,11 +9,18 @@ import { tmpdir } from "os";
 import path from "path";
 
 export function sh(cwd: string, ...args: string[]): string {
+  const cleanEnv = { ...process.env };
+  delete cleanEnv.GIT_DIR;
+  delete cleanEnv.GIT_WORK_TREE;
+  delete cleanEnv.GIT_COMMON_DIR;
+  delete cleanEnv.GIT_INDEX_FILE;
+  delete cleanEnv.GIT_OBJECT_DIRECTORY;
+  delete cleanEnv.GIT_ALTERNATE_OBJECT_DIRECTORIES;
   const result = spawnSync("git", args, {
     cwd,
     encoding: "utf8",
     env: {
-      ...process.env,
+      ...cleanEnv,
       GIT_AUTHOR_NAME: "Test",
       GIT_AUTHOR_EMAIL: "test@example.com",
       GIT_COMMITTER_NAME: "Test",
