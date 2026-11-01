@@ -27,10 +27,11 @@ import {
   renderReaderAboutSection,
   renderReaderSettingsPopover,
 } from "@/web/ui/reader/reader_dialogs.server";
+import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
 import {
-  renderCopyPillIconsHtml,
-  renderIconSvg,
-} from "@/web/ui/core/widgets/icons.common";
+  renderReaderHeadingHtml as renderReaderHeadingCommonHtml,
+  renderReaderSettingsButtonHtml as renderReaderSettingsButtonCommonHtml,
+} from "@/web/ui/reader/reader_chrome.common";
 import { getFirstHighlightSectionId } from "@/web/ui/reader/reader_highlight.common";
 import { renderSlotTemplates, slotAttr } from "@/web/ui/core/nav/slots.common";
 import {
@@ -255,36 +256,17 @@ ${renderReaderSettingsButtonHtml()}
 }
 
 /**
- * The `Aa` trigger for the reader settings dialog. `MorcusReaderSettings` finds it
- * by id, so every reader bar must render this exact button.
+ * The `Aa` trigger and the passage heading are shared with the client-rendered
+ * Open Texts reader, so they live in `reader_chrome.common.ts`; these wrappers
+ * keep the server's string API.
  */
 export function renderReaderSettingsButtonHtml(): string {
-  return ssr`<button type="button"
-                    class="reader-btn reader-settings-btn"
-                    id="reader-settings-btn"
-                    data-js-only
-                    aria-haspopup="dialog"
-                    aria-expanded="false"
-                    aria-controls="reader-settings-popover"
-                    aria-label="Appearance &amp; Typography"
-                    title="Appearance &amp; Typography">
-              <span class="settings-glyph" aria-hidden="true">Aa</span>
-            </button>`;
+  return String(renderReaderSettingsButtonCommonHtml());
 }
 
-/**
- * Renders the passage `<h1>` heading. When `href` is supplied (library works
- * and URL-backed external texts), the heading text is wrapped in a permalink
- * anchor (`a.reader-heading-link`) that copies the page link on click.
- */
+/** See `renderReaderHeadingHtml` in `reader_chrome.common.ts`. */
 export function renderReaderHeadingHtml(title: string, href?: string): string {
-  const escapedTitle = he.escape(title);
-  if (!href) {
-    return `<h1 class="reader-passage-heading" aria-live="polite">${escapedTitle}</h1>`;
-  }
-  return `<h1 class="reader-passage-heading" aria-live="polite"><a href="${he.escape(
-    href
-  )}" class="reader-heading-link" title="Copy link to this page" aria-label="${escapedTitle} (copy link to this page)">${escapedTitle}${renderCopyPillIconsHtml()}</a></h1>`;
+  return String(renderReaderHeadingCommonHtml(title, href));
 }
 
 /** Compact source credit beneath the passage heading, linking to the About tab. */

@@ -32,6 +32,7 @@ import {
 import { renderOpenTextReaderHostHtml } from "@/web/ui/open_texts/open_texts_contract.common";
 import { buildOpenTextFileUrls } from "@/common/open_texts/catalog_types";
 import { installPointerEventShims } from "@/web/ui/testing/pointer_events";
+import { setupAnchorScroll } from "@/web/ui/core/nav/anchor_scroll.client";
 
 /** Rendered text, ignoring the formatting whitespace in templates. */
 function text(el: Element | null | undefined): string | undefined {
@@ -361,8 +362,15 @@ describe("<morcus-open-text-reader>", () => {
       (w) => text(w)
     );
     expect(words).toContain("Regina");
-    expect(words).toContain("Reg"); // Note text is tokenized too.
     expect(reader.querySelector("#sec-529A")).not.toBeNull();
+    // The page's note is in the companion panel's Notes tab, not the passage.
+    expect(reader.querySelector("#reader-passage .reader-note")).toBeNull();
+    expect(
+      text(reader.querySelector("#panel-view-notes #note-1 .reader-note-body"))
+    ).toBe("Cf. 3 Reg. 10.");
+    expect(reader.querySelector<HTMLElement>("#panel-tab-notes")?.hidden).toBe(
+      false
+    );
     // The URL names the page shown.
     expect(new URLSearchParams(window.location.search).get("page")).toBe("529");
   });
@@ -485,6 +493,139 @@ describe("<morcus-open-text-reader>", () => {
     }
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
     expect(drawer.open).toBe(true);
+  });
+
+  it("opens the reader settings from the Aa button and applies them", async () => {
+    useFetch({ [PRIMARY]: [200, TEI] });
+    const reader = mount();
+    await reader.ready;
+
+    const btn = reader.querySelector<HTMLButtonElement>(
+      ".reader-sticky-bar #reader-settings-btn"
+    );
+    const dialog = reader.querySelector<HTMLDialogElement>(
+      "morcus-reader-view #reader-settings-popover"
+    );
+    if (!btn || !dialog) throw new Error("no reader settings");
+    expect(
+      dialog.closest("morcus-reader-settings")?.hasAttribute("data-upgraded")
+    ).toBe(true);
+    btn.click();
+    expect(dialog.open).toBe(true);
+    expect(btn.getAttribute("aria-expanded")).toBe("true");
+
+    // The settings reach the reader view: hiding the section numbers.
+    const gutter = dialog.querySelector<HTMLInputElement>("#toggle-gutter");
+    if (!gutter) throw new Error("no gutter toggle");
+    expect(gutter.checked).toBe(true);
+    gutter.checked = false;
+    gutter.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(
+      document.documentElement.hasAttribute("data-reader-hide-gutter")
+    ).toBe(true);
+    gutter.checked = true;
+    gutter.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(
+      document.documentElement.hasAttribute("data-reader-hide-gutter")
+    ).toBe(false);
+
+    dialog.querySelector<HTMLElement>("#reader-settings-close-btn")?.click();
+    expect(dialog.open).toBe(false);
+  });
+
+  it("copies the heading's permalink, which follows page turns", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    useFetch({ [PRIMARY]: [200, TEI] });
+    const reader = mount();
+    await reader.ready;
+
+    reader
+      .querySelector<HTMLAnchorElement>(
+        '.reader-sticky-bar [data-role="open-text-next"]'
+      )
+      ?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    const link = reader.querySelector<HTMLAnchorElement>(
+      "h1.reader-passage-heading a.reader-heading-link"
+    );
+    if (!link) throw new Error("no heading link");
+    expect(text(link)).toBe("col. 530");
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+    link.dispatchEvent(click);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(click.defaultPrevented).toBe(true);
+    expect(writeText).toHaveBeenCalledWith(
+      new URL(link.getAttribute("href") ?? "", window.location.href).href
+    );
+    expect(new URL(link.href).searchParams.get("page")).toBe("530");
+  });
+
+  it("shows notes in the Notes tab, following page turns", async () => {
+    useFetch({ [PRIMARY]: [200, TEI] });
+    const reader = mount();
+    await reader.ready;
+    // On the page, `common.js` handles in-page links once components are up.
+    const stopAnchors = setupAnchorScroll();
+
+    const tab = reader.querySelector<HTMLElement>("#panel-tab-notes");
+    const notesView = reader.querySelector<HTMLElement>("#panel-view-notes");
+    const notesLink = reader.querySelector<HTMLAnchorElement>(
+      '.reader-text-card-header a[data-role="open-text-notes-link"]'
+    );
+    if (!tab || !notesView || !notesLink) throw new Error("no notes tab");
+    expect(tab.hidden).toBe(false);
+    expect(tab.getAttribute("role")).toBe("tab");
+    expect(tab.getAttribute("aria-selected")).toBe("false");
+
+    // The header's "1 note" link opens the Notes tab.
+    expect(text(notesLink)).toBe("1 note");
+    notesLink.click();
+    expect(tab.getAttribute("aria-selected")).toBe("true");
+    expect(notesView.classList.contains("active")).toBe(true);
+
+    // A `#note-1` link reveals the note in the tab.
+    const view = reader.querySelector("morcus-reader-view");
+    view?.querySelector<HTMLElement>("#panel-tab-dict")?.click();
+    expect(tab.getAttribute("aria-selected")).toBe("false");
+    const noteLink = document.createElement("a");
+    noteLink.href = "#note-1";
+    reader.querySelector(".reader-text-card-header")?.appendChild(noteLink);
+    noteLink.click();
+    expect(tab.getAttribute("aria-selected")).toBe("true");
+    expect(
+      notesView.querySelector("#note-1")?.classList.contains("note-active")
+    ).toBe(true);
+    noteLink.remove();
+
+    // A page without notes hides the tab and falls back to the dictionary.
+    const next = reader.querySelector<HTMLAnchorElement>(
+      '.reader-sticky-bar [data-role="open-text-next"]'
+    );
+    next?.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true })
+    );
+    expect(heading(reader)).toBe("col. 530");
+    expect(tab.hidden).toBe(true);
+    expect(notesView.querySelector(".reader-note")).toBeNull();
+    expect(
+      reader.querySelector("#panel-tab-dict")?.getAttribute("aria-selected")
+    ).toBe("true");
+    expect(notesLink.hidden).toBe(true);
+
+    // Back on a page with notes, the tab comes back.
+    window.history.replaceState(
+      null,
+      "",
+      `/opentexts?open=${encodeURIComponent(FIXTURE_PL_ENTRY.id)}&page=529`
+    );
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    expect(heading(reader)).toBe("col. 529");
+    expect(tab.hidden).toBe(false);
+    expect(notesView.querySelectorAll(".reader-note")).toHaveLength(1);
+    expect(notesLink.hidden).toBe(false);
+    stopAnchors();
   });
 
   it("reopens from the cache at the last page read, without the network", async () => {

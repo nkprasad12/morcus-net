@@ -54,6 +54,7 @@ import {
   openTextPageHref,
   renderOpenTextFrameHtml,
   renderOpenTextPassageHtml,
+  swapOpenTextNotes,
   syncOpenTextPageChrome,
   type OpenTextViewModel,
 } from "@/web/ui/open_texts/open_text_view_adapter.client";
@@ -421,6 +422,7 @@ export class MorcusOpenTextReader extends BaseElement {
     const page = model.doc.pages[index];
     if (options.push) this.#syncUrl(true);
     view.adoptPassage(renderOpenTextPassageHtml(page));
+    swapOpenTextNotes(mount, model, index);
     syncOpenTextPageChrome(mount, model, index);
     view.syncTocActivePage(page.id);
     // A new page starts at its top (the passage scrolls in the text panel on

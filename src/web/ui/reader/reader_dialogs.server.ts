@@ -1,7 +1,9 @@
 import { V2PreprocessedWork } from "@/common/library/preprocess/preprocessed_types";
 import * as he from "he";
-import { renderIconSvg } from "@/web/ui/core/widgets/icons.common";
-import { DEFAULT_PANEL_SCALE } from "@/web/ui/reader/reader_scale.common";
+import {
+  renderReaderSettingsPopoverHtml,
+  type ReaderSettingsPopoverOptions,
+} from "@/web/ui/reader/reader_chrome.common";
 import { ssr } from "@/web/ui/core/server/ssr_template.server";
 
 /**
@@ -106,88 +108,13 @@ export function renderReaderAboutSection(work: V2PreprocessedWork): string {
       </div>`;
 }
 
-interface ReaderSettingsPopoverOptions {
-  hasMacra?: boolean;
-}
-
 /**
- * Renders the reader display settings: a modal `<dialog>` (JS-only, like its
- * trigger) anchored under the trigger by <morcus-reader-settings>.
- * When hasMacra is false (e.g. for unmacronized editions), the macra toggle is omitted from the DOM.
+ * Renders the reader display settings dialog (`#reader-settings-popover`).
+ * The markup is shared with the client-rendered Open Texts reader, so it
+ * lives in `renderReaderSettingsPopoverHtml` (`reader_chrome.common.ts`).
  */
 export function renderReaderSettingsPopover(
   options: ReaderSettingsPopoverOptions = {}
 ): string {
-  const hasMacra = options.hasMacra ?? true;
-  // App-wide text appearance lives in the app-bar Appearance menu, so this
-  // only links to it. The Side Panel size is reader-only: it applies to every
-  // tab, relative to the global text size. Touch Navigation (swipe page turns)
-  // is hidden without a touchscreen by reader_page_nav.css.
-  return ssr`<morcus-reader-settings>
-        <dialog class="anchored-popover reader-settings-popover"
-                id="reader-settings-popover"
-                aria-label="Reader settings">
-          <div class="settings-popover-header">
-            <h2 class="settings-popover-title">Reader settings</h2>
-            <button type="button"
-                    class="settings-popover-close"
-                    id="reader-settings-close-btn"
-                    data-dialog-close
-                    aria-label="Close reader settings">${renderIconSvg(
-                      "close",
-                      { className: "dialog-close-icon", width: 18, height: 18 }
-                    )}</button>
-          </div>
-
-          <div class="settings-body">
-            
-            <button type="button" class="appearance-link" id="reader-appearance-link">
-              <span>Text appearance<span class="appearance-link-hint">Font, size, spacing, contrast, theme</span></span>
-              ${renderIconSvg("palette")}
-            </button>
-
-            <div class="settings-group">
-              <h3 class="settings-group-title">Side Panel</h3>
-              <div class="settings-row">
-                <span class="settings-label">Text Size<span class="settings-hint">Relative to your text size</span></span>
-                <div class="stepper">
-                  <button type="button" class="stepper-btn" id="dict-size-dec" aria-label="Decrease side panel text size">A&minus;</button>
-                  <span class="stepper-val" id="dict-size-label">${DEFAULT_PANEL_SCALE}%</span>
-                  <button type="button" class="stepper-btn" id="dict-size-inc" aria-label="Increase side panel text size">A+</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="settings-group">
-              <h3 class="settings-group-title">Textual Aids</h3>
-              ${
-                hasMacra
-                  ? ssr`<label class="settings-toggle-row">
-                <span class="settings-label">Show Macra (vowel length markings: &amacr;, &emacr;, &imacr;, &omacr;, &umacr;)</span>
-                <input type="checkbox" id="toggle-macra" class="toggle-checkbox" checked>
-              </label>`
-                  : ""
-              }
-
-              <label class="settings-toggle-row">
-                <span class="settings-label">Show Section Numbers (&sect;)</span>
-                <input type="checkbox" id="toggle-gutter" class="toggle-checkbox" checked>
-              </label>
-            </div>
-
-            <div class="settings-group settings-touch-nav">
-              <h3 class="settings-group-title">Touch Navigation</h3>
-              <label class="settings-toggle-row">
-                <span class="settings-label">Swipe to turn pages</span>
-                <input type="checkbox" id="toggle-swipe-nav" class="toggle-checkbox" checked>
-              </label>
-            </div>
-
-          </div>
-
-          <div class="settings-popover-footer">
-            <button type="button" class="btn btn-secondary settings-reset-btn" id="reader-settings-reset-btn">Reset Defaults</button>
-          </div>
-        </dialog>
-      </morcus-reader-settings>`;
+  return String(renderReaderSettingsPopoverHtml(options));
 }

@@ -16,11 +16,19 @@
  * a stylesheet of its own. The `open-text-badge*` classes are hooks that the
  * Open Texts stylesheet may style; unstyled, they read as plain metadata text.
  *
- * All DOM writes go through {@link mountOpenTextFrame}, the module's single
+ * The chrome every reader shares comes from the same browser-safe renderers
+ * the server uses: the contents button and dialog (`reader_toc.common.ts`),
+ * and the `Aa` settings button and dialog and the permalink heading
+ * (`reader_chrome.common.ts`). A page's notes sit in the companion panel's
+ * Notes tab, in the same `notes` slot as on library pages, so
+ * `ReaderPanelController` handles them the same way.
+ *
+ * All DOM writes go through {@link writeOpenTextHtml}, the module's single
  * audited `setHtml` call site (`inventory_ratchet.json`). Page turns re-render
- * only the passage, through the reader view's `adoptPassage`, and patch the
- * surrounding chrome with {@link syncOpenTextPageChrome} (text and attributes
- * only), so the dictionary panel and its state survive a page turn.
+ * only the passage, through the reader view's `adoptPassage`, and the notes
+ * slot ({@link swapOpenTextNotes}), and patch the surrounding chrome with
+ * {@link syncOpenTextPageChrome} (text and attributes only), so the dictionary
+ * panel and its state survive a page turn.
  */
 
 import type {
@@ -46,6 +54,12 @@ import {
   OPEN_TEXTS_PATH,
   buildOpenTextsUrl,
 } from "@/web/ui/open_texts/open_texts_contract.common";
+import { SLOT_ATTR } from "@/web/ui/core/nav/slots.common";
+import {
+  renderReaderHeadingHtml,
+  renderReaderSettingsButtonHtml,
+  renderReaderSettingsPopoverHtml,
+} from "@/web/ui/reader/reader_chrome.common";
 import {
   renderPageListTocDrawerHtml,
   renderTocTriggerHtml,
@@ -61,8 +75,13 @@ export const OPEN_TEXT_VIEW_ROLES = {
   notesLink: "open-text-notes-link",
 } as const;
 
-/** The element id of the page's footnote list (target of the notes link). */
-export const OPEN_TEXT_NOTES_ID = "open-text-notes";
+/** The companion panel's Notes view (target of the notes link). */
+export const OPEN_TEXT_NOTES_VIEW_ID = "panel-view-notes";
+
+/** The element id of a page's note `index` (0-based): `note-1`, `note-2`... */
+export function openTextNoteId(index: number): string {
+  return `note-${index + 1}`;
+}
 
 /** Shown in About: Open Texts make no promise (Decision #16, M4). */
 export const OPEN_TEXT_NO_PROMISE_NOTICE =
@@ -79,6 +98,8 @@ const ICONS = {
   chevronUp: "M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z",
   book: "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
   info: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16v-4 M12 8h.01",
+  notes:
+    "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8",
   drawer:
     "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M3 14h18 M10 17.5h4",
   strokeChevronLeft: "M15 6l-6 6 6 6",
@@ -328,39 +349,47 @@ function renderBlock(
   }
 }
 
-function renderNotes(page: OpenTextPage): SafeHtml {
+/**
+ * The page's notes as the companion panel's Notes view shows them, in the
+ * library's endnote shape (`renderNotesSection` in `work_preprocessor.ts`):
+ * one `li.reader-note#note-<n>` each, which `ReaderPanelController` counts,
+ * shows the Notes tab for, and reveals for a `#note-<n>` link. Open Text
+ * notes have no in-text markers, so the label is plain text rather than a
+ * back-link. "" for a page without notes, as on library pages.
+ */
+export function renderOpenTextNotesHtml(page: OpenTextPage): SafeHtml {
+  if (page.notes.length === 0) return html``;
   const items = page.notes.map(
     (note, i) =>
-      html`<li class="reader-note" id="${OPEN_TEXT_NOTES_ID}-${i + 1}">
-        <span class="text-muted" data-no-tokenize="true">[${i + 1}]</span>
+      html`<li class="reader-note" id="${openTextNoteId(i)}">
+        <span class="text-muted">[${i + 1}]</span>
         <div class="reader-note-body">
           ${raw(renderInlineSegments(note.segments))}
         </div>
       </li>`
   );
-  // A gutterless row, so the note text is tokenized like the passage.
-  return html`<div class="reader-section">
-    <div class="reader-gutter"></div>
-    <div class="reader-passage">
-      <aside
-        class="reader-notes"
-        id="${OPEN_TEXT_NOTES_ID}"
-        role="doc-endnotes"
-        aria-labelledby="${OPEN_TEXT_NOTES_ID}-heading">
-        <h2 class="reader-notes-heading" id="${OPEN_TEXT_NOTES_ID}-heading">
-          Notes
-        </h2>
-        <ol class="reader-notes-list">
-          ${joinHtml(items)}
-        </ol>
-      </aside>
-    </div>
+  return html`<aside
+    class="reader-notes"
+    role="doc-endnotes"
+    aria-labelledby="reader-notes-heading">
+    <h2 class="reader-notes-heading" id="reader-notes-heading">Notes</h2>
+    <ol class="reader-notes-list">
+      ${joinHtml(items)}
+    </ol>
+  </aside>`;
+}
+
+/** The `notes` page-turn slot inside `#panel-view-notes`. */
+function renderNotesSlot(page: OpenTextPage): SafeHtml {
+  return html`<div class="reader-notes-slot" ${raw(SLOT_ATTR)}="notes">
+    ${raw(renderOpenTextNotesHtml(page))}
   </div>`;
 }
 
 /**
  * The inner HTML of `#reader-passage` for one page: a section row per block
- * (per marker within a paragraph), then the page's notes as footnotes.
+ * (per marker within a paragraph). The page's notes are in the companion
+ * panel ({@link renderOpenTextNotesHtml}).
  */
 export function renderOpenTextPassageHtml(page: OpenTextPage): SafeHtml {
   const ids = new SectionIds();
@@ -377,7 +406,6 @@ export function renderOpenTextPassageHtml(page: OpenTextPage): SafeHtml {
       </div>`
     );
   }
-  if (page.notes.length > 0) rows.push(renderNotes(page));
   return html`${joinHtml(rows, "\n")}`;
 }
 
@@ -400,7 +428,7 @@ function pageNav(doc: OpenTextDocument, index: number): PageNav {
 }
 
 function notesLinkText(count: number): string {
-  return count === 1 ? "1 note ↓" : `${count} notes ↓`;
+  return count === 1 ? "1 note" : `${count} notes`;
 }
 
 function sourceBadgeText(model: OpenTextViewModel): string {
@@ -490,6 +518,8 @@ function renderStickyBar(model: OpenTextViewModel, nav: PageNav): SafeHtml {
       </div>
       <div class="sticky-primary-right">
         ${raw(renderStickyArrow(model, "next", nav.page, nav.next))}
+        <span class="running-right-sep" aria-hidden="true">&middot;</span>
+        ${raw(renderReaderSettingsButtonHtml())}
       </div>
     </div>
   </header>`;
@@ -542,12 +572,12 @@ function renderTextCard(model: OpenTextViewModel, nav: PageNav): SafeHtml {
         ><span class="reader-meta-sep">·</span
         ><span class="reader-work-tag" title="${title}">${title}</span>
       </div>
-      <h1
-        class="reader-passage-heading"
-        aria-live="polite"
-        data-role="${OPEN_TEXT_VIEW_ROLES.pageLabel}">
-        ${nav.page.label}
-      </h1>
+      ${raw(
+        renderReaderHeadingHtml(
+          nav.page.label,
+          openTextPageHref(entry.id, nav.page.id)
+        )
+      )}
       <div class="reader-text-meta">
         <span
           class="open-text-badge open-text-badge-uncurated"
@@ -571,7 +601,7 @@ function renderTextCard(model: OpenTextViewModel, nav: PageNav): SafeHtml {
           ${raw(notesHidden)}>
           · </span
         ><a
-          href="#${OPEN_TEXT_NOTES_ID}"
+          href="#${OPEN_TEXT_NOTES_VIEW_ID}"
           data-role="${OPEN_TEXT_VIEW_ROLES.notesLink}"
           ${raw(notesHidden)}
           >${notesLinkText(notes)}</a
@@ -690,7 +720,7 @@ export function renderOpenTextAboutHtml(model: OpenTextViewModel): SafeHtml {
   </div>`;
 }
 
-function tabIcon(name: "book" | "info"): SafeHtml {
+function tabIcon(name: "book" | "notes" | "info"): SafeHtml {
   return html`<span class="reader-tab-icon" aria-hidden="true"
     >${raw(icon(name, { size: 14, strokeWidth: 2 }))}</span
   >`;
@@ -705,10 +735,16 @@ function dictFrameSrc(query: string): string {
 
 /**
  * The splitter and companion panel, mirroring `renderReaderDictPanelHtml` in
- * `reader.server.ts`, with only the Dictionary and About tabs: Open Text notes
- * are footnotes in the passage, and there is no translation.
+ * `reader.server.ts`, with the Dictionary, Notes and About tabs (there is no
+ * translation). As on library pages, the Notes tab is hidden on a page
+ * without notes, and `ReaderPanelController` shows or hides it again when a
+ * page turn swaps the `notes` slot.
  */
-function renderDictPanel(model: OpenTextViewModel, query: string): SafeHtml {
+function renderDictPanel(
+  model: OpenTextViewModel,
+  page: OpenTextPage,
+  query: string
+): SafeHtml {
   const closeIcon = raw(icon("close", { size: 16, strokeWidth: 2 }));
   const unarmed = query ? "" : " data-dict-unarmed";
   const minimized = query ? "" : " drawer-minimized";
@@ -757,6 +793,16 @@ function renderDictPanel(model: OpenTextViewModel, query: string): SafeHtml {
               ></a
             >
             <a
+              href="#${OPEN_TEXT_NOTES_VIEW_ID}"
+              class="reader-panel-tab"
+              id="panel-tab-notes"
+              aria-label="Notes"
+              ${raw(page.notes.length > 0 ? "" : "hidden")}
+              >${raw(tabIcon("notes"))}<span class="reader-tab-label"
+                >Notes</span
+              ></a
+            >
+            <a
               href="#panel-view-about"
               class="reader-panel-tab"
               id="panel-tab-about"
@@ -800,6 +846,12 @@ function renderDictPanel(model: OpenTextViewModel, query: string): SafeHtml {
             class="dict-iframe"
             title="Dictionary Search and Definitions"
             loading="lazy"></iframe>
+        </div>
+        <div
+          class="reader-panel-notes reader-panel-view reader-panel-card"
+          id="${OPEN_TEXT_NOTES_VIEW_ID}"
+          aria-live="polite">
+          ${raw(renderNotesSlot(page))}
         </div>
         <div
           class="reader-panel-about reader-panel-view reader-panel-card"
@@ -852,17 +904,39 @@ export function renderOpenTextFrameHtml(
           ${raw(renderTextCard(model, nav))}
         </section>
       </div>
-      ${raw(renderDictPanel(model, query))}
+      ${raw(renderDictPanel(model, nav.page, query))}
     </div>
+    ${raw(renderReaderSettingsPopoverHtml({ hasMacra: false }))}
   </morcus-reader-view>`;
 }
 
-/**
- * Writes the reader frame into the host's mount. The module's only HTML
- * sink (see the module comment).
- */
+/** The module's only HTML sink (see the module comment). */
+function writeOpenTextHtml(target: Element, content: SafeHtml): void {
+  setHtml(target, content);
+}
+
+/** Writes the reader frame into the host's mount. */
 export function mountOpenTextFrame(mount: Element, frame: SafeHtml): void {
-  setHtml(mount, frame);
+  writeOpenTextHtml(mount, frame);
+}
+
+/**
+ * Replaces the companion panel's notes with page `index`'s, for a page turn.
+ * The write notifies the reader view's controllers of the swap, so
+ * `ReaderPanelController` recounts the notes and shows or hides the Notes
+ * tab (falling back to Dictionary when the Notes tab was open and the new
+ * page has none), as `swapSlots` does on library pages.
+ */
+export function swapOpenTextNotes(
+  root: ParentNode,
+  model: OpenTextViewModel,
+  index: number
+): void {
+  const slot = root.querySelector(
+    `#${OPEN_TEXT_NOTES_VIEW_ID} [${SLOT_ATTR}="notes"]`
+  );
+  const page = model.doc.pages[index];
+  if (slot && page) writeOpenTextHtml(slot, renderOpenTextNotesHtml(page));
 }
 
 function setArrowState(
@@ -894,10 +968,28 @@ function setLabels(root: ParentNode, role: string, text: string): void {
 }
 
 /**
- * Updates everything around the passage for page `index`: page labels,
- * prev / next links and the notes link. Text and attributes only; the
- * passage itself is replaced with `adoptPassage`, and the contents dialog's
- * current page is moved by the reader view (`syncTocActivePage`).
+ * Points the permalink heading (`renderReaderHeadingHtml`) at another page:
+ * its link, its label and its text, leaving the copy icons in place.
+ */
+function syncHeading(root: ParentNode, label: string, href: string): void {
+  const link = root.querySelector<HTMLAnchorElement>(
+    "h1.reader-passage-heading a.reader-heading-link"
+  );
+  if (!link) return;
+  link.setAttribute("href", href);
+  link.setAttribute("aria-label", `${label} (copy link to this page)`);
+  // The label is the link's first child, a text node (page labels are never
+  // empty), followed by the icons.
+  const first = link.firstChild;
+  if (first instanceof Text) first.data = label;
+}
+
+/**
+ * Updates everything around the passage for page `index`: page labels, the
+ * heading's permalink, prev / next links and the notes link. Text and
+ * attributes only; the passage itself is replaced with `adoptPassage`, the
+ * notes with {@link swapOpenTextNotes}, and the contents dialog's current
+ * page is moved by the reader view (`syncTocActivePage`).
  */
 export function syncOpenTextPageChrome(
   root: ParentNode,
@@ -906,6 +998,7 @@ export function syncOpenTextPageChrome(
 ): void {
   const { page, prev, next } = pageNav(model.doc, index);
   setLabels(root, OPEN_TEXT_VIEW_ROLES.pageLabel, page.label);
+  syncHeading(root, page.label, openTextPageHref(model.entry.id, page.id));
   const prevHref = openTextPageHref(model.entry.id, (prev ?? page).id);
   const nextHref = openTextPageHref(model.entry.id, (next ?? page).id);
   for (const el of root.querySelectorAll<HTMLElement>(

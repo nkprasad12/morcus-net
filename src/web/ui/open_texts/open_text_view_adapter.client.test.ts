@@ -7,12 +7,14 @@ import type {
   OpenTextPage,
 } from "@/common/open_texts/open_text_document";
 import {
-  OPEN_TEXT_NOTES_ID,
+  OPEN_TEXT_NOTES_VIEW_ID,
   findOpenTextPageIndex,
   openTextPageHref,
   renderOpenTextAboutHtml,
   renderOpenTextFrameHtml,
+  renderOpenTextNotesHtml,
   renderOpenTextPassageHtml,
+  swapOpenTextNotes,
   syncOpenTextPageChrome,
   type OpenTextViewModel,
 } from "@/web/ui/open_texts/open_text_view_adapter.client";
@@ -109,8 +111,9 @@ describe("renderOpenTextPassageHtml", () => {
   it("puts each section marker in the gutter of its own row", () => {
     const root = fragment(renderOpenTextPassageHtml(DOC.pages[0]));
     const sections = root.querySelectorAll(":scope > .reader-section");
-    // Heading, 529A, 529B, notes.
-    expect(sections).toHaveLength(4);
+    // Heading, 529A, 529B: the notes are in the companion panel.
+    expect(sections).toHaveLength(3);
+    expect(root.querySelector(".reader-notes, .reader-note")).toBeNull();
     expect(text(sections[0].querySelector("h3.reader-subheading"))).toBe(
       "LIBER PRIMUS"
     );
@@ -134,18 +137,6 @@ describe("renderOpenTextPassageHtml", () => {
     const greek = root.querySelector('[lang="grc"]');
     expect(text(greek)).toBe("λόγος");
     expect(greek?.getAttribute("data-no-tokenize")).toBe("true");
-  });
-
-  it("renders the page's notes as footnotes in a tokenized row", () => {
-    const root = fragment(renderOpenTextPassageHtml(DOC.pages[0]));
-    const notes = root.querySelector(`#${OPEN_TEXT_NOTES_ID}`);
-    expect(notes?.closest(".reader-section > .reader-passage")).not.toBeNull();
-    const items = notes?.querySelectorAll("li.reader-note") ?? [];
-    expect(items).toHaveLength(1);
-    expect(items[0].id).toBe(`${OPEN_TEXT_NOTES_ID}-1`);
-    expect(text(items[0].querySelector(".reader-note-body"))).toBe(
-      "Cf. 3 Reg. 10."
-    );
   });
 
   it("renders verse lines with stanza breaks and gutter markers", () => {
@@ -192,6 +183,42 @@ describe("renderOpenTextPassageHtml", () => {
   });
 });
 
+describe("renderOpenTextNotesHtml", () => {
+  afterEach(() => document.body.replaceChildren());
+
+  it("renders the page's notes in the library's endnote shape", () => {
+    const root = fragment(renderOpenTextNotesHtml(DOC.pages[0]));
+    const notes = root.querySelector('aside.reader-notes[role="doc-endnotes"]');
+    expect(text(notes?.querySelector("h2.reader-notes-heading"))).toBe("Notes");
+    const items = notes?.querySelectorAll("ol.reader-notes-list > li") ?? [];
+    expect(items).toHaveLength(1);
+    expect(items[0].classList.contains("reader-note")).toBe(true);
+    // `#note-<n>`, which ReaderPanelController reveals in the Notes tab.
+    expect(items[0].id).toBe("note-1");
+    expect(text(items[0])).toContain("[1]");
+    expect(text(items[0].querySelector(".reader-note-body"))).toBe(
+      "Cf. 3 Reg. 10."
+    );
+  });
+
+  it("is empty for a page without notes, as on library pages", () => {
+    expect(String(renderOpenTextNotesHtml(DOC.pages[1]))).toBe("");
+  });
+
+  it("escapes note text", () => {
+    const root = fragment(
+      renderOpenTextNotesHtml(
+        page({
+          id: "1",
+          notes: [{ segments: [{ kind: "text", text: "<img src=x>" }] }],
+        })
+      )
+    );
+    expect(root.querySelector("img")).toBeNull();
+    expect(root.textContent).toContain("<img src=x>");
+  });
+});
+
 describe("findOpenTextPageIndex", () => {
   it("finds pages by id, then by label", () => {
     expect(findOpenTextPageIndex(DOC, "530")).toBe(1);
@@ -221,6 +248,20 @@ describe("renderOpenTextFrameHtml", () => {
     expect(text(root.querySelector("h1.reader-passage-heading"))).toBe(
       "col. 529"
     );
+    // The heading is the library reader's copy-permalink link.
+    const headingLink = root.querySelector<HTMLAnchorElement>(
+      'h1.reader-passage-heading[aria-live="polite"] > a.reader-heading-link'
+    );
+    expect(headingLink?.getAttribute("href")).toBe(
+      openTextPageHref(FIXTURE_PL_ENTRY.id, "529")
+    );
+    expect(headingLink?.getAttribute("title")).toBe("Copy link to this page");
+    expect(headingLink?.getAttribute("aria-label")).toBe(
+      "col. 529 (copy link to this page)"
+    );
+    expect(
+      headingLink?.querySelectorAll(".copy-pill-icon svg.copy-pill-glyph")
+    ).toHaveLength(2);
     // The About panel carries the provenance and the no-promise notice.
     const about = root.querySelector("#panel-view-about");
     expect(about?.querySelector(".reader-work-about")).not.toBeNull();
@@ -244,6 +285,60 @@ describe("renderOpenTextFrameHtml", () => {
     expect(
       root.querySelector("#dict-frame")?.hasAttribute("data-dict-unarmed")
     ).toBe(true);
+  });
+
+  it("has the library reader's Aa button and settings dialog", () => {
+    const root = fragment(renderOpenTextFrameHtml(MODEL, 0));
+    const right = root.querySelector(
+      ".reader-sticky-bar .sticky-primary-right"
+    );
+    const btn = right?.querySelector<HTMLButtonElement>(
+      "button#reader-settings-btn.reader-settings-btn"
+    );
+    expect(btn?.getAttribute("aria-controls")).toBe("reader-settings-popover");
+    expect(btn?.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(btn?.hasAttribute("data-js-only")).toBe(true);
+    expect(text(btn)).toBe("Aa");
+    // After the next arrow and a separator, as on library pages.
+    expect(
+      Array.from(right?.children ?? [], (el) => el.className.split(" ")[0])
+    ).toEqual(["reader-btn", "running-right-sep", "reader-btn"]);
+    // The dialog is inside the reader view, which listens for its changes.
+    const dialog = root.querySelector(
+      "morcus-reader-view > morcus-reader-settings > dialog#reader-settings-popover"
+    );
+    expect(dialog).not.toBeNull();
+    expect(dialog?.querySelector("#toggle-gutter")).not.toBeNull();
+    expect(dialog?.querySelector("#dict-size-inc")).not.toBeNull();
+    // Open Texts have no macra.
+    expect(dialog?.querySelector("#toggle-macra")).toBeNull();
+  });
+
+  it("puts the page's notes in the companion panel's Notes tab", () => {
+    const root = fragment(renderOpenTextFrameHtml(MODEL, 0));
+    const tab = root.querySelector<HTMLAnchorElement>("a#panel-tab-notes");
+    expect(tab?.getAttribute("href")).toBe("#panel-view-notes");
+    expect(tab?.hidden).toBe(false);
+    const view = root.querySelector(
+      `.reader-panel-views > #${OPEN_TEXT_NOTES_VIEW_ID}.reader-panel-notes`
+    );
+    const slot = view?.querySelector('.reader-notes-slot[data-slot="notes"]');
+    expect(slot?.querySelector("li.reader-note#note-1")).not.toBeNull();
+    // The header's notes link opens the tab.
+    const link = root.querySelector<HTMLAnchorElement>(
+      '.reader-text-card-header a[data-role="open-text-notes-link"]'
+    );
+    expect(link?.getAttribute("href")).toBe("#panel-view-notes");
+    expect(text(link)).toBe("1 note");
+
+    // A page without notes hides the tab and leaves the slot empty.
+    const empty = fragment(renderOpenTextFrameHtml(MODEL, 1));
+    expect(
+      empty.querySelector<HTMLAnchorElement>("a#panel-tab-notes")?.hidden
+    ).toBe(true);
+    expect(
+      text(empty.querySelector('#panel-view-notes [data-slot="notes"]'))
+    ).toBe("");
   });
 
   it("switches pages with the library reader's contents button and dialog", () => {
@@ -380,13 +475,13 @@ describe("renderOpenTextFrameHtml", () => {
 describe("syncOpenTextPageChrome", () => {
   afterEach(() => document.body.replaceChildren());
 
-  it("updates labels, pager links and the notes link", () => {
+  it("updates labels, the heading, pager links and the notes link", () => {
     const root = fragment(renderOpenTextFrameHtml(MODEL, 0));
     const notesLink = root.querySelector<HTMLAnchorElement>(
       'a[data-role="open-text-notes-link"]'
     );
     expect(notesLink?.hidden).toBe(false);
-    expect(text(notesLink)).toBe("1 note ↓");
+    expect(text(notesLink)).toBe("1 note");
 
     syncOpenTextPageChrome(root, MODEL, 2);
 
@@ -395,7 +490,18 @@ describe("syncOpenTextPageChrome", () => {
         root.querySelectorAll('[data-role="open-text-page-label"]'),
         (el) => text(el)
       )
-    ).toEqual(["col. 531", "col. 531"]);
+    ).toEqual(["col. 531"]);
+    const headingLink = root.querySelector<HTMLAnchorElement>(
+      "h1.reader-passage-heading a.reader-heading-link"
+    );
+    expect(text(headingLink)).toBe("col. 531");
+    expect(headingLink?.getAttribute("href")).toBe(
+      openTextPageHref(FIXTURE_PL_ENTRY.id, "531")
+    );
+    expect(headingLink?.getAttribute("aria-label")).toBe(
+      "col. 531 (copy link to this page)"
+    );
+    expect(headingLink?.querySelector(".copy-pill-icon")).not.toBeNull();
     const stickyNext = root.querySelector<HTMLAnchorElement>(
       '.reader-sticky-bar [data-role="open-text-next"]'
     );
@@ -415,5 +521,23 @@ describe("syncOpenTextPageChrome", () => {
       "col. 531"
     );
     expect(notesLink?.hidden).toBe(true);
+  });
+});
+
+describe("swapOpenTextNotes", () => {
+  afterEach(() => document.body.replaceChildren());
+
+  it("replaces the notes slot's content with the page's notes", () => {
+    const root = fragment(renderOpenTextFrameHtml(MODEL, 1));
+    const slot = root.querySelector('#panel-view-notes [data-slot="notes"]');
+    expect(slot?.querySelector(".reader-note")).toBeNull();
+
+    swapOpenTextNotes(root, MODEL, 0);
+    // The slot element itself stays, as `#panel-view-notes`' state does.
+    expect(root.querySelector('[data-slot="notes"]')).toBe(slot);
+    expect(slot?.querySelectorAll(".reader-note")).toHaveLength(1);
+
+    swapOpenTextNotes(root, MODEL, 2);
+    expect(slot?.querySelector(".reader-note")).toBeNull();
   });
 });

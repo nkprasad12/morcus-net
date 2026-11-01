@@ -86,7 +86,8 @@ sequenceDiagram
 - `reader.server.ts`: Renders the page shell — primary sticky navigation bar (TOC dialog launcher, pager controls, and the `Aa` reader settings launcher), passage text with citation gutters, the companion panel, and the passage footer with continuation cards.
 - `reader_toc.server.ts`: Renders the table of contents, including its `:target`-addressable No-JS fallback.
 - `reader_toc.common.ts` (shared with the client): the browser-safe markup for the sticky bar's contents button (`#reader-toc-btn`) and the contents dialog (`#reader-toc-drawer`). `reader_toc.server.ts` and `reader.server.ts` render through it, and so does the client-rendered Open Texts reader (`open_texts/open_text_view_adapter.client.ts`), so every reader gets the same `ReaderTocController`-enhanced contents.
-- `reader_dialogs.server.ts`: Renders the scholarly `About` section (`#reader-work-about`) and the reader settings `<dialog>`.
+- `reader_chrome.common.ts` (shared with the client): the browser-safe markup for the sticky bar's `Aa` button (`#reader-settings-btn`), the reader settings `<dialog>` (`#reader-settings-popover`) and the copy-permalink passage heading (`a.reader-heading-link`). The server readers (`reader.server.ts`, `reader_dialogs.server.ts`, `external/external.server.ts`) render through it byte for byte, and so does the Open Texts reader, so `<morcus-reader-settings>` and `<morcus-reader-view>` enhance them all the same way.
+- `reader_dialogs.server.ts`: Renders the scholarly `About` section (`#reader-work-about`) and, through `reader_chrome.common.ts`, the reader settings `<dialog>`.
 - `reader_types.server.ts`: Citation hierarchy types and helpers (`CitationId`, `citationToString`, `parseCitationString`, `getDifferentialCitationLabel`) supporting works of arbitrary citation depth.
 
 ### Client
