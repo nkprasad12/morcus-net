@@ -376,8 +376,8 @@ export function resolveDefaultTheLatinLibraryOptions(): BuildLatinLibraryFromRoo
     configured !== undefined && configured.trim() !== ""
       ? configured
       : fs.existsSync("TheLatinLibrary")
-        ? "TheLatinLibrary"
-        : "thelatinlibrary";
+      ? "TheLatinLibrary"
+      : "thelatinlibrary";
   return {
     rootDir,
     commit: locked.commit,
