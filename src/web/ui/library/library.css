@@ -146,69 +146,63 @@
 /* .filter-pill.active shares the filled look of .btn-primary
    (core/nav/components.css). */
 
-/* Continuous Works Grid */
+/* Works, grouped by author: a stack of collapsible author cards (native
+   <details>), each listing its works as rows, like /opentexts. */
 .library-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--space-5);
 }
 
-/* The grid item: the card link, plus (with a saved spot) the corner tag laid
-   over it as a sibling, since its clear button can't go inside the link. */
-.work-card-item {
+/* Each author is a collapsible .author-card (core/nav/components.css). */
+
+/* The row: the work's link, plus (with badges or a saved spot) the corner tag
+   laid over its right end as a sibling, since its clear button can't go inside
+   the link. */
+.library-work-row {
   position: relative;
-  display: grid;
+  border-bottom: 1px solid var(--border);
 }
 
-.work-card-item[hidden] {
-  display: none;
+.library-work-row:last-child {
+  border-bottom: none;
 }
 
-/* Work Card (Fully Clickable Card) */
-.work-card {
-  padding: var(--space-5);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  text-decoration: none;
+/* The whole row is the link. */
+.library-work-link {
+  display: block;
+  padding: var(--space-3) var(--space-5);
   color: inherit;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
 }
 
-.work-card-item:hover .work-card-title {
-  color: var(--primary);
+.library-work-row:hover > .library-work-link {
+  background-color: var(--surface-alt);
 }
 
-.work-card-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-  width: 100%;
-}
-
-.work-card-author {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  line-height: 1.3;
+.library-work-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
 }
 
 .work-card-title {
-  font-family: var(--font-serif);
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.35;
   margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
   color: var(--text);
   overflow-wrap: break-word;
   transition: color 0.15s ease;
 }
 
+.library-work-row:hover .work-card-title {
+  color: var(--primary);
+}
+
 .work-card-corner-tag {
   position: absolute;
-  /* Aligns the badge text baseline and right edge with .work-card-author's
-     inset (padding: var(--space-5), less the badge's 2px top padding). */
-  top: calc(var(--space-5) - 2px);
+  top: 50%;
   right: var(--space-5);
   display: inline-flex;
   align-items: center;
@@ -216,10 +210,10 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  /* Clicks on the badges reach the card link beneath; only the clear button
+  transform: translateY(-50%);
+  /* Clicks on the badges reach the row's link beneath; only the clear button
      takes them. */
   pointer-events: none;
-  transition: transform 0.15s ease;
 }
 
 .work-card-corner-tag:empty {
@@ -228,12 +222,6 @@
 
 .work-card-corner-tag > .badge + .badge {
   border-left: 1px solid var(--border);
-}
-
-/* Lift with the card (.work-card-item:hover in components.css: the card
-   itself isn't :hover while the pointer is over the tag). */
-.work-card-item:hover > .work-card-corner-tag {
-  transform: translateY(-2px);
 }
 
 .badge-resume > svg,
@@ -255,23 +243,45 @@
   color: inherit;
 }
 
-/* Clear the corner badges on the author line only, scaled to the badge count
-   so the title below keeps the full width of the card. */
-.work-card-item:has(.work-card-corner-tag > .badge) .work-card-author {
-  padding-right: 5.5rem;
+/* Keep the title clear of the corner badges, scaled to the badge count. */
+.library-work-row:has(.work-card-corner-tag > .badge) > .library-work-link {
+  padding-right: calc(var(--space-5) + 6rem);
 }
 
-.work-card-item:has(.work-card-corner-tag > .badge:nth-child(2))
-  .work-card-author {
-  padding-right: 9.5rem;
+.library-work-row:has(.work-card-corner-tag > .badge:nth-child(2))
+  > .library-work-link {
+  padding-right: calc(var(--space-5) + 10rem);
+}
+
+.library-work-row:has(.work-card-corner-tag > .badge:nth-child(3))
+  > .library-work-link {
+  padding-right: calc(var(--space-5) + 14rem);
 }
 
 @media (width <= 640px) {
   .library-header {
     margin-bottom: var(--space-5);
   }
+
   .library-grid {
-    grid-template-columns: 1fr;
     gap: var(--space-4);
+  }
+
+  /* Too narrow to share a line: the badges go under the title. */
+  .work-card-corner-tag {
+    top: auto;
+    right: auto;
+    bottom: var(--space-3);
+    left: var(--space-5);
+    transform: none;
+  }
+
+  .library-work-row:has(.work-card-corner-tag > .badge) > .library-work-link,
+  .library-work-row:has(.work-card-corner-tag > .badge:nth-child(2))
+    > .library-work-link,
+  .library-work-row:has(.work-card-corner-tag > .badge:nth-child(3))
+    > .library-work-link {
+    padding-right: var(--space-5);
+    padding-bottom: calc(var(--space-3) + 1.6rem);
   }
 }

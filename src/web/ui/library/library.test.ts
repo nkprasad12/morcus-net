@@ -43,8 +43,24 @@ jest.mock("@/web/ui/reader/reader_loader.server", () => ({
       pageCount: 116,
       firstPageId: ["1"],
     },
+    {
+      id: "phi0448.phi002.perseus-lat2",
+      title: "De Bello Civili",
+      author: "Gaius Julius Caesar",
+      urlAuthor: "caesar",
+      urlName: "de_bello_civili",
+      attribution: "perseus",
+      hasMacra: false,
+      hasTranslation: false,
+      textParts: ["book", "chapter"],
+      paginationDepth: 2,
+      pageCount: 3,
+      firstPageId: ["1", "1"],
+    },
   ]),
 }));
+
+const CAESAR_SEL = '[data-work-id="phi0448.phi001.perseus-lat2"]';
 
 describe("library SSR & client hydration", () => {
   beforeEach(() => {
@@ -61,7 +77,7 @@ describe("library SSR & client hydration", () => {
       expect(html).toContain('href="/work/caesar/de_bello_gallico"');
       expect(html).toContain('href="/work/catullus/carmina"');
       expect(html).toContain('data-first-page="1.1"');
-      expect(html).toContain('class="work-card-item"');
+      expect(html).toContain('class="library-work-row"');
       expect(html).toContain(
         '<span class="badge badge-macra">Macronized</span>'
       );
@@ -123,6 +139,55 @@ describe("library SSR & client hydration", () => {
         "library-search-form",
       ]);
     });
+
+    it("groups works into collapsible author cards, sorted by author then title", async () => {
+      document.documentElement.innerHTML = await renderLibraryPageHtml();
+
+      const grid = document.querySelector("#library-grid")!;
+      const groups = [
+        ...grid.querySelectorAll<HTMLDetailsElement>(
+          "details.library-author-group[data-author-group]"
+        ),
+      ];
+      expect(groups.map((g) => g.parentElement)).toEqual([grid, grid]);
+      expect(groups.every((g) => g.open)).toBe(true);
+      expect(
+        groups.map((g) => g.querySelector(".library-author-name")!.textContent)
+      ).toEqual(["Gaius Julius Caesar", "Gaius Valerius Catullus"]);
+      expect(
+        groups.map(
+          (g) => g.querySelector('[data-role="author-count"]')!.textContent
+        )
+      ).toEqual(["2 works", "1 work"]);
+
+      const summary = groups[0].firstElementChild!;
+      expect(summary.tagName).toBe("SUMMARY");
+      expect(summary.classList.contains("library-author-header")).toBe(true);
+      expect(
+        summary
+          .querySelector(".author-card-chevron")
+          ?.getAttribute("aria-hidden")
+      ).toBe("true");
+
+      // Rows are list items holding the card link and its corner tag.
+      const rows = [
+        ...groups[0].querySelectorAll(".author-card-list > .library-work-row"),
+      ];
+      expect(
+        rows.map((r) => r.querySelector(".work-card-title")!.textContent)
+      ).toEqual(["De Bello Civili", "De Bello Gallico"]);
+      for (const row of rows) {
+        expect(row.querySelector(":scope > a.work-card")).not.toBeNull();
+        expect(
+          row.querySelector(":scope > .work-card-corner-tag")
+        ).not.toBeNull();
+      }
+      // The author is the card's heading; the link's label still names it.
+      expect(grid.querySelector(".work-card-author")).toBeNull();
+      expect(grid.querySelector(CAESAR_SEL)!.getAttribute("aria-label")).toBe(
+        "De Bello Gallico by Gaius Julius Caesar"
+      );
+    });
   });
 
   describe("MorcusLibraryView", () => {
@@ -143,33 +208,53 @@ describe("library SSR & client hydration", () => {
         </header>
         <div id="library-empty-state" hidden></div>
         <main class="library-main">
-          <div class="library-grid">
-            <div class="work-card-item">
-            <a href="/work/caesar/de_bello_gallico"
-               class="card card-interactive work-card"
-               data-work-id="phi0448.phi001.perseus-lat2"
-               data-first-page="1.1"
-               data-tags="all macra">
-              <div class="work-card-content">
-                <span class="work-card-author">Gaius Julius Caesar</span>
-                <h2 class="work-card-title">De Bello Gallico</h2>
-              </div>
-            </a>
-            <div class="work-card-corner-tag"><span class="badge badge-macra">Macronized</span></div>
-            </div>
-            <div class="work-card-item">
-            <a href="/work/catullus/carmina"
-               class="card card-interactive work-card"
-               data-work-id="phi0472.phi001.perseus-lat2"
-               data-first-page="1"
-               data-tags="all">
-              <div class="work-card-content">
-                <span class="work-card-author">Gaius Valerius Catullus</span>
-                <h2 class="work-card-title">Carmina</h2>
-              </div>
-            </a>
-            <div class="work-card-corner-tag"></div>
-            </div>
+          <div class="library-grid" id="library-grid">
+            <details class="library-author-group" data-author-group open>
+              <summary class="library-author-header">
+                <h2 class="library-author-name">Gaius Julius Caesar</h2>
+                <span class="library-author-count" data-role="author-count">2 works</span>
+              </summary>
+              <ul class="library-work-list">
+                <li class="library-work-row">
+                  <a href="/work/caesar/de_bello_civili"
+                     class="work-card library-work-link"
+                     data-work-id="phi0448.phi002.perseus-lat2"
+                     data-first-page="1.1"
+                     data-tags="all">
+                    <h3 class="work-card-title">De Bello Civili</h3>
+                  </a>
+                  <div class="work-card-corner-tag"></div>
+                </li>
+                <li class="library-work-row">
+                  <a href="/work/caesar/de_bello_gallico"
+                     class="work-card library-work-link"
+                     data-work-id="phi0448.phi001.perseus-lat2"
+                     data-first-page="1.1"
+                     data-tags="all macra">
+                    <h3 class="work-card-title">De Bello Gallico</h3>
+                  </a>
+                  <div class="work-card-corner-tag"><span class="badge badge-macra">Macronized</span></div>
+                </li>
+              </ul>
+            </details>
+            <details class="library-author-group" data-author-group open>
+              <summary class="library-author-header">
+                <h2 class="library-author-name">Gaius Valerius Catullus</h2>
+                <span class="library-author-count" data-role="author-count">1 work</span>
+              </summary>
+              <ul class="library-work-list">
+                <li class="library-work-row">
+                  <a href="/work/catullus/carmina"
+                     class="work-card library-work-link"
+                     data-work-id="phi0472.phi001.perseus-lat2"
+                     data-first-page="1"
+                     data-tags="all">
+                    <h3 class="work-card-title">Carmina</h3>
+                  </a>
+                  <div class="work-card-corner-tag"></div>
+                </li>
+              </ul>
+            </details>
           </div>
         </main>
       `;
@@ -180,11 +265,19 @@ describe("library SSR & client hydration", () => {
 
     const CAESAR = '[data-work-id="phi0448.phi001.perseus-lat2"]';
     const CATULLUS = '[data-work-id="phi0472.phi001.perseus-lat2"]';
-    /** The grid item (wrapper) around the card matching `sel`. */
+    const CIVIL = '[data-work-id="phi0448.phi002.perseus-lat2"]';
+    /** The row (list item) around the card matching `sel`. */
     const item = (el: Element, sel: string) =>
       el
         .querySelector<HTMLElement>(sel)!
-        .closest<HTMLElement>(".work-card-item")!;
+        .closest<HTMLElement>(".library-work-row")!;
+    /** The author card around the card matching `sel`. */
+    const group = (el: Element, sel: string) =>
+      el
+        .querySelector<HTMLElement>(sel)!
+        .closest<HTMLDetailsElement>("details[data-author-group]")!;
+    const authorCount = (el: Element, sel: string) =>
+      group(el, sel).querySelector('[data-role="author-count"]')!.textContent;
 
     it("leaves cards un-modified when no saved spots exist", () => {
       const el = setupLibraryDOM();
@@ -421,6 +514,60 @@ describe("library SSR & client hydration", () => {
         "/work/caesar/de_bello_gallico"
       );
       expect(caesarCard.dataset.tags).toBe("all macra");
+    });
+
+    it("hides author cards without a match and recounts the rest", () => {
+      const el = setupLibraryDOM();
+      const input = el.querySelector<HTMLInputElement>(
+        "#library-search-input"
+      )!;
+      const search = (q: string) => {
+        input.value = q;
+        input.dispatchEvent(new Event("input"));
+      };
+
+      search("gallico");
+      expect(item(el, CAESAR).hidden).toBe(false);
+      expect(item(el, CIVIL).hidden).toBe(true);
+      expect(group(el, CAESAR).hidden).toBe(false);
+      expect(authorCount(el, CAESAR)).toBe("1 work");
+      expect(group(el, CATULLUS).hidden).toBe(true);
+
+      // The author's name matches all their works.
+      search("caesar");
+      expect(authorCount(el, CAESAR)).toBe("2 works");
+      expect(group(el, CATULLUS).hidden).toBe(true);
+
+      el.querySelector<HTMLButtonElement>('[data-filter="macra"]')!.click();
+      search("");
+      expect(authorCount(el, CAESAR)).toBe("1 work");
+      expect(group(el, CATULLUS).hidden).toBe(true);
+
+      el.querySelector<HTMLButtonElement>("#library-reset-filter-btn")!.click();
+      expect(group(el, CAESAR).hidden).toBe(false);
+      expect(group(el, CATULLUS).hidden).toBe(false);
+      expect(authorCount(el, CAESAR)).toBe("2 works");
+      expect(authorCount(el, CATULLUS)).toBe("1 work");
+    });
+
+    it("unfolds a folded author card holding a match, only while filtering", () => {
+      const el = setupLibraryDOM();
+      const input = el.querySelector<HTMLInputElement>(
+        "#library-search-input"
+      )!;
+      group(el, CAESAR).open = false;
+      group(el, CATULLUS).open = false;
+
+      input.value = "gallico";
+      input.dispatchEvent(new Event("input"));
+      expect(group(el, CAESAR).open).toBe(true);
+      // No match: hidden, and left folded as the user had it.
+      expect(group(el, CATULLUS).open).toBe(false);
+
+      group(el, CAESAR).open = false;
+      el.querySelector<HTMLButtonElement>("#library-reset-filter-btn")!.click();
+      expect(group(el, CAESAR).open).toBe(false);
+      expect(group(el, CATULLUS).hidden).toBe(false);
     });
   });
 });

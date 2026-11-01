@@ -119,22 +119,35 @@ function renderWorkItemHtml(entry: OpenTextCatalogEntry): string {
   `;
 }
 
+/**
+ * One author's card: a native `<details>`, open by default, so the reader can
+ * fold away authors they're not interested in without any JS.
+ */
 function renderAuthorGroupHtml(group: OpenTextAuthorGroup): string {
   const worksHtml = group.entries.map((e) => renderWorkItemHtml(e)).join("\n");
   return ssr`
-    <section class="open-texts-author-group" id="author-${he.escape(
+    <details class="author-card open-texts-author-group" id="author-${he.escape(
       group.slug
-    )}">
-      <header class="open-texts-author-header">
-        <h2 class="open-texts-author-name">${he.escape(group.author)}</h2>
-        <span class="open-texts-author-count">${he.escape(
-          countLabel(group.entries.length, "work")
-        )}</span>
-      </header>
-      <ul class="open-texts-work-list">
+    )}" open>
+      <summary class="author-card-header open-texts-author-header">
+        <h2 class="author-card-name open-texts-author-name">${he.escape(
+          group.author
+        )}</h2>
+        <span class="author-card-meta">
+          <span class="author-card-count open-texts-author-count">${he.escape(
+            countLabel(group.entries.length, "work")
+          )}</span>
+          ${renderIconSvg("strokeChevronDown", {
+            className: "author-card-chevron",
+            width: 16,
+            height: 16,
+          })}
+        </span>
+      </summary>
+      <ul class="author-card-list open-texts-work-list">
         ${worksHtml}
       </ul>
-    </section>
+    </details>
   `;
 }
 

@@ -8,6 +8,9 @@ import {
 } from "@/web/ui/core/index.client";
 import { savedSpotsStore } from "@/web/ui/reader/saved_spots.client";
 
+/** An author's collapsible card (`<details>`), holding its works' rows. */
+const GROUP = "details[data-author-group]";
+
 export class MorcusLibraryView extends BaseElement {
   #currentFilter: string = "all";
   #currentQuery: string = "";
@@ -24,17 +27,21 @@ export class MorcusLibraryView extends BaseElement {
 
   /**
    * The card's author and title as the user sees them, for filtering. The
-   * server doesn't duplicate them into attributes; the saved-spot badge sits
-   * in the wrapper, outside these spans, so it never leaks into the text.
+   * server doesn't duplicate them into attributes: the author is its card's
+   * heading, and the saved-spot badge sits in the row, outside the title, so
+   * it never leaks into the text.
    */
   #textOf(card: HTMLAnchorElement): { author: string; title: string } {
     let text = this.#searchText.get(card);
     if (!text) {
-      const read = (sel: string) =>
-        (card.querySelector(sel)?.textContent ?? "").trim().toLowerCase();
+      const read = (el: Element | null | undefined) =>
+        (el?.textContent ?? "").trim().toLowerCase();
       text = {
-        author: read(".work-card-author"),
-        title: read(".work-card-title"),
+        author: read(
+          card.closest(GROUP)?.querySelector(".library-author-name") ??
+            card.querySelector(".work-card-author")
+        ),
+        title: read(card.querySelector(".work-card-title")),
       };
       this.#searchText.set(card, text);
     }
@@ -113,9 +120,28 @@ export class MorcusLibraryView extends BaseElement {
         tokens.every((tok) => author.includes(tok) || title.includes(tok));
 
       const isVisible = matchesTag && matchesQuery;
-      // The card's wrapper is the grid item (see library.server.ts).
+      // The card's row is the list item (see library.server.ts).
       (card.parentElement ?? card).hidden = !isVisible;
       if (isVisible) visibleCount++;
+    }
+
+    // Each author's card: hidden while none of its works match, counting the
+    // ones that do, and unfolded (if the user folded it) while filtering.
+    const filtered = tokens.length > 0 || this.#currentFilter !== "all";
+    for (const group of this.scope.$$<HTMLDetailsElement>(GROUP)) {
+      let visibleInGroup = 0;
+      for (const card of Array.from(
+        group.querySelectorAll<HTMLElement>(".work-card")
+      )) {
+        if (!(card.parentElement ?? card).hidden) visibleInGroup++;
+      }
+      group.hidden = visibleInGroup === 0;
+      if (filtered && visibleInGroup > 0 && !group.open) group.open = true;
+      const count = group.querySelector('[data-role="author-count"]');
+      const label = `${visibleInGroup} ${
+        visibleInGroup === 1 ? "work" : "works"
+      }`;
+      if (count && count.textContent !== label) count.textContent = label;
     }
 
     if (emptyState) {

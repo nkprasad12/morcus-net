@@ -149,6 +149,28 @@ describe("open_texts.server", () => {
     ).toBe(true);
   });
 
+  it("renders each author as a collapsible card, open by default", () => {
+    const doc = new JSDOM(
+      renderOpenTextsCatalogContentHtml(SEED_OPEN_TEXTS_CATALOG_BUNDLE)
+    ).window.document;
+    const groups = Array.from(
+      doc.querySelectorAll<HTMLElement>(".open-texts-author-group")
+    );
+    expect(groups.length).toBeGreaterThan(0);
+    for (const group of groups) {
+      expect(group.tagName).toBe("DETAILS");
+      expect(group.hasAttribute("open")).toBe(true);
+      expect(group.id).toMatch(/^author-/);
+      const summary = group.firstElementChild!;
+      expect(summary.tagName).toBe("SUMMARY");
+      expect(summary.classList.contains("open-texts-author-header")).toBe(true);
+      expect(summary.querySelector(".open-texts-author-name")).not.toBeNull();
+      expect(summary.querySelector(".open-texts-author-count")).not.toBeNull();
+      const chevron = summary.querySelector(".author-card-chevron")!;
+      expect(chevron.getAttribute("aria-hidden")).toBe("true");
+    }
+  });
+
   it("tags each work row with its source, period and lowercased volume label", () => {
     const doc = new JSDOM(
       renderOpenTextsCatalogContentHtml(SEED_OPEN_TEXTS_CATALOG_BUNDLE)

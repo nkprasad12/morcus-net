@@ -117,43 +117,7 @@
   gap: var(--space-5);
 }
 
-.open-texts-author-group {
-  background-color: var(--card-surface-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.open-texts-author-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-  background-color: var(--surface-alt);
-  border-bottom: 1px solid var(--border);
-}
-
-.open-texts-author-name {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 1.08rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.open-texts-author-count {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.open-texts-work-list {
-  list-style-type: none;
-  margin-block: 0;
-  padding-inline-start: 0;
-}
+/* Each author is a collapsible .author-card (core/nav/components.css). */
 
 .open-texts-work-item {
   display: flex;

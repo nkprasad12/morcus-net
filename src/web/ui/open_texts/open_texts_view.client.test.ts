@@ -185,6 +185,33 @@ describe("MorcusOpenTextsView", () => {
     expect(visibleAuthors()).toEqual(["Apicius"]);
   });
 
+  test("author cards start open, and a match unfolds a folded card", () => {
+    mount();
+    const groups = Array.from(
+      document.querySelectorAll<HTMLDetailsElement>(".open-texts-author-group")
+    );
+    expect(groups.length).toBeGreaterThan(1);
+    expect(groups.every((g) => g.tagName === "DETAILS" && g.open)).toBe(true);
+
+    const ambrose =
+      document.querySelector<HTMLDetailsElement>("#author-ambrosius")!;
+    const other = groups.find((g) => g !== ambrose)!;
+    ambrose.open = false;
+    other.open = false;
+
+    type("ambros");
+    expect(ambrose.open).toBe(true);
+    // Cards without a match stay as the user left them.
+    expect(other.hidden).toBe(true);
+    expect(other.open).toBe(false);
+
+    // Unfiltered, nothing is reopened behind the user's back.
+    ambrose.open = false;
+    click('[data-role="open-texts-reset"]');
+    expect(ambrose.open).toBe(false);
+    expect(other.hidden).toBe(false);
+  });
+
   test("never touches the URL", () => {
     mount();
     type("augustin");
