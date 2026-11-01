@@ -16,6 +16,8 @@ export const ICON_EDIT =
 export const ICON_BOOKMARK =
   "M17 3H7a1 1 0 0 0-1 1v16l6-3.2L18 20V4a1 1 0 0 0-1-1z";
 export const ICON_CLOSE = "M18 6 6 18M6 6l12 12";
+/** Outline ▾: the reader TOC trigger's chevron. */
+export const ICON_STROKE_CHEVRON_DOWN = "M6 9l6 6 6-6";
 
 export const ICON_PATHS = {
   tune: "M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z",
@@ -47,7 +49,7 @@ export const ICON_PATHS = {
   /** Outline chevrons (pager, quick jump, corpus guide accordions). */
   strokeChevronLeft: "M15 6l-6 6 6 6",
   strokeChevronRight: "M9 6l6 6-6 6",
-  strokeChevronDown: "M6 9l6 6 6-6",
+  strokeChevronDown: ICON_STROKE_CHEVRON_DOWN,
 } as const;
 
 type IconName = keyof typeof ICON_PATHS;

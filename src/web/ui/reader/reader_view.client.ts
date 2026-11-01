@@ -765,6 +765,11 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     this.dismissDrawer();
   }
 
+  /** Closes the contents dialog (`#reader-toc-drawer`) if it is open. */
+  public closeToc(): void {
+    if (this.#tocController.isOpen()) this.#tocController.close();
+  }
+
   public dismissDrawer(): void {
     const splitLayout =
       this.#layoutController.splitLayout ?? this.#splitLayoutEl;
@@ -1557,7 +1562,12 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     }
   }
 
-  #patchToc(newPageId: string): void {
+  /**
+   * Marks `newPageId` as the current page in the contents dialog (and opens
+   * its groups). Called after a page swap, and by readers that turn pages
+   * themselves (`<morcus-open-text-reader>`).
+   */
+  public syncTocActivePage(newPageId: string): void {
     if (!newPageId) return;
 
     const author = this.dataset.author;
@@ -1781,7 +1791,7 @@ export class MorcusReaderView extends BaseElement<"page" | "translation"> {
     if (newPageId) {
       this.dataset.page = newPageId;
     }
-    this.#patchToc(newPageId);
+    this.syncTocActivePage(newPageId);
     this.#hydratePage({ isPopState, hash: url.hash });
 
     if (isTransActive) {

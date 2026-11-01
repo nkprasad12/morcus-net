@@ -238,15 +238,91 @@ describe("renderOpenTextFrameHtml", () => {
     expect(next?.getAttribute("href")).toBe(
       openTextPageHref(FIXTURE_PL_ENTRY.id, "530")
     );
-    const select = root.querySelector<HTMLSelectElement>(
-      'select[data-role="open-text-page-select"]'
-    );
-    expect(select?.value).toBe("529");
-    expect(select?.options).toHaveLength(3);
+    // No bespoke page selector: the library reader's contents do that.
+    expect(root.querySelector(".reader-text-card-header select")).toBeNull();
     // The dictionary starts unarmed without a lookup.
     expect(
       root.querySelector("#dict-frame")?.hasAttribute("data-dict-unarmed")
     ).toBe(true);
+  });
+
+  it("switches pages with the library reader's contents button and dialog", () => {
+    const root = fragment(renderOpenTextFrameHtml(MODEL, 1));
+    const btn = root.querySelector<HTMLAnchorElement>(
+      ".reader-sticky-bar .sticky-jump-box a#reader-toc-btn"
+    );
+    expect(btn?.getAttribute("href")).toBe("#reader-toc-drawer");
+    expect(btn?.classList.contains("sticky-section-btn")).toBe(true);
+    expect(btn?.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(btn?.getAttribute("aria-expanded")).toBe("false");
+    expect(btn?.getAttribute("aria-controls")).toBe("reader-toc-drawer");
+    expect(text(btn?.querySelector(".sticky-work-title"))).toBe(
+      FIXTURE_PL_ENTRY.title
+    );
+    expect(btn?.querySelector(".sticky-section-sep")).not.toBeNull();
+    // Page labels name their own unit, so there is no `§`.
+    expect(btn?.querySelector(".jump-glyph")).toBeNull();
+    const label = btn?.querySelector(
+      '.jump-val[data-role="open-text-page-label"]'
+    );
+    expect(text(label)).toBe("col. 530");
+    expect(btn?.querySelector("svg.jump-chevron")).not.toBeNull();
+    expect(root.querySelector(".sticky-title-wrapper")).toBeNull();
+
+    // The dialog sits in the reader view, as on library pages.
+    const drawer = root.querySelector(
+      "morcus-reader-view > dialog#reader-toc-drawer.reader-toc-drawer"
+    );
+    expect(drawer).not.toBeNull();
+    expect(drawer?.querySelector("#reader-toc-search-input")).not.toBeNull();
+    expect(drawer?.querySelector("#reader-toc-close-btn")).not.toBeNull();
+    expect(
+      drawer?.querySelector("#reader-toc-empty")?.hasAttribute("hidden")
+    ).toBe(true);
+    const items = Array.from(
+      drawer?.querySelectorAll<HTMLAnchorElement>(
+        "#reader-toc-list a.reader-toc-item"
+      ) ?? []
+    );
+    expect(items.map((a) => a.dataset.pageId)).toEqual(["529", "530", "531"]);
+    expect(items.map((a) => text(a))).toEqual([
+      "col. 529",
+      "col. 530",
+      "col. 531",
+    ]);
+    expect(items.map((a) => a.getAttribute("href"))).toEqual(
+      ["529", "530", "531"].map((id) =>
+        openTextPageHref(FIXTURE_PL_ENTRY.id, id)
+      )
+    );
+    expect(items.map((a) => a.getAttribute("aria-current"))).toEqual([
+      null,
+      "page",
+      null,
+    ]);
+    expect(items[1].classList.contains("active")).toBe(true);
+    const back = drawer?.querySelector<HTMLAnchorElement>(
+      ".reader-toc-footer a.reader-library-link"
+    );
+    expect(back?.getAttribute("href")).toBe("/opentexts");
+    expect(text(back)).toBe("← Back to Open Texts");
+  });
+
+  it("escapes page labels and ids in the contents", () => {
+    const doc: OpenTextDocument = {
+      ...DOC,
+      pages: [
+        page({ id: '1"<x>', label: "<b>one</b>" }),
+        page({ id: "2", label: "two" }),
+      ],
+    };
+    const root = fragment(renderOpenTextFrameHtml({ ...MODEL, doc }, 0));
+    const first = root.querySelector<HTMLAnchorElement>(
+      "#reader-toc-drawer a.reader-toc-item"
+    );
+    expect(first?.dataset.pageId).toBe('1"<x>');
+    expect(text(first)).toBe("<b>one</b>");
+    expect(root.querySelector("#reader-toc-drawer b")).toBeNull();
   });
 
   it("opens the dictionary on a lookup already in the URL", () => {
@@ -280,10 +356,12 @@ describe("renderOpenTextFrameHtml", () => {
     );
     // In the header notice and in About.
     expect(links).toHaveLength(2);
-    // A single page has no pager or page selector.
-    expect(
-      root.querySelector('[data-role="open-text-page-select"]')
-    ).toBeNull();
+    // A single page has no pager or contents, just its title and page.
+    expect(root.querySelector("#reader-toc-btn")).toBeNull();
+    expect(root.querySelector("#reader-toc-drawer")).toBeNull();
+    expect(text(root.querySelector(".sticky-title-wrapper .jump-val"))).toBe(
+      "col. 530"
+    );
     expect(root.querySelector(".reader-continuation-actions")).toBeNull();
   });
 
@@ -302,7 +380,7 @@ describe("renderOpenTextFrameHtml", () => {
 describe("syncOpenTextPageChrome", () => {
   afterEach(() => document.body.replaceChildren());
 
-  it("updates labels, pager links, the selector and the notes link", () => {
+  it("updates labels, pager links and the notes link", () => {
     const root = fragment(renderOpenTextFrameHtml(MODEL, 0));
     const notesLink = root.querySelector<HTMLAnchorElement>(
       'a[data-role="open-text-notes-link"]'
@@ -333,11 +411,9 @@ describe("syncOpenTextPageChrome", () => {
       '.reader-continuation-card[data-role="open-text-next"]'
     );
     expect(nextCard?.hidden).toBe(true);
-    expect(
-      root.querySelector<HTMLSelectElement>(
-        'select[data-role="open-text-page-select"]'
-      )?.value
-    ).toBe("531");
+    expect(text(root.querySelector("#reader-toc-btn .jump-val"))).toBe(
+      "col. 531"
+    );
     expect(notesLink?.hidden).toBe(true);
   });
 });

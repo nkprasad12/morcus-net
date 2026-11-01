@@ -387,14 +387,36 @@ describe("<morcus-open-text-reader>", () => {
     ).toBeGreaterThan(0);
     expect(new URLSearchParams(window.location.search).get("page")).toBe("530");
 
-    // The page selector jumps too.
-    const select = reader.querySelector<HTMLSelectElement>(
-      'select[data-role="open-text-page-select"]'
+    // The contents dialog jumps too: its button opens it, and choosing a
+    // page closes it and turns to that page in place.
+    const tocBtn = reader.querySelector<HTMLAnchorElement>("#reader-toc-btn");
+    const drawer =
+      reader.querySelector<HTMLDialogElement>("#reader-toc-drawer");
+    if (!tocBtn || !drawer) throw new Error("no contents");
+    tocBtn.click();
+    expect(drawer.open).toBe(true);
+    expect(tocBtn.getAttribute("aria-expanded")).toBe("true");
+    const item = drawer.querySelector<HTMLAnchorElement>(
+      'a.reader-toc-item[data-page-id="531"]'
     );
-    if (!select) throw new Error("no selector");
-    select.value = "531";
-    select.dispatchEvent(new Event("change", { bubbles: true }));
+    const tocClick = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    item?.dispatchEvent(tocClick);
+    expect(tocClick.defaultPrevented).toBe(true);
+    expect(drawer.open).toBe(false);
     expect(heading(reader)).toBe("col. 531");
+    expect(text(tocBtn.querySelector(".jump-val"))).toBe("col. 531");
+    expect(new URLSearchParams(window.location.search).get("page")).toBe("531");
+    // The contents now mark the new page as current.
+    expect(
+      Array.from(
+        drawer.querySelectorAll<HTMLElement>(".reader-toc-item[aria-current]"),
+        (el) => el.dataset.pageId
+      )
+    ).toEqual(["531"]);
+    expect(item?.classList.contains("active")).toBe(true);
 
     // Back goes to the previous page.
     window.history.replaceState(
@@ -404,10 +426,65 @@ describe("<morcus-open-text-reader>", () => {
     );
     window.dispatchEvent(new PopStateEvent("popstate"));
     expect(heading(reader)).toBe("col. 530");
+    expect(
+      drawer.querySelector<HTMLElement>(".reader-toc-item.active")?.dataset
+        .pageId
+    ).toBe("530");
 
     await until(() => true);
     const position = await new OpenTextStore().getPosition(FIXTURE_PL_ENTRY.id);
     expect(position?.pageId).toBe("530");
+  });
+
+  it("enhances the contents dialog after the async render", async () => {
+    useFetch({ [PRIMARY]: [200, TEI] });
+    const reader = mount();
+    await reader.ready;
+
+    // The reader view connected with the frame already in place, so its
+    // contents controller found the dialog and its button.
+    const tocBtn = reader.querySelector<HTMLAnchorElement>("#reader-toc-btn");
+    const drawer =
+      reader.querySelector<HTMLDialogElement>("#reader-toc-drawer");
+    const search = reader.querySelector<HTMLInputElement>(
+      "#reader-toc-search-input"
+    );
+    if (!tocBtn || !drawer || !search) throw new Error("no contents");
+    const open = new MouseEvent("click", { bubbles: true, cancelable: true });
+    tocBtn.dispatchEvent(open);
+    expect(open.defaultPrevented).toBe(true);
+    expect(drawer.open).toBe(true);
+
+    // Typing filters the pages by id.
+    search.value = "530";
+    search.dispatchEvent(new Event("input", { bubbles: true }));
+    const visible = Array.from(
+      drawer.querySelectorAll<HTMLElement>(".reader-toc-item"),
+      (el) => (el.hidden ? null : el.dataset.pageId)
+    ).filter((id) => id !== null);
+    expect(visible).toEqual(["530"]);
+
+    // Enter opens the one match, turning the page in place.
+    search.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+    );
+    expect(drawer.open).toBe(false);
+    expect(heading(reader)).toBe("col. 530");
+
+    // The dialog still works after a page turn: its button and the `t`
+    // shortcut open it, and its close button closes it.
+    tocBtn.click();
+    expect(drawer.open).toBe(true);
+    // Filtering was reset on close.
+    expect(search.value).toBe("");
+    drawer.querySelector<HTMLElement>("#reader-toc-close-btn")?.click();
+    expect(drawer.open).toBe(false);
+    // (Typed into a text box, `t` is just a letter.)
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "t" }));
+    expect(drawer.open).toBe(true);
   });
 
   it("reopens from the cache at the last page read, without the network", async () => {

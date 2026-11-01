@@ -42,7 +42,14 @@ import {
   setHtml,
   type SafeHtml,
 } from "@/web/ui/core/index.client";
-import { buildOpenTextsUrl } from "@/web/ui/open_texts/open_texts_contract.common";
+import {
+  OPEN_TEXTS_PATH,
+  buildOpenTextsUrl,
+} from "@/web/ui/open_texts/open_texts_contract.common";
+import {
+  renderPageListTocDrawerHtml,
+  renderTocTriggerHtml,
+} from "@/web/ui/reader/reader_toc.common";
 
 /** `data-role` values inside the client-rendered frame. */
 export const OPEN_TEXT_VIEW_ROLES = {
@@ -51,8 +58,6 @@ export const OPEN_TEXT_VIEW_ROLES = {
   prevLabel: "open-text-prev-label",
   nextLabel: "open-text-next-label",
   pageLabel: "open-text-page-label",
-  pageSelect: "open-text-page-select",
-  pageCount: "open-text-page-count",
   notesLink: "open-text-notes-link",
 } as const;
 
@@ -442,8 +447,36 @@ function renderStickyArrow(
   >`;
 }
 
-function renderStickyBar(model: OpenTextViewModel, nav: PageNav): SafeHtml {
+/**
+ * The bar's centre: for a work of several pages, the library reader's
+ * contents button (`#reader-toc-btn`, opening {@link renderTocDrawer}); for a
+ * single page, which has nothing to switch to, just the title and page.
+ */
+function renderStickyCenter(model: OpenTextViewModel, nav: PageNav): SafeHtml {
   const title = model.doc.title || model.entry.title;
+  const pageLabel = html`<span
+    class="jump-val"
+    data-role="${OPEN_TEXT_VIEW_ROLES.pageLabel}"
+    >${nav.page.label}</span
+  >`;
+  if (model.doc.pages.length > 1) {
+    return renderTocTriggerHtml({
+      title,
+      shortTitle: model.entry.title,
+      pageLabelHtml: pageLabel,
+      // Page labels name their own unit (`col. 529`, `Part 2`).
+      sectionGlyph: false,
+    });
+  }
+  return html`<div class="sticky-title-wrapper" title="${title}">
+    <span class="sticky-work-title">${model.entry.title}</span
+    ><span class="sticky-section-sep" aria-hidden="true">·</span>${raw(
+      pageLabel
+    )}
+  </div>`;
+}
+
+function renderStickyBar(model: OpenTextViewModel, nav: PageNav): SafeHtml {
   return html`<header
     class="reader-sticky-bar"
     role="toolbar"
@@ -452,15 +485,7 @@ function renderStickyBar(model: OpenTextViewModel, nav: PageNav): SafeHtml {
       ${raw(renderStickyArrow(model, "prev", nav.page, nav.prev))}
       <div class="reader-sticky-form">
         <div class="sticky-center-group">
-          <div class="sticky-title-wrapper" title="${title}">
-            <span class="sticky-work-title">${model.entry.title}</span
-            ><span class="sticky-section-sep" aria-hidden="true">·</span
-            ><span
-              class="jump-val"
-              data-role="${OPEN_TEXT_VIEW_ROLES.pageLabel}"
-              >${nav.page.label}</span
-            >
-          </div>
+          ${raw(renderStickyCenter(model, nav))}
         </div>
       </div>
       <div class="sticky-primary-right">
@@ -470,24 +495,26 @@ function renderStickyBar(model: OpenTextViewModel, nav: PageNav): SafeHtml {
   </header>`;
 }
 
-function renderPageSelect(model: OpenTextViewModel, index: number): SafeHtml {
-  const options = model.doc.pages.map(
-    (page, i) =>
-      html`<option value="${page.id}" ${raw(i === index ? " selected" : "")}>
-        ${page.label}
-      </option>`
-  );
-  return html`<p class="reader-header-attribution">
-    <label for="${OPEN_TEXT_VIEW_ROLES.pageSelect}">Go to</label>
-    <select
-      id="${OPEN_TEXT_VIEW_ROLES.pageSelect}"
-      data-role="${OPEN_TEXT_VIEW_ROLES.pageSelect}">
-      ${joinHtml(options)}
-    </select>
-    <span data-role="${OPEN_TEXT_VIEW_ROLES.pageCount}"
-      >of ${model.doc.pages.length}</span
-    >
-  </p>`;
+/**
+ * The library reader's contents dialog (`#reader-toc-drawer`), listing every
+ * page, for a work of several pages; "" for a single page. Its items are
+ * page links (`data-page-id`) that `<morcus-open-text-reader>` turns in place.
+ */
+function renderTocDrawer(model: OpenTextViewModel, index: number): SafeHtml {
+  const { entry, doc } = model;
+  if (doc.pages.length <= 1) return html``;
+  return renderPageListTocDrawerHtml({
+    pages: doc.pages.map((page) => ({
+      id: page.id,
+      label: page.label,
+      href: openTextPageHref(entry.id, page.id),
+    })),
+    activeIndex: index,
+    // A GET form's action drops its own query, so the entry is a field.
+    formAction: OPEN_TEXTS_PATH,
+    hiddenFields: [["open", entry.id]],
+    footer: { href: model.backHref, label: "Back to Open Texts" },
+  });
 }
 
 function renderPartialNotice(model: OpenTextViewModel): SafeHtml {
@@ -501,11 +528,7 @@ function renderPartialNotice(model: OpenTextViewModel): SafeHtml {
   </p>`;
 }
 
-function renderTextCard(
-  model: OpenTextViewModel,
-  nav: PageNav,
-  index: number
-): SafeHtml {
+function renderTextCard(model: OpenTextViewModel, nav: PageNav): SafeHtml {
   const { entry, doc } = model;
   const author = doc.author || entry.author;
   const title = entry.title || doc.title;
@@ -555,7 +578,6 @@ function renderTextCard(
         >
       </p>
       ${raw(renderPartialNotice(model))}
-      ${raw(multiPage ? renderPageSelect(model, index) : html``)}
     </header>
     <article class="reader-passage" id="reader-passage">
       ${raw(renderOpenTextPassageHtml(nav.page))}
@@ -818,6 +840,7 @@ export function renderOpenTextFrameHtml(
     data-open-text="${model.entry.id}"
     data-has-macra="false"
     data-has-translation="false">
+    ${raw(renderTocDrawer(model, index))}
     <span
       id="reader-dict-dismissed"
       class="reader-drawer-dismiss-target"
@@ -826,7 +849,7 @@ export function renderOpenTextFrameHtml(
       <div class="reader-main-column">
         ${raw(renderStickyBar(model, nav))}
         <section class="reader-text-panel" aria-label="Reading Text">
-          ${raw(renderTextCard(model, nav, index))}
+          ${raw(renderTextCard(model, nav))}
         </section>
       </div>
       ${raw(renderDictPanel(model, query))}
@@ -872,8 +895,9 @@ function setLabels(root: ParentNode, role: string, text: string): void {
 
 /**
  * Updates everything around the passage for page `index`: page labels,
- * prev / next links, the page selector and the notes link. Text and
- * attributes only; the passage itself is replaced with `adoptPassage`.
+ * prev / next links and the notes link. Text and attributes only; the
+ * passage itself is replaced with `adoptPassage`, and the contents dialog's
+ * current page is moved by the reader view (`syncTocActivePage`).
  */
 export function syncOpenTextPageChrome(
   root: ParentNode,
@@ -896,10 +920,6 @@ export function syncOpenTextPageChrome(
   }
   setLabels(root, OPEN_TEXT_VIEW_ROLES.prevLabel, prev?.label ?? "");
   setLabels(root, OPEN_TEXT_VIEW_ROLES.nextLabel, next?.label ?? "");
-  const select = root.querySelector<HTMLSelectElement>(
-    `select[data-role="${OPEN_TEXT_VIEW_ROLES.pageSelect}"]`
-  );
-  if (select) select.value = page.id;
   const notes = page.notes.length;
   for (const el of root.querySelectorAll<HTMLElement>(
     `[data-role="${OPEN_TEXT_VIEW_ROLES.notesLink}"]`

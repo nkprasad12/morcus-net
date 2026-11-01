@@ -22,6 +22,7 @@ import {
   buildReaderPageUrl,
   renderTocDrawer,
 } from "@/web/ui/reader/reader_toc.server";
+import { renderTocTriggerHtml } from "@/web/ui/reader/reader_toc.common";
 import {
   renderReaderAboutSection,
   renderReaderSettingsPopover,
@@ -233,29 +234,11 @@ ${renderReaderPagerLink(ctx, "prev")}
 
           <div class="reader-sticky-form" id="reader-jump-form">
             <div class="sticky-center-group">
-              <div class="sticky-jump-box">
-                <a href="#reader-toc-drawer"
-                   class="reader-btn sticky-section-btn"
-                   id="reader-toc-btn"
-                   role="button"
-                   aria-haspopup="dialog"
-                   aria-expanded="false"
-                   aria-controls="reader-toc-drawer"
-                   title="Contents & Sections (T)">
-                  <span class="sticky-work-title" title="${he.escape(
-                    work.title
-                  )}">${he.escape(work.shortTitle || work.title)}</span>
-                  <span class="sticky-section-sep" aria-hidden="true">&middot;</span>
-                  <span class="jump-glyph" aria-hidden="true">&sect;</span>
-                  ${renderReaderPageLabel(ctx)}
-                  ${renderIconSvg("strokeChevronDown", {
-                    className: "jump-chevron",
-                    width: 14,
-                    height: 14,
-                    strokeWidth: 2.5,
-                  })}
-                </a>
-              </div>
+              ${renderTocTriggerHtml({
+                title: work.title,
+                shortTitle: work.shortTitle || work.title,
+                pageLabelHtml: renderReaderPageLabel(ctx),
+              })}
             </div>
           </div>
 

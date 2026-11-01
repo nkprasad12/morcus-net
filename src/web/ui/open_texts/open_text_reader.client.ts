@@ -16,7 +16,8 @@
  * 3. Mounts a `<morcus-reader-view>` frame for the page in `?page=` (or
  *    `?section=`, the server's `initialSection`, or the last page read) into
  *    `[data-role="open-text-mount"]` (`open_text_view_adapter.client.ts`), and
- *    turns pages in place, keeping `?page=` and the reading position current.
+ *    turns pages in place (from the pager or the contents dialog), keeping
+ *    `?page=` and the reading position current.
  *
  * Without JS the host shows its No-JS note and a link to the upstream source;
  * see "The M4 JS-only exception" in `src/web/ui/README.md`.
@@ -245,6 +246,16 @@ export function parseOpenTextReaderPayload(
   return value as unknown as OpenTextReaderPayload;
 }
 
+/** A page in the contents dialog (`reader_toc.common.ts`). */
+const TOC_ITEM_SELECTOR = "#reader-toc-drawer a.reader-toc-item[data-page-id]";
+
+/** The links that turn pages in place: the pager arrows and the contents. */
+const PAGE_LINK_SELECTOR = [
+  `a[data-role="${OPEN_TEXT_VIEW_ROLES.prev}"]`,
+  `a[data-role="${OPEN_TEXT_VIEW_ROLES.next}"]`,
+  TOC_ITEM_SELECTOR,
+].join(", ");
+
 const DEFAULT_ERROR =
   "Unable to load this text right now. The source may be unreachable.";
 
@@ -277,7 +288,6 @@ export class MorcusOpenTextReader extends BaseElement {
       }
     );
     this.scope.listen(this, "click", this.#handleClick);
-    this.scope.listen(this, "change", this.#handleChange);
     this.scope.listen(window, "popstate", this.#handlePopState);
     // Moved in the DOM after loading: the frame (and its reader view, which
     // reconnects itself) is still there, so only the listeners come back.
@@ -412,6 +422,7 @@ export class MorcusOpenTextReader extends BaseElement {
     if (options.push) this.#syncUrl(true);
     view.adoptPassage(renderOpenTextPassageHtml(page));
     syncOpenTextPageChrome(mount, model, index);
+    view.syncTocActivePage(page.id);
     // A new page starts at its top (the passage scrolls in the text panel on
     // desktop and in the window on phones).
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -424,37 +435,28 @@ export class MorcusOpenTextReader extends BaseElement {
   readonly #handleClick = (e: MouseEvent): void => {
     if (e.defaultPrevented || !isPlainLeftClick(e)) return;
     if (!(e.target instanceof Element)) return;
-    const link = e.target.closest<HTMLAnchorElement>(
-      `a[data-role="${OPEN_TEXT_VIEW_ROLES.prev}"], a[data-role="${OPEN_TEXT_VIEW_ROLES.next}"]`
-    );
+    const link = e.target.closest<HTMLAnchorElement>(PAGE_LINK_SELECTOR);
     if (!link || !this.contains(link)) return;
     const href = link.getAttribute("href");
     const model = this.#model;
     if (!href || !model) return;
-    const pageId = new URL(href, window.location.href).searchParams.get("page");
+    const tocItem = link.matches(TOC_ITEM_SELECTOR);
+    if (tocItem) {
+      // A page chosen in the contents: close them, then turn to it.
+      const mount = this.#mount;
+      if (mount) queryUpgraded(mount, "morcus-reader-view")?.closeToc();
+    }
+    const pageId =
+      (tocItem ? link.dataset.pageId : undefined) ??
+      new URL(href, window.location.href).searchParams.get("page");
     const index = findOpenTextPageIndex(model.doc, pageId);
     if (index < 0 || index === this.#pageIndex) {
-      // At either end: nothing to turn to.
+      // At either end, or the page already shown: nothing to turn to.
       e.preventDefault();
       return;
     }
     // Turns the page in place instead of reloading and re-parsing the work.
     if (this.#showPage(index, { push: true })) e.preventDefault();
-  };
-
-  readonly #handleChange = (e: Event): void => {
-    const select = e.target;
-    if (
-      !(select instanceof HTMLSelectElement) ||
-      select.dataset.role !== OPEN_TEXT_VIEW_ROLES.pageSelect
-    ) {
-      return;
-    }
-    const model = this.#model;
-    if (!model) return;
-    this.#showPage(findOpenTextPageIndex(model.doc, select.value), {
-      push: true,
-    });
   };
 
   readonly #handlePopState = (): void => {

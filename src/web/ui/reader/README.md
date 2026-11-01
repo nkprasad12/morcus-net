@@ -85,6 +85,7 @@ sequenceDiagram
 - `reader_loader.server.ts`: Reads preprocessed works and pages from `build/library_processed/library.db`, caching work headers, slug→id mappings, and library summaries in memory while lazily reading page HTML on demand. Also resolves a citation string to a concrete page.
 - `reader.server.ts`: Renders the page shell — primary sticky navigation bar (TOC dialog launcher, pager controls, and the `Aa` reader settings launcher), passage text with citation gutters, the companion panel, and the passage footer with continuation cards.
 - `reader_toc.server.ts`: Renders the table of contents, including its `:target`-addressable No-JS fallback.
+- `reader_toc.common.ts` (shared with the client): the browser-safe markup for the sticky bar's contents button (`#reader-toc-btn`) and the contents dialog (`#reader-toc-drawer`). `reader_toc.server.ts` and `reader.server.ts` render through it, and so does the client-rendered Open Texts reader (`open_texts/open_text_view_adapter.client.ts`), so every reader gets the same `ReaderTocController`-enhanced contents.
 - `reader_dialogs.server.ts`: Renders the scholarly `About` section (`#reader-work-about`) and the reader settings `<dialog>`.
 - `reader_types.server.ts`: Citation hierarchy types and helpers (`CitationId`, `citationToString`, `parseCitationString`, `getDifferentialCitationLabel`) supporting works of arbitrary citation depth.
 
