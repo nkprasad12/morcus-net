@@ -175,6 +175,14 @@ function parseArguments() {
         action: "store_true",
       },
     },
+    {
+      short: "-b_ot",
+      long: "--build_open_texts",
+      options: {
+        help: "Builds the Open Texts metadata catalog.",
+        action: "store_true",
+      },
+    },
   ];
   build.add_argument("--build_all", {
     help: "Builds all artifacts.",
@@ -683,6 +691,7 @@ function artifactConfig(args: any): StepConfig[] {
     args.build_sh = true;
     args.build_corpus = true;
     args.build_gaffiot = true;
+    args.build_open_texts = true;
   }
 
   // If build_corpus is set, enable build_latin_library
@@ -791,9 +800,20 @@ function artifactConfig(args: any): StepConfig[] {
     "build_ls",
     "build_gaffiot",
     "build_latin_library",
+    "build_open_texts",
   ];
   if (DATA_FLAGS.some((flag) => args[flag] === true)) {
     warnOnUpstreamDrift();
+  }
+  if (args.build_open_texts === true) {
+    const command = baseCommand.concat([
+      "src/scripts/build_open_texts_catalog.ts",
+    ]);
+    setupSteps.push({
+      operation: () => shellStep(command.join(" "), childEnv),
+      label: "Building Open Texts catalog",
+      priority: 2,
+    });
   }
   if (args.build_latin_library === true) {
     if (args.build_corpus === true) {

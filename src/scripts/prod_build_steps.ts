@@ -24,6 +24,7 @@ import { processForcellini } from "@/common/dictionaries/forcellini/process_forc
 import { buildV2Bundle } from "@/bundler/client.rsbuild";
 import { buildCompletionsDb } from "@/web/ui/dict/search/completions_db.server";
 import { buildStaticPagesDb } from "@/web/ui/static_pages_seed.server";
+import { buildOpenTextsCatalog } from "@/common/open_texts/catalog_builder";
 import { pinnedDownload, upstreamSource } from "@/scripts/upstream/lock";
 
 const CANONICAL_LATINLIT_DIR = "canonical-latinlit";
@@ -99,6 +100,18 @@ const PROCESS_LAT_LIB: StepConfig = {
     ],
   },
 };
+const BUILD_OPEN_TEXTS_CATALOG: StepConfig = {
+  operation: () => {
+    buildOpenTextsCatalog();
+  },
+  label: "Open Texts catalog creation",
+  repoInfo: {
+    repos: [
+      upstreamSource("patrologia_latina-dev"),
+      upstreamSource("thelatinlibrary"),
+    ],
+  },
+};
 const MAKE_V2_BUNDLE: StepConfig = {
   operation: () => buildV2Bundle(/* minify= */ true),
   label: "Building UI V2 assets",
@@ -128,6 +141,7 @@ const ALL_STEPS = [
   MAKE_FORCELLINI,
   MAKE_COMPLETIONS_DB,
   PROCESS_LAT_LIB,
+  BUILD_OPEN_TEXTS_CATALOG,
   PRERENDER_STATIC_PAGES,
 ];
 
